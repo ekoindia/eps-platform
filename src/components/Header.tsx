@@ -3,14 +3,19 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EkoLogo } from "@/components/EkoLogo";
 
 const navLinks = [
   { 
     label: "Products", 
     href: "#products",
     children: [
-      { label: "Payment APIs", href: "#products" },
-      { label: "Verification APIs", href: "#products" },
+      { label: "DMT API", href: "/products/dmt-api" },
+      { label: "AePS API", href: "/products/aeps-api" },
+      { label: "BBPS API", href: "/products/bbps-api" },
+      { label: "PAN Verification", href: "/products/pan-verification-api" },
+      { label: "Aadhaar Verification", href: "/products/aadhaar-verification-api" },
+      { label: "Bank Verification", href: "/products/bank-verification-api" },
       { label: "Ekonic Platform", href: "#ekonic" },
       { label: "Eko Shield", href: "#shield" },
     ]
@@ -46,12 +51,10 @@ export const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className={cn(
-              "text-2xl font-bold transition-colors duration-300",
-              isScrolled ? "text-eko-navy" : "text-white"
-            )}>
-              eko
-            </span>
+            <EkoLogo 
+              className="h-8 w-auto" 
+              isLight={!isScrolled}
+            />
           </Link>
 
           {/* Desktop Navigation */}
