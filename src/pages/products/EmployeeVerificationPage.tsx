@@ -1,152 +1,80 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { UserCheck, Shield, Zap, CheckCircle, Briefcase, Building, FileText, Users } from "lucide-react";
 
 const EmployeeVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>Employee Verification API - Background Check | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Comprehensive employee background verification with Eko's API. Verify identity, education, employment history, and criminal records for secure hiring." 
-        />
-        <meta name="keywords" content="employee verification API, background check API, employment verification, education verification API, hiring verification, Eko API" />
+        <title>Employee Verification API | Workforce Background Checks | Eko</title>
+        <meta name="description" content="Integrate Employee Verification API to verify employee identity and details digitally for hiring, compliance, and risk management." />
+        <meta name="keywords" content="Employee Verification API, Employee Background Check API, Workforce Verification API, HR Verification API, Employee KYC API" />
         <link rel="canonical" href="https://eko.in/products/employee-verification-api" />
-        <meta property="og:title" content="Employee Verification API - Background Check | Eko" />
-        <meta property="og:description" content="Comprehensive employee background verification for secure hiring." />
+        <meta property="og:title" content="Employee Verification API | Workforce Background Checks | Eko" />
+        <meta property="og:description" content="Verify employee identity and details digitally to reduce hiring risk and ensure compliance." />
         <meta property="og:type" content="website" />
       </Helmet>
       
       <ProductPageLayout
         title="Employee Verification API"
-        description="Comprehensive background verification for hiring"
-        heroTitle="Employee Verification API"
-        heroSubtitle="Verify employee backgrounds comprehensively - identity, education, employment history, and more. Make informed hiring decisions with authentic verification."
+        description="Digital employee identity verification"
+        heroTitle="Employee Verification API for Trusted Workforce Onboarding"
+        heroSubtitle="Verify employee identity and details digitally to reduce hiring risk and ensure compliance."
         category="verification"
-        docsUrl="https://developers.eko.in/docs/employee-verification"
+        docsUrl="https://eko.in/developers/eps/employee-verification-api/"
+        overview="The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows."
+        keyBenefits={[
+          "Digital employee verification",
+          "Reduced hiring and impersonation risk",
+          "Faster onboarding cycles",
+          "Automation-ready HR workflows",
+          "Scalable for large hiring volumes"
+        ]}
         features={[
-          {
-            title: "Identity Verification",
-            description: "Verify PAN, Aadhaar, and other identity documents.",
-            icon: UserCheck
-          },
-          {
-            title: "Education Check",
-            description: "Verify degrees, diplomas, and educational qualifications.",
-            icon: FileText
-          },
-          {
-            title: "Employment History",
-            description: "Verify previous employment, designations, and tenure.",
-            icon: Briefcase
-          },
-          {
-            title: "Address Verification",
-            description: "Physical address verification through field visits.",
-            icon: Building
-          },
-          {
-            title: "Criminal Records",
-            description: "Check court records and criminal background.",
-            icon: Shield
-          },
-          {
-            title: "Reference Check",
-            description: "Contact previous employers for reference verification.",
-            icon: Users
-          }
+          { title: "Employee Identity Verification", description: "Verify employee identity details digitally as part of onboarding." },
+          { title: "Hiring Risk Reduction", description: "Detect inconsistencies early to reduce impersonation and compliance risk." },
+          { title: "Automation Friendly", description: "Integrates seamlessly into HRMS, ATS, and onboarding platforms." },
+          { title: "High-Volume Support", description: "Designed to support large-scale hiring and verification needs." }
         ]}
-        benefits={[
-          {
-            title: "Reduce Hiring Risk",
-            description: "Identify discrepancies before making hiring decisions.",
-            icon: Shield
-          },
-          {
-            title: "Faster Onboarding",
-            description: "Parallel verification reduces overall hiring time.",
-            icon: Zap
-          },
-          {
-            title: "Compliance Ready",
-            description: "Meet regulatory requirements for employee verification.",
-            icon: CheckCircle
-          },
-          {
-            title: "Scalable Solution",
-            description: "From 10 to 10,000 verifications - we scale with you.",
-            icon: Users
-          },
-          {
-            title: "Centralized Dashboard",
-            description: "Track all verifications from a single dashboard.",
-            icon: Building
-          },
-          {
-            title: "Detailed Reports",
-            description: "Comprehensive verification reports with findings.",
-            icon: FileText
-          }
-        ]}
-        integrationSteps={[
-          {
-            step: 1,
-            title: "Sign Up",
-            description: "Create account and select verification types."
-          },
-          {
-            step: 2,
-            title: "Submit Request",
-            description: "Upload candidate details via API or dashboard."
-          },
-          {
-            step: 3,
-            title: "Verification",
-            description: "Our team conducts thorough verification."
-          },
-          {
-            step: 4,
-            title: "Get Report",
-            description: "Receive detailed verification report."
-          },
-          {
-            step: 5,
-            title: "Take Action",
-            description: "Make informed hiring decisions."
-          }
+        whoShouldUse={[
+          "Enterprises and large employers",
+          "HR tech platforms",
+          "Gig economy and staffing companies",
+          "Organizations with compliance-driven hiring"
         ]}
         useCases={[
-          "Corporate Hiring",
-          "IT & ITES Companies",
-          "BFSI Sector",
-          "Gig Economy",
-          "Staffing Agencies",
-          "Healthcare",
-          "Education Sector",
-          "Government Contractors"
+          "Pre-employment verification",
+          "Contractor and gig worker onboarding",
+          "Workforce compliance checks",
+          "Enterprise HR verification workflows"
         ]}
+        trustAndCompliance={[
+          "Secure API authentication",
+          "Encrypted data transmission",
+          "Compliance-aligned verification workflows",
+          "Audit-ready verification logs"
+        ]}
+        integrationSteps={[
+          { step: 1, title: "Sign Up", description: "Create an account on Connect App." },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents for activation." },
+          { step: 3, title: "Integrate API", description: "Integrate Employee Verification API." },
+          { step: 4, title: "Go Live", description: "Start verifying employees in production." }
+        ]}
+        leadForm={{
+          title: "Get Employee Verification API Access",
+          fields: [
+            { name: "company_name", label: "Company Name", type: "text", required: true },
+            { name: "contact_person", label: "Contact Person", type: "text", required: true },
+            { name: "email", label: "Business Email", type: "email", required: true },
+            { name: "mobile", label: "Mobile Number", type: "tel", required: true },
+            { name: "hiring_volume", label: "Expected Monthly Verifications", type: "select", options: ["Less than 100", "100 – 1,000", "1,000 – 10,000", "10,000+"] }
+          ],
+          cta: "Request Employee Verification API"
+        }}
         faqs={[
-          {
-            question: "What types of verification are included?",
-            answer: "We offer identity verification (PAN, Aadhaar), education verification, employment history, address verification, criminal records check, reference checks, and drug tests (optional)."
-          },
-          {
-            question: "How long does verification take?",
-            answer: "Digital verifications (identity, education) complete within 24-48 hours. Field verifications (address) take 3-5 days. Criminal record checks take 5-7 days depending on jurisdiction."
-          },
-          {
-            question: "Is consent required from candidates?",
-            answer: "Yes, candidate consent is mandatory. We provide consent management through digital authorization that candidates can complete on their mobile devices."
-          },
-          {
-            question: "What if discrepancies are found?",
-            answer: "Discrepancies are clearly highlighted in the report with details. We recommend allowing candidates to explain discrepancies before making final decisions."
-          },
-          {
-            question: "Can we customize the verification package?",
-            answer: "Yes, you can select specific verification types based on job role, industry requirements, and company policy. Custom packages are available for enterprise customers."
-          }
+          { question: "What can be verified?", answer: "Employee identity details including name, ID documents, and related information can be verified digitally." },
+          { question: "Does it integrate with HRMS?", answer: "Yes, the API integrates seamlessly into HRMS, ATS, and onboarding platforms." },
+          { question: "Can it handle large hiring volumes?", answer: "Yes, the API is designed to support large-scale hiring and verification needs." },
+          { question: "How do I get started?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." }
         ]}
       />
     </>

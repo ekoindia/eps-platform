@@ -1,152 +1,80 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { Receipt, Shield, Zap, CheckCircle, Building, FileText, Search, Database } from "lucide-react";
 
 const GstVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>GST Verification API - GSTIN Validation | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Verify GST registration and compliance status with Eko's GST Verification API. GSTIN validation, filing status, business details for vendor and customer verification." 
-        />
-        <meta name="keywords" content="GST verification API, GSTIN validation API, GST compliance check, GST filing status API, business verification API, Eko API" />
+        <title>GST Verification API | Real-Time GSTIN Validation | Eko</title>
+        <meta name="description" content="Integrate GST Verification API to validate GSTIN details instantly for vendor onboarding, compliance, and fraud prevention." />
+        <meta name="keywords" content="GST Verification API, GSTIN Verification API, GST Check API, Business Verification API, GST Validation API" />
         <link rel="canonical" href="https://eko.in/products/gst-verification-api" />
-        <meta property="og:title" content="GST Verification API - GSTIN Validation | Eko" />
-        <meta property="og:description" content="Verify GST registration and compliance status for vendor and customer verification." />
+        <meta property="og:title" content="GST Verification API | Real-Time GSTIN Validation | Eko" />
+        <meta property="og:description" content="Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding." />
         <meta property="og:type" content="website" />
       </Helmet>
       
       <ProductPageLayout
         title="GST Verification API"
-        description="Verify GST registration and compliance status instantly"
-        heroTitle="GST Verification API"
-        heroSubtitle="Verify GST registration, compliance status, and business details instantly. Essential for vendor onboarding, B2B transactions, and regulatory compliance."
+        description="Validate GSTIN details instantly"
+        heroTitle="GST Verification API for Business Identity Validation"
+        heroSubtitle="Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding."
         category="verification"
-        docsUrl="https://developers.eko.in/docs/gst-verification"
+        docsUrl="https://eko.in/developers/eps/gst-verification-api/"
+        overview="The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical."
+        keyBenefits={[
+          "Instant GSTIN verification",
+          "Improves vendor and merchant onboarding accuracy",
+          "Reduces compliance and fraud risk",
+          "Automates business verification workflows",
+          "Scales for high-volume verification needs"
+        ]}
         features={[
-          {
-            title: "GSTIN Validation",
-            description: "Verify if GSTIN is valid, active, and registered with GST network.",
-            icon: CheckCircle
-          },
-          {
-            title: "Filing Status",
-            description: "Check GST return filing status and compliance history.",
-            icon: FileText
-          },
-          {
-            title: "Business Details",
-            description: "Get registered business name, address, and constitution type.",
-            icon: Building
-          },
-          {
-            title: "Tax Payer Type",
-            description: "Identify if registered as regular, composition, or casual taxpayer.",
-            icon: Receipt
-          },
-          {
-            title: "HSN/SAC Codes",
-            description: "Get principal place of business and nature of business activities.",
-            icon: Search
-          },
-          {
-            title: "Bulk Verification",
-            description: "Verify multiple GSTINs in a single API call for bulk operations.",
-            icon: Database
-          }
+          { title: "Real-Time GSTIN Validation", description: "Verify GST registration details instantly with structured responses." },
+          { title: "Business Identity Confirmation", description: "Validate legal business information before onboarding or payouts." },
+          { title: "Automation Ready", description: "Easily integrate into KYB and compliance pipelines." },
+          { title: "High-Volume Support", description: "Built to handle large verification volumes reliably." }
         ]}
-        benefits={[
-          {
-            title: "Vendor Compliance",
-            description: "Ensure vendors are GST-compliant before onboarding or transactions.",
-            icon: CheckCircle
-          },
-          {
-            title: "Input Tax Credit",
-            description: "Verify supplier GSTIN to ensure eligible input tax credit claims.",
-            icon: Receipt
-          },
-          {
-            title: "Reduce Risk",
-            description: "Avoid transacting with cancelled or suspended GST registrations.",
-            icon: Shield
-          },
-          {
-            title: "Instant Results",
-            description: "Real-time verification from GST network for quick decisions.",
-            icon: Zap
-          },
-          {
-            title: "Automated Compliance",
-            description: "Integrate into procurement workflow for automated compliance checks.",
-            icon: Building
-          },
-          {
-            title: "Detailed Reports",
-            description: "Generate compliance reports for audit and regulatory purposes.",
-            icon: FileText
-          }
-        ]}
-        integrationSteps={[
-          {
-            step: 1,
-            title: "Sign Up",
-            description: "Create an account on Connect App."
-          },
-          {
-            step: 2,
-            title: "Get Credentials",
-            description: "Receive sandbox and production API credentials."
-          },
-          {
-            step: 3,
-            title: "Integrate",
-            description: "Add GST verification to your vendor onboarding flow."
-          },
-          {
-            step: 4,
-            title: "Test",
-            description: "Test with sample GSTINs in sandbox environment."
-          },
-          {
-            step: 5,
-            title: "Deploy",
-            description: "Go live with production credentials."
-          }
+        whoShouldUse={[
+          "Marketplaces and B2B platforms",
+          "Fintechs onboarding merchants or vendors",
+          "Enterprises with supplier verification needs",
+          "Compliance-driven organizations"
         ]}
         useCases={[
-          "Vendor Onboarding",
-          "Procurement Systems",
-          "E-invoicing Validation",
-          "B2B Marketplaces",
-          "Lending Platforms",
-          "Trade Finance",
-          "Supply Chain Verification",
-          "Compliance Audits"
+          "Vendor and supplier onboarding",
+          "Merchant verification for platforms",
+          "Compliance and due diligence checks",
+          "B2B onboarding workflows"
         ]}
+        trustAndCompliance={[
+          "Secure API authentication",
+          "Encrypted verification communication",
+          "Compliance-aligned data handling",
+          "Audit-ready verification records"
+        ]}
+        integrationSteps={[
+          { step: 1, title: "Sign Up", description: "Create an account on Connect App." },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents for activation." },
+          { step: 3, title: "Integrate API", description: "Integrate GST Verification API." },
+          { step: 4, title: "Go Live", description: "Start verifying GSTIN details in production." }
+        ]}
+        leadForm={{
+          title: "Get GST Verification API Access",
+          fields: [
+            { name: "company_name", label: "Company Name", type: "text", required: true },
+            { name: "contact_person", label: "Contact Person", type: "text", required: true },
+            { name: "email", label: "Business Email", type: "email", required: true },
+            { name: "mobile", label: "Mobile Number", type: "tel", required: true },
+            { name: "verification_volume", label: "Expected Monthly GST Verifications", type: "select", options: ["Less than 1,000", "1,000 – 10,000", "10,000 – 100,000", "100,000+"] }
+          ],
+          cta: "Request GST Verification API"
+        }}
         faqs={[
-          {
-            question: "What information can I verify with GST API?",
-            answer: "You can verify GSTIN validity, registration status, business name, address, constitution type, taxpayer category, filing compliance, and principal place of business."
-          },
-          {
-            question: "Is the data from official GST network?",
-            answer: "Yes, all verification is done against the official GSTN (GST Network) database to ensure authentic and up-to-date information."
-          },
-          {
-            question: "Can I check GST filing status?",
-            answer: "Yes, you can check the return filing status to verify if the taxpayer has been filing returns regularly and is compliant."
-          },
-          {
-            question: "How often is the data updated?",
-            answer: "Our API fetches real-time data from GSTN, so you always get the latest registration and compliance status."
-          },
-          {
-            question: "Is there rate limiting?",
-            answer: "API rate limits depend on your plan. Contact our team to discuss high-volume requirements."
-          }
+          { question: "What details are returned in GST verification?", answer: "The API returns GSTIN status, legal business name, trade name, registration date, and compliance filing status." },
+          { question: "Can I verify multiple GSTINs?", answer: "Yes, the API supports high-volume verification for batch processing needs." },
+          { question: "Is the data real-time?", answer: "Yes, GSTIN details are verified in real time against official records." },
+          { question: "How do I get started?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." }
         ]}
       />
     </>
