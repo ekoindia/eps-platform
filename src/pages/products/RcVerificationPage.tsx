@@ -1,152 +1,80 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { Car, Shield, Zap, CheckCircle, FileText, Users, Calendar, Search } from "lucide-react";
 
 const RcVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>RC Verification API - Vehicle Registration Check | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Verify vehicle registration certificates instantly with Eko's RC Verification API. Check owner details, insurance status, fitness from VAHAN database." 
-        />
-        <meta name="keywords" content="RC verification API, vehicle registration API, VAHAN API, vehicle verification, registration certificate API, Eko API" />
+        <title>RC Verification API | Vehicle Registration Validation | Eko</title>
+        <meta name="description" content="Integrate RC Verification API to validate vehicle registration details instantly for compliance, onboarding, and fraud prevention." />
+        <meta name="keywords" content="RC Verification API, Vehicle RC Verification API, Vehicle Registration Check API, RC Validation API, Vehicle Verification API" />
         <link rel="canonical" href="https://eko.in/products/rc-verification-api" />
-        <meta property="og:title" content="RC Verification API - Vehicle Registration Check | Eko" />
-        <meta property="og:description" content="Verify vehicle registration certificates from official VAHAN database." />
+        <meta property="og:title" content="RC Verification API | Vehicle Registration Validation | Eko" />
+        <meta property="og:description" content="Verify vehicle registration details in real time to ensure compliance and reduce fraud." />
         <meta property="og:type" content="website" />
       </Helmet>
       
       <ProductPageLayout
         title="RC Verification API"
-        description="Verify vehicle registration from VAHAN database"
-        heroTitle="RC Verification API"
-        heroSubtitle="Verify vehicle registration certificates instantly from the official VAHAN database. Get complete vehicle and owner details for mobility, logistics, and insurance."
+        description="Vehicle registration validation"
+        heroTitle="RC Verification API for Vehicle Identity Validation"
+        heroSubtitle="Verify vehicle registration details in real time to ensure compliance and reduce fraud."
         category="verification"
-        docsUrl="https://developers.eko.in/docs/rc-verification"
+        docsUrl="https://eko.in/developers/eps/rc-verification-api/"
+        overview="The RC Verification API enables businesses to validate vehicle registration certificate (RC) details instantly. It is designed for platforms that onboard drivers, vehicles, or assets where vehicle authenticity and ownership verification are critical."
+        keyBenefits={[
+          "Instant RC verification",
+          "Confirms vehicle ownership and registration status",
+          "Reduces vehicle-related fraud",
+          "Improves onboarding accuracy",
+          "Automation-ready for digital workflows"
+        ]}
         features={[
-          {
-            title: "Vehicle Details",
-            description: "Get make, model, variant, fuel type, and color information.",
-            icon: Car
-          },
-          {
-            title: "Owner Information",
-            description: "Verify registered owner name and address.",
-            icon: Users
-          },
-          {
-            title: "Insurance Status",
-            description: "Check if vehicle has active insurance coverage.",
-            icon: Shield
-          },
-          {
-            title: "Fitness Certificate",
-            description: "Verify fitness certificate status and validity.",
-            icon: CheckCircle
-          },
-          {
-            title: "Registration Validity",
-            description: "Check registration date and validity period.",
-            icon: Calendar
-          },
-          {
-            title: "Chassis & Engine",
-            description: "Verify chassis and engine numbers for authenticity.",
-            icon: Search
-          }
+          { title: "Real-Time RC Validation", description: "Verify vehicle registration details instantly with structured response data." },
+          { title: "Vehicle Identity Confirmation", description: "Validate ownership and registration information before onboarding or activation." },
+          { title: "Automation Friendly", description: "Seamlessly integrates into digital onboarding and verification pipelines." },
+          { title: "High-Volume Ready", description: "Designed to support large-scale verification needs reliably." }
         ]}
-        benefits={[
-          {
-            title: "Fleet Compliance",
-            description: "Ensure all fleet vehicles have valid registration and documents.",
-            icon: CheckCircle
-          },
-          {
-            title: "Insurance Verification",
-            description: "Verify vehicle details before issuing motor insurance policies.",
-            icon: Shield
-          },
-          {
-            title: "Used Car Market",
-            description: "Authenticate vehicle history for used car transactions.",
-            icon: Car
-          },
-          {
-            title: "Fraud Prevention",
-            description: "Detect stolen vehicles and fake registration documents.",
-            icon: Search
-          },
-          {
-            title: "Loan Underwriting",
-            description: "Verify vehicle details for vehicle finance applications.",
-            icon: FileText
-          },
-          {
-            title: "Quick Verification",
-            description: "Real-time verification with sub-second response times.",
-            icon: Zap
-          }
-        ]}
-        integrationSteps={[
-          {
-            step: 1,
-            title: "Sign Up",
-            description: "Create an account on Connect App."
-          },
-          {
-            step: 2,
-            title: "Get Credentials",
-            description: "Receive your API credentials."
-          },
-          {
-            step: 3,
-            title: "Integrate",
-            description: "Add RC verification to your workflow."
-          },
-          {
-            step: 4,
-            title: "Test",
-            description: "Test with sample registration numbers."
-          },
-          {
-            step: 5,
-            title: "Deploy",
-            description: "Go live with production credentials."
-          }
+        whoShouldUse={[
+          "Mobility and ride-hailing platforms",
+          "Logistics and delivery companies",
+          "Fleet operators",
+          "Enterprises verifying vehicle assets"
         ]}
         useCases={[
-          "Vehicle Insurance",
-          "Vehicle Finance",
-          "Used Car Platforms",
-          "Fleet Management",
-          "Ride-Hailing",
-          "Toll Management",
-          "Parking Solutions",
-          "Traffic Management"
+          "Driver and vehicle onboarding",
+          "Logistics and mobility platforms",
+          "Asset and fleet verification",
+          "Compliance and due diligence checks"
         ]}
+        trustAndCompliance={[
+          "Secure API authentication",
+          "Encrypted verification communication",
+          "Compliance-aligned data handling",
+          "Audit-ready verification logs"
+        ]}
+        integrationSteps={[
+          { step: 1, title: "Sign Up", description: "Create an account on Connect App." },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents for activation." },
+          { step: 3, title: "Integrate API", description: "Add RC verification to your workflow." },
+          { step: 4, title: "Go Live", description: "Start verifying vehicle registrations in production." }
+        ]}
+        leadForm={{
+          title: "Get RC Verification API Access",
+          fields: [
+            { name: "company_name", label: "Company Name", type: "text", required: true },
+            { name: "contact_person", label: "Contact Person", type: "text", required: true },
+            { name: "email", label: "Business Email", type: "email", required: true },
+            { name: "mobile", label: "Mobile Number", type: "tel", required: true },
+            { name: "verification_volume", label: "Expected Monthly RC Verifications", type: "select", options: ["Less than 1,000", "1,000 – 10,000", "10,000 – 100,000", "100,000+"] }
+          ],
+          cta: "Request RC Verification API"
+        }}
         faqs={[
-          {
-            question: "What details are returned in RC verification?",
-            answer: "We return registration number, owner name, owner address, vehicle make/model, fuel type, chassis number, engine number, registration date, insurance validity, fitness certificate status, and more."
-          },
-          {
-            question: "Is data from all states available?",
-            answer: "Yes, we have pan-India coverage through VAHAN database integration, covering all states and union territories."
-          },
-          {
-            question: "Can I verify commercial vehicles?",
-            answer: "Yes, for commercial vehicles you get additional details like permit type, permit validity, tax status, and fitness certificate details."
-          },
-          {
-            question: "How accurate is the insurance status?",
-            answer: "Insurance status is fetched from VAHAN which is updated by insurance companies. It reflects the latest known insurance status as reported to the transport authority."
-          },
-          {
-            question: "Can I detect stolen vehicles?",
-            answer: "VAHAN data includes blacklist status. Vehicles reported stolen are flagged in the verification response, helping you avoid such vehicles."
-          }
+          { question: "What details are returned?", answer: "Vehicle registration number, owner name, make/model, registration status, and more." },
+          { question: "Is pan-India coverage available?", answer: "Yes, we cover all states and union territories through official database integration." },
+          { question: "Can I verify commercial vehicles?", answer: "Yes, commercial vehicles return additional details like permit type and fitness status." },
+          { question: "How do I get started?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and go live." }
         ]}
       />
     </>

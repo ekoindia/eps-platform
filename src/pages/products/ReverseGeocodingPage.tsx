@@ -1,152 +1,80 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { MapPin, Shield, Zap, CheckCircle, Navigation, Map, Database, Globe } from "lucide-react";
 
 const ReverseGeocodingPage = () => {
   return (
     <>
       <Helmet>
-        <title>Reverse Geocoding API - Address from Coordinates | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Convert GPS coordinates to addresses with Eko's Reverse Geocoding API. Get accurate Indian addresses, pincodes, and location details for logistics and fintech." 
-        />
-        <meta name="keywords" content="reverse geocoding API, GPS to address API, location API, coordinates to address, pincode API, Eko API" />
+        <title>Reverse Geocoding API | Location to Address Resolution | Eko</title>
+        <meta name="description" content="Integrate Reverse Geocoding API to convert latitude and longitude into accurate, structured address data for verification and compliance." />
+        <meta name="keywords" content="Reverse Geocoding API, Location Verification API, Address Resolution API, Latitude Longitude to Address API, Geo Verification API" />
         <link rel="canonical" href="https://eko.in/products/reverse-geocoding-api" />
-        <meta property="og:title" content="Reverse Geocoding API - Address from Coordinates | Eko" />
-        <meta property="og:description" content="Convert GPS coordinates to accurate Indian addresses with pincode details." />
+        <meta property="og:title" content="Reverse Geocoding API | Location to Address Resolution | Eko" />
+        <meta property="og:description" content="Convert geo-coordinates into precise address data to strengthen verification and compliance workflows." />
         <meta property="og:type" content="website" />
       </Helmet>
       
       <ProductPageLayout
         title="Reverse Geocoding API"
-        description="Convert GPS coordinates to addresses"
-        heroTitle="Reverse Geocoding API"
-        heroSubtitle="Convert latitude and longitude coordinates to accurate Indian addresses. Get complete address details including pincode, district, and state for any location."
+        description="Convert coordinates to addresses"
+        heroTitle="Reverse Geocoding API for Location-Based Verification"
+        heroSubtitle="Convert geo-coordinates into precise address data to strengthen verification and compliance workflows."
         category="verification"
-        docsUrl="https://developers.eko.in/docs/reverse-geocoding"
+        docsUrl="https://eko.in/developers/eps/reverse-geocoding-api/"
+        overview="The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment."
+        keyBenefits={[
+          "Accurate latitude-to-address conversion",
+          "Improves address and location verification",
+          "Supports geo-compliance and risk checks",
+          "Automation-ready for digital workflows",
+          "Scales for high-volume location lookups"
+        ]}
         features={[
-          {
-            title: "Accurate Addresses",
-            description: "Get precise address details from GPS coordinates.",
-            icon: MapPin
-          },
-          {
-            title: "Complete Details",
-            description: "Receive area, city, district, state, and pincode.",
-            icon: Map
-          },
-          {
-            title: "India-focused",
-            description: "Optimized for Indian addresses with local area names.",
-            icon: Globe
-          },
-          {
-            title: "Fast Response",
-            description: "Sub-second response times for real-time applications.",
-            icon: Zap
-          },
-          {
-            title: "High Coverage",
-            description: "Comprehensive coverage across all Indian states and territories.",
-            icon: Navigation
-          },
-          {
-            title: "Batch Processing",
-            description: "Process multiple coordinates in a single request.",
-            icon: Database
-          }
+          { title: "Coordinate to Address Resolution", description: "Convert latitude and longitude into structured, readable address data." },
+          { title: "Location Accuracy", description: "Helps validate whether users or devices are operating from expected locations." },
+          { title: "Automation Friendly", description: "Integrates easily into onboarding, verification, and monitoring systems." },
+          { title: "High-Volume Ready", description: "Designed to handle frequent and large-scale geolocation queries." }
         ]}
-        benefits={[
-          {
-            title: "Auto-fill Addresses",
-            description: "Pre-fill customer address from GPS for faster onboarding.",
-            icon: Zap
-          },
-          {
-            title: "Delivery Optimization",
-            description: "Get accurate delivery addresses from driver locations.",
-            icon: Navigation
-          },
-          {
-            title: "Fraud Detection",
-            description: "Verify customer location claims during KYC.",
-            icon: Shield
-          },
-          {
-            title: "Field Force Tracking",
-            description: "Log accurate locations for field agent activities.",
-            icon: MapPin
-          },
-          {
-            title: "Serviceability Check",
-            description: "Determine service availability based on customer location.",
-            icon: CheckCircle
-          },
-          {
-            title: "Analytics & Reports",
-            description: "Enrich location data for better business insights.",
-            icon: Map
-          }
-        ]}
-        integrationSteps={[
-          {
-            step: 1,
-            title: "Sign Up",
-            description: "Create an account on Connect App."
-          },
-          {
-            step: 2,
-            title: "Get API Keys",
-            description: "Receive your API credentials."
-          },
-          {
-            step: 3,
-            title: "Integrate",
-            description: "Pass latitude and longitude to our API."
-          },
-          {
-            step: 4,
-            title: "Test",
-            description: "Test with various coordinates across India."
-          },
-          {
-            step: 5,
-            title: "Deploy",
-            description: "Go live with production credentials."
-          }
+        whoShouldUse={[
+          "Fintechs and regulated platforms",
+          "Enterprises verifying customer locations",
+          "Field service and agent-based operations",
+          "Platforms performing geo-risk analysis"
         ]}
         useCases={[
-          "Customer Onboarding",
-          "Delivery Apps",
-          "Logistics & Fleet",
-          "Insurance Claims",
-          "Field Agent Apps",
-          "Lending Platforms",
-          "Real Estate",
-          "Hyperlocal Services"
+          "Address verification during onboarding",
+          "Geo-compliance and location validation",
+          "Fraud detection and risk assessment",
+          "Field agent or device location checks"
         ]}
+        trustAndCompliance={[
+          "Secure API authentication",
+          "Encrypted request and response handling",
+          "Compliance-aligned data processing",
+          "Audit-ready lookup records"
+        ]}
+        integrationSteps={[
+          { step: 1, title: "Sign Up", description: "Create an account on Connect App." },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents." },
+          { step: 3, title: "Integrate API", description: "Pass latitude and longitude to our API." },
+          { step: 4, title: "Go Live", description: "Start resolving addresses in production." }
+        ]}
+        leadForm={{
+          title: "Get Reverse Geocoding API Access",
+          fields: [
+            { name: "company_name", label: "Company Name", type: "text", required: true },
+            { name: "contact_person", label: "Contact Person", type: "text", required: true },
+            { name: "email", label: "Business Email", type: "email", required: true },
+            { name: "mobile", label: "Mobile Number", type: "tel", required: true },
+            { name: "lookup_volume", label: "Expected Monthly Lookups", type: "select", options: ["Less than 10,000", "10,000 – 100,000", "100,000 – 1,000,000", "1,000,000+"] }
+          ],
+          cta: "Request Reverse Geocoding API"
+        }}
         faqs={[
-          {
-            question: "How accurate is the address returned?",
-            answer: "Accuracy depends on GPS precision. With standard smartphone GPS (10-20m accuracy), we return the correct locality, city, and pincode. For street-level accuracy, higher precision coordinates are needed."
-          },
-          {
-            question: "What address components are returned?",
-            answer: "We return formatted address, area/locality, city, district, state, pincode, and country. Components are structured for easy parsing."
-          },
-          {
-            question: "Is the entire India covered?",
-            answer: "Yes, we cover all states and union territories including remote areas. Urban areas have higher detail compared to rural/forest areas."
-          },
-          {
-            question: "Can I use this for address verification?",
-            answer: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses as part of fraud prevention during KYC."
-          },
-          {
-            question: "What is the rate limit?",
-            answer: "Rate limits depend on your plan. Standard plans allow up to 100 requests per second. Contact us for higher throughput requirements."
-          }
+          { question: "How accurate is the address returned?", answer: "Accuracy depends on GPS precision. With standard coordinates, we return correct locality, city, and pincode." },
+          { question: "What address components are returned?", answer: "We return formatted address, area/locality, city, district, state, pincode, and country." },
+          { question: "Can I use this for fraud detection?", answer: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses for fraud prevention." },
+          { question: "What is the rate limit?", answer: "Rate limits depend on your plan. Contact us for higher throughput requirements." }
         ]}
       />
     </>

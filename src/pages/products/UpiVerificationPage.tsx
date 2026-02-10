@@ -1,152 +1,72 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { AtSign, Shield, Zap, CheckCircle, Users, Search, FileText, UserCheck } from "lucide-react";
 
 const UpiVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>UPI ID Verification API - VPA Validation | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Verify UPI IDs instantly with Eko's UPI Verification API. Validate VPAs, get beneficiary name, and ensure accurate payouts before transfers." 
-        />
-        <meta name="keywords" content="UPI verification API, VPA validation API, UPI ID check, beneficiary verification, payout verification, Eko API" />
+        <title>UPI ID Verification API | Verify UPI ID & Retrieve via Phone Number | Eko</title>
+        <meta name="description" content="Verify UPI IDs in real time and retrieve UPI ID using phone number through a secure, well-documented API." />
+        <meta name="keywords" content="UPI ID Verification API, UPI ID check API, Verify UPI ID, Retrieve UPI ID using phone number, VPA verification API, UPI verification API" />
         <link rel="canonical" href="https://eko.in/products/upi-verification-api" />
-        <meta property="og:title" content="UPI ID Verification API - VPA Validation | Eko" />
-        <meta property="og:description" content="Verify UPI IDs and get beneficiary names before making payouts." />
+        <meta property="og:title" content="UPI ID Verification API | Verify UPI ID & Retrieve via Phone Number | Eko" />
+        <meta property="og:description" content="Validate UPI IDs in real time and retrieve a UPI ID using a phone number to reduce failures." />
         <meta property="og:type" content="website" />
       </Helmet>
       
       <ProductPageLayout
         title="UPI ID Verification API"
-        description="Verify UPI IDs and get beneficiary details"
-        heroTitle="UPI ID Verification API"
-        heroSubtitle="Verify any UPI ID (VPA) instantly and get beneficiary name. Ensure accurate payouts and reduce failed transactions with pre-validation."
+        description="Verify UPI IDs and retrieve via phone number"
+        heroTitle="UPI ID Verification API – Verify UPI ID with Ease"
+        heroSubtitle="Validate UPI IDs in real time and retrieve a UPI ID using a phone number to reduce failures and improve payment accuracy."
         category="verification"
-        docsUrl="https://developers.eko.in/docs/upi-verification"
+        docsUrl="https://eko.in/developers/eps/upi-id-verification-api/"
+        overview="Eko's UPI ID Verification API is designed for payment systems that need real-time UPI ID validation. It supports verifying a UPI ID and retrieving a UPI ID using a phone number—helping you confirm payee identifiers before initiating transactions."
+        keyBenefits={[
+          "Real-time UPI ID verification",
+          "Retrieve UPI ID using phone number",
+          "Reduces wrong-handle payment attempts",
+          "Well-documented integration flow",
+          "24×7 manual integration support"
+        ]}
         features={[
-          {
-            title: "VPA Validation",
-            description: "Check if a UPI ID is valid and active across all UPI handles.",
-            icon: AtSign
-          },
-          {
-            title: "Beneficiary Name",
-            description: "Get the registered name associated with the UPI ID.",
-            icon: UserCheck
-          },
-          {
-            title: "Instant Response",
-            description: "Real-time verification with sub-second response times.",
-            icon: Zap
-          },
-          {
-            title: "All Handles Supported",
-            description: "Works with @upi, @paytm, @ybl, @okaxis and all other handles.",
-            icon: CheckCircle
-          },
-          {
-            title: "Bulk Verification",
-            description: "Verify multiple UPI IDs in a single API call.",
-            icon: Users
-          },
-          {
-            title: "Error Details",
-            description: "Get specific error codes for invalid or inactive VPAs.",
-            icon: FileText
-          }
-        ]}
-        benefits={[
-          {
-            title: "Reduce Failed Payouts",
-            description: "Verify before sending to eliminate failed transaction charges.",
-            icon: CheckCircle
-          },
-          {
-            title: "Confirm Beneficiary",
-            description: "Display name to user for confirmation before transfer.",
-            icon: UserCheck
-          },
-          {
-            title: "Prevent Fraud",
-            description: "Verify VPA ownership to reduce misdirected payments.",
-            icon: Shield
-          },
-          {
-            title: "Better UX",
-            description: "Instant validation improves user experience in payment flows.",
-            icon: Zap
-          },
-          {
-            title: "Cost Savings",
-            description: "Avoid failed transaction fees by verifying upfront.",
-            icon: Search
-          },
-          {
-            title: "Audit Trail",
-            description: "Maintain records of verification for compliance.",
-            icon: FileText
-          }
-        ]}
-        integrationSteps={[
-          {
-            step: 1,
-            title: "Sign Up",
-            description: "Create an account on Connect App."
-          },
-          {
-            step: 2,
-            title: "Get API Keys",
-            description: "Receive sandbox and production credentials."
-          },
-          {
-            step: 3,
-            title: "Integrate",
-            description: "Add verification before payout initiation."
-          },
-          {
-            step: 4,
-            title: "Test",
-            description: "Test with various UPI ID formats."
-          },
-          {
-            step: 5,
-            title: "Go Live",
-            description: "Start verifying in production environment."
-          }
+          { title: "Check UPI ID", description: "Validate whether a UPI ID is correct and usable before initiating a transfer." },
+          { title: "Retrieve UPI ID Using Phone Number", description: "Fetch associated UPI ID details using a phone number to simplify payee discovery." },
+          { title: "Secure, Simple and Robust", description: "Built for production-grade stability with straightforward integration steps." }
         ]}
         useCases={[
-          "Payout Pre-validation",
-          "Payment Apps",
-          "Refund Processing",
-          "Vendor Verification",
-          "Salary Disbursement",
-          "Gaming Withdrawals",
-          "Cashback Credits",
-          "P2P Transfers"
+          "Pre-payment validation for UPI transfers",
+          "Reducing payout/payment failures caused by incorrect UPI IDs",
+          "Customer onboarding where UPI ID discovery is required",
+          "Assisted payments (agent or retailer-led transactions)"
         ]}
+        trustAndCompliance={[
+          "Every API call is secured with one-time-use tokens generated using asymmetric cryptography",
+          "Open-source libraries available to simplify and reduce integration errors"
+        ]}
+        integrationSteps={[
+          { step: 1, title: "Sign Up", description: "Sign up on Connect App." },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents." },
+          { step: 3, title: "Integrate API", description: "Integrate UPI ID Verification API." },
+          { step: 4, title: "Go Live", description: "Start validating UPI IDs." }
+        ]}
+        leadForm={{
+          title: "Get UPI ID Verification API Access",
+          fields: [
+            { name: "company_name", label: "Company Name", type: "text", required: true },
+            { name: "contact_person", label: "Contact Person", type: "text", required: true },
+            { name: "email", label: "Business Email", type: "email", required: true },
+            { name: "mobile", label: "Mobile Number", type: "tel", required: true },
+            { name: "use_case", label: "Primary Use Case", type: "select", options: ["Pre-payment UPI ID Validation", "UPI ID Retrieval via Phone Number", "Assisted Payments (Agent/Retail)", "Multiple Use Cases"] },
+            { name: "expected_volume", label: "Expected Monthly Verifications", type: "select", options: ["Less than 10,000", "10,000 – 100,000", "100,000 – 1,000,000", "1,000,000+"] }
+          ],
+          cta: "Request UPI ID Verification API"
+        }}
         faqs={[
-          {
-            question: "How accurate is the verification?",
-            answer: "Verification is done against live NPCI/UPI infrastructure, providing 100% accurate results for VPA validity and registered name."
-          },
-          {
-            question: "What information is returned?",
-            answer: "The API returns whether the VPA is valid, the registered beneficiary name, and the PSP/bank handle information."
-          },
-          {
-            question: "Are all UPI handles supported?",
-            answer: "Yes, we support all UPI handles including @upi, @paytm, @ybl, @okaxis, @okhdfcbank, and 300+ other bank and fintech handles."
-          },
-          {
-            question: "What if the VPA is invalid?",
-            answer: "You'll receive an error response indicating the VPA doesn't exist or is inactive. This helps prevent failed transactions."
-          },
-          {
-            question: "Can I verify mobile number-based UPIs?",
-            answer: "Yes, you can verify UPI IDs in mobile@upi format, which are automatically created for all mobile numbers linked to UPI."
-          }
+          { question: "Can I retrieve a UPI ID using a phone number?", answer: "Yes, the API supports fetching associated UPI ID details using a phone number to simplify payee discovery." },
+          { question: "How is the API secured?", answer: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography." },
+          { question: "Is 24×7 support available?", answer: "Yes, 24×7 manual integration support is available to help you integrate smoothly." },
+          { question: "What use cases does it support?", answer: "Pre-payment validation, payout failure reduction, customer onboarding with UPI ID discovery, and assisted agent/retailer payments." }
         ]}
       />
     </>

@@ -1,147 +1,80 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { FileCheck, Shield, Zap, CheckCircle, Users, Building, Clock, Database } from "lucide-react";
 
 const PanVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>PAN Verification API - Instant PAN Card Validation | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Verify PAN cards instantly with Eko's NSDL-powered PAN Verification API. Real-time validation, name matching, and fraud prevention for seamless customer onboarding." 
-        />
-        <meta name="keywords" content="PAN verification API, PAN card verification, NSDL PAN API, KYC API, identity verification API, Eko API" />
+        <title>PAN Verification API | Real-Time PAN Validation | Eko</title>
+        <meta name="description" content="Integrate PAN Verification API to validate PAN details instantly for KYC, onboarding, and compliance workflows." />
+        <meta name="keywords" content="PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API" />
         <link rel="canonical" href="https://eko.in/products/pan-verification-api" />
-        <meta property="og:title" content="PAN Verification API - Instant PAN Card Validation | Eko" />
-        <meta property="og:description" content="Verify PAN cards instantly with NSDL-powered real-time validation and name matching." />
+        <meta property="og:title" content="PAN Verification API | Real-Time PAN Validation | Eko" />
+        <meta property="og:description" content="Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding." />
         <meta property="og:type" content="website" />
       </Helmet>
       
       <ProductPageLayout
         title="PAN Verification API"
-        description="Instant PAN card verification with name matching and fraud prevention"
-        heroTitle="PAN Verification Made Easy"
-        heroSubtitle="Customer onboarding & verification simplified with Eko's NSDL-powered PAN Verification API. Validate PAN cards instantly and prevent fraud with real-time verification."
+        description="Verify PAN details in real time"
+        heroTitle="PAN Verification API for Instant Identity Validation"
+        heroSubtitle="Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding."
         category="verification"
-        docsUrl="https://developers.eko.in/docs/identity"
+        docsUrl="https://eko.in/developers/eps/pan-verification-api/"
+        overview="The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms."
+        keyBenefits={[
+          "Instant PAN validation",
+          "Improves KYC accuracy and speed",
+          "Reduces onboarding fraud",
+          "API-driven, automation-ready workflows",
+          "Suitable for high-volume verifications"
+        ]}
         features={[
-          {
-            title: "Real-time Verification",
-            description: "Instant PAN validation with NSDL database lookup and real-time response.",
-            icon: Zap
-          },
-          {
-            title: "Name Matching",
-            description: "Get the name associated with PAN for identity verification and fraud prevention.",
-            icon: Users
-          },
-          {
-            title: "PAN Status Check",
-            description: "Verify if PAN is active, inactive, or flagged for any issues.",
-            icon: CheckCircle
-          },
-          {
-            title: "Fraud Prevention",
-            description: "Detect fake or invalid PAN numbers before onboarding customers.",
-            icon: Shield
-          },
-          {
-            title: "Bulk Verification",
-            description: "Process multiple PAN verifications in a single API call for bulk operations.",
-            icon: Database
-          },
-          {
-            title: "Detailed Response",
-            description: "Get comprehensive PAN details including category, holder type, and more.",
-            icon: FileCheck
-          }
+          { title: "Real-Time PAN Validation", description: "Verify PAN details instantly with structured responses." },
+          { title: "High Accuracy Responses", description: "Returns validated PAN information for reliable identity checks." },
+          { title: "Automation Friendly", description: "Easily integrate into digital onboarding and KYC pipelines." },
+          { title: "Scalable Verification", description: "Designed to support large volumes without performance impact." }
         ]}
-        benefits={[
-          {
-            title: "Seamless Integration",
-            description: "Well-documented API that's easy to understand. We provide 24x7 manual integration support.",
-            icon: CheckCircle
-          },
-          {
-            title: "Robust & Authentic",
-            description: "Backend powered by robust code, proactively maintained to keep your API running.",
-            icon: Building
-          },
-          {
-            title: "NSDL Powered",
-            description: "Direct integration with NSDL database for authentic and reliable verification.",
-            icon: Shield
-          },
-          {
-            title: "High Accuracy",
-            description: "99.9% accuracy rate with intelligent name matching algorithms.",
-            icon: Zap
-          },
-          {
-            title: "Fast Response",
-            description: "Sub-second response times for seamless user experience.",
-            icon: Clock
-          },
-          {
-            title: "Cost Effective",
-            description: "Competitive pricing with volume-based discounts for high-volume partners.",
-            icon: FileCheck
-          }
-        ]}
-        integrationSteps={[
-          {
-            step: 1,
-            title: "Sign Up",
-            description: "Create an account on Connect App to get started."
-          },
-          {
-            step: 2,
-            title: "Submit Documents",
-            description: "Complete the KYC process with necessary business documents."
-          },
-          {
-            step: 3,
-            title: "Integrate API",
-            description: "Use our documentation to integrate the PAN Verification API."
-          },
-          {
-            step: 4,
-            title: "Go Live",
-            description: "Start verifying PAN cards and onboarding customers."
-          }
+        whoShouldUse={[
+          "Fintech and financial institutions",
+          "Marketplaces and platforms",
+          "NBFCs and lenders",
+          "Enterprises with KYC requirements"
         ]}
         useCases={[
-          "Customer Onboarding",
-          "KYC Verification",
-          "Loan Applications",
-          "Account Opening",
-          "Insurance Verification",
-          "Employee Verification",
-          "Vendor Onboarding",
-          "E-commerce Sellers"
+          "Customer KYC verification",
+          "Merchant and vendor onboarding",
+          "Account opening workflows",
+          "Compliance and due diligence checks"
         ]}
+        trustAndCompliance={[
+          "Compliance-aligned verification workflows",
+          "Secure API authentication",
+          "Encrypted data transmission",
+          "Audit-ready verification logs"
+        ]}
+        integrationSteps={[
+          { step: 1, title: "Sign Up", description: "Create an account on Connect App." },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents for activation." },
+          { step: 3, title: "Integrate API", description: "Integrate PAN Verification API into your system." },
+          { step: 4, title: "Go Live", description: "Start validating PAN details in production." }
+        ]}
+        leadForm={{
+          title: "Get PAN Verification API Access",
+          fields: [
+            { name: "company_name", label: "Company Name", type: "text", required: true },
+            { name: "contact_person", label: "Contact Person", type: "text", required: true },
+            { name: "email", label: "Business Email", type: "email", required: true },
+            { name: "mobile", label: "Mobile Number", type: "tel", required: true },
+            { name: "verification_volume", label: "Expected Monthly Verifications", type: "select", options: ["Less than 1,000", "1,000 – 10,000", "10,000 – 100,000", "100,000+"] }
+          ],
+          cta: "Request PAN Verification API"
+        }}
         faqs={[
-          {
-            question: "How does PAN verification work?",
-            answer: "Simply enter the PAN number in your application. Our API sends it to NSDL, which returns the name and other details associated with the PAN. The entire process takes less than a second."
-          },
-          {
-            question: "Is the verification real-time?",
-            answer: "Yes, all verifications are performed in real-time against NSDL's database. You get instant results within milliseconds."
-          },
-          {
-            question: "What information is returned?",
-            answer: "The API returns PAN holder name, PAN status (active/inactive), PAN category (individual/company), and other relevant details for verification."
-          },
-          {
-            question: "Is there a limit on API calls?",
-            answer: "API call limits depend on your plan. We offer flexible plans based on your verification volume requirements."
-          },
-          {
-            question: "Is this service compliant with regulations?",
-            answer: "Yes, our PAN verification service is fully compliant with RBI and government regulations for KYC and identity verification."
-          }
+          { question: "How fast is PAN verification?", answer: "PAN verification is real-time with sub-second response times for instant identity validation." },
+          { question: "What details are returned?", answer: "The API returns validated PAN holder name, PAN status, and other relevant identity details." },
+          { question: "Is it suitable for high volumes?", answer: "Yes, the API is designed to handle large-scale verification volumes reliably without performance degradation." },
+          { question: "How do I get started?", answer: "Sign up on Connect App, submit necessary documents, integrate the API, and start verifying PAN details." }
         ]}
       />
     </>
