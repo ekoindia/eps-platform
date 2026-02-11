@@ -1,23 +1,17 @@
 import { useState } from "react";
-import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
+import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Building, User, Mail, Phone, MessageSquare } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 
 export const LeadCaptureSection = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    message: ""
-  });
+  const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
+    setFormSubmitted(true);
   };
 
   return (
@@ -56,97 +50,81 @@ export const LeadCaptureSection = () => {
         {/* Right: Form */}
         <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
-          <form 
-            onSubmit={handleSubmit}
-            className="relative bg-card border border-border/50 rounded-2xl p-6 lg:p-8 shadow-xl"
-          >
-            <h3 className="text-xl font-semibold text-foreground mb-6">Request a Demo</h3>
-            
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    Name
+          {formSubmitted ? (
+            <div className="relative bg-card border border-border/50 rounded-2xl p-6 lg:p-8 shadow-xl text-center py-12">
+              <div className="w-14 h-14 rounded-full bg-eko-gold/20 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-7 h-7 text-eko-gold" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-1">Thank You!</h3>
+              <p className="text-muted-foreground text-sm">Our team will reach out to you within 24 hours.</p>
+            </div>
+          ) : (
+            <form 
+              onSubmit={handleSubmit}
+              className="relative bg-card border border-border/50 rounded-2xl p-6 lg:p-8 shadow-xl"
+            >
+              <h3 className="text-xl font-semibold text-foreground mb-6">Request a Demo</h3>
+              
+              <div className="space-y-5">
+                <div>
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
-                    placeholder="Your name"
+                    placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
+                    className="mt-1.5"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    Phone
+
+                <div>
+                  <Label htmlFor="phone" className="text-sm font-medium">
+                    Phone <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="flex mt-1.5">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">
+                      +91
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="Enter mobile number"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      required
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email <span className="text-muted-foreground">(optional)</span>
                   </Label>
                   <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+91"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="mt-1.5"
                   />
                 </div>
+                
+                <Button type="submit" variant="gold" size="lg" className="w-full">
+                  Submit Request
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  By submitting, you agree to our Terms of Service and Privacy Policy.
+                </p>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="company" className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-muted-foreground" />
-                  Company
-                </Label>
-                <Input
-                  id="company"
-                  placeholder="Your company name"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="message" className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                  Message (Optional)
-                </Label>
-                <textarea
-                  id="message"
-                  placeholder="Tell us about your requirements..."
-                  rows={3}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                />
-              </div>
-              
-              <Button type="submit" variant="gold" size="lg" className="w-full">
-                Submit Request
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-              
-              <p className="text-xs text-muted-foreground text-center">
-                By submitting, you agree to our Terms of Service and Privacy Policy.
-              </p>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
       </div>
     </SectionContainer>

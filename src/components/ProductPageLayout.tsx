@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SectionContainer } from "@/components/SectionContainer";
-import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Building, Send } from "lucide-react";
+import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,53 +35,26 @@ interface FormField {
 }
 
 interface ProductPageLayoutProps {
-  // SEO
   title: string;
   description: string;
-  
-  // Hero
   heroTitle: string;
   heroSubtitle: string;
-  
-  // Overview
   overview?: string;
-  
-  // Features
   features: ProductFeature[];
-  
-  // Benefits / Key Benefits
   benefits?: ProductFeature[];
   keyBenefits?: string[];
-  
-  // Integration steps
   integrationSteps: IntegrationStep[];
-  
-  // FAQ
   faqs: FAQ[];
-  
-  // Documentation link
   docsUrl: string;
-  
-  // Category
   category: "payment" | "verification" | "platform";
-  
-  // Use cases
   useCases?: string[];
-  
-  // Who should use
   whoShouldUse?: string[];
-  
-  // Trust & Compliance
   trustAndCompliance?: string[];
-  
-  // Lead form
   leadForm?: {
     title: string;
     fields: FormField[];
     cta: string;
   };
-  
-  // Types
   types?: { label: string; icon?: LucideIcon }[];
 }
 
@@ -102,7 +75,7 @@ export const ProductPageLayout = ({
   leadForm,
   types,
 }: ProductPageLayoutProps) => {
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
   const [formSubmitted, setFormSubmitted] = useState(false);
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -121,40 +94,117 @@ export const ProductPageLayout = ({
       <Header />
       
       <main>
-        {/* Hero Section */}
+        {/* Hero Section with inline form */}
         <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
           
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="max-w-4xl">
-              <Link 
-                to="/#products" 
-                className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
-              >
-                ← Back to Products
-              </Link>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                {heroTitle}
-              </h1>
-              <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
-                {heroSubtitle}
-              </p>
-              
-              <div className="flex flex-wrap gap-4">
-                <Button variant="gold" size="lg" asChild>
-                  <a href="#lead-form">
-                    Get Started
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                </Button>
-                <Button variant="hero-outline" size="lg" asChild>
-                  <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-                    <FileText className="w-4 h-4" />
-                    View Documentation
-                  </a>
-                </Button>
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+              {/* Left: Content */}
+              <div>
+                <Link 
+                  to="/#products" 
+                  className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
+                >
+                  ← Back to Products
+                </Link>
+                
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                  {heroTitle}
+                </h1>
+                <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
+                  {heroSubtitle}
+                </p>
+                
+                <div className="flex flex-wrap gap-4">
+                  <Button variant="hero-outline" size="lg" asChild>
+                    <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                      <FileText className="w-4 h-4" />
+                      View Documentation
+                    </a>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right: Lead Form Card */}
+              <div className="relative">
+                <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
+                <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="bg-eko-navy px-6 py-4">
+                    <h3 className="text-lg font-bold text-white">
+                      {leadForm?.title || "Get API Access"}
+                    </h3>
+                    <p className="text-white/70 text-sm">Get started in 10 minutes</p>
+                  </div>
+
+                  <div className="p-6">
+                    {formSubmitted ? (
+                      <div className="text-center py-8">
+                        <div className="w-14 h-14 rounded-full bg-eko-gold/20 flex items-center justify-center mx-auto mb-4">
+                          <CheckCircle className="w-7 h-7 text-eko-gold" />
+                        </div>
+                        <h3 className="text-lg font-bold text-foreground mb-1">Thank You!</h3>
+                        <p className="text-muted-foreground text-sm">Our team will reach out to you within 24 hours.</p>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleFormSubmit} className="space-y-5">
+                        <div>
+                          <Label htmlFor="hero-name" className="text-sm font-medium text-foreground">
+                            Name <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="hero-name"
+                            placeholder="Enter your name"
+                            required
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className="mt-1.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="hero-phone" className="text-sm font-medium text-foreground">
+                            Phone <span className="text-destructive">*</span>
+                          </Label>
+                          <div className="flex mt-1.5">
+                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">
+                              +91
+                            </span>
+                            <Input
+                              id="hero-phone"
+                              type="tel"
+                              placeholder="Enter mobile number"
+                              required
+                              value={formData.phone}
+                              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                              className="rounded-l-none"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="hero-email" className="text-sm font-medium text-foreground">
+                            Email <span className="text-muted-foreground">(optional)</span>
+                          </Label>
+                          <Input
+                            id="hero-email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className="mt-1.5"
+                          />
+                        </div>
+                        <Button type="submit" variant="gold" size="lg" className="w-full">
+                          {leadForm?.cta || "Request API Access"}
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          By submitting, you agree to our Terms & Conditions.
+                        </p>
+                      </form>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -373,80 +423,6 @@ export const ProductPageLayout = ({
             ))}
           </div>
         </SectionContainer>
-
-        {/* Lead Generation Form */}
-        <div id="lead-form">
-          <SectionContainer>
-            <div className="max-w-2xl mx-auto">
-              <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-3xl blur-2xl" />
-                <div className="relative bg-card border border-border/50 rounded-2xl p-8 md:p-10">
-                  {formSubmitted ? (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 rounded-full bg-eko-gold/20 flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle className="w-8 h-8 text-eko-gold" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-foreground mb-2">Thank You!</h3>
-                      <p className="text-muted-foreground">Our team will reach out to you within 24 hours.</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-center mb-8">
-                        <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mx-auto mb-4">
-                          <Send className="w-6 h-6 text-eko-gold" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-foreground mb-2">
-                          {leadForm?.title || "Get API Access"}
-                        </h3>
-                        <p className="text-muted-foreground text-sm">Fill in your details and our team will get back to you.</p>
-                      </div>
-                      <form onSubmit={handleFormSubmit} className="space-y-5">
-                        {(leadForm?.fields || [
-                          { name: "company_name", label: "Company Name", type: "text" as const, required: true },
-                          { name: "contact_name", label: "Contact Person", type: "text" as const, required: true },
-                          { name: "email", label: "Business Email", type: "email" as const, required: true },
-                          { name: "mobile", label: "Mobile Number", type: "tel" as const, required: true },
-                        ]).map((field) => (
-                          <div key={field.name}>
-                            <Label htmlFor={field.name} className="text-sm font-medium text-foreground mb-1.5 block">
-                              {field.label} {field.required && <span className="text-destructive">*</span>}
-                            </Label>
-                            {field.type === "select" && field.options ? (
-                              <select
-                                id={field.name}
-                                required={field.required}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                value={formData[field.name] || ""}
-                                onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                              >
-                                <option value="">Select...</option>
-                                {field.options.map((opt) => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <Input
-                                id={field.name}
-                                type={field.type}
-                                required={field.required}
-                                value={formData[field.name] || ""}
-                                onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                              />
-                            )}
-                          </div>
-                        ))}
-                        <Button type="submit" variant="gold" size="lg" className="w-full">
-                          {leadForm?.cta || "Request API Access"}
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
-                      </form>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </SectionContainer>
-        </div>
       </main>
       
       <Footer />
