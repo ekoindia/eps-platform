@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import { MapPin } from "lucide-react";
 
 const ReverseGeocodingPage = () => {
   return (
@@ -76,6 +77,19 @@ const ReverseGeocodingPage = () => {
           { question: "Can I use this for fraud detection?", answer: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses for fraud prevention." },
           { question: "What is the rate limit?", answer: "Rate limits depend on your plan. Contact us for higher throughput requirements." }
         ]}
+        inputOutputPreview={{
+          apiName: "Reverse Geocoding",
+          inputs: [
+            { label: "Latitude", value: "19.0760", icon: MapPin },
+            { label: "Longitude", value: "72.8777", icon: MapPin },
+          ],
+          outputs: [
+            { label: "Address", value: "Chhatrapati Shivaji Terminus" },
+            { label: "City", value: "Mumbai" },
+            { label: "State", value: "Maharashtra" },
+            { label: "PIN Code", value: "400001" },
+          ],
+        }}
       />
     </>
   );

@@ -148,6 +148,23 @@ const VehicleVerificationPage = () => {
             answer: "Yes, all verifications are performed in real-time with sub-second response times for most queries."
           }
         ]}
+        inputOutputPreview={{
+          apiName: "Vehicle Verification",
+          inputs: [
+            { label: "Vehicle Number", value: "MH01AB1234", icon: Car },
+          ],
+          outputs: [
+            { label: "Owner Name", value: "Rajesh Kumar" },
+            { label: "Vehicle Category", value: "LMV" },
+            { label: "RC Status", value: "Active" },
+            { label: "Vehicle Color", value: "White" },
+            { label: "Manufacturer", value: "Maruti Suzuki" },
+            { label: "Model", value: "Swift Dzire" },
+            { label: "Manufacturing Year", value: "2020" },
+            { label: "Registration Date", value: "15/06/2020" },
+            { label: "Insurance Valid Upto", value: "20/12/2025" },
+          ],
+        }}
       />
     </>
   );

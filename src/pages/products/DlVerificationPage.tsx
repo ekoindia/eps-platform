@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import { CreditCard } from "lucide-react";
 
 const DlVerificationPage = () => {
   return (
@@ -76,6 +77,22 @@ const DlVerificationPage = () => {
           { question: "Does it support high volumes?", answer: "Yes, the API is built to handle large verification volumes reliably." },
           { question: "How do I integrate?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and go live." }
         ]}
+        inputOutputPreview={{
+          apiName: "DL Verification",
+          inputs: [
+            { label: "Driving License Number", value: "MH0220190001234", icon: CreditCard },
+          ],
+          outputs: [
+            { label: "Name", value: "Rajesh Kumar" },
+            { label: "Date of Birth", value: "29/08/1994" },
+            { label: "Address", value: "123, Andheri West, Mumbai" },
+            { label: "Date of Issue", value: "15/03/2019" },
+            { label: "DL Validity", value: "14/03/2039" },
+            { label: "Father's/Husband's Name", value: "Suresh Kumar" },
+            { label: "Badge Details", value: "Transport" },
+            { label: "COV Details", value: "LMV, MCWG" },
+          ],
+        }}
       />
     </>
   );

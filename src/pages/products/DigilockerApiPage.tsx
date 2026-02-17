@@ -76,6 +76,12 @@ const DigilockerApiPage = () => {
           { question: "Does it eliminate physical document collection?", answer: "Yes, the API enables fully paperless document verification, eliminating manual collection." },
           { question: "How do I integrate?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and go live." }
         ]}
+        inputOutputPreview={{
+          apiName: "DigiLocker",
+          inputs: [],
+          outputs: [],
+          comingSoon: true,
+        }}
       />
     </>
   );

@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import { Car } from "lucide-react";
 
 const RcVerificationPage = () => {
   return (
@@ -76,6 +77,29 @@ const RcVerificationPage = () => {
           { question: "Can I verify commercial vehicles?", answer: "Yes, commercial vehicles return additional details like permit type and fitness status." },
           { question: "How do I get started?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and go live." }
         ]}
+        inputOutputPreview={{
+          apiName: "RC Verification",
+          inputs: [
+            { label: "Vehicle Number", value: "MH01AB1234", icon: Car },
+          ],
+          outputs: [
+            { label: "Owner Name", value: "Rajesh Kumar" },
+            { label: "Vehicle Category", value: "LMV" },
+            { label: "Address", value: "Mumbai, Maharashtra" },
+            { label: "RC Status", value: "Active" },
+            { label: "Vehicle Color", value: "White" },
+            { label: "RC Expiry Date", value: "15/06/2035" },
+            { label: "Body Type", value: "Sedan" },
+            { label: "Manufacturer", value: "Maruti Suzuki" },
+            { label: "Model", value: "Swift Dzire" },
+            { label: "Chassis Number", value: "MA3FJEB1S00****" },
+            { label: "Engine Number", value: "K12MN****" },
+            { label: "Manufacturing Year", value: "2020" },
+            { label: "Insurance Company", value: "ICICI Lombard" },
+            { label: "Insurance Valid Upto", value: "20/12/2025" },
+            { label: "Registration Date", value: "15/06/2020" },
+          ],
+        }}
       />
     </>
   );
