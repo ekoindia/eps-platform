@@ -8,6 +8,8 @@ import { SectionContainer } from "@/components/SectionContainer";
 import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
+import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
+import type { ApiField } from "@/components/ApiInputOutputPreview";
 
 interface ProductFeature {
   title: string;
@@ -56,6 +58,12 @@ interface ProductPageLayoutProps {
     cta: string;
   };
   types?: { label: string; icon?: LucideIcon }[];
+  inputOutputPreview?: {
+    apiName: string;
+    inputs: ApiField[];
+    outputs: ApiField[];
+    comingSoon?: boolean;
+  };
 }
 
 export const ProductPageLayout = ({
@@ -74,6 +82,7 @@ export const ProductPageLayout = ({
   trustAndCompliance,
   leadForm,
   types,
+  inputOutputPreview,
 }: ProductPageLayoutProps) => {
   const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -235,6 +244,17 @@ export const ProductPageLayout = ({
               ))}
             </div>
           </SectionContainer>
+        )}
+
+        {/* API Input/Output Preview */}
+        {inputOutputPreview && (
+          <ApiInputOutputPreview
+            apiName={inputOutputPreview.apiName}
+            inputs={inputOutputPreview.inputs}
+            outputs={inputOutputPreview.outputs}
+            comingSoon={inputOutputPreview.comingSoon}
+            docsUrl={docsUrl}
+          />
         )}
 
         {/* Features Section */}

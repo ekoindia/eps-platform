@@ -68,6 +68,12 @@ const UpiVerificationPage = () => {
           { question: "Is 24×7 support available?", answer: "Yes, 24×7 manual integration support is available to help you integrate smoothly." },
           { question: "What use cases does it support?", answer: "Pre-payment validation, payout failure reduction, customer onboarding with UPI ID discovery, and assisted agent/retailer payments." }
         ]}
+        inputOutputPreview={{
+          apiName: "UPI Verification",
+          inputs: [],
+          outputs: [],
+          comingSoon: true,
+        }}
       />
     </>
   );

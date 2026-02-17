@@ -76,6 +76,12 @@ const AadhaarVerificationPage = () => {
           { question: "Can it handle high volumes?", answer: "Yes, the architecture is built to handle large-scale KYC verification volumes reliably." },
           { question: "How do I integrate?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and go live." }
         ]}
+        inputOutputPreview={{
+          apiName: "Aadhaar Verification",
+          inputs: [],
+          outputs: [],
+          comingSoon: true,
+        }}
       />
     </>
   );

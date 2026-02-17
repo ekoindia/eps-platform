@@ -1,6 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import { Building, Shield, Zap, CheckCircle, CreditCard, FileText, Clock, Database } from "lucide-react";
+import { Building, Shield, Zap, CheckCircle, CreditCard, FileText, Clock, Database, Hash, User } from "lucide-react";
 
 const BankVerificationPage = () => {
   return (
@@ -148,6 +148,17 @@ const BankVerificationPage = () => {
             answer: "Failed verifications return specific error codes indicating the reason - invalid account, closed account, incorrect IFSC, etc. - helping you take appropriate action."
           }
         ]}
+        inputOutputPreview={{
+          apiName: "Bank Verification",
+          inputs: [
+            { label: "Account Number", value: "1234567890", icon: Hash },
+            { label: "Bank Name", value: "State Bank of India", icon: Building },
+            { label: "IFSC Code", value: "SBIN0001234", icon: CreditCard },
+          ],
+          outputs: [
+            { label: "Account Holder Name", value: "Rajesh Kumar", icon: User },
+          ],
+        }}
       />
     </>
   );

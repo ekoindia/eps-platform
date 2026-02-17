@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import { CreditCard, User, Calendar, CheckCircle, Fingerprint } from "lucide-react";
 
 const PanVerificationPage = () => {
   return (
@@ -76,6 +77,21 @@ const PanVerificationPage = () => {
           { question: "Is it suitable for high volumes?", answer: "Yes, the API is designed to handle large-scale verification volumes reliably without performance degradation." },
           { question: "How do I get started?", answer: "Sign up on Connect App, submit necessary documents, integrate the API, and start verifying PAN details." }
         ]}
+        inputOutputPreview={{
+          apiName: "PAN Verification",
+          inputs: [
+            { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
+            { label: "Full Name", value: "Rajesh Kumar", icon: User },
+            { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
+          ],
+          outputs: [
+            { label: "PAN Match", value: "✓ Matched" },
+            { label: "Name Match", value: "✓ Matched" },
+            { label: "DOB Match", value: "✓ Matched" },
+            { label: "Gender", value: "Male" },
+            { label: "Aadhaar Seeding Status", value: "Seeded", icon: Fingerprint },
+          ],
+        }}
       />
     </>
   );

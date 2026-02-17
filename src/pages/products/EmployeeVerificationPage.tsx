@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import { Phone } from "lucide-react";
 
 const EmployeeVerificationPage = () => {
   return (
@@ -76,6 +77,24 @@ const EmployeeVerificationPage = () => {
           { question: "Can it handle large hiring volumes?", answer: "Yes, the API is designed to support large-scale hiring and verification needs." },
           { question: "How do I get started?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." }
         ]}
+        inputOutputPreview={{
+          apiName: "Employee Verification",
+          inputs: [
+            { label: "Phone Number", value: "+91 98765 43210", icon: Phone },
+          ],
+          outputs: [
+            { label: "Employee Name", value: "Rajesh Kumar" },
+            { label: "Date of Birth", value: "29/08/1994" },
+            { label: "PAN Number", value: "ABCDE1234F" },
+            { label: "UAN", value: "1001234567890" },
+            { label: "Member ID", value: "MH/BOM/12345" },
+            { label: "Company Name", value: "Acme Pvt Ltd" },
+            { label: "Joining Date", value: "01/04/2019" },
+            { label: "Exit Date", value: "30/06/2023" },
+            { label: "Exit Reason", value: "Resignation" },
+            { label: "PF Filing", value: "Up to date" },
+          ],
+        }}
       />
     </>
   );

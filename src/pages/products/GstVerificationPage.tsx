@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import { Building, FileText } from "lucide-react";
 
 const GstVerificationPage = () => {
   return (
@@ -76,6 +77,23 @@ const GstVerificationPage = () => {
           { question: "Is the data real-time?", answer: "Yes, GSTIN details are verified in real time against official records." },
           { question: "How do I get started?", answer: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." }
         ]}
+        inputOutputPreview={{
+          apiName: "GST Verification",
+          inputs: [
+            { label: "GST Number", value: "29ABCDE1234F1Z5", icon: FileText },
+            { label: "Company Name", value: "Acme Pvt Ltd", icon: Building },
+          ],
+          outputs: [
+            { label: "Legal Name", value: "Acme Private Limited" },
+            { label: "Address", value: "123, MG Road, Bangalore" },
+            { label: "Registration Date", value: "01/07/2017" },
+            { label: "GST Status", value: "Active" },
+            { label: "Constitution", value: "Private Limited" },
+            { label: "Nature of Business", value: "Wholesale" },
+            { label: "Taxpayer Type", value: "Regular" },
+            { label: "Status Code", value: "ACT" },
+          ],
+        }}
       />
     </>
   );
