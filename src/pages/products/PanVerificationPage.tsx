@@ -3,16 +3,52 @@ import { Helmet } from "react-helmet-async";
 import { CreditCard, User, Calendar, CheckCircle, Fingerprint } from "lucide-react";
 
 const PanVerificationPage = () => {
+  const faqData = [
+    { question: "How fast is PAN verification?", answer: "PAN verification is real-time with sub-second response times for instant identity validation." },
+    { question: "What details are returned?", answer: "The API returns validated PAN holder name, PAN status, and other relevant identity details." },
+    { question: "Is it suitable for high volumes?", answer: "Yes, the API is designed to handle large-scale verification volumes reliably without performance degradation." },
+    { question: "How do I get started?", answer: "Sign up on Connect App, submit necessary documents, integrate the API, and start verifying PAN details." }
+  ];
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "PAN Verification API",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web API",
+        "description": "Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs.",
+        "offers": {
+          "@type": "Offer",
+          "availability": "https://schema.org/InStock"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqData.map(faq => ({
+          "@type": "Question",
+          "name": faq.question,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": faq.answer
+          }
+        }))
+      }
+    ]
+  };
+
   return (
     <>
       <Helmet>
         <title>PAN Verification API | Real-Time PAN Validation | Eko</title>
-        <meta name="description" content="Integrate PAN Verification API to validate PAN details instantly for KYC, onboarding, and compliance workflows." />
+        <meta name="description" content="Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs." />
         <meta name="keywords" content="PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API" />
         <link rel="canonical" href="https://eko.in/products/pan-verification-api" />
         <meta property="og:title" content="PAN Verification API | Real-Time PAN Validation | Eko" />
-        <meta property="og:description" content="Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding." />
+        <meta property="og:description" content="Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs." />
         <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
       
       <ProductPageLayout
@@ -55,10 +91,10 @@ const PanVerificationPage = () => {
           "Audit-ready verification logs"
         ]}
         integrationSteps={[
-          { step: 1, title: "Sign Up", description: "Create an account on Connect App." },
-          { step: 2, title: "Submit Documents", description: "Submit necessary documents for activation." },
-          { step: 3, title: "Integrate API", description: "Integrate PAN Verification API into your system." },
-          { step: 4, title: "Go Live", description: "Start validating PAN details in production." }
+          { step: 1, title: "Sign Up", description: "Create an account on Connect App.", tip: "Takes less than 2 minutes" },
+          { step: 2, title: "Submit Documents", description: "Submit necessary documents for activation.", tip: "KYC docs verified in 24 hours" },
+          { step: 3, title: "Integrate API", description: "Integrate PAN Verification API into your system.", tip: "API keys generated instantly" },
+          { step: 4, title: "Go Live", description: "Start validating PAN details in production.", tip: "Sandbox available for testing" }
         ]}
         leadForm={{
           title: "Get PAN Verification API Access",
@@ -71,12 +107,7 @@ const PanVerificationPage = () => {
           ],
           cta: "Request PAN Verification API"
         }}
-        faqs={[
-          { question: "How fast is PAN verification?", answer: "PAN verification is real-time with sub-second response times for instant identity validation." },
-          { question: "What details are returned?", answer: "The API returns validated PAN holder name, PAN status, and other relevant identity details." },
-          { question: "Is it suitable for high volumes?", answer: "Yes, the API is designed to handle large-scale verification volumes reliably without performance degradation." },
-          { question: "How do I get started?", answer: "Sign up on Connect App, submit necessary documents, integrate the API, and start verifying PAN details." }
-        ]}
+        faqs={faqData}
         inputOutputPreview={{
           apiName: "PAN Verification",
           inputs: [

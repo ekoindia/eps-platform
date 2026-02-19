@@ -22,6 +22,7 @@ const buttonVariants = cva(
         "navy-outline": "border-2 border-eko-navy text-eko-navy bg-transparent hover:bg-eko-navy hover:text-white font-semibold",
         "hero-outline": "border-2 border-white/30 text-white bg-transparent hover:bg-white/10 font-semibold backdrop-blur-sm",
         "white": "bg-white text-eko-navy font-semibold hover:bg-white/90 shadow-lg hover:-translate-y-0.5",
+        "action": "bg-amber-500 text-white font-semibold hover:bg-amber-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5",
       },
       size: {
         default: "h-10 px-4 py-2",
