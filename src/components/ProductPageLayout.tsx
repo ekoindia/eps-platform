@@ -342,7 +342,7 @@ export const ProductPageLayout = ({
 
           {/* Remaining features in 2-col grid */}
           {features.length > 3 && (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.slice(3).map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
