@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SectionContainer } from "@/components/SectionContainer";
-import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send } from "lucide-react";
+import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send, Building2, Store, Landmark, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import type { ApiField } from "@/components/ApiInputOutputPreview";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProductFeature {
   title: string;
@@ -21,6 +22,7 @@ interface IntegrationStep {
   step: number;
   title: string;
   description: string;
+  tip?: string;
 }
 
 interface FAQ {
@@ -66,7 +68,26 @@ interface ProductPageLayoutProps {
   };
 }
 
+const industryIcons: Record<string, LucideIcon> = {
+  fintech: Building2,
+  financial: Building2,
+  marketplace: Store,
+  nbfc: Landmark,
+  lender: Landmark,
+  enterprise: Briefcase,
+  default: Users,
+};
+
+const getIndustryIcon = (label: string): LucideIcon => {
+  const lower = label.toLowerCase();
+  for (const [key, icon] of Object.entries(industryIcons)) {
+    if (lower.includes(key)) return icon;
+  }
+  return industryIcons.default;
+};
+
 export const ProductPageLayout = ({
+  title,
   heroTitle,
   heroSubtitle,
   overview,
@@ -86,6 +107,19 @@ export const ProductPageLayout = ({
 }: ProductPageLayoutProps) => {
   const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [showSticky, setShowSticky] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,10 +135,24 @@ export const ProductPageLayout = ({
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
+      {/* Sticky CTA Bar */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border/50 shadow-sm transition-all duration-300 ${
+          showSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        }`}
+      >
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+          <span className="font-semibold text-foreground text-sm truncate">{title}</span>
+          <Button variant="action" size="sm" asChild>
+            <a href="#lead-form">Get API Access <ArrowRight className="w-3 h-3" /></a>
+          </Button>
+        </div>
+      </div>
       
       <main>
-        {/* Hero Section with inline form */}
-        <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
+        {/* Hero Section */}
+        <section ref={heroRef} className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
           
@@ -137,7 +185,13 @@ export const ProductPageLayout = ({
               </div>
 
               {/* Right: Lead Form Card */}
-              <div className="relative">
+              <div className="relative" id="lead-form">
+                {/* Trust Shield Badge - desktop only */}
+                <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-sm">
+                  <Shield className="w-4 h-4 text-eko-gold" />
+                  <span className="text-xs font-semibold text-eko-gold">99.9% Uptime</span>
+                </div>
+
                 <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
                 <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
                   <div className="bg-eko-navy px-6 py-4">
@@ -203,7 +257,7 @@ export const ProductPageLayout = ({
                             className="mt-1.5"
                           />
                         </div>
-                        <Button type="submit" variant="gold" size="lg" className="w-full">
+                        <Button type="submit" variant="action" size="lg" className="w-full">
                           {leadForm?.cta || "Request API Access"}
                           <ArrowRight className="w-4 h-4" />
                         </Button>
@@ -237,7 +291,7 @@ export const ProductPageLayout = ({
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {keyBenefits.map((benefit, i) => (
-                <div key={i} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
+                <div key={i} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl opacity-0 animate-fade-up" style={{ animationDelay: `${i * 100}ms`, animationFillMode: "forwards" }}>
                   <CheckCircle className="w-6 h-6 text-eko-gold flex-shrink-0 mt-0.5" />
                   <span className="text-foreground font-medium">{benefit}</span>
                 </div>
@@ -264,23 +318,69 @@ export const ProductPageLayout = ({
             <p className="text-muted-foreground max-w-2xl mx-auto">Everything you need to integrate and scale</p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            {features.map((feature, index) => {
-              const Icon = feature.icon || Zap;
-              return (
-                <div 
-                  key={index}
-                  className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
-                    <Icon className="w-6 h-6 text-eko-gold" />
+          {/* Top features in 3-col highlighted row */}
+          {features.length >= 3 && (
+            <div className="grid md:grid-cols-3 gap-6 mb-6">
+              {features.slice(0, 3).map((feature, index) => {
+                const Icon = feature.icon || Zap;
+                return (
+                  <div 
+                    key={index}
+                    className="group p-6 bg-card border-2 border-eko-gold/20 rounded-2xl hover:shadow-lg hover:border-eko-gold/40 transition-all duration-300 opacity-0 animate-fade-up"
+                    style={{ animationDelay: `${index * 100}ms`, animationFillMode: "forwards" }}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
+                      <Icon className="w-6 h-6 text-eko-gold" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Remaining features in 2-col grid */}
+          {features.length > 3 && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {features.slice(3).map((feature, index) => {
+                const Icon = feature.icon || Zap;
+                return (
+                  <div 
+                    key={index}
+                    className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
+                      <Icon className="w-6 h-6 text-eko-gold" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Fallback for <= 3 features without top row */}
+          {features.length < 3 && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {features.map((feature, index) => {
+                const Icon = feature.icon || Zap;
+                return (
+                  <div 
+                    key={index}
+                    className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
+                      <Icon className="w-6 h-6 text-eko-gold" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </SectionContainer>
 
         {/* Types Section */}
@@ -326,19 +426,27 @@ export const ProductPageLayout = ({
           </SectionContainer>
         )}
 
-        {/* Who Should Use */}
+        {/* Who Should Use - Industry Cards */}
         {whoShouldUse && whoShouldUse.length > 0 && (
           <SectionContainer>
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Who Should Use This API?</h2>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {whoShouldUse.map((item, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-card border border-border/50 rounded-xl">
-                  <Users className="w-5 h-5 text-eko-gold flex-shrink-0" />
-                  <span className="text-foreground font-medium">{item}</span>
-                </div>
-              ))}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              {whoShouldUse.map((item, i) => {
+                const Icon = getIndustryIcon(item);
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-3 p-6 bg-card border border-border/50 rounded-xl text-center hover:-translate-y-1 hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300 cursor-default"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-eko-gold" />
+                    </div>
+                    <span className="text-foreground font-medium text-sm">{item}</span>
+                  </div>
+                );
+              })}
             </div>
           </SectionContainer>
         )}
@@ -393,24 +501,60 @@ export const ProductPageLayout = ({
           </SectionContainer>
         )}
 
-        {/* Integration Steps */}
+        {/* Interactive Integration Stepper */}
         <SectionContainer className="bg-eko-navy">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How to Integrate</h2>
             <p className="text-white/70 max-w-2xl mx-auto">Get started in minutes with our simple integration process</p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {integrationSteps.map((step) => (
-              <div key={step.step} className="relative p-6 bg-white/5 backdrop-blur border border-white/10 rounded-2xl">
-                <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold">
-                  {step.step}
+          <TooltipProvider>
+            {/* Desktop: horizontal stepper */}
+            <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
+              {integrationSteps.map((step, i) => (
+                <div key={step.step} className="flex items-start flex-1">
+                  <div className="flex flex-col items-center text-center group">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="w-14 h-14 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-lg cursor-pointer hover:scale-110 hover:ring-4 hover:ring-eko-gold/30 transition-all duration-300">
+                          {step.step}
+                        </div>
+                      </TooltipTrigger>
+                      {step.tip && (
+                        <TooltipContent side="top" className="bg-eko-navy text-white border-eko-gold/30 max-w-[200px]">
+                          <p className="text-xs">{step.tip}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                    <h3 className="text-sm font-semibold text-white mt-3 mb-1">{step.title}</h3>
+                    <p className="text-white/50 text-xs max-w-[140px]">{step.description}</p>
+                  </div>
+                  {i < integrationSteps.length - 1 && (
+                    <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
+                  )}
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2 mt-4">{step.title}</h3>
-                <p className="text-white/60 text-sm">{step.description}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {/* Mobile: vertical stepper */}
+            <div className="md:hidden space-y-6 max-w-sm mx-auto">
+              {integrationSteps.map((step, i) => (
+                <div key={step.step} className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm">
+                      {step.step}
+                    </div>
+                    {i < integrationSteps.length - 1 && <div className="w-0.5 flex-1 bg-white/20 mt-2" />}
+                  </div>
+                  <div className="pb-6">
+                    <h3 className="text-sm font-semibold text-white">{step.title}</h3>
+                    <p className="text-white/50 text-xs mt-1">{step.description}</p>
+                    {step.tip && <p className="text-eko-gold/80 text-xs mt-1 italic">{step.tip}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TooltipProvider>
           
           <div className="text-center mt-10">
             <Button variant="gold" size="lg" asChild>
