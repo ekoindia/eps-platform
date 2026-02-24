@@ -29,6 +29,13 @@ import EmployeeVerificationPage from "./pages/products/EmployeeVerificationPage"
 import DlVerificationPage from "./pages/products/DlVerificationPage";
 import RcVerificationPage from "./pages/products/RcVerificationPage";
 
+// Company & Legal Pages
+import AboutPage from "./pages/AboutPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import RefundPolicyPage from "./pages/RefundPolicyPage";
+import GrievancePage from "./pages/GrievancePage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -62,6 +69,13 @@ const App = () => (
             <Route path="/products/employee-verification-api" element={<EmployeeVerificationPage />} />
             <Route path="/products/dl-verification-api" element={<DlVerificationPage />} />
             <Route path="/products/rc-verification-api" element={<RcVerificationPage />} />
+            
+            {/* Company & Legal Pages */}
+            <Route path="/about-us" element={<AboutPage />} />
+            <Route path="/tnc" element={<TermsPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/refund-policy" element={<RefundPolicyPage />} />
+            <Route path="/grievance" element={<GrievancePage />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

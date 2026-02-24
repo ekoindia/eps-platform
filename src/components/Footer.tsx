@@ -24,15 +24,15 @@ const footerLinks = {
     { label: "Sandbox", href: "https://developers.eko.in", external: true },
   ],
   company: [
-    { label: "About Us", href: "#" },
-    { label: "Careers", href: "#" },
+    { label: "About Us", href: "/about-us", internal: true },
+    { label: "Grievance", href: "/grievance", internal: true },
     { label: "Blog", href: "#" },
     { label: "Press", href: "#" },
   ],
   legal: [
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
-    { label: "Security", href: "#compliance" },
+    { label: "Privacy Policy", href: "/privacy-policy", internal: true },
+    { label: "Terms & Conditions", href: "/tnc", internal: true },
+    { label: "Refund Policy", href: "/refund-policy", internal: true },
     { label: "Compliance", href: "#compliance" },
   ],
 };
@@ -119,13 +119,23 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a 
-                    href={link.href}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </a>
+                  {'internal' in link && link.internal ? (
+                    <Link
+                      to={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -137,13 +147,23 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a 
-                    href={link.href}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </a>
+                  {'internal' in link && link.internal ? (
+                    <Link
+                      to={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
