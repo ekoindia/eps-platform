@@ -128,6 +128,14 @@
     background-image: 
       radial-gradient(circle at 25% 25%, hsl(42 96% 54% / 0.08) 0%, transparent 50%),
       radial-gradient(circle at 75% 75%, hsl(42 96% 54% / 0.05) 0%, transparent 50%);
+    background-color: transparent;
+  }
+
+  .hero-gradient.hero-pattern {
+    background: 
+      radial-gradient(circle at 25% 25%, hsl(42 96% 54% / 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, hsl(42 96% 54% / 0.05) 0%, transparent 50%),
+      var(--gradient-hero);
   }
   
   /* Gold Accent Line */
