@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Loader2 } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EkoLogo } from "@/components/EkoLogo";
 import {
@@ -11,11 +11,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowRight, CheckCircle } from "lucide-react";
-import { submitToZoho, validateLeadForm, type LeadFormErrors } from "@/lib/zoho-form";
-import { toast } from "sonner";
 
 const paymentApis = [
   { label: "DMT API", href: "/products/dmt-api" },
@@ -55,10 +50,6 @@ export const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<LeadFormErrors>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,32 +69,11 @@ export const Header = () => {
   }, []);
 
   useEffect(() => {
-    const openDialog = () => { resetForm(); setGetStartedOpen(true); };
+    const openDialog = () => setGetStartedOpen(true);
     window.addEventListener("open-get-started", openDialog);
     return () => window.removeEventListener("open-get-started", openDialog);
   }, []);
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors = validateLeadForm(formData);
-    if (errors) { setFormErrors(errors); return; }
-    setFormErrors({});
-    setIsSubmitting(true);
-    try {
-      await submitToZoho(formData, { referrer: "homepage" });
-      setFormSubmitted(true);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({ name: "", phone: "", email: "" });
-    setFormSubmitted(false);
-    setFormErrors({});
-  };
 
   return (
     <>
@@ -197,7 +167,7 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
-              <Button variant="gold" size="sm" onClick={() => { resetForm(); setGetStartedOpen(true); }}>
+              <Button variant="gold" size="sm" onClick={() => setGetStartedOpen(true)}>
                 Get Started
               </Button>
             </div>
@@ -255,7 +225,7 @@ export const Header = () => {
                   </a>
                 ))}
                 <div className="flex flex-col gap-3 mt-4">
-                  <Button variant="gold" size="sm" onClick={() => { resetForm(); setGetStartedOpen(true); setMobileMenuOpen(false); }}>
+                  <Button variant="gold" size="sm" onClick={() => { setGetStartedOpen(true); setMobileMenuOpen(false); }}>
                     Get Started
                   </Button>
                 </div>
@@ -273,74 +243,13 @@ export const Header = () => {
             <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
           </DialogHeader>
 
-          {formSubmitted ? (
-            <div className="text-center py-6">
-              <div className="w-14 h-14 rounded-full bg-eko-gold/20 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-7 h-7 text-eko-gold" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">Thank You!</h3>
-              <p className="text-muted-foreground text-sm">Our team will reach out to you within 24 hours.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleFormSubmit} className="space-y-4 pt-2">
-              <div>
-                <Label htmlFor="gs-name" className="text-sm font-medium">
-                  Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="gs-name"
-                  placeholder="Enter your name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors((p) => ({ ...p, name: undefined })); }}
-                  className="mt-1.5"
-                />
-                {formErrors.name && <p className="text-xs text-destructive mt-1">{formErrors.name}</p>}
-              </div>
-              <div>
-                <Label htmlFor="gs-phone" className="text-sm font-medium">
-                  Phone <span className="text-destructive">*</span>
-                </Label>
-                <div className="flex mt-1.5">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">
-                    +91
-                  </span>
-                  <Input
-                    id="gs-phone"
-                    type="tel"
-                    placeholder="Enter mobile number"
-                    required
-                    maxLength={10}
-                    value={formData.phone}
-                    onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFormErrors((p) => ({ ...p, phone: undefined })); }}
-                    className="rounded-l-none"
-                  />
-                </div>
-                {formErrors.phone && <p className="text-xs text-destructive mt-1">{formErrors.phone}</p>}
-              </div>
-              <div>
-                <Label htmlFor="gs-email" className="text-sm font-medium">
-                  Email <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="gs-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((p) => ({ ...p, email: undefined })); }}
-                  className="mt-1.5"
-                />
-                {formErrors.email && <p className="text-xs text-destructive mt-1">{formErrors.email}</p>}
-              </div>
-              <Button type="submit" variant="gold" size="lg" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Request Free Demo <ArrowRight className="w-4 h-4" /></>}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                By submitting, you agree to our Terms & Conditions.
-              </p>
-            </form>
-          )}
+          <iframe
+            aria-label="New Eko.in API Signup"
+            frameBorder="0"
+            allow="geolocation;"
+            style={{ height: "500px", width: "100%", border: "none" }}
+            src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+          />
         </DialogContent>
       </Dialog>
     </>

@@ -1,13 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+
 import { SectionContainer } from "@/components/SectionContainer";
-import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send, Building2, Store, Landmark, Briefcase, Loader2 } from "lucide-react";
-import { submitToZoho, validateLeadForm, type LeadFormErrors } from "@/lib/zoho-form";
-import { toast } from "sonner";
+import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send, Building2, Store, Landmark, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
@@ -107,10 +105,6 @@ export const ProductPageLayout = ({
   types,
   inputOutputPreview,
 }: ProductPageLayoutProps) => {
-  const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<LeadFormErrors>({});
   const [showSticky, setShowSticky] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
 
@@ -125,21 +119,6 @@ export const ProductPageLayout = ({
     return () => observer.disconnect();
   }, []);
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors = validateLeadForm(formData);
-    if (errors) { setFormErrors(errors); return; }
-    setFormErrors({});
-    setIsSubmitting(true);
-    try {
-      await submitToZoho(formData, { referrer: title });
-      setFormSubmitted(true);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const categoryColors = {
     payment: "from-eko-gold/20 to-eko-navy/5",
@@ -216,75 +195,14 @@ export const ProductPageLayout = ({
                     <p className="text-white/70 text-sm">Get started in 10 minutes</p>
                   </div>
 
-                  <div className="p-6">
-                    {formSubmitted ? (
-                      <div className="text-center py-8">
-                        <div className="w-14 h-14 rounded-full bg-eko-gold/20 flex items-center justify-center mx-auto mb-4">
-                          <CheckCircle className="w-7 h-7 text-eko-gold" />
-                        </div>
-                        <h3 className="text-lg font-bold text-foreground mb-1">Thank You!</h3>
-                        <p className="text-muted-foreground text-sm">Our team will reach out to you within 24 hours.</p>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleFormSubmit} className="space-y-5">
-                        <div>
-                          <Label htmlFor="hero-name" className="text-sm font-medium text-foreground">
-                            Name <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="hero-name"
-                            placeholder="Enter your name"
-                            required
-                            value={formData.name}
-                            onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors((p) => ({ ...p, name: undefined })); }}
-                            className="mt-1.5"
-                          />
-                          {formErrors.name && <p className="text-xs text-destructive mt-1">{formErrors.name}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor="hero-phone" className="text-sm font-medium text-foreground">
-                            Phone <span className="text-destructive">*</span>
-                          </Label>
-                          <div className="flex mt-1.5">
-                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground">
-                              +91
-                            </span>
-                            <Input
-                              id="hero-phone"
-                              type="tel"
-                              placeholder="Enter mobile number"
-                              required
-                              maxLength={10}
-                              value={formData.phone}
-                              onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFormErrors((p) => ({ ...p, phone: undefined })); }}
-                              className="rounded-l-none"
-                            />
-                          </div>
-                          {formErrors.phone && <p className="text-xs text-destructive mt-1">{formErrors.phone}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor="hero-email" className="text-sm font-medium text-foreground">
-                            Email <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="hero-email"
-                            type="email"
-                            placeholder="Enter your email"
-                            required
-                            value={formData.email}
-                            onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((p) => ({ ...p, email: undefined })); }}
-                            className="mt-1.5"
-                          />
-                          {formErrors.email && <p className="text-xs text-destructive mt-1">{formErrors.email}</p>}
-                        </div>
-                        <Button type="submit" variant="action" size="lg" className="w-full" disabled={isSubmitting}>
-                          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{leadForm?.cta || "Request API Access"} <ArrowRight className="w-4 h-4" /></>}
-                        </Button>
-                        <p className="text-xs text-muted-foreground text-center">
-                          By submitting, you agree to our Terms & Conditions.
-                        </p>
-                      </form>
-                    )}
+                  <div className="p-2">
+                    <iframe
+                      aria-label="New Eko.in API Signup"
+                      frameBorder="0"
+                      allow="geolocation;"
+                      style={{ height: "500px", width: "100%", border: "none" }}
+                      src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                    />
                   </div>
                 </div>
               </div>
