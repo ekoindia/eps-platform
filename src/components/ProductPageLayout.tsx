@@ -264,12 +264,13 @@ export const ProductPageLayout = ({
                         </div>
                         <div>
                           <Label htmlFor="hero-email" className="text-sm font-medium text-foreground">
-                            Email <span className="text-muted-foreground">(optional)</span>
+                            Email <span className="text-destructive">*</span>
                           </Label>
                           <Input
                             id="hero-email"
                             type="email"
                             placeholder="Enter your email"
+                            required
                             value={formData.email}
                             onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((p) => ({ ...p, email: undefined })); }}
                             className="mt-1.5"
