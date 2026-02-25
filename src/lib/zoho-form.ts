@@ -12,8 +12,9 @@ export const leadFormSchema = z.object({
   email: z
     .string()
     .trim()
+    .min(1, "Email is required")
     .max(255, "Email is too long")
-    .refine((v) => v === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Enter a valid email address"),
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Enter a valid email address"),
 });
 
 export type LeadFormData = z.infer<typeof leadFormSchema>;
@@ -57,9 +58,35 @@ export async function submitToZoho(
   formData.append("utm_term", params.get("utm_term") || "");
   formData.append("utm_content", params.get("utm_content") || "");
 
-  await fetch(ZOHO_ENDPOINT, {
-    method: "POST",
-    body: formData,
-    mode: "no-cors",
+  // Use hidden iframe approach for reliable cross-origin form submission
+  const iframeName = `zoho_submit_${Date.now()}`;
+  const iframe = document.createElement("iframe");
+  iframe.name = iframeName;
+  iframe.style.display = "none";
+  document.body.appendChild(iframe);
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = ZOHO_ENDPOINT;
+  form.target = iframeName;
+  form.enctype = "multipart/form-data";
+  form.style.display = "none";
+
+  // Append all fields as hidden inputs
+  formData.forEach((value, key) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = value as string;
+    form.appendChild(input);
   });
+
+  document.body.appendChild(form);
+  form.submit();
+
+  // Clean up after submission
+  setTimeout(() => {
+    form.remove();
+    iframe.remove();
+  }, 5000);
 }
