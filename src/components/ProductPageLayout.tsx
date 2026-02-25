@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SectionContainer } from "@/components/SectionContainer";
-import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send, Building2, Store, Landmark, Briefcase } from "lucide-react";
+import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send, Building2, Store, Landmark, Briefcase, Loader2 } from "lucide-react";
+import { submitToZoho, validateLeadForm, type LeadFormErrors } from "@/lib/zoho-form";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
@@ -107,6 +109,8 @@ export const ProductPageLayout = ({
 }: ProductPageLayoutProps) => {
   const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<LeadFormErrors>({});
   const [showSticky, setShowSticky] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
 
@@ -121,9 +125,20 @@ export const ProductPageLayout = ({
     return () => observer.disconnect();
   }, []);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormSubmitted(true);
+    const errors = validateLeadForm(formData);
+    if (errors) { setFormErrors(errors); return; }
+    setFormErrors({});
+    setIsSubmitting(true);
+    try {
+      await submitToZoho(formData, { referrer: title });
+      setFormSubmitted(true);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const categoryColors = {
@@ -221,9 +236,10 @@ export const ProductPageLayout = ({
                             placeholder="Enter your name"
                             required
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors((p) => ({ ...p, name: undefined })); }}
                             className="mt-1.5"
                           />
+                          {formErrors.name && <p className="text-xs text-destructive mt-1">{formErrors.name}</p>}
                         </div>
                         <div>
                           <Label htmlFor="hero-phone" className="text-sm font-medium text-foreground">
@@ -238,11 +254,13 @@ export const ProductPageLayout = ({
                               type="tel"
                               placeholder="Enter mobile number"
                               required
+                              maxLength={10}
                               value={formData.phone}
-                              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                              onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFormErrors((p) => ({ ...p, phone: undefined })); }}
                               className="rounded-l-none"
                             />
                           </div>
+                          {formErrors.phone && <p className="text-xs text-destructive mt-1">{formErrors.phone}</p>}
                         </div>
                         <div>
                           <Label htmlFor="hero-email" className="text-sm font-medium text-foreground">
@@ -253,13 +271,13 @@ export const ProductPageLayout = ({
                             type="email"
                             placeholder="Enter your email"
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((p) => ({ ...p, email: undefined })); }}
                             className="mt-1.5"
                           />
+                          {formErrors.email && <p className="text-xs text-destructive mt-1">{formErrors.email}</p>}
                         </div>
-                        <Button type="submit" variant="action" size="lg" className="w-full">
-                          {leadForm?.cta || "Request API Access"}
-                          <ArrowRight className="w-4 h-4" />
+                        <Button type="submit" variant="action" size="lg" className="w-full" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>{leadForm?.cta || "Request API Access"} <ArrowRight className="w-4 h-4" /></>}
                         </Button>
                         <p className="text-xs text-muted-foreground text-center">
                           By submitting, you agree to our Terms & Conditions.
