@@ -58,35 +58,15 @@ export async function submitToZoho(
   formData.append("utm_term", params.get("utm_term") || "");
   formData.append("utm_content", params.get("utm_content") || "");
 
-  // Use hidden iframe approach for reliable cross-origin form submission
-  const iframeName = `zoho_submit_${Date.now()}`;
-  const iframe = document.createElement("iframe");
-  iframe.name = iframeName;
-  iframe.style.display = "none";
-  document.body.appendChild(iframe);
-
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = ZOHO_ENDPOINT;
-  form.target = iframeName;
-  form.enctype = "multipart/form-data";
-  form.style.display = "none";
-
-  // Append all fields as hidden inputs
+  // Submit using fetch with no-cors and URL-encoded body
+  const body = new URLSearchParams();
   formData.forEach((value, key) => {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = key;
-    input.value = value as string;
-    form.appendChild(input);
+    body.append(key, value as string);
   });
 
-  document.body.appendChild(form);
-  form.submit();
-
-  // Clean up after submission
-  setTimeout(() => {
-    form.remove();
-    iframe.remove();
-  }, 5000);
+  await fetch(ZOHO_ENDPOINT, {
+    method: "POST",
+    body,
+    mode: "no-cors",
+  });
 }
