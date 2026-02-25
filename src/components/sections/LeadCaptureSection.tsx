@@ -3,15 +3,30 @@ import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import { submitToZoho, validateLeadForm, type LeadFormErrors } from "@/lib/zoho-form";
+import { toast } from "sonner";
 
 export const LeadCaptureSection = () => {
   const [formData, setFormData] = useState({ name: "", phone: "", email: "" });
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<LeadFormErrors>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormSubmitted(true);
+    const errors = validateLeadForm(formData);
+    if (errors) { setFormErrors(errors); return; }
+    setFormErrors({});
+    setIsSubmitting(true);
+    try {
+      await submitToZoho(formData, { referrer: "homepage-contact" });
+      setFormSubmitted(true);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -74,10 +89,11 @@ export const LeadCaptureSection = () => {
                     id="name"
                     placeholder="Enter your name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors((p) => ({ ...p, name: undefined })); }}
                     required
                     className="mt-1.5"
                   />
+                  {formErrors.name && <p className="text-xs text-destructive mt-1">{formErrors.name}</p>}
                 </div>
 
                 <div>
@@ -93,11 +109,13 @@ export const LeadCaptureSection = () => {
                       type="tel"
                       placeholder="Enter mobile number"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFormErrors((p) => ({ ...p, phone: undefined })); }}
                       required
+                      maxLength={10}
                       className="rounded-l-none"
                     />
                   </div>
+                  {formErrors.phone && <p className="text-xs text-destructive mt-1">{formErrors.phone}</p>}
                 </div>
 
                 <div>
@@ -109,14 +127,14 @@ export const LeadCaptureSection = () => {
                     type="email"
                     placeholder="Enter your email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors((p) => ({ ...p, email: undefined })); }}
                     className="mt-1.5"
                   />
+                  {formErrors.email && <p className="text-xs text-destructive mt-1">{formErrors.email}</p>}
                 </div>
                 
-                <Button type="submit" variant="gold" size="lg" className="w-full">
-                  Submit Request
-                  <ArrowRight className="w-4 h-4" />
+                <Button type="submit" variant="gold" size="lg" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Submit Request <ArrowRight className="w-4 h-4" /></>}
                 </Button>
                 
                 <p className="text-xs text-muted-foreground text-center">
