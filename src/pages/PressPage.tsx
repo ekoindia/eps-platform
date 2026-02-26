@@ -5,25 +5,25 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { ExternalLink, CalendarDays } from "lucide-react";
 
 const pressItems = [
-  {
-    title: "Eko Platform Services Expands API Suite for NBFCs",
-    source: "The Economic Times",
-    date: "January 2026",
-    url: "#",
-  },
-  {
-    title: "How Eko Is Enabling Financial Inclusion Through Technology",
-    source: "YourStory",
-    date: "December 2025",
-    url: "#",
-  },
-  {
-    title: "Eko Crosses 50 Million Customers Milestone",
-    source: "Business Standard",
-    date: "November 2025",
-    url: "#",
-  },
-];
+{
+  title: "Eko Platform Services Expands API Suite for NBFCs",
+  source: "The Economic Times",
+  date: "January 2026",
+  url: "#"
+},
+{
+  title: "How Eko Is Enabling Financial Inclusion Through Technology",
+  source: "YourStory",
+  date: "December 2025",
+  url: "#"
+},
+{
+  title: "Eko Crosses 50 Million Customers Milestone",
+  source: "Business Standard",
+  date: "November 2025",
+  url: "#"
+}];
+
 
 const PressPage = () => {
   return (
@@ -44,8 +44,8 @@ const PressPage = () => {
           </div>
 
           <div className="max-w-3xl mx-auto space-y-4">
-            {pressItems.map((item) => (
-              <a key={item.title} href={item.url} target="_blank" rel="noopener noreferrer" className="block">
+            {pressItems.map((item) =>
+            <a key={item.title} href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <Card className="hover:shadow-md transition-shadow cursor-pointer">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
@@ -64,7 +64,7 @@ const PressPage = () => {
                   </CardContent>
                 </Card>
               </a>
-            ))}
+            )}
           </div>
 
           <div className="text-center mt-12">
@@ -75,8 +75,8 @@ const PressPage = () => {
       </main>
 
       <Footer />
-    </div>
-  );
+    </div>);
+
 };
 
 export default PressPage;
