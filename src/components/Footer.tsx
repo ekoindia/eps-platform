@@ -60,7 +60,7 @@ export const Footer = () => {
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="mb-6">
-              <EkoLogo className="h-8 w-auto" isLight />
+              <EkoLogo className="h-16 w-auto" isLight />
             </div>
             <p className="text-white/70 mb-6 max-w-sm leading-relaxed">
               Powering India's financial infrastructure with secure, 
