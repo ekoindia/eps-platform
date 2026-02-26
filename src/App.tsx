@@ -31,6 +31,8 @@ import RcVerificationPage from "./pages/products/RcVerificationPage";
 
 // Company & Legal Pages
 import AboutPage from "./pages/AboutPage";
+import BlogPage from "./pages/BlogPage";
+import PressPage from "./pages/PressPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
@@ -72,6 +74,8 @@ const App = () => (
             
             {/* Company & Legal Pages */}
             <Route path="/about-us" element={<AboutPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/press" element={<PressPage />} />
             <Route path="/tnc" element={<TermsPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/refund-policy" element={<RefundPolicyPage />} />
