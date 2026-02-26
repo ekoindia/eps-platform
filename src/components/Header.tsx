@@ -65,7 +65,7 @@ export const Header = () => {
   const isHomePage = location.pathname === "/";
   const darkHeaderPages = ["/privacy-policy", "/terms-and-conditions", "/refund-policy", "/grievance", "/about-us", "/blog", "/press"];
   const isDarkHeader = darkHeaderPages.some((p) => location.pathname.startsWith(p));
-  const useWhiteText = (isDarkHeader || isHomePage) && !isScrolled;
+  const useWhiteText = isDarkHeader || isHomePage;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -98,7 +98,7 @@ export const Header = () => {
         className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300",
 
         isScrolled ?
-        "bg-white backdrop-blur-md shadow-sm py-3" :
+        "bg-[#00394b] backdrop-blur-md shadow-sm py-3" :
         isHomePage ?
         "bg-transparent py-5" :
         isDarkHeader ?
