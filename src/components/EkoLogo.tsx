@@ -22,7 +22,7 @@ export const EkoLogo = ({ variant = "main", className = "", isLight = false }: E
     <img 
       src={ekoLogo} 
       alt="Eko Platform Services Logo" 
-      className={`${className} ${isLight ? "brightness-0 invert" : ""}`}
+      className={className}
     />
   );
 };
