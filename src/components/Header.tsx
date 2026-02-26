@@ -109,7 +109,7 @@ export const Header = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <EkoLogo className="h-16 w-auto" isLight={useWhiteText} />
+              <EkoLogo className="h-16 w-auto" isLight={useWhiteText && !isScrolled} />
             </Link>
 
             {/* Desktop Navigation */}
