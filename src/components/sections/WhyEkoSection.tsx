@@ -12,7 +12,7 @@ const trustPillars = [
     icon: Shield,
     value: "RBI Compliant",
     label: "Regulatory adherence",
-    description: "Fully compliant with Reserve Bank of India guidelines"
+    description: "Security controls: ISO 27001 / PCI DSS / SOC2\nData residency: India\nAudit & reporting: logs, reconciliation, settlement reports"
   },
   {
     icon: Clock,
@@ -53,7 +53,7 @@ export const WhyEkoSection = () => {
             <div className="text-sm font-medium text-eko-gold mb-3">
               {pillar.label}
             </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
               {pillar.description}
             </p>
           </div>
