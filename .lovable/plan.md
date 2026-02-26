@@ -1,89 +1,91 @@
 
 
-# Integrate Zoho Form Across All Lead Capture Points
+## Plan: Comprehensive Eko Platform Services Update
 
-## Overview
-Replace all mock form submissions (which currently just show "Thank You" without sending data anywhere) with real submissions to the Zoho CRM form endpoint. The existing UI stays exactly the same -- only the submission logic changes.
+This is a large multi-part update covering branding, SEO, navigation, compliance, footer, form, and UX fixes. Here's the implementation plan broken into tasks:
 
-## Where Forms Exist (4 locations)
-1. **Header "Get Started" dialog** (`src/components/Header.tsx`) -- popup form
-2. **Product page hero form** (`src/components/ProductPageLayout.tsx`) -- right-side lead form on every API page
-3. **Homepage lead capture section** (`src/components/sections/LeadCaptureSection.tsx`) -- bottom-of-page form
-4. **CTA section buttons** (`src/components/sections/CTASection.tsx`) -- "Get Started" and "Book a Demo" buttons (these should open the same dialog or link to the form)
+---
 
-## What Will Change
+### 1. Copy Logo Asset & Update Branding
 
-### 1. New Shared Form Submission Utility
-Create `src/lib/zoho-form.ts` with a reusable async function that:
-- Accepts `{ name, phone, email }` plus optional UTM parameters
-- Submits via `fetch()` to `https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/t7sfVQXMPus-0edXDrlVwvYeOUvLukZFFDUpISXlsnk/htmlRecords/submit`
-- Maps fields to the Zoho field names: `SingleLine` (name), `PhoneNumber_countrycode` (+91), `PhoneNumber_countrycodeval` (number), `Email` (email)
-- Includes hidden fields: `zf_referrer_name`, `zf_redirect_url`, `zc_gad`, and UTM params (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`)
-- Reads UTM values from `window.location.search` at submission time
-- Returns success/failure so the UI can show the thank-you state or an error toast
-- Uses `multipart/form-data` encoding as required by the Zoho endpoint
+- Copy `user-uploads://EKO_Platform_Services.svg` to `src/assets/eko-platform-services.svg`
+- Update `EkoLogo.tsx` to use the new logo as the default
+- Replace the plain "eko" text in the Footer with the logo component
 
-### 2. Update Header Dialog Form (`Header.tsx`)
-- Replace `handleFormSubmit` to call the shared Zoho submit function
-- Add loading state on the submit button while the request is in flight
-- Show error toast (via sonner) if submission fails; show existing "Thank You" on success
+### 2. Update Hero Section Headline
 
-### 3. Update Product Page Hero Form (`ProductPageLayout.tsx`)
-- Replace `handleFormSubmit` to call the shared Zoho submit function
-- Add `zf_referrer_name` set to the current product page title for lead source tracking
-- Add loading state and error handling
+In `HeroSection.tsx`:
+- Change headline from "Powering India's Financial Infrastructure" to **"APIs & Platforms Powering India's Financial Infrastructure"**
+- The sub-heading already matches the requested text ("APIs and platforms for Payments, Identity, and Verification...")
 
-### 4. Update Homepage Lead Capture Form (`LeadCaptureSection.tsx`)
-- Replace `handleSubmit` to call the shared Zoho submit function
-- Add loading state and error handling
+### 3. Update SEO Title & Meta Description
 
-### 5. Update CTA Section (`CTASection.tsx`)
-- Wire "Get Started" button to trigger the Header's Get Started dialog (currently does nothing)
-- This requires either lifting the dialog state or using a custom event / shared context
+In `index.html`:
+- Title: **"Fintech APIs & Platforms for KYC, Verification & Transactions in India | Eko Platform Services"**
+- Meta description: **"Compliant fintech APIs built for India. Power KYC, verification, payouts, and financial workflows for NBFCs, fintech startups, and developers."**
+- Update OG and Twitter meta tags to match
 
-### 6. Input Validation
-- Validate phone: exactly 10 digits
-- Validate name: non-empty, max 255 chars
-- Validate email: valid format if provided, max 255 chars
-- Show inline validation errors before attempting submission
+### 4. Navigation & Header Fixes
 
-## Files Changed
+In `Header.tsx`:
+- Add `cursor-pointer` to all nav link buttons/anchors
+- Add `bg-white/95 backdrop-blur-md` to mobile menu container (fix transparent background on mobile)
+- Add **Company submenu** with: About Us (`/about-us`), Blog (`#`), Press (`#`) — similar dropdown pattern to Products
+- **Remove "Ekonic Platform →"** link from the Products dropdown bottom section
+- Add state management for Company dropdown (desktop + mobile)
 
-1. **New:** `src/lib/zoho-form.ts` -- shared submission utility
-2. **Edit:** `src/components/Header.tsx` -- wire form to Zoho, add loading/error states
-3. **Edit:** `src/components/ProductPageLayout.tsx` -- wire hero form to Zoho, add loading/error states
-4. **Edit:** `src/components/sections/LeadCaptureSection.tsx` -- wire form to Zoho, add loading/error states
-5. **Edit:** `src/components/sections/CTASection.tsx` -- wire buttons to open Get Started dialog
+### 5. Compliance Section Updates
 
-## Technical Details
+In `ComplianceSection.tsx`:
+- Change "RBI Authorized" to **"RBI Compliant"**
+- Update description to include bullet points: ISO 27001 / PCI DSS / SOC2, Data residency: India, Audit & reporting details
 
-### Zoho Field Mapping
-```text
-Form Field    → Zoho Name
-─────────────────────────────────
-Name (*)      → SingleLine
-Country Code  → PhoneNumber_countrycode (value: "+91")
-Phone (*)     → PhoneNumber_countrycodeval
-Email         → Email
-Referrer      → zf_referrer_name (set to page title or "homepage")
-UTM Source    → utm_source (from URL params)
-UTM Medium    → utm_medium (from URL params)
-UTM Campaign  → utm_campaign (from URL params)
-UTM Term      → utm_term (from URL params)
-UTM Content   → utm_content (from URL params)
-```
+### 6. Footer Updates
 
-### Submission Method
-The Zoho form requires `multipart/form-data` POST. The utility will construct a `FormData` object and submit via `fetch()` with `mode: 'no-cors'` (since Zoho's endpoint does not return CORS headers for cross-origin JS requests). Because `no-cors` responses are opaque, the form will optimistically show the success state after the request completes without error.
+In `Footer.tsx`:
+- Change company name from "Eko India Financial Services Pvt. Ltd." to **"Eko Bharat Ventures Private Limited"**
+- Replace plain "eko" text with `<EkoLogo>` component (with `isLight` prop)
+- Update email/phone to be clickable (`mailto:` and `tel:` links)
+- Wrap location in a Google Maps link
+- Move social links below the contact info section
+- Remove "Ekonic Platform" from footer product links
 
-### UTM Parameter Extraction
-```text
-// Read from current URL at submission time
-const params = new URLSearchParams(window.location.search);
-formData.append('utm_source', params.get('utm_source') || '');
-// ... same for medium, campaign, term, content
-```
+### 7. Lead Capture Form Updates
 
-### Loading State
-Each form gets an `isSubmitting` boolean state. While true, the submit button shows a spinner and is disabled to prevent double submissions.
+In `LeadCaptureSection.tsx`:
+- Change form heading from "Request a Demo" to **"Get Started with Eko Platform Services"**
+
+Also update the Get Started dialog in `Header.tsx`:
+- Change dialog title to **"Get Started with Eko Platform Services"**
+
+### 8. Products Section Cleanup
+
+In `ProductsSection.tsx`:
+- Remove the "Ekonic Platform" tab from `productTabs` array
+- Remove the entire `activeTab === "ekonic"` content block
+- Update the `ProductTab` type to remove `"ekonic"`
+
+### 9. UX Polish
+
+- Ensure all interactive elements have `cursor-pointer`
+- Verify mobile menu has solid background (not transparent)
+- Consistency check on button styles (already using design system)
+
+---
+
+### Technical Details
+
+**Files to modify:**
+1. `index.html` — SEO meta tags
+2. `src/components/EkoLogo.tsx` — new logo import
+3. `src/components/sections/HeroSection.tsx` — headline change
+4. `src/components/Header.tsx` — nav fixes, Company submenu, remove Ekonic, mobile bg fix, cursor fix, dialog title
+5. `src/components/sections/ComplianceSection.tsx` — RBI text + details
+6. `src/components/Footer.tsx` — company name, logo, clickable contacts, social links position, remove Ekonic
+7. `src/components/sections/LeadCaptureSection.tsx` — form heading
+8. `src/components/sections/ProductsSection.tsx` — remove Ekonic tab
+9. `src/components/sections/CTASection.tsx` — no changes needed
+
+**New file:**
+- `src/assets/eko-platform-services.svg` (copied from upload)
 
