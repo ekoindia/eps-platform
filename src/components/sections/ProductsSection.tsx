@@ -147,7 +147,7 @@ export const ProductsSection = () => {
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
-            <Button variant="navy-outline" size="lg">
+            <Button variant="navy-outline" size="lg" onClick={() => window.dispatchEvent(new CustomEvent("open-get-started"))}>
               Request Access
             </Button>
           </div>
@@ -168,7 +168,7 @@ export const ProductsSection = () => {
                 <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
-            <Button variant="navy-outline" size="lg">
+            <Button variant="navy-outline" size="lg" onClick={() => window.dispatchEvent(new CustomEvent("open-get-started"))}>
               Request Access
             </Button>
           </div>

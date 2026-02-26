@@ -45,7 +45,7 @@ export const HeroSection = () => {
                 Explore APIs
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="hero-outline" size="xl">
+              <Button variant="hero-outline" size="xl" onClick={() => window.dispatchEvent(new CustomEvent("open-get-started"))}>
                 Talk to Sales
               </Button>
             </div>
