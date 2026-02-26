@@ -64,13 +64,13 @@ export const Footer = () => {
                 <Mail className="w-4 h-4 text-eko-gold" />
                 <span>support@eko.in</span>
               </a>
-              <a href="tel:+911144444444" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
+              <a href="tel:+919311019477" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Phone className="w-4 h-4 text-eko-gold" />
-                <span>+91 11 4444 4444</span>
+                <span>+91 93110 19477</span>
               </a>
-              <a href="https://maps.google.com/?q=New+Delhi+India" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
+              <a href="https://share.google/WoimNHTmqaNqJnKxs" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <MapPin className="w-4 h-4 text-eko-gold mt-0.5" />
-                <span>New Delhi, India</span>
+                <span>68, Phase IV, Udyog Vihar, Sector 18, Gurugram, Haryana 122015</span>
               </a>
             </div>
             {/* Social Links */}
