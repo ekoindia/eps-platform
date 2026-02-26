@@ -38,8 +38,8 @@ const verificationApis = [
 
 const companyLinks = [
 { label: "About Us", href: "/about-us", internal: true },
-{ label: "Blog", href: "#" },
-{ label: "Press", href: "#" }];
+{ label: "Blog", href: "/blog", internal: true },
+{ label: "Press", href: "/press", internal: true }];
 
 
 const navLinks = [
