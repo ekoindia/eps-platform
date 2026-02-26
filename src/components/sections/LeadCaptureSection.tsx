@@ -40,7 +40,7 @@ export const LeadCaptureSection = () => {
         <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
           <div className="relative bg-card border border-border/50 rounded-2xl p-6 lg:p-8 shadow-xl overflow-hidden">
-            <h3 className="text-xl font-semibold text-foreground mb-4">Request a Demo</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-4">Get Started with Eko Platform Services</h3>
             <iframe
               aria-label="New Eko.in API Signup"
               frameBorder="0"
