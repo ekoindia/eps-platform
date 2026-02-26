@@ -12,7 +12,7 @@ const trustPillars = [
     icon: Shield,
     value: "RBI Compliant",
     label: "Regulatory adherence",
-    description: "Security controls: ISO 27001 / PCI DSS / SOC2\nData residency: India\nAudit & reporting: logs, reconciliation, settlement reports"
+    description: ["Security controls: ISO 27001 / PCI DSS / SOC2", "Data residency: India", "Audit & reporting: logs, reconciliation, settlement reports"]
   },
   {
     icon: Clock,
@@ -53,9 +53,20 @@ export const WhyEkoSection = () => {
             <div className="text-sm font-medium text-eko-gold mb-3">
               {pillar.label}
             </div>
-            <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
-              {pillar.description}
-            </p>
+            {Array.isArray(pillar.description) ? (
+              <ul className="text-muted-foreground text-sm leading-relaxed space-y-1 text-left">
+                {pillar.description.map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-eko-gold mt-1.5 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {pillar.description}
+              </p>
+            )}
           </div>
         ))}
       </div>
