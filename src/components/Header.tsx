@@ -98,7 +98,7 @@ export const Header = () => {
         className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300",
 
         isScrolled ?
-        "bg-white/95 backdrop-blur-md shadow-sm py-3" :
+        "bg-white backdrop-blur-md shadow-sm py-3" :
         isHomePage ?
         "bg-transparent py-5" :
         isDarkHeader ?
@@ -121,7 +121,7 @@ export const Header = () => {
                       <button
                         onClick={() => {setProductsDropdownOpen(!productsDropdownOpen);setCompanyDropdownOpen(false);}}
                         className={cn(
-                          "text-base font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+                          "text-lg font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
                           useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                         )}>
 
@@ -178,7 +178,7 @@ export const Header = () => {
                       <button
                         onClick={() => {setCompanyDropdownOpen(!companyDropdownOpen);setProductsDropdownOpen(false);}}
                         className={cn(
-                          "text-base font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+                          "text-lg font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
                           useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                         )}>
 
@@ -224,7 +224,7 @@ export const Header = () => {
                     target={link.external ? "_blank" : undefined}
                     rel={link.external ? "noopener noreferrer" : undefined}
                     className={cn(
-                      "text-base font-medium transition-colors duration-200 cursor-pointer",
+                      "text-lg font-medium transition-colors duration-200 cursor-pointer",
                       useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                     )}>
 
