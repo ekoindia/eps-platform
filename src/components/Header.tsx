@@ -62,9 +62,10 @@ export const Header = () => {
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
+  const isHomePage = location.pathname === "/";
   const darkHeaderPages = ["/privacy-policy", "/terms-and-conditions", "/refund-policy", "/grievance", "/about-us", "/blog", "/press"];
   const isDarkHeader = darkHeaderPages.some((p) => location.pathname.startsWith(p));
-  const useWhiteText = isDarkHeader && !isScrolled;
+  const useWhiteText = (isDarkHeader || isHomePage) && !isScrolled;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -94,10 +95,12 @@ export const Header = () => {
   return (
     <>
       <header
-        className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[#144048]",
+        className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300",
 
         isScrolled ?
         "bg-white/95 backdrop-blur-md shadow-sm py-3" :
+        isHomePage ?
+        "bg-transparent py-5" :
         isDarkHeader ?
         "bg-[#00394b] py-5" :
         "bg-white py-5"
@@ -118,7 +121,7 @@ export const Header = () => {
                       <button
                         onClick={() => {setProductsDropdownOpen(!productsDropdownOpen);setCompanyDropdownOpen(false);}}
                         className={cn(
-                          "text-sm font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+                          "text-base font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
                           useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                         )}>
 
@@ -175,7 +178,7 @@ export const Header = () => {
                       <button
                         onClick={() => {setCompanyDropdownOpen(!companyDropdownOpen);setProductsDropdownOpen(false);}}
                         className={cn(
-                          "text-sm font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+                          "text-base font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
                           useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                         )}>
 
@@ -221,7 +224,7 @@ export const Header = () => {
                     target={link.external ? "_blank" : undefined}
                     rel={link.external ? "noopener noreferrer" : undefined}
                     className={cn(
-                      "text-sm font-medium transition-colors duration-200 cursor-pointer",
+                      "text-base font-medium transition-colors duration-200 cursor-pointer",
                       useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                     )}>
 
