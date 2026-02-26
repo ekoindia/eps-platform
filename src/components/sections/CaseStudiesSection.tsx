@@ -67,12 +67,12 @@ export const CaseStudiesSection = () => {
 
 
 
-      <div className="text-center mt-10">
-        <Button variant="navy-outline" size="lg">
-          View All Case Studies
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-      </div>
+      
+
+
+
+
+
     </SectionContainer>);
 
 };
