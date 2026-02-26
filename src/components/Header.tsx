@@ -62,8 +62,10 @@ export const Header = () => {
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
+  const isHomePage = location.pathname === "/";
   const darkHeaderPages = ["/privacy-policy", "/terms-and-conditions", "/refund-policy", "/grievance", "/about-us", "/blog", "/press"];
   const isDarkHeader = darkHeaderPages.some((p) => location.pathname.startsWith(p));
+  const useWhiteText = (isHomePage || isDarkHeader) && !isScrolled;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -97,15 +99,17 @@ export const Header = () => {
 
         isScrolled
           ? "bg-white/95 backdrop-blur-md shadow-sm py-3"
-          : isDarkHeader
-            ? "bg-[#00394b] py-5"
-            : "bg-white py-5"
+          : isHomePage
+            ? "bg-transparent py-5"
+            : isDarkHeader
+              ? "bg-[#00394b] py-5"
+              : "bg-white py-5"
         )}>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <EkoLogo className="h-16 w-auto" isLight={!isScrolled && isDarkHeader} />
+              <EkoLogo className="h-16 w-auto" isLight={useWhiteText} />
             </Link>
 
             {/* Desktop Navigation */}
@@ -118,7 +122,7 @@ export const Header = () => {
                         onClick={() => {setProductsDropdownOpen(!productsDropdownOpen);setCompanyDropdownOpen(false);}}
                         className={cn(
                           "text-sm font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          isScrolled ? "text-eko-slate hover:text-eko-navy" : isDarkHeader ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
+                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                         )}>
 
                         {link.label}
@@ -175,7 +179,7 @@ export const Header = () => {
                         onClick={() => {setCompanyDropdownOpen(!companyDropdownOpen);setProductsDropdownOpen(false);}}
                         className={cn(
                           "text-sm font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          isScrolled ? "text-eko-slate hover:text-eko-navy" : isDarkHeader ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
+                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                         )}>
 
                         {link.label}
@@ -221,7 +225,7 @@ export const Header = () => {
                     rel={link.external ? "noopener noreferrer" : undefined}
                     className={cn(
                       "text-sm font-medium transition-colors duration-200 cursor-pointer",
-                      isScrolled ? "text-eko-slate hover:text-eko-navy" : isDarkHeader ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
+                      useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                     )}>
 
                     {link.label}
@@ -240,9 +244,9 @@ export const Header = () => {
             {/* Mobile Menu Button */}
             <button className="lg:hidden p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
               {mobileMenuOpen ?
-              <X className={cn("w-6 h-6", isScrolled ? "text-eko-navy" : isDarkHeader ? "text-white" : "text-eko-navy")} /> :
+              <X className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} /> :
 
-              <Menu className={cn("w-6 h-6", isScrolled ? "text-eko-navy" : isDarkHeader ? "text-white" : "text-eko-navy")} />
+              <Menu className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
               }
             </button>
           </div>

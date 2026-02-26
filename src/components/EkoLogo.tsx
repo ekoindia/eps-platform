@@ -23,6 +23,7 @@ export const EkoLogo = ({ variant = "main", className = "", isLight = false }: E
       src={ekoLogo} 
       alt="Eko Platform Services Logo" 
       className={className}
+      style={isLight ? { filter: "brightness(0) invert(1)" } : undefined}
     />
   );
 };

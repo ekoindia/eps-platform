@@ -47,12 +47,12 @@ export const ComplianceSection = () => {
             <p className="text-white/70 text-sm leading-relaxed">{item.description}</p>
             {'details' in item && item.details &&
           <ul className="mt-3 space-y-1.5">
-                {(item.details as string[]).map((detail: string) => {}
-
-
-
-
-            )}
+                {(item.details as string[]).map((detail: string, i: number) => (
+                  <li key={i} className="text-white/60 text-xs flex items-start gap-1.5">
+                    <span className="mt-1 w-1 h-1 rounded-full bg-white/40 shrink-0" />
+                    {detail}
+                  </li>
+                ))}
               </ul>
           }
           </div>
