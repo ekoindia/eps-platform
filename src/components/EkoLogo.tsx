@@ -1,4 +1,4 @@
-import ekoLogo from "@/assets/eko-logo.svg";
+import ekoLogo from "@/assets/eko-platform-services.svg";
 import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 interface EkoLogoProps {
@@ -21,7 +21,7 @@ export const EkoLogo = ({ variant = "main", className = "", isLight = false }: E
   return (
     <img 
       src={ekoLogo} 
-      alt="Eko Logo" 
+      alt="Eko Platform Services Logo" 
       className={`${className} ${isLight ? "brightness-0 invert" : ""}`}
     />
   );

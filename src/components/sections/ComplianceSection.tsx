@@ -4,8 +4,9 @@ import { Shield, Lock, FileCheck, Award } from "lucide-react";
 const complianceItems = [
   {
     icon: Shield,
-    title: "RBI Authorized",
-    description: "Authorized by Reserve Bank of India for payment services and banking correspondent operations."
+    title: "RBI Compliant",
+    description: "Compliant with Reserve Bank of India regulations for payment services and banking correspondent operations.",
+    details: ["Security controls: ISO 27001 / PCI DSS / SOC2", "Data residency: India", "Audit & reporting: logs, reconciliation, settlement reports"]
   },
   {
     icon: Lock,
@@ -44,6 +45,16 @@ export const ComplianceSection = () => {
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
             <p className="text-white/70 text-sm leading-relaxed">{item.description}</p>
+            {'details' in item && item.details && (
+              <ul className="mt-3 space-y-1.5">
+                {(item.details as string[]).map((detail: string) => (
+                  <li key={detail} className="text-white/60 text-xs flex items-start gap-2">
+                    <span className="w-1 h-1 rounded-full bg-eko-gold mt-1.5 flex-shrink-0" />
+                    {detail}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
       </div>

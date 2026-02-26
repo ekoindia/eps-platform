@@ -22,12 +22,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ProductTab = "payments" | "verification" | "ekonic" | "shield";
+type ProductTab = "payments" | "verification" | "shield";
 
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
   { id: "payments", label: "Payment APIs", icon: CreditCard },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
-  { id: "ekonic", label: "Ekonic Platform", icon: LayoutDashboard },
   { id: "shield", label: "Eko Shield", icon: ShieldCheck },
 ];
 
@@ -172,72 +171,6 @@ export const ProductsSection = () => {
             <Button variant="navy-outline" size="lg">
               Request Access
             </Button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "ekonic" && (
-        <div className="animate-fade-up">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                Your Fintech Operating System
-              </h3>
-              <p className="text-muted-foreground mb-6 leading-relaxed">
-                Ekonic is a comprehensive platform for managing your entire fintech operations — 
-                from merchant onboarding to commission management, all in one place.
-              </p>
-              <ul className="space-y-4 mb-8">
-                {[
-                  "Merchant onboarding & lifecycle management",
-                  "Distributor & retailer network management", 
-                  "Commission & pricing control",
-                  "Multi-product enablement (Payments + Verification)",
-                  "Real-time analytics & reporting"
-                ].map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <span className="w-5 h-5 rounded-full bg-eko-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="w-2 h-2 rounded-full bg-eko-gold" />
-                    </span>
-                    <span className="text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex gap-4">
-                <Button variant="gold" size="lg">
-                  Explore Ekonic
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button variant="navy-outline" size="lg">
-                  Book a Demo
-                </Button>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
-              <div className="relative bg-card border border-border/50 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
-                <div className="w-3 h-3 rounded-full bg-destructive/80" />
-                <div className="w-3 h-3 rounded-full bg-primary" />
-                <div className="w-3 h-3 rounded-full bg-eko-success" />
-                <span className="ml-2 text-sm text-muted-foreground">Ekonic Dashboard</span>
-              </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm font-medium">Active Merchants</span>
-                    <span className="text-lg font-bold text-eko-gold">12,458</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm font-medium">Today's Volume</span>
-                    <span className="text-lg font-bold text-eko-gold">₹2.4 Cr</span>
-                  </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="text-sm font-medium">Success Rate</span>
-                  <span className="text-lg font-bold text-eko-gold">99.2%</span>
-                </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
