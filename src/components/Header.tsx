@@ -226,7 +226,7 @@ export const Header = () => {
                     className={cn(
                       "text-lg font-medium transition-colors duration-200 cursor-pointer",
                       useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
-                    )}>
+                    )}>Solutions
 
                     {link.label}
                   </a>);
@@ -241,8 +241,8 @@ export const Header = () => {
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium transition-colors",
                   useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
-                )}
-              >
+                )}>
+
                 <Phone className="w-4 h-4" />
                 Call Us @ +91 93110 19477
               </a>
