@@ -56,12 +56,12 @@ export const SectionHeader = ({
 
 
       }
-      <h2 className={cn(
-        "text-3xl md:text-4xl lg:text-5xl font-bold mb-4",
-        light ? "text-white" : "text-foreground"
-      )}>
-        {title}
-      </h2>
+      
+
+
+
+
+
       {subtitle &&
       <p className={cn(
         "text-lg max-w-3xl leading-relaxed",
