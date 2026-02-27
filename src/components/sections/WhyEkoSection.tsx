@@ -6,26 +6,30 @@ const trustPillars = [
     icon: Users,
     value: "Since 2008",
     label: "Trusted by businesses",
-    description: "Building India's financial infrastructure for over 15 years"
+    description: "Building India's financial infrastructure for over 15 years",
   },
   {
     icon: Shield,
     value: "RBI Compliant",
     label: "Regulatory adherence",
-    description: ["Security controls: ISO 27001 / PCI DSS / SOC2", "Data residency: India", "Audit & reporting: logs, reconciliation, settlement reports"]
+    description: [
+      "Security controls: ISO 27001",
+      "Data residency: India",
+      "Audit & reporting: logs, reconciliation, settlement reports",
+    ],
   },
   {
     icon: Clock,
     value: "99.9%",
     label: "Platform uptime",
-    description: "Enterprise-grade reliability you can count on"
+    description: "Enterprise-grade reliability you can count on",
   },
   {
     icon: Server,
     value: "Scalable",
     label: "Enterprise APIs",
-    description: "Built for banks, fintechs, and large enterprises"
-  }
+    description: "Built for banks, fintechs, and large enterprises",
+  },
 ];
 
 export const WhyEkoSection = () => {
@@ -39,7 +43,7 @@ export const WhyEkoSection = () => {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
         {trustPillars.map((pillar, index) => (
-          <div 
+          <div
             key={pillar.label}
             className="group text-center p-8 rounded-2xl bg-card border border-border/50 card-hover"
             style={{ animationDelay: `${index * 100}ms` }}
@@ -47,12 +51,8 @@ export const WhyEkoSection = () => {
             <div className="icon-container mx-auto mb-5 group-hover:scale-110 transition-transform duration-300">
               <pillar.icon className="w-6 h-6 text-eko-gold" />
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-              {pillar.value}
-            </div>
-            <div className="text-sm font-medium text-eko-gold mb-3">
-              {pillar.label}
-            </div>
+            <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{pillar.value}</div>
+            <div className="text-sm font-medium text-eko-gold mb-3">{pillar.label}</div>
             {Array.isArray(pillar.description) ? (
               <ul className="text-muted-foreground text-sm leading-relaxed space-y-1 text-left">
                 {pillar.description.map((item) => (
@@ -63,9 +63,7 @@ export const WhyEkoSection = () => {
                 ))}
               </ul>
             ) : (
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {pillar.description}
-              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{pillar.description}</p>
             )}
           </div>
         ))}
