@@ -37,6 +37,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import GrievancePage from "./pages/GrievancePage";
+import EkoShieldPage from "./pages/EkoShieldPage";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,9 @@ const App = () => (
             <Route path="/products/employee-verification-api" element={<EmployeeVerificationPage />} />
             <Route path="/products/dl-verification-api" element={<DlVerificationPage />} />
             <Route path="/products/rc-verification-api" element={<RcVerificationPage />} />
+            
+            {/* Eko Shield */}
+            <Route path="/products/eko-shield" element={<EkoShieldPage />} />
             
             {/* Company & Legal Pages */}
             <Route path="/about-us" element={<AboutPage />} />

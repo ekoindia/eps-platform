@@ -162,9 +162,9 @@ export const Header = () => {
                             </div>
                           </div>
                           <div className="col-span-2 pt-4 border-t border-border">
-                            <a href="#shield" onClick={() => setProductsDropdownOpen(false)} className="text-sm font-medium text-eko-navy hover:text-eko-gold transition-colors cursor-pointer">
+                            <Link to="/products/eko-shield" onClick={() => setProductsDropdownOpen(false)} className="text-sm font-medium text-eko-navy hover:text-eko-gold transition-colors cursor-pointer">
                               Eko Shield →
-                            </a>
+                            </Link>
                           </div>
                         </div>
                       }
