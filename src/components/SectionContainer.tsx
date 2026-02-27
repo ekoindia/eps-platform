@@ -46,31 +46,31 @@ export const SectionHeader = ({
   light = false,
   className
 }: SectionHeaderProps) => {
-  return (
-    <div className={cn(centered && "text-center", className)}>
-      {badge
+  return;
 
 
 
 
 
 
-      }
-      <h2 className={cn(
-        "text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4",
-        light ? "text-white" : "text-foreground"
-      )}>
-        {title}
-      </h2>
-      {subtitle &&
-      <p className={cn(
-        "text-lg max-w-2xl leading-relaxed",
-        centered && "mx-auto",
-        light ? "text-white/70" : "text-muted-foreground"
-      )}>
-          {subtitle}
-        </p>
-      }
-    </div>);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 };
