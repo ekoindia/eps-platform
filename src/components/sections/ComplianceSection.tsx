@@ -1,5 +1,24 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Lock, FileCheck, Award } from "lucide-react";
+import airtelLogo from "@/assets/partners/airtel-payments-bank.png";
+import finoLogo from "@/assets/partners/fino-payments-bank.png";
+import razorpayLogo from "@/assets/partners/razorpay.png";
+import fingpayLogo from "@/assets/partners/fingpay.png";
+import billdeskLogo from "@/assets/partners/billdesk.png";
+import payuLogo from "@/assets/partners/payu.png";
+import prabhuLogo from "@/assets/partners/prabhu.png";
+import moneycartLogo from "@/assets/partners/moneycart.png";
+
+const partners = [
+  { name: "Airtel Payments Bank", logo: airtelLogo },
+  { name: "Fino Payments Bank", logo: finoLogo },
+  { name: "Razorpay", logo: razorpayLogo },
+  { name: "Fingpay", logo: fingpayLogo },
+  { name: "BillDesk", logo: billdeskLogo },
+  { name: "PayU", logo: payuLogo },
+  { name: "Prabhu Money Transfer", logo: prabhuLogo },
+  { name: "MoneyCart", logo: moneycartLogo },
+];
 
 const complianceItems = [
   {
@@ -64,15 +83,20 @@ export const ComplianceSection = () => {
         ))}
       </div>
 
-      {/* Partner Logos Placeholder */}
+      {/* Partner Logos */}
       <div className="mt-16 pt-12 border-t border-white/10">
         <p className="text-center text-white/50 text-sm mb-8">Trusted by leading financial institutions</p>
-        <div className="flex flex-wrap justify-center items-center gap-8 lg:gap-16 opacity-60">
-          {["Partner 1", "Partner 2", "Partner 3", "Partner 4", "Partner 5"].map((partner) => (
-            <div key={partner} className="text-white/40 text-lg font-semibold">
-              {partner}
-            </div>
-          ))}
+        <div className="relative overflow-hidden h-20">
+          <div className="flex items-center gap-12 animate-scroll-x">
+            {[...partners, ...partners].map((partner, i) => (
+              <img
+                key={`${partner.name}-${i}`}
+                src={partner.logo}
+                alt={partner.name}
+                className="h-12 w-auto object-contain bg-white rounded-lg px-4 py-2 shrink-0"
+              />
+            ))}
+          </div>
         </div>
       </div>
     </SectionContainer>
