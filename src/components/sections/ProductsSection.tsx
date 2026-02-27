@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/Cards";
@@ -216,9 +217,11 @@ export const ProductsSection = () => {
                   </div>
                 ))}
               </div>
-              <Button variant="gold" size="lg">
-                Request Demo
-                <ArrowRight className="w-4 h-4" />
+              <Button variant="gold" size="lg" asChild>
+                <Link to="/products/eko-shield">
+                  Request Demo
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </Button>
             </div>
           </div>
