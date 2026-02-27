@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EkoLogo } from "@/components/EkoLogo";
 import {
@@ -236,6 +236,16 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
+              <a
+                href="tel:+919311019477"
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-medium transition-colors",
+                  useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
+                )}
+              >
+                <Phone className="w-4 h-4" />
+                Call Us @ +91 93110 19477
+              </a>
               <Button variant="gold" size="sm" onClick={() => setGetStartedOpen(true)} className="cursor-pointer">
                 Get Started
               </Button>
