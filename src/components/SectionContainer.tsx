@@ -48,29 +48,29 @@ export const SectionHeader = ({
 }: SectionHeaderProps) => {
   return (
     <div className={cn(centered && "text-center", className)}>
-      {badge && (
-        <span className={cn(
-          "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
-          light ? "bg-white/10 text-white/90" : "bg-primary/10 text-primary"
-        )}>
-          {badge}
-        </span>
-      )}
+      {badge
+
+
+
+
+
+
+      }
       <h2 className={cn(
         "text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4",
         light ? "text-white" : "text-foreground"
       )}>
         {title}
       </h2>
-      {subtitle && (
-        <p className={cn(
-          "text-lg max-w-2xl leading-relaxed",
-          centered && "mx-auto",
-          light ? "text-white/70" : "text-muted-foreground"
-        )}>
+      {subtitle &&
+      <p className={cn(
+        "text-lg max-w-2xl leading-relaxed",
+        centered && "mx-auto",
+        light ? "text-white/70" : "text-muted-foreground"
+      )}>
           {subtitle}
         </p>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
