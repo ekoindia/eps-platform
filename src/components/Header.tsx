@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Phone } from "lucide-react";
+import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EkoLogo } from "@/components/EkoLogo";
 import {
@@ -129,41 +129,54 @@ export const Header = () => {
                       </button>
 
                       {productsDropdownOpen &&
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[560px] bg-white rounded-2xl shadow-xl border border-border/50 p-6 grid grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">Payment APIs</h4>
-                            <div className="space-y-1">
-                              {paymentApis.map((item) =>
-                            <Link
-                              key={item.href}
-                              to={item.href}
-                              onClick={() => setProductsDropdownOpen(false)}
-                              className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
-
-                                  {item.label}
-                                </Link>
-                            )}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[620px] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+                          {/* Eko Shield Hero Banner */}
+                          <Link
+                            to="/products/eko-shield"
+                            onClick={() => setProductsDropdownOpen(false)}
+                            className="block bg-gradient-to-r from-[#00394b] to-[#005a6e] p-5 group cursor-pointer hover:from-[#004a5e] hover:to-[#006b82] transition-all"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-eko-gold/20 flex items-center justify-center shrink-0">
+                                <Shield className="w-6 h-6 text-eko-gold" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-base font-bold text-white">Eko Shield</span>
+                                  <span className="text-[10px] font-semibold uppercase tracking-wider bg-eko-gold/20 text-eko-gold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" /> Featured
+                                  </span>
+                                </div>
+                                <p className="text-sm text-white/70">Unified verification platform — PAN, Aadhaar, Bank, GST, DL, RC in one dashboard</p>
+                              </div>
+                              <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-eko-gold group-hover:translate-x-1 transition-all shrink-0" />
                             </div>
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">Verification APIs</h4>
-                            <div className="space-y-1">
-                              {verificationApis.map((item) =>
-                            <Link
-                              key={item.href}
-                              to={item.href}
-                              onClick={() => setProductsDropdownOpen(false)}
-                              className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
+                          </Link>
 
-                                  {item.label}
-                                </Link>
-                            )}
+                          {/* API Columns */}
+                          <div className="p-6 grid grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">Payment APIs</h4>
+                              <div className="space-y-1">
+                                {paymentApis.map((item) =>
+                                  <Link key={item.href} to={item.href} onClick={() => setProductsDropdownOpen(false)}
+                                    className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
+                                    {item.label}
+                                  </Link>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="col-span-2 pt-4 border-t border-border">
-                            <Link to="/products/eko-shield" onClick={() => setProductsDropdownOpen(false)} className="text-sm font-medium text-eko-navy hover:text-eko-gold transition-colors cursor-pointer">
-                              Eko Shield →
-                            </Link>
+                            <div>
+                              <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">Verification APIs</h4>
+                              <div className="space-y-1">
+                                {verificationApis.map((item) =>
+                                  <Link key={item.href} to={item.href} onClick={() => setProductsDropdownOpen(false)}
+                                    className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
+                                    {item.label}
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       }
@@ -274,6 +287,15 @@ export const Header = () => {
                 </button>
                 {mobileProductsOpen &&
               <div className="pl-4 space-y-1">
+                    {/* Eko Shield highlight */}
+                    <Link to="/products/eko-shield" onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 py-2.5 px-3 -mx-3 bg-gradient-to-r from-[#00394b] to-[#005a6e] rounded-lg my-1 cursor-pointer">
+                      <Shield className="w-5 h-5 text-eko-gold shrink-0" />
+                      <div>
+                        <span className="text-sm font-semibold text-white">Eko Shield</span>
+                        <span className="text-[10px] ml-2 uppercase tracking-wider bg-eko-gold/20 text-eko-gold px-1.5 py-0.5 rounded-full">Featured</span>
+                      </div>
+                    </Link>
                     <p className="text-xs font-semibold text-eko-gold uppercase tracking-wider py-1">Payment APIs</p>
                     {paymentApis.map((item) =>
                 <Link key={item.href} to={item.href} onClick={() => setMobileMenuOpen(false)}
