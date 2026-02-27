@@ -130,13 +130,13 @@ export const ProductPageLayout = ({
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Sticky CTA Bar */}
+      {/* Sticky CTA Bar - positioned below the main header */}
       <div
-        className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border/50 shadow-sm transition-all duration-300 ${
+        className={`fixed top-[72px] left-0 right-0 z-40 bg-background/95 backdrop-blur border-b border-border/50 shadow-sm transition-all duration-300 ${
           showSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
         }`}
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-12">
           <span className="font-semibold text-foreground text-sm truncate">{title}</span>
           <Button variant="action" size="sm" asChild>
             <a href="#lead-form">Get API Access <ArrowRight className="w-3 h-3" /></a>
