@@ -15,7 +15,7 @@ const complianceItems = [
 },
 {
   icon: FileCheck,
-  title: 
+  title: "PCI DSS Certified",
   description: "Payment Card Industry Data Security Standard compliance for secure card transactions."
 },
 {
