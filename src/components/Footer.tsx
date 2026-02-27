@@ -62,9 +62,8 @@ export const Footer = () => {
             <div className="mb-6">
               <EkoLogo className="h-16 w-auto" isLight />
             </div>
-            <p className="text-white/70 mb-6 max-w-sm leading-relaxed">
-              Powering India's financial infrastructure with secure, 
-              scalable APIs for payments, identity, and verification.
+            <p className="text-white/70 mb-6 max-w-sm leading-relaxed text-xs">
+              Eko's mission is to provide Distribution as a Service for brands to reach the next billion customers through deeply embedded in the community micro-entrepreneurs as influencers, facilitators and resellers. We use simple digital tools to help these entrepreneurs earn more, get fair access to capital and run & grow their businesses better every day.
             </p>
             <div className="space-y-3 text-sm">
               <a href="mailto:support@eko.in" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
