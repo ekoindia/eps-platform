@@ -26,9 +26,9 @@ export const CTASection = () => {
             Get Started
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Button>
-          <Button variant="hero-outline" size="xl" onClick={handleGetStarted}>
+          <Button variant="hero-outline" size="xl" onClick={() => window.dispatchEvent(new CustomEvent("open-talk-to-sales"))}>
             <MessageCircle className="w-5 h-5" />
-            Book a Demo
+            Talk to Sales
           </Button>
         </div>
       </div>
