@@ -45,19 +45,14 @@ const industries = [
   { icon: Building2, name: "Insurance", tagline: "Instant claim verification", pain: "Fraudulent claims with fake documents cost insurers millions annually. Manual verification creates claim processing backlogs.", solution: "Eko Shield automates claimant identity and document verification, enabling instant claim processing while catching fraud before payout.", benefits: ["Instant claimant verification", "Document fraud detection", "Reduce claim processing time", "Automated audit compliance"] },
 ];
 
-const demoIndustries = ["NBFC & Lending", "Fintech", "Staffing & HR", "Logistics", "Marketplace / E-commerce", "Travel & Hospitality", "Agro Platforms", "Insurance", "Other"];
+
 
 /* ─── Page Component ─── */
 
 const EkoShieldPage = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<typeof industries[0] | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", company: "", industry: "", employees: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -276,66 +271,16 @@ const EkoShieldPage = () => {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                {submitted ? (
-                  <div className="bg-background rounded-2xl p-8 shadow-2xl text-center">
-                    <CheckCircle className="h-16 w-16 text-eko-gold mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-foreground mb-2">Thank You!</h3>
-                    <p className="text-muted-foreground mb-4">We've received your demo request. Our team will reach out within 24 hours.</p>
-                    <Button variant="gold" onClick={() => setSubmitted(false)}>Submit Another Request</Button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="bg-background rounded-2xl p-8 shadow-2xl">
-                    <h3 className="text-xl font-bold text-foreground mb-6">Request a Demo</h3>
-                    <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Full Name *</label>
-                        <input required type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Your name" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Work Email *</label>
-                        <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="you@company.com" />
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-foreground mb-1">Company Name *</label>
-                      <input required type="text" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Your company" />
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Industry *</label>
-                        <select required value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                          <option value="">Select industry</option>
-                          {demoIndustries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Team Size</label>
-                        <select value={form.employees} onChange={(e) => setForm({ ...form, employees: e.target.value })}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                          <option value="">Select size</option>
-                          <option value="20-50">20–50 employees</option>
-                          <option value="50-150">50–150 employees</option>
-                          <option value="150-300">150–300 employees</option>
-                          <option value="300-500">300–500 employees</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-foreground mb-1">Anything else?</label>
-                      <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={3}
-                        className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                        placeholder="Tell us about your verification needs..." />
-                    </div>
-                    <Button type="submit" variant="gold" size="lg" className="w-full">
-                      Request a Demo <ArrowRight className="w-4 h-4" />
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-3 text-center">We'll respond within 24 hours. No spam, ever.</p>
-                  </form>
-                )}
+                <div className="bg-background rounded-2xl p-6 shadow-2xl overflow-hidden">
+                  <h3 className="text-xl font-bold text-foreground mb-4">Get Started with Eko Shield</h3>
+                  <iframe
+                    aria-label="New Eko.in API Signup"
+                    frameBorder="0"
+                    allow="geolocation;"
+                    style={{ height: "500px", width: "100%", border: "none" }}
+                    src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                  />
+                </div>
               </motion.div>
             </div>
           </div>
