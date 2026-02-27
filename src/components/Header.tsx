@@ -353,6 +353,13 @@ export const Header = () => {
                   </a>
               )}
                 <div className="flex flex-col gap-3 mt-4">
+                  <a
+                    href="tel:+919311019477"
+                    className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors"
+                  >
+                    <Phone className="w-4 h-4" />
+                    Call Us @ +91 93110 19477
+                  </a>
                   <Button variant="gold" size="sm" onClick={() => {setGetStartedOpen(true);setMobileMenuOpen(false);}} className="cursor-pointer">
                     Get Started
                   </Button>
