@@ -89,8 +89,13 @@ export const Header = () => {
 
   useEffect(() => {
     const openDialog = () => setGetStartedOpen(true);
+    const openSales = () => setTalkToSalesOpen(true);
     window.addEventListener("open-get-started", openDialog);
-    return () => window.removeEventListener("open-get-started", openDialog);
+    window.addEventListener("open-talk-to-sales", openSales);
+    return () => {
+      window.removeEventListener("open-get-started", openDialog);
+      window.removeEventListener("open-talk-to-sales", openSales);
+    };
   }, []);
 
   return (
