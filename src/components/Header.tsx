@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EkoLogo } from "@/components/EkoLogo";
+import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,7 @@ export const Header = () => {
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [mobileCompanyOpen, setMobileCompanyOpen] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
+  const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
   const productsDropdownRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -248,16 +250,16 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
-              <a
-                href="tel:+919311019477"
+              <button
+                onClick={() => setTalkToSalesOpen(true)}
                 className={cn(
-                  "flex items-center gap-1.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer",
                   useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                 )}
               >
                 <Phone className="w-4 h-4" />
-                Call Us @ +91 93110 19477
-              </a>
+                Talk to Sales
+              </button>
               <Button variant="gold" size="sm" onClick={() => setGetStartedOpen(true)} className="cursor-pointer">
                 Get Started
               </Button>
@@ -353,13 +355,13 @@ export const Header = () => {
                   </a>
               )}
                 <div className="flex flex-col gap-3 mt-4">
-                  <a
-                    href="tel:+919311019477"
-                    className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors"
+                  <button
+                    onClick={() => { setTalkToSalesOpen(true); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
-                    Call Us @ +91 93110 19477
-                  </a>
+                    Talk to Sales
+                  </button>
                   <Button variant="gold" size="sm" onClick={() => {setGetStartedOpen(true);setMobileMenuOpen(false);}} className="cursor-pointer">
                     Get Started
                   </Button>
@@ -387,6 +389,7 @@ export const Header = () => {
 
         </DialogContent>
       </Dialog>
+      <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
     </>);
 
 };
