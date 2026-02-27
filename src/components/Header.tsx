@@ -63,9 +63,8 @@ export const Header = () => {
   const location = useLocation();
 
   const isHomePage = location.pathname === "/";
-  const darkHeaderPages = ["/privacy-policy", "/terms-and-conditions", "/refund-policy", "/grievance", "/about-us", "/blog", "/press"];
-  const isDarkHeader = darkHeaderPages.some((p) => location.pathname.startsWith(p));
-  const useWhiteText = isDarkHeader || isHomePage;
+  const isDarkHeader = !isHomePage; // All non-homepage pages use dark navy header
+  const useWhiteText = true; // Always white text (transparent on home, dark navy on others)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
