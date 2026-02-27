@@ -8,9 +8,9 @@ export const LeadCaptureSection = () => {
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         {/* Left: Content */}
         <div>
-          <span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-eko-gold-light text-eko-navy">
-            Get in Touch
-          </span>
+          
+
+
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Ready to Transform Your Business?
           </h2>
@@ -21,18 +21,18 @@ export const LeadCaptureSection = () => {
           
           <div className="space-y-4">
             {[
-              "Personalized demo of our products",
-              "Technical consultation for integration",
-              "Custom pricing for enterprise needs",
-              "Sandbox access for testing"
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-3">
+            "Personalized demo of our products",
+            "Technical consultation for integration",
+            "Custom pricing for enterprise needs",
+            "Sandbox access for testing"].
+            map((item) =>
+            <div key={item} className="flex items-center gap-3">
                 <span className="w-5 h-5 rounded-full bg-eko-gold/20 flex items-center justify-center flex-shrink-0">
                   <span className="w-2 h-2 rounded-full bg-eko-gold" />
                 </span>
                 <span className="text-foreground">{item}</span>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -46,11 +46,11 @@ export const LeadCaptureSection = () => {
               frameBorder="0"
               allow="geolocation;"
               style={{ height: "500px", width: "100%", border: "none" }}
-              src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
-            />
+              src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ" />
+
           </div>
         </div>
       </div>
-    </SectionContainer>
-  );
+    </SectionContainer>);
+
 };
