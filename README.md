@@ -62,7 +62,47 @@ This project is built with:
 
 ## How can I deploy this project?
 
+### Deploy via Lovable
+
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+
+### Deploy to Any Platform
+
+This project is a React SPA (Single Page Application) using client-side routing. It's configured to work seamlessly with multiple deployment platforms. Each platform has its own URL rewrite configuration to ensure proper routing.
+
+#### Supported Platforms
+
+**Vercel**
+- Uses `vercel.json` for URL rewrites
+- Deploy via Vercel CLI or GitHub integration
+- Recommended: Connect your GitHub repo for automatic deployments
+
+**Netlify**
+- Uses `netlify.toml` or `public/_redirects` for URL rewrites
+- Deploy via Netlify CLI or GitHub integration
+- Simple drag-and-drop deployment available
+
+**Apache (Shared Hosting/cPanel)**
+- Uses `.htaccess` for URL rewrites
+- Build locally: `npm run build`
+- Upload the `dist/` folder to your Apache server
+
+**Nginx (VPS/Docker/Kubernetes)**
+- Uses `nginx.conf` for URL rewrites
+- Build locally: `npm run build`
+- Copy `dist/` contents to your Nginx web root
+- Update your nginx configuration with the provided `nginx.conf`
+
+#### Why Multiple Configuration Files?
+
+This project includes platform-specific redirect configurations because each deployment platform has its own configuration format. When users directly visit URLs like `/products/aeps-api` or refresh the page, the server needs to serve `index.html` for all routes, allowing React Router to handle navigation client-side.
+
+- **vercel.json** → Vercel deployments
+- **netlify.toml** / **_redirects** → Netlify deployments
+- **.htaccess** → Apache servers
+- **nginx.conf** → Nginx servers
+
+These files don't conflict - each platform only reads its own configuration and ignores the others. This makes the project deployment-agnostic and portable across platforms.
 
 ## Can I connect a custom domain to my Lovable project?
 

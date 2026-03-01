@@ -45,9 +45,9 @@ const companyLinks = [
 
 const navLinks = [
 { label: "Products", href: "#products", hasDropdown: true },
-{ label: "Use Cases", href: "#use-cases" },
+{ label: "Use Cases", href: "/#use-cases" },
 { label: "Developers", href: "https://developers.eko.in", external: true },
-{ label: "Pricing", href: "#" },
+// { label: "Pricing", href: "#" },
 { label: "Company", href: "#", hasDropdown: true }];
 
 
