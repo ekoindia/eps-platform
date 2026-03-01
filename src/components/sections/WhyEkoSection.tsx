@@ -37,7 +37,7 @@ export const WhyEkoSection = () => {
     <SectionContainer id="why-eko" className="border-b border-border">
       <SectionHeader
         badge="Why Choose Eko"
-        title="Built for Enterprise Scale"
+        title="Enterprise-Grade Infrastructure. Built for Growing Businesses Across Bharat."
         subtitle="India's most trusted financial infrastructure provider, powering millions of transactions every day."
       />
 

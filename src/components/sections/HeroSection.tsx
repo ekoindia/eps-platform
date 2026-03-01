@@ -7,7 +7,7 @@ export const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
@@ -28,18 +28,18 @@ export const HeroSection = () => {
               <span className="w-2 h-2 rounded-full bg-eko-gold animate-pulse-soft" />
               <span className="text-white/80 text-sm font-medium">Trusted by 50,000+ businesses</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight mb-6">
-              APIs & Platforms Powering India's{" "}
+              APIs & Platform Powering Bharat's{" "}
               <span className="text-gradient-gold">Financial</span>{" "}
               Infrastructure
             </h1>
-            
+
             <p className="text-lg md:text-xl text-white/80 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              APIs and platforms for Payments, Identity, and Verification — 
+              APIs and SaaS platform for Payments, Identity, and Verification —
               built for scale, security, and compliance.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button variant="gold" size="xl" className="group" onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}>
                 Explore APIs
@@ -81,13 +81,13 @@ export const HeroSection = () => {
             <div className="relative">
               {/* Glow Effect */}
               <div className="absolute -inset-4 bg-eko-gold/10 rounded-2xl blur-2xl" />
-              
-              <CodeBlock 
-                code={exampleApiCode} 
+
+              <CodeBlock
+                code={exampleApiCode}
                 fileName="verify.js"
                 className="relative"
               />
-              
+
               {/* Floating Badge */}
               <div className="absolute -bottom-4 -right-4 bg-card rounded-xl p-4 shadow-xl flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-eko-gold-light flex items-center justify-center">

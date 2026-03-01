@@ -57,7 +57,8 @@ export const SectionHeader = ({
         </span>
       )}
       <h2 className={cn(
-        "text-3xl lg:text-4xl font-bold tracking-tight",
+        "text-3xl lg:text-4xl font-bold tracking-tight balance max-w-3xl",
+        centered && "mx-auto",
         light ? "text-white" : "text-foreground"
       )}>
         {title}
