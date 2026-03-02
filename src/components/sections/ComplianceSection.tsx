@@ -85,7 +85,7 @@ export const ComplianceSection = () => {
 
       {/* Partner Logos */}
       <div className="mt-16 pt-12 border-t border-white/10">
-        <p className="text-center text-white/50 text-sm mb-8">Trusted by leading financial institutions</p>
+        <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-white text-center mb-8">Our Partners</h2>
         <div className="relative overflow-hidden h-20">
           <div className="flex items-center gap-12 animate-scroll-x">
             {[...partners, ...partners].map((partner, i) => (
