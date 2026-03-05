@@ -255,16 +255,16 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
-              <button
-                onClick={() => setTalkToSalesOpen(true)}
+              <a
+                href="tel:+919311019477"
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer",
                   useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                 )}
               >
                 <Phone className="w-4 h-4" />
-                Talk to Sales
-              </button>
+                +91 9311019477
+              </a>
               <Button variant="gold" size="sm" onClick={() => setGetStartedOpen(true)} className="cursor-pointer">
                 Get Started
               </Button>
@@ -360,13 +360,13 @@ export const Header = () => {
                   </a>
               )}
                 <div className="flex flex-col gap-3 mt-4">
-                  <button
-                    onClick={() => { setTalkToSalesOpen(true); setMobileMenuOpen(false); }}
+                  <a
+                    href="tel:+919311019477"
                     className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
-                    Talk to Sales
-                  </button>
+                    +91 9311019477
+                  </a>
                   <Button variant="gold" size="sm" onClick={() => {setGetStartedOpen(true);setMobileMenuOpen(false);}} className="cursor-pointer">
                     Get Started
                   </Button>
