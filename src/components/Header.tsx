@@ -265,7 +265,11 @@ export const Header = () => {
                 <Phone className="w-4 h-4" />
                 +91 9311019477
               </a>
-              <Button variant="gold" size="sm" onClick={() => setGetStartedOpen(true)} className="cursor-pointer">
+              <Button variant="gold" size="sm" onClick={() => {
+                if ((window as any).$zoho?.salesiq?.chat?.start) {
+                  (window as any).$zoho.salesiq.chat.start();
+                }
+              }} className="cursor-pointer">
                 Get Started
               </Button>
             </div>
@@ -367,7 +371,12 @@ export const Header = () => {
                     <Phone className="w-4 h-4" />
                     +91 9311019477
                   </a>
-                  <Button variant="gold" size="sm" onClick={() => {setGetStartedOpen(true);setMobileMenuOpen(false);}} className="cursor-pointer">
+                  <Button variant="gold" size="sm" onClick={() => {
+                    setMobileMenuOpen(false);
+                    if ((window as any).$zoho?.salesiq?.chat?.start) {
+                      (window as any).$zoho.salesiq.chat.start();
+                    }
+                  }} className="cursor-pointer">
                     Get Started
                   </Button>
                 </div>
