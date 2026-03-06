@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { openZohoChat } from "@/lib/zoho-form";
 import { Link } from "react-router-dom";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
@@ -125,9 +126,7 @@ const verificationProducts = [
 ];
 
 const handleChat = () => {
-  if ((window as any).$zoho?.salesiq?.chat?.start) {
-    (window as any).$zoho.salesiq.chat.start();
-  }
+  openZohoChat();
 };
 
 const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (

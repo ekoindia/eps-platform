@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { openZohoChat } from "@/lib/zoho-form";
 import {
   Dialog,
   DialogContent,
@@ -23,10 +24,7 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
 
   const handleOpenChatbot = () => {
     handleClose(false);
-    // Trigger Zoho SalesIQ chatbot
-    if ((window as any).$zoho?.salesiq?.chat?.start) {
-      (window as any).$zoho.salesiq.chat.start();
-    }
+    openZohoChat();
   };
 
   return (
