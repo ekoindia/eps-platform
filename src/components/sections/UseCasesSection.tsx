@@ -1,44 +1,44 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { UseCaseCard } from "@/components/Cards";
 import { 
-  Building2, 
+  Store, 
   Smartphone, 
   CreditCard, 
   Plane, 
   Building, 
-  ShoppingCart 
+  Users 
 } from "lucide-react";
 
 const useCases = [
   {
-    icon: Building2,
-    title: "Banks & NBFCs",
-    description: "Extend reach with agent banking, enable digital payments, and streamline customer onboarding with verified data."
+    icon: Store,
+    title: "Kirana & Retail Stores",
+    description: "Offer banking services like money transfer, bill payments, and Aadhaar withdrawals right from your shop counter."
+  },
+  {
+    icon: Users,
+    title: "CSP / BC Agents",
+    description: "Become a banking point for your community with AePS, DMT, and bill collection services powered by Eko APIs."
+  },
+  {
+    icon: Building,
+    title: "Small NBFCs & MFIs",
+    description: "Automate KYC verification, enable loan disbursements via UPI payouts, and collect repayments digitally."
   },
   {
     icon: Smartphone,
-    title: "Fintech Startups",
-    description: "Launch financial products faster with ready-to-use APIs. Focus on your core product, not infrastructure."
+    title: "Micro-Fintech Builders",
+    description: "Launch your own fintech product with ready-to-use BC, payment, and verification APIs. Focus on growth, not infrastructure."
+  },
+  {
+    icon: Plane,
+    title: "Travel Agents & Distributors",
+    description: "Enable instant money transfers, identity verification, and digital payments for your customers in Tier 2+ cities."
   },
   {
     icon: CreditCard,
     title: "Payment Service Providers",
-    description: "Offer comprehensive payment solutions to merchants with our white-label infrastructure."
-  },
-  {
-    icon: Plane,
-    title: "Travel & Insurance",
-    description: "Verify customer identities seamlessly for bookings, claims processing, and policy issuance."
-  },
-  {
-    icon: Building,
-    title: "Enterprises",
-    description: "Automate vendor verification, streamline employee onboarding, and manage bulk payouts efficiently."
-  },
-  {
-    icon: ShoppingCart,
-    title: "E-commerce & Lending",
-    description: "Enable instant credit decisions with real-time verification and secure payment processing."
+    description: "Offer comprehensive payment and collection solutions to your merchant network with our white-label APIs."
   },
 ];
 
@@ -47,12 +47,12 @@ export const UseCasesSection = () => {
     <SectionContainer id="use-cases">
       <SectionHeader
         badge="Use Cases"
-        title="Built for Every Industry"
-        subtitle="From startups to enterprises, Eko powers financial operations across sectors."
+        title="Built for Bharat's Entrepreneurs"
+        subtitle="From kirana stores to micro-fintech builders — Eko powers financial operations for MSMEs across Tier 2 and beyond."
       />
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {useCases.map((useCase, index) => (
+        {useCases.map((useCase) => (
           <UseCaseCard 
             key={useCase.title} 
             {...useCase}

@@ -1,5 +1,5 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
-import { Shield, Lock, FileCheck, Award } from "lucide-react";
+import { Shield, Lock, FileCheck } from "lucide-react";
 import airtelLogo from "@/assets/partners/airtel-payments-bank.png";
 import finoLogo from "@/assets/partners/fino-payments-bank.png";
 import razorpayLogo from "@/assets/partners/razorpay.png";
@@ -27,25 +27,20 @@ const complianceItems = [
     description:
       "Compliant with Reserve Bank of India regulations for payment services and banking correspondent operations.",
     details: [
-      "Security controls: ISO 27001",
+      "Authorised BC operations",
       "Data residency: India",
       "Audit & reporting: logs, reconciliation, settlement reports",
     ],
   },
   {
     icon: Lock,
-    title: "ISO 27001 Certified",
-    description: "International standard for information security management, ensuring your data is protected.",
+    title: "KYC Compliant",
+    description: "Full Know Your Customer compliance for onboarding and identity verification across all services.",
   },
   {
     icon: FileCheck,
-    title: "PCI DSS Certified",
-    description: "Payment Card Industry Data Security Standard compliance for secure card transactions.",
-  },
-  {
-    icon: Award,
-    title: "SOC 2 Type II",
-    description: "Independently audited security controls demonstrating our commitment to data protection.",
+    title: "AML/CFT Compliant",
+    description: "Anti-Money Laundering and Counter Financing of Terrorism compliance built into every transaction.",
   },
 ];
 
@@ -58,7 +53,7 @@ export const ComplianceSection = () => {
         light
       />
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+      <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
         {complianceItems.map((item) => (
           <div
             key={item.title}

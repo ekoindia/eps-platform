@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
@@ -33,8 +33,7 @@ import RcVerificationPage from "./pages/products/RcVerificationPage";
 
 // Company & Legal Pages
 import AboutPage from "./pages/AboutPage";
-import BlogPage from "./pages/BlogPage";
-import PressPage from "./pages/PressPage";
+import BlogsMediaPage from "./pages/BlogsMediaPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
@@ -82,8 +81,10 @@ const App = () => (
 
               {/* Company & Legal Pages */}
               <Route path="/about-us" element={<AboutPage />} />
-              <Route path="/blog" element={<BlogPage />} />
-              <Route path="/press" element={<PressPage />} />
+              <Route path="/blogs-media" element={<BlogsMediaPage />} />
+              {/* Redirects for old routes */}
+              <Route path="/blog" element={<Navigate to="/blogs-media" replace />} />
+              <Route path="/press" element={<Navigate to="/blogs-media" replace />} />
               <Route path="/tnc" element={<TermsPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/refund-policy" element={<RefundPolicyPage />} />

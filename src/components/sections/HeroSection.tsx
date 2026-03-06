@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Code, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
 import heroImage from "@/assets/hero-network.jpg";
 
@@ -30,14 +30,14 @@ export const HeroSection = () => {
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight mb-6">
-              APIs & Platform Powering Bharat's{" "}
-              <span className="text-gradient-gold">Financial</span>{" "}
-              Infrastructure
+              APIs & Platform for MSMEs to Scale Their{" "}
+              <span className="text-gradient-gold">Business</span>{" "}
+              Everyday
             </h1>
 
             <p className="text-lg md:text-xl text-white/80 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              APIs and SaaS platform for Payments, Identity, and Verification —
-              built for scale, security, and compliance.
+              BC, Identity, Payment & Collection solutions & APIs for MSMEs
+              to scale their business across Tier 2 and beyond.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -45,8 +45,10 @@ export const HeroSection = () => {
                 Explore APIs
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="hero-outline" size="xl" onClick={() => window.dispatchEvent(new CustomEvent("open-talk-to-sales"))}>
-                Talk to Sales
+              <Button variant="hero-outline" size="xl" asChild>
+                <a href="tel:+919311019477">
+                  Talk to Sales
+                </a>
               </Button>
             </div>
 
@@ -65,13 +67,6 @@ export const HeroSection = () => {
                   <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 <span>99.9% Uptime</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/60 text-sm">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M8 10h8M8 14h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <span>ISO 27001</span>
               </div>
             </div>
           </div>

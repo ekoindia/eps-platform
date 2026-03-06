@@ -6,12 +6,10 @@ import { ProductCard } from "@/components/Cards";
 import { 
   CreditCard, 
   Fingerprint, 
-  LayoutDashboard, 
   ShieldCheck,
   Banknote,
   Smartphone,
   Receipt,
-  Wallet,
   Send,
   FileCheck,
   User,
@@ -19,19 +17,23 @@ import {
   Car,
   Plane,
   FolderCheck,
-  ArrowRight
+  ArrowRight,
+  Landmark,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ProductTab = "payments" | "verification" | "shield";
+type ProductTab = "bc" | "payments" | "collection" | "verification" | "shield";
 
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
+  { id: "bc", label: "BC APIs", icon: Landmark },
   { id: "payments", label: "Payment APIs", icon: CreditCard },
+  { id: "collection", label: "Collection APIs", icon: Receipt },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   { id: "shield", label: "Eko Shield", icon: ShieldCheck },
 ];
 
-const paymentProducts = [
+const bcProducts = [
   {
     title: "Domestic Money Transfer",
     icon: Banknote,
@@ -44,12 +46,9 @@ const paymentProducts = [
     description: "Aadhaar-enabled payment services for rural and underbanked segments.",
     features: ["Cash withdrawal", "Balance enquiry", "Mini statement"]
   },
-  {
-    title: "BBPS Integration",
-    icon: Receipt,
-    description: "Complete bill payment ecosystem with 200+ biller categories.",
-    features: ["Electricity & gas", "DTH & broadband", "Insurance premiums"]
-  },
+];
+
+const paymentProducts = [
   {
     title: "Payment Gateway",
     icon: CreditCard,
@@ -57,10 +56,31 @@ const paymentProducts = [
     features: ["Multi-mode support", "Instant settlements", "Smart routing"]
   },
   {
-    title: "Payouts API",
+    title: "QR Payment",
+    icon: Smartphone,
+    description: "Generate and manage QR codes for seamless payment collection.",
+    features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
+  },
+  {
+    title: "UPI Payout",
     icon: Send,
     description: "Bulk disbursements to bank accounts, UPI, and wallets.",
     features: ["Batch processing", "Scheduled payouts", "Real-time webhooks"]
+  },
+];
+
+const collectionProducts = [
+  {
+    title: "BBPS Integration",
+    icon: Receipt,
+    description: "Complete bill payment ecosystem with 200+ biller categories.",
+    features: ["Electricity & gas", "DTH & broadband", "Insurance premiums"]
+  },
+  {
+    title: "CMS API",
+    icon: Wallet,
+    description: "Cash Management System for streamlined cash collection and reconciliation.",
+    features: ["Multi-channel collection", "Automated reconciliation", "Real-time tracking"]
   },
 ];
 
@@ -103,15 +123,42 @@ const verificationProducts = [
   },
 ];
 
+const handleChat = () => {
+  if ((window as any).$zoho?.salesiq?.chat?.start) {
+    (window as any).$zoho.salesiq.chat.start();
+  }
+};
+
+const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
+  <div className="animate-fade-up">
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {products.map((product) => (
+        <ProductCard key={product.title} {...product} />
+      ))}
+    </div>
+    <div className="flex justify-center gap-4 mt-10">
+      <Button variant="gold" size="lg" asChild>
+        <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
+          View Documentation
+          <ArrowRight className="w-4 h-4" />
+        </a>
+      </Button>
+      <Button variant="navy-outline" size="lg" onClick={handleChat}>
+        Chat with Us
+      </Button>
+    </div>
+  </div>
+);
+
 export const ProductsSection = () => {
-  const [activeTab, setActiveTab] = useState<ProductTab>("payments");
+  const [activeTab, setActiveTab] = useState<ProductTab>("bc");
 
   return (
     <SectionContainer id="products">
       <SectionHeader
         badge="Our Products"
-        title="Complete Financial Infrastructure"
-        subtitle="From payments to verifications, everything you need to build robust financial applications."
+        title="APIs to Build Your Own Fintech Business"
+        subtitle="From BC services to payments and verifications, everything you need to build and scale your fintech operations."
       />
 
       {/* Tabs */}
@@ -134,47 +181,10 @@ export const ProductsSection = () => {
       </div>
 
       {/* Content */}
-      {activeTab === "payments" && (
-        <div className="animate-fade-up">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paymentProducts.map((product) => (
-              <ProductCard key={product.title} {...product} />
-            ))}
-          </div>
-          <div className="flex justify-center gap-4 mt-10">
-            <Button variant="gold" size="lg" asChild>
-              <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
-                View Documentation
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-            <Button variant="navy-outline" size="lg" onClick={() => window.dispatchEvent(new CustomEvent("open-get-started"))}>
-              Request Access
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "verification" && (
-        <div className="animate-fade-up">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {verificationProducts.map((product) => (
-              <ProductCard key={product.title} {...product} />
-            ))}
-          </div>
-          <div className="flex justify-center gap-4 mt-10">
-            <Button variant="gold" size="lg" asChild>
-              <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
-                View Documentation
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-            <Button variant="navy-outline" size="lg" onClick={() => window.dispatchEvent(new CustomEvent("open-get-started"))}>
-              Request Access
-            </Button>
-          </div>
-        </div>
-      )}
+      {activeTab === "bc" && <ProductTabContent products={bcProducts} />}
+      {activeTab === "payments" && <ProductTabContent products={paymentProducts} />}
+      {activeTab === "collection" && <ProductTabContent products={collectionProducts} />}
+      {activeTab === "verification" && <ProductTabContent products={verificationProducts} />}
 
       {activeTab === "shield" && (
         <div className="animate-fade-up">
@@ -206,10 +216,10 @@ export const ProductsSection = () => {
               </p>
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {[
-                  { icon: Building, label: "Banks & NBFCs" },
-                  { icon: Smartphone, label: "Fintech Startups" },
+                  { icon: Building, label: "Small NBFCs & MFIs" },
+                  { icon: Smartphone, label: "Fintech Builders" },
                   { icon: Plane, label: "Travel & Insurance" },
-                  { icon: Wallet, label: "E-commerce & Lending" },
+                  { icon: Wallet, label: "Lending & E-commerce" },
                 ].map((useCase) => (
                   <div key={useCase.label} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                     <useCase.icon className="w-5 h-5 text-eko-gold" />

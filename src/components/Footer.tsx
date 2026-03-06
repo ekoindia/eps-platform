@@ -13,9 +13,11 @@ import { EkoLogo } from "@/components/EkoLogo";
 
 const footerLinks = {
   products: [
+    { label: "BC APIs", href: "#products" },
     { label: "Payment APIs", href: "#products" },
+    { label: "Collection APIs", href: "#products" },
     { label: "Verification APIs", href: "#products" },
-    { label: "Eko Shield", href: "#shield" },
+    { label: "Eko Shield", href: "/products/eko-shield", internal: true },
   ],
   developers: [
     { label: "Documentation", href: "https://developers.eko.in", external: true },
@@ -26,8 +28,7 @@ const footerLinks = {
   company: [
     { label: "About Us", href: "/about-us", internal: true },
     { label: "Grievance", href: "/grievance", internal: true },
-    { label: "Blog", href: "#" },
-    { label: "Press", href: "#" },
+    { label: "Blogs & Media", href: "/blogs-media", internal: true },
   ],
   legal: [
     { label: "Privacy Policy", href: "/privacy-policy", internal: true },
@@ -102,13 +103,23 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.products.map((link) => (
                 <li key={link.label}>
-                  <a 
-                    href={link.href}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </a>
+                  {'internal' in link && link.internal ? (
+                    <Link
+                      to={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a 
+                      href={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

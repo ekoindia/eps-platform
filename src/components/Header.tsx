@@ -10,46 +10,50 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription } from
-"@/components/ui/dialog";
+  DialogDescription,
+} from "@/components/ui/dialog";
+
+const bcApis = [
+  { label: "DMT API", href: "/products/dmt-api" },
+  { label: "AePS API", href: "/products/aeps-api" },
+];
 
 const paymentApis = [
-{ label: "DMT API", href: "/products/dmt-api" },
-{ label: "AePS API", href: "/products/aeps-api" },
-{ label: "BBPS API", href: "/products/bbps-api" },
-{ label: "QR Payment API", href: "/products/qr-payment-api" },
-{ label: "CMS API", href: "/products/cms-api" },
-{ label: "Payout API", href: "/products/payment-api" },
-{ label: "UPI Payout API", href: "/products/upi-payout-api" }];
+  { label: "Payment Gateway", href: "/products/payment-api" },
+  { label: "QR Payment API", href: "/products/qr-payment-api" },
+  { label: "UPI Payout API", href: "/products/upi-payout-api" },
+];
 
+const collectionApis = [
+  { label: "BBPS API", href: "/products/bbps-api" },
+  { label: "CMS API", href: "/products/cms-api" },
+];
 
 const verificationApis = [
-{ label: "PAN Verification", href: "/products/pan-verification-api" },
-{ label: "Aadhaar Verification", href: "/products/aadhaar-verification-api" },
-{ label: "Bank Verification", href: "/products/bank-verification-api" },
-{ label: "GST Verification", href: "/products/gst-verification-api" },
-{ label: "UPI Verification", href: "/products/upi-verification-api" },
-{ label: "DL Verification", href: "/products/dl-verification-api" },
-{ label: "RC Verification", href: "/products/rc-verification-api" },
-{ label: "Vehicle Verification", href: "/products/vehicle-verification-api" },
-{ label: "DigiLocker API", href: "/products/digilocker-api" },
-{ label: "Employee Verification", href: "/products/employee-verification-api" },
-{ label: "Reverse Geocoding", href: "/products/reverse-geocoding-api" }];
-
+  { label: "PAN Verification", href: "/products/pan-verification-api" },
+  { label: "Aadhaar Verification", href: "/products/aadhaar-verification-api" },
+  { label: "Bank Verification", href: "/products/bank-verification-api" },
+  { label: "GST Verification", href: "/products/gst-verification-api" },
+  { label: "UPI Verification", href: "/products/upi-verification-api" },
+  { label: "DL Verification", href: "/products/dl-verification-api" },
+  { label: "RC Verification", href: "/products/rc-verification-api" },
+  { label: "Vehicle Verification", href: "/products/vehicle-verification-api" },
+  { label: "DigiLocker API", href: "/products/digilocker-api" },
+  { label: "Employee Verification", href: "/products/employee-verification-api" },
+  { label: "Reverse Geocoding", href: "/products/reverse-geocoding-api" },
+];
 
 const companyLinks = [
-{ label: "About Us", href: "/about-us", internal: true },
-{ label: "Blog", href: "/blog", internal: true },
-{ label: "Press", href: "/press", internal: true }];
-
+  { label: "About Us", href: "/about-us", internal: true },
+  { label: "Blogs & Media", href: "/blogs-media", internal: true },
+];
 
 const navLinks = [
-{ label: "Products", href: "#products", hasDropdown: true },
-{ label: "Use Cases", href: "/#use-cases" },
-{ label: "Developers", href: "https://developers.eko.in", external: true },
-// { label: "Pricing", href: "#" },
-{ label: "Company", href: "#", hasDropdown: true }];
-
+  { label: "Products", href: "#products", hasDropdown: true },
+  { label: "Use Cases", href: "/#use-cases" },
+  { label: "Developers", href: "https://developers.eko.in", external: true },
+  { label: "Company", href: "#", hasDropdown: true },
+];
 
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -65,8 +69,8 @@ export const Header = () => {
   const location = useLocation();
 
   const isHomePage = location.pathname === "/";
-  const isDarkHeader = !isHomePage; // All non-homepage pages use dark navy header
-  const useWhiteText = true; // Always white text (transparent on home, dark navy on others)
+  const isDarkHeader = !isHomePage;
+  const useWhiteText = true;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -98,20 +102,26 @@ export const Header = () => {
     };
   }, []);
 
+  const apiColumns = [
+    { title: "BC APIs", items: bcApis },
+    { title: "Payment APIs", items: paymentApis },
+    { title: "Collection APIs", items: collectionApis },
+    { title: "Verification APIs", items: verificationApis },
+  ];
+
   return (
     <>
       <header
         className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-
-        isScrolled ?
-        "bg-[#00394b] backdrop-blur-md shadow-sm py-3" :
-        isHomePage ?
-        "bg-transparent py-5" :
-        isDarkHeader ?
-        "bg-[#00394b] py-5" :
-        "bg-white py-5"
-        )}>
-
+          isScrolled
+            ? "bg-[#00394b] backdrop-blur-md shadow-sm py-3"
+            : isHomePage
+              ? "bg-transparent py-5"
+              : isDarkHeader
+                ? "bg-[#00394b] py-5"
+                : "bg-white py-5"
+        )}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
@@ -125,18 +135,18 @@ export const Header = () => {
                   return (
                     <div key={link.label} className="relative" ref={productsDropdownRef}>
                       <button
-                        onClick={() => {setProductsDropdownOpen(!productsDropdownOpen);setCompanyDropdownOpen(false);}}
+                        onClick={() => { setProductsDropdownOpen(!productsDropdownOpen); setCompanyDropdownOpen(false); }}
                         className={cn(
                           "text-lg font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
                           useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
-                        )}>
-
+                        )}
+                      >
                         {link.label}
                         <ChevronDown className={cn("w-4 h-4 transition-transform", productsDropdownOpen && "rotate-180")} />
                       </button>
 
-                      {productsDropdownOpen &&
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[620px] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+                      {productsDropdownOpen && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[780px] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden">
                           {/* Eko Shield Hero Banner */}
                           <Link
                             to="/products/eko-shield"
@@ -160,80 +170,75 @@ export const Header = () => {
                             </div>
                           </Link>
 
-                          {/* API Columns */}
-                          <div className="p-6 grid grid-cols-2 gap-6">
-                            <div>
-                              <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">Payment APIs</h4>
-                              <div className="space-y-1">
-                                {paymentApis.map((item) =>
-                                  <Link key={item.href} to={item.href} onClick={() => setProductsDropdownOpen(false)}
-                                    className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
-                                    {item.label}
-                                  </Link>
-                                )}
+                          {/* API Columns - 4 categories */}
+                          <div className="p-6 grid grid-cols-4 gap-6">
+                            {apiColumns.map((col) => (
+                              <div key={col.title}>
+                                <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">{col.title}</h4>
+                                <div className="space-y-1">
+                                  {col.items.map((item) => (
+                                    <Link
+                                      key={item.href}
+                                      to={item.href}
+                                      onClick={() => setProductsDropdownOpen(false)}
+                                      className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      {item.label}
+                                    </Link>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">Verification APIs</h4>
-                              <div className="space-y-1">
-                                {verificationApis.map((item) =>
-                                  <Link key={item.href} to={item.href} onClick={() => setProductsDropdownOpen(false)}
-                                    className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
-                                    {item.label}
-                                  </Link>
-                                )}
-                              </div>
-                            </div>
+                            ))}
                           </div>
                         </div>
-                      }
-                    </div>);
-
+                      )}
+                    </div>
+                  );
                 }
 
                 if (link.label === "Company") {
                   return (
                     <div key={link.label} className="relative" ref={companyDropdownRef}>
                       <button
-                        onClick={() => {setCompanyDropdownOpen(!companyDropdownOpen);setProductsDropdownOpen(false);}}
+                        onClick={() => { setCompanyDropdownOpen(!companyDropdownOpen); setProductsDropdownOpen(false); }}
                         className={cn(
                           "text-lg font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer",
                           useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
-                        )}>
-
+                        )}
+                      >
                         {link.label}
                         <ChevronDown className={cn("w-4 h-4 transition-transform", companyDropdownOpen && "rotate-180")} />
                       </button>
 
-                      {companyDropdownOpen &&
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[200px] bg-white rounded-2xl shadow-xl border border-border/50 p-4">
+                      {companyDropdownOpen && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[200px] bg-white rounded-2xl shadow-xl border border-border/50 p-4">
                           <div className="space-y-1">
                             {companyLinks.map((item) =>
-                          item.internal ?
-                          <Link
-                            key={item.label}
-                            to={item.href}
-                            onClick={() => setCompanyDropdownOpen(false)}
-                            className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
-
+                              item.internal ? (
+                                <Link
+                                  key={item.label}
+                                  to={item.href}
+                                  onClick={() => setCompanyDropdownOpen(false)}
+                                  className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                >
                                   {item.label}
-                                </Link> :
-
-                          <a
-                            key={item.label}
-                            href={item.href}
-                            onClick={() => setCompanyDropdownOpen(false)}
-                            className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer">
-
+                                </Link>
+                              ) : (
+                                <a
+                                  key={item.label}
+                                  href={item.href}
+                                  onClick={() => setCompanyDropdownOpen(false)}
+                                  className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                >
                                   {item.label}
                                 </a>
-
-                          )}
+                              )
+                            )}
                           </div>
                         </div>
-                      }
-                    </div>);
-
+                      )}
+                    </div>
+                  );
                 }
 
                 return (
@@ -245,11 +250,11 @@ export const Header = () => {
                     className={cn(
                       "text-lg font-medium transition-colors duration-200 cursor-pointer",
                       useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
-                    )}>
-
+                    )}
+                  >
                     {link.label}
-                  </a>);
-
+                  </a>
+                );
               })}
             </nav>
 
@@ -276,28 +281,28 @@ export const Header = () => {
 
             {/* Mobile Menu Button */}
             <button className="lg:hidden p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
-              {mobileMenuOpen ?
-              <X className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} /> :
-
-              <Menu className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
-              }
+              {mobileMenuOpen ? (
+                <X className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+              ) : (
+                <Menu className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+              )}
             </button>
           </div>
 
           {/* Mobile Menu */}
-          {mobileMenuOpen &&
-          <div className="lg:hidden mt-4 pb-4 pt-4 bg-white/95 backdrop-blur-md rounded-xl px-4 -mx-4 shadow-lg">
+          {mobileMenuOpen && (
+            <div className="lg:hidden mt-4 pb-4 pt-4 bg-white/95 backdrop-blur-md rounded-xl px-4 -mx-4 shadow-lg">
               <nav className="flex flex-col gap-2">
                 {/* Products Accordion */}
                 <button
-                onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
-                className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer">
-
+                  onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
+                  className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
+                >
                   Products
                   <ChevronDown className={cn("w-4 h-4 transition-transform", mobileProductsOpen && "rotate-180")} />
                 </button>
-                {mobileProductsOpen &&
-              <div className="pl-4 space-y-1">
+                {mobileProductsOpen && (
+                  <div className="pl-4 space-y-1">
                     {/* Eko Shield highlight */}
                     <Link to="/products/eko-shield" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 py-2.5 px-3 -mx-3 bg-gradient-to-r from-[#00394b] to-[#005a6e] rounded-lg my-1 cursor-pointer">
@@ -307,62 +312,59 @@ export const Header = () => {
                         <span className="text-[10px] ml-2 uppercase tracking-wider bg-eko-gold/20 text-eko-gold px-1.5 py-0.5 rounded-full">Featured</span>
                       </div>
                     </Link>
-                    <p className="text-xs font-semibold text-eko-gold uppercase tracking-wider py-1">Payment APIs</p>
-                    {paymentApis.map((item) =>
-                <Link key={item.href} to={item.href} onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                        {item.label}
-                      </Link>
-                )}
-                    <p className="text-xs font-semibold text-eko-gold uppercase tracking-wider py-1 mt-2">Verification APIs</p>
-                    {verificationApis.map((item) =>
-                <Link key={item.href} to={item.href} onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                        {item.label}
-                      </Link>
-                )}
+                    {apiColumns.map((col) => (
+                      <div key={col.title}>
+                        <p className="text-xs font-semibold text-eko-gold uppercase tracking-wider py-1 mt-2">{col.title}</p>
+                        {col.items.map((item) => (
+                          <Link key={item.href} to={item.href} onClick={() => setMobileMenuOpen(false)}
+                            className="block text-sm py-1.5 text-eko-slate cursor-pointer">
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ))}
                   </div>
-              }
+                )}
 
                 {/* Company Accordion */}
                 <button
-                onClick={() => setMobileCompanyOpen(!mobileCompanyOpen)}
-                className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer">
-
+                  onClick={() => setMobileCompanyOpen(!mobileCompanyOpen)}
+                  className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
+                >
                   Company
                   <ChevronDown className={cn("w-4 h-4 transition-transform", mobileCompanyOpen && "rotate-180")} />
                 </button>
-                {mobileCompanyOpen &&
-              <div className="pl-4 space-y-1">
+                {mobileCompanyOpen && (
+                  <div className="pl-4 space-y-1">
                     {companyLinks.map((item) =>
-                item.internal ?
-                <Link key={item.label} to={item.href} onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm py-1.5 text-eko-slate cursor-pointer">
+                      item.internal ? (
+                        <Link key={item.label} to={item.href} onClick={() => setMobileMenuOpen(false)}
+                          className="block text-sm py-1.5 text-eko-slate cursor-pointer">
                           {item.label}
-                        </Link> :
-
-                <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm py-1.5 text-eko-slate cursor-pointer">
+                        </Link>
+                      ) : (
+                        <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)}
+                          className="block text-sm py-1.5 text-eko-slate cursor-pointer">
                           {item.label}
                         </a>
-
-                )}
+                      )
+                    )}
                   </div>
-              }
+                )}
 
                 {/* Other Links */}
-                {navLinks.filter((l) => !l.hasDropdown).map((link) =>
-              <a
-                key={link.label}
-                href={link.href}
-                target={link.external ? "_blank" : undefined}
-                rel={link.external ? "noopener noreferrer" : undefined}
-                className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}>
-
+                {navLinks.filter((l) => !l.hasDropdown).map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target={link.external ? "_blank" : undefined}
+                    rel={link.external ? "noopener noreferrer" : undefined}
+                    className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     {link.label}
                   </a>
-              )}
+                ))}
                 <div className="flex flex-col gap-3 mt-4">
                   <a
                     href="tel:+919311019477"
@@ -382,7 +384,7 @@ export const Header = () => {
                 </div>
               </nav>
             </div>
-          }
+          )}
         </div>
       </header>
 
@@ -399,11 +401,11 @@ export const Header = () => {
             frameBorder="0"
             allow="geolocation;"
             style={{ height: "500px", width: "100%", border: "none" }}
-            src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ" />
-
+            src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+          />
         </DialogContent>
       </Dialog>
       <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
-    </>);
-
+    </>
+  );
 };
