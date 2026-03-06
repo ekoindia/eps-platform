@@ -1,10 +1,12 @@
 import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { MessageCircle, Phone } from "lucide-react";
 
 export const CTASection = () => {
-  const handleGetStarted = () => {
-    window.dispatchEvent(new CustomEvent("open-get-started"));
+  const handleChat = () => {
+    if ((window as any).$zoho?.salesiq?.chat?.start) {
+      (window as any).$zoho.salesiq.chat.start();
+    }
   };
 
   return (
@@ -18,17 +20,19 @@ export const CTASection = () => {
           Build with Eko Today
         </h2>
         <p className="text-lg md:text-xl text-white/80 mb-10 leading-relaxed">
-          Join thousands of businesses using Eko's infrastructure to power their financial operations. 
+          Join thousands of MSMEs using Eko's infrastructure to power their financial operations. 
           Get started in minutes.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="gold" size="xl" className="group" onClick={handleGetStarted}>
-            Get Started
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
-          <Button variant="hero-outline" size="xl" onClick={() => window.dispatchEvent(new CustomEvent("open-talk-to-sales"))}>
+          <Button variant="gold" size="xl" className="group" onClick={handleChat}>
             <MessageCircle className="w-5 h-5" />
-            Talk to Sales
+            Chat with Us
+          </Button>
+          <Button variant="hero-outline" size="xl" asChild>
+            <a href="tel:+919311019477">
+              <Phone className="w-5 h-5" />
+              Call Sales
+            </a>
           </Button>
         </div>
       </div>

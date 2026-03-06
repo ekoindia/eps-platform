@@ -1,22 +1,28 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
-import { Shield, Clock, Users, Server } from "lucide-react";
+import { Shield, Clock, Users, Handshake, HeadphonesIcon } from "lucide-react";
 
 const trustPillars = [
   {
     icon: Users,
-    value: "Since 2008",
-    label: "Trusted by businesses",
-    description: "Building India's financial infrastructure for over 15 years",
+    value: "Since 2007",
+    label: "Powering Bharat's MSMEs",
+    description: "Building India's financial infrastructure for micro-entrepreneurs across Tier 2 and beyond",
   },
   {
     icon: Shield,
     value: "RBI Compliant",
     label: "Regulatory adherence",
     description: [
-      "Security controls: ISO 27001",
+      "KYC & AML/CFT compliant",
       "Data residency: India",
       "Audit & reporting: logs, reconciliation, settlement reports",
     ],
+  },
+  {
+    icon: Handshake,
+    value: "50+",
+    label: "Banks, AAs & PAs",
+    description: "Working with FINO, Airtel Payments Bank, and many more to bring services to Tier 2 and beyond",
   },
   {
     icon: Clock,
@@ -25,10 +31,10 @@ const trustPillars = [
     description: "Enterprise-grade reliability you can count on",
   },
   {
-    icon: Server,
-    value: "Scalable",
-    label: "Enterprise APIs",
-    description: "Built for banks, fintechs, and large enterprises",
+    icon: HeadphonesIcon,
+    value: "Dedicated",
+    label: "Support & RMs",
+    description: "Dedicated Relationship Managers and Customer Support Representatives for every partner",
   },
 ];
 
@@ -37,15 +43,15 @@ export const WhyEkoSection = () => {
     <SectionContainer id="why-eko" className="border-b border-border">
       <SectionHeader
         badge="Why Choose Eko"
-        title="Enterprise-Grade Infrastructure. Built for Growing Businesses Across Bharat."
-        subtitle="India's most trusted financial infrastructure provider, powering millions of transactions every day."
+        title="Built for Developers from Bharat"
+        subtitle="Grow Every Entrepreneur Daily — India's most trusted financial infrastructure provider, powering millions of transactions every day."
       />
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-6">
         {trustPillars.map((pillar, index) => (
           <div
             key={pillar.label}
-            className="group text-center p-8 rounded-2xl bg-card border border-border/50 card-hover"
+            className="group text-center p-6 rounded-2xl bg-card border border-border/50 card-hover"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="icon-container mx-auto mb-5 group-hover:scale-110 transition-transform duration-300">
