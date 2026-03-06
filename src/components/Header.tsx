@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { openZohoChat } from "@/lib/zoho-form";
 import { EkoLogo } from "@/components/EkoLogo";
 import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
 import {
@@ -270,11 +271,7 @@ export const Header = () => {
                 <Phone className="w-4 h-4" />
                 +91 9311019477
               </a>
-              <Button variant="gold" size="sm" onClick={() => {
-                if ((window as any).$zoho?.salesiq?.chat?.start) {
-                  (window as any).$zoho.salesiq.chat.start();
-                }
-              }} className="cursor-pointer">
+              <Button variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
                 Get Started
               </Button>
             </div>
@@ -375,9 +372,7 @@ export const Header = () => {
                   </a>
                   <Button variant="gold" size="sm" onClick={() => {
                     setMobileMenuOpen(false);
-                    if ((window as any).$zoho?.salesiq?.chat?.start) {
-                      (window as any).$zoho.salesiq.chat.start();
-                    }
+                    openZohoChat();
                   }} className="cursor-pointer">
                     Get Started
                   </Button>

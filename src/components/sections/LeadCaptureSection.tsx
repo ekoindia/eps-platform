@@ -4,9 +4,7 @@ import { MessageCircle, Phone } from "lucide-react";
 
 export const LeadCaptureSection = () => {
   const handleChat = () => {
-    if ((window as any).$zoho?.salesiq?.chat?.start) {
-      (window as any).$zoho.salesiq.chat.start();
-    }
+    openZohoChat();
   };
 
   return (
