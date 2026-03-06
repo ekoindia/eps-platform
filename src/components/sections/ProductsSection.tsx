@@ -10,6 +10,7 @@ import {
   Banknote,
   Smartphone,
   Receipt,
+  IndianRupee,
   Send,
   FileCheck,
   User,
