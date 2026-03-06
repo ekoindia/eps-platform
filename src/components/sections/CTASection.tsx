@@ -1,6 +1,7 @@
 import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Phone } from "lucide-react";
+import { openZohoChat } from "@/lib/zoho-form";
 
 export const CTASection = () => {
   const handleChat = () => {
