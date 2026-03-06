@@ -18,7 +18,7 @@ import {
   Plane,
   FolderCheck,
   ArrowRight,
-  IndianRupee,
+  Landmark,
   Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 type ProductTab = "bc" | "payments" | "collection" | "verification" | "shield";
 
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
-  { id: "bc", label: "BC APIs", icon: IndianRupee },
+  { id: "bc", label: "BC APIs", icon: Landmark },
   { id: "payments", label: "Payment APIs", icon: CreditCard },
   { id: "collection", label: "Collection APIs", icon: Receipt },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
