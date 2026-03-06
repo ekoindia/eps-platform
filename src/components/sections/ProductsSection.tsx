@@ -10,6 +10,7 @@ import {
   Banknote,
   Smartphone,
   Receipt,
+  IndianRupee,
   Send,
   FileCheck,
   User,
@@ -28,7 +29,7 @@ type ProductTab = "bc" | "payments" | "collection" | "verification" | "shield";
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
   { id: "bc", label: "BC APIs", icon: Landmark },
   { id: "payments", label: "Payment APIs", icon: CreditCard },
-  { id: "collection", label: "Collection APIs", icon: Receipt },
+  { id: "collection", label: "Collection APIs", icon: IndianRupee },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   { id: "shield", label: "Eko Shield", icon: ShieldCheck },
 ];
