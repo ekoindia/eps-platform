@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
 import { EkoLogo } from "@/components/EkoLogo";
 import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import {
   Dialog,
   DialogContent,
