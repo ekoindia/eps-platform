@@ -157,7 +157,7 @@ export const ProductsSection = () => {
     <SectionContainer id="products">
       <SectionHeader
         badge="Our Products"
-        title="APIs to Build Your Own Fintech Business"
+        title="APIs to Integrate to Grow your Business"
         subtitle="From BC services to payments and verifications, everything you need to build and scale your fintech operations."
       />
 
