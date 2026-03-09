@@ -262,6 +262,7 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
+              <LanguageSelector isLight={useWhiteText} />
               <a
                 href="tel:+919311019477"
                 className={cn(
