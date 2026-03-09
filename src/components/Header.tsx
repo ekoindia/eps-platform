@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
 import { EkoLogo } from "@/components/EkoLogo";
 import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import {
   Dialog,
   DialogContent,
@@ -261,6 +262,7 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
+              <LanguageSelector isLight={useWhiteText} />
               <a
                 href="tel:+919311019477"
                 className={cn(
@@ -363,6 +365,7 @@ export const Header = () => {
                   </a>
                 ))}
                 <div className="flex flex-col gap-3 mt-4">
+                  <LanguageSelector isLight={false} />
                   <a
                     href="tel:+919311019477"
                     className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"

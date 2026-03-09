@@ -352,3 +352,11 @@ p {
   line-height: 1.5;
   margin-bottom: 1em;
 }
+
+/* Hide Google Translate default bar */
+.goog-te-banner-frame, .skiptranslate {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
