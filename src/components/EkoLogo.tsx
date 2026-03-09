@@ -10,18 +10,18 @@ interface EkoLogoProps {
 export const EkoLogo = ({ variant = "main", className = "", isLight = false }: EkoLogoProps) => {
   if (variant === "shield") {
     return (
-      <img 
-        src={ekoShieldLogo} 
-        alt="Eko Shield Logo" 
+      <img
+        src={ekoShieldLogo}
+        alt="Eko Shield Logo"
         className={className}
       />
     );
   }
 
   return (
-    <img 
-      src={ekoLogo} 
-      alt="Eko Platform Services Logo" 
+    <img
+      src={ekoLogo}
+      alt="Eko Platform Services Logo"
       className={className}
       style={isLight ? { filter: "brightness(0) invert(1)" } : undefined}
     />
