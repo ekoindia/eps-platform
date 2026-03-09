@@ -291,7 +291,7 @@ export const Header = () => {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="lg:hidden mt-4 pb-4 pt-4 bg-white/95 backdrop-blur-md rounded-xl px-4 -mx-4 shadow-lg">
-              <nav className="flex flex-col gap-2">
+              <nav className="flex flex-col gap-2 max-h-[calc(95vh-90px)] max-h-[80vh] overflow-y-auto">
                 {/* Products Accordion */}
                 <button
                   onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
@@ -304,7 +304,7 @@ export const Header = () => {
                   <div className="pl-4 space-y-1">
                     {/* Eko Shield highlight */}
                     <Link to="/products/eko-shield" onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 py-2.5 px-3 -mx-3 bg-gradient-to-r from-[#00394b] to-[#005a6e] rounded-lg my-1 cursor-pointer">
+                      className="flex items-center gap-3 py-2.5 px-3 -mx-3 bg-gradient-to-r from-[#00394b] to-[#005a6e] rounded-lg my-1 cursor-pointer max-w-full">
                       <Shield className="w-5 h-5 text-eko-gold shrink-0" />
                       <div>
                         <span className="text-sm font-semibold text-white">Eko Shield</span>
