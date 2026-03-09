@@ -33,7 +33,7 @@ const useCases = [
   {
     icon: Plane,
     title: "Travel Agents & Distributors",
-    description: "Enable instant money transfers, identity verification, and digital payments for your customers in Tier 2+ cities."
+    description: "Launch your own Travel portal with a ready-to-use Platform for all travel booking need Like Hotel, Fights, Bus and Train."
   },
   {
     icon: CreditCard,
