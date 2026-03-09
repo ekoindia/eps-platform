@@ -4,10 +4,13 @@ import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { openZohoChat } from "@/lib/zoho-form";
 import {
   ArrowRight, Shield, Zap, ShieldCheck, Eye, TrendingDown,
   Landmark, CreditCard, Users, Truck, ShoppingBag, Plane, Leaf, Building2,
   X, CheckCircle, AlertTriangle, Sparkles, Phone, MapPin, Mail,
+  IdCard, FileText, BadgeCheck, FileCheck, FolderCheck, Building,
+  Smartphone, Briefcase, Car, UserCheck, Globe, Stethoscope, Receipt,
 } from "lucide-react";
 // import heroDashboard from "@/assets/hero-dashboard.jpg";
 import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png";
@@ -46,12 +49,70 @@ const industries = [
   { icon: Building2, name: "Insurance", tagline: "Instant claim verification", pain: "Fraudulent claims with fake documents cost insurers millions annually. Manual verification creates claim processing backlogs.", solution: "Eko Shield automates claimant identity and document verification, enabling instant claim processing while catching fraud before payout.", benefits: ["Instant claimant verification", "Document fraud detection", "Reduce claim processing time", "Automated audit compliance"] },
 ];
 
+const verificationCategories = [
+  { id: "identity", label: "Identity", icon: IdCard },
+  { id: "gstin", label: "GSTIN", icon: Receipt },
+  { id: "financial", label: "Financial", icon: Building },
+  { id: "employment", label: "Employment", icon: Briefcase },
+  { id: "vehicle", label: "Vehicle", icon: Car },
+  { id: "digital", label: "Digital", icon: Globe },
+  { id: "healthcare", label: "Healthcare", icon: Stethoscope },
+];
+
+const identityProducts = [
+  { icon: IdCard, name: "PAN Lite", description: "Verify PAN number with name and date of birth check instantly." },
+  { icon: FileCheck, name: "PAN Advanced", description: "Get detailed PAN verification with identity and status check." },
+  { icon: BadgeCheck, name: "PAN Comprehensive", description: "Complete PAN verification with detailed compliance insights." },
+  { icon: FileText, name: "PAN Verify", description: "Verify PAN holder name and status instantly." },
+  { icon: Plane, name: "Passport", description: "Validate passport number and holder details." },
+  { icon: FolderCheck, name: "CKYC Download", description: "Download Central KYC record using CKYC number or PAN." },
+];
+
+const gstinProducts = [
+  { icon: Receipt, name: "GSTIN Verify", description: "Check GST registration details of any business using GSTIN." },
+  { icon: Building2, name: "GSTIN by PAN", description: "Find all GST numbers linked to a PAN." },
+  { icon: FileText, name: "GST Basic", description: "Fetch GST registration and basic business details." },
+  { icon: Building, name: "GST by PAN", description: "Get GST registrations linked to a PAN number." },
+  { icon: FileCheck, name: "GST Advanced", description: "Access detailed GST payment and filing information." },
+];
+
+const financialProducts = [
+  { icon: Building, name: "Bank Account Verify", description: "Verify bank account holder name and account details instantly." },
+  { icon: Zap, name: "Instant Account Verify", description: "Instantly verify bank account without penny debit." },
+  { icon: CreditCard, name: "Penny Drop Verify", description: "Verify account ownership through small credit transaction." },
+  { icon: Smartphone, name: "Mobile to UPI", description: "Find UPI ID linked to a mobile number." },
+];
+
+const employmentProducts = [
+  { icon: Briefcase, name: "Employment Insights", description: "Fetch employment and professional details of a person." },
+  { icon: Users, name: "Name Match", description: "Compare two names and check similarity score." },
+  { icon: FileCheck, name: "ITR Compliance", description: "Check Income Tax Return filing status." },
+];
+
+const vehicleProducts = [
+  { icon: Car, name: "Driving License", description: "Check driving license validity and holder details." },
+  { icon: AlertTriangle, name: "E-Challan", description: "Check pending traffic challans for a vehicle." },
+];
+
+const digitalProducts = [
+  { icon: MapPin, name: "IP Intelligence", description: "Check IP location and risk details." },
+  { icon: Globe, name: "Reverse Geocode", description: "Convert latitude and longitude into full address." },
+  { icon: Mail, name: "Email Verify", description: "Validate email authenticity and deliverability." },
+];
+
+const healthcareProducts = [
+  { icon: Stethoscope, name: "Doctor Verify", description: "Check doctor registration status with medical council." },
+];
+
+type VerificationCategory = "identity" | "gstin" | "financial" | "employment" | "vehicle" | "digital" | "healthcare";
+
 
 
 /* ─── Page Component ─── */
 
 const EkoShieldPage = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<typeof industries[0] | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<VerificationCategory>("identity");
 
 
 
@@ -90,10 +151,10 @@ const EkoShieldPage = () => {
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                 className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-                <Button variant="gold" size="xl" onClick={() => document.getElementById('shield-demo')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Button variant="gold" size="xl" onClick={() => openZohoChat()}>
                   Request a Demo <ArrowRight className="w-5 h-5" />
                 </Button>
-                <Button variant="hero-outline" size="xl" onClick={() => document.getElementById('shield-products')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Button variant="hero-outline" size="xl" onClick={() => document.getElementById('kyc-products')?.scrollIntoView({ behavior: 'smooth' })}>
                   View Products
                 </Button>
               </motion.div>
@@ -250,20 +311,131 @@ const EkoShieldPage = () => {
           </div>
         </section>
 
-        {/* ─── Demo Section ─── */}
-        <section id="shield-demo" className="py-20 lg:py-28 hero-gradient hero-pattern relative overflow-hidden">
+        {/* ─── KYC & Verification Products ─── */}
+        <section id="kyc-products" className="py-20 lg:py-28 hero-gradient hero-pattern relative overflow-hidden">
           <div className="container mx-auto px-4 relative z-10">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Complete KYC & Verification Suite</h2>
+              <p className="text-white/80 max-w-2xl mx-auto">24 verification products across 7 categories. One unified platform.</p>
+            </motion.div>
+
+            {/* Category Tabs */}
+            <div className="flex flex-wrap justify-center gap-2 mb-12">
+              {verificationCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id as VerificationCategory)}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-all duration-200 ${
+                    selectedCategory === category.id
+                      ? "bg-eko-gold text-eko-navy shadow-lg"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  <category.icon className="w-4 h-4" />
+                  {category.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Product Grid */}
+            <div className="animate-fade-up">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                {selectedCategory === "identity" && identityProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">IDENTITY</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+                {selectedCategory === "gstin" && gstinProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">GSTIN</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+                {selectedCategory === "financial" && financialProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">FINANCIAL</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+                {selectedCategory === "employment" && employmentProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">EMPLOYMENT</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+                {selectedCategory === "vehicle" && vehicleProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">VEHICLE</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+                {selectedCategory === "digital" && digitalProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">DIGITAL</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+                {selectedCategory === "healthcare" && healthcareProducts.map((product, i) => (
+                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                    className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <product.icon className="h-6 w-6 text-eko-gold" />
+                    </div>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">HEALTHCARE</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
+                    <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Demo Section ─── */}
+        <section id="shield-demo" className="py-20 lg:py-28 bg-background">
+          <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
               <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-eko-gold/10 backdrop-blur-sm border border-eko-gold/20 mb-6">
                   <Sparkles className="w-4 h-4 text-eko-gold" />
-                  <span className="text-sm font-medium text-white">Start Your Free Trial</span>
+                  <span className="text-sm font-medium text-eko-gold">Start Your Free Trial</span>
                 </div>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to Take Control of Your Verifications?</h2>
-                <p className="text-lg text-white/80 mb-8">Start your 7-day industry trial. See how Eko Shield replaces fragmented verification with one scalable trust infrastructure.</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Ready to Take Control of Your Verifications?</h2>
+                <p className="text-lg text-muted-foreground mb-8">Start your 7-day industry trial. See how Eko Shield replaces fragmented verification with one scalable trust infrastructure.</p>
                 <ul className="space-y-3 mb-8">
                   {["No credit card required", "Setup in under 30 minutes", "Full dashboard access", "Dedicated onboarding support"].map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-white/90">
+                    <li key={item} className="flex items-center gap-2 text-foreground/80">
                       <CheckCircle className="h-5 w-5 text-eko-gold shrink-0" />
                       <span className="text-sm">{item}</span>
                     </li>
@@ -272,8 +444,8 @@ const EkoShieldPage = () => {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                <div className="bg-background rounded-2xl p-6 shadow-2xl overflow-hidden">
-                  <h3 className="text-xl font-bold text-foreground mb-4">Get Started with Eko Shield</h3>
+                <div className="bg-card rounded-2xl p-6 shadow-2xl overflow-hidden border border-border">
+                  <h3 className="text-xl font-bold text-card-foreground mb-4">Get Started with Eko Shield</h3>
                   <iframe
                     aria-label="New Eko.in API Signup"
                     frameBorder="0"
