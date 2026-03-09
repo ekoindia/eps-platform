@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
+import { openZohoChat } from "@/lib/zoho-form";
 import heroImage from "@/assets/hero-network.jpg";
 
 export const HeroSection = () => {
@@ -45,10 +46,8 @@ export const HeroSection = () => {
                 Explore APIs
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="hero-outline" size="xl" asChild>
-                <a href="tel:+919311019477">
-                  Talk to Sales
-                </a>
+              <Button variant="hero-outline" size="xl" onClick={() => openZohoChat()}>
+                Talk to Sales
               </Button>
             </div>
 
