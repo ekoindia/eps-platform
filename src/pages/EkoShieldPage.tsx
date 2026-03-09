@@ -112,8 +112,8 @@ const EkoShieldPage = () => {
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }}
               className="max-w-5xl mx-auto mt-16 relative">
               <div className="absolute inset-0 bg-eko-gold/10 blur-[80px] rounded-3xl" />
-              <div className="relative rounded-2xl overflow-hidden">
-                <img src={heroDashboard} alt="Eko Shield verification dashboard" className="w-full h-auto" loading="eager" />
+              <div className="relative rounded-2xl overflow-hidden flex justify-center">
+                <img src={heroDashboard} alt="Eko Shield verification dashboard" className="w-full h-auto max-w-[800px]" loading="eager" />
               </div>
             </motion.div>
           </div>
