@@ -148,7 +148,7 @@ export const Header = () => {
                       </button>
 
                       {productsDropdownOpen && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[780px] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 w-[90vw] lg:w-[780px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden z-50">
                           {/* Eko Shield Hero Banner */}
                           <Link
                             to="/products/eko-shield"
@@ -213,7 +213,7 @@ export const Header = () => {
                       </button>
 
                       {companyDropdownOpen && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[200px] bg-white rounded-2xl shadow-xl border border-border/50 p-4">
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 w-[200px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 p-4 z-50">
                           <div className="space-y-1">
                             {companyLinks.map((item) =>
                               item.internal ? (
