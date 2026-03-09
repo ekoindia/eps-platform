@@ -61,7 +61,7 @@ export const Footer = () => {
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="mb-6">
-              <EkoLogo className="h-16 w-auto" isLight />
+              <EkoLogo className="h-16 w-auto" />
             </div>
             <p className="text-white/70 mb-6 max-w-sm leading-relaxed text-xs text-justify">
               Eko's mission is to provide Distribution as a Service for brands to reach the next billion customers through deeply embedded-in-the-community micro-entrepreneurs as influencers, facilitators and resellers. We use simple digital tools to help these entrepreneurs earn more, get fair access to capital and run & grow their businesses better every day.
