@@ -9,7 +9,8 @@ import {
   Landmark, CreditCard, Users, Truck, ShoppingBag, Plane, Leaf, Building2,
   X, CheckCircle, AlertTriangle, Sparkles, Phone, MapPin, Mail,
 } from "lucide-react";
-import heroDashboard from "@/assets/hero-dashboard.jpg";
+// import heroDashboard from "@/assets/hero-dashboard.jpg";
+import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png";
 import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 /* ─── Data ─── */
@@ -111,7 +112,7 @@ const EkoShieldPage = () => {
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }}
               className="max-w-5xl mx-auto mt-16 relative">
               <div className="absolute inset-0 bg-eko-gold/10 blur-[80px] rounded-3xl" />
-              <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-gold">
+              <div className="relative rounded-2xl overflow-hidden">
                 <img src={heroDashboard} alt="Eko Shield verification dashboard" className="w-full h-auto" loading="eager" />
               </div>
             </motion.div>
