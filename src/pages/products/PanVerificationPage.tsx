@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { CreditCard, User, Calendar, CheckCircle, Fingerprint } from "lucide-react";
+import panImg from "@/assets/pan-verification.svg";
 
 const PanVerificationPage = () => {
   const faqData = [
@@ -58,6 +59,7 @@ const PanVerificationPage = () => {
         heroSubtitle="Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding."
         category="verification"
         docsUrl="https://eko.in/developers/eps/pan-verification-api/"
+        heroImage={panImg}
         overview="The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms."
         keyBenefits={[
           "Instant PAN validation",
