@@ -1,6 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import upiVerifyImg from "@/assets/dl-verification.png";
+import upiVerifyImg from "@/assets/upi-hero.png";
 
 const UpiVerificationPage = () => {
   return (
@@ -22,6 +22,7 @@ const UpiVerificationPage = () => {
         heroSubtitle="Validate UPI IDs in real time and retrieve a UPI ID using a phone number to reduce failures and improve payment accuracy."
         category="verification"
         docsUrl="https://eko.in/developers/eps/upi-id-verification-api/"
+        heroImage={upiVerifyImg}
         overview="Eko's UPI ID Verification API is designed for payment systems that need real-time UPI ID validation. It supports verifying a UPI ID and retrieving a UPI ID using a phone number—helping you confirm payee identifiers before initiating transactions."
         keyBenefits={[
           "Real-time UPI ID verification",
