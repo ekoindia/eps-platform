@@ -28,6 +28,7 @@ const paymentApis = [
 const collectionApis = [
   { label: "BBPS API", href: "/products/bbps-api" },
   { label: "CMS API", href: "/products/cms-api" },
+  { label: "QR API", href: "/products/qr-payment-api" },
 ];
 
 const verificationApis = [
