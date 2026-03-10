@@ -25,11 +25,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ProductTab = "bc" | "payments" | "collection" | "verification" | "shield";
+type ProductTab = "bc" | "payments" | "bbps" | "collection" | "verification" | "shield";
 
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
   { id: "bc", label: "BC APIs", icon: Landmark },
   { id: "payments", label: "Payment APIs", icon: CreditCard },
+  { id: "bbps", label: "BBPS APIs", icon: Receipt },
   { id: "collection", label: "Collection APIs", icon: IndianRupee },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   { id: "shield", label: "Eko Shield", icon: ShieldCheck },
