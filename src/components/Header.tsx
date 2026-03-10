@@ -16,19 +16,19 @@ import {
 } from "@/components/ui/dialog";
 
 const bcApis = [
-  { label: "DMT API", href: "/products/dmt-api" },
-  { label: "AePS API", href: "/products/aeps-api" },
+  { label: "DMT", href: "/products/dmt-api" },
+  { label: "AePS", href: "/products/aeps-api" },
 ];
 
 const paymentApis = [
-  { label: "Payout API", href: "/products/payment-api" },
-  { label: "UPI Payout API", href: "/products/upi-payout-api" },
+  { label: "Payout", href: "/products/payment-api" },
+  { label: "UPI Payout", href: "/products/upi-payout-api" },
 ];
 
 const collectionApis = [
-  { label: "BBPS API", href: "/products/bbps-api" },
-  { label: "CMS API", href: "/products/cms-api" },
-  { label: "QR API", href: "/products/qr-payment-api" },
+  { label: "BBPS", href: "/products/bbps-api" },
+  { label: "CMS", href: "/products/cms-api" },
+  { label: "QR", href: "/products/qr-payment-api" },
 ];
 
 const verificationApis = [
@@ -108,7 +108,7 @@ export const Header = () => {
     { title: "BC APIs", items: bcApis },
     { title: "Payment APIs", items: paymentApis },
     { title: "Collection APIs", items: collectionApis },
-    { title: "Verification APIs", items: verificationApis },
+    { title: "Verification APIs", items: verificationApis, maxItems: 6, moreLink: { label: "More...", href: "https://developers.eko.in/v3/reference/bank-account-verification-sync" } },
   ];
 
   return (
@@ -174,23 +174,38 @@ export const Header = () => {
 
                           {/* API Columns - 4 categories */}
                           <div className="p-6 grid grid-cols-4 gap-6">
-                            {apiColumns.map((col) => (
-                              <div key={col.title}>
-                                <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">{col.title}</h4>
-                                <div className="space-y-1">
-                                  {col.items.map((item) => (
-                                    <Link
-                                      key={item.href}
-                                      to={item.href}
-                                      onClick={() => setProductsDropdownOpen(false)}
-                                      className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                                    >
-                                      {item.label}
-                                    </Link>
-                                  ))}
+                            {apiColumns.map((col) => {
+                              const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
+                              const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;
+                              return (
+                                <div key={col.title}>
+                                  <h4 className="text-xs font-semibold text-eko-gold uppercase tracking-wider mb-3">{col.title}</h4>
+                                  <div className="space-y-1">
+                                    {displayItems.map((item) => (
+                                      <Link
+                                        key={item.href}
+                                        to={item.href}
+                                        onClick={() => setProductsDropdownOpen(false)}
+                                        className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                      >
+                                        {item.label}
+                                      </Link>
+                                    ))}
+                                    {showMoreLink && (
+                                      <a
+                                        href={col.moreLink.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={() => setProductsDropdownOpen(false)}
+                                        className="block px-3 py-2 text-sm text-eko-gold hover:text-eko-gold/80 font-medium transition-colors cursor-pointer"
+                                      >
+                                        {col.moreLink.label}
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -311,17 +326,27 @@ export const Header = () => {
                         <span className="text-[10px] ml-2 uppercase tracking-wider bg-eko-gold/20 text-eko-gold px-1.5 py-0.5 rounded-full">Featured</span>
                       </div>
                     </Link>
-                    {apiColumns.map((col) => (
-                      <div key={col.title}>
-                        <p className="text-xs font-semibold text-eko-gold uppercase tracking-wider py-1 mt-2">{col.title}</p>
-                        {col.items.map((item) => (
-                          <Link key={item.href} to={item.href} onClick={() => setMobileMenuOpen(false)}
-                            className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    ))}
+                    {apiColumns.map((col) => {
+                      const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
+                      const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;
+                      return (
+                        <div key={col.title}>
+                          <p className="text-xs font-semibold text-eko-gold uppercase tracking-wider py-1 mt-2">{col.title}</p>
+                          {displayItems.map((item) => (
+                            <Link key={item.href} to={item.href} onClick={() => setMobileMenuOpen(false)}
+                              className="block text-sm py-1.5 text-eko-slate cursor-pointer">
+                              {item.label}
+                            </Link>
+                          ))}
+                          {showMoreLink && (
+                            <a href={col.moreLink.href} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}
+                              className="block text-sm py-1.5 text-eko-gold font-medium cursor-pointer">
+                              {col.moreLink.label}
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
