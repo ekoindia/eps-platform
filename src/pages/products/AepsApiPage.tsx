@@ -26,6 +26,7 @@ const AepsApiPage = () => {
         heroSubtitle="Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication."
         category="payment"
         docsUrl="https://developers.eko.in/docs/aeps"
+        heroImage={aepsImg}
         features={[
           {
             title: "Cash Withdrawal",
