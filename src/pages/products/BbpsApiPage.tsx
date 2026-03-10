@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Receipt, Zap, Shield, CreditCard, Smartphone, Car, Droplets, Flame, Wifi, Building, CheckCircle, Users } from "lucide-react";
+import bbpsImg from "@/assets/utility-bill-payment.svg";
 
 const BbpsApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const BbpsApiPage = () => {
         heroSubtitle="The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services."
         category="payment"
         docsUrl="https://developers.eko.in/reference/bbps-1"
+        heroImage={bbpsImg}
         types={[
           { label: "Electricity", icon: Zap },
           { label: "Gas", icon: Flame },
