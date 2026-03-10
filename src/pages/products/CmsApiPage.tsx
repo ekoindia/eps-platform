@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Banknote, Shield, Zap, CheckCircle, Users, MapPin, FileText, Clock } from "lucide-react";
+import cmsImg from "@/assets/assisted-cash-management.svg";
 
 const CmsApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const CmsApiPage = () => {
         heroSubtitle="Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility."
         category="payment"
         docsUrl="https://developers.eko.in/docs/cms"
+        heroImage={cmsImg}
         features={[
           {
             title: "Field Agent App",
