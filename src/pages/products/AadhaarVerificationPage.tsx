@@ -1,5 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
+import aadhaarImg from "@/assets/aadhaar-verification.svg";
 
 const AadhaarVerificationPage = () => {
   return (
