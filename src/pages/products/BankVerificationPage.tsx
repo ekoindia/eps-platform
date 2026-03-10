@@ -26,6 +26,7 @@ const BankVerificationPage = () => {
         heroSubtitle="Verify bank account details before payouts to prevent failed transactions and reduce operational costs. Instant verification with penny drop and account holder name matching."
         category="verification"
         docsUrl="https://developers.eko.in/docs/bank-verification"
+        heroImage={bankImg}
         features={[
           {
             title: "Penny Drop Verification",
