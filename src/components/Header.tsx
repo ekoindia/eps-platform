@@ -21,7 +21,6 @@ const bcApis = [
 ];
 
 const paymentApis = [
-  { label: "Payment Gateway", href: "/products/payment-api" },
   { label: "QR Payment API", href: "/products/qr-payment-api" },
   { label: "UPI Payout API", href: "/products/upi-payout-api" },
 ];
