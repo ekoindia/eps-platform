@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Building, FileText } from "lucide-react";
+import gstImg from "@/assets/gst-verification.png";
 
 const GstVerificationPage = () => {
   return (
