@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { QrCode, Shield, Zap, CheckCircle, Smartphone, CreditCard, BarChart3, RefreshCw } from "lucide-react";
+import qrImg from "@/assets/qr-payment.png";
 
 const QrPaymentApiPage = () => {
   return (
