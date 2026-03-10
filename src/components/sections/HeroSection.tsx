@@ -38,7 +38,7 @@ export const HeroSection = () => {
 
             <p className="text-lg md:text-xl text-white/80 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
               BC, Identity, Payment & Collection solutions & APIs for MSMEs
-              to scale their business across Tier 2 and beyond.
+              to scale their business across Tier-2 and beyond.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
