@@ -1,6 +1,6 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
-import upiVerifyImg from "@/assets/dl-verification.png";
+import upiVerifyImg from "@/assets/upi-hero.png";
 
 const UpiVerificationPage = () => {
   return (
