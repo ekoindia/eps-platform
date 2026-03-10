@@ -548,6 +548,54 @@ export const ProductPageLayout = ({
             ))}
           </div>
         </SectionContainer>
+
+        {/* Lead Form Section - Below FAQ */}
+        {heroImage && (
+          <SectionContainer variant="navy" id="lead-form" className="relative overflow-hidden">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
+            
+            <div className="relative grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  Get API Access
+                </h2>
+                <p className="text-white/70 text-lg mb-6 leading-relaxed">
+                  Sign up now and start integrating in minutes. Our team will help you go live quickly.
+                </p>
+                <ul className="space-y-3">
+                  {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-white/80">
+                      <CheckCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="relative">
+                <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
+                <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
+                    <h3 className="text-lg font-bold text-white">
+                      {leadForm?.title || "Get API Access"}
+                    </h3>
+                    <p className="text-white/70 text-sm">Get started in 10 minutes</p>
+                  </div>
+                  <div className="p-2">
+                    <iframe
+                      aria-label="New Eko.in API Signup"
+                      frameBorder="0"
+                      allow="geolocation;"
+                      style={{ height: "500px", width: "100%", border: "none" }}
+                      src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SectionContainer>
+        )}
       </main>
       
       <Footer />
