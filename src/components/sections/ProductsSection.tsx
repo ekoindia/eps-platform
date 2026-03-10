@@ -52,12 +52,6 @@ const bcProducts = [
 
 const paymentProducts = [
   {
-    title: "QR Payment",
-    icon: Smartphone,
-    description: "Generate and manage QR codes for seamless payment collection.",
-    features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
-  },
-  {
     title: "Payout / UPI Payout",
     icon: Send,
     description: "Bulk disbursements to bank accounts, UPI, and wallets.",
