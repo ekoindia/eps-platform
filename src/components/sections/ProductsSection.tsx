@@ -125,7 +125,12 @@ const handleChat = () => {
 
 const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
   <div className="animate-fade-up">
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className={cn(
+      "grid gap-6",
+      products.length <= 2
+        ? "md:grid-cols-2 max-w-2xl mx-auto"
+        : "md:grid-cols-2 lg:grid-cols-3"
+    )}>
       {products.map((product) => (
         <ProductCard key={product.title} {...product} />
       ))}
