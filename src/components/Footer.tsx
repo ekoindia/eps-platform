@@ -67,13 +67,13 @@ export const Footer = () => {
               “Grow every entrepreneur daily”
             </p>
             <div className="space-y-3 text-sm">
-              <a href="mailto:support@eko.in" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
+              <a href="mailto:api.sales@eko.co.in" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Mail className="w-4 h-4 text-eko-gold" />
-                <span>support@eko.in</span>
+                <span>api.sales@eko.co.in</span>
               </a>
               <a href="tel:+919311019477" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Phone className="w-4 h-4 text-eko-gold" />
-                <span>+91 93110 19477</span>
+                <span>+91 931 101 9477</span>
               </a>
               <a href="https://share.google/WoimNHTmqaNqJnKxs" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <MapPin className="w-4 h-4 text-eko-gold mt-0.5" />
