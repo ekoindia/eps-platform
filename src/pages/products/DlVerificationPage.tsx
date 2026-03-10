@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { CreditCard } from "lucide-react";
+import dlImg from "@/assets/dl-verification-2.png";
 
 const DlVerificationPage = () => {
   return (
