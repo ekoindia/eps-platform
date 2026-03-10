@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Send, Shield, Zap, CheckCircle, Users, Clock, FileText, Wallet } from "lucide-react";
+import upiPayoutImg from "@/assets/salary-disbursal.svg";
 
 const UpiPayoutApiPage = () => {
   return (
