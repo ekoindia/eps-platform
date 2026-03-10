@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Building, Shield, Zap, CheckCircle, CreditCard, FileText, Clock, Database, Hash, User } from "lucide-react";
+import bankImg from "@/assets/bank-verification.svg";
 
 const BankVerificationPage = () => {
   return (
