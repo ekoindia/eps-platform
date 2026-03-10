@@ -1,42 +1,43 @@
 
 
-## Plan: Hero Image + Relocated Lead Form
+## Plan: Header Logo & Styling Overhaul
 
-### What changes
+### Current State
+- Header has `h-16` logo, white background on homepage, `#00394b` on legal pages
+- EkoLogo `isLight` prop exists but is ignored — the same SVG is always rendered
+- The SVG logo has gold icon + white "PLATFORM SERVICES" text (cls-3)
+- On homepage, the hero section below has a dark gradient background, but the header is solid white
 
-**1. Copy the SVG asset into the project**
-- Copy `user-uploads://money-transfer-api-opt.svg` to `src/assets/money-transfer-api.svg`
+### Changes
 
-**2. Update `ProductPageLayout.tsx`**
+#### 1. EkoLogo — implement `isLight` prop
+- When `isLight=true`, apply CSS filter `brightness(0) invert(1)` to make the entire logo white
+- This avoids needing a separate white SVG asset
 
-- **Hero section**: Add an optional `heroImage` prop (string). When provided, render the image on the right side instead of the lead form. Apply a 3D perspective transform (`perspective`, `rotateY`, `rotateX`) with a subtle floating animation. Use `drop-shadow` and remove any background from the SVG so it blends with the dark navy hero.
+#### 2. Header — transparent background on homepage (not scrolled)
+- On the homepage (`/`), when not scrolled: set header background to `transparent` so the dark hero gradient shows through
+- Logo: white (`isLight=true`), size stays `h-16`
+- Nav text: white (`text-white`)
+- Mobile menu icon: white
 
-- **New "Get API Access" section**: Move the existing lead form (Zoho iframe) into a new section placed **after the FAQ section and before the Footer**. Style it as a full-width CTA section with the navy gradient background, keeping the same form card design.
+#### 3. Header — scrolled state (all pages)
+- Background: `bg-white/95 backdrop-blur-md shadow-sm`
+- Logo: original colors (`isLight=false`), size stays `h-16`
+- Nav text: `text-eko-slate` (grey, current default)
 
-- Update the sticky CTA bar's `#lead-form` anchor to point to the new bottom section.
+#### 4. Header — dark header pages (legal, about, blog, press) when not scrolled
+- Keep existing `bg-[#00394b]` behavior
+- Logo: white, nav text: white (already working)
 
-**3. Update `DmtApiPage.tsx`**
-- Import the SVG and pass `heroImage` prop to `ProductPageLayout`.
-
-### Layout change summary
-
+### Logic Summary
 ```text
-BEFORE:                          AFTER:
-┌──────────┬──────────┐          ┌──────────┬──────────┐
-│ Hero Text│ Lead Form│          │ Hero Text│ 3D Image │
-└──────────┴──────────┘          └──────────┴──────────┘
-│  Features, Benefits  │          │  Features, Benefits  │
-│  Integration, FAQ    │          │  Integration, FAQ    │
-└──────────────────────┘          ├──────────────────────┤
-│       Footer         │          │  Lead Form (CTA)     │
-└──────────────────────┘          ├──────────────────────┤
-                                  │       Footer         │
-                                  └──────────────────────┘
+Homepage, not scrolled  → bg-transparent, white logo, white text
+Dark pages, not scrolled → bg-[#00394b], white logo, white text
+All other pages, not scrolled → bg-white, original logo, grey text
+Any page, scrolled → bg-white/95, original logo, grey text
 ```
 
-### 3D image effect
-- CSS `transform: perspective(1000px) rotateY(-5deg) rotateX(5deg)` with hover removing the rotation
-- Subtle `drop-shadow(0 25px 50px rgba(0,0,0,0.5))` for depth
-- `animate-float` for gentle movement
-- The SVG has a transparent/light background that will need a `filter: drop-shadow` to pop against the dark navy
+### Files Modified
+- `src/components/EkoLogo.tsx` — add CSS filter for `isLight`
+- `src/components/Header.tsx` — add homepage detection, update background/text logic
 

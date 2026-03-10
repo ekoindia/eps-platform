@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Banknote, Zap, Shield, RefreshCw, Globe, Clock, Users, Building, CheckCircle } from "lucide-react";
+import moneyTransferImg from "@/assets/money-transfer-api.svg";
 
 const DmtApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const DmtApiPage = () => {
         heroSubtitle="Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support."
         category="payment"
         docsUrl="https://developers.eko.in/docs/money-transfer"
+        heroImage={moneyTransferImg}
         features={[
           {
             title: "Real-time Transfers",
