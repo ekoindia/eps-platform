@@ -29,7 +29,7 @@ const AboutPage = () => {
   return (
     <>
       <Header />
-      <main className="pt-20 lg:pt-24">
+      <main className="pt-20">
         {/* Hero */}
         <section className="relative overflow-hidden bg-eko-navy py-24 lg:py-32">
           <div className="absolute inset-0 opacity-10">
