@@ -58,7 +58,7 @@ const paymentProducts = [
     features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
   },
   {
-    title: "UPI Payout",
+    title: "Payout / UPI Payout",
     icon: Send,
     description: "Bulk disbursements to bank accounts, UPI, and wallets.",
     features: ["Batch processing", "Scheduled payouts", "Real-time webhooks"]
