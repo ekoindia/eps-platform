@@ -180,34 +180,56 @@ export const ProductPageLayout = ({
                 </div>
               </div>
 
-              {/* Right: Lead Form Card */}
-              <div className="relative" id="lead-form">
-                {/* Trust Shield Badge - desktop only */}
-                <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-sm">
-                  <Shield className="w-4 h-4 text-eko-gold" />
-                  <span className="text-xs font-semibold text-eko-gold">99.9% Uptime</span>
-                </div>
-
-                <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-                <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-                  <div className="bg-eko-navy px-6 py-4">
-                    <h3 className="text-lg font-bold text-white">
-                      {leadForm?.title || "Get API Access"}
-                    </h3>
-                    <p className="text-white/70 text-sm">Get started in 10 minutes</p>
-                  </div>
-
-                  <div className="p-2">
-                    <iframe
-                      aria-label="New Eko.in API Signup"
-                      frameBorder="0"
-                      allow="geolocation;"
-                      style={{ height: "500px", width: "100%", border: "none" }}
-                      src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+              {/* Right: Hero Image or Lead Form */}
+              {heroImage ? (
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
+                  <div 
+                    className="relative animate-float"
+                    style={{
+                      perspective: "1000px",
+                    }}
+                  >
+                    <img 
+                      src={heroImage} 
+                      alt={heroTitle}
+                      className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105"
+                      style={{
+                        transform: "perspective(1000px) rotateY(-5deg) rotateX(5deg)",
+                        filter: "drop-shadow(0 25px 50px rgba(0,0,0,0.4))",
+                      }}
                     />
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="relative" id="lead-form">
+                  {/* Trust Shield Badge - desktop only */}
+                  <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-sm">
+                    <Shield className="w-4 h-4 text-eko-gold" />
+                    <span className="text-xs font-semibold text-eko-gold">99.9% Uptime</span>
+                  </div>
+
+                  <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
+                  <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="bg-eko-navy px-6 py-4">
+                      <h3 className="text-lg font-bold text-white">
+                        {leadForm?.title || "Get API Access"}
+                      </h3>
+                      <p className="text-white/70 text-sm">Get started in 10 minutes</p>
+                    </div>
+
+                    <div className="p-2">
+                      <iframe
+                        aria-label="New Eko.in API Signup"
+                        frameBorder="0"
+                        allow="geolocation;"
+                        style={{ height: "500px", width: "100%", border: "none" }}
+                        src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
