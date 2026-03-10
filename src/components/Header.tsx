@@ -47,7 +47,7 @@ const verificationApis = [
 
 const companyLinks = [
   { label: "About Us", href: "/about-us", internal: true },
-  { label: "Blogs & Media", href: "/blogs-media", internal: true },
+  // { label: "Blogs & Media", href: "/blogs-media", internal: true },
 ];
 
 const navLinks = [

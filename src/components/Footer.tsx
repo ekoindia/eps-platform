@@ -28,7 +28,7 @@ const footerLinks = {
   company: [
     { label: "About Us", href: "/about-us", internal: true },
     { label: "Grievance", href: "/grievance", internal: true },
-    { label: "Blogs & Media", href: "/blogs-media", internal: true },
+    // { label: "Blogs & Media", href: "/blogs-media", internal: true },
   ],
   legal: [
     { label: "Privacy Policy", href: "/privacy-policy", internal: true },
