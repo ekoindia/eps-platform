@@ -105,6 +105,7 @@ export const ProductPageLayout = ({
   leadForm,
   types,
   inputOutputPreview,
+  heroImage,
 }: ProductPageLayoutProps) => {
   const [showSticky, setShowSticky] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
