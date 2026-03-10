@@ -89,7 +89,7 @@ const AboutPage = () => {
           >
             <div className="relative">
               <Quote strokeWidth={0} className="absolute -top-4 -left-2 w-20 h-20 lg:w-28 lg:h-28 text-eko-gold/15 pointer-events-none" fill="currentColor" style={{ transform: 'scaleX(-1) translateX(30%) translateY(-0%)' }} />
-              <blockquote className="text-2xl lg:text-2xl font-bold text-foreground leading-relaxed italic rounded-lg p-8 relative z-10">
+              <blockquote className="text-2xl lg:text-2xl font-bold text-foreground opacity-80 text-justify leading-relaxed italic rounded-lg p-8 relative z-10">
                 Eko's mission is to provide Distribution as a Service for brands to reach the next billion customers through deeply embedded-in-the-community micro-entrepreneurs as influencers, facilitators and resellers. We use simple digital tools to help these entrepreneurs earn more, get fair access to capital and run & grow their businesses better every day.
               </blockquote>
             </div>
