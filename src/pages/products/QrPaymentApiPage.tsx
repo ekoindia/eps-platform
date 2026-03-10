@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { QrCode, Shield, Zap, CheckCircle, Smartphone, CreditCard, BarChart3, RefreshCw } from "lucide-react";
+import qrImg from "@/assets/qr-payment.png";
 
 const QrPaymentApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const QrPaymentApiPage = () => {
         heroSubtitle="Enable seamless UPI payments through dynamic QR codes. Perfect for retail stores, restaurants, and any business accepting digital payments."
         category="payment"
         docsUrl="https://developers.eko.in/docs/qr-payment"
+        heroImage={qrImg}
         features={[
           {
             title: "Dynamic QR Generation",
