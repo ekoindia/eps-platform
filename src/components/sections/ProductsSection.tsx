@@ -52,12 +52,6 @@ const bcProducts = [
 
 const paymentProducts = [
   {
-    title: "Payment Gateway",
-    icon: CreditCard,
-    description: "Accept payments via cards, UPI, net banking, and wallets.",
-    features: ["Multi-mode support", "Instant settlements", "Smart routing"]
-  },
-  {
     title: "QR Payment",
     icon: Smartphone,
     description: "Generate and manage QR codes for seamless payment collection.",
