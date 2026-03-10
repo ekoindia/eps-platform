@@ -26,6 +26,7 @@ const DmtApiPage = () => {
         heroSubtitle="Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support."
         category="payment"
         docsUrl="https://developers.eko.in/docs/money-transfer"
+        heroImage={moneyTransferImg}
         features={[
           {
             title: "Real-time Transfers",
