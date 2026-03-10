@@ -186,6 +186,7 @@ export const ProductsSection = () => {
       {/* Content */}
       {activeTab === "bc" && <ProductTabContent products={bcProducts} />}
       {activeTab === "payments" && <ProductTabContent products={paymentProducts} />}
+      {activeTab === "bbps" && <ProductTabContent products={bbpsProducts} />}
       {activeTab === "collection" && <ProductTabContent products={collectionProducts} />}
       {activeTab === "verification" && <ProductTabContent products={verificationProducts} />}
 
