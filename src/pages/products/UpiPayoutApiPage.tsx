@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Send, Shield, Zap, CheckCircle, Users, Clock, FileText, Wallet } from "lucide-react";
+import upiPayoutImg from "@/assets/salary-disbursal.svg";
 
 const UpiPayoutApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const UpiPayoutApiPage = () => {
         heroSubtitle="Send money instantly to any UPI ID - VPAs, mobile numbers, or linked bank accounts. Perfect for vendor payments, refunds, and disbursements."
         category="payment"
         docsUrl="https://developers.eko.in/docs/upi-payout"
+        heroImage={upiPayoutImg}
         features={[
           {
             title: "Instant Transfers",
