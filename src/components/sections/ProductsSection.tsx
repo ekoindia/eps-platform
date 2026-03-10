@@ -72,6 +72,12 @@ const collectionProducts = [
     description: "Cash Management System for streamlined cash collection and reconciliation.",
     features: ["Multi-channel collection", "Automated reconciliation", "Real-time tracking"]
   },
+  {
+    title: "QR Payment",
+    icon: Smartphone,
+    description: "Generate and manage QR codes for seamless payment collection.",
+    features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
+  },
 ];
 
 const verificationProducts = [
