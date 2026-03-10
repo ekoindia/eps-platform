@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Fingerprint, Wallet, FileText, Shield, Users, Building, Clock, CheckCircle, Zap } from "lucide-react";
+import aepsImg from "@/assets/aeps-main.svg";
 
 const AepsApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const AepsApiPage = () => {
         heroSubtitle="Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication."
         category="payment"
         docsUrl="https://developers.eko.in/docs/aeps"
+        heroImage={aepsImg}
         features={[
           {
             title: "Cash Withdrawal",
