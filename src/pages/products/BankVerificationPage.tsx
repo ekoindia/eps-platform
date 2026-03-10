@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Building, Shield, Zap, CheckCircle, CreditCard, FileText, Clock, Database, Hash, User } from "lucide-react";
+import bankImg from "@/assets/bank-verification.svg";
 
 const BankVerificationPage = () => {
   return (
@@ -25,6 +26,7 @@ const BankVerificationPage = () => {
         heroSubtitle="Verify bank account details before payouts to prevent failed transactions and reduce operational costs. Instant verification with penny drop and account holder name matching."
         category="verification"
         docsUrl="https://developers.eko.in/docs/bank-verification"
+        heroImage={bankImg}
         features={[
           {
             title: "Penny Drop Verification",
