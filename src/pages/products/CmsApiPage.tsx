@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Banknote, Shield, Zap, CheckCircle, Users, MapPin, FileText, Clock } from "lucide-react";
+import cmsImg from "@/assets/assisted-cash-management.svg";
 
 const CmsApiPage = () => {
   return (
