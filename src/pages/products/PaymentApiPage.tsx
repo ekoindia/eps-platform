@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Send, Shield, Zap, CheckCircle, Wallet, Clock, FileText, Users, Building, RefreshCw } from "lucide-react";
+import payoutImg from "@/assets/salary-disbursal.svg";
 
 const PaymentApiPage = () => {
   return (
@@ -25,6 +26,7 @@ const PaymentApiPage = () => {
         heroSubtitle="Pay your employees and vendors directly from your digital wallet balance. Easy-to-use, reliable, and secure fund transfer API for instant salary disbursals and vendor payments."
         category="payment"
         docsUrl="https://developers.eko.in/docs/fund-transfer"
+        heroImage={payoutImg}
         features={[
           {
             title: "Easy Salary Disbursals",
