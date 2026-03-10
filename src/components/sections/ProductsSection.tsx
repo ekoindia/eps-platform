@@ -30,7 +30,7 @@ type ProductTab = "bc" | "payments" | "collection" | "verification" | "shield";
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
   { id: "bc", label: "BC APIs", icon: Landmark },
   { id: "payments", label: "Payment APIs", icon: CreditCard },
-  { id: "collection", label: "BBPS APIs", icon: IndianRupee },
+  { id: "collection", label: "Collection APIs", icon: IndianRupee },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   { id: "shield", label: "Eko Shield", icon: ShieldCheck },
 ];
@@ -52,12 +52,6 @@ const bcProducts = [
 
 const paymentProducts = [
   {
-    title: "QR Payment",
-    icon: Smartphone,
-    description: "Generate and manage QR codes for seamless payment collection.",
-    features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
-  },
-  {
     title: "Payout / UPI Payout",
     icon: Send,
     description: "Bulk disbursements to bank accounts, UPI, and wallets.",
@@ -77,6 +71,12 @@ const collectionProducts = [
     icon: Wallet,
     description: "Cash Management System for streamlined cash collection and reconciliation.",
     features: ["Multi-channel collection", "Automated reconciliation", "Real-time tracking"]
+  },
+  {
+    title: "QR Payment",
+    icon: Smartphone,
+    description: "Generate and manage QR codes for seamless payment collection.",
+    features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
   },
 ];
 
@@ -125,7 +125,12 @@ const handleChat = () => {
 
 const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
   <div className="animate-fade-up">
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className={cn(
+      "grid gap-6",
+      products.length <= 2
+        ? "md:grid-cols-2 max-w-2xl mx-auto"
+        : "md:grid-cols-2 lg:grid-cols-3"
+    )}>
       {products.map((product) => (
         <ProductCard key={product.title} {...product} />
       ))}
