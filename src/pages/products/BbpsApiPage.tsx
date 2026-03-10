@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Receipt, Zap, Shield, CreditCard, Smartphone, Car, Droplets, Flame, Wifi, Building, CheckCircle, Users } from "lucide-react";
+import bbpsImg from "@/assets/utility-bill-payment.svg";
 
 const BbpsApiPage = () => {
   return (
