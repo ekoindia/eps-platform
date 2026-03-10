@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { CreditCard, User, Calendar, CheckCircle, Fingerprint } from "lucide-react";
+import panImg from "@/assets/pan-verification.svg";
 
 const PanVerificationPage = () => {
   const faqData = [
