@@ -26,6 +26,7 @@ const CmsApiPage = () => {
         heroSubtitle="Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility."
         category="payment"
         docsUrl="https://developers.eko.in/docs/cms"
+        heroImage={cmsImg}
         features={[
           {
             title: "Field Agent App",
