@@ -60,7 +60,7 @@ const paymentProducts = [
   },
 ];
 
-const collectionProducts = [
+const bbpsProducts = [
   {
     title: "BBPS Integration",
     icon: Receipt,
@@ -73,6 +73,9 @@ const collectionProducts = [
     description: "Cash Management System for streamlined cash collection and reconciliation.",
     features: ["Multi-channel collection", "Automated reconciliation", "Real-time tracking"]
   },
+];
+
+const collectionProducts = [
   {
     title: "QR Payment",
     icon: Smartphone,
