@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { Fingerprint, Wallet, FileText, Shield, Users, Building, Clock, CheckCircle, Zap } from "lucide-react";
+import aepsImg from "@/assets/aeps-main.svg";
 
 const AepsApiPage = () => {
   return (
