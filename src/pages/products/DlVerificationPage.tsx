@@ -1,6 +1,7 @@
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { Helmet } from "react-helmet-async";
 import { CreditCard } from "lucide-react";
+import dlImg from "@/assets/dl-verification-2.png";
 
 const DlVerificationPage = () => {
   return (
@@ -22,6 +23,7 @@ const DlVerificationPage = () => {
         heroSubtitle="Verify driving license details in real time to strengthen KYC and reduce identity fraud."
         category="verification"
         docsUrl="https://eko.in/developers/eps/dl-verification-api/"
+        heroImage={dlImg}
         overview="The Driving License Verification API enables businesses to validate driving license details instantly as part of identity verification and onboarding workflows. It helps confirm user identity, reduce impersonation risk, and meet compliance requirements."
         keyBenefits={[
           "Instant driving license verification",
