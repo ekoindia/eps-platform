@@ -66,6 +66,7 @@ interface ProductPageLayoutProps {
     outputs: ApiField[];
     comingSoon?: boolean;
   };
+  heroImage?: string;
 }
 
 const industryIcons: Record<string, LucideIcon> = {
