@@ -21,9 +21,10 @@ const footerLinks = {
   ],
   developers: [
     { label: "Documentation", href: "https://developers.eko.in", external: true },
-    { label: "API Reference", href: "https://developers.eko.in", external: true },
-    { label: "SDKs & Libraries", href: "https://developers.eko.in", external: true },
-    { label: "Sandbox", href: "https://developers.eko.in", external: true },
+    { label: "Guides", href: "https://developers.eko.in/docs", external: true },
+    { label: "API Reference", href: "https://developers.eko.in/reference", external: true },
+    // { label: "SDKs & Libraries", href: "https://developers.eko.in", external: true },
+    // { label: "Sandbox", href: "https://developers.eko.in", external: true },
   ],
   company: [
     { label: "About Us", href: "/about-us", internal: true },
@@ -60,16 +61,19 @@ export const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
-            <div className="mb-6">
+            <div className="mb-3">
               <EkoLogo className="h-16 w-auto" />
             </div>
-            <p className="text-white/70 mb-6 max-w-sm leading-relaxed text-md text-justify">
+            <p className="text-white/70 mb-1 max-w-sm leading-relaxed text-sm text-justify">
+              By <a href="https://eko.in" className="font-bold hover:underline" target="_blank">Eko Bharat Ventures Private Limited</a>
+            </p>
+            <p className="text-white/70 mb-6 max-w-sm leading-relaxed text-sm text-justify italic">
               “Grow every entrepreneur daily”
             </p>
             <div className="space-y-3 text-sm">
-              <a href="mailto:api.sales@eko.co.in" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
+              <a href="mailto:eps@eko.in" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Mail className="w-4 h-4 text-eko-gold" />
-                <span>api.sales@eko.co.in</span>
+                <span>eps@eko.in</span>
               </a>
               <a href="tel:+919311019477" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Phone className="w-4 h-4 text-eko-gold" />
@@ -145,6 +149,34 @@ export const Footer = () => {
             </ul>
           </div>
 
+          {/* Legal */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Legal</h4>
+            <ul className="space-y-3">
+              {footerLinks.legal.map((link) => (
+                <li key={link.label}>
+                  {'internal' in link && link.internal ? (
+                    <Link
+                      to={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                    >
+                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                      {link.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* Company */}
           <div>
             <h4 className="font-semibold text-white mb-4">Company</h4>
@@ -173,33 +205,6 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Legal</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  {'internal' in link && link.internal ? (
-                    <Link
-                      to={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
 
