@@ -316,7 +316,7 @@ const EkoShieldPage = () => {
           <div className="container mx-auto px-4 relative z-10">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Complete KYC & Verification Suite</h2>
-              <p className="text-white/80 max-w-2xl mx-auto">24 verification products across 7 categories. One unified platform.</p>
+              <p className="text-white/80 max-w-2xl mx-auto">20+ verification products across 7 categories. One unified platform.</p>
             </motion.div>
 
             {/* Category Tabs */}

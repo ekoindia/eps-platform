@@ -120,6 +120,10 @@ export default {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "menu-slide-down-in": {
+          from: { opacity: "0", transform: "translateX(-50%) translateY(-10px)" },
+          to: { opacity: "1", transform: "translateX(-50%) translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -131,6 +135,7 @@ export default {
         "float": "float 6s ease-in-out infinite",
         "pulse-soft": "pulse-soft 3s ease-in-out infinite",
         "scroll-x": "scroll-x 20s linear infinite",
+        "menu-slide-down-in": "menu-slide-down-in 0.3s ease-out forwards",
       },
     },
   },
