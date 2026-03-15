@@ -25,7 +25,7 @@ const UpiPayoutApiPage = () => {
         heroTitle="UPI Payout API"
         heroSubtitle="Send money instantly to any UPI ID - VPAs, mobile numbers, or linked bank accounts. Perfect for vendor payments, refunds, and disbursements."
         category="payment"
-        docsUrl="https://developers.eko.in/docs/upi-payout"
+        docsUrl="https://developers.eko.in/reference/upi-vpa-payment"
         heroImage={upiPayoutImg}
         features={[
           {
