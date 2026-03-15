@@ -58,7 +58,7 @@ const PanVerificationPage = () => {
         heroTitle="PAN Verification API for Instant Identity Validation"
         heroSubtitle="Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding."
         category="verification"
-        docsUrl="https://eko.in/developers/eps/pan-verification-api/"
+        docsUrl="https://developers.eko.in/reference/pan-lite"
         heroImage={panImg}
         overview="The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms."
         keyBenefits={[
