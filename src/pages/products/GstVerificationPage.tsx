@@ -22,7 +22,7 @@ const GstVerificationPage = () => {
         heroTitle="GST Verification API for Business Identity Validation"
         heroSubtitle="Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding."
         category="verification"
-        docsUrl="https://eko.in/developers/eps/gst-verification-api/"
+        docsUrl="https://developers.eko.in/reference/advance-gst"
         heroImage={gstImg}
         overview="The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical."
         keyBenefits={[
