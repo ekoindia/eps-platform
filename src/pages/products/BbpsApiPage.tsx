@@ -25,7 +25,7 @@ const BbpsApiPage = () => {
         heroTitle="Help Customers Pay Their Utility Bills!"
         heroSubtitle="The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services."
         category="payment"
-        docsUrl="https://developers.eko.in/reference/bbps-1"
+        docsUrl="https://developers.eko.in/reference/bbps-get-operators"
         heroImage={bbpsImg}
         types={[
           { label: "Electricity", icon: Zap },
