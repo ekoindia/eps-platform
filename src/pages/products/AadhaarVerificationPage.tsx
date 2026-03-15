@@ -21,7 +21,7 @@ const AadhaarVerificationPage = () => {
         heroTitle="Aadhaar Verification API for Secure Digital Identity"
         heroSubtitle="Verify Aadhaar details through consent-based, real-time verification workflows."
         category="verification"
-        docsUrl="https://eko.in/developers/eps/aadhaar-verification-api/"
+        docsUrl="https://developers.eko.in/reference/aadhaar-verification-apis"
         heroImage={aadhaarImg}
         overview="The Aadhaar Verification API enables businesses to validate Aadhaar details securely as part of identity verification and KYC processes. It is designed for regulated onboarding, fraud prevention, and compliance-driven use cases."
         keyBenefits={[
