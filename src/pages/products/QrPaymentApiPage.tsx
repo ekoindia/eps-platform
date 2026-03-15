@@ -25,7 +25,7 @@ const QrPaymentApiPage = () => {
         heroTitle="QR Payment API"
         heroSubtitle="Enable seamless UPI payments through dynamic QR codes. Perfect for retail stores, restaurants, and any business accepting digital payments."
         category="payment"
-        docsUrl="https://developers.eko.in/docs/qr-payment"
+        docsUrl="https://developers.eko.in/reference/upi-generate-static-qr"
         heroImage={qrImg}
         features={[
           {
