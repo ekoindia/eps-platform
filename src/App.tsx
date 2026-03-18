@@ -39,6 +39,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import GrievancePage from "./pages/GrievancePage";
 import EkoShieldPage from "./pages/EkoShieldPage";
+import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
 
 const queryClient = new QueryClient();
 
