@@ -79,6 +79,7 @@ const App = () => (
 
               {/* Eko Shield */}
               <Route path="/products/eko-shield" element={<EkoShieldPage />} />
+              <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} />
 
               {/* Company & Legal Pages */}
               <Route path="/about-us" element={<AboutPage />} />
