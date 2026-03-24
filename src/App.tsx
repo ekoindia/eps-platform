@@ -40,6 +40,7 @@ import RefundPolicyPage from "./pages/RefundPolicyPage";
 import GrievancePage from "./pages/GrievancePage";
 import EkoShieldPage from "./pages/EkoShieldPage";
 import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
+import SignupPage from "./pages/SignupPage";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/refund-policy" element={<RefundPolicyPage />} />
               <Route path="/grievance" element={<GrievancePage />} />
+              <Route path="/signup" element={<SignupPage />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
