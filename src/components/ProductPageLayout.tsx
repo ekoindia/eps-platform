@@ -11,6 +11,7 @@ import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import type { ApiField } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
 
 interface ProductFeature {
   title: string;
@@ -145,31 +146,31 @@ export const ProductPageLayout = ({
           </Button>
         </div>
       </div>
-      
+
       <main>
         {/* Hero Section */}
         <section ref={heroRef} className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
-          
+
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
               {/* Left: Content */}
               <div>
-                <Link 
-                  to="/#products" 
+                <Link
+                  to="/#products"
                   className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
                 >
                   ← Back to Products
                 </Link>
-                
+
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
                   {heroTitle}
                 </h1>
                 <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
                   {heroSubtitle}
                 </p>
-                
+
                 <div className="flex flex-wrap gap-4">
                   <Button variant="hero-outline" size="lg" asChild>
                     <a href={docsUrl} target="_blank" rel="noopener noreferrer">
@@ -184,14 +185,14 @@ export const ProductPageLayout = ({
               {heroImage ? (
                 <div className="relative flex items-center justify-center">
                   <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
-                  <div 
+                  <div
                     className="relative animate-float"
                     style={{
                       perspective: "1000px",
                     }}
                   >
-                    <img 
-                      src={heroImage} 
+                    <img
+                      src={heroImage}
                       alt={heroTitle}
                       className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105"
                       style={{
@@ -224,7 +225,7 @@ export const ProductPageLayout = ({
                         frameBorder="0"
                         allow="geolocation;"
                         style={{ height: "500px", width: "100%", border: "none" }}
-                        src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                        src={ZOHO_SIGNUP_EMBED_URL}
                       />
                     </div>
                   </div>
@@ -278,14 +279,14 @@ export const ProductPageLayout = ({
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Key Features</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">Everything you need to integrate and scale</p>
           </div>
-          
+
           {/* Top features in 3-col highlighted row */}
           {features.length >= 3 && (
             <div className="grid md:grid-cols-3 gap-6 mb-6">
               {features.slice(0, 3).map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
-                  <div 
+                  <div
                     key={index}
                     className="group p-6 bg-card border-2 border-eko-gold/20 rounded-2xl hover:shadow-lg hover:border-eko-gold/40 transition-all duration-300 opacity-0 animate-fade-up"
                     style={{ animationDelay: `${index * 100}ms`, animationFillMode: "forwards" }}
@@ -307,7 +308,7 @@ export const ProductPageLayout = ({
               {features.slice(3).map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
-                  <div 
+                  <div
                     key={index}
                     className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
                   >
@@ -328,7 +329,7 @@ export const ProductPageLayout = ({
               {features.map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
-                  <div 
+                  <div
                     key={index}
                     className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
                   >
@@ -468,7 +469,7 @@ export const ProductPageLayout = ({
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How to Integrate</h2>
             <p className="text-white/70 max-w-2xl mx-auto">Get started in minutes with our simple integration process</p>
           </div>
-          
+
           <TooltipProvider>
             {/* Desktop: horizontal stepper */}
             <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
@@ -516,7 +517,7 @@ export const ProductPageLayout = ({
               ))}
             </div>
           </TooltipProvider>
-          
+
           <div className="text-center mt-10">
             <Button variant="gold" size="lg" asChild>
               <a href={docsUrl} target="_blank" rel="noopener noreferrer">
@@ -532,7 +533,7 @@ export const ProductPageLayout = ({
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Frequently Asked Questions</h2>
           </div>
-          
+
           <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((faq, index) => (
               <details key={index} className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
@@ -554,7 +555,7 @@ export const ProductPageLayout = ({
           <SectionContainer variant="navy" id="lead-form" className="relative overflow-hidden">
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
-            
+
             <div className="relative grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
@@ -572,7 +573,7 @@ export const ProductPageLayout = ({
                   ))}
                 </ul>
               </div>
-              
+
               <div className="relative">
                 <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
                 <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -588,7 +589,7 @@ export const ProductPageLayout = ({
                       frameBorder="0"
                       allow="geolocation;"
                       style={{ height: "500px", width: "100%", border: "none" }}
-                      src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                      src={ZOHO_SIGNUP_EMBED_URL}
                     />
                   </div>
                 </div>
@@ -597,7 +598,7 @@ export const ProductPageLayout = ({
           </SectionContainer>
         )}
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { openZohoChat } from "@/lib/zoho-form";
+import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
 import {
   Dialog,
   DialogContent,
@@ -95,7 +96,7 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
                 frameBorder="0"
                 allow="geolocation;"
                 style={{ height: "500px", width: "100%", border: "none" }}
-                src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                src={ZOHO_SIGNUP_EMBED_URL}
               />
             </div>
           </>

@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { openZohoChat } from "@/lib/zoho-form";
+import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
 import {
   ArrowRight, Shield, Zap, ShieldCheck, Eye, TrendingDown,
   Landmark, CreditCard, Users, Truck, ShoppingBag, Plane, Leaf, Building2,
@@ -451,7 +452,7 @@ const EkoShieldPage = () => {
                     frameBorder="0"
                     allow="geolocation;"
                     style={{ height: "500px", width: "100%", border: "none" }}
-                    src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+                    src={ZOHO_SIGNUP_EMBED_URL}
                   />
                 </div>
               </motion.div>

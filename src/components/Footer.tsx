@@ -30,6 +30,7 @@ const footerLinks = {
     { label: "About Us", href: "/about-us", internal: true },
     { label: "Grievance", href: "/grievance", internal: true },
     // { label: "Blogs & Media", href: "/blogs-media", internal: true },
+    { label: "Signup", href: "/signup", internal: true },
   ],
   legal: [
     { label: "Privacy Policy", href: "/privacy-policy", internal: true },

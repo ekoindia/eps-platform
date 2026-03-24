@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
+import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
 import { EkoLogo } from "@/components/EkoLogo";
 import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -424,7 +425,7 @@ export const Header = () => {
             frameBorder="0"
             allow="geolocation;"
             style={{ height: "500px", width: "100%", border: "none" }}
-            src="https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/JmSIq1OIg5-iNmPq-fcqHv9g9_QBNvM2VQ2DC3XetvQ"
+            src={ZOHO_SIGNUP_EMBED_URL}
           />
         </DialogContent>
       </Dialog>
