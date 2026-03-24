@@ -75,9 +75,9 @@ export const Footer = () => {
                 <Mail className="w-4 h-4 text-eko-gold" />
                 <span>eps@eko.in</span>
               </a>
-              <a href="tel:+919311019477" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
+              <a href="tel:+919513181707" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Phone className="w-4 h-4 text-eko-gold" />
-                <span>+91 931 101 9477</span>
+                <span>+91 951 318 1707</span>
               </a>
               <a href="https://share.google/WoimNHTmqaNqJnKxs" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <MapPin className="w-4 h-4 text-eko-gold mt-0.5" />
