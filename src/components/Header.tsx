@@ -279,14 +279,14 @@ export const Header = () => {
             <div className="hidden lg:flex items-center gap-4">
               <LanguageSelector isLight={useWhiteText} />
               <a
-                href="tel:+919311019477"
+                href="tel:+919513181707"
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer",
                   useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                 )}
               >
                 <Phone className="w-4 h-4" />
-                +91 9311019477
+                +91 9513181707
               </a>
               <Button variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
                 Get Started
@@ -392,11 +392,11 @@ export const Header = () => {
                 <div className="flex flex-col gap-3 mt-4">
                   <LanguageSelector isLight={false} />
                   <a
-                    href="tel:+919311019477"
+                    href="tel:+919513181707"
                     className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
-                    +91 9311019477
+                    +91 9513181707
                   </a>
                   <Button variant="gold" size="sm" onClick={() => {
                     setMobileMenuOpen(false);

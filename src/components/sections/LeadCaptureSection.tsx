@@ -51,9 +51,9 @@ export const LeadCaptureSection = () => {
                 Chat with Us
               </Button>
               <Button variant="navy-outline" size="xl" className="w-full" asChild>
-                <a href="tel:+919311019477">
+                <a href="tel:+919513181707">
                   <Phone className="w-5 h-5" />
-                  Call +91 93110 19477
+                  Call +91 95131 81707
                 </a>
               </Button>
             </div>
