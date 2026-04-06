@@ -52,7 +52,7 @@ const RefundPolicyPage = () => {
       <h2>Our Address</h2>
       <p>
         <strong>Eko Bharat Ventures Private Limited</strong>,<br />
-        1st Floor, Coworkkeys Building, Plot no 68, Phase IV, Udyog Vihar, Sector 18, Gurgaon, Haryana-122015, India.<br />
+        68, Phase IV, Udyog Vihar, Sector 18, Gurugram, Haryana 122015.<br />
         Phone: +91 924 027 8654
       </p>
     </LegalPageLayout>
