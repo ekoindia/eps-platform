@@ -2,7 +2,7 @@ import { Phone, Mail, MapPin, Clock, ArrowRight, AlertTriangle, User, ExternalLi
 import { LegalPageLayout, SectionDivider } from "@/components/LegalPageLayout";
 
 /* ─── Shared escalation data ─── */
-const address = "Eko Bharat Ventures Private Limited, 1st Floor, Coworkkeys Building, Plot no 68, Phase IV, Udyog Vihar, Sector 18, Gurgaon, Haryana-122015, India";
+const address = "Eko Bharat Ventures Private Limited, 68, Phase IV, Udyog Vihar, Sector 18, Gurugram, Haryana 122015";
 
 /* ─── Table of contents ─── */
 function TableOfContents() {
