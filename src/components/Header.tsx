@@ -22,15 +22,15 @@ const bcApis = [
 ];
 
 const paymentApis = [
-  { label: "Payout", href: "/products/payment-api" },
-  { label: "UPI Payout", href: "/products/upi-payout-api" },
-];
-
-const collectionApis = [
+  // { label: "Payout", href: "/products/payment-api" },
+  // { label: "UPI Payout", href: "/products/upi-payout-api" },
   { label: "BBPS", href: "/products/bbps-api" },
   { label: "CMS", href: "/products/cms-api" },
-  { label: "QR", href: "/products/qr-payment-api" },
 ];
+
+// const collectionApis = [
+//   { label: "QR", href: "/products/qr-payment-api" },
+// ];
 
 const verificationApis = [
   { label: "PAN Verification", href: "/products/pan-verification-api" },
@@ -108,7 +108,7 @@ export const Header = () => {
   const apiColumns = [
     { title: "BC APIs", items: bcApis },
     { title: "Payment APIs", items: paymentApis },
-    { title: "Collection APIs", items: collectionApis },
+    // { title: "Collection APIs", items: collectionApis },
     { title: "Verification APIs", items: verificationApis, maxItems: 6, moreLink: { label: "More...", href: "https://developers.eko.in/v3/reference/bank-account-verification-sync" } },
   ];
 
@@ -149,7 +149,7 @@ export const Header = () => {
                       </button>
 
                       {productsDropdownOpen && (
-                        <div className="fixed top-24 left-1/2 w-[90vw] lg:w-[780px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden z-50 animate-menu-slide-down-in">
+                        <div className="fixed top-24 left-1/2 w-[90vw] lg:w-[680px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden z-50 animate-menu-slide-down-in">
                           {/* Eko Shield Hero Banner */}
                           <Link
                             to="/products/eko-shield"
@@ -173,8 +173,8 @@ export const Header = () => {
                             </div>
                           </Link>
 
-                          {/* API Columns - 4 categories */}
-                          <div className="p-6 grid grid-cols-4 gap-6">
+                          {/* API Columns - 3 categories */}
+                          <div className="p-6 grid grid-cols-3 gap-6">
                             {apiColumns.map((col) => {
                               const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
                               const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;

@@ -14,8 +14,8 @@ import { EkoLogo } from "@/components/EkoLogo";
 const footerLinks = {
   products: [
     { label: "BC APIs", href: "#products" },
-    { label: "Payment APIs", href: "#products" },
-    { label: "Collection APIs", href: "#products" },
+    { label: "Payments APIs", href: "#products" },
+    // { label: "Collection APIs", href: "#products" },
     { label: "Verification APIs", href: "#products" },
     { label: "Eko Shield", href: "/products/eko-shield", internal: true },
   ],

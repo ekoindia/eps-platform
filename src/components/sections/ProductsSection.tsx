@@ -4,9 +4,9 @@ import { Link } from "react-router-dom";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/Cards";
-import { 
-  CreditCard, 
-  Fingerprint, 
+import {
+  CreditCard,
+  Fingerprint,
   ShieldCheck,
   Banknote,
   Smartphone,
@@ -29,9 +29,9 @@ type ProductTab = "bc" | "payments" | "bbps" | "collection" | "verification" | "
 
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
   { id: "bc", label: "BC APIs", icon: Landmark },
-  { id: "payments", label: "Payment APIs", icon: CreditCard },
-  { id: "bbps", label: "BBPS APIs", icon: Receipt },
-  { id: "collection", label: "Collection APIs", icon: IndianRupee },
+  // { id: "payments", label: "Payment APIs", icon: CreditCard },
+  { id: "bbps", label: "Payments APIs", icon: Receipt },
+  // { id: "collection", label: "Collection APIs", icon: IndianRupee },
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   { id: "shield", label: "Eko Shield", icon: ShieldCheck },
 ];
@@ -215,7 +215,7 @@ export const ProductsSection = () => {
                 Unified Verification Suite
               </h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                One single portal for all verifications across industries. 
+                One single portal for all verifications across industries.
                 Eko Shield simplifies compliance with a unified interface for all your verification needs.
               </p>
               <div className="grid grid-cols-2 gap-4 mb-8">
