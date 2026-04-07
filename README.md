@@ -1,8 +1,13 @@
-# Welcome to your Lovable project
+# Eko Platform Services Website Project
 
-## Project info
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## How to Add/Remove a Product?
+1. To add a product, create a new file in `src/pages/products/` with the product's slug as the filename (e.g. `my-new-product.tsx`).
+2. Use the existing product pages as a reference for the structure and content of the new product page.
+3. To remove a product, simply delete the corresponding file from `src/pages/products/`.
+4. Update the `products` array in `src/components/Header.tsx` and `src/components/Footer.tsx` to reflect the addition or removal of the product.
+5. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs.
+
 
 ## How can I edit this code?
 
