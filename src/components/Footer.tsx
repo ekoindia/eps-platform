@@ -95,7 +95,7 @@ export const Footer = () => {
                 <span>+91 951 318 1707</span>
               </a>
               <a href="https://share.google/WoimNHTmqaNqJnKxs" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
-                <MapPin className="w-4 h-4 text-eko-gold mt-0.5" />
+                <MapPin className="w-4 min-w-4 h-4 text-eko-gold mt-0.5" />
                 <span>68, Phase IV, Udyog Vihar, Sector 18, Gurugram, Haryana 122015</span>
               </a>
             </div>
