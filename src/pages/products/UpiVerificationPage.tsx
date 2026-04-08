@@ -9,12 +9,12 @@ const UpiVerificationPage = () => {
         <title>UPI ID Verification API | Verify UPI ID & Retrieve via Phone Number | Eko</title>
         <meta name="description" content="Verify UPI IDs in real time and retrieve UPI ID using phone number through a secure, well-documented API." />
         <meta name="keywords" content="UPI ID Verification API, UPI ID check API, Verify UPI ID, Retrieve UPI ID using phone number, VPA verification API, UPI verification API" />
-        <link rel="canonical" href="https://eko.in/products/upi-verification-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/upi-verification-api" /> */}
         <meta property="og:title" content="UPI ID Verification API | Verify UPI ID & Retrieve via Phone Number | Eko" />
         <meta property="og:description" content="Validate UPI IDs in real time and retrieve a UPI ID using a phone number to reduce failures." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="UPI ID Verification API"
         description="Verify UPI IDs and retrieve via phone number"

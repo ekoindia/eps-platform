@@ -45,13 +45,13 @@ const PanVerificationPage = () => {
         <title>PAN Verification API | Real-Time PAN Validation | Eko</title>
         <meta name="description" content="Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs." />
         <meta name="keywords" content="PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API" />
-        <link rel="canonical" href="https://eko.in/products/pan-verification-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/pan-verification-api" /> */}
         <meta property="og:title" content="PAN Verification API | Real-Time PAN Validation | Eko" />
         <meta property="og:description" content="Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs." />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
-      
+
       <ProductPageLayout
         title="PAN Verification API"
         description="Verify PAN details in real time"

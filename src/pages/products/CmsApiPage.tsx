@@ -8,17 +8,17 @@ const CmsApiPage = () => {
     <>
       <Helmet>
         <title>CMS Cash Collection API - Cash Management Services | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Digitize cash collection with Eko's CMS API. Enable field agents to collect cash and instantly credit customer accounts. Perfect for NBFCs, insurance, and utilities." 
+        <meta
+          name="description"
+          content="Digitize cash collection with Eko's CMS API. Enable field agents to collect cash and instantly credit customer accounts. Perfect for NBFCs, insurance, and utilities."
         />
         <meta name="keywords" content="CMS API, cash collection API, cash management services, field collection API, NBFC collection API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/cms-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/cms-api" /> */}
         <meta property="og:title" content="CMS Cash Collection API | Eko" />
         <meta property="og:description" content="Digitize cash collection with instant account credits through field agents." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="CMS Cash Collection API"
         description="Digitize cash collection with field agents"

@@ -8,17 +8,17 @@ const BbpsApiPage = () => {
     <>
       <Helmet>
         <title>BBPS API - Bharat Bill Payment System | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure." 
+        <meta
+          name="description"
+          content="Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure."
         />
         <meta name="keywords" content="BBPS API, bill payment API, Bharat Bill Payment System, utility bill API, electricity bill API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/bbps-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/bbps-api" /> */}
         <meta property="og:title" content="BBPS API - Bharat Bill Payment System | Eko" />
         <meta property="og:description" content="Enable seamless bill payments for 200+ biller categories with Eko's BBPS API." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="BBPS API"
         description="Complete bill payment ecosystem with 200+ biller categories"

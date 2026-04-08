@@ -8,17 +8,17 @@ const QrPaymentApiPage = () => {
     <>
       <Helmet>
         <title>QR Payment API - UPI QR Code Payments | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Accept UPI payments via QR codes with Eko's QR Payment API. Dynamic QR generation, real-time notifications, and seamless payment collection for merchants." 
+        <meta
+          name="description"
+          content="Accept UPI payments via QR codes with Eko's QR Payment API. Dynamic QR generation, real-time notifications, and seamless payment collection for merchants."
         />
         <meta name="keywords" content="QR payment API, UPI QR API, dynamic QR code, QR code payments, merchant payments API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/qr-payment-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/qr-payment-api" /> */}
         <meta property="og:title" content="QR Payment API - UPI QR Code Payments | Eko" />
         <meta property="og:description" content="Accept UPI payments via dynamic QR codes with real-time notifications." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="QR Payment API"
         description="Accept UPI payments via dynamic QR codes"

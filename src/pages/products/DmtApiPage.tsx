@@ -8,17 +8,17 @@ const DmtApiPage = () => {
     <>
       <Helmet>
         <title>Domestic Money Transfer API (DMT) | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Enable instant money transfers across India with Eko's DMT API. Real-time IMPS & NEFT settlements, pan-India coverage, and 99.9% uptime. Integrate in minutes." 
+        <meta
+          name="description"
+          content="Enable instant money transfers across India with Eko's DMT API. Real-time IMPS & NEFT settlements, pan-India coverage, and 99.9% uptime. Integrate in minutes."
         />
         <meta name="keywords" content="DMT API, domestic money transfer API, IMPS API, NEFT API, money transfer India, remittance API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/dmt-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/dmt-api" /> */}
         <meta property="og:title" content="Domestic Money Transfer API (DMT) | Eko" />
         <meta property="og:description" content="Enable instant money transfers across India with real-time settlements and pan-India coverage." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Domestic Money Transfer API"
         description="Enable instant money transfers across India with Eko's DMT API"

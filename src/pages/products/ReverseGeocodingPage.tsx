@@ -9,12 +9,12 @@ const ReverseGeocodingPage = () => {
         <title>Reverse Geocoding API | Location to Address Resolution | Eko</title>
         <meta name="description" content="Integrate Reverse Geocoding API to convert latitude and longitude into accurate, structured address data for verification and compliance." />
         <meta name="keywords" content="Reverse Geocoding API, Location Verification API, Address Resolution API, Latitude Longitude to Address API, Geo Verification API" />
-        <link rel="canonical" href="https://eko.in/products/reverse-geocoding-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/reverse-geocoding-api" /> */}
         <meta property="og:title" content="Reverse Geocoding API | Location to Address Resolution | Eko" />
         <meta property="og:description" content="Convert geo-coordinates into precise address data to strengthen verification and compliance workflows." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Reverse Geocoding API"
         description="Convert coordinates to addresses"

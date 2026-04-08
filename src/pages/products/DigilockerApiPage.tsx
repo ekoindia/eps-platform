@@ -8,19 +8,19 @@ const DigilockerApiPage = () => {
         <title>DigiLocker API | Secure Digital Document Access | Eko</title>
         <meta name="description" content="Integrate DigiLocker API to access and verify user documents securely through consent-based digital workflows." />
         <meta name="keywords" content="DigiLocker API, Digital Document Verification API, Consent Based Document Access, Paperless KYC API, Government Document API" />
-        <link rel="canonical" href="https://eko.in/products/digilocker-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/digilocker-api" /> */}
         <meta property="og:title" content="DigiLocker API | Secure Digital Document Access | Eko" />
         <meta property="og:description" content="Access and verify user documents digitally through consent-driven, paperless workflows." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="DigiLocker API"
         description="Secure digital document verification"
         heroTitle="DigiLocker API for Secure Digital Document Verification"
         heroSubtitle="Access and verify user documents digitally through consent-driven, paperless workflows."
         category="verification"
-        docsUrl="https://eko.in/developers/eps/digilocker-api/"
+        docsUrl="https://eps.eko.in/developers/eps/digilocker-api/"
         overview="The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records."
         keyBenefits={[
           "Paperless document verification",

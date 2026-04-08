@@ -8,17 +8,17 @@ const BankVerificationPage = () => {
     <>
       <Helmet>
         <title>Bank Account Verification API - Penny Drop & IFSC | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts." 
+        <meta
+          name="description"
+          content="Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts."
         />
         <meta name="keywords" content="bank account verification API, penny drop API, IFSC validation API, bank verification, account verification, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/bank-verification-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/bank-verification-api" /> */}
         <meta property="og:title" content="Bank Account Verification API - Penny Drop & IFSC | Eko" />
         <meta property="og:description" content="Verify bank account details instantly with penny drop and IFSC validation." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Bank Account Verification API"
         description="Verify bank account details instantly with penny drop verification"

@@ -10,12 +10,12 @@ const GstVerificationPage = () => {
         <title>GST Verification API | Real-Time GSTIN Validation | Eko</title>
         <meta name="description" content="Integrate GST Verification API to validate GSTIN details instantly for vendor onboarding, compliance, and fraud prevention." />
         <meta name="keywords" content="GST Verification API, GSTIN Verification API, GST Check API, Business Verification API, GST Validation API" />
-        <link rel="canonical" href="https://eko.in/products/gst-verification-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/gst-verification-api" /> */}
         <meta property="og:title" content="GST Verification API | Real-Time GSTIN Validation | Eko" />
         <meta property="og:description" content="Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="GST Verification API"
         description="Validate GSTIN details instantly"

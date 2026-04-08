@@ -10,12 +10,12 @@ const DlVerificationPage = () => {
         <title>Driving License Verification API | Real-Time DL Validation | Eko</title>
         <meta name="description" content="Integrate Driving License Verification API to validate driving license details instantly for KYC, onboarding, and compliance checks." />
         <meta name="keywords" content="Driving License Verification API, DL Verification API, Driving Licence Check API, Identity Verification API, KYC DL API" />
-        <link rel="canonical" href="https://eko.in/products/dl-verification-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/dl-verification-api" /> */}
         <meta property="og:title" content="Driving License Verification API | Real-Time DL Validation | Eko" />
         <meta property="og:description" content="Verify driving license details in real time to strengthen KYC and reduce identity fraud." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Driving License Verification API"
         description="Real-time DL validation"

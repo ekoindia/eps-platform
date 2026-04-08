@@ -9,12 +9,12 @@ const RcVerificationPage = () => {
         <title>RC Verification API | Vehicle Registration Validation | Eko</title>
         <meta name="description" content="Integrate RC Verification API to validate vehicle registration details instantly for compliance, onboarding, and fraud prevention." />
         <meta name="keywords" content="RC Verification API, Vehicle RC Verification API, Vehicle Registration Check API, RC Validation API, Vehicle Verification API" />
-        <link rel="canonical" href="https://eko.in/products/rc-verification-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/rc-verification-api" /> */}
         <meta property="og:title" content="RC Verification API | Vehicle Registration Validation | Eko" />
         <meta property="og:description" content="Verify vehicle registration details in real time to ensure compliance and reduce fraud." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="RC Verification API"
         description="Vehicle registration validation"

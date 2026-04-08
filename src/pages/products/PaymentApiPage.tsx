@@ -8,17 +8,17 @@ const PaymentApiPage = () => {
     <>
       <Helmet>
         <title>Payout API - Salary & Vendor Payments | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Make instant salary disbursals and vendor payments using Eko's Payout API. Pay employees and vendors directly from your e-wallet balance with high success rates." 
+        <meta
+          name="description"
+          content="Make instant salary disbursals and vendor payments using Eko's Payout API. Pay employees and vendors directly from your e-wallet balance with high success rates."
         />
         <meta name="keywords" content="payout API, salary disbursal API, vendor payment API, fund transfer API, e-wallet payout, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/payment-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/payment-api" /> */}
         <meta property="og:title" content="Payout API - Salary & Vendor Payments | Eko" />
         <meta property="og:description" content="Instant salary disbursals and vendor payments using your e-wallet balance." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Payout API"
         description="Make salary & vendor payments easily"

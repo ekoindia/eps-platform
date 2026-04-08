@@ -8,17 +8,17 @@ const AepsApiPage = () => {
     <>
       <Helmet>
         <title>AePS API - Aadhaar Enabled Payment System | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Enable Aadhaar-based banking services with Eko's AePS API. Cash withdrawal, balance enquiry, mini statements, and fund transfers using Aadhaar authentication." 
+        <meta
+          name="description"
+          content="Enable Aadhaar-based banking services with Eko's AePS API. Cash withdrawal, balance enquiry, mini statements, and fund transfers using Aadhaar authentication."
         />
         <meta name="keywords" content="AePS API, Aadhaar enabled payment system, Aadhaar banking API, biometric payment API, rural banking API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/aeps-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/aeps-api" /> */}
         <meta property="og:title" content="AePS API - Aadhaar Enabled Payment System | Eko" />
         <meta property="og:description" content="Enable Aadhaar-based banking services for rural and underbanked segments." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="AePS API"
         description="Aadhaar-enabled payment services for rural and underbanked segments"

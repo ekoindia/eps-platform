@@ -9,12 +9,12 @@ const EmployeeVerificationPage = () => {
         <title>Employee Verification API | Workforce Background Checks | Eko</title>
         <meta name="description" content="Integrate Employee Verification API to verify employee identity and details digitally for hiring, compliance, and risk management." />
         <meta name="keywords" content="Employee Verification API, Employee Background Check API, Workforce Verification API, HR Verification API, Employee KYC API" />
-        <link rel="canonical" href="https://eko.in/products/employee-verification-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/employee-verification-api" /> */}
         <meta property="og:title" content="Employee Verification API | Workforce Background Checks | Eko" />
         <meta property="og:description" content="Verify employee identity and details digitally to reduce hiring risk and ensure compliance." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Employee Verification API"
         description="Digital employee identity verification"

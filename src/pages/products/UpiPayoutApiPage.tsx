@@ -8,17 +8,17 @@ const UpiPayoutApiPage = () => {
     <>
       <Helmet>
         <title>UPI Payout API - Instant UPI Transfers | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Send instant payouts to any UPI ID with Eko's UPI Payout API. Instant transfers, bulk payouts, and real-time status updates for businesses." 
+        <meta
+          name="description"
+          content="Send instant payouts to any UPI ID with Eko's UPI Payout API. Instant transfers, bulk payouts, and real-time status updates for businesses."
         />
         <meta name="keywords" content="UPI payout API, instant payout API, UPI transfer API, bulk UPI payout, vendor payout API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/upi-payout-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/upi-payout-api" /> */}
         <meta property="og:title" content="UPI Payout API - Instant UPI Transfers | Eko" />
         <meta property="og:description" content="Send instant payouts to any UPI ID with real-time status updates." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="UPI Payout API"
         description="Send instant payouts to any UPI ID"

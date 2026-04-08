@@ -7,17 +7,17 @@ const VehicleVerificationPage = () => {
     <>
       <Helmet>
         <title>Vehicle Verification API - RC & DL Verification | Eko India Financial Services</title>
-        <meta 
-          name="description" 
-          content="Verify vehicle RC and driving license with Eko's Vehicle Verification API. Registration certificate validation, DL verification, chassis number check for mobility services." 
+        <meta
+          name="description"
+          content="Verify vehicle RC and driving license with Eko's Vehicle Verification API. Registration certificate validation, DL verification, chassis number check for mobility services."
         />
         <meta name="keywords" content="vehicle verification API, RC verification API, driving license API, DL verification, registration certificate API, Eko API" />
-        <link rel="canonical" href="https://eko.in/products/vehicle-verification-api" />
+        {/* <link rel="canonical" href="https://eko.in/products/vehicle-verification-api" /> */}
         <meta property="og:title" content="Vehicle Verification API - RC & DL Verification | Eko" />
         <meta property="og:description" content="Verify vehicle RC and driving license for mobility and logistics services." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Vehicle Verification API"
         description="Verify vehicle RC and driving license for mobility services"

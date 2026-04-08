@@ -9,12 +9,12 @@ const AadhaarVerificationPage = () => {
         <title>Aadhaar Verification API | Secure Identity Verification | Eko</title>
         <meta name="description" content="Integrate Aadhaar Verification API to verify identity securely with consent-based, compliance-ready workflows." />
         <meta name="keywords" content="Aadhaar Verification API, Aadhaar KYC API, Identity Verification API, UIDAI Verification API, Digital KYC API" />
-        <link rel="canonical" href="https://eko.in/products/aadhaar-verification-api" />
+        {/* <link rel="canonical" href="https://eps.eko.in/products/aadhaar-verification-api" /> */}
         <meta property="og:title" content="Aadhaar Verification API | Secure Identity Verification | Eko" />
         <meta property="og:description" content="Verify Aadhaar details through consent-based, real-time verification workflows." />
         <meta property="og:type" content="website" />
       </Helmet>
-      
+
       <ProductPageLayout
         title="Aadhaar Verification API"
         description="Verify Aadhaar details securely"
