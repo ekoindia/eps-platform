@@ -233,7 +233,7 @@ export const ProductsSection = () => {
               </div>
               <Button variant="gold" size="lg" asChild>
                 <Link to="/products/eko-shield">
-                  Request Demo
+                  Learn More
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>

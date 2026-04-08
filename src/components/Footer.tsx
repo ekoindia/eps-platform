@@ -38,6 +38,20 @@ const footerLinks = {
     { label: "Refund Policy", href: "/refund-policy", internal: true },
     { label: "Compliance", href: "#compliance" },
   ],
+  industries: [
+    { label: "Lending & NBFCs", href: "/industries/lending-nbfc", internal: true },
+    { label: "Microfinance", href: "/industries/microfinance", internal: true },
+    { label: "Insurance", href: "/industries/insurance", internal: true },
+    { label: "Agent Networks", href: "/industries/agent-networks-csp", internal: true },
+    { label: "All Industries", href: "/industries", internal: true },
+  ],
+  solutions: [
+    { label: "Assisted Banking Pack", href: "/solutions/assisted-banking-agent-pack", internal: true },
+    { label: "Lending KYC Pack", href: "/solutions/lending-kyc-pack", internal: true },
+    { label: "Merchant Onboarding", href: "/solutions/merchant-onboarding-pack", internal: true },
+    { label: "MFI Operations", href: "/solutions/mfi-field-operations-pack", internal: true },
+    { label: "All Solutions", href: "/solutions", internal: true },
+  ],
 };
 
 const XIcon = ({ className }: { className?: string }) => (
@@ -59,7 +73,7 @@ export const Footer = () => {
     <footer className="bg-eko-navy text-white">
       {/* Main Footer */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-8 lg:gap-10">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="mb-3">
@@ -125,6 +139,42 @@ export const Footer = () => {
                       {link.label}
                     </a>
                   )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Industries */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Industries</h4>
+            <ul className="space-y-3">
+              {footerLinks.industries.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                  >
+                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Solutions */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Solutions</h4>
+            <ul className="space-y-3">
+              {footerLinks.solutions.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                  >
+                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>

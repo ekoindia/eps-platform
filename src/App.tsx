@@ -42,6 +42,13 @@ import EkoShieldPage from "./pages/EkoShieldPage";
 import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
 import SignupPage from "./pages/SignupPage";
 
+// Industry & Solution Pages
+import IndustryDetailPage from "./pages/IndustryDetailPage";
+import SolutionDetailPage from "./pages/SolutionDetailPage";
+import IndustriesPage from "./pages/IndustriesPage";
+import SolutionsPage from "./pages/SolutionsPage";
+import UseCasesHubPage from "./pages/UseCasesHubPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -81,6 +88,13 @@ const App = () => (
               {/* Eko Shield */}
               <Route path="/products/eko-shield" element={<EkoShieldPage />} />
               <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} />
+
+              {/* Industry & Solution Pages */}
+              <Route path="/use-cases" element={<UseCasesHubPage />} />
+              <Route path="/industries" element={<IndustriesPage />} />
+              <Route path="/industries/:slug" element={<IndustryDetailPage />} />
+              <Route path="/solutions" element={<SolutionsPage />} />
+              <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
 
               {/* Company & Legal Pages */}
               <Route path="/about-us" element={<AboutPage />} />
