@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { openZohoChat } from "@/lib/zoho-form";
-import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import {
   ArrowRight, Shield, Zap, ShieldCheck, Eye, TrendingDown,
   Landmark, CreditCard, Users, Truck, ShoppingBag, Plane, Leaf, Building2,
@@ -447,13 +447,7 @@ const EkoShieldPage = () => {
               <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
                 <div className="bg-card rounded-2xl p-6 shadow-2xl overflow-hidden border border-border">
                   <h3 className="text-xl font-bold text-card-foreground mb-4">Get Started with Eko Shield</h3>
-                  <iframe
-                    aria-label="New Eko.in API Signup"
-                    frameBorder="0"
-                    allow="geolocation;"
-                    style={{ height: "500px", width: "100%", border: "none" }}
-                    src={ZOHO_SIGNUP_EMBED_URL}
-                  />
+                  <ZohoSignupForm />
                 </div>
               </motion.div>
             </div>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// Redundant: This was used to submit to Zoho Form via Javascript fetch
 const ZOHO_ENDPOINT =
   "https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/t7sfVQXMPus-0edXDrlVwvYeOUvLukZFFDUpISXlsnk/htmlRecords/submit";
 

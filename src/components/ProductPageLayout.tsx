@@ -11,7 +11,7 @@ import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import type { ApiField } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 
 interface ProductFeature {
   title: string;
@@ -220,13 +220,7 @@ export const ProductPageLayout = ({
                     </div>
 
                     <div className="p-2">
-                      <iframe
-                        aria-label="New Eko.in API Signup"
-                        frameBorder="0"
-                        allow="geolocation;"
-                        style={{ height: "500px", width: "100%", border: "none" }}
-                        src={ZOHO_SIGNUP_EMBED_URL}
-                      />
+                      <ZohoSignupForm />
                     </div>
                   </div>
                 </div>
@@ -584,13 +578,7 @@ export const ProductPageLayout = ({
                     <p className="text-white/70 text-sm">Get started in 10 minutes</p>
                   </div>
                   <div className="p-2">
-                    <iframe
-                      aria-label="New Eko.in API Signup"
-                      frameBorder="0"
-                      allow="geolocation;"
-                      style={{ height: "500px", width: "100%", border: "none" }}
-                      src={ZOHO_SIGNUP_EMBED_URL}
-                    />
+                    <ZohoSignupForm />
                   </div>
                 </div>
               </div>

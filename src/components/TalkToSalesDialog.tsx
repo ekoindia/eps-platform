@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { openZohoChat } from "@/lib/zoho-form";
-import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import {
   Dialog,
   DialogContent,
@@ -91,13 +91,7 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
               <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
             </DialogHeader>
             <div className="px-6 pb-6">
-              <iframe
-                aria-label="New Eko.in API Signup"
-                frameBorder="0"
-                allow="geolocation;"
-                style={{ height: "500px", width: "100%", border: "none" }}
-                src={ZOHO_SIGNUP_EMBED_URL}
-              />
+              <ZohoSignupForm />
             </div>
           </>
         )}

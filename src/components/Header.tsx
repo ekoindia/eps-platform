@@ -7,7 +7,7 @@ import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles,
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
-import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { EkoLogo } from "@/components/EkoLogo";
 import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -587,13 +587,7 @@ export const Header = () => {
             <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
           </DialogHeader>
 
-          <iframe
-            aria-label="New Eko.in API Signup"
-            frameBorder="0"
-            allow="geolocation;"
-            style={{ height: "500px", width: "100%", border: "none" }}
-            src={ZOHO_SIGNUP_EMBED_URL}
-          />
+          <ZohoSignupForm />
         </DialogContent>
       </Dialog>
       <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />

@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { CheckCircle } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 
 const signupBenefits = [
   "Sandbox access in minutes",
@@ -59,13 +59,7 @@ const SignupPage = () => {
                   </div>
 
                   <div className="p-2">
-                    <iframe
-                      aria-label="New Eko.in API Signup"
-                      frameBorder="0"
-                      allow="geolocation;"
-                      style={{ height: "500px", width: "100%", border: "none" }}
-                      src={ZOHO_SIGNUP_EMBED_URL}
-                    />
+                    <ZohoSignupForm />
                   </div>
                 </div>
               </div>

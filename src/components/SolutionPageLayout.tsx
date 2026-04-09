@@ -9,7 +9,7 @@ import { SolutionCard } from "@/components/SolutionCard";
 import { CodeBlock } from "@/components/CodeBlock";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { ArrowRight, CheckCircle, HelpCircle, Shield, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { SolutionData } from "@/lib/data/solutions";
@@ -307,13 +307,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                   <p className="text-white/70 text-sm">Get started in 10 minutes</p>
                 </div>
                 <div className="p-2">
-                  <iframe
-                    aria-label="New Eko.in API Signup"
-                    frameBorder="0"
-                    allow="geolocation;"
-                    style={{ height: "500px", width: "100%", border: "none" }}
-                    src={ZOHO_SIGNUP_EMBED_URL}
-                  />
+                  <ZohoSignupForm />
                 </div>
               </div>
             </div>
