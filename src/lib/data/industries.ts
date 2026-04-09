@@ -500,11 +500,244 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Seller KYB & onboarding for marketplace platforms",
   },
 
+  /* ── 7. Staffing & HR ───────────────────────────────────────── */
+  {
+    slug: "staffing-hr",
+    name: "Staffing & HR",
+    eyebrow: "INDUSTRY",
+    h1: "Staffing & HR APIs for background verification & workforce onboarding",
+    heroSubtitle:
+      "From mass hiring BGV to gig worker onboarding — Eko gives staffing firms, HR platforms, and enterprise HR teams instant verification APIs that cover identity, employment history, education, and bank accounts.",
+    trustStrip: [
+      // "DPDP Act Compliant",
+      // "Bulk BGV Supported",
+      "Trusted by 50,000+ businesses",
+      "RBI compliant",
+      "99.9% uptime",
+      "5-Minute Onboarding SLA",
+    ],
+    challengeText:
+      "India onboards millions of new employees and gig workers every month — yet most HR teams still rely on manual reference calls, physical document checks, and third-party BGV agencies that take 5–10 business days and cost ₹500–2,000 per hire. For staffing firms running high-volume hiring cycles, this creates a bottleneck that delays time-to-deploy and inflates pre-employment costs.\n\nFor gig and delivery platforms, the challenge is different but equally acute: onboarding a driver or rider requires verifying a driving licence, vehicle registration, Aadhaar identity, and bank account — often in a single mobile session — before the worker can start earning. Eko's API stack handles both use cases from one integration.",
+    recommendedPacks: [
+      {
+        slug: "employee-bgv-pack",
+        name: "Employee BGV Pack",
+        description:
+          "Run instant background verification on new hires — identity, EPFO employment history, education, and address in under 5 minutes.",
+        apis: ["PAN Verification", "Aadhaar Verification", "Employee Verification (EPFO)", "DL Verification", "DigiLocker", "Reverse Geocoding"],
+        featured: true,
+      },
+      {
+        slug: "gig-worker-onboarding-pack",
+        name: "Gig Worker Onboarding Pack",
+        description:
+          "Onboard delivery riders and gig workers in under 3 minutes — identity, DL, vehicle RC, and bank account in one flow.",
+        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "RC Verification", "Bank Verification"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "pan", name: "PAN Verification", description: "Verify employee identity for tax compliance (TDS Section 192/194C)", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Confirm address and biometric identity for blue-collar & field workers", href: "/products/aadhaar-verification-api", relevance: "H" },
+      { apiId: "employee", name: "Employee Verification (EPFO)", description: "Fetch full employment history from EPFO PRAN — replaces reference calls", href: "/products/employee-verification-api", relevance: "H" },
+      { apiId: "dl", name: "DL Verification", description: "Verify driving licence for delivery riders, drivers, and field staff", href: "/products/dl-verification-api", relevance: "H" },
+      { apiId: "digilocker", name: "DigiLocker", description: "Pull degree certificates and marksheets directly — eliminates document fraud", href: "/products/digilocker-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate payout account before onboarding is complete", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "geocoding", name: "Reverse Geocoding", description: "Validate employee's stated address against GPS coordinates", href: "/products/reverse-geocoding-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Fuzzy name matching across ID documents to catch discrepancies", href: "/products/name-match-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Mass hiring BGV at 1,000 hires/day",
+        situation:
+          "A large staffing firm onboards 1,000 contract workers daily across manufacturing plants in 5 states. Manual BGV takes 7–10 days and costs ₹800 per hire.",
+        integration:
+          "They integrate the Employee BGV Pack: each worker submits Aadhaar + PAN on a mobile form → EPFO employment history fetched automatically → DigiLocker pulls educational certificates → bank account verified. All in parallel.",
+        outcome:
+          "BGV time reduced from 7 days to 6 minutes. Cost per BGV cut from ₹800 to under ₹50. 40% of applications cleared same-hour.",
+      },
+      {
+        title: "Delivery rider onboarding at scale",
+        situation:
+          "A quick-commerce startup needs to onboard 10,000 delivery riders in 30 cities before a festival season peak. Manual DL + RC checks take 3 days.",
+        integration:
+          "They use the Gig Worker Onboarding Pack: rider enters mobile + Aadhaar → PAN verified → DL validated against Sarathi DB → vehicle RC + insurance confirmed → bank account registered. 3 minutes per rider.",
+        outcome:
+          "Fully onboarded 8,500 riders in 2 days — 5x faster than previous cycle. Zero suspended-licence riders on network.",
+      },
+      {
+        title: "Healthcare temp staff BGV",
+        situation:
+          "A hospital group hires 500 temp nurses and paramedics quarterly and must verify nursing council registration and educational credentials.",
+        integration:
+          "DigiLocker fetches nursing council certificates. PAN + Aadhaar confirm identity. EPFO lookup checks prior employment at other facilities.",
+        outcome: "Zero fraudulent credential submissions in 3 consecutive hiring cycles.",
+      },
+      {
+        title: "Field sales team background check",
+        situation:
+          "A BFSI company onboards 200 field sales agents monthly and needs address verification against a physical location.",
+        integration:
+          "Aadhaar OTP confirms current address. Reverse Geocoding validates GPS coordinates match the stated address during the onboarding field visit. PAN cross-checks identity.",
+        outcome: "Address fraud rate dropped 70% after introducing geocoding-based address validation.",
+      },
+    ],
+    whyEko: [
+      { title: "BGV in under 5 minutes", description: "Parallel API calls — PAN, EPFO, DigiLocker, bank — run simultaneously for the fastest possible onboarding.", icon: CheckCircle },
+      // { title: "DPDP Act 2023 compliant", description: "Built-in consent flows ensure every verification meets India's Digital Personal Data Protection Act requirements.", icon: ShieldCheck },
+      { title: "Bulk async processing", description: "Verify multiple employees in a single batch.", icon: BarChart3 },
+      { title: "Pay per verification", description: "No BGV agency retainers. No minimum commitment. Pay only for API calls you make — sandbox is free.", icon: Banknote },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      // { title: "DPDP Act 2023", description: "All verification APIs include consent capture and data minimisation — aligned with India's Digital Personal Data Protection Act." },
+      // { title: "EPFO Data Access", description: "Employee Verification uses EPFO's official PRAN lookup — employee consent is mandatory and logged for audit." },
+    ],
+    faqs: [
+      { question: "Is employee consent required for EPFO and DigiLocker lookups?", answer: "Yes. Every data fetch requires explicit employee consent captured digitally. The consent log is available for audit, as required under the DPDP Act 2023." },
+      { question: "What if a candidate doesn't have EPFO registration?", answer: "Many informal and first-time workers lack EPFO records. For these cases, the pack uses Aadhaar verification for address + identity, and DigiLocker for educational documents as fallbacks." },
+      { question: "Can I run bulk BGV in a batch of multiple employees?", answer: "Yes. PAN, bank account, and employee verification APIs all support bulk mode with async processing." },
+      { question: "How long does sandbox-to-production onboarding take for an HR platform?", answer: "Most HR platforms complete sandbox integration in 1–2 days and go live within 5 business days after submitting platform documentation." },
+      { question: "Can I periodically re-verify DL validity for active delivery workers?", answer: "Yes. Many gig platforms re-verify DLs monthly to catch expirations or suspensions. The DL Verification API can be called at any frequency — pricing is per API call." },
+      { question: "Does the bank verification confirm the account is active?", answer: "Yes. Eko's penny-drop bank verification returns both account holder name and active/inactive status in a single real-time call." },
+    ],
+    relatedIndustries: [
+      { slug: "logistics-fleet", name: "Logistics & Fleet" },
+      { slug: "e-commerce", name: "E-commerce" },
+      { slug: "healthcare", name: "Healthcare" },
+    ],
+    seo: {
+      title: "Staffing & HR APIs | Background Verification & Onboarding | Eko",
+      description: "Instant employee background verification & gig worker onboarding APIs for India. EPFO, DL, PAN, DigiLocker, bank — BGV in under 5 minutes. DPDP compliant.",
+      keywords: "staffing api india, employee background verification api, bgv api india, hr onboarding api, epfo verification api, gig worker onboarding api",
+    },
+    icon: Briefcase,
+    category: "workforce-fleet",
+    navDescription: "Background verification for temp & permanent hires",
+  },
+
+  /* ── 8. Logistics & Fleet ───────────────────────────────────── */
+  {
+    slug: "logistics-fleet",
+    name: "Logistics & Fleet",
+    eyebrow: "INDUSTRY",
+    h1: "Logistics & Fleet APIs for vehicle compliance & driver verification",
+    heroSubtitle:
+      "From daily fleet compliance monitoring to delivery partner onboarding — Eko gives logistics operators, fleet managers, and motor insurers real-time vehicle and driver verification APIs backed by the national VAHAN database.",
+    trustStrip: [
+      "All-India RTO Coverage (VAHAN)",
+      // "Daily Batch Monitoring",
+      "Trusted by 50,000+ businesses",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "India has 12+ million registered commercial vehicles and 5+ million active delivery partners — yet most fleet operators still track RC expiries, DL validity, and insurance renewals in spreadsheets, discovering compliance gaps only when a vehicle is stopped on road. The Motor Vehicles (Amendment) Act 2019 raised penalties significantly — an expired insurance or suspended driver licence now carries fines of ₹2,000–25,000 per incident.\n\nFor delivery and logistics platforms, the onboarding challenge compounds the compliance problem: each new driver must be verified for identity, licence validity, and vehicle insurance before they can start earning — a process that takes 2–3 days manually. Eko's Fleet Compliance Pack + Gig Worker Onboarding Pack close both gaps from a single API integration.",
+    recommendedPacks: [
+      {
+        slug: "fleet-compliance-pack",
+        name: "Fleet Compliance Pack",
+        description:
+          "Automate RC, insurance, permit, and DL compliance across your entire fleet — with daily batch checks and 30-day expiry alerts.",
+        apis: ["RC Verification", "Vehicle Verification", "DL Verification", "Reverse Geocoding"],
+        featured: true,
+      },
+      {
+        slug: "gig-worker-onboarding-pack",
+        name: "Gig Worker Onboarding Pack",
+        description:
+          "Onboard delivery riders in under 3 minutes — identity, DL, vehicle RC, and bank account in one mobile flow.",
+        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "RC Verification", "Bank Verification"],
+      },
+      {
+        slug: "motor-insurance-pack",
+        name: "Motor Insurance Pack",
+        description:
+          "Auto-fill motor insurance proposals using verified vehicle and RC data — instant quotes, no manual form filling.",
+        apis: ["Vehicle Verification", "RC Verification", "DL Verification", "PAN Verification"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "rc", name: "RC Verification", description: "Fetch RC details, insurance expiry, and owner info from VAHAN", href: "/products/rc-verification-api", relevance: "H" },
+      { apiId: "vehicle", name: "Vehicle Verification", description: "Full vehicle data — chassis, engine, blacklist status, financier", href: "/products/vehicle-verification-api", relevance: "H" },
+      { apiId: "dl", name: "DL Verification", description: "Validate driving licence, vehicle categories authorised, suspension status", href: "/products/dl-verification-api", relevance: "H" },
+      { apiId: "geocoding", name: "Reverse Geocoding", description: "GPS to address — geofence routes, verify driver locations, permit-zone compliance", href: "/products/reverse-geocoding-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Driver identity and address verification during onboarding", href: "/products/aadhaar-verification-api", relevance: "M" },
+      { apiId: "pan", name: "PAN Verification", description: "Verify driver PAN for TDS deduction on delivery earnings", href: "/products/pan-verification-api", relevance: "M" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate payout account before registering driver for earnings", href: "/products/bank-verification-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Daily fleet compliance batch for 10,000 vehicles",
+        situation:
+          "A logistics company with 10,000 commercial vehicles needs to ensure every RC and DL is valid before dispatching vehicles each morning.",
+        integration:
+          "They run a daily batch job via Eko's RC + DL Verification APIs — all 10,000 vehicles checked overnight, non-compliant vehicles flagged before dispatch. 30-day expiry alerts configured.",
+        outcome:
+          "Zero regulatory incidents in 18 months. Insurance renewal costs reduced 12% by proactive renewal vs. lapse-and-reinstate cycle.",
+      },
+      {
+        title: "3-minute delivery partner onboarding",
+        situation:
+          "A quick-commerce platform needs to onboard 5,000 new delivery partners before a city expansion launch.",
+        integration:
+          "Each partner completes a mobile flow: Aadhaar OTP → PAN verify → DL validation → vehicle RC + insurance check → bank account penny-drop. Eko runs all steps in parallel.",
+        outcome:
+          "4,800 partners onboarded in 48 hours — 6x faster than the previous manual process. DL fraud rate dropped to zero.",
+      },
+      {
+        title: "Commercial vehicle insurance in 30 seconds",
+        situation:
+          "A motor insurer wants to offer instant commercial vehicle insurance renewal via a B2B API to fleet operators.",
+        integration:
+          "Fleet operator enters registration number → Vehicle Verification auto-fills make/model/engine → RC Verification confirms owner and previous insurer → DL check → instant renewal quote generated.",
+        outcome:
+          "Policy issuance time cut from 24 hours to 8 minutes. Drop-off rate on the renewal flow fell 55%.",
+      },
+      {
+        title: "Permit-zone geofencing for 3-wheelers",
+        situation:
+          "A 3-wheeler logistics operator must ensure vehicles only operate in permit-authorised zones across city boundaries.",
+        integration:
+          "Reverse Geocoding API converts live GPS data to administrative zone codes, checked against each vehicle's permit at every trip start.",
+        outcome: "Permit violations eliminated — compliance cost from traffic fines reduced 80%.",
+      },
+    ],
+    whyEko: [
+      { title: "VAHAN national database", description: "All RC and vehicle data sourced from VAHAN — 99% coverage of registered vehicles across all 36 state RTOs.", icon: CheckCircle },
+      // { title: "Automated expiry alerts", description: "Configure 30/15/7 day advance alerts for insurance, DL, and RC renewals — eliminate fire-fighting compliance.", icon: ShieldCheck },
+      { title: "Sub-2-second responses", description: "Real-time RC, DL, and vehicle lookups return in under 2 seconds — fast enough for trip-start compliance gates.", icon: Zap },
+      { title: "Fleet-scale batch processing", description: "Verify multiple vehicles via bulk API.", icon: BarChart3 },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      // { title: "Motor Vehicles Act (MVA 2019)", description: "Eko's RC, DL, and Vehicle Verification APIs are sourced from VAHAN/Sarathi — the same databases used by traffic enforcement authorities." },
+      // { title: "MORTH Digital Integration", description: "Direct integration with the Ministry of Road Transport & Highways' VAHAN 4.0 and Sarathi 4.0 national databases for real-time, authoritative data." },
+    ],
+    faqs: [
+      { question: "Which database does Eko use for RC and vehicle verification?", answer: "Eko's RC and Vehicle Verification APIs connect to VAHAN 4.0 — the Ministry of Road Transport & Highways' national vehicle registration database with 99%+ coverage for all registered vehicles." },
+      { question: "Can I check vehicles registered across multiple states?", answer: "Yes. VAHAN is a national database covering all 36 state RTOs. A single API call fetches data for any registration number regardless of the issuing state." },
+      // { question: "How does the daily fleet compliance batch work?", answer: "You send a list of registration numbers and DL numbers to the batch API. Eko processes them asynchronously and sends a webhook when results are ready — typically overnight for batches up to 50,000 vehicles." },
+      // { question: "Can I set up expiry alerts for insurance and DL renewals?", answer: "Yes. Each API response includes expiry dates for insurance, registration, and DL. Your system can trigger alerts based on these dates — many operators configure 30-day and 7-day reminders." },
+      { question: "How fast are real-time vehicle lookups?", answer: "Typically under 2 seconds for RC and vehicle verification. DL verification via Sarathi is usually under 3 seconds. Both are fast enough for trip-start compliance gates." },
+      { question: "Does the Gig Worker Onboarding Pack also verify vehicle ownership?", answer: "Yes. RC Verification confirms that the vehicle registration is valid, insured, and that the registered owner matches the gig worker — preventing workers from using unregistered or borrowed vehicles." },
+    ],
+    relatedIndustries: [
+      { slug: "staffing-hr", name: "Staffing & HR" },
+      { slug: "automotive", name: "Automotive" },
+      { slug: "insurance", name: "Insurance" },
+    ],
+    seo: {
+      title: "Logistics & Fleet APIs | Vehicle Compliance & Driver Verification | Eko",
+      description: "Fleet compliance & driver verification APIs for India. RC, DL, vehicle verification via VAHAN. Daily batch monitoring, expiry alerts, instant delivery partner onboarding.",
+      keywords: "logistics api india, fleet compliance api, rc verification api india, dl verification fleet, vehicle compliance api, delivery partner onboarding api, vahan api india",
+    },
+    icon: Truck,
+    category: "workforce-fleet",
+    navDescription: "Driver & vehicle compliance for fleet operators",
+  },
+
   /* ── Placeholder industries with minimal data ──────────────── */
   ...([
     { slug: "saas-platforms", name: "SaaS Platforms", icon: Building2, category: "digital-tech" as IndustryCategory, navDescription: "Embed verification & payments in your SaaS product" },
-    { slug: "staffing-hr", name: "Staffing & HR", icon: Briefcase, category: "workforce-fleet" as IndustryCategory, navDescription: "Background verification for temp & permanent hires" },
-    { slug: "logistics-fleet", name: "Logistics & Fleet", icon: Truck, category: "workforce-fleet" as IndustryCategory, navDescription: "Driver & vehicle compliance for fleet operators" },
     { slug: "e-commerce", name: "E-commerce", icon: ShoppingCart, category: "digital-tech" as IndustryCategory, navDescription: "Seller onboarding & payout verification" },
     { slug: "agriculture", name: "Agriculture", icon: Sprout, category: "sector-specific" as IndustryCategory, navDescription: "Financial services for farmers & FPOs" },
     { slug: "automotive", name: "Automotive", icon: Car, category: "sector-specific" as IndustryCategory, navDescription: "Vehicle financing & insurance verification" },
