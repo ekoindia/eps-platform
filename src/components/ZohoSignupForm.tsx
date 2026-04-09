@@ -4,7 +4,7 @@ import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
 export const ZohoSignupForm = () => {
   const { pathname } = useLocation();
   const referrername = pathname.replace(/^\/+|\/+$/g, ""); // strip leading and trailing slashes
-  const website = `${window.location.origin}${pathname}`;
+  const website = window.location.href;
 
   const src = `${ZOHO_SIGNUP_EMBED_URL}?Website=${encodeURIComponent(website)}&referrername=${encodeURIComponent(referrername)}`;
 
