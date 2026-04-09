@@ -102,7 +102,7 @@ const DEFAULT_INTEGRATION_STEPS = [
 /* ─────────────────────────────────────────────────────────────── */
 
 export const INDUSTRIES_LIST: IndustryData[] = [
-  /* ── 1. Lending & NBFC ──────────────────────────────────────── */
+  // MARK: Lending NBFC
   {
     slug: "lending-nbfc",
     name: "Lending & NBFC",
@@ -205,7 +205,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "KYC, disbursal & EMI collection for digital lenders",
   },
 
-  /* ── 2. Microfinance ────────────────────────────────────────── */
+
+  // MARK: Microfinance
   {
     slug: "microfinance",
     name: "Microfinance",
@@ -266,7 +267,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Digitize field collection & disbursal for MFIs",
   },
 
-  /* ── 3. Insurance ───────────────────────────────────────────── */
+
+  // MARK: Insurance
   {
     slug: "insurance",
     name: "Insurance",
@@ -326,7 +328,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Auto-fill proposals & verify policyholders instantly",
   },
 
-  /* ── 4. Agent Networks (CSP/BC) ─────────────────────────────── */
+
+  // MARK: Agent Networks CSP/BC
   {
     slug: "agent-networks-csp",
     name: "Agent Networks (CSP/BC)",
@@ -388,7 +391,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Scale BC/CSP operations under Eko's BCNM license",
   },
 
-  /* ── 5. Kirana & Retail ─────────────────────────────────────── */
+
+  // MARK: Kirana & Retail
   {
     slug: "kirana-retail",
     name: "Kirana & Retail",
@@ -444,7 +448,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Turn shops into banking touchpoints for extra income",
   },
 
-  /* ── 6. Marketplaces ────────────────────────────────────────── */
+
+  // MARK: Marketplaces
   {
     slug: "marketplaces",
     name: "Marketplaces",
@@ -500,7 +505,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Seller KYB & onboarding for marketplace platforms",
   },
 
-  /* ── 7. Staffing & HR ───────────────────────────────────────── */
+
+  // MARK: Staffing HR
   {
     slug: "staffing-hr",
     name: "Staffing & HR",
@@ -615,7 +621,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Background verification for temp & permanent hires",
   },
 
-  /* ── 8. Logistics & Fleet ───────────────────────────────────── */
+
+  // MARK: Logistics Fleet
   {
     slug: "logistics-fleet",
     name: "Logistics & Fleet",
@@ -735,51 +742,854 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     navDescription: "Driver & vehicle compliance for fleet operators",
   },
 
-  /* ── Placeholder industries with minimal data ──────────────── */
-  ...([
-    { slug: "saas-platforms", name: "SaaS Platforms", icon: Building2, category: "digital-tech" as IndustryCategory, navDescription: "Embed verification & payments in your SaaS product" },
-    { slug: "e-commerce", name: "E-commerce", icon: ShoppingCart, category: "digital-tech" as IndustryCategory, navDescription: "Seller onboarding & payout verification" },
-    { slug: "agriculture", name: "Agriculture", icon: Sprout, category: "sector-specific" as IndustryCategory, navDescription: "Financial services for farmers & FPOs" },
-    { slug: "automotive", name: "Automotive", icon: Car, category: "sector-specific" as IndustryCategory, navDescription: "Vehicle financing & insurance verification" },
-    { slug: "travel", name: "Travel", icon: Plane, category: "sector-specific" as IndustryCategory, navDescription: "Merchant onboarding for travel aggregators" },
-    { slug: "education", name: "Education", icon: GraduationCap, category: "sector-specific" as IndustryCategory, navDescription: "Student loan & fee collection APIs" },
-    { slug: "healthcare", name: "Healthcare", icon: Heart, category: "sector-specific" as IndustryCategory, navDescription: "Employee & vendor verification for hospitals" },
-    { slug: "real-estate", name: "Real Estate", icon: Home, category: "sector-specific" as IndustryCategory, navDescription: "Tenant & property verification APIs" },
-    { slug: "accounting-tax", name: "Accounting & Tax", icon: Calculator, category: "sector-specific" as IndustryCategory, navDescription: "MSME credit assessment data for CAs" },
-  ] as const).map((ind) => ({
-    slug: ind.slug,
-    name: ind.name,
+
+  // MARK: SaaS
+  {
+    slug: "saas-platforms",
+    name: "SaaS Platforms",
     eyebrow: "INDUSTRY",
-    h1: `${ind.name} APIs & solutions`,
-    heroSubtitle: `Eko provides the API infrastructure ${ind.name.toLowerCase()} businesses need to verify, transact, and grow — all from a single platform.`,
+    h1: "SaaS Platform APIs for embedded verification & payments",
+    heroSubtitle:
+      "Embed KYC, verification, and payment APIs directly into your SaaS product — give your customers instant onboarding, compliance, and transaction capabilities without building the infrastructure yourself.",
     trustStrip: [
-		"Trusted by 50,000+ businesses",
-		"RBI compliant",
-		"99.9% uptime"
-	],
-    challengeText: `The ${ind.name.toLowerCase()} sector faces unique verification and payment challenges. Eko's API platform simplifies onboarding, compliance, and transactions with a single integration.`,
-    recommendedPacks: [] as RecommendedPack[],
-    apiGrid: [] as ApiGridItem[],
-    useCaseVignettes: [] as UseCaseVignette[],
+      // "Trusted by 500+ SaaS platforms",
+      // "RESTful APIs & SDK support",
+      "Trusted by 50,000+ businesses",
+      "RBI compliant",
+      "99.9% uptime",
+    ],
+    challengeText:
+      "SaaS platforms increasingly need to offer financial and compliance features — KYC for onboarding, bank verification for payouts, GST validation for billing, or lending data for credit-embedded products. Building and maintaining these integrations in-house means managing 6–10 different vendor contracts, disparate APIs, and ongoing compliance updates as regulations change.\n\nEko provides a single API platform that SaaS builders can embed as a backend service — one set of credentials, one dashboard, one contract covering PAN, GST, bank, Aadhaar, DigiLocker, and payment rails. Your product ships faster; your customers get features they'd otherwise build themselves.",
+    recommendedPacks: [
+      {
+        slug: "lending-kyc-pack",
+        name: "Lending KYC Pack",
+        description: "Embed a complete borrower verification flow — OTP, PAN, bank, DigiLocker, GST — into your lending or credit SaaS.",
+        apis: ["Mobile OTP", "PAN Advanced", "Bank Verification", "DigiLocker", "GST Verification", "Fund Transfer"],
+        featured: true,
+      },
+      {
+        slug: "merchant-onboarding-pack",
+        name: "Merchant Onboarding Pack",
+        description: "Add merchant/seller KYB to your SaaS — PAN, GST, bank in one workflow.",
+        apis: ["PAN Verification", "GST Verification", "Bank Verification", "Aadhaar Verification"],
+      },
+      {
+        slug: "msme-credit-assessment-pack",
+        name: "MSME Credit Assessment Pack",
+        description: "Embed alternative credit scoring using GST + ITR data into your fintech or accounting SaaS.",
+        apis: ["GST Verification", "PAN Advanced", "Bank Verification", "DigiLocker"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "pan", name: "PAN Verification", description: "Embed identity verification for user onboarding, admin KYC, or contractor compliance", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate payout accounts before disbursing wages, refunds, or commissions", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "gst", name: "GST Verification", description: "Validate business registrations and filing status within your B2B platform", href: "/products/gst-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Add address verification to user or agent onboarding flows", href: "/products/aadhaar-verification-api", relevance: "H" },
+      { apiId: "digilocker", name: "DigiLocker", description: "Pull ITRs, Aadhaar, driving licences, and education certificates paperlessly", href: "/products/digilocker-api", relevance: "H" },
+      { apiId: "bbps", name: "BBPS", description: "Embed bill payment collection for fee collection or subscription billing", href: "/products/bbps-api", relevance: "M" },
+      { apiId: "upi-payout", name: "UPI Payout", description: "Programmatic payouts to users, vendors, or partners from within your platform", href: "/products/upi-payout-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Embedded BGV in an HR SaaS",
+        situation: "An HR software company wants to offer 'instant employee BGV' as a premium feature — without building verification infrastructure.",
+        integration: "They embed Eko's PAN + Employee Verification + DigiLocker APIs via a single SDK. Customers click 'Run BGV' inside the HR tool; Eko handles every step.",
+        outcome: "New premium tier launched in 3 weeks. 40% of enterprise customers upgraded for the BGV feature.",
+      },
+      {
+        title: "Fintech SaaS adds MSME credit scoring",
+        situation: "An accounting SaaS for CAs wants to add a 'loan eligibility' widget for their SME clients.",
+        integration: "MSME Credit Assessment Pack: GST history fetch → PAN identity link → bank account validation. The SaaS presents a credit score to CAs in-app.",
+        outcome: "NBFC partner secured within 2 months. ₹50 Cr in loan applications generated in the first quarter.",
+      },
+      {
+        title: "Marketplace SaaS automates seller KYB",
+        situation: "A white-label marketplace platform needs every client's sellers to complete KYB before listing products.",
+        integration: "Merchant Onboarding Pack embedded as an API call within the seller registration webhook. PAN + GST + bank happen automatically on signup.",
+        outcome: "Zero failed payouts from unverified accounts. Marketplace clients see 80% fewer KYB support tickets.",
+      },
+    ],
     whyEko: [
-      { title: "Single integration", description: "One API platform for verification, payments, and compliance.", icon: Zap },
-      { title: "RBI compliant", description: "Built-in regulatory compliance for Indian financial regulations.", icon: Shield },
-      { title: "Enterprise-grade", description: "99.9% uptime with enterprise SLAs and dedicated support.", icon: Building2 },
-      { title: "Pay per use", description: "No setup fees. Pay only for what you use. Sandbox is free.", icon: Banknote },
+      { title: "One API, all compliance features", description: "PAN, GST, bank, Aadhaar, DigiLocker, payments — one key, one contract, one dashboard.", icon: Layers },
+      { title: "Embed in days, not quarters", description: "RESTful APIs with detailed SDKs — typical SaaS integration completed in 3–5 days.", icon: Zap },
+      { title: "Usage-based pricing", description: "Pay per API call — no minimum commitment. Pass costs to customers or absorb in your margin.", icon: Banknote },
+      { title: "99.9% uptime SLA", description: "Enterprise-grade reliability with dedicated support for SaaS platform partners.", icon: ShieldCheck },
     ],
     integrationSteps: DEFAULT_INTEGRATION_STEPS,
-    complianceItems: [] as ComplianceItem[],
-    faqs: [] as IndustryFAQ[],
-    relatedIndustries: [] as RelatedIndustry[],
+    complianceItems: [
+      // { title: "Data minimisation (DPDP Act)", description: "Eko's APIs return only verified claims — your platform stores minimal raw PII." },
+      // { title: "RBI PA/PG guidelines", description: "Core payment APIs (UPI Payout, BBPS) are RBI-compliant and cover your downstream customers." },
+    ],
+    faqs: [
+      { question: "Can I white-label Eko's verification flows inside my SaaS?", answer: "Yes. The APIs are headless — you build the UI, Eko powers the data layer. Your customers see your brand throughout." },
+      { question: "How do I handle user consent for verification?", answer: "Eko's API responses include a consent token. You capture consent in your UI and pass it with the API call — Eko logs it for audit under the DPDP Act." },
+      { question: "Is there a per-seat or platform fee?", answer: "No platform fee. Billing is purely per API call. Volume pricing tiers kick in at 1,000+ monthly calls." },
+      { question: "Can my SaaS customers get their own API credentials?", answer: "Yes. Eko supports multi-tenant API key issuance for SaaS platforms — each of your customers gets their own credentials, billing rolls up under your master account." },
+      { question: "What's the sandbox-to-production timeline?", answer: "Sandbox is available immediately on signup. Production go-live takes 3–5 business days after platform KYC submission." },
+    ],
+    relatedIndustries: [
+      { slug: "marketplaces", name: "Marketplaces" },
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+      { slug: "accounting-tax", name: "Accounting & Tax" },
+    ],
     seo: {
-      title: `${ind.name} APIs | Eko Platform Services`,
-      description: `API solutions for India's ${ind.name.toLowerCase()} sector. Verification, payments, and compliance — all from one platform. Sandbox in minutes.`,
-      keywords: `${ind.name.toLowerCase()} api india, ${ind.slug} api`,
+      title: "SaaS Platform APIs | Embed KYC, Verification & Payments | Eko",
+      description: "Embed PAN, GST, bank, Aadhaar, and payment APIs into your SaaS product. One integration, full compliance coverage. Sandbox in minutes. Used by 500+ platforms.",
+      keywords: "saas verification api india, embed kyc api saas, pan verification api for saas, bank verification api india, fintech api platform india",
     },
-    icon: ind.icon,
-    category: ind.category,
-    navDescription: ind.navDescription,
-  } satisfies IndustryData)),
+    icon: Building2,
+    category: "digital-tech",
+    navDescription: "Embed verification & payments in your SaaS product",
+  },
+
+
+  // MARK: E-commerce
+  {
+    slug: "e-commerce",
+    name: "E-commerce",
+    eyebrow: "INDUSTRY",
+    h1: "E-commerce APIs for seller onboarding & delivery operations",
+    heroSubtitle:
+      "Onboard sellers with automated KYB, verify delivery partner credentials instantly, and secure every payout account — Eko gives e-commerce platforms the verification and payment APIs to scale without fraud.",
+    trustStrip: [
+      "ONDC Seller-Ready",
+      "Trusted by 500+ platforms",
+      "RBI Compliant",
+    ],
+    challengeText:
+      "E-commerce platforms face a dual compliance challenge: every new seller must be vetted (PAN, GST, bank account) to prevent marketplace fraud, and every delivery partner must have a valid driving licence, insured vehicle, and verified bank account before going on-road. Manual review creates days of onboarding delay at scale.\n\nONDC regulations mandate structured KYB for all network participants, and RBI PA/PG guidelines require settlement account verification before disbursing marketplace payments. Eko consolidates seller KYB, driver onboarding, and payout verification into a single API integration.",
+    recommendedPacks: [
+      {
+        slug: "merchant-onboarding-pack",
+        name: "Merchant Onboarding Pack",
+        description: "Onboard sellers with PAN, GST, and bank verification in under 10 minutes — ONDC compliant.",
+        apis: ["PAN Verification", "GST Verification", "Bank Verification", "Aadhaar Verification"],
+        featured: true,
+      },
+      {
+        slug: "gig-worker-onboarding-pack",
+        name: "Gig Worker Onboarding Pack",
+        description: "Verify delivery riders — DL, vehicle RC, Aadhaar, and bank account — in under 3 minutes.",
+        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "RC Verification", "Bank Verification"],
+      },
+      {
+        slug: "fleet-compliance-pack",
+        name: "Fleet Compliance Pack",
+        description: "Monitor active delivery partner RC and DL validity daily — automated compliance without manual tracking.",
+        apis: ["RC Verification", "Vehicle Verification", "DL Verification", "Reverse Geocoding"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "pan", name: "PAN Verification", description: "Seller and delivery partner identity verification for TDS compliance", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "gst", name: "GST Verification", description: "Validate seller business registration and filing status for KYB", href: "/products/gst-verification-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Verify seller settlement accounts before disbursing marketplace payments", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "dl", name: "DL Verification", description: "Confirm delivery rider licence validity and suspension status", href: "/products/dl-verification-api", relevance: "H" },
+      { apiId: "rc", name: "RC Verification", description: "Verify delivery vehicles are registered and insured", href: "/products/rc-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Identity for sellers without GST and informal delivery workers", href: "/products/aadhaar-verification-api", relevance: "M" },
+      { apiId: "upi-payout", name: "UPI Payout", description: "Instant seller payouts and delivery commission disbursals", href: "/products/upi-payout-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "ONDC seller onboarding at scale",
+        situation: "An ONDC buyer app needs to verify and activate 50,000 new sellers across 200 cities.",
+        integration: "Merchant Onboarding Pack: mobile OTP → PAN verify → GST validate → bank penny-drop. Webhook triggers seller activation on success.",
+        outcome: "Seller activation from 5 days to 8 minutes. Zero fraudulent sellers in first 3 months.",
+      },
+      {
+        title: "Delivery partner onboarding pre-launch",
+        situation: "A D2C brand building a 10-minute delivery service needs to onboard 2,000 riders in 2 weeks.",
+        integration: "Gig Worker Onboarding Pack verifies Aadhaar + PAN identity, DL validity, vehicle RC and insurance, plus bank account — all in one parallel API call.",
+        outcome: "All 2,000 riders onboarded in 6 days. Zero on-road incidents from uninsured or unlicensed riders.",
+      },
+      {
+        title: "COD payout verification",
+        situation: "A marketplace collects cash-on-delivery payments via delivery partners who need daily bank settlement.",
+        integration: "Bank Account Verification confirms each delivery partner's payout account is active before the settlement batch runs.",
+        outcome: "Failed payout rate reduced from 4.2% to under 0.1%. Settlement disputes eliminated.",
+      },
+    ],
+    whyEko: [
+      { title: "ONDC pre-certified KYB", description: "Merchant Onboarding Pack is pre-validated for ONDC seller KYB — one integration covers all ONDC buyer app requirements.", icon: CheckCircle },
+      { title: "Seller + rider in one platform", description: "Same API covers seller KYB, delivery partner onboarding, and fleet compliance — no separate vendors.", icon: Layers },
+      { title: "Fraud prevention built in", description: "Name Match cross-checks PAN, GST, and bank holder names — catches mismatches manual review misses.", icon: ShieldCheck },
+      // { title: "Scales to millions", description: "Bulk verification APIs handle 100,000+ verifications per day with async processing and webhooks.", icon: Building2 },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      { title: "ONDC seller verification", description: "PAN + GST + Bank verification meets all ONDC Network Participant KYB obligations." },
+      { title: "RBI Payment Aggregator guidelines", description: "Settlement account verification is mandatory under RBI PA guidelines before disbursing marketplace payments." },
+    ],
+    faqs: [
+      { question: "Does the Merchant Onboarding Pack work for sellers without GST?", answer: "Yes. For sole proprietors below the GST threshold, the pack falls back to PAN + Aadhaar verification. The bank account penny-drop still runs to activate settlement." },
+      { question: "How frequently should I re-verify delivery partner credentials?", answer: "Most platforms re-verify DL and RC validity monthly. Insurance expiry is typically checked weekly via the Fleet Compliance Pack batch job." },
+      { question: "Can I run bulk seller verification for a marketplace migration?", answer: "Yes. Bulk PAN and bank account verification support async batch processing with webhooks. Batches of 50,000 complete in 2–4 hours." },
+      { question: "Does Eko support instant seller payouts after order completion?", answer: "Yes. UPI Payout and IMPS APIs support real-time disbursals to verified settlement accounts — same-day settlement for marketplace transactions." },
+    ],
+    relatedIndustries: [
+      { slug: "marketplaces", name: "Marketplaces" },
+      { slug: "logistics-fleet", name: "Logistics & Fleet" },
+      { slug: "staffing-hr", name: "Staffing & HR" },
+    ],
+    seo: {
+      title: "E-commerce APIs | Seller Onboarding & Delivery Verification | Eko",
+      description: "ONDC-ready seller KYB, delivery partner verification, and payout APIs for e-commerce. PAN, GST, bank, DL, RC in one integration. Sandbox in minutes.",
+      keywords: "ecommerce seller verification api india, ondc seller onboarding api, delivery partner verification api, kyb api ecommerce india",
+    },
+    icon: ShoppingCart,
+    category: "digital-tech",
+    navDescription: "Seller KYB & delivery partner verification",
+  },
+
+
+  // MARK: Agriculture
+  {
+    slug: "agriculture",
+    name: "Agriculture",
+    eyebrow: "INDUSTRY",
+    h1: "Agriculture APIs for rural financial services & farmer payments",
+    heroSubtitle:
+      "Connect India's 140 million farming households to financial services — DBT cashout, last-mile money transfer, cooperative KYC, and FPO payments — using only Aadhaar and a biometric device.",
+    trustStrip: [
+      // "Covers All DBT Schemes",
+      // "Works Without Smartphones",
+      // "NPCI & RBI Compliant",
+      "Trusted by 50,000+ businesses",
+      "RBI compliant",
+      "99.9% uptime",
+    ],
+    challengeText:
+      "India's agricultural sector receives over ₹2.5 lakh crore annually in government transfers — PM-KISAN, MGNREGA, PM Fasal Bima Yojana, and state DBT programs — yet millions of farmers still travel 20–30 km to the nearest bank branch to access their own money. Biometric cashout at local agent points solves this, but requires certified AePS infrastructure that most agri platforms lack.\n\nFor agri-fintech, FPO lending platforms, and input finance companies, the challenge is assessing creditworthiness of farmers with no credit bureau history and verifying Jan Dhan accounts with minimal transaction history. Eko's agriculture stack addresses both the access problem and the credit assessment problem from one integration.",
+    recommendedPacks: [
+      {
+        slug: "rural-financial-services-pack",
+        name: "Rural Financial Services Pack",
+        description: "AePS cashout, Aadhaar KYC, and money transfer for rural platforms — works without a smartphone.",
+        apis: ["AePS Cashout", "Aadhaar Verification", "Bank Verification", "Fund Transfer"],
+        featured: true,
+      },
+      {
+        slug: "dbt-cashout-pack",
+        name: "DBT Cashout Pack",
+        description: "Enable farmers to withdraw PM-KISAN, MGNREGA, and state-DBT benefits at local agent points.",
+        apis: ["AePS Cashout", "Aadhaar Verification", "Bank Verification"],
+      },
+      {
+        slug: "mfi-field-operations-pack",
+        name: "MFI Field Operations Pack",
+        description: "Digitize Kisan credit disbursals and field collections for agricultural MFIs.",
+        apis: ["AePS Cashout", "DMT", "Bank Verification", "PAN Verification"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "aeps", name: "AePS Cashout", description: "Biometric DBT withdrawal — farmers access PM-KISAN, MGNREGA at village agent points", href: "/products/aeps-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "eKYC for farmer onboarding — most farmers have only Aadhaar as ID", href: "/products/aadhaar-verification-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate Jan Dhan and cooperative bank accounts before DBT or payout routing", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "dmt", name: "DMT", description: "Instant cash-to-bank remittance for seasonal migrants and rural wages", href: "/products/dmt-api", relevance: "H" },
+      { apiId: "pan", name: "PAN Verification", description: "Farmer identity for input credit and cooperative KYC", href: "/products/pan-verification-api", relevance: "M" },
+      { apiId: "bbps", name: "BBPS", description: "Collect loan EMIs and cooperative dues digitally from rural borrowers", href: "/products/bbps-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "PM-KISAN cashout at village level",
+        situation: "An agri-platform wants to enable farmers in 500 villages to withdraw PM-KISAN instalments without travel to banks.",
+        integration: "AePS-enabled village agents at local kirana stores. Farmers use Aadhaar + fingerprint; agents earn commission per transaction.",
+        outcome: "80,000 farmer withdrawals per month across 500 villages. Average travel time reduced from 2 hours to 5 minutes.",
+      },
+      {
+        title: "Input finance disbursals to FPO members",
+        situation: "A seed company extends input credit to 10,000 FPO members and needs to disburse directly to individual farmer accounts.",
+        integration: "Bank Account Verification confirms Jan Dhan accounts for all 10,000 farmers. Fund Transfer disburses credit directly — no cash handling by FPO managers.",
+        outcome: "Input credit disbursal time from 3 weeks to same-day. Zero misappropriation incidents.",
+      },
+      {
+        title: "Agricultural MFI field collection",
+        situation: "A Kisan credit cooperative collects weekly EMIs from 5,000 farmers across 50 villages.",
+        integration: "Field officers use AePS biometric collection app. Each repayment is biometrically authenticated and instantly reconciled.",
+        outcome: "Cash handling eliminated. Collection efficiency improved from 78% to 96%.",
+      },
+    ],
+    whyEko: [
+      // { title: "Works without smartphones", description: "AePS requires only Aadhaar + fingerprint — the farmer needs nothing. The agent handles all technology.", icon: Fingerprint },
+      // { title: "Covers every DBT scheme", description: "All Aadhaar-seeded schemes — PM-KISAN, MGNREGA, PM Fasal Bima, state DBT — via a single AePS integration.", icon: CheckCircle },
+      // { title: "200K+ rural touchpoints", description: "Eko's agent network covers Tier 3–5 towns and villages where bank branches are absent.", icon: Users },
+      // { title: "2G-ready infrastructure", description: "AePS and DMT transactions complete on minimal bandwidth — designed for rural India's network conditions.", icon: Zap },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      { title: "NPCI AePS guidelines", description: "Eko's dual-gateway AePS (FingPay + FINO) meets all NPCI OC 88/91 compliance requirements." },
+      { title: "RBI BC framework", description: "Village agents operate under Eko's BCNM licence — no separate bank license required." },
+    ],
+    faqs: [
+      // { question: "Which DBT schemes can farmers access via AePS?", answer: "All Aadhaar-seeded DBT schemes: PM-KISAN, MGNREGA, PM Ujjwala, PMAY, PM Fasal Bima, scholarships, and all state-level DBT programs." },
+      { question: "Does AePS work in areas without 4G connectivity?", answer: "Yes. AePS needs only a minimal 2G data connection. Eko's dual gateway (FingPay + FINO) provides fallback for maximum success rates in low-connectivity zones." },
+      { question: "How do village agents earn commissions?", answer: "Agents earn ₹5–25 per AePS transaction and ₹10–30 per DMT transfer, settled daily to their Eko wallet or bank account." },
+      { question: "Can I assess farmer creditworthiness without a bureau score?", answer: "Yes. AePS transaction history and bank account verification can proxy income signals. For FPO lending, GST verification of the FPO entity supports credit assessment." },
+    ],
+    relatedIndustries: [
+      { slug: "microfinance", name: "Microfinance" },
+      { slug: "agent-networks-csp", name: "Agent Networks (CSP/BC)" },
+      { slug: "kirana-retail", name: "Kirana & Retail" },
+    ],
+    seo: {
+      title: "Agriculture APIs | Rural Payments & Farmer DBT Cashout | Eko",
+      description: "AePS DBT cashout, rural money transfer, and FPO payout APIs for India's agricultural sector. Works without smartphones. Covers PM-KISAN, MGNREGA, all DBT schemes.",
+      keywords: "agriculture api india, farmer dbt cashout api, pm-kisan withdrawal api, aeps agriculture, rural fintech api india",
+    },
+    icon: Sprout,
+    category: "sector-specific",
+    navDescription: "Financial services for farmers & FPOs",
+  },
+
+
+  // MARK:  Automotive
+  {
+    slug: "automotive",
+    name: "Automotive",
+    eyebrow: "INDUSTRY",
+    h1: "Automotive APIs for vehicle verification, financing & insurance",
+    heroSubtitle:
+      "Auto-fill insurance proposals, verify vehicle ownership for financing, and check fleet credentials in seconds — Eko's automotive APIs connect directly to the VAHAN and Sarathi national databases.",
+    trustStrip: [
+      "VAHAN National Database",
+      "Sub-2-Second Response",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "India's automotive sector processes millions of insurance renewals, vehicle loan disbursals, and used-car transactions every year — all requiring accurate vehicle data that customers often misremember or misrepresent. Manual RC lookups and physical document verification add hours or days to what should be instant transactions.\n\nEko's Vehicle Verification and RC APIs tap directly into VAHAN 4.0 — returning verified make, model, engine, chassis, ownership, and insurance status in under 2 seconds. This enables instant insurance quotes, fraud-proof loan origination, and automated fleet compliance at scale.",
+    recommendedPacks: [
+      {
+        slug: "motor-insurance-pack",
+        name: "Motor Insurance Pack",
+        description: "Auto-fill vehicle details, verify ownership, and check DL risk profile — instant motor insurance quotes without manual data entry.",
+        apis: ["Vehicle Verification", "RC Verification", "DL Verification", "PAN Verification"],
+        featured: true,
+      },
+      {
+        slug: "fleet-compliance-pack",
+        name: "Fleet Compliance Pack",
+        description: "Maintain RC, insurance, and DL compliance across vehicle fleets with daily automated checks.",
+        apis: ["RC Verification", "Vehicle Verification", "DL Verification", "Reverse Geocoding"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "vehicle", name: "Vehicle Verification", description: "Fetch make, model, fuel type, chassis, engine, and blacklist status from VAHAN", href: "/products/vehicle-verification-api", relevance: "H" },
+      { apiId: "rc", name: "RC Verification", description: "Owner details, registration status, and insurance expiry from VAHAN", href: "/products/rc-verification-api", relevance: "H" },
+      { apiId: "dl", name: "DL Verification", description: "Validate driver licence validity, vehicle categories, and suspension status", href: "/products/dl-verification-api", relevance: "H" },
+      { apiId: "pan", name: "PAN Verification", description: "Policyholder and loan applicant identity verification", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate EMI payout and claims settlement accounts", href: "/products/bank-verification-api", relevance: "M" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "KYC for loan applicants and policy purchasers", href: "/products/aadhaar-verification-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Instant motor insurance renewal",
+        situation: "An insurer wants to let customers renew two-wheeler insurance in under 60 seconds via a mobile app.",
+        integration: "Customer enters registration number → Vehicle Verification auto-fills make/model/year → RC Verification confirms previous policy and NCB → instant premium calculated → policy issued.",
+        outcome: "Renewal flow time cut from 8 minutes to 45 seconds. Renewal conversion rate doubled.",
+      },
+      {
+        title: "Used-car loan origination without RC fraud",
+        situation: "An auto-finance NBFC processes 5,000 used-car loan applications per month and sees 3% fraud from misrepresented vehicles.",
+        integration: "Vehicle Verification API confirms chassis, engine, and hypothecation status on application submission — before any field visit.",
+        outcome: "Vehicle fraud rate reduced to near zero. Field visit requirement eliminated for 80% of applications.",
+      },
+      {
+        title: "Dealership service contract verification",
+        situation: "An auto dealership network verifies vehicle ownership before each service appointment to prevent unauthorised servicing.",
+        integration: "RC Verification confirms current registered owner matches the customer. DL Verification checks driver's licence for liability purposes.",
+        outcome: "Unauthorised service claims eliminated. Duplicate warranty fraud reduced 90%.",
+      },
+    ],
+    whyEko: [
+      { title: "Direct VAHAN 4.0 integration", description: "99%+ coverage of India's 300+ million registered vehicles across all 36 state RTOs.", icon: CheckCircle },
+      { title: "Auto-fill everything", description: "One registration lookup fills make, model, fuel, engine, chassis, owner, and insurance history.", icon: Zap },
+      { title: "Stolen & hypothecated check", description: "Vehicle Verification returns blacklist and hypothecation status — critical for used-car lending.", icon: ShieldCheck },
+      // { title: "Insurance sector pricing", description: "Dedicated volume pricing tiers for high-volume insurers and auto-finance platforms.", icon: Banknote },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      { title: "IRDAI KYC norms", description: "PAN and Aadhaar verification meet IRDAI policyholder identity requirements for all motor policy types." },
+      { title: "Motor Vehicles Act 2019", description: "RC and DL data sourced from authoritative VAHAN/Sarathi databases — same data used by traffic enforcement." },
+    ],
+    faqs: [
+      { question: "What data does the Vehicle Verification API return?", answer: "Make, model, variant, fuel type, engine number, chassis number, registration date, owner name, hypothecation status, and financing institution (if financed)." },
+      { question: "Does the API check for stolen vehicles?", answer: "Yes. Vehicle Verification returns VAHAN's blacklist status — stolen vehicles registered in the system are flagged in the API response." },
+      { question: "Can I check vehicles registered in any state?", answer: "Yes. VAHAN is a national database — RC and vehicle data for any registration number, regardless of originating state, is accessible via a single API call." },
+      { question: "How current is the insurance data?", answer: "Insurance data in VAHAN is typically updated within 24–72 hours of a policy being issued or renewed." },
+    ],
+    relatedIndustries: [
+      { slug: "insurance", name: "Insurance" },
+      { slug: "logistics-fleet", name: "Logistics & Fleet" },
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+    ],
+    seo: {
+      title: "Automotive APIs | Vehicle Verification, Insurance & Fleet | Eko",
+      description: "RC, vehicle verification, and DL APIs for India's automotive sector. VAHAN national database. Sub-2-second response. Motor insurance, auto finance, fleet compliance.",
+      keywords: "automotive api india, vehicle verification api india, rc api for auto finance, motor insurance api, vahan api india, used car verification api",
+    },
+    icon: Car,
+    category: "sector-specific",
+    navDescription: "Vehicle financing & insurance verification APIs",
+  },
+
+
+  // MARK: Travel
+  {
+    slug: "travel",
+    name: "Travel",
+    eyebrow: "INDUSTRY",
+    h1: "Travel Industry APIs for agent onboarding & payment verification",
+    heroSubtitle:
+      "Onboard travel agents and tour operators quickly, verify business credentials, and secure every commission payout — Eko gives travel aggregators and OTAs the KYB and payment APIs to scale their agent networks.",
+    trustStrip: [
+      "Trusted by 50,000+ businesses",
+      "RBI Compliant",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "India's travel industry relies on a vast network of independent agents — over 60,000 registered IATA agents and millions of informal resellers. OTAs and travel aggregators onboarding new agents face the same KYB challenge as any marketplace: verify identity, validate the business, confirm the payout account. Doing this manually blocks agent activation for days.\n\nOn the payment side, travel platforms must settle with hotels, airlines, and activity providers across India — often in real time. Verified settlement accounts and instant payment rails are critical to maintaining supplier relationships and agent trust.",
+    recommendedPacks: [
+      {
+        slug: "merchant-onboarding-pack",
+        name: "Merchant Onboarding Pack",
+        description: "Onboard travel agents with PAN, GST, and bank verification — activate them for commissions in under 10 minutes.",
+        apis: ["PAN Verification", "GST Verification", "Bank Verification", "Aadhaar Verification"],
+        featured: true,
+      },
+      {
+        slug: "lending-kyc-pack",
+        name: "Lending KYC Pack",
+        description: "Extend travel credit or BNPL to customers — full KYC and bank verification in one flow.",
+        apis: ["Mobile OTP", "PAN Advanced", "Bank Verification", "DigiLocker", "Fund Transfer"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "pan", name: "PAN Verification", description: "Travel agent and corporate client identity verification", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "gst", name: "GST Verification", description: "Validate agency business registration and filing status", href: "/products/gst-verification-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Confirm agent commission payout and supplier settlement accounts", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Identity for individual agents without GST registration", href: "/products/aadhaar-verification-api", relevance: "M" },
+      { apiId: "bbps", name: "BBPS", description: "Collect travel EMIs and booking advance payments via Bharat Connect", href: "/products/bbps-api", relevance: "M" },
+      { apiId: "upi-payout", name: "UPI Payout", description: "Real-time commission and supplier settlement disbursals", href: "/products/upi-payout-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "OTA agent network expansion",
+        situation: "An OTA wants to onboard 10,000 travel agents across Tier 2–3 cities as business partners.",
+        integration: "Merchant Onboarding Pack: mobile OTP → PAN verify → GST check → bank penny-drop → instant activation for booking and commissions.",
+        outcome: "Agent activation from 5 days to 8 minutes. 3,000 new agents activated in the first month.",
+      },
+      {
+        title: "Travel BNPL for corporate clients",
+        situation: "A B2B travel platform wants to offer 30-day credit to corporate clients for flight and hotel bookings.",
+        integration: "Lending KYC Pack verifies company PAN, DigiLocker pulls ITR, bank account confirmed. Fund Transfer issues approved credit to the booking account.",
+        outcome: "Corporate GMV increased 60% within 3 months of BNPL launch.",
+      },
+    ],
+    whyEko: [
+      { title: "Fast agent activation", description: "PAN + GST + Bank penny-drop completes in under 10 minutes — agents start booking and earning same day.", icon: Zap },
+      { title: "Supports informal agents", description: "For agents without GST, PAN + Aadhaar + bank provides a compliant onboarding path.", icon: CheckCircle },
+      { title: "Real-time settlement", description: "UPI Payout and IMPS disburse commissions and supplier payments instantly — no T+2 delays.", icon: Banknote },
+      { title: "One integration, all checks", description: "PAN, GST, bank, Aadhaar — single API integration covers every KYB requirement.", icon: Layers },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      { title: "RBI Payment Aggregator guidelines", description: "Settlement account verification before disbursing collected payments meets RBI PA/PG requirements." },
+      { title: "GST compliance", description: "GST Verification confirms agency TCS and input tax credit eligibility for B2B travel transactions." },
+    ],
+    faqs: [
+      { question: "Can I onboard travel agents without GST registration?", answer: "Yes. The pack falls back to PAN + Aadhaar for individual agents below the GST threshold. Bank verification still runs to configure their payout account." },
+      { question: "How fast is the bank penny-drop verification?", answer: "Typically under 3 seconds. The API returns account holder name and active/inactive status in the same call." },
+      { question: "Can I use Eko for collecting customer advance payments?", answer: "Yes. BBPS supports advance payment collection. For card and UPI collections, Eko's payment gateway partners integrate alongside the verification APIs." },
+    ],
+    relatedIndustries: [
+      { slug: "marketplaces", name: "Marketplaces" },
+      { slug: "saas-platforms", name: "SaaS Platforms" },
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+    ],
+    seo: {
+      title: "Travel Industry APIs | Agent Onboarding & Payment Verification | Eko",
+      description: "KYB and payment APIs for travel OTAs, aggregators, and agent networks. PAN, GST, bank verification for agent onboarding. RBI compliant. Sandbox in minutes.",
+      keywords: "travel agent verification api india, ota agent onboarding api, travel industry kyb api, travel payment api india",
+    },
+    icon: Plane,
+    category: "sector-specific",
+    navDescription: "Agent KYB & payment verification for travel platforms",
+  },
+
+
+  // MARK: Education
+  {
+    slug: "education",
+    name: "Education",
+    eyebrow: "INDUSTRY",
+    h1: "Education APIs for student loans, fee collection & institution KYB",
+    heroSubtitle:
+      "Disburse student loans instantly, collect fees via BBPS, verify educational institutions, and pull academic records directly from DigiLocker — Eko gives edtech and education finance platforms the complete API stack.",
+    trustStrip: [
+      "RBI Compliant",
+      "DigiLocker Integration",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "India's education finance market is growing at 20%+ annually — yet education NBFCs still disburse through manual bank transfers and collect via cheques, creating reconciliation nightmares and delayed access for students.\n\nFor EdTech platforms, the challenge is institution onboarding: verifying a coaching centre or university partner is legitimate before enabling payments. For education lenders, the challenge is documentation — pulling IT returns, Aadhaar, and mark sheets from students who may have all of these in DigiLocker but won't physically submit them.",
+    recommendedPacks: [
+      {
+        slug: "lending-kyc-pack",
+        name: "Lending KYC Pack",
+        description: "Onboard student loan applicants in under 90 seconds — OTP, PAN, Aadhaar, DigiLocker, bank, instant disbursal.",
+        apis: ["Mobile OTP", "PAN Advanced", "DigiLocker", "Aadhaar Verification", "Bank Verification", "Fund Transfer"],
+        featured: true,
+      },
+      {
+        slug: "merchant-onboarding-pack",
+        name: "Merchant Onboarding Pack",
+        description: "Verify coaching institutes and university partners — PAN, GST, bank in one automated KYB flow.",
+        apis: ["PAN Verification", "GST Verification", "Bank Verification", "Aadhaar Verification"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "digilocker", name: "DigiLocker", description: "Pull mark sheets, degree certificates, Aadhaar, and ITR-V directly — eliminates document forgery", href: "/products/digilocker-api", relevance: "H" },
+      { apiId: "pan", name: "PAN Verification", description: "Student and guardian identity verification for loan KYC", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Address and biometric identity for student onboarding", href: "/products/aadhaar-verification-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate student and institution disbursal accounts before transferring loans or fee payments", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "bbps", name: "BBPS", description: "Enable school and college fee EMI collection on Bharat Connect", href: "/products/bbps-api", relevance: "H" },
+      { apiId: "gst", name: "GST Verification", description: "Verify institution business registration for EdTech partner KYB", href: "/products/gst-verification-api", relevance: "M" },
+      { apiId: "upi-payout", name: "UPI Payout", description: "Disburse student loan amounts instantly to verified bank accounts", href: "/products/upi-payout-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Student loan disbursal in 90 seconds",
+        situation: "An education NBFC wants to disburse personal loans for coaching fees before students drop off to a competitor.",
+        integration: "Lending KYC Pack: student submits mobile → OTP → PAN → DigiLocker auto-pulls Aadhaar + mark sheet → bank penny-drop → fund transfer to institution account immediately.",
+        outcome: "Application-to-disbursal time cut from 3 days to 90 seconds. Conversion improved 3.5x.",
+      },
+      {
+        title: "School fee BBPS integration",
+        situation: "A school management SaaS wants to collect fees via BBPS so parents can pay from any bank, wallet, or UPI app.",
+        integration: "BBPS API registers the school as a biller. Parents pay via any BBPS-enabled app — funds credited to school account next day.",
+        outcome: "On-time fee collection improved from 62% to 91%. Cash and cheque collection eliminated entirely.",
+      },
+      {
+        title: "EdTech partner institution KYB",
+        situation: "An online learning platform partners with 5,000 offline coaching institutes and must verify each before activation.",
+        integration: "Merchant Onboarding Pack: GST verify → PAN confirms promoter identity → bank penny-drop confirms payout account.",
+        outcome: "Institute activation from 2 weeks to same-day. Fraudulent signups eliminated.",
+      },
+    ],
+    whyEko: [
+      { title: "Paperless document collection", description: "DigiLocker pulls mark sheets, certificates, and ITR-V from the source — no physical scans, no forgery risk.", icon: FileText },
+      { title: "BBPS fee collection", description: "Enable parents to pay fees from any bank, UPI app, or wallet via India's Bharat Connect network.", icon: Receipt },
+      { title: "Instant loan disbursal", description: "UPI and IMPS payment rails disburse approved loan amounts within seconds of bank account verification.", icon: Zap },
+      { title: "RBI compliant lending flows", description: "Fund Transfer, bank verification, and KYC stack designed for RBI Digital Lending Direction compliance.", icon: Shield },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      // { title: "RBI Digital Lending Directions", description: "Direct disbursal to verified student accounts with full audit trails — meets RBI DLD requirements." },
+      // { title: "DPDP Act 2023", description: "Student consent flows for DigiLocker and Aadhaar lookups are DPDP-compliant with logged consent records." },
+    ],
+    faqs: [
+      { question: "Can DigiLocker pull educational documents like marksheets?", answer: "Yes. DigiLocker stores CBSE, university, and state board marksheets, degree certificates, and diplomas — fetchable with student consent via Eko's DigiLocker API." },
+      { question: "Is BBPS fee collection available for all types of institutions?", answer: "Yes. Schools, colleges, coaching institutes, and universities can register as BBPS billers. Parents pay from any BBPS-enabled app, bank, or counter." },
+      { question: "How does the student loan KYC flow work?", answer: "PAN + Aadhaar for identity, DigiLocker for academic documents, and bank penny-drop for the disbursement account — all steps run in parallel for speed." },
+      { question: "Can I verify if a university is a legitimate institution before partnering?", answer: "GST and PAN verification confirm the institution's legal business entity. For NAAC/UGC-specific accreditation checks, supplementary lookups are available via our enterprise team." },
+    ],
+    relatedIndustries: [
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+      { slug: "saas-platforms", name: "SaaS Platforms" },
+      { slug: "marketplaces", name: "Marketplaces" },
+    ],
+    seo: {
+      title: "Education APIs | Student Loan, Fee Collection & KYB | Eko",
+      description: "Student loan disbursal, BBPS fee collection, DigiLocker document verification, and institution KYB APIs for India's education sector. RBI compliant. Sandbox in minutes.",
+      keywords: "education loan api india, student loan disbursal api, bbps fee collection api, digilocker education api, edtech kyb api india",
+    },
+    icon: GraduationCap,
+    category: "sector-specific",
+    navDescription: "Student loan APIs & BBPS fee collection",
+  },
+
+
+  // MARK: Healthcare
+  {
+    slug: "healthcare",
+    name: "Healthcare",
+    eyebrow: "INDUSTRY",
+    h1: "Healthcare APIs for staff verification, patient KYC & payments",
+    heroSubtitle:
+      "Verify doctors, nurses, and hospital staff instantly — background checks, council registration validation, and employment history — with the same platform handling patient payments and medical credit.",
+    trustStrip: [
+      // "DPDP Act Compliant",
+      "EPFO & DigiLocker Integration",
+      "RBI Compliant",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "India's healthcare sector employs over 7 million people — yet it faces an acute credential fraud problem. Fake nursing and medical degrees are prevalent; without verified employment history and council registration, hospitals face regulatory and liability risk from unqualified practitioners.\n\nOn the payment side, healthcare NBFCs offering medical credit need the same KYC flow as any digital lender — PAN, Aadhaar, bank account — but with medical document overlays via DigiLocker. Patient identity verification during hospital admission increasingly needs digital, API-driven flows as insurance pre-authorisations move online.",
+    recommendedPacks: [
+      {
+        slug: "employee-bgv-pack",
+        name: "Employee BGV Pack",
+        description: "Instant BGV for healthcare hires — PAN, Aadhaar, EPFO employment history, education certificates, and address in under 5 minutes.",
+        apis: ["PAN Verification", "Aadhaar Verification", "Employee Verification (EPFO)", "DigiLocker", "DL Verification", "Reverse Geocoding"],
+        featured: true,
+      },
+      {
+        slug: "lending-kyc-pack",
+        name: "Lending KYC Pack",
+        description: "Medical credit and healthcare BNPL — patient KYC, bank verification, and instant disbursal in one flow.",
+        apis: ["Mobile OTP", "PAN Advanced", "Bank Verification", "DigiLocker", "Fund Transfer"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "pan", name: "PAN Verification", description: "Doctor and staff identity for employment and contractor compliance", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Address and biometric identity for patient onboarding and health insurance KYC", href: "/products/aadhaar-verification-api", relevance: "H" },
+      { apiId: "employee", name: "Employee Verification (EPFO)", description: "Verify employment history of doctors, nurses, and paramedics at prior institutions", href: "/products/employee-verification-api", relevance: "H" },
+      { apiId: "digilocker", name: "DigiLocker", description: "Pull degree certificates, nursing council registrations, and medical diplomas — eliminates fake credentials", href: "/products/digilocker-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Verify doctor payout and patient insurance claim accounts", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "bbps", name: "BBPS", description: "Collect patient EMI payments and hospital subscription fees on Bharat Connect", href: "/products/bbps-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Hospital chain mass hiring verification",
+        situation: "A 50-hospital chain hires 2,000 nurses and paramedics quarterly. Fake nursing council registrations are a recurring problem.",
+        integration: "Employee BGV Pack: DigiLocker fetches nursing council certificates at source → EPFO confirms prior employment at registered hospitals → PAN + Aadhaar confirm identity.",
+        outcome: "Fake credential rate dropped from 4% to zero. Hiring decision same-day instead of 10 business days.",
+      },
+      {
+        title: "Medical credit / healthcare BNPL",
+        situation: "A hospital group partners with an NBFC to offer EMI financing for surgeries. Patients need KYC before discharge.",
+        integration: "Lending KYC Pack at bedside: patient scans Aadhaar QR → PAN verified → bank account confirmed → loan disbursed to hospital account within the admission window.",
+        outcome: "70% of eligible patients opted for EMI financing. Hospital bad debt from unpaid bills reduced 40%.",
+      },
+      {
+        title: "Locum doctor credential verification",
+        situation: "A healthtech staffing platform places locum doctors and needs to verify medical registration within hours of a request.",
+        integration: "PAN + DigiLocker confirm medical degree and NMC registration. EPFO lookup checks prior hospital employment. Bank account verified for fee settlement.",
+        outcome: "Locum placement time from 3 days to 4 hours. Liability from unregistered doctors eliminated.",
+      },
+    ],
+    whyEko: [
+      { title: "Source-verified credentials", description: "DigiLocker pulls certificates directly from issuing universities and nursing councils — impossible to forge.", icon: ShieldCheck },
+      { title: "EPFO employment history", description: "Verify every hospital a doctor or nurse has been registered with — no reference calls required.", icon: CheckCircle },
+      // { title: "DPDP Act compliant", description: "All credential and employment lookups require and record patient/employee consent — full audit trail.", icon: Shield },
+      { title: "Healthcare-specific KYC flows", description: "Pre-built flows for doctor onboarding, patient credit, and nursing staff BGV — not generic verification.", icon: Layers },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      // { title: "DPDP Act 2023 (patient data)", description: "All patient identity data is fetched with explicit consent. Eko stores no raw PII — only verified claim tokens." },
+      // { title: "NMC compliance", description: "DigiLocker integration fetches doctor registration certificates from NMC-affiliated sources for authentic credential verification." },
+    ],
+    faqs: [
+      { question: "Can DigiLocker fetch nursing council and medical degree certificates?", answer: "Yes. DigiLocker stores credentials from NMC, state nursing councils, and accredited universities — all fetchable with employee consent via Eko's DigiLocker API." },
+      { question: "What if a nurse worked at a small clinic not registered with EPFO?", answer: "For informal employment, the BGV relies on DigiLocker credentials + Aadhaar address verification. The EPFO check flags gaps for your manual review workflow." },
+      { question: "Can I use Eko for patient identity verification during hospital admission?", answer: "Yes. Aadhaar OTP verification confirms patient identity and current address at admission. PAN verification is used for high-value insurance pre-authorisations." },
+      { question: "Is bulk BGV supported for a hospital chain?", answer: "Yes. All verification APIs support bulk batch mode." },
+    ],
+    relatedIndustries: [
+      { slug: "staffing-hr", name: "Staffing & HR" },
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+      { slug: "insurance", name: "Insurance" },
+    ],
+    seo: {
+      title: "Healthcare APIs | Staff BGV, Patient KYC & Medical Payments | Eko",
+      description: "Background verification, credential check, and payment APIs for India's healthcare sector. EPFO, DigiLocker, PAN, Aadhaar for doctor and nurse BGV. DPDP compliant.",
+      keywords: "healthcare bgv api india, doctor verification api, nurse credential verification api, healthcare kyc api india, medical credit api",
+    },
+    icon: Heart,
+    category: "sector-specific",
+    navDescription: "Staff BGV & patient verification for hospitals",
+  },
+
+
+  // MARK: Real Estate
+  {
+    slug: "real-estate",
+    name: "Real Estate",
+    eyebrow: "INDUSTRY",
+    h1: "Real Estate APIs for home loan KYC, tenant verification & broker onboarding",
+    heroSubtitle:
+      "From home loan KYC to tenant background checks to developer and broker verification — Eko gives housing finance companies, proptech platforms, and real estate marketplaces the APIs to close deals faster.",
+    trustStrip: [
+      "RBI Compliant",
+      "DigiLocker ITR Fetch",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "Real estate transactions involve India's largest personal financial commitments. Home loan KYC still relies on physical document submission and manual scrutiny that takes weeks. Housing finance companies are under RBI pressure to digitise borrower onboarding while maintaining robust fraud prevention.\n\nFor proptech platforms onboarding brokers and developers, the KYB challenge mirrors marketplaces: PAN, GST, and bank account must be verified before enabling listing and commission settlement. Tenant verification for rental platforms adds employment and identity verification on top.",
+    recommendedPacks: [
+      {
+        slug: "lending-kyc-pack",
+        name: "Lending KYC Pack",
+        description: "Full home loan applicant KYC — OTP, PAN, Aadhaar, DigiLocker for ITR, bank penny-drop, instant disbursal.",
+        apis: ["Mobile OTP", "PAN Advanced", "DigiLocker", "Aadhaar Verification", "Bank Verification", "Fund Transfer"],
+        featured: true,
+      },
+      {
+        slug: "merchant-onboarding-pack",
+        name: "Merchant Onboarding Pack",
+        description: "Onboard real estate developers and brokers — PAN, GST, and bank verification for commission payouts.",
+        apis: ["PAN Verification", "GST Verification", "Bank Verification", "Aadhaar Verification"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "pan", name: "PAN Verification", description: "Home loan applicant and property buyer identity verification", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Address and identity for KYC — confirms current residence matches application", href: "/products/aadhaar-verification-api", relevance: "H" },
+      { apiId: "digilocker", name: "DigiLocker", description: "Pull ITR-V, Form 16, and Aadhaar from source — paperless loan documentation", href: "/products/digilocker-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate EMI debit and broker payout accounts", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "gst", name: "GST Verification", description: "Verify developer and broker business registration and GST compliance", href: "/products/gst-verification-api", relevance: "H" },
+      { apiId: "employee", name: "Employee Verification (EPFO)", description: "Verify employment and income for tenant screening and loan underwriting", href: "/products/employee-verification-api", relevance: "M" },
+      { apiId: "upi-payout", name: "UPI Payout", description: "Instant broker commission disbursals after deal closure", href: "/products/upi-payout-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "Digital home loan KYC",
+        situation: "A housing finance company wants to move from physical document submission to fully digital loan applications.",
+        integration: "Lending KYC Pack: applicant submits Aadhaar OTP → PAN fetch → DigiLocker pulls ITR-V and Form 16 → bank penny-drop for EMI account → loan processing begins instantly.",
+        outcome: "Application processing from 14 days to same-day. Document fraud dropped to near zero.",
+      },
+      {
+        title: "Proptech broker onboarding",
+        situation: "A proptech marketplace onboards 1,000 brokers per month and needs to verify them before enabling listing and commission settlement.",
+        integration: "Merchant Onboarding Pack: mobile OTP → PAN verify → GST check → bank penny-drop. Brokers activated for listing and disbursals.",
+        outcome: "Broker activation from 5 days to under 10 minutes. Commission payout failures from 6% to 0.2%.",
+      },
+      {
+        title: "Tenant employment screening",
+        situation: "A co-living platform screens thousands of tenant applications per month and needs employment verification alongside ID checks.",
+        integration: "PAN + Aadhaar confirm identity and address. EPFO lookup verifies current employment and income. Bank verification confirms deposit refund account.",
+        outcome: "Rental fraud (fake employment letters) dropped 85% after EPFO verification was introduced.",
+      },
+    ],
+    whyEko: [
+      { title: "Paperless loan documentation", description: "DigiLocker fetches ITR, salary slips, and Aadhaar from source — no physical copies needed at any stage.", icon: FileText },
+      { title: "EPFO income verification", description: "Verify employment and income from authoritative EPFO records — fake salary slips can't pass.", icon: ShieldCheck },
+      { title: "RBI compliant", description: "KYC, bank verification, and disbursal stack designed for NHB/RBI housing finance requirements.", icon: Shield },
+      { title: "Instant broker commissions", description: "UPI Payout disburses broker commissions on deal closure — same-day settlement improves broker retention.", icon: Banknote },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      { title: "RBI Housing Finance Directions (NHB)", description: "KYC and bank verification stack meets NHB/RBI requirements for housing loan origination." },
+      { title: "RERA compliance", description: "GST + PAN verification of developers cross-validates business entity before listing projects on proptech platforms." },
+    ],
+    faqs: [
+      { question: "Can DigiLocker pull ITR and salary slips for home loan KYC?", answer: "Yes. DigiLocker stores ITR-V filed via the income tax portal, Form 26AS, and salary certificates from EPFO-registered employers — all fetchable with applicant consent." },
+      { question: "Does EPFO verification work for self-employed applicants?", answer: "Self-employed applicants without EPFO records are verified via GST filing history and bank statement via DigiLocker — alternative income proof paths supported." },
+      // { question: "How does broker commission settlement work?", answer: "After KYB completion, broker bank accounts are verified via penny-drop. Post-deal closure, UPI Payout disburses commissions instantly to those verified accounts." },
+      { question: "Can I verify a developer's RERA registration?", answer: "GST and PAN verification confirm the developer's business entity. RERA-specific database lookups are available as a custom integration — contact our enterprise team." },
+    ],
+    relatedIndustries: [
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+      { slug: "marketplaces", name: "Marketplaces" },
+      { slug: "staffing-hr", name: "Staffing & HR" },
+    ],
+    seo: {
+      title: "Real Estate APIs | Home Loan KYC, Broker & Tenant Verification | Eko",
+      description: "Home loan KYC, broker onboarding, and tenant verification APIs for India's real estate sector. DigiLocker ITR fetch, EPFO employment check, bank verification. RBI compliant.",
+      keywords: "real estate api india, home loan kyc api, broker verification api india, tenant screening api, digilocker itr api, proptech api india",
+    },
+    icon: Home,
+    category: "sector-specific",
+    navDescription: "Home loan KYC & broker verification APIs",
+  },
+
+
+  // MARK: Accounting Tax
+  {
+    slug: "accounting-tax",
+    name: "Accounting & Tax",
+    eyebrow: "INDUSTRY",
+    h1: "Accounting & Tax APIs for GST, ITR & MSME credit assessment",
+    heroSubtitle:
+      "Give your CA firm, accounting SaaS, or tax platform the data APIs to pull GST filing history, verify PAN identities, fetch ITR records, and assess MSME creditworthiness — all from a single integration.",
+    trustStrip: [
+      // "12 Quarters of GST History",
+      "CBDT ITR Data via DigiLocker",
+      "RBI Compliant",
+      "99.9% Uptime",
+    ],
+    challengeText:
+      "Chartered accountants and tax professionals spend enormous time manually verifying client business details, cross-checking GST filing compliance, and gathering financial documents for loan applications. With 14 million GST-registered businesses and 80+ million ITR filers in India, the volume of data lookups is enormous — yet most CA firms still do this manually through the GST portal, creating hours of non-billable work per client.\n\nFor accounting SaaS platforms, the opportunity is to embed these data APIs as premium features. For MSME lending platforms, GST filing history and ITR data from DigiLocker are the best available credit score substitute for the 40+ million MSMEs that have no bureau score.",
+    recommendedPacks: [
+      {
+        slug: "msme-credit-assessment-pack",
+        name: "MSME Credit Assessment Pack",
+        description: "Assess MSME creditworthiness using GST filing patterns, ITR history, and bank account validation — no traditional credit score required.",
+        apis: ["GST Verification", "PAN Advanced", "Bank Verification", "DigiLocker"],
+        featured: true,
+      },
+      {
+        slug: "merchant-onboarding-pack",
+        name: "Merchant Onboarding Pack",
+        description: "Onboard business clients with PAN, GST, and bank verification — activate them for billing and service access.",
+        apis: ["PAN Verification", "GST Verification", "Bank Verification", "Aadhaar Verification"],
+      },
+      {
+        slug: "lending-kyc-pack",
+        name: "Lending KYC Pack",
+        description: "Full KYC for MSME loan applicants — PAN, DigiLocker ITR, GST history, bank account, instant disbursal.",
+        apis: ["PAN Advanced", "DigiLocker", "GST Verification", "Bank Verification", "Fund Transfer"],
+      },
+    ],
+    apiGrid: [
+      { apiId: "gst", name: "GST Verification (Advanced)", description: "Fetch up to 12 quarters of filing history, turnover trends, and compliance score", href: "/products/gst-verification-api", relevance: "H" },
+      { apiId: "pan", name: "PAN Verification (Advanced)", description: "Verify taxpayer identity and check PAN-GST linkage for business clients", href: "/products/pan-verification-api", relevance: "H" },
+      { apiId: "digilocker", name: "DigiLocker", description: "Pull ITR-V, Form 26AS, and financial statements directly from CBDT with taxpayer consent", href: "/products/digilocker-api", relevance: "H" },
+      { apiId: "bank", name: "Bank Account Verification", description: "Validate client payout and tax refund accounts", href: "/products/bank-verification-api", relevance: "H" },
+      { apiId: "aadhaar", name: "Aadhaar Verification", description: "Individual taxpayer identity and address verification", href: "/products/aadhaar-verification-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Cross-validate PAN name, GST trade name, and bank account holder — catch discrepancies for ITC fraud detection", href: "/products/name-match-api", relevance: "M" },
+    ],
+    useCaseVignettes: [
+      {
+        title: "CA practice: one-click client GST due diligence",
+        situation: "A CA firm serving 500 SME clients needs to review each client's GST filing compliance and turnover quarterly for tax planning.",
+        integration: "Eko's GST Verification API fetches 12 quarters of filing history, return status, and taxable turnover per call. CA dashboard shows compliance trends in real time.",
+        outcome: "Client review time per filing cycle from 2 hours to 5 minutes. CAs launched a new 'compliance monitoring' premium tier.",
+      },
+      {
+        title: "MSME credit assessment without bureau score",
+        situation: "A fintech lender wants to offer working capital loans to 50,000 small manufacturers who have no CIBIL score.",
+        integration: "MSME Credit Assessment Pack: GSTIN entered → 8 quarters of filing data → PAN links promoter identity → DigiLocker pulls ITR-V → bank account validated. Real-time credit score generated.",
+        outcome: "₹200 Cr disbursed to credit-invisible MSMEs in 6 months. Default rate within CIBIL-scored benchmark.",
+      },
+      {
+        title: "Accounting SaaS adds vendor KYB",
+        situation: "An accounts payable SaaS wants to auto-verify vendor bank accounts before releasing payments to new suppliers.",
+        integration: "Merchant Onboarding Pack as a webhook: new vendor added → PAN verify → GST check → bank penny-drop → payment terms activated.",
+        outcome: "Fraudulent vendor additions dropped 94%. AP team eliminated manual bank detail verification entirely.",
+      },
+    ],
+    whyEko: [
+      // { title: "12 quarters of GST history", description: "GST Verification returns 3 years of filing patterns — the richest proxy for MSME business health available.", icon: BarChart3 },
+      { title: "CBDT & DigiLocker integration", description: "Pull ITR-V and Form 26AS from the income tax department directly with taxpayer consent.", icon: FileText },
+      { title: "Name Match for ITC fraud detection", description: "Fuzzy matching across PAN, GST, and bank records catches fake invoice fraud that manual review misses.", icon: ShieldCheck },
+      { title: "Pay per lookup", description: "No retainer. CA firms and accounting SaaS pay per API call — costs scale with your client base.", icon: Banknote },
+    ],
+    integrationSteps: DEFAULT_INTEGRATION_STEPS,
+    complianceItems: [
+      { title: "GSTN data access", description: "All GST data fetched from GSTN's official APIs — authoritative, real-time filing data only." },
+      { title: "CBDT / DigiLocker consent flow", description: "ITR and Form 26AS access requires taxpayer consent — Eko's DigiLocker integration includes a DPDP-compliant consent capture step." },
+    ],
+    faqs: [
+      { question: "How many quarters of GST data can I fetch per call?", answer: "Eko's Advanced GST API provides up to 12 quarters (3 years) of filing history including return status, taxable value, and compliance score per GSTIN." },
+      { question: "Can I fetch a client's ITR directly from the CBDT system?", answer: "Yes. DigiLocker stores ITR-V acknowledgements and Form 26AS filed through the income tax portal — fetchable with the taxpayer's explicit DigiLocker consent." },
+      { question: "Can I use GST history as a credit scoring signal?", answer: "Yes. GST filing regularity, turnover trend, and compliance score are used by multiple NBFCs as primary credit indicators for MSMEs with no bureau history." },
+      { question: "Does the Name Match API work for GST trade names vs. PAN legal names?", answer: "Yes. Name Match uses fuzzy matching with transliteration support — handles regional name variations and GST trade name abbreviations versus full legal PAN names." },
+      { question: "Is this useful for GST ITC fraud detection?", answer: "Yes. Cross-validating supplier PAN, GSTIN, and bank account holder names against purchase invoices using Name Match catches a significant portion of fake invoice fraud." },
+    ],
+    relatedIndustries: [
+      { slug: "lending-nbfc", name: "Lending & NBFC" },
+      { slug: "saas-platforms", name: "SaaS Platforms" },
+      { slug: "marketplaces", name: "Marketplaces" },
+    ],
+    seo: {
+      title: "Accounting & Tax APIs | GST Verification, ITR & MSME Credit | Eko",
+      description: "GST filing history, ITR data pull, PAN verification, and MSME credit assessment APIs for CAs, accounting SaaS, and tax platforms. 12 quarters of GST data. Sandbox free.",
+      keywords: "gst verification api india, itr api india, msme credit assessment api, accounting api india, ca gst data api, pan gst verification india",
+    },
+    icon: Calculator,
+    category: "sector-specific",
+    navDescription: "GST filing data & MSME credit assessment for CAs",
+  },
 ];
 
 export const INDUSTRIES_MAP: Record<string, IndustryData> = Object.fromEntries(
