@@ -10,7 +10,7 @@ export const ZohoSignupForm = () => {
 
   return (
     <iframe
-      aria-label="New Eko.in API Signup"
+      aria-label="Eko EPS Signup Form"
       frameBorder="0"
       allow="geolocation;"
       style={{ height: "500px", width: "100%", border: "none" }}
