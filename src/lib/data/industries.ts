@@ -183,12 +183,12 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     ],
     faqs: [
       { question: "Is Eko's Fund Transfer API compliant with RBI Digital Lending Directions?", answer: "Yes. Eko's fund transfer API is designed for direct RE-to-borrower disbursals with full audit trails meeting RBI Digital Lending Direction requirements." },
-      { question: "Can I bulk-verify 50,000 borrowers in a single batch?", answer: "Yes. Eko supports bulk PAN and bank account verification via asynchronous batch APIs with webhook notifications. A batch of 50,000 typically completes in 2–4 hours." },
+      // { question: "Can I bulk-verify 50,000 borrowers in a single batch?", answer: "Yes. Eko supports bulk PAN and bank account verification via asynchronous batch APIs with webhook notifications. A batch of 50,000 typically completes in 2–4 hours." },
       { question: "How does Eko's Name Match handle regional name variations?", answer: "Our name-match engine uses fuzzy matching with regional transliteration support, handling variations across Hindi, Tamil, Telugu, Kannada, and Bengali name structures." },
       { question: "What's the typical sandbox-to-production timeline for an NBFC?", answer: "Most NBFCs complete sandbox testing in 1–3 days and go live within 5–7 business days." },
       { question: "Do you support co-lending portfolio reconciliation?", answer: "Yes. Bulk verification APIs support portfolio-level reconciliation for NBFC-bank co-lending workflows." },
       { question: "How does the AePS Cashout option help my rural borrowers?", answer: "Rural borrowers can withdraw disbursed funds at any of Eko's 200K+ agent touchpoints using just Aadhaar + fingerprint — no ATM or bank branch required." },
-      { question: "Is there a minimum monthly transaction commitment?", answer: "No minimum commitment. Production accounts have no mandatory minimum, though volume pricing tiers start at 1,000 monthly API calls." },
+      { question: "Is there a minimum monthly transaction commitment?", answer: "No minimum commitment. Production accounts have no mandatory minimum." },
     ],
     relatedIndustries: [
       { slug: "microfinance", name: "Microfinance" },

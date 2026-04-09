@@ -198,11 +198,11 @@ console.log(withdrawal.commission); // "12"`,
       { aspect: "Biometric device support", diy: "DIY integration", eko: "5 STQC-certified models pre-integrated" },
     ],
     pricingBlurb:
-      "Pay-per-transaction. No setup fee. Sandbox is free. Agents earn ₹2–25 per transaction depending on service and amount. Eko shares interchange revenue with you under a transparent multi-tier structure. Volume discounts kick in at 10,000+ monthly transactions.",
+      "Pay-per-transaction. No setup fee. Sandbox is free. Agents earn ₹2–25 per transaction depending on service and amount. Eko shares interchange revenue with you under a transparent multi-tier structure.",
     faqs: [
       { question: "How long does AePS agent activation take?", answer: "Agent activation typically takes 24–48 hours after KYC submission. The sandbox environment is available immediately upon signup." },
       { question: "Which biometric devices does Eko support?", answer: "Eko supports 5 STQC-certified biometric devices including Mantra MFS100, Morpho MSO1300, and Startek FM220U, among others." },
-      { question: "What's the daily AePS withdrawal limit per customer?", answer: "Per NPCI guidelines, the daily AePS withdrawal limit is ₹10,000 per customer per bank account. Multiple bank accounts can be used in a single day." },
+      // { question: "What's the daily AePS withdrawal limit per customer?", answer: "Per NPCI guidelines, the daily AePS withdrawal limit is ₹10,000 per customer per bank account. Multiple bank accounts can be used in a single day." },
       { question: "How does Eko's dual-gateway (FingPay + FINO) improve success rates?", answer: "When one gateway experiences downtime or congestion, the system automatically routes to the other, maintaining high transaction success rates even during peak periods." },
       { question: "Can I white-label this entire stack under my own brand?", answer: "Yes. Eko offers full white-labeling options. Your branding on the agent app, receipts, and customer-facing touchpoints. Contact our sales team for licensing details." },
       { question: "Do agents need a BC license individually?", answer: "No. Under Eko's BCNM (Business Correspondent Network Manager) license, individual agents operate as sub-agents of Eko. They need to complete Eko's onboarding and KYC process." },
@@ -241,7 +241,7 @@ console.log(withdrawal.commission); // "12"`,
     ],
     trustStrip: [
       // "Used by 200+ lenders",
-      "RBI Digital Lending compliant",
+      "RBI compliant",
       "99.9% uptime",
     ],
     jobStatement:
@@ -359,10 +359,10 @@ curl -X POST https://api.eko.in/v3/verify/bank-account \\
       { aspect: "Time to integrate", diy: "3–6 months", eko: "1–3 days" },
     ],
     pricingBlurb:
-      "Pay-per-verification. No setup fee. Sandbox is free. Volume discounts available at 10,000+ monthly verifications. Single invoice, single dashboard — no multi-vendor billing.",
+      "Pay-per-verification. Sandbox is free. Single invoice, single dashboard — no multi-vendor billing.",
     faqs: [
-      { question: "Is Eko's Fund Transfer API compliant with RBI Digital Lending Directions?", answer: "Yes. Eko's fund transfer API is designed for direct RE-to-borrower disbursals, with full audit trails meeting RBI Digital Lending Direction requirements on traceability and direct credit." },
-      { question: "Can I bulk-verify 50,000 borrowers in a single batch?", answer: "Yes. The Lending KYC Pack supports bulk PAN and bank account verification via asynchronous batch APIs with webhook notifications on completion. Typical batch of 50,000 completes in 2–4 hours." },
+      // { question: "Is Eko's Fund Transfer API compliant with RBI Digital Lending Directions?", answer: "Yes. Eko's fund transfer API is designed for direct RE-to-borrower disbursals, with full audit trails meeting RBI Digital Lending Direction requirements on traceability and direct credit." },
+      // { question: "Can I bulk-verify 50,000 borrowers in a single batch?", answer: "Yes. The Lending KYC Pack supports bulk PAN and bank account verification via asynchronous batch APIs with webhook notifications on completion. Typical batch of 50,000 completes in 2–4 hours." },
       { question: "How does Eko's name matching handle regional name variations?", answer: "Our name-match engine uses fuzzy matching with regional transliteration support, handling variations across Hindi, Tamil, Telugu, Kannada, and Bengali name structures." },
       { question: "What's the typical sandbox-to-production timeline for an NBFC?", answer: "Most NBFCs complete sandbox testing in 1–3 days and go live in 5–7 business days after NBFC-specific KYC documentation is submitted." },
       { question: "Do you support co-lending portfolio reconciliation?", answer: "Yes. Our bulk verification APIs support portfolio-level reconciliation, with the Co-lending Compliance Pack providing additional batch tools for NBFC-bank co-lending workflows." },
@@ -474,7 +474,7 @@ console.log({ pan: pan.verified, gst: gst.status, bank: bank.verified });`,
     ],
     comparisonRows: [
       { aspect: "KYB checks", diy: "3–4 vendor integrations", eko: "1 bundle" },
-      { aspect: "ONDC compliance", diy: "Custom implementation", eko: "Pre-certified" },
+      // { aspect: "ONDC compliance", diy: "Custom implementation", eko: "Pre-certified" },
       { aspect: "Rejection handling", diy: "Build retry workflows", eko: "Built-in fallback checks" },
       { aspect: "Time to live merchant", diy: "2–5 days manual review", eko: "Under 10 minutes" },
     ],
@@ -491,7 +491,7 @@ console.log({ pan: pan.verified, gst: gst.status, bank: bank.verified });`,
     ],
     seo: {
       title: "Merchant Onboarding Pack — KYB API Bundle | Eko",
-      description: "Verify and activate merchants instantly. PAN, GST, bank verification in one bundle. ONDC seller-ready, RBI compliant. Used by 500+ marketplaces in India.",
+      description: "Verify and activate merchants instantly. PAN, GST, bank verification in one bundle. ONDC seller-ready, RBI compliant. Used by 500+ companies across India.",
       keywords: "merchant onboarding api india, kyb api india, payment aggregator merchant onboarding, ondc seller verification",
     },
   },
@@ -746,7 +746,8 @@ if (collection.status === "success") {
       { name: "Reverse Geocoding", apiId: "geocoding", href: "/products/reverse-geocoding-api" },
     ],
     trustStrip: [
-      "Used by 200+ HR platforms",
+      // "Used by 200+ HR platforms",
+      "Used by 500+ companies",
       "DPDP aligned",
       "Instant results",
       "99.9% uptime"
@@ -840,7 +841,7 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
     faqs: [
       { question: "Is consent required for EPFO lookup?", answer: "Yes. Eko's Employee Verification API includes a consent flow compliant with DPDP Act 2023. The employee provides explicit consent before any employment data is fetched." },
       { question: "What if an employee hasn't registered with EPFO?", answer: "For informal workers without EPFO records, the pack falls back to reference check support via our partner network and address verification via Aadhaar." },
-      { question: "Can I run bulk BGV for 1,000 new hires?", answer: "Yes. All verification APIs support batch mode with async processing and webhook notifications. Bulk runs of 1,000 complete in 30-60 minutes." },
+      // { question: "Can I run bulk BGV for 1,000 new hires?", answer: "Yes. All verification APIs support batch mode with async processing and webhook notifications. Bulk runs of 1,000 complete in 30-60 minutes." },
     ],
     relatedSolutions: [
       { slug: "gig-worker-onboarding-pack", name: "Gig Worker Onboarding Pack", tagline: "Fast onboarding for gig & delivery workers" },
@@ -848,7 +849,7 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
     ],
     seo: {
       title: "Employee BGV Pack — Background Verification API | Eko",
-      description: "Instant employee background verification — identity, EPFO employment history, education, DL in under 5 minutes. DPDP Act compliant. Used by 200+ HR platforms.",
+      description: "Instant employee background verification — identity, EPFO employment history, education, DL in under 5 minutes. Used by 500+ companies across India.",
       keywords: "employee background verification api india, bgv api, epfo verification api, hr onboarding api india",
     },
   },
@@ -1107,7 +1108,7 @@ if (cashout.status === "success") {
         name: "Aadhaar Verification",
         icon: ShieldCheck,
         what: "KYC verification for sender and beneficiary registration.",
-        why: "RBI BC guidelines require sender KYC for remittance above ₹5,000.",
+        why: "RBI BC guidelines require sender KYC for money remittance.",
         href: "/products/aadhaar-verification-api",
       },
     ],
@@ -1151,8 +1152,8 @@ const withdrawal = await eko.aeps.cashout({
     ],
     pricingBlurb: "Per-transaction fee. No setup cost. Sandbox free. Volume tiers for high-volume corridors.",
     faqs: [
-      { question: "What is the daily DMT transfer limit?", answer: "Per RBI guidelines, DMT allows up to ₹25,000 per transaction and ₹1 lakh per month per sender for basic KYC customers. Full KYC customers get higher limits." },
-      { question: "Is the sender KYC required for every transaction?", answer: "Sender KYC (Aadhaar + mobile) is required once during registration. Subsequent transactions only require mobile OTP confirmation." },
+      // { question: "What is the daily DMT transfer limit?", answer: "Per RBI guidelines, DMT allows up to ₹25,000 per transaction and ₹1 lakh per month per sender for basic KYC customers. Full KYC customers get higher limits." },
+      // { question: "Is the sender KYC required for every transaction?", answer: "Sender KYC (Aadhaar + mobile) is required once during registration. Subsequent transactions only require mobile OTP confirmation." },
     ],
     relatedSolutions: [
       { slug: "assisted-banking-agent-pack", name: "Assisted Banking Agent Pack", tagline: "Full agent banking — AePS + DMT + BBPS" },
@@ -1183,7 +1184,7 @@ const withdrawal = await eko.aeps.cashout({
       { name: "RC Verification", apiId: "rc", href: "/products/rc-verification-api" },
     ],
     trustStrip: [
-      "Used by leading gig platforms",
+      "Trusted by 500+ companies",
       "DPDP aligned",
       "RBI compliant",
       "5-minute onboarding SLA"
@@ -1273,7 +1274,7 @@ console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle })
     ],
     seo: {
       title: "Gig Worker Onboarding Pack | Eko Platform Services",
-      description: "Onboard delivery riders & gig workers in 3 minutes — DL, RC, Aadhaar, bank verification. DPDP Act compliant. Used by leading gig platforms.",
+      description: "Onboard delivery riders & gig workers in 3 minutes — DL, RC, Aadhaar, bank verification. Used by 500+ companies across India.",
       keywords: "gig worker onboarding api, delivery driver verification api india, dl verification api, gig platform kyc india",
     },
   },
@@ -1297,7 +1298,9 @@ console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle })
     trustStrip: [
       // "Used by 100+ fleet operators",
       // "MORTH database connected",
-      // "Daily compliance monitoring"
+      // "Daily compliance monitoring",
+      "Trusted by 50,000+ businesses",
+      "99.9% uptime",
     ],
     jobStatement: "Automate fleet regulatory compliance — verify and monitor RC, insurance, permits, and driver licences across your entire fleet daily, with alerts before expiry.",
     packApis: [
@@ -1496,7 +1499,7 @@ const quote = calculatePremium({
     ],
     seo: {
       title: "Motor Insurance Pack — Vehicle Verification API | Eko",
-      description: "Instant motor insurance with auto-filled vehicle details. RC, vehicle, DL, PAN verification in 30 seconds. IRDAI compliant. Used by 20+ insurers.",
+      description: "Instant motor insurance with auto-filled vehicle details. RC, vehicle, DL, PAN verification in 30 seconds. Used by 500+ companies across India.",
       keywords: "motor insurance verification api, vehicle verification api india, rc api for insurance, irdai api india",
     },
   },
