@@ -1,10 +1,11 @@
 import { useLocation } from "react-router-dom";
 import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
+import { appendTrackingParams } from "@/hooks/use-tracking-params";
 
 export const ZohoSignupForm = () => {
   const { pathname } = useLocation();
   const referrername = pathname.replace(/^\/+|\/+$/g, ""); // strip leading and trailing slashes
-  const website = window.location.href;
+  const website = appendTrackingParams(window.location.href);
 
   const src = `${ZOHO_SIGNUP_EMBED_URL}?Website=${encodeURIComponent(website)}&referrername=${encodeURIComponent(referrername)}`;
 

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
+import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,11 @@ import UseCasesHubPage from "./pages/UseCasesHubPage";
 
 const queryClient = new QueryClient();
 
+function TrackingParamCapture() {
+  useCaptureTrackingParams();
+  return null;
+}
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -58,6 +64,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <TrackingParamCapture />
           <ScrollToTop />
           <AnimatedRoutes>
             <Routes>
