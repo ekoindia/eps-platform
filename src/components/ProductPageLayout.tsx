@@ -13,6 +13,7 @@ import type { ApiField } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-form";
+import EkoShieldAdBanner from "./EkoShieldAdBanner";
 
 interface ProductFeature {
   title: string;
@@ -426,6 +427,11 @@ export const ProductPageLayout = ({
               ))}
             </div>
           </SectionContainer>
+        )}
+
+        {/* Eko Shield Ad Banner */}
+        {/verification|kyc/i.test(heroTitle) && (
+          <EkoShieldAdBanner/>
         )}
 
         {/* Trust & Compliance */}

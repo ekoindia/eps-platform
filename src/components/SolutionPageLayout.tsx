@@ -16,6 +16,7 @@ import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { openZohoChat } from "@/lib/zoho-form";
+import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
 
 interface SolutionPageLayoutProps {
   data: SolutionData;
@@ -257,6 +258,11 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
               ))}
             </div>
           </SectionContainer>
+        )}
+
+        {/* Eko Shield Ad Banner */}
+        {data.apiChips.some((chip) => /verification|kyc/i.test(chip.name)) && (
+          <EkoShieldAdBanner/>
         )}
 
         {/* Related Solutions */}
