@@ -7,7 +7,7 @@ const PaymentApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>Payout API - Salary & Vendor Payments | Eko India Financial Services</title>
+        <title>Payout API - Salary & Vendor Payments | Eko Platform Services</title>
         <meta
           name="description"
           content="Make instant salary disbursals and vendor payments using Eko's Payout API. Pay employees and vendors directly from your e-wallet balance with high success rates."

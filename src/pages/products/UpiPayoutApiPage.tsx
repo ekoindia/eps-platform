@@ -7,7 +7,7 @@ const UpiPayoutApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>UPI Payout API - Instant UPI Transfers | Eko India Financial Services</title>
+        <title>UPI Payout API - Instant UPI Transfers | Eko Platform Services</title>
         <meta
           name="description"
           content="Send instant payouts to any UPI ID with Eko's UPI Payout API. Instant transfers, bulk payouts, and real-time status updates for businesses."

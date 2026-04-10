@@ -7,7 +7,7 @@ const QrPaymentApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>QR Payment API - UPI QR Code Payments | Eko India Financial Services</title>
+        <title>QR Payment API - UPI QR Code Payments | Eko Platform Services</title>
         <meta
           name="description"
           content="Accept UPI payments via QR codes with Eko's QR Payment API. Dynamic QR generation, real-time notifications, and seamless payment collection for merchants."

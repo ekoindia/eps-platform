@@ -7,7 +7,7 @@ const BbpsApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>BBPS API - Bharat Bill Payment System | Eko India Financial Services</title>
+        <title>BBPS API - Bharat Bill Payment System | Eko Platform Services</title>
         <meta
           name="description"
           content="Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure."

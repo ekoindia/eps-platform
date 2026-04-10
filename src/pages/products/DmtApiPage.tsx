@@ -7,7 +7,7 @@ const DmtApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>Domestic Money Transfer API (DMT) | Eko India Financial Services</title>
+        <title>Domestic Money Transfer API (DMT) | Eko Platform Services</title>
         <meta
           name="description"
           content="Enable instant money transfers across India with Eko's DMT API. Real-time IMPS & NEFT settlements, pan-India coverage, and 99.9% uptime. Integrate in minutes."

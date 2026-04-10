@@ -171,8 +171,8 @@ const EkoShieldDocumentPage = () => {
 
         {/* Footer */}
         <div className="text-center pt-8 border-t border-gray-200 text-sm text-gray-400">
-          <p>© {new Date().getFullYear()} Eko India Financial Services Pvt. Ltd. All rights reserved.</p>
-          <p className="mt-1">For demos and inquiries, visit <strong>eko.in</strong></p>
+          <p>© {new Date().getFullYear()} Eko Bharat Ventures Pvt. Ltd. All rights reserved.</p>
+          <p className="mt-1">For demos and inquiries, visit <strong>eps.eko.in</strong></p>
         </div>
       </div>
 

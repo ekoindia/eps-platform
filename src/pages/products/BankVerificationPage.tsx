@@ -7,7 +7,7 @@ const BankVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>Bank Account Verification API - Penny Drop & IFSC | Eko India Financial Services</title>
+        <title>Bank Account Verification API - Penny Drop & IFSC | Eko Platform Services</title>
         <meta
           name="description"
           content="Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts."

@@ -6,7 +6,7 @@ const VehicleVerificationPage = () => {
   return (
     <>
       <Helmet>
-        <title>Vehicle Verification API - RC & DL Verification | Eko India Financial Services</title>
+        <title>Vehicle Verification API - RC & DL Verification | Eko Platform Services</title>
         <meta
           name="description"
           content="Verify vehicle RC and driving license with Eko's Vehicle Verification API. Registration certificate validation, DL verification, chassis number check for mobility services."

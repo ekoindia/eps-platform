@@ -7,7 +7,7 @@ const AepsApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>AePS API - Aadhaar Enabled Payment System | Eko India Financial Services</title>
+        <title>AePS API - Aadhaar Enabled Payment System | Eko Platform Services</title>
         <meta
           name="description"
           content="Enable Aadhaar-based banking services with Eko's AePS API. Cash withdrawal, balance enquiry, mini statements, and fund transfers using Aadhaar authentication."

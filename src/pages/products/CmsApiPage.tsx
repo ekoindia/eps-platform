@@ -7,7 +7,7 @@ const CmsApiPage = () => {
   return (
     <>
       <Helmet>
-        <title>CMS Cash Collection API - Cash Management Services | Eko India Financial Services</title>
+        <title>CMS Cash Collection API - Cash Management Services | Eko Platform Services</title>
         <meta
           name="description"
           content="Digitize cash collection with Eko's CMS API. Enable field agents to collect cash and instantly credit customer accounts. Perfect for NBFCs, insurance, and utilities."
