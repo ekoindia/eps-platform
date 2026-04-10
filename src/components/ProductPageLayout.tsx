@@ -12,6 +12,7 @@ import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import type { ApiField } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
+import { openZohoChat } from "@/lib/zoho-form";
 
 interface ProductFeature {
   title: string;
@@ -172,10 +173,14 @@ export const ProductPageLayout = ({
                 </p>
 
                 <div className="flex flex-wrap gap-4">
+                  <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
+                    <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
+                  </Button>
+
                   <Button variant="hero-outline" size="lg" asChild>
                     <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-                      <FileText className="w-4 h-4" />
                       View Documentation
+                      <FileText className="w-4 h-4" />
                     </a>
                   </Button>
                 </div>
