@@ -62,8 +62,8 @@ const XIcon = ({ className }: { className?: string }) => (
 
 const socialLinks = [
   { icon: Linkedin, href: "https://www.linkedin.com/company/eko-bharat-ventures/", label: "LinkedIn" },
-  { icon: Instagram, href: "https://www.instagram.com/eko__India", label: "Instagram" },
   { icon: Facebook, href: "https://www.facebook.com/EkoEPS", label: "Facebook" },
+  { icon: Instagram, href: "https://www.instagram.com/eko__India", label: "Instagram" },
   { icon: Youtube, href: "https://www.youtube.com/@eko_india", label: "YouTube" },
   { icon: XIcon, href: "https://x.com/ekospeaks", label: "X" },
 ];
