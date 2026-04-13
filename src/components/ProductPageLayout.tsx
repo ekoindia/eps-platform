@@ -15,33 +15,24 @@ import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-form";
 import EkoShieldAdBanner from "./EkoShieldAdBanner";
 
-interface ProductFeature {
+export interface ProductFeature {
   title: string;
   description: string;
   icon?: LucideIcon;
 }
 
-interface IntegrationStep {
-  step: number;
+export interface IntegrationStep {
   title: string;
   description: string;
   tip?: string;
 }
 
-interface FAQ {
+export interface FAQ {
   question: string;
   answer: string;
 }
 
-interface FormField {
-  name: string;
-  label: string;
-  type: "text" | "email" | "tel" | "select";
-  required?: boolean;
-  options?: string[];
-}
-
-interface ProductPageLayoutProps {
+export interface ProductPageLayoutProps {
   title: string;
   description: string;
   heroTitle: string;
@@ -59,14 +50,12 @@ interface ProductPageLayoutProps {
   trustAndCompliance?: string[];
   leadForm?: {
     title: string;
-    fields: FormField[];
-    cta: string;
   };
   types?: { label: string; icon?: LucideIcon }[];
   inputOutputPreview?: {
     apiName: string;
-    inputs: ApiField[];
-    outputs: ApiField[];
+    inputs?: ApiField[];
+    outputs?: ApiField[];
     comingSoon?: boolean;
   };
   heroImage?: string;
@@ -479,12 +468,12 @@ export const ProductPageLayout = ({
             {/* Desktop: horizontal stepper */}
             <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
               {integrationSteps.map((step, i) => (
-                <div key={step.step} className="flex items-start flex-1">
+                <div key={i} className="flex items-start flex-1">
                   <div className="flex flex-col items-center text-center group">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="w-14 h-14 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-lg cursor-pointer hover:scale-110 hover:ring-4 hover:ring-eko-gold/30 transition-all duration-300">
-                          {step.step}
+                          {i + 1}
                         </div>
                       </TooltipTrigger>
                       {step.tip && (
@@ -506,10 +495,10 @@ export const ProductPageLayout = ({
             {/* Mobile: vertical stepper */}
             <div className="md:hidden space-y-6 max-w-sm mx-auto">
               {integrationSteps.map((step, i) => (
-                <div key={step.step} className="flex gap-4">
+                <div key={i} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm">
-                      {step.step}
+                      {i + 1}
                     </div>
                     {i < integrationSteps.length - 1 && <div className="w-0.5 flex-1 bg-white/20 mt-2" />}
                   </div>

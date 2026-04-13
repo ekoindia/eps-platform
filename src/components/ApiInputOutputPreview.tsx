@@ -14,10 +14,10 @@ export interface ApiField {
 
 interface ApiInputOutputPreviewProps {
   apiName: string;
-  inputs: ApiField[];
-  outputs: ApiField[];
+  inputs?: ApiField[];
+  outputs?: ApiField[];
   comingSoon?: boolean;
-  docsUrl: string;
+  docsUrl?: string;
 }
 
 // Simple JSON syntax highlighting
@@ -90,12 +90,15 @@ export const ApiInputOutputPreview = ({
     );
   }
 
+  // Guard: outputs must be defined and have more than 1 item
+  if (!outputs || outputs.length <= 1) return null;
+
   // Build JSON objects from fields
   const inputJson: Record<string, unknown> = {};
-  inputs.forEach(f => { inputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = f.value; });
+  inputs?.forEach(f => { inputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = f.value; });
 
   const outputJson: Record<string, unknown> = {};
-  outputs.forEach(f => {
+  outputs?.forEach(f => {
     const val = f.value;
     if (val === "✓ Matched" || val === "true") outputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = true;
     else if (val === "✗ Not Matched" || val === "false") outputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = false;
