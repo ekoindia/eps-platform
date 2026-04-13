@@ -17,24 +17,24 @@ import EkoShieldAdBanner from "./EkoShieldAdBanner";
 
 export interface ProductFeature {
   title: string;
-  description: string;
+  desc: string;
   icon?: LucideIcon;
 }
 
 export interface IntegrationStep {
   title: string;
-  description: string;
+  desc: string;
   tip?: string;
 }
 
 export interface FAQ {
-  question: string;
-  answer: string;
+  q: string;
+  a: string;
 }
 
 export interface ProductPageLayoutProps {
   title: string;
-  description: string;
+  desc: string;
   heroTitle: string;
   heroSubtitle: string;
   overview?: string;
@@ -284,7 +284,7 @@ export const ProductPageLayout = ({
                       <Icon className="w-6 h-6 text-eko-gold" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
                   </div>
                 );
               })}
@@ -305,7 +305,7 @@ export const ProductPageLayout = ({
                       <Icon className="w-6 h-6 text-eko-gold" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
                   </div>
                 );
               })}
@@ -326,7 +326,7 @@ export const ProductPageLayout = ({
                       <Icon className="w-6 h-6 text-eko-gold" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
                   </div>
                 );
               })}
@@ -369,7 +369,7 @@ export const ProductPageLayout = ({
                       <Icon className="w-8 h-8 text-eko-gold" />
                     </div>
                     <h3 className="text-xl font-semibold text-foreground mb-2">{benefit.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{benefit.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">{benefit.desc}</p>
                   </div>
                 );
               })}
@@ -483,7 +483,7 @@ export const ProductPageLayout = ({
                       )}
                     </Tooltip>
                     <h3 className="text-sm font-semibold text-white mt-3 mb-1">{step.title}</h3>
-                    <p className="text-white/50 text-xs max-w-[140px]">{step.description}</p>
+                    <p className="text-white/50 text-xs max-w-[140px]">{step.desc}</p>
                   </div>
                   {i < integrationSteps.length - 1 && (
                     <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
@@ -504,7 +504,7 @@ export const ProductPageLayout = ({
                   </div>
                   <div className="pb-6">
                     <h3 className="text-sm font-semibold text-white">{step.title}</h3>
-                    <p className="text-white/50 text-xs mt-1">{step.description}</p>
+                    <p className="text-white/50 text-xs mt-1">{step.desc}</p>
                     {step.tip && <p className="text-eko-gold/80 text-xs mt-1 italic">{step.tip}</p>}
                   </div>
                 </div>
@@ -534,11 +534,11 @@ export const ProductPageLayout = ({
                 <summary className="flex items-center justify-between font-semibold text-foreground list-none">
                   <span className="flex items-center gap-3">
                     <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
-                    {faq.question}
+                    {faq.q}
                   </span>
                   <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
                 </summary>
-                <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.answer}</p>
+                <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.a}</p>
               </details>
             ))}
           </div>
