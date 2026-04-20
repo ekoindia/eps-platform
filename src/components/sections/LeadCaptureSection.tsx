@@ -1,6 +1,8 @@
 import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Phone } from "lucide-react";
+import { SALES_MOBILE } from "@/lib/config/site";
+import { formatMobile } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
 
 export const LeadCaptureSection = () => {
@@ -17,10 +19,10 @@ export const LeadCaptureSection = () => {
             Ready to Transform Your Business?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-            Whether you're looking to integrate our APIs or explore our platform solutions, 
+            Whether you're looking to integrate our APIs or explore our platform solutions,
             our team is here to help you find the right fit.
           </p>
-          
+
           <div className="space-y-4">
             {[
               "Personalized demo of our products",
@@ -44,16 +46,16 @@ export const LeadCaptureSection = () => {
           <div className="relative bg-card border border-border/50 rounded-2xl p-8 lg:p-10 shadow-xl">
             <h3 className="text-xl font-semibold text-foreground mb-2">Get Started with Eko Platform Services</h3>
             <p className="text-muted-foreground mb-8">Reach out to us and our team will get back to you within 24 hours.</p>
-            
+
             <div className="space-y-4">
               <Button variant="gold" size="xl" className="w-full group" onClick={handleChat}>
                 <MessageCircle className="w-5 h-5" />
                 Chat with Us
               </Button>
               <Button variant="navy-outline" size="xl" className="w-full" asChild>
-                <a href="tel:+919513181707">
+                <a href={`tel:+91${SALES_MOBILE}`}>
                   <Phone className="w-5 h-5" />
-                  Call +91 95131 81707
+                  Call {formatMobile(SALES_MOBILE)}
                 </a>
               </Button>
             </div>

@@ -1,6 +1,8 @@
 import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Phone } from "lucide-react";
+import { SALES_MOBILE } from "@/lib/config/site";
+import { formatMobile } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
 
 export const CTASection = () => {
@@ -19,7 +21,7 @@ export const CTASection = () => {
           Build with Eko Today
         </h2>
         <p className="text-lg md:text-xl text-white/80 mb-10 leading-relaxed">
-          Join thousands of MSMEs using Eko's infrastructure to power their financial operations. 
+          Join thousands of MSMEs using Eko's infrastructure to power their financial operations.
           Get started in minutes.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -28,9 +30,9 @@ export const CTASection = () => {
             Chat with Us
           </Button>
           <Button variant="hero-outline" size="xl" asChild>
-            <a href="tel:+919513181707">
+            <a href={`tel:+91${SALES_MOBILE}`}>
               <Phone className="w-5 h-5" />
-              Call Sales
+              Call {formatMobile(SALES_MOBILE)}
             </a>
           </Button>
         </div>
