@@ -483,7 +483,7 @@ export const ProductPageLayout = ({
                       )}
                     </Tooltip>
                     <h3 className="text-sm font-semibold text-white mt-3 mb-1">{step.title}</h3>
-                    <p className="text-white/50 text-xs max-w-[140px]">{step.desc}</p>
+                    <p className="text-white/70 text-xs max-w-[140px]">{step.desc}</p>
                   </div>
                   {i < integrationSteps.length - 1 && (
                     <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
