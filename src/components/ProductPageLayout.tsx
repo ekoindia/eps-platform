@@ -504,7 +504,7 @@ export const ProductPageLayout = ({
                   </div>
                   <div className="pb-6">
                     <h3 className="text-sm font-semibold text-white">{step.title}</h3>
-                    <p className="text-white/50 text-xs mt-1">{step.desc}</p>
+                    <p className="text-white/70 text-xs mt-1">{step.desc}</p>
                     {step.tip && <p className="text-eko-gold/80 text-xs mt-1 italic">{step.tip}</p>}
                   </div>
                 </div>
