@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { SolutionPageLayout } from "@/components/SolutionPageLayout";
+import { AiHint } from "@/components/AiHint";
 import NotFound from "@/pages/NotFound";
 
 const SolutionDetailPage = () => {
@@ -17,6 +18,12 @@ const SolutionDetailPage = () => {
         <meta name="description" content={data.seo.description} />
         <meta name="keywords" content={data.seo.keywords} />
         {/* <link rel="canonical" href={`https://eps.eko.in/solutions/${data.slug}`} /> */}
+        <link
+          rel="alternate"
+          type="text/markdown"
+          title="Markdown version"
+          href={`/solutions/${data.slug}.md`}
+        />
         <meta property="og:title" content={data.seo.title} />
         <meta property="og:description" content={data.seo.description} />
         <meta property="og:type" content="website" />
@@ -61,6 +68,7 @@ const SolutionDetailPage = () => {
           })}
         </script>
       </Helmet>
+      <AiHint mdPath={`/solutions/${data.slug}.md`} />
       <SolutionPageLayout data={data} />
     </>
   );

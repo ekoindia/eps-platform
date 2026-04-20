@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { IndustryPageLayout } from "@/components/IndustryPageLayout";
+import { AiHint } from "@/components/AiHint";
 import NotFound from "@/pages/NotFound";
 
 const IndustryDetailPage = () => {
@@ -17,6 +18,12 @@ const IndustryDetailPage = () => {
         <meta name="description" content={data.seo.description} />
         <meta name="keywords" content={data.seo.keywords} />
         {/* <link rel="canonical" href={`https://eps.eko.in/industries/${data.slug}`} /> */}
+        <link
+          rel="alternate"
+          type="text/markdown"
+          title="Markdown version"
+          href={`/industries/${data.slug}.md`}
+        />
         <meta property="og:title" content={data.seo.title} />
         <meta property="og:description" content={data.seo.description} />
         <meta property="og:type" content="website" />
@@ -45,6 +52,7 @@ const IndustryDetailPage = () => {
           </script>
         )}
       </Helmet>
+      <AiHint mdPath={`/industries/${data.slug}.md`} />
       <IndustryPageLayout data={data} />
     </>
   );

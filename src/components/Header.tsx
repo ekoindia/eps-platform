@@ -6,6 +6,8 @@ import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles,
   Banknote, Fingerprint, Receipt, BarChart3, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatMobile } from "@/lib/utils";
+import { SALES_MOBILE } from "@/lib/config/site";
 import { openZohoChat } from "@/lib/zoho-form";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { EkoLogo } from "@/components/EkoLogo";
@@ -409,14 +411,14 @@ export const Header = () => {
             <div className="hidden lg:flex items-center gap-4">
               <LanguageSelector isLight={useWhiteText} />
               <a
-                href="tel:+919513181707"
+                href={`tel:+91${SALES_MOBILE}`}
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer",
                   useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
                 )}
               >
                 <Phone className="w-4 h-4" />
-                +91 9513181707
+                {formatMobile(SALES_MOBILE)}
               </a>
               <Button variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
                 Get Started
@@ -560,11 +562,11 @@ export const Header = () => {
                 <div className="flex flex-col gap-3 mt-4">
                   <LanguageSelector isLight={false} />
                   <a
-                    href="tel:+919513181707"
+                    href={`tel:+91${SALES_MOBILE}`}
                     className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
-                    +91 9513181707
+                    {formatMobile(SALES_MOBILE)}
                   </a>
                   <Button variant="gold" size="sm" onClick={() => {
                     setMobileMenuOpen(false);

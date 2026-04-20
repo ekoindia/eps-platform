@@ -9,6 +9,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Phone, MessageCircle, FileText, ArrowRight } from "lucide-react";
+import { SALES_MOBILE } from "@/lib/config/site";
+import { formatMobile } from "@/lib/utils";
 
 interface TalkToSalesDialogProps {
   open: boolean;
@@ -40,7 +42,7 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
             <div className="p-6 pt-2 space-y-3">
               {/* Call Option */}
               <a
-                href="tel:+919513181707"
+                href={`tel:+91${SALES_MOBILE}`}
                 className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-eko-gold/50 hover:bg-eko-gold/5 transition-all group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
@@ -48,7 +50,7 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-foreground">Call Us</p>
-                  <p className="text-sm text-muted-foreground">+91 95131 81707</p>
+                  <p className="text-sm text-muted-foreground">{formatMobile(SALES_MOBILE)}</p>
                 </div>
                 <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-eko-gold group-hover:translate-x-1 transition-all" />
               </a>

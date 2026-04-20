@@ -547,7 +547,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "PAN Match", value: "✓ Matched" },
         { label: "Name Match", value: "✓ Matched" },
         { label: "DOB Match", value: "✓ Matched" },
-        { label: "Gender", value: "Male" },
+        { label: "PAN Status", value: "Active" },
         { label: "Aadhaar Seeding Status", value: "Seeded", icon: Fingerprint },
       ],
     },
