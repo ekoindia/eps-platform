@@ -12,6 +12,7 @@ import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { INDUSTRY_CATEGORIES } from "@/lib/data/industries";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { AiHint } from "@/components/AiHint";
+import { SITE_URL } from "@/lib/config/site";
 
 const FEATURED_SOLUTION_SLUGS = [
   "assisted-banking-agent-pack",
@@ -30,7 +31,7 @@ const UseCasesHubPage = () => {
       <Helmet>
         <title>Use Cases | Eko Platform Services</title>
         <meta name="description" content="Find the right Eko API stack for your business. Browse by industry or solution pack to see pre-bundled APIs for common workflows." />
-        {/* <link rel="canonical" href="https://eps.eko.in/use-cases" /> */}
+        <link rel="canonical" href={`${SITE_URL}/use-cases`} />
         <link
           rel="alternate"
           type="text/markdown"

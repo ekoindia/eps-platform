@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { safeSessionStorage } from "@/lib/ssr-safe";
 
 const TRACKING_KEYS = [
   "gclid", "fbclid", "ttclid", "msclkid",          // ad platform click IDs
@@ -29,7 +30,7 @@ export function useCaptureTrackingParams() {
     if (Object.keys(captured).length > 0) {
       // First-touch attribution: don't overwrite already-stored params
       const existing = getStoredTrackingParams();
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...captured, ...existing }));
+      safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...captured, ...existing }));
     }
   }, [search]);
 }
@@ -37,7 +38,7 @@ export function useCaptureTrackingParams() {
 /** Returns tracking params saved from the landing URL, or an empty object. */
 export function getStoredTrackingParams(): Record<string, string> {
   try {
-    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+    return JSON.parse(safeSessionStorage.getItem(STORAGE_KEY) || "{}");
   } catch {
     return {};
   }

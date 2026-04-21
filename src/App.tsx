@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
@@ -38,50 +38,49 @@ function TrackingParamCapture() {
   return null;
 }
 
-const App = () => (
-  <HelmetProvider>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const App = ({ helmetContext }: { helmetContext?: any }) => (
+  <HelmetProvider context={helmetContext}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <TrackingParamCapture />
-          <ScrollToTop />
-          <AnimatedRoutes>
-            <Routes>
-              <Route path="/" element={<Index />} />
+        <TrackingParamCapture />
+        <ScrollToTop />
+        <AnimatedRoutes>
+          <Routes>
+            <Route path="/" element={<Index />} />
 
-              {/* Eko Shield (specific routes before :slug wildcard) */}
-              <Route path="/products/eko-shield" element={<EkoShieldPage />} />
-              <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} />
+            {/* Eko Shield (specific routes before :slug wildcard) */}
+            <Route path="/products/eko-shield" element={<EkoShieldPage />} />
+            <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} />
 
-              {/* Product API Pages */}
-              <Route path="/products/:slug" element={<ProductDetailPage />} />
+            {/* Product API Pages */}
+            <Route path="/products/:slug" element={<ProductDetailPage />} />
 
-              {/* Industry & Solution Pages */}
-              <Route path="/use-cases" element={<UseCasesHubPage />} />
-              <Route path="/industries" element={<IndustriesPage />} />
-              <Route path="/industries/:slug" element={<IndustryDetailPage />} />
-              <Route path="/solutions" element={<SolutionsPage />} />
-              <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+            {/* Industry & Solution Pages */}
+            <Route path="/use-cases" element={<UseCasesHubPage />} />
+            <Route path="/industries" element={<IndustriesPage />} />
+            <Route path="/industries/:slug" element={<IndustryDetailPage />} />
+            <Route path="/solutions" element={<SolutionsPage />} />
+            <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
 
-              {/* Company & Legal Pages */}
-              <Route path="/about-us" element={<AboutPage />} />
-              <Route path="/blogs-media" element={<BlogsMediaPage />} />
-              {/* Redirects for old routes */}
-              <Route path="/blog" element={<Navigate to="/blogs-media" replace />} />
-              <Route path="/press" element={<Navigate to="/blogs-media" replace />} />
-              <Route path="/tnc" element={<TermsPage />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-              <Route path="/refund-policy" element={<RefundPolicyPage />} />
-              <Route path="/grievance" element={<GrievancePage />} />
-              <Route path="/signup" element={<SignupPage />} />
+            {/* Company & Legal Pages */}
+            <Route path="/about-us" element={<AboutPage />} />
+            <Route path="/blogs-media" element={<BlogsMediaPage />} />
+            {/* Redirects for old routes */}
+            <Route path="/blog" element={<Navigate to="/blogs-media" replace />} />
+            <Route path="/press" element={<Navigate to="/blogs-media" replace />} />
+            <Route path="/tnc" element={<TermsPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/refund-policy" element={<RefundPolicyPage />} />
+            <Route path="/grievance" element={<GrievancePage />} />
+            <Route path="/signup" element={<SignupPage />} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AnimatedRoutes>
-        </BrowserRouter>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AnimatedRoutes>
       </TooltipProvider>
     </QueryClientProvider>
   </HelmetProvider>

@@ -4,6 +4,7 @@ import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { API_PRODUCTS } from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import { AiHint } from "@/components/AiHint";
+import { SITE_URL } from "@/lib/config/site";
 import NotFound from "@/pages/NotFound";
 
 const ProductDetailPage = () => {
@@ -24,6 +25,7 @@ const ProductDetailPage = () => {
         <title>{seo.title} | Eko Platform Services</title>
         <meta name="description" content={seo.description} />
         <meta name="keywords" content={seo.keywords} />
+        <link rel="canonical" href={`${SITE_URL}/products/${product.slug}`} />
         <meta property="og:title" content={`${seo.ogTitle ?? seo.title} | Eko Platform Services`} />
         <meta property="og:description" content={seo.ogDescription ?? seo.description} />
         <meta property="og:type" content="website" />

@@ -5,6 +5,7 @@ import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { SITE_URL } from "@/lib/config/site";
 
 const CATEGORY_LABELS: Record<string, string> = {
   "lending-credit": "Lending & Credit",
@@ -22,7 +23,7 @@ const SolutionsPage = () => {
       <Helmet>
         <title>Solutions | Eko Platform Services</title>
         <meta name="description" content="Pre-bundled API packs for common business workflows — lending KYC, agent banking, merchant onboarding, fleet compliance, and more. Sandbox in minutes." />
-        {/* <link rel="canonical" href="https://eps.eko.in/solutions" /> */}
+        <link rel="canonical" href={`${SITE_URL}/solutions`} />
       </Helmet>
       <div className="min-h-screen bg-background">
         <Header />
