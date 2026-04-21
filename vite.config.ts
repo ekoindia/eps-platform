@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => ({
     generateMarkdownPlugin(),
     mode !== "development" && prerenderPlugin(),
   ].filter(Boolean),
+  build: {
+    manifest: true,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
