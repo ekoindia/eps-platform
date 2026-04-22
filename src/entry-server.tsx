@@ -11,7 +11,7 @@
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
 import { HelmetServerState } from "react-helmet-async";
-import App from "./App";
+import App from "./AppServer";
 
 interface RenderResult {
   /** The rendered HTML for inside <div id="root"> */

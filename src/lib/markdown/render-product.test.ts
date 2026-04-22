@@ -77,7 +77,7 @@ describe("renderProductMarkdown", () => {
     expect(md).toContain("- Lending");
     expect(md).toContain("## FAQs");
     expect(md).toContain("### Is it real-time?");
-    expect(md).toContain("## Documentation");
+    expect(md).toContain("## API Documentation");
     expect(md).toContain("https://developers.eko.in/docs/pan");
   });
 

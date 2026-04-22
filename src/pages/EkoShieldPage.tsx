@@ -175,7 +175,7 @@ const EkoShieldPage = () => {
               className="max-w-5xl mx-auto mt-16 relative">
               <div className="absolute inset-0 bg-eko-gold/10 blur-[80px] rounded-3xl" />
               <div className="relative rounded-2xl overflow-hidden flex justify-center">
-                <img src={heroDashboard} alt="Eko Shield verification dashboard" className="w-full h-auto max-w-[800px]" loading="eager" />
+                <img src={heroDashboard} alt="Eko Shield verification dashboard" width={1075} height={655} className="w-full h-auto max-w-[800px]" loading="eager" />
               </div>
             </FadeIn>
           </div>

@@ -35,7 +35,7 @@ const EkoShieldDocumentPage = () => {
 
         {/* Cover / Header */}
         <div className="text-center mb-16 print:mb-10">
-          <img src={ekoShieldLogo} alt="Eko Shield" className="h-16 mx-auto mb-6" />
+          <img src={ekoShieldLogo} alt="Eko Shield" width={64} height={64} className="h-16 mx-auto mb-6" />
           <h1 className="text-4xl font-bold text-[#00394b] mb-3">Eko Shield</h1>
           <p className="text-xl text-gray-600">Unified Verification Platform — Product Overview</p>
           <div className="mt-4 text-sm text-gray-400">Confidential • {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long' })}</div>

@@ -11,6 +11,30 @@ the transition client-side (no full reload). If the user opens a product URL
 directly or refreshes, the server serves the pre-rendered static HTML
 immediately.
 
+### Client / server App split
+
+The site uses two versions of the App component to support both route-based
+code splitting and static pre-rendering:
+
+| File | Imports | Used by |
+|------|---------|--------|
+| `src/App.tsx` | `React.lazy()` dynamic imports | `src/main.tsx` (client hydration & SPA) |
+| `src/AppServer.tsx` | Static eager imports | `src/entry-server.tsx` (SSG pre-rendering) |
+
+**Why two files?** `React.lazy` is not supported by `renderToString` (used for
+SSG). The server variant keeps all page imports static so every route can be
+pre-rendered synchronously. The client variant uses `React.lazy` with
+`<Suspense fallback={null}>` so each page's JS is loaded on demand — only the
+code for the current route is downloaded on initial page load.
+
+Both files share the same route definitions and component tree. When adding a
+new route, it must be added to **both** `App.tsx` and `AppServer.tsx`.
+
+Because pre-rendered pages already contain the full HTML, React 18's
+`hydrateRoot` attaches event handlers to the existing markup without showing
+the Suspense fallback. The lazy chunk for the current page loads in the
+background and hydration completes seamlessly.
+
 ### What gets pre-rendered
 
 The route manifest in `ssg/routes.ts` is the single source of truth. It is
@@ -63,11 +87,13 @@ npm run build
 
 #### Client hydration
 
-`src/main.tsx` detects whether the page was pre-rendered by checking for
-meaningful markup inside `#root` (ignoring comment-only placeholders like
-`<!--ssr-outlet-->`):
+`src/main.tsx` imports `App` (the lazy-loading client variant) and detects
+whether the page was pre-rendered by checking for meaningful markup inside
+`#root` (ignoring comment-only placeholders like `<!--ssr-outlet-->`):
 
 ```ts
+import App from "./App.tsx";   // lazy route imports + Suspense
+
 const hasPrerenderedMarkup =
 	container.innerHTML.replace(/<!--([\s\S]*?)-->/g, "").trim().length > 0;
 
@@ -77,6 +103,12 @@ if (hasPrerenderedMarkup) {
   createRoot(container).render(app);  // SPA fallback: full client render
 }
 ```
+
+During hydration, React 18 matches the pre-rendered HTML to the lazy
+component's output. Because the markup already exists in the DOM, the
+`<Suspense fallback={null}>` wrapper never renders its fallback — the lazy
+chunk loads transparently and hydration completes without a flash of empty
+content.
 
 #### SPA fallback
 
@@ -96,6 +128,8 @@ can be added to the manifest incrementally.
 | `ssg/plugin.ts` | Vite plugin (`closeBundle` hook) — registered in `vite.config.ts` |
 | `ssg/sitemap.ts` | XML sitemap generator (uses the same route manifest) |
 | `src/entry-server.tsx` | SSR entry: `renderPage(url)` via `StaticRouter` + `renderToString` |
+| `src/App.tsx` | Client App — `React.lazy` imports + `Suspense` for code splitting |
+| `src/AppServer.tsx` | Server App — eager imports for synchronous SSG rendering |
 | `src/lib/ssr-safe.ts` | Browser-API guards (`safeSessionStorage`, `safeLocationHref`) |
 | `vite.config.ts` | Enables `build.manifest` for asset URL rewriting |
 
@@ -145,14 +179,19 @@ already guarded inside `useEffect` or event handlers.
 `useCaptureTrackingParams()` runs inside `useEffect`, so it fires after
 hydration — correctly capturing `gclid`, `utm_*`, and other tracking params
 from the hydrated page URL and persisting them to `sessionStorage`. The
-`ZohoSignupForm` iframe starts from a deterministic SSR-safe `SITE_URL` value,
-then updates `src` in `useEffect` using `window.location.href` so tracking
-params are applied after mount without causing hydration mismatch.
+`ZohoSignupForm` renders a placeholder `<div>` during SSR and defers loading
+the iframe until the container scrolls near the viewport (via
+`IntersectionObserver` with a 200px root margin). Once visible, it builds the
+iframe `src` from `window.location.href` so tracking params are applied.
+This avoids loading the Zoho form on initial page render, reducing main-thread
+work and eliminating the geolocation permission request that was previously
+triggered on page load.
 
 ### How to add a new pre-rendered route
 
 1. Add the URL string to the array in `ssg/routes.ts`.
-2. Ensure the corresponding React route exists in `src/App.tsx`.
+2. Add the corresponding `<Route>` to **both** `src/App.tsx` (with a
+   `React.lazy` import) and `src/AppServer.tsx` (with a static import).
 3. Run `npm run build` — the route is pre-rendered automatically.
 
 If the new route is a detail page driven by data (e.g. a new product slug),
@@ -233,8 +272,9 @@ When migrating to Vike:
    in `+config.ts`).
 3. Replace `ssg/routes.ts` with Vike's `+onBeforePrerenderStart.ts` hook that
    returns the same URL list.
-4. Keep `src/App.tsx` unchanged — it is router-agnostic (no `BrowserRouter`
-   inside it).
+4. Keep `src/App.tsx` and `src/AppServer.tsx` route definitions — they are
+   router-agnostic (no `BrowserRouter` inside them). The lazy/eager split
+   may be replaced by Vike's own code-splitting mechanism.
 5. Replace `src/main.tsx`'s hydration logic with Vike's `+onRenderClient.tsx`.
 6. Remove `ssg/` directory entirely.
 

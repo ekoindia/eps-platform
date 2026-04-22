@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
 import { appendTrackingParams } from "@/hooks/use-tracking-params";
@@ -11,25 +11,45 @@ function buildSrc(website: string, referrername: string) {
 
 export const ZohoSignupForm = () => {
   const { pathname } = useLocation();
-  const referrername = pathname.replace(/^\/+|\/+$/g, ""); // strip leading and trailing slashes
+  const referrername = pathname.replace(/^\/+|\/+$/g, "");
 
-  // Start with SITE_URL (matches SSR output, avoids hydration mismatch)
   const [src, setSrc] = useState(() => buildSrc(SITE_URL + pathname, referrername));
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isBrowser()) return;
-    // By now, useCaptureTrackingParams has run and populated sessionStorage
     const website = appendTrackingParams(window.location.href);
     setSrc(buildSrc(website, referrername));
   }, [pathname, referrername]);
 
+  // Defer iframe loading until the container is near the viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <iframe
-      aria-label="Eko EPS Signup Form"
-      frameBorder="0"
-      allow="geolocation;"
-      style={{ height: "500px", width: "100%", border: "none" }}
-      src={src}
-    />
+    <div ref={containerRef} style={{ minHeight: "500px", width: "100%" }}>
+      {isVisible && (
+        <iframe
+          aria-label="Eko EPS Signup Form"
+          frameBorder="0"
+          style={{ height: "500px", width: "100%", border: "none" }}
+          src={src}
+        />
+      )}
+    </div>
   );
 };

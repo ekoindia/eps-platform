@@ -14,6 +14,10 @@ This project is built with:
 
 ## Main Project Structure
 - `src/` - Main source code for the React application
+  - `App.tsx` - Client-side App with `React.lazy` route imports for code splitting
+  - `AppServer.tsx` - Server-side App with eager imports for SSG pre-rendering
+  - `entry-server.tsx` - SSR entry point used by the SSG build pipeline
+  - `main.tsx` - Client entry point with hydration / SPA-fallback detection
   - `components/` - Reusable React components
   - `hooks/` - Custom React hooks
   - `pages/` - React components for each page/route
@@ -23,7 +27,7 @@ This project is built with:
 	- `markdown/` - Logic for generating Markdown content from data
   - `assets/` - Static assets like images and icons, to be imported in React components
 - `public/` - Publicly accessible static files (e.g. robots.txt, _redirects)
-- `ssg/` - Custom Vite plugin for static Markdown generation
+- `ssg/` - Custom Vite plugin for static page generation and pre-rendering
 
 
 ## Product Data Files (in `src/lib/data/`):
