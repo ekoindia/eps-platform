@@ -49,22 +49,22 @@ export async function prerenderAllPages(
 
       // Determine output path:
       //   /                     → dist/index.html  (overwrite)
-      //   /products/aeps-api    → dist/products/aeps-api.html
-      //   /about-us             → dist/about-us.html
+      //   /products/aeps-api    → dist/products/aeps-api/index.html
+      //   /about-us             → dist/about-us/index.html
       let filePath: string;
       if (route === "/") {
         filePath = path.join(outDir, "index.html");
       } else {
-        filePath = path.join(outDir, `${route.slice(1)}.html`);
+        filePath = path.join(outDir, route.slice(1), "index.html");
       }
 
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, html, "utf-8");
       written++;
     } catch (err) {
-      // Log and continue — don't let one broken page block the rest
-      console.error(
+      throw new Error(
         `[ssg] Failed to pre-render ${route}: ${(err as Error).message}`,
+        { cause: err },
       );
     }
   }

@@ -56,7 +56,7 @@ npm run build
         │     renderPage(url) → { html, head }
         │     inject into dist/index.html template
 		│     rewrite /src/assets/* → /assets/* via manifest map
-        │     write dist/<route>.html
+        │     write dist/<route>/index.html
         ├── Saves original SPA shell as dist/__spa-fallback.html
         └── Generates dist/sitemap.xml
 ```
@@ -179,7 +179,7 @@ catch-all is reached, so there is no routing conflict.
 # Build and inspect
 npm run build
 
-# Check pre-rendered files
+# Check pre-rendered files (each route is a directory with index.html)
 ls dist/products/
 ls dist/industries/
 ls dist/solutions/
@@ -194,7 +194,7 @@ open http://localhost:4173/products/aeps-api
 # Verify canonical and JSON-LD in View Source
 
 # Verify asset paths were rewritten (should be 0)
-grep -c '/src/assets/' dist/index.html dist/products/dmt-api.html
+grep -c '/src/assets/' dist/index.html dist/products/dmt-api/index.html
 ```
 
 
