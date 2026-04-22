@@ -189,6 +189,9 @@ export const ProductPageLayout = ({
                     <img
                       src={heroImage}
                       alt={heroTitle}
+                      width={512}
+                      height={512}
+                      fetchPriority="high"
                       className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105"
                       style={{
                         transform: "perspective(1000px) rotateY(-5deg) rotateX(5deg)",

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Lock, FileCheck } from "lucide-react";
 import airtelLogo from "@/assets/partners/airtel-payments-bank.png";
@@ -45,6 +46,21 @@ const complianceItems = [
 ];
 
 export const ComplianceSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        el.style.animationPlayState = entry.isIntersecting ? "running" : "paused";
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <SectionContainer variant="navy" id="compliance">
       <SectionHeader
@@ -82,12 +98,15 @@ export const ComplianceSection = () => {
       <div className="mt-16 pt-12 border-t border-white/10">
         <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-white text-center mb-8">Our Partners</h2>
         <div className="relative overflow-hidden h-20">
-          <div className="flex items-center gap-12 animate-scroll-x">
+          <div ref={scrollRef} className="flex items-center gap-12 animate-scroll-x" style={{ animationPlayState: "paused" }}>
             {[...partners, ...partners].map((partner, i) => (
               <img
                 key={`${partner.name}-${i}`}
                 src={partner.logo}
                 alt={partner.name}
+                width={120}
+                height={48}
+                loading="lazy"
                 className="h-12 w-auto object-contain bg-white rounded-lg px-4 py-2 shrink-0"
               />
             ))}

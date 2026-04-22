@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -31,8 +30,6 @@ import IndustriesPage from "./pages/IndustriesPage";
 import SolutionsPage from "./pages/SolutionsPage";
 import UseCasesHubPage from "./pages/UseCasesHubPage";
 
-const queryClient = new QueryClient();
-
 function TrackingParamCapture() {
   useCaptureTrackingParams();
   return null;
@@ -41,13 +38,12 @@ function TrackingParamCapture() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const App = ({ helmetContext }: { helmetContext?: any }) => (
   <HelmetProvider context={helmetContext}>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <TrackingParamCapture />
-        <ScrollToTop />
-        <AnimatedRoutes>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <TrackingParamCapture />
+      <ScrollToTop />
+      <AnimatedRoutes>
           <Routes>
             <Route path="/" element={<Index />} />
 
@@ -82,7 +78,6 @@ const App = ({ helmetContext }: { helmetContext?: any }) => (
           </Routes>
         </AnimatedRoutes>
       </TooltipProvider>
-    </QueryClientProvider>
   </HelmetProvider>
 );
 

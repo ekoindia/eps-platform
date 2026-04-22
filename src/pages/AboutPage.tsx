@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Handshake, ShoppingBag, Lightbulb, Shield, Heart, Zap, Lock, Star, UserCheck, Swords, Target, Quote } from "lucide-react";
-import { motion } from "framer-motion";
+import { FadeIn } from "@/components/FadeIn";
 
 const roles = [
   { title: "Influencers", description: "Helping customers choose the right product or service.", icon: Users, gradient: "from-eko-gold-light to-eko-gold-light/20" },
@@ -20,11 +20,6 @@ const values = [  { name: "Curiosity", synonyms: ["जिज्ञासा", "�
   { name: "Courage", synonyms: ["साहस", "ధైర్యం", "धैर्य", "সাहस", "ہمت"], icon: Swords, color: "text-destructive", bg: "bg-destructive/10", body: "Courage means doing what is right even when it is difficult. At Eko, courage is about speaking up, sharing honest perspectives and taking decisions in the face of uncertainty. As Churchill said: \"Courage is what it takes to stand up and speak; courage is also what it takes to sit down and listen.\"" },
 ];
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
-};
-
 const AboutPage = () => {
   return (
     <>
@@ -36,12 +31,7 @@ const AboutPage = () => {
             <div className="absolute top-10 left-10 w-72 h-72 bg-eko-gold rounded-full blur-3xl" />
             <div className="absolute bottom-10 right-10 w-96 h-96 bg-eko-gold rounded-full blur-3xl" />
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="container mx-auto px-6 text-center max-w-3xl relative z-10"
-          >
+          <FadeIn onView={false} className="container mx-auto px-6 text-center max-w-3xl relative z-10">
             <span className="inline-block px-4 py-1.5 rounded-full bg-eko-gold/20 text-eko-gold text-sm font-semibold mb-6">
               About Eko
             </span>
@@ -51,7 +41,7 @@ const AboutPage = () => {
             <p className="text-lg text-white/75 leading-relaxed max-w-2xl mx-auto">
               Eko is a financial technology platform helping brands, banks, and fintech companies reach customers through trusted micro-entrepreneurs embedded in their communities across Bharat.
             </p>
-          </motion.div>
+          </FadeIn>
         </section>
 
         {/* Body Intro */}
@@ -62,50 +52,33 @@ const AboutPage = () => {
               "Through a combination of distribution infrastructure, fintech APIs, and simple digital tools, we connect institutions with a vast network of micro-entrepreneurs — many of them women — who bring financial services closer to their communities.",
               "Today, Eko powers a nationwide network serving tens of millions of customers across thousands of towns and villages, enabling banking services, digital transactions, and financial products through entrepreneurs deeply embedded in local markets.",
             ].map((text, i) => (
-              <motion.p
+              <FadeIn
                 key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                variants={fadeUp}
+                as="p"
+                delay={i * 100}
                 className="text-muted-foreground leading-relaxed text-base text-justify"
               >
                 {text}
-              </motion.p>
+              </FadeIn>
             ))}
           </div>
         </section>
 
         {/* Mission Quote */}
         <section className="pb-10 lg:pb-12">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="container mx-auto px-0 max-w-3xl"
-          >
+          <FadeIn className="container mx-auto px-0 max-w-3xl">
             <div className="relative">
               <Quote strokeWidth={0} className="absolute -top-4 -left-2 w-20 h-20 lg:w-28 lg:h-28 text-eko-gold/15 pointer-events-none" fill="currentColor" style={{ transform: 'scaleX(-1) translateX(30%) translateY(-0%)' }} />
               <blockquote className="text-2xl lg:text-2xl font-bold text-foreground opacity-80 text-justify leading-relaxed italic rounded-lg p-8 relative z-10">
                 Eko's mission is to provide Distribution as a Service for brands to reach the next billion customers through deeply embedded-in-the-community micro-entrepreneurs as influencers, facilitators and resellers. We use simple digital tools to help these entrepreneurs earn more, get fair access to capital and run & grow their businesses better every day.
               </blockquote>
             </div>
-          </motion.div>
+          </FadeIn>
         </section>
 
         {/* Our Mission */}
         <section className="py-16 lg:py-20 bg-gradient-to-br from-secondary via-muted/40 to-secondary/50">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="container mx-auto px-6 max-w-3xl"
-          >
+          <FadeIn className="container mx-auto px-6 max-w-3xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-xl bg-eko-navy flex items-center justify-center">
                 <Target className="w-6 h-6 text-eko-gold" />
@@ -120,29 +93,25 @@ const AboutPage = () => {
                 In short, Eko connects brands, entrepreneurs and customers — creating a financial ecosystem that is more inclusive, accessible and scalable.
               </p>
             </div>
-          </motion.div>
+          </FadeIn>
         </section>
 
         {/* What This Means in Practice */}
         <section className="py-16 lg:py-20">
           <div className="container mx-auto px-6 max-w-4xl">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
+            <FadeIn>
               <h2 className="text-3xl font-bold text-foreground mb-4 text-center">What This Means in Practice</h2>
               <p className="text-muted-foreground leading-relaxed mb-12 text-justify max-w-2xl mx-auto">
                 Many institutions struggle to reach customers beyond large cities. Building physical networks is expensive and difficult. Eko solves this by enabling brands to work with trusted local entrepreneurs who already serve their communities.
               </p>
-            </motion.div>
+            </FadeIn>
             <div className="grid sm:grid-cols-3 gap-6 mb-12">
               {roles.map((role, i) => {
                 const Icon = role.icon;
                 return (
-                  <motion.div
+                  <FadeIn
                     key={role.title}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                    custom={i}
-                    variants={fadeUp}
+                    delay={i * 100}
                   >
                     <Card className={`border-0 shadow-lg bg-gradient-to-br ${role.gradient} h-full hover:shadow-xl transition-shadow`}>
                       <CardContent className="pt-8 pb-8 text-center">
@@ -153,20 +122,16 @@ const AboutPage = () => {
                         <p className="text-sm text-muted-foreground leading-relaxed">{role.description}</p>
                       </CardContent>
                     </Card>
-                  </motion.div>
+                  </FadeIn>
                 );
               })}
             </div>
-            <motion.p
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              custom={0}
+            <FadeIn
+              as="p"
               className="text-muted-foreground leading-relaxed text-center max-w-2xl mx-auto bg-muted/60 rounded-xl p-6 border border-border/40"
             >
               With Eko's platform, these entrepreneurs gain access to tools that help them manage transactions, track income, expand services and access working capital — allowing them to grow their businesses every day.
-            </motion.p>
+            </FadeIn>
           </div>
         </section>
 
@@ -175,25 +140,18 @@ const AboutPage = () => {
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-80 h-80 bg-eko-gold rounded-full blur-3xl" />
           </div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="container mx-auto px-6 max-w-3xl text-center relative z-10"
-          >
+          <FadeIn className="container mx-auto px-6 max-w-3xl text-center relative z-10">
             <h2 className="text-3xl font-bold text-white mb-6">The Future We Are Building</h2>
             <p className="text-lg text-white/75 leading-relaxed">
               Financial services will not be built through apps alone. They will be built through technology, trust and local entrepreneurship working together. Eko is building the infrastructure that makes this possible.
             </p>
-          </motion.div>
+          </FadeIn>
         </section>
 
         {/* Our Values */}
         <section className="py-16 lg:py-24 bg-gradient-to-b from-background to-muted/30">
           <div className="container mx-auto px-6 max-w-5xl">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-12">
+            <FadeIn className="text-center mb-12">
               <span className="inline-block px-4 py-1.5 rounded-full bg-eko-navy text-eko-gold text-sm font-semibold mb-4">
                 Our Culture
               </span>
@@ -206,18 +164,14 @@ const AboutPage = () => {
               <p className="text-muted-foreground max-w-2xl mx-auto text-justify">
                 At Eko, our values guide how we build technology, work with partners and serve communities. They shape how we think, how we act and how we create long-term impact.
               </p>
-            </motion.div>
+            </FadeIn>
             <div className="grid sm:grid-cols-2 gap-5">
               {values.map((v, i) => {
                 const Icon = v.icon;
                 return (
-                  <motion.div
+                  <FadeIn
                     key={v.name}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                    custom={i}
-                    variants={fadeUp}
+                    delay={i * 100}
                   >
                     <Card className="border-border/40 hover:border-eko-gold/30 hover:shadow-lg transition-all h-full">
                       <CardContent className="pt-6 pb-6">
@@ -254,7 +208,7 @@ const AboutPage = () => {
                         <p className="text-sm text-muted-foreground leading-relaxed text-justify">{v.body}</p>
                       </CardContent>
                     </Card>
-                  </motion.div>
+                  </FadeIn>
                 );
               })}
             </div>
