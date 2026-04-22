@@ -51,7 +51,7 @@ export const SectionHeader = ({
       {badge && (
         <span className={cn(
           "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
-          light ? "bg-white/10 text-white/90" : "bg-primary/10 text-primary"
+          light ? "bg-white/10 text-white/90" : "bg-primary/20 text-amber-700"
         )}>
           {badge}
         </span>

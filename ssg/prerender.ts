@@ -4,7 +4,19 @@
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { minify } from "html-minifier-terser";
 import type { ViteDevServer } from "vite";
+
+const MINIFY_OPTIONS = {
+  collapseWhitespace: true,
+  removeComments: true,
+  removeRedundantAttributes: true,
+  removeScriptTypeAttributes: true,
+  removeStyleLinkTypeAttributes: true,
+  useShortDoctype: true,
+  minifyCSS: true,
+  minifyJS: true,
+};
 
 export async function prerenderAllPages(
   outDir: string,
@@ -38,7 +50,8 @@ export async function prerenderAllPages(
 
   // Save the original SPA shell as a fallback for catch-all rewrites
   const fallbackPath = path.join(outDir, "__spa-fallback.html");
-  await fs.writeFile(fallbackPath, template, "utf-8");
+  const minifiedTemplate = await minify(template, MINIFY_OPTIONS);
+  await fs.writeFile(fallbackPath, minifiedTemplate, "utf-8");
 
   let written = 0;
 
@@ -46,6 +59,7 @@ export async function prerenderAllPages(
     try {
       let html = renderRoute(route, template, renderPage);
       html = replaceAssetUrls(html, assetMap);
+      html = await minify(html, MINIFY_OPTIONS);
 
       // Determine output path:
       //   /                     → dist/index.html  (overwrite)
