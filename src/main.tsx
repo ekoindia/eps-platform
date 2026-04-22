@@ -10,7 +10,10 @@ const app = (
   </BrowserRouter>
 );
 
-if (container.hasChildNodes()) {
+const hasPrerenderedMarkup =
+  container.innerHTML.replace(/<!--([\s\S]*?)-->/g, "").trim().length > 0;
+
+if (hasPrerenderedMarkup) {
   hydrateRoot(container, app);
 } else {
   createRoot(container).render(app);
