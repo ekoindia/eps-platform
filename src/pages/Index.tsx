@@ -19,7 +19,7 @@ const Index = () => {
         <link rel="canonical" href={SITE_URL} />
       </Helmet>
       <Header />
-      
+
       <main>
         <HeroSection />
         <WhyEkoSection />
@@ -27,11 +27,11 @@ const Index = () => {
         <DeveloperSection />
         <UseCasesSection />
         <ComplianceSection />
-        
+
         <LeadCaptureSection />
         <CTASection />
       </main>
-      
+
       <Footer />
     </div>
   );
