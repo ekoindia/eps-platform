@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { IndustryPageLayout } from "@/components/IndustryPageLayout";
 import { AiHint } from "@/components/AiHint";
+import { SITE_URL } from "@/lib/config/site";
 import NotFound from "@/pages/NotFound";
 
 const IndustryDetailPage = () => {
@@ -17,7 +18,7 @@ const IndustryDetailPage = () => {
         <title>{data.seo.title}</title>
         <meta name="description" content={data.seo.description} />
         <meta name="keywords" content={data.seo.keywords} />
-        {/* <link rel="canonical" href={`https://eps.eko.in/industries/${data.slug}`} /> */}
+        <link rel="canonical" href={`${SITE_URL}/industries/${data.slug}`} />
         <link
           rel="alternate"
           type="text/markdown"
@@ -32,9 +33,9 @@ const IndustryDetailPage = () => {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://eps.eko.in/" },
-              { "@type": "ListItem", position: 2, name: "Industries", item: "https://eps.eko.in/industries" },
-              { "@type": "ListItem", position: 3, name: data.name, item: `https://eps.eko.in/industries/${data.slug}` },
+              { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+              { "@type": "ListItem", position: 2, name: "Industries", item: `${SITE_URL}/industries` },
+              { "@type": "ListItem", position: 3, name: data.name, item: `${SITE_URL}/industries/${data.slug}` },
             ],
           })}
         </script>

@@ -14,6 +14,7 @@ import {
 /**
  * Render the `/use-cases.md` hub index — a flat, AI-agent-friendly listing of
  * all industries and solution packs, mirroring the hub page.
+ * MARK: use-cases.md
  */
 export function renderUseCasesHubMarkdown(
   industries: IndustryData[],
@@ -53,6 +54,7 @@ export function renderUseCasesHubMarkdown(
 /**
  * Render the root `/index.md` — site sitemap in markdown form linking to every
  * content piece's markdown version.
+ * MARK: index.md
  */
 export function renderSiteIndexMarkdown(
   products: ApiProductRef[],
@@ -115,6 +117,7 @@ export function renderSiteIndexMarkdown(
 
 /**
  * Render `/llms.txt` per the llmstxt.org convention.
+ * MARK: llms.txt
  */
 export function renderLlmsTxt(
   products: ApiProductRef[],
@@ -125,7 +128,7 @@ export function renderLlmsTxt(
   lines.push("# Eko Platform Services");
   lines.push("");
   lines.push(
-    "> Eko is an API platform for payments, banking correspondent services (AePS, DMT, BBPS), and identity verification (PAN, Aadhaar, bank, GST, DL, RC, etc.) in India. Markdown versions of every page are available at the URLs below."
+    "> EPS (Eko Platform Services) is an API platform for payments, banking correspondent services (AePS, DMT, BBPS), and identity verification (PAN, Aadhaar, bank, GST, DL, RC, etc.) in India. Markdown versions of every page are available at the URLs below."
   );
   lines.push("");
   lines.push(`- [Site index](${SITE_URL}/index.md): Full list of products, industries, and solutions`);

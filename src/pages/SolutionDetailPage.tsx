@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { SolutionPageLayout } from "@/components/SolutionPageLayout";
 import { AiHint } from "@/components/AiHint";
+import { SITE_URL } from "@/lib/config/site";
 import NotFound from "@/pages/NotFound";
 
 const SolutionDetailPage = () => {
@@ -17,7 +18,7 @@ const SolutionDetailPage = () => {
         <title>{data.seo.title}</title>
         <meta name="description" content={data.seo.description} />
         <meta name="keywords" content={data.seo.keywords} />
-        {/* <link rel="canonical" href={`https://eps.eko.in/solutions/${data.slug}`} /> */}
+        <link rel="canonical" href={`${SITE_URL}/solutions/${data.slug}`} />
         <link
           rel="alternate"
           type="text/markdown"
@@ -32,9 +33,9 @@ const SolutionDetailPage = () => {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://eps.eko.in/" },
-              { "@type": "ListItem", position: 2, name: "Solutions", item: "https://eps.eko.in/solutions" },
-              { "@type": "ListItem", position: 3, name: data.name, item: `https://eps.eko.in/solutions/${data.slug}` },
+              { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+              { "@type": "ListItem", position: 2, name: "Solutions", item: `${SITE_URL}/solutions` },
+              { "@type": "ListItem", position: 3, name: data.name, item: `${SITE_URL}/solutions/${data.slug}` },
             ],
           })}
         </script>
@@ -62,7 +63,7 @@ const SolutionDetailPage = () => {
             offers: {
               "@type": "Offer",
               priceCurrency: "INR",
-              url: `https://eps.eko.in/solutions/${data.slug}`,
+              url: `${SITE_URL}/solutions/${data.slug}`,
               availability: "https://schema.org/InStock",
             },
           })}

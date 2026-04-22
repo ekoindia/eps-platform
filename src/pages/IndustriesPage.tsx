@@ -5,6 +5,7 @@ import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { IndustryCard } from "@/components/IndustryCard";
 import { INDUSTRIES_LIST, INDUSTRY_CATEGORIES } from "@/lib/data/industries";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { SITE_URL } from "@/lib/config/site";
 
 const IndustriesPage = () => {
   return (
@@ -12,7 +13,7 @@ const IndustriesPage = () => {
       <Helmet>
         <title>Industries | Eko Platform Services</title>
         <meta name="description" content="Explore Eko's API solutions for every industry — lending, microfinance, insurance, retail, logistics, and more. Find the right stack for your business." />
-        {/* <link rel="canonical" href="https://eps.eko.in/industries" /> */}
+        <link rel="canonical" href={`${SITE_URL}/industries`} />
       </Helmet>
       <div className="min-h-screen bg-background">
         <Header />
