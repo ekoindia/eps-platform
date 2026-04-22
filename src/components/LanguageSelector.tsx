@@ -28,45 +28,7 @@ declare global {
 export const LanguageSelector = ({ isLight = true }: { isLight?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("en");
-  const [initialized, setInitialized] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Initialize Google Translate once
-  useEffect(() => {
-    if (initialized) return;
-
-    // Create hidden container for Google Translate
-    let container = document.getElementById("google_translate_element");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "google_translate_element";
-      container.style.display = "none";
-      document.body.appendChild(container);
-    }
-
-    window.googleTranslateElementInit = () => {
-      new window.google.translate.TranslateElement(
-        {
-          pageLanguage: "en",
-          includedLanguages: languages.map((l) => l.code).join(","),
-          layout: 0, // SIMPLE layout
-          autoDisplay: false,
-        },
-        "google_translate_element"
-      );
-    };
-
-    if (!document.getElementById("google-translate-script")) {
-      const script = document.createElement("script");
-      script.id = "google-translate-script";
-      script.src =
-        "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    setInitialized(true);
-  }, [initialized]);
 
   // Close on outside click
   useEffect(() => {
@@ -79,11 +41,70 @@ export const LanguageSelector = ({ isLight = true }: { isLight?: boolean }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const changeLanguage = (langCode: string) => {
+  const ensureGoogleTranslateLoaded = (): Promise<void> => {
+    return new Promise((resolve) => {
+      // If already initialized, resolve immediately
+      const selectEl = document.querySelector<HTMLSelectElement>(
+        "#google_translate_element select"
+      );
+      if (selectEl) {
+        resolve();
+        return;
+      }
+
+      // Create hidden container for Google Translate
+      let container = document.getElementById("google_translate_element");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "google_translate_element";
+        container.style.display = "none";
+        document.body.appendChild(container);
+      }
+
+      window.googleTranslateElementInit = () => {
+        new window.google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            includedLanguages: languages.map((l) => l.code).join(","),
+            layout: 0, // SIMPLE layout
+            autoDisplay: false,
+          },
+          "google_translate_element"
+        );
+        // Wait briefly for the select element to render
+        setTimeout(resolve, 300);
+      };
+
+      if (!document.getElementById("google-translate-script")) {
+        const script = document.createElement("script");
+        script.id = "google-translate-script";
+        script.src =
+          "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+    });
+  };
+
+  const changeLanguage = async (langCode: string) => {
     setSelected(langCode);
     setOpen(false);
 
-    // Trigger Google Translate
+    if (langCode === "en") {
+      // Reset to English by removing the translate cookie and reloading
+      const selectEl = document.querySelector<HTMLSelectElement>(
+        "#google_translate_element select"
+      );
+      if (selectEl) {
+        selectEl.value = langCode;
+        selectEl.dispatchEvent(new Event("change"));
+      }
+      return;
+    }
+
+    // Lazy-load Google Translate on first non-English selection
+    await ensureGoogleTranslateLoaded();
+
     const selectEl = document.querySelector<HTMLSelectElement>(
       "#google_translate_element select"
     );
