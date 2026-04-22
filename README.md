@@ -12,12 +12,31 @@ This project is built with:
 - Tailwind CSS
 
 
-## How to Add/Remove a Product?
-1. To add a product, create a new file in `src/pages/products/` with the product's slug as the filename (e.g. `my-new-product.tsx`).
-2. Use the existing product pages as a reference for the structure and content of the new product page.
-3. To remove a product, simply delete the corresponding file from `src/pages/products/`.
-4. Update the `products` array in `src/components/Header.tsx` and `src/components/Footer.tsx` to reflect the addition or removal of the product.
-5. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs.
+## Main Project Structure
+- `src/` - Main source code for the React application
+  - `components/` - Reusable React components
+  - `hooks/` - Custom React hooks
+  - `pages/` - React components for each page/route
+  - `lib/` - Utility functions, data sources, and Markdown generation logic
+	- **`config/`** - Site-wide configuration constants (e.g. site URL, API endpoints)
+	- **`data/`** - Static data for products, industries, solutions, etc.
+	- `markdown/` - Logic for generating Markdown content from data
+  - `assets/` - Static assets like images and icons, to be imported in React components
+- `public/` - Publicly accessible static files (e.g. robots.txt, _redirects)
+- `ssg/` - Custom Vite plugin for static Markdown generation
+
+
+## Product Data Files (in `src/lib/data/`):
+- [`api-product-pages.ts`](src/lib/data/api-product-pages.ts) - Detailed data for product pages (e.g. AEPS API, Lending API)
+- [`api-products.ts`](src/lib/data/api-products.ts) - List of API products with metadata
+- [`industries.ts`](src/lib/data/industries.ts) - List of industries and their associated data
+- [`solutions.ts`](src/lib/data/solutions.ts) - List of solutions and their associated data
+
+
+## How to Add/Remove an API Product?
+1. Add data in `src/lib/data/api-products.ts` and `src/lib/data/api-product-pages.ts` for the new product, following the existing structures.
+2. Update the `products` array in `src/components/Header.tsx` and `src/components/Footer.tsx` to reflect the addition or removal of the product.
+3. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs widget.
 
 
 ## How can I deploy this project?
