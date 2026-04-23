@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode, type CSSProperties, type ElementType, type HTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
 
 interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, 'style'> {
   children: ReactNode;
@@ -12,7 +13,7 @@ interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, 'style'> {
 
 /**
  * Lightweight replacement for framer-motion's whileInView fade-up animation.
- * Uses IntersectionObserver — zero JS library overhead.
+ * Uses IntersectionObserver + CSS class toggle — avoids forced reflows from inline style mutations.
  */
 export function FadeIn({
   children,
@@ -30,8 +31,7 @@ export function FadeIn({
     if (!el) return;
 
     const apply = () => {
-      el.style.opacity = "1";
-      el.style.transform = "translateY(0)";
+      el.classList.add("fade-in-visible");
     };
 
     if (!onView) {
@@ -59,12 +59,10 @@ export function FadeIn({
   return (
     <Tag
       ref={ref}
-      className={className}
+      className={cn("fade-in-hidden", className)}
       {...rest}
       style={{
-        opacity: 0,
-        transform: "translateY(20px)",
-        transition: `opacity 0.5s ease-out ${delay}ms, transform 0.5s ease-out ${delay}ms`,
+        transitionDelay: delay ? `${delay}ms` : undefined,
         ...style,
       }}
     >

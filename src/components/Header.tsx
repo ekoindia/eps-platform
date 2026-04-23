@@ -115,7 +115,7 @@ export const Header = () => {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -582,17 +582,21 @@ export const Header = () => {
       </header>
 
       {/* Get Started Dialog */}
-      <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Get Started with Eko Platform Services</DialogTitle>
-            <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
-          </DialogHeader>
+      {getStartedOpen && (
+        <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Get Started with Eko Platform Services</DialogTitle>
+              <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
+            </DialogHeader>
 
-          <ZohoSignupForm />
-        </DialogContent>
-      </Dialog>
-      <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+            <ZohoSignupForm />
+          </DialogContent>
+        </Dialog>
+      )}
+      {talkToSalesOpen && (
+        <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+      )}
     </>
   );
 };
