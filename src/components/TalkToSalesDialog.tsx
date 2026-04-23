@@ -40,8 +40,12 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
               <DialogDescription>Choose how you'd like to connect with our team.</DialogDescription>
             </DialogHeader>
             <div className="p-6 pt-2 space-y-3">
-              {/* Call Option */}
+
+              {/*
+                  MARK: Call Us
+              */}
               <a
+                id="lnk-sales-phone-dialog"
                 href={`tel:+91${SALES_MOBILE}`}
                 className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-eko-gold/50 hover:bg-eko-gold/5 transition-all group cursor-pointer"
               >
@@ -55,8 +59,11 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
                 <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-eko-gold group-hover:translate-x-1 transition-all" />
               </a>
 
-              {/* Chatbot Option */}
+              {/*
+                  MARK: Chatbot
+              */}
               <button
+                id="btn-chat-dialog"
                 onClick={handleOpenChatbot}
                 className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-eko-gold/50 hover:bg-eko-gold/5 transition-all group cursor-pointer text-left"
               >
@@ -70,7 +77,9 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
                 <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-eko-gold group-hover:translate-x-1 transition-all" />
               </button>
 
-              {/* Leave Contact Details Option */}
+              {/*
+                  MARK: Form
+              */}
               <button
                 onClick={() => setShowForm(true)}
                 className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-eko-gold/50 hover:bg-eko-gold/5 transition-all group cursor-pointer text-left"

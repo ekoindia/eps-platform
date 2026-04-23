@@ -146,7 +146,9 @@ const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
           <ArrowRight className="w-4 h-4" />
         </a>
       </Button>
-      <Button variant="navy-outline" size="lg" onClick={handleChat}>
+      <Button
+        id="btn-chat-section-products"
+        variant="navy-outline" size="lg" onClick={handleChat}>
         Chat with Us
       </Button>
     </div>

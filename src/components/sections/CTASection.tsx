@@ -25,12 +25,16 @@ export const CTASection = () => {
           Get started in minutes.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="gold" size="xl" className="group" onClick={handleChat}>
+          <Button
+            id="btn-chat-section-cta"
+            variant="gold" size="xl" className="group" onClick={handleChat}>
             <MessageCircle className="w-5 h-5" />
             Chat with Us
           </Button>
           <Button variant="hero-outline" size="xl" asChild>
-            <a href={`tel:+91${SALES_MOBILE}`}>
+            <a
+              id="lnk-sales-phone-section-cta"
+              href={`tel:+91${SALES_MOBILE}`}>
               <Phone className="w-5 h-5" />
               Call {formatMobile(SALES_MOBILE)}
             </a>

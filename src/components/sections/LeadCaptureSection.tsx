@@ -48,12 +48,16 @@ export const LeadCaptureSection = () => {
             <p className="text-muted-foreground mb-8">Reach out to us and our team will get back to you within 24 hours.</p>
 
             <div className="space-y-4">
-              <Button variant="gold" size="xl" className="w-full group" onClick={handleChat}>
+              <Button
+                id="btn-chat-section-lead-capture"
+                variant="gold" size="xl" className="w-full group" onClick={handleChat}>
                 <MessageCircle className="w-5 h-5" />
                 Chat with Us
               </Button>
               <Button variant="navy-outline" size="xl" className="w-full" asChild>
-                <a href={`tel:+91${SALES_MOBILE}`}>
+                <a
+                  id="lnk-sales-phone-section-lead-capture"
+                  href={`tel:+91${SALES_MOBILE}`}>
                   <Phone className="w-5 h-5" />
                   Call {formatMobile(SALES_MOBILE)}
                 </a>

@@ -47,11 +47,15 @@ export const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button variant="gold" size="xl" className="group" onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}>
+              <Button
+                id="btn-explore-apis-section-hero"
+                variant="gold" size="xl" className="group" onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}>
                 Explore APIs
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="hero-outline" size="xl" onClick={() => openZohoChat()}>
+              <Button
+                id="btn-chat-section-hero"
+                variant="hero-outline" size="xl" onClick={() => openZohoChat()}>
                 Talk to Sales
               </Button>
             </div>

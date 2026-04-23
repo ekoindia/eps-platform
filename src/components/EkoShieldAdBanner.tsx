@@ -84,12 +84,12 @@ const EkoShieldAdBanner = ({
   const _cta = { text: "Explore Eko Shield", href: "/products/eko-shield", ...cta };
 
   const ctaElement = _cta.onClick ? (
-    <Button variant="gold" size="lg" className="group" onClick={_cta.onClick}>
+    <Button id="btn-eko-shield-banner-cta" variant="gold" size="lg" className="group" onClick={_cta.onClick}>
       {_cta.text}
       <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
     </Button>
   ) : (
-	<Button variant="gold" size="lg" className="group" asChild>
+	<Button id="btn-eko-shield-banner-cta" variant="gold" size="lg" className="group" asChild>
 		<Link to={_cta.href}>
 			{_cta.text}
 			<ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />

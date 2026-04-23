@@ -102,7 +102,7 @@ export const Header = () => {
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [mobileCompanyOpen, setMobileCompanyOpen] = useState(false);
   const [mobileUseCasesOpen, setMobileUseCasesOpen] = useState(false);
-  const [getStartedOpen, setGetStartedOpen] = useState(false);
+  // const [getStartedOpen, setGetStartedOpen] = useState(false);
   const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
   const productsDropdownRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
@@ -136,12 +136,12 @@ export const Header = () => {
   }, []);
 
   useEffect(() => {
-    const openDialog = () => setGetStartedOpen(true);
+    // const openDialog = () => setGetStartedOpen(true);
     const openSales = () => setTalkToSalesOpen(true);
-    window.addEventListener("open-get-started", openDialog);
+    // window.addEventListener("open-get-started", openDialog);
     window.addEventListener("open-talk-to-sales", openSales);
     return () => {
-      window.removeEventListener("open-get-started", openDialog);
+      // window.removeEventListener("open-get-started", openDialog);
       window.removeEventListener("open-talk-to-sales", openSales);
     };
   }, []);
@@ -411,6 +411,7 @@ export const Header = () => {
             <div className="hidden lg:flex items-center gap-4">
               <LanguageSelector isLight={useWhiteText} />
               <a
+                id="lnk-sales-phone-header-desktop"
                 href={`tel:+91${SALES_MOBILE}`}
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer",
@@ -420,7 +421,7 @@ export const Header = () => {
                 <Phone className="w-4 h-4" />
                 {formatMobile(SALES_MOBILE)}
               </a>
-              <Button variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
+              <Button id="btn-get-started-header-desktop" variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
                 Get Started
               </Button>
             </div>
@@ -435,7 +436,9 @@ export const Header = () => {
             </button>
           </div>
 
-          {/* Mobile Menu */}
+          {/*
+              MARK: Mobile Menu
+          */}
           {mobileMenuOpen && (
             <div className="lg:hidden mt-4 pb-4 pt-4 bg-white/95 backdrop-blur-md rounded-xl px-4 -mx-4 shadow-lg">
               <nav className="flex flex-col gap-2 max-h-[calc(95vh-90px)] max-h-[80vh] overflow-y-auto">
@@ -562,13 +565,14 @@ export const Header = () => {
                 <div className="flex flex-col gap-3 mt-4">
                   <LanguageSelector isLight={false} />
                   <a
+                    id="lnk-sales-phone-header-mobile"
                     href={`tel:+91${SALES_MOBILE}`}
                     className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
                     {formatMobile(SALES_MOBILE)}
                   </a>
-                  <Button variant="gold" size="sm" onClick={() => {
+                  <Button id="btn-get-started-header-mobile" variant="gold" size="sm" onClick={() => {
                     setMobileMenuOpen(false);
                     openZohoChat();
                   }} className="cursor-pointer">
@@ -582,7 +586,8 @@ export const Header = () => {
       </header>
 
       {/* Get Started Dialog */}
-      {getStartedOpen && (
+      {/* Commented out: Redundant - 'open-get-started' event is never dispatched in the app */}
+      {/* {getStartedOpen && (
         <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -593,7 +598,7 @@ export const Header = () => {
             <ZohoSignupForm />
           </DialogContent>
         </Dialog>
-      )}
+      )} */}
       {talkToSalesOpen && (
         <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
       )}
