@@ -1,25 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles,
-  Landmark, Users, Store, Globe, Briefcase, Truck, Building2,
+  Landmark, Users, Store, Globe, Briefcase, Truck,
   Banknote, Fingerprint, Receipt, BarChart3, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { openZohoChat } from "@/lib/zoho-form";
-import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { EkoLogo } from "@/components/EkoLogo";
-import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
+const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
 import { LanguageSelector } from "@/components/LanguageSelector";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 const bcApis = [
   { label: "DMT", href: "/products/dmt-api" },
@@ -600,7 +592,9 @@ export const Header = () => {
         </Dialog>
       )} */}
       {talkToSalesOpen && (
-        <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+        <Suspense fallback={null}>
+          <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+        </Suspense>
       )}
     </>
   );

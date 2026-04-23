@@ -1,4 +1,3 @@
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Handshake, ShoppingBag, Lightbulb, Shield, Heart, Zap, Lock, Star, UserCheck, Swords, Target, Quote } from "lucide-react";
@@ -23,7 +22,6 @@ const values = [  { name: "Curiosity", synonyms: ["जिज्ञासा", "�
 const AboutPage = () => {
   return (
     <>
-      <Header />
       <main className="pt-20">
         {/* Hero */}
         <section className="relative overflow-hidden bg-eko-navy py-24 lg:py-32">

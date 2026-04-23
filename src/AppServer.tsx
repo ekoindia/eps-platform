@@ -13,6 +13,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
+import { Header } from "@/components/Header";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -50,6 +51,7 @@ const AppServer = ({ helmetContext }: { helmetContext?: any }) => (
       <Sonner />
       <TrackingParamCapture />
       <ScrollToTop />
+      <Header />
       <AnimatedRoutes>
           <Routes>
             <Route path="/" element={<Index />} />

@@ -1,6 +1,5 @@
 import { Helmet } from "react-helmet-async";
 import { CheckCircle } from "lucide-react";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 
@@ -21,8 +20,6 @@ const SignupPage = () => {
           content="Get access to Eko Platform Services by submitting the signup form."
         />
       </Helmet>
-
-      <Header />
 
       <main className="pt-24 lg:pt-28">
         <section className="relative overflow-hidden bg-white py-14 md:py-20">

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
@@ -122,7 +121,6 @@ export const ProductPageLayout = ({
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
 
       {/* Sticky CTA Bar - positioned below the main header */}
       <div

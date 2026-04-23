@@ -1,4 +1,3 @@
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Helmet } from "react-helmet-async";
 import { SITE_URL } from "@/lib/config/site";
@@ -18,7 +17,6 @@ const Index = () => {
       <Helmet>
         <link rel="canonical" href={SITE_URL} />
       </Helmet>
-      <Header />
 
       <main>
         <HeroSection />

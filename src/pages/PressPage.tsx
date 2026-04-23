@@ -1,4 +1,3 @@
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Helmet } from "react-helmet-async";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -32,7 +31,6 @@ const PressPage = () => {
         <title>Press & Media | Eko Platform Services</title>
         <meta name="description" content="Latest news, press releases, and media coverage about Eko Platform Services and India's fintech infrastructure." />
       </Helmet>
-      <Header />
 
       <main className="pt-28 pb-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">

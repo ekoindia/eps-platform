@@ -1,5 +1,4 @@
 import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
@@ -41,7 +40,6 @@ const UseCasesHubPage = () => {
       </Helmet>
       <AiHint mdPath="/use-cases.md" />
       <div className="min-h-screen bg-background">
-        <Header />
         <main>
           {/* Hero + Choice Cards */}
           <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">

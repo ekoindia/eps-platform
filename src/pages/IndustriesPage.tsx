@@ -1,5 +1,4 @@
 import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { IndustryCard } from "@/components/IndustryCard";
@@ -16,7 +15,6 @@ const IndustriesPage = () => {
         <link rel="canonical" href={`${SITE_URL}/industries`} />
       </Helmet>
       <div className="min-h-screen bg-background">
-        <Header />
         <main>
           <section className="relative pt-32 pb-16 bg-eko-navy overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />

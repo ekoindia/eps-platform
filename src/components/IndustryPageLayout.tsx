@@ -1,4 +1,3 @@
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
@@ -22,7 +21,6 @@ interface IndustryPageLayoutProps {
 export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main>
         {/* Hero */}
         <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">

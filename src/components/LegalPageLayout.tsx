@@ -1,5 +1,4 @@
 import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
@@ -19,7 +18,6 @@ const LegalPageLayout = ({ title, description, subtitle, breadcrumb, children }:
         <title>{title} | Eko</title>
         <meta name="description" content={description || title} />
       </Helmet>
-      <Header />
 
       {/* Hero Section */}
       {(subtitle || breadcrumb) && (

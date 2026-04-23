@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
+import { Header } from "@/components/Header";
 
 // Route-based code splitting: each page is loaded on demand
 const Index = lazy(() => import("./pages/Index"));
@@ -40,6 +41,7 @@ const App = ({ helmetContext }: { helmetContext?: any }) => (
       <Sonner />
       <TrackingParamCapture />
       <ScrollToTop />
+      <Header />
       <AnimatedRoutes>
         <Suspense fallback={null}>
           <Routes>
