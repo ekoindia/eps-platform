@@ -139,7 +139,7 @@ const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
         <ProductCard key={product.title} {...product} />
       ))}
     </div>
-    <div className="flex justify-center gap-4 mt-10">
+    <div className="flex flex-wrap justify-center gap-4 mt-10">
       <Button variant="gold" size="lg" asChild>
         <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
           View Documentation

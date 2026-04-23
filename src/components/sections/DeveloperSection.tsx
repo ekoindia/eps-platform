@@ -18,7 +18,7 @@ export const DeveloperSection = () => {
             Build with Confidence
           </h2>
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-            Comprehensive documentation, SDKs, and sandbox environments to help you 
+            Comprehensive documentation, SDKs, and sandbox environments to help you
             integrate Eko APIs in minutes, not weeks.
           </p>
 
@@ -52,10 +52,10 @@ export const DeveloperSection = () => {
         </div>
 
         {/* Right: Code Block */}
-        <div className="relative">
+        <div className="relative overflow-hidden">
           <div className="absolute -inset-4 bg-eko-gold/5 rounded-2xl blur-2xl" />
-          <CodeBlock 
-            code={examplePaymentCode} 
+          <CodeBlock
+            code={examplePaymentCode}
             fileName="transfer.js"
             className="relative"
           />
