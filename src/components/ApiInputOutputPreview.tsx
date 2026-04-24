@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FadeIn } from "@/components/FadeIn";
 import { SectionContainer } from "@/components/SectionContainer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,14 +70,14 @@ export const ApiInputOutputPreview = ({
   if (comingSoon) {
     return (
       <SectionContainer className="bg-muted/30">
-        <div className="text-center mb-8">
+        <FadeIn className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
             {apiName} API Input & Output Preview
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Send simple inputs. Get rich, verified data in seconds.
           </p>
-        </div>
+        </FadeIn>
         <div className="max-w-md mx-auto text-center py-16 bg-card border border-border/50 rounded-2xl">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <Clock className="w-8 h-8 text-muted-foreground" />
@@ -107,14 +108,14 @@ export const ApiInputOutputPreview = ({
 
   return (
     <SectionContainer className="bg-muted/30">
-      <div className="text-center mb-10">
+      <FadeIn className="text-center mb-10">
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
           {apiName} API Input & Output Preview
         </h2>
         <p className="text-muted-foreground max-w-2xl mx-auto">
           Send simple inputs. Get rich, verified data in seconds.
         </p>
-      </div>
+      </FadeIn>
 
       <Tabs defaultValue="visual" className="max-w-5xl mx-auto">
         <div className="flex justify-center mb-6">
@@ -128,7 +129,7 @@ export const ApiInputOutputPreview = ({
         <TabsContent value="visual">
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Input Card */}
-            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
+            <FadeIn className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
               <div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
                 <Send className="w-4 h-4 text-white/70" />
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">REQUEST</Badge>
@@ -148,10 +149,10 @@ export const ApiInputOutputPreview = ({
                   );
                 })}
               </div>
-            </div>
+            </FadeIn>
 
             {/* Output Card */}
-            <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
+            <FadeIn delay={200} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
               <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-eko-success/90 to-eko-success">
                 <Download className="w-4 h-4 text-white/70" />
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">RESPONSE</Badge>
@@ -175,7 +176,7 @@ export const ApiInputOutputPreview = ({
                   );
                 })}
               </div>
-            </div>
+            </FadeIn>
           </div>
         </TabsContent>
 

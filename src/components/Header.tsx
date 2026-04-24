@@ -101,8 +101,6 @@ export const Header = () => {
   const useCasesDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  const isHomePage = location.pathname === "/";
-  const isDarkHeader = !isHomePage;
   const useWhiteText = true;
 
   useEffect(() => {
@@ -151,11 +149,7 @@ export const Header = () => {
         className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           isScrolled
             ? "bg-[#00394bdd] backdrop-blur-md shadow-sm py-3"
-            : isHomePage
-              ? "bg-transparent py-5"
-              : isDarkHeader
-                ? "bg-[#00394b] py-5"
-                : "bg-white py-5"
+              : "bg-[#00394b] py-5"
         )}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">

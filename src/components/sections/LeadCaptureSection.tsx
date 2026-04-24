@@ -4,6 +4,7 @@ import { MessageCircle, Phone } from "lucide-react";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-form";
+import { FadeIn } from "@/components/FadeIn";
 
 export const LeadCaptureSection = () => {
   const handleChat = () => {
@@ -14,7 +15,7 @@ export const LeadCaptureSection = () => {
     <SectionContainer variant="muted" id="contact">
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         {/* Left: Content */}
-        <div>
+        <FadeIn>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Ready to Transform Your Business?
           </h2>
@@ -38,10 +39,10 @@ export const LeadCaptureSection = () => {
               </div>
             ))}
           </div>
-        </div>
+        </FadeIn>
 
         {/* Right: Chat & Call CTAs */}
-        <div className="relative">
+        <FadeIn delay={200} className="relative">
           <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
           <div className="relative bg-card border border-border/50 rounded-2xl p-8 lg:p-10 shadow-xl">
             <h3 className="text-xl font-semibold text-foreground mb-2">Get Started with Eko Platform Services</h3>
@@ -68,7 +69,7 @@ export const LeadCaptureSection = () => {
               Available Monday to Saturday, 9 AM – 7 PM IST
             </p>
           </div>
-        </div>
+        </FadeIn>
       </div>
     </SectionContainer>
   );

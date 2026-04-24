@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/FadeIn";
 
 interface SectionContainerProps {
   children: ReactNode;
@@ -47,7 +48,7 @@ export const SectionHeader = ({
   className
 }: SectionHeaderProps) => {
   return (
-    <div className={cn("mb-12 lg:mb-16", centered && "text-center", className)}>
+    <FadeIn className={cn("mb-12 lg:mb-16", centered && "text-center", className)}>
       {badge && (
         <span className={cn(
           "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
@@ -72,6 +73,6 @@ export const SectionHeader = ({
           {subtitle}
         </p>
       )}
-    </div>
+    </FadeIn>
   );
 };

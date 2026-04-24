@@ -4,14 +4,15 @@ import { Link } from "react-router-dom";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/Cards";
+import { FadeIn } from "@/components/FadeIn";
 import {
-  CreditCard,
+  // CreditCard,
   Fingerprint,
   ShieldCheck,
   Banknote,
   Smartphone,
   Receipt,
-  IndianRupee,
+  // IndianRupee,
   Send,
   FileCheck,
   User,
@@ -128,15 +129,17 @@ const handleChat = () => {
 };
 
 const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
-  <div className="animate-fade-up">
+  <div>
     <div className={cn(
       "grid gap-6",
       products.length <= 2
         ? "md:grid-cols-2 max-w-2xl mx-auto"
         : "md:grid-cols-2 lg:grid-cols-3"
     )}>
-      {products.map((product) => (
-        <ProductCard key={product.title} {...product} />
+      {products.map((product, i) => (
+        <FadeIn key={product.title} delay={i * 100}>
+          <ProductCard {...product} />
+        </FadeIn>
       ))}
     </div>
     <div className="flex flex-wrap justify-center gap-4 mt-10">
@@ -160,11 +163,13 @@ export const ProductsSection = () => {
 
   return (
     <SectionContainer id="products">
-      <SectionHeader
-        badge="Our Products"
-        title="APIs to Integrate to Grow your Business"
-        subtitle="From BC services to payments and verifications, everything you need to build and scale your fintech operations."
-      />
+      <FadeIn>
+        <SectionHeader
+          badge="Our Products"
+          title="APIs to Integrate to Grow your Business"
+          subtitle="From BC services to payments and verifications, everything you need to build and scale your fintech operations."
+        />
+      </FadeIn>
 
       {/* Tabs */}
       <div className="flex flex-wrap justify-center gap-2 mb-12">
@@ -193,9 +198,9 @@ export const ProductsSection = () => {
       {activeTab === "verification" && <ProductTabContent products={verificationProducts} />}
 
       {activeTab === "shield" && (
-        <div className="animate-fade-up">
+        <div>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 relative">
+            <FadeIn className="order-2 lg:order-1 relative">
               <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
               <div className="relative bg-card border border-border/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
@@ -211,8 +216,8 @@ export const ProductsSection = () => {
                   ))}
                 </div>
               </div>
-            </div>
-            <div className="order-1 lg:order-2">
+            </FadeIn>
+            <FadeIn delay={200} className="order-1 lg:order-2">
               <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
                 Unified Verification Suite
               </h3>
@@ -239,7 +244,7 @@ export const ProductsSection = () => {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
-            </div>
+            </FadeIn>
           </div>
         </div>
       )}

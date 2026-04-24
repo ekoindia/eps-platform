@@ -8,13 +8,13 @@ import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import {
   ArrowRight, Shield, Zap, ShieldCheck, Eye, TrendingDown,
   Landmark, CreditCard, Users, Truck, ShoppingBag, Plane, Leaf, Building2,
-  X, CheckCircle, AlertTriangle, Sparkles, Phone, MapPin, Mail,
+  X, CheckCircle, AlertTriangle, Sparkles, MapPin, Mail,
   IdCard, FileText, BadgeCheck, FileCheck, FolderCheck, Building,
-  Smartphone, Briefcase, Car, UserCheck, Globe, Stethoscope, Receipt,
+  Smartphone, Briefcase, Car, Globe, Stethoscope, Receipt,
 } from "lucide-react";
 // import heroDashboard from "@/assets/hero-dashboard.jpg";
 import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png";
-import ekoShieldLogo from "@/assets/eko-shield-logo.png";
+// import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 /* ─── Data ─── */
 

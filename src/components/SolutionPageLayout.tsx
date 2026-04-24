@@ -16,6 +16,7 @@ import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { openZohoChat } from "@/lib/zoho-form";
 import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
+import { FadeIn } from "@/components/FadeIn";
 
 interface SolutionPageLayoutProps {
   data: SolutionData;
@@ -39,43 +40,48 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
               { label: data.name },
             ]} />
             <div className="max-w-3xl">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-eko-gold/20 text-eko-gold mb-4">
-                {data.eyebrow}
-              </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                {data.name.replace(/ ?(?:API )?Pack$/i, "")}{" "}API Pack
-              </h1>
-              <p className="text-xl text-white/80 mb-6 leading-relaxed">
-                {data.heroSubtitle}
-              </p>
+              <FadeIn onView={false} delay={100}>
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-eko-gold/20 text-eko-gold mb-4">
+                  {data.eyebrow}
+                </span>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                  {data.name.replace(/ ?(?:API )?Pack$/i, "")}{" "}API Pack
+                </h1>
+              </FadeIn>
+              <FadeIn onView={false} delay={200}>
+                <p className="text-xl text-white/80 mb-6 leading-relaxed">
+                  {data.heroSubtitle}
+                </p>
 
-              {/* API Chip Row */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {data.apiChips.map((chip) => (
-                  <ApiChip key={chip.name} name={chip.name} href={chip.href} className="bg-white/10 border-white/20 text-white hover:bg-white/20" />
-                ))}
-              </div>
+                {/* API Chip Row */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {data.apiChips.map((chip) => (
+                    <ApiChip key={chip.name} name={chip.name} href={chip.href} className="bg-white/10 border-white/20 text-white hover:bg-white/20" />
+                  ))}
+                </div>
+              </FadeIn>
+              <FadeIn onView={false} delay={300}>
+                {/* Trust Strip */}
+                <div className="flex flex-wrap gap-4 mb-8">
+                  {data.trustStrip.map((item) => (
+                    <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
+                      <CheckCircle className="w-4 h-4 text-eko-gold flex-shrink-0" />
+                      {item}
+                    </span>
+                  ))}
+                </div>
 
-              {/* Trust Strip */}
-              <div className="flex flex-wrap gap-4 mb-8">
-                {data.trustStrip.map((item) => (
-                  <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
-                    <CheckCircle className="w-4 h-4 text-eko-gold flex-shrink-0" />
-                    {item}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-4">
-                <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
-                  <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
-                </Button>
-                <Button variant="hero-outline" size="lg" asChild>
-                  <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
-                    View Documentation <ExternalLink className="w-4 h-4" />
-                  </a>
-                </Button>
-              </div>
+                <div className="flex flex-wrap gap-4">
+                  <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
+                    <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
+                  </Button>
+                  <Button variant="hero-outline" size="lg" asChild>
+                    <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
+                      View Documentation <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </Button>
+                </div>
+              </FadeIn>
             </div>
           </div>
         </section>
@@ -85,9 +91,11 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <div className="max-w-4xl mx-auto text-center">
             {/* <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">What You Can Achieve</h2> */}
 			<SectionHeader badge="Core Use Cases" title="What You Can Achieve" />
-            <p className="text-xl text-muted-foreground leading-relaxed italic">
-              "{data.jobStatement}"
-            </p>
+            <FadeIn>
+              <p className="text-xl text-muted-foreground leading-relaxed italic">
+                "{data.jobStatement}"
+              </p>
+            </FadeIn>
           </div>
         </SectionContainer>
 
@@ -96,10 +104,10 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <SectionContainer variant="muted">
             <SectionHeader badge="APIs In This Pack" title="What You Get" subtitle="Every API in this pack, what it does, and why it's included." />
             <div className="max-w-4xl mx-auto space-y-4">
-              {data.packApis.map((api) => {
+              {data.packApis.map((api, i) => {
                 const Icon = api.icon;
                 return (
-                  <div key={api.apiId} className="group p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
+                  <FadeIn key={api.apiId} delay={i * 50} className="group p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center flex-shrink-0 group-hover:bg-eko-gold/20 transition-colors">
                         <Icon className="w-5 h-5 text-eko-gold" />
@@ -119,7 +127,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -133,7 +141,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
             <div className="max-w-3xl mx-auto">
               <div className="space-y-0">
                 {data.howItWorksSteps.map((step, i) => (
-                  <div key={step.step} className="flex gap-4">
+                  <FadeIn key={step.step} delay={i * 100} className="flex gap-4">
                     <div className="flex flex-col items-center">
                       <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm flex-shrink-0">
                         {step.step}
@@ -143,7 +151,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                     <div className="pb-8">
                       <p className="text-foreground font-medium pt-2">{step.label}</p>
                     </div>
-                  </div>
+                  </FadeIn>
                 ))}
               </div>
             </div>
@@ -155,10 +163,10 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <SectionContainer variant="muted">
             <SectionHeader badge="Industries" title="Built For These Businesses" />
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {data.industriesUsingSlugs.map((slug) => {
+              {data.industriesUsingSlugs.map((slug, i) => {
                 const indData = INDUSTRIES_MAP[slug];
                 if (indData) {
-                  return <IndustryCard key={slug} industry={indData} />;
+                  return <IndustryCard key={slug} industry={indData} delay={i * 100} />;
                 }
                 return null;
               }).filter(Boolean)}
@@ -243,16 +251,18 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
             <SectionHeader title="Frequently Asked Questions" />
             <div className="max-w-3xl mx-auto space-y-4">
               {data.faqs.map((faq, i) => (
-                <details key={i} className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
-                  <summary className="flex items-center justify-between font-semibold text-foreground list-none">
-                    <span className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
-                      {faq.question}
-                    </span>
-                    <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
-                  </summary>
-                  <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.answer}</p>
-                </details>
+                <FadeIn key={i} delay={i * 50}>
+                  <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
+                    <summary className="flex items-center justify-between font-semibold text-foreground list-none">
+                      <span className="flex items-center gap-3">
+                        <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                        {faq.question}
+                      </span>
+                      <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
+                    </summary>
+                    <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.answer}</p>
+                  </details>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -268,10 +278,10 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <SectionContainer variant="muted">
             <SectionHeader badge="Related" title="Related solutions" />
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {data.relatedSolutions.map((rel) => {
+              {data.relatedSolutions.map((rel, i) => {
                 const solData = SOLUTIONS_MAP[rel.slug];
                 if (solData) {
-                  return <SolutionCard key={rel.slug} solution={solData} />;
+                  return <SolutionCard key={rel.slug} solution={solData} delay={i * 100} />;
                 }
                 return (
                   <Link key={rel.slug} to={`/solutions/${rel.slug}`} className="p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
@@ -289,7 +299,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
           <div className="relative grid lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <FadeIn>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Get API Access Now</h2>
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
                 Sign up now and start integrating in minutes. Our team will help you go live quickly.
@@ -302,8 +312,8 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="relative">
+            </FadeIn>
+            <FadeIn delay={200} className="relative">
               <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
               <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
@@ -314,7 +324,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                   <ZohoSignupForm />
                 </div>
               </div>
-            </div>
+            </FadeIn>
           </div>
         </SectionContainer>
       </main>

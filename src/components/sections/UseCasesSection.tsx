@@ -1,12 +1,13 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { UseCaseCard } from "@/components/Cards";
-import { 
-  Store, 
-  Smartphone, 
-  CreditCard, 
-  Plane, 
-  Building, 
-  Users 
+import { FadeIn } from "@/components/FadeIn";
+import {
+  Store,
+  Smartphone,
+  CreditCard,
+  Plane,
+  Building,
+  Users
 } from "lucide-react";
 
 const useCases = [
@@ -45,18 +46,21 @@ const useCases = [
 export const UseCasesSection = () => {
   return (
     <SectionContainer id="use-cases">
-      <SectionHeader
-        badge="Use Cases"
-        title="Built for Bharat's Entrepreneurs"
-        subtitle="From kirana stores to micro-fintech builders — Eko powers financial operations for MSMEs across Tier 2 and beyond."
-      />
+      <FadeIn>
+        <SectionHeader
+          badge="Use Cases"
+          title="Built for Bharat's Entrepreneurs"
+          subtitle="From kirana stores to micro-fintech builders — Eko powers financial operations for MSMEs across Tier 2 and beyond."
+        />
+      </FadeIn>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {useCases.map((useCase) => (
-          <UseCaseCard 
-            key={useCase.title} 
-            {...useCase}
-          />
+        {useCases.map((useCase, i) => (
+          <FadeIn key={useCase.title} delay={i * 100}>
+            <UseCaseCard
+              {...useCase}
+            />
+          </FadeIn>
         ))}
       </div>
     </SectionContainer>

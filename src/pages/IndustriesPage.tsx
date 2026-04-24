@@ -5,6 +5,7 @@ import { IndustryCard } from "@/components/IndustryCard";
 import { INDUSTRIES_LIST, INDUSTRY_CATEGORIES } from "@/lib/data/industries";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { SITE_URL } from "@/lib/config/site";
+import { FadeIn } from "@/components/FadeIn";
 
 const IndustriesPage = () => {
   return (
@@ -26,13 +27,17 @@ const IndustriesPage = () => {
                   { label: "Industries" },
                 ]} />
               </div>
-              <span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-white/10 text-white/90">
-                Industries
-              </span>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Find the right APIs for your industry</h1>
-              <p className="text-xl text-white/70 max-w-2xl mx-auto">
-                See how businesses in your sector use Eko's APIs to verify, transact, and grow.
-              </p>
+              <FadeIn onView={false} delay={100} className="text-center">
+                <span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-white/10 text-white/90">
+                  Industries
+                </span>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Find the right APIs for your industry</h1>
+              </FadeIn>
+              <FadeIn onView={false} delay={200} className="text-center">
+                <p className="text-xl text-white/70 max-w-2xl mx-auto">
+                  See how businesses in your sector use Eko's APIs to verify, transact, and grow.
+                </p>
+              </FadeIn>
             </div>
           </section>
 
@@ -40,8 +45,8 @@ const IndustriesPage = () => {
             <SectionContainer key={cat.key} variant={cat.key === "agent-retail" || cat.key === "workforce-fleet" ? "muted" : "default"}>
               <SectionHeader title={cat.label} />
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                {cat.industries.map((ind) => (
-                  <IndustryCard key={ind.slug} industry={ind} />
+                {cat.industries.map((ind, i) => (
+                  <IndustryCard key={ind.slug} industry={ind} delay={i * 100} />
                 ))}
               </div>
             </SectionContainer>

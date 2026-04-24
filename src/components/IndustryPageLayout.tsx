@@ -13,6 +13,7 @@ import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { openZohoChat } from "@/lib/zoho-form";
+import { FadeIn } from "@/components/FadeIn";
 
 interface IndustryPageLayoutProps {
   data: IndustryData;
@@ -35,31 +36,37 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             ]} />
             <div className="grid lg:grid-cols-1 gap-10 lg:gap-16 items-start">
               <div>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-eko-gold/20 text-eko-gold mb-4">
-                  {data.eyebrow}
-                </span>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                  {data.h1}
-                </h1>
-                <p className="text-xl text-white/80 mb-6 max-w-2xl leading-relaxed">
-                  {data.heroSubtitle}
-                </p>
-                <div className="flex flex-wrap gap-3 mb-8">
-                  {data.trustStrip.map((item) => (
-                    <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
-                      <CheckCircle className="w-4 h-4 text-eko-gold flex-shrink-0" />
-                      {item}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-4">
-                  <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
-                    <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
-                  </Button>
-                  <Button variant="hero-outline" size="lg" onClick={() => window.dispatchEvent(new Event("open-talk-to-sales"))}>
-                    Talk to Sales
-                  </Button>
-                </div>
+                <FadeIn onView={false} delay={100}>
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-eko-gold/20 text-eko-gold mb-4">
+                    {data.eyebrow}
+                  </span>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                    {data.h1}
+                  </h1>
+                </FadeIn>
+                <FadeIn onView={false} delay={200}>
+                  <p className="text-xl text-white/80 mb-6 max-w-2xl leading-relaxed">
+                    {data.heroSubtitle}
+                  </p>
+                  <div className="flex flex-wrap gap-3 mb-8">
+                    {data.trustStrip.map((item) => (
+                      <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
+                        <CheckCircle className="w-4 h-4 text-eko-gold flex-shrink-0" />
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </FadeIn>
+                <FadeIn onView={false} delay={300}>
+                  <div className="flex flex-wrap gap-4">
+                    <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
+                      <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
+                    </Button>
+                    <Button variant="hero-outline" size="lg" onClick={() => window.dispatchEvent(new Event("open-talk-to-sales"))}>
+                      Talk to Sales
+                    </Button>
+                  </div>
+                </FadeIn>
               </div>
               {/* Lead Form */}
               {/* <div className="relative" id="lead-form-hero">
@@ -94,7 +101,9 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             <SectionHeader badge="The Challenge" title={`The challenge for ${data.name}`} />
             <div className="max-w-4xl mx-auto">
               {data.challengeText.split("\n\n").map((para, i) => (
-                <p key={i} className="text-muted-foreground leading-relaxed text-lg mb-4 last:mb-0">{para}</p>
+                <FadeIn key={i}>
+                  <p className="text-muted-foreground leading-relaxed text-lg mb-4 last:mb-0">{para}</p>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -105,10 +114,10 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <SectionContainer variant="muted">
             <SectionHeader badge="Solutions" title="Recommended solution packs" subtitle="Pre-bundled API stacks designed for your industry workflow." />
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {data.recommendedPacks.map((pack) => {
+              {data.recommendedPacks.map((pack, i) => {
                 const solData = SOLUTIONS_MAP[pack.slug];
                 if (solData) {
-                  return <SolutionCard key={pack.slug} solution={solData} featured={pack.featured} />;
+                  return <SolutionCard key={pack.slug} solution={solData} featured={pack.featured} delay={i * 100} />;
                 }
                 return (
                   <div key={pack.slug} className="p-6 rounded-xl bg-card border border-border/50">
@@ -131,12 +140,12 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <SectionContainer>
             <SectionHeader badge="APIs" title="All APIs you'll need" subtitle="Every Eko API relevant to your industry, with relevance indicators." />
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-              {data.apiGrid.map((api) => (
-                <Link
-                  key={api.apiId}
-                  to={api.href}
-                  className="group flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 hover:shadow-md transition-all"
-                >
+              {data.apiGrid.map((api, i) => (
+                <FadeIn key={api.apiId} delay={i * 50}>
+                  <Link
+                    to={api.href}
+                    className="group flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 hover:shadow-md transition-all h-full"
+                  >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-foreground text-sm group-hover:text-eko-gold transition-colors">{api.name}</span>
@@ -145,7 +154,8 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                     <p className="text-muted-foreground text-xs leading-relaxed">{api.description}</p>
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-eko-gold flex-shrink-0 mt-0.5" />
-                </Link>
+                  </Link>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -157,12 +167,12 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             <SectionHeader badge="Use Cases" title="Real-world use cases" />
             <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
               {data.useCaseVignettes.map((uc, i) => (
-                <div key={i} className="p-6 rounded-xl bg-card border border-border/50">
+                <FadeIn key={i} delay={i * 100} className="p-6 rounded-xl bg-card border border-border/50">
                   <h3 className="font-semibold text-foreground mb-3">{uc.title}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed mb-2"><strong className="text-foreground/80">Situation:</strong> {uc.situation}</p>
                   <p className="text-muted-foreground text-sm leading-relaxed mb-2"><strong className="text-foreground/80">Integration:</strong> {uc.integration}</p>
                   <p className="text-sm leading-relaxed"><strong className="text-eko-gold">Result:</strong> <span className="text-foreground">{uc.outcome}</span></p>
-                </div>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -176,13 +186,13 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
               {data.whyEko.map((diff, i) => {
                 const Icon = diff.icon;
                 return (
-                  <div key={i} className="text-center">
+                  <FadeIn key={i} delay={i * 100} className="text-center">
                     <div className="w-14 h-14 rounded-2xl bg-eko-gold/10 flex items-center justify-center mx-auto mb-4">
                       <Icon className="w-7 h-7 text-eko-gold" />
                     </div>
                     <h3 className="font-semibold text-foreground mb-2">{diff.title}</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">{diff.description}</p>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -244,13 +254,13 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             <SectionHeader badge="Compliance" title="Compliance & regulatory" />
             <div className="max-w-3xl mx-auto space-y-4">
               {data.complianceItems.map((item, i) => (
-                <div key={i} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
+                <FadeIn key={i} delay={i * 50} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
                   <Shield className="w-5 h-5 text-eko-gold flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">{item.title}</h4>
                     <p className="text-muted-foreground text-sm">{item.description}</p>
                   </div>
-                </div>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -262,16 +272,18 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             <SectionHeader title="Frequently Asked Questions" />
             <div className="max-w-3xl mx-auto space-y-4">
               {data.faqs.map((faq, i) => (
-                <details key={i} className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
-                  <summary className="flex items-center justify-between font-semibold text-foreground list-none">
-                    <span className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
-                      {faq.question}
-                    </span>
-                    <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
-                  </summary>
-                  <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.answer}</p>
-                </details>
+                <FadeIn key={i} delay={i * 50}>
+                  <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
+                    <summary className="flex items-center justify-between font-semibold text-foreground list-none">
+                      <span className="flex items-center gap-3">
+                        <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                        {faq.question}
+                      </span>
+                      <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
+                    </summary>
+                    <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.answer}</p>
+                  </details>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -282,10 +294,10 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <SectionContainer>
             <SectionHeader badge="Related" title="Related industries" />
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {data.relatedIndustries.map((rel) => {
+              {data.relatedIndustries.map((rel, i) => {
                 const relData = INDUSTRIES_MAP[rel.slug];
                 if (relData) {
-                  return <IndustryCard key={rel.slug} industry={relData} />;
+                  return <IndustryCard key={rel.slug} industry={relData} delay={i * 100} />;
                 }
                 return (
                   <Link key={rel.slug} to={`/industries/${rel.slug}`} className="p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
@@ -302,7 +314,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
           <div className="relative grid lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <FadeIn>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Get API Access Now</h2>
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
                 Sign up now and start integrating in minutes. Our team will help you go live quickly.
@@ -315,8 +327,8 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="relative">
+            </FadeIn>
+            <FadeIn delay={200} className="relative">
               <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
               <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
@@ -327,7 +339,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   <ZohoSignupForm />
                 </div>
               </div>
-            </div>
+            </FadeIn>
           </div>
         </SectionContainer>
       </main>

@@ -5,6 +5,7 @@ import { SolutionCard } from "@/components/SolutionCard";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { SITE_URL } from "@/lib/config/site";
+import { FadeIn } from "@/components/FadeIn";
 
 const CATEGORY_LABELS: Record<string, string> = {
   "lending-credit": "Lending & Credit",
@@ -36,13 +37,17 @@ const SolutionsPage = () => {
                   { label: "Solutions" },
                 ]} />
               </div>
-              <span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-white/10 text-white/90">
-                Solutions
-              </span>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Pre-bundled API packs</h1>
-              <p className="text-xl text-white/70 max-w-2xl mx-auto">
-                Each pack bundles the exact APIs you need for a specific workflow — one integration, one contract, one dashboard.
-              </p>
+              <FadeIn onView={false} delay={100} className="text-center">
+                <span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-white/10 text-white/90">
+                  Solutions
+                </span>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Pre-bundled API packs</h1>
+              </FadeIn>
+              <FadeIn onView={false} delay={200} className="text-center">
+                <p className="text-xl text-white/70 max-w-2xl mx-auto">
+                  Each pack bundles the exact APIs you need for a specific workflow — one integration, one contract, one dashboard.
+                </p>
+              </FadeIn>
             </div>
           </section>
 
@@ -50,8 +55,8 @@ const SolutionsPage = () => {
             <SectionContainer key={cat} variant={i % 2 === 1 ? "muted" : "default"}>
               <SectionHeader title={CATEGORY_LABELS[cat] || cat} />
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                {SOLUTIONS_LIST.filter((s) => s.category === cat).map((sol) => (
-                  <SolutionCard key={sol.slug} solution={sol} />
+                {SOLUTIONS_LIST.filter((s) => s.category === cat).map((sol, i) => (
+                  <SolutionCard key={sol.slug} solution={sol} delay={i * 100} />
                 ))}
               </div>
             </SectionContainer>
