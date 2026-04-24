@@ -1,4 +1,10 @@
-import { lazy, Suspense } from "react";
+/**
+ * Server-side App with eager imports for SSG pre-rendering.
+ *
+ * React.lazy is not supported in renderToString, so this variant
+ * keeps all page imports static. The client-side App.tsx uses lazy
+ * imports for route-based code splitting.
+ */
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,25 +14,29 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import { Header } from "@/components/Header";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
-// Route-based code splitting: each page is loaded on demand
-const Index = lazy(() => import("./pages/Index"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ProductDetailPage = lazy(() => import("./pages/products/ProductDetailPage"));
-const AboutPage = lazy(() => import("./pages/AboutPage"));
-const BlogsMediaPage = lazy(() => import("./pages/BlogsMediaPage"));
-const TermsPage = lazy(() => import("./pages/TermsPage"));
-const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
-const RefundPolicyPage = lazy(() => import("./pages/RefundPolicyPage"));
-const GrievancePage = lazy(() => import("./pages/GrievancePage"));
-const EkoShieldPage = lazy(() => import("./pages/EkoShieldPage"));
-const EkoShieldDocumentPage = lazy(() => import("./pages/EkoShieldDocumentPage"));
-const SignupPage = lazy(() => import("./pages/SignupPage"));
-const IndustryDetailPage = lazy(() => import("./pages/IndustryDetailPage"));
-const SolutionDetailPage = lazy(() => import("./pages/SolutionDetailPage"));
-const IndustriesPage = lazy(() => import("./pages/IndustriesPage"));
-const SolutionsPage = lazy(() => import("./pages/SolutionsPage"));
-const UseCasesHubPage = lazy(() => import("./pages/UseCasesHubPage"));
+// Product API Pages (single dynamic component)
+import ProductDetailPage from "./pages/products/ProductDetailPage";
+
+// Company & Legal Pages
+import AboutPage from "./pages/AboutPage";
+import BlogsMediaPage from "./pages/BlogsMediaPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import RefundPolicyPage from "./pages/RefundPolicyPage";
+import GrievancePage from "./pages/GrievancePage";
+import EkoShieldPage from "./pages/EkoShieldPage";
+import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
+import SignupPage from "./pages/SignupPage";
+
+// Industry & Solution Pages
+import IndustryDetailPage from "./pages/IndustryDetailPage";
+import SolutionDetailPage from "./pages/SolutionDetailPage";
+import IndustriesPage from "./pages/IndustriesPage";
+import SolutionsPage from "./pages/SolutionsPage";
+import UseCasesHubPage from "./pages/UseCasesHubPage";
 
 function TrackingParamCapture() {
   useCaptureTrackingParams();
@@ -34,7 +44,7 @@ function TrackingParamCapture() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const App = ({ helmetContext }: { helmetContext?: any }) => (
+const AppServer = ({ helmetContext }: { helmetContext?: any }) => (
   <HelmetProvider context={helmetContext}>
     <TooltipProvider>
       <Toaster />
@@ -43,7 +53,6 @@ const App = ({ helmetContext }: { helmetContext?: any }) => (
       <ScrollToTop />
       <Header />
       <AnimatedRoutes>
-        <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<Index />} />
 
@@ -76,10 +85,9 @@ const App = ({ helmetContext }: { helmetContext?: any }) => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Suspense>
         </AnimatedRoutes>
       </TooltipProvider>
   </HelmetProvider>
 );
 
-export default App;
+export default AppServer;

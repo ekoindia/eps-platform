@@ -1,5 +1,6 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Clock, Users, Handshake, HeadphonesIcon } from "lucide-react";
+import { FadeIn } from "@/components/FadeIn";
 
 const trustPillars = [
   {
@@ -41,18 +42,20 @@ const trustPillars = [
 export const WhyEkoSection = () => {
   return (
     <SectionContainer id="why-eko" className="border-b border-border">
-      <SectionHeader
-        badge="Why Choose Eko"
-        title="Built for Developers from Bharat"
-        subtitle="Grow Every Entrepreneur Daily — India's most trusted financial infrastructure provider, powering millions of transactions every day."
-      />
+      <FadeIn>
+        <SectionHeader
+          badge="Why Choose Eko"
+          title="Built for Developers from Bharat"
+          subtitle="Grow Every Entrepreneur Daily — India's most trusted financial infrastructure provider, powering millions of transactions every day."
+        />
+      </FadeIn>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-6">
         {trustPillars.map((pillar, index) => (
-          <div
+          <FadeIn
             key={pillar.label}
+            delay={index * 100}
             className="group text-center p-6 rounded-2xl bg-card border border-border/50 card-hover"
-            style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="icon-container mx-auto mb-5 group-hover:scale-110 transition-transform duration-300">
               <pillar.icon className="w-6 h-6 text-eko-gold" />
@@ -71,7 +74,7 @@ export const WhyEkoSection = () => {
             ) : (
               <p className="text-muted-foreground text-sm leading-relaxed">{pillar.description}</p>
             )}
-          </div>
+          </FadeIn>
         ))}
       </div>
     </SectionContainer>

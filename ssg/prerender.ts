@@ -4,7 +4,20 @@
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { minify } from "html-minifier-terser";
 import type { ViteDevServer } from "vite";
+import type { ROUTE_CHUNK_MAP } from "./routes";
+
+const MINIFY_OPTIONS = {
+  collapseWhitespace: true,
+  removeComments: true,
+  removeRedundantAttributes: true,
+  removeScriptTypeAttributes: true,
+  removeStyleLinkTypeAttributes: true,
+  useShortDoctype: true,
+  minifyCSS: true,
+  minifyJS: true,
+};
 
 export async function prerenderAllPages(
   outDir: string,
@@ -19,6 +32,7 @@ export async function prerenderAllPages(
   ]);
 
   const routes: string[] = routesMod.PRERENDER_ROUTES;
+  const routeChunkMap: typeof ROUTE_CHUNK_MAP = routesMod.ROUTE_CHUNK_MAP ?? [];
   const renderRoute: typeof import("./renderer").renderRoute =
     rendererMod.renderRoute;
   const renderPage: typeof import("../src/entry-server").renderPage =
@@ -34,11 +48,13 @@ export async function prerenderAllPages(
   // During SSR, asset imports resolve to source paths (/src/assets/foo.svg)
   // but the production build hashes them (/assets/foo-abc123.svg).
   // We post-process the rendered HTML to swap dev paths → production paths.
-  const assetMap = await buildAssetMap(outDir);
+  // Also build a chunk map (source file → hashed URL) for preload injection.
+  const { assetMap, chunkMap } = await buildMaps(outDir);
 
   // Save the original SPA shell as a fallback for catch-all rewrites
   const fallbackPath = path.join(outDir, "__spa-fallback.html");
-  await fs.writeFile(fallbackPath, template, "utf-8");
+  const minifiedTemplate = await minify(template, MINIFY_OPTIONS);
+  await fs.writeFile(fallbackPath, minifiedTemplate, "utf-8");
 
   let written = 0;
 
@@ -46,6 +62,9 @@ export async function prerenderAllPages(
     try {
       let html = renderRoute(route, template, renderPage);
       html = replaceAssetUrls(html, assetMap);
+      html = injectRoutePreload(html, route, routeChunkMap, chunkMap);
+      html = addFetchPriorityLow(html);
+      html = await minify(html, MINIFY_OPTIONS);
 
       // Determine output path:
       //   /                     → dist/index.html  (overwrite)
@@ -85,18 +104,22 @@ export async function prerenderAllPages(
 interface ManifestEntry {
   file: string;
   src?: string;
+  isDynamicEntry?: boolean;
 }
 
 /**
- * Reads `dist/.vite/manifest.json` and builds a map from source paths
- * (as they appear in SSR output) to hashed production paths.
+ * Reads `dist/.vite/manifest.json` and builds two maps in one pass:
+ *  - assetMap: dev source URL → hashed production URL (for SSR asset rewriting)
+ *  - chunkMap: source file key → hashed chunk URL (for modulepreload injection)
  *
- * e.g. "/src/assets/eps-logo-color.svg" → "/assets/eps-logo-color-D4f2a.svg"
+ * e.g. assetMap: "/src/assets/eps-logo-color.svg" → "/assets/eps-logo-color-D4f2a.svg"
+ *      chunkMap: "src/pages/Index.tsx" → "/assets/Index-Bx3kR1Aj.js"
  */
-async function buildAssetMap(
+async function buildMaps(
   outDir: string,
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+): Promise<{ assetMap: Map<string, string>; chunkMap: Map<string, string> }> {
+  const assetMap = new Map<string, string>();
+  const chunkMap = new Map<string, string>();
 
   try {
     const manifestPath = path.join(outDir, ".vite", "manifest.json");
@@ -109,18 +132,63 @@ async function buildAssetMap(
       // In SSR output it appears as "/src/assets/eps-logo-color.svg"
       const devUrl = "/" + key;
       const prodUrl = "/" + entry.file;
-      map.set(devUrl, prodUrl);
+      assetMap.set(devUrl, prodUrl);
+
+      // Dynamic entries (React.lazy chunks) get a modulepreload entry
+      if (entry.isDynamicEntry) {
+        chunkMap.set(key, prodUrl);
+      }
     }
 
     // eslint-disable-next-line no-console
-    console.log(`[ssg] Loaded asset manifest with ${map.size} entries`);
+    console.log(
+      `[ssg] Loaded asset manifest with ${assetMap.size} entries, ${chunkMap.size} dynamic chunks`,
+    );
   } catch {
     console.warn(
       "[ssg] Could not read .vite/manifest.json — asset URLs will not be rewritten",
     );
   }
 
-  return map;
+  return { assetMap, chunkMap };
+}
+
+/**
+ * Looks up the hashed chunk URL for a given route using ROUTE_CHUNK_MAP,
+ * then injects a <link rel="modulepreload"> into the <head>. This tells
+ * the browser to fetch the route-specific JS chunk in parallel with the
+ * main bundle, eliminating the React.lazy() import waterfall.
+ */
+function injectRoutePreload(
+  html: string,
+  route: string,
+  routeChunkMap: Array<{ pattern: RegExp; src: string }>,
+  chunkMap: Map<string, string>,
+): string {
+  // Find which source file handles this route
+  const match = routeChunkMap.find(({ pattern }) => pattern.test(route));
+  if (!match) return html;
+
+  // Look up the hashed chunk URL from the Vite manifest
+  const chunkUrl = chunkMap.get(match.src);
+  if (!chunkUrl) return html;
+
+  return html.replace(
+    "</head>",
+    `<link rel="modulepreload" crossorigin href="${chunkUrl}"></head>`,
+  );
+}
+
+/**
+ * Adds fetchpriority="low" to the main app <script type="module"> tag.
+ * Pre-rendered pages already display full content, so the hydration
+ * script is lower priority than images and CSS during initial load.
+ */
+function addFetchPriorityLow(html: string): string {
+  return html.replace(
+    '<script type="module" crossorigin',
+    '<script type="module" crossorigin fetchpriority="low"',
+  );
 }
 
 /**

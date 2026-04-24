@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { FadeIn } from "@/components/FadeIn";
 import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { openZohoChat } from "@/lib/zoho-form";
@@ -9,13 +8,13 @@ import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import {
   ArrowRight, Shield, Zap, ShieldCheck, Eye, TrendingDown,
   Landmark, CreditCard, Users, Truck, ShoppingBag, Plane, Leaf, Building2,
-  X, CheckCircle, AlertTriangle, Sparkles, Phone, MapPin, Mail,
+  X, CheckCircle, AlertTriangle, Sparkles, MapPin, Mail,
   IdCard, FileText, BadgeCheck, FileCheck, FolderCheck, Building,
-  Smartphone, Briefcase, Car, UserCheck, Globe, Stethoscope, Receipt,
+  Smartphone, Briefcase, Car, Globe, Stethoscope, Receipt,
 } from "lucide-react";
 // import heroDashboard from "@/assets/hero-dashboard.jpg";
 import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png";
-import ekoShieldLogo from "@/assets/eko-shield-logo.png";
+// import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 /* ─── Data ─── */
 
@@ -124,33 +123,31 @@ const EkoShieldPage = () => {
         <meta name="description" content="One platform for all identity, financial & compliance verifications. Real-time KYC checks with a unified control dashboard." />
       </Helmet>
 
-      <Header />
-
       <main>
         {/* ─── Hero ─── */}
         <section className="relative overflow-hidden hero-gradient hero-pattern pt-32 pb-20 md:pt-40 md:pb-32">
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              <FadeIn onView={false} delay={100}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
                 <Zap className="w-4 h-4 text-eko-gold" />
                 <span className="text-sm font-medium text-white">India's Verification Infrastructure</span>
-              </motion.div>
+              </FadeIn>
 
-              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              <FadeIn as="h1" onView={false} delay={200}
                 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
                 One Platform. Complete Control.
                 <br />
                 <span className="text-gradient-gold">Zero Compliance Gaps.</span>
-              </motion.h1>
+              </FadeIn>
 
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              <FadeIn as="p" onView={false} delay={300}
                 className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
                 Replace fragmented verification processes with one scalable trust infrastructure.
                 Real-time identity, financial & compliance checks with a unified control dashboard.
-              </motion.p>
+              </FadeIn>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              <FadeIn onView={false} delay={400}
                 className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                 <Button variant="gold" size="xl" onClick={() => openZohoChat()}>
                   Request a Demo <ArrowRight className="w-5 h-5" />
@@ -158,9 +155,9 @@ const EkoShieldPage = () => {
                 <Button variant="hero-outline" size="xl" onClick={() => document.getElementById('kyc-products')?.scrollIntoView({ behavior: 'smooth' })}>
                   View Products
                 </Button>
-              </motion.div>
+              </FadeIn>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+              <FadeIn onView={false} delay={500}
                 className="flex flex-wrap items-center justify-center gap-6 pt-8 border-t border-white/20">
                 {stats.map((s) => (
                   <div key={s.label} className="flex items-center gap-2 text-white/90">
@@ -168,36 +165,36 @@ const EkoShieldPage = () => {
                     <span className="text-sm font-medium">{s.value} {s.label}</span>
                   </div>
                 ))}
-              </motion.div>
+              </FadeIn>
             </div>
 
-            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }}
+            <FadeIn onView={false} delay={600}
               className="max-w-5xl mx-auto mt-16 relative">
               <div className="absolute inset-0 bg-eko-gold/10 blur-[80px] rounded-3xl" />
               <div className="relative rounded-2xl overflow-hidden flex justify-center">
-                <img src={heroDashboard} alt="Eko Shield verification dashboard" className="w-full h-auto max-w-[800px]" loading="eager" />
+                <img src={heroDashboard} alt="Eko Shield verification dashboard" width={1075} height={655} className="w-full h-auto max-w-[800px]" loading="eager" />
               </div>
-            </motion.div>
+            </FadeIn>
           </div>
         </section>
 
         {/* ─── Value Props ─── */}
         <section id="shield-products" className="py-20 lg:py-28 bg-background">
           <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <FadeIn className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Why Growing Companies Choose Eko Shield</h2>
               <p className="text-muted-foreground max-w-xl mx-auto">One contract. Multiple verifications. Complete operational control.</p>
-            </motion.div>
+            </FadeIn>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {valueProps.map((p, i) => (
-                <motion.div key={p.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                <FadeIn key={p.title} delay={i * 100}
                   className="group p-6 rounded-xl bg-card border border-border hover:border-eko-gold/40 hover:shadow-lg transition-all duration-300">
                   <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-navy to-eko-navy-light flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
                     <p.icon className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-card-foreground mb-2">{p.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
-                </motion.div>
+                </FadeIn>
               ))}
             </div>
           </div>
@@ -206,13 +203,13 @@ const EkoShieldPage = () => {
         {/* ─── Industries ─── */}
         <section className="py-20 lg:py-28 hero-gradient hero-pattern relative overflow-hidden">
           <div className="container mx-auto px-4 relative z-10">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <FadeIn className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Built for Every Growing Industry</h2>
               <p className="text-white/80 max-w-xl mx-auto">Click on any industry to see how Eko Shield reduces risk and ensures compliance.</p>
-            </motion.div>
+            </FadeIn>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {industries.map((ind, i) => (
-                <motion.button key={ind.name} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                <FadeIn key={ind.name} delay={i * 50}
                   onClick={() => setSelectedIndustry(ind)}
                   className="group p-5 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300 text-left cursor-pointer">
                   <ind.icon className="h-8 w-8 text-eko-gold mb-3 group-hover:scale-110 transition-transform" />
@@ -221,19 +218,18 @@ const EkoShieldPage = () => {
                   <span className="inline-flex items-center gap-1 mt-3 text-xs text-eko-gold font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                     Learn more <ArrowRight className="w-3 h-3" />
                   </span>
-                </motion.button>
+                </FadeIn>
               ))}
             </div>
           </div>
 
           {/* Industry Modal */}
-          <AnimatePresence>
             {selectedIndustry && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-sm"
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-sm animate-fade-in"
                 onClick={() => setSelectedIndustry(null)}>
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                  className="bg-background rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                <div
+                  className="bg-background rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in"
                   onClick={(e) => e.stopPropagation()}>
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-6">
@@ -283,22 +279,21 @@ const EkoShieldPage = () => {
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             )}
-          </AnimatePresence>
         </section>
 
         {/* ─── How It Works ─── */}
         <section className="py-20 lg:py-28 bg-background">
           <div className="container mx-auto px-4">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <FadeIn className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Live in 30 Minutes</h2>
               <p className="text-muted-foreground">No complex integration. No vendor lock-in.</p>
-            </motion.div>
+            </FadeIn>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {steps.map((s, i) => (
-                <motion.div key={s.num} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                <FadeIn key={s.num} delay={i * 100}
                   className="relative p-6 rounded-xl bg-card border border-border hover:shadow-lg transition-all duration-300">
                   <span className="text-5xl font-bold text-eko-gold/15 absolute top-4 right-4">{s.num}</span>
                   <div className="relative z-10">
@@ -306,7 +301,7 @@ const EkoShieldPage = () => {
                     <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
                   </div>
                   {i < steps.length - 1 && <div className="hidden lg:block absolute top-1/2 -right-3 w-6 h-0.5 bg-eko-gold/30" />}
-                </motion.div>
+                </FadeIn>
               ))}
             </div>
           </div>
@@ -315,10 +310,10 @@ const EkoShieldPage = () => {
         {/* ─── KYC & Verification Products ─── */}
         <section id="kyc-products" className="py-20 lg:py-28 hero-gradient hero-pattern relative overflow-hidden">
           <div className="container mx-auto px-4 relative z-10">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <FadeIn className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Complete KYC & Verification Suite</h2>
               <p className="text-white/80 max-w-2xl mx-auto">20+ verification products across 7 categories. One unified platform.</p>
-            </motion.div>
+            </FadeIn>
 
             {/* Category Tabs */}
             <div className="flex flex-wrap justify-center gap-2 mb-12">
@@ -342,7 +337,7 @@ const EkoShieldPage = () => {
             <div className="animate-fade-up">
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {selectedCategory === "identity" && identityProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -350,10 +345,10 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">IDENTITY</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
                 {selectedCategory === "gstin" && gstinProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -361,10 +356,10 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">GSTIN</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
                 {selectedCategory === "financial" && financialProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -372,10 +367,10 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">FINANCIAL</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
                 {selectedCategory === "employment" && employmentProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -383,10 +378,10 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">EMPLOYMENT</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
                 {selectedCategory === "vehicle" && vehicleProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -394,10 +389,10 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">VEHICLE</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
                 {selectedCategory === "digital" && digitalProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -405,10 +400,10 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">DIGITAL</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
                 {selectedCategory === "healthcare" && healthcareProducts.map((product, i) => (
-                  <motion.div key={product.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                  <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
@@ -416,7 +411,7 @@ const EkoShieldPage = () => {
                     <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">HEALTHCARE</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
-                  </motion.div>
+                  </FadeIn>
                 ))}
               </div>
             </div>
@@ -427,7 +422,7 @@ const EkoShieldPage = () => {
         <section id="shield-demo" className="py-20 lg:py-28 bg-background">
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-              <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <FadeIn>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-eko-gold/10 backdrop-blur-sm border border-eko-gold/20 mb-6">
                   <Sparkles className="w-4 h-4 text-eko-gold" />
                   <span className="text-sm font-medium text-eko-gold">Start Your Free Trial</span>
@@ -442,14 +437,14 @@ const EkoShieldPage = () => {
                     </li>
                   ))}
                 </ul>
-              </motion.div>
+              </FadeIn>
 
-              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <FadeIn>
                 <div className="bg-card rounded-2xl p-6 shadow-2xl overflow-hidden border border-border">
                   <h3 className="text-xl font-bold text-card-foreground mb-4">Get Started with Eko Shield</h3>
                   <ZohoSignupForm />
                 </div>
-              </motion.div>
+              </FadeIn>
             </div>
           </div>
         </section>

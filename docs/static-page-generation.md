@@ -11,6 +11,33 @@ the transition client-side (no full reload). If the user opens a product URL
 directly or refreshes, the server serves the pre-rendered static HTML
 immediately.
 
+### Client / server App split
+
+The site uses two versions of the App component to support both route-based
+code splitting and static pre-rendering:
+
+| File | Imports | Used by |
+|------|---------|--------|
+| `src/App.tsx` | `React.lazy()` dynamic imports | `src/main.tsx` (client hydration & SPA) |
+| `src/AppServer.tsx` | Static eager imports | `src/entry-server.tsx` (SSG pre-rendering) |
+
+**Why two files?** `React.lazy` is not supported by `renderToString` (used for
+SSG). The server variant keeps all page imports static so every route can be
+pre-rendered synchronously. The client variant uses `React.lazy` with
+`<Suspense fallback={null}>` so each page's JS is loaded on demand — only the
+code for the current route is downloaded on initial page load.
+
+Both files share the same route definitions and component tree. When adding a
+new route, it must be added to **both** `App.tsx` and `AppServer.tsx`.
+
+Because pre-rendered pages already contain the full HTML, React 18's
+`hydrateRoot` attaches event handlers to the existing markup without showing
+the Suspense fallback. The lazy chunk for the current page loads in the
+background and hydration completes seamlessly.
+
+Hydration is **deferred** to browser idle time so the main thread stays free
+for paint and user input (see [Client hydration](#client-hydration) below).
+
 ### What gets pre-rendered
 
 The route manifest in `ssg/routes.ts` is the single source of truth. It is
@@ -55,7 +82,9 @@ npm run build
         ├── For each route:
         │     renderPage(url) → { html, head }
         │     inject into dist/index.html template
-		│     rewrite /src/assets/* → /assets/* via manifest map
+        │     rewrite /src/assets/* → /assets/* via manifest map
+        │     inject <link rel="modulepreload"> for route's lazy chunk
+        │     add fetchpriority="low" to main <script> tag
         │     write dist/<route>/index.html
         ├── Saves original SPA shell as dist/__spa-fallback.html
         └── Generates dist/sitemap.xml
@@ -63,20 +92,57 @@ npm run build
 
 #### Client hydration
 
-`src/main.tsx` detects whether the page was pre-rendered by checking for
-meaningful markup inside `#root` (ignoring comment-only placeholders like
-`<!--ssr-outlet-->`):
+`src/main.tsx` imports `App` (the lazy-loading client variant) and detects
+whether the page was pre-rendered by checking for meaningful markup inside
+`#root` (ignoring comment-only placeholders like `<!--ssr-outlet-->`):
 
 ```ts
+import App from "./App.tsx";   // lazy route imports + Suspense
+
 const hasPrerenderedMarkup =
 	container.innerHTML.replace(/<!--([\s\S]*?)-->/g, "").trim().length > 0;
 
 if (hasPrerenderedMarkup) {
-  hydrateRoot(container, app);   // pre-rendered: attach event handlers only
+  // Pre-rendered: defer hydration to browser idle time.
+  // Fire immediately on the first user interaction so React event
+  // handlers are available the moment the user needs them.
+  let hydrated = false;
+  const TRIGGER_EVENTS = ["click", "touchstart", "keydown", "scroll"];
+
+  function doHydrate() {
+    if (hydrated) return;
+    hydrated = true;
+    TRIGGER_EVENTS.forEach((e) => document.removeEventListener(e, doHydrate));
+    hydrateRoot(container, app);
+  }
+
+  TRIGGER_EVENTS.forEach((e) =>
+    document.addEventListener(e, doHydrate, { once: true, passive: true }),
+  );
+
+  // requestIdleCallback schedules work during browser idle periods.
+  // Safari fallback: 2 s timeout.
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(doHydrate, { timeout: 2000 });
+  } else {
+    setTimeout(doHydrate, 2000);
+  }
 } else {
   createRoot(container).render(app);  // SPA fallback: full client render
 }
 ```
+
+Deferring hydration keeps the main thread free for paint on initial load.
+Because the pre-rendered HTML is already on screen, the page is fully readable
+and native `<a>` links work before React attaches. The interaction trigger
+(`click`, `touchstart`, `keydown`, `scroll`) ensures React event handlers are
+registered the instant the user first engages.
+
+During hydration, React 18 matches the pre-rendered HTML to the lazy
+component's output. Because the markup already exists in the DOM, the
+`<Suspense fallback={null}>` wrapper never renders its fallback — the lazy
+chunk loads transparently and hydration completes without a flash of empty
+content.
 
 #### SPA fallback
 
@@ -96,13 +162,22 @@ can be added to the manifest incrementally.
 | `ssg/plugin.ts` | Vite plugin (`closeBundle` hook) — registered in `vite.config.ts` |
 | `ssg/sitemap.ts` | XML sitemap generator (uses the same route manifest) |
 | `src/entry-server.tsx` | SSR entry: `renderPage(url)` via `StaticRouter` + `renderToString` |
+| `src/App.tsx` | Client App — `React.lazy` imports + `Suspense` for code splitting |
+| `src/AppServer.tsx` | Server App — eager imports for synchronous SSG rendering |
 | `src/lib/ssr-safe.ts` | Browser-API guards (`safeSessionStorage`, `safeLocationHref`) |
 | `vite.config.ts` | Enables `build.manifest` for asset URL rewriting |
+| `tsconfig.node.json` | Covers `ssg/` files; includes `@/*` path alias so SSG modules can import `src/` data |
 
 ### SEO outputs per page
 
 Every pre-rendered page includes:
 
+- `<link rel="modulepreload">` for the route's own lazy JS chunk (eliminates
+  the React.lazy import waterfall — the chunk downloads in parallel with the
+  main bundle instead of waiting for it to execute)
+- `fetchpriority="low"` on the main app `<script>` tag (tells the browser to
+  prioritise images and CSS over the hydration bundle; content is already
+  visible so JS is not on the critical path)
 - `<title>` and `<meta name="description">` from page-level Helmet
 - `<meta property="og:*">` Open Graph tags
 - `<link rel="canonical">` pointing to `SITE_URL + route` (via `src/lib/config/site.ts`)
@@ -145,15 +220,23 @@ already guarded inside `useEffect` or event handlers.
 `useCaptureTrackingParams()` runs inside `useEffect`, so it fires after
 hydration — correctly capturing `gclid`, `utm_*`, and other tracking params
 from the hydrated page URL and persisting them to `sessionStorage`. The
-`ZohoSignupForm` iframe starts from a deterministic SSR-safe `SITE_URL` value,
-then updates `src` in `useEffect` using `window.location.href` so tracking
-params are applied after mount without causing hydration mismatch.
+`ZohoSignupForm` renders a placeholder `<div>` during SSR and defers loading
+the iframe until the container scrolls near the viewport (via
+`IntersectionObserver` with a 200px root margin). Once visible, it builds the
+iframe `src` from `window.location.href` so tracking params are applied.
+This avoids loading the Zoho form on initial page render, reducing main-thread
+work and eliminating the geolocation permission request that was previously
+triggered on page load.
 
 ### How to add a new pre-rendered route
 
-1. Add the URL string to the array in `ssg/routes.ts`.
-2. Ensure the corresponding React route exists in `src/App.tsx`.
-3. Run `npm run build` — the route is pre-rendered automatically.
+1. Add the URL string to `PRERENDER_ROUTES` in `ssg/routes.ts`.
+2. Add an entry to `ROUTE_CHUNK_MAP` in the same file, mapping a regex for
+   the new URL to the page component's source path. This enables the
+   `<link rel="modulepreload">` injection for the new route.
+3. Add the corresponding `<Route>` to **both** `src/App.tsx` (with a
+   `React.lazy` import) and `src/AppServer.tsx` (with a static import).
+4. Run `npm run build` — the route is pre-rendered automatically.
 
 If the new route is a detail page driven by data (e.g. a new product slug),
 adding the slug to the data file is sufficient — the route manifest derives
@@ -195,6 +278,15 @@ open http://localhost:4173/products/aeps-api
 
 # Verify asset paths were rewritten (should be 0)
 grep -c '/src/assets/' dist/index.html dist/products/dmt-api/index.html
+
+# Verify route-specific modulepreload was injected
+grep 'modulepreload.*ProductDetailPage' dist/products/dmt-api/index.html
+grep 'modulepreload.*Index' dist/index.html
+
+# Verify fetchpriority=low on main script (pre-rendered pages only)
+grep 'fetchpriority="low"' dist/products/dmt-api/index.html
+# SPA fallback must NOT have fetchpriority (should print 0)
+grep -c 'fetchpriority' dist/__spa-fallback.html
 ```
 
 
@@ -233,8 +325,9 @@ When migrating to Vike:
    in `+config.ts`).
 3. Replace `ssg/routes.ts` with Vike's `+onBeforePrerenderStart.ts` hook that
    returns the same URL list.
-4. Keep `src/App.tsx` unchanged — it is router-agnostic (no `BrowserRouter`
-   inside it).
+4. Keep `src/App.tsx` and `src/AppServer.tsx` route definitions — they are
+   router-agnostic (no `BrowserRouter` inside them). The lazy/eager split
+   may be replaced by Vike's own code-splitting mechanism.
 5. Replace `src/main.tsx`'s hydration logic with Vike's `+onRenderClient.tsx`.
 6. Remove `ssg/` directory entirely.
 

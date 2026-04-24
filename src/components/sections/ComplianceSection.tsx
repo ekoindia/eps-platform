@@ -1,5 +1,7 @@
+import { useEffect, useRef } from "react";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Lock, FileCheck } from "lucide-react";
+import { FadeIn } from "@/components/FadeIn";
 import airtelLogo from "@/assets/partners/airtel-payments-bank.png";
 import finoLogo from "@/assets/partners/fino-payments-bank.png";
 import razorpayLogo from "@/assets/partners/razorpay.png";
@@ -45,18 +47,36 @@ const complianceItems = [
 ];
 
 export const ComplianceSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        el.style.animationPlayState = entry.isIntersecting ? "running" : "paused";
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <SectionContainer variant="navy" id="compliance">
-      <SectionHeader
-        title="Security & Compliance First"
-        subtitle="Enterprise-grade security with complete regulatory compliance. Your data and transactions are always protected."
-        light
-      />
+      <FadeIn>
+        <SectionHeader
+          title="Security & Compliance First"
+          subtitle="Enterprise-grade security with complete regulatory compliance. Your data and transactions are always protected."
+          light
+        />
+      </FadeIn>
 
       <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-        {complianceItems.map((item) => (
-          <div
+        {complianceItems.map((item, i) => (
+          <FadeIn
             key={item.title}
+            delay={i * 100}
             className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors duration-300"
           >
             <div className="w-12 h-12 rounded-xl bg-eko-gold/20 flex items-center justify-center mb-5">
@@ -74,26 +94,29 @@ export const ComplianceSection = () => {
                 ))}
               </ul>
             )}
-          </div>
+          </FadeIn>
         ))}
       </div>
 
       {/* Partner Logos */}
-      <div className="mt-16 pt-12 border-t border-white/10">
+      <FadeIn className="mt-16 pt-12 border-t border-white/10">
         <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-white text-center mb-8">Our Partners</h2>
         <div className="relative overflow-hidden h-20">
-          <div className="flex items-center gap-12 animate-scroll-x">
+          <div ref={scrollRef} className="flex items-center gap-12 animate-scroll-x" style={{ animationPlayState: "paused" }}>
             {[...partners, ...partners].map((partner, i) => (
               <img
                 key={`${partner.name}-${i}`}
                 src={partner.logo}
                 alt={partner.name}
+                width={120}
+                height={48}
+                loading="lazy"
                 className="h-12 w-auto object-contain bg-white rounded-lg px-4 py-2 shrink-0"
               />
             ))}
           </div>
         </div>
-      </div>
+      </FadeIn>
     </SectionContainer>
   );
 };

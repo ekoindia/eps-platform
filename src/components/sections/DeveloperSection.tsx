@@ -2,6 +2,7 @@ import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { CodeBlock, examplePaymentCode, exampleIntegrationSteps } from "@/components/CodeBlock";
 import { ArrowRight, Code, Key, Zap } from "lucide-react";
+import { FadeIn } from "@/components/FadeIn";
 
 const stepIcons = [Code, Key, Zap];
 
@@ -10,7 +11,7 @@ export const DeveloperSection = () => {
     <SectionContainer variant="muted" id="developers">
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         {/* Left: Content */}
-        <div>
+        <FadeIn>
           <span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-eko-gold-light text-eko-navy">
             For Developers
           </span>
@@ -18,7 +19,7 @@ export const DeveloperSection = () => {
             Build with Confidence
           </h2>
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-            Comprehensive documentation, SDKs, and sandbox environments to help you 
+            Comprehensive documentation, SDKs, and sandbox environments to help you
             integrate Eko APIs in minutes, not weeks.
           </p>
 
@@ -49,17 +50,17 @@ export const DeveloperSection = () => {
               <ArrowRight className="w-4 h-4" />
             </a>
           </Button>
-        </div>
+        </FadeIn>
 
         {/* Right: Code Block */}
-        <div className="relative">
+        <FadeIn delay={200} className="relative overflow-hidden">
           <div className="absolute -inset-4 bg-eko-gold/5 rounded-2xl blur-2xl" />
-          <CodeBlock 
-            code={examplePaymentCode} 
+          <CodeBlock
+            code={examplePaymentCode}
             fileName="transfer.js"
             className="relative"
           />
-        </div>
+        </FadeIn>
       </div>
     </SectionContainer>
   );

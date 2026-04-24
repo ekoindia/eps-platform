@@ -21,11 +21,17 @@
     <meta name="twitter:site" content="@ekospeaks" />
     <meta name="twitter:image" content="https://eps.eko.in/eps-website-social-preview.png">
 
-    <link rel="canonical" href="https://eps.eko.in" />
     <meta property="og:title" content="Fintech APIs for KYC, Verification & Transactions in India | Eko Platform Services">
     <meta name="twitter:title" content="Fintech APIs for KYC, Verification & Transactions in India | Eko Platform Services">
     <meta property="og:description" content="Compliant fintech APIs built for India. Power KYC, verification, payouts, and financial workflows for NBFCs, fintech startups, and developers.">
     <meta name="twitter:description" content="Compliant fintech APIs built for India. Power KYC, verification, payouts, and financial workflows for NBFCs, fintech startups, and developers.">
+
+    <!-- Fonts: preconnect + async load -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" /></noscript>
+
     <!--ssr-head-->
 </head>
 
@@ -34,10 +40,28 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MLL3LZZD"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
+
     <div id="root"><!--ssr-outlet--></div>
+
     <script type="module" src="/src/main.tsx"></script>
-    <script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script>
-    <script id="zsiqscript" src="https://salesiq.zohopublic.in/widget?wc=siq98f148fc6653300884516d19c269e3f0112b2a47f07d6179929cd65ed882f8b5" defer></script>
-    <script type="text/javascript" src="https://forms.zoho.in/js/zf_gclid.js" defer></script>
+
+    <script>
+    (function(){
+      var loaded=false;
+      function loadZoho(){
+        if(loaded)return;loaded=true;
+        window.$zoho=window.$zoho||{};$zoho.salesiq=$zoho.salesiq||{ready:function(){}};
+        var s=document.createElement('script');s.id='zsiqscript';s.defer=true;
+        s.src='https://salesiq.zohopublic.in/widget?wc=siq98f148fc6653300884516d19c269e3f0112b2a47f07d6179929cd65ed882f8b5';
+        document.body.appendChild(s);
+        var g=document.createElement('script');g.defer=true;
+        g.src='https://forms.zoho.in/js/zf_gclid.js';
+        document.body.appendChild(g);
+      }
+      var events=['scroll','click','mouseover','touchstart','keydown'];
+      events.forEach(function(e){document.addEventListener(e,loadZoho,{once:true,passive:true})});
+      setTimeout(loadZoho,1000);
+    })();
+    </script>
   </body>
 </html>

@@ -1,25 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles,
-  Landmark, Users, Store, Globe, Briefcase, Truck, Building2,
+  Landmark, Users, Store, Globe, Briefcase, Truck,
   Banknote, Fingerprint, Receipt, BarChart3, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { openZohoChat } from "@/lib/zoho-form";
-import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { EkoLogo } from "@/components/EkoLogo";
-import { TalkToSalesDialog } from "@/components/TalkToSalesDialog";
+const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
 import { LanguageSelector } from "@/components/LanguageSelector";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 const bcApis = [
   { label: "DMT", href: "/products/dmt-api" },
@@ -102,20 +94,18 @@ export const Header = () => {
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [mobileCompanyOpen, setMobileCompanyOpen] = useState(false);
   const [mobileUseCasesOpen, setMobileUseCasesOpen] = useState(false);
-  const [getStartedOpen, setGetStartedOpen] = useState(false);
+  // const [getStartedOpen, setGetStartedOpen] = useState(false);
   const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
   const productsDropdownRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const useCasesDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  const isHomePage = location.pathname === "/";
-  const isDarkHeader = !isHomePage;
   const useWhiteText = true;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -136,12 +126,12 @@ export const Header = () => {
   }, []);
 
   useEffect(() => {
-    const openDialog = () => setGetStartedOpen(true);
+    // const openDialog = () => setGetStartedOpen(true);
     const openSales = () => setTalkToSalesOpen(true);
-    window.addEventListener("open-get-started", openDialog);
+    // window.addEventListener("open-get-started", openDialog);
     window.addEventListener("open-talk-to-sales", openSales);
     return () => {
-      window.removeEventListener("open-get-started", openDialog);
+      // window.removeEventListener("open-get-started", openDialog);
       window.removeEventListener("open-talk-to-sales", openSales);
     };
   }, []);
@@ -159,11 +149,7 @@ export const Header = () => {
         className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           isScrolled
             ? "bg-[#00394bdd] backdrop-blur-md shadow-sm py-3"
-            : isHomePage
-              ? "bg-transparent py-5"
-              : isDarkHeader
-                ? "bg-[#00394b] py-5"
-                : "bg-white py-5"
+              : "bg-[#00394b] py-5"
         )}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -411,6 +397,7 @@ export const Header = () => {
             <div className="hidden lg:flex items-center gap-4">
               <LanguageSelector isLight={useWhiteText} />
               <a
+                id="lnk-sales-phone-header-desktop"
                 href={`tel:+91${SALES_MOBILE}`}
                 className={cn(
                   "flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer",
@@ -420,7 +407,7 @@ export const Header = () => {
                 <Phone className="w-4 h-4" />
                 {formatMobile(SALES_MOBILE)}
               </a>
-              <Button variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
+              <Button id="btn-get-started-header-desktop" variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
                 Get Started
               </Button>
             </div>
@@ -435,7 +422,9 @@ export const Header = () => {
             </button>
           </div>
 
-          {/* Mobile Menu */}
+          {/*
+              MARK: Mobile Menu
+          */}
           {mobileMenuOpen && (
             <div className="lg:hidden mt-4 pb-4 pt-4 bg-white/95 backdrop-blur-md rounded-xl px-4 -mx-4 shadow-lg">
               <nav className="flex flex-col gap-2 max-h-[calc(95vh-90px)] max-h-[80vh] overflow-y-auto">
@@ -562,13 +551,14 @@ export const Header = () => {
                 <div className="flex flex-col gap-3 mt-4">
                   <LanguageSelector isLight={false} />
                   <a
+                    id="lnk-sales-phone-header-mobile"
                     href={`tel:+91${SALES_MOBILE}`}
                     className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
                   >
                     <Phone className="w-4 h-4" />
                     {formatMobile(SALES_MOBILE)}
                   </a>
-                  <Button variant="gold" size="sm" onClick={() => {
+                  <Button id="btn-get-started-header-mobile" variant="gold" size="sm" onClick={() => {
                     setMobileMenuOpen(false);
                     openZohoChat();
                   }} className="cursor-pointer">
@@ -582,17 +572,24 @@ export const Header = () => {
       </header>
 
       {/* Get Started Dialog */}
-      <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Get Started with Eko Platform Services</DialogTitle>
-            <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
-          </DialogHeader>
+      {/* Commented out: Redundant - 'open-get-started' event is never dispatched in the app */}
+      {/* {getStartedOpen && (
+        <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Get Started with Eko Platform Services</DialogTitle>
+              <DialogDescription>Fill in your details and our team will reach out within 24 hours.</DialogDescription>
+            </DialogHeader>
 
-          <ZohoSignupForm />
-        </DialogContent>
-      </Dialog>
-      <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+            <ZohoSignupForm />
+          </DialogContent>
+        </Dialog>
+      )} */}
+      {talkToSalesOpen && (
+        <Suspense fallback={null}>
+          <TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+        </Suspense>
+      )}
     </>
   );
 };

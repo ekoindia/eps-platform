@@ -92,7 +92,7 @@ export const Footer = () => {
                 <Mail className="w-4 h-4 text-eko-gold" />
                 <span>eps@eko.in</span>
               </a>
-              <a href={`tel:+91${SALES_MOBILE}`} className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
+              <a id="lnk-sales-phone-footer" href={`tel:+91${SALES_MOBILE}`} className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Phone className="w-4 h-4 text-eko-gold" />
                 <span>{formatMobile(SALES_MOBILE)}</span>
               </a>

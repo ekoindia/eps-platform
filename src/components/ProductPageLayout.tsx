@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
 
 import { SectionContainer } from "@/components/SectionContainer";
-import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Send, Building2, Store, Landmark, Briefcase } from "lucide-react";
+import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Building2, Store, Landmark, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
@@ -14,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-form";
 import EkoShieldAdBanner from "./EkoShieldAdBanner";
+import { FadeIn } from "@/components/FadeIn";
 
 export interface ProductFeature {
   title: string;
@@ -122,7 +122,6 @@ export const ProductPageLayout = ({
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
 
       {/* Sticky CTA Bar - positioned below the main header */}
       <div
@@ -148,37 +147,42 @@ export const ProductPageLayout = ({
             <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
               {/* Left: Content */}
               <div>
-                <Link
-                  to="/#products"
-                  className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
-                >
-                  ← Back to Products
-                </Link>
+                <FadeIn onView={false} delay={100}>
+                  <Link
+                    to="/#products"
+                    className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
+                  >
+                    ← Back to Products
+                  </Link>
 
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                  {heroTitle}
-                </h1>
-                <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
-                  {heroSubtitle}
-                </p>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                    {heroTitle}
+                  </h1>
+                </FadeIn>
+                <FadeIn onView={false} delay={200}>
+                  <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
+                    {heroSubtitle}
+                  </p>
+                </FadeIn>
+                <FadeIn onView={false} delay={300}>
+                  <div className="flex flex-wrap gap-4">
+                    <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
+                      <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
+                    </Button>
 
-                <div className="flex flex-wrap gap-4">
-                  <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
-                    <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
-                  </Button>
-
-                  <Button variant="hero-outline" size="lg" asChild>
-                    <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-                      View Documentation
-                      <FileText className="w-4 h-4" />
-                    </a>
-                  </Button>
-                </div>
+                    <Button variant="hero-outline" size="lg" asChild>
+                      <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                        View Documentation
+                        <FileText className="w-4 h-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </FadeIn>
               </div>
 
               {/* Right: Hero Image or Lead Form */}
               {heroImage ? (
-                <div className="relative flex items-center justify-center">
+                <FadeIn onView={false} delay={300} className="relative flex items-center justify-center">
                   <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
                   <div
                     className="relative animate-float"
@@ -189,6 +193,9 @@ export const ProductPageLayout = ({
                     <img
                       src={heroImage}
                       alt={heroTitle}
+                      width={512}
+                      height={512}
+                      fetchPriority="high"
                       className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105"
                       style={{
                         transform: "perspective(1000px) rotateY(-5deg) rotateX(5deg)",
@@ -196,9 +203,9 @@ export const ProductPageLayout = ({
                       }}
                     />
                   </div>
-                </div>
+                </FadeIn>
               ) : (
-                <div className="relative" id="lead-form">
+                <FadeIn onView={false} delay={300} className="relative" id="lead-form">
                   {/* Trust Shield Badge - desktop only */}
                   <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-sm">
                     <Shield className="w-4 h-4 text-eko-gold" />
@@ -218,7 +225,7 @@ export const ProductPageLayout = ({
                       <ZohoSignupForm />
                     </div>
                   </div>
-                </div>
+                </FadeIn>
               )}
             </div>
           </div>
@@ -227,25 +234,25 @@ export const ProductPageLayout = ({
         {/* Overview Section */}
         {overview && (
           <SectionContainer>
-            <div className="max-w-4xl mx-auto text-center">
+            <FadeIn className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Overview</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">{overview}</p>
-            </div>
+            </FadeIn>
           </SectionContainer>
         )}
 
         {/* Key Benefits */}
         {keyBenefits && keyBenefits.length > 0 && (
           <SectionContainer className="bg-muted/30">
-            <div className="text-center mb-12">
+            <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Key Benefits</h2>
-            </div>
+            </FadeIn>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {keyBenefits.map((benefit, i) => (
-                <div key={i} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl opacity-0 animate-fade-up" style={{ animationDelay: `${i * 100}ms`, animationFillMode: "forwards" }}>
+                <FadeIn key={i} delay={i * 100} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
                   <CheckCircle className="w-6 h-6 text-eko-gold flex-shrink-0 mt-0.5" />
                   <span className="text-foreground font-medium">{benefit}</span>
-                </div>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -264,10 +271,10 @@ export const ProductPageLayout = ({
 
         {/* Features Section */}
         <SectionContainer>
-          <div className="text-center mb-12">
+          <FadeIn className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Key Features</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">Everything you need to integrate and scale</p>
-          </div>
+          </FadeIn>
 
           {/* Top features in 3-col highlighted row */}
           {features.length >= 3 && (
@@ -275,17 +282,17 @@ export const ProductPageLayout = ({
               {features.slice(0, 3).map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
-                  <div
+                  <FadeIn
                     key={index}
-                    className="group p-6 bg-card border-2 border-eko-gold/20 rounded-2xl hover:shadow-lg hover:border-eko-gold/40 transition-all duration-300 opacity-0 animate-fade-up"
-                    style={{ animationDelay: `${index * 100}ms`, animationFillMode: "forwards" }}
+                    delay={index * 100}
+                    className="group p-6 bg-card border-2 border-eko-gold/20 rounded-2xl hover:shadow-lg hover:border-eko-gold/40 transition-all duration-300"
                   >
                     <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
                       <Icon className="w-6 h-6 text-eko-gold" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -297,8 +304,9 @@ export const ProductPageLayout = ({
               {features.slice(3).map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
-                  <div
+                  <FadeIn
                     key={index}
+                    delay={index * 100}
                     className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
                   >
                     <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
@@ -306,7 +314,7 @@ export const ProductPageLayout = ({
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -318,8 +326,9 @@ export const ProductPageLayout = ({
               {features.map((feature, index) => {
                 const Icon = feature.icon || Zap;
                 return (
-                  <div
+                  <FadeIn
                     key={index}
+                    delay={index * 100}
                     className="group p-6 bg-card border border-border/50 rounded-2xl hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300"
                   >
                     <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:bg-eko-gold/20 transition-colors">
@@ -327,7 +336,7 @@ export const ProductPageLayout = ({
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -337,9 +346,9 @@ export const ProductPageLayout = ({
         {/* Types Section */}
         {types && types.length > 0 && (
           <SectionContainer className="bg-muted/30">
-            <div className="text-center mb-12">
+            <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Supported Types</h2>
-            </div>
+            </FadeIn>
             <div className="flex flex-wrap justify-center gap-4">
               {types.map((type, index) => {
                 const Icon = type.icon || CheckCircle;
@@ -357,9 +366,9 @@ export const ProductPageLayout = ({
         {/* Benefits Section (legacy) */}
         {benefits && benefits.length > 0 && (
           <SectionContainer className={`bg-gradient-to-br ${categoryColors[category]}`}>
-            <div className="text-center mb-12">
+            <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Why Choose Eko?</h2>
-            </div>
+            </FadeIn>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {benefits.map((benefit, index) => {
                 const Icon = benefit.icon || Zap;
@@ -380,22 +389,23 @@ export const ProductPageLayout = ({
         {/* Who Should Use - Industry Cards */}
         {whoShouldUse && whoShouldUse.length > 0 && (
           <SectionContainer>
-            <div className="text-center mb-12">
+            <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Who Should Use This API?</h2>
-            </div>
+            </FadeIn>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
               {whoShouldUse.map((item, i) => {
                 const Icon = getIndustryIcon(item);
                 return (
-                  <div
+                  <FadeIn
                     key={i}
+                    delay={i * 100}
                     className="flex flex-col items-center gap-3 p-6 bg-card border border-border/50 rounded-xl text-center hover:-translate-y-1 hover:shadow-lg hover:border-eko-gold/30 transition-all duration-300 cursor-default"
                   >
                     <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center">
                       <Icon className="w-6 h-6 text-eko-gold" />
                     </div>
                     <span className="text-foreground font-medium text-sm">{item}</span>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -405,9 +415,9 @@ export const ProductPageLayout = ({
         {/* Use Cases */}
         {useCases && useCases.length > 0 && (
           <SectionContainer className="bg-muted/30">
-            <div className="text-center mb-12">
+            <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Primary Use Cases</h2>
-            </div>
+            </FadeIn>
             <div className="flex flex-wrap justify-center gap-4">
               {useCases.map((useCase, index) => (
                 <div key={index} className="px-6 py-3 bg-card border border-border/50 rounded-full text-sm font-medium">
@@ -427,7 +437,7 @@ export const ProductPageLayout = ({
         {trustAndCompliance && trustAndCompliance.length > 0 && (
           <SectionContainer>
             <div className="flex flex-col lg:flex-row items-center gap-12">
-              <div className="flex-1">
+              <FadeIn className="flex-1">
                 <div className="w-16 h-16 rounded-2xl bg-eko-gold/10 flex items-center justify-center mb-6">
                   <Shield className="w-8 h-8 text-eko-gold" />
                 </div>
@@ -443,8 +453,8 @@ export const ProductPageLayout = ({
                     </li>
                   ))}
                 </ul>
-              </div>
-              <div className="flex-1">
+              </FadeIn>
+              <FadeIn delay={200} className="flex-1">
                 <div className="relative">
                   <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
                   <div className="relative bg-card border border-border/50 rounded-2xl p-8 text-center">
@@ -452,17 +462,17 @@ export const ProductPageLayout = ({
                     <div className="text-muted-foreground">Uptime Guaranteed</div>
                   </div>
                 </div>
-              </div>
+              </FadeIn>
             </div>
           </SectionContainer>
         )}
 
         {/* Interactive Integration Stepper */}
         <SectionContainer className="bg-eko-navy">
-          <div className="text-center mb-12">
+          <FadeIn className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How to Integrate</h2>
             <p className="text-white/70 max-w-2xl mx-auto">Get started in minutes with our simple integration process</p>
-          </div>
+          </FadeIn>
 
           <TooltipProvider>
             {/* Desktop: horizontal stepper */}
@@ -524,22 +534,24 @@ export const ProductPageLayout = ({
 
         {/* FAQ Section */}
         <SectionContainer className="bg-muted/30">
-          <div className="text-center mb-12">
+          <FadeIn className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Frequently Asked Questions</h2>
-          </div>
+          </FadeIn>
 
           <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((faq, index) => (
-              <details key={index} className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
-                <summary className="flex items-center justify-between font-semibold text-foreground list-none">
-                  <span className="flex items-center gap-3">
-                    <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
-                    {faq.q}
-                  </span>
-                  <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
-                </summary>
-                <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.a}</p>
-              </details>
+              <FadeIn key={index} delay={index * 50}>
+                <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
+                  <summary className="flex items-center justify-between font-semibold text-foreground list-none">
+                    <span className="flex items-center gap-3">
+                      <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                      {faq.q}
+                    </span>
+                    <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
+                  </summary>
+                  <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.a}</p>
+                </details>
+              </FadeIn>
             ))}
           </div>
         </SectionContainer>
@@ -551,7 +563,7 @@ export const ProductPageLayout = ({
             <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
 
             <div className="relative grid lg:grid-cols-2 gap-12 items-center">
-              <div>
+              <FadeIn>
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
                   Get API Access
                 </h2>
@@ -566,9 +578,9 @@ export const ProductPageLayout = ({
                     </li>
                   ))}
                 </ul>
-              </div>
+              </FadeIn>
 
-              <div className="relative">
+              <FadeIn delay={200} className="relative">
                 <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
                 <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
                   <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
@@ -581,7 +593,7 @@ export const ProductPageLayout = ({
                     <ZohoSignupForm />
                   </div>
                 </div>
-              </div>
+              </FadeIn>
             </div>
           </SectionContainer>
         )}

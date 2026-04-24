@@ -1,5 +1,6 @@
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Helmet } from "react-helmet-async";
+import { SITE_URL } from "@/lib/config/site";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { WhyEkoSection } from "@/components/sections/WhyEkoSection";
 import { ProductsSection } from "@/components/sections/ProductsSection";
@@ -13,8 +14,10 @@ import { CTASection } from "@/components/sections/CTASection";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
+      <Helmet>
+        <link rel="canonical" href={SITE_URL} />
+      </Helmet>
+
       <main>
         <HeroSection />
         <WhyEkoSection />
@@ -22,11 +25,11 @@ const Index = () => {
         <DeveloperSection />
         <UseCasesSection />
         <ComplianceSection />
-        
+
         <LeadCaptureSection />
         <CTASection />
       </main>
-      
+
       <Footer />
     </div>
   );
