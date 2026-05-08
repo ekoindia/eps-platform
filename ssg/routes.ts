@@ -4,7 +4,7 @@
  * This is the single source of truth for which routes get pre-rendered
  * at build time. Adding or removing a route here is all that's needed.
  */
-import { API_PRODUCTS } from "@/lib/data/api-products";
+import { getActiveProducts } from "@/lib/data/api-products";
 import { INDUSTRIES_LIST } from "@/lib/data/industries";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 
@@ -56,7 +56,7 @@ export const PRERENDER_ROUTES: string[] = [
   "/",
 
   // Products — dynamic slugs
-  ...API_PRODUCTS.map((p) => `/products/${p.slug}`),
+  ...getActiveProducts().map((p) => `/products/${p.slug}`),
 
   // Products — static routes (before :slug wildcard in the router)
   "/products/eko-shield",

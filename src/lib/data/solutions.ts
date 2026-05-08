@@ -4,6 +4,7 @@ import {
   CheckCircle, FileText, Users, Building2, Store, Truck,
   ShieldCheck, Layers, BarChart3, Briefcase, Globe,
 } from "lucide-react";
+import { API_PRODUCTS_MAP } from "@/lib/data/api-products";
 
 export interface PackApiItem {
   /** references API_PRODUCTS_MAP key */
@@ -62,10 +63,9 @@ export interface SolutionData {
   category: "lending-credit" | "onboarding" | "agent-banking" | "hr-workforce" | "fleet-motor";
 }
 
-/* ─────────────────────────────────────────────────────────────── */
-/*  SOLUTIONS DATA                                                  */
-/* ─────────────────────────────────────────────────────────────── */
-
+/* ───────────────────────────────────────────────────────────────
+    MARK: SOLUTIONS
+  ─────────────────────────────────────────────────────────────── */
 export const SOLUTIONS_LIST: SolutionData[] = [
   /* ── 1. Assisted Banking Agent Pack ─────────────────────────── */
   {
@@ -395,6 +395,7 @@ curl -X POST https://api.eko.in/v3/verify/bank-account \\
       { name: "GST Verification", apiId: "gst", href: "/products/gst-verification-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
+      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
     ],
     trustStrip: [
       // "Used by 500+ marketplaces",
@@ -436,6 +437,14 @@ curl -X POST https://api.eko.in/v3/verify/bank-account \\
         what: "Verify the merchant's identity with Aadhaar OTP for sole proprietors.",
         why: "Adds biometric-linked identity for unregistered merchants and sole proprietors who may not have GST.",
         href: "/products/aadhaar-verification-api",
+      },
+      {
+        apiId: "digilocker",
+        name: "DigiLocker",
+        icon: FileText,
+        what: "Access and verify documents stored in DigiLocker, such as Aadhaar, PAN, and business registration certificates.",
+        why: "Provides a secure and convenient way to verify documents without physical copies.",
+        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -481,7 +490,7 @@ console.log({ pan: pan.verified, gst: gst.status, bank: bank.verified });`,
     pricingBlurb: "Pay-per-verification. No setup fee. Sandbox is free. Volume pricing available for 10,000+ monthly onboardings.",
     faqs: [
       { question: "Does this pack work for ONDC seller onboarding?", answer: "Yes. The Merchant Onboarding Pack is pre-validated for ONDC seller KYB requirements including GST validation, PAN verification, and bank account confirmation." },
-      { question: "Can I onboard unregistered merchants without GST?", answer: "Yes. For sole proprietors without GST, the pack falls back to PAN + Aadhaar verification for identity and the bank verification for payment activation." },
+      { question: "Can I onboard unregistered merchants without GST?", answer: "Yes. For sole proprietors without GST, the pack falls back to PAN + Aadhaar verification (via DigiLocker) for identity and the bank verification for payment activation." },
       { question: "How fast is the penny-drop bank verification?", answer: "Real-time, typically under 3 seconds. The API returns account holder name and active status in the same call." },
       { question: "Is there directory lookup for business type?", answer: "GST verification returns business type (proprietor, partnership, LLP, etc.), registration date, and address — no separate MCA lookup needed for most cases." },
     ],
@@ -589,7 +598,7 @@ console.log({ avgMonthlyTurnover, filingConsistency: gst.complianceScore });`,
     pricingBlurb: "Pay-per-assessment. No setup fee. Sandbox is free.",
     faqs: [
       { question: "How many quarters of GST data can I access?", answer: "Eko's GST verification API provides up to 12 quarters of filing history including return filing status, taxable value trends, and compliance score." },
-      { question: "Does this work for MSMEs with turnover below GST threshold?", answer: "For MSMEs below the ₹40 lakh GST threshold, the pack falls back to Aadhaar + PAN + bank statement via DigiLocker." },
+      { question: "Does this work for MSMEs with turnover below GST threshold?", answer: "For MSMEs below the ₹40 lakh GST threshold, the pack falls back to Aadhaar (DigiLocker) + PAN + bank statement via DigiLocker." },
     ],
     relatedSolutions: [
       { slug: "lending-kyc-pack", name: "Lending KYC Pack", tagline: "Full KYC for borrower onboarding & disbursal" },
@@ -713,7 +722,7 @@ if (collection.status === "success") {
     faqs: [
       { question: "Does AePS work in areas with poor internet connectivity?", answer: "AePS requires a minimal data connection for biometric authentication. Eko's SDK supports offline queuing — transactions are submitted when connectivity resumes." },
       { question: "Can one field officer serve borrowers at multiple different banks?", answer: "Yes. Eko's AePS integration covers NPCI's interoperable network — a single device can process withdrawals from all Aadhaar-linked bank accounts regardless of bank." },
-      { question: "How does the JLG model work with AePS collection?", answer: "The system supports group-level session management — a field officer can process multiple borrower collections in a single visit with each Aadhaar authentication creating a separate receipt." },
+      { question: "How does the JLG model work with AePS collection?", answer: "The system supports group-level session management — a field officer can process multiple borrower collections in a single visit with each Aadhaar (DigiLocker) authentication creating a separate receipt." },
     ],
     relatedSolutions: [
       { slug: "assisted-banking-agent-pack", name: "Assisted Banking Agent Pack", tagline: "Full agent banking bundle for kirana & CSP" },
@@ -804,11 +813,12 @@ if (collection.status === "success") {
       },
     ],
     howItWorksSteps: [
-      { step: 1, label: "Employee submits mobile number + Aadhaar — OTP authentication" },
-      { step: 2, label: "PAN + Aadhaar verification — identity confirmed" },
-      { step: 3, label: "EPFO lookup — employment history verified" },
-      { step: 4, label: "DigiLocker — education documents fetched" },
-      { step: 5, label: "BGV report generated — hire/no-hire recommendation" },
+      { step: 1, label: "Employee submits mobile number" },  //Employee submits mobile number + Aadhaar — OTP authentication
+      { step: 2, label: "PAN — identity confirmed" },
+      { step: 3, label: "DigiLocker — Aadhaar fetched for verification" },
+      { step: 4, label: "EPFO lookup — employment history verified" },
+      { step: 5, label: "DigiLocker — education documents fetched" },
+      { step: 6, label: "BGV report generated — hire/no-hire recommendation" },
     ],
     industriesUsingSlugs: ["staffing-hr", "logistics-fleet", "e-commerce", "healthcare"],
     exampleCode: [
@@ -840,7 +850,7 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
     pricingBlurb: "Pay-per-verification. No setup fee. Sandbox is free. Volume pricing at 1,000+ monthly BGVs.",
     faqs: [
       { question: "Is consent required for EPFO lookup?", answer: "Yes. Eko's Employee Verification API includes a consent flow compliant with DPDP Act 2023. The employee provides explicit consent before any employment data is fetched." },
-      { question: "What if an employee hasn't registered with EPFO?", answer: "For informal workers without EPFO records, the pack falls back to reference check support via our partner network and address verification via Aadhaar." },
+      { question: "What if an employee hasn't registered with EPFO?", answer: "For informal workers without EPFO records, the pack falls back to reference check support via our partner network and address verification via Aadhaar (DigiLocker)." },
       // { question: "Can I run bulk BGV for 1,000 new hires?", answer: "Yes. All verification APIs support batch mode with async processing and webhook notifications. Bulk runs of 1,000 complete in 30-60 minutes." },
     ],
     relatedSolutions: [
@@ -869,6 +879,7 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
       { name: "Fund Transfer", apiId: "upi-payout", href: "/products/upi-payout-api" },
+      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
     ],
     trustStrip: [
       "Serves Tier 3 & beyond",
@@ -908,6 +919,14 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
         what: "Route DBT, wages, or loan disbursals directly to verified accounts.",
         why: "Closes the last mile — money is deposited into the account that the customer can then withdraw via AePS.",
         href: "/products/upi-payout-api",
+      },
+      {
+        apiId: "digilocker",
+        name: "DigiLocker",
+        icon: Layers,
+        what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
+        why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
+        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -970,6 +989,7 @@ console.log(withdrawal.receiptNumber); // Send SMS to customer`,
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
+      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
     ],
     trustStrip: [
       "Critical DBT infrastructure",
@@ -1003,6 +1023,15 @@ console.log(withdrawal.receiptNumber); // Send SMS to customer`,
         what: "Confirm seeding of Aadhaar to the DBT recipient bank account.",
         why: "Validates that the correct bank account is linked to the Aadhaar before routing the cashout.",
         href: "/products/bank-verification-api",
+      },
+
+      {
+        apiId: "digilocker",
+        name: "DigiLocker",
+        icon: Layers,
+        what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
+        why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
+        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -1070,6 +1099,7 @@ if (cashout.status === "success") {
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
+      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
     ],
     trustStrip: [
       // "₹4,000 Cr+ remitted monthly",
@@ -1110,6 +1140,14 @@ if (cashout.status === "success") {
         what: "KYC verification for sender and beneficiary registration.",
         why: "RBI BC guidelines require sender KYC for money remittance.",
         href: "/products/aadhaar-verification-api",
+      },
+      {
+        apiId: "digilocker",
+        name: "DigiLocker",
+        icon: Layers,
+        what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
+        why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
+        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -1182,6 +1220,7 @@ const withdrawal = await eko.aeps.cashout({
       { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
       { name: "RC Verification", apiId: "rc", href: "/products/rc-verification-api" },
+      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
     ],
     trustStrip: [
       "Trusted by 500+ companies",
@@ -1231,13 +1270,22 @@ const withdrawal = await eko.aeps.cashout({
         why: "Gig workers switch bank accounts frequently — verify before each earnings cycle to avoid failed payouts.",
         href: "/products/bank-verification-api",
       },
+      {
+        apiId: "digilocker",
+        name: "DigiLocker",
+        icon: Layers,
+        what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
+        why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
+        href: "/products/digilocker-api",
+      },
     ],
     howItWorksSteps: [
-      { step: 1, label: "Worker opens app — enters mobile number + Aadhaar" },
-      { step: 2, label: "PAN + Aadhaar — identity verified" },
-      { step: 3, label: "DL + RC — vehicle eligibility confirmed" },
-      { step: 4, label: "Bank Account Verification — payout account registered" },
-      { step: 5, label: "Worker approved and active on platform" },
+      { step: 1, label: "Worker opens app — enters mobile number" },
+      { step: 2, label: "PAN — identity verified" },
+      { step: 3, label: "DigiLocker — Aadhaar fetched for verification" },
+      { step: 4, label: "DL + RC — vehicle eligibility confirmed" },
+      { step: 5, label: "Bank Account Verification — payout account registered" },
+      { step: 6, label: "Worker approved and active on platform" },
     ],
     industriesUsingSlugs: ["logistics-fleet", "e-commerce", "staffing-hr"],
     exampleCode: [
@@ -1505,6 +1553,20 @@ const quote = calculatePremium({
   },
 ];
 
+/** Strip references to disabled products from a solution's API lists */
+function stripDisabledApis(solution: SolutionData): SolutionData {
+  const isActive = (apiId?: string) => !apiId || !API_PRODUCTS_MAP[apiId]?.disabled;
+  return {
+    ...solution,
+    apiChips: solution.apiChips.filter((c) => isActive(c.apiId)),
+    packApis: solution.packApis.filter((a) => isActive(a.apiId)),
+    howItWorksSteps: solution.howItWorksSteps.filter((s) => isActive(s.apiId)),
+  };
+}
+
 export const SOLUTIONS_MAP: Record<string, SolutionData> = Object.fromEntries(
-  SOLUTIONS_LIST.map((s) => [s.slug, s])
+  SOLUTIONS_LIST.map((s) => [s.slug, stripDisabledApis(s)])
 );
+
+/** SOLUTIONS_LIST with disabled product references stripped */
+export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(stripDisabledApis);

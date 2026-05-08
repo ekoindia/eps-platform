@@ -12,36 +12,20 @@ import { openZohoChat } from "@/lib/zoho-form";
 import { EkoLogo } from "@/components/EkoLogo";
 const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { getActiveProducts } from "@/lib/data/api-products";
 
-const bcApis = [
-  { label: "DMT", href: "/products/dmt-api" },
-  { label: "AePS", href: "/products/aeps-api" },
-];
+const activeProducts = getActiveProducts();
+const bcApis = activeProducts
+  .filter((p) => p.category === "bc")
+  .map((p) => ({ label: p.name, href: p.href }));
 
-const paymentApis = [
-  // { label: "Payout", href: "/products/payment-api" },
-  // { label: "UPI Payout", href: "/products/upi-payout-api" },
-  { label: "BBPS", href: "/products/bbps-api" },
-  { label: "CMS", href: "/products/cms-api" },
-];
+const paymentApis = activeProducts
+  .filter((p) => p.category === "payment")
+  .map((p) => ({ label: p.name, href: p.href }));
 
-// const collectionApis = [
-//   { label: "QR", href: "/products/qr-payment-api" },
-// ];
-
-const verificationApis = [
-  { label: "PAN Verification", href: "/products/pan-verification-api" },
-  { label: "Aadhaar Verification", href: "/products/aadhaar-verification-api" },
-  { label: "Bank Verification", href: "/products/bank-verification-api" },
-  { label: "GST Verification", href: "/products/gst-verification-api" },
-  { label: "UPI Verification", href: "/products/upi-verification-api" },
-  { label: "DL Verification", href: "/products/dl-verification-api" },
-  { label: "RC Verification", href: "/products/rc-verification-api" },
-  { label: "Vehicle Verification", href: "/products/vehicle-verification-api" },
-  { label: "DigiLocker API", href: "/products/digilocker-api" },
-  { label: "Employee Verification", href: "/products/employee-verification-api" },
-  { label: "Reverse Geocoding", href: "/products/reverse-geocoding-api" },
-];
+const verificationApis = activeProducts
+  .filter((p) => p.category === "verification")
+  .map((p) => ({ label: p.name, href: p.href }));
 
 const companyLinks = [
   { label: "About Us", href: "/about-us", internal: true },

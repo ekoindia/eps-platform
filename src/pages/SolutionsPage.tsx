@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { Footer } from "@/components/Footer";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
-import { SOLUTIONS_LIST } from "@/lib/data/solutions";
+import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { SITE_URL } from "@/lib/config/site";
 import { FadeIn } from "@/components/FadeIn";
@@ -16,7 +16,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const SolutionsPage = () => {
-  const categories = [...new Set(SOLUTIONS_LIST.map((s) => s.category))];
+  const categories = [...new Set(ACTIVE_SOLUTIONS_LIST.map((s) => s.category))];
 
   return (
     <>
@@ -55,7 +55,7 @@ const SolutionsPage = () => {
             <SectionContainer key={cat} variant={i % 2 === 1 ? "muted" : "default"}>
               <SectionHeader title={CATEGORY_LABELS[cat] || cat} />
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                {SOLUTIONS_LIST.filter((s) => s.category === cat).map((sol, i) => (
+                {ACTIVE_SOLUTIONS_LIST.filter((s) => s.category === cat).map((sol, i) => (
                   <SolutionCard key={sol.slug} solution={sol} delay={i * 100} />
                 ))}
               </div>

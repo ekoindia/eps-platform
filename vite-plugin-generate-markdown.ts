@@ -70,13 +70,14 @@ export function generateMarkdownPlugin(): Plugin {
         let written = 0;
 
         // -- Products -------------------------------------------------------
-        for (const product of bundle.API_PRODUCTS) {
+        const activeProducts = bundle.API_PRODUCTS.filter((p) => !p.disabled);
+        for (const product of activeProducts) {
           const page = bundle.API_PRODUCT_PAGES[product.id];
           if (!page) {
             this.warn(`No page data for product id="${product.id}" — skipping`);
             continue;
           }
-          const related = bundle.API_PRODUCTS.filter(
+          const related = activeProducts.filter(
             (p) => p.category === product.category && p.id !== product.id
           ).slice(0, 5);
           const md = bundle.renderProductMarkdown(product, page, related);
@@ -112,7 +113,7 @@ export function generateMarkdownPlugin(): Plugin {
         await writeFile(
           path.join(outDir, "index.md"),
           bundle.renderSiteIndexMarkdown(
-            bundle.API_PRODUCTS,
+            activeProducts,
             bundle.INDUSTRIES_LIST,
             bundle.SOLUTIONS_LIST
           )
@@ -122,7 +123,7 @@ export function generateMarkdownPlugin(): Plugin {
         // -- llms.txt -------------------------------------------------------
         await writeFile(
           path.join(outDir, "llms.txt"),
-          bundle.renderLlmsTxt(bundle.API_PRODUCTS, bundle.INDUSTRIES_LIST, bundle.SOLUTIONS_LIST)
+          bundle.renderLlmsTxt(activeProducts, bundle.INDUSTRIES_LIST, bundle.SOLUTIONS_LIST)
         );
         written++;
 
@@ -130,7 +131,7 @@ export function generateMarkdownPlugin(): Plugin {
         await writeFile(
           path.join(outDir, "llms-full.txt"),
           bundle.renderSiteIndexMarkdown(
-            bundle.API_PRODUCTS,
+            activeProducts,
             bundle.INDUSTRIES_LIST,
             bundle.SOLUTIONS_LIST
           )
@@ -154,6 +155,7 @@ interface MarkdownBundle {
     href: string;
     category: "bc" | "payment" | "verification";
     shortDesc: string;
+    disabled?: boolean;
   }>;
   API_PRODUCT_PAGES: Record<string, unknown>;
   INDUSTRIES_LIST: Array<{ slug: string; name: string; category: string }>;
@@ -193,7 +195,7 @@ async function loadRenderBundle(
     API_PRODUCTS: productsMod.API_PRODUCTS,
     API_PRODUCT_PAGES: productPagesMod.API_PRODUCT_PAGES,
     INDUSTRIES_LIST: industriesMod.INDUSTRIES_LIST,
-    SOLUTIONS_LIST: solutionsMod.SOLUTIONS_LIST,
+    SOLUTIONS_LIST: solutionsMod.ACTIVE_SOLUTIONS_LIST,
     renderProductMarkdown: renderProductMod.renderProductMarkdown,
     renderIndustryMarkdown: renderIndustryMod.renderIndustryMarkdown,
     renderSolutionMarkdown: renderSolutionMod.renderSolutionMarkdown,
@@ -204,12 +206,13 @@ async function loadRenderBundle(
 }
 
 function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
+  const activeProducts = bundle.API_PRODUCTS.filter((p) => !p.disabled);
   if (url === "/llms.txt") {
-    return bundle.renderLlmsTxt(bundle.API_PRODUCTS, bundle.INDUSTRIES_LIST, bundle.SOLUTIONS_LIST);
+    return bundle.renderLlmsTxt(activeProducts, bundle.INDUSTRIES_LIST, bundle.SOLUTIONS_LIST);
   }
   if (url === "/llms-full.txt" || url === "/index.md") {
     return bundle.renderSiteIndexMarkdown(
-      bundle.API_PRODUCTS,
+      activeProducts,
       bundle.INDUSTRIES_LIST,
       bundle.SOLUTIONS_LIST
     );
@@ -220,11 +223,11 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 
   const productMatch = url.match(/^\/products\/([^/]+)\.md$/);
   if (productMatch) {
-    const product = bundle.API_PRODUCTS.find((p) => p.slug === productMatch[1]);
+    const product = activeProducts.find((p) => p.slug === productMatch[1]);
     if (!product) return null;
     const page = bundle.API_PRODUCT_PAGES[product.id];
     if (!page) return null;
-    const related = bundle.API_PRODUCTS.filter(
+    const related = activeProducts.filter(
       (p) => p.category === product.category && p.id !== product.id
     ).slice(0, 5);
     return bundle.renderProductMarkdown(product, page, related);

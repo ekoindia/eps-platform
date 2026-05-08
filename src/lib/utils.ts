@@ -22,3 +22,16 @@ export function formatMobile(mobile: string | number): string {
   }
   return mobileStr;
 }
+
+
+
+/**
+ * Utility function to normalize API label: Append "API" suffix if not already present (both singular or plural), and convert to title case. E.g. "GST Verification" becomes "GST Verification API", while "PAN API" stays "PAN API".
+ * MARK: Normalize API Label
+ * @param {string} label - The original API label to normalize.
+ * @return {string} The normalized API label with "API" suffix if it wasn't already present.
+ */
+export const normalizeApiLabel = (label: string): string => {
+  const _label = label.trim().toLowerCase();
+  return label + (_label.endsWith("api") || _label.endsWith("apis") ? "" : " API");
+};
