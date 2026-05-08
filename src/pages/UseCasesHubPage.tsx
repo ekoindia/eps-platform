@@ -7,7 +7,7 @@ import { StatCard } from "@/components/Cards";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Building2, Package, Users, Shield, Zap, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { SOLUTIONS_LIST } from "@/lib/data/solutions";
+import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { INDUSTRY_CATEGORIES } from "@/lib/data/industries";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { AiHint } from "@/components/AiHint";
@@ -24,7 +24,7 @@ const FEATURED_SOLUTION_SLUGS = [
 ];
 
 const UseCasesHubPage = () => {
-  const featuredSolutions = SOLUTIONS_LIST.filter((s) => FEATURED_SOLUTION_SLUGS.includes(s.slug));
+  const featuredSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => FEATURED_SOLUTION_SLUGS.includes(s.slug));
 
   return (
     <>

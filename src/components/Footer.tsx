@@ -118,7 +118,9 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Products */}
+          {/*
+            MARK: Products
+          */}
           <div>
             <h4 className="font-semibold text-white mb-4">Products</h4>
             <ul className="space-y-3">
@@ -146,25 +148,9 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Industries */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Industries</h4>
-            <ul className="space-y-3">
-              {footerLinks.industries.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Solutions */}
+          {/*
+            MARK: Solutions
+          */}
           <div>
             <h4 className="font-semibold text-white mb-4">Solutions</h4>
             <ul className="space-y-3">
@@ -182,7 +168,29 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Developers */}
+          {/*
+            MARK: Industries
+          */}
+          <div>
+            <h4 className="font-semibold text-white mb-4">Industries</h4>
+            <ul className="space-y-3">
+              {footerLinks.industries.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
+                  >
+                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/*
+            MARK: Developers
+          */}
           <div>
             <h4 className="font-semibold text-white mb-4">Developers</h4>
             <ul className="space-y-3">
@@ -202,7 +210,9 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal */}
+          {/*
+            MARK: Legal
+          */}
           <div>
             <h4 className="font-semibold text-white mb-4">Legal</h4>
             <ul className="space-y-3">
@@ -230,7 +240,9 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Company */}
+          {/*
+            MARK: Company
+          */}
           <div>
             <h4 className="font-semibold text-white mb-4">Company</h4>
             <ul className="space-y-3">
@@ -261,7 +273,9 @@ export const Footer = () => {
         </div>
       </div>
 
-      {/* Bottom Bar */}
+      {/*
+        MARK: Bottom Bar
+      */}
       <div className="border-t border-white/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-white/60 text-sm text-center">

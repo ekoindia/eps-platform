@@ -8,12 +8,14 @@ import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Buil
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
-import type { ApiField } from "@/components/ApiInputOutputPreview";
+import type { ApiField, ApiPreviewItem } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-form";
 import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
+import { ApiChip } from "./ApiChip";
+import { normalizeApiLabel } from "@/lib/utils";
 
 export interface ProductFeature {
   title: string;
@@ -58,6 +60,7 @@ export interface ProductPageLayoutProps {
     outputs?: ApiField[];
     comingSoon?: boolean;
   };
+  inputOutputPreviews?: ApiPreviewItem[];
   heroImage?: string;
 }
 
@@ -97,10 +100,13 @@ export const ProductPageLayout = ({
   leadForm,
   types,
   inputOutputPreview,
+  inputOutputPreviews,
   heroImage,
 }: ProductPageLayoutProps) => {
   const [showSticky, setShowSticky] = useState(false);
+  const [selectedApiName, setSelectedApiName] = useState<string | null>(null);
   const heroRef = useRef<HTMLElement>(null);
+  const apiPreviewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -118,6 +124,15 @@ export const ProductPageLayout = ({
     payment: "from-eko-gold/20 to-eko-navy/5",
     verification: "from-eko-gold/20 to-eko-success/5",
     platform: "from-eko-navy/20 to-eko-gold/5",
+  };
+
+  /**
+   * Utility function to scroll to API preview section when an API chip is clicked. This allows users to quickly navigate to the relevant section of the page to see input/output details for the selected API.
+   * The function uses the `apiPreviewRef` reference to identify the target section and scrolls it into view with smooth behavior.
+   */
+  const scrollToApiPreview = (apiName?: string) => {
+    if (apiName) setSelectedApiName(apiName);
+    apiPreviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -152,7 +167,7 @@ export const ProductPageLayout = ({
                     to="/#products"
                     className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
                   >
-                    ← Back to Products
+                    ← Back to Home
                   </Link>
 
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -163,6 +178,21 @@ export const ProductPageLayout = ({
                   <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
                     {heroSubtitle}
                   </p>
+
+                  {/* API Chip Row */}
+                  {inputOutputPreviews && inputOutputPreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-10">
+                    {inputOutputPreviews.map((chip) => (
+                      <ApiChip
+                        key={chip.apiName}
+                        name={normalizeApiLabel(chip.apiName)}
+                        relevance={chip.relevance}
+                        onClick={() => scrollToApiPreview(chip.apiName)}
+                        className="bg-white/10 border-white/20 text-white"
+                      />
+                    ))}
+                  </div>
+                  )}
                 </FadeIn>
                 <FadeIn onView={false} delay={300}>
                   <div className="flex flex-wrap gap-4">
@@ -258,15 +288,26 @@ export const ProductPageLayout = ({
           </SectionContainer>
         )}
 
-        {/* API Input/Output Preview */}
-        {inputOutputPreview && (
-          <ApiInputOutputPreview
-            apiName={inputOutputPreview.apiName}
-            inputs={inputOutputPreview.inputs}
-            outputs={inputOutputPreview.outputs}
-            comingSoon={inputOutputPreview.comingSoon}
-            docsUrl={docsUrl}
-          />
+        {/* API Input/Output Preview Section */}
+        {(inputOutputPreviews || inputOutputPreview) && (
+          <div ref={apiPreviewRef}>
+            {inputOutputPreviews ? (
+              <ApiInputOutputPreview
+                apiName={title}
+                previews={inputOutputPreviews}
+                docsUrl={docsUrl}
+                activeApiName={selectedApiName ?? undefined}
+              />
+            ) : inputOutputPreview && (
+              <ApiInputOutputPreview
+                apiName={inputOutputPreview.apiName}
+                inputs={inputOutputPreview.inputs}
+                outputs={inputOutputPreview.outputs}
+                comingSoon={inputOutputPreview.comingSoon}
+                docsUrl={docsUrl}
+              />
+            )}
+          </div>
         )}
 
         {/* Features Section */}

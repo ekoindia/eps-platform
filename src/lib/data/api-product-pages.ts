@@ -25,6 +25,7 @@ import {
   User, Calendar,
   // Zap (used everywhere)
   Zap,
+  Mail,
 } from "lucide-react";
 
 import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
@@ -472,7 +473,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // PAN Verification
+  // MARK: PAN
   // -------------------------------------------------------------------------
   pan: {
     seo: {
@@ -503,7 +504,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "PAN Verification API",
     desc: "Verify PAN details in real time",
-    heroTitle: "PAN Verification API for Instant Identity Validation",
+    heroTitle: "PAN Verification APIs for Instant Identity Validation",
     heroSubtitle: "Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding.",
     category: "verification",
     docsUrl: "https://developers.eko.in/reference/pan-lite",
@@ -536,25 +537,69 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get PAN Verification API Access",
     },
     faqs: PAN_FAQS,
-    inputOutputPreview: {
-      apiName: "PAN Verification",
-      inputs: [
-        { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
-        { label: "Full Name", value: "Rajesh Kumar", icon: User },
-        { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
-      ],
-      outputs: [
-        { label: "PAN Match", value: "✓ Matched" },
-        { label: "Name Match", value: "✓ Matched" },
-        { label: "DOB Match", value: "✓ Matched" },
-        { label: "PAN Status", value: "Active" },
-        { label: "Aadhaar Seeding Status", value: "Seeded", icon: Fingerprint },
-      ],
-    },
+    inputOutputPreviews: [
+      {
+        apiName: "PAN Lite",
+        description: "Quick PAN validation with match results for basic KYC checks.",
+        docsUrl: "https://developers.eko.in/reference/pan-lite",
+        endpoint: "/pan-lite",
+        inputs: [
+          { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
+          { label: "Full Name", value: "Rajesh Kumar", icon: User },
+          { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
+        ],
+        outputs: [
+          { label: "PAN Status", value: "Valid" },
+          { label: "Name Match", value: "Matched" },
+          { label: "DOB Match", value: "Matched" },
+          { label: "Aadhaar Seeding Status", value: "Seeded", icon: Fingerprint },
+        ],
+      },
+      {
+        apiName: "PAN Advanced",
+        description: "Detailed PAN data including holder name, category, and Aadhaar seeding status.",
+        docsUrl: "https://developers.eko.in/reference/pan-advanced",
+        endpoint: "/pan-advanced",
+        inputs: [
+
+          { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
+          { label: "Full Name", value: "Rajesh Kumar", icon: User },
+          { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
+        ],
+        outputs: [
+          { label: "Registered Name", value: "Rajesh Kumar", icon: User },
+          { label: "PAN Type", value: "Individual" },
+          { label: "Gender", value: "Male", icon: User },
+          { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
+          { label: "Masked Aadhaar", value: "XXXX-XXXX-1234", icon: Fingerprint },
+          { label: "Aadhaar Linked?", value: "Yes" },
+          { label: "Mobile Number", value: "9876543210", icon: Smartphone },
+          { label: "Email", value: "rajesh.kumar@example.com", icon: Mail },
+          { label: "Address (Full)", value: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072", icon: MapPin },
+        ],
+      },
+      {
+        apiName: "Bulk PAN Verification",
+        description: "Verify multiple PANs in a single async batch request for high-volume operations.",
+        docsUrl: "https://developers.eko.in/reference/pan-bulk-verify",
+        endpoint: "/pan/bulk",
+        inputs: [
+          { label: "Entry 1", value: "John (ABCPV1234D)", icon: User },
+          { label: "Entry 2", value: "John Doe (ABCPV1234L)", icon: User },
+          // { label: "Total Entries", value: "2", icon: Users },
+        ],
+        outputs: [
+          { label: "Status", value: "Processing" },
+          { label: "Reference ID", value: "REF123456", icon: Hash },
+          { label: "Batch ID", value: "BLK789" },
+          { label: "Note", value: "Poll Bulk PAN Verification Status API for results" },
+        ],
+      },
+    ],
   },
 
   // -------------------------------------------------------------------------
-  // Aadhaar Verification
+  // MARK: Aadhaar Verification
   // -------------------------------------------------------------------------
   aadhaar: {
     seo: {
@@ -603,7 +648,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // Bank Verification
+  // MARK: Bank Verification
   // -------------------------------------------------------------------------
   bank: {
     seo: {
@@ -660,7 +705,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // GST Verification
+  // MARK: GST Verification
   // -------------------------------------------------------------------------
   gst: {
     seo: {

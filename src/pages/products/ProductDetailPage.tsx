@@ -11,7 +11,7 @@ const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
 
   const product = API_PRODUCTS.find((p) => p.slug === slug);
-  const pageData = product ? API_PRODUCT_PAGES[product.id] : undefined;
+  const pageData = product && !product.disabled ? API_PRODUCT_PAGES[product.id] : undefined;
 
   if (!pageData) {
     return <NotFound />;
