@@ -1,17 +1,14 @@
 import { Link } from "react-router-dom";
 import {
   ChevronRight,
-  Facebook,
-  Linkedin,
-  Youtube,
-  Instagram,
   Mail,
   MapPin,
   Phone
 } from "lucide-react";
 import { EkoLogo } from "@/components/EkoLogo";
-import { SALES_MOBILE } from "@/lib/config/site";
+import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
+import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/fa";
 
 const footerLinks = {
   products: [
@@ -63,11 +60,11 @@ const XIcon = ({ className }: { className?: string }) => (
 );
 
 const socialLinks = [
-  { icon: Linkedin, href: "https://www.linkedin.com/company/eko-bharat-ventures/", label: "LinkedIn" },
-  { icon: Facebook, href: "https://www.facebook.com/EkoEPS", label: "Facebook" },
-  { icon: Instagram, href: "https://www.instagram.com/eko__India", label: "Instagram" },
-  { icon: Youtube, href: "https://www.youtube.com/@eko_india", label: "YouTube" },
-  { icon: XIcon, href: "https://x.com/ekospeaks", label: "X" },
+  { icon: FaLinkedinIn, href: SOCIAL_LINKS.linkedin, label: "LinkedIn" },
+  { icon: FaFacebookF, href: SOCIAL_LINKS.facebook, label: "Facebook" },
+  { icon: FaInstagram, href: SOCIAL_LINKS.instagram, label: "Instagram" },
+  { icon: FaYoutube, href: SOCIAL_LINKS.youtube, label: "YouTube" },
+  { icon: XIcon, href: SOCIAL_LINKS.x, label: "X" },
 ];
 
 export const Footer = () => {
