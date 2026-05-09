@@ -1570,3 +1570,19 @@ export const SOLUTIONS_MAP: Record<string, SolutionData> = Object.fromEntries(
 
 /** SOLUTIONS_LIST with disabled product references stripped */
 export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(stripDisabledApis);
+
+/**
+ * Return up to `maxCount` solution packs whose `packApis` include the given API id,
+ * shuffled randomly so the selection varies across page loads.
+ */
+export function getSolutionPacksForApi(apiId: string, maxCount = 3): SolutionData[] {
+  const matching = ACTIVE_SOLUTIONS_LIST.filter((s) =>
+    s.packApis.some((a) => a.apiId === apiId)
+  );
+  // Fisher-Yates shuffle
+  for (let i = matching.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [matching[i], matching[j]] = [matching[j], matching[i]];
+  }
+  return matching.slice(0, maxCount);
+}
