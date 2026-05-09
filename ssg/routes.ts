@@ -60,7 +60,7 @@ export const PRERENDER_ROUTES: string[] = [
 
   // Products — static routes (before :slug wildcard in the router)
   "/products/eko-shield",
-  "/products/eko-shield/document",
+  // "/products/eko-shield/document", --- IGNORE ---
 
   // Industries
   "/industries",
@@ -75,7 +75,7 @@ export const PRERENDER_ROUTES: string[] = [
 
   // Company & Legal
   "/about-us",
-  "/blogs-media",
+  // "/blogs-media", --- IGNORE ---
   "/tnc",
   "/privacy-policy",
   "/refund-policy",

@@ -62,31 +62,31 @@ const UseCasesHubPage = () => {
 
               {/* Choice Cards */}
               <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                <FadeIn delay={200}>
+                <FadeIn delay={200} className="flex">
                   <Link
                     to="/industries"
-                    className="group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
+                    className="flex flex-col group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-eko-gold/20 flex items-center justify-center mb-5 group-hover:bg-eko-gold/30 transition-colors">
                     <Building2 className="w-7 h-7 text-eko-gold" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">I'm building for an industry</h2>
-                  <p className="text-white/60 mb-6 leading-relaxed">See which APIs and packs are recommended for your sector — lending, microfinance, retail, insurance, and more.</p>
+                  <p className="text-white/60 mb-6 leading-relaxed flex-1">See which APIs and packs are recommended for your sector — lending, microfinance, retail, insurance, and more.</p>
                   <span className="inline-flex items-center gap-1.5 text-eko-gold font-semibold group-hover:gap-3 transition-all duration-200">
                     Browse Industries <ArrowRight className="w-4 h-4" />
                   </span>
                   </Link>
                 </FadeIn>
-                <FadeIn delay={300}>
+                <FadeIn delay={300} className="flex">
                   <Link
                     to="/solutions"
-                    className="group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
+                    className="flex flex-col group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-eko-gold/20 flex items-center justify-center mb-5 group-hover:bg-eko-gold/30 transition-colors">
                     <Package className="w-7 h-7 text-eko-gold" />
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">I need a specific solution</h2>
-                  <p className="text-white/60 mb-6 leading-relaxed">Explore pre-bundled API packs for common workflows — KYC, onboarding, agent banking, compliance, and more.</p>
+                  <p className="text-white/60 mb-6 leading-relaxed flex-1">Explore pre-bundled API packs for common workflows — KYC, onboarding, agent banking, compliance, and more.</p>
                   <span className="inline-flex items-center gap-1.5 text-eko-gold font-semibold group-hover:gap-3 transition-all duration-200">
                     Browse Solutions <ArrowRight className="w-4 h-4" />
                   </span>

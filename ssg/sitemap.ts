@@ -6,21 +6,33 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { SITE_URL } from "@/lib/config/site";
 
-const LEGAL_ROUTES = new Set([
+const LOW_PRIORITY_ROUTES = new Set([
   "/tnc",
   "/privacy-policy",
   "/refund-policy",
   "/grievance",
+  "/signup",
+  "/about-us",
+  "/blogs-media",
+]);
+
+const MONTHLY_CHANGEFREQ_ROUTES = new Set([
+  "/tnc",
+  "/privacy-policy",
+  "/refund-policy",
+  "/grievance",
+  "/signup",
 ]);
 
 function priority(route: string): string {
   if (route === "/") return "1.0";
-  if (LEGAL_ROUTES.has(route)) return "0.5";
+  if (LOW_PRIORITY_ROUTES.has(route)) return "0.5";
+  if (route.startsWith("/industries/")) return "0.6";
   return "0.8";
 }
 
 function changefreq(route: string): string {
-  if (LEGAL_ROUTES.has(route)) return "monthly";
+  if (MONTHLY_CHANGEFREQ_ROUTES.has(route)) return "monthly";
   return "weekly";
 }
 
