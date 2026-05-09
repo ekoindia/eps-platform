@@ -14,6 +14,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import { Header } from "@/components/Header";
+import { DefaultMeta } from "@/components/DefaultMeta";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +47,7 @@ function TrackingParamCapture() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AppServer = ({ helmetContext }: { helmetContext?: any }) => (
   <HelmetProvider context={helmetContext}>
+    <DefaultMeta />
     <TooltipProvider>
       <Toaster />
       <Sonner />

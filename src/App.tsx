@@ -8,6 +8,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import { Header } from "@/components/Header";
+import { DefaultMeta } from "@/components/DefaultMeta";
 
 // Route-based code splitting: each page is loaded on demand
 const Index = lazy(() => import("./pages/Index"));
@@ -36,6 +37,7 @@ function TrackingParamCapture() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const App = ({ helmetContext }: { helmetContext?: any }) => (
   <HelmetProvider context={helmetContext}>
+    <DefaultMeta />
     <TooltipProvider>
       <Toaster />
       <Sonner />

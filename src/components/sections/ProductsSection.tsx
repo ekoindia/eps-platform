@@ -13,9 +13,9 @@ import {
   Smartphone,
   Receipt,
   // IndianRupee,
-  Send,
+  // Send,
   FileCheck,
-  User,
+  // User,
   Building,
   Car,
   Plane,
@@ -52,13 +52,13 @@ const bcProducts = [
   },
 ];
 
-const paymentProducts = [
-  {
-    title: "Payout / UPI Payout",
-    icon: Send,
-    description: "Bulk disbursements to bank accounts, UPI, and wallets.",
-    features: ["Batch processing", "Scheduled payouts", "Real-time webhooks"]
-  },
+const paymentProducts: typeof bcProducts = [
+  // {
+  //   title: "Payout / UPI Payout",
+  //   icon: Send,
+  //   description: "Bulk disbursements to bank accounts, UPI, and wallets.",
+  //   features: ["Batch processing", "Scheduled payouts", "Real-time webhooks"]
+  // },
 ];
 
 const bbpsProducts = [
@@ -77,12 +77,12 @@ const bbpsProducts = [
 ];
 
 const collectionProducts = [
-  {
-    title: "QR Payment",
-    icon: Smartphone,
-    description: "Generate and manage QR codes for seamless payment collection.",
-    features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
-  },
+  // {
+  //   title: "QR Payment",
+  //   icon: Smartphone,
+  //   description: "Generate and manage QR codes for seamless payment collection.",
+  //   features: ["Dynamic QR codes", "UPI integration", "Real-time notifications"]
+  // },
 ];
 
 const verificationProducts = [
@@ -92,12 +92,12 @@ const verificationProducts = [
     description: "Instant PAN card verification with name matching.",
     features: ["Real-time verification", "Name match score", "Status check"]
   },
-  {
-    title: "Aadhaar Verification",
-    icon: User,
-    description: "Secure Aadhaar-based identity verification.",
-    features: ["OTP verification", "Demographic check", "eKYC support"]
-  },
+  // {
+  //   title: "Aadhaar Verification",
+  //   icon: User,
+  //   description: "Secure Aadhaar-based identity verification.",
+  //   features: ["OTP verification", "Demographic check", "eKYC support"]
+  // },
   {
     title: "Bank Account Verification",
     icon: Building,
