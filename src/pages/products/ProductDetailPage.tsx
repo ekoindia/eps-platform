@@ -41,7 +41,7 @@ const ProductDetailPage = () => {
       </Helmet>
 
       <AiHint mdPath={`/products/${product.slug}.md`} />
-      <ProductPageLayout {...layoutProps} />
+      <ProductPageLayout {...layoutProps} productId={product.id} />
     </>
   );
 };

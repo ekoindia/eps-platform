@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +16,8 @@ import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 import { ApiChip } from "./ApiChip";
 import { normalizeApiLabel } from "@/lib/utils";
+import { getSolutionPacksForApi } from "@/lib/data/solutions";
+import { SolutionCard } from "@/components/SolutionCard";
 
 export interface ProductFeature {
   title: string;
@@ -62,6 +64,7 @@ export interface ProductPageLayoutProps {
   };
   inputOutputPreviews?: ApiPreviewItem[];
   heroImage?: string;
+  productId?: string;
 }
 
 const industryIcons: Record<string, LucideIcon> = {
@@ -102,11 +105,16 @@ export const ProductPageLayout = ({
   inputOutputPreview,
   inputOutputPreviews,
   heroImage,
+  productId,
 }: ProductPageLayoutProps) => {
   const [showSticky, setShowSticky] = useState(false);
   const [selectedApiName, setSelectedApiName] = useState<string | null>(null);
   const heroRef = useRef<HTMLElement>(null);
   const apiPreviewRef = useRef<HTMLDivElement>(null);
+  const recommendedPacks = useMemo(
+    () => (productId ? getSolutionPacksForApi(productId, 3) : []),
+    [productId]
+  );
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -596,6 +604,21 @@ export const ProductPageLayout = ({
             ))}
           </div>
         </SectionContainer>
+
+        {/* Recommended Solution Packs */}
+        {recommendedPacks.length > 0 && (
+          <SectionContainer>
+            <FadeIn className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Recommended Solution Packs</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">Pre-bundled API stacks that include this API, designed for common industry workflows.</p>
+            </FadeIn>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {recommendedPacks.map((pack, i) => (
+                <SolutionCard key={pack.slug} solution={pack} delay={i * 100} />
+              ))}
+            </div>
+          </SectionContainer>
+        )}
 
         {/* Lead Form Section - Below FAQ */}
         {heroImage && (
