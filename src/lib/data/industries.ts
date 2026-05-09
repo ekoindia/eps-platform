@@ -6,6 +6,7 @@ import {
   Fingerprint, FileText, Banknote, Receipt, BarChart3,
   CheckCircle, ShieldCheck, Layers,
 } from "lucide-react";
+import { API_PRODUCTS, API_PRODUCTS_MAP } from "@/lib/data/api-products";
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  TYPES                                                          */
@@ -1592,15 +1593,35 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   },
 ];
 
+/** Set of display names of disabled products (for filtering recommendedPacks.apis strings) */
+const DISABLED_PRODUCT_NAMES: Set<string> = new Set(
+  API_PRODUCTS.filter((p) => p.disabled).map((p) => p.name)
+);
+
+/** Strip references to disabled products from an industry's API lists */
+function stripDisabledApis(industry: IndustryData): IndustryData {
+  return {
+    ...industry,
+    apiGrid: industry.apiGrid.filter((a) => !API_PRODUCTS_MAP[a.apiId]?.disabled),
+    recommendedPacks: industry.recommendedPacks.map((pack) => ({
+      ...pack,
+      apis: pack.apis.filter((name) => !DISABLED_PRODUCT_NAMES.has(name)),
+    })),
+  };
+}
+
+/** INDUSTRIES_LIST with disabled product references stripped */
+export const ACTIVE_INDUSTRIES_LIST: IndustryData[] = INDUSTRIES_LIST.map(stripDisabledApis);
+
 export const INDUSTRIES_MAP: Record<string, IndustryData> = Object.fromEntries(
-  INDUSTRIES_LIST.map((i) => [i.slug, i])
+  ACTIVE_INDUSTRIES_LIST.map((i) => [i.slug, i])
 );
 
 /** Group industries by category for display */
 export const INDUSTRY_CATEGORIES: { label: string; key: IndustryCategory; industries: IndustryData[] }[] = [
-  { label: "Financial Services", key: "financial-services", industries: INDUSTRIES_LIST.filter((i) => i.category === "financial-services") },
-  { label: "Agent & Retail", key: "agent-retail", industries: INDUSTRIES_LIST.filter((i) => i.category === "agent-retail") },
-  { label: "Digital / Tech", key: "digital-tech", industries: INDUSTRIES_LIST.filter((i) => i.category === "digital-tech") },
-  { label: "Workforce & Fleet", key: "workforce-fleet", industries: INDUSTRIES_LIST.filter((i) => i.category === "workforce-fleet") },
-  { label: "Sector-Specific", key: "sector-specific", industries: INDUSTRIES_LIST.filter((i) => i.category === "sector-specific") },
+  { label: "Financial Services", key: "financial-services", industries: ACTIVE_INDUSTRIES_LIST.filter((i) => i.category === "financial-services") },
+  { label: "Agent & Retail", key: "agent-retail", industries: ACTIVE_INDUSTRIES_LIST.filter((i) => i.category === "agent-retail") },
+  { label: "Digital / Tech", key: "digital-tech", industries: ACTIVE_INDUSTRIES_LIST.filter((i) => i.category === "digital-tech") },
+  { label: "Workforce & Fleet", key: "workforce-fleet", industries: ACTIVE_INDUSTRIES_LIST.filter((i) => i.category === "workforce-fleet") },
+  { label: "Sector-Specific", key: "sector-specific", industries: ACTIVE_INDUSTRIES_LIST.filter((i) => i.category === "sector-specific") },
 ];

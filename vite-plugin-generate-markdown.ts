@@ -194,7 +194,7 @@ async function loadRenderBundle(
   return {
     API_PRODUCTS: productsMod.API_PRODUCTS,
     API_PRODUCT_PAGES: productPagesMod.API_PRODUCT_PAGES,
-    INDUSTRIES_LIST: industriesMod.INDUSTRIES_LIST,
+    INDUSTRIES_LIST: industriesMod.ACTIVE_INDUSTRIES_LIST,
     SOLUTIONS_LIST: solutionsMod.ACTIVE_SOLUTIONS_LIST,
     renderProductMarkdown: renderProductMod.renderProductMarkdown,
     renderIndustryMarkdown: renderIndustryMod.renderIndustryMarkdown,
