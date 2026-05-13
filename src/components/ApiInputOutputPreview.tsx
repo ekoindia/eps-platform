@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle, ArrowRight, Clock, Send, Download } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { normalizeApiLabel } from "@/lib/utils";
+import { cn, normalizeApiLabel } from "@/lib/utils";
 import { ApiProductRelevance } from "@/lib/data/api-products";
 
 export interface ApiField {
@@ -90,6 +90,12 @@ const SectionHeader = ({ title, description, className = "mb-10" }: { title: str
 
   return (
     <FadeIn className={`text-center ${className}`}>
+      <span className={cn(
+        "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
+        "bg-primary/20 text-amber-700"
+      )}>
+        Simplified API Preview
+      </span>
       <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 max-w-[650px] text-center mx-auto">
         {label}
       </h2>
