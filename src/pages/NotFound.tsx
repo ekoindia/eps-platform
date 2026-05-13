@@ -113,7 +113,7 @@ const NotFound = () => {
 						/>
 					))}
 				</div>
-				<FadeIn className="text-center mt-10">
+				<FadeIn delay={200} className="text-center mt-10">
 					<Button variant="outline" size="lg" asChild>
 						<Link to="/solutions">
 							View All Solutions

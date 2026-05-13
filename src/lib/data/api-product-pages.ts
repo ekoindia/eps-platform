@@ -477,7 +477,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   pan: {
     seo: {
-      title: "PAN Verification API | Real-Time PAN Validation",
+      title: "PAN Verification API India | Instant PAN Validation for KYC & Onboarding",
       description: "Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs.",
       keywords: "PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API",
       jsonLd: {
@@ -603,7 +603,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   aadhaar: {
     seo: {
-      title: "Aadhaar Verification API | Secure Identity Verification",
+      title: "Aadhaar Verification API India | Secure Identity Verification",
       description: "Integrate Aadhaar Verification API to verify identity securely with consent-based, compliance-ready workflows.",
       keywords: "Aadhaar Verification API, Aadhaar KYC API, Identity Verification API, UIDAI Verification API, Digital KYC API",
     },
@@ -652,7 +652,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   bank: {
     seo: {
-      title: "Bank Account Verification API - Penny Drop & IFSC",
+      title: "Bank Account Verification API India - Penny Drop & IFSC",
       description: "Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts.",
       keywords: "bank account verification API, penny drop API, IFSC validation API, bank verification, account verification, Eko API",
     },
@@ -709,7 +709,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   gst: {
     seo: {
-      title: "GST Verification API | Real-Time GSTIN Validation",
+      title: "GST Verification API India | Real-Time GSTIN Validation",
       description: "Integrate GST Verification API to validate GSTIN details instantly for vendor onboarding, compliance, and fraud prevention.",
       keywords: "GST Verification API, GSTIN Verification API, GST Check API, Business Verification API, GST Validation API",
     },
