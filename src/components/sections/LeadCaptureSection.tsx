@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, Phone } from "lucide-react";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import { FadeIn } from "@/components/FadeIn";
 
 export const LeadCaptureSection = () => {

@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import { FadeIn } from "@/components/FadeIn";
 
 interface IndustryPageLayoutProps {

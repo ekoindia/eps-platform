@@ -11,7 +11,7 @@ import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import type { ApiField, ApiPreviewItem } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 import { ApiChip } from "./ApiChip";

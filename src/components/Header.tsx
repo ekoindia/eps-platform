@@ -8,7 +8,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
 const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
 import { LanguageSelector } from "@/components/LanguageSelector";

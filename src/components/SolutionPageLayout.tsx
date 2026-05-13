@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 
