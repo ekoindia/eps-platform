@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 // Redundant: This was used to submit to Zoho Form via Javascript fetch
+// ISSUE: requires server-side proxy to avoid CORS issues, which adds complexity and maintenance overhead. Since Zoho Forms provides its own embeddable widget that handles submission and CORS internally, it's more efficient to use that instead of implementing a custom submission flow.
 const ZOHO_ENDPOINT =
   "https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/t7sfVQXMPus-0edXDrlVwvYeOUvLukZFFDUpISXlsnk/htmlRecords/submit";
 

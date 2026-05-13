@@ -212,7 +212,7 @@ could work. All fixes live in `src/lib/ssr-safe.ts`:
 	`SITE_URL` during SSR. Available for SSR-safe URL reads where needed.
 
 These are the only two SSR-unsafe patterns found in the codebase. Everything
-else (`Header`, `LanguageSelector`, `ScrollToTop`, `zoho-form.ts`, etc.) was
+else (`Header`, `LanguageSelector`, `ScrollToTop`, `zoho-custom-form.ts`, etc.) was
 already guarded inside `useEffect` or event handlers.
 
 ### Tracking params across SSR → hydration
