@@ -121,10 +121,10 @@ export const Header = () => {
   }, []);
 
   const apiColumns = [
-    { title: "BC APIs", items: bcApis },
+    { title: "Verification APIs", items: verificationApis, maxItems: 6, moreLink: { label: "More...", href: "https://developers.eko.in/v3/reference/bank-account-verification-sync" } },
     { title: "Payment APIs", items: paymentApis },
     // { title: "Collection APIs", items: collectionApis },
-    { title: "Verification APIs", items: verificationApis, maxItems: 6, moreLink: { label: "More...", href: "https://developers.eko.in/v3/reference/bank-account-verification-sync" } },
+    { title: "BC APIs", items: bcApis },
   ];
 
   return (

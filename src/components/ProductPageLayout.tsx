@@ -610,7 +610,7 @@ export const ProductPageLayout = ({
           <SectionContainer>
             <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Recommended Solution Packs</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">Pre-bundled API stacks that include this API, designed for common industry workflows.</p>
+              <p className="text-muted-foreground max-w-2xl mx-auto">Pre-bundled API stacks that include {title}, designed for common industry workflows.</p>
             </FadeIn>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {recommendedPacks.map((pack, i) => (
