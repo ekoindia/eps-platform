@@ -12,6 +12,7 @@ import {
   joinBlocks,
   markdownTable,
   renderSteps,
+  indexPageNotice,
 } from "./shared";
 
 export interface ProductPageSeoShape {
@@ -136,11 +137,13 @@ export function renderProductMarkdown(
       relatedProducts
         .map(
           (p) =>
-            `- [${p.name}](${SITE_URL}${p.href}) — ${p.shortDesc} ([markdown](${SITE_URL}${p.href}.md))`
+            `- [${p.name}](${SITE_URL}${p.href}): ${p.shortDesc} ([markdown](${SITE_URL}${p.href}.md))`
         )
         .join("\n")
     );
   }
+
+  blocks.push(`- ${indexPageNotice()}`);
 
   return joinBlocks(blocks);
 }

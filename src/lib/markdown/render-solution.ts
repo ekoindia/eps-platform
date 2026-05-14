@@ -9,7 +9,8 @@ import {
   h2,
   h3,
   joinBlocks,
-  markdownTable,
+  // markdownTable,
+  indexPageNotice,
 } from "./shared";
 
 export function renderSolutionMarkdown(
@@ -130,6 +131,8 @@ export function renderSolutionMarkdown(
         .join("\n")
     );
   }
+
+  blocks.push(`- ${indexPageNotice()}`);
 
   return joinBlocks(blocks);
 }

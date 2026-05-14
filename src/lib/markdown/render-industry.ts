@@ -10,6 +10,7 @@ import {
   h3,
   joinBlocks,
   markdownTable,
+  indexPageNotice,
 } from "./shared";
 
 const relevanceLabel: Record<"H" | "M" | "L", string> = {
@@ -115,6 +116,8 @@ export function renderIndustryMarkdown(data: IndustryData): string {
         .join("\n")
     );
   }
+
+  blocks.push(`- ${indexPageNotice()}`);
 
   return joinBlocks(blocks);
 }
