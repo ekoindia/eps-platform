@@ -1,19 +1,48 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Banknote, Fingerprint, Receipt, Wallet, MessageSquare, Phone,
-  CheckCircle, FileText, Users, Building2, Store, Truck,
-  ShieldCheck, Layers, BarChart3, Briefcase, Globe,
+  Banknote, Fingerprint, Receipt, FileText, Store, Truck,
+  ShieldCheck, BarChart3, Briefcase, Globe,
 } from "lucide-react";
-import { API_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { API_PRODUCTS_MAP, ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 
-export interface PackApiItem {
+/** Slim reference stored per solution — name, icon, href are resolved at runtime */
+export interface PackApiRef {
   /** references API_PRODUCTS_MAP key */
   apiId: string;
+  what: string;
+  why: string;
+  /** Override the default product name (e.g. "Bank Account Verification (Penny Drop)") */
+  nameOverride?: string;
+  /** Override the default product icon */
+  iconOverride?: LucideIcon;
+}
+
+/** Fully-resolved pack API item for rendering */
+export interface ResolvedPackApi {
+  apiId: string;
   name: string;
+  shortName: string;
   icon: LucideIcon;
   what: string;
   why: string;
   href: string;
+}
+
+/** Resolve a PackApiRef into a full rendering object */
+export function resolvePackApi(ref: PackApiRef): ResolvedPackApi | null {
+  const product = API_PRODUCTS_MAP[ref.apiId];
+  if (!product) return null;
+  const page = API_PRODUCT_PAGES[ref.apiId];
+  return {
+    apiId: ref.apiId,
+    name: ref.nameOverride ?? product.name,
+    shortName: product.shortName ?? product.name,
+    icon: ref.iconOverride ?? page?.icon ?? FileText,
+    what: ref.what,
+    why: ref.why,
+    href: product.href,
+  };
 }
 
 export interface HowItWorksStep {
@@ -44,10 +73,9 @@ export interface SolutionData {
   name: string;
   eyebrow: string;
   heroSubtitle: string;
-  apiChips: { name: string; apiId?: string; href?: string }[];
   trustStrip: string[];
   jobStatement: string;
-  packApis: PackApiItem[];
+  packApis: PackApiRef[];
   howItWorksSteps: HowItWorksStep[];
   industriesUsingSlugs: string[];
   // exampleCode: { language: string; fileName: string; code: string }[];
@@ -81,14 +109,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Store,
     category: "agent-banking",
     priority: 1,
-    apiChips: [
-      { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
-      { name: "DMT", apiId: "dmt", href: "/products/dmt-api" },
-      { name: "BBPS", apiId: "bbps", href: "/products/bbps-api" },
-      { name: "PPI DigiKhata", href: "#" },
-      { name: "Mobile OTP" },
-      { name: "SMS" },
-    ],
     trustStrip: [
       "Powering 200K+ agent touchpoints",
       // "1.5 Cr+ transactions/month",
@@ -100,51 +120,39 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "aeps",
-        name: "AePS Cashout",
-        icon: Fingerprint,
+        nameOverride: "AePS Cashout",
         what: "Aadhaar-authenticated biometric cash withdrawal at agent points via FingPay & FINO gateways.",
         why: "The core service that turns a retail counter into a micro-ATM. Serves the 200–300 million Indians who can't use UPI or mobile banking.",
-        href: "/products/aeps-api",
       },
       {
         apiId: "dmt",
-        name: "Domestic Money Transfer (DMT)",
-        icon: Banknote,
+        nameOverride: "Domestic Money Transfer (DMT)",
         what: "Cash-to-bank-account remittance via IMPS/NEFT under RBI's BC model.",
         why: "Lets agents accept cash from migrant workers and transfer it to family bank accounts in real time. Pairs with AePS to complete the urban-to-rural remittance loop.",
-        href: "/products/dmt-api",
       },
       {
         apiId: "bbps",
-        name: "Bill Payment (BBPS / Bharat Connect)",
-        icon: Receipt,
+        nameOverride: "Bill Payment (BBPS / Bharat Connect)",
         what: "Pay 25+ biller categories — electricity, gas, DTH, broadband, EMI, insurance — through a single integration.",
         why: "Drives footfall and frequency. Bills are paid every month, so customers come back every month.",
-        href: "/products/bbps-api",
       },
       {
         apiId: "ppi",
-        name: "PPI DigiKhata (Prepaid Wallet)",
-        icon: Wallet,
+        nameOverride: "PPI DigiKhata (Prepaid Wallet)",
         what: "Issue and manage RBI-compliant prepaid wallets for end customers.",
         why: "Lets agents onboard customers into a digital wallet, opening up gift cards, loyalty, and recurring payments.",
-        href: "#",
       },
       {
         apiId: "otp",
-        name: "Mobile OTP",
-        icon: Phone,
+        nameOverride: "Mobile OTP",
         what: "Send and verify OTPs across telecom networks.",
         why: "Required for daily agent authentication, customer verification, and transaction confirmation.",
-        href: "#",
       },
       {
         apiId: "sms",
-        name: "Send SMS",
-        icon: MessageSquare,
+        nameOverride: "Send SMS",
         what: "Transactional SMS delivery for receipts, alerts, and notifications.",
         why: "Every transaction generates a customer receipt — critical for trust and dispute resolution in cash-handling environments.",
-        href: "#",
       },
     ],
     howItWorksSteps: [
@@ -198,14 +206,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Banknote,
     category: "lending-credit",
     priority: 1,
-    apiChips: [
-      { name: "PAN Advanced", apiId: "pan", href: "/products/pan-verification-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "GST Verification", apiId: "gst", href: "/products/gst-verification-api" },
-      { name: "Fund Transfer", apiId: "upi-payout", href: "/products/upi-payout-api" },
-    ],
     trustStrip: [
       // "Used by 200+ lenders",
       "RBI compliant",
@@ -216,51 +216,36 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "pan",
-        name: "PAN Verification (Advanced)",
-        icon: FileText,
+        nameOverride: "PAN Verification (Advanced)",
         what: "Fetch full borrower identity including name, DOB, and PAN status in <2 seconds.",
         why: "The first verification in every lending journey — confirms identity and links to income data.",
-        href: "/products/pan-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification (Penny Drop)",
-        icon: Building2,
+        nameOverride: "Bank Account Verification (Penny Drop)",
         what: "Confirm the borrower's bank account is active and the name matches.",
         why: "RBI Digital Lending Directions require verified bank accounts before disbursal. Penny drop is the industry standard.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: Layers,
         what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
         why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
-        href: "/products/digilocker-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Verify address and identity using Aadhaar number + OTP.",
         why: "Adds a biometric-linked identity layer on top of PAN — the combination prevents most synthetic identity fraud.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "gst",
-        name: "GST Verification",
-        icon: BarChart3,
         what: "Validate GSTIN and pull filing patterns as a cash-flow proxy.",
         why: "For MSME borrowers with no credit score, GST filing history is the most reliable income signal.",
-        href: "/products/gst-verification-api",
       },
       {
         apiId: "upi-payout",
-        name: "Fund Transfer (UPI/IMPS/NEFT)",
-        icon: Banknote,
+        nameOverride: "Fund Transfer (UPI/IMPS/NEFT)",
         what: "Disburse loans instantly to the verified bank account.",
         why: "Closes the loop — once all verifications pass, the disbursal fires automatically in the same workflow.",
-        href: "/products/upi-payout-api",
       },
     ],
     howItWorksSteps: [
@@ -313,13 +298,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Briefcase,
     category: "onboarding",
     priority: 1,
-    apiChips: [
-      { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
-      { name: "GST Verification", apiId: "gst", href: "/products/gst-verification-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       // "Used by 500+ marketplaces",
       "ONDC seller-ready",
@@ -331,43 +309,29 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "pan",
-        name: "PAN Verification",
-        icon: FileText,
         what: "Verify the merchant proprietor's or director's PAN and fetch identity details.",
         why: "First step in any KYB flow — confirms who owns the business before verifying the business itself.",
-        href: "/products/pan-verification-api",
       },
       {
         apiId: "gst",
-        name: "GST Verification",
-        icon: BarChart3,
         what: "Validate GSTIN and fetch business name, address, and filing status.",
         why: "GST number is the fastest way to verify a business's existence, category, and compliance standing.",
-        href: "/products/gst-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Verification (Penny Drop)",
-        icon: Building2,
+        nameOverride: "Bank Verification (Penny Drop)",
         what: "Confirm the merchant's settlement bank account is active and the name matches.",
         why: "Required before activating payment settlements — prevents fraudulent account substitution.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Verify the merchant's identity with Aadhaar OTP for sole proprietors.",
         why: "Adds biometric-linked identity for unregistered merchants and sole proprietors who may not have GST.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: FileText,
         what: "Access and verify documents stored in DigiLocker, such as Aadhaar, PAN, and business registration certificates.",
         why: "Provides a secure and convenient way to verify documents without physical copies.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -413,12 +377,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: BarChart3,
     category: "lending-credit",
     priority: 1,
-    apiChips: [
-      { name: "GST Verification", apiId: "gst", href: "/products/gst-verification-api" },
-      { name: "PAN Advanced", apiId: "pan", href: "/products/pan-verification-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       "Used by new-age NBFCs",
       // "No credit bureau dependency",
@@ -429,35 +387,26 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "gst",
-        name: "GST Verification & Filing History",
-        icon: BarChart3,
+        nameOverride: "GST Verification & Filing History",
         what: "Fetch GSTIN details, filing patterns, and turnover trends across quarters.",
         why: "GST compliance patterns are the best proxy for MSME cash flow — replacing the monthly bank statement request with an automated data pull.",
-        href: "/products/gst-verification-api",
       },
       {
         apiId: "pan",
-        name: "PAN Verification (Advanced)",
-        icon: FileText,
+        nameOverride: "PAN Verification (Advanced)",
         what: "Fetch promoter identity, PAN category, and cross-link to business PAN.",
         why: "Links the business identity to the promoter — essential for sole proprietors and personal-guarantee lending.",
-        href: "/products/pan-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification",
-        icon: Building2,
         what: "Validate the MSME's primary operating account via penny drop.",
         why: "Confirms the settlement account exists and the business name matches — prevents mule account disbursals.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker (ITR Documents)",
-        icon: Layers,
+        nameOverride: "DigiLocker (ITR Documents)",
         what: "Fetch ITR-V and Form-26AS documents directly from the borrower's DigiLocker.",
         why: "Provides verified income history without relying on self-submitted PDFs — eliminates document forgery risk.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -500,13 +449,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Fingerprint,
     category: "agent-banking",
     priority: 1,
-    apiChips: [
-      { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "Fund Transfer", apiId: "upi-payout", href: "/products/upi-payout-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       // "Used by 50+ MFIs",
       // "JLG & SHG ready",
@@ -519,43 +461,30 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "aeps",
-        name: "AePS Cashout",
-        icon: Fingerprint,
+        nameOverride: "AePS Cashout",
         what: "Aadhaar-authenticated biometric repayment collection at borrower's doorstep.",
         why: "Replaces cash collection with biometric proof — eliminates misappropriation and provides an instant audit trail for every EMI.",
-        href: "/products/aeps-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Verify borrower identity with Aadhaar OTP for KYC compliance.",
         why: "RBI KYC norms require Aadhaar-based identity for MFI borrowers. OTP-based verification works even without biometric devices.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification",
-        icon: Building2,
         what: "Validate borrower's bank account before disbursal.",
         why: "Many JLG borrowers receive their first formal bank account for MFI lending — verifying it prevents disbursal failures.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "upi-payout",
-        name: "Fund Transfer (Disbursal)",
-        icon: Banknote,
+        nameOverride: "Fund Transfer (Disbursal)",
         what: "Instant loan disbursal directly to borrower's bank account.",
         why: "RBI mandates direct bank account disbursal for microfinance — cash disbursal through field officers is non-compliant.",
-        href: "/products/upi-payout-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: Layers,
         what: "Fetch Aadhaar, ration card, and other KYC documents paperlessly.",
         why: "MFI field officers can complete full KYC from a mobile without physical document collection or storage.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -601,14 +530,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: ShieldCheck,
     category: "hr-workforce",
     priority: 1,
-    apiChips: [
-      { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "Employee Verification", apiId: "employee", href: "/products/employee-verification-api" },
-      { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-      { name: "Reverse Geocoding", apiId: "geocoding", href: "/products/reverse-geocoding-api" },
-    ],
     trustStrip: [
       // "Used by 200+ HR platforms",
       "Used by 500+ companies",
@@ -620,51 +541,36 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "pan",
-        name: "PAN Verification",
-        icon: FileText,
         what: "Verify the employee's PAN for identity and tax compliance.",
         why: "Required for TDS compliance on salary and is the primary government-issued identity for employment records.",
-        href: "/products/pan-verification-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Confirm current address and biometric identity.",
         why: "Provides address verification and biometric identity in one step — critical for field employees and delivery workers.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "employee",
-        name: "Employee Verification (EPFO)",
-        icon: Briefcase,
+        nameOverride: "Employee Verification (EPFO)",
         what: "Verify employment history via EPFO PRAN records.",
         why: "Checks all past employers registered with EPFO — no need to call previous employers manually.",
-        href: "/products/employee-verification-api",
       },
       {
         apiId: "dl",
-        name: "Driving Licence Verification",
-        icon: Truck,
+        nameOverride: "Driving Licence Verification",
         what: "Verify DL authenticity and traffic violation history.",
         why: "Mandatory for driver, delivery, and field workforce roles. Catches fake or suspended licences before onboarding.",
-        href: "/products/dl-verification-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker (Educational Documents)",
-        icon: Layers,
+        nameOverride: "DigiLocker (Educational Documents)",
         what: "Fetch degree certificates and marksheets directly from DigiLocker.",
         why: "Eliminates educational document forgery — the leading form of BGV fraud in India.",
-        href: "/products/digilocker-api",
       },
       {
         apiId: "geocoding",
-        name: "Reverse Geocoding",
-        icon: Globe,
         what: "Convert GPS coordinates to verifiable address for field employee visits.",
         why: "Validates that the address provided during onboarding matches the physical location — critical for blue-collar workers.",
-        href: "/products/reverse-geocoding-api",
       },
     ],
     howItWorksSteps: [
@@ -710,13 +616,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Globe,
     category: "agent-banking",
     priority: 2,
-    apiChips: [
-      { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "Fund Transfer", apiId: "upi-payout", href: "/products/upi-payout-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       "Serves Tier 3 & beyond",
       "Works with 2G connectivity",
@@ -726,43 +625,30 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "aeps",
-        name: "AePS Cashout",
-        icon: Fingerprint,
+        nameOverride: "AePS Cashout",
         what: "Aadhaar-authenticated biometric cash withdrawal at any agent point.",
         why: "The primary financial service for rural Indians — withdraw government subsidies (DBT), wages, and loan disbursals without a bank branch.",
-        href: "/products/aeps-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Basic identity verification for new account and wallet onboarding.",
         why: "Aadhaar-based eKYC is the cheapest and fastest onboarding path for rural customers with no other documents.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification",
-        icon: Building2,
         what: "Validate Jan Dhan or any rural bank account via penny drop.",
         why: "Confirms PM-JDY account is active before routing DBT or salary transfers.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "upi-payout",
-        name: "Fund Transfer",
-        icon: Banknote,
+        nameOverride: "Fund Transfer",
         what: "Route DBT, wages, or loan disbursals directly to verified accounts.",
         why: "Closes the last mile — money is deposited into the account that the customer can then withdraw via AePS.",
-        href: "/products/upi-payout-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: Layers,
         what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
         why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -805,12 +691,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Receipt,
     category: "agent-banking",
     priority: 1,
-    apiChips: [
-      { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       "Critical DBT infrastructure",
       "Used in 500+ districts",
@@ -822,36 +702,24 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "aeps",
-        name: "AePS Cashout",
-        icon: Fingerprint,
+        nameOverride: "AePS Cashout",
         what: "Biometric cash withdrawal from any Aadhaar-linked government scheme account.",
         why: "The only way rural beneficiaries can access DBT funds without an ATM card — serves 100 million+ Jan Dhan account holders.",
-        href: "/products/aeps-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Verify beneficiary identity before cashout.",
         why: "Prevents impersonation fraud in DBT withdrawals — every transaction is tied to a biometric record.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification",
-        icon: Building2,
         what: "Confirm seeding of Aadhaar to the DBT recipient bank account.",
         why: "Validates that the correct bank account is linked to the Aadhaar before routing the cashout.",
-        href: "/products/bank-verification-api",
       },
-
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: Layers,
         what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
         why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -894,13 +762,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Banknote,
     category: "agent-banking",
     priority: 2,
-    apiChips: [
-      { name: "DMT", apiId: "dmt", href: "/products/dmt-api" },
-      { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       // "₹4,000 Cr+ remitted monthly",
       "Urban → rural in <60 seconds",
@@ -911,43 +772,30 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "dmt",
-        name: "Domestic Money Transfer (DMT)",
-        icon: Banknote,
+        nameOverride: "Domestic Money Transfer (DMT)",
         what: "Cash-to-bank account transfers via IMPS under RBI's BC model.",
         why: "The urban sending leg — migrant gives cash to agent, who sends it to the rural family bank account instantly.",
-        href: "/products/dmt-api",
       },
       {
         apiId: "aeps",
-        name: "AePS Cashout",
-        icon: Fingerprint,
+        nameOverride: "AePS Cashout",
         what: "Rural family withdraws at nearest agent using Aadhaar + fingerprint.",
         why: "Closes the remittance loop — the receiving family doesn't need a smartphone, debit card, or bank branch.",
-        href: "/products/aeps-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification",
-        icon: Building2,
         what: "Validate beneficiary bank account before registration.",
         why: "Prevents remittance to wrong accounts — one-time verification per beneficiary.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "KYC verification for sender and beneficiary registration.",
         why: "RBI BC guidelines require sender KYC for money remittance.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: Layers,
         what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
         why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -990,14 +838,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Truck,
     category: "hr-workforce",
     priority: 2,
-    apiChips: [
-      { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
-      { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
-      { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
-      { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
-      { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
-    ],
     trustStrip: [
       "Trusted by 500+ companies",
       "DPDP aligned",
@@ -1008,51 +848,34 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "aadhaar",
-        name: "Aadhaar Verification",
-        icon: ShieldCheck,
         what: "Verify identity and current address via Aadhaar OTP.",
         why: "Simplest KYC path for gig workers — most have only Aadhaar + phone as identity.",
-        href: "/products/aadhaar-verification-api",
       },
       {
         apiId: "pan",
-        name: "PAN Verification",
-        icon: FileText,
         what: "Verify PAN for TDS deduction on gig earnings.",
         why: "Mandatory for platforms deducting TDS Section 194C on payments to gig workers.",
-        href: "/products/pan-verification-api",
       },
       {
         apiId: "dl",
-        name: "Driving Licence Verification",
-        icon: Truck,
+        nameOverride: "Driving Licence Verification",
         what: "Validate DL authenticity, expiry, and vehicle category.",
         why: "Critical for delivery platforms — ensures only licensed riders are onboarded. Checks for suspension.",
-        href: "/products/dl-verification-api",
       },
       {
         apiId: "rc",
-        name: "Vehicle & RC Verification",
-        icon: Truck,
         what: "Verify vehicle registration certificate, insurance validity, and complete vehicle details.",
         why: "Platforms face liability if uninsured vehicles are on their network — RC check prevents this.",
-        href: "/products/vehicle-rc-verification-api",
       },
       {
         apiId: "bank",
-        name: "Bank Account Verification",
-        icon: Building2,
         what: "Validate the worker's payout bank account.",
         why: "Gig workers switch bank accounts frequently — verify before each earnings cycle to avoid failed payouts.",
-        href: "/products/bank-verification-api",
       },
       {
         apiId: "digilocker",
-        name: "DigiLocker",
-        icon: Layers,
         what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
         why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
-        href: "/products/digilocker-api",
       },
     ],
     howItWorksSteps: [
@@ -1096,11 +919,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: Truck,
     category: "fleet-motor",
     priority: 1,
-    apiChips: [
-      { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
-      { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
-      { name: "Reverse Geocoding", apiId: "geocoding", href: "/products/reverse-geocoding-api" },
-    ],
     trustStrip: [
       // "Used by 100+ fleet operators",
       // "MORTH database connected",
@@ -1112,27 +930,19 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "rc",
-        name: "Vehicle & RC Verification",
-        icon: Truck,
         what: "Fetch complete vehicle data — RC status, owner, insurance expiry, chassis, engine, blacklist status, and financier.",
         why: "Core compliance check — identifies uninsured, expired, stolen, or financed vehicles before adding them to a fleet.",
-        href: "/products/vehicle-rc-verification-api",
       },
       {
         apiId: "dl",
-        name: "Driving Licence Verification",
-        icon: CheckCircle,
+        nameOverride: "Driving Licence Verification",
         what: "Validate driver licence and check suspension status.",
         why: "Fleet operators are liable for accidents involving drivers with expired or suspended licences.",
-        href: "/products/dl-verification-api",
       },
       {
         apiId: "geocoding",
-        name: "Reverse Geocoding",
-        icon: Globe,
         what: "Convert GPS coordinates to address for driver location verification.",
         why: "Enables geofencing and route compliance — verify drivers are operating in permitted zones.",
-        href: "/products/reverse-geocoding-api",
       },
     ],
     howItWorksSteps: [
@@ -1175,11 +985,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     icon: ShieldCheck,
     category: "fleet-motor",
     priority: 2,
-    apiChips: [
-      { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
-      { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
-      { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
-    ],
     trustStrip: [
       // "Used by 20+ insurers",
       // "IRDAI data norms compliant",
@@ -1190,27 +995,19 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     packApis: [
       {
         apiId: "rc",
-        name: "Vehicle & RC Verification",
-        icon: Truck,
         what: "Fetch complete vehicle data from VAHAN — chassis, engine, make/model, fuel type, ownership, RC status, and previous insurance.",
         why: "Pre-fills the policy application with verified vehicle data and checks previous insurance history — required for accurate premium calculation and lapse detection.",
-        href: "/products/vehicle-rc-verification-api",
       },
       {
         apiId: "dl",
-        name: "Driving Licence Verification",
-        icon: FileText,
+        nameOverride: "Driving Licence Verification",
         what: "Verify the policyholder's driving licence validity and suspensions.",
         why: "Affects risk underwriting — suspended or invalid licences change the risk profile significantly.",
-        href: "/products/dl-verification-api",
       },
       {
         apiId: "pan",
-        name: "PAN Verification",
-        icon: Layers,
         what: "Verify policyholder identity for premium above ₹50,000.",
         why: "IRDAI mandates PAN verification for high-premium policies and for tax deductions on claims.",
-        href: "/products/pan-verification-api",
       },
     ],
     howItWorksSteps: [
@@ -1242,24 +1039,23 @@ export const SOLUTIONS_LIST: SolutionData[] = [
   },
 ];
 
-/** Strip references to disabled products from a solution's API lists */
-function stripDisabledApis(solution: SolutionData): SolutionData {
-  const isActive = (apiId?: string) => !apiId || !API_PRODUCTS_MAP[apiId]?.disabled;
+/** Strip references to products not in the active products list */
+function stripInactiveApis(solution: SolutionData): SolutionData {
+  const isActive = (apiId?: string) => !apiId || !!ACTIVE_PRODUCTS_MAP[apiId];
   return {
     ...solution,
-    apiChips: solution.apiChips.filter((c) => isActive(c.apiId)),
     packApis: solution.packApis.filter((a) => isActive(a.apiId)),
     howItWorksSteps: solution.howItWorksSteps.filter((s) => isActive(s.apiId)),
   };
 }
 
-/** Map of solution slug to SolutionData, with disabled product references stripped */
+/** Map of solution slug to SolutionData, with inactive product references stripped */
 export const SOLUTIONS_MAP: Record<string, SolutionData> = Object.fromEntries(
-  SOLUTIONS_LIST.map((s) => [s.slug, stripDisabledApis(s)])
+  SOLUTIONS_LIST.map((s) => [s.slug, stripInactiveApis(s)])
 );
 
-/** SOLUTIONS_LIST with disabled product references stripped, and solutions with no remaining APIs excluded */
-export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(stripDisabledApis).filter((s) => s.packApis.length > 0);
+/** SOLUTIONS_LIST with inactive product references stripped, and solutions with no remaining APIs excluded */
+export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(stripInactiveApis).filter((s) => s.packApis.length > 0);
 
 /**
  * Return up to `maxCount` solution packs whose `packApis` include the given API id,

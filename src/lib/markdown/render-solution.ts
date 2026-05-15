@@ -1,4 +1,5 @@
 import type { SolutionData } from "@/lib/data/solutions";
+import { resolvePackApi } from "@/lib/data/solutions";
 import { SITE_URL } from "@/lib/config/site";
 import {
   bulletList,
@@ -36,14 +37,15 @@ export function renderSolutionMarkdown(
     gettingStartedNotice(),
   ];
 
-  if (data.apiChips && data.apiChips.length > 0) {
+  const resolvedChips = data.packApis.map(resolvePackApi).filter(Boolean);
+  if (resolvedChips.length > 0) {
     blocks.push(
       h2("APIs in this pack"),
-      data.apiChips
-        .map((c) =>
-          c.href && c.href !== "#"
-            ? `- [${c.name}](${SITE_URL}${c.href}) ([markdown](${SITE_URL}${c.href}.md))`
-            : `- ${c.name}`,
+      resolvedChips
+        .map((api) =>
+          api.href && api.href !== "#"
+            ? `- [${api.name}](${SITE_URL}${api.href}) ([markdown](${SITE_URL}${api.href}.md))`
+            : `- ${api.name}`
         )
         .join("\n"),
     );
@@ -59,7 +61,9 @@ export function renderSolutionMarkdown(
 
   if (data.packApis && data.packApis.length > 0) {
     blocks.push(h2("Included APIs"));
-    for (const api of data.packApis) {
+    for (const ref of data.packApis) {
+      const api = resolvePackApi(ref);
+      if (!api) continue;
       const header =
         api.href && api.href !== "#"
           ? `[${api.name}](${SITE_URL}${api.href})`

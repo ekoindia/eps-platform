@@ -42,6 +42,7 @@ export interface ProductPageLayoutProps {
   heroTitle: string;
   heroSubtitle: string;
   overview?: string;
+  icon?: LucideIcon;
   features: ProductFeature[];
   benefits?: ProductFeature[];
   keyBenefits?: string[];

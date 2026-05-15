@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import type { SolutionData } from "@/lib/data/solutions";
+import { resolvePackApi } from "@/lib/data/solutions";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/FadeIn";
 
 interface SolutionCardProps {
-  solution: Pick<SolutionData, "slug" | "name" | "tagline" | "icon" | "apiChips">;
+  solution: Pick<SolutionData, "slug" | "name" | "tagline" | "icon" | "packApis">;
   featured?: boolean;
   className?: string;
   delay?: number;
@@ -42,18 +43,23 @@ export const SolutionCard = ({ solution, featured, className, delay }: SolutionC
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {solution.apiChips.slice(0, 4).map((chip) => (
-          <span key={chip.name} className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            {chip.name}
-          </span>
-        ))}
-        {solution.apiChips.length > 4 && (
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            +{solution.apiChips.length - 4} more
-          </span>
-        )}
-      </div>
+      {(() => {
+        const chips = solution.packApis.map(resolvePackApi).filter(Boolean);
+        return (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {chips.slice(0, 4).map((api) => (
+              <span key={api.apiId} className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {api.name}
+              </span>
+            ))}
+            {chips.length > 4 && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                +{chips.length - 4} more
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       <span className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold group-hover:gap-2 transition-all">
         Explore pack <ArrowRight className="w-3.5 h-3.5" />

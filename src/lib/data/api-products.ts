@@ -3,6 +3,7 @@ export type ApiProductRelevance = "H" | "M" | "L";
 export interface ApiProductRef {
   id: string;
   name: string;
+  shortName?: string;
   slug: string;
   href: string;
   category: "bc" | "payment" | "verification";
@@ -15,7 +16,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   // BC APIs
   {
     id: "dmt",
-    name: "DMT",
+    name: "Domestic Money Transfer (DMT)",
+    shortName: "DMT",
     slug: "dmt-api",
     href: "/products/dmt-api",
     category: "bc",
@@ -23,7 +25,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "aeps",
-    name: "AePS",
+    name: "AePS Cashout",
+    // shortName: "AePS",
     slug: "aeps-api",
     href: "/products/aeps-api",
     category: "bc",
@@ -33,7 +36,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   // Payment APIs
   {
     id: "bbps",
-    name: "BBPS",
+    name: "Bharat Bill Payment System (BBPS)",
+    shortName: "BBPS",
     slug: "bbps-api",
     href: "/products/bbps-api",
     category: "payment",
@@ -41,7 +45,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "cms",
-    name: "CMS",
+    name: "Cash Management System (CMS)",
+    shortName: "CMS",
     slug: "cms-api",
     href: "/products/cms-api",
     category: "payment",
@@ -95,7 +100,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "bank",
-    name: "Bank Verification",
+    name: "Bank Account Verification",
+    shortName: "Bank Verification",
     slug: "bank-verification-api",
     href: "/products/bank-verification-api",
     category: "verification",

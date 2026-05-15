@@ -12,7 +12,7 @@ import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { ArrowRight, CheckCircle, HelpCircle, Shield, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { SolutionData } from "@/lib/data/solutions";
-import { SOLUTIONS_MAP } from "@/lib/data/solutions";
+import { SOLUTIONS_MAP, resolvePackApi } from "@/lib/data/solutions";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { openZohoChat } from "@/lib/zoho-chat";
 import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
@@ -55,8 +55,8 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
 
                 {/* API Chip Row */}
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {data.apiChips.map((chip) => (
-                    <ApiChip key={chip.name} name={chip.name} href={chip.href} className="bg-white/10 border-white/20 text-white hover:bg-white/20" />
+                  {data.packApis.map(resolvePackApi).filter(Boolean).map((api) => (
+                    <ApiChip key={api.apiId} name={api.shortName} href={api.href} className="bg-white/10 border-white/20 text-white hover:bg-white/20" />
                   ))}
                 </div>
               </FadeIn>
@@ -104,7 +104,9 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <SectionContainer variant="muted">
             <SectionHeader badge="APIs In This Pack" title="What You Get" subtitle="Every API in this pack, what it does, and why it's included." />
             <div className="max-w-4xl mx-auto space-y-4">
-              {data.packApis.map((api, i) => {
+              {data.packApis.map((ref, i) => {
+                const api = resolvePackApi(ref);
+                if (!api) return null;
                 const Icon = api.icon;
                 return (
                   <FadeIn key={api.apiId} delay={i * 50} className="group p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
@@ -269,7 +271,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
         )}
 
         {/* Eko Shield Ad Banner */}
-        {data.apiChips.some((chip) => /verification|kyc/i.test(chip.name)) && (
+        {data.packApis.map(resolvePackApi).filter(Boolean).some((api) => /verification|kyc/i.test(api.name)) && (
           <EkoShieldAdBanner/>
         )}
 
