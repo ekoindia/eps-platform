@@ -148,7 +148,7 @@ export const ProductPageLayout = ({
     <div className="min-h-screen bg-background">
 
       {/* Sticky CTA Bar - positioned below the main header */}
-      <div
+      {/* <div
         className={`fixed top-[72px] left-0 right-0 z-40 bg-background/95 backdrop-blur border-b border-border/50 shadow-sm transition-all duration-300 ${
           showSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
         }`}
@@ -159,7 +159,7 @@ export const ProductPageLayout = ({
             <a href="#lead-form">Get API Access <ArrowRight className="w-3 h-3" /></a>
           </Button>
         </div>
-      </div>
+      </div> */}
 
       <main>
         {/* Hero Section */}
