@@ -30,7 +30,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <BreadcrumbNav crumbs={[
               { label: "Home", href: "/" },
-              { label: "Use Cases", href: "/use-cases" },
+              // { label: "Use Cases", href: "/use-cases" },
               { label: "Industries", href: "/industries" },
               { label: data.name },
             ]} />

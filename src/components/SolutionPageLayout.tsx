@@ -35,7 +35,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <BreadcrumbNav crumbs={[
               { label: "Home", href: "/" },
-              { label: "Use Cases", href: "/use-cases" },
+              // { label: "Use Cases", href: "/use-cases" },
               { label: "Solutions", href: "/solutions" },
               { label: data.name },
             ]} />
