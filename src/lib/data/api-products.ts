@@ -135,19 +135,11 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "rc",
-    name: "RC Verification",
-    slug: "rc-verification-api",
-    href: "/products/rc-verification-api",
+    name: "Vehicle & RC Verification",
+    slug: "vehicle-rc-verification-api",
+    href: "/products/vehicle-rc-verification-api",
     category: "verification",
-    shortDesc: "Vehicle registration certificate lookup",
-  },
-  {
-    id: "vehicle",
-    name: "Vehicle Verification",
-    slug: "vehicle-verification-api",
-    href: "/products/vehicle-verification-api",
-    category: "verification",
-    shortDesc: "Comprehensive vehicle & chassis details",
+    shortDesc: "Vehicle registration, ownership & insurance details",
   },
   {
     id: "employee",

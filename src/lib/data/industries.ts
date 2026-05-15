@@ -284,22 +284,21 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 		"99.9% uptime"],
     challengeText: "Insurance underwriting and claims still involve manual document collection. Motor insurance proposals require 5–10 minutes of data entry. Eko's verification APIs auto-fill vehicle details, verify identity, and cross-check driving licences — reducing proposal time to seconds.",
     recommendedPacks: [
-      { slug: "motor-insurance-pack", name: "Motor Insurance Pack", description: "Instant motor proposals with auto-filled RC + DL details.", apis: ["RC Verification", "Vehicle Verification", "DL Verification", "PAN"], featured: true },
+      { slug: "motor-insurance-pack", name: "Motor Insurance Pack", description: "Instant motor proposals with auto-filled vehicle RC + DL details.", apis: ["Vehicle & RC Verification", "DL Verification", "PAN"], featured: true },
     ],
     apiGrid: [
-      { apiId: "rc", name: "RC Verification", description: "Auto-fill vehicle details from registration number", href: "/products/rc-verification-api", relevance: "H" },
-      { apiId: "vehicle", name: "Vehicle Verification", description: "Comprehensive chassis & engine details", href: "/products/vehicle-verification-api", relevance: "H" },
+      { apiId: "rc", name: "Vehicle & RC Verification", description: "Auto-fill vehicle details, RC status & insurance from registration number", href: "/products/vehicle-rc-verification-api", relevance: "H" },
       { apiId: "dl", name: "DL Verification", description: "Verify driving licence validity", href: "/products/dl-verification-api", relevance: "H" },
       { apiId: "pan", name: "PAN Verification", description: "Policyholder identity verification", href: "/products/pan-verification-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "KYC for high-value policies", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "bank", name: "Bank Verification", description: "Claims payout account validation", href: "/products/bank-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
-      { title: "Instant motor insurance proposal", situation: "An insurer wants to reduce proposal form time from 10 minutes to 30 seconds.", integration: "RC Verification auto-fills vehicle make, model, year, fuel type. DL Verification confirms the driver.", outcome: "90% reduction in proposal time, 3x increase in conversion." },
+      { title: "Instant motor insurance proposal", situation: "An insurer wants to reduce proposal form time from 10 minutes to 30 seconds.", integration: "Vehicle & RC Verification auto-fills vehicle make, model, year, fuel type, and insurance history. DL Verification confirms the driver.", outcome: "90% reduction in proposal time, 3x increase in conversion." },
       { title: "Claims payout verification", situation: "Claims team needs to verify bank account before disbursing claim settlement.", integration: "Bank Verification (penny drop) confirms account is active and name matches the policyholder.", outcome: "Zero fraudulent claims payouts, instant settlement." },
     ],
     whyEko: [
-      { title: "Auto-fill proposals", description: "RC and vehicle APIs return make, model, year, fuel, chassis, engine — one lookup fills the entire form.", icon: Zap },
+      { title: "Auto-fill proposals", description: "Vehicle & RC Verification API returns make, model, year, fuel, chassis, engine, insurance — one lookup fills the entire form.", icon: Zap },
       { title: "IRDAI compliant", description: "All verification flows designed for insurance regulatory requirements.", icon: Shield },
       { title: "Fraud prevention", description: "Cross-check RC, DL, and PAN to catch identity mismatches before underwriting.", icon: ShieldCheck },
       { title: "Sub-second response", description: "99th percentile latency under 2 seconds for all verification APIs.", icon: Zap },
@@ -307,12 +306,12 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     integrationSteps: DEFAULT_INTEGRATION_STEPS,
     complianceItems: [
       { title: "IRDAI KYC norms", description: "PAN and Aadhaar verification for policyholder identity." },
-      { title: "Motor vehicle regulations", description: "RC and DL verification ensure valid registration and licensed drivers." },
+      { title: "Motor vehicle regulations", description: "Vehicle RC and DL verification ensure valid registration and licensed drivers." },
     ],
     faqs: [
-      { question: "Can RC Verification auto-fill the entire motor proposal?", answer: "Yes. A single RC lookup returns vehicle make, model, year, fuel type, registration date, chassis number, engine number, and owner name." },
+      { question: "Can Vehicle & RC Verification auto-fill the entire motor proposal?", answer: "Yes. A single Vehicle RC lookup returns vehicle make, model, year, fuel type, registration date, chassis number, engine number, owner name, and insurance details." },
       { question: "Does DL Verification check for violations?", answer: "DL Verification returns licence validity, issue date, expiry, and vehicle classes. Violation history requires a separate RTO integration." },
-      { question: "How fast is the verification?", answer: "All verification APIs respond in under 2 seconds. RC and vehicle verification typically complete in 500ms." },
+      { question: "How fast is the verification?", answer: "All verification APIs respond in under 2 seconds. Vehicle RC verification typically completes in 500ms." },
     ],
     relatedIndustries: [
       { slug: "automotive", name: "Automotive" },
@@ -539,7 +538,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         name: "Gig Worker Onboarding Pack",
         description:
           "Onboard delivery riders and gig workers in under 3 minutes — identity, DL, vehicle RC, and bank account in one flow.",
-        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "RC Verification", "Bank Verification"],
+        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "Vehicle & RC Verification", "Bank Verification"],
       },
     ],
     apiGrid: [
@@ -644,8 +643,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         slug: "fleet-compliance-pack",
         name: "Fleet Compliance Pack",
         description:
-          "Automate RC, insurance, permit, and DL compliance across your entire fleet — with daily batch checks and 30-day expiry alerts.",
-        apis: ["RC Verification", "Vehicle Verification", "DL Verification", "Reverse Geocoding"],
+          "Automate vehicle RC, insurance, permit, and DL compliance across your entire fleet — with daily batch checks and 30-day expiry alerts.",
+        apis: ["Vehicle & RC Verification", "DL Verification", "Reverse Geocoding"],
         featured: true,
       },
       {
@@ -653,19 +652,18 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         name: "Gig Worker Onboarding Pack",
         description:
           "Onboard delivery riders in under 3 minutes — identity, DL, vehicle RC, and bank account in one mobile flow.",
-        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "RC Verification", "Bank Verification"],
+        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "Vehicle & RC Verification", "Bank Verification"],
       },
       {
         slug: "motor-insurance-pack",
         name: "Motor Insurance Pack",
         description:
-          "Auto-fill motor insurance proposals using verified vehicle and RC data — instant quotes, no manual form filling.",
-        apis: ["Vehicle Verification", "RC Verification", "DL Verification", "PAN Verification"],
+          "Auto-fill motor insurance proposals using verified vehicle RC data — instant quotes, no manual form filling.",
+        apis: ["Vehicle & RC Verification", "DL Verification", "PAN Verification"],
       },
     ],
     apiGrid: [
-      { apiId: "rc", name: "RC Verification", description: "Fetch RC details, insurance expiry, and owner info from VAHAN", href: "/products/rc-verification-api", relevance: "H" },
-      { apiId: "vehicle", name: "Vehicle Verification", description: "Full vehicle data — chassis, engine, blacklist status, financier", href: "/products/vehicle-verification-api", relevance: "H" },
+      { apiId: "rc", name: "Vehicle & RC Verification", description: "Fetch RC details, insurance expiry, owner info, and full vehicle data from VAHAN", href: "/products/vehicle-rc-verification-api", relevance: "H" },
       { apiId: "dl", name: "DL Verification", description: "Validate driving licence, vehicle categories authorised, suspension status", href: "/products/dl-verification-api", relevance: "H" },
       { apiId: "geocoding", name: "Reverse Geocoding", description: "GPS to address — geofence routes, verify driver locations, permit-zone compliance", href: "/products/reverse-geocoding-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Driver identity and address verification during onboarding", href: "/products/aadhaar-verification-api", relevance: "M" },
@@ -678,7 +676,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         situation:
           "A logistics company with 10,000 commercial vehicles needs to ensure every RC and DL is valid before dispatching vehicles each morning.",
         integration:
-          "They run a daily batch job via Eko's RC + DL Verification APIs — all 10,000 vehicles checked overnight, non-compliant vehicles flagged before dispatch. 30-day expiry alerts configured.",
+          "They run a daily batch job via Eko's Vehicle RC + DL Verification APIs — all 10,000 vehicles checked overnight, non-compliant vehicles flagged before dispatch. 30-day expiry alerts configured.",
         outcome:
           "Zero regulatory incidents in 18 months. Insurance renewal costs reduced 12% by proactive renewal vs. lapse-and-reinstate cycle.",
       },
@@ -687,7 +685,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         situation:
           "A quick-commerce platform needs to onboard 5,000 new delivery partners before a city expansion launch.",
         integration:
-          "Each partner completes a mobile flow: Aadhaar OTP → PAN verify → DL validation → vehicle RC + insurance check → bank account penny-drop. Eko runs all steps in parallel.",
+          "Each partner completes a mobile flow: Aadhaar OTP → PAN verify → DL validation → Vehicle RC + insurance check → bank account penny-drop. Eko runs all steps in parallel.",
         outcome:
           "4,800 partners onboarded in 48 hours — 6x faster than the previous manual process. DL fraud rate dropped to zero.",
       },
@@ -696,7 +694,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         situation:
           "A motor insurer wants to offer instant commercial vehicle insurance renewal via a B2B API to fleet operators.",
         integration:
-          "Fleet operator enters registration number → Vehicle Verification auto-fills make/model/engine → RC Verification confirms owner and previous insurer → DL check → instant renewal quote generated.",
+          "Fleet operator enters registration number → Vehicle & RC Verification auto-fills make/model/engine and confirms owner and previous insurer → DL check → instant renewal quote generated.",
         outcome:
           "Policy issuance time cut from 24 hours to 8 minutes. Drop-off rate on the renewal flow fell 55%.",
       },
@@ -872,13 +870,13 @@ export const INDUSTRIES_LIST: IndustryData[] = [
         slug: "gig-worker-onboarding-pack",
         name: "Gig Worker Onboarding Pack",
         description: "Verify delivery riders — DL, vehicle RC, Aadhaar, and bank account — in under 3 minutes.",
-        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "RC Verification", "Bank Verification"],
+        apis: ["Aadhaar Verification", "PAN Verification", "DL Verification", "Vehicle & RC Verification", "Bank Verification"],
       },
       {
         slug: "fleet-compliance-pack",
         name: "Fleet Compliance Pack",
         description: "Monitor active delivery partner RC and DL validity daily — automated compliance without manual tracking.",
-        apis: ["RC Verification", "Vehicle Verification", "DL Verification", "Reverse Geocoding"],
+        apis: ["Vehicle & RC Verification", "DL Verification", "Reverse Geocoding"],
       },
     ],
     apiGrid: [
@@ -886,7 +884,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "gst", name: "GST Verification", description: "Validate seller business registration and filing status for KYB", href: "/products/gst-verification-api", relevance: "H" },
       { apiId: "bank", name: "Bank Account Verification", description: "Verify seller settlement accounts before disbursing marketplace payments", href: "/products/bank-verification-api", relevance: "H" },
       { apiId: "dl", name: "DL Verification", description: "Confirm delivery rider licence validity and suspension status", href: "/products/dl-verification-api", relevance: "H" },
-      { apiId: "rc", name: "RC Verification", description: "Verify delivery vehicles are registered and insured", href: "/products/rc-verification-api", relevance: "H" },
+      { apiId: "rc", name: "Vehicle & RC Verification", description: "Verify delivery vehicles are registered and insured", href: "/products/vehicle-rc-verification-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Identity for sellers without GST and informal delivery workers", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "upi-payout", name: "UPI Payout", description: "Instant seller payouts and delivery commission disbursals", href: "/products/upi-payout-api", relevance: "M" },
     ],
@@ -1057,25 +1055,24 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       "99.9% Uptime",
     ],
     challengeText:
-      "India's automotive sector processes millions of insurance renewals, vehicle loan disbursals, and used-car transactions every year — all requiring accurate vehicle data that customers often misremember or misrepresent. Manual RC lookups and physical document verification add hours or days to what should be instant transactions.\n\nEko's Vehicle Verification and RC APIs tap directly into VAHAN 4.0 — returning verified make, model, engine, chassis, ownership, and insurance status in under 2 seconds. This enables instant insurance quotes, fraud-proof loan origination, and automated fleet compliance at scale.",
+      "India's automotive sector processes millions of insurance renewals, vehicle loan disbursals, and used-car transactions every year — all requiring accurate vehicle data that customers often misremember or misrepresent. Manual RC lookups and physical document verification add hours or days to what should be instant transactions.\n\nEko's Vehicle & RC Verification API taps directly into VAHAN 4.0 — returning verified make, model, engine, chassis, ownership, insurance status, blacklist, and permit details in under 2 seconds. This enables instant insurance quotes, fraud-proof loan origination, and automated fleet compliance at scale.",
     recommendedPacks: [
       {
         slug: "motor-insurance-pack",
         name: "Motor Insurance Pack",
         description: "Auto-fill vehicle details, verify ownership, and check DL risk profile — instant motor insurance quotes without manual data entry.",
-        apis: ["Vehicle Verification", "RC Verification", "DL Verification", "PAN Verification"],
+        apis: ["Vehicle & RC Verification", "DL Verification", "PAN Verification"],
         featured: true,
       },
       {
         slug: "fleet-compliance-pack",
         name: "Fleet Compliance Pack",
-        description: "Maintain RC, insurance, and DL compliance across vehicle fleets with daily automated checks.",
-        apis: ["RC Verification", "Vehicle Verification", "DL Verification", "Reverse Geocoding"],
+        description: "Maintain vehicle RC, insurance, and DL compliance across vehicle fleets with daily automated checks.",
+        apis: ["Vehicle & RC Verification", "DL Verification", "Reverse Geocoding"],
       },
     ],
     apiGrid: [
-      { apiId: "vehicle", name: "Vehicle Verification", description: "Fetch make, model, fuel type, chassis, engine, and blacklist status from VAHAN", href: "/products/vehicle-verification-api", relevance: "H" },
-      { apiId: "rc", name: "RC Verification", description: "Owner details, registration status, and insurance expiry from VAHAN", href: "/products/rc-verification-api", relevance: "H" },
+      { apiId: "rc", name: "Vehicle & RC Verification", description: "Fetch make, model, fuel type, chassis, engine, owner, insurance, and blacklist status from VAHAN", href: "/products/vehicle-rc-verification-api", relevance: "H" },
       { apiId: "dl", name: "DL Verification", description: "Validate driver licence validity, vehicle categories, and suspension status", href: "/products/dl-verification-api", relevance: "H" },
       { apiId: "pan", name: "PAN Verification", description: "Policyholder and loan applicant identity verification", href: "/products/pan-verification-api", relevance: "H" },
       { apiId: "bank", name: "Bank Account Verification", description: "Validate EMI payout and claims settlement accounts", href: "/products/bank-verification-api", relevance: "M" },
@@ -1085,26 +1082,26 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       {
         title: "Instant motor insurance renewal",
         situation: "An insurer wants to let customers renew two-wheeler insurance in under 60 seconds via a mobile app.",
-        integration: "Customer enters registration number → Vehicle Verification auto-fills make/model/year → RC Verification confirms previous policy and NCB → instant premium calculated → policy issued.",
+        integration: "Customer enters registration number → Vehicle & RC Verification auto-fills make/model/year, confirms previous policy and NCB → instant premium calculated → policy issued.",
         outcome: "Renewal flow time cut from 8 minutes to 45 seconds. Renewal conversion rate doubled.",
       },
       {
         title: "Used-car loan origination without RC fraud",
         situation: "An auto-finance NBFC processes 5,000 used-car loan applications per month and sees 3% fraud from misrepresented vehicles.",
-        integration: "Vehicle Verification API confirms chassis, engine, and hypothecation status on application submission — before any field visit.",
+        integration: "Vehicle & RC Verification API confirms chassis, engine, and hypothecation status on application submission — before any field visit.",
         outcome: "Vehicle fraud rate reduced to near zero. Field visit requirement eliminated for 80% of applications.",
       },
       {
         title: "Dealership service contract verification",
         situation: "An auto dealership network verifies vehicle ownership before each service appointment to prevent unauthorised servicing.",
-        integration: "RC Verification confirms current registered owner matches the customer. DL Verification checks driver's licence for liability purposes.",
+        integration: "Vehicle & RC Verification confirms current registered owner matches the customer. DL Verification checks driver's licence for liability purposes.",
         outcome: "Unauthorised service claims eliminated. Duplicate warranty fraud reduced 90%.",
       },
     ],
     whyEko: [
       { title: "Direct VAHAN 4.0 integration", description: "99%+ coverage of India's 300+ million registered vehicles across all 36 state RTOs.", icon: CheckCircle },
       { title: "Auto-fill everything", description: "One registration lookup fills make, model, fuel, engine, chassis, owner, and insurance history.", icon: Zap },
-      { title: "Stolen & hypothecated check", description: "Vehicle Verification returns blacklist and hypothecation status — critical for used-car lending.", icon: ShieldCheck },
+      { title: "Stolen & hypothecated check", description: "Vehicle & RC Verification returns blacklist and hypothecation status — critical for used-car lending.", icon: ShieldCheck },
       // { title: "Insurance sector pricing", description: "Dedicated volume pricing tiers for high-volume insurers and auto-finance platforms.", icon: Banknote },
     ],
     integrationSteps: DEFAULT_INTEGRATION_STEPS,
@@ -1113,9 +1110,9 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { title: "Motor Vehicles Act 2019", description: "RC and DL data sourced from authoritative VAHAN/Sarathi databases — same data used by traffic enforcement." },
     ],
     faqs: [
-      { question: "What data does the Vehicle Verification API return?", answer: "Make, model, variant, fuel type, engine number, chassis number, registration date, owner name, hypothecation status, and financing institution (if financed)." },
-      { question: "Does the API check for stolen vehicles?", answer: "Yes. Vehicle Verification returns VAHAN's blacklist status — stolen vehicles registered in the system are flagged in the API response." },
-      { question: "Can I check vehicles registered in any state?", answer: "Yes. VAHAN is a national database — RC and vehicle data for any registration number, regardless of originating state, is accessible via a single API call." },
+      { question: "What data does the Vehicle & RC Verification API return?", answer: "Make, model, fuel type, engine number, chassis number, registration date, owner name, hypothecation status, financing institution, insurance details, blacklist status, and permit info — 50+ fields in a single call." },
+      { question: "Does the API check for stolen vehicles?", answer: "Yes. Vehicle & RC Verification returns VAHAN's blacklist status — stolen vehicles registered in the system are flagged in the API response." },
+      { question: "Can I check vehicles registered in any state?", answer: "Yes. VAHAN is a national database — vehicle RC data for any registration number, regardless of originating state, is accessible via a single API call." },
       { question: "How current is the insurance data?", answer: "Insurance data in VAHAN is typically updated within 24–72 hours of a policy being issued or renewed." },
     ],
     relatedIndustries: [
@@ -1126,7 +1123,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
     seo: {
       title: "Automotive APIs | Vehicle Verification, Insurance & Fleet | Eko",
       description: "RC, vehicle verification, and DL APIs for India's automotive sector. VAHAN national database. Sub-2-second response. Motor insurance, auto finance, fleet compliance.",
-      keywords: "automotive api india, vehicle verification api india, rc api for auto finance, motor insurance api, vahan api india, used car verification api",
+      keywords: "automotive api india, vehicle rc verification api india, rc api for auto finance, motor insurance api, vahan api india, used car verification api",
     },
     icon: Car,
     category: "sector-specific",

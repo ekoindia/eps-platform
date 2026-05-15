@@ -65,7 +65,7 @@ const navSolutions: NavCardItem[] = [
   { label: "MFI Field Operations Pack", description: "Digital field collection & disbursal", href: "/solutions/mfi-field-operations-pack", slug: "mfi-field-operations-pack", icon: Fingerprint },
   { label: "Employee BGV Pack", description: "Instant background checks", href: "/solutions/employee-bgv-pack", slug: "employee-bgv-pack", icon: ShieldCheck },
   { label: "MSME Credit Assessment Pack", description: "Credit scoring via GST & ITR data", href: "/solutions/msme-credit-assessment-pack", slug: "msme-credit-assessment-pack", icon: BarChart3 },
-  { label: "Fleet Compliance Pack", description: "Ongoing RC & DL compliance monitoring", href: "/solutions/fleet-compliance-pack", slug: "fleet-compliance-pack", icon: Truck },
+  { label: "Fleet Compliance Pack", description: "Ongoing vehicle, RC & DL compliance monitoring", href: "/solutions/fleet-compliance-pack", slug: "fleet-compliance-pack", icon: Truck },
   { label: "DBT Cashout Pack", description: "Government subsidy disbursement", href: "/solutions/dbt-cashout-pack", slug: "dbt-cashout-pack", icon: Receipt },
 ];
 

@@ -111,10 +111,10 @@ const verificationProducts = [
     features: ["GSTIN validation", "Filing status", "Business details"]
   },
   {
-    title: "Vehicle Verification",
+    title: "Vehicle & RC Verification",
     icon: Car,
-    description: "RC and driving license verification for mobility.",
-    features: ["RC verification", "DL validation", "Chassis number check"]
+    description: "Complete vehicle registration, ownership & insurance check.",
+    features: ["RC status & expiry", "Owner & vehicle details", "Insurance & blacklist check"]
   },
   {
     title: "DigiLocker Integration",

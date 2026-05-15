@@ -16,7 +16,7 @@ import {
   // GST / DL
   // (Building, FileText, CreditCard already imported)
   // Vehicle
-  Search,
+  Search, Palette, Leaf,
   // Employee
   Phone,
   // Reverse Geocoding
@@ -56,8 +56,6 @@ export interface ProductPageSeo {
   keywords: string;
   ogTitle?: string;
   ogDescription?: string;
-  /** Optional JSON-LD structured data object (serialised by ProductDetailPage) */
-  jsonLd?: object;
 }
 
 export interface ProductPageData extends ProductPageLayoutProps {
@@ -128,7 +126,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Instant Domestic Money Transfers",
     heroSubtitle: "Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support.",
     category: "payment",
-    docsUrl: "https://developers.eko.in/docs/money-transfer",
+    docsUrl: "https://developers.eko.in/reference/fino-dmt-flow",
     heroImage: moneyTransferImg,
     features: [
       { title: "Real-time Transfers", desc: "Instant money transfers via IMPS with real-time status updates and confirmations.", icon: Zap },
@@ -176,7 +174,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Aadhaar Enabled Payment System",
     heroSubtitle: "Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication.",
     category: "payment",
-    docsUrl: "https://developers.eko.in/docs/aeps",
+    docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
     heroImage: aepsImg,
     features: [
       { title: "Cash Withdrawal", desc: "Enable customers to withdraw cash from any bank account using Aadhaar and biometric authentication.", icon: Wallet },
@@ -226,7 +224,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Help Customers Pay Their Utility Bills!",
     heroSubtitle: "The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services.",
     category: "payment",
-    docsUrl: "https://developers.eko.in/reference/bbps-get-operators",
+    docsUrl: "https://developers.eko.in/reference/bbps-pay",
     heroImage: bbpsImg,
     types: [
       { label: "Electricity", icon: Zap },
@@ -340,7 +338,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Cash Collection API",
     heroSubtitle: "Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility.",
     category: "payment",
-    docsUrl: "https://developers.eko.in/docs/cms",
+    docsUrl: "https://developers.eko.in/v1/reference/get-cms-url",
     heroImage: cmsImg,
     features: [
       { title: "Field Agent App", desc: "White-label mobile app for field agents to collect payments and issue receipts.", icon: Users },
@@ -480,27 +478,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "PAN Verification API India | Instant PAN Validation for KYC & Onboarding",
       description: "Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs.",
       keywords: "PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API",
-      jsonLd: {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "SoftwareApplication",
-            "name": "PAN Verification API",
-            "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Web API",
-            "description": "Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs.",
-            "offers": { "@type": "Offer", "availability": "https://schema.org/InStock" },
-          },
-          {
-            "@type": "FAQPage",
-            "mainEntity": PAN_FAQS.map((f) => ({
-              "@type": "Question",
-              "name": f.q,
-              "acceptedAnswer": { "@type": "Answer", "text": f.a },
-            })),
-          },
-        ],
-      },
     },
     title: "PAN Verification API",
     desc: "Verify PAN details in real time",
@@ -661,7 +638,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Bank Account Verification",
     heroSubtitle: "Verify bank account details before payouts to prevent failed transactions and reduce operational costs. Instant verification with penny drop and account holder name matching.",
     category: "verification",
-    docsUrl: "https://developers.eko.in/reference/bank-account-verification-pennydrop",
+    docsUrl: "https://developers.eko.in/reference/bank-account-verification",
     heroImage: bankImg,
     features: [
       { title: "Penny Drop Verification", desc: "Send ₹1 to verify account exists and is active before large payouts.", icon: CreditCard },
@@ -718,7 +695,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "GST Verification API for Business Identity Validation",
     heroSubtitle: "Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding.",
     category: "verification",
-    docsUrl: "https://developers.eko.in/reference/advance-gst",
+    docsUrl: "https://developers.eko.in/reference/verify-gstin",
     heroImage: gstImg,
     overview: "The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical.",
     keyBenefits: [
@@ -783,7 +760,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "UPI ID Verification API – Verify UPI ID with Ease",
     heroSubtitle: "Validate UPI IDs in real time and retrieve a UPI ID using a phone number to reduce failures and improve payment accuracy.",
     category: "verification",
-    docsUrl: "https://eko.in/developers/eps/upi-id-verification-api/",
+    docsUrl: "",
     heroImage: upiVerifyImg,
     overview: "Eko's UPI ID Verification API is designed for payment systems that need real-time UPI ID validation. It supports verifying a UPI ID and retrieving a UPI ID using a phone number—helping you confirm payee identifiers before initiating transactions.",
     keyBenefits: [
@@ -889,135 +866,78 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // RC Verification
+  // Vehicle & RC Verification
   // -------------------------------------------------------------------------
   rc: {
     seo: {
-      title: "RC Verification API | Vehicle Registration Validation",
-      description: "Integrate RC Verification API to validate vehicle registration details instantly for compliance, onboarding, and fraud prevention.",
-      keywords: "RC Verification API, Vehicle RC Verification API, Vehicle Registration Check API, RC Validation API, Vehicle Verification API",
+      title: "Vehicle & RC Verification API | Registration, Ownership & Insurance Check",
+      description: "Verify vehicle registration certificate (RC) details instantly — owner, chassis, engine, insurance, blacklist status, permits, and more. Pan-India coverage via VAHAN.",
+      keywords: "Vehicle & RC Verification API, RC Verification API, Vehicle Registration Check API, Vehicle Verification API, RC Validation API, VAHAN API",
     },
-    title: "RC Verification API",
-    desc: "Vehicle registration validation",
-    heroTitle: "RC Verification API for Vehicle Identity Validation",
-    heroSubtitle: "Verify vehicle registration details in real time to ensure compliance and reduce fraud.",
+    title: "Vehicle & RC Verification API",
+    desc: "Complete vehicle registration, ownership & insurance verification",
+    heroTitle: "Vehicle & RC Verification API",
+    heroSubtitle: "Get complete vehicle information from a registration number — owner details, chassis, engine, insurance status, blacklist check, permits, and more. Pan-India coverage via VAHAN database.",
     category: "verification",
-    docsUrl: "https://eko.in/developers/eps/rc-verification-api/",
-    overview: "The RC Verification API enables businesses to validate vehicle registration certificate (RC) details instantly. It is designed for platforms that onboard drivers, vehicles, or assets where vehicle authenticity and ownership verification are critical.",
+    docsUrl: "https://developers.eko.in/reference/vehicle-rc",
+    overview: "The Vehicle & RC Verification API enables businesses to fetch comprehensive vehicle information using a registration number. It returns RC status, owner details, chassis and engine numbers, manufacturer and model, insurance validity, permit details, blacklist and challan status, and more — all in a single API call. Designed for platforms that onboard drivers or vehicles, verify fleet compliance, underwrite motor insurance, or assess vehicle-related risk.",
     keyBenefits: [
-      "Instant RC verification",
+      "Complete vehicle details in a single API call",
       "Confirms vehicle ownership and registration status",
-      "Reduces vehicle-related fraud",
-      "Improves onboarding accuracy",
-      "Automation-ready for digital workflows",
+      "Returns insurance validity, company, and policy number",
+      "Blacklist and challan status check",
+      "Permit and fitness certificate details for commercial vehicles",
+      "Pan-India coverage via VAHAN database",
     ],
     features: [
-      { title: "Real-Time RC Validation", desc: "Verify vehicle registration details instantly with structured response data." },
-      { title: "Vehicle Identity Confirmation", desc: "Validate ownership and registration information before onboarding or activation." },
-      { title: "Automation Friendly", desc: "Seamlessly integrates into digital onboarding and verification pipelines." },
-      { title: "High-Volume Ready", desc: "Designed to support large-scale verification needs reliably." },
+      { title: "RC & Vehicle Details", desc: "Get registration status, make/model, chassis, engine, color, body type, fuel type, and manufacturing year." },
+      { title: "Owner & Address", desc: "Retrieve owner name, father's name, present and permanent address with structured components." },
+      { title: "Insurance Status", desc: "Check insurance company, policy number, and validity — critical for fleet compliance and motor insurance." },
+      { title: "Blacklist & Challan Check", desc: "Identify blacklisted vehicles and pending traffic challans for risk assessment." },
+      { title: "Permit & Fitness Details", desc: "Verify commercial vehicle permits, fitness certificates, and tax validity." },
+      { title: "Financier Information", desc: "Know if the vehicle is under finance and the lending institution — essential for used car and loan platforms." },
     ],
-    whoShouldUse: ["Mobility and ride-hailing platforms", "Logistics and delivery companies", "Fleet operators", "Enterprises verifying vehicle assets"],
-    useCases: ["Driver and vehicle onboarding", "Logistics and mobility platforms", "Asset and fleet verification", "Compliance and due diligence checks"],
+    whoShouldUse: ["Mobility and ride-hailing platforms", "Logistics and delivery companies", "Fleet operators", "Motor insurance companies", "Vehicle finance and lending platforms", "Used car marketplaces"],
+    useCases: ["Driver and vehicle onboarding", "Fleet compliance monitoring", "Motor insurance underwriting", "Vehicle finance and loan verification", "Used car marketplace verification", "Logistics and delivery platforms", "Parking and toll management"],
     trustAndCompliance: ["Secure API authentication", "Encrypted verification communication", "Compliance-aligned data handling", "Audit-ready verification logs"],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying vehicle registrations in production." },
     ],
     leadForm: {
-      title: "Get RC Verification API Access",
+      title: "Get Vehicle & RC Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "Vehicle registration number, owner name, make/model, registration status, and more." },
-      { q: "Is pan-India coverage available?", a: "Yes, we cover all states and union territories through official database integration." },
-      { q: "Can I verify commercial vehicles?", a: "Yes, commercial vehicles return additional details like permit type and fitness status." },
+      { q: "What details are returned?", a: "Owner name, RC status, chassis and engine number, manufacturer, model, color, body type, fuel type, registration and expiry dates, insurance company and validity, blacklist status, challan details, permit info, financier, and more — 50+ fields in a single call." },
+      { q: "Is pan-India coverage available?", a: "Yes, we cover all states and union territories through integration with the VAHAN national database." },
+      { q: "Can I verify commercial vehicles?", a: "Yes, commercial vehicles return additional details like permit type, permit validity, fitness certificate status, national permit, and tax status." },
+      { q: "How accurate is the verification?", a: "All verifications are done against official RTO databases (VAHAN), ensuring 100% accuracy of returned data. Updates to vehicle information reflect in the source within 15–30 days." },
+      { q: "Is real-time verification available?", a: "Yes, all verifications are performed in real-time with sub-second response times for most queries." },
+      { q: "Can I check if a vehicle is blacklisted?", a: "Yes, the API returns blacklist status along with detailed reasons if the vehicle has been blacklisted." },
       { q: "How do I get started?", a: "Sign up on Connect App, submit documents, integrate the REST API, and go live." },
     ],
     inputOutputPreview: {
-      apiName: "RC Verification",
+      apiName: "Vehicle & RC Verification",
       inputs: [
-        { label: "Vehicle Number", value: "MH01AB1234", icon: Car },
+        { label: "Vehicle Number", value: "HR26DA8398", icon: Car },
       ],
       outputs: [
-        { label: "Owner Name", value: "Rajesh Kumar" },
-        { label: "Vehicle Category", value: "LMV" },
-        { label: "Address", value: "Mumbai, Maharashtra" },
-        { label: "RC Status", value: "Active" },
-        { label: "Vehicle Color", value: "White" },
-        { label: "RC Expiry Date", value: "15/06/2035" },
-        { label: "Body Type", value: "Sedan" },
-        { label: "Manufacturer", value: "Maruti Suzuki" },
-        { label: "Model", value: "Swift Dzire" },
-        { label: "Chassis Number", value: "MA3FJEB1S00****" },
-        { label: "Engine Number", value: "K12MN****" },
-        { label: "Manufacturing Year", value: "2020" },
-        { label: "Insurance Company", value: "ICICI Lombard" },
-        { label: "Insurance Valid Upto", value: "20/12/2025" },
-        { label: "Registration Date", value: "15/06/2020" },
-      ],
-    },
-  },
-
-  // -------------------------------------------------------------------------
-  // Vehicle Verification
-  // -------------------------------------------------------------------------
-  vehicle: {
-    seo: {
-      title: "Vehicle Verification API - RC & DL Verification",
-      description: "Verify vehicle RC and driving license with Eko's Vehicle Verification API. Registration certificate validation, DL verification, chassis number check for mobility services.",
-      keywords: "vehicle verification API, RC verification API, driving license API, DL verification, registration certificate API, Eko API",
-      ogTitle: "Vehicle Verification API - RC & DL Verification",
-      ogDescription: "Verify vehicle RC and driving license for mobility and logistics services.",
-    },
-    title: "Vehicle Verification API",
-    desc: "Verify vehicle RC and driving license for mobility services",
-    heroTitle: "Vehicle & Driver Verification",
-    heroSubtitle: "Verify vehicle registration certificates and driving licenses instantly. Essential for ride-hailing, logistics, insurance, and fleet management operations.",
-    category: "verification",
-    docsUrl: "https://developers.eko.in/docs/vehicle-verification",
-    features: [
-      { title: "RC Verification", desc: "Verify vehicle registration certificate with owner details and vehicle information.", icon: Car },
-      { title: "DL Verification", desc: "Validate driving license with class, validity, and holder details.", icon: FileText },
-      { title: "Chassis Verification", desc: "Verify chassis number to validate vehicle authenticity.", icon: Search },
-      { title: "Owner Details", desc: "Get registered owner name and address for vehicle.", icon: Users },
-      { title: "Validity Check", desc: "Check if RC/DL is valid, expired, or suspended.", icon: CheckCircle },
-      { title: "Insurance Status", desc: "Verify if vehicle has active insurance coverage.", icon: Shield },
-    ],
-    benefits: [
-      { title: "Driver Onboarding", desc: "Verify driver documents before onboarding for ride-hailing and delivery platforms.", icon: Users },
-      { title: "Fleet Compliance", desc: "Ensure all fleet vehicles have valid RC, insurance, and fitness certificates.", icon: CheckCircle },
-      { title: "Insurance Verification", desc: "Verify vehicle details for motor insurance underwriting and claims.", icon: Shield },
-      { title: "Fraud Prevention", desc: "Detect fake or invalid documents during verification process.", icon: Shield },
-      { title: "Instant Results", desc: "Real-time verification from RTO databases across India.", icon: Zap },
-      { title: "Loan Verification", desc: "Verify vehicle details for vehicle finance and loan applications.", icon: CreditCard },
-    ],
-    integrationSteps: [
-      ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Deploy with production credentials." },
-    ],
-    useCases: ["Ride-Hailing Platforms", "Delivery Services", "Fleet Management", "Vehicle Insurance", "Vehicle Finance", "Used Car Marketplaces", "Parking Solutions", "Toll Management"],
-    faqs: [
-      { q: "What RC details can be verified?", a: "You can verify registration number, owner name, vehicle class, fuel type, registration date, chassis number, engine number, insurance validity, and fitness certificate status." },
-      { q: "Which states are supported?", a: "We support RC and DL verification across all states in India through integration with VAHAN and SARATHI databases." },
-      { q: "Can I verify commercial vehicle permits?", a: "Yes, for commercial vehicles, you can also verify permits, fitness certificates, and tax status along with RC details." },
-      { q: "How accurate is the verification?", a: "All verifications are done against official RTO databases (VAHAN/SARATHI), ensuring 100% accuracy of returned data." },
-      { q: "Is real-time verification available?", a: "Yes, all verifications are performed in real-time with sub-second response times for most queries." },
-    ],
-    inputOutputPreview: {
-      apiName: "Vehicle Verification",
-      inputs: [
-        { label: "Vehicle Number", value: "MH01AB1234", icon: Car },
-      ],
-      outputs: [
-        { label: "Owner Name", value: "Rajesh Kumar" },
-        { label: "Vehicle Category", value: "LMV" },
-        { label: "RC Status", value: "Active" },
-        { label: "Vehicle Color", value: "White" },
-        { label: "Manufacturer", value: "Maruti Suzuki" },
-        { label: "Model", value: "Swift Dzire" },
-        { label: "Manufacturing Year", value: "2020" },
-        { label: "Registration Date", value: "15/06/2020" },
-        { label: "Insurance Valid Upto", value: "20/12/2025" },
+        { label: "Owner Name", value: "Arya ****", icon: User },
+        { label: "RC Status", value: "Active", icon: CheckCircle },
+        { label: "Blacklist Status", value: "Not Blacklisted", icon: Shield },
+        { label: "Vehicle Class", value: "Motor Car", icon: Car },
+        { label: "Fuel Type", value: "Petrol", icon: Flame },
+        { label: "Manufacturer", value: "Mahindra & Mahindra", icon: Building },
+        { label: "Body Type", value: "Hard Top", icon: Car },
+        { label: "Vehicle Color", value: "Dark Grey", icon: Palette },
+        { label: "Chassis Number", value: "MA1**************", icon: Hash },
+        { label: "Engine Number", value: "N**********", icon: Hash },
+        { label: "Registration Date", value: "2020", icon: Calendar },
+        { label: "RC Expiry Date", value: "2039", icon: Calendar },
+        { label: "Insurance Company", value: "Tata AIG General Insurance", icon: Shield },
+        { label: "Insurance Valid Upto", value: "2025", icon: Calendar },
+        { label: "Emission Norms", value: "Bharat Stage VI", icon: Leaf },
+        { label: "Financier", value: "****** Bank Ltd", icon: Building },
       ],
     },
   },

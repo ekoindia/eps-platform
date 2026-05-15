@@ -1219,7 +1219,7 @@ const withdrawal = await eko.aeps.cashout({
       { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
       { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
-      { name: "RC Verification", apiId: "rc", href: "/products/rc-verification-api" },
+      { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
       { name: "DigiLocker", apiId: "digilocker", href: "/products/digilocker-api" },
     ],
     trustStrip: [
@@ -1256,11 +1256,11 @@ const withdrawal = await eko.aeps.cashout({
       },
       {
         apiId: "rc",
-        name: "RC Verification",
+        name: "Vehicle & RC Verification",
         icon: Truck,
-        what: "Verify vehicle registration certificate and insurance validity.",
+        what: "Verify vehicle registration certificate, insurance validity, and complete vehicle details.",
         why: "Platforms face liability if uninsured vehicles are on their network — RC check prevents this.",
-        href: "/products/rc-verification-api",
+        href: "/products/vehicle-rc-verification-api",
       },
       {
         apiId: "bank",
@@ -1338,8 +1338,7 @@ console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle })
     icon: Truck,
     category: "fleet-motor",
     apiChips: [
-      { name: "RC Verification", apiId: "rc", href: "/products/rc-verification-api" },
-      { name: "Vehicle Verification", apiId: "vehicle", href: "/products/vehicle-verification-api" },
+      { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
       { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
       { name: "Reverse Geocoding", apiId: "geocoding", href: "/products/reverse-geocoding-api" },
     ],
@@ -1354,19 +1353,11 @@ console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle })
     packApis: [
       {
         apiId: "rc",
-        name: "RC Verification",
+        name: "Vehicle & RC Verification",
         icon: Truck,
-        what: "Fetch RC details including owner, registration date, and insurance expiry.",
-        why: "Core compliance check — an uninsured or expired-registration vehicle exposes operators to liability.",
-        href: "/products/rc-verification-api",
-      },
-      {
-        apiId: "vehicle",
-        name: "Vehicle Verification",
-        icon: Truck,
-        what: "Fetch comprehensive vehicle data — chassis, engine, blacklist status, financier.",
-        why: "Identifies stolen or financed vehicles before adding them to a fleet — critical for leasing and logistics.",
-        href: "/products/vehicle-verification-api",
+        what: "Fetch complete vehicle data — RC status, owner, insurance expiry, chassis, engine, blacklist status, and financier.",
+        why: "Core compliance check — identifies uninsured, expired, stolen, or financed vehicles before adding them to a fleet.",
+        href: "/products/vehicle-rc-verification-api",
       },
       {
         apiId: "dl",
@@ -1429,7 +1420,7 @@ await sendAlerts(nonCompliant);`,
     ],
     pricingBlurb: "Pay-per-look-up. No setup fee. Sandbox free. Bulk pricing for fleets of 1,000+ vehicles.",
     faqs: [
-      { question: "Can I check vehicles across multiple states?", answer: "Yes. Eko's RC and Vehicle Verification APIs cover all state RTOs via the VAHAN national database, with 99% coverage of registered vehicles." },
+      { question: "Can I check vehicles across multiple states?", answer: "Yes. Eko's Vehicle & RC Verification API covers all state RTOs via the VAHAN national database, with 99% coverage of registered vehicles." },
       { question: "How often can I run compliance checks?", answer: "Daily batch runs are most common. Some premium fleet operators run real-time checks at every trip start. Pricing is per-API call." },
     ],
     relatedSolutions: [
@@ -1437,9 +1428,9 @@ await sendAlerts(nonCompliant);`,
       { slug: "employee-bgv-pack", name: "Employee BGV Pack", tagline: "Full background verification for drivers" },
     ],
     seo: {
-      title: "Fleet Compliance Pack — RC, DL & Vehicle API | Eko",
-      description: "Automate fleet regulatory compliance — RC, insurance, DL verification daily. Automated expiry alerts. Covers all state RTOs via VAHAN database.",
-      keywords: "fleet compliance api india, rc verification api, vehicle insurance check api, dl verification fleet, fleet management api",
+      title: "Fleet Compliance Pack — Vehicle RC & DL Verification API | Eko",
+      description: "Automate fleet regulatory compliance — vehicle RC, insurance, DL verification daily. Automated expiry alerts. Covers all state RTOs via VAHAN database.",
+      keywords: "fleet compliance api india, vehicle rc verification api, vehicle insurance check api, dl verification fleet, fleet management api",
     },
   },
 
@@ -1448,14 +1439,13 @@ await sendAlerts(nonCompliant);`,
     slug: "motor-insurance-pack",
     name: "Motor Insurance Pack",
     eyebrow: "SOLUTION PACK",
-    heroSubtitle: "Pre-built verification bundle for motor insurance workflows — vehicle details, RC, ownership, and driver verification in minutes.",
-    tagline: "Vehicle + owner verification for motor insurance",
-    navDescription: "RC + vehicle details + driver KYC for motor insurers",
+    heroSubtitle: "Pre-built verification bundle for motor insurance workflows — vehicle RC details, ownership, insurance history, and driver verification in minutes.",
+    tagline: "Vehicle RC + owner verification for motor insurance",
+    navDescription: "Vehicle RC + driver KYC for motor insurers",
     icon: ShieldCheck,
     category: "fleet-motor",
     apiChips: [
-      { name: "Vehicle Verification", apiId: "vehicle", href: "/products/vehicle-verification-api" },
-      { name: "RC Verification", apiId: "rc", href: "/products/rc-verification-api" },
+      { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
       { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
       { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
     ],
@@ -1468,20 +1458,12 @@ await sendAlerts(nonCompliant);`,
     jobStatement: "Verify vehicle details, ownership, and driver eligibility in under 30 seconds — enabling instant motor insurance quotes and policy issuance without manual form filling.",
     packApis: [
       {
-        apiId: "vehicle",
-        name: "Vehicle Verification",
-        icon: Truck,
-        what: "Fetch chassis, engine, make/model, fuel type, and ownership from VAHAN.",
-        why: "Pre-fills the policy application with verified vehicle data — eliminates typographic errors and fraud.",
-        href: "/products/vehicle-verification-api",
-      },
-      {
         apiId: "rc",
-        name: "RC Verification",
-        icon: CheckCircle,
-        what: "Get current RC status, owner details, and last insurance details.",
-        why: "Checks previous insurance history — required for accurate premium calculation and lapse detection.",
-        href: "/products/rc-verification-api",
+        name: "Vehicle & RC Verification",
+        icon: Truck,
+        what: "Fetch complete vehicle data from VAHAN — chassis, engine, make/model, fuel type, ownership, RC status, and previous insurance.",
+        why: "Pre-fills the policy application with verified vehicle data and checks previous insurance history — required for accurate premium calculation and lapse detection.",
+        href: "/products/vehicle-rc-verification-api",
       },
       {
         apiId: "dl",
@@ -1502,10 +1484,9 @@ await sendAlerts(nonCompliant);`,
     ],
     howItWorksSteps: [
       { step: 1, label: "Customer enters vehicle registration number" },
-      { step: 2, label: "Vehicle Verification — make, model, engine pre-filled" },
-      { step: 3, label: "RC Verification — ownership & previous insurance confirmed" },
-      { step: 4, label: "DL Verification — driver risk profile assessed" },
-      { step: 5, label: "Instant quote generated — policy issued in minutes" },
+      { step: 2, label: "Vehicle & RC Verification — make, model, engine, ownership & insurance pre-filled" },
+      { step: 3, label: "DL Verification — driver risk profile assessed" },
+      { step: 4, label: "Instant quote generated — policy issued in minutes" },
     ],
     industriesUsingSlugs: ["insurance", "automotive", "logistics-fleet"],
     exampleCode: [
@@ -1515,40 +1496,37 @@ await sendAlerts(nonCompliant);`,
         code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
 
 // Fetch vehicle details for policy pre-fill
-const [vehicle, rc] = await Promise.all([
-  eko.verify.vehicle({ regNumber: "DL01AB1234" }),
-  eko.verify.rc({ rcNumber: "DL01AB1234" })
-]);
+const rc = await eko.verify.rc({ rcNumber: "DL01AB1234" });
 
-// Generate instant quote
+// Generate instant quote — single API returns all vehicle + RC data
 const quote = calculatePremium({
-  make: vehicle.make,
-  model: vehicle.model,
-  year: vehicle.year,
-  fuelType: vehicle.fuelType,
-  previousInsurer: rc.lastInsurer,
-  noClaimBonus: rc.nclaimBonus
+  make: rc.vehicleManufacturerName,
+  model: rc.model,
+  year: rc.vehicleManufacturingMonthYear,
+  fuelType: rc.type,
+  previousInsurer: rc.vehicleInsuranceCompanyName,
+  rcStatus: rc.rcStatus
 });`,
       },
     ],
     comparisonRows: [
       { aspect: "Vehicle data collection", diy: "Manual form fill by customer", eko: "Auto-fetched from VAHAN" },
-      { aspect: "Previous insurance check", diy: "Self-declaration (fraud risk)", eko: "Verified from RC record" },
+      { aspect: "Previous insurance check", diy: "Self-declaration (fraud risk)", eko: "Verified from Vehicle RC record" },
       { aspect: "Policy issuance time", diy: "24 hours", eko: "Under 10 minutes" },
     ],
     pricingBlurb: "Pay-per-verification. No setup fee. Sandbox free. Insurance-sector volume pricing available.",
     faqs: [
       { question: "Does Eko provide claims verification too?", answer: "Currently the Motor Insurance Pack covers the underwriting/onboarding workflow. Claims verification APIs are on the roadmap. Contact sales for early access." },
-      { question: "What data does the Vehicle Verification API return?", answer: "Make, model, variant, fuel type, engine number, chassis number, registration date, owner name, registration state, and financing status." },
+      { question: "What data does the Vehicle & RC Verification API return?", answer: "Make, model, fuel type, engine number, chassis number, registration date, owner name, registration state, insurance details, blacklist status, permit info, and financing status — 50+ fields in a single call." },
     ],
     relatedSolutions: [
       { slug: "fleet-compliance-pack", name: "Fleet Compliance Pack", tagline: "Ongoing fleet RC & DL compliance monitoring" },
       { slug: "gig-worker-onboarding-pack", name: "Gig Worker Onboarding Pack", tagline: "Vehicle & driver onboarding for gig platforms" },
     ],
     seo: {
-      title: "Motor Insurance Pack — Vehicle Verification API | Eko",
-      description: "Instant motor insurance with auto-filled vehicle details. RC, vehicle, DL, PAN verification in 30 seconds. Used by 500+ companies across India.",
-      keywords: "motor insurance verification api, vehicle verification api india, rc api for insurance, irdai api india",
+      title: "Motor Insurance Pack — Vehicle & RC Verification API | Eko",
+      description: "Instant motor insurance with auto-filled vehicle details. Vehicle RC, DL, PAN verification in 30 seconds. Used by 500+ companies across India.",
+      keywords: "motor insurance verification api, vehicle rc verification api india, rc api for insurance, irdai api india",
     },
   },
 ];
