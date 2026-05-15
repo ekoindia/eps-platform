@@ -5,6 +5,7 @@ import { API_PRODUCTS } from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import { AiHint } from "@/components/AiHint";
 import { SITE_URL } from "@/lib/config/site";
+import { generateProductJsonLd } from "@/lib/utils/json-ld";
 import NotFound from "@/pages/NotFound";
 
 const ProductDetailPage = () => {
@@ -18,6 +19,7 @@ const ProductDetailPage = () => {
   }
 
   const { seo, ...layoutProps } = pageData;
+  const jsonLdSchemas = generateProductJsonLd(pageData, product.slug);
 
   return (
     <>
@@ -35,9 +37,9 @@ const ProductDetailPage = () => {
           title="Markdown version"
           href={`/products/${product.slug}.md`}
         />
-        {seo.jsonLd && (
-          <script type="application/ld+json">{JSON.stringify(seo.jsonLd)}</script>
-        )}
+        {jsonLdSchemas.map((schema, i) => (
+          <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
+        ))}
       </Helmet>
 
       <AiHint mdPath={`/products/${product.slug}.md`} />
