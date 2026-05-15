@@ -66,6 +66,10 @@ export type IndustryCategory =
 export interface IndustryData {
   slug: string;
   name: string;
+  /** Short tagline for header nav & compact cards */
+  tagline: string;
+  /** 1 = featured in header nav, 2 = available, 3 = hidden/draft */
+  priority: 1 | 2 | 3;
   eyebrow: string;
   h1: string;
   heroSubtitle: string;
@@ -107,6 +111,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "lending-nbfc",
     name: "Lending & NBFC",
+    tagline: "KYC, disbursal & EMI collection",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Lending & NBFC APIs for India's digital lenders",
     heroSubtitle:
@@ -211,6 +217,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "microfinance",
     name: "Microfinance",
+    tagline: "Field collection & disbursal for MFIs",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Microfinance APIs for India's MFIs",
     heroSubtitle: "Digitize field operations — from group loan disbursals to biometric collections — with a single API stack built for India's microfinance sector.",
@@ -273,6 +281,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "insurance",
     name: "Insurance",
+    tagline: "Auto-fill proposals & verify policyholders",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Insurance APIs for India's insurers & InsurTech",
     heroSubtitle: "Verify policyholders, auto-fill motor proposals, and accelerate claims with instant verification APIs — IRDAI compliant.",
@@ -333,6 +343,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "agent-networks-csp",
     name: "Agent Networks (CSP/BC)",
+    tagline: "Scale agent operations at BCNM level",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Agent Banking APIs for CSP & BC networks",
     heroSubtitle: "Scale your agent network with AePS, DMT, and BBPS — all under Eko's BCNM license. No separate licensing required for individual agents.",
@@ -396,6 +408,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "kirana-retail",
     name: "Kirana & Retail",
+    tagline: "Turn shops into banking touchpoints",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Banking APIs for India's kirana stores",
     heroSubtitle: "Turn any neighbourhood shop into a banking touchpoint with cash withdrawal, money transfer, and bill payments — all from a single app.",
@@ -453,6 +467,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "marketplaces",
     name: "Marketplaces",
+    tagline: "Seller KYB & onboarding",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Marketplace & seller verification APIs",
     heroSubtitle: "Onboard merchants and sellers in minutes with automated KYB — PAN, GST, bank verification, and ONDC-ready compliance in one stack.",
@@ -510,6 +526,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "staffing-hr",
     name: "Staffing & HR",
+    tagline: "Background verification for hires",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Staffing & HR APIs for background verification & workforce onboarding",
     heroSubtitle:
@@ -626,6 +644,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "logistics-fleet",
     name: "Logistics & Fleet",
+    tagline: "Driver & vehicle compliance",
+    priority: 1,
     eyebrow: "INDUSTRY",
     h1: "Logistics & Fleet APIs for vehicle compliance & driver verification",
     heroSubtitle:
@@ -746,6 +766,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "saas-platforms",
     name: "SaaS Platforms",
+    tagline: "Embed verification & payments in your SaaS",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "SaaS Platform APIs for embedded verification & payments",
     heroSubtitle:
@@ -847,6 +869,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "e-commerce",
     name: "E-commerce",
+    tagline: "Seller KYB & delivery partner verification",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "E-commerce APIs for seller onboarding & delivery operations",
     heroSubtitle:
@@ -945,6 +969,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "agriculture",
     name: "Agriculture",
+    tagline: "Financial services for farmers & FPOs",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Agriculture APIs for rural financial services & farmer payments",
     heroSubtitle:
@@ -1045,6 +1071,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "automotive",
     name: "Automotive",
+    tagline: "Vehicle financing & insurance verification",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Automotive APIs for vehicle verification, financing & insurance",
     heroSubtitle:
@@ -1135,6 +1163,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "travel",
     name: "Travel",
+    tagline: "Agent KYB & payment verification",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Travel Industry APIs for agent onboarding & payment verification",
     heroSubtitle:
@@ -1219,6 +1249,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "education",
     name: "Education",
+    tagline: "Student loan KYC & fee collection",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Education APIs for student loans, fee collection & institution KYB",
     heroSubtitle:
@@ -1311,6 +1343,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "healthcare",
     name: "Healthcare",
+    tagline: "Staff BGV & patient verification",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Healthcare APIs for staff verification, patient KYC & payments",
     heroSubtitle:
@@ -1403,6 +1437,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "real-estate",
     name: "Real Estate",
+    tagline: "Home loan KYC & broker verification",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Real Estate APIs for home loan KYC, tenant verification & broker onboarding",
     heroSubtitle:
@@ -1495,6 +1531,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
   {
     slug: "accounting-tax",
     name: "Accounting & Tax",
+    tagline: "GST data & MSME credit assessment for CAs",
+    priority: 2,
     eyebrow: "INDUSTRY",
     h1: "Accounting & Tax APIs for GST, ITR & MSME credit assessment",
     heroSubtitle:

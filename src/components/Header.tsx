@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Phone, Shield, ArrowRight, Sparkles,
-  Landmark, Users, Store, Globe, Briefcase, Truck,
-  Banknote, Fingerprint, Receipt, BarChart3, ShieldCheck } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Menu, X, ChevronDown, Phone, ArrowRight, Sparkles, Shield, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
@@ -13,6 +10,8 @@ import { EkoLogo } from "@/components/EkoLogo";
 const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { getActiveProducts } from "@/lib/data/api-products";
+import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
+import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 
 const activeProducts = getActiveProducts();
 const bcApis = activeProducts
@@ -39,35 +38,9 @@ const navLinks = [
   { label: "Company", href: "#", hasDropdown: true },
 ];
 
-interface NavCardItem {
-  label: string;
-  description: string;
-  href?: string;
-  slug?: string;
-  icon: LucideIcon;
-}
-
-const navIndustries: NavCardItem[] = [
-  { label: "Lending & NBFC", description: "KYC, disbursal & EMI collection", href: "/industries/lending-nbfc", slug: "lending-nbfc", icon: Landmark },
-  { label: "Microfinance", description: "Field collection & disbursal for MFIs", href: "/industries/microfinance", slug: "microfinance", icon: Users },
-  { label: "Kirana & Retail", description: "Turn shops into banking touchpoints", href: "/industries/kirana-retail", slug: "kirana-retail", icon: Store },
-  { label: "Agent Networks (CSP/BC)", description: "Scale agent operations at BCNM level", href: "/industries/agent-networks-csp", slug: "agent-networks-csp", icon: Users },
-  { label: "Marketplaces", description: "Seller KYB & onboarding", href: "/industries/marketplaces", slug: "marketplaces", icon: Globe },
-  { label: "Insurance", description: "Auto-fill proposals & verify policyholders", href: "/industries/insurance", slug: "insurance", icon: Shield },
-  { label: "Staffing & HR", description: "Background verification for hires", href: "/industries/staffing-hr", slug: "staffing-hr", icon: Briefcase },
-  { label: "Logistics & Fleet", description: "Driver & vehicle compliance", href: "/industries/logistics-fleet", slug: "logistics-fleet", icon: Truck },
-];
-
-const navSolutions: NavCardItem[] = [
-  { label: "Assisted Banking Agent Pack", description: "AePS + DMT + BBPS for kirana & CSP", href: "/solutions/assisted-banking-agent-pack", slug: "assisted-banking-agent-pack", icon: Store },
-  { label: "Lending KYC Pack", description: "Onboard borrowers in under 90 seconds", href: "/solutions/lending-kyc-pack", slug: "lending-kyc-pack", icon: Banknote },
-  { label: "Merchant Onboarding Pack", description: "KYB + payment activation for sellers", href: "/solutions/merchant-onboarding-pack", slug: "merchant-onboarding-pack", icon: Briefcase },
-  { label: "MFI Field Operations Pack", description: "Digital field collection & disbursal", href: "/solutions/mfi-field-operations-pack", slug: "mfi-field-operations-pack", icon: Fingerprint },
-  { label: "Employee BGV Pack", description: "Instant background checks", href: "/solutions/employee-bgv-pack", slug: "employee-bgv-pack", icon: ShieldCheck },
-  { label: "MSME Credit Assessment Pack", description: "Credit scoring via GST & ITR data", href: "/solutions/msme-credit-assessment-pack", slug: "msme-credit-assessment-pack", icon: BarChart3 },
-  { label: "Fleet Compliance Pack", description: "Ongoing vehicle, RC & DL compliance monitoring", href: "/solutions/fleet-compliance-pack", slug: "fleet-compliance-pack", icon: Truck },
-  { label: "DBT Cashout Pack", description: "Government subsidy disbursement", href: "/solutions/dbt-cashout-pack", slug: "dbt-cashout-pack", icon: Receipt },
-];
+const NAV_MAX_ITEMS = 8;
+const navIndustries = ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority === 1).slice(0, NAV_MAX_ITEMS);
+const navSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority === 1).slice(0, NAV_MAX_ITEMS);
 
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -277,8 +250,8 @@ export const Header = () => {
                                   >
                                     <item.icon className="w-4 h-4 text-eko-navy/60 mt-0.5 shrink-0 group-hover:text-eko-navy" />
                                     <div>
-                                      <span className="text-sm font-medium text-eko-navy">{item.label}</span>
-                                      <p className="text-xs text-eko-slate/70 leading-tight mt-0.5">{item.description}</p>
+                                      <span className="text-sm font-medium text-eko-navy">{item.name}</span>
+                                      <p className="text-xs text-eko-slate/70 leading-tight mt-0.5">{item.tagline}</p>
                                     </div>
                                   </Link>
                                 ))}
@@ -301,8 +274,8 @@ export const Header = () => {
                                   >
                                     <item.icon className="w-4 h-4 text-eko-navy/60 mt-0.5 shrink-0 group-hover:text-eko-navy" />
                                     <div>
-                                      <span className="text-sm font-medium text-eko-navy">{item.label}</span>
-                                      <p className="text-xs text-eko-slate/70 leading-tight mt-0.5">{item.description}</p>
+                                      <span className="text-sm font-medium text-eko-navy">{item.name}</span>
+                                      <p className="text-xs text-eko-slate/70 leading-tight mt-0.5">{item.tagline}</p>
                                     </div>
                                   </Link>
                                 ))}
@@ -496,7 +469,7 @@ export const Header = () => {
                       <Link key={item.slug} to={`/industries/${item.slug}`} onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer">
                         <item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
-                        {item.label}
+                        {item.name}
                       </Link>
                     ))}
                     <Link to="/industries" onClick={() => setMobileMenuOpen(false)}
@@ -509,7 +482,7 @@ export const Header = () => {
                       <Link key={item.slug} to={`/solutions/${item.slug}`} onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer">
                         <item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
-                        {item.label}
+                        {item.name}
                       </Link>
                     ))}
                     <Link to="/solutions" onClick={() => setMobileMenuOpen(false)}

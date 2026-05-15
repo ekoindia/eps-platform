@@ -50,7 +50,7 @@ export interface SolutionData {
   packApis: PackApiItem[];
   howItWorksSteps: HowItWorksStep[];
   industriesUsingSlugs: string[];
-  exampleCode: { language: string; fileName: string; code: string }[];
+  // exampleCode: { language: string; fileName: string; code: string }[];
   comparisonRows: ComparisonRow[];
   pricingBlurb: string;
   faqs: SolutionFAQ[];
@@ -61,6 +61,8 @@ export interface SolutionData {
   navDescription: string;
   icon: LucideIcon;
   category: "lending-credit" | "onboarding" | "agent-banking" | "hr-workforce" | "fleet-motor";
+  /** 1 = featured in header nav, 2 = available, 3 = hidden/draft */
+  priority: 1 | 2 | 3;
 }
 
 /* ───────────────────────────────────────────────────────────────
@@ -78,6 +80,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
     navDescription: "Turn any retail counter into a banking touchpoint",
     icon: Store,
     category: "agent-banking",
+    priority: 1,
     apiChips: [
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
       { name: "DMT", apiId: "dmt", href: "/products/dmt-api" },
@@ -152,43 +155,6 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { step: 5, label: "Agent earns commission, settled to wallet" },
     ],
     industriesUsingSlugs: ["kirana-retail", "agent-networks-csp", "microfinance", "agriculture"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "agent-banking.js",
-        code: `// Initialize Eko API Client
-const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// 1. Authenticate the agent (daily)
-await eko.aeps.dailyAuth({ agentId: "AGT123" });
-
-// 2. Customer cash withdrawal
-const withdrawal = await eko.aeps.cashout({
-  aadhaar: "XXXX-XXXX-1234",
-  bankIin: "607094",   // Bank IIN code
-  amount: 5000,
-  biometricData: fingerprintTemplate
-});
-
-console.log(withdrawal.status);     // "success"
-console.log(withdrawal.balance);    // "2450.50"
-console.log(withdrawal.commission); // "12"`,
-      },
-      {
-        language: "bash",
-        fileName: "curl-example.sh",
-        code: `curl -X POST https://api.eko.in/v3/aeps/cashout \\
-  -H "Authorization: Bearer $EKO_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "agent_id": "AGT123",
-    "aadhaar_number": "XXXXXXXXXXXX",
-    "bank_iin": "607094",
-    "amount": 5000,
-    "biometric_data": "<FMR_DATA>"
-  }'`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Vendor contracts", diy: "4–6 separate vendors", eko: "1 contract" },
       { aspect: "BC license", diy: "Apply separately, 6+ months", eko: "Eko is the BCNM — included" },
@@ -231,6 +197,7 @@ console.log(withdrawal.commission); // "12"`,
     navDescription: "KYC + bank verification + disbursal for digital lenders",
     icon: Banknote,
     category: "lending-credit",
+    priority: 1,
     apiChips: [
       { name: "PAN Advanced", apiId: "pan", href: "/products/pan-verification-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
@@ -305,51 +272,6 @@ console.log(withdrawal.commission); // "12"`,
       { step: 6, label: "Fund Transfer — instant disbursal to verified account", apiId: "upi-payout" },
     ],
     industriesUsingSlugs: ["lending-nbfc", "microfinance", "saas-platforms", "marketplaces"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "lending-kyc.js",
-        code: `// Initialize Eko API Client
-const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// 1. Verify PAN identity
-const pan = await eko.verify.pan({
-  panNumber: "ABCDE1234F",
-  fullName: "Rajesh Kumar"
-});
-
-// 2. Verify bank account (penny drop)
-const bank = await eko.verify.bankAccount({
-  accountNumber: "1234567890",
-  ifsc: "HDFC0001234",
-  name: pan.name   // cross-match name
-});
-
-// 3. Disburse loan if all checks pass
-if (pan.verified && bank.verified) {
-  const disbursal = await eko.payments.transfer({
-    accountNumber: bank.accountNumber,
-    ifsc: bank.ifsc,
-    amount: 50000,
-    purpose: "loan_disbursal"
-  });
-  console.log(disbursal.transactionId);
-}`,
-      },
-      {
-        language: "bash",
-        fileName: "curl-pan.sh",
-        code: `# Step 1: Verify PAN
-curl -X POST https://api.eko.in/v3/verify/pan \\
-  -H "Authorization: Bearer $EKO_API_KEY" \\
-  -d '{"pan_number":"ABCDE1234F","full_name":"Rajesh Kumar"}'
-
-# Step 2: Verify bank account
-curl -X POST https://api.eko.in/v3/verify/bank-account \\
-  -H "Authorization: Bearer $EKO_API_KEY" \\
-  -d '{"account_number":"1234567890","ifsc":"HDFC0001234"}'`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Vendor contracts", diy: "3–5 separate KYC vendors", eko: "1 contract" },
       { aspect: "RBI Digital Lending compliance", diy: "Build & maintain yourself", eko: "Compliant by default" },
@@ -390,6 +312,7 @@ curl -X POST https://api.eko.in/v3/verify/bank-account \\
     navDescription: "Onboard merchants with KYB checks in hours, not days",
     icon: Briefcase,
     category: "onboarding",
+    priority: 1,
     apiChips: [
       { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
       { name: "GST Verification", apiId: "gst", href: "/products/gst-verification-api" },
@@ -455,32 +378,6 @@ curl -X POST https://api.eko.in/v3/verify/bank-account \\
       { step: 5, label: "Merchant activated for payments — instant settlement configured" },
     ],
     industriesUsingSlugs: ["marketplaces", "e-commerce", "saas-platforms", "accounting-tax"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "merchant-onboarding.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// 1. Verify business PAN
-const pan = await eko.verify.pan({
-  panNumber: "AABCS1234C",
-  fullName: "Sharma Traders"
-});
-
-// 2. Verify GST number
-const gst = await eko.verify.gstin({
-  gstin: "07AABCS1234C1Z5"
-});
-
-// 3. Validate settlement bank account
-const bank = await eko.verify.bankAccount({
-  accountNumber: "9876543210",
-  ifsc: "SBIN0001234"
-});
-
-console.log({ pan: pan.verified, gst: gst.status, bank: bank.verified });`,
-      },
-    ],
     comparisonRows: [
       { aspect: "KYB checks", diy: "3–4 vendor integrations", eko: "1 bundle" },
       // { aspect: "ONDC compliance", diy: "Custom implementation", eko: "Pre-certified" },
@@ -511,10 +408,11 @@ console.log({ pan: pan.verified, gst: gst.status, bank: bank.verified });`,
     name: "MSME Credit Assessment Pack",
     eyebrow: "SOLUTION PACK",
     heroSubtitle: "Assess MSME creditworthiness using GST filing patterns, ITR history, and bank account validation — no traditional credit score required.",
-    tagline: "Assess MSME credit via GST + ITR — no credit score needed",
+    tagline: "Credit scoring via GST & ITR data",
     navDescription: "Alternative credit scoring for MSMEs via GST & ITR data",
     icon: BarChart3,
     category: "lending-credit",
+    priority: 1,
     apiChips: [
       { name: "GST Verification", apiId: "gst", href: "/products/gst-verification-api" },
       { name: "PAN Advanced", apiId: "pan", href: "/products/pan-verification-api" },
@@ -570,26 +468,6 @@ console.log({ pan: pan.verified, gst: gst.status, bank: bank.verified });`,
       { step: 5, label: "Credit model scores the MSME — loan offer generated" },
     ],
     industriesUsingSlugs: ["lending-nbfc", "microfinance", "saas-platforms"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "msme-credit.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// 1. Fetch GST filing history (8 quarters)
-const gst = await eko.verify.gstin({
-  gstin: "07AABCS1234C1Z5",
-  includeFilingHistory: true
-});
-
-// 2. Calculate GST-based cash flow proxy
-const avgMonthlyTurnover = gst.filings
-  .map(f => f.taxableValue)
-  .reduce((a, b) => a + b, 0) / gst.filings.length;
-
-console.log({ avgMonthlyTurnover, filingConsistency: gst.complianceScore });`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Credit bureau dependency", diy: "Bureau subscription + integration", eko: "Bureau-free alternative scoring" },
       { aspect: "MSME data sources", diy: "Manual ITR & bank statements", eko: "Automated GST + DigiLocker pull" },
@@ -619,8 +497,9 @@ console.log({ avgMonthlyTurnover, filingConsistency: gst.complianceScore });`,
     heroSubtitle: "Digital tools for microfinance field officers — paperless KYC, biometric collections, and instant disbursals for JLG and SHG lending models.",
     tagline: "Paperless KYC & biometric collections for MFIs",
     navDescription: "Replace cash collection with digital ops for microfinance",
-    icon: Users,
+    icon: Fingerprint,
     category: "agent-banking",
+    priority: 1,
     apiChips: [
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
       { name: "Bank Verification", apiId: "bank", href: "/products/bank-verification-api" },
@@ -687,31 +566,6 @@ console.log({ avgMonthlyTurnover, filingConsistency: gst.complianceScore });`,
       { step: 5, label: "AePS collection — biometric EMI collection at next visit" },
     ],
     industriesUsingSlugs: ["microfinance", "lending-nbfc", "agriculture"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "mfi-collection.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// MFI field officer collects EMI via AePS
-const collection = await eko.aeps.cashout({
-  aadhaar: borrower.aadhaarNumber,
-  bankIin: borrower.bankIin,
-  amount: borrower.emiAmount,
-  agentId: officer.agentId,
-  biometricData: scannedFingerprint
-});
-
-// Update loan account on success
-if (collection.status === "success") {
-  await updateLoanAccount({
-    loanId: borrower.loanId,
-    txnId: collection.transactionId,
-    amount: collection.amount
-  });
-}`,
-      },
-    ],
     comparisonRows: [
       { aspect: "EMI collection", diy: "Cash + manual ledger", eko: "Biometric + instant digital receipt" },
       { aspect: "Disbursal compliance", diy: "Cash = RBI non-compliant", eko: "Direct bank transfer = compliant" },
@@ -744,8 +598,9 @@ if (collection.status === "success") {
     heroSubtitle: "Run instant background verification on new hires — identity, address, employment history, criminal records, and education — in one API bundle.",
     tagline: "Instant employee background checks in one API call",
     navDescription: "Identity + employment + address verification for HR teams",
-    icon: CheckCircle,
+    icon: ShieldCheck,
     category: "hr-workforce",
+    priority: 1,
     apiChips: [
       { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
@@ -821,26 +676,6 @@ if (collection.status === "success") {
       { step: 6, label: "BGV report generated — hire/no-hire recommendation" },
     ],
     industriesUsingSlugs: ["staffing-hr", "logistics-fleet", "e-commerce", "healthcare"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "employee-bgv.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// Run parallel verifications for speed
-const [pan, employment, education] = await Promise.all([
-  eko.verify.pan({ panNumber: employee.pan }),
-  eko.verify.epfo({ uan: employee.uan }),
-  eko.digilocker.fetch({
-    documentType: "degree_certificate",
-    consent: employee.digilockerConsent
-  })
-]);
-
-const bgvScore = calculateBGVScore({ pan, employment, education });
-console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Verification time", diy: "5–10 business days", eko: "Under 5 minutes" },
       { aspect: "Employment history source", diy: "Reference calls", eko: "EPFO PRAN records — authoritative" },
@@ -874,6 +709,7 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
     navDescription: "AePS + basic KYC bundle for rural & last-mile platforms",
     icon: Globe,
     category: "agent-banking",
+    priority: 2,
     apiChips: [
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
@@ -937,23 +773,6 @@ console.log(bgvScore.recommendation); // "HIRE" | "HOLD" | "REJECT"`,
       { step: 5, label: "Agent earns commission" },
     ],
     industriesUsingSlugs: ["agriculture", "kirana-retail", "microfinance", "agent-networks-csp"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "rural-services.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// Rural customer withdraws DBT benefit
-const withdrawal = await eko.aeps.cashout({
-  aadhaar: customer.aadhaarNumber,
-  bankIin: "508505",   // Jan Dhan bank IIN
-  amount: 500,         // DBT installment
-  biometricData: fingerprint
-});
-
-console.log(withdrawal.receiptNumber); // Send SMS to customer`,
-      },
-    ],
     comparisonRows: [
       { aspect: "End-user device needed", diy: "Smartphone + internet", eko: "Just Aadhaar + fingerprint" },
       { aspect: "Bank branch proximity", diy: "Required", eko: "Any kirana shop within 1km" },
@@ -983,8 +802,9 @@ console.log(withdrawal.receiptNumber); // Send SMS to customer`,
     heroSubtitle: "Enable citizens to withdraw government DBT benefits at agent points — biometric cashout from PM-KISAN, MGNREGA, and all state DBT schemes.",
     tagline: "Government DBT withdrawal at agent points via AePS",
     navDescription: "Enable PM-KISAN, MGNREGA & DBT benefit cashout at agents",
-    icon: Banknote,
+    icon: Receipt,
     category: "agent-banking",
+    priority: 1,
     apiChips: [
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
@@ -1042,27 +862,6 @@ console.log(withdrawal.receiptNumber); // Send SMS to customer`,
       { step: 5, label: "SMS receipt sent to beneficiary's registered mobile" },
     ],
     industriesUsingSlugs: ["agriculture", "kirana-retail", "agent-networks-csp"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "dbt-cashout.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// DBT benefit withdrawal
-const cashout = await eko.aeps.cashout({
-  aadhaar: "XXXXXXXXXXXX",
-  bankIin: "508505",
-  transactionType: "CASHOUT",
-  amount: 2000,
-  biometricData: fingerprintTemplate
-});
-
-if (cashout.status === "success") {
-  // Dispense cash and print receipt
-  printer.print(cashout.receipt);
-}`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Access to DBT", diy: "ATM + debit card needed", eko: "Aadhaar + fingerprint only" },
       { aspect: "Outlet density", diy: "Bank branch/ATM density", eko: "200K+ agent touchpoints" },
@@ -1094,6 +893,7 @@ if (cashout.status === "success") {
     navDescription: "Best-in-class DMT + AePS loop for migrant remittance",
     icon: Banknote,
     category: "agent-banking",
+    priority: 2,
     apiChips: [
       { name: "DMT", apiId: "dmt", href: "/products/dmt-api" },
       { name: "AePS Cashout", apiId: "aeps", href: "/products/aeps-api" },
@@ -1158,31 +958,6 @@ if (cashout.status === "success") {
       { step: 5, label: "Family withdraws at rural agent via AePS" },
     ],
     industriesUsingSlugs: ["kirana-retail", "agent-networks-csp", "microfinance"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "remittance.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// Urban leg: sender sends money
-const transfer = await eko.dmt.transfer({
-  senderMobile: "9876543210",
-  beneficiaryAccount: "1234567890",
-  ifsc: "SBIN0001234",
-  amount: 2000,
-  agentId: "AGT456"
-});
-
-// Rural leg: family withdraws via AePS
-// (at receiving agent's terminal)
-const withdrawal = await eko.aeps.cashout({
-  aadhaar: family.aadhaarNumber,
-  bankIin: "508505",
-  amount: 2000,
-  biometricData: fingerprint
-});`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Transfer speed", diy: "Bank transfer T+1", eko: "IMPS in <30 seconds" },
       { aspect: "Receiving end", diy: "Debit card + ATM needed", eko: "AePS — Aadhaar only" },
@@ -1214,6 +989,7 @@ const withdrawal = await eko.aeps.cashout({
     navDescription: "DL + identity + bank verification for gig platforms",
     icon: Truck,
     category: "hr-workforce",
+    priority: 2,
     apiChips: [
       { name: "Aadhaar Verification", apiId: "aadhaar", href: "/products/aadhaar-verification-api" },
       { name: "PAN Verification", apiId: "pan", href: "/products/pan-verification-api" },
@@ -1288,24 +1064,6 @@ const withdrawal = await eko.aeps.cashout({
       { step: 6, label: "Worker approved and active on platform" },
     ],
     industriesUsingSlugs: ["logistics-fleet", "e-commerce", "staffing-hr"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "gig-onboarding.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// Parallel verification for speed
-const [identity, licence, vehicle, payment] = await Promise.all([
-  eko.verify.aadhaar({ aadhaarNumber: worker.aadhaar, otp: worker.otp }),
-  eko.verify.drivingLicence({ dlNumber: worker.dlNumber, dob: worker.dob }),
-  eko.verify.rc({ rcNumber: worker.vehicleRC }),
-  eko.verify.bankAccount({ accountNumber: worker.accountNumber, ifsc: worker.ifsc })
-]);
-
-const approved = identity.verified && licence.valid && vehicle.insured && payment.verified;
-console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle }) });`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Onboarding time", diy: "2–3 days manual review", eko: "Under 3 minutes" },
       { aspect: "DL fake check", diy: "Manual scan + police check", eko: "Real-time Sarathi database" },
@@ -1333,10 +1091,11 @@ console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle })
     name: "Fleet Compliance Pack",
     eyebrow: "SOLUTION PACK",
     heroSubtitle: "Maintain regulatory compliance for vehicle fleets — RC, insurance, permit, and driver licence verification in one API bundle.",
-    tagline: "RC + insurance + permit compliance for fleet operators",
+    tagline: "RC + DL + insurance compliance for fleet operators",
     navDescription: "Automated fleet compliance — RC, insurance & driver checks",
     icon: Truck,
     category: "fleet-motor",
+    priority: 1,
     apiChips: [
       { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
       { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
@@ -1384,35 +1143,6 @@ console.log({ approved, riskScore: calculateRisk({ identity, licence, vehicle })
       { step: 5, label: "Compliance dashboard updated in real time" },
     ],
     industriesUsingSlugs: ["logistics-fleet", "automotive", "e-commerce"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "fleet-compliance.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// Daily compliance batch check
-const fleet = await getFleetVehicles();
-
-const complianceResults = await Promise.all(
-  fleet.map(async (vehicle) => {
-    const [rc, dl] = await Promise.all([
-      eko.verify.rc({ rcNumber: vehicle.registrationNumber }),
-      eko.verify.drivingLicence({ dlNumber: vehicle.driver.dlNumber })
-    ]);
-
-    return {
-      vehicleId: vehicle.id,
-      rcExpiry: rc.insuranceExpiry,
-      dlExpiry: dl.expiryDate,
-      isCompliant: rc.valid && dl.valid && !dl.suspended
-    };
-  })
-);
-
-const nonCompliant = complianceResults.filter(v => !v.isCompliant);
-await sendAlerts(nonCompliant);`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Compliance monitoring", diy: "Manual tracking in spreadsheets", eko: "Automated daily API batch" },
       { aspect: "Expiry alerts", diy: "None — discover on road", eko: "30-day advance warnings" },
@@ -1444,6 +1174,7 @@ await sendAlerts(nonCompliant);`,
     navDescription: "Vehicle RC + driver KYC for motor insurers",
     icon: ShieldCheck,
     category: "fleet-motor",
+    priority: 2,
     apiChips: [
       { name: "Vehicle & RC Verification", apiId: "rc", href: "/products/vehicle-rc-verification-api" },
       { name: "DL Verification", apiId: "dl", href: "/products/dl-verification-api" },
@@ -1489,26 +1220,6 @@ await sendAlerts(nonCompliant);`,
       { step: 4, label: "Instant quote generated — policy issued in minutes" },
     ],
     industriesUsingSlugs: ["insurance", "automotive", "logistics-fleet"],
-    exampleCode: [
-      {
-        language: "javascript",
-        fileName: "motor-insurance.js",
-        code: `const eko = new EkoAPI({ apiKey: process.env.EKO_API_KEY });
-
-// Fetch vehicle details for policy pre-fill
-const rc = await eko.verify.rc({ rcNumber: "DL01AB1234" });
-
-// Generate instant quote — single API returns all vehicle + RC data
-const quote = calculatePremium({
-  make: rc.vehicleManufacturerName,
-  model: rc.model,
-  year: rc.vehicleManufacturingMonthYear,
-  fuelType: rc.type,
-  previousInsurer: rc.vehicleInsuranceCompanyName,
-  rcStatus: rc.rcStatus
-});`,
-      },
-    ],
     comparisonRows: [
       { aspect: "Vehicle data collection", diy: "Manual form fill by customer", eko: "Auto-fetched from VAHAN" },
       { aspect: "Previous insurance check", diy: "Self-declaration (fraud risk)", eko: "Verified from Vehicle RC record" },
