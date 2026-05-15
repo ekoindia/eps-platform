@@ -15,7 +15,7 @@ import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP, resolvePackApi } from "@/lib/data/solutions";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { openZohoChat } from "@/lib/zoho-chat";
-import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
+// import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 
 interface SolutionPageLayoutProps {
@@ -271,9 +271,9 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
         )}
 
         {/* Eko Shield Ad Banner */}
-        {data.packApis.map(resolvePackApi).filter(Boolean).some((api) => /verification|kyc/i.test(api.name)) && (
+        {/* {data.packApis.map(resolvePackApi).filter(Boolean).some((api) => /verification|kyc/i.test(api.name)) && (
           <EkoShieldAdBanner/>
-        )}
+        )} */}
 
         {/* Related Solutions */}
         {data.relatedSolutions.length > 0 && (

@@ -16,7 +16,7 @@ const footerLinks = {
     { label: "Payments APIs", href: "#products" },
     // { label: "Collection APIs", href: "#products" },
     { label: "Verification APIs", href: "#products" },
-    { label: "Eko Shield", href: "/products/eko-shield", internal: true },
+    // { label: "Eko Shield", href: "/products/eko-shield", internal: true },
   ],
   developers: [
     { label: "Documentation", href: "https://developers.eko.in", external: true },

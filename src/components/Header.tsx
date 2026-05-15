@@ -135,7 +135,7 @@ export const Header = () => {
                       {productsDropdownOpen && (
                         <div className="fixed top-24 left-1/2 w-[90vw] lg:w-[680px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 overflow-hidden z-50 animate-menu-slide-down-in">
                           {/* Eko Shield Hero Banner */}
-                          <Link
+                          {/* <Link
                             to="/products/eko-shield"
                             onClick={() => setProductsDropdownOpen(false)}
                             className="block bg-gradient-to-r from-[#00394b] to-[#005a6e] p-5 group cursor-pointer hover:from-[#004a5e] hover:to-[#006b82] transition-all"
@@ -155,7 +155,7 @@ export const Header = () => {
                               </div>
                               <ArrowRight className="w-5 h-5 text-white/50 group-hover:text-eko-gold group-hover:translate-x-1 transition-all shrink-0" />
                             </div>
-                          </Link>
+                          </Link> */}
 
                           {/* API Columns - 3 categories */}
                           <div className="p-6 grid grid-cols-3 gap-6">
@@ -396,14 +396,14 @@ export const Header = () => {
                 {mobileProductsOpen && (
                   <div className="pl-4 space-y-1">
                     {/* Eko Shield highlight */}
-                    <Link to="/products/eko-shield" onClick={() => setMobileMenuOpen(false)}
+                    {/* <Link to="/products/eko-shield" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 py-2.5 px-3 -mx-3 bg-gradient-to-r from-[#00394b] to-[#005a6e] rounded-lg my-1 cursor-pointer max-w-full">
                       <Shield className="w-5 h-5 text-eko-gold shrink-0" />
                       <div>
                         <span className="text-sm font-semibold text-white">Eko Shield</span>
                         <span className="text-[10px] ml-2 uppercase tracking-wider bg-eko-gold/20 text-eko-gold px-1.5 py-0.5 rounded-full">Featured</span>
                       </div>
-                    </Link>
+                    </Link> */}
                     {apiColumns.map((col) => {
                       const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
                       const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;

@@ -117,7 +117,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "digilocker",
-    name: "DigiLocker",
+    name: "DigiLocker Integration",
+    shortName: "DigiLocker",
     slug: "digilocker-api",
     href: "/products/digilocker-api",
     category: "verification",

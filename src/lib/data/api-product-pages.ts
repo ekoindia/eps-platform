@@ -16,7 +16,7 @@ import {
   // GST / DL
   // (Building, FileText, CreditCard already imported)
   // Vehicle
-  Search, Palette, Leaf,
+  Palette, Leaf,
   // Employee
   Phone,
   // Reverse Geocoding
@@ -27,7 +27,7 @@ import {
   Zap,
   Mail,
   // Product-level icons (used by solutions resolver)
-  ShieldCheck, Building2, Layers, Briefcase, Truck,
+  ShieldCheck, Building2, FolderCheck, Briefcase, Truck,
 } from "lucide-react";
 
 import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
@@ -972,7 +972,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "DigiLocker API for Secure Digital Document Verification",
     heroSubtitle: "Access and verify user documents digitally through consent-driven, paperless workflows.",
     category: "verification",
-    icon: Layers,
+    icon: FolderCheck,
     docsUrl: "https://eps.eko.in/developers/eps/digilocker-api/",
     overview: "The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records.",
     keyBenefits: [

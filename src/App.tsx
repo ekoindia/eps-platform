@@ -20,8 +20,8 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const RefundPolicyPage = lazy(() => import("./pages/RefundPolicyPage"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
-const EkoShieldPage = lazy(() => import("./pages/EkoShieldPage"));
-const EkoShieldDocumentPage = lazy(() => import("./pages/EkoShieldDocumentPage"));
+// const EkoShieldPage = lazy(() => import("./pages/EkoShieldPage"));
+// const EkoShieldDocumentPage = lazy(() => import("./pages/EkoShieldDocumentPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const IndustryDetailPage = lazy(() => import("./pages/IndustryDetailPage"));
 const SolutionDetailPage = lazy(() => import("./pages/SolutionDetailPage"));
@@ -50,8 +50,8 @@ const App = ({ helmetContext }: { helmetContext?: any }) => (
             <Route path="/" element={<Index />} />
 
             {/* Eko Shield (specific routes before :slug wildcard) */}
-            <Route path="/products/eko-shield" element={<EkoShieldPage />} />
-            <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} />
+            {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
+            {/* <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} /> */}
 
             {/* Product API Pages */}
             <Route path="/products/:slug" element={<ProductDetailPage />} />

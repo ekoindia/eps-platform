@@ -17,11 +17,11 @@ import { SOLUTIONS_LIST } from "@/lib/data/solutions";
  */
 export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
   // Static product routes must precede the dynamic :slug catch-all
-  {
-    pattern: /^\/products\/eko-shield\/document$/,
-    src: "src/pages/EkoShieldDocumentPage.tsx",
-  },
-  { pattern: /^\/products\/eko-shield$/, src: "src/pages/EkoShieldPage.tsx" },
+  // {
+  //   pattern: /^\/products\/eko-shield\/document$/,
+  //   src: "src/pages/EkoShieldDocumentPage.tsx",
+  // },
+  // { pattern: /^\/products\/eko-shield$/, src: "src/pages/EkoShieldPage.tsx" },
   {
     pattern: /^\/products\//,
     src: "src/pages/products/ProductDetailPage.tsx",

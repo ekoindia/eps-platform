@@ -26,15 +26,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ProductTab = "bc" | "payments" | "bbps" | "collection" | "verification" | "shield";
+type ProductTab = "bc" | "payments" | "bbps" | "collection" | "verification"; // | "shield"
 
 const productTabs: { id: ProductTab; label: string; icon: any }[] = [
-  { id: "bc", label: "BC APIs", icon: Landmark },
+  { id: "verification", label: "Verification APIs", icon: Fingerprint },
   // { id: "payments", label: "Payment APIs", icon: CreditCard },
   { id: "bbps", label: "Payments APIs", icon: Receipt },
   // { id: "collection", label: "Collection APIs", icon: IndianRupee },
-  { id: "verification", label: "Verification APIs", icon: Fingerprint },
-  { id: "shield", label: "Eko Shield", icon: ShieldCheck },
+  { id: "bc", label: "BC APIs", icon: Landmark },
+  // { id: "shield", label: "Eko Shield", icon: ShieldCheck },
 ];
 
 const bcProducts = [
@@ -159,7 +159,7 @@ const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
 );
 
 export const ProductsSection = () => {
-  const [activeTab, setActiveTab] = useState<ProductTab>("bc");
+  const [activeTab, setActiveTab] = useState<ProductTab>("verification");
 
   return (
     <SectionContainer id="products">
@@ -197,7 +197,7 @@ export const ProductsSection = () => {
       {activeTab === "collection" && <ProductTabContent products={collectionProducts} />}
       {activeTab === "verification" && <ProductTabContent products={verificationProducts} />}
 
-      {activeTab === "shield" && (
+      {/* {activeTab === "shield" && (
         <div>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn className="order-2 lg:order-1 relative">
@@ -247,7 +247,7 @@ export const ProductsSection = () => {
             </FadeIn>
           </div>
         </div>
-      )}
+      )} */}
     </SectionContainer>
   );
 };

@@ -12,7 +12,7 @@ import type { ApiField, ApiPreviewItem } from "@/components/ApiInputOutputPrevie
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-chat";
-import EkoShieldAdBanner from "./EkoShieldAdBanner";
+// import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 import { ApiChip } from "./ApiChip";
 import { normalizeApiLabel } from "@/lib/utils";
@@ -479,9 +479,9 @@ export const ProductPageLayout = ({
         )}
 
         {/* Eko Shield Ad Banner */}
-        {/verification|kyc/i.test(heroTitle) && (
+        {/* {/verification|kyc/i.test(heroTitle) && (
           <EkoShieldAdBanner/>
-        )}
+        )} */}
 
         {/* Trust & Compliance */}
         {trustAndCompliance && trustAndCompliance.length > 0 && (
