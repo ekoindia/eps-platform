@@ -16,7 +16,7 @@ import {
   // GST / DL
   // (Building, FileText, CreditCard already imported)
   // Vehicle
-  Search, Palette, Leaf,
+  Palette, Leaf,
   // Employee
   Phone,
   // Reverse Geocoding
@@ -26,6 +26,8 @@ import {
   // Zap (used everywhere)
   Zap,
   Mail,
+  // Product-level icons (used by solutions resolver)
+  ShieldCheck, Building2, FolderCheck, Briefcase, Truck,
 } from "lucide-react";
 
 import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
@@ -126,6 +128,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Instant Domestic Money Transfers",
     heroSubtitle: "Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support.",
     category: "payment",
+    icon: Banknote,
     docsUrl: "https://developers.eko.in/reference/fino-dmt-flow",
     heroImage: moneyTransferImg,
     features: [
@@ -174,6 +177,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Aadhaar Enabled Payment System",
     heroSubtitle: "Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication.",
     category: "payment",
+    icon: Fingerprint,
     docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
     heroImage: aepsImg,
     features: [
@@ -224,6 +228,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Help Customers Pay Their Utility Bills!",
     heroSubtitle: "The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services.",
     category: "payment",
+    icon: Receipt,
     docsUrl: "https://developers.eko.in/reference/bbps-pay",
     heroImage: bbpsImg,
     types: [
@@ -288,6 +293,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "QR Payment API",
     heroSubtitle: "Enable seamless UPI payments through dynamic QR codes. Perfect for retail stores, restaurants, and any business accepting digital payments.",
     category: "payment",
+    icon: QrCode,
     docsUrl: "https://developers.eko.in/reference/upi-generate-static-qr",
     heroImage: qrImg,
     features: [
@@ -338,6 +344,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Cash Collection API",
     heroSubtitle: "Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility.",
     category: "payment",
+    icon: Receipt,
     docsUrl: "https://developers.eko.in/v1/reference/get-cms-url",
     heroImage: cmsImg,
     features: [
@@ -389,6 +396,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Payout API",
     heroSubtitle: "Pay your employees and vendors directly from your digital wallet balance. Easy-to-use, reliable, and secure fund transfer API for instant salary disbursals and vendor payments.",
     category: "payment",
+    icon: Send,
     docsUrl: "https://developers.eko.in/docs/fund-transfer",
     heroImage: payoutImg,
     features: [
@@ -437,6 +445,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "UPI Payout API",
     heroSubtitle: "Send money instantly to any UPI ID - VPAs, mobile numbers, or linked bank accounts. Perfect for vendor payments, refunds, and disbursements.",
     category: "payment",
+    icon: Banknote,
     docsUrl: "https://developers.eko.in/reference/upi-vpa-payment",
     heroImage: payoutImg,
     features: [
@@ -484,6 +493,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "PAN Verification APIs for Instant Identity Validation",
     heroSubtitle: "Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding.",
     category: "verification",
+    icon: FileText,
     docsUrl: "https://developers.eko.in/reference/pan-lite",
     heroImage: panImg,
     overview: "The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms.",
@@ -589,6 +599,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Aadhaar Verification API for Secure Digital Identity",
     heroSubtitle: "Verify Aadhaar details through consent-based, real-time verification workflows.",
     category: "verification",
+    icon: ShieldCheck,
     docsUrl: "https://developers.eko.in/reference/aadhaar-verification-apis",
     heroImage: aadhaarImg,
     overview: "The Aadhaar Verification API enables businesses to validate Aadhaar details securely as part of identity verification and KYC processes. It is designed for regulated onboarding, fraud prevention, and compliance-driven use cases.",
@@ -638,6 +649,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Bank Account Verification",
     heroSubtitle: "Verify bank account details before payouts to prevent failed transactions and reduce operational costs. Instant verification with penny drop and account holder name matching.",
     category: "verification",
+    icon: Building2,
     docsUrl: "https://developers.eko.in/reference/bank-account-verification",
     heroImage: bankImg,
     features: [
@@ -695,6 +707,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "GST Verification API for Business Identity Validation",
     heroSubtitle: "Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding.",
     category: "verification",
+    icon: BarChart3,
     docsUrl: "https://developers.eko.in/reference/verify-gstin",
     heroImage: gstImg,
     overview: "The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical.",
@@ -760,6 +773,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "UPI ID Verification API – Verify UPI ID with Ease",
     heroSubtitle: "Validate UPI IDs in real time and retrieve a UPI ID using a phone number to reduce failures and improve payment accuracy.",
     category: "verification",
+    icon: Zap,
     docsUrl: "",
     heroImage: upiVerifyImg,
     overview: "Eko's UPI ID Verification API is designed for payment systems that need real-time UPI ID validation. It supports verifying a UPI ID and retrieving a UPI ID using a phone number—helping you confirm payee identifiers before initiating transactions.",
@@ -815,6 +829,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Driving License Verification API for Identity Validation",
     heroSubtitle: "Verify driving license details in real time to strengthen KYC and reduce identity fraud.",
     category: "verification",
+    icon: Truck,
     docsUrl: "https://developers.eko.in/reference/driving-license",
     heroImage: dlImg,
     overview: "The Driving License Verification API enables businesses to validate driving license details instantly as part of identity verification and onboarding workflows. It helps confirm user identity, reduce impersonation risk, and meet compliance requirements.",
@@ -879,6 +894,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Vehicle & RC Verification API",
     heroSubtitle: "Get complete vehicle information from a registration number — owner details, chassis, engine, insurance status, blacklist check, permits, and more. Pan-India coverage via VAHAN database.",
     category: "verification",
+    icon: Truck,
     docsUrl: "https://developers.eko.in/reference/vehicle-rc",
     overview: "The Vehicle & RC Verification API enables businesses to fetch comprehensive vehicle information using a registration number. It returns RC status, owner details, chassis and engine numbers, manufacturer and model, insurance validity, permit details, blacklist and challan status, and more — all in a single API call. Designed for platforms that onboard drivers or vehicles, verify fleet compliance, underwrite motor insurance, or assess vehicle-related risk.",
     keyBenefits: [
@@ -956,6 +972,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "DigiLocker API for Secure Digital Document Verification",
     heroSubtitle: "Access and verify user documents digitally through consent-driven, paperless workflows.",
     category: "verification",
+    icon: FolderCheck,
     docsUrl: "https://eps.eko.in/developers/eps/digilocker-api/",
     overview: "The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records.",
     keyBenefits: [
@@ -1004,6 +1021,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Employee Verification API for Trusted Workforce Onboarding",
     heroSubtitle: "Verify employee identity and details digitally to reduce hiring risk and ensure compliance.",
     category: "verification",
+    icon: Briefcase,
     docsUrl: "https://eko.in/developers/eps/employee-verification-api/",
     overview: "The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows.",
     keyBenefits: [
@@ -1069,6 +1087,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroTitle: "Reverse Geocoding API for Location-Based Verification",
     heroSubtitle: "Convert geo-coordinates into precise address data to strengthen verification and compliance workflows.",
     category: "verification",
+    icon: Globe,
     docsUrl: "https://eko.in/developers/eps/reverse-geocoding-api/",
     overview: "The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment.",
     keyBenefits: [

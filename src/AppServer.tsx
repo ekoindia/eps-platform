@@ -28,8 +28,8 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import GrievancePage from "./pages/GrievancePage";
-import EkoShieldPage from "./pages/EkoShieldPage";
-import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
+// import EkoShieldPage from "./pages/EkoShieldPage";
+// import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
 import SignupPage from "./pages/SignupPage";
 
 // Industry & Solution Pages
@@ -59,8 +59,8 @@ const AppServer = ({ helmetContext }: { helmetContext?: any }) => (
             <Route path="/" element={<Index />} />
 
             {/* Eko Shield (specific routes before :slug wildcard) */}
-            <Route path="/products/eko-shield" element={<EkoShieldPage />} />
-            <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} />
+            {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
+            {/* <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} /> */}
 
             {/* Product API Pages */}
             <Route path="/products/:slug" element={<ProductDetailPage />} />
