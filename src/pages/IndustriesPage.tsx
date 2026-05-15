@@ -23,7 +23,7 @@ const IndustriesPage = () => {
               <div className="text-left">
                 <BreadcrumbNav crumbs={[
                   { label: "Home", href: "/" },
-                  { label: "Use Cases", href: "/use-cases" },
+                  // { label: "Use Cases", href: "/use-cases" },
                   { label: "Industries" },
                 ]} />
               </div>

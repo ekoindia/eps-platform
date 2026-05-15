@@ -50,7 +50,7 @@ const UseCasesHubPage = () => {
               <div className="text-left">
                 <BreadcrumbNav crumbs={[
                   { label: "Home", href: "/" },
-                  { label: "Use Cases" },
+                  { label: "All Use Cases" },
                 ]} />
               </div>
               <FadeIn onView={false} delay={100} className="text-center mb-12">

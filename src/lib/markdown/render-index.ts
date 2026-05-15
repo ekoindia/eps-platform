@@ -9,6 +9,7 @@ import {
   h1,
   h2,
   joinBlocks,
+  indexPageNotice,
 } from "./shared";
 
 /**
@@ -81,7 +82,7 @@ export function renderSiteIndexMarkdown(
   const blocks: (string | undefined)[] = [
     frontMatter({
       type: "site-index",
-      title: "Eko Platform Services — Site Index",
+      title: "Eko Platform Services (EPS) — Site Index",
       description:
         "Machine-readable site index for Eko Platform Services. Links to markdown versions of every product, industry, and solution page.",
       canonical,
@@ -91,21 +92,24 @@ export function renderSiteIndexMarkdown(
     "Eko provides a single API platform for payments, banking correspondent services, and identity verification across India. This is a machine-readable index linking to markdown versions of every page.",
     gettingStartedNotice(),
     h2("Products (APIs)"),
-    renderProductSection("Banking Correspondent (BC) APIs", productsByCategory.bc),
-    renderProductSection("Payment APIs", productsByCategory.payment),
     renderProductSection("Verification APIs", productsByCategory.verification),
+    renderProductSection("Payment APIs", productsByCategory.payment),
+    renderProductSection(
+      "Banking Correspondent (BC) APIs",
+      productsByCategory.bc,
+    ),
     h2("Industries"),
     industries
       .map(
         (i) =>
-          `- [${i.name}](${SITE_URL}/industries/${i.slug}) — ${i.navDescription} ([markdown](${SITE_URL}/industries/${i.slug}.md))`
+          `- [${i.name}](${SITE_URL}/industries/${i.slug}) — ${i.navDescription} ([markdown](${SITE_URL}/industries/${i.slug}.md))`,
       )
       .join("\n"),
     h2("Solution Packs"),
     solutions
       .map(
         (s) =>
-          `- [${s.name}](${SITE_URL}/solutions/${s.slug}) — ${s.tagline} ([markdown](${SITE_URL}/solutions/${s.slug}.md))`
+          `- [${s.name}](${SITE_URL}/solutions/${s.slug}) — ${s.tagline} ([markdown](${SITE_URL}/solutions/${s.slug}.md))`,
       )
       .join("\n"),
     h2("Use Cases Hub"),
@@ -131,8 +135,8 @@ export function renderLlmsTxt(
     "> EPS (Eko Platform Services) is an API platform for payments, banking correspondent services (AePS, DMT, BBPS), and identity verification (PAN, Aadhaar, bank, GST, DL, RC, etc.) in India. Markdown versions of every page are available at the URLs below."
   );
   lines.push("");
-  lines.push(`- [Site index](${SITE_URL}/index.md): Full list of products, industries, and solutions`);
-  lines.push(`- [Use cases hub](${SITE_URL}/use-cases.md): Industries and solution packs`);
+  lines.push(`- ${indexPageNotice()}`);
+  // lines.push(`- [Use cases hub](${SITE_URL}/use-cases.md): Industries and solution packs`);
   lines.push("");
 
   lines.push("## Products");

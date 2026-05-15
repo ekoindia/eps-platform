@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 // Redundant: This was used to submit to Zoho Form via Javascript fetch
+// ISSUE: requires server-side proxy to avoid CORS issues, which adds complexity and maintenance overhead. Since Zoho Forms provides its own embeddable widget that handles submission and CORS internally, it's more efficient to use that instead of implementing a custom submission flow.
 const ZOHO_ENDPOINT =
   "https://forms.zohopublic.in/ekoindiafinancialservicespvtlt/form/NewEkoinAPISignup/formperma/t7sfVQXMPus-0edXDrlVwvYeOUvLukZFFDUpISXlsnk/htmlRecords/submit";
 
@@ -70,22 +71,4 @@ export async function submitToZoho(
     body,
     mode: "no-cors",
   });
-}
-
-/**
- * Opens the Zoho SalesIQ chat widget reliably,
- * even after the user has closed it previously.
- */
-export function openZohoChat() {
-  const zoho = (window as any).$zoho;
-  if (!zoho?.salesiq) return;
-
-  // Show the chat window first (works even after close)
-  if (zoho.salesiq.chatwindow?.visible) {
-    zoho.salesiq.chatwindow.visible("show");
-  }
-  // Then start a new chat conversation
-  if (zoho.salesiq.chat?.start) {
-    zoho.salesiq.chat.start();
-  }
 }

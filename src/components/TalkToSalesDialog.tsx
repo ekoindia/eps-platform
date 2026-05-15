@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import {
   Dialog,

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import heroImage from "@/assets/hero-network.jpg";
 import { FadeIn } from "@/components/FadeIn";
 

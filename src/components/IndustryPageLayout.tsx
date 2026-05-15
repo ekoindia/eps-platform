@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import { FadeIn } from "@/components/FadeIn";
 
 interface IndustryPageLayoutProps {
@@ -30,7 +30,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <BreadcrumbNav crumbs={[
               { label: "Home", href: "/" },
-              { label: "Use Cases", href: "/use-cases" },
+              // { label: "Use Cases", href: "/use-cases" },
               { label: "Industries", href: "/industries" },
               { label: data.name },
             ]} />

@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 
@@ -35,7 +35,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <BreadcrumbNav crumbs={[
               { label: "Home", href: "/" },
-              { label: "Use Cases", href: "/use-cases" },
+              // { label: "Use Cases", href: "/use-cases" },
               { label: "Solutions", href: "/solutions" },
               { label: data.name },
             ]} />

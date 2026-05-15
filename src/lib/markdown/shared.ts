@@ -78,3 +78,7 @@ export function canonicalNotice(canonicalUrl: string): string {
 export function gettingStartedNotice(): string {
   return `To get started, fill the form at ${SITE_URL}${SIGNUP_PAGE} (with your name and mobile number) or call us at +91${SALES_MOBILE}`;
 }
+
+/** Get Index Page Link */
+export const indexPageNotice = (): string =>
+  `[Site index](${SITE_URL}/index.md): Full list of API products, industries, and solution packs`;

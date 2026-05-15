@@ -3,7 +3,7 @@ import { FadeIn } from "@/components/FadeIn";
 import { Helmet } from "react-helmet-async";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { openZohoChat } from "@/lib/zoho-form";
+import { openZohoChat } from "@/lib/zoho-chat";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import {
   ArrowRight, Shield, Zap, ShieldCheck, Eye, TrendingDown,

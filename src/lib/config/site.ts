@@ -5,6 +5,12 @@ export const SITE_URL = "https://eps.eko.in";
 export const SALES_MOBILE = "9513181707";
 export const SIGNUP_PAGE = "/signup";
 
+export const SITE_ORG_NAME = "Eko Platform Services";
+export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
+
+export const PARENT_SITE_URL = "https://eko.in";
+export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";
+
 /**
  * Default SEO meta — used by DefaultMeta.tsx as the base layer for Helmet cascading.
  */
