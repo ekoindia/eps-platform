@@ -59,7 +59,7 @@ export const PRERENDER_ROUTES: string[] = [
   ...getActiveProducts().map((p) => `/products/${p.slug}`),
 
   // Products — static routes (before :slug wildcard in the router)
-  "/products/eko-shield",
+  // "/products/eko-shield",
   // "/products/eko-shield/document", --- IGNORE ---
 
   // Industries
