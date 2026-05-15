@@ -1645,8 +1645,8 @@ function stripDisabledApis(industry: IndustryData): IndustryData {
   };
 }
 
-/** INDUSTRIES_LIST with disabled product references stripped */
-export const ACTIVE_INDUSTRIES_LIST: IndustryData[] = INDUSTRIES_LIST.map(stripDisabledApis);
+/** INDUSTRIES_LIST with disabled product references stripped, and industries with no remaining APIs excluded */
+export const ACTIVE_INDUSTRIES_LIST: IndustryData[] = INDUSTRIES_LIST.map(stripDisabledApis).filter((i) => i.apiGrid.length > 0);
 
 export const INDUSTRIES_MAP: Record<string, IndustryData> = Object.fromEntries(
   ACTIVE_INDUSTRIES_LIST.map((i) => [i.slug, i])

@@ -1253,12 +1253,13 @@ function stripDisabledApis(solution: SolutionData): SolutionData {
   };
 }
 
+/** Map of solution slug to SolutionData, with disabled product references stripped */
 export const SOLUTIONS_MAP: Record<string, SolutionData> = Object.fromEntries(
   SOLUTIONS_LIST.map((s) => [s.slug, stripDisabledApis(s)])
 );
 
-/** SOLUTIONS_LIST with disabled product references stripped */
-export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(stripDisabledApis);
+/** SOLUTIONS_LIST with disabled product references stripped, and solutions with no remaining APIs excluded */
+export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(stripDisabledApis).filter((s) => s.packApis.length > 0);
 
 /**
  * Return up to `maxCount` solution packs whose `packApis` include the given API id,
