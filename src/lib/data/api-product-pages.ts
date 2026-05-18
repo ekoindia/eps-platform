@@ -485,13 +485,13 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   pan: {
     seo: {
       title: "PAN Verification API India | Instant PAN Validation for KYC & Onboarding",
-      description: "Instantly verify PAN details in real-time with 99.9% accuracy. Strengthen KYC compliance and reduce fraud for Fintechs and NBFCs.",
+      description: "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows for Fintechs and NBFCs.",
       keywords: "PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API",
     },
     title: "PAN Verification API",
     desc: "Verify PAN details in real time",
-    heroTitle: "PAN Verification APIs for Instant Identity Validation",
-    heroSubtitle: "Verify PAN details in real time to strengthen KYC, reduce fraud, and accelerate onboarding.",
+    heroTitle: "PAN Verification API for KYC & Onboarding in India",
+    heroSubtitle: "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows.",
     category: "verification",
     icon: FileText,
     docsUrl: "https://developers.eko.in/reference/pan-lite",
@@ -528,6 +528,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         apiName: "PAN Lite",
         description: "Quick PAN validation with match results for basic KYC checks.",
+        bestFor: "Basic PAN status checks",
         docsUrl: "https://developers.eko.in/reference/pan-lite",
         endpoint: "/pan-lite",
         inputs: [
@@ -545,6 +546,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         apiName: "PAN Advanced",
         description: "Detailed PAN data including holder name, category, and Aadhaar seeding status.",
+        bestFor: "KYC workflows needing richer match details",
         docsUrl: "https://developers.eko.in/reference/pan-advanced",
         endpoint: "/pan-advanced",
         inputs: [
@@ -568,6 +570,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         apiName: "Bulk PAN Verification",
         description: "Verify multiple PANs in a single async batch request for high-volume operations.",
+        bestFor: "High-volume PAN verification with async processing",
         docsUrl: "https://developers.eko.in/reference/pan-bulk-verify",
         endpoint: "/pan/bulk",
         inputs: [
