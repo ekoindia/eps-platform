@@ -25,6 +25,8 @@ export interface ApiPreviewItem {
   comingSoon?: boolean;
   docsUrl?: string;
   relevance?: ApiProductRelevance;
+  /** What is this API best suited for, as compared to other variants in this product pack? */
+  bestFor?: string; // e.g. "Best for quick checks", "Best for detailed reports", etc.
 }
 
 // MARK: API Type
