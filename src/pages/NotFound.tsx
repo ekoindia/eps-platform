@@ -63,8 +63,8 @@ const NotFound = () => {
 	return (
 		<>
 			<Helmet>
-				<title>Page Not Found | Eko</title>
-				<meta name="robots" content="noindex, nofollow" />
+				<title>Page Not Found | Eko Platform Services</title>
+				<meta name="robots" content="noindex" />
 			</Helmet>
 
 			{/* Hero Section */}

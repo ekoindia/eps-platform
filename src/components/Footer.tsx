@@ -12,11 +12,12 @@ import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/f
 
 const footerLinks = {
   products: [
-    { label: "BC APIs", href: "#products" },
-    { label: "Payments APIs", href: "#products" },
-    // { label: "Collection APIs", href: "#products" },
-    { label: "Verification APIs", href: "#products" },
+    { label: "Verification APIs", href: "/products#verification", internal: true },
+    { label: "Payments APIs", href: "/products#payment", internal: true },
+    // { label: "Collection APIs", href: "/products" },
+    { label: "BC APIs", href: "/products#bc", internal: true },
     // { label: "Eko Shield", href: "/products/eko-shield", internal: true },
+    { label: "All APIs", href: "/products", internal: true },
   ],
   developers: [
     { label: "Documentation", href: "https://developers.eko.in", external: true },

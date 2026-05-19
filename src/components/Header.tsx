@@ -35,7 +35,7 @@ const companyLinks = [
 ];
 
 const navLinks = [
-  { label: "Products", href: "#products", hasDropdown: true },
+  { label: "Products", href: "/products", hasDropdown: true },
   { label: "Use Cases", href: "/use-cases", hasDropdown: true },
   { label: "Developers", href: "https://developers.eko.in", external: true },
   { label: "Company", href: "#", hasDropdown: true },
@@ -200,7 +200,7 @@ export const Header = () => {
   }, []);
 
   const apiColumns = [
-    { title: "Verification APIs", icon: Search, items: verificationApis, maxItems: 6, moreLink: { label: "More...", href: "https://developers.eko.in/v3/reference/bank-account-verification-sync" } },
+    { title: "Verification APIs", icon: Search, items: verificationApis, maxItems: 6, moreLink: { label: "More...", href: "/products" } },
     { title: "Payment APIs", icon: CreditCard, items: paymentApis },
     // { title: "Collection APIs", items: collectionApis },
     { title: "BC APIs", icon: Building2, items: bcApis },
@@ -280,8 +280,8 @@ export const Header = () => {
                                     {showMoreLink && (
                                       <a
                                         href={col.moreLink.href}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                        // target="_blank"
+                                        // rel="noopener noreferrer"
                                         onClick={() => setProductsDropdownOpen(false)}
                                         className="flex items-center gap-2 px-3 py-2 text-sm text-eko-navy/80 hover:text-eko-navy hover:underline font-medium transition-colors cursor-pointer"
                                       >

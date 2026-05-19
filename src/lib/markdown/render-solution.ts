@@ -25,7 +25,7 @@ export function renderSolutionMarkdown(
       type: "solution pack",
       title: data.seo.title,
       description: data.seo.description,
-      keywords: data.seo.keywords,
+      // keywords: data.seo.keywords,
       slug: data.slug,
       category: data.category,
       canonical,

@@ -27,7 +27,7 @@ export function renderIndustryMarkdown(data: IndustryData): string {
       type: "industry",
       title: data.seo.title,
       description: data.seo.description,
-      keywords: data.seo.keywords,
+      // keywords: data.seo.keywords,
       slug: data.slug,
       category: data.category,
       canonical,

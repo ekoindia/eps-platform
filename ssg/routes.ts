@@ -22,6 +22,7 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
   //   src: "src/pages/EkoShieldDocumentPage.tsx",
   // },
   // { pattern: /^\/products\/eko-shield$/, src: "src/pages/EkoShieldPage.tsx" },
+  { pattern: /^\/products$/, src: "src/pages/ProductsPage.tsx" },
   {
     pattern: /^\/products\//,
     src: "src/pages/products/ProductDetailPage.tsx",
@@ -55,7 +56,8 @@ export const PRERENDER_ROUTES: string[] = [
   // Home
   "/",
 
-  // Products — dynamic slugs
+  // Products listing + dynamic slugs
+  "/products",
   ...getActiveProducts().map((p) => `/products/${p.slug}`),
 
   // Products — static routes (before :slug wildcard in the router)
