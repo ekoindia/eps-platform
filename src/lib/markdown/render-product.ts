@@ -44,7 +44,7 @@ export function renderProductMarkdown(
       type: "product",
       title: page.seo.title,
       description: page.seo.description,
-      keywords: page.seo.keywords,
+      // keywords: page.seo.keywords,
       slug: product.slug,
       category: page.category,
       canonical,
