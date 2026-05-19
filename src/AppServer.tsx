@@ -32,6 +32,9 @@ import GrievancePage from "./pages/GrievancePage";
 // import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
 import SignupPage from "./pages/SignupPage";
 
+// Products listing page
+import ProductsPage from "./pages/ProductsPage";
+
 // Industry & Solution Pages
 import IndustryDetailPage from "./pages/IndustryDetailPage";
 import SolutionDetailPage from "./pages/SolutionDetailPage";
@@ -63,6 +66,7 @@ const AppServer = ({ helmetContext }: { helmetContext?: any }) => (
             {/* <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} /> */}
 
             {/* Product API Pages */}
+            <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:slug" element={<ProductDetailPage />} />
 
             {/* Industry & Solution Pages */}

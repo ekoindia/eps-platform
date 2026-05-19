@@ -9,6 +9,7 @@ with full rendered HTML.
 
 At build time, the site generates Markdown equivalents for:
 
+- Product listing: `/products.md`
 - Product pages: `/products/:slug.md`
 - Industry pages: `/industries/:slug.md`
 - Solution pages: `/solutions/:slug.md`
@@ -50,6 +51,10 @@ All Markdown generation logic lives in `src/lib/markdown/`.
 	Generates Markdown for product detail pages from product page data. Includes
 	sections such as overview, benefits, features, use cases, integration steps,
 	FAQs, docs link, and related products.
+
+- `src/lib/markdown/render-products-index.ts`
+	Generates Markdown for the products listing page (`/products.md`). Lists all
+	active API products grouped by category (Verification, Payment, BC Agent).
 
 - `src/lib/markdown/render-industry.ts`
 	Generates Markdown for industry pages. Includes challenge text, recommended

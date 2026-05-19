@@ -25,6 +25,7 @@ const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const IndustryDetailPage = lazy(() => import("./pages/IndustryDetailPage"));
 const SolutionDetailPage = lazy(() => import("./pages/SolutionDetailPage"));
+const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const IndustriesPage = lazy(() => import("./pages/IndustriesPage"));
 const SolutionsPage = lazy(() => import("./pages/SolutionsPage"));
 const UseCasesHubPage = lazy(() => import("./pages/UseCasesHubPage"));
@@ -54,6 +55,7 @@ const App = ({ helmetContext }: { helmetContext?: any }) => (
             {/* <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} /> */}
 
             {/* Product API Pages */}
+            <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:slug" element={<ProductDetailPage />} />
 
             {/* Industry & Solution Pages */}
