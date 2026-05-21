@@ -8,6 +8,7 @@ import { EkoLogo } from "@/components/EkoLogo";
 import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
 import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/fa";
+import { XIcon } from "@/components/icons/XIcon";
 
 /**
  * MARK: Links Data
@@ -55,12 +56,6 @@ const footerLinks = {
     { label: "All Solutions", href: "/solutions", internal: true },
   ],
 };
-
-const XIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
 
 /**
  * Discriminated union covering internal (React Router), external (new tab), and plain anchor link variants.
@@ -136,7 +131,7 @@ export const Footer = () => {
               <EkoLogo className="h-16 w-auto" />
             </div>
             <p className="text-white/70 mb-1 max-w-sm leading-relaxed text-sm text-justify">
-              By <a href="https://eko.in" className="font-bold hover:underline" target="_blank">Eko Bharat Ventures Private Limited</a>
+              By <a href="https://eko.in" className="font-bold hover:underline" target="_blank">Eko Bharat Ventures Pvt. Ltd.</a>
             </p>
             <p className="text-white/70 mb-6 max-w-sm leading-relaxed text-sm text-justify italic">
               “Grow every entrepreneur daily”
