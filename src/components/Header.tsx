@@ -1,12 +1,15 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, ArrowRight, Sparkles, Shield, Briefcase, Search, CreditCard, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
-import { SALES_MOBILE } from "@/lib/config/site";
+import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
+import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/fa";
+import { XIcon } from "@/components/icons/XIcon";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
+import { DropdownGrid, DropdownColumnHeader } from "@/components/DropdownGrid";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
@@ -30,8 +33,17 @@ const verificationApis = activeProducts
   .map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
 
 const companyLinks = [
-  { label: "About Us", href: "/about-us", internal: true },
+  { label: "About Eko", href: "/about-us", internal: true },
+  // { label: "Grievance", href: "/grievance", internal: true },
   // { label: "Blogs & Media", href: "/blogs-media", internal: true },
+];
+
+const companySocialLinks = [
+  { icon: FaLinkedinIn, href: SOCIAL_LINKS.linkedin, label: "LinkedIn", iconBg: "bg-[#0A66C2]/15", iconColor: "text-[#0A66C2]" },
+  { icon: FaFacebookF, href: SOCIAL_LINKS.facebook, label: "Facebook", iconBg: "bg-[#1877F2]/15", iconColor: "text-[#1877F2]" },
+  { icon: FaInstagram, href: SOCIAL_LINKS.instagram, label: "Instagram", iconBg: "bg-[#E4405F]/15", iconColor: "text-[#E4405F]" },
+  { icon: FaYoutube, href: SOCIAL_LINKS.youtube, label: "YouTube", iconBg: "bg-[#FF0000]/15", iconColor: "text-[#FF0000]" },
+  { icon: XIcon, href: SOCIAL_LINKS.x, label: "X (Twitter)", iconBg: "bg-[#1D1D1D]/10", iconColor: "text-[#1D1D1D]" },
 ];
 
 const navLinks = [
@@ -45,43 +57,101 @@ const NAV_MAX_ITEMS = 8;
 const navIndustries = ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority === 1).slice(0, NAV_MAX_ITEMS);
 const navSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority === 1).slice(0, NAV_MAX_ITEMS);
 
-const pastelColors = [
-  'bg-blue-100 text-blue-400',
-  'bg-purple-100 text-purple-400',
-  'bg-pink-100 text-pink-400',
-  'bg-emerald-100 text-emerald-400',
-  'bg-amber-100 text-amber-400',
-  'bg-indigo-100 text-indigo-400',
-  'bg-teal-100 text-teal-400',
-  'bg-fuchsia-100 text-fuchsia-400',
-  'bg-rose-100 text-rose-400',
-];
-
-interface MenuItemLinkProps {
-  to: string;
-  icon: React.ComponentType<{ className?: string }>;
+/**
+ * Desktop navigation dropdown trigger button with a chevron indicator.
+ */
+const NavDropdownButton = ({
+  label,
+  isOpen,
+  isActive,
+  useWhiteText,
+  activeNavClasses,
+  onClick,
+}: {
   label: string;
-  description?: string;
-  index: number;
+  isOpen: boolean;
+  isActive: boolean;
+  useWhiteText: boolean;
+  activeNavClasses: string;
   onClick: () => void;
-}
-
-const MenuItemLink = ({ to, icon: Icon, label, description, index, onClick }: MenuItemLinkProps) => (
-  <Link
-    to={to}
+}) => (
+  <button
     onClick={onClick}
-    className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors cursor-pointer group animate-fade-up [animation-duration:300ms]"
-    style={{ animationDelay: `${index * 40}ms`, animationFillMode: "backwards" }}
+    className={cn(
+      "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+      useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
+      isActive && activeNavClasses
+    )}
   >
-    <Icon className={`w-7 h-7 mt-1.5 p-[6px] opacity-90 shrink-0 rounded-lg ${pastelColors[index % pastelColors.length]}`} />
-    <div>
-      <span className="text-sm font-medium text-eko-navy">{label}</span>
-      {description && (
-        <p className="text-xs text-eko-slate/60 leading-tight mt-0.5">{description}</p>
-      )}
-    </div>
-  </Link>
+    {label}
+    <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+  </button>
 );
+
+/**
+ * Full-width dropdown panel pinned below the fixed header.
+ * Adjusts its top offset based on whether the header is in its compact (scrolled) state.
+ */
+const FullWidthDropdownPanel = ({
+  isScrolled,
+  children,
+}: {
+  isScrolled: boolean;
+  children: ReactNode;
+}) => (
+  <div
+    className={cn(
+      "fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal",
+      isScrolled ? "top-[60px]" : "top-[82px]"
+    )}
+  >
+    {children}
+  </div>
+);
+
+/**
+ * Mobile navigation accordion toggle button with a chevron indicator.
+ */
+const MobileAccordionButton = ({
+  label,
+  isOpen,
+  onClick,
+}: {
+  label: string;
+  isOpen: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
+  >
+    {label}
+    <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+  </button>
+);
+
+/**
+ * Renders a company navigation link as an internal `<Link>` or external `<a>`,
+ * based on the `item.internal` flag.
+ */
+const CompanyLinkItem = ({
+  item,
+  onClick,
+  className,
+}: {
+  item: { label: string; href: string; internal?: boolean };
+  onClick?: () => void;
+  className: string;
+}) =>
+  item.internal ? (
+    <Link to={item.href} onClick={onClick} className={className}>
+      {item.label}
+    </Link>
+  ) : (
+    <a href={item.href} onClick={onClick} className={className}>
+      {item.label}
+    </a>
+  );
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -229,7 +299,10 @@ export const Header = () => {
               />
             </Link>
 
-            {/* Desktop Navigation */}
+            {/*
+              Desktop Navigation
+              MARK: Products
+            */}
             <nav className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => {
                 if (link.label === "Products") {
@@ -243,63 +316,39 @@ export const Header = () => {
                         setUseCasesDropdownOpen(false);
                       })}
                     >
-                      <button
+                      <NavDropdownButton
+                        label={link.label}
+                        isOpen={productsDropdownOpen}
+                        isActive={isNavActive(link.label)}
+                        useWhiteText={useWhiteText}
+                        activeNavClasses={activeNavClasses}
                         onClick={() => { setProductsDropdownOpen(!productsDropdownOpen); setCompanyDropdownOpen(false); setUseCasesDropdownOpen(false); }}
-                        className={cn(
-                          "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                          isNavActive(link.label) && activeNavClasses
-                        )}
-                      >
-                        {link.label}
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", productsDropdownOpen && "rotate-180")} />
-                      </button>
+                      />
 
                       {productsDropdownOpen && (
-                        <div className={cn("fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal", isScrolled ? "top-[60px]" : "top-[82px]")}>
-                          {/* API Columns - 3 categories */}
-                          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-3 gap-10">
-                            {apiColumns.map((col, colIndex) => {
-                              const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
-                              const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;
-                              return (
-                                <div key={col.title}>
-                                  <h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider mb-2 pb-2 border-b border-eko-navy/10">{col.title}</h4>
-                                  <div className="space-y-0.5">
-                                    {displayItems.map((item, index) => (
-                                      <MenuItemLink
-                                        key={item.href}
-                                        to={item.href}
-                                        icon={item.icon}
-                                        label={item.label}
-                                        description={item.shortDesc}
-                                        index={index + colIndex * 2}
-                                        onClick={() => setProductsDropdownOpen(false)}
-                                      />
-                                    ))}
-                                    {showMoreLink && (
-                                      <a
-                                        href={col.moreLink.href}
-                                        // target="_blank"
-                                        // rel="noopener noreferrer"
-                                        onClick={() => setProductsDropdownOpen(false)}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm text-eko-navy/80 hover:text-eko-navy hover:underline font-medium transition-colors cursor-pointer"
-                                      >
-                                        {col.moreLink.label}
-                                        <ArrowRight className="w-3.5 h-3.5" />
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
+                        <FullWidthDropdownPanel isScrolled={isScrolled}>
+                          <DropdownGrid
+                            columns={apiColumns.map((col) => ({
+                              title: col.title,
+                              items: (col.maxItems ? col.items.slice(0, col.maxItems) : col.items).map((item) => ({
+                                to: item.href,
+                                icon: item.icon,
+                                label: item.label,
+                                description: item.shortDesc,
+                              })),
+                              seeAllLink: col.maxItems && col.items.length > col.maxItems && col.moreLink
+                                ? { label: "See all →", to: col.moreLink.href }
+                                : undefined,
+                            }))}
+                            onItemClick={() => setProductsDropdownOpen(false)}
+                          />
+                        </FullWidthDropdownPanel>
                       )}
                     </div>
                   );
                 }
 
+                // MARK: Use Cases
                 if (link.label === "Use Cases") {
                   return (
                     <div
@@ -311,20 +360,17 @@ export const Header = () => {
                         setCompanyDropdownOpen(false);
                       })}
                     >
-                      <button
+                      <NavDropdownButton
+                        label={link.label}
+                        isOpen={useCasesDropdownOpen}
+                        isActive={isNavActive(link.label)}
+                        useWhiteText={useWhiteText}
+                        activeNavClasses={activeNavClasses}
                         onClick={() => { setUseCasesDropdownOpen(!useCasesDropdownOpen); setProductsDropdownOpen(false); setCompanyDropdownOpen(false); }}
-                        className={cn(
-                          "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                          isNavActive(link.label) && activeNavClasses
-                        )}
-                      >
-                        {link.label}
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", useCasesDropdownOpen && "rotate-180")} />
-                      </button>
+                      />
 
                       {useCasesDropdownOpen && (
-                        <div className={cn("fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal", isScrolled ? "top-[60px]" : "top-[82px]")}>
+                        <FullWidthDropdownPanel isScrolled={isScrolled}>
                           {/* Featured banner */}
                           <div className="bg-gradient-to-r from-[#00394b] to-[#005a6e]">
                             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -347,56 +393,38 @@ export const Header = () => {
                             </div>
                           </div>
 
-                          {/* Two-panel layout */}
-                          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-2 gap-10">
-                            {/* Industries panel */}
-                            <div>
-                              <div className="flex items-center justify-between mb-2 pb-2 border-b border-eko-navy/10">
-                                <h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider">Industries</h4>
-                                <Link to="/industries" onClick={() => setUseCasesDropdownOpen(false)} className="text-xs text-eko-navy/80 hover:text-eko-navy hover:underline font-medium">See all →</Link>
-                              </div>
-                              <div className="space-y-0.5">
-                                {navIndustries.map((item, index) => (
-                                  <MenuItemLink
-                                    key={item.slug}
-                                    to={`/industries/${item.slug}`}
-                                    icon={item.icon}
-                                    label={item.name}
-                                    description={item.tagline}
-                                    index={index}
-                                    onClick={() => setUseCasesDropdownOpen(false)}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Solutions panel */}
-                            <div>
-                              <div className="flex items-center justify-between mb-2 pb-2 border-b border-eko-navy/10">
-                                <h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider">Solution Packs</h4>
-                                <Link to="/solutions" onClick={() => setUseCasesDropdownOpen(false)} className="text-xs text-eko-navy/80 hover:text-eko-navy hover:underline font-medium">See all →</Link>
-                              </div>
-                              <div className="space-y-0.5">
-                                {navSolutions.map((item, index) => (
-                                  <MenuItemLink
-                                    key={item.slug}
-                                    to={`/solutions/${item.slug}`}
-                                    icon={item.icon}
-                                    label={item.name}
-                                    description={item.tagline}
-                                    index={index + 2}
-                                    onClick={() => setUseCasesDropdownOpen(false)}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                          <DropdownGrid
+                            columns={[
+                              {
+                                title: "Industries",
+                                items: navIndustries.map((item) => ({
+                                  to: `/industries/${item.slug}`,
+                                  icon: item.icon,
+                                  label: item.name,
+                                  description: item.tagline,
+                                })),
+                                seeAllLink: { label: "See all →", to: "/industries" },
+                              },
+                              {
+                                title: "Solution Packs",
+                                items: navSolutions.map((item) => ({
+                                  to: `/solutions/${item.slug}`,
+                                  icon: item.icon,
+                                  label: item.name,
+                                  description: item.tagline,
+                                })),
+                                seeAllLink: { label: "See all →", to: "/solutions" },
+                              },
+                            ]}
+                            onItemClick={() => setUseCasesDropdownOpen(false)}
+                          />
+                        </FullWidthDropdownPanel>
                       )}
                     </div>
                   );
                 }
 
+                // MARK: Company
                 if (link.label === "Company") {
                   return (
                     <div
@@ -408,42 +436,49 @@ export const Header = () => {
                         setUseCasesDropdownOpen(false);
                       })}
                     >
-                      <button
+                      <NavDropdownButton
+                        label={link.label}
+                        isOpen={companyDropdownOpen}
+                        isActive={isNavActive(link.label)}
+                        useWhiteText={useWhiteText}
+                        activeNavClasses={activeNavClasses}
                         onClick={() => { setCompanyDropdownOpen(!companyDropdownOpen); setProductsDropdownOpen(false); setUseCasesDropdownOpen(false); }}
-                        className={cn(
-                          "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                          isNavActive(link.label) && activeNavClasses
-                        )}
-                      >
-                        {link.label}
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", companyDropdownOpen && "rotate-180")} />
-                      </button>
+                      />
 
                       {companyDropdownOpen && (
-                        <div className="fixed top-24 left-1/2 w-[200px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 p-4 z-50 animate-menu-slide-down-in">
-                          <div className="space-y-1">
-                            {companyLinks.map((item) =>
-                              item.internal ? (
-                                <Link
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden">
+                          <div className="grid grid-cols-2">
+                            {/* Left column: company links */}
+                            <div className="p-4 space-y-1">
+                              <DropdownColumnHeader title="Company" />
+                              {companyLinks.map((item) => (
+                                <CompanyLinkItem
                                   key={item.label}
-                                  to={item.href}
+                                  item={item}
                                   onClick={() => setCompanyDropdownOpen(false)}
                                   className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                                >
-                                  {item.label}
-                                </Link>
-                              ) : (
+                                />
+                              ))}
+                            </div>
+
+                            {/* Right column: social links */}
+                            <div className="p-4 space-y-1">
+                              <DropdownColumnHeader title="Follow Us" />
+                              {companySocialLinks.map((social) => (
                                 <a
-                                  key={item.label}
-                                  href={item.href}
-                                  onClick={() => setCompanyDropdownOpen(false)}
-                                  className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                  key={social.label}
+                                  href={social.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
                                 >
-                                  {item.label}
+                                  <span className={cn("w-6 h-6 rounded-full flex items-center justify-center shrink-0", social.iconBg)}>
+                                    <social.icon className={cn("w-3 h-3", social.iconColor)} />
+                                  </span>
+                                  {social.label}
                                 </a>
-                              )
-                            )}
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -517,13 +552,11 @@ export const Header = () => {
 
           <nav className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
             {/* Products Accordion */}
-            <button
+            <MobileAccordionButton
+              label="Products"
+              isOpen={mobileProductsOpen}
               onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
-              className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
-            >
-              Products
-              <ChevronDown className={cn("w-4 h-4 transition-transform", mobileProductsOpen && "rotate-180")} />
-            </button>
+            />
             {mobileProductsOpen && (
               <div className="pl-4 space-y-1">
                 {apiColumns.map((col) => {
@@ -551,39 +584,30 @@ export const Header = () => {
             )}
 
             {/* Company Accordion */}
-            <button
+            <MobileAccordionButton
+              label="Company"
+              isOpen={mobileCompanyOpen}
               onClick={() => setMobileCompanyOpen(!mobileCompanyOpen)}
-              className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
-            >
-              Company
-              <ChevronDown className={cn("w-4 h-4 transition-transform", mobileCompanyOpen && "rotate-180")} />
-            </button>
+            />
             {mobileCompanyOpen && (
               <div className="pl-4 space-y-1">
-                {companyLinks.map((item) =>
-                  item.internal ? (
-                    <Link key={item.label} to={item.href} onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                      {item.label}
-                    </a>
-                  )
-                )}
+                {companyLinks.map((item) => (
+                  <CompanyLinkItem
+                    key={item.label}
+                    item={item}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block text-sm py-1.5 text-eko-slate cursor-pointer"
+                  />
+                ))}
               </div>
             )}
 
             {/* Use Cases Accordion */}
-            <button
+            <MobileAccordionButton
+              label="Use Cases"
+              isOpen={mobileUseCasesOpen}
               onClick={() => setMobileUseCasesOpen(!mobileUseCasesOpen)}
-              className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
-            >
-              Use Cases
-              <ChevronDown className={cn("w-4 h-4 transition-transform", mobileUseCasesOpen && "rotate-180")} />
-            </button>
+            />
             {mobileUseCasesOpen && (
               <div className="pl-4 space-y-1">
                 <p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">Industries</p>

@@ -15,7 +15,7 @@ const SolutionDetailPage = () => {
   return (
     <>
       <Helmet>
-        <title>{data.seo.title}</title>
+        <title>{data.seo.title} | Eko Platform Services</title>
         <meta name="description" content={data.seo.description} />
         <meta name="keywords" content={data.seo.keywords} />
         <link rel="canonical" href={`${SITE_URL}/solutions/${data.slug}`} />

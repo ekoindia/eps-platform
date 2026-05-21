@@ -203,7 +203,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "insurance", name: "Insurance" },
     ],
     seo: {
-      title: "Lending & NBFC APIs | Eko Platform Services",
+      title: "Lending & NBFC APIs",
       description: "RBI-compliant API stack for digital lenders in India. PAN, bank, DigiLocker, instant disbursal, BBPS collection. Sandbox in minutes.",
       keywords: "lending api india, nbfc api platform, kyc api for lending, digital lending api india, rbi digital lending api",
     },
@@ -267,7 +267,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "agriculture", name: "Agriculture" },
     ],
     seo: {
-      title: "Microfinance APIs | Eko Platform Services",
+      title: "Microfinance APIs",
       description: "Digitize MFI field operations — AePS biometric collection, instant disbursal, group loan management. NPCI compliant. Trusted by 50+ MFIs.",
       keywords: "mfi api india, microfinance digital collection api, aeps for mfi, field collection api india",
     },
@@ -329,7 +329,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "logistics-fleet", name: "Logistics & Fleet" },
     ],
     seo: {
-      title: "Insurance APIs | Eko Platform Services",
+      title: "Insurance APIs",
       description: "Instant motor insurance proposals with auto-filled vehicle details. RC, DL, PAN verification. IRDAI compliant. Used by 20+ insurers in India.",
       keywords: "insurance kyc api india, motor insurance verification api, rc api for insurance, irdai api",
     },
@@ -394,7 +394,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "agriculture", name: "Agriculture" },
     ],
     seo: {
-      title: "Agent Banking APIs for CSP & BC | Eko Platform Services",
+      title: "Agent Banking APIs for CSP & BC",
       description: "Scale your agent network with AePS, DMT, and BBPS under Eko's BCNM license. 200K+ agents, dual AePS gateway, daily commission settlement.",
       keywords: "csp api india, bc agent api, white label aeps, agent banking platform india",
     },
@@ -453,7 +453,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "agriculture", name: "Agriculture" },
     ],
     seo: {
-      title: "Kirana Banking APIs | Eko Platform Services",
+      title: "Kirana Banking APIs",
       description: "Turn kirana stores into banking touchpoints. AePS cash withdrawal, DMT money transfer, BBPS bill payments. ₹15K–30K/month agent income.",
       keywords: "kirana api india, retail banking api india, digital kirana platform",
     },
@@ -512,7 +512,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "lending-nbfc", name: "Lending & NBFC" },
     ],
     seo: {
-      title: "Marketplace Seller Verification APIs | Eko Platform Services",
+      title: "Marketplace Seller Verification APIs",
       description: "Onboard marketplace sellers in 10 minutes. PAN, GST, bank verification. ONDC seller-ready. Used by 500+ marketplaces in India.",
       keywords: "marketplace seller verification api, vendor kyb api india, ondc seller onboarding api",
     },
@@ -630,7 +630,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "healthcare", name: "Healthcare" },
     ],
     seo: {
-      title: "Staffing & HR APIs | Background Verification & Onboarding | Eko",
+      title: "Staffing & HR APIs | Background Verification & Onboarding",
       description: "Instant employee background verification & gig worker onboarding APIs for India. EPFO, DL, PAN, DigiLocker, bank — BGV in under 5 minutes. DPDP compliant.",
       keywords: "staffing api india, employee background verification api, bgv api india, hr onboarding api, epfo verification api, gig worker onboarding api",
     },
@@ -752,7 +752,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "insurance", name: "Insurance" },
     ],
     seo: {
-      title: "Logistics & Fleet APIs | Vehicle Compliance & Driver Verification | Eko",
+      title: "Logistics & Fleet APIs | Vehicle Compliance & Driver Verification",
       description: "Fleet compliance & driver verification APIs for India. RC, DL, vehicle verification via VAHAN. Daily batch monitoring, expiry alerts, instant delivery partner onboarding.",
       keywords: "logistics api india, fleet compliance api, rc verification api india, dl verification fleet, vehicle compliance api, delivery partner onboarding api, vahan api india",
     },
@@ -855,7 +855,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "accounting-tax", name: "Accounting & Tax" },
     ],
     seo: {
-      title: "SaaS Platform APIs | Embed KYC, Verification & Payments | Eko",
+      title: "SaaS Platform APIs | Embed KYC, Verification & Payments",
       description: "Embed PAN, GST, bank, Aadhaar, and payment APIs into your SaaS product. One integration, full compliance coverage. Sandbox in minutes. Used by 500+ platforms.",
       keywords: "saas verification api india, embed kyc api saas, pan verification api for saas, bank verification api india, fintech api platform india",
     },
@@ -955,7 +955,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "staffing-hr", name: "Staffing & HR" },
     ],
     seo: {
-      title: "E-commerce APIs | Seller Onboarding & Delivery Verification | Eko",
+      title: "E-commerce APIs | Seller Onboarding & Delivery Verification",
       description: "ONDC-ready seller KYB, delivery partner verification, and payout APIs for e-commerce. PAN, GST, bank, DL, RC in one integration. Sandbox in minutes.",
       keywords: "ecommerce seller verification api india, ondc seller onboarding api, delivery partner verification api, kyb api ecommerce india",
     },
@@ -1057,7 +1057,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "kirana-retail", name: "Kirana & Retail" },
     ],
     seo: {
-      title: "Agriculture APIs | Rural Payments & Farmer DBT Cashout | Eko",
+      title: "Agriculture APIs | Rural Payments & Farmer DBT Cashout",
       description: "AePS DBT cashout, rural money transfer, and FPO payout APIs for India's agricultural sector. Works without smartphones. Covers PM-KISAN, MGNREGA, all DBT schemes.",
       keywords: "agriculture api india, farmer dbt cashout api, pm-kisan withdrawal api, aeps agriculture, rural fintech api india",
     },
@@ -1149,7 +1149,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "lending-nbfc", name: "Lending & NBFC" },
     ],
     seo: {
-      title: "Automotive APIs | Vehicle Verification, Insurance & Fleet | Eko",
+      title: "Automotive APIs | Vehicle Verification, Insurance & Fleet",
       description: "RC, vehicle verification, and DL APIs for India's automotive sector. VAHAN national database. Sub-2-second response. Motor insurance, auto finance, fleet compliance.",
       keywords: "automotive api india, vehicle rc verification api india, rc api for auto finance, motor insurance api, vahan api india, used car verification api",
     },
@@ -1235,7 +1235,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "lending-nbfc", name: "Lending & NBFC" },
     ],
     seo: {
-      title: "Travel Industry APIs | Agent Onboarding & Payment Verification | Eko",
+      title: "Travel Industry APIs | Agent Onboarding & Payment Verification",
       description: "KYB and payment APIs for travel OTAs, aggregators, and agent networks. PAN, GST, bank verification for agent onboarding. RBI compliant. Sandbox in minutes.",
       keywords: "travel agent verification api india, ota agent onboarding api, travel industry kyb api, travel payment api india",
     },
@@ -1329,7 +1329,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "marketplaces", name: "Marketplaces" },
     ],
     seo: {
-      title: "Education APIs | Student Loan, Fee Collection & KYB | Eko",
+      title: "Education APIs | Student Loan, Fee Collection & KYB",
       description: "Student loan disbursal, BBPS fee collection, DigiLocker document verification, and institution KYB APIs for India's education sector. RBI compliant. Sandbox in minutes.",
       keywords: "education loan api india, student loan disbursal api, bbps fee collection api, digilocker education api, edtech kyb api india",
     },
@@ -1423,7 +1423,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "insurance", name: "Insurance" },
     ],
     seo: {
-      title: "Healthcare APIs | Staff BGV, Patient KYC & Medical Payments | Eko",
+      title: "Healthcare APIs | Staff BGV, Patient KYC & Medical Payments",
       description: "Background verification, credential check, and payment APIs for India's healthcare sector. EPFO, DigiLocker, PAN, Aadhaar for doctor and nurse BGV. DPDP compliant.",
       keywords: "healthcare bgv api india, doctor verification api, nurse credential verification api, healthcare kyc api india, medical credit api",
     },
@@ -1517,7 +1517,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "staffing-hr", name: "Staffing & HR" },
     ],
     seo: {
-      title: "Real Estate APIs | Home Loan KYC, Broker & Tenant Verification | Eko",
+      title: "Real Estate APIs | Home Loan KYC, Broker & Tenant Verification",
       description: "Home loan KYC, broker onboarding, and tenant verification APIs for India's real estate sector. DigiLocker ITR fetch, EPFO employment check, bank verification. RBI compliant.",
       keywords: "real estate api india, home loan kyc api, broker verification api india, tenant screening api, digilocker itr api, proptech api india",
     },
@@ -1618,7 +1618,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { slug: "marketplaces", name: "Marketplaces" },
     ],
     seo: {
-      title: "Accounting & Tax APIs | GST Verification, ITR & MSME Credit | Eko",
+      title: "Accounting & Tax APIs | GST Verification, ITR & MSME Credit",
       description: "GST filing history, ITR data pull, PAN verification, and MSME credit assessment APIs for CAs, accounting SaaS, and tax platforms. 12 quarters of GST data. Sandbox free.",
       keywords: "gst verification api india, itr api india, msme credit assessment api, accounting api india, ca gst data api, pan gst verification india",
     },
