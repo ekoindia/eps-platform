@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, ArrowRight, Sparkles, Shield, Briefcase, Search, CreditCard, Building2 } from "lucide-react";
@@ -31,7 +31,8 @@ const verificationApis = activeProducts
   .map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
 
 const companyLinks = [
-  { label: "About Us", href: "/about-us", internal: true },
+  { label: "About Eko", href: "/about-us", internal: true },
+  // { label: "Grievance", href: "/grievance", internal: true },
   // { label: "Blogs & Media", href: "/blogs-media", internal: true },
 ];
 
@@ -46,7 +47,101 @@ const NAV_MAX_ITEMS = 8;
 const navIndustries = ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority === 1).slice(0, NAV_MAX_ITEMS);
 const navSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority === 1).slice(0, NAV_MAX_ITEMS);
 
+/**
+ * Desktop navigation dropdown trigger button with a chevron indicator.
+ */
+const NavDropdownButton = ({
+  label,
+  isOpen,
+  isActive,
+  useWhiteText,
+  activeNavClasses,
+  onClick,
+}: {
+  label: string;
+  isOpen: boolean;
+  isActive: boolean;
+  useWhiteText: boolean;
+  activeNavClasses: string;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+      useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
+      isActive && activeNavClasses
+    )}
+  >
+    {label}
+    <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+  </button>
+);
 
+/**
+ * Full-width dropdown panel pinned below the fixed header.
+ * Adjusts its top offset based on whether the header is in its compact (scrolled) state.
+ */
+const FullWidthDropdownPanel = ({
+  isScrolled,
+  children,
+}: {
+  isScrolled: boolean;
+  children: ReactNode;
+}) => (
+  <div
+    className={cn(
+      "fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal",
+      isScrolled ? "top-[60px]" : "top-[82px]"
+    )}
+  >
+    {children}
+  </div>
+);
+
+/**
+ * Mobile navigation accordion toggle button with a chevron indicator.
+ */
+const MobileAccordionButton = ({
+  label,
+  isOpen,
+  onClick,
+}: {
+  label: string;
+  isOpen: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
+  >
+    {label}
+    <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+  </button>
+);
+
+/**
+ * Renders a company navigation link as an internal `<Link>` or external `<a>`,
+ * based on the `item.internal` flag.
+ */
+const CompanyLinkItem = ({
+  item,
+  onClick,
+  className,
+}: {
+  item: { label: string; href: string; internal?: boolean };
+  onClick?: () => void;
+  className: string;
+}) =>
+  item.internal ? (
+    <Link to={item.href} onClick={onClick} className={className}>
+      {item.label}
+    </Link>
+  ) : (
+    <a href={item.href} onClick={onClick} className={className}>
+      {item.label}
+    </a>
+  );
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -211,20 +306,17 @@ export const Header = () => {
                         setUseCasesDropdownOpen(false);
                       })}
                     >
-                      <button
+                      <NavDropdownButton
+                        label={link.label}
+                        isOpen={productsDropdownOpen}
+                        isActive={isNavActive(link.label)}
+                        useWhiteText={useWhiteText}
+                        activeNavClasses={activeNavClasses}
                         onClick={() => { setProductsDropdownOpen(!productsDropdownOpen); setCompanyDropdownOpen(false); setUseCasesDropdownOpen(false); }}
-                        className={cn(
-                          "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                          isNavActive(link.label) && activeNavClasses
-                        )}
-                      >
-                        {link.label}
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", productsDropdownOpen && "rotate-180")} />
-                      </button>
+                      />
 
                       {productsDropdownOpen && (
-                        <div className={cn("fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal", isScrolled ? "top-[60px]" : "top-[82px]")}>
+                        <FullWidthDropdownPanel isScrolled={isScrolled}>
                           <DropdownGrid
                             columns={apiColumns.map((col) => ({
                               title: col.title,
@@ -240,7 +332,7 @@ export const Header = () => {
                             }))}
                             onItemClick={() => setProductsDropdownOpen(false)}
                           />
-                        </div>
+                        </FullWidthDropdownPanel>
                       )}
                     </div>
                   );
@@ -258,20 +350,17 @@ export const Header = () => {
                         setCompanyDropdownOpen(false);
                       })}
                     >
-                      <button
+                      <NavDropdownButton
+                        label={link.label}
+                        isOpen={useCasesDropdownOpen}
+                        isActive={isNavActive(link.label)}
+                        useWhiteText={useWhiteText}
+                        activeNavClasses={activeNavClasses}
                         onClick={() => { setUseCasesDropdownOpen(!useCasesDropdownOpen); setProductsDropdownOpen(false); setCompanyDropdownOpen(false); }}
-                        className={cn(
-                          "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                          isNavActive(link.label) && activeNavClasses
-                        )}
-                      >
-                        {link.label}
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", useCasesDropdownOpen && "rotate-180")} />
-                      </button>
+                      />
 
                       {useCasesDropdownOpen && (
-                        <div className={cn("fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal", isScrolled ? "top-[60px]" : "top-[82px]")}>
+                        <FullWidthDropdownPanel isScrolled={isScrolled}>
                           {/* Featured banner */}
                           <div className="bg-gradient-to-r from-[#00394b] to-[#005a6e]">
                             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -319,7 +408,7 @@ export const Header = () => {
                             ]}
                             onItemClick={() => setUseCasesDropdownOpen(false)}
                           />
-                        </div>
+                        </FullWidthDropdownPanel>
                       )}
                     </div>
                   );
@@ -337,42 +426,26 @@ export const Header = () => {
                         setUseCasesDropdownOpen(false);
                       })}
                     >
-                      <button
+                      <NavDropdownButton
+                        label={link.label}
+                        isOpen={companyDropdownOpen}
+                        isActive={isNavActive(link.label)}
+                        useWhiteText={useWhiteText}
+                        activeNavClasses={activeNavClasses}
                         onClick={() => { setCompanyDropdownOpen(!companyDropdownOpen); setProductsDropdownOpen(false); setUseCasesDropdownOpen(false); }}
-                        className={cn(
-                          "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-                          useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                          isNavActive(link.label) && activeNavClasses
-                        )}
-                      >
-                        {link.label}
-                        <ChevronDown className={cn("w-4 h-4 transition-transform", companyDropdownOpen && "rotate-180")} />
-                      </button>
+                      />
 
                       {companyDropdownOpen && (
                         <div className="fixed top-24 left-1/2 w-[200px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 p-4 z-50 animate-menu-slide-down-in">
                           <div className="space-y-1">
-                            {companyLinks.map((item) =>
-                              item.internal ? (
-                                <Link
-                                  key={item.label}
-                                  to={item.href}
-                                  onClick={() => setCompanyDropdownOpen(false)}
-                                  className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                                >
-                                  {item.label}
-                                </Link>
-                              ) : (
-                                <a
-                                  key={item.label}
-                                  href={item.href}
-                                  onClick={() => setCompanyDropdownOpen(false)}
-                                  className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                                >
-                                  {item.label}
-                                </a>
-                              )
-                            )}
+                            {companyLinks.map((item) => (
+                              <CompanyLinkItem
+                                key={item.label}
+                                item={item}
+                                onClick={() => setCompanyDropdownOpen(false)}
+                                className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                              />
+                            ))}
                           </div>
                         </div>
                       )}
@@ -446,13 +519,11 @@ export const Header = () => {
 
           <nav className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
             {/* Products Accordion */}
-            <button
+            <MobileAccordionButton
+              label="Products"
+              isOpen={mobileProductsOpen}
               onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
-              className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
-            >
-              Products
-              <ChevronDown className={cn("w-4 h-4 transition-transform", mobileProductsOpen && "rotate-180")} />
-            </button>
+            />
             {mobileProductsOpen && (
               <div className="pl-4 space-y-1">
                 {apiColumns.map((col) => {
@@ -480,39 +551,30 @@ export const Header = () => {
             )}
 
             {/* Company Accordion */}
-            <button
+            <MobileAccordionButton
+              label="Company"
+              isOpen={mobileCompanyOpen}
               onClick={() => setMobileCompanyOpen(!mobileCompanyOpen)}
-              className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
-            >
-              Company
-              <ChevronDown className={cn("w-4 h-4 transition-transform", mobileCompanyOpen && "rotate-180")} />
-            </button>
+            />
             {mobileCompanyOpen && (
               <div className="pl-4 space-y-1">
-                {companyLinks.map((item) =>
-                  item.internal ? (
-                    <Link key={item.label} to={item.href} onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)}
-                      className="block text-sm py-1.5 text-eko-slate cursor-pointer">
-                      {item.label}
-                    </a>
-                  )
-                )}
+                {companyLinks.map((item) => (
+                  <CompanyLinkItem
+                    key={item.label}
+                    item={item}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block text-sm py-1.5 text-eko-slate cursor-pointer"
+                  />
+                ))}
               </div>
             )}
 
             {/* Use Cases Accordion */}
-            <button
+            <MobileAccordionButton
+              label="Use Cases"
+              isOpen={mobileUseCasesOpen}
               onClick={() => setMobileUseCasesOpen(!mobileUseCasesOpen)}
-              className="text-sm font-medium py-2 flex items-center justify-between text-eko-slate cursor-pointer"
-            >
-              Use Cases
-              <ChevronDown className={cn("w-4 h-4 transition-transform", mobileUseCasesOpen && "rotate-180")} />
-            </button>
+            />
             {mobileUseCasesOpen && (
               <div className="pl-4 space-y-1">
                 <p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">Industries</p>
