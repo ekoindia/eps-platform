@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import {
-  ChevronRight,
   Mail,
   MapPin,
   Phone
@@ -10,6 +9,9 @@ import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
 import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/fa";
 
+/**
+ * MARK: Links Data
+ */
 const footerLinks = {
   products: [
     { label: "Verification APIs", href: "/products#verification", internal: true },
@@ -60,6 +62,57 @@ const XIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+/**
+ * Discriminated union covering internal (React Router), external (new tab), and plain anchor link variants.
+ */
+type FooterLinkItem =
+  | { label: string; href: string; internal: true }
+  | { label: string; href: string; external: true }
+  | { label: string; href: string };
+
+/**
+ * Renders the correct anchor variant (`<Link>`, `<a target="_blank">`, or plain `<a>`) with a subtle hover nudge.
+ */
+const FooterLink = ({ link }: { link: FooterLinkItem }) => {
+  const className =
+    "text-white/70 hover:text-eko-gold text-sm inline-block hover:translate-x-1 transition-all duration-200 cursor-pointer";
+
+  if ("internal" in link && link.internal) {
+    return (
+      <Link to={link.href} className={className}>
+        {link.label}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={link.href}
+      target={"external" in link && link.external ? "_blank" : undefined}
+      rel={"external" in link && link.external ? "noopener noreferrer" : undefined}
+      className={className}
+    >
+      {link.label}
+    </a>
+  );
+};
+
+/**
+ * Titled `<h4>` + `<ul>` column that maps a list of {@link FooterLinkItem} entries through {@link FooterLink}.
+ */
+const FooterColumn = ({ title, links }: { title: string; links: FooterLinkItem[] }) => (
+  <div>
+    <h4 className="font-semibold text-white mb-4">{title}</h4>
+    <ul className="space-y-3">
+      {links.map((link) => (
+        <li key={link.label}>
+          <FooterLink link={link} />
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
 const socialLinks = [
   { icon: FaLinkedinIn, href: SOCIAL_LINKS.linkedin, label: "LinkedIn" },
   { icon: FaFacebookF, href: SOCIAL_LINKS.facebook, label: "Facebook" },
@@ -74,7 +127,10 @@ export const Footer = () => {
       {/* Main Footer */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 lg:gap-6">
-          {/* Brand Column */}
+
+          {/*
+            MARK: About Eko
+          */}
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="mb-3">
               <EkoLogo className="h-16 w-auto" />
@@ -117,156 +173,19 @@ export const Footer = () => {
           </div>
 
           {/*
-            MARK: Products
+            MARK: Columns
           */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Products</h4>
-            <ul className="space-y-3">
-              {footerLinks.products.map((link) => (
-                <li key={link.label}>
-                  {'internal' in link && link.internal ? (
-                    <Link
-                      to={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Products" links={footerLinks.products} />
 
-          {/*
-            MARK: Solutions
-          */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Solutions</h4>
-            <ul className="space-y-3">
-              {footerLinks.solutions.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Solutions" links={footerLinks.solutions} />
 
-          {/*
-            MARK: Industries
-          */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Industries</h4>
-            <ul className="space-y-3">
-              {footerLinks.industries.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Industries" links={footerLinks.industries} />
 
-          {/*
-            MARK: Developers
-          */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Developers</h4>
-            <ul className="space-y-3">
-              {footerLinks.developers.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target={link.external ? "_blank" : undefined}
-                    rel={link.external ? "noopener noreferrer" : undefined}
-                    className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                  >
-                    <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Developers" links={footerLinks.developers} />
 
-          {/*
-            MARK: Legal
-          */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Legal</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  {'internal' in link && link.internal ? (
-                    <Link
-                      to={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Legal" links={footerLinks.legal} />
 
-          {/*
-            MARK: Company
-          */}
-          <div>
-            <h4 className="font-semibold text-white mb-4">Company</h4>
-            <ul className="space-y-3">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  {'internal' in link && link.internal ? (
-                    <Link
-                      to={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <a
-                      href={link.href}
-                      className="text-white/70 hover:text-eko-gold transition-colors text-sm flex items-center gap-1 group cursor-pointer"
-                    >
-                      <ChevronRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Company" links={footerLinks.company} />
 
         </div>
       </div>
