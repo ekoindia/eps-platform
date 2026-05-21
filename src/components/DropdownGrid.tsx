@@ -52,6 +52,30 @@ export interface DropdownGridColumn {
 	};
 }
 
+/**
+ * Column header used in dropdown menus — title on the left, optional "see all" link on the right.
+ */
+export const DropdownColumnHeader = ({
+	title,
+	link,
+}: {
+	title: string;
+	link?: { label: string; to: string; onClick?: () => void };
+}) => (
+	<div className="flex items-center justify-between mb-2 pb-2 px-3 border-b border-eko-navy/10">
+		<h4 className="text-xs font-semibold text-eko-navy/60 uppercase tracking-wider">{title}</h4>
+		{link && (
+			<Link
+				to={link.to}
+				onClick={link.onClick}
+				className="text-xs text-eko-navy/80 hover:text-eko-navy hover:underline font-medium"
+			>
+				{link.label}
+			</Link>
+		)}
+	</div>
+);
+
 interface DropdownGridProps {
 	columns: DropdownGridColumn[];
 	onItemClick: () => void;
@@ -61,18 +85,10 @@ export const DropdownGrid = ({ columns, onItemClick }: DropdownGridProps) => (
 	<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-nowrap justify-center gap-5 xl:gap-10">
 		{columns.map((col, colIndex) => (
 			<div key={col.title} className="w-full max-w-[350px]">
-				<div className="flex items-center justify-between mb-2 pb-2 px-3 border-b border-eko-navy/10">
-					<h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider">{col.title}</h4>
-					{col.seeAllLink && (
-						<Link
-							to={col.seeAllLink.to}
-							onClick={onItemClick}
-							className="text-xs text-eko-navy/80 hover:text-eko-navy hover:underline font-medium"
-						>
-							{col.seeAllLink.label}
-						</Link>
-					)}
-				</div>
+				<DropdownColumnHeader
+					title={col.title}
+					link={col.seeAllLink ? { ...col.seeAllLink, onClick: onItemClick } : undefined}
+				/>
 				<div className="space-y-0.5">
 					{col.items.map((item, index) => (
 						<MenuItemLink
