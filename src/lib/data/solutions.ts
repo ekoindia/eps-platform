@@ -188,7 +188,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "mfi-field-operations-pack", name: "MFI Field Operations Pack", tagline: "For microfinance field collection & disbursals" },
     ],
     seo: {
-      title: "Assisted Banking Agent Pack — AePS, DMT, BBPS | Eko",
+      title: "Assisted Banking Agent Pack — AePS, DMT, BBPS APIs",
       description: "Turn kirana stores & CSP agents into banking touchpoints. AePS biometric withdrawal + DMT remittance + BBPS bill payment in one integrated bundle. RBI & NPCI compliant.",
       keywords: "aeps dmt bbps bundle, agent banking api bundle india, white label bc api, csp api platform, kirana banking api",
     },
@@ -281,7 +281,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "mfi-field-operations-pack", name: "MFI Field Operations Pack", tagline: "Field collection & disbursal for microfinance" },
     ],
     seo: {
-      title: "Lending KYC Pack — Digital Lending API Bundle | Eko",
+      title: "Lending KYC Pack — Digital Lending API Bundle",
       description: "RBI-compliant API stack for digital lenders in India. PAN, bank, DigiLocker, instant disbursal, BBPS collection. Sandbox in minutes. Trusted by 200+ lenders.",
       keywords: "lending kyc api bundle india, digital lending kyc package, nbfc kyc api stack, kyc api for lending",
     },
@@ -360,7 +360,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "employee-bgv-pack", name: "Employee BGV Pack", tagline: "Instant background verification for employees" },
     ],
     seo: {
-      title: "Merchant Onboarding Pack — KYB API Bundle | Eko",
+      title: "Merchant Onboarding Pack — KYB API Bundle",
       description: "Verify and activate merchants instantly. PAN, GST, bank verification in one bundle. ONDC seller-ready, RBI compliant. Used by 500+ companies across India.",
       keywords: "merchant onboarding api india, kyb api india, payment aggregator merchant onboarding, ondc seller verification",
     },
@@ -432,7 +432,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "merchant-onboarding-pack", name: "Merchant Onboarding Pack", tagline: "KYB + payment activation for merchants" },
     ],
     seo: {
-      title: "MSME Credit Assessment Pack | Eko Platform Services",
+      title: "MSME Credit Assessment Pack",
       description: "Assess MSME creditworthiness using GST filing patterns and ITR — no credit bureau needed. Lend to 63 million underserved businesses. RBI compliant.",
       keywords: "msme credit assessment api, gst based lending india, alternative credit scoring msme, nbfc msme api",
     },
@@ -513,7 +513,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "lending-kyc-pack", name: "Lending KYC Pack", tagline: "Full KYC for borrower onboarding" },
     ],
     seo: {
-      title: "MFI Field Operations Pack | Eko Platform Services",
+      title: "MFI Field Operations Pack",
       description: "Digital field operations for microfinance — biometric EMI collection via AePS, paperless KYC, RBI-compliant disbursals. NABFID & RBI ready.",
       keywords: "mfi field collection api, microfinance digital collection, aeps for microfinance, mfi api india",
     },
@@ -599,7 +599,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "merchant-onboarding-pack", name: "Merchant Onboarding Pack", tagline: "KYB verification for merchants & sellers" },
     ],
     seo: {
-      title: "Employee BGV Pack — Background Verification API | Eko",
+      title: "Employee BGV Pack — Background Verification APIs",
       description: "Instant employee background verification — identity, EPFO employment history, education, DL in under 5 minutes. Used by 500+ companies across India.",
       keywords: "employee background verification api india, bgv api, epfo verification api, hr onboarding api india",
     },
@@ -674,7 +674,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "dbt-cashout-pack", name: "DBT Cashout Pack", tagline: "Optimized for government benefit distribution" },
     ],
     seo: {
-      title: "Rural Financial Services Pack | Eko Platform Services",
+      title: "Rural Financial Services Pack",
       description: "Last-mile financial access for Tier 3+ India. AePS cashout + DBT cashout + basic KYC bundle. Works with Aadhaar only — no smartphone needed.",
       keywords: "rural banking api india, dbt cashout api, aeps for rural india, jan dhan api, last mile banking api",
     },
@@ -745,7 +745,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "assisted-banking-agent-pack", name: "Assisted Banking Agent Pack", tagline: "Complete agent banking stack" },
     ],
     seo: {
-      title: "DBT Cashout Pack — Government Benefit Withdrawal API | Eko",
+      title: "DBT Cashout Pack — Government Benefit Withdrawal API",
       description: "Enable DBT benefit cashout at agent points via AePS. PM-KISAN, MGNREGA, and all Aadhaar-linked government schemes. 200K+ agent touchpoints.",
       keywords: "dbt cashout api, pm kisan cashout api, mgnrega payment api, aadhaar dbt withdrawal, government benefit disbursement api",
     },
@@ -821,7 +821,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "rural-financial-services-pack", name: "Rural Financial Services Pack", tagline: "Rural-focused banking bundle" },
     ],
     seo: {
-      title: "Migrant Remittance Hub Pack | Eko Platform Services",
+      title: "Migrant Remittance Hub Pack",
       description: "Urban-to-rural remittance bundle. DMT for sending, AePS for cashout at village level. Sub-60-second corridor. RBI BC model compliant.",
       keywords: "migrant remittance api india, dmt aeps bundle, urban rural remittance api, domestic money transfer rural cashout",
     },
@@ -902,7 +902,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "fleet-compliance-pack", name: "Fleet Compliance Pack", tagline: "Vehicle compliance for fleet operators" },
     ],
     seo: {
-      title: "Gig Worker Onboarding Pack | Eko Platform Services",
+      title: "Gig Worker Onboarding Pack",
       description: "Onboard delivery riders & gig workers in 3 minutes — DL, RC, Aadhaar, bank verification. Used by 500+ companies across India.",
       keywords: "gig worker onboarding api, delivery driver verification api india, dl verification api, gig platform kyc india",
     },
@@ -968,7 +968,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "employee-bgv-pack", name: "Employee BGV Pack", tagline: "Full background verification for drivers" },
     ],
     seo: {
-      title: "Fleet Compliance Pack — Vehicle RC & DL Verification API | Eko",
+      title: "Fleet Compliance Pack — Vehicle RC & DL Verification API",
       description: "Automate fleet regulatory compliance — vehicle RC, insurance, DL verification daily. Automated expiry alerts. Covers all state RTOs via VAHAN database.",
       keywords: "fleet compliance api india, vehicle rc verification api, vehicle insurance check api, dl verification fleet, fleet management api",
     },
@@ -1032,7 +1032,7 @@ export const SOLUTIONS_LIST: SolutionData[] = [
       { slug: "gig-worker-onboarding-pack", name: "Gig Worker Onboarding Pack", tagline: "Vehicle & driver onboarding for gig platforms" },
     ],
     seo: {
-      title: "Motor Insurance Pack — Vehicle & RC Verification API | Eko",
+      title: "Motor Insurance Pack — Vehicle & RC Verification API",
       description: "Instant motor insurance with auto-filled vehicle details. Vehicle RC, DL, PAN verification in 30 seconds. Used by 500+ companies across India.",
       keywords: "motor insurance verification api, vehicle rc verification api india, rc api for insurance, irdai api india",
     },
