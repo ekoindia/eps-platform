@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, Phone, ArrowRight, Sparkles, Shield, Briefcase, Search, CreditCard, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
-import { SALES_MOBILE } from "@/lib/config/site";
+import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
+import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/fa";
+import { XIcon } from "@/components/icons/XIcon";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
-import { DropdownGrid } from "@/components/DropdownGrid";
+import { DropdownGrid, DropdownColumnHeader } from "@/components/DropdownGrid";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
@@ -34,6 +36,14 @@ const companyLinks = [
   { label: "About Eko", href: "/about-us", internal: true },
   // { label: "Grievance", href: "/grievance", internal: true },
   // { label: "Blogs & Media", href: "/blogs-media", internal: true },
+];
+
+const companySocialLinks = [
+  { icon: FaLinkedinIn, href: SOCIAL_LINKS.linkedin, label: "LinkedIn", iconBg: "bg-[#0A66C2]/15", iconColor: "text-[#0A66C2]" },
+  { icon: FaFacebookF, href: SOCIAL_LINKS.facebook, label: "Facebook", iconBg: "bg-[#1877F2]/15", iconColor: "text-[#1877F2]" },
+  { icon: FaInstagram, href: SOCIAL_LINKS.instagram, label: "Instagram", iconBg: "bg-[#E4405F]/15", iconColor: "text-[#E4405F]" },
+  { icon: FaYoutube, href: SOCIAL_LINKS.youtube, label: "YouTube", iconBg: "bg-[#FF0000]/15", iconColor: "text-[#FF0000]" },
+  { icon: XIcon, href: SOCIAL_LINKS.x, label: "X (Twitter)", iconBg: "bg-[#1D1D1D]/10", iconColor: "text-[#1D1D1D]" },
 ];
 
 const navLinks = [
@@ -436,16 +446,39 @@ export const Header = () => {
                       />
 
                       {companyDropdownOpen && (
-                        <div className="fixed top-24 left-1/2 w-[200px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 p-4 z-50 animate-menu-slide-down-in">
-                          <div className="space-y-1">
-                            {companyLinks.map((item) => (
-                              <CompanyLinkItem
-                                key={item.label}
-                                item={item}
-                                onClick={() => setCompanyDropdownOpen(false)}
-                                className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                              />
-                            ))}
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden">
+                          <div className="grid grid-cols-2">
+                            {/* Left column: company links */}
+                            <div className="p-4 space-y-1">
+                              <DropdownColumnHeader title="Company" />
+                              {companyLinks.map((item) => (
+                                <CompanyLinkItem
+                                  key={item.label}
+                                  item={item}
+                                  onClick={() => setCompanyDropdownOpen(false)}
+                                  className="block px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                />
+                              ))}
+                            </div>
+
+                            {/* Right column: social links */}
+                            <div className="p-4 space-y-1">
+                              <DropdownColumnHeader title="Follow Us" />
+                              {companySocialLinks.map((social) => (
+                                <a
+                                  key={social.label}
+                                  href={social.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <span className={cn("w-6 h-6 rounded-full flex items-center justify-center shrink-0", social.iconBg)}>
+                                    <social.icon className={cn("w-3 h-3", social.iconColor)} />
+                                  </span>
+                                  {social.label}
+                                </a>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
