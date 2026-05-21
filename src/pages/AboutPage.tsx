@@ -2,6 +2,7 @@ import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Handshake, ShoppingBag, Lightbulb, Shield, Heart, Zap, Lock, Star, UserCheck, Swords, Target, Quote } from "lucide-react";
 import { FadeIn } from "@/components/FadeIn";
+import { PARENT_SITE_URL } from "@/lib/config/site";
 
 const roles = [
   { title: "Influencers", description: "Helping customers choose the right product or service.", icon: Users, gradient: "from-eko-gold-light to-eko-gold-light/20" },
@@ -37,7 +38,7 @@ const AboutPage = () => {
               Building the infrastructure for community-powered finance
             </h1>
             <p className="text-lg text-white/75 leading-relaxed max-w-2xl mx-auto">
-              Eko is a financial technology platform helping brands, banks, and fintech companies reach customers through trusted micro-entrepreneurs embedded in their communities across Bharat.
+              <a href={PARENT_SITE_URL} target="_blank" className="underline underline-offset-4 decoration-2 decoration-eko-gold/80 hover:decoration-eko-gold transition-colors">Eko Bharat Ventures</a> is a financial technology platform helping brands, banks, and fintech companies reach customers through trusted micro-entrepreneurs embedded in their communities across Bharat.
             </p>
           </FadeIn>
         </section>
@@ -154,7 +155,7 @@ const AboutPage = () => {
                 Our Culture
               </span>
               <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Our Values</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto text-justify">Financial liberty to a business is like pop-corns to a movie theatre. You can live without it, but the experience is never the same.  At Eko Bharat Ventures, we want to take this experience home to every micro entrepreneur.</p>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-justify">Financial liberty to a business is like pop-corns to a movie theatre. You can live without it, but the experience is never the same.  At <a href={PARENT_SITE_URL} target="_blank" className="underline underline-offset-4 decoration-2 decoration-eko-gold/80 hover:decoration-eko-gold transition-colors">Eko Bharat Ventures</a>, we want to take this experience home to every micro entrepreneur.</p>
 
               <p className="text-foreground font-semibold max-w-2xl mx-auto mb-2 text-justify">
                 We call it CREATE — Curiosity, Resilience, Empathy, Agility, Trust, Excellence — with Ownership &amp; Courage.
