@@ -7,6 +7,7 @@ import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
+import { DropdownGrid } from "@/components/DropdownGrid";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 const TalkToSalesDialog = lazy(() => import("@/components/TalkToSalesDialog").then(m => ({ default: m.TalkToSalesDialog })));
@@ -45,43 +46,7 @@ const NAV_MAX_ITEMS = 8;
 const navIndustries = ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority === 1).slice(0, NAV_MAX_ITEMS);
 const navSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority === 1).slice(0, NAV_MAX_ITEMS);
 
-const pastelColors = [
-  'bg-blue-100 text-blue-400',
-  'bg-purple-100 text-purple-400',
-  'bg-pink-100 text-pink-400',
-  'bg-emerald-100 text-emerald-400',
-  'bg-amber-100 text-amber-400',
-  'bg-indigo-100 text-indigo-400',
-  'bg-teal-100 text-teal-400',
-  'bg-fuchsia-100 text-fuchsia-400',
-  'bg-rose-100 text-rose-400',
-];
 
-interface MenuItemLinkProps {
-  to: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  description?: string;
-  index: number;
-  onClick: () => void;
-}
-
-const MenuItemLink = ({ to, icon: Icon, label, description, index, onClick }: MenuItemLinkProps) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors cursor-pointer group animate-fade-up [animation-duration:300ms]"
-    style={{ animationDelay: `${index * 40}ms`, animationFillMode: "backwards" }}
-  >
-    <Icon className={`w-7 h-7 mt-1.5 p-[6px] opacity-90 shrink-0 rounded-lg ${pastelColors[index % pastelColors.length]}`} />
-    <div>
-      <span className="text-sm font-medium text-eko-navy">{label}</span>
-      {description && (
-        <p className="text-xs text-eko-slate/60 leading-tight mt-0.5">{description}</p>
-      )}
-    </div>
-  </Link>
-);
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -229,7 +194,10 @@ export const Header = () => {
               />
             </Link>
 
-            {/* Desktop Navigation */}
+            {/*
+              Desktop Navigation
+              MARK: Products
+            */}
             <nav className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => {
                 if (link.label === "Products") {
@@ -257,49 +225,28 @@ export const Header = () => {
 
                       {productsDropdownOpen && (
                         <div className={cn("fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal", isScrolled ? "top-[60px]" : "top-[82px]")}>
-                          {/* API Columns - 3 categories */}
-                          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-3 gap-10">
-                            {apiColumns.map((col, colIndex) => {
-                              const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
-                              const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;
-                              return (
-                                <div key={col.title}>
-                                  <h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider mb-2 pb-2 border-b border-eko-navy/10">{col.title}</h4>
-                                  <div className="space-y-0.5">
-                                    {displayItems.map((item, index) => (
-                                      <MenuItemLink
-                                        key={item.href}
-                                        to={item.href}
-                                        icon={item.icon}
-                                        label={item.label}
-                                        description={item.shortDesc}
-                                        index={index + colIndex * 2}
-                                        onClick={() => setProductsDropdownOpen(false)}
-                                      />
-                                    ))}
-                                    {showMoreLink && (
-                                      <a
-                                        href={col.moreLink.href}
-                                        // target="_blank"
-                                        // rel="noopener noreferrer"
-                                        onClick={() => setProductsDropdownOpen(false)}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm text-eko-navy/80 hover:text-eko-navy hover:underline font-medium transition-colors cursor-pointer"
-                                      >
-                                        {col.moreLink.label}
-                                        <ArrowRight className="w-3.5 h-3.5" />
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <DropdownGrid
+                            columns={apiColumns.map((col) => ({
+                              title: col.title,
+                              items: (col.maxItems ? col.items.slice(0, col.maxItems) : col.items).map((item) => ({
+                                to: item.href,
+                                icon: item.icon,
+                                label: item.label,
+                                description: item.shortDesc,
+                              })),
+                              seeAllLink: col.maxItems && col.items.length > col.maxItems && col.moreLink
+                                ? { label: "See all →", to: col.moreLink.href }
+                                : undefined,
+                            }))}
+                            onItemClick={() => setProductsDropdownOpen(false)}
+                          />
                         </div>
                       )}
                     </div>
                   );
                 }
 
+                // MARK: Use Cases
                 if (link.label === "Use Cases") {
                   return (
                     <div
@@ -347,56 +294,38 @@ export const Header = () => {
                             </div>
                           </div>
 
-                          {/* Two-panel layout */}
-                          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-2 gap-10">
-                            {/* Industries panel */}
-                            <div>
-                              <div className="flex items-center justify-between mb-2 pb-2 border-b border-eko-navy/10">
-                                <h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider">Industries</h4>
-                                <Link to="/industries" onClick={() => setUseCasesDropdownOpen(false)} className="text-xs text-eko-navy/80 hover:text-eko-navy hover:underline font-medium">See all →</Link>
-                              </div>
-                              <div className="space-y-0.5">
-                                {navIndustries.map((item, index) => (
-                                  <MenuItemLink
-                                    key={item.slug}
-                                    to={`/industries/${item.slug}`}
-                                    icon={item.icon}
-                                    label={item.name}
-                                    description={item.tagline}
-                                    index={index}
-                                    onClick={() => setUseCasesDropdownOpen(false)}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Solutions panel */}
-                            <div>
-                              <div className="flex items-center justify-between mb-2 pb-2 border-b border-eko-navy/10">
-                                <h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider">Solution Packs</h4>
-                                <Link to="/solutions" onClick={() => setUseCasesDropdownOpen(false)} className="text-xs text-eko-navy/80 hover:text-eko-navy hover:underline font-medium">See all →</Link>
-                              </div>
-                              <div className="space-y-0.5">
-                                {navSolutions.map((item, index) => (
-                                  <MenuItemLink
-                                    key={item.slug}
-                                    to={`/solutions/${item.slug}`}
-                                    icon={item.icon}
-                                    label={item.name}
-                                    description={item.tagline}
-                                    index={index + 2}
-                                    onClick={() => setUseCasesDropdownOpen(false)}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </div>
+                          <DropdownGrid
+                            columns={[
+                              {
+                                title: "Industries",
+                                items: navIndustries.map((item) => ({
+                                  to: `/industries/${item.slug}`,
+                                  icon: item.icon,
+                                  label: item.name,
+                                  description: item.tagline,
+                                })),
+                                seeAllLink: { label: "See all →", to: "/industries" },
+                              },
+                              {
+                                title: "Solution Packs",
+                                items: navSolutions.map((item) => ({
+                                  to: `/solutions/${item.slug}`,
+                                  icon: item.icon,
+                                  label: item.name,
+                                  description: item.tagline,
+                                })),
+                                seeAllLink: { label: "See all →", to: "/solutions" },
+                              },
+                            ]}
+                            onItemClick={() => setUseCasesDropdownOpen(false)}
+                          />
                         </div>
                       )}
                     </div>
                   );
                 }
 
+                // MARK: Company
                 if (link.label === "Company") {
                   return (
                     <div
