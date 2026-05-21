@@ -61,7 +61,7 @@ export const DropdownGrid = ({ columns, onItemClick }: DropdownGridProps) => (
 	<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-nowrap justify-center gap-5 xl:gap-10">
 		{columns.map((col, colIndex) => (
 			<div key={col.title} className="w-full max-w-[350px]">
-				<div className="flex items-center justify-between mb-2 pb-2 border-b border-eko-navy/10">
+				<div className="flex items-center justify-between mb-2 pb-2 px-3 border-b border-eko-navy/10">
 					<h4 className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider">{col.title}</h4>
 					{col.seeAllLink && (
 						<Link
