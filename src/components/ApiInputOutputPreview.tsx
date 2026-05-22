@@ -233,12 +233,13 @@ const MultiApiPreview = ({
       {/* Render active preview content */}
       {activePreview.comingSoon ? (
         <ComingSoonBlock apiName={activePreview.apiName} />
-      ) : activePreview.outputs && activePreview.outputs.length > 1 ? (
+      ) : activePreview.outputs && activePreview.outputs.length ? (
         <PreviewContent
           key={activePreview.apiName}
           inputs={activePreview.inputs}
           outputs={activePreview.outputs}
           docsUrl={activePreview.docsUrl || fallbackDocsUrl}
+          endpoint={activePreview.endpoint}
         />
       ) : null}
     </SectionContainer>
@@ -283,13 +284,12 @@ const SingleApiPreview = ({
     );
   }
 
-  // Guard: outputs must be defined and have more than 1 item
-  if (!outputs || outputs.length <= 1) return null;
+  // Guard: outputs must be defined and have 1 or more fields to show the preview. If not, return null (render nothing).
+  if (!outputs || outputs.length < 1) return null;
 
   return (
     <SectionContainer className="bg-muted/30">
       <SectionHeader title={sectionTitle} description={description} />
-
       <PreviewContent inputs={inputs} outputs={outputs} docsUrl={docsUrl} />
     </SectionContainer>
   );
@@ -301,16 +301,19 @@ const SingleApiPreview = ({
  * @param {Array} inputs - List of input fields to display in the request preview, each with a label, value, and optional icon.
  * @param {Array} outputs - List of output fields to display in the response preview, each with a label, value, and optional icon.
  * @param {string} docsUrl - Optional URL for the "View Sample Response" and "Try in Demo" buttons. If not provided, buttons won't be shown.
- * @returns
+ * @param {string} endpoint - Optional API endpoint to display in the request card header. E.g. "/verify". If not provided, the endpoint is not shown.
+ * @returns {JSX.Element} The rendered component.
  */
 const PreviewContent = ({
   inputs,
   outputs,
   docsUrl,
+  endpoint,
 }: {
   inputs?: ApiField[];
   outputs?: ApiField[];
   docsUrl?: string;
+  endpoint?: string;
 }) => {
   // Build JSON objects from fields
   const inputJson: Record<string, unknown> = {};
@@ -356,7 +359,7 @@ const PreviewContent = ({
               <div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
                 <Send className="w-4 h-4 text-white/70" />
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">REQUEST</Badge>
-                <span className="text-white/60 text-xs ml-auto font-mono">POST /verify</span>
+                <span className="text-white/60 text-xs ml-auto font-mono">{endpoint ? `POST ${endpoint}` : ""}</span>
               </div>
               <div className="p-6 space-y-4">
                 {inputs?.map((field, i) => {
@@ -410,7 +413,7 @@ const PreviewContent = ({
         <TabsContent value="json">
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="code-block rounded-2xl overflow-hidden">
-              <TerminalHeader label="POST /verify" badgeText="REQUEST" />
+              <TerminalHeader label={endpoint ? `POST ${endpoint}` : ""} badgeText="REQUEST" />
               <JsonHighlight json={inputJson} />
             </div>
             <div className="code-block rounded-2xl overflow-hidden">

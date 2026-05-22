@@ -28,6 +28,8 @@ import {
   Mail,
   // Product-level icons (used by solutions resolver)
   ShieldCheck, Building2, FolderCheck, Briefcase, Truck,
+  Info,
+  IdCard,
 } from "lucide-react";
 
 import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
@@ -550,7 +552,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         docsUrl: "https://developers.eko.in/reference/pan-advanced",
         endpoint: "/pan-advanced",
         inputs: [
-
           { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
           { label: "Full Name", value: "Rajesh Kumar", icon: User },
           { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
@@ -582,14 +583,14 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Status", value: "Processing" },
           { label: "Reference ID", value: "REF123456", icon: Hash },
           { label: "Batch ID", value: "BLK789" },
-          { label: "Note", value: "Poll Bulk PAN Verification Status API for results" },
+          { label: "Note", value: "Poll Bulk PAN Verification Status API for results", icon: Info },
         ],
       },
     ],
   },
 
   // -------------------------------------------------------------------------
-  // MARK: Aadhaar Verification
+  // MARK: Aadhaar
   // -------------------------------------------------------------------------
   aadhaar: {
     seo: {
@@ -639,7 +640,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // MARK: Bank Verification
+  // MARK: Bank Acc
   // -------------------------------------------------------------------------
   bank: {
     seo: {
@@ -648,9 +649,9 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       keywords: "bank account verification API, penny drop API, IFSC validation API, bank verification, account verification, Eko API",
     },
     title: "Bank Account Verification API",
-    desc: "Verify bank account details instantly with penny drop verification",
+    desc: "Verify bank account details instantly with penny-drop verification",
     heroTitle: "Bank Account Verification",
-    heroSubtitle: "Verify bank account details before payouts to prevent failed transactions and reduce operational costs. Instant verification with penny drop and account holder name matching.",
+    heroSubtitle: "Verify bank account details to prevent failed transactions and reduce operational costs. Instant verification with penny-drop and account holder name matching.",
     category: "verification",
     icon: Building2,
     docsUrl: "https://developers.eko.in/reference/bank-account-verification",
@@ -683,21 +684,46 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { q: "Which banks are supported?", a: "We support all major banks in India including SBI, HDFC, ICICI, Axis, Kotak, Yes Bank, and 100+ other banks." },
       { q: "What if verification fails?", a: "Failed verifications return specific error codes indicating the reason - invalid account, closed account, incorrect IFSC, etc. - helping you take appropriate action." },
     ],
-    inputOutputPreview: {
-      apiName: "Bank Verification",
-      inputs: [
-        { label: "Account Number", value: "1234567890", icon: Hash },
-        { label: "Bank Name", value: "State Bank of India", icon: Building },
-        { label: "IFSC Code", value: "SBIN0001234", icon: CreditCard },
-      ],
-      outputs: [
-        { label: "Account Holder Name", value: "Rajesh Kumar", icon: User },
-      ],
-    },
+    inputOutputPreviews: [
+      {
+        apiName: "Bank Account Verification",
+        description: "Verify a bank account number by transferring ₹1 to retrieve the name of the account holder",
+        docsUrl: "https://developers.eko.in/reference/bank-account-verification",
+        endpoint: "/bank-account-verification",
+        inputs: [
+          { label: "Account Number", value: "1234567890", icon: Hash },
+          // { label: "Bank Name", value: "State Bank of India", icon: Building },
+          { label: "IFSC Code", value: "SBIN0001234", icon: Hash },
+        ],
+        outputs: [
+          { label: "Account Status", value: "Valid", icon: CheckCircle },
+          { label: "Account Holder Name", value: "Rajesh Kumar", icon: User },
+          { label: "Bank", value: "State Bank of India", icon: Building },
+          { label: "Branch", value: "MG Road Branch", icon: MapPin },
+        ],
+      },
+      {
+        apiName: "Bulk Bank Account Verification",
+        description: "Verify multiple bank accounts in a single API call",
+        docsUrl: "https://developers.eko.in/reference/bulk-bank-account-verification",
+        endpoint: "/bulk-bank-account-verification",
+        inputs: [
+          { label: "Entry 1", value: "1234567890, SBIN0001234", icon: Hash },
+          { label: "Entry 2", value: "9876543210, HDFC0005678", icon: Hash },
+          // { label: "Total Entries", value: "2", icon: Users },
+        ],
+        outputs: [
+          { label: "Status", value: "Received", icon: CheckCircle },
+          { label: "Reference ID", value: "123456", icon: Hash },
+          { label: "Bulk Verification ID", value: "3356655212", icon: Hash },
+          { label: "Note", value: "Poll Bulk Bank Account Verification Status API for results", icon: Info },
+        ],
+      },
+    ],
   },
 
   // -------------------------------------------------------------------------
-  // MARK: GST Verification
+  // MARK: GST
   // -------------------------------------------------------------------------
   gst: {
     seo: {
@@ -743,23 +769,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { q: "Is the data real-time?", a: "Yes, GSTIN details are verified in real time against official records." },
       { q: "How do I get started?", a: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." },
     ],
-    inputOutputPreview: {
-      apiName: "GST Verification",
-      inputs: [
-        { label: "GST Number", value: "29ABCDE1234F1Z5", icon: FileText },
-        { label: "Company Name", value: "Acme Pvt Ltd", icon: Building },
-      ],
-      outputs: [
-        { label: "Legal Name", value: "Acme Private Limited" },
-        { label: "Address", value: "123, MG Road, Bangalore" },
-        { label: "Registration Date", value: "01/07/2017" },
-        { label: "GST Status", value: "Active" },
-        { label: "Constitution", value: "Private Limited" },
-        { label: "Nature of Business", value: "Wholesale" },
-        { label: "Taxpayer Type", value: "Regular" },
-        { label: "Status Code", value: "ACT" },
-      ],
-    },
+    inputOutputPreviews: [
+      {
+        apiName: "GST Verification",
+        description: "Validate GSTIN details instantly for vendor onboarding and compliance",
+        docsUrl: "https://developers.eko.in/reference/verify-gstin",
+        endpoint: "/verify-gstin",
+        inputs: [
+          { label: "GST Number", value: "29ABCDE1234F1Z5", icon: FileText },
+          { label: "Business Name", value: "Acme Pvt Ltd", icon: Building },
+        ],
+        outputs: [
+          { label: "GST Status", value: "Active" },
+          { label: "Legal Name", value: "Acme Private Limited", icon: Building },
+          { label: "Trade Name", value: "Acme Private Limited", icon: Building },
+          { label: "Address", value: "123, MG Road, Bangalore", icon: MapPin },
+          { label: "Constitution", value: "Private Limited", icon: Building },
+          { label: "Nature of Business", value: "Wholesale, Supplier of Services, Recipient of Goods or Services", icon: Briefcase },
+          { label: "Taxpayer Type", value: "Regular", icon: User },
+          { label: "Registration Date", value: "01/07/2017", icon: Calendar },
+          { label: "Update Date", value: "01/02/2022", icon: Calendar },
+        ],
+      },
+      {
+        apiName: "Fetch GSTIN with PAN",
+        description: "Fetch a list of GSTIN associated with a PAN",
+        docsUrl: "https://developers.eko.in/reference/gstin-with-pan",
+        endpoint: "/gstin-with-pan",
+        inputs: [
+          { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
+        ],
+        outputs: [
+          { label: "GSTIN List", value: "29ABCDE1234F1Z5 (Maharashtra / Active), 27ABCDE1234F1Z2 (Karnataka / Inactive)", icon: FileText },
+        ],
+      },
+    ],
   },
 
   // -------------------------------------------------------------------------
@@ -962,7 +1006,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // DigiLocker
+  // MARK: DigiLocker
   // -------------------------------------------------------------------------
   digilocker: {
     seo: {
@@ -976,7 +1020,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroSubtitle: "Access and verify user documents digitally through consent-driven, paperless workflows.",
     category: "verification",
     icon: FolderCheck,
-    docsUrl: "https://eps.eko.in/developers/eps/digilocker-api/",
+    docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
     overview: "The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records.",
     keyBenefits: [
       "Paperless document verification",
@@ -1025,7 +1069,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroSubtitle: "Verify employee identity and details digitally to reduce hiring risk and ensure compliance.",
     category: "verification",
     icon: Briefcase,
-    docsUrl: "https://eko.in/developers/eps/employee-verification-api/",
+    docsUrl: "https://developers.eko.in/reference/advance-employment",
     overview: "The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows.",
     keyBenefits: [
       "Digital employee verification",
@@ -1062,16 +1106,19 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Phone Number", value: "+91 98765 43210", icon: Phone },
       ],
       outputs: [
-        { label: "Employee Name", value: "Rajesh Kumar" },
-        { label: "Date of Birth", value: "29/08/1994" },
-        { label: "PAN Number", value: "ABCDE1234F" },
-        { label: "UAN", value: "1001234567890" },
-        { label: "Member ID", value: "MH/BOM/12345" },
-        { label: "Company Name", value: "Acme Pvt Ltd" },
-        { label: "Joining Date", value: "01/04/2019" },
-        { label: "Exit Date", value: "30/06/2023" },
-        { label: "Exit Reason", value: "Resignation" },
-        { label: "PF Filing", value: "Up to date" },
+        { label: "Employee Name", value: "Rajesh Kumar", icon: User },
+        { label: "Gender", value: "Male", icon: User },
+        { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
+        { label: "Aadhaar Verified", value: "No" },
+        { label: "PAN Number", value: "ABCDE1234F", icon: IdCard },
+        { label: "UAN", value: "1001234567890", icon: IdCard },
+        { label: "Member ID", value: "MH/BOM/12345", icon: IdCard },
+        { label: "Company Name", value: "Acme Pvt Ltd", icon: Building },
+        { label: "Joining Date", value: "01/04/2019", icon: Calendar },
+        { label: "Exit Date", value: "30/06/2023", icon: Calendar },
+        { label: "Exit Reason", value: "Resignation", icon: Info },
+        { label: "EPFO Details…", value: "PF Filing?, Name Unique?, …", icon: Info },
+        { label: "Employer Info…", value: "Name, Setup Date, PF Filing Details, …", icon: Info },
       ],
     },
   },
@@ -1091,7 +1138,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroSubtitle: "Convert geo-coordinates into precise address data to strengthen verification and compliance workflows.",
     category: "verification",
     icon: Globe,
-    docsUrl: "https://eko.in/developers/eps/reverse-geocoding-api/",
+    docsUrl: "https://developers.eko.in/reference/reverse-geocoding",
     overview: "The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment.",
     keyBenefits: [
       "Accurate latitude-to-address conversion",
@@ -1129,10 +1176,13 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Longitude", value: "72.8777", icon: MapPin },
       ],
       outputs: [
-        { label: "Address", value: "Chhatrapati Shivaji Terminus" },
-        { label: "City", value: "Mumbai" },
-        { label: "State", value: "Maharashtra" },
-        { label: "PIN Code", value: "400001" },
+        { label: "Address", value: "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus", icon: MapPin },
+        { label: "City", value: "Mumbai", icon: MapPin },
+        { label: "State", value: "Maharashtra", icon: MapPin },
+        { label: "PIN Code", value: "400001", icon: MapPin },
+        { label: "Country", value: "India", icon: MapPin },
+        { label: "State Code", value: "MH", icon: MapPin },
+        { label: "Country Code", value: "IN", icon: MapPin },
       ],
     },
   },
