@@ -51,6 +51,7 @@ export const API_PRODUCTS: ApiProductRef[] = [
     href: "/products/cms-api",
     category: "payment",
     shortDesc: "Cash management & collection services",
+    disabled: true,
   },
   {
     id: "payment",
