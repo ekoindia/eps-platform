@@ -12,7 +12,6 @@ import {
   IdCard, FileText, BadgeCheck, FileCheck, FolderCheck, Building,
   Smartphone, Briefcase, Car, Globe, Stethoscope, Receipt,
 } from "lucide-react";
-// import heroDashboard from "@/assets/hero-dashboard.jpg";
 import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png";
 // import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 

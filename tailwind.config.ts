@@ -1,8 +1,9 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
     container: {
@@ -132,6 +133,11 @@ export default {
           from: { opacity: "0", transform: "translateY(-8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "chevron-scroll": {
+          "0%": { opacity: "0.15", transform: "translateY(0)" },
+          "40%": { opacity: "0.7", transform: "translateY(4px)" },
+          "80%, 100%": { opacity: "0.15", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -146,8 +152,9 @@ export default {
         "menu-slide-down-in": "menu-slide-down-in 0.3s ease-out forwards",
         "scale-in": "scale-in 0.2s ease-out forwards",
         "menu-fullwidth-reveal": "menu-fullwidth-reveal 0.2s ease-out forwards",
+        "chevron-scroll": "chevron-scroll 1.8s ease-in-out 10",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

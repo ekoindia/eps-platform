@@ -5,6 +5,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { minify } from "html-minifier-terser";
+import Beasties from "beasties";
 import type { ViteDevServer } from "vite";
 import type { ROUTE_CHUNK_MAP } from "./routes";
 
@@ -51,6 +52,17 @@ export async function prerenderAllPages(
   // Also build a chunk map (source file → hashed URL) for preload injection.
   const { assetMap, chunkMap } = await buildMaps(outDir);
 
+  // Critical CSS extractor — inlines above-fold CSS and defers the rest
+  const beasties = new Beasties({
+    path: outDir,
+    publicPath: "/",
+    reduceInlineStyles: true,
+    pruneSource: false,
+    mergeStylesheets: true,
+    preload: "media",
+    logLevel: "warn",
+  });
+
   // Save the original SPA shell as a fallback for catch-all rewrites
   const fallbackPath = path.join(outDir, "__spa-fallback.html");
   const minifiedTemplate = await minify(template, MINIFY_OPTIONS);
@@ -64,6 +76,7 @@ export async function prerenderAllPages(
       html = replaceAssetUrls(html, assetMap);
       html = injectRoutePreload(html, route, routeChunkMap, chunkMap);
       html = addFetchPriorityLow(html);
+      html = await beasties.process(html);
       html = await minify(html, MINIFY_OPTIONS);
 
       // Determine output path:

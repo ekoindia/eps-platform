@@ -39,8 +39,7 @@ This project is built with:
 
 ## How to Add/Remove an API Product?
 1. Add data in `src/lib/data/api-products.ts` and `src/lib/data/api-product-pages.ts` for the new product, following the existing structures.
-2. Update the `products` array in `src/components/Header.tsx` and `src/components/Footer.tsx` to reflect the addition or removal of the product.
-3. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs widget.
+2. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs widget.
 
 
 ## How can I deploy this project?
