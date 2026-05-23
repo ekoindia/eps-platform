@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => ({
     mode !== "development" && prerenderPlugin(),
   ].filter(Boolean),
   build: {
+    cssMinify: "lightningcss",
     manifest: true,
     rollupOptions: {
       output: {

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { FadeIn } from "@/components/FadeIn";
@@ -141,11 +141,15 @@ export const HeroSection = () => {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="hidden lg:block absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-          <div className="w-1 h-2 bg-white/50 rounded-full" />
-        </div>
-      </div>
+      <button
+        className="hidden lg:flex absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex-col items-center cursor-pointer group"
+        onClick={() => window.scrollBy({ top: window.innerHeight, behavior: 'smooth' })}
+        aria-label="Scroll down"
+      >
+        <span className="text-white/30 text-[10px] font-medium tracking-widest uppercase mb-1 group-hover:text-white/50 transition-colors">Scroll</span>
+        <ChevronDown className="w-5 h-5 text-white/40 animate-chevron-scroll group-hover:text-white/60 transition-colors" />
+        <ChevronDown className="w-5 h-5 -mt-2 text-white/20 animate-chevron-scroll group-hover:text-white/40 transition-colors" style={{ animationDelay: '300ms' }} />
+      </button>
     </section>
   );
 };

@@ -137,17 +137,6 @@
       var(--gradient-hero);
   }
 
-  /* Gold Accent Line */
-  .gold-line {
-    @apply relative;
-  }
-
-  .gold-line::after {
-    content: '';
-    @apply absolute -bottom-2 left-0 h-1 w-16 rounded-full;
-    background: var(--gradient-gold);
-  }
-
   /* Code Block Styling */
   .code-block {
     @apply rounded-xl overflow-hidden shadow-xl;
@@ -172,43 +161,6 @@
     box-shadow: var(--shadow-xl);
   }
 
-  /* Button Shine Animation */
-  .btn-shine {
-    @apply relative overflow-hidden;
-  }
-
-  .btn-shine::after {
-    content: '';
-    @apply absolute inset-0 -translate-x-full;
-    background: var(--gradient-shine);
-    animation: shine 3s infinite;
-  }
-
-  /* Glow Effects */
-  .glow-gold {
-    box-shadow: var(--shadow-gold);
-  }
-
-  .glow-navy {
-    box-shadow: var(--shadow-navy);
-  }
-
-  /* Section Styling */
-  .section-navy {
-    @apply hero-gradient hero-pattern text-white;
-  }
-
-  /* Tab Active State */
-  .tab-active {
-    @apply relative;
-  }
-
-  .tab-active::after {
-    content: '';
-    @apply absolute bottom-0 left-0 right-0 h-0.5;
-    background: var(--gradient-gold);
-  }
-
   /* Feature Icon Container */
   .icon-container {
     @apply w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300;
@@ -219,37 +171,9 @@
     @apply w-6 h-6 text-primary;
   }
 
-  /* Network Animation Background */
-  .network-bg {
-    background-image:
-      radial-gradient(circle at 20% 30%, hsl(42 96% 54% / 0.15) 0%, transparent 25%),
-      radial-gradient(circle at 80% 70%, hsl(42 96% 54% / 0.1) 0%, transparent 25%),
-      radial-gradient(circle at 50% 50%, hsl(195 91% 40% / 0.05) 0%, transparent 50%);
-  }
-
-  /* Floating Animation */
-  .float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  /* Pulse Ring */
-  .pulse-ring {
-    @apply relative;
-  }
-
-  .pulse-ring::before {
-    content: '';
-    @apply absolute inset-0 rounded-full;
-    background: hsl(var(--eko-gold) / 0.3);
-    animation: pulse-ring 2s ease-out infinite;
-  }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
   .text-gradient-gold {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-gold);
@@ -277,32 +201,12 @@
 }
 
 /* Keyframe Animations */
-@keyframes shine {
-  0% {
-    transform: translateX(-100%);
-  }
-  20%, 100% {
-    transform: translateX(100%);
-  }
-}
-
 @keyframes float {
   0%, 100% {
     transform: translateY(0);
   }
   50% {
     transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
   }
 }
 
