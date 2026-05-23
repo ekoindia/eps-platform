@@ -48,7 +48,7 @@
     --radius: 0.5rem;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(195 91% 15%) 0%, hsl(195 60% 25%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(195 91% 15%) 0%, hsl(195 60% 20%) 100%);
     --gradient-gold: linear-gradient(135deg, hsl(42 96% 54%) 0%, hsl(38 95% 50%) 100%);
     --gradient-shine: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
 

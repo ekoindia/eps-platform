@@ -50,6 +50,7 @@ import bankImg from "@/assets/bank-verification.svg";
 import gstImg from "@/assets/gst-verification.png";
 import dlImg from "@/assets/dl-verification-2.png";
 import upiVerifyImg from "@/assets/upi-hero.png";
+import employeeImg from "@/assets/employee_verification.png";
 
 // ---------------------------------------------------------------------------
 // SEO helper type + full page config type
@@ -1055,7 +1056,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // Employee Verification
+  // MARK: Employee
   // -------------------------------------------------------------------------
   employee: {
     seo: {
@@ -1069,6 +1070,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     heroSubtitle: "Verify employee identity and details digitally to reduce hiring risk and ensure compliance.",
     category: "verification",
     icon: Briefcase,
+    heroImage: employeeImg,
     docsUrl: "https://developers.eko.in/reference/advance-employment",
     overview: "The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows.",
     keyBenefits: [

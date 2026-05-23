@@ -654,7 +654,9 @@ export const Header = () => {
           </nav>
 
           <div className="flex flex-col gap-3 px-5 py-4 border-t border-eko-navy/10 shrink-0">
-            <LanguageSelector isLight={false} />
+            <div className="-ml-2">
+              <LanguageSelector isLight={false} showLabel />
+            </div>
             <a
               id="lnk-sales-phone-header-mobile"
               href={`tel:+91${SALES_MOBILE}`}
@@ -666,7 +668,7 @@ export const Header = () => {
             <Button id="btn-get-started-header-mobile" variant="gold" size="sm" onClick={() => {
               setMobileMenuOpen(false);
               openZohoChat();
-            }} className="cursor-pointer">
+            }} className="cursor-pointer self-start min-w-[140px]">
               Get Started
             </Button>
           </div>

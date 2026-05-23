@@ -25,7 +25,7 @@ declare global {
   }
 }
 
-export const LanguageSelector = ({ isLight = true }: { isLight?: boolean }) => {
+export const LanguageSelector = ({ isLight = true, showLabel = false }: { isLight?: boolean; showLabel?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("en");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -127,7 +127,7 @@ export const LanguageSelector = ({ isLight = true }: { isLight?: boolean }) => {
         aria-label="Select language"
       >
         <Globe className="w-4 h-4" />
-        <span className="hidden sm:inline">{selectedLang?.label || "English"}</span>
+        <span className={showLabel ? undefined : "hidden sm:inline"}>{selectedLang?.label || "English"}</span>
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
       </button>
 
