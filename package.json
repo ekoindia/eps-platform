@@ -83,7 +83,6 @@
     "html-minifier-terser": "^7.2.0",
     "jsdom": "^20.0.3",
     "lightningcss": "^1.32.0",
-    "lovable-tagger": "^1.1.13",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
