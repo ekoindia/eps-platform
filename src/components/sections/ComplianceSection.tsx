@@ -77,7 +77,7 @@ export const ComplianceSection = () => {
           <FadeIn
             key={item.title}
             delay={i * 100}
-            className="p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors duration-300"
+            className="p-6 rounded-2xl bg-white/5 backdrop-blur-xs border border-white/10 hover:bg-white/10 transition-colors duration-300"
           >
             <div className="w-12 h-12 rounded-xl bg-eko-gold/20 flex items-center justify-center mb-5">
               <item.icon className="w-6 h-6 text-eko-gold" />
@@ -85,7 +85,7 @@ export const ComplianceSection = () => {
             <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
             <p className="text-white/70 text-sm leading-relaxed">{item.description}</p>
             {"details" in item && item.details && (
-              <ul className="mt-3 space-y-1.5">
+              <ul className="mt-3 flex flex-col gap-1.5">
                 {(item.details as string[]).map((detail: string, i: number) => (
                   <li key={i} className="text-white/60 text-xs flex items-start gap-1.5">
                     <span className="mt-1 w-1 h-1 rounded-full bg-white/40 shrink-0" />

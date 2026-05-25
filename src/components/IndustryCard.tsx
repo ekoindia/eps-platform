@@ -21,7 +21,7 @@ export const IndustryCard = ({ industry, className, delay }: IndustryCardProps) 
         )}
       >
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center flex-shrink-0 group-hover:bg-eko-gold/20 transition-colors">
+          <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center shrink-0 group-hover:bg-eko-gold/20 transition-colors">
             <Icon className="w-5 h-5 text-eko-gold" />
           </div>
           <div>

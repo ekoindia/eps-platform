@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 type ProductTab = "bc" | "payments" | "bbps" | "collection" | "verification"; // | "shield"
 
-const productTabs: { id: ProductTab; label: string; icon: any }[] = [
+const productTabs: { id: ProductTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   // { id: "payments", label: "Payment APIs", icon: CreditCard },
   { id: "bbps", label: "Payments APIs", icon: Receipt },
@@ -201,7 +201,7 @@ export const ProductsSection = () => {
         <div>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn className="order-2 lg:order-1 relative">
-              <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
+              <div className="absolute -inset-4 bg-linear-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
               <div className="relative bg-card border border-border/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
                   <ShieldCheck className="w-5 h-5 text-eko-gold" />

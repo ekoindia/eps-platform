@@ -89,7 +89,7 @@ export const DropdownGrid = ({ columns, onItemClick }: DropdownGridProps) => (
 					title={col.title}
 					link={col.seeAllLink ? { ...col.seeAllLink, onClick: onItemClick } : undefined}
 				/>
-				<div className="space-y-0.5">
+				<div className="flex flex-col gap-0.5">
 					{col.items.map((item, index) => (
 						<MenuItemLink
 							key={item.to}

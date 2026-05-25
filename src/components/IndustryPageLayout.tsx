@@ -25,8 +25,8 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
       <main>
         {/* Hero */}
         <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <BreadcrumbNav crumbs={[
               { label: "Home", href: "/" },
@@ -51,7 +51,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   <div className="flex flex-wrap gap-3 mb-8">
                     {data.trustStrip.map((item) => (
                       <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
-                        <CheckCircle className="w-4 h-4 text-eko-gold flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 text-eko-gold shrink-0" />
                         {item}
                       </span>
                     ))}
@@ -70,7 +70,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
               </div>
               {/* Lead Form */}
               {/* <div className="relative" id="lead-form-hero">
-                <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-sm">
+                <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-xs">
                   <Shield className="w-4 h-4 text-eko-gold" />
                   <span className="text-xs font-semibold text-eko-gold">99.9% Uptime</span>
                 </div>
@@ -149,11 +149,11 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-foreground text-sm group-hover:text-eko-gold transition-colors">{api.name}</span>
-                      <ApiChip name="" relevance={api.relevance} className="!px-1.5 !py-0 border-0 bg-transparent" />
+                      <ApiChip name="" relevance={api.relevance} className="px-1.5! py-0! border-0 bg-transparent" />
                     </div>
                     <p className="text-muted-foreground text-xs leading-relaxed">{api.description}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-eko-gold flex-shrink-0 mt-0.5" />
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-eko-gold shrink-0 mt-0.5" />
                   </Link>
                 </FadeIn>
               ))}
@@ -222,7 +222,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                 </div>
               ))}
             </div>
-            <div className="md:hidden space-y-6 max-w-sm mx-auto">
+            <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
               {data.integrationSteps.map((step, i) => (
                 <div key={step.step} className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -252,10 +252,10 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {data.complianceItems.length > 0 && (
           <SectionContainer>
             <SectionHeader badge="Compliance" title="Compliance & regulatory" />
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.complianceItems.map((item, i) => (
                 <FadeIn key={i} delay={i * 50} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
-                  <Shield className="w-5 h-5 text-eko-gold flex-shrink-0 mt-0.5" />
+                  <Shield className="w-5 h-5 text-eko-gold shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">{item.title}</h4>
                     <p className="text-muted-foreground text-sm">{item.description}</p>
@@ -270,13 +270,13 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {data.faqs.length > 0 && (
           <SectionContainer variant="muted">
             <SectionHeader title="Frequently Asked Questions" />
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.faqs.map((faq, i) => (
                 <FadeIn key={i} delay={i * 50}>
                   <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
                     <summary className="flex items-center justify-between font-semibold text-foreground list-none">
                       <span className="flex items-center gap-3">
-                        <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                        <HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
                         {faq.question}
                       </span>
                       <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
@@ -319,10 +319,10 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
                 Sign up now and start integrating in minutes. Our team will help you go live quickly.
               </p>
-              <ul className="space-y-3">
+              <ul className="flex flex-col gap-3">
                 {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/80">
-                    <CheckCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
                     {item}
                   </li>
                 ))}

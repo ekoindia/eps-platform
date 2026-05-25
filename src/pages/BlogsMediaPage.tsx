@@ -93,7 +93,7 @@ const BlogsMediaPage = () => {
           {/* Press / Media */}
           <div className="max-w-5xl mx-auto">
             <h2 className="text-2xl font-bold text-foreground mb-6">Press & Media</h2>
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               {pressItems.map((item) => (
                 <a key={item.title} href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -103,7 +103,7 @@ const BlogsMediaPage = () => {
                           <CardTitle className="text-lg">{item.title}</CardTitle>
                           <CardDescription className="mt-1">{item.source}</CardDescription>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+                        <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                       </div>
                     </CardHeader>
                     <CardContent>

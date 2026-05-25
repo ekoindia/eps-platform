@@ -39,7 +39,7 @@ export const TalkToSalesDialog = ({ open, onOpenChange }: TalkToSalesDialogProps
               <DialogTitle className="text-xl font-bold">Talk to Sales</DialogTitle>
               <DialogDescription>Choose how you'd like to connect with our team.</DialogDescription>
             </DialogHeader>
-            <div className="p-6 pt-2 space-y-3">
+            <div className="p-6 pt-2 flex flex-col gap-3">
 
               {/*
                   MARK: Call Us
