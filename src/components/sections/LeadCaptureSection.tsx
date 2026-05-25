@@ -12,7 +12,7 @@ export const LeadCaptureSection = () => {
   };
 
   return (
-    <SectionContainer variant="muted" id="contact">
+    <SectionContainer variant="muted" id="contact" className="overflow-hidden">
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         {/* Left: Content */}
         <FadeIn>
@@ -42,7 +42,7 @@ export const LeadCaptureSection = () => {
         </FadeIn>
 
         {/* Right: Chat & Call CTAs */}
-        <FadeIn delay={200} className="relative">
+        <FadeIn delay={200} className="relative min-w-0">
           <div className="absolute inset-0 bg-linear-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-3xl" />
           <div className="relative bg-card border border-border/50 rounded-2xl p-8 lg:p-10 shadow-xl">
             <h3 className="text-xl font-semibold text-foreground mb-2">Get Started with Eko Platform Services</h3>
