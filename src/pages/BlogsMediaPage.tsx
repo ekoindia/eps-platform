@@ -103,7 +103,7 @@ const BlogsMediaPage = () => {
                           <CardTitle className="text-lg">{item.title}</CardTitle>
                           <CardDescription className="mt-1">{item.source}</CardDescription>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+                        <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
                       </div>
                     </CardHeader>
                     <CardContent>

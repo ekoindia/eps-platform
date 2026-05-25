@@ -225,7 +225,7 @@ export const HeaderDropdownPanels = ({
 			{activeDesktopDropdown === 'useCases' && (
 			<FullWidthDropdownPanel isScrolled={isScrolled} data-dropdown="usecases" {...panelHoverHandlers}>
 					{/* Featured banner */}
-					<div className="bg-gradient-to-r from-[#00394b] to-[#005a6e]">
+					<div className="bg-linear-to-r from-[#00394b] to-[#005a6e]">
 						<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 							<Link
 								to="/use-cases"

@@ -128,7 +128,7 @@ const EkoShieldPage = () => {
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
               <FadeIn onView={false} delay={100}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 mb-6">
                 <Zap className="w-4 h-4 text-eko-gold" />
                 <span className="text-sm font-medium text-white">India's Verification Infrastructure</span>
               </FadeIn>
@@ -188,7 +188,7 @@ const EkoShieldPage = () => {
               {valueProps.map((p, i) => (
                 <FadeIn key={p.title} delay={i * 100}
                   className="group p-6 rounded-xl bg-card border border-border hover:border-eko-gold/40 hover:shadow-lg transition-all duration-300">
-                  <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-navy to-eko-navy-light flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-navy to-eko-navy-light flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
                     <p.icon className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-card-foreground mb-2">{p.title}</h3>
@@ -225,7 +225,7 @@ const EkoShieldPage = () => {
           {/* Industry Modal */}
             {selectedIndustry && (
               <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-sm animate-fade-in"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/60 backdrop-blur-xs animate-fade-in"
                 onClick={() => setSelectedIndustry(null)}>
                 <div
                   className="bg-background rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in"
@@ -233,7 +233,7 @@ const EkoShieldPage = () => {
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-6">
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-navy to-eko-navy-light flex items-center justify-center">
+                        <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-navy to-eko-navy-light flex items-center justify-center">
                           <selectedIndustry.icon className="h-6 w-6 text-white" />
                         </div>
                         <div>
@@ -338,10 +338,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "identity" && identityProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">IDENTITY</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">IDENTITY</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -349,10 +349,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "gstin" && gstinProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">GSTIN</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">GSTIN</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -360,10 +360,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "financial" && financialProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">FINANCIAL</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">FINANCIAL</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -371,10 +371,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "employment" && employmentProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">EMPLOYMENT</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">EMPLOYMENT</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -382,10 +382,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "vehicle" && vehicleProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">VEHICLE</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">VEHICLE</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -393,10 +393,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "digital" && digitalProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">DIGITAL</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">DIGITAL</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -404,10 +404,10 @@ const EkoShieldPage = () => {
                 {selectedCategory === "healthcare" && healthcareProducts.map((product, i) => (
                   <FadeIn key={product.name} delay={i * 50}
                     className="group p-6 rounded-xl bg-white/5 border border-white/10 hover:border-eko-gold/50 hover:bg-white/10 transition-all duration-300">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-br from-eko-gold/20 to-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <product.icon className="h-6 w-6 text-eko-gold" />
                     </div>
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">HEALTHCARE</span>
+                    <span className="inline-block px-2 py-1 rounded-sm text-xs font-medium bg-eko-gold/20 text-eko-gold mb-3">HEALTHCARE</span>
                     <h3 className="text-lg font-semibold text-white mb-2">{product.name}</h3>
                     <p className="text-sm text-white/60 leading-relaxed">{product.description}</p>
                   </FadeIn>
@@ -422,7 +422,7 @@ const EkoShieldPage = () => {
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
               <FadeIn>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-eko-gold/10 backdrop-blur-sm border border-eko-gold/20 mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-eko-gold/10 backdrop-blur-xs border border-eko-gold/20 mb-6">
                   <Sparkles className="w-4 h-4 text-eko-gold" />
                   <span className="text-sm font-medium text-eko-gold">Start Your Free Trial</span>
                 </div>

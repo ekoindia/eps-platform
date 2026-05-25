@@ -27,14 +27,14 @@ export const SolutionCard = ({ solution, featured, className, delay }: SolutionC
         )}
       >
       <div className="flex items-start gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center flex-shrink-0 group-hover:bg-eko-gold/20 transition-colors">
+        <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center shrink-0 group-hover:bg-eko-gold/20 transition-colors">
           <Icon className="w-5 h-5 text-eko-gold" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <h3 className="font-semibold text-foreground group-hover:text-eko-gold transition-colors truncate">{solution.name}</h3>
             {featured && (
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-eko-gold/10 text-eko-gold px-2 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-[10px] font-semibold uppercase tracking-wider bg-eko-gold/10 text-eko-gold px-2 py-0.5 rounded-full shrink-0">
                 Popular
               </span>
             )}

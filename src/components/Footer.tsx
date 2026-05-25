@@ -39,7 +39,7 @@ const footerLinks = {
     { label: "Privacy Policy", href: "/privacy-policy", internal: true },
     { label: "Terms & Conditions", href: "/tnc", internal: true },
     { label: "Refund Policy", href: "/refund-policy", internal: true },
-    { label: "Compliance", href: "#compliance" },
+    // { label: "Compliance", href: "#compliance" },
   ],
   industries: [
     { label: "Lending & NBFCs", href: "/industries/lending-nbfc", internal: true },

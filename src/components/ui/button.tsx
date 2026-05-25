@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm cursor-pointer font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm cursor-pointer font-medium ring-offset-background transition-all duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -20,7 +20,7 @@ const buttonVariants = cva(
         "gold-outline": "border-2 border-eko-gold text-eko-gold bg-transparent hover:bg-eko-gold hover:text-eko-navy font-semibold",
         navy: "bg-eko-navy text-white font-semibold hover:bg-eko-navy-light shadow-navy hover:shadow-lg hover:-translate-y-0.5",
         "navy-outline": "border-2 border-eko-navy text-eko-navy bg-transparent hover:bg-eko-navy hover:text-white font-semibold",
-        "hero-outline": "border-2 border-white/30 text-white bg-transparent hover:bg-white/10 font-semibold backdrop-blur-sm",
+        "hero-outline": "border-2 border-white/30 text-white bg-transparent hover:bg-white/10 font-semibold backdrop-blur-xs",
         "white": "bg-white text-eko-navy font-semibold hover:bg-white/90 shadow-lg hover:-translate-y-0.5",
         "action": "bg-amber-500 text-white font-semibold hover:bg-amber-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5",
       },

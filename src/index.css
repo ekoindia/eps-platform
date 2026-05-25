@@ -1,20 +1,163 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Eko Design System - Enterprise Fintech Aesthetic */
 /* Fonts loaded asynchronously via index.html */
 
+@theme {
+  /* Brand colors — exposed as utilities (bg-eko-gold etc.) */
+  --color-eko-gold: hsl(42 96% 54%);
+  --color-eko-gold-hover: hsl(42 96% 48%);
+  --color-eko-gold-light: hsl(42 96% 95%);
+  --color-eko-navy: hsl(195 91% 15%);
+  --color-eko-navy-light: hsl(195 60% 25%);
+  --color-eko-slate: hsl(0 0% 33%);
+  --color-eko-success: hsl(142 76% 36%);
+
+  /* Semantic tokens — bind to runtime CSS vars for dark-mode switching */
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* Fonts */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Custom shadows — utility names: shadow-gold, shadow-navy, shadow-card, shadow-card-hover */
+  --shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
+  --shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Keyframes — registered as values so animation utilities can use them */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-up: fade-up 0.6s ease-out both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-slide-left: slide-left 0.6s ease-out both;
+  --animate-slide-right: slide-right 0.6s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+  --animate-scroll-x: scroll-x 20s linear infinite;
+  --animate-menu-slide-down-in: menu-slide-down-in 0.3s ease-out forwards;
+  --animate-scale-in: scale-in 0.2s ease-out forwards;
+  --animate-menu-fullwidth-reveal: menu-fullwidth-reveal 0.2s ease-out forwards;
+  --animate-chevron-scroll: chevron-scroll 1.8s ease-in-out 10;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-left {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slide-right {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  @keyframes scroll-x {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes menu-slide-down-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes menu-fullwidth-reveal {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes chevron-scroll {
+    0% { opacity: 0.15; transform: translateY(0); }
+    40% { opacity: 0.7; transform: translateY(4px); }
+    80%, 100% { opacity: 0.15; transform: translateY(0); }
+  }
+}
+
+/* Container utility — replaces v3 theme.container { center, padding, screens } */
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
 @layer base {
   :root {
-    /* Brand Colors - Eko Identity */
-    --eko-gold: 42 96% 54%;           /* #fbb11b - Primary CTA */
-    --eko-gold-hover: 42 96% 48%;     /* Darker gold for hover */
-    --eko-gold-light: 42 96% 95%;     /* Light gold tint */
-    --eko-navy: 195 91% 15%;          /* #04394b - Primary Dark */
-    --eko-navy-light: 195 60% 25%;    /* Lighter navy */
-    --eko-slate: 0 0% 33%;            /* #545454 - Secondary text */
-    --eko-success: 142 76% 36%;       /* Green for success states */
+    /* Brand Colors - Eko Identity (runtime HSL channels for hsl(var(--x)) consumers) */
+    --eko-gold: 42 96% 54%;
+    --eko-gold-hover: 42 96% 48%;
+    --eko-gold-light: 42 96% 95%;
+    --eko-navy: 195 91% 15%;
+    --eko-navy-light: 195 60% 25%;
+    --eko-slate: 0 0% 33%;
+    --eko-success: 142 76% 36%;
 
     /* Semantic Tokens */
     --background: 0 0% 100%;
@@ -52,13 +195,14 @@
     --gradient-gold: linear-gradient(135deg, hsl(42 96% 54%) 0%, hsl(38 95% 50%) 100%);
     --gradient-shine: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
-    --shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
+    /* App shadows (raw values consumed via var()) — renamed from --shadow-* to avoid
+       collision with Tailwind v4's registered --shadow-* theme variables. */
+    --app-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --app-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --app-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --app-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --app-shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
+    --app-shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
 
     /* Sidebar */
     --sidebar-background: 0 0% 98%;
@@ -158,7 +302,7 @@
 
   .card-hover:hover {
     @apply -translate-y-1;
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--app-shadow-xl);
   }
 
   /* Feature Icon Container */
@@ -170,7 +314,6 @@
   .icon-container svg {
     @apply w-6 h-6 text-primary;
   }
-
 }
 
 @layer utilities {
@@ -200,76 +343,10 @@
   transform: translateY(0);
 }
 
-/* Keyframe Animations */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slide-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.animate-fade-up {
-  animation: fade-up 0.6s ease-out both;
-}
-
-.animate-slide-left {
-  animation: slide-in-left 0.6s ease-out both;
-}
-
-.animate-slide-right {
-  animation: slide-in-right 0.6s ease-out both;
-}
-
-.animation-delay-100 {
-  animation-delay: 100ms;
-}
-
-.animation-delay-200 {
-  animation-delay: 200ms;
-}
-
-.animation-delay-300 {
-  animation-delay: 300ms;
-}
-
-.animation-delay-400 {
-  animation-delay: 400ms;
-}
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-400 { animation-delay: 400ms; }
 
 p {
   line-height: 1.5;

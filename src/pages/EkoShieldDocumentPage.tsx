@@ -82,7 +82,7 @@ const EkoShieldDocumentPage = () => {
               { title: "Fraud Reduction", desc: "Catch fake identities, expired documents, and mismatched bank details before they cost you." },
             ].map((prop) => (
               <div key={prop.title} className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="w-2 bg-[#C8A951] rounded-full flex-shrink-0" />
+                <div className="w-2 bg-[#C8A951] rounded-full shrink-0" />
                 <div>
                   <h3 className="font-semibold text-[#00394b] mb-1">{prop.title}</h3>
                   <p className="text-sm text-gray-600 leading-relaxed">{prop.desc}</p>

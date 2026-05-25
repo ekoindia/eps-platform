@@ -107,7 +107,7 @@ const ProductsPage = () => {
 				<main>
 					{/* Hero Section */}
 					<section className="relative pt-32 pb-16 bg-eko-navy overflow-hidden">
-						<div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
+						<div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
 						<div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
 							<div className="text-left">
 								<BreadcrumbNav crumbs={[

@@ -24,7 +24,7 @@ function EscalationLevel({ level, title, children, color }: { level: number; tit
   return (
     <div className={`rounded-xl border ${color} p-5`}>
       <div className="flex items-center gap-3 mb-3">
-        <span className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
+        <span className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold shrink-0">
           {level}
         </span>
         <h3 className="font-bold text-foreground text-lg">
@@ -41,7 +41,7 @@ function EscalationLevel({ level, title, children, color }: { level: number; tit
 function ContactRow({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
-      <Icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground/70" />
+      <Icon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground/70" />
       <span>{children}</span>
     </div>
   );
@@ -153,7 +153,7 @@ function PolicyContent() {
       </div>
 
       <div className="mt-4 bg-muted rounded-xl p-4 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <p className="text-sm text-muted-foreground">
           <strong className="text-foreground">Important:</strong> All complaints at Level 3 will be considered only if the complaint number given at Level 1 is included in the complaint.
         </p>

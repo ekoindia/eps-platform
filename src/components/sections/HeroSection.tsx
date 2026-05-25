@@ -55,7 +55,7 @@ export const HeroSection = () => {
           {/* Left: Text Content */}
           <div className="text-center lg:text-left">
             <FadeIn onView={false} delay={100} className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-xs mb-6">
                 <span className="w-2 h-2 rounded-full bg-eko-gold animate-pulse-soft" />
                 <span className="text-white/80 text-sm font-medium">Trusted by 50,000+ businesses</span>
               </div>

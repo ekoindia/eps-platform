@@ -48,7 +48,7 @@ export const ProductCard = ({ title, description, features, icon: Icon, classNam
       <ul className="space-y-2.5 mt-auto">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2.5 text-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-eko-gold mt-2 flex-shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-eko-gold mt-2 shrink-0" />
             <span className="text-foreground/80">{feature}</span>
           </li>
         ))}
@@ -95,7 +95,7 @@ export const UseCaseCard = ({ title, description, icon: Icon, className }: UseCa
       className
     )}>
       <div className="flex items-start gap-4">
-        <div className="icon-container flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+        <div className="icon-container shrink-0 group-hover:scale-110 transition-transform duration-300">
           <Icon className="w-5 h-5 text-eko-gold" />
         </div>
         <div>

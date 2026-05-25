@@ -76,7 +76,7 @@ const AboutPage = () => {
         </section>
 
         {/* Our Mission */}
-        <section className="py-16 lg:py-20 bg-gradient-to-br from-secondary via-muted/40 to-secondary/50">
+        <section className="py-16 lg:py-20 bg-linear-to-br from-secondary via-muted/40 to-secondary/50">
           <FadeIn className="container mx-auto px-6 max-w-3xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-xl bg-eko-navy flex items-center justify-center">
@@ -112,7 +112,7 @@ const AboutPage = () => {
                     key={role.title}
                     delay={i * 100}
                   >
-                    <Card className={`border-0 shadow-lg bg-gradient-to-br ${role.gradient} h-full hover:shadow-xl transition-shadow`}>
+                    <Card className={`border-0 shadow-lg bg-linear-to-br ${role.gradient} h-full hover:shadow-xl transition-shadow`}>
                       <CardContent className="pt-8 pb-8 text-center">
                         <div className="w-14 h-14 rounded-2xl bg-eko-navy flex items-center justify-center mx-auto mb-5 shadow-md">
                           <Icon className="w-7 h-7 text-eko-gold" />
@@ -148,7 +148,7 @@ const AboutPage = () => {
         </section>
 
         {/* Our Values */}
-        <section className="py-16 lg:py-24 bg-gradient-to-b from-background to-muted/30">
+        <section className="py-16 lg:py-24 bg-linear-to-b from-background to-muted/30">
           <div className="container mx-auto px-6 max-w-5xl">
             <FadeIn className="text-center mb-12">
               <span className="inline-block px-4 py-1.5 rounded-full bg-eko-navy text-eko-gold text-sm font-semibold mb-4">
@@ -175,7 +175,7 @@ const AboutPage = () => {
                     <Card className="border-border/40 hover:border-eko-gold/30 hover:shadow-lg transition-all h-full">
                       <CardContent className="pt-6 pb-6">
                         <div className="flex items-center gap-3 mb-4">
-                          <div className={`w-11 h-11 rounded-xl ${v.bg} flex items-center justify-center flex-shrink-0`}>
+                          <div className={`w-11 h-11 rounded-xl ${v.bg} flex items-center justify-center shrink-0`}>
                             <Icon className={`w-5 h-5 ${v.color}`} />
                           </div>
                           <div>

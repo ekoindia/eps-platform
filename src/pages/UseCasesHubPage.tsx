@@ -44,8 +44,8 @@ const UseCasesHubPage = () => {
         <main>
           {/* Hero + Choice Cards */}
           <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="text-left">
                 <BreadcrumbNav crumbs={[
@@ -65,7 +65,7 @@ const UseCasesHubPage = () => {
                 <FadeIn delay={200} className="flex">
                   <Link
                     to="/industries"
-                    className="flex flex-col group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
+                    className="flex flex-col group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xs hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-eko-gold/20 flex items-center justify-center mb-5 group-hover:bg-eko-gold/30 transition-colors">
                     <Building2 className="w-7 h-7 text-eko-gold" />
@@ -80,7 +80,7 @@ const UseCasesHubPage = () => {
                 <FadeIn delay={300} className="flex">
                   <Link
                     to="/solutions"
-                    className="flex flex-col group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
+                    className="flex flex-col group p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xs hover:bg-white/10 hover:border-eko-gold/40 hover:shadow-[0_0_40px_rgba(212,160,23,0.15)] transition-all duration-300"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-eko-gold/20 flex items-center justify-center mb-5 group-hover:bg-eko-gold/30 transition-colors">
                     <Package className="w-7 h-7 text-eko-gold" />

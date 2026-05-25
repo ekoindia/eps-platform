@@ -197,7 +197,7 @@ export const Header = () => {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-[transform,background-color,padding,box-shadow] duration-300 ease-out will-change-transform",
           isScrolled
-            ? "bg-[#00394bdd] backdrop-blur-md shadow-sm py-3"
+            ? "bg-[#00394bdd] backdrop-blur-md shadow-xs py-3"
             : "bg-[#00394b] py-5",
           isHidden ? "-translate-y-full" : "translate-y-0"
         )}

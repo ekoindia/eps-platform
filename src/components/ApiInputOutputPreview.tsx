@@ -213,7 +213,7 @@ const MultiApiPreview = ({
               onClick={() => setActiveApi(p.apiName)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeApi === p.apiName
-                  ? "bg-primary text-primary-foreground shadow-sm"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -332,16 +332,16 @@ const PreviewContent = ({
       <Tabs defaultValue="visual" className="max-w-5xl mx-auto">
         {/* TODO: Show "Visual" vs "JSON" tabs only when we have authentic JSON trsucture to show */}
         {/* <div className="flex justify-end mb-4">
-          <TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-sm">
+          <TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-xs">
             <TabsTrigger
               value="visual"
-              className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
             >
               Visual
             </TabsTrigger>
             <TabsTrigger
               value="json"
-              className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
             >
               JSON
             </TabsTrigger>
@@ -355,7 +355,7 @@ const PreviewContent = ({
               Input Card
               MARK: REQUEST
             */}
-            <FadeIn delay={100} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
+            <FadeIn delay={100} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
               <div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
                 <Send className="w-4 h-4 text-white/70" />
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">REQUEST</Badge>
@@ -366,7 +366,7 @@ const PreviewContent = ({
                   const Icon = field.icon;
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      {Icon && <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
+                      {Icon && <Icon className="w-4 h-4 text-muted-foreground shrink-0" />}
                       <div className="flex-1 flex items-center justify-between gap-4 py-2 border-b border-border/30 last:border-0">
                         <span className="text-sm text-muted-foreground">{field.label}</span>
                         <span className="text-sm font-mono font-medium text-foreground bg-muted/50 px-3 py-1 rounded-md">{field.value}</span>
@@ -381,8 +381,8 @@ const PreviewContent = ({
               Output Card
               MARK: RESPONSE
             */}
-            <FadeIn delay={200} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
-              <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-eko-success/90 to-eko-success">
+            <FadeIn delay={200} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
+              <div className="flex items-center gap-3 px-6 py-4 bg-linear-to-r from-eko-success/90 to-eko-success">
                 <Download className="w-4 h-4 text-white/70" />
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">RESPONSE</Badge>
                 <span className="text-white/60 text-xs ml-auto font-mono">200 OK</span>
@@ -393,9 +393,9 @@ const PreviewContent = ({
                   return (
                     <div key={i} className="flex items-center gap-3">
                       {Icon ? (
-                        <Icon className="w-4 h-4 text-eko-success flex-shrink-0 mt-0.5" />
+                        <Icon className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
                       ) : (
-                        <CheckCircle className="w-4 h-4 text-eko-success flex-shrink-0 mt-0.5" />
+                        <CheckCircle className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
                       )}
                       <div className="flex-1 flex items-center justify-between gap-4 py-1">
                         <span className="text-sm text-muted-foreground">{field.label}</span>

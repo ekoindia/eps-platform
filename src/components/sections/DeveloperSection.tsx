@@ -29,7 +29,7 @@ export const DeveloperSection = () => {
               const Icon = stepIcons[index];
               return (
                 <div key={step.step} className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-eko-gold/10 flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-eko-gold" />
                   </div>
                   <div>
