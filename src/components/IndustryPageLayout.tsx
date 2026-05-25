@@ -201,14 +201,14 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
 
         {/* Integration Stepper */}
         <SectionContainer className="bg-eko-navy">
-          <div className="text-center mb-12">
+          <FadeIn className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How to Integrate</h2>
             <p className="text-white/70 max-w-2xl mx-auto">Get started in minutes with our simple integration process</p>
-          </div>
+          </FadeIn>
           <TooltipProvider>
             <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
               {data.integrationSteps.map((step, i) => (
-                <div key={step.step} className="flex items-start flex-1">
+                <FadeIn key={step.step} delay={i * 150} className="flex items-start flex-1">
                   <div className="flex flex-col items-center text-center">
                     <div className="w-14 h-14 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-lg">
                       {step.step}
@@ -219,12 +219,12 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   {i < data.integrationSteps.length - 1 && (
                     <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
                   )}
-                </div>
+                </FadeIn>
               ))}
             </div>
             <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
               {data.integrationSteps.map((step, i) => (
-                <div key={step.step} className="flex gap-4">
+                <FadeIn key={step.step} delay={i * 150} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm">
                       {step.step}
@@ -235,7 +235,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                     <h3 className="text-sm font-semibold text-white">{step.title}</h3>
                     <p className="text-white/50 text-xs mt-1">{step.description}</p>
                   </div>
-                </div>
+                </FadeIn>
               ))}
             </div>
           </TooltipProvider>

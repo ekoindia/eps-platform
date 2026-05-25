@@ -43,7 +43,7 @@ const IndustriesPage = () => {
 
           {INDUSTRY_CATEGORIES.map((cat) => (
             <SectionContainer key={cat.key} variant={cat.key === "agent-retail" || cat.key === "workforce-fleet" ? "muted" : "default"}>
-              <SectionHeader title={cat.label} />
+              <FadeIn><SectionHeader title={cat.label} /></FadeIn>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {cat.industries.map((ind, i) => (
                   <IndustryCard key={ind.slug} industry={ind} delay={i * 100} />
