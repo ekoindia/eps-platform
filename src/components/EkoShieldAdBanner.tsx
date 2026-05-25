@@ -1,8 +1,9 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Shield, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/FadeIn";
 import ekoshieldMockup from "@/assets/ekoshield/ekoshield-imac-mockup-640x701.png";
 
 /* ─── Types ─── */
@@ -62,25 +63,6 @@ const EkoShieldAdBanner = ({
     []
   );
 
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.style.opacity = "1";
-          el.style.transform = "translateY(0)";
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   const _cta = { text: "Explore Eko Shield", href: "/products/eko-shield", ...cta };
 
   const ctaElement = _cta.onClick ? (
@@ -98,15 +80,11 @@ const EkoShieldAdBanner = ({
   );
 
   return (
-    <section
-      ref={sectionRef}
-      style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.5s ease-out, transform 0.5s ease-out" }}
-      className={cn(
-        "relative w-full overflow-hidden py-14 md:py-20",
-        "bg-[linear-gradient(135deg,#672458_0%,#1a1240_50%,#0d1b3e_100%)]",
-        className
-      )}
-    >
+    <FadeIn as="section" className={cn(
+      "relative w-full overflow-hidden py-14 md:py-20",
+      "bg-[linear-gradient(135deg,#672458_0%,#1a1240_50%,#0d1b3e_100%)]",
+      className
+    )}>
       {/* ── Subtle tile / grid pattern overlay ── */}
       <div
         className="absolute inset-0 opacity-[0.06] pointer-events-none"
@@ -168,7 +146,7 @@ const EkoShieldAdBanner = ({
           loading="lazy"
         />
       </div>
-    </section>
+    </FadeIn>
   );
 };
 

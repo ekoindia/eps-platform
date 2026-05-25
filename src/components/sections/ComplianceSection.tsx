@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Lock, FileCheck } from "lucide-react";
 import { FadeIn } from "@/components/FadeIn";
@@ -47,21 +46,6 @@ const complianceItems = [
 ];
 
 export const ComplianceSection = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        el.style.animationPlayState = entry.isIntersecting ? "running" : "paused";
-      },
-      { threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <SectionContainer variant="navy" id="compliance">
       <FadeIn>
@@ -102,7 +86,7 @@ export const ComplianceSection = () => {
       <FadeIn className="mt-16 pt-12 border-t border-white/10">
         <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-white text-center mb-8">Our Partners</h2>
         <div className="relative overflow-hidden h-20">
-          <div ref={scrollRef} className="flex items-center gap-12 animate-scroll-x" style={{ animationPlayState: "paused" }}>
+          <div className="flex items-center gap-12 animate-scroll-x">
             {[...partners, ...partners].map((partner, i) => (
               <img
                 key={`${partner.name}-${i}`}
