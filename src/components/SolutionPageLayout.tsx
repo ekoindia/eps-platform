@@ -30,8 +30,8 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
       <main>
         {/* Hero */}
         <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <BreadcrumbNav crumbs={[
               { label: "Home", href: "/" },
@@ -65,7 +65,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                 <div className="flex flex-wrap gap-4 mb-8">
                   {data.trustStrip.map((item) => (
                     <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
-                      <CheckCircle className="w-4 h-4 text-eko-gold flex-shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-eko-gold shrink-0" />
                       {item}
                     </span>
                   ))}
@@ -103,7 +103,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
         {data.packApis.length > 0 && (
           <SectionContainer variant="muted">
             <SectionHeader badge="APIs In This Pack" title="What You Get" subtitle="Every API in this pack, what it does, and why it's included." />
-            <div className="max-w-4xl mx-auto space-y-4">
+            <div className="max-w-4xl mx-auto flex flex-col gap-4">
               {data.packApis.map((ref, i) => {
                 const api = resolvePackApi(ref);
                 if (!api) return null;
@@ -111,7 +111,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
                 return (
                   <FadeIn key={api.apiId} delay={i * 50} className="group p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center flex-shrink-0 group-hover:bg-eko-gold/20 transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-eko-gold/10 flex items-center justify-center shrink-0 group-hover:bg-eko-gold/20 transition-colors">
                         <Icon className="w-5 h-5 text-eko-gold" />
                       </div>
                       <div className="flex-1">
@@ -141,11 +141,11 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <SectionContainer>
             <SectionHeader badge="Workflow" title="How it works" />
             <div className="max-w-3xl mx-auto">
-              <div className="space-y-0">
+              <div className="flex flex-col">
                 {data.howItWorksSteps.map((step, i) => (
                   <FadeIn key={step.step} delay={i * 100} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm shrink-0">
                         {step.step}
                       </div>
                       {i < data.howItWorksSteps.length - 1 && <div className="w-0.5 flex-1 bg-border mt-2" />}
@@ -251,13 +251,13 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
         {data.faqs.length > 0 && (
           <SectionContainer>
             <SectionHeader title="Frequently Asked Questions" />
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.faqs.map((faq, i) => (
                 <FadeIn key={i} delay={i * 50}>
                   <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
                     <summary className="flex items-center justify-between font-semibold text-foreground list-none">
                       <span className="flex items-center gap-3">
-                        <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                        <HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
                         {faq.question}
                       </span>
                       <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
@@ -306,10 +306,10 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
                 Sign up now and start integrating in minutes. Our team will help you go live quickly.
               </p>
-              <ul className="space-y-3">
+              <ul className="flex flex-col gap-3">
                 {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/80">
-                    <CheckCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
                     {item}
                   </li>
                 ))}

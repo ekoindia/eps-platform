@@ -20,7 +20,7 @@ const languages = [
 
 declare global {
   interface Window {
-    google?: any;
+    google?: { translate: { TranslateElement: new (config: Record<string, unknown>, id: string) => void } };
     googleTranslateElementInit?: () => void;
   }
 }

@@ -74,7 +74,7 @@ const EkoShieldDocumentPage = () => {
         {/* Section: Core Value Propositions */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-[#00394b] mb-4">Core Value Propositions</h2>
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {[
               { title: "Sub-Second Verification", desc: "Every check completes in under 1 second. Aadhaar, PAN, Bank, GST, DL, RC — all instant." },
               { title: "Centralized Compliance", desc: "One dashboard for audit logs, branch-level visibility, and regulatory compliance tracking." },
@@ -82,7 +82,7 @@ const EkoShieldDocumentPage = () => {
               { title: "Fraud Reduction", desc: "Catch fake identities, expired documents, and mismatched bank details before they cost you." },
             ].map((prop) => (
               <div key={prop.title} className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="w-2 bg-[#C8A951] rounded-full flex-shrink-0" />
+                <div className="w-2 bg-[#C8A951] rounded-full shrink-0" />
                 <div>
                   <h3 className="font-semibold text-[#00394b] mb-1">{prop.title}</h3>
                   <p className="text-sm text-gray-600 leading-relaxed">{prop.desc}</p>
@@ -141,7 +141,7 @@ const EkoShieldDocumentPage = () => {
         <section className="mb-12 print:break-before-page">
           <h2 className="text-2xl font-bold text-[#00394b] mb-6">Industries Served</h2>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             {[
               { name: "NBFC & Lending", tagline: "Branch-level KYC with audit control", pain: "Slow KYC processing, RBI audit pressure, and fragmented branch-level verification workflows cause TAT delays and compliance exposure.", solution: "Centralizes branch-level KYC with audit logs, reducing loan processing TAT by up to 30%. Automated Aadhaar, PAN, and bank verification ensures RBI compliance.", benefits: ["Reduce loan TAT by 30%", "Centralized audit trail", "Automated RBI compliance", "Real-time fraud detection"] },
               { name: "Fintech & Neobanks", tagline: "API + compliance dashboard", pain: "Multiple API vendors, no centralized compliance visibility, and growing regulatory pressure make scaling risky.", solution: "One verification infrastructure. Compliance teams get a real-time dashboard while developers get sub-second APIs.", benefits: ["One API for 50+ types", "Real-time compliance dashboard", "Sub-second response times", "SOC 2 & ISO 27001 compliant"] },

@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import { generateMarkdownPlugin } from "./vite-plugin-generate-markdown";
 import { prerenderPlugin } from "./ssg/plugin";
 
@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
+    tailwindcss(),
     generateMarkdownPlugin(),
     mode !== "development" && prerenderPlugin(),
   ].filter(Boolean),

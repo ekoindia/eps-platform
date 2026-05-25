@@ -35,8 +35,7 @@ function TrackingParamCapture() {
   return null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const App = ({ helmetContext }: { helmetContext?: any }) => (
+const App = ({ helmetContext }: { helmetContext?: Record<string, unknown> }) => (
   <HelmetProvider context={helmetContext}>
     <DefaultMeta />
     <TooltipProvider>

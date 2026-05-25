@@ -37,9 +37,9 @@ export const HeroSection = () => {
 
           {/* Diagonal API data-flow lines */}
           <g fill="none" stroke="#fbb11b">
-            <path d="M -50 750 C 200 580 480 640 740 460 S 1090 260 1500 190" strokeWidth="1"    opacity="0.07" />
-            <path d="M -80 870 C 160 710 420 770 690 590 S 1040 390 1500 330" strokeWidth="0.75" opacity="0.05" />
-            <path d="M  80 900 C 340 750 640 810 900 630 S 1210 430 1500 410" strokeWidth="0.5"  opacity="0.04" />
+            <path d="M -50 750 C 200 580 480 640 740 460 S 1090 260 1440 190" strokeWidth="1"    opacity="0.07" />
+            <path d="M -80 870 C 160 710 420 770 690 590 S 1040 390 1440 330" strokeWidth="0.75" opacity="0.05" />
+            <path d="M  80 900 C 340 750 640 810 900 630 S 1210 430 1440 410" strokeWidth="0.5"  opacity="0.04" />
             <path d="M-100 580 C 160 450 430 500 690 340 S 1010 160 1440 100" strokeWidth="1"    opacity="0.06" />
           </g>
         </svg>
@@ -55,7 +55,7 @@ export const HeroSection = () => {
           {/* Left: Text Content */}
           <div className="text-center lg:text-left">
             <FadeIn onView={false} delay={100} className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-xs mb-6">
                 <span className="w-2 h-2 rounded-full bg-eko-gold animate-pulse-soft" />
                 <span className="text-white/80 text-sm font-medium">Trusted by 50,000+ businesses</span>
               </div>

@@ -149,7 +149,7 @@ export const ProductPageLayout = ({
 
       {/* Sticky CTA Bar - positioned below the main header */}
       {/* <div
-        className={`fixed top-[72px] left-0 right-0 z-40 bg-background/95 backdrop-blur border-b border-border/50 shadow-sm transition-all duration-300 ${
+        className={`fixed top-[72px] left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 shadow-xs transition-all duration-300 ${
           showSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
         }`}
       >
@@ -164,8 +164,8 @@ export const ProductPageLayout = ({
       <main>
         {/* Hero Section */}
         <section ref={heroRef} className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-eko-gold/5 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
@@ -246,7 +246,7 @@ export const ProductPageLayout = ({
               ) : (
                 <FadeIn onView={false} delay={300} className="relative" id="lead-form">
                   {/* Trust Shield Badge - desktop only */}
-                  <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-sm">
+                  <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-xs">
                     <Shield className="w-4 h-4 text-eko-gold" />
                     <span className="text-xs font-semibold text-eko-gold">99.9% Uptime</span>
                   </div>
@@ -289,7 +289,7 @@ export const ProductPageLayout = ({
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {keyBenefits.map((benefit, i) => (
                 <FadeIn key={i} delay={i * 100} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
-                  <CheckCircle className="w-6 h-6 text-eko-gold flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-6 h-6 text-eko-gold shrink-0 mt-0.5" />
                   <span className="text-foreground font-medium">{benefit}</span>
                 </FadeIn>
               ))}
@@ -415,7 +415,7 @@ export const ProductPageLayout = ({
 
         {/* Benefits Section (legacy) */}
         {benefits && benefits.length > 0 && (
-          <SectionContainer className={`bg-gradient-to-br ${categoryColors[category]}`}>
+          <SectionContainer className={`bg-linear-to-br ${categoryColors[category]}`}>
             <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Why Choose Eko?</h2>
             </FadeIn>
@@ -495,10 +495,10 @@ export const ProductPageLayout = ({
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Every API call is secured with enterprise-grade encryption and compliance-ready workflows.
                 </p>
-                <ul className="space-y-3">
+                <ul className="flex flex-col gap-3">
                   {trustAndCompliance.map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
                       <span className="text-foreground">{item}</span>
                     </li>
                   ))}
@@ -506,7 +506,7 @@ export const ProductPageLayout = ({
               </FadeIn>
               <FadeIn delay={200} className="flex-1">
                 <div className="relative">
-                  <div className="absolute -inset-4 bg-gradient-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
+                  <div className="absolute -inset-4 bg-linear-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
                   <div className="relative bg-card border border-border/50 rounded-2xl p-8 text-center">
                     <div className="text-6xl font-bold text-eko-gold mb-2">99.9%</div>
                     <div className="text-muted-foreground">Uptime Guaranteed</div>
@@ -553,7 +553,7 @@ export const ProductPageLayout = ({
             </div>
 
             {/* Mobile: vertical stepper */}
-            <div className="md:hidden space-y-6 max-w-sm mx-auto">
+            <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
               {integrationSteps.map((step, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -588,13 +588,13 @@ export const ProductPageLayout = ({
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Frequently Asked Questions</h2>
           </FadeIn>
 
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="max-w-3xl mx-auto flex flex-col gap-4">
             {faqs.map((faq, index) => (
               <FadeIn key={index} delay={index * 50}>
                 <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
                   <summary className="flex items-center justify-between font-semibold text-foreground list-none">
                     <span className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                      <HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
                       {faq.q}
                     </span>
                     <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
@@ -635,10 +635,10 @@ export const ProductPageLayout = ({
                 <p className="text-white/70 text-lg mb-6 leading-relaxed">
                   Sign up now and start integrating in minutes. Our team will help you go live quickly.
                 </p>
-                <ul className="space-y-3">
+                <ul className="flex flex-col gap-3">
                   {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
                     <li key={item} className="flex items-center gap-3 text-white/80">
-                      <CheckCircle className="w-5 h-5 text-eko-gold flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
                       {item}
                     </li>
                   ))}

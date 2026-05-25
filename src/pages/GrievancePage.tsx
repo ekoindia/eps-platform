@@ -8,7 +8,7 @@ const address = "Eko Bharat Ventures Private Limited, 68, Phase IV, Udyog Vihar,
 function TableOfContents() {
   return (
     <div className="border-l-4 border-primary bg-primary/5 rounded-r-xl p-5 mb-8">
-      <ol className="list-decimal list-inside space-y-2 text-sm">
+      <ol className="list-decimal list-inside flex flex-col gap-2 text-sm">
         <li><a href="#customer-grievance-policy" className="text-primary font-semibold hover:underline">Customer Grievance Policy</a></li>
         <li><a href="#level-1" className="text-primary font-semibold hover:underline">Escalation Level 1</a></li>
         <li><a href="#level-2" className="text-primary font-semibold hover:underline">Escalation Level 2</a></li>
@@ -24,14 +24,14 @@ function EscalationLevel({ level, title, children, color }: { level: number; tit
   return (
     <div className={`rounded-xl border ${color} p-5`}>
       <div className="flex items-center gap-3 mb-3">
-        <span className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
+        <span className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold shrink-0">
           {level}
         </span>
         <h3 className="font-bold text-foreground text-lg">
           {title}
         </h3>
       </div>
-      <div className="pl-11 space-y-3 text-sm text-muted-foreground leading-relaxed">
+      <div className="pl-11 flex flex-col gap-3 text-sm text-muted-foreground leading-relaxed">
         {children}
       </div>
     </div>
@@ -41,7 +41,7 @@ function EscalationLevel({ level, title, children, color }: { level: number; tit
 function ContactRow({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
-      <Icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground/70" />
+      <Icon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground/70" />
       <span>{children}</span>
     </div>
   );
@@ -76,7 +76,7 @@ function PolicyContent() {
       <SectionDivider />
 
       <h3 className="font-bold text-foreground mb-3">Our Principles:</h3>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground text-sm leading-relaxed">
+      <ul className="list-disc pl-6 flex flex-col gap-2 text-muted-foreground text-sm leading-relaxed">
         <li>Customers remain the Key focus for all initiatives and strategies developed in the Company.</li>
         <li>"Delighted" Customers are a necessity for business growth and survival.</li>
         <li>Our Customers and their Feedback is treated as the most valuable asset for the organization, forming the foundation for development and innovation.</li>
@@ -87,7 +87,7 @@ function PolicyContent() {
       <SectionDivider />
 
       <h3 className="font-bold text-foreground mb-3">Our Promise:</h3>
-      <ul className="list-disc pl-6 space-y-2 text-muted-foreground text-sm leading-relaxed mb-4">
+      <ul className="list-disc pl-6 flex flex-col gap-2 text-muted-foreground text-sm leading-relaxed mb-4">
         <li>All grievances will be dealt with, promptly and courteously.</li>
         <li>We promise to resolve any or all issues faced by our customers effectively and within the communicated time frame.</li>
         <li>All Service Level Agreements and turnaround time for each third party transaction would be published on our website.</li>
@@ -101,7 +101,7 @@ function PolicyContent() {
       <SectionDivider />
 
       {/* Escalation Levels */}
-      <div className="space-y-4" id="level-1">
+      <div className="flex flex-col gap-4" id="level-1">
         <EscalationLevel level={1} title="Escalation: Level 1" color="bg-primary/10 border-primary/30">
           <p className="font-semibold text-foreground">Our customers can inquire, insist, or complain through the following mediums:</p>
           <ContactRow icon={Phone}>
@@ -114,7 +114,7 @@ function PolicyContent() {
 
           <div className="bg-muted/50 rounded-lg p-4 mt-2">
             <p className="font-semibold text-foreground text-xs mb-2">Customer Resolution Timelines:</p>
-            <ul className="list-disc pl-4 space-y-1 text-xs">
+            <ul className="list-disc pl-4 flex flex-col gap-1 text-xs">
               <li>Customer Engagement Centre team will acknowledge the grievance within <strong>48 hours</strong> on receipt of complaint (email response or answering the call).</li>
               <li>A reference number will be provided for all future communication around the particular complaint.</li>
               <li>The customer care executive will try to resolve the issue within <strong>7 days</strong> after acknowledgement.</li>
@@ -153,7 +153,7 @@ function PolicyContent() {
       </div>
 
       <div className="mt-4 bg-muted rounded-xl p-4 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <p className="text-sm text-muted-foreground">
           <strong className="text-foreground">Important:</strong> All complaints at Level 3 will be considered only if the complaint number given at Level 1 is included in the complaint.
         </p>

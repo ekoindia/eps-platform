@@ -126,12 +126,12 @@ const EkoShieldAdBanner = ({
         <div className="flex items-center md:pr-[340px] lg:pr-[420px]">
           <div className="flex flex-col gap-5 max-w-xl">
             {/* Icon badge */}
-            <div className="w-13 h-13 w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400/25 flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+            <div className="w-13 h-13 w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400/25 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
               <Shield className="w-7 h-7 text-eko-gold" />
             </div>
 
             {/* Text */}
-            <div className="space-y-2.5">
+            <div className="flex flex-col gap-2.5">
               <h3 className="text-2xl md:text-3xl font-bold text-white leading-snug">
                 {headline}
               </h3>
