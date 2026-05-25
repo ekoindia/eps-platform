@@ -41,7 +41,7 @@ const PressPage = () => {
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="max-w-3xl mx-auto flex flex-col gap-4">
             {pressItems.map((item) =>
             <a key={item.title} href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <Card className="hover:shadow-md transition-shadow cursor-pointer">

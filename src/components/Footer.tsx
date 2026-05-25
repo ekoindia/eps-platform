@@ -98,7 +98,7 @@ const FooterLink = ({ link }: { link: FooterLinkItem }) => {
 const FooterColumn = ({ title, links }: { title: string; links: FooterLinkItem[] }) => (
   <div>
     <h4 className="font-semibold text-white mb-4">{title}</h4>
-    <ul className="space-y-3">
+    <ul className="flex flex-col gap-3">
       {links.map((link) => (
         <li key={link.label}>
           <FooterLink link={link} />
@@ -136,7 +136,7 @@ export const Footer = () => {
             <p className="text-white/70 mb-6 max-w-sm leading-relaxed text-sm text-justify italic">
               “Grow every entrepreneur daily”
             </p>
-            <div className="space-y-3 text-sm">
+            <div className="flex flex-col gap-3 text-sm">
               <a href="mailto:eps@eko.in" className="flex items-center gap-3 text-white/70 hover:text-eko-gold transition-colors cursor-pointer">
                 <Mail className="w-4 h-4 text-eko-gold" />
                 <span>eps@eko.in</span>

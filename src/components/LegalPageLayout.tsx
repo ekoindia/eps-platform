@@ -65,7 +65,7 @@ const LegalPageLayout = ({ title, description, subtitle, breadcrumb, children }:
           )}
 
           {/* Content */}
-          <div className="space-y-8">
+          <div className="flex flex-col gap-8">
             {children}
           </div>
         </div>

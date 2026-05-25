@@ -283,7 +283,7 @@ export const HeaderDropdownPanels = ({
 				>
 					<div className="grid grid-cols-2">
 						{/* Left column: company links */}
-						<div className="p-4 space-y-1">
+						<div className="p-4 flex flex-col gap-1">
 							<DropdownColumnHeader title="Company" />
 							{companyLinks.map((item) => (
 								<CompanyLinkItem
@@ -296,7 +296,7 @@ export const HeaderDropdownPanels = ({
 						</div>
 
 						{/* Right column: social links */}
-						<div className="p-4 space-y-1">
+						<div className="p-4 flex flex-col gap-1">
 							<DropdownColumnHeader title="Follow Us" />
 							{companySocialLinks.map((social) => (
 								<a
@@ -345,7 +345,7 @@ export const HeaderDropdownPanels = ({
 							onClick={() => setActiveMobileAccordion(activeMobileAccordion === 'products' ? null : 'products')}
 						/>
 						{activeMobileAccordion === 'products' && (
-							<div className="pl-4 space-y-1">
+							<div className="pl-4 flex flex-col gap-1">
 								{apiColumns.map((col) => {
 									const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
 									const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;
@@ -388,7 +388,7 @@ export const HeaderDropdownPanels = ({
 							onClick={() => setActiveMobileAccordion(activeMobileAccordion === 'company' ? null : 'company')}
 						/>
 						{activeMobileAccordion === 'company' && (
-							<div className="pl-4 space-y-1">
+							<div className="pl-4 flex flex-col gap-1">
 								{companyLinks.map((item) => (
 									<CompanyLinkItem
 										key={item.label}
@@ -407,7 +407,7 @@ export const HeaderDropdownPanels = ({
 							onClick={() => setActiveMobileAccordion(activeMobileAccordion === 'useCases' ? null : 'useCases')}
 						/>
 						{activeMobileAccordion === 'useCases' && (
-							<div className="pl-4 space-y-1">
+							<div className="pl-4 flex flex-col gap-1">
 								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">Industries</p>
 								{navIndustries.map((item) => (
 									<Link

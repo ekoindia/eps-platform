@@ -50,7 +50,7 @@ export const WhyEkoSection = () => {
         />
       </FadeIn>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {trustPillars.map((pillar, index) => (
           <FadeIn
             key={pillar.label}
@@ -63,7 +63,7 @@ export const WhyEkoSection = () => {
             <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{pillar.value}</div>
             <div className="text-sm font-medium text-eko-gold mb-3">{pillar.label}</div>
             {Array.isArray(pillar.description) ? (
-              <ul className="text-muted-foreground text-sm leading-relaxed space-y-1 text-left">
+              <ul className="text-muted-foreground text-sm leading-relaxed flex flex-col gap-1 text-left">
                 {pillar.description.map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-eko-gold mt-1.5 shrink-0" />

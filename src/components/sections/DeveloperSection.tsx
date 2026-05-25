@@ -24,7 +24,7 @@ export const DeveloperSection = () => {
           </p>
 
           {/* Integration Steps */}
-          <div className="space-y-6 mb-10">
+          <div className="flex flex-col gap-6 mb-10">
             {exampleIntegrationSteps.map((step, index) => {
               const Icon = stepIcons[index];
               return (

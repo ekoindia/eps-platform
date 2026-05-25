@@ -36,7 +36,7 @@ const SignupPage = () => {
                   Sign up now and start integrating in minutes. Our team will help you go live quickly.
                 </p>
 
-                <ul className="space-y-3.5">
+                <ul className="flex flex-col gap-3.5">
                   {signupBenefits.map((item) => (
                     <li key={item} className="flex items-center gap-3 text-foreground/80 text-lg">
                       <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />

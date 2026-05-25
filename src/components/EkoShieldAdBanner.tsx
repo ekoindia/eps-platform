@@ -131,7 +131,7 @@ const EkoShieldAdBanner = ({
             </div>
 
             {/* Text */}
-            <div className="space-y-2.5">
+            <div className="flex flex-col gap-2.5">
               <h3 className="text-2xl md:text-3xl font-bold text-white leading-snug">
                 {headline}
               </h3>

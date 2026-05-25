@@ -361,7 +361,7 @@ const PreviewContent = ({
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">REQUEST</Badge>
                 <span className="text-white/60 text-xs ml-auto font-mono">{endpoint ? `POST ${endpoint}` : ""}</span>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-6 flex flex-col gap-4">
                 {inputs?.map((field, i) => {
                   const Icon = field.icon;
                   return (
@@ -387,7 +387,7 @@ const PreviewContent = ({
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">RESPONSE</Badge>
                 <span className="text-white/60 text-xs ml-auto font-mono">200 OK</span>
               </div>
-              <div className="p-6 space-y-3">
+              <div className="p-6 flex flex-col gap-3">
                 {outputs?.map((field, i) => {
                   const Icon = field.icon;
                   return (

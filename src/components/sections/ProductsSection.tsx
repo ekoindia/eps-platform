@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 type ProductTab = "bc" | "payments" | "bbps" | "collection" | "verification"; // | "shield"
 
-const productTabs: { id: ProductTab; label: string; icon: any }[] = [
+const productTabs: { id: ProductTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "verification", label: "Verification APIs", icon: Fingerprint },
   // { id: "payments", label: "Payment APIs", icon: CreditCard },
   { id: "bbps", label: "Payments APIs", icon: Receipt },

@@ -45,7 +45,7 @@ export const ProductCard = ({ title, description, features, icon: Icon, classNam
       )}
       <h3 className="text-xl font-semibold text-foreground mb-3">{title}</h3>
       <p className="text-muted-foreground mb-5 leading-relaxed">{description}</p>
-      <ul className="space-y-2.5 mt-auto">
+      <ul className="flex flex-col gap-2.5 mt-auto">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2.5 text-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-eko-gold mt-2 shrink-0" />

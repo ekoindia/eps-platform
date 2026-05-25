@@ -261,7 +261,7 @@ const EkoShieldPage = () => {
                     </div>
                     <div className="mb-6">
                       <h4 className="text-sm font-semibold text-foreground mb-3">Key Benefits</h4>
-                      <ul className="space-y-2">
+                      <ul className="flex flex-col gap-2">
                         {selectedIndustry.benefits.map((b) => (
                           <li key={b} className="flex items-center gap-2 text-sm text-foreground/80">
                             <CheckCircle className="h-4 w-4 text-eko-gold shrink-0" />
@@ -428,7 +428,7 @@ const EkoShieldPage = () => {
                 </div>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Ready to Take Control of Your Verifications?</h2>
                 <p className="text-lg text-muted-foreground mb-8">Start your 7-day industry trial. See how Eko Shield replaces fragmented verification with one scalable trust infrastructure.</p>
-                <ul className="space-y-3 mb-8">
+                <ul className="flex flex-col gap-3 mb-8">
                   {["No credit card required", "Setup in under 30 minutes", "Full dashboard access", "Dedicated onboarding support"].map((item) => (
                     <li key={item} className="flex items-center gap-2 text-foreground/80">
                       <CheckCircle className="h-5 w-5 text-eko-gold shrink-0" />

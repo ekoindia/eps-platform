@@ -103,7 +103,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
         {data.packApis.length > 0 && (
           <SectionContainer variant="muted">
             <SectionHeader badge="APIs In This Pack" title="What You Get" subtitle="Every API in this pack, what it does, and why it's included." />
-            <div className="max-w-4xl mx-auto space-y-4">
+            <div className="max-w-4xl mx-auto flex flex-col gap-4">
               {data.packApis.map((ref, i) => {
                 const api = resolvePackApi(ref);
                 if (!api) return null;
@@ -141,7 +141,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
           <SectionContainer>
             <SectionHeader badge="Workflow" title="How it works" />
             <div className="max-w-3xl mx-auto">
-              <div className="space-y-0">
+              <div className="flex flex-col">
                 {data.howItWorksSteps.map((step, i) => (
                   <FadeIn key={step.step} delay={i * 100} className="flex gap-4">
                     <div className="flex flex-col items-center">
@@ -251,7 +251,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
         {data.faqs.length > 0 && (
           <SectionContainer>
             <SectionHeader title="Frequently Asked Questions" />
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.faqs.map((faq, i) => (
                 <FadeIn key={i} delay={i * 50}>
                   <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
@@ -306,7 +306,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
                 Sign up now and start integrating in minutes. Our team will help you go live quickly.
               </p>
-              <ul className="space-y-3">
+              <ul className="flex flex-col gap-3">
                 {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/80">
                     <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />

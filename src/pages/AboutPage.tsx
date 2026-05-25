@@ -45,7 +45,7 @@ const AboutPage = () => {
 
         {/* Body Intro */}
         <section className="py-16 lg:py-20">
-          <div className="container mx-auto px-6 max-w-3xl space-y-5">
+          <div className="container mx-auto px-6 max-w-3xl flex flex-col gap-5">
             {[
               "Across Bharat, millions of people prefer accessing financial services through someone they trust — their neighbourhood shopkeeper, a local entrepreneur, or a community agent who understands their needs and aspirations. Eko enables this ecosystem.",
               "Through a combination of distribution infrastructure, fintech APIs, and simple digital tools, we connect institutions with a vast network of micro-entrepreneurs — many of them women — who bring financial services closer to their communities.",
@@ -84,7 +84,7 @@ const AboutPage = () => {
               </div>
               <h2 className="text-3xl font-bold text-foreground">Expanding access to opportunity</h2>
             </div>
-            <div className="space-y-5 text-muted-foreground leading-relaxed text-justify">
+            <div className="flex flex-col gap-5 text-muted-foreground leading-relaxed text-justify">
               <p>Our mission is to help brands reach the next billion customers through trusted community entrepreneurs — while empowering those entrepreneurs to grow sustainable businesses.</p>
               <p>We do this by building <span className="font-semibold text-foreground">Distribution-as-a-Service</span>, a platform that connects institutions with local micro-entrepreneurs who serve as trusted access points for financial services.</p>
               <p>Through simple digital tools, these entrepreneurs can serve customers, earn more and build a stronger economic future for themselves and their communities.</p>

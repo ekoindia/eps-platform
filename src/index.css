@@ -18,41 +18,41 @@
   --color-eko-success: hsl(142 76% 36%);
 
   /* Semantic tokens — bind to runtime CSS vars for dark-mode switching */
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
 
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
 
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
 
-  --color-sidebar: hsl(var(--sidebar-background));
-  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
-  --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-  --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-  --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
   /* Fonts */
   --font-sans: "Inter", system-ui, sans-serif;
@@ -150,43 +150,43 @@
 
 @layer base {
   :root {
-    /* Brand Colors - Eko Identity (runtime HSL channels for hsl(var(--x)) consumers) */
-    --eko-gold: 42 96% 54%;
-    --eko-gold-hover: 42 96% 48%;
-    --eko-gold-light: 42 96% 95%;
-    --eko-navy: 195 91% 15%;
-    --eko-navy-light: 195 60% 25%;
-    --eko-slate: 0 0% 33%;
-    --eko-success: 142 76% 36%;
+    /* Brand Colors - Eko Identity */
+    --eko-gold: hsl(42 96% 54%);
+    --eko-gold-hover: hsl(42 96% 48%);
+    --eko-gold-light: hsl(42 96% 95%);
+    --eko-navy: hsl(195 91% 15%);
+    --eko-navy-light: hsl(195 60% 25%);
+    --eko-slate: hsl(0 0% 33%);
+    --eko-success: hsl(142 76% 36%);
 
     /* Semantic Tokens */
-    --background: 0 0% 100%;
-    --foreground: 195 91% 15%;
+    --background: hsl(0 0% 100%);
+    --foreground: hsl(195 91% 15%);
 
-    --card: 0 0% 100%;
-    --card-foreground: 195 91% 15%;
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(195 91% 15%);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 195 91% 15%;
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(195 91% 15%);
 
-    --primary: 42 96% 54%;
-    --primary-foreground: 195 91% 15%;
+    --primary: hsl(42 96% 54%);
+    --primary-foreground: hsl(195 91% 15%);
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 195 91% 15%;
+    --secondary: hsl(210 20% 96%);
+    --secondary-foreground: hsl(195 91% 15%);
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 0 0% 33%;
+    --muted: hsl(210 20% 96%);
+    --muted-foreground: hsl(0 0% 33%);
 
-    --accent: 195 91% 15%;
-    --accent-foreground: 0 0% 100%;
+    --accent: hsl(195 91% 15%);
+    --accent-foreground: hsl(0 0% 100%);
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: hsl(0 84% 60%);
+    --destructive-foreground: hsl(0 0% 100%);
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 42 96% 54%;
+    --border: hsl(210 20% 90%);
+    --input: hsl(210 20% 90%);
+    --ring: hsl(42 96% 54%);
 
     --radius: 0.5rem;
 
@@ -205,36 +205,36 @@
     --app-shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
 
     /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 42 96% 54%;
+    --sidebar-background: hsl(0 0% 98%);
+    --sidebar-foreground: hsl(240 5.3% 26.1%);
+    --sidebar-primary: hsl(240 5.9% 10%);
+    --sidebar-primary-foreground: hsl(0 0% 98%);
+    --sidebar-accent: hsl(240 4.8% 95.9%);
+    --sidebar-accent-foreground: hsl(240 5.9% 10%);
+    --sidebar-border: hsl(220 13% 91%);
+    --sidebar-ring: hsl(42 96% 54%);
   }
 
   .dark {
-    --background: 195 91% 10%;
-    --foreground: 0 0% 98%;
-    --card: 195 80% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 195 80% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 42 96% 54%;
-    --primary-foreground: 195 91% 15%;
-    --secondary: 195 40% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 195 40% 20%;
-    --muted-foreground: 210 20% 70%;
-    --accent: 42 96% 54%;
-    --accent-foreground: 195 91% 15%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 195 40% 20%;
-    --input: 195 40% 20%;
-    --ring: 42 96% 54%;
+    --background: hsl(195 91% 10%);
+    --foreground: hsl(0 0% 98%);
+    --card: hsl(195 80% 12%);
+    --card-foreground: hsl(0 0% 98%);
+    --popover: hsl(195 80% 12%);
+    --popover-foreground: hsl(0 0% 98%);
+    --primary: hsl(42 96% 54%);
+    --primary-foreground: hsl(195 91% 15%);
+    --secondary: hsl(195 40% 20%);
+    --secondary-foreground: hsl(0 0% 98%);
+    --muted: hsl(195 40% 20%);
+    --muted-foreground: hsl(210 20% 70%);
+    --accent: hsl(42 96% 54%);
+    --accent-foreground: hsl(195 91% 15%);
+    --destructive: hsl(0 62.8% 30.6%);
+    --destructive-foreground: hsl(0 0% 98%);
+    --border: hsl(195 40% 20%);
+    --input: hsl(195 40% 20%);
+    --ring: hsl(42 96% 54%);
   }
 }
 
@@ -308,7 +308,7 @@
   /* Feature Icon Container */
   .icon-container {
     @apply w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300;
-    background: hsl(var(--eko-gold-light));
+    background: var(--eko-gold-light);
   }
 
   .icon-container svg {

@@ -495,7 +495,7 @@ export const ProductPageLayout = ({
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Every API call is secured with enterprise-grade encryption and compliance-ready workflows.
                 </p>
-                <ul className="space-y-3">
+                <ul className="flex flex-col gap-3">
                   {trustAndCompliance.map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
@@ -553,7 +553,7 @@ export const ProductPageLayout = ({
             </div>
 
             {/* Mobile: vertical stepper */}
-            <div className="md:hidden space-y-6 max-w-sm mx-auto">
+            <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
               {integrationSteps.map((step, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -588,7 +588,7 @@ export const ProductPageLayout = ({
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Frequently Asked Questions</h2>
           </FadeIn>
 
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="max-w-3xl mx-auto flex flex-col gap-4">
             {faqs.map((faq, index) => (
               <FadeIn key={index} delay={index * 50}>
                 <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
@@ -635,7 +635,7 @@ export const ProductPageLayout = ({
                 <p className="text-white/70 text-lg mb-6 leading-relaxed">
                   Sign up now and start integrating in minutes. Our team will help you go live quickly.
                 </p>
-                <ul className="space-y-3">
+                <ul className="flex flex-col gap-3">
                   {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
                     <li key={item} className="flex items-center gap-3 text-white/80">
                       <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />

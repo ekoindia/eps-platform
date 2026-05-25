@@ -149,7 +149,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-foreground text-sm group-hover:text-eko-gold transition-colors">{api.name}</span>
-                      <ApiChip name="" relevance={api.relevance} className="!px-1.5 !py-0 border-0 bg-transparent" />
+                      <ApiChip name="" relevance={api.relevance} className="px-1.5! py-0! border-0 bg-transparent" />
                     </div>
                     <p className="text-muted-foreground text-xs leading-relaxed">{api.description}</p>
                   </div>
@@ -222,7 +222,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                 </div>
               ))}
             </div>
-            <div className="md:hidden space-y-6 max-w-sm mx-auto">
+            <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
               {data.integrationSteps.map((step, i) => (
                 <div key={step.step} className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -252,7 +252,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {data.complianceItems.length > 0 && (
           <SectionContainer>
             <SectionHeader badge="Compliance" title="Compliance & regulatory" />
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.complianceItems.map((item, i) => (
                 <FadeIn key={i} delay={i * 50} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
                   <Shield className="w-5 h-5 text-eko-gold shrink-0 mt-0.5" />
@@ -270,7 +270,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {data.faqs.length > 0 && (
           <SectionContainer variant="muted">
             <SectionHeader title="Frequently Asked Questions" />
-            <div className="max-w-3xl mx-auto space-y-4">
+            <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.faqs.map((faq, i) => (
                 <FadeIn key={i} delay={i * 50}>
                   <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
@@ -319,7 +319,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
                 Sign up now and start integrating in minutes. Our team will help you go live quickly.
               </p>
-              <ul className="space-y-3">
+              <ul className="flex flex-col gap-3">
                 {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/80">
                     <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />

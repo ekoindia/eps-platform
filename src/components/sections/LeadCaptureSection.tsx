@@ -24,7 +24,7 @@ export const LeadCaptureSection = () => {
             our team is here to help you find the right fit.
           </p>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {[
               "Personalized demo of our products",
               "Technical consultation for integration",
@@ -48,7 +48,7 @@ export const LeadCaptureSection = () => {
             <h3 className="text-xl font-semibold text-foreground mb-2">Get Started with Eko Platform Services</h3>
             <p className="text-muted-foreground mb-8">Reach out to us and our team will get back to you within 24 hours.</p>
 
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <Button
                 id="btn-chat-section-lead-capture"
                 variant="gold" size="xl" className="w-full group" onClick={handleChat}>
