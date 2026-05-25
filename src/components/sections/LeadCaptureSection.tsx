@@ -43,7 +43,7 @@ export const LeadCaptureSection = () => {
 
         {/* Right: Chat & Call CTAs */}
         <FadeIn delay={200} className="relative">
-          <div className="absolute -inset-4 bg-linear-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-2xl" />
+          <div className="absolute inset-0 bg-linear-to-br from-eko-gold/10 to-eko-navy/5 rounded-2xl blur-3xl" />
           <div className="relative bg-card border border-border/50 rounded-2xl p-8 lg:p-10 shadow-xl">
             <h3 className="text-xl font-semibold text-foreground mb-2">Get Started with Eko Platform Services</h3>
             <p className="text-muted-foreground mb-8">Reach out to us and our team will get back to you within 24 hours.</p>
