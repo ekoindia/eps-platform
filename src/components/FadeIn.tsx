@@ -12,9 +12,22 @@ interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, 'style'> {
 }
 
 /**
- * Lightweight replacement for framer-motion's whileInView fade-up animation.
- * Uses IntersectionObserver + CSS class toggle — avoids forced reflows from inline style mutations.
+ * Progressive enhancement: when the browser supports CSS scroll-driven
+ * animations (`animation-timeline: view()`), the fade-in runs entirely in CSS
+ * via the `.fade-in-css` class defined in index.css — no IntersectionObserver,
+ * no JS at all. Unsupported browsers (Firefox, Safari as of May 2025) fall back
+ * to the original IntersectionObserver + `.fade-in-hidden`/`.fade-in-visible`
+ * class-toggle approach.
+ *
+ * TODO: Once `animation-timeline: view()` reaches baseline support across
+ * Chrome, Firefox, and Safari (track at https://caniuse.com/css-animation-timeline),
+ * remove the IntersectionObserver fallback path and simplify this component to
+ * render only the `.fade-in-css` class. The `supportsScrollDriven` check,
+ * `useEffect`, and `useRef` can all be deleted at that point.
  */
+const supportsScrollDriven =
+  typeof CSS !== "undefined" && CSS.supports("animation-timeline", "view()");
+
 export function FadeIn({
   children,
   as: Tag = "div",
@@ -25,8 +38,11 @@ export function FadeIn({
   ...rest
 }: FadeInProps) {
   const ref = useRef<HTMLElement>(null);
+  const useCssOnly = supportsScrollDriven && onView && delay === 0;
 
   useEffect(() => {
+    if (useCssOnly) return;
+
     const el = ref.current;
     if (!el) return;
 
@@ -54,15 +70,16 @@ export function FadeIn({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [delay, onView]);
+  }, [delay, onView, useCssOnly]);
 
   return (
     <Tag
       ref={ref}
-      className={cn("fade-in-hidden", className)}
+      className={cn(useCssOnly ? "fade-in-css" : "fade-in-hidden", className)}
       {...rest}
       style={{
-        transitionDelay: delay ? `${delay}ms` : undefined,
+        ...(!useCssOnly && delay ? { transitionDelay: `${delay}ms` } : {}),
+        ...(useCssOnly && delay ? { animationDelay: `${delay}ms` } : {}),
         ...style,
       }}
     >

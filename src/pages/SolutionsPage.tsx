@@ -53,7 +53,7 @@ const SolutionsPage = () => {
 
           {categories.map((cat, i) => (
             <SectionContainer key={cat} variant={i % 2 === 1 ? "muted" : "default"}>
-              <SectionHeader title={CATEGORY_LABELS[cat] || cat} />
+              <FadeIn><SectionHeader title={CATEGORY_LABELS[cat] || cat} /></FadeIn>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {ACTIVE_SOLUTIONS_LIST.filter((s) => s.category === cat).map((sol, i) => (
                   <SolutionCard key={sol.slug} solution={sol} delay={i * 100} />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
@@ -108,25 +108,12 @@ export const ProductPageLayout = ({
   heroImage,
   productId,
 }: ProductPageLayoutProps) => {
-  const [showSticky, setShowSticky] = useState(false);
   const [selectedApiName, setSelectedApiName] = useState<string | null>(null);
-  const heroRef = useRef<HTMLElement>(null);
   const apiPreviewRef = useRef<HTMLDivElement>(null);
   const recommendedPacks = useMemo(
     () => (productId ? getSolutionPacksForApi(productId, 3) : []),
     [productId]
   );
-
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowSticky(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-    observer.observe(hero);
-    return () => observer.disconnect();
-  }, []);
 
 
   const categoryColors = {
@@ -147,23 +134,9 @@ export const ProductPageLayout = ({
   return (
     <div className="min-h-screen bg-background">
 
-      {/* Sticky CTA Bar - positioned below the main header */}
-      {/* <div
-        className={`fixed top-[72px] left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 shadow-xs transition-all duration-300 ${
-          showSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-12">
-          <span className="font-semibold text-foreground text-sm truncate">{title}</span>
-          <Button variant="action" size="sm" asChild>
-            <a href="#lead-form">Get API Access <ArrowRight className="w-3 h-3" /></a>
-          </Button>
-        </div>
-      </div> */}
-
       <main>
         {/* Hero Section */}
-        <section ref={heroRef} className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
+        <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
           <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
           <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
 
@@ -223,23 +196,14 @@ export const ProductPageLayout = ({
               {heroImage ? (
                 <FadeIn onView={false} delay={300} className="relative flex items-center justify-center">
                   <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
-                  <div
-                    className="relative animate-float"
-                    style={{
-                      perspective: "1000px",
-                    }}
-                  >
+                  <div className="relative animate-float perspective-[1000px]">
                     <img
                       src={heroImage}
                       alt={heroTitle}
                       width={512}
                       height={512}
                       fetchPriority="high"
-                      className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105"
-                      style={{
-                        transform: "perspective(1000px) rotateY(-5deg) rotateX(5deg)",
-                        filter: "drop-shadow(0 25px 50px rgba(0,0,0,0.4))",
-                      }}
+                      className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
                     />
                   </div>
                 </FadeIn>
@@ -403,10 +367,10 @@ export const ProductPageLayout = ({
               {types.map((type, index) => {
                 const Icon = type.icon || CheckCircle;
                 return (
-                  <div key={index} className="flex items-center gap-3 px-5 py-3 bg-card border border-border/50 rounded-full">
+                  <FadeIn key={index} delay={index * 75} className="flex items-center gap-3 px-5 py-3 bg-card border border-border/50 rounded-full">
                     <Icon className="w-5 h-5 text-eko-gold" />
                     <span className="font-medium text-sm">{type.label}</span>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -423,13 +387,13 @@ export const ProductPageLayout = ({
               {benefits.map((benefit, index) => {
                 const Icon = benefit.icon || Zap;
                 return (
-                  <div key={index} className="text-center">
+                  <FadeIn key={index} delay={index * 100} className="text-center">
                     <div className="w-16 h-16 rounded-2xl bg-eko-gold/10 flex items-center justify-center mx-auto mb-4">
                       <Icon className="w-8 h-8 text-eko-gold" />
                     </div>
                     <h3 className="text-xl font-semibold text-foreground mb-2">{benefit.title}</h3>
                     <p className="text-muted-foreground leading-relaxed">{benefit.desc}</p>
-                  </div>
+                  </FadeIn>
                 );
               })}
             </div>
@@ -470,9 +434,9 @@ export const ProductPageLayout = ({
             </FadeIn>
             <div className="flex flex-wrap justify-center gap-4">
               {useCases.map((useCase, index) => (
-                <div key={index} className="px-6 py-3 bg-card border border-border/50 rounded-full text-sm font-medium">
+                <FadeIn key={index} delay={index * 75} className="px-6 py-3 bg-card border border-border/50 rounded-full text-sm font-medium">
                   {useCase}
-                </div>
+                </FadeIn>
               ))}
             </div>
           </SectionContainer>
@@ -528,7 +492,7 @@ export const ProductPageLayout = ({
             {/* Desktop: horizontal stepper */}
             <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
               {integrationSteps.map((step, i) => (
-                <div key={i} className="flex items-start flex-1">
+                <FadeIn key={i} delay={i * 150} className="flex items-start flex-1">
                   <div className="flex flex-col items-center text-center group">
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -548,14 +512,14 @@ export const ProductPageLayout = ({
                   {i < integrationSteps.length - 1 && (
                     <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
                   )}
-                </div>
+                </FadeIn>
               ))}
             </div>
 
             {/* Mobile: vertical stepper */}
             <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
               {integrationSteps.map((step, i) => (
-                <div key={i} className="flex gap-4">
+                <FadeIn key={i} delay={i * 150} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm">
                       {i + 1}
@@ -567,7 +531,7 @@ export const ProductPageLayout = ({
                     <p className="text-white/70 text-xs mt-1">{step.desc}</p>
                     {step.tip && <p className="text-eko-gold/80 text-xs mt-1 italic">{step.tip}</p>}
                   </div>
-                </div>
+                </FadeIn>
               ))}
             </div>
           </TooltipProvider>

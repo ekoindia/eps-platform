@@ -138,7 +138,7 @@ const ProductsPage = () => {
 
 						return (
 							<SectionContainer key={cat.key} variant={cat.variant} id={cat.key}>
-								<SectionHeader title={cat.label} subtitle={cat.description} />
+								<FadeIn><SectionHeader title={cat.label} subtitle={cat.description} /></FadeIn>
 								<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
 									{products.map((product, i) => (
 										<ApiProductCard key={product.id} product={product} delay={i * 100} />
