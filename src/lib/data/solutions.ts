@@ -247,6 +247,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         what: "Disburse loans instantly to the verified bank account.",
         why: "Closes the loop — once all verifications pass, the disbursal fires automatically in the same workflow.",
       },
+      {
+        apiId: "name-match",
+        what: "Fuzzy name matching across PAN, Aadhaar, bank, and GST records.",
+        why: "Catches synthetic identity fraud by detecting name discrepancies across documents — replaces custom ML models.",
+      },
     ],
     howItWorksSteps: [
       { step: 1, label: "Mobile OTP — authenticate borrower" },
@@ -333,6 +338,16 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         what: "Access and verify documents stored in DigiLocker, such as Aadhaar, PAN, and business registration certificates.",
         why: "Provides a secure and convenient way to verify documents without physical copies.",
       },
+      {
+        apiId: "cin",
+        what: "Validate Company Identification Number and fetch company details from MCA.",
+        why: "For incorporated merchants, CIN verification confirms the company is active and fetches director details — faster than manual MCA portal checks.",
+      },
+      {
+        apiId: "name-match",
+        what: "Cross-check merchant name across PAN, GST trade name, and bank account holder.",
+        why: "Catches mismatches that indicate fraudulent merchant registrations — the GST trade name often differs from the PAN legal name.",
+      },
     ],
     howItWorksSteps: [
       { step: 1, label: "Merchant enters mobile number — OTP authentication" },
@@ -407,6 +422,17 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         nameOverride: "DigiLocker (ITR Documents)",
         what: "Fetch ITR-V and Form-26AS documents directly from the borrower's DigiLocker.",
         why: "Provides verified income history without relying on self-submitted PDFs — eliminates document forgery risk.",
+      },
+      {
+        apiId: "itr",
+        nameOverride: "ITR Compliance Check",
+        what: "Check income tax return filing status and compliance via PAN.",
+        why: "Quick pre-screen before pulling full ITR documents — confirms the borrower has filed returns and is tax-compliant.",
+      },
+      {
+        apiId: "cin",
+        what: "Validate Company Identification Number for incorporated MSMEs.",
+        why: "For Pvt Ltd and LLP borrowers, CIN check confirms the entity is active and not struck off — a basic corporate due diligence step.",
       },
     ],
     howItWorksSteps: [
@@ -571,6 +597,26 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         apiId: "geocoding",
         what: "Convert GPS coordinates to verifiable address for field employee visits.",
         why: "Validates that the address provided during onboarding matches the physical location — critical for blue-collar workers.",
+      },
+      {
+        apiId: "voter-id",
+        what: "Verify Voter ID (EPIC) for additional identity confirmation.",
+        why: "An alternative government-issued ID when employees don't have PAN or Aadhaar — common for informal sector workers.",
+      },
+      {
+        apiId: "passport",
+        what: "Verify passport details for employees in international or travel roles.",
+        why: "Mandatory for roles involving international travel — confirms document validity and matches holder identity.",
+      },
+      {
+        apiId: "name-match",
+        what: "Fuzzy name matching across all submitted identity documents.",
+        why: "Catches name discrepancies across PAN, Aadhaar, DL, and employment records that indicate identity fraud.",
+      },
+      {
+        apiId: "email",
+        what: "Verify employee email address deliverability.",
+        why: "Confirms the contact email is valid and reachable — important for offer letters, payroll communications, and DPDP consent.",
       },
     ],
     howItWorksSteps: [
@@ -877,6 +923,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
         why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
       },
+      {
+        apiId: "e-challan",
+        what: "Check pending traffic challans for the rider's vehicle.",
+        why: "Identifies riders with unresolved traffic violations before onboarding — reduces platform liability for reckless drivers.",
+      },
     ],
     howItWorksSteps: [
       { step: 1, label: "Worker opens app — enters mobile number" },
@@ -944,6 +995,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         what: "Convert GPS coordinates to address for driver location verification.",
         why: "Enables geofencing and route compliance — verify drivers are operating in permitted zones.",
       },
+      {
+        apiId: "e-challan",
+        what: "Check pending traffic challans across all fleet vehicles.",
+        why: "Identifies vehicles with unresolved challans — unpaid challans can lead to impounding during compliance checks.",
+      },
     ],
     howItWorksSteps: [
       { step: 1, label: "Vehicle onboarded — RC number fetched & verified" },
@@ -1008,6 +1064,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
         apiId: "pan",
         what: "Verify policyholder identity for premium above ₹50,000.",
         why: "IRDAI mandates PAN verification for high-premium policies and for tax deductions on claims.",
+      },
+      {
+        apiId: "e-challan",
+        what: "Fetch pending traffic challans and violation history for the vehicle.",
+        why: "Challan history indicates driving behavior risk — affects premium calculation and underwriting decisions.",
       },
     ],
     howItWorksSteps: [

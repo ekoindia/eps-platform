@@ -149,6 +149,10 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "bbps", name: "BBPS", description: "Collect EMIs nationwide via Bharat Connect", href: "/products/bbps-api", relevance: "H" },
       { apiId: "gst", name: "GSTIN Verification", description: "For MSME credit assessment", href: "/products/gst-verification-api", relevance: "H" },
       { apiId: "aeps", name: "AePS Cashout", description: "Enable rural borrowers to withdraw disbursed funds at agent points", href: "/products/aeps-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Cross-validate borrower name across PAN, Aadhaar, and bank records to detect synthetic identity fraud", href: "/products/name-match-api", relevance: "H" },
+      { apiId: "itr", name: "ITR Compliance Check", description: "Verify income tax return filing status via PAN for credit assessment", href: "/products/itr-compliance-api", relevance: "H" },
+      { apiId: "cin", name: "CIN Verification", description: "Validate corporate borrower identity and status via MCA records", href: "/products/cin-verification-api", relevance: "M" },
+      { apiId: "ip", name: "IP Verification", description: "Detect proxy/VPN usage during loan applications for fraud prevention", href: "/products/ip-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {
@@ -302,6 +306,8 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "pan", name: "PAN Verification", description: "Policyholder identity verification", href: "/products/pan-verification-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "KYC for high-value policies", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "bank", name: "Bank Verification", description: "Claims payout account validation", href: "/products/bank-verification-api", relevance: "M" },
+      { apiId: "e-challan", name: "E-Challan Verification", description: "Fetch traffic violation history for motor insurance risk underwriting", href: "/products/e-challan-verification-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Cross-check policyholder name across PAN, Aadhaar, and bank for fraud prevention", href: "/products/name-match-api", relevance: "M" },
     ],
     useCaseVignettes: [
       { title: "Instant motor insurance proposal", situation: "An insurer wants to reduce proposal form time from 10 minutes to 30 seconds.", integration: "Vehicle & RC Verification auto-fills vehicle make, model, year, fuel type, and insurance history. DL Verification confirms the driver.", outcome: "90% reduction in proposal time, 3x increase in conversion." },
@@ -487,6 +493,9 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "gst", name: "GST Verification", description: "Business validation & filing status", href: "/products/gst-verification-api", relevance: "H" },
       { apiId: "bank", name: "Bank Verification", description: "Settlement account validation", href: "/products/bank-verification-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Identity for sole proprietors without GST", href: "/products/aadhaar-verification-api", relevance: "M" },
+      { apiId: "cin", name: "CIN Verification", description: "Validate incorporated seller company identity and status via MCA", href: "/products/cin-verification-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Cross-check seller PAN name, GST trade name, and bank account holder", href: "/products/name-match-api", relevance: "M" },
+      { apiId: "fssai", name: "FSSAI License Verification", description: "Verify food seller FSSAI license for food marketplace compliance", href: "/products/fssai-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
       { title: "ONDC seller onboarding", situation: "An ONDC buyer app needs to verify 10,000 sellers.", integration: "Merchant Onboarding Pack verifies PAN, GST, and bank account in a single API workflow .", outcome: "Seller onboarding time drops from 5 days to 10 minutes." },
@@ -568,6 +577,9 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "bank", name: "Bank Account Verification", description: "Validate payout account before onboarding is complete", href: "/products/bank-verification-api", relevance: "H" },
       { apiId: "geocoding", name: "Reverse Geocoding", description: "Validate employee's stated address against GPS coordinates", href: "/products/reverse-geocoding-api", relevance: "M" },
       { apiId: "name-match", name: "Name Match", description: "Fuzzy name matching across ID documents to catch discrepancies", href: "/products/name-match-api", relevance: "M" },
+      { apiId: "voter-id", name: "Voter ID Verification", description: "Alternative government ID check for workers without PAN or Aadhaar", href: "/products/voter-id-verification-api", relevance: "M" },
+      { apiId: "passport", name: "Passport Verification", description: "Verify passport for employees in international or travel-related roles", href: "/products/passport-verification-api", relevance: "M" },
+      { apiId: "email", name: "Email Verification", description: "Validate employee contact email for offer letters and payroll communications", href: "/products/email-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {
@@ -689,6 +701,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Driver identity and address verification during onboarding", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "pan", name: "PAN Verification", description: "Verify driver PAN for TDS deduction on delivery earnings", href: "/products/pan-verification-api", relevance: "M" },
       { apiId: "bank", name: "Bank Account Verification", description: "Validate payout account before registering driver for earnings", href: "/products/bank-verification-api", relevance: "M" },
+      { apiId: "e-challan", name: "E-Challan Verification", description: "Check pending traffic challans across fleet vehicles — prevent impounding during inspections", href: "/products/e-challan-verification-api", relevance: "H" },
     ],
     useCaseVignettes: [
       {
@@ -810,6 +823,9 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "digilocker", name: "DigiLocker", description: "Pull ITRs, Aadhaar, driving licences, and education certificates paperlessly", href: "/products/digilocker-api", relevance: "H" },
       { apiId: "bbps", name: "BBPS", description: "Embed bill payment collection for fee collection or subscription billing", href: "/products/bbps-api", relevance: "M" },
       { apiId: "upi-payout", name: "UPI Payout", description: "Programmatic payouts to users, vendors, or partners from within your platform", href: "/products/upi-payout-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Embed cross-document name validation for KYC and KYB within your platform", href: "/products/name-match-api", relevance: "M" },
+      { apiId: "ip", name: "IP Verification", description: "Geo-locate and risk-score user IPs for fraud prevention and geo-compliance", href: "/products/ip-verification-api", relevance: "M" },
+      { apiId: "email", name: "Email Verification", description: "Validate user and tenant email addresses during signup and onboarding", href: "/products/email-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {
@@ -911,6 +927,10 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "rc", name: "Vehicle & RC Verification", description: "Verify delivery vehicles are registered and insured", href: "/products/vehicle-rc-verification-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Identity for sellers without GST and informal delivery workers", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "upi-payout", name: "UPI Payout", description: "Instant seller payouts and delivery commission disbursals", href: "/products/upi-payout-api", relevance: "M" },
+      { apiId: "fssai", name: "FSSAI License Verification", description: "Verify food seller and restaurant FSSAI license for delivery platform compliance", href: "/products/fssai-verification-api", relevance: "H" },
+      { apiId: "email", name: "Email Verification", description: "Validate seller and buyer contact emails to reduce bounce and fraud", href: "/products/email-verification-api", relevance: "M" },
+      { apiId: "ip", name: "IP Verification", description: "Detect fraudulent signups and proxy-based order abuse", href: "/products/ip-verification-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Cross-check seller identity across PAN, GST, and bank records", href: "/products/name-match-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {
@@ -1105,6 +1125,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "pan", name: "PAN Verification", description: "Policyholder and loan applicant identity verification", href: "/products/pan-verification-api", relevance: "H" },
       { apiId: "bank", name: "Bank Account Verification", description: "Validate EMI payout and claims settlement accounts", href: "/products/bank-verification-api", relevance: "M" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "KYC for loan applicants and policy purchasers", href: "/products/aadhaar-verification-api", relevance: "M" },
+      { apiId: "e-challan", name: "E-Challan Verification", description: "Check pending traffic challans for used vehicle pre-purchase checks and fleet compliance", href: "/products/e-challan-verification-api", relevance: "H" },
     ],
     useCaseVignettes: [
       {
@@ -1198,6 +1219,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Identity for individual agents without GST registration", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "bbps", name: "BBPS", description: "Collect travel EMIs and booking advance payments via Bharat Connect", href: "/products/bbps-api", relevance: "M" },
       { apiId: "upi-payout", name: "UPI Payout", description: "Real-time commission and supplier settlement disbursals", href: "/products/upi-payout-api", relevance: "M" },
+      { apiId: "passport", name: "Passport Verification", description: "Verify traveller passport details for international booking compliance", href: "/products/passport-verification-api", relevance: "H" },
     ],
     useCaseVignettes: [
       {
@@ -1379,6 +1401,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "digilocker", name: "DigiLocker", description: "Pull degree certificates, nursing council registrations, and medical diplomas — eliminates fake credentials", href: "/products/digilocker-api", relevance: "H" },
       { apiId: "bank", name: "Bank Account Verification", description: "Verify doctor payout and patient insurance claim accounts", href: "/products/bank-verification-api", relevance: "H" },
       { apiId: "bbps", name: "BBPS", description: "Collect patient EMI payments and hospital subscription fees on Bharat Connect", href: "/products/bbps-api", relevance: "M" },
+      { apiId: "email", name: "Email Verification", description: "Validate doctor, staff, and patient contact emails for communications and DPDP consent", href: "/products/email-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {
@@ -1473,6 +1496,9 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "gst", name: "GST Verification", description: "Verify developer and broker business registration and GST compliance", href: "/products/gst-verification-api", relevance: "H" },
       { apiId: "employee", name: "Employee Verification (EPFO)", description: "Verify employment and income for tenant screening and loan underwriting", href: "/products/employee-verification-api", relevance: "M" },
       { apiId: "upi-payout", name: "UPI Payout", description: "Instant broker commission disbursals after deal closure", href: "/products/upi-payout-api", relevance: "M" },
+      { apiId: "cin", name: "CIN Verification", description: "Validate developer and builder company identity and active status via MCA", href: "/products/cin-verification-api", relevance: "M" },
+      { apiId: "itr", name: "ITR Compliance Check", description: "Verify loan applicant income tax filing status for credit assessment", href: "/products/itr-compliance-api", relevance: "M" },
+      { apiId: "name-match", name: "Name Match", description: "Cross-check property buyer name across PAN, Aadhaar, and bank records", href: "/products/name-match-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {
@@ -1573,6 +1599,9 @@ export const INDUSTRIES_LIST: IndustryData[] = [
       { apiId: "bank", name: "Bank Account Verification", description: "Validate client payout and tax refund accounts", href: "/products/bank-verification-api", relevance: "H" },
       { apiId: "aadhaar", name: "Aadhaar Verification", description: "Individual taxpayer identity and address verification", href: "/products/aadhaar-verification-api", relevance: "M" },
       { apiId: "name-match", name: "Name Match", description: "Cross-validate PAN name, GST trade name, and bank account holder — catch discrepancies for ITC fraud detection", href: "/products/name-match-api", relevance: "M" },
+      { apiId: "itr", name: "ITR Compliance Check", description: "Verify client income tax return filing status via PAN for compliance monitoring", href: "/products/itr-compliance-api", relevance: "H" },
+      { apiId: "cin", name: "CIN Verification", description: "Validate client company registration and active status via MCA", href: "/products/cin-verification-api", relevance: "M" },
+      { apiId: "din", name: "DIN Verification", description: "Verify director identity and associated companies for corporate client due diligence", href: "/products/din-verification-api", relevance: "M" },
     ],
     useCaseVignettes: [
       {

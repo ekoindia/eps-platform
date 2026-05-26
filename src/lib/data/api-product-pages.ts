@@ -30,6 +30,9 @@ import {
   ShieldCheck, Building2, FolderCheck, Briefcase, Truck,
   Info,
   IdCard,
+  // New verification product icons
+  Vote, Plane, Landmark, Globe2, ScanText, IndianRupee, BadgeCheck, TicketCheck, MailCheck, Utensils,
+  AlertTriangle,
 } from "lucide-react";
 
 import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
@@ -1185,6 +1188,628 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Country", value: "India", icon: MapPin },
         { label: "State Code", value: "MH", icon: MapPin },
         { label: "Country Code", value: "IN", icon: MapPin },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: Voter ID
+  // -------------------------------------------------------------------------
+  "voter-id": {
+    seo: {
+      title: "Voter ID Verification API India | Instant EPIC Validation for KYC",
+      description: "Verify Voter ID (EPIC) details in real time — name, age, constituency, and address. Integrate Voter ID verification for KYC, onboarding, and identity checks.",
+      keywords: "Voter ID Verification API, EPIC Verification API, Voter ID KYC API, Electoral Verification API, Identity Verification API India",
+    },
+    title: "Voter ID Verification API",
+    desc: "Verify voter ID (EPIC) details in real time",
+    heroTitle: "Voter ID Verification API for KYC & Identity Checks",
+    heroSubtitle: "Validate Voter ID (EPIC) card details instantly — fetch name, age, address, and constituency information for identity verification and onboarding workflows.",
+    category: "verification",
+    icon: Vote,
+    docsUrl: "https://developers.eko.in/reference/voter-id",
+    overview: "The Voter ID Verification API enables businesses to validate Electoral Photo Identity Card (EPIC) details against government records. Use it for identity verification, address confirmation, and compliance workflows.",
+    keyBenefits: [
+      "Instant EPIC validation against government records",
+      "Fetches name, age, address, and constituency details",
+      "Supports regional language name retrieval",
+      "Suitable for high-volume verification workflows",
+      "API-driven, automation-ready",
+    ],
+    features: [
+      { title: "Real-Time EPIC Validation", desc: "Verify voter ID details instantly with structured responses including name, age, and address." },
+      { title: "Address Confirmation", desc: "Fetch full address with district, state, city, and pincode from voter records." },
+      { title: "Constituency Details", desc: "Returns assembly and parliamentary constituency information for geo-compliance." },
+      { title: "Regional Language Support", desc: "Retrieves voter name in regional language alongside English for cross-verification." },
+    ],
+    whoShouldUse: ["Fintech and financial institutions", "Staffing and HR platforms", "Government and public sector applications", "Enterprises with KYC requirements"],
+    useCases: ["Customer identity verification", "Address verification for onboarding", "Employee background checks", "Government scheme eligibility validation"],
+    trustAndCompliance: ["Government source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying Voter IDs in production." },
+    ],
+    leadForm: {
+      title: "Get Voter ID Verification API Access",
+    },
+    faqs: [
+      { q: "What details are returned?", a: "The API returns voter name (English and regional), age, date of birth, gender, full address, assembly and parliamentary constituency, father/guardian name, and polling station details." },
+      { q: "How fast is Voter ID verification?", a: "Verification is real-time with sub-second response times for instant identity validation." },
+      { q: "Can I use this for address verification?", a: "Yes. The API returns structured address data including district, city, state, and pincode — useful for address verification workflows." },
+      { q: "Is it suitable for bulk verification?", a: "Yes. The API is designed to handle high-volume verification requests reliably." },
+    ],
+    inputOutputPreview: {
+      apiName: "Voter ID Verification",
+      inputs: [
+        { label: "EPIC Number", value: "ABC1234567", icon: IdCard },
+        { label: "Name", value: "Rajesh Kumar", icon: User },
+      ],
+      outputs: [
+        { label: "Name", value: "Rajesh Kumar", icon: User },
+        { label: "Name (Regional)", value: "राजेश कुमार" },
+        { label: "Age", value: "34", icon: Calendar },
+        { label: "Gender", value: "Male", icon: User },
+        { label: "Father's Name", value: "Suresh Kumar", icon: User },
+        { label: "Address", value: "Ward 12, Sector 5, Noida", icon: MapPin },
+        { label: "Assembly Constituency", value: "Noida (62)", icon: MapPin },
+        { label: "Parliamentary Constituency", value: "Gautam Buddha Nagar", icon: MapPin },
+        { label: "Polling Station", value: "Govt. School Noida Sec 5", icon: MapPin },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: Passport
+  // -------------------------------------------------------------------------
+  passport: {
+    seo: {
+      title: "Passport Verification API India | Instant Passport Validation",
+      description: "Verify passport file number and holder details in real time. Integrate passport verification for KYC, travel compliance, and identity checks.",
+      keywords: "Passport Verification API, Passport KYC API, Passport Validation API, Travel Document Verification API, Identity Verification API India",
+    },
+    title: "Passport Verification API",
+    desc: "Verify passport details in real time",
+    heroTitle: "Passport Verification API for KYC & Travel Compliance",
+    heroSubtitle: "Validate passport application details instantly — verify file number, holder name, date of birth, and application status for identity and travel compliance workflows.",
+    category: "verification",
+    icon: Plane,
+    docsUrl: "https://developers.eko.in/reference/passport",
+    overview: "The Passport Verification API enables businesses to validate passport holder details against official records. Use it for identity verification, travel compliance, and employee background checks.",
+    keyBenefits: [
+      "Instant passport detail verification",
+      "Confirms holder name and date of birth",
+      "Returns application type and status",
+      "API-driven, automation-ready workflows",
+      "Suitable for travel and compliance use cases",
+    ],
+    features: [
+      { title: "Real-Time Passport Validation", desc: "Verify passport file number and holder details with instant structured responses." },
+      { title: "Identity Confirmation", desc: "Cross-check holder name and date of birth against passport records." },
+      { title: "Application Status", desc: "Returns application type and received date for processing verification." },
+      { title: "Automation Friendly", desc: "Easily integrate into digital onboarding, KYC, and compliance pipelines." },
+    ],
+    whoShouldUse: ["Travel and hospitality platforms", "Staffing and HR platforms", "Financial institutions", "Government and immigration services"],
+    useCases: ["Employee background verification", "Travel compliance checks", "Customer KYC for financial services", "Identity verification for visa processing"],
+    trustAndCompliance: ["Government source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying passports in production." },
+    ],
+    leadForm: {
+      title: "Get Passport Verification API Access",
+    },
+    faqs: [
+      { q: "What details are required for verification?", a: "You need the passport file number and date of birth of the holder. Optionally, you can provide the holder name for name matching." },
+      { q: "What details are returned?", a: "The API returns file number, holder name, date of birth, application type, and application received date." },
+      { q: "How fast is passport verification?", a: "Verification is real-time with sub-second response times." },
+      { q: "Can I use this for employee BGV?", a: "Yes. Passport verification is commonly used in employee background verification to confirm identity and travel document validity." },
+    ],
+    inputOutputPreview: {
+      apiName: "Passport Verification",
+      inputs: [
+        { label: "File Number", value: "J8369854", icon: FileText },
+        { label: "Date of Birth", value: "1994-08-29", icon: Calendar },
+        { label: "Name", value: "Rajesh Kumar", icon: User },
+      ],
+      outputs: [
+        { label: "File Number", value: "J8369854", icon: FileText },
+        { label: "Name", value: "Rajesh Kumar", icon: User },
+        { label: "Date of Birth", value: "1994-08-29", icon: Calendar },
+        { label: "Application Type", value: "Normal" },
+        { label: "Application Received Date", value: "2023-01-15" },
+        { label: "Status", value: "Valid", icon: CheckCircle },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: CIN
+  // -------------------------------------------------------------------------
+  cin: {
+    seo: {
+      title: "CIN Verification API India | Company Identity Validation via MCA",
+      description: "Verify Company Identification Number (CIN) details instantly. Fetch company name, incorporation date, directors, and status from MCA records for KYB and compliance.",
+      keywords: "CIN Verification API, Company Verification API, MCA Verification API, KYB API India, Corporate Identity API",
+    },
+    title: "CIN Verification API",
+    desc: "Validate Company Identification Numbers via MCA",
+    heroTitle: "CIN Verification API for KYB & Corporate Due Diligence",
+    heroSubtitle: "Verify Company Identification Numbers (CIN) instantly — fetch company name, registration number, incorporation date, directors, and status from Ministry of Corporate Affairs records.",
+    category: "verification",
+    icon: Landmark,
+    docsUrl: "https://developers.eko.in/reference/cin",
+    overview: "The CIN Verification API enables businesses to validate Company Identification Numbers against MCA records. Use it for KYB workflows, corporate due diligence, vendor verification, and compliance checks.",
+    keyBenefits: [
+      "Instant CIN validation against MCA records",
+      "Returns company name, directors, and incorporation details",
+      "Confirms CIN status (active/struck-off/dormant)",
+      "Supports KYB and corporate compliance workflows",
+      "API-driven, automation-ready",
+    ],
+    features: [
+      { title: "Real-Time CIN Validation", desc: "Verify CIN details instantly with structured responses including company name and status." },
+      { title: "Director Information", desc: "Fetch director details including name, DIN, designation, and date of birth." },
+      { title: "Incorporation Details", desc: "Returns registration number, incorporation date, and country of incorporation." },
+      { title: "Status Verification", desc: "Confirms whether the company is active, struck-off, dormant, or under liquidation." },
+    ],
+    whoShouldUse: ["Lending and financial institutions", "Marketplace and e-commerce platforms", "Accounting and compliance firms", "Enterprises performing vendor due diligence"],
+    useCases: ["Merchant and vendor KYB", "Corporate due diligence", "Lending to corporate borrowers", "Supply chain partner verification"],
+    trustAndCompliance: ["MCA source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying CINs in production." },
+    ],
+    leadForm: {
+      title: "Get CIN Verification API Access",
+    },
+    faqs: [
+      { q: "What details are returned?", a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, DOB, address)." },
+      { q: "Can I verify LLPs with this API?", a: "CIN is specific to companies registered under the Companies Act. LLPs use LLPIN — contact us for LLP verification availability." },
+      { q: "How fast is CIN verification?", a: "Verification is real-time with sub-second response times." },
+      { q: "Is director information included?", a: "Yes. The API returns director details including name, DIN, designation, and date of birth for all directors listed in MCA records." },
+    ],
+    inputOutputPreview: {
+      apiName: "CIN Verification",
+      inputs: [
+        { label: "CIN", value: "U72900KA2015PTC082988", icon: Building },
+      ],
+      outputs: [
+        { label: "Company Name", value: "Acme Technologies Pvt Ltd", icon: Building },
+        { label: "CIN Status", value: "Active", icon: CheckCircle },
+        { label: "Registration Number", value: "82987", icon: Hash },
+        { label: "Incorporation Date", value: "2015-09-23", icon: Calendar },
+        { label: "Email", value: "contact@acmetech.in", icon: Mail },
+        { label: "Incorporation Country", value: "India", icon: Globe },
+        { label: "Director 1", value: "Rahul Mehta (DIN: 07168822) — Director", icon: User },
+        { label: "Director 2", value: "Priya Sharma (DIN: 07168826) — Director", icon: User },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: IP Verification
+  // -------------------------------------------------------------------------
+  ip: {
+    seo: {
+      title: "IP Verification API India | IP Geolocation & Risk Scoring",
+      description: "Verify IP addresses with geolocation, proxy detection, and risk scoring. Prevent fraud and enforce geo-compliance with real-time IP intelligence.",
+      keywords: "IP Verification API, IP Geolocation API, IP Risk Score API, Proxy Detection API, Fraud Prevention API India",
+    },
+    title: "IP Verification API",
+    desc: "Geo-locate and risk-score IP addresses",
+    heroTitle: "IP Verification API for Fraud Prevention & Geo-Compliance",
+    heroSubtitle: "Verify IP addresses in real time — detect proxies, geo-locate users, and assess risk scores for fraud prevention and geo-compliance workflows.",
+    category: "verification",
+    icon: Globe2,
+    docsUrl: "https://developers.eko.in/reference/ip",
+    overview: "The IP Verification API enables businesses to geo-locate IP addresses, detect proxies and VPNs, and assess risk scores. Use it for fraud prevention, geo-compliance, and user location verification.",
+    keyBenefits: [
+      "Real-time IP geolocation with city-level accuracy",
+      "Proxy and VPN detection",
+      "City and proxy-type risk scoring",
+      "Supports geo-compliance enforcement",
+      "API-driven, automation-ready",
+    ],
+    features: [
+      { title: "IP Geolocation", desc: "Resolve IP addresses to country, region, and city for location-based decisions." },
+      { title: "Proxy & VPN Detection", desc: "Identify proxy type and category to flag suspicious connection sources." },
+      { title: "Risk Scoring", desc: "Get city-level and proxy-type risk scores for fraud assessment." },
+      { title: "Real-Time Processing", desc: "Instant IP intelligence for inline fraud checks during transactions." },
+    ],
+    whoShouldUse: ["Fintech and digital lending platforms", "E-commerce and marketplace platforms", "SaaS and subscription platforms", "Insurance and compliance platforms"],
+    useCases: ["Transaction fraud detection", "Geo-compliance enforcement", "User location verification during KYC", "Bot and scraping detection"],
+    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "DPDP-aligned data processing", "Audit-ready lookup records"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying IP addresses in production." },
+    ],
+    leadForm: {
+      title: "Get IP Verification API Access",
+    },
+    faqs: [
+      { q: "What details are returned?", a: "The API returns IP address, proxy type, country code and name, region, city, city risk score, and proxy-type risk score." },
+      { q: "Can it detect VPNs?", a: "Yes. The API identifies proxy type including VPN, residential proxy, data center proxy, and other classifications." },
+      { q: "How is the risk score calculated?", a: "Risk scores are based on factors like cybersecurity threats, proxy type classification, and historical threat intelligence for the city and connection type." },
+      { q: "Is this suitable for real-time fraud checks?", a: "Yes. The API is designed for inline transaction-level fraud checks with sub-second response times." },
+    ],
+    inputOutputPreview: {
+      apiName: "IP Verification",
+      inputs: [
+        { label: "IP Address", value: "103.21.58.193", icon: Globe2 },
+      ],
+      outputs: [
+        { label: "Country", value: "India (IN)", icon: Globe2 },
+        { label: "Region", value: "Maharashtra", icon: MapPin },
+        { label: "City", value: "Mumbai", icon: MapPin },
+        { label: "Proxy Type", value: "None", icon: Shield },
+        { label: "City Risk Score", value: "12 / 100", icon: AlertTriangle },
+        { label: "Proxy Risk Score", value: "0 / 100", icon: AlertTriangle },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: Name Match
+  // -------------------------------------------------------------------------
+  "name-match": {
+    seo: {
+      title: "Name Match API India | AI-Powered Name Matching for KYC & Compliance",
+      description: "AI-powered name matching API trained on 100M+ Indian name records. Compare names across identity documents — handles initials, phonetic variants, regional spellings, and salutations.",
+      keywords: "Name Match API, AI Name Matching API, Fuzzy Name Matching API, Name Comparison API, KYC Name Verification API, Identity Matching API India",
+    },
+    title: "Name Match API",
+    desc: "AI-powered name matching across identity documents",
+    heroTitle: "Name Match API for Cross-Document Identity Verification",
+    heroSubtitle: "AI-powered name comparison trained on 100M+ Indian name records. Compare names across PAN, Aadhaar, bank, and GST records — get a match score (0–1) and category (Direct Match, Partial Match, No Match) for automated KYC decisions.",
+    category: "verification",
+    icon: ScanText,
+    docsUrl: "https://developers.eko.in/reference/name-match",
+    overview: "Name Match is an AI-powered name comparison API built for India's complex naming conventions. Trained on over 100 million Indian name records, it handles initials, abbreviations, phonetic and regional spelling variants, salutation patterns, and subset matching — returning a match score (0 to 1) and match category for automated decision-making.",
+    keyBenefits: [
+      "AI-powered, trained on 100M+ Indian name records",
+      "Returns score (0–1) and match category for rule-based decisions",
+      "Handles initials, abbreviations, phonetic and regional spelling variants",
+      "Reduces false mismatches and manual review overhead",
+      "Real-time and scalable",
+    ],
+    features: [
+      { title: "Indian Name Intelligence", desc: "Handles initials, middle names, abbreviations, and subset matching (e.g. Harsh Kishore → HKishore) with high accuracy." },
+      { title: "Phonetic & Regional Variants", desc: "Understands phonetic similarities and regional spelling variations across Indian languages and naming conventions." },
+      { title: "Context-Aware Matching", desc: "Considers name sequence, gender, regional norms, and salutation patterns (e.g. S/O, D/O) for accurate results." },
+      { title: "Score + Category Response", desc: "Returns a 0–1 score with match categories: Direct Match (1.0), Good Partial (0.85–0.99), Moderate Partial (0.60–0.84), Poor Partial (0.34–0.59), No Match (0–0.33)." },
+    ],
+    whoShouldUse: ["Lending and financial institutions", "Accounting and tax platforms", "Marketplace and e-commerce platforms", "Enterprises performing KYC/KYB"],
+    useCases: ["Cross-document KYC name validation", "ITC fraud detection via GST-PAN-bank name checks", "Lending name match for fraud prevention", "Merchant onboarding name consistency checks", "Payout reconciliation", "Risk and fraud prevention"],
+    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "Audit-ready match records", "Compliance-aligned verification workflows"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start matching names in production." },
+    ],
+    leadForm: {
+      title: "Get Name Match API Access",
+    },
+    faqs: [
+      { q: "How does the matching work?", a: "Name Match uses AI trained on 100M+ Indian name records. It handles initials, phonetic variants, regional spellings, salutation patterns (S/O, D/O), subset matching, and name ordering variations." },
+      { q: "What is the score range?", a: "The API returns a score from 0 to 1: Direct Match (1.0), Good Partial Match (0.85–0.99), Moderate Partial Match (0.60–0.84), Poor Partial Match (0.34–0.59), No Match (0–0.33). Set your own threshold based on risk tolerance." },
+      { q: "What examples of Indian name variations does it handle?", a: "Initials (S K Mishra → Satish Kumar Mishra), subsets (Harsh Kishore → HKishore), salutations (Aditya Roy S/O Jatin), missing middle names, extra spaces, and phonetic/regional spelling variants." },
+      { q: "Can I use this for GST ITC fraud detection?", a: "Yes. Cross-validating supplier PAN name, GST trade name, and bank account holder name catches fake invoice fraud that manual review misses." },
+    ],
+    inputOutputPreview:
+      {
+        apiName: "Good Partial Match",
+        inputs: [
+          { label: "Name 1", value: "S K Mishra", icon: User },
+          { label: "Name 2", value: "Satish Kumar Mishra", icon: User },
+        ],
+        outputs: [
+          { label: "Status", value: "Success", icon: CheckCircle },
+          { label: "Match Score", value: "0.92" },
+          { label: "Match Category", value: "Good Partial Match", icon: CheckCircle },
+        ],
+      },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: ITR Compliance
+  // -------------------------------------------------------------------------
+  itr: {
+    seo: {
+      title: "ITR Compliance API India | Income Tax Filing Status Check",
+      description: "Check income tax return filing and compliance status using PAN number. Verify ITR compliance for lending, credit assessment, and due diligence workflows.",
+      keywords: "ITR Compliance API, Income Tax Verification API, ITR Status Check API, PAN ITR API, Tax Compliance API India",
+    },
+    title: "ITR Compliance Check API",
+    desc: "Check income tax return filing and compliance status",
+    heroTitle: "ITR Compliance API for Lending & Credit Assessment",
+    heroSubtitle: "Verify income tax return filing and compliance status using PAN — assess borrower and business creditworthiness with real-time ITR data for lending and due diligence workflows.",
+    category: "verification",
+    icon: IndianRupee,
+    docsUrl: "https://developers.eko.in/reference/itr-compliance",
+    overview: "The ITR Compliance Check API enables businesses to verify income tax return filing status using a PAN number. Use it for credit assessment, lending due diligence, and compliance verification.",
+    keyBenefits: [
+      "Instant ITR filing status via PAN",
+      "Supports credit assessment workflows",
+      "Validates tax compliance for lending",
+      "API-driven, automation-ready",
+      "Suitable for high-volume checks",
+    ],
+    features: [
+      { title: "ITR Filing Status", desc: "Check whether a PAN holder has filed income tax returns and their compliance standing." },
+      { title: "PAN-Based Lookup", desc: "Simple PAN number input — no additional documents or consent flows required." },
+      { title: "Credit Assessment Signal", desc: "Use ITR filing patterns as a proxy for income verification and creditworthiness." },
+      { title: "Automation Friendly", desc: "Integrate into lending pipelines, onboarding flows, and compliance checks seamlessly." },
+    ],
+    whoShouldUse: ["Lending and NBFC platforms", "Accounting and tax firms", "Real estate and property platforms", "Enterprises performing financial due diligence"],
+    useCases: ["Borrower credit assessment", "MSME income verification", "Vendor and supplier due diligence", "Tax compliance verification for onboarding"],
+    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "Compliance-aligned verification workflows", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start checking ITR compliance in production." },
+    ],
+    leadForm: {
+      title: "Get ITR Compliance API Access",
+    },
+    faqs: [
+      { q: "What input is required?", a: "Only the PAN number is required to check ITR compliance status." },
+      { q: "What details are returned?", a: "The API returns ITR filing status and compliance information associated with the PAN number." },
+      { q: "Can I use this for lending decisions?", a: "Yes. ITR compliance status is a strong signal for borrower creditworthiness, especially for MSMEs without traditional credit bureau scores." },
+      { q: "How fast is the check?", a: "The API returns results in real time with sub-second response times." },
+    ],
+    inputOutputPreview: {
+      apiName: "ITR Compliance Check",
+      inputs: [
+        { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
+      ],
+      outputs: [
+        { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
+        { label: "ITR Filing Status", value: "Filed", icon: CheckCircle },
+        { label: "Assessment Year", value: "2024-25" },
+        { label: "Compliance Status", value: "Compliant", icon: Shield },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: DIN
+  // -------------------------------------------------------------------------
+  din: {
+    seo: {
+      title: "DIN Verification API India | Director Identity Validation via MCA",
+      description: "Verify Director Identification Number (DIN) details instantly. Validate director identity for corporate due diligence, KYB, and compliance workflows.",
+      keywords: "DIN Verification API, Director Verification API, MCA Director Check API, Corporate KYB API, Director Identity API India",
+    },
+    title: "DIN Verification API",
+    desc: "Verify Director Identification Numbers via MCA",
+    heroTitle: "DIN Verification API for Corporate Due Diligence",
+    heroSubtitle: "Validate Director Identification Numbers (DIN) against MCA records — verify director identity, designation, and associated companies for KYB and compliance workflows.",
+    category: "verification",
+    icon: BadgeCheck,
+    docsUrl: "https://developers.eko.in/reference/din-verification",
+    overview: "The DIN Verification API enables businesses to validate Director Identification Numbers against Ministry of Corporate Affairs records. Use it for corporate due diligence, KYB workflows, and director background checks.",
+    keyBenefits: [
+      "Instant DIN validation against MCA records",
+      "Confirms director identity and status",
+      "Supports corporate KYB workflows",
+      "API-driven, automation-ready",
+      "Suitable for high-volume verification",
+    ],
+    features: [
+      { title: "Real-Time DIN Validation", desc: "Verify DIN details instantly against Ministry of Corporate Affairs records." },
+      { title: "Director Identity", desc: "Confirm director name, designation, and DIN status for due diligence." },
+      { title: "Corporate Linkage", desc: "Identify companies associated with a director for cross-referencing." },
+      { title: "Automation Friendly", desc: "Integrate into KYB pipelines, compliance checks, and onboarding workflows." },
+    ],
+    whoShouldUse: ["Lending and financial institutions", "Accounting and compliance firms", "Marketplace and e-commerce platforms", "Enterprises performing corporate due diligence"],
+    useCases: ["Director background verification", "Corporate KYB workflows", "Lending to corporate borrowers", "Vendor and supplier due diligence"],
+    trustAndCompliance: ["MCA source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying DINs in production." },
+    ],
+    leadForm: {
+      title: "Get DIN Verification API Access",
+    },
+    faqs: [
+      { q: "What input is required?", a: "Only the Director Identification Number (DIN) is required." },
+      { q: "What details are returned?", a: "The API returns director name, DIN status, designation, and associated company information from MCA records." },
+      { q: "How is DIN different from CIN?", a: "DIN identifies individual directors, while CIN identifies companies. Use DIN Verification for director-level checks and CIN Verification for company-level checks." },
+      { q: "Can I verify multiple directors at once?", a: "Each API call verifies one DIN. For bulk verification, you can make parallel API calls." },
+    ],
+    inputOutputPreview: {
+      apiName: "DIN Verification",
+      inputs: [
+        { label: "DIN Number", value: "06731826", icon: BadgeCheck },
+      ],
+      outputs: [
+        { label: "Director Name", value: "Abhishek Sagar", icon: User },
+        { label: "DIN Status", value: "Active", icon: CheckCircle },
+        { label: "Designation", value: "Director" },
+        { label: "Associated Company", value: "Eko India Financial Services Pvt Ltd", icon: Building },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: E-Challan
+  // -------------------------------------------------------------------------
+  "e-challan": {
+    seo: {
+      title: "E-Challan Verification API India | Traffic Challan Check for Vehicles",
+      description: "Check pending traffic challans for any vehicle using registration number. Integrate e-challan verification for fleet compliance, insurance, and driver onboarding.",
+      keywords: "E-Challan API, Traffic Challan API, Vehicle Challan Check API, Fleet Compliance API, Traffic Violation API India",
+    },
+    title: "E-Challan Verification API",
+    desc: "Check pending traffic challans for vehicles",
+    heroTitle: "E-Challan Verification API for Fleet & Vehicle Compliance",
+    heroSubtitle: "Fetch pending traffic challans for any vehicle using its registration number — automate fleet compliance monitoring, insurance risk assessment, and driver onboarding checks.",
+    category: "verification",
+    icon: TicketCheck,
+    docsUrl: "https://developers.eko.in/reference/e-challan",
+    overview: "The E-Challan Verification API enables businesses to check pending traffic challans for a vehicle using its registration number. Use it for fleet compliance, insurance underwriting, and gig worker onboarding.",
+    keyBenefits: [
+      "Instant challan status by registration number",
+      "Supports fleet compliance monitoring",
+      "Identifies traffic violation patterns",
+      "API-driven, automation-ready",
+      "Suitable for batch and real-time checks",
+    ],
+    features: [
+      { title: "Challan Lookup", desc: "Fetch pending traffic challans for any vehicle using its registration number." },
+      { title: "Fleet Compliance", desc: "Monitor challan status across entire vehicle fleets for regulatory compliance." },
+      { title: "Risk Assessment", desc: "Identify traffic violation patterns for insurance underwriting and driver scoring." },
+      { title: "Real-Time Processing", desc: "Instant challan status checks for onboarding and compliance workflows." },
+    ],
+    whoShouldUse: ["Fleet operators and logistics companies", "Insurance companies", "Gig and delivery platforms", "Automotive and vehicle marketplace platforms"],
+    useCases: ["Fleet compliance monitoring", "Insurance risk assessment", "Delivery rider onboarding checks", "Used vehicle pre-purchase checks"],
+    trustAndCompliance: ["Government source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start checking e-challans in production." },
+    ],
+    leadForm: {
+      title: "Get E-Challan Verification API Access",
+    },
+    faqs: [
+      { q: "What input is required?", a: "Only the vehicle registration number is required to check pending challans." },
+      { q: "Does it cover all states?", a: "The API covers challans issued via the national e-challan system. Coverage may vary by state adoption." },
+      { q: "Can I monitor my entire fleet?", a: "Yes. You can run batch checks across all vehicle registration numbers in your fleet on a daily or weekly schedule." },
+      { q: "Is this useful for insurance?", a: "Yes. Challan history indicates driving behavior risk — insurers use this data for underwriting and premium calculation." },
+    ],
+    inputOutputPreview: {
+      apiName: "E-Challan Verification",
+      inputs: [
+        { label: "Registration Number", value: "MH02AB1234", icon: Car },
+      ],
+      outputs: [
+        { label: "Vehicle Number", value: "MH02AB1234", icon: Car },
+        { label: "Pending Challans", value: "2", icon: TicketCheck },
+        { label: "Total Fine Amount", value: "₹3,500", icon: IndianRupee },
+        { label: "Latest Violation", value: "Overspeeding — 2024-12-10" },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: Email Verification
+  // -------------------------------------------------------------------------
+  email: {
+    seo: {
+      title: "Email Verification API India | Catch Invalid & Dummy Emails",
+      description: "Verify email addresses in real time — catch dummy emails, typos, and non-existent domains. Validate domain authenticity and age for onboarding, fraud prevention, and contact verification.",
+      keywords: "Email Verification API, Email Validation API, Email Check API, Invalid Email Detection API, Dummy Email Check API, Contact Verification API India",
+    },
+    title: "Email Verification API",
+    desc: "Catch invalid, dummy, and non-existent email addresses",
+    heroTitle: "Email Verification API for Onboarding & Fraud Prevention",
+    heroSubtitle: "Catch invalid, dummy, and mistyped email addresses in real time. Verify that an email domain actually exists and can receive messages — reduce bounce rates, block fake signups, and ensure valid contact data during onboarding.",
+    category: "verification",
+    icon: MailCheck,
+    docsUrl: "https://developers.eko.in/reference/email-check",
+    overview: "The Email Verification API helps businesses catch invalid, dummy, and mistyped email addresses before they enter your system. It checks whether the email domain is real and can receive messages, and returns domain age to help assess trust — a newly created domain with no mail infrastructure is a strong fraud signal.",
+    keyBenefits: [
+      "Catch invalid, dummy, and mistyped email addresses",
+      "Verify domain can actually receive messages",
+      "Domain age check to flag suspicious new domains",
+      "API-driven, automation-ready",
+      "Suitable for high-volume verification",
+    ],
+    features: [
+      { title: "Invalid Email Detection", desc: "Catch dummy, mistyped, and non-existent email addresses by verifying the domain has real mail infrastructure." },
+      { title: "Domain Trust Scoring", desc: "Returns domain age in days — newly created domains are a strong indicator of fraudulent or disposable email addresses." },
+      { title: "Mail Server Validation", desc: "Checks MX (mail exchange) records to confirm the domain can actually receive emails — not just that the format is valid." },
+      { title: "Real-Time Processing", desc: "Instant email validation for inline onboarding and registration flows." },
+    ],
+    whoShouldUse: ["E-commerce and marketplace platforms", "SaaS and subscription platforms", "Staffing and HR platforms", "Financial institutions"],
+    useCases: ["Block dummy emails during user onboarding", "Catch typos in email addresses at signup", "Detect fraudulent signups with new/suspicious domains", "Contact database cleaning", "Employee contact verification"],
+    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "DPDP-aligned data processing", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying emails in production." },
+    ],
+    leadForm: {
+      title: "Get Email Verification API Access",
+    },
+    faqs: [
+      { q: "What input is required?", a: "Only the email address is required for verification." },
+      { q: "How does it catch dummy emails?", a: "The API checks if the email domain has valid mail exchange (MX) records — domains without mail servers can't receive emails, indicating a fake or dummy address." },
+      { q: "What is the domain age check?", a: "The API returns domain age in days. Newly created domains (days or weeks old) are a strong fraud signal — legitimate businesses and email providers have domains that are years old." },
+      { q: "Can I use this for bulk email list cleaning?", a: "Yes. You can validate email lists by making parallel API calls to clean your contact database and remove invalid entries." },
+    ],
+    inputOutputPreview: {
+      apiName: "Email Verification",
+      inputs: [
+        { label: "Email Address", value: "rajesh.kumar@example.com", icon: Mail },
+      ],
+      outputs: [
+        { label: "Status", value: "Success", icon: MailCheck },
+        { label: "Message", value: "Email verification successful", icon: CheckCircle },
+        { label: "Domain", value: "example.com", icon: Globe },
+        { label: "Domain Age", value: "6,970 days (~19 years)", icon: Calendar },
+        { label: "MX Records", value: "aspmx.l.google.com (+ 4 more)", icon: Shield },
+      ],
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // MARK: FSSAI
+  // -------------------------------------------------------------------------
+  fssai: {
+    seo: {
+      title: "FSSAI License Verification API India | Food License Validation",
+      description: "Verify FSSAI food license details and status in real time. Integrate FSSAI verification for food business onboarding, marketplace compliance, and regulatory checks.",
+      keywords: "FSSAI Verification API, Food License API, FSSAI License Check API, Food Business Verification API, Food Safety API India",
+    },
+    title: "FSSAI License Verification API",
+    desc: "Verify FSSAI food license details and status",
+    heroTitle: "FSSAI License Verification API for Food Business Compliance",
+    heroSubtitle: "Validate FSSAI food license details and status instantly — verify food business registration for marketplace onboarding, delivery platform compliance, and regulatory checks.",
+    category: "verification",
+    icon: Utensils,
+    docsUrl: "https://developers.eko.in/reference/fssai-verification",
+    overview: "The FSSAI License Verification API enables businesses to validate Food Safety and Standards Authority of India (FSSAI) license details. Use it for food business onboarding, delivery platform compliance, and food safety regulatory checks.",
+    keyBenefits: [
+      "Instant FSSAI license validation",
+      "Confirms food business registration status",
+      "Supports food marketplace compliance",
+      "API-driven, automation-ready",
+      "Suitable for high-volume verification",
+    ],
+    features: [
+      { title: "License Validation", desc: "Verify FSSAI license number and retrieve registered business details." },
+      { title: "Status Check", desc: "Confirm whether the food license is active, expired, or suspended." },
+      { title: "Business Details", desc: "Fetch registered business name, address, and license category." },
+      { title: "Real-Time Processing", desc: "Instant validation for food business onboarding and compliance workflows." },
+    ],
+    whoShouldUse: ["Food delivery and aggregator platforms", "E-commerce and marketplace platforms", "Restaurant management SaaS", "Food safety compliance teams"],
+    useCases: ["Food seller onboarding on marketplaces", "Delivery platform restaurant verification", "Food safety audit and compliance checks", "Cloud kitchen registration verification"],
+    trustAndCompliance: ["FSSAI source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    integrationSteps: [
+      ...VERIFICATION_STEPS_BASE,
+      { title: "Go Live", desc: "Start verifying FSSAI licenses in production." },
+    ],
+    leadForm: {
+      title: "Get FSSAI Verification API Access",
+    },
+    faqs: [
+      { q: "What input is required?", a: "Only the FSSAI license number is required for verification." },
+      { q: "What details are returned?", a: "The API returns FSSAI license status, registered business name, address, and license category details." },
+      { q: "Is this mandatory for food delivery platforms?", a: "Yes. FSSAI regulations require food delivery platforms to verify that all listed restaurants and cloud kitchens have valid FSSAI licenses." },
+      { q: "How fast is the check?", a: "The API returns results in real time with sub-second response times." },
+    ],
+    inputOutputPreview: {
+      apiName: "FSSAI License Verification",
+      inputs: [
+        { label: "FSSAI License Number", value: "11521998000045", icon: Utensils },
+      ],
+      outputs: [
+        { label: "License Number", value: "11521998000045", icon: Utensils },
+        { label: "Status", value: "Active", icon: CheckCircle },
+        { label: "License Category", value: "State License" },
+        { label: "Business Name", value: "Spice Garden Restaurant", icon: Building },
+        { label: "Address", value: "123 Main Street, Mumbai, Maharashtra", icon: MapPin },
+        { label: "State", value: "Maharashtra", icon: MapPin },
+        { label: "PIN Code", value: "400001", icon: MapPin },
+        { label: "Expiry Date", value: "2026-03-15", icon: Calendar },
       ],
     },
   },
