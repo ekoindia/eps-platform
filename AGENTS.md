@@ -38,9 +38,8 @@ npm run preview      # Preview production build locally
 
 ### Styling
 
-- **Tailwind CSS only.** No inline styles, no CSS modules.
+- **Tailwind CSS v4 only.** No inline styles, no CSS modules.
 - **Brand palette:** `eko-gold`, `eko-navy`, `eko-slate`, `eko-success` + hover/light variants. Use them instead of raw hex/HSL values.
-- **Fonts:** Inter (sans), JetBrains Mono (mono). Configured in Tailwind.
 - **Shadows:** Use semantic tokens: `shadow-card`, `shadow-card-hover`, `shadow-gold`, `shadow-navy`.
 
 ### TypeScript
