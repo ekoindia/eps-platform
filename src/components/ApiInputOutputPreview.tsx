@@ -15,6 +15,13 @@ export interface ApiField {
   icon?: LucideIcon;
 }
 
+export interface ApiSampleJson {
+  method: "GET" | "POST" | "PUT" | "DELETE";
+  endpoint: string;
+  request: Record<string, unknown>;
+  response: Record<string, unknown>;
+}
+
 export interface ApiPreviewItem {
   apiName: string;
   description?: string;
@@ -25,8 +32,8 @@ export interface ApiPreviewItem {
   comingSoon?: boolean;
   docsUrl?: string;
   relevance?: ApiProductRelevance;
-  /** What is this API best suited for, as compared to other variants in this product pack? */
-  bestFor?: string; // e.g. "Best for quick checks", "Best for detailed reports", etc.
+  bestFor?: string;
+  sampleJson?: ApiSampleJson;
 }
 
 // MARK: API Type
@@ -38,31 +45,61 @@ interface ApiInputOutputPreviewProps {
   docsUrl?: string;
   previews?: ApiPreviewItem[];
   activeApiName?: string;
+  sampleJson?: ApiSampleJson;
 }
 
-// Simple JSON syntax highlighting
 const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
-  const renderValue = (value: unknown): JSX.Element => {
+  const indent = (depth: number) => "  ".repeat(depth);
+
+  const renderValue = (value: unknown, depth: number): JSX.Element => {
+    if (value === null) return <span className="text-sky-400">null</span>;
     if (typeof value === "string") return <span className="text-emerald-400">"{value}"</span>;
     if (typeof value === "boolean") return <span className="text-sky-400">{String(value)}</span>;
     if (typeof value === "number") return <span className="text-amber-400">{value}</span>;
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <span className="text-white/60">[]</span>;
+      return (
+        <>
+          <span className="text-white/60">[</span>{"\n"}
+          {value.map((item, i) => (
+            <span key={i}>
+              {indent(depth + 1)}{renderValue(item, depth + 1)}
+              {i < value.length - 1 && <span className="text-white/60">,</span>}
+              {"\n"}
+            </span>
+          ))}
+          {indent(depth)}<span className="text-white/60">]</span>
+        </>
+      );
+    }
+
+    if (typeof value === "object") {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (entries.length === 0) return <span className="text-white/60">{"{}"}</span>;
+      return (
+        <>
+          <span className="text-white/60">{"{"}</span>{"\n"}
+          {entries.map(([key, val], i) => (
+            <span key={key}>
+              {indent(depth + 1)}<span className="text-purple-400">"{key}"</span>
+              <span className="text-white/60">: </span>
+              {renderValue(val, depth + 1)}
+              {i < entries.length - 1 && <span className="text-white/60">,</span>}
+              {"\n"}
+            </span>
+          ))}
+          {indent(depth)}<span className="text-white/60">{"}"}</span>
+        </>
+      );
+    }
+
     return <span className="text-white">{String(value)}</span>;
   };
 
-  const entries = Object.entries(json);
   return (
     <pre className="text-sm leading-relaxed font-mono p-5 overflow-x-auto">
-      <span className="text-white/60">{"{"}</span>{"\n"}
-      {entries.map(([key, val], i) => (
-        <span key={key}>
-          {"  "}<span className="text-purple-400">"{key}"</span>
-          <span className="text-white/60">: </span>
-          {renderValue(val)}
-          {i < entries.length - 1 && <span className="text-white/60">,</span>}
-          {"\n"}
-        </span>
-      ))}
-      <span className="text-white/60">{"}"}</span>
+      {renderValue(json, 0)}
     </pre>
   );
 };
@@ -137,6 +174,7 @@ export const ApiInputOutputPreview = ({
   docsUrl,
   previews,
   activeApiName,
+  sampleJson,
 }: ApiInputOutputPreviewProps) => {
   // Multi-API mode: render with sub-API selector
   if (previews && previews.length > 0) {
@@ -152,6 +190,7 @@ export const ApiInputOutputPreview = ({
           comingSoon={p.comingSoon}
           docsUrl={p.docsUrl || docsUrl}
           sectionTitle={apiName}
+          sampleJson={p.sampleJson}
         />
       );
     }
@@ -168,6 +207,7 @@ export const ApiInputOutputPreview = ({
       comingSoon={comingSoon}
       docsUrl={docsUrl}
       sectionTitle={apiName}
+      sampleJson={sampleJson}
     />
   );
 };
@@ -240,6 +280,7 @@ const MultiApiPreview = ({
           outputs={activePreview.outputs}
           docsUrl={activePreview.docsUrl || fallbackDocsUrl}
           endpoint={activePreview.endpoint}
+          sampleJson={activePreview.sampleJson}
         />
       ) : null}
     </SectionContainer>
@@ -266,6 +307,7 @@ const SingleApiPreview = ({
   comingSoon = false,
   docsUrl,
   sectionTitle,
+  sampleJson,
 }: {
   apiName: string;
   description?: string;
@@ -274,6 +316,7 @@ const SingleApiPreview = ({
   comingSoon?: boolean;
   docsUrl?: string;
   sectionTitle: string;
+  sampleJson?: ApiSampleJson;
 }) => {
   if (comingSoon) {
     return (
@@ -284,13 +327,12 @@ const SingleApiPreview = ({
     );
   }
 
-  // Guard: outputs must be defined and have 1 or more fields to show the preview. If not, return null (render nothing).
   if (!outputs || outputs.length < 1) return null;
 
   return (
     <SectionContainer className="bg-muted/30">
       <SectionHeader title={sectionTitle} description={description} />
-      <PreviewContent inputs={inputs} outputs={outputs} docsUrl={docsUrl} />
+      <PreviewContent inputs={inputs} outputs={outputs} docsUrl={docsUrl} sampleJson={sampleJson} />
     </SectionContainer>
   );
 };
@@ -309,52 +351,42 @@ const PreviewContent = ({
   outputs,
   docsUrl,
   endpoint,
+  sampleJson,
 }: {
   inputs?: ApiField[];
   outputs?: ApiField[];
   docsUrl?: string;
   endpoint?: string;
+  sampleJson?: ApiSampleJson;
 }) => {
-  // Build JSON objects from fields
-  const inputJson: Record<string, unknown> = {};
-  inputs?.forEach(f => { inputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = f.value; });
-
-  const outputJson: Record<string, unknown> = {};
-  outputs?.forEach(f => {
-    const val = f.value;
-    if (val === "✓ Matched" || val === "true") outputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = true;
-    else if (val === "✗ Not Matched" || val === "false") outputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = false;
-    else outputJson[f.label.toLowerCase().replace(/\s+/g, "_")] = val;
-  });
+  const showJsonTab = !!sampleJson;
 
   return (
     <>
       <Tabs defaultValue="visual" className="max-w-5xl mx-auto">
-        {/* TODO: Show "Visual" vs "JSON" tabs only when we have authentic JSON trsucture to show */}
-        {/* <div className="flex justify-end mb-4">
-          <TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-xs">
-            <TabsTrigger
-              value="visual"
-              className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
-            >
-              Visual
-            </TabsTrigger>
-            <TabsTrigger
-              value="json"
-              className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
-            >
-              JSON
-            </TabsTrigger>
-          </TabsList>
-        </div> */}
+        {showJsonTab && (
+          <div className="flex justify-end mb-4">
+            <TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-xs">
+              <TabsTrigger
+                value="visual"
+                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
+              >
+                Visual
+              </TabsTrigger>
+              <TabsTrigger
+                value="json"
+                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
+              >
+                JSON
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        )}
 
         {/* Visual View */}
         <TabsContent value="visual">
           <div className="grid lg:grid-cols-2 gap-6">
-            {/*
-              Input Card
-              MARK: REQUEST
-            */}
+            {/* MARK: REQUEST */}
             <FadeIn delay={100} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
               <div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
                 <Send className="w-4 h-4 text-white/70" />
@@ -377,10 +409,7 @@ const PreviewContent = ({
               </div>
             </FadeIn>
 
-            {/*
-              Output Card
-              MARK: RESPONSE
-            */}
+            {/* MARK: RESPONSE */}
             <FadeIn delay={200} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
               <div className="flex items-center gap-3 px-6 py-4 bg-linear-to-r from-eko-success/90 to-eko-success">
                 <Download className="w-4 h-4 text-white/70" />
@@ -409,19 +438,21 @@ const PreviewContent = ({
           </div>
         </TabsContent>
 
-        {/* JSON View */}
-        <TabsContent value="json">
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="code-block rounded-2xl overflow-hidden">
-              <TerminalHeader label={endpoint ? `POST ${endpoint}` : ""} badgeText="REQUEST" />
-              <JsonHighlight json={inputJson} />
+        {/* JSON View — only rendered when authentic sampleJson is provided */}
+        {showJsonTab && (
+          <TabsContent value="json">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <div className="code-block rounded-2xl overflow-hidden">
+                <TerminalHeader label={`${sampleJson.method} ${sampleJson.endpoint}`} badgeText="REQUEST" />
+                <JsonHighlight json={sampleJson.request} />
+              </div>
+              <div className="code-block rounded-2xl overflow-hidden">
+                <TerminalHeader label="200 OK" badgeText="RESPONSE" />
+                <JsonHighlight json={sampleJson.response} />
+              </div>
             </div>
-            <div className="code-block rounded-2xl overflow-hidden">
-              <TerminalHeader label="200 OK" badgeText="RESPONSE" />
-              <JsonHighlight json={{ status: "SUCCESS", ...outputJson }} />
-            </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* CTA Row */}
