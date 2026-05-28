@@ -8,6 +8,7 @@ import { CheckCircle, ArrowRight, Clock, Send, Download } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn, normalizeApiLabel } from "@/lib/utils";
 import { ApiProductRelevance } from "@/lib/data/api-products";
+import { API_DEFAULT_VERSION } from "@/lib/config/site";
 
 export interface ApiField {
   label: string;
@@ -18,6 +19,7 @@ export interface ApiField {
 export interface ApiSampleJson {
   method: "GET" | "POST" | "PUT" | "DELETE";
   endpoint: string;
+  apiVersion?: string;
   request: Record<string, unknown>;
   response: Record<string, unknown>;
 }
@@ -443,7 +445,7 @@ const PreviewContent = ({
           <TabsContent value="json">
             <div className="grid lg:grid-cols-2 gap-6">
               <div className="code-block rounded-2xl overflow-hidden">
-                <TerminalHeader label={`${sampleJson.method} ${sampleJson.endpoint}`} badgeText="REQUEST" />
+                <TerminalHeader label={`${sampleJson.method} /${sampleJson.apiVersion ?? API_DEFAULT_VERSION}${sampleJson.endpoint}`} badgeText="REQUEST" />
                 <JsonHighlight json={sampleJson.request} />
               </div>
               <div className="code-block rounded-2xl overflow-hidden">

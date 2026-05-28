@@ -119,7 +119,7 @@ const PAN_FAQS = [
 export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 
   // -------------------------------------------------------------------------
-  // DMT
+  // MARK: DMT
   // -------------------------------------------------------------------------
   dmt: {
     seo: {
@@ -168,7 +168,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // AePS
+  // MARK: AePS
   // -------------------------------------------------------------------------
   aeps: {
     seo: {
@@ -219,7 +219,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // BBPS
+  // MARK: BBPS
   // -------------------------------------------------------------------------
   bbps: {
     seo: {
@@ -284,7 +284,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // QR Payment
+  // MARK: QR Payment
   // -------------------------------------------------------------------------
   "qr-payment": {
     seo: {
@@ -335,7 +335,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // CMS
+  // MARK: CMS
   // -------------------------------------------------------------------------
   cms: {
     seo: {
@@ -387,7 +387,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // Payout (payment-api)
+  // MARK: Payout
   // -------------------------------------------------------------------------
   payment: {
     seo: {
@@ -436,7 +436,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // UPI Payout
+  // MARK: UPI Payout
   // -------------------------------------------------------------------------
   "upi-payout": {
     seo: {
@@ -550,7 +550,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/pan-lite",
+          endpoint: "/tools/kyc/pan-lite",
           request: {
             initiator_id: "9876543210",
             pan_number: "ABCDE1234F",
@@ -603,7 +603,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/pan-advanced",
+          endpoint: "/tools/kyc/pan-advanced",
           request: {
             initiator_id: "9876543210",
             pan: "ABCDE1234F",
@@ -656,7 +656,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/pan/bulk",
+          endpoint: "/tools/kyc/pan/bulk",
           request: {
             initiator_id: "9876543210",
             client_ref_id: "BULK-PAN-20240101-001",
@@ -790,7 +790,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/bank-account/sync",
+          endpoint: "/tools/kyc/bank-account/sync",
           request: {
             initiator_id: "9876543210",
             user_code: "20810200",
@@ -829,7 +829,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/bank-account/bulk",
+          endpoint: "/tools/kyc/bank-account/bulk",
           request: {
             initiator_id: "9876543210",
             client_ref_id: "BULK-BANK-20240101-001",
@@ -921,7 +921,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/gstin",
+          endpoint: "/tools/kyc/gstin",
           request: {
             initiator_id: "9876543210",
             client_ref_id: "GST-VER-20240101-001",
@@ -961,7 +961,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         sampleJson: {
           method: "POST",
-          endpoint: "/ekoapi/v3/tools/kyc/gstin-with-pan",
+          endpoint: "/tools/kyc/gstin-with-pan",
           request: {
             initiator_id: "9876543210",
             pan: "ABCDE1234F",
@@ -985,7 +985,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // UPI Verification
+  // MARK: UPI VPA
   // -------------------------------------------------------------------------
   upi: {
     seo: {
@@ -1054,7 +1054,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/customer/payment/upi/validate-vpa",
+        endpoint: "/customer/payment/upi/validate-vpa",
         request: {
           initiator_id: "9876543210",
           user_code: "20810200",
@@ -1078,7 +1078,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // DL Verification
+  // MARK: DL
   // -------------------------------------------------------------------------
   dl: {
     seo: {
@@ -1141,7 +1141,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/driving-license",
+        endpoint: "/tools/kyc/driving-license",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "DL-VER-20240101-001",
@@ -1176,7 +1176,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // Vehicle & RC Verification
+  // MARK: Vehicle+RC
   // -------------------------------------------------------------------------
   rc: {
     seo: {
@@ -1252,7 +1252,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/vehicle-rc",
+        endpoint: "/tools/kyc/vehicle-rc",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "RC-VER-20240101-001",
@@ -1344,7 +1344,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/digilocker",
+        endpoint: "/tools/kyc/digilocker",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "DGL-20240101-001",
@@ -1435,7 +1435,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/advance-employment",
+        endpoint: "/tools/kyc/advance-employment",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "EMP-VER-20240101-001",
@@ -1533,7 +1533,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/reverse-geocoding",
+        endpoint: "/tools/kyc/reverse-geocoding",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "GEO-20240101-001",
@@ -1626,7 +1626,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/voter-id",
+        endpoint: "/tools/kyc/voter-id",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "VOTER-20240101-001",
@@ -1724,7 +1724,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/passport",
+        endpoint: "/tools/kyc/passport",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "PASS-20240101-001",
@@ -1812,7 +1812,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/cin",
+        endpoint: "/tools/kyc/cin",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "CIN-20240101-001",
@@ -1902,7 +1902,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/ip",
+        endpoint: "/tools/kyc/ip",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "IP-20240101-001",
@@ -1987,7 +1987,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/name-match",
+        endpoint: "/tools/kyc/name-match",
         request: {
           initiator_id: "9876543210",
           client_ref_id: "NAME-20240101-001",
@@ -2069,7 +2069,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/touras/itr-compliance",
+        endpoint: "/tools/kyc/touras/itr-compliance",
         request: {
           initiator_id: "9876543210",
           user_code: "20810200",
@@ -2148,7 +2148,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/touras/din-verification",
+        endpoint: "/tools/kyc/touras/din-verification",
         request: {
           initiator_id: "9876543210",
           user_code: "20810200",
@@ -2228,7 +2228,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/touras/e-challan",
+        endpoint: "/tools/kyc/touras/e-challan",
         request: {
           initiator_id: "9876543210",
           user_code: "20810200",
@@ -2311,7 +2311,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/touras/check-email",
+        endpoint: "/tools/kyc/touras/check-email",
         request: {
           initiator_id: "9876543210",
           user_code: "20810200",
@@ -2396,7 +2396,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       ],
       sampleJson: {
         method: "POST",
-        endpoint: "/ekoapi/v3/tools/kyc/touras/fetch-fssai",
+        endpoint: "/tools/kyc/touras/fetch-fssai",
         request: {
           initiator_id: "9876543210",
           user_code: "20810200",
