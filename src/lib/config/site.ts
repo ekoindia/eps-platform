@@ -8,6 +8,8 @@ export const SIGNUP_PAGE = "/signup";
 export const SITE_ORG_NAME = "Eko Platform Services";
 export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
 
+export const API_DEFAULT_VERSION = "v3";
+
 export const PARENT_SITE_URL = "https://eko.in";
 export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";
 

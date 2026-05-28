@@ -8,7 +8,7 @@ import { ArrowRight, CheckCircle, Shield, Zap, FileText, HelpCircle, Users, Buil
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
-import type { ApiField, ApiPreviewItem } from "@/components/ApiInputOutputPreview";
+import type { ApiField, ApiPreviewItem, ApiSampleJson } from "@/components/ApiInputOutputPreview";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -62,6 +62,7 @@ export interface ProductPageLayoutProps {
     inputs?: ApiField[];
     outputs?: ApiField[];
     comingSoon?: boolean;
+    sampleJson?: ApiSampleJson;
   };
   inputOutputPreviews?: ApiPreviewItem[];
   heroImage?: string;
@@ -278,6 +279,7 @@ export const ProductPageLayout = ({
                 outputs={inputOutputPreview.outputs}
                 comingSoon={inputOutputPreview.comingSoon}
                 docsUrl={docsUrl}
+                sampleJson={inputOutputPreview.sampleJson}
               />
             )}
           </div>

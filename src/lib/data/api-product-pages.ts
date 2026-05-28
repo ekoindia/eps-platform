@@ -119,7 +119,7 @@ const PAN_FAQS = [
 export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 
   // -------------------------------------------------------------------------
-  // DMT
+  // MARK: DMT
   // -------------------------------------------------------------------------
   dmt: {
     seo: {
@@ -168,7 +168,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // AePS
+  // MARK: AePS
   // -------------------------------------------------------------------------
   aeps: {
     seo: {
@@ -219,7 +219,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // BBPS
+  // MARK: BBPS
   // -------------------------------------------------------------------------
   bbps: {
     seo: {
@@ -284,7 +284,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // QR Payment
+  // MARK: QR Payment
   // -------------------------------------------------------------------------
   "qr-payment": {
     seo: {
@@ -335,7 +335,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // CMS
+  // MARK: CMS
   // -------------------------------------------------------------------------
   cms: {
     seo: {
@@ -387,7 +387,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // Payout (payment-api)
+  // MARK: Payout
   // -------------------------------------------------------------------------
   payment: {
     seo: {
@@ -436,7 +436,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // UPI Payout
+  // MARK: UPI Payout
   // -------------------------------------------------------------------------
   "upi-payout": {
     seo: {
@@ -548,6 +548,36 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "DOB Match", value: "Matched" },
           { label: "Aadhaar Seeding Status", value: "Seeded", icon: Fingerprint },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/pan-lite",
+          request: {
+            initiator_id: "9876543210",
+            pan_number: "ABCDE1234F",
+            name: "Rajesh Kumar",
+            dob: "1994-08-29",
+            client_ref_id: "PAN-REQ-20240101-001",
+            user_code: "20810200",
+            source: "API",
+          },
+          response: {
+            status: 0,
+            response_status_id: 0,
+            data: {
+              pan: "ABCDE1234F",
+              name: "Rajesh Kumar",
+              dob: "1994-08-29",
+              name_match: "Y",
+              dob_match: "Y",
+              pan_status: "E",
+              status: "VALID",
+              aadhaar_seeding_status: "Y",
+              aadhaar_seeding_status_desc: "Aadhaar is linked to PAN",
+            },
+            message: "PAN verification successful",
+            response_type_id: 1388,
+          },
+        },
       },
       {
         apiName: "PAN Advanced",
@@ -571,6 +601,42 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Email", value: "rajesh.kumar@example.com", icon: Mail },
           { label: "Address (Full)", value: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072", icon: MapPin },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/pan-advanced",
+          request: {
+            initiator_id: "9876543210",
+            pan: "ABCDE1234F",
+            name: "Rajesh Kumar",
+            dob: "1994-08-29",
+            client_ref_id: "PAN-ADV-20240101-001",
+            user_code: "20810200",
+          },
+          response: {
+            status: 0,
+            data: {
+              pan: "ABCDE1234F",
+              name_provided: "Rajesh Kumar",
+              registered_name: "Rajesh Kumar",
+              first_name: "Rajesh",
+              last_name: "Kumar",
+              type: "Individual",
+              gender: "M",
+              date_of_birth: "1994-08-29",
+              masked_aadhaar_number: "XXXX XXXX 1234",
+              aadhaar_linked: true,
+              email: "rajesh.kumar@example.com",
+              mobile_number: "9876543210",
+              address: {
+                full_address: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
+                city: "Mumbai",
+                state: "Maharashtra",
+                pincode: 400072,
+              },
+            },
+            message: "PAN Advanced verification successful",
+          },
+        },
       },
       {
         apiName: "Bulk PAN Verification",
@@ -581,7 +647,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         inputs: [
           { label: "Entry 1", value: "John (ABCPV1234D)", icon: User },
           { label: "Entry 2", value: "John Doe (ABCPV1234L)", icon: User },
-          // { label: "Total Entries", value: "2", icon: Users },
         ],
         outputs: [
           { label: "Status", value: "Processing" },
@@ -589,6 +654,25 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Batch ID", value: "BLK789" },
           { label: "Note", value: "Poll Bulk PAN Verification Status API for results", icon: Info },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/pan/bulk",
+          request: {
+            initiator_id: "9876543210",
+            client_ref_id: "BULK-PAN-20240101-001",
+            entries: [
+              { pan: "ABCPV1234D", name: "John", source: "API" },
+              { pan: "ABCPV1234L", name: "John Doe", source: "API" },
+            ],
+          },
+          response: {
+            status: 0,
+            data: {
+              reference_id: 123456,
+            },
+            message: "Bulk PAN verification request accepted. Poll status API for results.",
+          },
+        },
       },
     ],
   },
@@ -696,7 +780,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         endpoint: "/bank-account-verification",
         inputs: [
           { label: "Account Number", value: "1234567890", icon: Hash },
-          // { label: "Bank Name", value: "State Bank of India", icon: Building },
           { label: "IFSC Code", value: "SBIN0001234", icon: Hash },
         ],
         outputs: [
@@ -705,6 +788,29 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Bank", value: "State Bank of India", icon: Building },
           { label: "Branch", value: "MG Road Branch", icon: MapPin },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/bank-account/sync",
+          request: {
+            initiator_id: "9876543210",
+            user_code: "20810200",
+            bank_account: 1234567890,
+            ifsc: "SBIN0001234",
+            client_ref_id: "BANK-VER-20240101-001",
+          },
+          response: {
+            status: 0,
+            data: {
+              account_exists: true,
+              account_name: "Rajesh Kumar",
+              ifsc: "SBIN0001234",
+              bank: "State Bank of India",
+              branch: "MG Road Branch",
+              utr: "431712345678",
+            },
+            message: "Bank account verification successful",
+          },
+        },
       },
       {
         apiName: "Bulk Bank Account Verification",
@@ -714,7 +820,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         inputs: [
           { label: "Entry 1", value: "1234567890, SBIN0001234", icon: Hash },
           { label: "Entry 2", value: "9876543210, HDFC0005678", icon: Hash },
-          // { label: "Total Entries", value: "2", icon: Users },
         ],
         outputs: [
           { label: "Status", value: "Received", icon: CheckCircle },
@@ -722,6 +827,26 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Bulk Verification ID", value: "3356655212", icon: Hash },
           { label: "Note", value: "Poll Bulk Bank Account Verification Status API for results", icon: Info },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/bank-account/bulk",
+          request: {
+            initiator_id: "9876543210",
+            client_ref_id: "BULK-BANK-20240101-001",
+            entries: [
+              { bank_account: "1234567890", ifsc: "SBIN0001234" },
+              { bank_account: "9876543210", ifsc: "HDFC0005678" },
+            ],
+          },
+          response: {
+            status: 0,
+            data: {
+              reference_id: 123456,
+              bulk_verification_id: "3356655212",
+            },
+            message: "Bulk verification request accepted. Poll status API for results.",
+          },
+        },
       },
     ],
   },
@@ -794,6 +919,34 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Registration Date", value: "01/07/2017", icon: Calendar },
           { label: "Update Date", value: "01/02/2022", icon: Calendar },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/gstin",
+          request: {
+            initiator_id: "9876543210",
+            client_ref_id: "GST-VER-20240101-001",
+            gstin: "29ABCDE1234F1Z5",
+            business_name: "Acme Pvt Ltd",
+            user_code: "20810200",
+          },
+          response: {
+            status: 0,
+            data: {
+              gstin: "29ABCDE1234F1Z5",
+              gst_in_status: "Active",
+              valid: true,
+              legal_name_of_business: "Acme Private Limited",
+              constitution_of_business: "Private Limited Company",
+              taxpayer_type: "Regular",
+              nature_of_business_activities: "Wholesale, Supplier of Services",
+              date_of_registration: "01/07/2017",
+              last_update_date: "01/02/2022",
+              state_jurisdiction: "Karnataka",
+              principal_place_address: "123, MG Road, Bangalore, Karnataka 560001",
+            },
+            message: "GSTIN verification successful",
+          },
+        },
       },
       {
         apiName: "Fetch GSTIN with PAN",
@@ -806,12 +959,33 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         outputs: [
           { label: "GSTIN List", value: "29ABCDE1234F1Z5 (Maharashtra / Active), 27ABCDE1234F1Z2 (Karnataka / Inactive)", icon: FileText },
         ],
+        sampleJson: {
+          method: "POST",
+          endpoint: "/tools/kyc/gstin-with-pan",
+          request: {
+            initiator_id: "9876543210",
+            pan: "ABCDE1234F",
+            user_code: "20810200",
+            source: "API",
+          },
+          response: {
+            status: 0,
+            data: {
+              pan: "ABCDE1234F",
+              gstin_list: [
+                { gstin: "29ABCDE1234F1Z5", status: "Active", state: "Maharashtra" },
+                { gstin: "27ABCDE1234F1Z2", status: "Inactive", state: "Karnataka" },
+              ],
+            },
+            message: "GSTIN fetch successful",
+          },
+        },
       },
     ],
   },
 
   // -------------------------------------------------------------------------
-  // UPI Verification
+  // MARK: UPI VPA
   // -------------------------------------------------------------------------
   upi: {
     seo: {
@@ -878,11 +1052,33 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Mobile Number", value: "9876543210", icon: Phone },
         { label: "Transaction ID", value: "3560508954", icon: Hash },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/customer/payment/upi/validate-vpa",
+        request: {
+          initiator_id: "9876543210",
+          user_code: "20810200",
+          customer_vpa: "rajesh.kumar@okicici",
+          client_ref_id: "VPA-VAL-20240101-001",
+          recipient_mobile: "9876543210",
+          name: "Rajesh Kumar",
+          latlong: "28.6139,77.2090",
+        },
+        response: {
+          status: 0,
+          data: {
+            vpa: "rajesh.kumar@okicici",
+            valid: true,
+            recipient_name: "Rajesh Kumar",
+          },
+          message: "VPA validation successful",
+        },
+      },
     },
   },
 
   // -------------------------------------------------------------------------
-  // DL Verification
+  // MARK: DL
   // -------------------------------------------------------------------------
   dl: {
     seo: {
@@ -943,11 +1139,44 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Badge Details", value: "Transport" },
         { label: "COV Details", value: "LMV, MCWG" },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/driving-license",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "DL-VER-20240101-001",
+          dl_number: "MH0220190001234",
+          dob: "1994-08-29",
+          user_code: "20810200",
+          source: "API",
+        },
+        response: {
+          status: 0,
+          data: {
+            dl_number: "MH0220190001234",
+            dob: "1994-08-29",
+            status: "Active",
+            details_of_driving_licence: {
+              name: "Rajesh Kumar",
+              father_or_husband_name: "Suresh Kumar",
+              date_of_issue: "2019-03-15",
+              status: "Active",
+              address_list: [{ complete_address: "123, Andheri West, Mumbai" }],
+            },
+            dl_validity: {
+              non_transport: { from: "2019-03-15", to: "2039-03-14" },
+              transport: { from: "2019-03-15", to: "2039-03-14" },
+            },
+            badge_details: [{ class_of_vehicle: ["LMV", "MCWG"] }],
+          },
+          message: "DL verification successful",
+        },
+      },
     },
   },
 
   // -------------------------------------------------------------------------
-  // Vehicle & RC Verification
+  // MARK: Vehicle+RC
   // -------------------------------------------------------------------------
   rc: {
     seo: {
@@ -1021,6 +1250,38 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Emission Norms", value: "Bharat Stage VI", icon: Leaf },
         { label: "Financier", value: "****** Bank Ltd", icon: Building },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/vehicle-rc",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "RC-VER-20240101-001",
+          vehicle_number: "HR26DA8398",
+          user_code: "20810200",
+          source: "API",
+        },
+        response: {
+          status: 0,
+          data: {
+            reg_no: "HR26DA8398",
+            owner: "Arya ****",
+            rc_status: "Active",
+            class: "Motor Car",
+            vehicle_manufacturer_name: "Mahindra & Mahindra",
+            model: "XUV300",
+            vehicle_color: "Dark Grey",
+            chassis: "MA1**************",
+            engine: "N**********",
+            reg_date: "2020-06-15",
+            rc_expiry_date: "2039-06-14",
+            vehicle_insurance_company_name: "Tata AIG General Insurance",
+            vehicle_insurance_upto: "2025-06-14",
+            blacklist_status: "Not Blacklisted",
+            is_commercial: false,
+          },
+          message: "Vehicle RC verification successful",
+        },
+      },
     },
   },
 
@@ -1070,7 +1331,39 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { q: "Does it eliminate physical document collection?", a: "Yes, the API enables fully paperless document verification, eliminating manual collection." },
       { q: "How do I integrate?", a: "Sign up on Connect App, submit documents, integrate the REST API, and go live." },
     ],
-    // inputOutputPreview: comingSoonPreview("DigiLocker"),
+    inputOutputPreview: {
+      apiName: "DigiLocker",
+      inputs: [
+        { label: "Document Requested", value: "AADHAAR", icon: FileText },
+        { label: "Redirect URL", value: "https://yourapp.com/callback", icon: Globe },
+      ],
+      outputs: [
+        { label: "Status", value: "Success", icon: CheckCircle },
+        { label: "DigiLocker URL", value: "https://digilocker.gov.in/link-verification?verification_id=123456", icon: Globe },
+        { label: "Reference ID", value: "12345", icon: Hash },
+      ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/digilocker",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "DGL-20240101-001",
+          document_requested: ["AADHAAR"],
+          redirect_url: "https://yourapp.com/callback",
+          user_code: "20810200",
+        },
+        response: {
+          status: 0,
+          data: {
+            reference_id: 12345,
+            url: "https://digilocker.gov.in/link-verification?verification_id=123456",
+            document_requested: ["AADHAAR"],
+            redirect_url: "https://yourapp.com/callback",
+          },
+          message: "DigiLocker URL created successfully",
+        },
+      },
+    },
   },
 
   // -------------------------------------------------------------------------
@@ -1140,6 +1433,40 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "EPFO Details…", value: "PF Filing?, Name Unique?, …", icon: Info },
         { label: "Employer Info…", value: "Name, Setup Date, PF Filing Details, …", icon: Info },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/advance-employment",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "EMP-VER-20240101-001",
+          phone: "9876543210",
+          source: "API",
+          user_code: "20810200",
+        },
+        response: {
+          status: 0,
+          data: {
+            uan_details: [{
+              uan: "1001234567890",
+              basic_details: {
+                employee_name: "Rajesh Kumar",
+                gender: "Male",
+                dob: "1994-08-29",
+                phone: "9876543210",
+                aadhaar_verified: false,
+              },
+              employment_details: {
+                member_id: "MH/BOM/12345",
+                establishment_name: "Acme Pvt Ltd",
+                joining_date: "2019-04-01",
+                exit_date: "2023-06-30",
+                leave_reason: "Resignation",
+              },
+            }],
+          },
+          message: "Employee verification successful",
+        },
+      },
     },
   },
 
@@ -1204,6 +1531,33 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "State Code", value: "MH", icon: MapPin },
         { label: "Country Code", value: "IN", icon: MapPin },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/reverse-geocoding",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "GEO-20240101-001",
+          latitude: "19.0760",
+          longitude: "72.8777",
+          user_code: "20810200",
+          source: "API",
+        },
+        response: {
+          status: 0,
+          data: {
+            latitude: "19.0760",
+            longitude: "72.8777",
+            address: "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus",
+            city: "Mumbai",
+            state: "Maharashtra",
+            statecode: "MH",
+            countrycode: "IN",
+            pincode: "400001",
+            score: 0.95,
+          },
+          message: "Reverse geocoding successful",
+        },
+      },
     },
   },
 
@@ -1270,6 +1624,40 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Parliamentary Constituency", value: "Gautam Buddha Nagar", icon: MapPin },
         { label: "Polling Station", value: "Govt. School Noida Sec 5", icon: MapPin },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/voter-id",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "VOTER-20240101-001",
+          epic_number: "ABC1234567",
+          name: "Rajesh Kumar",
+          source: "API",
+          user_code: "20810200",
+        },
+        response: {
+          status: 0,
+          data: {
+            name: "Rajesh Kumar",
+            age: "34",
+            dob: "1994-08-29",
+            gender: "Male",
+            father_name: "Suresh Kumar",
+            epic_number: "ABC1234567",
+            address: "Ward 12, Sector 5, Noida",
+            state: "Uttar Pradesh",
+            assembly_constituency: "Noida (62)",
+            parliamentary_constituency: "Gautam Buddha Nagar",
+            polling_station: "Govt. School Noida Sec 5",
+            split_address: {
+              district: ["Gautam Buddha Nagar"],
+              city: ["Noida"],
+              pincode: "201301",
+            },
+          },
+          message: "Voter ID verification successful",
+        },
+      },
     },
   },
 
@@ -1334,6 +1722,30 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Application Received Date", value: "2023-01-15" },
         { label: "Status", value: "Valid", icon: CheckCircle },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/passport",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "PASS-20240101-001",
+          file_number: "J8369854",
+          dob: "1994-08-29",
+          name: "Rajesh Kumar",
+          user_code: "20810200",
+          source: "API",
+        },
+        response: {
+          status: 0,
+          data: {
+            file_number: "J8369854",
+            name: "Rajesh Kumar",
+            dob: "1994-08-29",
+            application_type: "Normal",
+            application_received_date: "2023-01-15",
+          },
+          message: "Passport verification successful",
+        },
+      },
     },
   },
 
@@ -1398,6 +1810,34 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Director 1", value: "Rahul Mehta (DIN: 07168822) — Director", icon: User },
         { label: "Director 2", value: "Priya Sharma (DIN: 07168826) — Director", icon: User },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/cin",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "CIN-20240101-001",
+          cin: "U72900KA2015PTC082988",
+          user_code: "20810200",
+          source: "API",
+        },
+        response: {
+          status: 0,
+          data: {
+            cin: "U72900KA2015PTC082988",
+            company_name: "Acme Technologies Pvt Ltd",
+            registration_number: 82987,
+            incorporation_date: "2015-09-23",
+            cin_status: "Active",
+            email: "contact@acmetech.in",
+            incorporation_country: "India",
+            director_details: [
+              { name: "Rahul Mehta", din: "07168822", designation: "Director", dob: "1985-03-12" },
+              { name: "Priya Sharma", din: "07168826", designation: "Director", dob: "1988-07-25" },
+            ],
+          },
+          message: "CIN verification successful",
+        },
+      },
     },
   },
 
@@ -1460,6 +1900,31 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "City Risk Score", value: "12 / 100", icon: AlertTriangle },
         { label: "Proxy Risk Score", value: "0 / 100", icon: AlertTriangle },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/ip",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "IP-20240101-001",
+          ip_address: "103.21.58.193",
+          source: "API",
+          user_code: "20810200",
+        },
+        response: {
+          status: 0,
+          data: {
+            ip_address: "103.21.58.193",
+            proxy_type: "None",
+            country_code: "IN",
+            country_name: "India",
+            region_name: "Maharashtra",
+            city_name: "Mumbai",
+            city_risk_score: "12",
+            proxy_type_risk_score: "0",
+          },
+          message: "IP verification successful",
+        },
+      },
     },
   },
 
@@ -1509,19 +1974,40 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { q: "What examples of Indian name variations does it handle?", a: "Initials (S K Mishra → Satish Kumar Mishra), subsets (Harsh Kishore → HKishore), salutations (Aditya Roy S/O Jatin), missing middle names, extra spaces, and phonetic/regional spelling variants." },
       { q: "Can I use this for GST ITC fraud detection?", a: "Yes. Cross-validating supplier PAN name, GST trade name, and bank account holder name catches fake invoice fraud that manual review misses." },
     ],
-    inputOutputPreview:
-      {
-        apiName: "Good Partial Match",
-        inputs: [
-          { label: "Name 1", value: "S K Mishra", icon: User },
-          { label: "Name 2", value: "Satish Kumar Mishra", icon: User },
-        ],
-        outputs: [
-          { label: "Status", value: "Success", icon: CheckCircle },
-          { label: "Match Score", value: "0.92" },
-          { label: "Match Category", value: "Good Partial Match", icon: CheckCircle },
-        ],
+    inputOutputPreview: {
+      apiName: "Good Partial Match",
+      inputs: [
+        { label: "Name 1", value: "S K Mishra", icon: User },
+        { label: "Name 2", value: "Satish Kumar Mishra", icon: User },
+      ],
+      outputs: [
+        { label: "Status", value: "Success", icon: CheckCircle },
+        { label: "Match Score", value: "0.92" },
+        { label: "Match Category", value: "Good Partial Match", icon: CheckCircle },
+      ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/name-match",
+        request: {
+          initiator_id: "9876543210",
+          client_ref_id: "NAME-20240101-001",
+          name_1: "S K Mishra",
+          name_2: "Satish Kumar Mishra",
+          source: "API",
+          user_code: "20810200",
+        },
+        response: {
+          status: 0,
+          data: {
+            name_1: "S K Mishra",
+            name_2: "Satish Kumar Mishra",
+            score: 0.92,
+            reason: "Names match with initials expanded",
+          },
+          message: "Name match successful",
+        },
       },
+    },
   },
 
   // -------------------------------------------------------------------------
@@ -1581,6 +2067,25 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Assessment Year", value: "2024-25" },
         { label: "Compliance Status", value: "Compliant", icon: Shield },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/touras/itr-compliance",
+        request: {
+          initiator_id: "9876543210",
+          user_code: "20810200",
+          pan_number: "ABCDE1234F",
+        },
+        response: {
+          status: 0,
+          data: {
+            pan_number: "ABCDE1234F",
+            itr_filed: true,
+            assessment_year: "2024-25",
+            compliance_status: "Compliant",
+          },
+          message: "ITR compliance check successful",
+        },
+      },
     },
   },
 
@@ -1641,6 +2146,26 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Designation", value: "Director" },
         { label: "Associated Company", value: "Eko India Financial Services Pvt Ltd", icon: Building },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/touras/din-verification",
+        request: {
+          initiator_id: "9876543210",
+          user_code: "20810200",
+          din_number: "06731826",
+        },
+        response: {
+          status: 0,
+          data: {
+            din: "06731826",
+            director_name: "Abhishek Sagar",
+            din_status: "Active",
+            designation: "Director",
+            company_name: "Eko India Financial Services Pvt Ltd",
+          },
+          message: "DIN verification successful",
+        },
+      },
     },
   },
 
@@ -1701,6 +2226,28 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Total Fine Amount", value: "₹3,500", icon: IndianRupee },
         { label: "Latest Violation", value: "Overspeeding — 2024-12-10" },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/touras/e-challan",
+        request: {
+          initiator_id: "9876543210",
+          user_code: "20810200",
+          registration_number: "MH02AB1234",
+        },
+        response: {
+          status: 0,
+          data: {
+            vehicle_number: "MH02AB1234",
+            pending_challans: 2,
+            total_fine_amount: 3500,
+            challans: [
+              { violation: "Overspeeding", date: "2024-12-10", fine: 2000, status: "Pending" },
+              { violation: "Red Light Jump", date: "2024-11-05", fine: 1500, status: "Pending" },
+            ],
+          },
+          message: "E-Challan check successful",
+        },
+      },
     },
   },
 
@@ -1762,6 +2309,27 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Domain Age", value: "6,970 days (~19 years)", icon: Calendar },
         { label: "MX Records", value: "aspmx.l.google.com (+ 4 more)", icon: Shield },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/touras/check-email",
+        request: {
+          initiator_id: "9876543210",
+          user_code: "20810200",
+          email: "rajesh.kumar@example.com",
+        },
+        response: {
+          status: 0,
+          data: {
+            email: "rajesh.kumar@example.com",
+            domain: "example.com",
+            domain_age_days: 6970,
+            mx_records: ["aspmx.l.google.com", "alt1.aspmx.l.google.com"],
+            is_valid: true,
+            is_disposable: false,
+          },
+          message: "Email verification successful",
+        },
+      },
     },
   },
 
@@ -1826,6 +2394,29 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "PIN Code", value: "400001", icon: MapPin },
         { label: "Expiry Date", value: "2026-03-15", icon: Calendar },
       ],
+      sampleJson: {
+        method: "POST",
+        endpoint: "/tools/kyc/touras/fetch-fssai",
+        request: {
+          initiator_id: "9876543210",
+          user_code: "20810200",
+          fssai: "11521998000045",
+        },
+        response: {
+          status: 0,
+          data: {
+            fssai_number: "11521998000045",
+            license_status: "Active",
+            license_category: "State License",
+            business_name: "Spice Garden Restaurant",
+            address: "123 Main Street, Mumbai, Maharashtra",
+            state: "Maharashtra",
+            pincode: "400001",
+            expiry_date: "2026-03-15",
+          },
+          message: "FSSAI verification successful",
+        },
+      },
     },
   },
 };
