@@ -9,6 +9,7 @@
 import path from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
 import { createServer } from "vite";
+import { imagetools } from "vite-imagetools";
 
 export function prerenderPlugin(): Plugin {
   let resolvedConfig: ResolvedConfig | undefined;
@@ -35,6 +36,7 @@ export function prerenderPlugin(): Plugin {
         root: resolvedConfig.root,
         configFile: false,
         logLevel: "warn",
+        plugins: [imagetools()],
         server: { middlewareMode: true, hmr: false },
         appType: "custom",
         optimizeDeps: { noDiscovery: true, include: [] },

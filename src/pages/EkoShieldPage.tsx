@@ -12,7 +12,8 @@ import {
   IdCard, FileText, BadgeCheck, FileCheck, FolderCheck, Building,
   Smartphone, Briefcase, Car, Globe, Stethoscope, Receipt,
 } from "lucide-react";
-import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png";
+import { Picture } from "@/components/Picture";
+import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png?w=400;800;1075&format=avif;webp&as=picture";
 // import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 /* ─── Data ─── */
@@ -171,7 +172,7 @@ const EkoShieldPage = () => {
               className="max-w-5xl mx-auto mt-16 relative">
               <div className="absolute inset-0 bg-eko-gold/10 blur-[80px] rounded-3xl" />
               <div className="relative rounded-2xl overflow-hidden flex justify-center">
-                <img src={heroDashboard} alt="Eko Shield verification dashboard" width={1075} height={655} className="w-full h-auto max-w-[800px]" loading="eager" />
+                <Picture src={heroDashboard} alt="Eko Shield verification dashboard" sizes="(max-width: 768px) 90vw, 800px" className="w-full h-auto max-w-[800px]" loading="eager" fetchPriority="high" />
               </div>
             </FadeIn>
           </div>

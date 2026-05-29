@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
+import { imagetools } from "vite-imagetools";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import path from "path";
 import { generateMarkdownPlugin } from "./vite-plugin-generate-markdown";
 import { prerenderPlugin } from "./ssg/plugin";
@@ -16,9 +18,18 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    imagetools(),
     tailwindcss(),
     generateMarkdownPlugin(),
     mode !== "development" && prerenderPlugin(),
+    // svgo for svgs + sharp for png/jpg. imagetools emits only avif/webp,
+    // so png/jpg here only hits public assets (e.g. the OG preview) and any
+    // normally-bundled raster — never imagetools output, so no double-encode.
+    ViteImageOptimizer({
+      test: /\.(svg|png|jpe?g)$/i,
+      png: { quality: 80 },
+      jpeg: { quality: 80 },
+    }),
   ].filter(Boolean),
   build: {
     cssMinify: "lightningcss",

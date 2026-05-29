@@ -35,7 +35,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
+import type { ProductPageLayoutProps, FAQ } from "@/components/ProductPageLayout";
 
 // ---------------------------------------------------------------------------
 // Hero image assets
@@ -43,17 +43,17 @@ import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
 import moneyTransferImg from "@/assets/money-transfer-api.svg";
 import aepsImg from "@/assets/aeps-main.svg";
 import bbpsImg from "@/assets/utility-bill-payment.svg";
-import qrImg from "@/assets/qr-payment.png";
+import qrImg from "@/assets/qr-payment.png?w=256;512&format=avif;webp&as=picture";
 import cmsImg from "@/assets/assisted-cash-management.svg";
 import payoutImg from "@/assets/salary-disbursal.svg";
 // upi-payout reuses payoutImg
 import panImg from "@/assets/pan-verification.svg";
 import aadhaarImg from "@/assets/aadhaar-verification.svg";
 import bankImg from "@/assets/bank-verification.svg";
-import gstImg from "@/assets/gst-verification.png";
-import dlImg from "@/assets/dl-verification-2.png";
-import upiVerifyImg from "@/assets/upi-hero.png";
-import employeeImg from "@/assets/employee_verification.png";
+import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
+import dlImg from "@/assets/dl-verification-2.png?w=256;512&format=avif;webp&as=picture";
+import upiVerifyImg from "@/assets/upi-hero.png?w=256;512&format=avif;webp&as=picture";
+import employeeImg from "@/assets/employee_verification.png?w=256;512&format=avif;webp&as=picture";
 
 // ---------------------------------------------------------------------------
 // SEO helper type + full page config type
@@ -108,9 +108,35 @@ const VERIFICATION_STEPS_BASE = [
 /** PAN entry FAQs — also used to generate jsonLd FAQPage below */
 const PAN_FAQS = [
   { q: "How fast is PAN verification?", a: "PAN verification is real-time with sub-second response times for instant identity validation." },
-  { q: "What details are returned?", a: "The API returns validated PAN holder name, PAN status, and other relevant identity details." },
-  { q: "Is it suitable for high volumes?", a: "Yes, the API is designed to handle large-scale verification volumes reliably without performance degradation." },
-  { q: "How do I get started?", a: "Sign up on Connect App, submit necessary documents, integrate the API, and start verifying PAN details." },
+  { q: "What details are returned?", a: "PAN Lite returns PAN status, name match, DOB match, and Aadhaar seeding status. PAN Advanced returns holder name, PAN type, gender, date of birth, masked Aadhaar number, Aadhaar linking status, mobile number, email, and address." },
+];
+
+/** FAQs appended to every API product page after product-specific FAQs */
+const COMMON_API_FAQS: FAQ[] = [
+  {
+    q: "How do I get started?",
+    a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
+  },
+  {
+    q: "Can the API handle high volumes?",
+    a: "Yes. The API is designed to handle large-scale volumes reliably without performance degradation.",
+  },
+  {
+    q: "How does API authentication work?",
+    a: "Every request requires your developer_key and a secret-key-timestamp signature passed via HTTP headers. Keys are generated from the Connect App dashboard after KYC approval.",
+  },
+  {
+    q: "How are errors and failures reported?",
+    a: "Every response includes a status code and a human-readable message. Failed requests return specific error codes indicating the reason, so you can handle each case programmatically.",
+  },
+  {
+    q: "Is there a sandbox environment for testing?",
+    a: "Yes. A full sandbox environment is available immediately on signup. You can test your integration end-to-end before going live — no commitment required.",
+  },
+  {
+    q: "How is API usage billed?",
+    a: "Usage is billed per successful API call with no minimum commitment. Volume-based pricing tiers are available — contact our team for detailed rates.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -721,8 +747,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     faqs: [
       { q: "Is Aadhaar verification consent-based?", a: "Yes, all Aadhaar verification flows are designed with explicit user consent at the core, ensuring transparency and compliance." },
       { q: "How fast is the verification?", a: "Verification is real-time with instant results returned in structured response payloads." },
-      { q: "Can it handle high volumes?", a: "Yes, the architecture is built to handle large-scale KYC verification volumes reliably." },
-      { q: "How do I integrate?", a: "Sign up on Connect App, submit documents, integrate the REST API, and go live." },
     ],
     // inputOutputPreview: comingSoonPreview("Aadhaar Verification"),
   },
@@ -893,10 +917,9 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get GST Verification API Access",
     },
     faqs: [
-      { q: "What details are returned in GST verification?", a: "The API returns GSTIN status, legal business name, trade name, registration date, and compliance filing status." },
+      { q: "What details are returned in GST verification?", a: "The API returns GSTIN status, legal business name, trade name, constitution of business, taxpayer type, nature of business activities, registration date, last update date, state jurisdiction, and principal place of address." },
       { q: "Can I verify multiple GSTINs?", a: "Yes, the API supports high-volume verification for batch processing needs." },
       { q: "Is the data real-time?", a: "Yes, GSTIN details are verified in real time against official records." },
-      { q: "How do I get started?", a: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." },
     ],
     inputOutputPreviews: [
       {
@@ -1070,6 +1093,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
             vpa: "rajesh.kumar@okicici",
             valid: true,
             recipient_name: "Rajesh Kumar",
+            mobile_number: "9876543210",
+            transaction_id: "3560508954",
           },
           message: "VPA validation successful",
         },
@@ -1121,8 +1146,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     faqs: [
       { q: "How fast is DL verification?", a: "Verification is real-time with instant structured responses for driving license details." },
       { q: "Can I use it for driver onboarding?", a: "Yes, it's ideal for onboarding drivers, delivery partners, and agents requiring identity confirmation." },
-      { q: "Does it support high volumes?", a: "Yes, the API is built to handle large verification volumes reliably." },
-      { q: "How do I integrate?", a: "Sign up on Connect App, submit documents, integrate the REST API, and go live." },
     ],
     inputOutputPreview: {
       apiName: "DL Verification",
@@ -1219,13 +1242,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Vehicle & RC Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "Owner name, RC status, chassis and engine number, manufacturer, model, color, body type, fuel type, registration and expiry dates, insurance company and validity, blacklist status, challan details, permit info, financier, and more — 50+ fields in a single call." },
+      { q: "What details are returned?", a: "Owner name, RC status, vehicle class, fuel type, manufacturer, model, body type, color, chassis and engine number, registration and expiry dates, insurance company and validity, blacklist status, emission norms, and financier details." },
       { q: "Is pan-India coverage available?", a: "Yes, we cover all states and union territories through integration with the VAHAN national database." },
       { q: "Can I verify commercial vehicles?", a: "Yes, commercial vehicles return additional details like permit type, permit validity, fitness certificate status, national permit, and tax status." },
       { q: "How accurate is the verification?", a: "All verifications are done against official RTO databases (VAHAN), ensuring 100% accuracy of returned data. Updates to vehicle information reflect in the source within 15–30 days." },
       { q: "Is real-time verification available?", a: "Yes, all verifications are performed in real-time with sub-second response times for most queries." },
       { q: "Can I check if a vehicle is blacklisted?", a: "Yes, the API returns blacklist status along with detailed reasons if the vehicle has been blacklisted." },
-      { q: "How do I get started?", a: "Sign up on Connect App, submit documents, integrate the REST API, and go live." },
     ],
     inputOutputPreview: {
       apiName: "Vehicle & RC Verification",
@@ -1276,6 +1298,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
             rc_expiry_date: "2039-06-14",
             vehicle_insurance_company_name: "Tata AIG General Insurance",
             vehicle_insurance_upto: "2025-06-14",
+            fuel_type: "Petrol",
+            body_type: "Hard Top",
+            emission_norms: "Bharat Stage VI",
+            financier: "****** Bank Ltd",
             blacklist_status: "Not Blacklisted",
             is_commercial: false,
           },
@@ -1329,7 +1355,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { q: "Is DigiLocker access consent-based?", a: "Yes, documents are fetched only after explicit user consent, ensuring full transparency." },
       { q: "What documents can be accessed?", a: "You can access government-issued digital documents like Aadhaar, PAN, driving license, and more through DigiLocker." },
       { q: "Does it eliminate physical document collection?", a: "Yes, the API enables fully paperless document verification, eliminating manual collection." },
-      { q: "How do I integrate?", a: "Sign up on Connect App, submit documents, integrate the REST API, and go live." },
     ],
     inputOutputPreview: {
       apiName: "DigiLocker",
@@ -1410,8 +1435,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     faqs: [
       { q: "What can be verified?", a: "Employee identity details including name, ID documents, and related information can be verified digitally." },
       { q: "Does it integrate with HRMS?", a: "Yes, the API integrates seamlessly into HRMS, ATS, and onboarding platforms." },
-      { q: "Can it handle large hiring volumes?", a: "Yes, the API is designed to support large-scale hiring and verification needs." },
-      { q: "How do I get started?", a: "Sign up on Connect App, submit documents, integrate the REST API, and start verifying." },
     ],
     inputOutputPreview: {
       apiName: "Employee Verification",
@@ -1605,7 +1628,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { q: "What details are returned?", a: "The API returns voter name (English and regional), age, date of birth, gender, full address, assembly and parliamentary constituency, father/guardian name, and polling station details." },
       { q: "How fast is Voter ID verification?", a: "Verification is real-time with sub-second response times for instant identity validation." },
       { q: "Can I use this for address verification?", a: "Yes. The API returns structured address data including district, city, state, and pincode — useful for address verification workflows." },
-      { q: "Is it suitable for bulk verification?", a: "Yes. The API is designed to handle high-volume verification requests reliably." },
     ],
     inputOutputPreview: {
       apiName: "Voter ID Verification",
@@ -1790,7 +1812,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get CIN Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, DOB, address)." },
+      { q: "What details are returned?", a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, and date of birth)." },
       { q: "Can I verify LLPs with this API?", a: "CIN is specific to companies registered under the Companies Act. LLPs use LLPIN — contact us for LLP verification availability." },
       { q: "How fast is CIN verification?", a: "Verification is real-time with sub-second response times." },
       { q: "Is director information included?", a: "Yes. The API returns director details including name, DIN, designation, and date of birth for all directors listed in MCA records." },
@@ -2052,7 +2074,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     faqs: [
       { q: "What input is required?", a: "Only the PAN number is required to check ITR compliance status." },
-      { q: "What details are returned?", a: "The API returns ITR filing status and compliance information associated with the PAN number." },
+      { q: "What details are returned?", a: "The API returns ITR filing status, assessment year, and compliance status for the given PAN number." },
       { q: "Can I use this for lending decisions?", a: "Yes. ITR compliance status is a strong signal for borrower creditworthiness, especially for MSMEs without traditional credit bureau scores." },
       { q: "How fast is the check?", a: "The API returns results in real time with sub-second response times." },
     ],
@@ -2375,7 +2397,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     faqs: [
       { q: "What input is required?", a: "Only the FSSAI license number is required for verification." },
-      { q: "What details are returned?", a: "The API returns FSSAI license status, registered business name, address, and license category details." },
+      { q: "What details are returned?", a: "The API returns FSSAI license status, license category, registered business name, address, state, PIN code, and license expiry date." },
       { q: "Is this mandatory for food delivery platforms?", a: "Yes. FSSAI regulations require food delivery platforms to verify that all listed restaurants and cloud kitchens have valid FSSAI licenses." },
       { q: "How fast is the check?", a: "The API returns results in real time with sub-second response times." },
     ],
@@ -2420,6 +2442,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
   },
 };
+
+for (const page of Object.values(API_PRODUCT_PAGES)) {
+  page.faqs = [...page.faqs, ...COMMON_API_FAQS];
+}
 
 // Suppress unused-variable warnings for icons that are imported but only used
 // inside object literals (TypeScript sees them as referenced).

@@ -14,6 +14,8 @@ import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-chat";
 // import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
+import { Picture, type PictureSource } from "@/components/Picture";
+import { Helmet } from "react-helmet-async";
 import { ApiChip } from "./ApiChip";
 import { normalizeApiLabel } from "@/lib/utils";
 import { getSolutionPacksForApi } from "@/lib/data/solutions";
@@ -65,9 +67,12 @@ export interface ProductPageLayoutProps {
     sampleJson?: ApiSampleJson;
   };
   inputOutputPreviews?: ApiPreviewItem[];
-  heroImage?: string;
+  heroImage?: PictureSource;
   productId?: string;
 }
+
+/** Hero image `sizes`, shared by the <Picture> and its preload <link>. */
+const HERO_IMAGE_SIZES = "(max-width: 768px) 80vw, 512px";
 
 const industryIcons: Record<string, LucideIcon> = {
   fintech: Building2,
@@ -196,13 +201,29 @@ export const ProductPageLayout = ({
               {/* Right: Hero Image or Lead Form */}
               {heroImage ? (
                 <FadeIn onView={false} delay={300} className="relative flex items-center justify-center">
+                  {/* Preload the LCP hero image so the browser starts the
+                      request during <head> parse (Lighthouse "LCP request
+                      discovery"), instead of when the in-body <img> is reached. */}
+                  <Helmet>
+                    {typeof heroImage === "string" ? (
+                      <link rel="preload" as="image" href={heroImage} fetchPriority="high" />
+                    ) : (
+                      <link
+                        rel="preload"
+                        as="image"
+                        href={heroImage.img.src}
+                        imageSrcSet={Object.values(heroImage.sources)[0]}
+                        imageSizes={HERO_IMAGE_SIZES}
+                        fetchPriority="high"
+                      />
+                    )}
+                  </Helmet>
                   <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
                   <div className="relative animate-float perspective-[1000px]">
-                    <img
+                    <Picture
                       src={heroImage}
                       alt={heroTitle}
-                      width={512}
-                      height={512}
+                      sizes={HERO_IMAGE_SIZES}
                       fetchPriority="high"
                       className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
                     />
