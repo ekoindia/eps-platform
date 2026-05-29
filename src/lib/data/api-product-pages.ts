@@ -43,17 +43,17 @@ import type { ProductPageLayoutProps, FAQ } from "@/components/ProductPageLayout
 import moneyTransferImg from "@/assets/money-transfer-api.svg";
 import aepsImg from "@/assets/aeps-main.svg";
 import bbpsImg from "@/assets/utility-bill-payment.svg";
-import qrImg from "@/assets/qr-payment.png";
+import qrImg from "@/assets/qr-payment.png?w=256;512&format=avif;webp&as=picture";
 import cmsImg from "@/assets/assisted-cash-management.svg";
 import payoutImg from "@/assets/salary-disbursal.svg";
 // upi-payout reuses payoutImg
 import panImg from "@/assets/pan-verification.svg";
 import aadhaarImg from "@/assets/aadhaar-verification.svg";
 import bankImg from "@/assets/bank-verification.svg";
-import gstImg from "@/assets/gst-verification.png";
-import dlImg from "@/assets/dl-verification-2.png";
-import upiVerifyImg from "@/assets/upi-hero.png";
-import employeeImg from "@/assets/employee_verification.png";
+import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
+import dlImg from "@/assets/dl-verification-2.png?w=256;512&format=avif;webp&as=picture";
+import upiVerifyImg from "@/assets/upi-hero.png?w=256;512&format=avif;webp&as=picture";
+import employeeImg from "@/assets/employee_verification.png?w=256;512&format=avif;webp&as=picture";
 
 // ---------------------------------------------------------------------------
 // SEO helper type + full page config type

@@ -14,6 +14,7 @@ import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-chat";
 // import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
+import { Picture, type PictureSource } from "@/components/Picture";
 import { ApiChip } from "./ApiChip";
 import { normalizeApiLabel } from "@/lib/utils";
 import { getSolutionPacksForApi } from "@/lib/data/solutions";
@@ -65,7 +66,7 @@ export interface ProductPageLayoutProps {
     sampleJson?: ApiSampleJson;
   };
   inputOutputPreviews?: ApiPreviewItem[];
-  heroImage?: string;
+  heroImage?: PictureSource;
   productId?: string;
 }
 
@@ -198,11 +199,10 @@ export const ProductPageLayout = ({
                 <FadeIn onView={false} delay={300} className="relative flex items-center justify-center">
                   <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
                   <div className="relative animate-float perspective-[1000px]">
-                    <img
+                    <Picture
                       src={heroImage}
                       alt={heroTitle}
-                      width={512}
-                      height={512}
+                      sizes="(max-width: 768px) 80vw, 512px"
                       fetchPriority="high"
                       className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
                     />

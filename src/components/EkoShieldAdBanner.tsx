@@ -4,7 +4,8 @@ import { Shield, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/FadeIn";
-import ekoshieldMockup from "@/assets/ekoshield/ekoshield-imac-mockup-640x701.png";
+import { Picture } from "@/components/Picture";
+import ekoshieldMockup from "@/assets/ekoshield/ekoshield-imac-mockup-640x701.png?w=320;640&format=avif;webp&as=picture";
 
 /* ─── Types ─── */
 
@@ -137,11 +138,10 @@ const EkoShieldAdBanner = ({
           WebkitMaskComposite: "source-in",
         }}
       >
-        <img
+        <Picture
           src={ekoshieldMockup}
           alt="Eko Shield dashboard mockup"
-          width={640}
-          height={701}
+          sizes="640px"
           className="absolute bottom-0 right-0 h-[130%] w-auto object-contain object-right-bottom"
           loading="lazy"
         />

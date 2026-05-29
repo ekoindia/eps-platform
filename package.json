@@ -84,10 +84,14 @@
     "jsdom": "^20.0.3",
     "lightningcss": "^1.32.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
+    "svgo": "^4.0.1",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
+    "vite-imagetools": "^7.1.1",
+    "vite-plugin-image-optimizer": "^2.0.3",
     "vitest": "^3.2.4"
   }
 }

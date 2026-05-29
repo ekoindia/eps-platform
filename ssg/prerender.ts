@@ -3,6 +3,8 @@
  * a static HTML file, and writes them into the build output directory.
  */
 import { promises as fs } from "node:fs";
+import { createHash } from "node:crypto";
+import { Writable } from "node:stream";
 import path from "node:path";
 import { minify } from "html-minifier-terser";
 import Beasties from "beasties";
@@ -52,6 +54,14 @@ export async function prerenderAllPages(
   // Also build a chunk map (source file → hashed URL) for preload injection.
   const { assetMap, chunkMap } = await buildMaps(outDir);
 
+  // imagetools renders `/@imagetools/<id>` URLs during SSR that have no entry
+  // in Vite's manifest (different from the build's hashed filenames, and the
+  // manifest only keeps one width per image). Map each dev id → hashed prod
+  // file by content hash: the SSR middleware serves the exact bytes that the
+  // build emitted to dist/assets, so sha256 matches them unambiguously.
+  const imageHashToUrl = await buildImageContentHashMap(outDir);
+  const imagetoolsIdCache = new Map<string, string>();
+
   // Critical CSS extractor — inlines above-fold CSS and defers the rest
   const beasties = new Beasties({
     path: outDir,
@@ -74,6 +84,12 @@ export async function prerenderAllPages(
     try {
       let html = renderRoute(route, template, renderPage);
       html = replaceAssetUrls(html, assetMap);
+      html = await replaceImagetoolsUrls(
+        html,
+        ssrServer,
+        imageHashToUrl,
+        imagetoolsIdCache,
+      );
       html = injectRoutePreload(html, route, routeChunkMap, chunkMap);
       html = addFetchPriorityLow(html);
       html = await beasties.process(html);
@@ -220,4 +236,114 @@ function replaceAssetUrls(
   }
 
   return html;
+}
+
+/* ------------------------------------------------------------------ */
+/*  imagetools URL helpers                                              */
+/* ------------------------------------------------------------------ */
+
+const IMAGETOOLS_URL_RE = /\/@imagetools\/[0-9a-f]+/g;
+const IMAGE_EXTENSIONS = new Set([".avif", ".webp", ".png", ".jpg", ".jpeg"]);
+
+/**
+ * Hashes every emitted image in dist/assets so SSR `/@imagetools/<id>` URLs
+ * can be matched to their hashed production filename by content.
+ * Returns sha256(content) → "/assets/<file>".
+ */
+async function buildImageContentHashMap(
+  outDir: string,
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const assetsDir = path.join(outDir, "assets");
+
+  let files: string[];
+  try {
+    files = await fs.readdir(assetsDir);
+  } catch {
+    return map;
+  }
+
+  await Promise.all(
+    files
+      .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
+      .map(async (file) => {
+        const buf = await fs.readFile(path.join(assetsDir, file));
+        map.set(sha256(buf), "/assets/" + file);
+      }),
+  );
+
+  return map;
+}
+
+/**
+ * Rewrites every `/@imagetools/<id>` dev URL in the HTML to its hashed
+ * production URL. For each unseen id, fetches the bytes the imagetools dev
+ * middleware serves, hashes them, and looks up the matching dist file.
+ */
+async function replaceImagetoolsUrls(
+  html: string,
+  ssrServer: ViteDevServer,
+  imageHashToUrl: Map<string, string>,
+  idCache: Map<string, string>,
+): Promise<string> {
+  if (imageHashToUrl.size === 0) return html;
+
+  const matches = html.match(IMAGETOOLS_URL_RE);
+  if (!matches) return html;
+
+  for (const devUrl of new Set(matches)) {
+    if (idCache.has(devUrl)) continue;
+
+    const buf = await fetchImagetoolsBuffer(ssrServer, devUrl);
+    const prodUrl = buf && imageHashToUrl.get(sha256(buf));
+    if (!prodUrl) {
+      throw new Error(
+        `[ssg] Could not match imagetools URL ${devUrl} to a built asset by content hash`,
+      );
+    }
+    idCache.set(devUrl, prodUrl);
+  }
+
+  return html.replace(IMAGETOOLS_URL_RE, (devUrl) => idCache.get(devUrl) ?? devUrl);
+}
+
+/**
+ * Drives the imagetools connect middleware with a mock request/response to
+ * capture the bytes for a `/@imagetools/<id>` URL (the module has already
+ * been loaded during SSR render, so the image is in imagetools' cache).
+ */
+function fetchImagetoolsBuffer(
+  ssrServer: ViteDevServer,
+  url: string,
+): Promise<Buffer | null> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const res = new Writable({
+      write(chunk, _enc, cb) {
+        chunks.push(Buffer.from(chunk));
+        cb();
+      },
+    }) as Writable & {
+      setHeader: () => void;
+      getHeader: () => undefined;
+      removeHeader: () => void;
+      writeHead: () => unknown;
+      statusCode: number;
+    };
+    res.setHeader = () => {};
+    res.getHeader = () => undefined;
+    res.removeHeader = () => {};
+    res.writeHead = () => res;
+    res.statusCode = 200;
+    res.on("finish", () => resolve(Buffer.concat(chunks)));
+    res.on("error", reject);
+
+    const req = { url, method: "GET", headers: {} };
+    // If no middleware handles the URL, `next` is called → no image.
+    ssrServer.middlewares(req as never, res as never, () => resolve(null));
+  });
+}
+
+function sha256(buf: Buffer): string {
+  return createHash("sha256").update(buf).digest("hex");
 }

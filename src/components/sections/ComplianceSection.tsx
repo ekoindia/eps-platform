@@ -1,14 +1,15 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Lock, FileCheck } from "lucide-react";
 import { FadeIn } from "@/components/FadeIn";
-import airtelLogo from "@/assets/partners/airtel-payments-bank.png";
-import finoLogo from "@/assets/partners/fino-payments-bank.png";
-import razorpayLogo from "@/assets/partners/razorpay.png";
-import fingpayLogo from "@/assets/partners/fingpay.png";
-import billdeskLogo from "@/assets/partners/billdesk.png";
-import payuLogo from "@/assets/partners/payu.png";
-import prabhuLogo from "@/assets/partners/prabhu.png";
-import moneycartLogo from "@/assets/partners/moneycart.png";
+import { Picture } from "@/components/Picture";
+import airtelLogo from "@/assets/partners/airtel-payments-bank.png?w=120;240&format=avif;webp&as=picture";
+import finoLogo from "@/assets/partners/fino-payments-bank.png?w=120;240&format=avif;webp&as=picture";
+import razorpayLogo from "@/assets/partners/razorpay.png?w=120;240&format=avif;webp&as=picture";
+import fingpayLogo from "@/assets/partners/fingpay.png?w=120;240&format=avif;webp&as=picture";
+import billdeskLogo from "@/assets/partners/billdesk.png?w=120;240&format=avif;webp&as=picture";
+import payuLogo from "@/assets/partners/payu.png?w=120;240&format=avif;webp&as=picture";
+import prabhuLogo from "@/assets/partners/prabhu.png?w=120;240&format=avif;webp&as=picture";
+import moneycartLogo from "@/assets/partners/moneycart.png?w=120;240&format=avif;webp&as=picture";
 
 const partners = [
   { name: "Airtel Payments Bank", logo: airtelLogo },
@@ -88,12 +89,11 @@ export const ComplianceSection = () => {
         <div className="relative overflow-hidden h-20">
           <div className="flex items-center gap-12 animate-scroll-x">
             {[...partners, ...partners].map((partner, i) => (
-              <img
+              <Picture
                 key={`${partner.name}-${i}`}
                 src={partner.logo}
                 alt={partner.name}
-                width={120}
-                height={48}
+                sizes="120px"
                 loading="lazy"
                 className="h-12 w-auto object-contain bg-white rounded-lg px-4 py-2 shrink-0"
               />
