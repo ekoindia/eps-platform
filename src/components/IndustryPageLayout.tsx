@@ -1,19 +1,19 @@
-import { Footer } from "@/components/Footer";
-import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
-import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { ApiChip } from "@/components/ApiChip";
-import { SolutionCard } from "@/components/SolutionCard";
+import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { FadeIn } from "@/components/FadeIn";
+import { Footer } from "@/components/Footer";
 import { IndustryCard } from "@/components/IndustryCard";
+import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
+import { SolutionCard } from "@/components/SolutionCard";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
-import { ArrowRight, CheckCircle, HelpCircle, Shield, Zap } from "lucide-react";
-import { Link } from "react-router-dom";
 import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { openZohoChat } from "@/lib/zoho-chat";
-import { FadeIn } from "@/components/FadeIn";
+import { ArrowRight, CheckCircle, HelpCircle, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface IndustryPageLayoutProps {
   data: IndustryData;
@@ -28,12 +28,14 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
           <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <BreadcrumbNav crumbs={[
-              { label: "Home", href: "/" },
-              // { label: "Use Cases", href: "/use-cases" },
-              { label: "Industries", href: "/industries" },
-              { label: data.name },
-            ]} />
+            <BreadcrumbNav
+              crumbs={[
+                { label: "Home", href: "/" },
+                // { label: "Use Cases", href: "/use-cases" },
+                { label: "Industries", href: "/industries" },
+                { label: data.name },
+              ]}
+            />
             <div className="grid lg:grid-cols-1 gap-10 lg:gap-16 items-start">
               <div>
                 <FadeIn onView={false} delay={100}>
@@ -50,7 +52,10 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   </p>
                   <div className="flex flex-wrap gap-3 mb-8">
                     {data.trustStrip.map((item) => (
-                      <span key={item} className="inline-flex items-center gap-1.5 text-sm text-white/70">
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1.5 text-sm text-white/70"
+                      >
                         <CheckCircle className="w-4 h-4 text-eko-gold shrink-0" />
                         {item}
                       </span>
@@ -59,10 +64,23 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                 </FadeIn>
                 <FadeIn onView={false} delay={300}>
                   <div className="flex flex-wrap gap-4">
-                    <Button variant="gold" size="lg" asChild onClick={() => openZohoChat()}>
-                      <span>Get Sandbox Access <ArrowRight className="w-4 h-4" /></span>
+                    <Button
+                      variant="gold"
+                      size="lg"
+                      asChild
+                      onClick={() => openZohoChat()}
+                    >
+                      <span>
+                        Get Sandbox Access <ArrowRight className="w-4 h-4" />
+                      </span>
                     </Button>
-                    <Button variant="hero-outline" size="lg" onClick={() => window.dispatchEvent(new Event("open-talk-to-sales"))}>
+                    <Button
+                      variant="hero-outline"
+                      size="lg"
+                      onClick={() =>
+                        window.dispatchEvent(new Event("open-talk-to-sales"))
+                      }
+                    >
                       Talk to Sales
                     </Button>
                   </div>
@@ -98,11 +116,16 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {/* The Challenge */}
         {data.challengeText && (
           <SectionContainer>
-            <SectionHeader badge="The Challenge" title={`The challenge for ${data.name}`} />
+            <SectionHeader
+              badge="The Challenge"
+              title={`The challenge for ${data.name}`}
+            />
             <div className="max-w-4xl mx-auto">
               {data.challengeText.split("\n\n").map((para, i) => (
                 <FadeIn key={i}>
-                  <p className="text-muted-foreground leading-relaxed text-lg mb-4 last:mb-0">{para}</p>
+                  <p className="text-muted-foreground leading-relaxed text-lg mb-4 last:mb-0">
+                    {para}
+                  </p>
                 </FadeIn>
               ))}
             </div>
@@ -112,20 +135,43 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {/* Recommended Solution Packs */}
         {data.recommendedPacks.length > 0 && (
           <SectionContainer variant="muted">
-            <SectionHeader badge="Solutions" title="Recommended solution packs" subtitle="Pre-bundled API stacks designed for your industry workflow." />
+            <SectionHeader
+              badge="Solutions"
+              title="Recommended solution packs"
+              subtitle="Pre-bundled API stacks designed for your industry workflow."
+            />
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {data.recommendedPacks.map((pack, i) => {
                 const solData = SOLUTIONS_MAP[pack.slug];
                 if (solData) {
-                  return <SolutionCard key={pack.slug} solution={solData} featured={pack.featured} delay={i * 100} />;
+                  return (
+                    <SolutionCard
+                      key={pack.slug}
+                      solution={solData}
+                      featured={pack.featured}
+                      delay={i * 100}
+                    />
+                  );
                 }
                 return (
-                  <div key={pack.slug} className="p-6 rounded-xl bg-card border border-border/50">
-                    <h3 className="font-semibold text-foreground mb-2">{pack.name}</h3>
-                    <p className="text-muted-foreground text-sm mb-3">{pack.description}</p>
+                  <div
+                    key={pack.slug}
+                    className="p-6 rounded-xl bg-card border border-border/50"
+                  >
+                    <h3 className="font-semibold text-foreground mb-2">
+                      {pack.name}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mb-3">
+                      {pack.description}
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {pack.apis.map((api) => (
-                        <span key={api} className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{api}</span>
+                        <span
+                          key={api}
+                          className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                        >
+                          {api}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -138,7 +184,11 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {/* All APIs You'll Need */}
         {data.apiGrid.length > 0 && (
           <SectionContainer>
-            <SectionHeader badge="APIs" title="All APIs you'll need" subtitle="Every Eko API relevant to your industry, with relevance indicators." />
+            <SectionHeader
+              badge="APIs"
+              title="All APIs you'll need"
+              subtitle="Every Eko API relevant to your industry, with relevance indicators."
+            />
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
               {data.apiGrid.map((api, i) => (
                 <FadeIn key={api.apiId} delay={i * 50}>
@@ -146,14 +196,22 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                     to={api.href}
                     className="group flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 hover:shadow-md transition-all h-full"
                   >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-foreground text-sm group-hover:text-eko-gold transition-colors">{api.name}</span>
-                      <ApiChip name="" relevance={api.relevance} className="px-1.5! py-0! border-0 bg-transparent" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-foreground text-sm group-hover:text-eko-gold transition-colors">
+                          {api.name}
+                        </span>
+                        <ApiChip
+                          name=""
+                          relevance={api.relevance}
+                          className="px-1.5! py-0! border-0 bg-transparent"
+                        />
+                      </div>
+                      <p className="text-muted-foreground text-xs leading-relaxed">
+                        {api.description}
+                      </p>
                     </div>
-                    <p className="text-muted-foreground text-xs leading-relaxed">{api.description}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-eko-gold shrink-0 mt-0.5" />
+                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-eko-gold shrink-0 mt-0.5" />
                   </Link>
                 </FadeIn>
               ))}
@@ -167,11 +225,26 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             <SectionHeader badge="Use Cases" title="Real-world use cases" />
             <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
               {data.useCaseVignettes.map((uc, i) => (
-                <FadeIn key={i} delay={i * 100} className="p-6 rounded-xl bg-card border border-border/50">
-                  <h3 className="font-semibold text-foreground mb-3">{uc.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-2"><strong className="text-foreground/80">Situation:</strong> {uc.situation}</p>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-2"><strong className="text-foreground/80">Integration:</strong> {uc.integration}</p>
-                  <p className="text-sm leading-relaxed"><strong className="text-eko-gold">Result:</strong> <span className="text-foreground">{uc.outcome}</span></p>
+                <FadeIn
+                  key={i}
+                  delay={i * 100}
+                  className="p-6 rounded-xl bg-card border border-border/50"
+                >
+                  <h3 className="font-semibold text-foreground mb-3">
+                    {uc.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-2">
+                    <strong className="text-foreground/80">Situation:</strong>{" "}
+                    {uc.situation}
+                  </p>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-2">
+                    <strong className="text-foreground/80">Integration:</strong>{" "}
+                    {uc.integration}
+                  </p>
+                  <p className="text-sm leading-relaxed">
+                    <strong className="text-eko-gold">Result:</strong>{" "}
+                    <span className="text-foreground">{uc.outcome}</span>
+                  </p>
                 </FadeIn>
               ))}
             </div>
@@ -190,8 +263,12 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                     <div className="w-14 h-14 rounded-2xl bg-eko-gold/10 flex items-center justify-center mx-auto mb-4">
                       <Icon className="w-7 h-7 text-eko-gold" />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">{diff.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{diff.description}</p>
+                    <h3 className="font-semibold text-foreground mb-2">
+                      {diff.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {diff.description}
+                    </p>
                   </FadeIn>
                 );
               })}
@@ -202,19 +279,31 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         {/* Integration Stepper */}
         <SectionContainer className="bg-eko-navy">
           <FadeIn className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How to Integrate</h2>
-            <p className="text-white/70 max-w-2xl mx-auto">Get started in minutes with our simple integration process</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              How to Integrate
+            </h2>
+            <p className="text-white/70 max-w-2xl mx-auto">
+              Get started in minutes with our simple integration process
+            </p>
           </FadeIn>
           <TooltipProvider>
             <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
               {data.integrationSteps.map((step, i) => (
-                <FadeIn key={step.step} delay={i * 150} className="flex items-start flex-1">
+                <FadeIn
+                  key={step.step}
+                  delay={i * 150}
+                  className="flex items-start flex-1"
+                >
                   <div className="flex flex-col items-center text-center">
                     <div className="w-14 h-14 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-lg">
                       {step.step}
                     </div>
-                    <h3 className="text-sm font-semibold text-white mt-3 mb-1">{step.title}</h3>
-                    <p className="text-white/50 text-xs max-w-[140px]">{step.description}</p>
+                    <h3 className="text-sm font-semibold text-white mt-3 mb-1">
+                      {step.title}
+                    </h3>
+                    <p className="text-white/50 text-xs max-w-[140px]">
+                      {step.description}
+                    </p>
                   </div>
                   {i < data.integrationSteps.length - 1 && (
                     <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
@@ -229,11 +318,17 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                     <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm">
                       {step.step}
                     </div>
-                    {i < data.integrationSteps.length - 1 && <div className="w-0.5 flex-1 bg-white/20 mt-2" />}
+                    {i < data.integrationSteps.length - 1 && (
+                      <div className="w-0.5 flex-1 bg-white/20 mt-2" />
+                    )}
                   </div>
                   <div className="pb-6">
-                    <h3 className="text-sm font-semibold text-white">{step.title}</h3>
-                    <p className="text-white/50 text-xs mt-1">{step.description}</p>
+                    <h3 className="text-sm font-semibold text-white">
+                      {step.title}
+                    </h3>
+                    <p className="text-white/50 text-xs mt-1">
+                      {step.description}
+                    </p>
                   </div>
                 </FadeIn>
               ))}
@@ -241,7 +336,11 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
           </TooltipProvider>
           <div className="text-center mt-10">
             <Button variant="gold" size="lg" asChild>
-              <a href="https://developers.eko.in" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://developers.eko.in"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 View Documentation <ArrowRight className="w-4 h-4" />
               </a>
             </Button>
@@ -254,11 +353,19 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
             <SectionHeader badge="Compliance" title="Compliance & regulatory" />
             <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {data.complianceItems.map((item, i) => (
-                <FadeIn key={i} delay={i * 50} className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl">
+                <FadeIn
+                  key={i}
+                  delay={i * 50}
+                  className="flex items-start gap-4 p-5 bg-card border border-border/50 rounded-xl"
+                >
                   <Shield className="w-5 h-5 text-eko-gold shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-foreground mb-1">{item.title}</h4>
-                    <p className="text-muted-foreground text-sm">{item.description}</p>
+                    <h4 className="font-semibold text-foreground mb-1">
+                      {item.title}
+                    </h4>
+                    <p className="text-muted-foreground text-sm">
+                      {item.description}
+                    </p>
                   </div>
                 </FadeIn>
               ))}
@@ -279,9 +386,13 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                         <HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
                         {faq.question}
                       </span>
-                      <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">+</span>
+                      <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">
+                        +
+                      </span>
                     </summary>
-                    <p className="mt-4 text-muted-foreground leading-relaxed pl-8">{faq.answer}</p>
+                    <p className="mt-4 text-muted-foreground leading-relaxed pl-8">
+                      {faq.answer}
+                    </p>
                   </details>
                 </FadeIn>
               ))}
@@ -297,11 +408,23 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
               {data.relatedIndustries.map((rel, i) => {
                 const relData = INDUSTRIES_MAP[rel.slug];
                 if (relData) {
-                  return <IndustryCard key={rel.slug} industry={relData} delay={i * 100} />;
+                  return (
+                    <IndustryCard
+                      key={rel.slug}
+                      industry={relData}
+                      delay={i * 100}
+                    />
+                  );
                 }
                 return (
-                  <Link key={rel.slug} to={`/industries/${rel.slug}`} className="p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all">
-                    <h3 className="font-semibold text-foreground">{rel.name}</h3>
+                  <Link
+                    key={rel.slug}
+                    to={`/industries/${rel.slug}`}
+                    className="p-6 rounded-xl bg-card border border-border/50 hover:border-eko-gold/30 transition-all"
+                  >
+                    <h3 className="font-semibold text-foreground">
+                      {rel.name}
+                    </h3>
                   </Link>
                 );
               })}
@@ -310,18 +433,33 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         )}
 
         {/* Bottom CTA */}
-        <SectionContainer variant="navy" id="lead-form" className="relative overflow-hidden">
+        <SectionContainer
+          variant="navy"
+          id="lead-form"
+          className="relative overflow-hidden"
+        >
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
           <div className="relative grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Get API Access Now</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Get API Access Now
+              </h2>
               <p className="text-white/70 text-lg mb-6 leading-relaxed">
-                Sign up now and start integrating in minutes. Our team will help you go live quickly.
+                Sign up now and start integrating in minutes. Our team will help
+                you go live quickly.
               </p>
               <ul className="flex flex-col gap-3">
-                {["Sandbox access in minutes", "Dedicated integration support", "Comprehensive documentation", "99.9% uptime guarantee"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-white/80">
+                {[
+                  "Sandbox access in minutes",
+                  "Dedicated integration support",
+                  "Comprehensive documentation",
+                  "Reliable, high-volume workflows",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-3 text-white/80"
+                  >
                     <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
                     {item}
                   </li>
@@ -332,8 +470,12 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
               <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
               <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
-                  <h3 className="text-lg font-bold text-white">Get API Access</h3>
-                  <p className="text-white/70 text-sm">Get started in 10 minutes</p>
+                  <h3 className="text-lg font-bold text-white">
+                    Get API Access
+                  </h3>
+                  <p className="text-white/70 text-sm">
+                    Get started in 10 minutes
+                  </p>
                 </div>
                 <div className="p-2">
                   <ZohoSignupForm />

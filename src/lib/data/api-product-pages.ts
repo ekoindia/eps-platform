@@ -1,59 +1,94 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  AlertTriangle,
+  BadgeCheck,
   // DMT
-  Banknote, Globe, RefreshCw, Clock, Users, Building, CheckCircle,
+  Banknote,
+  BarChart3,
+  Briefcase,
+  Building,
+  Building2,
+  Calendar,
+  Car,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Database,
+  Droplets,
+  FileText,
   // AePS
-  Fingerprint, Wallet, FileText, Shield,
-  // BBPS
-  Receipt, CreditCard, Smartphone, Car, Droplets, Flame, Wifi,
-  // QR
-  QrCode, BarChart3,
-  // Payout
-  Send,
+  Fingerprint,
+  Flame,
+  FolderCheck,
+  Globe,
+  Globe2,
   // UPI Payout (re-uses Send, Zap, Users, Clock, CheckCircle, FileText, Wallet, Shield — all above)
   // Bank Verification
-  Hash, Database,
+  Hash,
+  IdCard,
+  IndianRupee,
+  Info,
+  Landmark,
+  Leaf,
+  Mail,
+  MailCheck,
+  // Reverse Geocoding
+  MapPin,
   // GST / DL
   // (Building, FileText, CreditCard already imported)
   // Vehicle
-  Palette, Leaf,
+  Palette,
   // Employee
   Phone,
-  // Reverse Geocoding
-  MapPin,
+  Plane,
+  // QR
+  QrCode,
+  // BBPS
+  Receipt,
+  RefreshCw,
+  ScanText,
+  // Payout
+  Send,
+  Shield,
+  // Product-level icons (used by solutions resolver)
+  ShieldCheck,
+  Smartphone,
+  TicketCheck,
+  Truck,
   // Pan Verification
-  User, Calendar,
+  User,
+  Users,
+  Utensils,
+  // New verification product icons
+  Vote,
+  Wallet,
+  Wifi,
   // Zap (used everywhere)
   Zap,
-  Mail,
-  // Product-level icons (used by solutions resolver)
-  ShieldCheck, Building2, FolderCheck, Briefcase, Truck,
-  Info,
-  IdCard,
-  // New verification product icons
-  Vote, Plane, Landmark, Globe2, ScanText, IndianRupee, BadgeCheck, TicketCheck, MailCheck, Utensils,
-  AlertTriangle,
 } from "lucide-react";
 
-import type { ProductPageLayoutProps, FAQ } from "@/components/ProductPageLayout";
+import type {
+  FAQ,
+  ProductPageLayoutProps,
+} from "@/components/ProductPageLayout";
 
 // ---------------------------------------------------------------------------
 // Hero image assets
 // ---------------------------------------------------------------------------
-import moneyTransferImg from "@/assets/money-transfer-api.svg";
 import aepsImg from "@/assets/aeps-main.svg";
-import bbpsImg from "@/assets/utility-bill-payment.svg";
-import qrImg from "@/assets/qr-payment.png?w=256;512&format=avif;webp&as=picture";
 import cmsImg from "@/assets/assisted-cash-management.svg";
+import moneyTransferImg from "@/assets/money-transfer-api.svg";
+import qrImg from "@/assets/qr-payment.png?w=256;512&format=avif;webp&as=picture";
 import payoutImg from "@/assets/salary-disbursal.svg";
+import bbpsImg from "@/assets/utility-bill-payment.svg";
 // upi-payout reuses payoutImg
-import panImg from "@/assets/pan-verification.svg";
 import aadhaarImg from "@/assets/aadhaar-verification.svg";
 import bankImg from "@/assets/bank-verification.svg";
-import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
 import dlImg from "@/assets/dl-verification-2.png?w=256;512&format=avif;webp&as=picture";
-import upiVerifyImg from "@/assets/upi-hero.png?w=256;512&format=avif;webp&as=picture";
 import employeeImg from "@/assets/employee_verification.png?w=256;512&format=avif;webp&as=picture";
+import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
+import panImg from "@/assets/pan-verification.svg";
+import upiVerifyImg from "@/assets/upi-hero.png?w=256;512&format=avif;webp&as=picture";
 
 // ---------------------------------------------------------------------------
 // SEO helper type + full page config type
@@ -78,14 +113,12 @@ export interface ProductPageData extends ProductPageLayoutProps {
 const VERIFICATION_STEPS_BASE = [
   {
     title: "Sign Up",
-    desc:
-      "Create an account on Connect App and get your sandbox credentials.", // TODO: Signup with your mobile number (complete OTP verification in future). SHOW "Sign Up Now" CTA that links to Zoho Chat with pre-filled message "Hi, I want to integrate [API_NAME]."
-    tip: "Takes less than a minute",
+    desc: "Create an account on Connect App and get your sandbox credentials.", // TODO: Signup with your mobile number (complete OTP verification in future). SHOW "Sign Up Now" CTA that links to Zoho Chat with pre-filled message "Hi, I want to integrate [API_NAME]."
+    // tip: "Takes less than a minute",
   },
   {
     title: "Submit KYC",
-    desc:
-      "Complete your KYC verification process by submitting the required documents.", // TODO: Our team will call you and guide you through the simple KYC process (document submission, video call, etc.) How long does it take for our team to verify docs???
+    desc: "Complete your KYC verification process by submitting the required documents.", // TODO: Our team will call you and guide you through the simple KYC process (document submission, video call, etc.) How long does it take for our team to verify docs???
   },
   {
     title: "Integrate API",
@@ -107,8 +140,14 @@ const VERIFICATION_STEPS_BASE = [
 
 /** PAN entry FAQs — also used to generate jsonLd FAQPage below */
 const PAN_FAQS = [
-  { q: "How fast is PAN verification?", a: "PAN verification is real-time with sub-second response times for instant identity validation." },
-  { q: "What details are returned?", a: "PAN Lite returns PAN status, name match, DOB match, and Aadhaar seeding status. PAN Advanced returns holder name, PAN type, gender, date of birth, masked Aadhaar number, Aadhaar linking status, mobile number, email, and address." },
+  {
+    q: "How fast is PAN verification?",
+    a: "PAN verification is real-time with sub-second response times for instant identity validation.",
+  },
+  {
+    q: "What details are returned?",
+    a: "PAN Lite returns PAN status, name match, DOB match, and Aadhaar seeding status. PAN Advanced returns holder name, PAN type, gender, date of birth, masked Aadhaar number, Aadhaar linking status, mobile number, email, and address.",
+  },
 ];
 
 /** FAQs appended to every API product page after product-specific FAQs */
@@ -123,7 +162,7 @@ const COMMON_API_FAQS: FAQ[] = [
   },
   {
     q: "How does API authentication work?",
-    a: "Every request requires your developer_key and a secret-key-timestamp signature passed via HTTP headers. Keys are generated from the Connect App dashboard after KYC approval.",
+    a: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography. After signing up, you will receive your developer-key and secret-key for both UAT and production environments, which you can use to generate tokens for authenticating your API requests.",
   },
   {
     q: "How are errors and failures reported?",
@@ -143,53 +182,130 @@ const COMMON_API_FAQS: FAQ[] = [
 // Config map keyed by API_PRODUCTS id
 // ---------------------------------------------------------------------------
 export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
-
   // -------------------------------------------------------------------------
   // MARK: DMT
   // -------------------------------------------------------------------------
   dmt: {
     seo: {
       title: "Domestic Money Transfer API (DMT)",
-      description: "Enable instant money transfers across India with Eko's DMT API. Real-time IMPS & NEFT settlements, pan-India coverage, and 99.9% uptime. Integrate in minutes.",
-      keywords: "DMT API, domestic money transfer API, IMPS API, NEFT API, money transfer India, remittance API, Eko API",
+      description:
+        "Enable instant money transfers across India with Eko's DMT API. Real-time IMPS & NEFT settlements with pan-India coverage. Integrate in minutes.",
+      keywords:
+        "DMT API, domestic money transfer API, IMPS API, NEFT API, money transfer India, remittance API, Eko API",
       ogTitle: "Domestic Money Transfer API (DMT)",
-      ogDescription: "Enable instant money transfers across India with real-time settlements and pan-India coverage.",
+      ogDescription:
+        "Enable instant money transfers across India with real-time settlements and pan-India coverage.",
     },
     title: "Domestic Money Transfer API",
     desc: "Enable instant money transfers across India with Eko's DMT API",
     heroTitle: "Instant Domestic Money Transfers",
-    heroSubtitle: "Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support.",
+    heroSubtitle:
+      "Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support.",
     category: "payment",
     icon: Banknote,
     docsUrl: "https://developers.eko.in/reference/fino-dmt-flow",
     heroImage: moneyTransferImg,
     features: [
-      { title: "Real-time Transfers", desc: "Instant money transfers via IMPS with real-time status updates and confirmations.", icon: Zap },
-      { title: "NEFT & RTGS Support", desc: "Support for NEFT and RTGS for high-value transfers with guaranteed settlements.", icon: Banknote },
-      { title: "Pan-India Coverage", desc: "Transfer money to any bank account across India with 99.9% success rate.", icon: Globe },
-      { title: "Real-time Webhooks", desc: "Receive instant notifications for transaction status updates via webhooks.", icon: RefreshCw },
-      { title: "Secure Transactions", desc: "Bank-grade encryption and security for all transactions with audit trails.", icon: Shield },
-      { title: "24/7 Availability", desc: "Round-the-clock availability with 99.9% uptime guarantee.", icon: Clock },
+      {
+        title: "Real-time Transfers",
+        desc: "Instant money transfers via IMPS with real-time status updates and confirmations.",
+        icon: Zap,
+      },
+      {
+        title: "NEFT & RTGS Support",
+        desc: "Support for NEFT and RTGS for high-value transfers with guaranteed settlements.",
+        icon: Banknote,
+      },
+      {
+        title: "Pan-India Coverage",
+        desc: "Transfer money to any bank account across India with high success rate.",
+        icon: Globe,
+      },
+      {
+        title: "Real-time Webhooks",
+        desc: "Receive instant notifications for transaction status updates via webhooks.",
+        icon: RefreshCw,
+      },
+      {
+        title: "Secure Transactions",
+        desc: "Bank-grade encryption and security for all transactions with audit trails.",
+        icon: Shield,
+      },
+      {
+        title: "24/7 Availability",
+        desc: "Round-the-clock availability with reliable, high-volume workflows.",
+        icon: Clock,
+      },
     ],
     benefits: [
-      { title: "Seamless Integration", desc: "Well-documented APIs with SDKs in multiple languages. Get started in minutes with 24x7 support.", icon: CheckCircle },
-      { title: "Best Success Rate", desc: "Industry-leading success rates with smart routing and automatic retries.", icon: Zap },
-      { title: "Earn Commission", desc: "Earn attractive commissions on every successful transaction processed through your platform.", icon: Banknote },
-      { title: "Scalable Infrastructure", desc: "Handle millions of transactions with our enterprise-grade infrastructure.", icon: Building },
-      { title: "Retailer Network", desc: "Build and manage a network of retailers for cash-in and cash-out services.", icon: Users },
-      { title: "Regulatory Compliant", desc: "Fully RBI-compliant infrastructure with all necessary licenses and certifications.", icon: Shield },
+      {
+        title: "Seamless Integration",
+        desc: "Well-documented APIs with SDKs in multiple languages. Get started in minutes with 24x7 support.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Best Success Rate",
+        desc: "Industry-leading success rates with smart routing and automatic retries.",
+        icon: Zap,
+      },
+      {
+        title: "Earn Commission",
+        desc: "Earn attractive commissions on every successful transaction processed through your platform.",
+        icon: Banknote,
+      },
+      {
+        title: "Scalable Infrastructure",
+        desc: "Handle millions of transactions with our enterprise-grade infrastructure.",
+        icon: Building,
+      },
+      {
+        title: "Retailer Network",
+        desc: "Build and manage a network of retailers for cash-in and cash-out services.",
+        icon: Users,
+      },
+      {
+        title: "Regulatory Compliant",
+        desc: "Fully RBI-compliant infrastructure with all necessary licenses and certifications.",
+        icon: Shield,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Get production credentials and start processing real transactions." },
+      {
+        title: "Go Live",
+        desc: "Get production credentials and start processing real transactions.",
+      },
     ],
-    useCases: ["Retail Banking Apps", "Fintech Platforms", "Remittance Services", "Kirana Stores", "Agent Banking", "Corporate Payouts", "E-commerce Refunds"],
+    useCases: [
+      "Retail Banking Apps",
+      "Fintech Platforms",
+      "Remittance Services",
+      "Kirana Stores",
+      "Agent Banking",
+      "Corporate Payouts",
+      "E-commerce Refunds",
+    ],
     faqs: [
-      { q: "What is the DMT API?", a: "The DMT (Domestic Money Transfer) API enables instant money transfers to any bank account across India using IMPS, NEFT, or RTGS. It's designed for businesses that want to offer remittance services to their customers." },
-      { q: "What is the transaction limit?", a: "Individual transaction limits vary based on the mode of transfer. IMPS supports up to ₹5 lakh per transaction, while NEFT and RTGS support higher limits for bulk transfers." },
-      { q: "How long does a transfer take?", a: "IMPS transfers are instant (within seconds). NEFT transfers are processed in batches throughout the day, and RTGS transfers are processed in real-time during banking hours." },
-      { q: "What documents are required for integration?", a: "You'll need business registration documents, PAN card, bank account details, and relevant licenses based on your business type. Our team will guide you through the complete process." },
-      { q: "Is there a settlement delay?", a: "Settlement timelines depend on your agreement. Most partners receive T+1 settlements, with options for same-day settlements for high-volume partners." },
+      {
+        q: "What is the DMT API?",
+        a: "The DMT (Domestic Money Transfer) API enables instant money transfers to any bank account across India using IMPS, NEFT, or RTGS. It's designed for businesses that want to offer remittance services to their customers.",
+      },
+      {
+        q: "What is the transaction limit?",
+        a: "Individual transaction limits vary based on the mode of transfer. IMPS supports up to ₹5 lakh per transaction, while NEFT and RTGS support higher limits for bulk transfers.",
+      },
+      {
+        q: "How long does a transfer take?",
+        a: "IMPS transfers are instant (within seconds). NEFT transfers are processed in batches throughout the day, and RTGS transfers are processed in real-time during banking hours.",
+      },
+      {
+        q: "What documents are required for integration?",
+        a: "You'll need business registration documents, PAN card, bank account details, and relevant licenses based on your business type. Our team will guide you through the complete process.",
+      },
+      {
+        q: "Is there a settlement delay?",
+        a: "Settlement timelines depend on your agreement. Most partners receive T+1 settlements, with options for same-day settlements for high-volume partners.",
+      },
     ],
   },
 
@@ -199,48 +315,128 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   aeps: {
     seo: {
       title: "AePS API - Aadhaar Enabled Payment System",
-      description: "Enable Aadhaar-based banking services with Eko's AePS API. Cash withdrawal, balance enquiry, mini statements, and fund transfers using Aadhaar authentication.",
-      keywords: "AePS API, Aadhaar enabled payment system, Aadhaar banking API, biometric payment API, rural banking API, Eko API",
+      description:
+        "Enable Aadhaar-based banking services with Eko's AePS API. Cash withdrawal, balance enquiry, mini statements, and fund transfers using Aadhaar authentication.",
+      keywords:
+        "AePS API, Aadhaar enabled payment system, Aadhaar banking API, biometric payment API, rural banking API, Eko API",
       ogTitle: "AePS API - Aadhaar Enabled Payment System",
-      ogDescription: "Enable Aadhaar-based banking services for rural and underbanked segments.",
+      ogDescription:
+        "Enable Aadhaar-based banking services for rural and underbanked segments.",
     },
     title: "AePS API",
     desc: "Aadhaar-enabled payment services for rural and underbanked segments",
     heroTitle: "Aadhaar Enabled Payment System",
-    heroSubtitle: "Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication.",
+    heroSubtitle:
+      "Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication.",
     category: "payment",
     icon: Fingerprint,
     docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
     heroImage: aepsImg,
     features: [
-      { title: "Cash Withdrawal", desc: "Enable customers to withdraw cash from any bank account using Aadhaar and biometric authentication.", icon: Wallet },
-      { title: "Balance Enquiry", desc: "Check account balance instantly using Aadhaar number and fingerprint verification.", icon: FileText },
-      { title: "Mini Statement", desc: "Retrieve the last few transactions for any Aadhaar-linked bank account.", icon: FileText },
-      { title: "Fund Transfer", desc: "Transfer funds between Aadhaar-linked accounts securely and instantly.", icon: Fingerprint },
-      { title: "Biometric Authentication", desc: "Secure transactions with Aadhaar-based biometric verification using UIDAI.", icon: Shield },
-      { title: "Multi-Bank Support", desc: "Connect to all major banks in India through a single integration.", icon: Building },
+      {
+        title: "Cash Withdrawal",
+        desc: "Enable customers to withdraw cash from any bank account using Aadhaar and biometric authentication.",
+        icon: Wallet,
+      },
+      {
+        title: "Balance Enquiry",
+        desc: "Check account balance instantly using Aadhaar number and fingerprint verification.",
+        icon: FileText,
+      },
+      {
+        title: "Mini Statement",
+        desc: "Retrieve the last few transactions for any Aadhaar-linked bank account.",
+        icon: FileText,
+      },
+      {
+        title: "Fund Transfer",
+        desc: "Transfer funds between Aadhaar-linked accounts securely and instantly.",
+        icon: Fingerprint,
+      },
+      {
+        title: "Biometric Authentication",
+        desc: "Secure transactions with Aadhaar-based biometric verification using UIDAI.",
+        icon: Shield,
+      },
+      {
+        title: "Multi-Bank Support",
+        desc: "Connect to all major banks in India through a single integration.",
+        icon: Building,
+      },
     ],
     benefits: [
-      { title: "Financial Inclusion", desc: "Bring banking services to rural and underbanked populations without traditional infrastructure.", icon: Users },
-      { title: "No Debit Card Required", desc: "Customers only need their Aadhaar number and fingerprint - no cards or PINs needed.", icon: Fingerprint },
-      { title: "Secure & Compliant", desc: "UIDAI-certified biometric authentication ensures secure and compliant transactions.", icon: Shield },
-      { title: "Build Retailer Network", desc: "Enable local retailers to become banking points and earn commissions.", icon: Building },
-      { title: "24/7 Operations", desc: "Provide banking services round the clock, even in areas without bank branches.", icon: Clock },
-      { title: "Easy Integration", desc: "Simple REST APIs with comprehensive documentation and sandbox environment.", icon: CheckCircle },
+      {
+        title: "Financial Inclusion",
+        desc: "Bring banking services to rural and underbanked populations without traditional infrastructure.",
+        icon: Users,
+      },
+      {
+        title: "No Debit Card Required",
+        desc: "Customers only need their Aadhaar number and fingerprint - no cards or PINs needed.",
+        icon: Fingerprint,
+      },
+      {
+        title: "Secure & Compliant",
+        desc: "UIDAI-certified biometric authentication ensures secure and compliant transactions.",
+        icon: Shield,
+      },
+      {
+        title: "Build Retailer Network",
+        desc: "Enable local retailers to become banking points and earn commissions.",
+        icon: Building,
+      },
+      {
+        title: "24/7 Operations",
+        desc: "Provide banking services round the clock, even in areas without bank branches.",
+        icon: Clock,
+      },
+      {
+        title: "Easy Integration",
+        desc: "Simple REST APIs with comprehensive documentation and sandbox environment.",
+        icon: CheckCircle,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       // { title: "Setup Biometric Devices", desc: "Configure certified biometric devices for fingerprint capture." },
-      { title: "Onboard Retailers", desc: "Start onboarding retailers to offer AePS services." },
-      { title: "Go Live", desc: "Launch your AePS services and start serving customers." },
+      {
+        title: "Onboard Retailers",
+        desc: "Start onboarding retailers to offer AePS services.",
+      },
+      {
+        title: "Go Live",
+        desc: "Launch your AePS services and start serving customers.",
+      },
     ],
-    useCases: ["Banking Correspondents", "Rural Financial Services", "Kirana Store Banking", "CSC Centers", "Microfinance Institutions", "Government Disbursements"],
+    useCases: [
+      "Banking Correspondents",
+      "Rural Financial Services",
+      "Kirana Store Banking",
+      "CSC Centers",
+      "Microfinance Institutions",
+      "Government Disbursements",
+    ],
     faqs: [
-      { q: "What is AePS?", a: "AePS (Aadhaar Enabled Payment System) is a bank-led model that allows online financial transactions at Micro ATM through Aadhaar authentication. It uses NPCI infrastructure and enables customers to use Aadhaar for bank transactions." },
-      { q: "What biometric devices are supported?", a: "We support all UIDAI-certified biometric devices including Morpho, Mantra, Startek, and others. Contact our team for the complete list of supported devices." },
-      { q: "What is the transaction limit for AePS?", a: "Cash withdrawal limits vary by bank but typically range from ₹10,000 to ₹50,000 per transaction. Some banks allow higher limits for specific use cases." },
-      { q: "Do I need special certification?", a: "Yes, you need to be a certified AePS operator. Eko can help you with the certification process and provide all necessary support." },
-      { q: "How is commission calculated?", a: "Commission is earned on every successful transaction. The exact rates depend on your agreement and transaction volumes. Contact our team for detailed pricing." },
+      {
+        q: "What is AePS?",
+        a: "AePS (Aadhaar Enabled Payment System) is a bank-led model that allows online financial transactions at Micro ATM through Aadhaar authentication. It uses NPCI infrastructure and enables customers to use Aadhaar for bank transactions.",
+      },
+      {
+        q: "What biometric devices are supported?",
+        a: "We support all UIDAI-certified biometric devices including Morpho, Mantra, Startek, and others. Contact our team for the complete list of supported devices.",
+      },
+      {
+        q: "What is the transaction limit for AePS?",
+        a: "Cash withdrawal limits vary by bank but typically range from ₹10,000 to ₹50,000 per transaction. Some banks allow higher limits for specific use cases.",
+      },
+      {
+        q: "Do I need special certification?",
+        a: "Yes, you need to be a certified AePS operator. Eko can help you with the certification process and provide all necessary support.",
+      },
+      {
+        q: "How is commission calculated?",
+        a: "Commission is earned on every successful transaction. The exact rates depend on your agreement and transaction volumes. Contact our team for detailed pricing.",
+      },
     ],
   },
 
@@ -250,15 +446,19 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   bbps: {
     seo: {
       title: "BBPS API - Bharat Bill Payment System",
-      description: "Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure.",
-      keywords: "BBPS API, bill payment API, Bharat Bill Payment System, utility bill API, electricity bill API, Eko API",
+      description:
+        "Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure.",
+      keywords:
+        "BBPS API, bill payment API, Bharat Bill Payment System, utility bill API, electricity bill API, Eko API",
       ogTitle: "BBPS API - Bharat Bill Payment System",
-      ogDescription: "Enable seamless bill payments for 200+ biller categories with Eko's BBPS API.",
+      ogDescription:
+        "Enable seamless bill payments for 200+ biller categories with Eko's BBPS API.",
     },
     title: "BBPS API",
     desc: "Complete bill payment ecosystem with 200+ biller categories",
     heroTitle: "Help Customers Pay Their Utility Bills!",
-    heroSubtitle: "The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services.",
+    heroSubtitle:
+      "The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services.",
     category: "payment",
     icon: Receipt,
     docsUrl: "https://developers.eko.in/reference/bbps-pay",
@@ -278,34 +478,111 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       { label: "Loan Repayment", icon: Building },
     ],
     features: [
-      { title: "200+ Biller Categories", desc: "Access to extensive biller network covering electricity, gas, water, insurance, and more.", icon: Receipt },
-      { title: "Instant Bill Fetch", desc: "Fetch outstanding bill amounts in real-time before payment processing.", icon: Zap },
-      { title: "Unified API", desc: "Single API integration for all biller categories - no separate integrations needed.", icon: CheckCircle },
-      { title: "Transaction Tracking", desc: "Complete visibility into transaction status with detailed reporting.", icon: Receipt },
-      { title: "Secure Payments", desc: "PCI-DSS compliant infrastructure with end-to-end encryption.", icon: Shield },
-      { title: "Receipt Generation", desc: "Auto-generated receipts for every successful transaction.", icon: Receipt },
+      {
+        title: "200+ Biller Categories",
+        desc: "Access to extensive biller network covering electricity, gas, water, insurance, and more.",
+        icon: Receipt,
+      },
+      {
+        title: "Instant Bill Fetch",
+        desc: "Fetch outstanding bill amounts in real-time before payment processing.",
+        icon: Zap,
+      },
+      {
+        title: "Unified API",
+        desc: "Single API integration for all biller categories - no separate integrations needed.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Transaction Tracking",
+        desc: "Complete visibility into transaction status with detailed reporting.",
+        icon: Receipt,
+      },
+      {
+        title: "Secure Payments",
+        desc: "PCI-DSS compliant infrastructure with end-to-end encryption.",
+        icon: Shield,
+      },
+      {
+        title: "Receipt Generation",
+        desc: "Auto-generated receipts for every successful transaction.",
+        icon: Receipt,
+      },
     ],
     benefits: [
-      { title: "Simplified Integration", desc: "Easy-to-read API documentation and 24x7 integration support for quick go-live.", icon: CheckCircle },
-      { title: "Best Success Rate", desc: "Industry-leading success rates with smart retry mechanisms.", icon: Zap },
-      { title: "Earn Commission", desc: "Attractive commissions on all types of bill payments processed through your platform.", icon: Receipt },
-      { title: "Extensive Biller Network", desc: "Access to 20,000+ billers across all major categories in India.", icon: Building },
-      { title: "Real-time Confirmation", desc: "Instant payment confirmation with transaction reference numbers.", icon: Zap },
-      { title: "Customer Retention", desc: "Keep customers engaged with recurring bill payment reminders and services.", icon: Users },
+      {
+        title: "Simplified Integration",
+        desc: "Easy-to-read API documentation and 24x7 integration support for quick go-live.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Best Success Rate",
+        desc: "Industry-leading success rates with smart retry mechanisms.",
+        icon: Zap,
+      },
+      {
+        title: "Earn Commission",
+        desc: "Attractive commissions on all types of bill payments processed through your platform.",
+        icon: Receipt,
+      },
+      {
+        title: "Extensive Biller Network",
+        desc: "Access to 20,000+ billers across all major categories in India.",
+        icon: Building,
+      },
+      {
+        title: "Real-time Confirmation",
+        desc: "Instant payment confirmation with transaction reference numbers.",
+        icon: Zap,
+      },
+      {
+        title: "Customer Retention",
+        desc: "Keep customers engaged with recurring bill payment reminders and services.",
+        icon: Users,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "UAT Testing", desc: "Complete UAT testing with all biller categories." },
+      {
+        title: "UAT Testing",
+        desc: "Complete UAT testing with all biller categories.",
+      },
       // { title: "IP Whitelisting", desc: "Get your production IPs whitelisted (India only)." },
-      { title: "Go Live", desc: "Launch with production credentials and start billing!" },
+      {
+        title: "Go Live",
+        desc: "Launch with production credentials and start billing!",
+      },
     ],
-    useCases: ["Banking Apps", "Fintech Platforms", "Payment Aggregators", "E-commerce Platforms", "Retail Networks", "Agent Banking", "Corporate Solutions"],
+    useCases: [
+      "Banking Apps",
+      "Fintech Platforms",
+      "Payment Aggregators",
+      "E-commerce Platforms",
+      "Retail Networks",
+      "Agent Banking",
+      "Corporate Solutions",
+    ],
     faqs: [
-      { q: "What is BBPS API?", a: "BBPS (Bharat Bill Payment System) API is an RBI-mandated online bill payment system that enables customers to pay bills easily and securely. Our API allows you to integrate bill payment services into your platform." },
-      { q: "How many billers are supported?", a: "Eko's BBPS API provides access to 20,000+ billers across 200+ categories including electricity, gas, water, DTH, broadband, insurance, EMI, FASTag, and more." },
-      { q: "What are the commission rates?", a: "Commission rates vary by biller category and transaction volume. Contact our sales team for detailed pricing and commission structures." },
-      { q: "Is BBPS API available 24/7?", a: "Yes, BBPS services are available 24/7. However, some billers may have specific operating hours for payment processing." },
-      { q: "How long does integration take?", a: "With our well-documented APIs and sandbox environment, most partners complete integration within 2-4 weeks including testing and certification." },
+      {
+        q: "What is BBPS API?",
+        a: "BBPS (Bharat Bill Payment System) API is an RBI-mandated online bill payment system that enables customers to pay bills easily and securely. Our API allows you to integrate bill payment services into your platform.",
+      },
+      {
+        q: "How many billers are supported?",
+        a: "Eko's BBPS API provides access to 20,000+ billers across 200+ categories including electricity, gas, water, DTH, broadband, insurance, EMI, FASTag, and more.",
+      },
+      {
+        q: "What are the commission rates?",
+        a: "Commission rates vary by biller category and transaction volume. Contact our sales team for detailed pricing and commission structures.",
+      },
+      {
+        q: "Is BBPS API available 24/7?",
+        a: "Yes, BBPS services are available 24/7. However, some billers may have specific operating hours for payment processing.",
+      },
+      {
+        q: "How long does integration take?",
+        a: "With our well-documented APIs and sandbox environment, most partners complete integration within 2-4 weeks including testing and certification.",
+      },
     ],
   },
 
@@ -315,48 +592,130 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   "qr-payment": {
     seo: {
       title: "QR Payment API - UPI QR Code Payments",
-      description: "Accept UPI payments via QR codes with Eko's QR Payment API. Dynamic QR generation, real-time notifications, and seamless payment collection for merchants.",
-      keywords: "QR payment API, UPI QR API, dynamic QR code, QR code payments, merchant payments API, Eko API",
+      description:
+        "Accept UPI payments via QR codes with Eko's QR Payment API. Dynamic QR generation, real-time notifications, and seamless payment collection for merchants.",
+      keywords:
+        "QR payment API, UPI QR API, dynamic QR code, QR code payments, merchant payments API, Eko API",
       ogTitle: "QR Payment API - UPI QR Code Payments",
-      ogDescription: "Accept UPI payments via dynamic QR codes with real-time notifications.",
+      ogDescription:
+        "Accept UPI payments via dynamic QR codes with real-time notifications.",
     },
     title: "QR Payment API",
     desc: "Accept UPI payments via dynamic QR codes",
     heroTitle: "QR Payment API",
-    heroSubtitle: "Enable seamless UPI payments through dynamic QR codes. Perfect for retail stores, restaurants, and any business accepting digital payments.",
+    heroSubtitle:
+      "Enable seamless UPI payments through dynamic QR codes. Perfect for retail stores, restaurants, and any business accepting digital payments.",
     category: "payment",
     icon: QrCode,
     docsUrl: "https://developers.eko.in/reference/upi-generate-static-qr",
     heroImage: qrImg,
     features: [
-      { title: "Dynamic QR Generation", desc: "Generate unique QR codes for each transaction with custom amounts and references.", icon: QrCode },
-      { title: "Real-time Notifications", desc: "Instant webhooks and callbacks when payment is received.", icon: Zap },
-      { title: "Multi-app Support", desc: "Works with all UPI apps - Google Pay, PhonePe, Paytm, BHIM, and more.", icon: Smartphone },
-      { title: "Static QR Support", desc: "Generate static QR codes for fixed collection points.", icon: QrCode },
-      { title: "Transaction Tracking", desc: "Complete transaction history and reconciliation reports.", icon: BarChart3 },
-      { title: "Refund Management", desc: "Process refunds directly through the API when needed.", icon: RefreshCw },
+      {
+        title: "Dynamic QR Generation",
+        desc: "Generate unique QR codes for each transaction with custom amounts and references.",
+        icon: QrCode,
+      },
+      {
+        title: "Real-time Notifications",
+        desc: "Instant webhooks and callbacks when payment is received.",
+        icon: Zap,
+      },
+      {
+        title: "Multi-app Support",
+        desc: "Works with all UPI apps - Google Pay, PhonePe, Paytm, BHIM, and more.",
+        icon: Smartphone,
+      },
+      {
+        title: "Static QR Support",
+        desc: "Generate static QR codes for fixed collection points.",
+        icon: QrCode,
+      },
+      {
+        title: "Transaction Tracking",
+        desc: "Complete transaction history and reconciliation reports.",
+        icon: BarChart3,
+      },
+      {
+        title: "Refund Management",
+        desc: "Process refunds directly through the API when needed.",
+        icon: RefreshCw,
+      },
     ],
     benefits: [
-      { title: "Zero Hardware Cost", desc: "No POS machine required - customers scan and pay using their phones.", icon: Smartphone },
-      { title: "Instant Settlement", desc: "Fast settlement cycles to ensure healthy cash flow.", icon: Zap },
-      { title: "Lower MDR", desc: "Benefit from competitive merchant discount rates on UPI transactions.", icon: CreditCard },
-      { title: "Easy Integration", desc: "Simple REST APIs with comprehensive documentation and SDKs.", icon: CheckCircle },
-      { title: "Secure Transactions", desc: "Bank-grade security with encrypted QR codes and secure callbacks.", icon: Shield },
-      { title: "Analytics Dashboard", desc: "Track payments, view trends, and download reports easily.", icon: BarChart3 },
+      {
+        title: "Zero Hardware Cost",
+        desc: "No POS machine required - customers scan and pay using their phones.",
+        icon: Smartphone,
+      },
+      {
+        title: "Instant Settlement",
+        desc: "Fast settlement cycles to ensure healthy cash flow.",
+        icon: Zap,
+      },
+      {
+        title: "Lower MDR",
+        desc: "Benefit from competitive merchant discount rates on UPI transactions.",
+        icon: CreditCard,
+      },
+      {
+        title: "Easy Integration",
+        desc: "Simple REST APIs with comprehensive documentation and SDKs.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Secure Transactions",
+        desc: "Bank-grade security with encrypted QR codes and secure callbacks.",
+        icon: Shield,
+      },
+      {
+        title: "Analytics Dashboard",
+        desc: "Track payments, view trends, and download reports easily.",
+        icon: BarChart3,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Generate QR", desc: "Use API to generate dynamic or static QR codes." },
+      {
+        title: "Generate QR",
+        desc: "Use API to generate dynamic or static QR codes.",
+      },
       { title: "Display QR", desc: "Show QR to customers on screen or print." },
-      { title: "Receive Payments", desc: "Get instant notifications on successful payments." },
+      {
+        title: "Receive Payments",
+        desc: "Get instant notifications on successful payments.",
+      },
     ],
-    useCases: ["Retail Stores", "Restaurants & Cafes", "E-commerce COD", "Street Vendors", "Service Providers", "Subscription Payments", "Event Ticketing", "Donation Collection"],
+    useCases: [
+      "Retail Stores",
+      "Restaurants & Cafes",
+      "E-commerce COD",
+      "Street Vendors",
+      "Service Providers",
+      "Subscription Payments",
+      "Event Ticketing",
+      "Donation Collection",
+    ],
     faqs: [
-      { q: "What is a dynamic QR code?", a: "A dynamic QR code contains a unique transaction ID and amount for each payment. This allows automatic reconciliation and instant payment confirmation without manual verification." },
-      { q: "Which UPI apps are supported?", a: "Our QR codes work with all UPI-enabled apps including Google Pay, PhonePe, Paytm, BHIM, Amazon Pay, and bank-specific UPI apps." },
-      { q: "How fast are payment notifications?", a: "Payment notifications are sent in real-time, typically within 1-2 seconds of successful payment. We support both webhooks and polling mechanisms." },
-      { q: "Can I customize the QR code appearance?", a: "Yes, you can add your logo, change colors, and customize the QR code design while maintaining scannability." },
-      { q: "What are the settlement timelines?", a: "Standard settlement is T+1 (next business day). Faster settlement options are available for eligible merchants." },
+      {
+        q: "What is a dynamic QR code?",
+        a: "A dynamic QR code contains a unique transaction ID and amount for each payment. This allows automatic reconciliation and instant payment confirmation without manual verification.",
+      },
+      {
+        q: "Which UPI apps are supported?",
+        a: "Our QR codes work with all UPI-enabled apps including Google Pay, PhonePe, Paytm, BHIM, Amazon Pay, and bank-specific UPI apps.",
+      },
+      {
+        q: "How fast are payment notifications?",
+        a: "Payment notifications are sent in real-time, typically within 1-2 seconds of successful payment. We support both webhooks and polling mechanisms.",
+      },
+      {
+        q: "Can I customize the QR code appearance?",
+        a: "Yes, you can add your logo, change colors, and customize the QR code design while maintaining scannability.",
+      },
+      {
+        q: "What are the settlement timelines?",
+        a: "Standard settlement is T+1 (next business day). Faster settlement options are available for eligible merchants.",
+      },
     ],
   },
 
@@ -366,49 +725,134 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   cms: {
     seo: {
       title: "CMS Cash Collection API - Cash Management Services",
-      description: "Digitize cash collection with Eko's CMS API. Enable field agents to collect cash and instantly credit customer accounts. Perfect for NBFCs, insurance, and utilities.",
-      keywords: "CMS API, cash collection API, cash management services, field collection API, NBFC collection API, Eko API",
+      description:
+        "Digitize cash collection with Eko's CMS API. Enable field agents to collect cash and instantly credit customer accounts. Perfect for NBFCs, insurance, and utilities.",
+      keywords:
+        "CMS API, cash collection API, cash management services, field collection API, NBFC collection API, Eko API",
       ogTitle: "CMS Cash Collection API",
-      ogDescription: "Digitize cash collection with instant account credits through field agents.",
+      ogDescription:
+        "Digitize cash collection with instant account credits through field agents.",
     },
     title: "CMS Cash Collection API",
     desc: "Digitize cash collection with field agents",
     heroTitle: "Cash Collection API",
-    heroSubtitle: "Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility.",
+    heroSubtitle:
+      "Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility.",
     category: "payment",
     icon: Receipt,
     docsUrl: "https://developers.eko.in/v1/reference/get-cms-url",
     heroImage: cmsImg,
     features: [
-      { title: "Field Agent App", desc: "White-label mobile app for field agents to collect payments and issue receipts.", icon: Users },
-      { title: "Real-time Credits", desc: "Instant account credit upon cash collection with digital confirmation.", icon: Zap },
-      { title: "GPS Tracking", desc: "Track agent location and collection points for complete visibility.", icon: MapPin },
-      { title: "Digital Receipts", desc: "Auto-generated digital receipts sent to customers via SMS.", icon: FileText },
-      { title: "Cash Limit Management", desc: "Set daily and per-transaction cash limits for each agent.", icon: Banknote },
-      { title: "Reconciliation", desc: "Automated reconciliation with detailed collection reports.", icon: Clock },
+      {
+        title: "Field Agent App",
+        desc: "White-label mobile app for field agents to collect payments and issue receipts.",
+        icon: Users,
+      },
+      {
+        title: "Real-time Credits",
+        desc: "Instant account credit upon cash collection with digital confirmation.",
+        icon: Zap,
+      },
+      {
+        title: "GPS Tracking",
+        desc: "Track agent location and collection points for complete visibility.",
+        icon: MapPin,
+      },
+      {
+        title: "Digital Receipts",
+        desc: "Auto-generated digital receipts sent to customers via SMS.",
+        icon: FileText,
+      },
+      {
+        title: "Cash Limit Management",
+        desc: "Set daily and per-transaction cash limits for each agent.",
+        icon: Banknote,
+      },
+      {
+        title: "Reconciliation",
+        desc: "Automated reconciliation with detailed collection reports.",
+        icon: Clock,
+      },
     ],
     benefits: [
-      { title: "Reduce Collection Cost", desc: "Lower operational costs with efficient agent management and routing.", icon: Banknote },
-      { title: "Faster Realization", desc: "Instant account credits eliminate delays in payment realization.", icon: Zap },
-      { title: "Fraud Prevention", desc: "GPS tracking, photo proof, and digital receipts prevent collection fraud.", icon: Shield },
-      { title: "Customer Convenience", desc: "Doorstep collection improves customer experience and retention.", icon: Users },
-      { title: "Complete Visibility", desc: "Real-time dashboard showing collection status across all agents.", icon: CheckCircle },
-      { title: "Easy Integration", desc: "Simple API integration with your existing loan or billing system.", icon: FileText },
+      {
+        title: "Reduce Collection Cost",
+        desc: "Lower operational costs with efficient agent management and routing.",
+        icon: Banknote,
+      },
+      {
+        title: "Faster Realization",
+        desc: "Instant account credits eliminate delays in payment realization.",
+        icon: Zap,
+      },
+      {
+        title: "Fraud Prevention",
+        desc: "GPS tracking, photo proof, and digital receipts prevent collection fraud.",
+        icon: Shield,
+      },
+      {
+        title: "Customer Convenience",
+        desc: "Doorstep collection improves customer experience and retention.",
+        icon: Users,
+      },
+      {
+        title: "Complete Visibility",
+        desc: "Real-time dashboard showing collection status across all agents.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Easy Integration",
+        desc: "Simple API integration with your existing loan or billing system.",
+        icon: FileText,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Configure", desc: "Set up collection accounts and agent limits." },
-      { title: "Onboard Agents", desc: "Register field agents and distribute the app." },
+      {
+        title: "Configure",
+        desc: "Set up collection accounts and agent limits.",
+      },
+      {
+        title: "Onboard Agents",
+        desc: "Register field agents and distribute the app.",
+      },
       // { title: "Integrate", desc: "Connect with your billing/loan system via API." },
-      { title: "Go Live", desc: "Start collecting with real-time tracking and credits." },
+      {
+        title: "Go Live",
+        desc: "Start collecting with real-time tracking and credits.",
+      },
     ],
-    useCases: ["NBFC Loan Collection", "Insurance Premium Collection", "Utility Bill Collection", "Microfinance", "Chit Fund Collection", "Society Maintenance", "Subscription Collection", "Rental Collection"],
+    useCases: [
+      "NBFC Loan Collection",
+      "Insurance Premium Collection",
+      "Utility Bill Collection",
+      "Microfinance",
+      "Chit Fund Collection",
+      "Society Maintenance",
+      "Subscription Collection",
+      "Rental Collection",
+    ],
     faqs: [
-      { q: "How does the agent app work?", a: "Agents download our white-label app, log in with credentials, and can immediately start collecting. The app shows assigned customers, amounts due, and allows cash/digital collection with instant receipts." },
-      { q: "Is there a limit on collection amount?", a: "You can configure daily limits and per-transaction limits for each agent based on your risk policy. Higher limits require additional verification." },
-      { q: "How is fraud prevented?", a: "Multiple layers including GPS location logging, photo capture of cash, digital receipts sent directly to customers, and real-time reconciliation. Any discrepancy is flagged immediately." },
-      { q: "Can we use our own collection app?", a: "Yes, our APIs can be integrated into your existing mobile app. We provide SDKs and complete documentation for custom integration." },
-      { q: "What reports are available?", a: "Daily collection summary, agent-wise reports, location-based analytics, pending collections, and reconciliation reports. All reports can be exported or accessed via API." },
+      {
+        q: "How does the agent app work?",
+        a: "Agents download our white-label app, log in with credentials, and can immediately start collecting. The app shows assigned customers, amounts due, and allows cash/digital collection with instant receipts.",
+      },
+      {
+        q: "Is there a limit on collection amount?",
+        a: "You can configure daily limits and per-transaction limits for each agent based on your risk policy. Higher limits require additional verification.",
+      },
+      {
+        q: "How is fraud prevented?",
+        a: "Multiple layers including GPS location logging, photo capture of cash, digital receipts sent directly to customers, and real-time reconciliation. Any discrepancy is flagged immediately.",
+      },
+      {
+        q: "Can we use our own collection app?",
+        a: "Yes, our APIs can be integrated into your existing mobile app. We provide SDKs and complete documentation for custom integration.",
+      },
+      {
+        q: "What reports are available?",
+        a: "Daily collection summary, agent-wise reports, location-based analytics, pending collections, and reconciliation reports. All reports can be exported or accessed via API.",
+      },
     ],
   },
 
@@ -418,46 +862,125 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   payment: {
     seo: {
       title: "Payout API - Salary & Vendor Payments",
-      description: "Make instant salary disbursals and vendor payments using Eko's Payout API. Pay employees and vendors directly from your e-wallet balance with high success rates.",
-      keywords: "payout API, salary disbursal API, vendor payment API, fund transfer API, e-wallet payout, Eko API",
+      description:
+        "Make instant salary disbursals and vendor payments using Eko's Payout API. Pay employees and vendors directly from your e-wallet balance with high success rates.",
+      keywords:
+        "payout API, salary disbursal API, vendor payment API, fund transfer API, e-wallet payout, Eko API",
       ogTitle: "Payout API - Salary & Vendor Payments",
-      ogDescription: "Instant salary disbursals and vendor payments using your e-wallet balance.",
+      ogDescription:
+        "Instant salary disbursals and vendor payments using your e-wallet balance.",
     },
     title: "Payout API",
     desc: "Make salary & vendor payments easily",
     heroTitle: "Payout API",
-    heroSubtitle: "Pay your employees and vendors directly from your digital wallet balance. Easy-to-use, reliable, and secure fund transfer API for instant salary disbursals and vendor payments.",
+    heroSubtitle:
+      "Pay your employees and vendors directly from your digital wallet balance. Easy-to-use, reliable, and secure fund transfer API for instant salary disbursals and vendor payments.",
     category: "payment",
     icon: Send,
     docsUrl: "https://developers.eko.in/docs/fund-transfer",
     heroImage: payoutImg,
     features: [
-      { title: "Easy Salary Disbursals", desc: "Pay wages to your employees directly into their bank accounts instantly.", icon: Users },
-      { title: "Instant Vendor Payments", desc: "Settle outstanding dues with vendors in one go through a hassle-free process.", icon: Building },
-      { title: "Track Payments", desc: "Maintain a record of every payment transaction to avoid conflicts.", icon: FileText },
-      { title: "E-Wallet Payments", desc: "Use your e-wallet balance to make payments — no bank account needed.", icon: Wallet },
-      { title: "High Success Rate", desc: "Best-in-class success rates, as reliable as banks themselves.", icon: CheckCircle },
-      { title: "Secure Transfers", desc: "Every API call is secured with one-time-use tokens using asymmetric cryptography.", icon: Shield },
+      {
+        title: "Easy Salary Disbursals",
+        desc: "Pay wages to your employees directly into their bank accounts instantly.",
+        icon: Users,
+      },
+      {
+        title: "Instant Vendor Payments",
+        desc: "Settle outstanding dues with vendors in one go through a hassle-free process.",
+        icon: Building,
+      },
+      {
+        title: "Track Payments",
+        desc: "Maintain a record of every payment transaction to avoid conflicts.",
+        icon: FileText,
+      },
+      {
+        title: "E-Wallet Payments",
+        desc: "Use your e-wallet balance to make payments — no bank account needed.",
+        icon: Wallet,
+      },
+      {
+        title: "High Success Rate",
+        desc: "Best-in-class success rates, as reliable as banks themselves.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Secure Transfers",
+        desc: "Every API call is secured with one-time-use tokens using asymmetric cryptography.",
+        icon: Shield,
+      },
     ],
     benefits: [
-      { title: "24x7 Availability", desc: "Make payments anytime — not confined to banking hours.", icon: Clock },
-      { title: "Use E-Money", desc: "Pay directly from your e-wallet balance — much easier and faster than bank transfers.", icon: Wallet },
-      { title: "Best Success Rate", desc: "Transaction failures occur rarely. We ensure the best success rate for every transaction.", icon: Zap },
-      { title: "Simple Documentation", desc: "Comprehensive and constantly updated API documentation with full technical support.", icon: FileText },
-      { title: "Open-Source Libraries", desc: "Easy and error-proof integration with Eko's open-source libraries.", icon: RefreshCw },
-      { title: "Bank-Grade Security", desc: "Same APIs used internally at Eko, secured with asymmetric cryptography.", icon: Shield },
+      {
+        title: "24x7 Availability",
+        desc: "Make payments anytime — not confined to banking hours.",
+        icon: Clock,
+      },
+      {
+        title: "Use E-Money",
+        desc: "Pay directly from your e-wallet balance — much easier and faster than bank transfers.",
+        icon: Wallet,
+      },
+      {
+        title: "Best Success Rate",
+        desc: "Transaction failures occur rarely. We ensure the best success rate for every transaction.",
+        icon: Zap,
+      },
+      {
+        title: "Simple Documentation",
+        desc: "Comprehensive and constantly updated API documentation with full technical support.",
+        icon: FileText,
+      },
+      {
+        title: "Open-Source Libraries",
+        desc: "Easy and error-proof integration with Eko's open-source libraries.",
+        icon: RefreshCw,
+      },
+      {
+        title: "Bank-Grade Security",
+        desc: "Same APIs used internally at Eko, secured with asymmetric cryptography.",
+        icon: Shield,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Start Paying", desc: "Start making salary and vendor payments instantly." },
+      {
+        title: "Start Paying",
+        desc: "Start making salary and vendor payments instantly.",
+      },
     ],
-    useCases: ["Salary Disbursement", "Vendor Payments", "Contractor Payments", "Gig Worker Payouts", "Commission Payments", "Refund Processing", "Incentive Payouts", "Bulk Disbursements"],
+    useCases: [
+      "Salary Disbursement",
+      "Vendor Payments",
+      "Contractor Payments",
+      "Gig Worker Payouts",
+      "Commission Payments",
+      "Refund Processing",
+      "Incentive Payouts",
+      "Bulk Disbursements",
+    ],
     faqs: [
-      { q: "How does the Payout API work?", a: "You load your digital wallet balance and use the Payout API to transfer funds directly to any bank account in India. Payments are processed via IMPS/NEFT for instant or near-instant settlements." },
-      { q: "Do I need a bank account to make payments?", a: "No, you can use your e-wallet balance to make payments. This is much easier and faster than traditional bank transfers." },
-      { q: "Is the Payout API available 24x7?", a: "Yes, unlike banks, our Payout API works 24x7 including weekends and holidays, so you can make payments anytime." },
-      { q: "What is the success rate?", a: "We maintain one of the highest success rates in the industry. Transaction failures are extremely rare, and we are as reliable as banks themselves." },
-      { q: "What use cases are not allowed?", a: "The Payout API is strictly not for gaming, trading, betting, or any unauthorized/illegal activity." },
+      {
+        q: "How does the Payout API work?",
+        a: "You load your digital wallet balance and use the Payout API to transfer funds directly to any bank account in India. Payments are processed via IMPS/NEFT for instant or near-instant settlements.",
+      },
+      {
+        q: "Do I need a bank account to make payments?",
+        a: "No, you can use your e-wallet balance to make payments. This is much easier and faster than traditional bank transfers.",
+      },
+      {
+        q: "Is the Payout API available 24x7?",
+        a: "Yes, unlike banks, our Payout API works 24x7 including weekends and holidays, so you can make payments anytime.",
+      },
+      {
+        q: "What is the success rate?",
+        a: "We maintain one of the highest success rates in the industry. Transaction failures are extremely rare, and we are as reliable as banks themselves.",
+      },
+      {
+        q: "What use cases are not allowed?",
+        a: "The Payout API is strictly not for gaming, trading, betting, or any unauthorized/illegal activity.",
+      },
     ],
   },
 
@@ -467,47 +990,126 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   "upi-payout": {
     seo: {
       title: "UPI Payout API - Instant UPI Transfers",
-      description: "Send instant payouts to any UPI ID with Eko's UPI Payout API. Instant transfers, bulk payouts, and real-time status updates for businesses.",
-      keywords: "UPI payout API, instant payout API, UPI transfer API, bulk UPI payout, vendor payout API, Eko API",
+      description:
+        "Send instant payouts to any UPI ID with Eko's UPI Payout API. Instant transfers, bulk payouts, and real-time status updates for businesses.",
+      keywords:
+        "UPI payout API, instant payout API, UPI transfer API, bulk UPI payout, vendor payout API, Eko API",
       ogTitle: "UPI Payout API - Instant UPI Transfers",
-      ogDescription: "Send instant payouts to any UPI ID with real-time status updates.",
+      ogDescription:
+        "Send instant payouts to any UPI ID with real-time status updates.",
     },
     title: "UPI Payout API",
     desc: "Send instant payouts to any UPI ID",
     heroTitle: "UPI Payout API",
-    heroSubtitle: "Send money instantly to any UPI ID - VPAs, mobile numbers, or linked bank accounts. Perfect for vendor payments, refunds, and disbursements.",
+    heroSubtitle:
+      "Send money instantly to any UPI ID - VPAs, mobile numbers, or linked bank accounts. Perfect for vendor payments, refunds, and disbursements.",
     category: "payment",
     icon: Banknote,
     docsUrl: "https://developers.eko.in/reference/upi-vpa-payment",
     heroImage: payoutImg,
     features: [
-      { title: "Instant Transfers", desc: "Send money to any UPI ID with instant credit, 24x7.", icon: Zap },
-      { title: "VPA & Mobile Support", desc: "Pay to UPI IDs, mobile numbers, or bank account-linked VPAs.", icon: Send },
-      { title: "Bulk Payouts", desc: "Process thousands of payouts in a single API batch.", icon: Users },
-      { title: "Real-time Status", desc: "Instant webhook notifications for successful transfers.", icon: Clock },
-      { title: "Auto-retry Logic", desc: "Intelligent retry mechanism for failed transactions.", icon: CheckCircle },
-      { title: "Detailed Reports", desc: "Transaction-level reports with UTR and status details.", icon: FileText },
+      {
+        title: "Instant Transfers",
+        desc: "Send money to any UPI ID with instant credit, 24x7.",
+        icon: Zap,
+      },
+      {
+        title: "VPA & Mobile Support",
+        desc: "Pay to UPI IDs, mobile numbers, or bank account-linked VPAs.",
+        icon: Send,
+      },
+      {
+        title: "Bulk Payouts",
+        desc: "Process thousands of payouts in a single API batch.",
+        icon: Users,
+      },
+      {
+        title: "Real-time Status",
+        desc: "Instant webhook notifications for successful transfers.",
+        icon: Clock,
+      },
+      {
+        title: "Auto-retry Logic",
+        desc: "Intelligent retry mechanism for failed transactions.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Detailed Reports",
+        desc: "Transaction-level reports with UTR and status details.",
+        icon: FileText,
+      },
     ],
     benefits: [
-      { title: "Zero Bank Holidays", desc: "UPI works 24x7x365, including weekends and holidays.", icon: Clock },
-      { title: "Lower Cost", desc: "More cost-effective than NEFT/IMPS for small-value payouts.", icon: Wallet },
-      { title: "No Account Details", desc: "Just need UPI ID - no need to collect bank account details.", icon: Users },
-      { title: "Instant Confirmation", desc: "Know immediately if the transfer succeeded or failed.", icon: Zap },
-      { title: "High Success Rate", desc: "99%+ success rate with intelligent routing.", icon: CheckCircle },
-      { title: "Secure Transfers", desc: "Bank-grade encryption and secure API authentication.", icon: Shield },
+      {
+        title: "Zero Bank Holidays",
+        desc: "UPI works 24x7x365, including weekends and holidays.",
+        icon: Clock,
+      },
+      {
+        title: "Lower Cost",
+        desc: "More cost-effective than NEFT/IMPS for small-value payouts.",
+        icon: Wallet,
+      },
+      {
+        title: "No Account Details",
+        desc: "Just need UPI ID - no need to collect bank account details.",
+        icon: Users,
+      },
+      {
+        title: "Instant Confirmation",
+        desc: "Know immediately if the transfer succeeded or failed.",
+        icon: Zap,
+      },
+      {
+        title: "High Success Rate",
+        desc: "99%+ success rate with intelligent routing.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Secure Transfers",
+        desc: "Bank-grade encryption and secure API authentication.",
+        icon: Shield,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Add Funds", desc: "Load your payout wallet with working capital." },
+      {
+        title: "Add Funds",
+        desc: "Load your payout wallet with working capital.",
+      },
       { title: "Scale", desc: "Process bulk payouts as your business grows." },
     ],
-    useCases: ["Vendor Payments", "Salary Disbursement", "Refunds & Cashbacks", "Gig Worker Payments", "Insurance Claims", "Loan Disbursement", "Contest Winnings", "Affiliate Payouts"],
+    useCases: [
+      "Vendor Payments",
+      "Salary Disbursement",
+      "Refunds & Cashbacks",
+      "Gig Worker Payments",
+      "Insurance Claims",
+      "Loan Disbursement",
+      "Contest Winnings",
+      "Affiliate Payouts",
+    ],
     faqs: [
-      { q: "What UPI IDs are supported?", a: "We support all UPI IDs across banks - user@upi, user@paytm, user@ybl, mobile@upi, and any other valid VPA format." },
-      { q: "What is the maximum payout limit?", a: "Individual UPI payouts can be up to ₹1 lakh per transaction. Higher limits are available for verified business accounts." },
-      { q: "How do I handle failed payouts?", a: "Failed payouts are automatically retried based on error type. You receive webhook notifications for all status changes. Funds are returned to your wallet for non-recoverable failures." },
-      { q: "Is there a minimum payout amount?", a: "Minimum payout is ₹1. There's no limit on number of payouts, making it ideal for micro-transactions." },
-      { q: "How do I verify UPI ID before payout?", a: "Use our UPI ID Verification API to validate the UPI ID and get beneficiary name before initiating payout." },
+      {
+        q: "What UPI IDs are supported?",
+        a: "We support all UPI IDs across banks - user@upi, user@paytm, user@ybl, mobile@upi, and any other valid VPA format.",
+      },
+      {
+        q: "What is the maximum payout limit?",
+        a: "Individual UPI payouts can be up to ₹1 lakh per transaction. Higher limits are available for verified business accounts.",
+      },
+      {
+        q: "How do I handle failed payouts?",
+        a: "Failed payouts are automatically retried based on error type. You receive webhook notifications for all status changes. Funds are returned to your wallet for non-recoverable failures.",
+      },
+      {
+        q: "Is there a minimum payout amount?",
+        a: "Minimum payout is ₹1. There's no limit on number of payouts, making it ideal for micro-transactions.",
+      },
+      {
+        q: "How do I verify UPI ID before payout?",
+        a: "Use our UPI ID Verification API to validate the UPI ID and get beneficiary name before initiating payout.",
+      },
     ],
   },
 
@@ -516,19 +1118,24 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   pan: {
     seo: {
-      title: "PAN Verification API India | Instant PAN Validation for KYC & Onboarding",
-      description: "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows for Fintechs and NBFCs.",
-      keywords: "PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API",
+      title:
+        "PAN Verification API India | Instant PAN Validation for KYC & Onboarding",
+      description:
+        "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows for Fintechs and NBFCs.",
+      keywords:
+        "PAN Verification API, PAN Validation API, KYC PAN API, PAN Check API, Identity Verification API",
     },
     title: "PAN Verification API",
     desc: "Verify PAN details in real time",
     heroTitle: "PAN Verification API for KYC & Onboarding in India",
-    heroSubtitle: "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows.",
+    heroSubtitle:
+      "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows.",
     category: "verification",
     icon: FileText,
     docsUrl: "https://developers.eko.in/reference/pan-lite",
     heroImage: panImg,
-    overview: "The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms.",
+    overview:
+      "The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms.",
     keyBenefits: [
       "Instant PAN validation",
       "Improves KYC accuracy and speed",
@@ -537,20 +1144,51 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for high-volume verifications",
     ],
     features: [
-      { title: "Real-Time PAN Validation", desc: "Verify PAN details instantly with structured responses." },
-      { title: "High Accuracy Responses", desc: "Returns validated PAN information for reliable identity checks." },
-      { title: "Automation Friendly", desc: "Easily integrate into digital onboarding and KYC pipelines." },
-      { title: "Scalable Verification", desc: "Designed to support large volumes without performance impact." },
+      {
+        title: "Real-Time PAN Validation",
+        desc: "Verify PAN details instantly with structured responses.",
+      },
+      {
+        title: "High Accuracy Responses",
+        desc: "Returns validated PAN information for reliable identity checks.",
+      },
+      {
+        title: "Automation Friendly",
+        desc: "Easily integrate into digital onboarding and KYC pipelines.",
+      },
+      {
+        title: "Scalable Verification",
+        desc: "Designed to support large volumes without performance impact.",
+      },
     ],
-    whoShouldUse: ["Fintech and financial institutions", "Marketplaces and platforms", "NBFCs and lenders", "Enterprises with KYC requirements"],
-    useCases: ["Customer KYC verification", "Merchant and vendor onboarding", "Account opening workflows", "Compliance and due diligence checks"],
-    trustAndCompliance: ["Compliance-aligned verification workflows", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Fintech and financial institutions",
+      "Marketplaces and platforms",
+      "NBFCs and lenders",
+      "Enterprises with KYC requirements",
+    ],
+    useCases: [
+      "Customer KYC verification",
+      "Merchant and vendor onboarding",
+      "Account opening workflows",
+      "Compliance and due diligence checks",
+    ],
+    trustAndCompliance: [
+      "Compliance-aligned verification workflows",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       // { title: "Sign Up", desc: "Create an account on Connect App.", tip: "Takes less than 2 minutes" },
       // { title: "Submit Documents", desc: "Submit necessary documents for activation.", tip: "KYC docs verified in 24 hours" },
       // { title: "Integrate API", desc: "Integrate PAN Verification API into your system.", tip: "API keys generated instantly" },
-      { title: "Go Live", desc: "Start validating PAN details in production.", tip: "Sandbox available for testing" },
+      {
+        title: "Go Live",
+        desc: "Start validating PAN details in production.",
+        tip: "Sandbox available for testing",
+      },
     ],
     leadForm: {
       title: "Get PAN Verification API Access",
@@ -559,7 +1197,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     inputOutputPreviews: [
       {
         apiName: "PAN Lite",
-        description: "Quick PAN validation with match results for basic KYC checks.",
+        description:
+          "Quick PAN validation with match results for basic KYC checks.",
         bestFor: "Basic PAN status checks",
         docsUrl: "https://developers.eko.in/reference/pan-lite",
         endpoint: "/pan-lite",
@@ -572,7 +1211,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "PAN Status", value: "Valid" },
           { label: "Name Match", value: "Matched" },
           { label: "DOB Match", value: "Matched" },
-          { label: "Aadhaar Seeding Status", value: "Seeded", icon: Fingerprint },
+          {
+            label: "Aadhaar Seeding Status",
+            value: "Seeded",
+            icon: Fingerprint,
+          },
         ],
         sampleJson: {
           method: "POST",
@@ -607,7 +1250,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       },
       {
         apiName: "PAN Advanced",
-        description: "Detailed PAN data including holder name, category, and Aadhaar seeding status.",
+        description:
+          "Detailed PAN data including holder name, category, and Aadhaar seeding status.",
         bestFor: "KYC workflows needing richer match details",
         docsUrl: "https://developers.eko.in/reference/pan-advanced",
         endpoint: "/pan-advanced",
@@ -621,11 +1265,19 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "PAN Type", value: "Individual" },
           { label: "Gender", value: "Male", icon: User },
           { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
-          { label: "Masked Aadhaar", value: "XXXX-XXXX-1234", icon: Fingerprint },
+          {
+            label: "Masked Aadhaar",
+            value: "XXXX-XXXX-1234",
+            icon: Fingerprint,
+          },
           { label: "Aadhaar Linked?", value: "Yes" },
           { label: "Mobile Number", value: "9876543210", icon: Smartphone },
           { label: "Email", value: "rajesh.kumar@example.com", icon: Mail },
-          { label: "Address (Full)", value: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072", icon: MapPin },
+          {
+            label: "Address (Full)",
+            value: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
+            icon: MapPin,
+          },
         ],
         sampleJson: {
           method: "POST",
@@ -654,7 +1306,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
               email: "rajesh.kumar@example.com",
               mobile_number: "9876543210",
               address: {
-                full_address: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
+                full_address:
+                  "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
                 city: "Mumbai",
                 state: "Maharashtra",
                 pincode: 400072,
@@ -666,7 +1319,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       },
       {
         apiName: "Bulk PAN Verification",
-        description: "Verify multiple PANs in a single async batch request for high-volume operations.",
+        description:
+          "Verify multiple PANs in a single async batch request for high-volume operations.",
         bestFor: "High-volume PAN verification with async processing",
         docsUrl: "https://developers.eko.in/reference/pan-bulk-verify",
         endpoint: "/pan/bulk",
@@ -678,7 +1332,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Status", value: "Processing" },
           { label: "Reference ID", value: "REF123456", icon: Hash },
           { label: "Batch ID", value: "BLK789" },
-          { label: "Note", value: "Poll Bulk PAN Verification Status API for results", icon: Info },
+          {
+            label: "Note",
+            value: "Poll Bulk PAN Verification Status API for results",
+            icon: Info,
+          },
         ],
         sampleJson: {
           method: "POST",
@@ -696,7 +1354,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
             data: {
               reference_id: 123456,
             },
-            message: "Bulk PAN verification request accepted. Poll status API for results.",
+            message:
+              "Bulk PAN verification request accepted. Poll status API for results.",
           },
         },
       },
@@ -709,18 +1368,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   aadhaar: {
     seo: {
       title: "Aadhaar Verification API India | Secure Identity Verification",
-      description: "Integrate Aadhaar Verification API to verify identity securely with consent-based, compliance-ready workflows.",
-      keywords: "Aadhaar Verification API, Aadhaar KYC API, Identity Verification API, UIDAI Verification API, Digital KYC API",
+      description:
+        "Integrate Aadhaar Verification API to verify identity securely with consent-based, compliance-ready workflows.",
+      keywords:
+        "Aadhaar Verification API, Aadhaar KYC API, Identity Verification API, UIDAI Verification API, Digital KYC API",
     },
     title: "Aadhaar Verification API",
     desc: "Verify Aadhaar details securely",
     heroTitle: "Aadhaar Verification API for Secure Digital Identity",
-    heroSubtitle: "Verify Aadhaar details through consent-based, real-time verification workflows.",
+    heroSubtitle:
+      "Verify Aadhaar details through consent-based, real-time verification workflows.",
     category: "verification",
     icon: ShieldCheck,
     docsUrl: "https://developers.eko.in/reference/aadhaar-verification-apis",
     heroImage: aadhaarImg,
-    overview: "The Aadhaar Verification API enables businesses to validate Aadhaar details securely as part of identity verification and KYC processes. It is designed for regulated onboarding, fraud prevention, and compliance-driven use cases.",
+    overview:
+      "The Aadhaar Verification API enables businesses to validate Aadhaar details securely as part of identity verification and KYC processes. It is designed for regulated onboarding, fraud prevention, and compliance-driven use cases.",
     keyBenefits: [
       "Consent-based Aadhaar verification",
       "Faster customer onboarding",
@@ -729,24 +1392,60 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Scalable for high-volume KYC operations",
     ],
     features: [
-      { title: "Consent-Based Verification", desc: "Aadhaar verification flows designed with user consent at the core." },
-      { title: "Real-Time Responses", desc: "Instant verification results with structured response payloads." },
-      { title: "Automation Ready", desc: "Seamlessly integrate into digital onboarding and KYC systems." },
-      { title: "Scalable Architecture", desc: "Built to handle large verification volumes reliably." },
+      {
+        title: "Consent-Based Verification",
+        desc: "Aadhaar verification flows designed with user consent at the core.",
+      },
+      {
+        title: "Real-Time Responses",
+        desc: "Instant verification results with structured response payloads.",
+      },
+      {
+        title: "Automation Ready",
+        desc: "Seamlessly integrate into digital onboarding and KYC systems.",
+      },
+      {
+        title: "Scalable Architecture",
+        desc: "Built to handle large verification volumes reliably.",
+      },
     ],
-    whoShouldUse: ["Fintech companies and lenders", "Banks and NBFCs", "Marketplaces and platforms", "Enterprises with regulated onboarding requirements"],
-    useCases: ["Customer KYC onboarding", "User identity verification", "Account opening workflows", "Compliance and due diligence checks"],
-    trustAndCompliance: ["Consent-first verification approach", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Fintech companies and lenders",
+      "Banks and NBFCs",
+      "Marketplaces and platforms",
+      "Enterprises with regulated onboarding requirements",
+    ],
+    useCases: [
+      "Customer KYC onboarding",
+      "User identity verification",
+      "Account opening workflows",
+      "Compliance and due diligence checks",
+    ],
+    trustAndCompliance: [
+      "Consent-first verification approach",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start verifying Aadhaar details in production." },
+      {
+        title: "Go Live",
+        desc: "Start verifying Aadhaar details in production.",
+      },
     ],
     leadForm: {
       title: "Get Aadhaar Verification API Access",
     },
     faqs: [
-      { q: "Is Aadhaar verification consent-based?", a: "Yes, all Aadhaar verification flows are designed with explicit user consent at the core, ensuring transparency and compliance." },
-      { q: "How fast is the verification?", a: "Verification is real-time with instant results returned in structured response payloads." },
+      {
+        q: "Is Aadhaar verification consent-based?",
+        a: "Yes, all Aadhaar verification flows are designed with explicit user consent at the core, ensuring transparency and compliance.",
+      },
+      {
+        q: "How fast is the verification?",
+        a: "Verification is real-time with instant results returned in structured response payloads.",
+      },
     ],
     // inputOutputPreview: comingSoonPreview("Aadhaar Verification"),
   },
@@ -756,51 +1455,132 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   bank: {
     seo: {
-      title: "Bank Account Verification API India - Penny Drop & IFSC",
-      description: "Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts.",
-      keywords: "bank account verification API, penny drop API, IFSC validation API, bank verification, account verification, Eko API",
+      title: "Bank Account Verification API India | Penny Drop & Name Match",
+      description:
+        "Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts.",
+      keywords:
+        "bank account verification API, penny drop API, IFSC validation API, bank verification, account verification, Eko API",
     },
     title: "Bank Account Verification API",
     desc: "Verify bank account details instantly with penny-drop verification",
-    heroTitle: "Bank Account Verification",
-    heroSubtitle: "Verify bank account details to prevent failed transactions and reduce operational costs. Instant verification with penny-drop and account holder name matching.",
+    heroTitle:
+      "Bank Account Verification API for Penny Drop & Name Matching in India",
+    heroSubtitle:
+      "Verify bank account details to prevent failed transactions and reduce operational costs. Instant verification with penny-drop and account holder name matching.",
     category: "verification",
     icon: Building2,
     docsUrl: "https://developers.eko.in/reference/bank-account-verification",
     heroImage: bankImg,
     features: [
-      { title: "Penny Drop Verification", desc: "Send ₹1 to verify account exists and is active before large payouts.", icon: CreditCard },
-      { title: "Account Status Check", desc: "Verify if the account is active, dormant, or closed.", icon: CheckCircle },
-      { title: "Name Matching", desc: "Get account holder name for verification against provided details.", icon: FileText },
-      { title: "IFSC Validation", desc: "Validate IFSC codes and get bank branch details.", icon: Building },
-      { title: "Real-time Results", desc: "Get verification results within seconds for seamless workflows.", icon: Zap },
-      { title: "Bulk Verification", desc: "Verify multiple accounts in a single API call for batch processing.", icon: Database },
+      {
+        title: "Penny Drop Verification",
+        desc: "Send ₹1 to verify account exists and is active before large payouts.",
+        icon: CreditCard,
+      },
+      {
+        title: "Account Status Check",
+        desc: "Verify if the account is active, dormant, or closed.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Name Matching",
+        desc: "Get account holder name for verification against provided details.",
+        icon: FileText,
+      },
+      {
+        title: "IFSC Validation",
+        desc: "Validate IFSC codes and get bank branch details.",
+        icon: Building,
+      },
+      {
+        title: "Real-time Results",
+        desc: "Get verification results within seconds for seamless workflows.",
+        icon: Zap,
+      },
+      {
+        title: "Bulk Verification",
+        desc: "Verify multiple accounts in a single API call for batch processing.",
+        icon: Database,
+      },
     ],
     benefits: [
-      { title: "Reduce Failed Payouts", desc: "Verify accounts before disbursement to minimize transaction failures and reversals.", icon: CheckCircle },
-      { title: "Prevent Fraud", desc: "Match account holder names to prevent payouts to wrong accounts.", icon: Shield },
-      { title: "Lower Operational Costs", desc: "Reduce cost of failed transactions, reversals, and manual reconciliation.", icon: CreditCard },
-      { title: "Instant Verification", desc: "Real-time results for seamless customer and vendor onboarding.", icon: Zap },
-      { title: "All Banks Supported", desc: "Verify accounts across all major banks in India through a single API.", icon: Building },
-      { title: "24/7 Availability", desc: "Round-the-clock verification service with 99.9% uptime.", icon: Clock },
+      {
+        title: "Reduce Failed Payouts",
+        desc: "Verify accounts before disbursement to minimize transaction failures and reversals.",
+        icon: CheckCircle,
+      },
+      {
+        title: "Prevent Fraud",
+        desc: "Match account holder names to prevent payouts to wrong accounts.",
+        icon: Shield,
+      },
+      {
+        title: "Lower Operational Costs",
+        desc: "Reduce cost of failed transactions, reversals, and manual reconciliation.",
+        icon: CreditCard,
+      },
+      {
+        title: "Instant Verification",
+        desc: "Real-time results for seamless customer and vendor onboarding.",
+        icon: Zap,
+      },
+      {
+        title: "All Banks Supported",
+        desc: "Verify accounts across all major banks in India through a single API.",
+        icon: Building,
+      },
+      {
+        title: "24/7 Availability",
+        desc: "Round-the-clock verification service for reliable, high-volume workflows.",
+        icon: Clock,
+      },
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start verifying real bank accounts before payouts." },
+      {
+        title: "Go Live",
+        desc: "Start verifying real bank accounts before payouts.",
+      },
     ],
-    useCases: ["Salary Disbursement", "Vendor Payments", "Loan Disbursement", "Insurance Claims", "Refund Processing", "Incentive Payouts", "Commission Payments", "E-commerce Seller Onboarding"],
+    useCases: [
+      "Salary Disbursement",
+      "Vendor Payments",
+      "Loan Disbursement",
+      "Insurance Claims",
+      "Refund Processing",
+      "Incentive Payouts",
+      "Commission Payments",
+      "E-commerce Seller Onboarding",
+    ],
     faqs: [
-      { q: "What is penny drop verification?", a: "Penny drop is a method where a small amount (₹1) is transferred to verify the account is active and details are correct. The account holder name is returned for matching." },
-      { q: "Do customers receive the ₹1?", a: "Yes, the ₹1 is credited to the verified account. This is a real transaction that confirms the account is active and can receive funds." },
-      { q: "How accurate is name matching?", a: "Our intelligent name matching algorithm handles variations, abbreviations, and common spelling differences with 99%+ accuracy." },
-      { q: "Which banks are supported?", a: "We support all major banks in India including SBI, HDFC, ICICI, Axis, Kotak, Yes Bank, and 100+ other banks." },
-      { q: "What if verification fails?", a: "Failed verifications return specific error codes indicating the reason - invalid account, closed account, incorrect IFSC, etc. - helping you take appropriate action." },
+      {
+        q: "What is penny drop verification?",
+        a: "Penny drop is a method where a small amount (₹1) is transferred to verify the account is active and details are correct. The account holder name is returned for matching.",
+      },
+      {
+        q: "Do customers receive the ₹1?",
+        a: "Yes, the ₹1 is credited to the verified account. This is a real transaction that confirms the account is active and can receive funds.",
+      },
+      {
+        q: "How accurate is name matching?",
+        a: "Our intelligent name matching algorithm handles variations, abbreviations, and common spelling differences with 99%+ accuracy.",
+      },
+      {
+        q: "Which banks are supported?",
+        a: "We support all major banks in India including SBI, HDFC, ICICI, Axis, Kotak, Yes Bank, and 100+ other banks.",
+      },
+      {
+        q: "What if verification fails?",
+        a: "Failed verifications return specific error codes indicating the reason - invalid account, closed account, incorrect IFSC, etc. - helping you take appropriate action.",
+      },
     ],
     inputOutputPreviews: [
       {
         apiName: "Bank Account Verification",
-        description: "Verify a bank account number by transferring ₹1 to retrieve the name of the account holder",
-        docsUrl: "https://developers.eko.in/reference/bank-account-verification",
+        description:
+          "Verify a bank account number by transferring ₹1 to retrieve the name of the account holder",
+        docsUrl:
+          "https://developers.eko.in/reference/bank-account-verification",
         endpoint: "/bank-account-verification",
         inputs: [
           { label: "Account Number", value: "1234567890", icon: Hash },
@@ -839,7 +1619,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         apiName: "Bulk Bank Account Verification",
         description: "Verify multiple bank accounts in a single API call",
-        docsUrl: "https://developers.eko.in/reference/bulk-bank-account-verification",
+        docsUrl:
+          "https://developers.eko.in/reference/bulk-bank-account-verification",
         endpoint: "/bulk-bank-account-verification",
         inputs: [
           { label: "Entry 1", value: "1234567890, SBIN0001234", icon: Hash },
@@ -849,7 +1630,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "Status", value: "Received", icon: CheckCircle },
           { label: "Reference ID", value: "123456", icon: Hash },
           { label: "Bulk Verification ID", value: "3356655212", icon: Hash },
-          { label: "Note", value: "Poll Bulk Bank Account Verification Status API for results", icon: Info },
+          {
+            label: "Note",
+            value: "Poll Bulk Bank Account Verification Status API for results",
+            icon: Info,
+          },
         ],
         sampleJson: {
           method: "POST",
@@ -868,7 +1653,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
               reference_id: 123456,
               bulk_verification_id: "3356655212",
             },
-            message: "Bulk verification request accepted. Poll status API for results.",
+            message:
+              "Bulk verification request accepted. Poll status API for results.",
           },
         },
       },
@@ -881,18 +1667,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   gst: {
     seo: {
       title: "GST Verification API India | Real-Time GSTIN Validation",
-      description: "Integrate GST Verification API to validate GSTIN details instantly for vendor onboarding, compliance, and fraud prevention.",
-      keywords: "GST Verification API, GSTIN Verification API, GST Check API, Business Verification API, GST Validation API",
+      description:
+        "Integrate GST Verification API to validate GSTIN details instantly for vendor onboarding, compliance, and fraud prevention.",
+      keywords:
+        "GST Verification API, GSTIN Verification API, GST Check API, Business Verification API, GSTIN Validation API",
     },
     title: "GST Verification API",
     desc: "Validate GSTIN details instantly",
-    heroTitle: "GST Verification API for Business Identity Validation",
-    heroSubtitle: "Verify GSTIN details in real time to ensure compliant and trustworthy business onboarding.",
+    heroTitle:
+      "GST Verification API for GSTIN Validation & Business Onboarding",
+    heroSubtitle:
+      "Verify GSTIN status, legal name, trade name, taxpayer type, registration details, and principal address in real time for vendor onboarding, merchant verification, KYB, and compliance workflows.",
     category: "verification",
     icon: BarChart3,
     docsUrl: "https://developers.eko.in/reference/verify-gstin",
     heroImage: gstImg,
-    overview: "The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical.",
+    overview:
+      "The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical.",
     keyBenefits: [
       "Instant GSTIN verification",
       "Improves vendor and merchant onboarding accuracy",
@@ -901,30 +1692,70 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Scales for high-volume verification needs",
     ],
     features: [
-      { title: "Real-Time GSTIN Validation", desc: "Verify GST registration details instantly with structured responses." },
-      { title: "Business Identity Confirmation", desc: "Validate legal business information before onboarding or payouts." },
-      { title: "Automation Ready", desc: "Easily integrate into KYB and compliance pipelines." },
-      { title: "High-Volume Support", desc: "Built to handle large verification volumes reliably." },
+      {
+        title: "Real-Time GSTIN Validation",
+        desc: "Verify GST registration details instantly with structured responses.",
+      },
+      {
+        title: "Business Identity Confirmation",
+        desc: "Validate legal business information before onboarding or payouts.",
+      },
+      {
+        title: "Automation Ready",
+        desc: "Easily integrate into KYB and compliance pipelines.",
+      },
+      {
+        title: "High-Volume Support",
+        desc: "Built to handle large verification volumes reliably.",
+      },
     ],
-    whoShouldUse: ["Marketplaces and B2B platforms", "Fintechs onboarding merchants or vendors", "Enterprises with supplier verification needs", "Compliance-driven organizations"],
-    useCases: ["Vendor and supplier onboarding", "Merchant verification for platforms", "Compliance and due diligence checks", "B2B onboarding workflows"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted verification communication", "Compliance-aligned data handling", "Audit-ready verification records"],
+    whoShouldUse: [
+      "Marketplaces and B2B platforms",
+      "Fintechs onboarding merchants or vendors",
+      "Enterprises with supplier verification needs",
+      "Compliance-driven organizations",
+    ],
+    useCases: [
+      "Vendor and supplier onboarding",
+      "Merchant verification for platforms",
+      "Compliance and due diligence checks",
+      "B2B onboarding workflows",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted verification communication",
+      "Compliance-aligned data handling",
+      "Audit-ready verification records",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start verifying GSTIN details in production." },
+      {
+        title: "Go Live",
+        desc: "Start verifying GSTIN details in production.",
+      },
     ],
     leadForm: {
       title: "Get GST Verification API Access",
     },
     faqs: [
-      { q: "What details are returned in GST verification?", a: "The API returns GSTIN status, legal business name, trade name, constitution of business, taxpayer type, nature of business activities, registration date, last update date, state jurisdiction, and principal place of address." },
-      { q: "Can I verify multiple GSTINs?", a: "Yes, the API supports high-volume verification for batch processing needs." },
-      { q: "Is the data real-time?", a: "Yes, GSTIN details are verified in real time against official records." },
+      {
+        q: "What details are returned in GST verification?",
+        a: "The API returns GSTIN status, legal business name, trade name, constitution of business, taxpayer type, nature of business activities, registration date, last update date, state jurisdiction, and principal place of address.",
+      },
+      {
+        q: "Can I verify multiple GSTINs?",
+        a: "Yes, the API supports high-volume verification for batch processing needs.",
+      },
+      {
+        q: "Is the data real-time?",
+        a: "Yes, GSTIN details are verified in real time against official records.",
+      },
     ],
     inputOutputPreviews: [
       {
         apiName: "GST Verification",
-        description: "Validate GSTIN details instantly for vendor onboarding and compliance",
+        description:
+          "Validate GSTIN details instantly for vendor onboarding and compliance",
         docsUrl: "https://developers.eko.in/reference/verify-gstin",
         endpoint: "/verify-gstin",
         inputs: [
@@ -933,11 +1764,24 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         ],
         outputs: [
           { label: "GST Status", value: "Active" },
-          { label: "Legal Name", value: "Acme Private Limited", icon: Building },
-          { label: "Trade Name", value: "Acme Private Limited", icon: Building },
+          {
+            label: "Legal Name",
+            value: "Acme Private Limited",
+            icon: Building,
+          },
+          {
+            label: "Trade Name",
+            value: "Acme Private Limited",
+            icon: Building,
+          },
           { label: "Address", value: "123, MG Road, Bangalore", icon: MapPin },
           { label: "Constitution", value: "Private Limited", icon: Building },
-          { label: "Nature of Business", value: "Wholesale, Supplier of Services, Recipient of Goods or Services", icon: Briefcase },
+          {
+            label: "Nature of Business",
+            value:
+              "Wholesale, Supplier of Services, Recipient of Goods or Services",
+            icon: Briefcase,
+          },
           { label: "Taxpayer Type", value: "Regular", icon: User },
           { label: "Registration Date", value: "01/07/2017", icon: Calendar },
           { label: "Update Date", value: "01/02/2022", icon: Calendar },
@@ -965,7 +1809,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
               date_of_registration: "01/07/2017",
               last_update_date: "01/02/2022",
               state_jurisdiction: "Karnataka",
-              principal_place_address: "123, MG Road, Bangalore, Karnataka 560001",
+              principal_place_address:
+                "123, MG Road, Bangalore, Karnataka 560001",
             },
             message: "GSTIN verification successful",
           },
@@ -980,7 +1825,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
           { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
         ],
         outputs: [
-          { label: "GSTIN List", value: "29ABCDE1234F1Z5 (Maharashtra / Active), 27ABCDE1234F1Z2 (Karnataka / Inactive)", icon: FileText },
+          {
+            label: "GSTIN List",
+            value:
+              "29ABCDE1234F1Z5 (Maharashtra / Active), 27ABCDE1234F1Z2 (Karnataka / Inactive)",
+            icon: FileText,
+          },
         ],
         sampleJson: {
           method: "POST",
@@ -996,8 +1846,16 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
             data: {
               pan: "ABCDE1234F",
               gstin_list: [
-                { gstin: "29ABCDE1234F1Z5", status: "Active", state: "Maharashtra" },
-                { gstin: "27ABCDE1234F1Z2", status: "Inactive", state: "Karnataka" },
+                {
+                  gstin: "29ABCDE1234F1Z5",
+                  status: "Active",
+                  state: "Maharashtra",
+                },
+                {
+                  gstin: "27ABCDE1234F1Z2",
+                  status: "Inactive",
+                  state: "Karnataka",
+                },
               ],
             },
             message: "GSTIN fetch successful",
@@ -1012,19 +1870,24 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   upi: {
     seo: {
-      title: "UPI ID (VPA) Verification API | Verify UPI VPA & Registered Phone Number",
-      description: "Verify UPI IDs (VPA) and registered phone numbers in real time. Confirm payee name before initiating UPI transfers to reduce payout failures.",
-      keywords: "UPI ID Verification API, VPA Verification API, UPI VPA check API, Verify UPI ID, Verify UPI VPA, Virtual Payment Address verification, UPI verification API India",
+      title:
+        "UPI ID (VPA) Verification API | Verify UPI VPA & Registered Phone Number",
+      description:
+        "Verify UPI IDs (VPA) and registered phone numbers in real time. Confirm payee name before initiating UPI transfers to reduce payout failures.",
+      keywords:
+        "UPI ID Verification API, VPA Verification API, UPI VPA check API, Verify UPI ID, Verify UPI VPA, Virtual Payment Address verification, UPI verification API India",
     },
     title: "UPI ID (VPA) Verification API",
     desc: "Verify UPI IDs (VPA) and registered phone number",
     heroTitle: "UPI ID (VPA) Verification API – Confirm Payee Before Payment",
-    heroSubtitle: "Validate UPI IDs — also known as Virtual Payment Address (VPA) — and registered phone numbers in real time. Confirm payee name before initiating transfers to reduce payout failures and payment fraud.",
+    heroSubtitle:
+      "Validate UPI IDs — also known as Virtual Payment Address (VPA) — and registered phone numbers in real time. Confirm payee name before initiating transfers to reduce payout failures and payment fraud.",
     category: "verification",
     icon: Zap,
     docsUrl: "https://developers.eko.in/reference/upi-validate-vpa",
     heroImage: upiVerifyImg,
-    overview: "The UPI ID (VPA) Verification API validates Virtual Payment Addresses and registered phone numbers in real time. It returns the verified payee name, VPA, and registered mobile — helping you confirm the recipient before initiating UPI transfers and reducing wrong-payee payment failures.",
+    overview:
+      "The UPI ID (VPA) Verification API validates Virtual Payment Addresses and registered phone numbers in real time. It returns the verified payee name, VPA, and registered mobile — helping you confirm the recipient before initiating UPI transfers and reducing wrong-payee payment failures.",
     keyBenefits: [
       "Real-time UPI ID (VPA) verification with payee name",
       "Verify registered phone number linked to VPA",
@@ -1033,10 +1896,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "24×7 manual integration support",
     ],
     features: [
-      { title: "Verify UPI ID (VPA)", desc: "Validate whether a UPI ID (VPA) is correct and retrieve the registered payee name before initiating a transfer." },
-      { title: "Verify Registered Phone Number", desc: "Confirm the mobile number registered with the UPI ID (VPA) to strengthen payee verification." },
-      { title: "Payee Name Confirmation", desc: "Returns the verified recipient name linked to the UPI ID (VPA) — enables name-match checks before payment." },
-      { title: "Secure & Robust", desc: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography." },
+      {
+        title: "Verify UPI ID (VPA)",
+        desc: "Validate whether a UPI ID (VPA) is correct and retrieve the registered payee name before initiating a transfer.",
+      },
+      {
+        title: "Verify Registered Phone Number",
+        desc: "Confirm the mobile number registered with the UPI ID (VPA) to strengthen payee verification.",
+      },
+      {
+        title: "Payee Name Confirmation",
+        desc: "Returns the verified recipient name linked to the UPI ID (VPA) — enables name-match checks before payment.",
+      },
+      {
+        title: "Secure & Robust",
+        desc: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography.",
+      },
     ],
     useCases: [
       "Pre-payment UPI ID (VPA) validation for UPI transfers",
@@ -1051,16 +1926,31 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start validating UPI ID (VPAs) in production." },
+      {
+        title: "Go Live",
+        desc: "Start validating UPI ID (VPAs) in production.",
+      },
     ],
     leadForm: {
       title: "Get UPI ID (VPA) Verification API Access",
     },
     faqs: [
-      { q: "What is a VPA?", a: "VPA (Virtual Payment Address) is the UPI ID used for sending and receiving payments — for example, rajesh@okicici. This API verifies whether a VPA is valid and returns the registered payee name." },
-      { q: "Can I verify the registered phone number?", a: "Yes. The API accepts a UPI ID (VPA) and registered mobile number, and returns the verified payee details including recipient name." },
-      { q: "How is the API secured?", a: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography." },
-      { q: "What details are returned?", a: "The API returns the verified UPI ID (VPA), recipient name, registered mobile number, transaction ID, and verification status." },
+      {
+        q: "What is a VPA?",
+        a: "VPA (Virtual Payment Address) is the UPI ID used for sending and receiving payments — for example, rajesh@okicici. This API verifies whether a VPA is valid and returns the registered payee name.",
+      },
+      {
+        q: "Can I verify the registered phone number?",
+        a: "Yes. The API accepts a UPI ID (VPA) and registered mobile number, and returns the verified payee details including recipient name.",
+      },
+      {
+        q: "How is the API secured?",
+        a: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography.",
+      },
+      {
+        q: "What details are returned?",
+        a: "The API returns the verified UPI ID (VPA), recipient name, registered mobile number, transaction ID, and verification status.",
+      },
     ],
     inputOutputPreview: {
       apiName: "UPI ID (VPA) Verification",
@@ -1108,18 +1998,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   dl: {
     seo: {
       title: "Driving License Verification API | Real-Time DL Validation",
-      description: "Integrate Driving License Verification API to validate driving license details instantly for KYC, onboarding, and compliance checks.",
-      keywords: "Driving License Verification API, DL Verification API, Driving Licence Check API, Identity Verification API, KYC DL API",
+      description:
+        "Integrate Driving License Verification API to validate driving license details instantly for KYC, onboarding, and compliance checks.",
+      keywords:
+        "Driving License Verification API, DL Verification API, Driving Licence Check API, Identity Verification API, KYC DL API",
     },
     title: "Driving License Verification API",
     desc: "Real-time DL validation",
     heroTitle: "Driving License Verification API for Identity Validation",
-    heroSubtitle: "Verify driving license details in real time to strengthen KYC and reduce identity fraud.",
+    heroSubtitle:
+      "Verify driving license details in real time to strengthen KYC and reduce identity fraud.",
     category: "verification",
     icon: Truck,
     docsUrl: "https://developers.eko.in/reference/driving-license",
     heroImage: dlImg,
-    overview: "The Driving License Verification API enables businesses to validate driving license details instantly as part of identity verification and onboarding workflows. It helps confirm user identity, reduce impersonation risk, and meet compliance requirements.",
+    overview:
+      "The Driving License Verification API enables businesses to validate driving license details instantly as part of identity verification and onboarding workflows. It helps confirm user identity, reduce impersonation risk, and meet compliance requirements.",
     keyBenefits: [
       "Instant driving license verification",
       "Improves identity validation accuracy",
@@ -1128,29 +2022,69 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Scales for high-volume verification needs",
     ],
     features: [
-      { title: "Real-Time DL Validation", desc: "Verify driving license details instantly with structured verification responses." },
-      { title: "Identity Confirmation", desc: "Use DL data as a trusted identity signal during onboarding." },
-      { title: "Automation Ready", desc: "Seamlessly integrates into digital KYC and onboarding pipelines." },
-      { title: "High-Volume Support", desc: "Built to handle large verification volumes reliably." },
+      {
+        title: "Real-Time DL Validation",
+        desc: "Verify driving license details instantly with structured verification responses.",
+      },
+      {
+        title: "Identity Confirmation",
+        desc: "Use DL data as a trusted identity signal during onboarding.",
+      },
+      {
+        title: "Automation Ready",
+        desc: "Seamlessly integrates into digital KYC and onboarding pipelines.",
+      },
+      {
+        title: "High-Volume Support",
+        desc: "Built to handle large verification volumes reliably.",
+      },
     ],
-    whoShouldUse: ["Fintech and lending platforms", "Mobility and logistics companies", "Marketplaces onboarding drivers or agents", "Enterprises with identity verification needs"],
-    useCases: ["Customer identity verification", "KYC onboarding workflows", "Driver or delivery partner onboarding", "Compliance and due diligence checks"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "Compliance-aligned verification workflows", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Fintech and lending platforms",
+      "Mobility and logistics companies",
+      "Marketplaces onboarding drivers or agents",
+      "Enterprises with identity verification needs",
+    ],
+    useCases: [
+      "Customer identity verification",
+      "KYC onboarding workflows",
+      "Driver or delivery partner onboarding",
+      "Compliance and due diligence checks",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Compliance-aligned verification workflows",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start verifying driving licenses in production." },
+      {
+        title: "Go Live",
+        desc: "Start verifying driving licenses in production.",
+      },
     ],
     leadForm: {
       title: "Get Driving License Verification API Access",
     },
     faqs: [
-      { q: "How fast is DL verification?", a: "Verification is real-time with instant structured responses for driving license details." },
-      { q: "Can I use it for driver onboarding?", a: "Yes, it's ideal for onboarding drivers, delivery partners, and agents requiring identity confirmation." },
+      {
+        q: "How fast is DL verification?",
+        a: "Verification is real-time with instant structured responses for driving license details.",
+      },
+      {
+        q: "Can I use it for driver onboarding?",
+        a: "Yes, it's ideal for onboarding drivers, delivery partners, and agents requiring identity confirmation.",
+      },
     ],
     inputOutputPreview: {
       apiName: "DL Verification",
       inputs: [
-        { label: "Driving License Number", value: "MH0220190001234", icon: CreditCard },
+        {
+          label: "Driving License Number",
+          value: "MH0220190001234",
+          icon: CreditCard,
+        },
       ],
       outputs: [
         { label: "Name", value: "Rajesh Kumar" },
@@ -1203,18 +2137,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   rc: {
     seo: {
-      title: "Vehicle & RC Verification API | Registration, Ownership & Insurance Check",
-      description: "Verify vehicle registration certificate (RC) details instantly — owner, chassis, engine, insurance, blacklist status, permits, and more. Pan-India coverage via VAHAN.",
-      keywords: "Vehicle & RC Verification API, RC Verification API, Vehicle Registration Check API, Vehicle Verification API, RC Validation API, VAHAN API",
+      title:
+        "Vehicle & RC Verification API | Registration, Ownership & Insurance Check",
+      description:
+        "Verify vehicle registration certificate (RC) details instantly — owner, chassis, engine, insurance, blacklist status, permits, and more. Pan-India coverage via VAHAN.",
+      keywords:
+        "Vehicle & RC Verification API, RC Verification API, Vehicle Registration Check API, Vehicle Verification API, RC Validation API, VAHAN API",
     },
     title: "Vehicle & RC Verification API",
     desc: "Complete vehicle registration, ownership & insurance verification",
     heroTitle: "Vehicle & RC Verification API",
-    heroSubtitle: "Get complete vehicle information from a registration number — owner details, chassis, engine, insurance status, blacklist check, permits, and more. Pan-India coverage via VAHAN database.",
+    heroSubtitle:
+      "Get complete vehicle information from a registration number — owner details, chassis, engine, insurance status, blacklist check, permits, and more. Pan-India coverage via VAHAN database.",
     category: "verification",
     icon: Truck,
     docsUrl: "https://developers.eko.in/reference/vehicle-rc",
-    overview: "The Vehicle & RC Verification API enables businesses to fetch comprehensive vehicle information using a registration number. It returns RC status, owner details, chassis and engine numbers, manufacturer and model, insurance validity, permit details, blacklist and challan status, and more — all in a single API call. Designed for platforms that onboard drivers or vehicles, verify fleet compliance, underwrite motor insurance, or assess vehicle-related risk.",
+    overview:
+      "The Vehicle & RC Verification API enables businesses to fetch comprehensive vehicle information using a registration number. It returns RC status, owner details, chassis and engine numbers, manufacturer and model, insurance validity, permit details, blacklist and challan status, and more — all in a single API call. Designed for platforms that onboard drivers or vehicles, verify fleet compliance, underwrite motor insurance, or assess vehicle-related risk.",
     keyBenefits: [
       "Complete vehicle details in a single API call",
       "Confirms vehicle ownership and registration status",
@@ -1224,36 +2163,93 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Pan-India coverage via VAHAN database",
     ],
     features: [
-      { title: "RC & Vehicle Details", desc: "Get registration status, make/model, chassis, engine, color, body type, fuel type, and manufacturing year." },
-      { title: "Owner & Address", desc: "Retrieve owner name, father's name, present and permanent address with structured components." },
-      { title: "Insurance Status", desc: "Check insurance company, policy number, and validity — critical for fleet compliance and motor insurance." },
-      { title: "Blacklist & Challan Check", desc: "Identify blacklisted vehicles and pending traffic challans for risk assessment." },
-      { title: "Permit & Fitness Details", desc: "Verify commercial vehicle permits, fitness certificates, and tax validity." },
-      { title: "Financier Information", desc: "Know if the vehicle is under finance and the lending institution — essential for used car and loan platforms." },
+      {
+        title: "RC & Vehicle Details",
+        desc: "Get registration status, make/model, chassis, engine, color, body type, fuel type, and manufacturing year.",
+      },
+      {
+        title: "Owner & Address",
+        desc: "Retrieve owner name, father's name, present and permanent address with structured components.",
+      },
+      {
+        title: "Insurance Status",
+        desc: "Check insurance company, policy number, and validity — critical for fleet compliance and motor insurance.",
+      },
+      {
+        title: "Blacklist & Challan Check",
+        desc: "Identify blacklisted vehicles and pending traffic challans for risk assessment.",
+      },
+      {
+        title: "Permit & Fitness Details",
+        desc: "Verify commercial vehicle permits, fitness certificates, and tax validity.",
+      },
+      {
+        title: "Financier Information",
+        desc: "Know if the vehicle is under finance and the lending institution — essential for used car and loan platforms.",
+      },
     ],
-    whoShouldUse: ["Mobility and ride-hailing platforms", "Logistics and delivery companies", "Fleet operators", "Motor insurance companies", "Vehicle finance and lending platforms", "Used car marketplaces"],
-    useCases: ["Driver and vehicle onboarding", "Fleet compliance monitoring", "Motor insurance underwriting", "Vehicle finance and loan verification", "Used car marketplace verification", "Logistics and delivery platforms", "Parking and toll management"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted verification communication", "Compliance-aligned data handling", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Mobility and ride-hailing platforms",
+      "Logistics and delivery companies",
+      "Fleet operators",
+      "Motor insurance companies",
+      "Vehicle finance and lending platforms",
+      "Used car marketplaces",
+    ],
+    useCases: [
+      "Driver and vehicle onboarding",
+      "Fleet compliance monitoring",
+      "Motor insurance underwriting",
+      "Vehicle finance and loan verification",
+      "Used car marketplace verification",
+      "Logistics and delivery platforms",
+      "Parking and toll management",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted verification communication",
+      "Compliance-aligned data handling",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start verifying vehicle registrations in production." },
+      {
+        title: "Go Live",
+        desc: "Start verifying vehicle registrations in production.",
+      },
     ],
     leadForm: {
       title: "Get Vehicle & RC Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "Owner name, RC status, vehicle class, fuel type, manufacturer, model, body type, color, chassis and engine number, registration and expiry dates, insurance company and validity, blacklist status, emission norms, and financier details." },
-      { q: "Is pan-India coverage available?", a: "Yes, we cover all states and union territories through integration with the VAHAN national database." },
-      { q: "Can I verify commercial vehicles?", a: "Yes, commercial vehicles return additional details like permit type, permit validity, fitness certificate status, national permit, and tax status." },
-      { q: "How accurate is the verification?", a: "All verifications are done against official RTO databases (VAHAN), ensuring 100% accuracy of returned data. Updates to vehicle information reflect in the source within 15–30 days." },
-      { q: "Is real-time verification available?", a: "Yes, all verifications are performed in real-time with sub-second response times for most queries." },
-      { q: "Can I check if a vehicle is blacklisted?", a: "Yes, the API returns blacklist status along with detailed reasons if the vehicle has been blacklisted." },
+      {
+        q: "What details are returned?",
+        a: "Owner name, RC status, vehicle class, fuel type, manufacturer, model, body type, color, chassis and engine number, registration and expiry dates, insurance company and validity, blacklist status, emission norms, and financier details.",
+      },
+      {
+        q: "Is pan-India coverage available?",
+        a: "Yes, we cover all states and union territories through integration with the VAHAN national database.",
+      },
+      {
+        q: "Can I verify commercial vehicles?",
+        a: "Yes, commercial vehicles return additional details like permit type, permit validity, fitness certificate status, national permit, and tax status.",
+      },
+      {
+        q: "How accurate is the verification?",
+        a: "All verifications are done against official RTO databases (VAHAN), ensuring 100% accuracy of returned data. Updates to vehicle information reflect in the source within 15–30 days.",
+      },
+      {
+        q: "Is real-time verification available?",
+        a: "Yes, all verifications are performed in real-time with sub-second response times for most queries.",
+      },
+      {
+        q: "Can I check if a vehicle is blacklisted?",
+        a: "Yes, the API returns blacklist status along with detailed reasons if the vehicle has been blacklisted.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Vehicle & RC Verification",
-      inputs: [
-        { label: "Vehicle Number", value: "HR26DA8398", icon: Car },
-      ],
+      inputs: [{ label: "Vehicle Number", value: "HR26DA8398", icon: Car }],
       outputs: [
         { label: "Owner Name", value: "Arya ****", icon: User },
         { label: "RC Status", value: "Active", icon: CheckCircle },
@@ -1267,7 +2263,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Engine Number", value: "N**********", icon: Hash },
         { label: "Registration Date", value: "2020", icon: Calendar },
         { label: "RC Expiry Date", value: "2039", icon: Calendar },
-        { label: "Insurance Company", value: "Tata AIG General Insurance", icon: Shield },
+        {
+          label: "Insurance Company",
+          value: "Tata AIG General Insurance",
+          icon: Shield,
+        },
         { label: "Insurance Valid Upto", value: "2025", icon: Calendar },
         { label: "Emission Norms", value: "Bharat Stage VI", icon: Leaf },
         { label: "Financier", value: "****** Bank Ltd", icon: Building },
@@ -1317,17 +2317,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   digilocker: {
     seo: {
       title: "DigiLocker API | Secure Digital Document Access",
-      description: "Integrate DigiLocker API to access and verify user documents securely through consent-based digital workflows.",
-      keywords: "DigiLocker API, Digital Document Verification API, Consent Based Document Access, Paperless KYC API, Government Document API",
+      description:
+        "Integrate DigiLocker API to access and verify user documents securely through consent-based digital workflows.",
+      keywords:
+        "DigiLocker API, Digital Document Verification API, Consent Based Document Access, Paperless KYC API, Government Document API",
     },
     title: "DigiLocker API",
     desc: "Secure digital document verification",
     heroTitle: "DigiLocker API for Secure Digital Document Verification",
-    heroSubtitle: "Access and verify user documents digitally through consent-driven, paperless workflows.",
+    heroSubtitle:
+      "Access and verify user documents digitally through consent-driven, paperless workflows.",
     category: "verification",
     icon: FolderCheck,
     docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
-    overview: "The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records.",
+    overview:
+      "The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records.",
     keyBenefits: [
       "Paperless document verification",
       "Consent-based access to user documents",
@@ -1336,35 +2340,83 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Improved user experience",
     ],
     features: [
-      { title: "Consent-Based Document Access", desc: "Fetch documents only after explicit user consent, ensuring transparency and trust." },
-      { title: "Digital Document Retrieval", desc: "Access verified digital documents without physical copies." },
-      { title: "Automation Ready", desc: "Integrates seamlessly into digital onboarding and compliance systems." },
-      { title: "Scalable Architecture", desc: "Designed to handle high-volume document access reliably." },
+      {
+        title: "Consent-Based Document Access",
+        desc: "Fetch documents only after explicit user consent, ensuring transparency and trust.",
+      },
+      {
+        title: "Digital Document Retrieval",
+        desc: "Access verified digital documents without physical copies.",
+      },
+      {
+        title: "Automation Ready",
+        desc: "Integrates seamlessly into digital onboarding and compliance systems.",
+      },
+      {
+        title: "Scalable Architecture",
+        desc: "Designed to handle high-volume document access reliably.",
+      },
     ],
-    whoShouldUse: ["Banks and NBFCs", "Fintech and lending platforms", "Enterprises with digital onboarding", "Platforms requiring document verification"],
-    useCases: ["Digital KYC and onboarding", "Loan and credit processing", "Customer identity verification", "Compliance and due diligence workflows"],
-    trustAndCompliance: ["Consent-first data access", "Secure API authentication", "Encrypted document transmission", "Audit-ready access logs"],
+    whoShouldUse: [
+      "Banks and NBFCs",
+      "Fintech and lending platforms",
+      "Enterprises with digital onboarding",
+      "Platforms requiring document verification",
+    ],
+    useCases: [
+      "Digital KYC and onboarding",
+      "Loan and credit processing",
+      "Customer identity verification",
+      "Compliance and due diligence workflows",
+    ],
+    trustAndCompliance: [
+      "Consent-first data access",
+      "Secure API authentication",
+      "Encrypted document transmission",
+      "Audit-ready access logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start accessing digital documents in production." },
+      {
+        title: "Go Live",
+        desc: "Start accessing digital documents in production.",
+      },
     ],
     leadForm: {
       title: "Get DigiLocker API Access",
     },
     faqs: [
-      { q: "Is DigiLocker access consent-based?", a: "Yes, documents are fetched only after explicit user consent, ensuring full transparency." },
-      { q: "What documents can be accessed?", a: "You can access government-issued digital documents like Aadhaar, PAN, driving license, and more through DigiLocker." },
-      { q: "Does it eliminate physical document collection?", a: "Yes, the API enables fully paperless document verification, eliminating manual collection." },
+      {
+        q: "Is DigiLocker access consent-based?",
+        a: "Yes, documents are fetched only after explicit user consent, ensuring full transparency.",
+      },
+      {
+        q: "What documents can be accessed?",
+        a: "You can access government-issued digital documents like Aadhaar, PAN, driving license, and more through DigiLocker.",
+      },
+      {
+        q: "Does it eliminate physical document collection?",
+        a: "Yes, the API enables fully paperless document verification, eliminating manual collection.",
+      },
     ],
     inputOutputPreview: {
       apiName: "DigiLocker",
       inputs: [
         { label: "Document Requested", value: "AADHAAR", icon: FileText },
-        { label: "Redirect URL", value: "https://yourapp.com/callback", icon: Globe },
+        {
+          label: "Redirect URL",
+          value: "https://yourapp.com/callback",
+          icon: Globe,
+        },
       ],
       outputs: [
         { label: "Status", value: "Success", icon: CheckCircle },
-        { label: "DigiLocker URL", value: "https://digilocker.gov.in/link-verification?verification_id=123456", icon: Globe },
+        {
+          label: "DigiLocker URL",
+          value:
+            "https://digilocker.gov.in/link-verification?verification_id=123456",
+          icon: Globe,
+        },
         { label: "Reference ID", value: "12345", icon: Hash },
       ],
       sampleJson: {
@@ -1397,18 +2449,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   employee: {
     seo: {
       title: "Employee Verification API | Workforce Background Checks",
-      description: "Integrate Employee Verification API to verify employee identity and details digitally for hiring, compliance, and risk management.",
-      keywords: "Employee Verification API, Employee Background Check API, Workforce Verification API, HR Verification API, Employee KYC API",
+      description:
+        "Integrate Employee Verification API to verify employee identity and details digitally for hiring, compliance, and risk management.",
+      keywords:
+        "Employee Verification API, Employee Background Check API, Workforce Verification API, HR Verification API, Employee KYC API",
     },
     title: "Employee Verification API",
     desc: "Digital employee identity verification",
     heroTitle: "Employee Verification API for Trusted Workforce Onboarding",
-    heroSubtitle: "Verify employee identity and details digitally to reduce hiring risk and ensure compliance.",
+    heroSubtitle:
+      "Verify employee identity and details digitally to reduce hiring risk and ensure compliance.",
     category: "verification",
     icon: Briefcase,
     heroImage: employeeImg,
     docsUrl: "https://developers.eko.in/reference/advance-employment",
-    overview: "The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows.",
+    overview:
+      "The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows.",
     keyBenefits: [
       "Digital employee verification",
       "Reduced hiring and impersonation risk",
@@ -1417,14 +2473,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Scalable for large hiring volumes",
     ],
     features: [
-      { title: "Employee Identity Verification", desc: "Verify employee identity details digitally as part of onboarding." },
-      { title: "Hiring Risk Reduction", desc: "Detect inconsistencies early to reduce impersonation and compliance risk." },
-      { title: "Automation Friendly", desc: "Integrates seamlessly into HRMS, ATS, and onboarding platforms." },
-      { title: "High-Volume Support", desc: "Designed to support large-scale hiring and verification needs." },
+      {
+        title: "Employee Identity Verification",
+        desc: "Verify employee identity details digitally as part of onboarding.",
+      },
+      {
+        title: "Hiring Risk Reduction",
+        desc: "Detect inconsistencies early to reduce impersonation and compliance risk.",
+      },
+      {
+        title: "Automation Friendly",
+        desc: "Integrates seamlessly into HRMS, ATS, and onboarding platforms.",
+      },
+      {
+        title: "High-Volume Support",
+        desc: "Designed to support large-scale hiring and verification needs.",
+      },
     ],
-    whoShouldUse: ["Enterprises and large employers", "HR tech platforms", "Gig economy and staffing companies", "Organizations with compliance-driven hiring"],
-    useCases: ["Pre-employment verification", "Contractor and gig worker onboarding", "Workforce compliance checks", "Enterprise HR verification workflows"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "Compliance-aligned verification workflows", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Enterprises and large employers",
+      "HR tech platforms",
+      "Gig economy and staffing companies",
+      "Organizations with compliance-driven hiring",
+    ],
+    useCases: [
+      "Pre-employment verification",
+      "Contractor and gig worker onboarding",
+      "Workforce compliance checks",
+      "Enterprise HR verification workflows",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Compliance-aligned verification workflows",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying employees in production." },
@@ -1433,8 +2516,14 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Employee Verification API Access",
     },
     faqs: [
-      { q: "What can be verified?", a: "Employee identity details including name, ID documents, and related information can be verified digitally." },
-      { q: "Does it integrate with HRMS?", a: "Yes, the API integrates seamlessly into HRMS, ATS, and onboarding platforms." },
+      {
+        q: "What can be verified?",
+        a: "Employee identity details including name, ID documents, and related information can be verified digitally.",
+      },
+      {
+        q: "Does it integrate with HRMS?",
+        a: "Yes, the API integrates seamlessly into HRMS, ATS, and onboarding platforms.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Employee Verification",
@@ -1453,8 +2542,16 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Joining Date", value: "01/04/2019", icon: Calendar },
         { label: "Exit Date", value: "30/06/2023", icon: Calendar },
         { label: "Exit Reason", value: "Resignation", icon: Info },
-        { label: "EPFO Details…", value: "PF Filing?, Name Unique?, …", icon: Info },
-        { label: "Employer Info…", value: "Name, Setup Date, PF Filing Details, …", icon: Info },
+        {
+          label: "EPFO Details…",
+          value: "PF Filing?, Name Unique?, …",
+          icon: Info,
+        },
+        {
+          label: "Employer Info…",
+          value: "Name, Setup Date, PF Filing Details, …",
+          icon: Info,
+        },
       ],
       sampleJson: {
         method: "POST",
@@ -1469,23 +2566,25 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         response: {
           status: 0,
           data: {
-            uan_details: [{
-              uan: "1001234567890",
-              basic_details: {
-                employee_name: "Rajesh Kumar",
-                gender: "Male",
-                dob: "1994-08-29",
-                phone: "9876543210",
-                aadhaar_verified: false,
+            uan_details: [
+              {
+                uan: "1001234567890",
+                basic_details: {
+                  employee_name: "Rajesh Kumar",
+                  gender: "Male",
+                  dob: "1994-08-29",
+                  phone: "9876543210",
+                  aadhaar_verified: false,
+                },
+                employment_details: {
+                  member_id: "MH/BOM/12345",
+                  establishment_name: "Acme Pvt Ltd",
+                  joining_date: "2019-04-01",
+                  exit_date: "2023-06-30",
+                  leave_reason: "Resignation",
+                },
               },
-              employment_details: {
-                member_id: "MH/BOM/12345",
-                establishment_name: "Acme Pvt Ltd",
-                joining_date: "2019-04-01",
-                exit_date: "2023-06-30",
-                leave_reason: "Resignation",
-              },
-            }],
+            ],
           },
           message: "Employee verification successful",
         },
@@ -1494,22 +2593,26 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   },
 
   // -------------------------------------------------------------------------
-  // Reverse Geocoding
+  // MARK: Geocoding
   // -------------------------------------------------------------------------
   geocoding: {
     seo: {
-      title: "Reverse Geocoding API | Location to Address Resolution",
-      description: "Integrate Reverse Geocoding API to convert latitude and longitude into accurate, structured address data for verification and compliance.",
-      keywords: "Reverse Geocoding API, Location Verification API, Address Resolution API, Latitude Longitude to Address API, Geo Verification API",
+      title: "Reverse Geocoding API India | Convert Coordinates to Address",
+      description:
+        "Integrate Reverse Geocoding API to convert latitude and longitude into accurate, structured address data for verification and compliance.",
+      keywords:
+        "Reverse Geocoding API, Location Verification API, Address Resolution API, Latitude Longitude to Address API, Geo Verification API",
     },
     title: "Reverse Geocoding API",
     desc: "Convert coordinates to addresses",
-    heroTitle: "Reverse Geocoding API for Location-Based Verification",
-    heroSubtitle: "Convert geo-coordinates into precise address data to strengthen verification and compliance workflows.",
+    heroTitle: "Reverse Geocoding API for Address Verification & Geo-Risk",
+    heroSubtitle:
+      "Convert latitude and longitude into structured Indian address data, including locality, city, state, PIN code, and country, for onboarding, field-agent verification, fraud checks, and compliance workflows.",
     category: "verification",
     icon: Globe,
     docsUrl: "https://developers.eko.in/reference/reverse-geocoding",
-    overview: "The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment.",
+    overview:
+      "The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment.",
     keyBenefits: [
       "Accurate latitude-to-address conversion",
       "Improves address and location verification",
@@ -1518,14 +2621,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Scales for high-volume location lookups",
     ],
     features: [
-      { title: "Coordinate to Address Resolution", desc: "Convert latitude and longitude into structured, readable address data." },
-      { title: "Location Accuracy", desc: "Helps validate whether users or devices are operating from expected locations." },
-      { title: "Automation Friendly", desc: "Integrates easily into onboarding, verification, and monitoring systems." },
-      { title: "High-Volume Ready", desc: "Designed to handle frequent and large-scale geolocation queries." },
+      {
+        title: "Coordinate to Address Resolution",
+        desc: "Convert latitude and longitude into structured, readable address data.",
+      },
+      {
+        title: "Location Accuracy",
+        desc: "Helps validate whether users or devices are operating from expected locations.",
+      },
+      {
+        title: "Automation Friendly",
+        desc: "Integrates easily into onboarding, verification, and monitoring systems.",
+      },
+      {
+        title: "High-Volume Ready",
+        desc: "Designed to handle frequent and large-scale geolocation queries.",
+      },
     ],
-    whoShouldUse: ["Fintechs and regulated platforms", "Enterprises verifying customer locations", "Field service and agent-based operations", "Platforms performing geo-risk analysis"],
-    useCases: ["Address verification during onboarding", "Geo-compliance and location validation", "Fraud detection and risk assessment", "Field agent or device location checks"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted request and response handling", "Compliance-aligned data processing", "Audit-ready lookup records"],
+    whoShouldUse: [
+      "Fintechs and regulated platforms",
+      "Enterprises verifying customer locations",
+      "Field service and agent-based operations",
+      "Platforms performing geo-risk analysis",
+    ],
+    useCases: [
+      "Address verification during onboarding",
+      "Geo-compliance and location validation",
+      "Fraud detection and risk assessment",
+      "Field agent or device location checks",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted request and response handling",
+      "Compliance-aligned data processing",
+      "Audit-ready lookup records",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start resolving addresses in production." },
@@ -1534,10 +2664,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Reverse Geocoding API Access",
     },
     faqs: [
-      { q: "How accurate is the address returned?", a: "Accuracy depends on GPS precision. With standard coordinates, we return correct locality, city, and pincode." },
-      { q: "What address components are returned?", a: "We return formatted address, area/locality, city, district, state, pincode, and country." },
-      { q: "Can I use this for fraud detection?", a: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses for fraud prevention." },
-      { q: "What is the rate limit?", a: "Rate limits depend on your plan. Contact us for higher throughput requirements." },
+      {
+        q: "How accurate is the address returned?",
+        a: "Accuracy depends on GPS precision. With standard coordinates, we return correct locality, city, and pincode.",
+      },
+      {
+        q: "What address components are returned?",
+        a: "We return formatted address, area/locality, city, district, state, pincode, and country.",
+      },
+      {
+        q: "Can I use this for fraud detection?",
+        a: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses for fraud prevention.",
+      },
+      {
+        q: "What is the rate limit?",
+        a: "Rate limits depend on your plan. Contact us for higher throughput requirements.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Reverse Geocoding",
@@ -1546,7 +2688,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Longitude", value: "72.8777", icon: MapPin },
       ],
       outputs: [
-        { label: "Address", value: "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus", icon: MapPin },
+        {
+          label: "Address",
+          value: "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus",
+          icon: MapPin,
+        },
         { label: "City", value: "Mumbai", icon: MapPin },
         { label: "State", value: "Maharashtra", icon: MapPin },
         { label: "PIN Code", value: "400001", icon: MapPin },
@@ -1589,18 +2735,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   "voter-id": {
     seo: {
-      title: "Voter ID Verification API India | Instant EPIC Validation for KYC",
-      description: "Verify Voter ID (EPIC) details in real time — name, age, constituency, and address. Integrate Voter ID verification for KYC, onboarding, and identity checks.",
-      keywords: "Voter ID Verification API, EPIC Verification API, Voter ID KYC API, Electoral Verification API, Identity Verification API India",
+      title:
+        "Voter ID Verification API India | Instant EPIC Validation for KYC",
+      description:
+        "Verify Voter ID (EPIC) details in real time — name, age, constituency, and address. Integrate Voter ID verification for KYC, onboarding, and identity checks.",
+      keywords:
+        "Voter ID Verification API, EPIC Verification API, Voter ID KYC API, Electoral Verification API, Identity Verification API India",
     },
     title: "Voter ID Verification API",
     desc: "Verify voter ID (EPIC) details in real time",
     heroTitle: "Voter ID Verification API for KYC & Identity Checks",
-    heroSubtitle: "Validate Voter ID (EPIC) card details instantly — fetch name, age, address, and constituency information for identity verification and onboarding workflows.",
+    heroSubtitle:
+      "Validate Voter ID (EPIC) card details instantly — fetch name, age, address, and constituency information for identity verification and onboarding workflows.",
     category: "verification",
     icon: Vote,
     docsUrl: "https://developers.eko.in/reference/voter-id",
-    overview: "The Voter ID Verification API enables businesses to validate Electoral Photo Identity Card (EPIC) details against government records. Use it for identity verification, address confirmation, and compliance workflows.",
+    overview:
+      "The Voter ID Verification API enables businesses to validate Electoral Photo Identity Card (EPIC) details against government records. Use it for identity verification, address confirmation, and compliance workflows.",
     keyBenefits: [
       "Instant EPIC validation against government records",
       "Fetches name, age, address, and constituency details",
@@ -1609,14 +2760,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "API-driven, automation-ready",
     ],
     features: [
-      { title: "Real-Time EPIC Validation", desc: "Verify voter ID details instantly with structured responses including name, age, and address." },
-      { title: "Address Confirmation", desc: "Fetch full address with district, state, city, and pincode from voter records." },
-      { title: "Constituency Details", desc: "Returns assembly and parliamentary constituency information for geo-compliance." },
-      { title: "Regional Language Support", desc: "Retrieves voter name in regional language alongside English for cross-verification." },
+      {
+        title: "Real-Time EPIC Validation",
+        desc: "Verify voter ID details instantly with structured responses including name, age, and address.",
+      },
+      {
+        title: "Address Confirmation",
+        desc: "Fetch full address with district, state, city, and pincode from voter records.",
+      },
+      {
+        title: "Constituency Details",
+        desc: "Returns assembly and parliamentary constituency information for geo-compliance.",
+      },
+      {
+        title: "Regional Language Support",
+        desc: "Retrieves voter name in regional language alongside English for cross-verification.",
+      },
     ],
-    whoShouldUse: ["Fintech and financial institutions", "Staffing and HR platforms", "Government and public sector applications", "Enterprises with KYC requirements"],
-    useCases: ["Customer identity verification", "Address verification for onboarding", "Employee background checks", "Government scheme eligibility validation"],
-    trustAndCompliance: ["Government source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Fintech and financial institutions",
+      "Staffing and HR platforms",
+      "Government and public sector applications",
+      "Enterprises with KYC requirements",
+    ],
+    useCases: [
+      "Customer identity verification",
+      "Address verification for onboarding",
+      "Employee background checks",
+      "Government scheme eligibility validation",
+    ],
+    trustAndCompliance: [
+      "Government source verification",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying Voter IDs in production." },
@@ -1625,9 +2803,18 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Voter ID Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "The API returns voter name (English and regional), age, date of birth, gender, full address, assembly and parliamentary constituency, father/guardian name, and polling station details." },
-      { q: "How fast is Voter ID verification?", a: "Verification is real-time with sub-second response times for instant identity validation." },
-      { q: "Can I use this for address verification?", a: "Yes. The API returns structured address data including district, city, state, and pincode — useful for address verification workflows." },
+      {
+        q: "What details are returned?",
+        a: "The API returns voter name (English and regional), age, date of birth, gender, full address, assembly and parliamentary constituency, father/guardian name, and polling station details.",
+      },
+      {
+        q: "How fast is Voter ID verification?",
+        a: "Verification is real-time with sub-second response times for instant identity validation.",
+      },
+      {
+        q: "Can I use this for address verification?",
+        a: "Yes. The API returns structured address data including district, city, state, and pincode — useful for address verification workflows.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Voter ID Verification",
@@ -1643,8 +2830,16 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "Father's Name", value: "Suresh Kumar", icon: User },
         { label: "Address", value: "Ward 12, Sector 5, Noida", icon: MapPin },
         { label: "Assembly Constituency", value: "Noida (62)", icon: MapPin },
-        { label: "Parliamentary Constituency", value: "Gautam Buddha Nagar", icon: MapPin },
-        { label: "Polling Station", value: "Govt. School Noida Sec 5", icon: MapPin },
+        {
+          label: "Parliamentary Constituency",
+          value: "Gautam Buddha Nagar",
+          icon: MapPin,
+        },
+        {
+          label: "Polling Station",
+          value: "Govt. School Noida Sec 5",
+          icon: MapPin,
+        },
       ],
       sampleJson: {
         method: "POST",
@@ -1689,17 +2884,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   passport: {
     seo: {
       title: "Passport Verification API India | Instant Passport Validation",
-      description: "Verify passport file number and holder details in real time. Integrate passport verification for KYC, travel compliance, and identity checks.",
-      keywords: "Passport Verification API, Passport KYC API, Passport Validation API, Travel Document Verification API, Identity Verification API India",
+      description:
+        "Verify passport file number and holder details in real time. Integrate passport verification for KYC, travel compliance, and identity checks.",
+      keywords:
+        "Passport Verification API, Passport KYC API, Passport Validation API, Travel Document Verification API, Identity Verification API India",
     },
     title: "Passport Verification API",
     desc: "Verify passport details in real time",
     heroTitle: "Passport Verification API for KYC & Travel Compliance",
-    heroSubtitle: "Validate passport application details instantly — verify file number, holder name, date of birth, and application status for identity and travel compliance workflows.",
+    heroSubtitle:
+      "Validate passport application details instantly — verify file number, holder name, date of birth, and application status for identity and travel compliance workflows.",
     category: "verification",
     icon: Plane,
     docsUrl: "https://developers.eko.in/reference/passport",
-    overview: "The Passport Verification API enables businesses to validate passport holder details against official records. Use it for identity verification, travel compliance, and employee background checks.",
+    overview:
+      "The Passport Verification API enables businesses to validate passport holder details against official records. Use it for identity verification, travel compliance, and employee background checks.",
     keyBenefits: [
       "Instant passport detail verification",
       "Confirms holder name and date of birth",
@@ -1708,14 +2907,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for travel and compliance use cases",
     ],
     features: [
-      { title: "Real-Time Passport Validation", desc: "Verify passport file number and holder details with instant structured responses." },
-      { title: "Identity Confirmation", desc: "Cross-check holder name and date of birth against passport records." },
-      { title: "Application Status", desc: "Returns application type and received date for processing verification." },
-      { title: "Automation Friendly", desc: "Easily integrate into digital onboarding, KYC, and compliance pipelines." },
+      {
+        title: "Real-Time Passport Validation",
+        desc: "Verify passport file number and holder details with instant structured responses.",
+      },
+      {
+        title: "Identity Confirmation",
+        desc: "Cross-check holder name and date of birth against passport records.",
+      },
+      {
+        title: "Application Status",
+        desc: "Returns application type and received date for processing verification.",
+      },
+      {
+        title: "Automation Friendly",
+        desc: "Easily integrate into digital onboarding, KYC, and compliance pipelines.",
+      },
     ],
-    whoShouldUse: ["Travel and hospitality platforms", "Staffing and HR platforms", "Financial institutions", "Government and immigration services"],
-    useCases: ["Employee background verification", "Travel compliance checks", "Customer KYC for financial services", "Identity verification for visa processing"],
-    trustAndCompliance: ["Government source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Travel and hospitality platforms",
+      "Staffing and HR platforms",
+      "Financial institutions",
+      "Government and immigration services",
+    ],
+    useCases: [
+      "Employee background verification",
+      "Travel compliance checks",
+      "Customer KYC for financial services",
+      "Identity verification for visa processing",
+    ],
+    trustAndCompliance: [
+      "Government source verification",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying passports in production." },
@@ -1724,10 +2950,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Passport Verification API Access",
     },
     faqs: [
-      { q: "What details are required for verification?", a: "You need the passport file number and date of birth of the holder. Optionally, you can provide the holder name for name matching." },
-      { q: "What details are returned?", a: "The API returns file number, holder name, date of birth, application type, and application received date." },
-      { q: "How fast is passport verification?", a: "Verification is real-time with sub-second response times." },
-      { q: "Can I use this for employee BGV?", a: "Yes. Passport verification is commonly used in employee background verification to confirm identity and travel document validity." },
+      {
+        q: "What details are required for verification?",
+        a: "You need the passport file number and date of birth of the holder. Optionally, you can provide the holder name for name matching.",
+      },
+      {
+        q: "What details are returned?",
+        a: "The API returns file number, holder name, date of birth, application type, and application received date.",
+      },
+      {
+        q: "How fast is passport verification?",
+        a: "Verification is real-time with sub-second response times.",
+      },
+      {
+        q: "Can I use this for employee BGV?",
+        a: "Yes. Passport verification is commonly used in employee background verification to confirm identity and travel document validity.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Passport Verification",
@@ -1777,17 +3015,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   cin: {
     seo: {
       title: "CIN Verification API India | Company Identity Validation via MCA",
-      description: "Verify Company Identification Number (CIN) details instantly. Fetch company name, incorporation date, directors, and status from MCA records for KYB and compliance.",
-      keywords: "CIN Verification API, Company Verification API, MCA Verification API, KYB API India, Corporate Identity API",
+      description:
+        "Verify Company Identification Number (CIN) details instantly. Fetch company name, incorporation date, directors, and status from MCA records for KYB and compliance.",
+      keywords:
+        "CIN Verification API, Company Verification API, MCA Verification API, KYB API India, Corporate Identity API",
     },
     title: "CIN Verification API",
     desc: "Validate Company Identification Numbers via MCA",
     heroTitle: "CIN Verification API for KYB & Corporate Due Diligence",
-    heroSubtitle: "Verify Company Identification Numbers (CIN) instantly — fetch company name, registration number, incorporation date, directors, and status from Ministry of Corporate Affairs records.",
+    heroSubtitle:
+      "Verify Company Identification Numbers (CIN) instantly — fetch company name, registration number, incorporation date, directors, and status from Ministry of Corporate Affairs records.",
     category: "verification",
     icon: Landmark,
     docsUrl: "https://developers.eko.in/reference/cin",
-    overview: "The CIN Verification API enables businesses to validate Company Identification Numbers against MCA records. Use it for KYB workflows, corporate due diligence, vendor verification, and compliance checks.",
+    overview:
+      "The CIN Verification API enables businesses to validate Company Identification Numbers against MCA records. Use it for KYB workflows, corporate due diligence, vendor verification, and compliance checks.",
     keyBenefits: [
       "Instant CIN validation against MCA records",
       "Returns company name, directors, and incorporation details",
@@ -1796,14 +3038,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "API-driven, automation-ready",
     ],
     features: [
-      { title: "Real-Time CIN Validation", desc: "Verify CIN details instantly with structured responses including company name and status." },
-      { title: "Director Information", desc: "Fetch director details including name, DIN, designation, and date of birth." },
-      { title: "Incorporation Details", desc: "Returns registration number, incorporation date, and country of incorporation." },
-      { title: "Status Verification", desc: "Confirms whether the company is active, struck-off, dormant, or under liquidation." },
+      {
+        title: "Real-Time CIN Validation",
+        desc: "Verify CIN details instantly with structured responses including company name and status.",
+      },
+      {
+        title: "Director Information",
+        desc: "Fetch director details including name, DIN, designation, and date of birth.",
+      },
+      {
+        title: "Incorporation Details",
+        desc: "Returns registration number, incorporation date, and country of incorporation.",
+      },
+      {
+        title: "Status Verification",
+        desc: "Confirms whether the company is active, struck-off, dormant, or under liquidation.",
+      },
     ],
-    whoShouldUse: ["Lending and financial institutions", "Marketplace and e-commerce platforms", "Accounting and compliance firms", "Enterprises performing vendor due diligence"],
-    useCases: ["Merchant and vendor KYB", "Corporate due diligence", "Lending to corporate borrowers", "Supply chain partner verification"],
-    trustAndCompliance: ["MCA source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Lending and financial institutions",
+      "Marketplace and e-commerce platforms",
+      "Accounting and compliance firms",
+      "Enterprises performing vendor due diligence",
+    ],
+    useCases: [
+      "Merchant and vendor KYB",
+      "Corporate due diligence",
+      "Lending to corporate borrowers",
+      "Supply chain partner verification",
+    ],
+    trustAndCompliance: [
+      "MCA source verification",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying CINs in production." },
@@ -1812,10 +3081,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get CIN Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, and date of birth)." },
-      { q: "Can I verify LLPs with this API?", a: "CIN is specific to companies registered under the Companies Act. LLPs use LLPIN — contact us for LLP verification availability." },
-      { q: "How fast is CIN verification?", a: "Verification is real-time with sub-second response times." },
-      { q: "Is director information included?", a: "Yes. The API returns director details including name, DIN, designation, and date of birth for all directors listed in MCA records." },
+      {
+        q: "What details are returned?",
+        a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, and date of birth).",
+      },
+      {
+        q: "Can I verify LLPs with this API?",
+        a: "CIN is specific to companies registered under the Companies Act. LLPs use LLPIN — contact us for LLP verification availability.",
+      },
+      {
+        q: "How fast is CIN verification?",
+        a: "Verification is real-time with sub-second response times.",
+      },
+      {
+        q: "Is director information included?",
+        a: "Yes. The API returns director details including name, DIN, designation, and date of birth for all directors listed in MCA records.",
+      },
     ],
     inputOutputPreview: {
       apiName: "CIN Verification",
@@ -1823,14 +3104,26 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         { label: "CIN", value: "U72900KA2015PTC082988", icon: Building },
       ],
       outputs: [
-        { label: "Company Name", value: "Acme Technologies Pvt Ltd", icon: Building },
+        {
+          label: "Company Name",
+          value: "Acme Technologies Pvt Ltd",
+          icon: Building,
+        },
         { label: "CIN Status", value: "Active", icon: CheckCircle },
         { label: "Registration Number", value: "82987", icon: Hash },
         { label: "Incorporation Date", value: "2015-09-23", icon: Calendar },
         { label: "Email", value: "contact@acmetech.in", icon: Mail },
         { label: "Incorporation Country", value: "India", icon: Globe },
-        { label: "Director 1", value: "Rahul Mehta (DIN: 07168822) — Director", icon: User },
-        { label: "Director 2", value: "Priya Sharma (DIN: 07168826) — Director", icon: User },
+        {
+          label: "Director 1",
+          value: "Rahul Mehta (DIN: 07168822) — Director",
+          icon: User,
+        },
+        {
+          label: "Director 2",
+          value: "Priya Sharma (DIN: 07168826) — Director",
+          icon: User,
+        },
       ],
       sampleJson: {
         method: "POST",
@@ -1853,8 +3146,18 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
             email: "contact@acmetech.in",
             incorporation_country: "India",
             director_details: [
-              { name: "Rahul Mehta", din: "07168822", designation: "Director", dob: "1985-03-12" },
-              { name: "Priya Sharma", din: "07168826", designation: "Director", dob: "1988-07-25" },
+              {
+                name: "Rahul Mehta",
+                din: "07168822",
+                designation: "Director",
+                dob: "1985-03-12",
+              },
+              {
+                name: "Priya Sharma",
+                din: "07168826",
+                designation: "Director",
+                dob: "1988-07-25",
+              },
             ],
           },
           message: "CIN verification successful",
@@ -1869,17 +3172,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   ip: {
     seo: {
       title: "IP Verification API India | IP Geolocation & Risk Scoring",
-      description: "Verify IP addresses with geolocation, proxy detection, and risk scoring. Prevent fraud and enforce geo-compliance with real-time IP intelligence.",
-      keywords: "IP Verification API, IP Geolocation API, IP Risk Score API, Proxy Detection API, Fraud Prevention API India",
+      description:
+        "Verify IP addresses with geolocation, proxy detection, and risk scoring. Prevent fraud and enforce geo-compliance with real-time IP intelligence.",
+      keywords:
+        "IP Verification API, IP Geolocation API, IP Risk Score API, Proxy Detection API, Fraud Prevention API India",
     },
     title: "IP Verification API",
     desc: "Geo-locate and risk-score IP addresses",
     heroTitle: "IP Verification API for Fraud Prevention & Geo-Compliance",
-    heroSubtitle: "Verify IP addresses in real time — detect proxies, geo-locate users, and assess risk scores for fraud prevention and geo-compliance workflows.",
+    heroSubtitle:
+      "Verify IP addresses in real time — detect proxies, geo-locate users, and assess risk scores for fraud prevention and geo-compliance workflows.",
     category: "verification",
     icon: Globe2,
     docsUrl: "https://developers.eko.in/reference/ip",
-    overview: "The IP Verification API enables businesses to geo-locate IP addresses, detect proxies and VPNs, and assess risk scores. Use it for fraud prevention, geo-compliance, and user location verification.",
+    overview:
+      "The IP Verification API enables businesses to geo-locate IP addresses, detect proxies and VPNs, and assess risk scores. Use it for fraud prevention, geo-compliance, and user location verification.",
     keyBenefits: [
       "Real-time IP geolocation with city-level accuracy",
       "Proxy and VPN detection",
@@ -1888,14 +3195,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "API-driven, automation-ready",
     ],
     features: [
-      { title: "IP Geolocation", desc: "Resolve IP addresses to country, region, and city for location-based decisions." },
-      { title: "Proxy & VPN Detection", desc: "Identify proxy type and category to flag suspicious connection sources." },
-      { title: "Risk Scoring", desc: "Get city-level and proxy-type risk scores for fraud assessment." },
-      { title: "Real-Time Processing", desc: "Instant IP intelligence for inline fraud checks during transactions." },
+      {
+        title: "IP Geolocation",
+        desc: "Resolve IP addresses to country, region, and city for location-based decisions.",
+      },
+      {
+        title: "Proxy & VPN Detection",
+        desc: "Identify proxy type and category to flag suspicious connection sources.",
+      },
+      {
+        title: "Risk Scoring",
+        desc: "Get city-level and proxy-type risk scores for fraud assessment.",
+      },
+      {
+        title: "Real-Time Processing",
+        desc: "Instant IP intelligence for inline fraud checks during transactions.",
+      },
     ],
-    whoShouldUse: ["Fintech and digital lending platforms", "E-commerce and marketplace platforms", "SaaS and subscription platforms", "Insurance and compliance platforms"],
-    useCases: ["Transaction fraud detection", "Geo-compliance enforcement", "User location verification during KYC", "Bot and scraping detection"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "DPDP-aligned data processing", "Audit-ready lookup records"],
+    whoShouldUse: [
+      "Fintech and digital lending platforms",
+      "E-commerce and marketplace platforms",
+      "SaaS and subscription platforms",
+      "Insurance and compliance platforms",
+    ],
+    useCases: [
+      "Transaction fraud detection",
+      "Geo-compliance enforcement",
+      "User location verification during KYC",
+      "Bot and scraping detection",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "DPDP-aligned data processing",
+      "Audit-ready lookup records",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying IP addresses in production." },
@@ -1904,16 +3238,26 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get IP Verification API Access",
     },
     faqs: [
-      { q: "What details are returned?", a: "The API returns IP address, proxy type, country code and name, region, city, city risk score, and proxy-type risk score." },
-      { q: "Can it detect VPNs?", a: "Yes. The API identifies proxy type including VPN, residential proxy, data center proxy, and other classifications." },
-      { q: "How is the risk score calculated?", a: "Risk scores are based on factors like cybersecurity threats, proxy type classification, and historical threat intelligence for the city and connection type." },
-      { q: "Is this suitable for real-time fraud checks?", a: "Yes. The API is designed for inline transaction-level fraud checks with sub-second response times." },
+      {
+        q: "What details are returned?",
+        a: "The API returns IP address, proxy type, country code and name, region, city, city risk score, and proxy-type risk score.",
+      },
+      {
+        q: "Can it detect VPNs?",
+        a: "Yes. The API identifies proxy type including VPN, residential proxy, data center proxy, and other classifications.",
+      },
+      {
+        q: "How is the risk score calculated?",
+        a: "Risk scores are based on factors like cybersecurity threats, proxy type classification, and historical threat intelligence for the city and connection type.",
+      },
+      {
+        q: "Is this suitable for real-time fraud checks?",
+        a: "Yes. The API is designed for inline transaction-level fraud checks with sub-second response times.",
+      },
     ],
     inputOutputPreview: {
       apiName: "IP Verification",
-      inputs: [
-        { label: "IP Address", value: "103.21.58.193", icon: Globe2 },
-      ],
+      inputs: [{ label: "IP Address", value: "103.21.58.193", icon: Globe2 }],
       outputs: [
         { label: "Country", value: "India (IN)", icon: Globe2 },
         { label: "Region", value: "Maharashtra", icon: MapPin },
@@ -1955,18 +3299,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   "name-match": {
     seo: {
-      title: "Name Match API India | AI-Powered Name Matching for KYC & Compliance",
-      description: "AI-powered name matching API trained on 100M+ Indian name records. Compare names across identity documents — handles initials, phonetic variants, regional spellings, and salutations.",
-      keywords: "Name Match API, AI Name Matching API, Fuzzy Name Matching API, Name Comparison API, KYC Name Verification API, Identity Matching API India",
+      title:
+        "Name Match API India | AI-Powered Name Matching for KYC & Compliance",
+      description:
+        "AI-powered name matching API trained on 100M+ Indian name records. Compare names across identity documents — handles initials, phonetic variants, regional spellings, and salutations.",
+      keywords:
+        "Name Match API, AI Name Matching API, Fuzzy Name Matching API, Name Comparison API, KYC Name Verification API, Identity Matching API India",
     },
     title: "Name Match API",
     desc: "AI-powered name matching across identity documents",
     heroTitle: "Name Match API for Cross-Document Identity Verification",
-    heroSubtitle: "AI-powered name comparison trained on 100M+ Indian name records. Compare names across PAN, Aadhaar, bank, and GST records — get a match score (0–1) and category (Direct Match, Partial Match, No Match) for automated KYC decisions.",
+    heroSubtitle:
+      "AI-powered name comparison trained on 100M+ Indian name records. Compare names across PAN, Aadhaar, bank, and GST records — get a match score (0–1) and category (Direct Match, Partial Match, No Match) for automated KYC decisions.",
     category: "verification",
     icon: ScanText,
     docsUrl: "https://developers.eko.in/reference/name-match",
-    overview: "Name Match is an AI-powered name comparison API built for India's complex naming conventions. Trained on over 100 million Indian name records, it handles initials, abbreviations, phonetic and regional spelling variants, salutation patterns, and subset matching — returning a match score (0 to 1) and match category for automated decision-making.",
+    overview:
+      "Name Match is an AI-powered name comparison API built for India's complex naming conventions. Trained on over 100 million Indian name records, it handles initials, abbreviations, phonetic and regional spelling variants, salutation patterns, and subset matching — returning a match score (0 to 1) and match category for automated decision-making.",
     keyBenefits: [
       "AI-powered, trained on 100M+ Indian name records",
       "Returns score (0–1) and match category for rule-based decisions",
@@ -1975,14 +3324,43 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Real-time and scalable",
     ],
     features: [
-      { title: "Indian Name Intelligence", desc: "Handles initials, middle names, abbreviations, and subset matching (e.g. Harsh Kishore → HKishore) with high accuracy." },
-      { title: "Phonetic & Regional Variants", desc: "Understands phonetic similarities and regional spelling variations across Indian languages and naming conventions." },
-      { title: "Context-Aware Matching", desc: "Considers name sequence, gender, regional norms, and salutation patterns (e.g. S/O, D/O) for accurate results." },
-      { title: "Score + Category Response", desc: "Returns a 0–1 score with match categories: Direct Match (1.0), Good Partial (0.85–0.99), Moderate Partial (0.60–0.84), Poor Partial (0.34–0.59), No Match (0–0.33)." },
+      {
+        title: "Indian Name Intelligence",
+        desc: "Handles initials, middle names, abbreviations, and subset matching (e.g. Harsh Kishore → HKishore) with high accuracy.",
+      },
+      {
+        title: "Phonetic & Regional Variants",
+        desc: "Understands phonetic similarities and regional spelling variations across Indian languages and naming conventions.",
+      },
+      {
+        title: "Context-Aware Matching",
+        desc: "Considers name sequence, gender, regional norms, and salutation patterns (e.g. S/O, D/O) for accurate results.",
+      },
+      {
+        title: "Score + Category Response",
+        desc: "Returns a 0–1 score with match categories: Direct Match (1.0), Good Partial (0.85–0.99), Moderate Partial (0.60–0.84), Poor Partial (0.34–0.59), No Match (0–0.33).",
+      },
     ],
-    whoShouldUse: ["Lending and financial institutions", "Accounting and tax platforms", "Marketplace and e-commerce platforms", "Enterprises performing KYC/KYB"],
-    useCases: ["Cross-document KYC name validation", "ITC fraud detection via GST-PAN-bank name checks", "Lending name match for fraud prevention", "Merchant onboarding name consistency checks", "Payout reconciliation", "Risk and fraud prevention"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "Audit-ready match records", "Compliance-aligned verification workflows"],
+    whoShouldUse: [
+      "Lending and financial institutions",
+      "Accounting and tax platforms",
+      "Marketplace and e-commerce platforms",
+      "Enterprises performing KYC/KYB",
+    ],
+    useCases: [
+      "Cross-document KYC name validation",
+      "ITC fraud detection via GST-PAN-bank name checks",
+      "Lending name match for fraud prevention",
+      "Merchant onboarding name consistency checks",
+      "Payout reconciliation",
+      "Risk and fraud prevention",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready match records",
+      "Compliance-aligned verification workflows",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start matching names in production." },
@@ -1991,10 +3369,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Name Match API Access",
     },
     faqs: [
-      { q: "How does the matching work?", a: "Name Match uses AI trained on 100M+ Indian name records. It handles initials, phonetic variants, regional spellings, salutation patterns (S/O, D/O), subset matching, and name ordering variations." },
-      { q: "What is the score range?", a: "The API returns a score from 0 to 1: Direct Match (1.0), Good Partial Match (0.85–0.99), Moderate Partial Match (0.60–0.84), Poor Partial Match (0.34–0.59), No Match (0–0.33). Set your own threshold based on risk tolerance." },
-      { q: "What examples of Indian name variations does it handle?", a: "Initials (S K Mishra → Satish Kumar Mishra), subsets (Harsh Kishore → HKishore), salutations (Aditya Roy S/O Jatin), missing middle names, extra spaces, and phonetic/regional spelling variants." },
-      { q: "Can I use this for GST ITC fraud detection?", a: "Yes. Cross-validating supplier PAN name, GST trade name, and bank account holder name catches fake invoice fraud that manual review misses." },
+      {
+        q: "How does the matching work?",
+        a: "Name Match uses AI trained on 100M+ Indian name records. It handles initials, phonetic variants, regional spellings, salutation patterns (S/O, D/O), subset matching, and name ordering variations.",
+      },
+      {
+        q: "What is the score range?",
+        a: "The API returns a score from 0 to 1: Direct Match (1.0), Good Partial Match (0.85–0.99), Moderate Partial Match (0.60–0.84), Poor Partial Match (0.34–0.59), No Match (0–0.33). Set your own threshold based on risk tolerance.",
+      },
+      {
+        q: "What examples of Indian name variations does it handle?",
+        a: "Initials (S K Mishra → Satish Kumar Mishra), subsets (Harsh Kishore → HKishore), salutations (Aditya Roy S/O Jatin), missing middle names, extra spaces, and phonetic/regional spelling variants.",
+      },
+      {
+        q: "Can I use this for GST ITC fraud detection?",
+        a: "Yes. Cross-validating supplier PAN name, GST trade name, and bank account holder name catches fake invoice fraud that manual review misses.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Good Partial Match",
@@ -2005,7 +3395,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       outputs: [
         { label: "Status", value: "Success", icon: CheckCircle },
         { label: "Match Score", value: "0.92" },
-        { label: "Match Category", value: "Good Partial Match", icon: CheckCircle },
+        {
+          label: "Match Category",
+          value: "Good Partial Match",
+          icon: CheckCircle,
+        },
       ],
       sampleJson: {
         method: "POST",
@@ -2038,17 +3432,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   itr: {
     seo: {
       title: "ITR Compliance API India | Income Tax Filing Status Check",
-      description: "Check income tax return filing and compliance status using PAN number. Verify ITR compliance for lending, credit assessment, and due diligence workflows.",
-      keywords: "ITR Compliance API, Income Tax Verification API, ITR Status Check API, PAN ITR API, Tax Compliance API India",
+      description:
+        "Check income tax return filing and compliance status using PAN number. Verify ITR compliance for lending, credit assessment, and due diligence workflows.",
+      keywords:
+        "ITR Compliance API, Income Tax Verification API, ITR Status Check API, PAN ITR API, Tax Compliance API India",
     },
     title: "ITR Compliance Check API",
     desc: "Check income tax return filing and compliance status",
     heroTitle: "ITR Compliance API for Lending & Credit Assessment",
-    heroSubtitle: "Verify income tax return filing and compliance status using PAN — assess borrower and business creditworthiness with real-time ITR data for lending and due diligence workflows.",
+    heroSubtitle:
+      "Verify income tax return filing and compliance status using PAN — assess borrower and business creditworthiness with real-time ITR data for lending and due diligence workflows.",
     category: "verification",
     icon: IndianRupee,
     docsUrl: "https://developers.eko.in/reference/itr-compliance",
-    overview: "The ITR Compliance Check API enables businesses to verify income tax return filing status using a PAN number. Use it for credit assessment, lending due diligence, and compliance verification.",
+    overview:
+      "The ITR Compliance Check API enables businesses to verify income tax return filing status using a PAN number. Use it for credit assessment, lending due diligence, and compliance verification.",
     keyBenefits: [
       "Instant ITR filing status via PAN",
       "Supports credit assessment workflows",
@@ -2057,32 +3455,72 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for high-volume checks",
     ],
     features: [
-      { title: "ITR Filing Status", desc: "Check whether a PAN holder has filed income tax returns and their compliance standing." },
-      { title: "PAN-Based Lookup", desc: "Simple PAN number input — no additional documents or consent flows required." },
-      { title: "Credit Assessment Signal", desc: "Use ITR filing patterns as a proxy for income verification and creditworthiness." },
-      { title: "Automation Friendly", desc: "Integrate into lending pipelines, onboarding flows, and compliance checks seamlessly." },
+      {
+        title: "ITR Filing Status",
+        desc: "Check whether a PAN holder has filed income tax returns and their compliance standing.",
+      },
+      {
+        title: "PAN-Based Lookup",
+        desc: "Simple PAN number input — no additional documents or consent flows required.",
+      },
+      {
+        title: "Credit Assessment Signal",
+        desc: "Use ITR filing patterns as a proxy for income verification and creditworthiness.",
+      },
+      {
+        title: "Automation Friendly",
+        desc: "Integrate into lending pipelines, onboarding flows, and compliance checks seamlessly.",
+      },
     ],
-    whoShouldUse: ["Lending and NBFC platforms", "Accounting and tax firms", "Real estate and property platforms", "Enterprises performing financial due diligence"],
-    useCases: ["Borrower credit assessment", "MSME income verification", "Vendor and supplier due diligence", "Tax compliance verification for onboarding"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "Compliance-aligned verification workflows", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Lending and NBFC platforms",
+      "Accounting and tax firms",
+      "Real estate and property platforms",
+      "Enterprises performing financial due diligence",
+    ],
+    useCases: [
+      "Borrower credit assessment",
+      "MSME income verification",
+      "Vendor and supplier due diligence",
+      "Tax compliance verification for onboarding",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Compliance-aligned verification workflows",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start checking ITR compliance in production." },
+      {
+        title: "Go Live",
+        desc: "Start checking ITR compliance in production.",
+      },
     ],
     leadForm: {
       title: "Get ITR Compliance API Access",
     },
     faqs: [
-      { q: "What input is required?", a: "Only the PAN number is required to check ITR compliance status." },
-      { q: "What details are returned?", a: "The API returns ITR filing status, assessment year, and compliance status for the given PAN number." },
-      { q: "Can I use this for lending decisions?", a: "Yes. ITR compliance status is a strong signal for borrower creditworthiness, especially for MSMEs without traditional credit bureau scores." },
-      { q: "How fast is the check?", a: "The API returns results in real time with sub-second response times." },
+      {
+        q: "What input is required?",
+        a: "Only the PAN number is required to check ITR compliance status.",
+      },
+      {
+        q: "What details are returned?",
+        a: "The API returns ITR filing status, assessment year, and compliance status for the given PAN number.",
+      },
+      {
+        q: "Can I use this for lending decisions?",
+        a: "Yes. ITR compliance status is a strong signal for borrower creditworthiness, especially for MSMEs without traditional credit bureau scores.",
+      },
+      {
+        q: "How fast is the check?",
+        a: "The API returns results in real time with sub-second response times.",
+      },
     ],
     inputOutputPreview: {
       apiName: "ITR Compliance Check",
-      inputs: [
-        { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
-      ],
+      inputs: [{ label: "PAN Number", value: "ABCDE1234F", icon: CreditCard }],
       outputs: [
         { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
         { label: "ITR Filing Status", value: "Filed", icon: CheckCircle },
@@ -2111,23 +3549,28 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
   },
 
-  // -------------------------------------------------------------------------
+  // ------------------------------------
   // MARK: DIN
-  // -------------------------------------------------------------------------
+  // ------------------------------------
   din: {
     seo: {
-      title: "DIN Verification API India | Director Identity Validation via MCA",
-      description: "Verify Director Identification Number (DIN) details instantly. Validate director identity for corporate due diligence, KYB, and compliance workflows.",
-      keywords: "DIN Verification API, Director Verification API, MCA Director Check API, Corporate KYB API, Director Identity API India",
+      title:
+        "DIN Verification API India | Director Identity Validation via MCA",
+      description:
+        "Verify Director Identification Number (DIN) details instantly. Validate director identity for corporate due diligence, KYB, and compliance workflows.",
+      keywords:
+        "DIN Verification API, Director Verification API, MCA Director Check API, Corporate KYB API, Director Identity API India",
     },
     title: "DIN Verification API",
     desc: "Verify Director Identification Numbers via MCA",
     heroTitle: "DIN Verification API for Corporate Due Diligence",
-    heroSubtitle: "Validate Director Identification Numbers (DIN) against MCA records — verify director identity, designation, and associated companies for KYB and compliance workflows.",
+    heroSubtitle:
+      "Validate Director Identification Numbers (DIN) against MCA records — verify director identity, designation, and associated companies for KYB and compliance workflows.",
     category: "verification",
     icon: BadgeCheck,
     docsUrl: "https://developers.eko.in/reference/din-verification",
-    overview: "The DIN Verification API enables businesses to validate Director Identification Numbers against Ministry of Corporate Affairs records. Use it for corporate due diligence, KYB workflows, and director background checks.",
+    overview:
+      "The DIN Verification API enables businesses to validate Director Identification Numbers against Ministry of Corporate Affairs records. Use it for corporate due diligence, KYB workflows, and director background checks.",
     keyBenefits: [
       "Instant DIN validation against MCA records",
       "Confirms director identity and status",
@@ -2136,14 +3579,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for high-volume verification",
     ],
     features: [
-      { title: "Real-Time DIN Validation", desc: "Verify DIN details instantly against Ministry of Corporate Affairs records." },
-      { title: "Director Identity", desc: "Confirm director name, designation, and DIN status for due diligence." },
-      { title: "Corporate Linkage", desc: "Identify companies associated with a director for cross-referencing." },
-      { title: "Automation Friendly", desc: "Integrate into KYB pipelines, compliance checks, and onboarding workflows." },
+      {
+        title: "Real-Time DIN Validation",
+        desc: "Verify DIN details instantly against Ministry of Corporate Affairs records.",
+      },
+      {
+        title: "Director Identity",
+        desc: "Confirm director name, designation, and DIN status for due diligence.",
+      },
+      {
+        title: "Corporate Linkage",
+        desc: "Identify companies associated with a director for cross-referencing.",
+      },
+      {
+        title: "Automation Friendly",
+        desc: "Integrate into KYB pipelines, compliance checks, and onboarding workflows.",
+      },
     ],
-    whoShouldUse: ["Lending and financial institutions", "Accounting and compliance firms", "Marketplace and e-commerce platforms", "Enterprises performing corporate due diligence"],
-    useCases: ["Director background verification", "Corporate KYB workflows", "Lending to corporate borrowers", "Vendor and supplier due diligence"],
-    trustAndCompliance: ["MCA source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Lending and financial institutions",
+      "Accounting and compliance firms",
+      "Marketplace and e-commerce platforms",
+      "Enterprises performing corporate due diligence",
+    ],
+    useCases: [
+      "Director background verification",
+      "Corporate KYB workflows",
+      "Lending to corporate borrowers",
+      "Vendor and supplier due diligence",
+    ],
+    trustAndCompliance: [
+      "MCA source verification",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying DINs in production." },
@@ -2152,21 +3622,35 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get DIN Verification API Access",
     },
     faqs: [
-      { q: "What input is required?", a: "Only the Director Identification Number (DIN) is required." },
-      { q: "What details are returned?", a: "The API returns director name, DIN status, designation, and associated company information from MCA records." },
-      { q: "How is DIN different from CIN?", a: "DIN identifies individual directors, while CIN identifies companies. Use DIN Verification for director-level checks and CIN Verification for company-level checks." },
-      { q: "Can I verify multiple directors at once?", a: "Each API call verifies one DIN. For bulk verification, you can make parallel API calls." },
+      {
+        q: "What input is required?",
+        a: "Only the Director Identification Number (DIN) is required.",
+      },
+      {
+        q: "What details are returned?",
+        a: "The API returns director name, DIN status, designation, and associated company information from MCA records.",
+      },
+      {
+        q: "How is DIN different from CIN?",
+        a: "DIN identifies individual directors, while CIN identifies companies. Use DIN Verification for director-level checks and CIN Verification for company-level checks.",
+      },
+      {
+        q: "Can I verify multiple directors at once?",
+        a: "Each API call verifies one DIN. For bulk verification, you can make parallel API calls.",
+      },
     ],
     inputOutputPreview: {
       apiName: "DIN Verification",
-      inputs: [
-        { label: "DIN Number", value: "06731826", icon: BadgeCheck },
-      ],
+      inputs: [{ label: "DIN Number", value: "06731826", icon: BadgeCheck }],
       outputs: [
         { label: "Director Name", value: "Abhishek Sagar", icon: User },
         { label: "DIN Status", value: "Active", icon: CheckCircle },
         { label: "Designation", value: "Director" },
-        { label: "Associated Company", value: "Eko India Financial Services Pvt Ltd", icon: Building },
+        {
+          label: "Associated Company",
+          value: "Eko India Financial Services Pvt Ltd",
+          icon: Building,
+        },
       ],
       sampleJson: {
         method: "POST",
@@ -2196,18 +3680,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   "e-challan": {
     seo: {
-      title: "E-Challan Verification API India | Traffic Challan Check for Vehicles",
-      description: "Check pending traffic challans for any vehicle using registration number. Integrate e-challan verification for fleet compliance, insurance, and driver onboarding.",
-      keywords: "E-Challan API, Traffic Challan API, Vehicle Challan Check API, Fleet Compliance API, Traffic Violation API India",
+      title:
+        "E-Challan Verification API India | Traffic Challan Check for Vehicles",
+      description:
+        "Check pending traffic challans for any vehicle using registration number. Integrate e-challan verification for fleet compliance, insurance, and driver onboarding.",
+      keywords:
+        "E-Challan API, Traffic Challan API, Vehicle Challan Check API, Fleet Compliance API, Traffic Violation API India",
     },
     title: "E-Challan Verification API",
     desc: "Check pending traffic challans for vehicles",
     heroTitle: "E-Challan Verification API for Fleet & Vehicle Compliance",
-    heroSubtitle: "Fetch pending traffic challans for any vehicle using its registration number — automate fleet compliance monitoring, insurance risk assessment, and driver onboarding checks.",
+    heroSubtitle:
+      "Fetch pending traffic challans for any vehicle using its registration number — automate fleet compliance monitoring, insurance risk assessment, and driver onboarding checks.",
     category: "verification",
     icon: TicketCheck,
     docsUrl: "https://developers.eko.in/reference/e-challan",
-    overview: "The E-Challan Verification API enables businesses to check pending traffic challans for a vehicle using its registration number. Use it for fleet compliance, insurance underwriting, and gig worker onboarding.",
+    overview:
+      "The E-Challan Verification API enables businesses to check pending traffic challans for a vehicle using its registration number. Use it for fleet compliance, insurance underwriting, and gig worker onboarding.",
     keyBenefits: [
       "Instant challan status by registration number",
       "Supports fleet compliance monitoring",
@@ -2216,14 +3705,41 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for batch and real-time checks",
     ],
     features: [
-      { title: "Challan Lookup", desc: "Fetch pending traffic challans for any vehicle using its registration number." },
-      { title: "Fleet Compliance", desc: "Monitor challan status across entire vehicle fleets for regulatory compliance." },
-      { title: "Risk Assessment", desc: "Identify traffic violation patterns for insurance underwriting and driver scoring." },
-      { title: "Real-Time Processing", desc: "Instant challan status checks for onboarding and compliance workflows." },
+      {
+        title: "Challan Lookup",
+        desc: "Fetch pending traffic challans for any vehicle using its registration number.",
+      },
+      {
+        title: "Fleet Compliance",
+        desc: "Monitor challan status across entire vehicle fleets for regulatory compliance.",
+      },
+      {
+        title: "Risk Assessment",
+        desc: "Identify traffic violation patterns for insurance underwriting and driver scoring.",
+      },
+      {
+        title: "Real-Time Processing",
+        desc: "Instant challan status checks for onboarding and compliance workflows.",
+      },
     ],
-    whoShouldUse: ["Fleet operators and logistics companies", "Insurance companies", "Gig and delivery platforms", "Automotive and vehicle marketplace platforms"],
-    useCases: ["Fleet compliance monitoring", "Insurance risk assessment", "Delivery rider onboarding checks", "Used vehicle pre-purchase checks"],
-    trustAndCompliance: ["Government source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Fleet operators and logistics companies",
+      "Insurance companies",
+      "Gig and delivery platforms",
+      "Automotive and vehicle marketplace platforms",
+    ],
+    useCases: [
+      "Fleet compliance monitoring",
+      "Insurance risk assessment",
+      "Delivery rider onboarding checks",
+      "Used vehicle pre-purchase checks",
+    ],
+    trustAndCompliance: [
+      "Government source verification",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start checking e-challans in production." },
@@ -2232,10 +3748,22 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get E-Challan Verification API Access",
     },
     faqs: [
-      { q: "What input is required?", a: "Only the vehicle registration number is required to check pending challans." },
-      { q: "Does it cover all states?", a: "The API covers challans issued via the national e-challan system. Coverage may vary by state adoption." },
-      { q: "Can I monitor my entire fleet?", a: "Yes. You can run batch checks across all vehicle registration numbers in your fleet on a daily or weekly schedule." },
-      { q: "Is this useful for insurance?", a: "Yes. Challan history indicates driving behavior risk — insurers use this data for underwriting and premium calculation." },
+      {
+        q: "What input is required?",
+        a: "Only the vehicle registration number is required to check pending challans.",
+      },
+      {
+        q: "Does it cover all states?",
+        a: "The API covers challans issued via the national e-challan system. Coverage may vary by state adoption.",
+      },
+      {
+        q: "Can I monitor my entire fleet?",
+        a: "Yes. You can run batch checks across all vehicle registration numbers in your fleet on a daily or weekly schedule.",
+      },
+      {
+        q: "Is this useful for insurance?",
+        a: "Yes. Challan history indicates driving behavior risk — insurers use this data for underwriting and premium calculation.",
+      },
     ],
     inputOutputPreview: {
       apiName: "E-Challan Verification",
@@ -2263,8 +3791,18 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
             pending_challans: 2,
             total_fine_amount: 3500,
             challans: [
-              { violation: "Overspeeding", date: "2024-12-10", fine: 2000, status: "Pending" },
-              { violation: "Red Light Jump", date: "2024-11-05", fine: 1500, status: "Pending" },
+              {
+                violation: "Overspeeding",
+                date: "2024-12-10",
+                fine: 2000,
+                status: "Pending",
+              },
+              {
+                violation: "Red Light Jump",
+                date: "2024-11-05",
+                fine: 1500,
+                status: "Pending",
+              },
             ],
           },
           message: "E-Challan check successful",
@@ -2279,17 +3817,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   email: {
     seo: {
       title: "Email Verification API India | Catch Invalid & Dummy Emails",
-      description: "Verify email addresses in real time — catch dummy emails, typos, and non-existent domains. Validate domain authenticity and age for onboarding, fraud prevention, and contact verification.",
-      keywords: "Email Verification API, Email Validation API, Email Check API, Invalid Email Detection API, Dummy Email Check API, Contact Verification API India",
+      description:
+        "Verify email addresses in real time — catch dummy emails, typos, and non-existent domains. Validate domain authenticity and age for onboarding, fraud prevention, and contact verification.",
+      keywords:
+        "Email Verification API, Email Validation API, Email Check API, Invalid Email Detection API, Dummy Email Check API, Contact Verification API India",
     },
     title: "Email Verification API",
     desc: "Catch invalid, dummy, and non-existent email addresses",
     heroTitle: "Email Verification API for Onboarding & Fraud Prevention",
-    heroSubtitle: "Catch invalid, dummy, and mistyped email addresses in real time. Verify that an email domain actually exists and can receive messages — reduce bounce rates, block fake signups, and ensure valid contact data during onboarding.",
+    heroSubtitle:
+      "Catch invalid, dummy, and mistyped email addresses in real time. Verify that an email domain actually exists and can receive messages — reduce bounce rates, block fake signups, and ensure valid contact data during onboarding.",
     category: "verification",
     icon: MailCheck,
     docsUrl: "https://developers.eko.in/reference/email-check",
-    overview: "The Email Verification API helps businesses catch invalid, dummy, and mistyped email addresses before they enter your system. It checks whether the email domain is real and can receive messages, and returns domain age to help assess trust — a newly created domain with no mail infrastructure is a strong fraud signal.",
+    overview:
+      "The Email Verification API helps businesses catch invalid, dummy, and mistyped email addresses before they enter your system. It checks whether the email domain is real and can receive messages, and returns domain age to help assess trust — a newly created domain with no mail infrastructure is a strong fraud signal.",
     keyBenefits: [
       "Catch invalid, dummy, and mistyped email addresses",
       "Verify domain can actually receive messages",
@@ -2298,14 +3840,42 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for high-volume verification",
     ],
     features: [
-      { title: "Invalid Email Detection", desc: "Catch dummy, mistyped, and non-existent email addresses by verifying the domain has real mail infrastructure." },
-      { title: "Domain Trust Scoring", desc: "Returns domain age in days — newly created domains are a strong indicator of fraudulent or disposable email addresses." },
-      { title: "Mail Server Validation", desc: "Checks MX (mail exchange) records to confirm the domain can actually receive emails — not just that the format is valid." },
-      { title: "Real-Time Processing", desc: "Instant email validation for inline onboarding and registration flows." },
+      {
+        title: "Invalid Email Detection",
+        desc: "Catch dummy, mistyped, and non-existent email addresses by verifying the domain has real mail infrastructure.",
+      },
+      {
+        title: "Domain Trust Scoring",
+        desc: "Returns domain age in days — newly created domains are a strong indicator of fraudulent or disposable email addresses.",
+      },
+      {
+        title: "Mail Server Validation",
+        desc: "Checks MX (mail exchange) records to confirm the domain can actually receive emails — not just that the format is valid.",
+      },
+      {
+        title: "Real-Time Processing",
+        desc: "Instant email validation for inline onboarding and registration flows.",
+      },
     ],
-    whoShouldUse: ["E-commerce and marketplace platforms", "SaaS and subscription platforms", "Staffing and HR platforms", "Financial institutions"],
-    useCases: ["Block dummy emails during user onboarding", "Catch typos in email addresses at signup", "Detect fraudulent signups with new/suspicious domains", "Contact database cleaning", "Employee contact verification"],
-    trustAndCompliance: ["Secure API authentication", "Encrypted data transmission", "DPDP-aligned data processing", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "E-commerce and marketplace platforms",
+      "SaaS and subscription platforms",
+      "Staffing and HR platforms",
+      "Financial institutions",
+    ],
+    useCases: [
+      "Block dummy emails during user onboarding",
+      "Catch typos in email addresses at signup",
+      "Detect fraudulent signups with new/suspicious domains",
+      "Contact database cleaning",
+      "Employee contact verification",
+    ],
+    trustAndCompliance: [
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "DPDP-aligned data processing",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
       { title: "Go Live", desc: "Start verifying emails in production." },
@@ -2314,22 +3884,50 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Email Verification API Access",
     },
     faqs: [
-      { q: "What input is required?", a: "Only the email address is required for verification." },
-      { q: "How does it catch dummy emails?", a: "The API checks if the email domain has valid mail exchange (MX) records — domains without mail servers can't receive emails, indicating a fake or dummy address." },
-      { q: "What is the domain age check?", a: "The API returns domain age in days. Newly created domains (days or weeks old) are a strong fraud signal — legitimate businesses and email providers have domains that are years old." },
-      { q: "Can I use this for bulk email list cleaning?", a: "Yes. You can validate email lists by making parallel API calls to clean your contact database and remove invalid entries." },
+      {
+        q: "What input is required?",
+        a: "Only the email address is required for verification.",
+      },
+      {
+        q: "How does it catch dummy emails?",
+        a: "The API checks if the email domain has valid mail exchange (MX) records — domains without mail servers can't receive emails, indicating a fake or dummy address.",
+      },
+      {
+        q: "What is the domain age check?",
+        a: "The API returns domain age in days. Newly created domains (days or weeks old) are a strong fraud signal — legitimate businesses and email providers have domains that are years old.",
+      },
+      {
+        q: "Can I use this for bulk email list cleaning?",
+        a: "Yes. You can validate email lists by making parallel API calls to clean your contact database and remove invalid entries.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Email Verification",
       inputs: [
-        { label: "Email Address", value: "rajesh.kumar@example.com", icon: Mail },
+        {
+          label: "Email Address",
+          value: "rajesh.kumar@example.com",
+          icon: Mail,
+        },
       ],
       outputs: [
         { label: "Status", value: "Success", icon: MailCheck },
-        { label: "Message", value: "Email verification successful", icon: CheckCircle },
+        {
+          label: "Message",
+          value: "Email verification successful",
+          icon: CheckCircle,
+        },
         { label: "Domain", value: "example.com", icon: Globe },
-        { label: "Domain Age", value: "6,970 days (~19 years)", icon: Calendar },
-        { label: "MX Records", value: "aspmx.l.google.com (+ 4 more)", icon: Shield },
+        {
+          label: "Domain Age",
+          value: "6,970 days (~19 years)",
+          icon: Calendar,
+        },
+        {
+          label: "MX Records",
+          value: "aspmx.l.google.com (+ 4 more)",
+          icon: Shield,
+        },
       ],
       sampleJson: {
         method: "POST",
@@ -2361,17 +3959,21 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   fssai: {
     seo: {
       title: "FSSAI License Verification API India | Food License Validation",
-      description: "Verify FSSAI food license details and status in real time. Integrate FSSAI verification for food business onboarding, marketplace compliance, and regulatory checks.",
-      keywords: "FSSAI Verification API, Food License API, FSSAI License Check API, Food Business Verification API, Food Safety API India",
+      description:
+        "Verify FSSAI food license details and status in real time. Integrate FSSAI verification for food business onboarding, marketplace compliance, and regulatory checks.",
+      keywords:
+        "FSSAI Verification API, Food License API, FSSAI License Check API, Food Business Verification API, Food Safety API India",
     },
     title: "FSSAI License Verification API",
     desc: "Verify FSSAI food license details and status",
     heroTitle: "FSSAI License Verification API for Food Business Compliance",
-    heroSubtitle: "Validate FSSAI food license details and status instantly — verify food business registration for marketplace onboarding, delivery platform compliance, and regulatory checks.",
+    heroSubtitle:
+      "Validate FSSAI food license details and status instantly — verify food business registration for marketplace onboarding, delivery platform compliance, and regulatory checks.",
     category: "verification",
     icon: Utensils,
     docsUrl: "https://developers.eko.in/reference/fssai-verification",
-    overview: "The FSSAI License Verification API enables businesses to validate Food Safety and Standards Authority of India (FSSAI) license details. Use it for food business onboarding, delivery platform compliance, and food safety regulatory checks.",
+    overview:
+      "The FSSAI License Verification API enables businesses to validate Food Safety and Standards Authority of India (FSSAI) license details. Use it for food business onboarding, delivery platform compliance, and food safety regulatory checks.",
     keyBenefits: [
       "Instant FSSAI license validation",
       "Confirms food business registration status",
@@ -2380,38 +3982,92 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Suitable for high-volume verification",
     ],
     features: [
-      { title: "License Validation", desc: "Verify FSSAI license number and retrieve registered business details." },
-      { title: "Status Check", desc: "Confirm whether the food license is active, expired, or suspended." },
-      { title: "Business Details", desc: "Fetch registered business name, address, and license category." },
-      { title: "Real-Time Processing", desc: "Instant validation for food business onboarding and compliance workflows." },
+      {
+        title: "License Validation",
+        desc: "Verify FSSAI license number and retrieve registered business details.",
+      },
+      {
+        title: "Status Check",
+        desc: "Confirm whether the food license is active, expired, or suspended.",
+      },
+      {
+        title: "Business Details",
+        desc: "Fetch registered business name, address, and license category.",
+      },
+      {
+        title: "Real-Time Processing",
+        desc: "Instant validation for food business onboarding and compliance workflows.",
+      },
     ],
-    whoShouldUse: ["Food delivery and aggregator platforms", "E-commerce and marketplace platforms", "Restaurant management SaaS", "Food safety compliance teams"],
-    useCases: ["Food seller onboarding on marketplaces", "Delivery platform restaurant verification", "Food safety audit and compliance checks", "Cloud kitchen registration verification"],
-    trustAndCompliance: ["FSSAI source verification", "Secure API authentication", "Encrypted data transmission", "Audit-ready verification logs"],
+    whoShouldUse: [
+      "Food delivery and aggregator platforms",
+      "E-commerce and marketplace platforms",
+      "Restaurant management SaaS",
+      "Food safety compliance teams",
+    ],
+    useCases: [
+      "Food seller onboarding on marketplaces",
+      "Delivery platform restaurant verification",
+      "Food safety audit and compliance checks",
+      "Cloud kitchen registration verification",
+    ],
+    trustAndCompliance: [
+      "FSSAI source verification",
+      "Secure API authentication",
+      "Encrypted data transmission",
+      "Audit-ready verification logs",
+    ],
     integrationSteps: [
       ...VERIFICATION_STEPS_BASE,
-      { title: "Go Live", desc: "Start verifying FSSAI licenses in production." },
+      {
+        title: "Go Live",
+        desc: "Start verifying FSSAI licenses in production.",
+      },
     ],
     leadForm: {
       title: "Get FSSAI Verification API Access",
     },
     faqs: [
-      { q: "What input is required?", a: "Only the FSSAI license number is required for verification." },
-      { q: "What details are returned?", a: "The API returns FSSAI license status, license category, registered business name, address, state, PIN code, and license expiry date." },
-      { q: "Is this mandatory for food delivery platforms?", a: "Yes. FSSAI regulations require food delivery platforms to verify that all listed restaurants and cloud kitchens have valid FSSAI licenses." },
-      { q: "How fast is the check?", a: "The API returns results in real time with sub-second response times." },
+      {
+        q: "What input is required?",
+        a: "Only the FSSAI license number is required for verification.",
+      },
+      {
+        q: "What details are returned?",
+        a: "The API returns FSSAI license status, license category, registered business name, address, state, PIN code, and license expiry date.",
+      },
+      {
+        q: "Is this mandatory for food delivery platforms?",
+        a: "Yes. FSSAI regulations require food delivery platforms to verify that all listed restaurants and cloud kitchens have valid FSSAI licenses.",
+      },
+      {
+        q: "How fast is the check?",
+        a: "The API returns results in real time with sub-second response times.",
+      },
     ],
     inputOutputPreview: {
       apiName: "FSSAI License Verification",
       inputs: [
-        { label: "FSSAI License Number", value: "11521998000045", icon: Utensils },
+        {
+          label: "FSSAI License Number",
+          value: "11521998000045",
+          icon: Utensils,
+        },
       ],
       outputs: [
         { label: "License Number", value: "11521998000045", icon: Utensils },
         { label: "Status", value: "Active", icon: CheckCircle },
         { label: "License Category", value: "State License" },
-        { label: "Business Name", value: "Spice Garden Restaurant", icon: Building },
-        { label: "Address", value: "123 Main Street, Mumbai, Maharashtra", icon: MapPin },
+        {
+          label: "Business Name",
+          value: "Spice Garden Restaurant",
+          icon: Building,
+        },
+        {
+          label: "Address",
+          value: "123 Main Street, Mumbai, Maharashtra",
+          icon: MapPin,
+        },
         { label: "State", value: "Maharashtra", icon: MapPin },
         { label: "PIN Code", value: "400001", icon: MapPin },
         { label: "Expiry Date", value: "2026-03-15", icon: Calendar },

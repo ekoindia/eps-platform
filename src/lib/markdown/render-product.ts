@@ -1,6 +1,6 @@
 import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
-import type { ApiProductRef } from "@/lib/data/api-products";
 import { SITE_URL } from "@/lib/config/site";
+import type { ApiProductRef } from "@/lib/data/api-products";
 import {
   bulletList,
   canonicalNotice,
@@ -9,10 +9,10 @@ import {
   h1,
   h2,
   h3,
+  indexPageNotice,
   joinBlocks,
   markdownTable,
   renderSteps,
-  indexPageNotice,
 } from "./shared";
 
 export interface ProductPageSeoShape {
@@ -35,7 +35,7 @@ export interface ProductPageDataShape extends ProductPageLayoutProps {
 export function renderProductMarkdown(
   product: ApiProductRef,
   page: ProductPageDataShape,
-  relatedProducts: ApiProductRef[] = []
+  relatedProducts: ApiProductRef[] = [],
 ): string {
   const canonical = `${SITE_URL}/products/${product.slug}`;
 
@@ -80,7 +80,10 @@ export function renderProductMarkdown(
   }
 
   if (page.types && page.types.length > 0) {
-    blocks.push(h2("Supported Types"), bulletList(page.types.map((t) => t.label)));
+    blocks.push(
+      h2("Supported Types"),
+      bulletList(page.types.map((t) => t.label)),
+    );
   }
 
   if (page.whoShouldUse && page.whoShouldUse.length > 0) {
@@ -99,8 +102,8 @@ export function renderProductMarkdown(
         h3("Example inputs"),
         markdownTable(
           ["Field", "Value"],
-          iop.inputs.map((f) => [f.label, f.value])
-        )
+          iop.inputs.map((f) => [f.label, f.value]),
+        ),
       );
     }
     if (iop.outputs && iop.outputs.length > 0) {
@@ -108,8 +111,8 @@ export function renderProductMarkdown(
         h3("Example outputs"),
         markdownTable(
           ["Field", "Value"],
-          iop.outputs.map((f) => [f.label, f.value])
-        )
+          iop.outputs.map((f) => [f.label, f.value]),
+        ),
       );
     }
   }
@@ -118,9 +121,10 @@ export function renderProductMarkdown(
     blocks.push(h2("Integration Steps"), renderSteps(page.integrationSteps));
   }
 
-  if (page.trustAndCompliance && page.trustAndCompliance.length > 0) {
-    blocks.push(h2("Trust & Compliance"), bulletList(page.trustAndCompliance));
-  }
+  // TODO: Fix how to show Trust & Compliance. The claims like "99.9% Uptime" should be legally/SLA backed.
+  // if (page.trustAndCompliance && page.trustAndCompliance.length > 0) {
+  //   blocks.push(h2("Trust & Compliance"), bulletList(page.trustAndCompliance));
+  // }
 
   if (page.faqs && page.faqs.length > 0) {
     blocks.push(h2("FAQs"));
@@ -129,7 +133,10 @@ export function renderProductMarkdown(
     }
   }
 
-  blocks.push(h2("API Documentation"), `- [Full developer docs](${page.docsUrl})`);
+  blocks.push(
+    h2("API Documentation"),
+    `- [Full developer docs](${page.docsUrl})`,
+  );
 
   if (relatedProducts.length > 0) {
     blocks.push(
@@ -137,9 +144,9 @@ export function renderProductMarkdown(
       relatedProducts
         .map(
           (p) =>
-            `- [${p.name}](${SITE_URL}${p.href}): ${p.shortDesc} ([markdown](${SITE_URL}${p.href}.md))`
+            `- [${p.name}](${SITE_URL}${p.href}): ${p.shortDesc} ([markdown](${SITE_URL}${p.href}.md))`,
         )
-        .join("\n")
+        .join("\n"),
     );
   }
 

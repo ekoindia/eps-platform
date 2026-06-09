@@ -1,13 +1,13 @@
-import { Helmet } from "react-helmet-async";
-import { CheckCircle } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
+import { CheckCircle } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 const signupBenefits = [
   "Sandbox access in minutes",
   "Dedicated integration support",
   "Comprehensive documentation",
-  "99.9% uptime guarantee",
+  "Reliable, high-volume workflows",
 ];
 
 const SignupPage = () => {
@@ -33,12 +33,16 @@ const SignupPage = () => {
                   Get Access to Eko Platform Services
                 </h1>
                 <p className="text-muted-foreground text-lg mb-7 leading-relaxed max-w-xl">
-                  Sign up now and start integrating in minutes. Our team will help you go live quickly.
+                  Sign up now and start integrating in minutes. Our team will
+                  help you go live quickly.
                 </p>
 
                 <ul className="flex flex-col gap-3.5">
                   {signupBenefits.map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-foreground/80 text-lg">
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 text-foreground/80 text-lg"
+                    >
                       <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
                       {item}
                     </li>
@@ -51,8 +55,12 @@ const SignupPage = () => {
 
                 <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
                   <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
-                    <h2 className="text-lg font-bold text-white">Get Platform Access</h2>
-                    <p className="text-white/70 text-sm">Get started in 10 minutes</p>
+                    <h2 className="text-lg font-bold text-white">
+                      Get Platform Access
+                    </h2>
+                    <p className="text-white/70 text-sm">
+                      Get started in 10 minutes
+                    </p>
                   </div>
 
                   <div className="p-2">
