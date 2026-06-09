@@ -1,19 +1,21 @@
-import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
-import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
-import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
-import { Header } from "@/components/Header";
 import { DefaultMeta } from "@/components/DefaultMeta";
+import { Header } from "@/components/Header";
+import { ScrollToTop } from "@/components/ScrollToTop";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
+import { lazy, Suspense } from "react";
+import { HelmetProvider } from "react-helmet-async";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 // Route-based code splitting: each page is loaded on demand
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const ProductDetailPage = lazy(() => import("./pages/products/ProductDetailPage"));
+const ProductDetailPage = lazy(
+  () => import("./pages/products/ProductDetailPage"),
+);
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const BlogsMediaPage = lazy(() => import("./pages/BlogsMediaPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
@@ -21,7 +23,6 @@ const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const RefundPolicyPage = lazy(() => import("./pages/RefundPolicyPage"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 // const EkoShieldPage = lazy(() => import("./pages/EkoShieldPage"));
-// const EkoShieldDocumentPage = lazy(() => import("./pages/EkoShieldDocumentPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const IndustryDetailPage = lazy(() => import("./pages/IndustryDetailPage"));
 const SolutionDetailPage = lazy(() => import("./pages/SolutionDetailPage"));
@@ -35,7 +36,11 @@ function TrackingParamCapture() {
   return null;
 }
 
-const App = ({ helmetContext }: { helmetContext?: Record<string, unknown> }) => (
+const App = ({
+  helmetContext,
+}: {
+  helmetContext?: Record<string, unknown>;
+}) => (
   <HelmetProvider context={helmetContext}>
     <DefaultMeta />
     <TooltipProvider>
@@ -51,7 +56,6 @@ const App = ({ helmetContext }: { helmetContext?: Record<string, unknown> }) => 
 
             {/* Eko Shield (specific routes before :slug wildcard) */}
             {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
-            {/* <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} /> */}
 
             {/* Product API Pages */}
             <Route path="/products" element={<ProductsPage />} />
@@ -68,8 +72,14 @@ const App = ({ helmetContext }: { helmetContext?: Record<string, unknown> }) => 
             <Route path="/about-us" element={<AboutPage />} />
             <Route path="/blogs-media" element={<BlogsMediaPage />} />
             {/* Redirects for old routes */}
-            <Route path="/blog" element={<Navigate to="/blogs-media" replace />} />
-            <Route path="/press" element={<Navigate to="/blogs-media" replace />} />
+            <Route
+              path="/blog"
+              element={<Navigate to="/blogs-media" replace />}
+            />
+            <Route
+              path="/press"
+              element={<Navigate to="/blogs-media" replace />}
+            />
             <Route path="/tnc" element={<TermsPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/refund-policy" element={<RefundPolicyPage />} />
@@ -80,8 +90,8 @@ const App = ({ helmetContext }: { helmetContext?: Record<string, unknown> }) => 
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        </AnimatedRoutes>
-      </TooltipProvider>
+      </AnimatedRoutes>
+    </TooltipProvider>
   </HelmetProvider>
 );
 

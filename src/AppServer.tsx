@@ -5,16 +5,16 @@
  * keeps all page imports static. The client-side App.tsx uses lazy
  * imports for route-based code splitting.
  */
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
-import { ScrollToTop } from "@/components/ScrollToTop";
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
-import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
-import { Header } from "@/components/Header";
 import { DefaultMeta } from "@/components/DefaultMeta";
+import { Header } from "@/components/Header";
+import { ScrollToTop } from "@/components/ScrollToTop";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
+import { HelmetProvider } from "react-helmet-async";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -24,21 +24,20 @@ import ProductDetailPage from "./pages/products/ProductDetailPage";
 // Company & Legal Pages
 import AboutPage from "./pages/AboutPage";
 import BlogsMediaPage from "./pages/BlogsMediaPage";
-import TermsPage from "./pages/TermsPage";
+import GrievancePage from "./pages/GrievancePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
-import GrievancePage from "./pages/GrievancePage";
+import TermsPage from "./pages/TermsPage";
 // import EkoShieldPage from "./pages/EkoShieldPage";
-// import EkoShieldDocumentPage from "./pages/EkoShieldDocumentPage";
 import SignupPage from "./pages/SignupPage";
 
 // Products listing page
 import ProductsPage from "./pages/ProductsPage";
 
 // Industry & Solution Pages
+import IndustriesPage from "./pages/IndustriesPage";
 import IndustryDetailPage from "./pages/IndustryDetailPage";
 import SolutionDetailPage from "./pages/SolutionDetailPage";
-import IndustriesPage from "./pages/IndustriesPage";
 import SolutionsPage from "./pages/SolutionsPage";
 import UseCasesHubPage from "./pages/UseCasesHubPage";
 
@@ -47,7 +46,11 @@ function TrackingParamCapture() {
   return null;
 }
 
-const AppServer = ({ helmetContext }: { helmetContext?: Record<string, unknown> }) => (
+const AppServer = ({
+  helmetContext,
+}: {
+  helmetContext?: Record<string, unknown>;
+}) => (
   <HelmetProvider context={helmetContext}>
     <DefaultMeta />
     <TooltipProvider>
@@ -57,41 +60,46 @@ const AppServer = ({ helmetContext }: { helmetContext?: Record<string, unknown> 
       <ScrollToTop />
       <Header />
       <AnimatedRoutes>
-          <Routes>
-            <Route path="/" element={<Index />} />
+        <Routes>
+          <Route path="/" element={<Index />} />
 
-            {/* Eko Shield (specific routes before :slug wildcard) */}
-            {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
-            {/* <Route path="/products/eko-shield/document" element={<EkoShieldDocumentPage />} /> */}
+          {/* Eko Shield (specific routes before :slug wildcard) */}
+          {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
 
-            {/* Product API Pages */}
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/products/:slug" element={<ProductDetailPage />} />
+          {/* Product API Pages */}
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/:slug" element={<ProductDetailPage />} />
 
-            {/* Industry & Solution Pages */}
-            <Route path="/use-cases" element={<UseCasesHubPage />} />
-            <Route path="/industries" element={<IndustriesPage />} />
-            <Route path="/industries/:slug" element={<IndustryDetailPage />} />
-            <Route path="/solutions" element={<SolutionsPage />} />
-            <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+          {/* Industry & Solution Pages */}
+          <Route path="/use-cases" element={<UseCasesHubPage />} />
+          <Route path="/industries" element={<IndustriesPage />} />
+          <Route path="/industries/:slug" element={<IndustryDetailPage />} />
+          <Route path="/solutions" element={<SolutionsPage />} />
+          <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
 
-            {/* Company & Legal Pages */}
-            <Route path="/about-us" element={<AboutPage />} />
-            <Route path="/blogs-media" element={<BlogsMediaPage />} />
-            {/* Redirects for old routes */}
-            <Route path="/blog" element={<Navigate to="/blogs-media" replace />} />
-            <Route path="/press" element={<Navigate to="/blogs-media" replace />} />
-            <Route path="/tnc" element={<TermsPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/refund-policy" element={<RefundPolicyPage />} />
-            <Route path="/grievance" element={<GrievancePage />} />
-            <Route path="/signup" element={<SignupPage />} />
+          {/* Company & Legal Pages */}
+          <Route path="/about-us" element={<AboutPage />} />
+          <Route path="/blogs-media" element={<BlogsMediaPage />} />
+          {/* Redirects for old routes */}
+          <Route
+            path="/blog"
+            element={<Navigate to="/blogs-media" replace />}
+          />
+          <Route
+            path="/press"
+            element={<Navigate to="/blogs-media" replace />}
+          />
+          <Route path="/tnc" element={<TermsPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/refund-policy" element={<RefundPolicyPage />} />
+          <Route path="/grievance" element={<GrievancePage />} />
+          <Route path="/signup" element={<SignupPage />} />
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AnimatedRoutes>
-      </TooltipProvider>
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AnimatedRoutes>
+    </TooltipProvider>
   </HelmetProvider>
 );
 

@@ -9,12 +9,7 @@ import type {
 } from "@/components/ApiInputOutputPreview";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import { SectionContainer } from "@/components/SectionContainer";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { IntegrationStepperSection } from "@/components/sections/IntegrationStepperSection";
 import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import { openZohoChat } from "@/lib/zoho-chat";
 import type { LucideIcon } from "lucide-react";
@@ -26,7 +21,6 @@ import {
   FileText,
   HelpCircle,
   Landmark,
-  Shield,
   Store,
   Users,
   Zap,
@@ -168,7 +162,11 @@ export const ProductPageLayout = ({
           <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+            <div
+              className={`grid gap-10 lg:gap-16 items-start ${
+                heroImage ? "lg:grid-cols-2" : ""
+              }`}
+            >
               {/* Left: Content */}
               <div>
                 <FadeIn onView={false} delay={100}>
@@ -179,7 +177,7 @@ export const ProductPageLayout = ({
                     ← Back to Home
                   </Link>
 
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight text-balance">
                     {heroTitle}
                   </h1>
                 </FadeIn>
@@ -231,77 +229,80 @@ export const ProductPageLayout = ({
               </div>
 
               {/* Right: Hero Image or Lead Form */}
-              {heroImage ? (
-                <FadeIn
-                  onView={false}
-                  delay={300}
-                  className="relative flex items-center justify-center"
-                >
-                  {/* Preload the LCP hero image so the browser starts the
+              {
+                heroImage ? (
+                  <FadeIn
+                    onView={false}
+                    delay={300}
+                    className="relative flex items-center justify-center"
+                  >
+                    {/* Preload the LCP hero image so the browser starts the
                       request during <head> parse (Lighthouse "LCP request
                       discovery"), instead of when the in-body <img> is reached. */}
-                  <Helmet>
-                    {typeof heroImage === "string" ? (
-                      <link
-                        rel="preload"
-                        as="image"
-                        href={heroImage}
+                    <Helmet>
+                      {typeof heroImage === "string" ? (
+                        <link
+                          rel="preload"
+                          as="image"
+                          href={heroImage}
+                          fetchPriority="high"
+                        />
+                      ) : (
+                        <link
+                          rel="preload"
+                          as="image"
+                          href={heroImage.img.src}
+                          imageSrcSet={Object.values(heroImage.sources)[0]}
+                          imageSizes={HERO_IMAGE_SIZES}
+                          fetchPriority="high"
+                        />
+                      )}
+                    </Helmet>
+                    <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
+                    <div className="relative animate-float perspective-[1000px]">
+                      <Picture
+                        src={heroImage}
+                        alt={heroTitle}
+                        sizes={HERO_IMAGE_SIZES}
                         fetchPriority="high"
+                        className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
                       />
-                    ) : (
-                      <link
-                        rel="preload"
-                        as="image"
-                        href={heroImage.img.src}
-                        imageSrcSet={Object.values(heroImage.sources)[0]}
-                        imageSizes={HERO_IMAGE_SIZES}
-                        fetchPriority="high"
-                      />
-                    )}
-                  </Helmet>
-                  <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
-                  <div className="relative animate-float perspective-[1000px]">
-                    <Picture
-                      src={heroImage}
-                      alt={heroTitle}
-                      sizes={HERO_IMAGE_SIZES}
-                      fetchPriority="high"
-                      className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
-                    />
-                  </div>
-                </FadeIn>
-              ) : (
-                <FadeIn
-                  onView={false}
-                  delay={300}
-                  className="relative"
-                  id="lead-form"
-                >
-                  {/* Trust Shield Badge - desktop only */}
-                  <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-xs">
-                    <Shield className="w-4 h-4 text-eko-gold" />
-                    <span className="text-xs font-semibold text-eko-gold">
-                      99.9% Uptime
-                    </span>
-                  </div>
-
-                  <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-                  <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-                    <div className="bg-eko-navy px-6 py-4">
-                      <h3 className="text-lg font-bold text-white">
-                        {leadForm?.title || "Get API Access"}
-                      </h3>
-                      <p className="text-white/70 text-sm">
-                        Get started in 10 minutes
-                      </p>
                     </div>
+                  </FadeIn>
+                ) : null
+                // (
+                //   <FadeIn
+                //     onView={false}
+                //     delay={300}
+                //     className="relative"
+                //     id="lead-form"
+                //   >
+                //     {/* Trust Shield Badge - desktop only */}
+                //     <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-xs">
+                //       <Shield className="w-4 h-4 text-eko-gold" />
+                //       <span className="text-xs font-semibold text-eko-gold">
+                //         Reliable, high-volume workflows
+                //       </span>
+                //     </div>
 
-                    <div className="p-2">
-                      <ZohoSignupForm />
-                    </div>
-                  </div>
-                </FadeIn>
-              )}
+                //     <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
+                //     <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                //       <div className="bg-eko-navy px-6 py-4">
+                //         <h3 className="text-lg font-bold text-white">
+                //           {leadForm?.title || "Get API Access"}
+                //         </h3>
+                //         <p className="text-white/70 text-sm">
+                //           Get started in 10 minutes
+                //         </p>
+                //       </div>
+
+                //       <div className="p-2">
+                //         <ZohoSignupForm />
+                //       </div>
+                //     </div>
+                //   </FadeIn>
+                // )
+              }
             </div>
           </div>
         </section>
@@ -577,7 +578,8 @@ export const ProductPageLayout = ({
         )} */}
 
         {/* Trust & Compliance */}
-        {trustAndCompliance && trustAndCompliance.length > 0 && (
+        {/* TODO: Fix how to show Trust & Compliance. The claims like "99.9% Uptime" should be legally/SLA backed. */}
+        {/* {trustAndCompliance && trustAndCompliance.length > 0 && (
           <SectionContainer>
             <div className="flex flex-col lg:flex-row items-center gap-12">
               <FadeIn className="flex-1">
@@ -615,95 +617,13 @@ export const ProductPageLayout = ({
               </FadeIn>
             </div>
           </SectionContainer>
-        )}
+        )} */}
 
         {/* Interactive Integration Stepper */}
-        <SectionContainer className="bg-eko-navy">
-          <FadeIn className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              How to Integrate
-            </h2>
-            <p className="text-white/70 max-w-2xl mx-auto">
-              Get started in minutes with our simple integration process
-            </p>
-          </FadeIn>
-
-          <TooltipProvider>
-            {/* Desktop: horizontal stepper */}
-            <div className="hidden md:flex items-start justify-center max-w-4xl mx-auto">
-              {integrationSteps.map((step, i) => (
-                <FadeIn
-                  key={i}
-                  delay={i * 150}
-                  className="flex items-start flex-1"
-                >
-                  <div className="flex flex-col items-center text-center group">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-14 h-14 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-lg cursor-pointer hover:scale-110 hover:ring-4 hover:ring-eko-gold/30 transition-all duration-300">
-                          {i + 1}
-                        </div>
-                      </TooltipTrigger>
-                      {step.tip && (
-                        <TooltipContent
-                          side="top"
-                          className="bg-eko-navy text-white border-eko-gold/30 max-w-[200px]"
-                        >
-                          <p className="text-xs">{step.tip}</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                    <h3 className="text-sm font-semibold text-white mt-3 mb-1">
-                      {step.title}
-                    </h3>
-                    <p className="text-white/70 text-xs max-w-[140px]">
-                      {step.desc}
-                    </p>
-                  </div>
-                  {i < integrationSteps.length - 1 && (
-                    <div className="flex-1 h-0.5 bg-white/20 mt-7 mx-2" />
-                  )}
-                </FadeIn>
-              ))}
-            </div>
-
-            {/* Mobile: vertical stepper */}
-            <div className="md:hidden flex flex-col gap-6 max-w-sm mx-auto">
-              {integrationSteps.map((step, i) => (
-                <FadeIn key={i} delay={i * 150} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full bg-eko-gold flex items-center justify-center text-eko-navy font-bold text-sm">
-                      {i + 1}
-                    </div>
-                    {i < integrationSteps.length - 1 && (
-                      <div className="w-0.5 flex-1 bg-white/20 mt-2" />
-                    )}
-                  </div>
-                  <div className="pb-6">
-                    <h3 className="text-sm font-semibold text-white">
-                      {step.title}
-                    </h3>
-                    <p className="text-white/70 text-xs mt-1">{step.desc}</p>
-                    {step.tip && (
-                      <p className="text-eko-gold/80 text-xs mt-1 italic">
-                        {step.tip}
-                      </p>
-                    )}
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </TooltipProvider>
-
-          <div className="text-center mt-10">
-            <Button variant="gold" size="lg" asChild>
-              <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-                View Documentation
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </Button>
-          </div>
-        </SectionContainer>
+        <IntegrationStepperSection
+          integrationSteps={integrationSteps}
+          docsUrl={docsUrl}
+        />
 
         {/* FAQ Section */}
         <SectionContainer className="bg-muted/30">
@@ -756,61 +676,59 @@ export const ProductPageLayout = ({
         )}
 
         {/* Lead Form Section - Below FAQ */}
-        {heroImage && (
-          <SectionContainer
-            variant="navy"
-            id="lead-form"
-            className="relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
+        <SectionContainer
+          variant="navy"
+          id="lead-form"
+          className="relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
 
-            <div className="relative grid lg:grid-cols-2 gap-12 items-center">
-              <FadeIn>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  Get API Access
-                </h2>
-                <p className="text-white/70 text-lg mb-6 leading-relaxed">
-                  Sign up now and start integrating in minutes. Our team will
-                  help you go live quickly.
-                </p>
-                <ul className="flex flex-col gap-3">
-                  {[
-                    "Sandbox access in minutes",
-                    "Dedicated integration support",
-                    "Comprehensive documentation",
-                    "Reliable, high-volume workflows",
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-center gap-3 text-white/80"
-                    >
-                      <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </FadeIn>
+          <div className="relative grid lg:grid-cols-2 gap-12 items-center">
+            <FadeIn>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Get API Access
+              </h2>
+              <p className="text-white/70 text-lg mb-6 leading-relaxed">
+                Sign up now and start integrating in minutes. Our team will help
+                you go live quickly.
+              </p>
+              <ul className="flex flex-col gap-3">
+                {[
+                  "Sandbox access in minutes",
+                  "Dedicated integration support",
+                  "Comprehensive documentation",
+                  "Reliable, high-volume workflows",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-3 text-white/80"
+                  >
+                    <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </FadeIn>
 
-              <FadeIn delay={200} className="relative">
-                <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-                <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-                  <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
-                    <h3 className="text-lg font-bold text-white">
-                      {leadForm?.title || "Get API Access"}
-                    </h3>
-                    <p className="text-white/70 text-sm">
-                      Get started in 10 minutes
-                    </p>
-                  </div>
-                  <div className="p-2">
-                    <ZohoSignupForm />
-                  </div>
+            <FadeIn delay={200} className="relative">
+              <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
+                  <h3 className="text-lg font-bold text-white">
+                    {leadForm?.title || "Get API Access"}
+                  </h3>
+                  <p className="text-white/70 text-sm">
+                    Get started in 10 minutes
+                  </p>
                 </div>
-              </FadeIn>
-            </div>
-          </SectionContainer>
-        )}
+                <div className="p-2">
+                  <ZohoSignupForm />
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </SectionContainer>
       </main>
 
       <Footer />
