@@ -187,7 +187,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   dmt: {
     seo: {
-      title: "Domestic Money Transfer API (DMT)",
+      title: "DMT API India | Domestic Money Transfer API for IMPS & NEFT",
       description:
         "Enable instant money transfers across India with Eko's DMT API. Real-time IMPS & NEFT settlements with pan-India coverage. Integrate in minutes.",
       keywords:
@@ -198,9 +198,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "Domestic Money Transfer API",
     desc: "Enable instant money transfers across India with Eko's DMT API",
-    heroTitle: "Instant Domestic Money Transfers",
+    heroTitle:
+      "Domestic Money Transfer API for Assisted Cash Remittance in India",
     heroSubtitle:
-      "Enable real-time money transfers across India with our robust DMT API. Power remittances for millions of customers with IMPS, NEFT, and RTGS support.",
+      "Enable assisted domestic money transfers through retailers, agents, CSPs, and fintech platforms. Let customers send money to bank accounts across India using IMPS and NEFT, with real-time status updates and transaction receipts.",
     category: "payment",
     icon: Banknote,
     docsUrl: "https://developers.eko.in/reference/fino-dmt-flow",
@@ -211,11 +212,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         desc: "Instant money transfers via IMPS with real-time status updates and confirmations.",
         icon: Zap,
       },
-      {
-        title: "NEFT & RTGS Support",
-        desc: "Support for NEFT and RTGS for high-value transfers with guaranteed settlements.",
-        icon: Banknote,
-      },
+      // {
+      //   title: "NEFT & RTGS Support",
+      //   desc: "Support for NEFT and RTGS for high-value transfers with guaranteed settlements.",
+      //   icon: Banknote,
+      // },
       {
         title: "Pan-India Coverage",
         desc: "Transfer money to any bank account across India with high success rate.",
@@ -238,11 +239,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       },
     ],
     benefits: [
-      {
-        title: "Seamless Integration",
-        desc: "Well-documented APIs with SDKs in multiple languages. Get started in minutes with 24x7 support.",
-        icon: CheckCircle,
-      },
+      // {
+      //   title: "Seamless Integration",
+      //   desc: "Well-documented APIs with SDKs in multiple languages. Get started in minutes with 24x7 support.",
+      //   icon: CheckCircle,
+      // },
       {
         title: "Best Success Rate",
         desc: "Industry-leading success rates with smart routing and automatic retries.",
@@ -265,7 +266,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       },
       {
         title: "Regulatory Compliant",
-        desc: "Fully RBI-compliant infrastructure with all necessary licenses and certifications.",
+        desc: "Built for regulated domestic money transfer workflows with partner onboarding, KYC, audit trails, and transaction controls.",
         icon: Shield,
       },
     ],
@@ -278,25 +279,27 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     ],
     useCases: [
       "Retail Banking Apps",
-      "Fintech Platforms",
+      // "Fintech Platforms",
       "Remittance Services",
       "Kirana Stores",
       "Agent Banking",
-      "Corporate Payouts",
-      "E-commerce Refunds",
+      "Assisted Banking Networks",
+      "CSP/BC networks",
+      // "Corporate Payouts",
+      // "E-commerce Refunds",
     ],
     faqs: [
       {
         q: "What is the DMT API?",
-        a: "The DMT (Domestic Money Transfer) API enables instant money transfers to any bank account across India using IMPS, NEFT, or RTGS. It's designed for businesses that want to offer remittance services to their customers.",
+        a: "The DMT (Domestic Money Transfer) API enables instant money transfers to any bank account across India using IMPS and NEFT. It's designed for businesses that want to offer remittance services to their customers.",
       },
-      {
-        q: "What is the transaction limit?",
-        a: "Individual transaction limits vary based on the mode of transfer. IMPS supports up to ₹5 lakh per transaction, while NEFT and RTGS support higher limits for bulk transfers.",
-      },
+      // {
+      //   q: "What is the transaction limit?",
+      //   a: "Individual transaction limits vary based on the mode of transfer. IMPS supports up to ₹5 lakh per transaction, while NEFT and RTGS support higher limits for bulk transfers.",
+      // },
       {
         q: "How long does a transfer take?",
-        a: "IMPS transfers are instant (within seconds). NEFT transfers are processed in batches throughout the day, and RTGS transfers are processed in real-time during banking hours.",
+        a: "IMPS transfers are instant (within seconds). NEFT transfers are processed in batches throughout the day.",
       },
       {
         q: "What documents are required for integration?",
@@ -314,9 +317,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   aeps: {
     seo: {
-      title: "AePS API - Aadhaar Enabled Payment System",
+      title:
+        "AePS API India | Cash Withdrawal, Balance Enquiry & Mini Statement",
       description:
-        "Enable Aadhaar-based banking services with Eko's AePS API. Cash withdrawal, balance enquiry, mini statements, and fund transfers using Aadhaar authentication.",
+        "Integrate Eko’s AePS APIs for Aadhaar-based cash withdrawal, balance enquiry and mini statement services. Built for fintechs, BC networks, CSPs and assisted banking platforms in India.",
       keywords:
         "AePS API, Aadhaar enabled payment system, Aadhaar banking API, biometric payment API, rural banking API, Eko API",
       ogTitle: "AePS API - Aadhaar Enabled Payment System",
@@ -325,9 +329,9 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "AePS API",
     desc: "Aadhaar-enabled payment services for rural and underbanked segments",
-    heroTitle: "Aadhaar Enabled Payment System",
+    heroTitle: "AePS API for Cash Withdrawal, Balance Enquiry & Mini Statement",
     heroSubtitle:
-      "Bring banking services to every corner of India with AePS. Enable cash withdrawals, balance enquiries, and fund transfers using just Aadhaar and fingerprint authentication.",
+      "Enable Aadhaar-based banking services through secure AePS APIs. Let your retailers, agents, or assisted-service network offer cash withdrawal, balance enquiry, and mini statement services using Aadhaar authentication.",
     category: "payment",
     icon: Fingerprint,
     docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
@@ -348,11 +352,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         desc: "Retrieve the last few transactions for any Aadhaar-linked bank account.",
         icon: FileText,
       },
-      {
-        title: "Fund Transfer",
-        desc: "Transfer funds between Aadhaar-linked accounts securely and instantly.",
-        icon: Fingerprint,
-      },
+      // {
+      //   title: "Fund Transfer",
+      //   desc: "Transfer funds between Aadhaar-linked accounts securely and instantly.",
+      //   icon: Fingerprint,
+      // },
       {
         title: "Biometric Authentication",
         desc: "Secure transactions with Aadhaar-based biometric verification using UIDAI.",
@@ -419,24 +423,24 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     faqs: [
       {
         q: "What is AePS?",
-        a: "AePS (Aadhaar Enabled Payment System) is a bank-led model that allows online financial transactions at Micro ATM through Aadhaar authentication. It uses NPCI infrastructure and enables customers to use Aadhaar for bank transactions.",
+        a: "AePS (Aadhaar Enabled Payment System) is a bank-led model that allows online financial transactions through Aadhaar authentication. It uses NPCI infrastructure and enables customers to use their Aadhaar for bank transactions.",
       },
       {
         q: "What biometric devices are supported?",
         a: "We support all UIDAI-certified biometric devices including Morpho, Mantra, Startek, and others. Contact our team for the complete list of supported devices.",
       },
-      {
-        q: "What is the transaction limit for AePS?",
-        a: "Cash withdrawal limits vary by bank but typically range from ₹10,000 to ₹50,000 per transaction. Some banks allow higher limits for specific use cases.",
-      },
-      {
-        q: "Do I need special certification?",
-        a: "Yes, you need to be a certified AePS operator. Eko can help you with the certification process and provide all necessary support.",
-      },
-      {
-        q: "How is commission calculated?",
-        a: "Commission is earned on every successful transaction. The exact rates depend on your agreement and transaction volumes. Contact our team for detailed pricing.",
-      },
+      // {
+      //   q: "What is the transaction limit for AePS?",
+      //   a: "Cash withdrawal limits vary by bank but typically range from ₹10,000 to ₹50,000 per transaction. Some banks allow higher limits for specific use cases.",
+      // },
+      // {
+      //   q: "Do I need special certification?",
+      //   a: "Yes, you need to be a certified AePS operator. Eko can help you with the certification process and provide all necessary support.",
+      // },
+      // {
+      //   q: "How is commission calculated?",
+      //   a: "Commission is earned on every successful transaction. The exact rates depend on your agreement and transaction volumes. Contact our team for detailed pricing.",
+      // },
     ],
   },
 
@@ -445,7 +449,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   bbps: {
     seo: {
-      title: "BBPS API - Bharat Bill Payment System",
+      title: "BBPS API / Bharat Connect API for Bill Payments in India",
       description:
         "Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure.",
       keywords:
@@ -456,9 +460,9 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "BBPS API",
     desc: "Complete bill payment ecosystem with 200+ biller categories",
-    heroTitle: "Help Customers Pay Their Utility Bills!",
+    heroTitle: "BBPS API for Utility Bill Payments in India",
     heroSubtitle:
-      "The BBPS API enables seamless integration for bill payments in India. Whether you're a financial institution, fintech, or service provider, offer your customers convenient bill payment services.",
+      "Integrate Eko’s BBPS API to let customers fetch bills, pay utility bills, and track transaction status across electricity, gas, water, DTH, broadband, FASTag, insurance, credit card, EMI, LPG, and loan repayment categories.",
     category: "payment",
     icon: Receipt,
     docsUrl: "https://developers.eko.in/reference/bbps-pay",
@@ -498,11 +502,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         desc: "Complete visibility into transaction status with detailed reporting.",
         icon: Receipt,
       },
-      {
-        title: "Secure Payments",
-        desc: "PCI-DSS compliant infrastructure with end-to-end encryption.",
-        icon: Shield,
-      },
+      // {
+      //   title: "Secure Payments",
+      //   desc: "PCI-DSS compliant infrastructure with end-to-end encryption.",
+      //   icon: Shield,
+      // },
       {
         title: "Receipt Generation",
         desc: "Auto-generated receipts for every successful transaction.",
@@ -567,14 +571,14 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         q: "What is BBPS API?",
         a: "BBPS (Bharat Bill Payment System) API is an RBI-mandated online bill payment system that enables customers to pay bills easily and securely. Our API allows you to integrate bill payment services into your platform.",
       },
-      {
-        q: "How many billers are supported?",
-        a: "Eko's BBPS API provides access to 20,000+ billers across 200+ categories including electricity, gas, water, DTH, broadband, insurance, EMI, FASTag, and more.",
-      },
-      {
-        q: "What are the commission rates?",
-        a: "Commission rates vary by biller category and transaction volume. Contact our sales team for detailed pricing and commission structures.",
-      },
+      // {
+      //   q: "How many billers are supported?",
+      //   a: "Eko's BBPS API provides access to 20,000+ billers across 200+ categories including electricity, gas, water, DTH, broadband, insurance, EMI, FASTag, and more.",
+      // },
+      // {
+      //   q: "What are the commission rates?",
+      //   a: "Commission rates vary by biller category and transaction volume. Contact our sales team for detailed pricing and commission structures.",
+      // },
       {
         q: "Is BBPS API available 24/7?",
         a: "Yes, BBPS services are available 24/7. However, some billers may have specific operating hours for payment processing.",
@@ -657,11 +661,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         desc: "Benefit from competitive merchant discount rates on UPI transactions.",
         icon: CreditCard,
       },
-      {
-        title: "Easy Integration",
-        desc: "Simple REST APIs with comprehensive documentation and SDKs.",
-        icon: CheckCircle,
-      },
+      // {
+      //   title: "Easy Integration",
+      //   desc: "Simple REST APIs with comprehensive documentation and SDKs.",
+      //   icon: CheckCircle,
+      // },
       {
         title: "Secure Transactions",
         desc: "Bank-grade security with encrypted QR codes and secure callbacks.",
@@ -845,10 +849,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         q: "How is fraud prevented?",
         a: "Multiple layers including GPS location logging, photo capture of cash, digital receipts sent directly to customers, and real-time reconciliation. Any discrepancy is flagged immediately.",
       },
-      {
-        q: "Can we use our own collection app?",
-        a: "Yes, our APIs can be integrated into your existing mobile app. We provide SDKs and complete documentation for custom integration.",
-      },
+      // {
+      //   q: "Can we use our own collection app?",
+      //   a: "Yes, our APIs can be integrated into your existing mobile app. We provide SDKs and complete documentation for custom integration.",
+      // },
       {
         q: "What reports are available?",
         a: "Daily collection summary, agent-wise reports, location-based analytics, pending collections, and reconciliation reports. All reports can be exported or accessed via API.",
@@ -2005,7 +2009,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "Driving License Verification API",
     desc: "Real-time DL validation",
-    heroTitle: "Driving License Verification API for Identity Validation",
+    heroTitle: "Driving License Verification API for Driver Onboarding & KYC",
     heroSubtitle:
       "Verify driving license details in real time to strengthen KYC and reduce identity fraud.",
     category: "verification",
@@ -2068,6 +2072,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get Driving License Verification API Access",
     },
     faqs: [
+      {
+        q: "DL Verification vs RC Verification?",
+        a: "Driving License Verification validates the person’s license details, such as holder name, DOB, validity, address, and vehicle class eligibility. Vehicle RC Verification validates vehicle registration details, ownership, fitness, insurance, and registration status. For complete driver and vehicle onboarding, combine DL Verification with RC Verification.",
+      },
       {
         q: "How fast is DL verification?",
         a: "Verification is real-time with instant structured responses for driving license details.",
@@ -2146,7 +2154,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "Vehicle & RC Verification API",
     desc: "Complete vehicle registration, ownership & insurance verification",
-    heroTitle: "Vehicle & RC Verification API",
+    heroTitle:
+      "Vehicle & RC Verification API for Ownership, Insurance & Compliance Checks",
     heroSubtitle:
       "Get complete vehicle information from a registration number — owner details, chassis, engine, insurance status, blacklist check, permits, and more. Pan-India coverage via VAHAN database.",
     category: "verification",
@@ -2236,7 +2245,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       },
       {
         q: "How accurate is the verification?",
-        a: "All verifications are done against official RTO databases (VAHAN), ensuring 100% accuracy of returned data. Updates to vehicle information reflect in the source within 15–30 days.",
+        a: "All verifications are done against official RTO databases (VAHAN). Updates to vehicle information reflect in the source within 15–30 days.",
       },
       {
         q: "Is real-time verification available?",
@@ -2245,6 +2254,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         q: "Can I check if a vehicle is blacklisted?",
         a: "Yes, the API returns blacklist status along with detailed reasons if the vehicle has been blacklisted.",
+      },
+      {
+        q: "Are all returned fields available for every vehicle?",
+        a: "No. Field availability may vary by vehicle type, RTO/source record, partner configuration, and data availability. The API response should be handled programmatically for missing or unavailable fields.",
       },
     ],
     inputOutputPreview: {
@@ -2324,9 +2337,9 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "DigiLocker API",
     desc: "Secure digital document verification",
-    heroTitle: "DigiLocker API for Secure Digital Document Verification",
+    heroTitle: "DigiLocker API for Consent-Based KYC & Document Verification",
     heroSubtitle:
-      "Access and verify user documents digitally through consent-driven, paperless workflows.",
+      "Fetch and verify user-consented digital documents such as Aadhaar, PAN, driving licence, and other DigiLocker-issued records through secure, paperless API workflows for onboarding, lending, and compliance.",
     category: "verification",
     icon: FolderCheck,
     docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
@@ -2386,6 +2399,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       title: "Get DigiLocker API Access",
     },
     faqs: [
+      {
+        q: "Does the DigiLocker API use OTP or redirect-based consent?",
+        a: "The DigiLocker API uses a redirect-based consent mechanism. The user may authenticate through DigiLocker using the supported login or OTP process and then approve document sharing. Your application receives the verification result through the configured callback or API response.",
+      },
       {
         q: "Is DigiLocker access consent-based?",
         a: "Yes, documents are fetched only after explicit user consent, ensuring full transparency.",
@@ -2448,17 +2465,18 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   employee: {
     seo: {
-      title: "Employee Verification API | Workforce Background Checks",
+      title: "Employee Verification API India | Workforce Background Checks",
       description:
-        "Integrate Employee Verification API to verify employee identity and details digitally for hiring, compliance, and risk management.",
+        "Verify employment history using phone number-based employee verification. Retrieve details such as employee name, PAN, UAN, Member ID, employer information, joining and exit dates, exit reason, and PF filing details for hiring, lending, staffing, and workforce onboarding workflows.",
       keywords:
         "Employee Verification API, Employee Background Check API, Workforce Verification API, HR Verification API, Employee KYC API",
     },
     title: "Employee Verification API",
     desc: "Digital employee identity verification",
-    heroTitle: "Employee Verification API for Trusted Workforce Onboarding",
+    heroTitle:
+      "Employee Verification API for Employment History Checks in India",
     heroSubtitle:
-      "Verify employee identity and details digitally to reduce hiring risk and ensure compliance.",
+      "Verify employment history using phone number-based employee verification. Retrieve details such as employee name, PAN, UAN, Member ID, employer information, joining and exit dates, exit reason, and PF filing details for hiring, lending, staffing, and workforce onboarding workflows.",
     category: "verification",
     icon: Briefcase,
     heroImage: employeeImg,
