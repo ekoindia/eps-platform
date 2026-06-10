@@ -19,19 +19,22 @@ interface MenuItemLinkProps {
 	description?: string;
 	index: number;
 	onClick: () => void;
+	/** Compact row: icon + label only, description shown as a native tooltip. */
+	compact?: boolean;
 }
 
-export const MenuItemLink = ({ to, icon: Icon, label, description, index, onClick }: MenuItemLinkProps) => (
+export const MenuItemLink = ({ to, icon: Icon, label, description, index, onClick, compact }: MenuItemLinkProps) => (
 	<Link
 		to={to}
 		onClick={onClick}
-		className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors cursor-pointer group animate-fade-up [animation-duration:300ms]"
+		title={compact ? description : undefined}
+		className={`flex gap-3 px-3 rounded-lg hover:bg-muted transition-colors cursor-pointer group animate-fade-up [animation-duration:300ms] ${compact ? "items-center py-2" : "items-start py-2.5"}`}
 		style={{ animationDelay: `${index * 40}ms`, animationFillMode: "backwards" }}
 	>
-		<Icon className={`w-7 h-7 mt-1.5 p-[6px] opacity-90 shrink-0 rounded-lg ${pastelColors[index % pastelColors.length]}`} />
+		<Icon className={`${compact ? "w-6 h-6 p-[5px]" : "w-7 h-7 mt-1.5 p-[6px]"} opacity-90 shrink-0 rounded-lg ${pastelColors[index % pastelColors.length]}`} />
 		<div>
-			<span className="text-sm font-medium text-eko-navy">{label}</span>
-			{description && (
+			<span className={`text-sm font-medium text-eko-navy ${compact ? "whitespace-nowrap" : ""}`}>{label}</span>
+			{!compact && description && (
 				<p className="text-xs text-eko-slate/60 leading-tight mt-0.5">{description}</p>
 			)}
 		</div>
