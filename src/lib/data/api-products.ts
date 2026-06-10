@@ -127,11 +127,12 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "upi",
-    name: "UPI Verification",
+    name: "UPI ID (VPA) Verification",
+    shortName: "UPI ID Verification",
     slug: "upi-verification-api",
     href: "/products/upi-verification-api",
     category: "verification",
-    shortDesc: "Validate UPI VPAs in real time",
+    shortDesc: "Validate UPI ID (VPA) in real time",
   },
   {
     id: "dl",
@@ -179,7 +180,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
     slug: "passport-verification-api",
     href: "/products/passport-verification-api",
     category: "verification",
-    shortDesc: "Verify passport details for identity & travel compliance",
+    shortDesc:
+      "Verify Indian passport details using file number and date of birth",
   },
   {
     id: "cin",
@@ -251,15 +253,13 @@ export const API_PRODUCTS: ApiProductRef[] = [
 ];
 
 /** Map of all products for quick lookup by ID */
-export const API_PRODUCTS_MAP: Record<string, ApiProductRef> = Object.fromEntries(
-  API_PRODUCTS.map((p) => [p.id, p])
-);
+export const API_PRODUCTS_MAP: Record<string, ApiProductRef> =
+  Object.fromEntries(API_PRODUCTS.map((p) => [p.id, p]));
 
 /** Returns only products that are not disabled */
 export const getActiveProducts = (): ApiProductRef[] =>
   API_PRODUCTS.filter((p) => !p.disabled);
 
 /** Map of active (non-disabled) products for quick lookup by ID */
-export const ACTIVE_PRODUCTS_MAP: Record<string, ApiProductRef> = Object.fromEntries(
-  getActiveProducts().map((p) => [p.id, p])
-);
+export const ACTIVE_PRODUCTS_MAP: Record<string, ApiProductRef> =
+  Object.fromEntries(getActiveProducts().map((p) => [p.id, p]));

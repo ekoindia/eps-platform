@@ -595,7 +595,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   "qr-payment": {
     seo: {
-      title: "QR Payment API - UPI QR Code Payments",
+      title: "QR Payment API India | UPI QR Code Payments",
       description:
         "Accept UPI payments via QR codes with Eko's QR Payment API. Dynamic QR generation, real-time notifications, and seamless payment collection for merchants.",
       keywords:
@@ -728,7 +728,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   cms: {
     seo: {
-      title: "CMS Cash Collection API - Cash Management Services",
+      title: "CMS Cash Collection API India | Cash Management Services",
       description:
         "Digitize cash collection with Eko's CMS API. Enable field agents to collect cash and instantly credit customer accounts. Perfect for NBFCs, insurance, and utilities.",
       keywords:
@@ -865,7 +865,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   payment: {
     seo: {
-      title: "Payout API - Salary & Vendor Payments",
+      title: "Payout API India | Salary & Vendor Payments",
       description:
         "Make instant salary disbursals and vendor payments using Eko's Payout API. Pay employees and vendors directly from your e-wallet balance with high success rates.",
       keywords:
@@ -993,7 +993,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   "upi-payout": {
     seo: {
-      title: "UPI Payout API - Instant UPI Transfers",
+      title: "UPI Payout API India | Instant UPI Transfers",
       description:
         "Send instant payouts to any UPI ID with Eko's UPI Payout API. Instant transfers, bulk payouts, and real-time status updates for businesses.",
       keywords:
@@ -1875,7 +1875,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   upi: {
     seo: {
       title:
-        "UPI ID (VPA) Verification API | Verify UPI VPA & Registered Phone Number",
+        "UPI ID Verification API India | Verify UPI VPA, Mobile & Payee Name",
       description:
         "Verify UPI IDs (VPA) and registered phone numbers in real time. Confirm payee name before initiating UPI transfers to reduce payout failures.",
       keywords:
@@ -2001,7 +2001,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   dl: {
     seo: {
-      title: "Driving License Verification API | Real-Time DL Validation",
+      title: "Driving License Verification API India | Real-Time DL Validation",
       description:
         "Integrate Driving License Verification API to validate driving license details instantly for KYC, onboarding, and compliance checks.",
       keywords:
@@ -2146,7 +2146,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   rc: {
     seo: {
       title:
-        "Vehicle & RC Verification API | Registration, Ownership & Insurance Check",
+        "Vehicle & RC Verification API India | Registration, Ownership & Insurance Check",
       description:
         "Verify vehicle registration certificate (RC) details instantly — owner, chassis, engine, insurance, blacklist status, permits, and more. Pan-India coverage via VAHAN.",
       keywords:
@@ -2329,7 +2329,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   digilocker: {
     seo: {
-      title: "DigiLocker API | Secure Digital Document Access",
+      title:
+        "DigiLocker API India | Consent Based Secure Digital Document Access",
       description:
         "Integrate DigiLocker API to access and verify user documents securely through consent-based digital workflows.",
       keywords:
@@ -2762,7 +2763,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     title: "Voter ID Verification API",
     desc: "Verify voter ID (EPIC) details in real time",
-    heroTitle: "Voter ID Verification API for KYC & Identity Checks",
+    heroTitle: "Voter ID Verification API for EPIC Validation & KYC",
     heroSubtitle:
       "Validate Voter ID (EPIC) card details instantly — fetch name, age, address, and constituency information for identity verification and onboarding workflows.",
     category: "verification",
@@ -2833,6 +2834,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         q: "Can I use this for address verification?",
         a: "Yes. The API returns structured address data including district, city, state, and pincode — useful for address verification workflows.",
       },
+      {
+        q: "Are all fields available for every Voter ID?",
+        a: "No. Field availability may vary by record, geography, source availability, and partner configuration. Your integration should handle unavailable or missing fields programmatically.",
+      },
     ],
     inputOutputPreview: {
       apiName: "Voter ID Verification",
@@ -2901,22 +2906,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
   // -------------------------------------------------------------------------
   passport: {
     seo: {
-      title: "Passport Verification API India | Instant Passport Validation",
+      title: "Passport Verification API India | File Number & DOB Verification",
       description:
-        "Verify passport file number and holder details in real time. Integrate passport verification for KYC, travel compliance, and identity checks.",
+        "Verify Indian passport details using file number and date of birth. Eko’s Passport Verification API returns status, holder name, DOB, application type and application received date for KYC and BGV workflows.",
       keywords:
         "Passport Verification API, Passport KYC API, Passport Validation API, Travel Document Verification API, Identity Verification API India",
     },
     title: "Passport Verification API",
-    desc: "Verify passport details in real time",
-    heroTitle: "Passport Verification API for KYC & Travel Compliance",
+    desc: "Verify Indian passport details in real time",
+    heroTitle:
+      "Passport Verification API for Indian Passport File Number Checks",
     heroSubtitle:
-      "Validate passport application details instantly — verify file number, holder name, date of birth, and application status for identity and travel compliance workflows.",
+      "Verify Indian passport application details using passport file number and date of birth. Retrieve verification status, holder name, date of birth, application type, and application received date for KYC, employee BGV, travel, and compliance workflows.",
     category: "verification",
     icon: Plane,
     docsUrl: "https://developers.eko.in/reference/passport",
     overview:
-      "The Passport Verification API enables businesses to validate passport holder details against official records. Use it for identity verification, travel compliance, and employee background checks.",
+      "The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth.",
     keyBenefits: [
       "Instant passport detail verification",
       "Confirms holder name and date of birth",
@@ -2927,7 +2933,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     features: [
       {
         title: "Real-Time Passport Validation",
-        desc: "Verify passport file number and holder details with instant structured responses.",
+        desc: "Verify Indian passport file number and holder details with instant structured responses.",
       },
       {
         title: "Identity Confirmation",
@@ -2951,8 +2957,9 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     useCases: [
       "Employee background verification",
       "Travel compliance checks",
-      "Customer KYC for financial services",
-      "Identity verification for visa processing",
+      "Visa and immigration assistance",
+      "Fintech and NBFC KYC",
+      "Education / overseas placement",
     ],
     trustAndCompliance: [
       "Government source verification",
@@ -2969,36 +2976,56 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     faqs: [
       {
-        q: "What details are required for verification?",
-        a: "You need the passport file number and date of birth of the holder. Optionally, you can provide the holder name for name matching.",
+        q: "Is this passport number verification or file number verification?",
+        a: "This API verifies Indian passport details using passport file number and date of birth. It is not a passport-number-only verification flow.",
+      },
+      {
+        q: "What inputs are required?",
+        a: "The required inputs are passport file number and date of birth. A unique verification ID is also used for request tracking. Name may be used depending on the verification flow.",
+      },
+      {
+        q: "Does this API support foreign passports?",
+        a: "No. This API supports Indian passport verification only.",
       },
       {
         q: "What details are returned?",
-        a: "The API returns file number, holder name, date of birth, application type, and application received date.",
+        a: "The API can return verification status, passport file number, holder name, date of birth, application type, and the application received date.",
+      },
+      {
+        q: "Does it return passport issue date or expiry date?",
+        a: "No, not as part of the standard source response shown in the current API documentation. Do not rely on issue date or expiry date unless separately enabled in your Eko API response.",
+      },
+      {
+        q: "Does it verify scanned passport images?",
+        a: "No. This is not an OCR or MRZ scan-verification API. It verifies passport details using structured input fields.",
+      },
+      {
+        q: "What happens if the details are invalid?",
+        a: "The API returns an invalid status. Your workflow should ask the user to verify the file number, date of birth, and name before retrying.",
       },
       {
         q: "How fast is passport verification?",
         a: "Verification is real-time with sub-second response times.",
       },
-      {
-        q: "Can I use this for employee BGV?",
-        a: "Yes. Passport verification is commonly used in employee background verification to confirm identity and travel document validity.",
-      },
     ],
     inputOutputPreview: {
       apiName: "Passport Verification",
       inputs: [
-        { label: "File Number", value: "J8369854", icon: FileText },
+        {
+          label: "Passport File Number",
+          value: "PA1079341954215",
+          icon: FileText,
+        },
         { label: "Date of Birth", value: "1994-08-29", icon: Calendar },
         { label: "Name", value: "Rajesh Kumar", icon: User },
       ],
       outputs: [
-        { label: "File Number", value: "J8369854", icon: FileText },
+        { label: "File Number", value: "PA1079341954215", icon: FileText },
         { label: "Name", value: "Rajesh Kumar", icon: User },
         { label: "Date of Birth", value: "1994-08-29", icon: Calendar },
         { label: "Application Type", value: "Normal" },
         { label: "Application Received Date", value: "2023-01-15" },
-        { label: "Status", value: "Valid", icon: CheckCircle },
+        { label: "Status", value: "VALID", icon: CheckCircle },
       ],
       sampleJson: {
         method: "POST",
@@ -3100,12 +3127,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     faqs: [
       {
-        q: "What details are returned?",
-        a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, and date of birth).",
-      },
-      {
         q: "Can I verify LLPs with this API?",
         a: "CIN is specific to companies registered under the Companies Act. LLPs use LLPIN — contact us for LLP verification availability.",
+      },
+      {
+        q: "What details are returned?",
+        a: "The API returns company name, CIN, registration number, incorporation date, CIN status, email, incorporation country, and an array of director details (name, DIN, designation, and date of birth).",
       },
       {
         q: "How fast is CIN verification?",
@@ -3114,6 +3141,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         q: "Is director information included?",
         a: "Yes. The API returns director details including name, DIN, designation, and date of birth for all directors listed in MCA records.",
+      },
+      {
+        q: "Are all fields available for every CIN?",
+        a: "No. Field availability may vary by MCA record, company type, data availability, and partner configuration. Your integration should handle unavailable or missing fields programmatically.",
       },
     ],
     inputOutputPreview: {
