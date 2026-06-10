@@ -5,7 +5,7 @@
  */
 import { lazy, Suspense, type ReactNode, type HTMLAttributes } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Briefcase, Search, CreditCard, Building2 } from "lucide-react";
+import { ArrowRight, Briefcase } from "lucide-react";
 import { Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import { XIcon } from "@/components/icons/XIcon";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
 import { DropdownGrid, DropdownColumnHeader } from "@/components/DropdownGrid";
+import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { getActiveProducts } from "@/lib/data/api-products";
@@ -63,10 +64,15 @@ const NAV_MAX_ITEMS = 8;
 const navIndustries = ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority === 1).slice(0, NAV_MAX_ITEMS);
 const navSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority === 1).slice(0, NAV_MAX_ITEMS);
 
-const apiColumns = [
-	{ title: "Verification APIs", icon: Search, items: verificationApis, maxItems: NAV_MAX_ITEMS, moreLink: { label: "More...", href: "/products" } },
-	{ title: "Payment APIs", icon: CreditCard, items: paymentApis },
-	{ title: "BC APIs", icon: Building2, items: bcApis },
+/** Mobile-accordion product sections; the desktop panel renders ProductsMegaPanel directly. */
+const apiColumns: Array<{
+	title: string;
+	items: typeof verificationApis;
+	seeAllLink?: { label: string; href: string };
+}> = [
+	{ title: "Verification APIs", items: verificationApis, seeAllLink: { label: "See all products →", href: "/products" } },
+	{ title: "Payment APIs", items: paymentApis },
+	{ title: "BC APIs", items: bcApis },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -202,20 +208,10 @@ export const HeaderDropdownPanels = ({
 			{/* ── Desktop: Products dropdown ─────────────────────────────── */}
 			{activeDesktopDropdown === 'products' && (
 			<FullWidthDropdownPanel isScrolled={isScrolled} data-dropdown="products" {...panelHoverHandlers}>
-					<DropdownGrid
-						columns={apiColumns.map((col) => ({
-							title: col.title,
-							items: (col.maxItems ? col.items.slice(0, col.maxItems) : col.items).map((item) => ({
-								to: item.href,
-								icon: item.icon,
-								label: item.label,
-								description: item.shortDesc,
-							})),
-							seeAllLink:
-								col.maxItems && col.items.length > col.maxItems && col.moreLink
-									? { label: "See all →", to: col.moreLink.href }
-									: undefined,
-						}))}
+					<ProductsMegaPanel
+						verificationApis={verificationApis}
+						paymentApis={paymentApis}
+						bcApis={bcApis}
 						onItemClick={() => setActiveDesktopDropdown(null)}
 					/>
 				</FullWidthDropdownPanel>
@@ -346,38 +342,32 @@ export const HeaderDropdownPanels = ({
 						/>
 						{activeMobileAccordion === 'products' && (
 							<div className="pl-4 flex flex-col gap-1">
-								{apiColumns.map((col) => {
-									const displayItems = col.maxItems ? col.items.slice(0, col.maxItems) : col.items;
-									const showMoreLink = col.maxItems && col.items.length > col.maxItems && col.moreLink;
-									return (
-										<div key={col.title}>
-											<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
-												{col.title}
-											</p>
-											{displayItems.map((item) => (
-												<Link
-													key={item.href}
-													to={item.href}
-													onClick={() => setMobileMenuOpen(false)}
-													className="block text-sm py-1.5 text-eko-slate cursor-pointer"
-												>
-													{item.label}
-												</Link>
-											))}
-											{showMoreLink && (
-												<a
-													href={col.moreLink.href}
-													target="_blank"
-													rel="noopener noreferrer"
-													onClick={() => setMobileMenuOpen(false)}
-													className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
-												>
-													{col.moreLink.label}
-												</a>
-											)}
-										</div>
-									);
-								})}
+								{apiColumns.map((col) => (
+									<div key={col.title}>
+										<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
+											{col.title}
+										</p>
+										{col.items.map((item) => (
+											<Link
+												key={item.href}
+												to={item.href}
+												onClick={() => setMobileMenuOpen(false)}
+												className="block text-sm py-1.5 text-eko-slate cursor-pointer"
+											>
+												{item.label}
+											</Link>
+										))}
+										{col.seeAllLink && (
+											<Link
+												to={col.seeAllLink.href}
+												onClick={() => setMobileMenuOpen(false)}
+												className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
+											>
+												{col.seeAllLink.label}
+											</Link>
+										)}
+									</div>
+								))}
 							</div>
 						)}
 
