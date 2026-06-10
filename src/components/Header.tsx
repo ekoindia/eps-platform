@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Phone } from "lucide-react";
+import { Menu, X, ChevronDown, Phone, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
@@ -13,6 +13,10 @@ import type { DropdownKey } from "@/components/HeaderDropdownPanels";
 
 const HeaderDropdownPanels = lazy(() =>
 	import("@/components/HeaderDropdownPanels").then((m) => ({ default: m.HeaderDropdownPanels }))
+);
+
+const CommandPalette = lazy(() =>
+	import("@/components/CommandPalette").then((m) => ({ default: m.CommandPalette }))
 );
 
 const navLinks = [
@@ -59,6 +63,9 @@ export const Header = () => {
   const [activeMobileAccordion, setActiveMobileAccordion] = useState<DropdownKey | null>(null);
   // const [getStartedOpen, setGetStartedOpen] = useState(false);
   const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  /** Palette chunk is mounted on first open and kept mounted afterwards */
+  const [searchMounted, setSearchMounted] = useState(false);
   const productsDropdownRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const useCasesDropdownRef = useRef<HTMLDivElement>(null);
@@ -159,9 +166,45 @@ export const Header = () => {
     };
   }, []);
 
+  // Keep a ref in sync so the global keydown handler can stay stable
+  const searchOpenRef = useRef(false);
+  useEffect(() => {
+    searchOpenRef.current = searchOpen;
+  }, [searchOpen]);
+
+  /** Opens the command palette, mounting its lazy chunk on first use */
+  const openSearch = () => {
+    setSearchMounted(true);
+    setSearchOpen(true);
+  };
+
+  // Global ⌘K / Ctrl+K shortcut — toggles the command palette
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "k") return;
+      // Ignore the shortcut while typing in a form field (only when the palette is closed)
+      const target = e.target as HTMLElement | null;
+      if (
+        !searchOpenRef.current &&
+        target?.closest("input, textarea, select, [contenteditable='true']")
+      ) {
+        return;
+      }
+      e.preventDefault();
+      setSearchMounted(true);
+      setSearchOpen((o) => !o);
+    };
+    document.addEventListener("keydown", handleKeydown);
+    return () => document.removeEventListener("keydown", handleKeydown);
+  }, []);
+
   // Prefetch the dropdown panels chunk after hydration so it is ready before first hover
   useEffect(() => {
-    const load = () => import("@/components/HeaderDropdownPanels");
+    const load = () =>
+      Promise.all([
+        import("@/components/HeaderDropdownPanels"),
+        import("@/components/CommandPalette"),
+      ]);
     if (typeof requestIdleCallback !== "undefined") {
       const handle = requestIdleCallback(load, { timeout: 2000 });
       return () => cancelIdleCallback(handle);
@@ -302,6 +345,20 @@ export const Header = () => {
 
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-4">
+              <button
+                id="btn-search-header-desktop"
+                onClick={openSearch}
+                aria-label="Search"
+                aria-keyshortcuts="Meta+K Control+K"
+                className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/15 hover:text-white cursor-pointer"
+              >
+                <Search className="w-4 h-4" />
+                <span>Search</span>
+                <span className="ml-1 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white/60">
+                  <span className="kbd-os-mac">⌘K</span>
+                  <span className="kbd-os-other">Ctrl K</span>
+                </span>
+              </button>
               <LanguageSelector isLight={useWhiteText} />
               <a
                 id="lnk-sales-phone-header-desktop"
@@ -319,14 +376,19 @@ export const Header = () => {
               </Button>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button className="lg:hidden p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
-              {mobileMenuOpen ? (
-                <X className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
-              ) : (
-                <Menu className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
-              )}
-            </button>
+            {/* Mobile: Search + Menu Buttons */}
+            <div className="lg:hidden flex items-center gap-1">
+              <button className="p-2 cursor-pointer" onClick={openSearch} aria-label="Search">
+                <Search className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+              </button>
+              <button className="p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+                {mobileMenuOpen ? (
+                  <X className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+                ) : (
+                  <Menu className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+                )}
+              </button>
+            </div>
           </div>
 
         </div>
@@ -346,6 +408,12 @@ export const Header = () => {
           panelHoverHandlers={panelHoverHandlers}
         />
       </Suspense>
+
+      {searchMounted && (
+        <Suspense fallback={null}>
+          <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
+        </Suspense>
+      )}
     </>
   );
 };
