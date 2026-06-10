@@ -3,16 +3,19 @@ import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { IndustryCard } from "@/components/IndustryCard";
+import { FaqSection } from "@/components/sections/FaqSection";
+import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
+import { PageHero } from "@/components/sections/PageHero";
+import { TrustStrip } from "@/components/sections/TrustStrip";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ZohoSignupForm } from "@/components/ZohoSignupForm";
 import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { openZohoChat } from "@/lib/zoho-chat";
-import { ArrowRight, CheckCircle, HelpCircle, Shield } from "lucide-react";
+import { ArrowRight, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface IndustryPageLayoutProps {
@@ -24,10 +27,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
     <div className="min-h-screen bg-background">
       <main>
         {/* Hero */}
-        <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
-          <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <PageHero>
             <BreadcrumbNav
               crumbs={[
                 { label: "Home", href: "/" },
@@ -50,17 +50,10 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                   <p className="text-xl text-white/80 mb-6 max-w-2xl leading-relaxed">
                     {data.heroSubtitle}
                   </p>
-                  <div className="flex flex-wrap gap-3 mb-8">
-                    {data.trustStrip.map((item) => (
-                      <span
-                        key={item}
-                        className="inline-flex items-center gap-1.5 text-sm text-white/70"
-                      >
-                        <CheckCircle className="w-4 h-4 text-eko-gold shrink-0" />
-                        {item}
-                      </span>
-                    ))}
-                  </div>
+                  <TrustStrip
+                    items={data.trustStrip}
+                    className="flex flex-wrap gap-3 mb-8"
+                  />
                 </FadeIn>
                 <FadeIn onView={false} delay={300}>
                   <div className="flex flex-wrap gap-4">
@@ -110,8 +103,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
                 </div>
               </div> */}
             </div>
-          </div>
-        </section>
+        </PageHero>
 
         {/* The Challenge */}
         {data.challengeText && (
@@ -374,31 +366,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         )}
 
         {/* FAQ */}
-        {data.faqs.length > 0 && (
-          <SectionContainer variant="muted">
-            <SectionHeader title="Frequently Asked Questions" />
-            <div className="max-w-3xl mx-auto flex flex-col gap-4">
-              {data.faqs.map((faq, i) => (
-                <FadeIn key={i} delay={i * 50}>
-                  <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
-                    <summary className="flex items-center justify-between font-semibold text-foreground list-none">
-                      <span className="flex items-center gap-3">
-                        <HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
-                        {faq.question}
-                      </span>
-                      <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">
-                        +
-                      </span>
-                    </summary>
-                    <p className="mt-4 text-muted-foreground leading-relaxed pl-8">
-                      {faq.answer}
-                    </p>
-                  </details>
-                </FadeIn>
-              ))}
-            </div>
-          </SectionContainer>
-        )}
+        <FaqSection faqs={data.faqs} variant="muted" />
 
         {/* Related Industries */}
         {data.relatedIndustries.length > 0 && (
@@ -433,57 +401,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
         )}
 
         {/* Bottom CTA */}
-        <SectionContainer
-          variant="navy"
-          id="lead-form"
-          className="relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
-          <div className="relative grid lg:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Get API Access Now
-              </h2>
-              <p className="text-white/70 text-lg mb-6 leading-relaxed">
-                Sign up now and start integrating in minutes. Our team will help
-                you go live quickly.
-              </p>
-              <ul className="flex flex-col gap-3">
-                {[
-                  "Sandbox access in minutes",
-                  "Dedicated integration support",
-                  "Comprehensive documentation",
-                  "Reliable, high-volume workflows",
-                ].map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-center gap-3 text-white/80"
-                  >
-                    <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </FadeIn>
-            <FadeIn delay={200} className="relative">
-              <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-                <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
-                  <h3 className="text-lg font-bold text-white">
-                    Get API Access
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    Get started in 10 minutes
-                  </p>
-                </div>
-                <div className="p-2">
-                  <ZohoSignupForm />
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </SectionContainer>
+        <LeadFormCTASection />
       </main>
       <Footer />
     </div>

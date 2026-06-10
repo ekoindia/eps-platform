@@ -9,8 +9,10 @@ import type {
 } from "@/components/ApiInputOutputPreview";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import { SectionContainer } from "@/components/SectionContainer";
+import { FaqSection } from "@/components/sections/FaqSection";
 import { IntegrationStepperSection } from "@/components/sections/IntegrationStepperSection";
-import { ZohoSignupForm } from "@/components/ZohoSignupForm";
+import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
+import { PageHero } from "@/components/sections/PageHero";
 import { openZohoChat } from "@/lib/zoho-chat";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -19,7 +21,6 @@ import {
   Building2,
   CheckCircle,
   FileText,
-  HelpCircle,
   Landmark,
   Store,
   Users,
@@ -157,12 +158,8 @@ export const ProductPageLayout = ({
     <div className="min-h-screen bg-background">
       <main>
         {/* Hero Section */}
-        <section className="relative pt-32 pb-20 bg-eko-navy overflow-hidden">
-          <div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-eko-gold/5 to-transparent" />
-
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div
+        <PageHero>
+          <div
               className={`grid gap-10 lg:gap-16 items-start ${
                 heroImage ? "lg:grid-cols-2" : ""
               }`}
@@ -304,8 +301,7 @@ export const ProductPageLayout = ({
                 // )
               }
             </div>
-          </div>
-        </section>
+        </PageHero>
 
         {/* Overview Section */}
         {overview && (
@@ -626,34 +622,7 @@ export const ProductPageLayout = ({
         />
 
         {/* FAQ Section */}
-        <SectionContainer className="bg-muted/30">
-          <FadeIn className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Frequently Asked Questions
-            </h2>
-          </FadeIn>
-
-          <div className="max-w-3xl mx-auto flex flex-col gap-4">
-            {faqs.map((faq, index) => (
-              <FadeIn key={index} delay={index * 50}>
-                <details className="group p-6 bg-card border border-border/50 rounded-2xl cursor-pointer">
-                  <summary className="flex items-center justify-between font-semibold text-foreground list-none">
-                    <span className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
-                      {faq.q}
-                    </span>
-                    <span className="ml-4 text-eko-gold transition-transform group-open:rotate-45">
-                      +
-                    </span>
-                  </summary>
-                  <p className="mt-4 text-muted-foreground leading-relaxed pl-8">
-                    {faq.a}
-                  </p>
-                </details>
-              </FadeIn>
-            ))}
-          </div>
-        </SectionContainer>
+        <FaqSection faqs={faqs} variant="default" className="bg-muted/30" />
 
         {/* Recommended Solution Packs */}
         {recommendedPacks.length > 0 && (
@@ -676,59 +645,10 @@ export const ProductPageLayout = ({
         )}
 
         {/* Lead Form Section - Below FAQ */}
-        <SectionContainer
-          variant="navy"
-          id="lead-form"
-          className="relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
-
-          <div className="relative grid lg:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Get API Access
-              </h2>
-              <p className="text-white/70 text-lg mb-6 leading-relaxed">
-                Sign up now and start integrating in minutes. Our team will help
-                you go live quickly.
-              </p>
-              <ul className="flex flex-col gap-3">
-                {[
-                  "Sandbox access in minutes",
-                  "Dedicated integration support",
-                  "Comprehensive documentation",
-                  "Reliable, high-volume workflows",
-                ].map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-center gap-3 text-white/80"
-                  >
-                    <CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </FadeIn>
-
-            <FadeIn delay={200} className="relative">
-              <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-                <div className="bg-eko-navy px-6 py-4 border-b border-white/10">
-                  <h3 className="text-lg font-bold text-white">
-                    {leadForm?.title || "Get API Access"}
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    Get started in 10 minutes
-                  </p>
-                </div>
-                <div className="p-2">
-                  <ZohoSignupForm />
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </SectionContainer>
+        <LeadFormCTASection
+          heading="Get API Access"
+          formTitle={leadForm?.title || "Get API Access"}
+        />
       </main>
 
       <Footer />
