@@ -2,6 +2,10 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
+import { installChunkErrorReload } from "./lib/reload-on-chunk-error";
+
+// Recover from stale-chunk loads (dynamic imports 404 after a redeploy).
+installChunkErrorReload();
 
 const container = document.getElementById("root")!;
 const app = (
