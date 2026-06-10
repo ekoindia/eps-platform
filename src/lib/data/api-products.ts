@@ -136,7 +136,8 @@ export const API_PRODUCTS: ApiProductRef[] = [
   },
   {
     id: "dl",
-    name: "DL Verification",
+    name: "Driving Licence Verification",
+    shortName: "DL Verification",
     slug: "dl-verification-api",
     href: "/products/dl-verification-api",
     category: "verification",
@@ -145,6 +146,7 @@ export const API_PRODUCTS: ApiProductRef[] = [
   {
     id: "rc",
     name: "Vehicle & RC Verification",
+    shortName: "RC Verification",
     slug: "vehicle-rc-verification-api",
     href: "/products/vehicle-rc-verification-api",
     category: "verification",

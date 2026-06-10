@@ -84,9 +84,9 @@ import bbpsImg from "@/assets/utility-bill-payment.svg";
 // upi-payout reuses payoutImg
 import aadhaarImg from "@/assets/aadhaar-verification.svg";
 import bankImg from "@/assets/bank-verification.svg";
-import dlImg from "@/assets/dl-verification-2.png?w=256;512&format=avif;webp&as=picture";
+// import dlImg from "@/assets/dl-verification-2.png?w=256;512&format=avif;webp&as=picture";
 import employeeImg from "@/assets/employee_verification.png?w=256;512&format=avif;webp&as=picture";
-import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
+// import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
 import panImg from "@/assets/pan-verification.svg";
 import upiVerifyImg from "@/assets/upi-hero.png?w=256;512&format=avif;webp&as=picture";
 
@@ -1685,7 +1685,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     category: "verification",
     icon: BarChart3,
     docsUrl: "https://developers.eko.in/reference/verify-gstin",
-    heroImage: gstImg,
+    // heroImage: gstImg,
     overview:
       "The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical.",
     keyBenefits: [
@@ -2015,7 +2015,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     category: "verification",
     icon: Truck,
     docsUrl: "https://developers.eko.in/reference/driving-license",
-    heroImage: dlImg,
+    // heroImage: dlImg,
     overview:
       "The Driving License Verification API enables businesses to validate driving license details instantly as part of identity verification and onboarding workflows. It helps confirm user identity, reduce impersonation risk, and meet compliance requirements.",
     keyBenefits: [

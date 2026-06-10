@@ -1,5 +1,6 @@
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
 import { FadeIn } from "@/components/FadeIn";
+import { TrustStrip } from "@/components/sections/TrustStrip";
 import { Button } from "@/components/ui/button";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, ChevronDown } from "lucide-react";
@@ -80,9 +81,9 @@ export const HeroSection = () => {
         </svg>
       </div>
 
-      {/* Floating Elements */}
-      <div className="hidden lg:block absolute top-1/4 left-10 w-64 h-64 bg-eko-gold/15 rounded-full blur-3xl animate-float" />
-      <div className="hidden lg:block absolute bottom-1/4 right-10 w-96 h-96 bg-eko-gold/20 rounded-full blur-3xl animate-float animation-delay-200" />
+      {/* Decorative glow blobs */}
+      <div className="hidden lg:block absolute top-1/4 left-10 w-64 h-64 bg-eko-gold/15 rounded-full blur-3xl" />
+      <div className="hidden lg:block absolute bottom-1/4 right-10 w-96 h-96 bg-eko-gold/20 rounded-full blur-3xl" />
 
       {/* Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 pb-16 lg:pt-32 lg:pb-24">
@@ -143,42 +144,50 @@ export const HeroSection = () => {
 
             {/* Trust Badges */}
             <FadeIn onView={false} delay={400}>
-              <div className="mt-12 flex flex-wrap items-center gap-6 justify-center lg:justify-start">
-                <div className="flex items-center gap-2 text-white/60 text-sm">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 2L3 7v10l9 5 9-5V7l-9-5z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M9 12l2 2 4-4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span>RBI compliant</span>
-                </div>
-                <div className="flex items-center gap-2 text-white/60 text-sm">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M12 6v6l4 2"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span>Reliable, high-volume workflows</span>
-                </div>
-              </div>
+              <TrustStrip
+                className="mt-12 flex flex-wrap items-center gap-6 justify-center lg:justify-start"
+                itemClassName="flex items-center gap-2 text-white/60 text-sm"
+                items={[
+                  {
+                    label: "RBI compliant",
+                    icon: (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M12 2L3 7v10l9 5 9-5V7l-9-5z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <path
+                          d="M9 12l2 2 4-4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "Reliable, high-volume workflows",
+                    icon: (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                        <path
+                          d="M12 6v6l4 2"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    ),
+                  },
+                ]}
+              />
             </FadeIn>
           </div>
 
