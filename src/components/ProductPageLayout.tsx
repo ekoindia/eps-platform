@@ -87,7 +87,8 @@ export interface ProductPageLayoutProps {
 }
 
 /** Hero image `sizes`, shared by the <Picture> and its preload <link>. */
-const HERO_IMAGE_SIZES = "(max-width: 768px) 80vw, 512px";
+const HERO_IMAGE_SIZES =
+  "(max-width: 767px) 70vw, (max-width: 1023px) 45vw, 448px";
 
 const industryIcons: Record<string, LucideIcon> = {
   fintech: Building2,
@@ -160,147 +161,143 @@ export const ProductPageLayout = ({
         {/* Hero Section */}
         <PageHero>
           <div
-              className={`grid gap-10 lg:gap-16 items-start ${
-                heroImage ? "lg:grid-cols-2" : ""
-              }`}
-            >
-              {/* Left: Content */}
-              <div>
-                <FadeIn onView={false} delay={100}>
-                  <Link
-                    to="/#products"
-                    className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
-                  >
-                    ← Back to Home
-                  </Link>
+            className={`grid gap-10 lg:gap-16 items-start ${
+              heroImage ? "lg:grid-cols-[3fr_2fr]" : ""
+            }`}
+          >
+            {/* Left: Content */}
+            <div>
+              <FadeIn onView={false} delay={100}>
+                <Link
+                  to="/#products"
+                  className="inline-flex items-center gap-2 text-eko-gold/80 hover:text-eko-gold mb-6 text-sm font-medium transition-colors"
+                >
+                  ← Back to Home
+                </Link>
 
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight text-balance">
-                    {heroTitle}
-                  </h1>
-                </FadeIn>
-                <FadeIn onView={false} delay={200}>
-                  <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
-                    {heroSubtitle}
-                  </p>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight text-balance">
+                  {heroTitle}
+                </h1>
+              </FadeIn>
+              <FadeIn onView={false} delay={200}>
+                <p className="text-xl text-white/80 mb-8 max-w-2xl leading-relaxed">
+                  {heroSubtitle}
+                </p>
 
-                  {/* API Chip Row */}
-                  {inputOutputPreviews && inputOutputPreviews.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-10">
-                      {inputOutputPreviews.map((chip) => (
-                        <ApiChip
-                          key={chip.apiName}
-                          name={normalizeApiLabel(chip.apiName)}
-                          relevance={chip.relevance}
-                          onClick={() => scrollToApiPreview(chip.apiName)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </FadeIn>
-                <FadeIn onView={false} delay={300}>
-                  <div className="flex flex-wrap gap-4">
-                    <Button
-                      variant="gold"
-                      size="lg"
-                      asChild
-                      onClick={() => openZohoChat()}
-                    >
-                      <span>
-                        Get Sandbox Access <ArrowRight className="w-4 h-4" />
-                      </span>
-                    </Button>
-
-                    <Button variant="hero-outline" size="lg" asChild>
-                      <a
-                        href={docsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View Documentation
-                        <FileText className="w-4 h-4" />
-                      </a>
-                    </Button>
+                {/* API Chip Row */}
+                {inputOutputPreviews && inputOutputPreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-10">
+                    {inputOutputPreviews.map((chip) => (
+                      <ApiChip
+                        key={chip.apiName}
+                        name={normalizeApiLabel(chip.apiName)}
+                        relevance={chip.relevance}
+                        onClick={() => scrollToApiPreview(chip.apiName)}
+                        className="bg-white/10 border-white/20 text-white"
+                      />
+                    ))}
                   </div>
-                </FadeIn>
-              </div>
-
-              {/* Right: Hero Image or Lead Form */}
-              {
-                heroImage ? (
-                  <FadeIn
-                    onView={false}
-                    delay={300}
-                    className="relative flex items-center justify-center"
+                )}
+              </FadeIn>
+              <FadeIn onView={false} delay={300}>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    asChild
+                    onClick={() => openZohoChat()}
                   >
-                    {/* Preload the LCP hero image so the browser starts the
+                    <span>
+                      Get Sandbox Access <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </Button>
+
+                  <Button variant="hero-outline" size="lg" asChild>
+                    <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+                      View Documentation
+                      <FileText className="w-4 h-4" />
+                    </a>
+                  </Button>
+                </div>
+              </FadeIn>
+            </div>
+
+            {/* Right: Hero Image or Lead Form */}
+            {
+              heroImage ? (
+                <FadeIn
+                  onView={false}
+                  delay={300}
+                  className="relative flex items-center justify-center"
+                >
+                  {/* Preload the LCP hero image so the browser starts the
                       request during <head> parse (Lighthouse "LCP request
                       discovery"), instead of when the in-body <img> is reached. */}
-                    <Helmet>
-                      {typeof heroImage === "string" ? (
-                        <link
-                          rel="preload"
-                          as="image"
-                          href={heroImage}
-                          fetchPriority="high"
-                        />
-                      ) : (
-                        <link
-                          rel="preload"
-                          as="image"
-                          href={heroImage.img.src}
-                          imageSrcSet={Object.values(heroImage.sources)[0]}
-                          imageSizes={HERO_IMAGE_SIZES}
-                          fetchPriority="high"
-                        />
-                      )}
-                    </Helmet>
-                    <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
-                    <div className="relative animate-float perspective-[1000px]">
-                      <Picture
-                        src={heroImage}
-                        alt={heroTitle}
-                        sizes={HERO_IMAGE_SIZES}
+                  <Helmet>
+                    {typeof heroImage === "string" ? (
+                      <link
+                        rel="preload"
+                        as="image"
+                        href={heroImage}
                         fetchPriority="high"
-                        className="w-full max-w-lg mx-auto transition-transform duration-500 hover:scale-105 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
                       />
-                    </div>
-                  </FadeIn>
-                ) : null
-                // (
-                //   <FadeIn
-                //     onView={false}
-                //     delay={300}
-                //     className="relative"
-                //     id="lead-form"
-                //   >
-                //     {/* Trust Shield Badge - desktop only */}
-                //     <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-xs">
-                //       <Shield className="w-4 h-4 text-eko-gold" />
-                //       <span className="text-xs font-semibold text-eko-gold">
-                //         Reliable, high-volume workflows
-                //       </span>
-                //     </div>
+                    ) : (
+                      <link
+                        rel="preload"
+                        as="image"
+                        href={heroImage.img.src}
+                        imageSrcSet={Object.values(heroImage.sources)[0]}
+                        imageSizes={HERO_IMAGE_SIZES}
+                        fetchPriority="high"
+                      />
+                    )}
+                  </Helmet>
+                  <div className="absolute inset-0 bg-eko-gold/5 rounded-full blur-3xl" />
+                  <div className="relative perspective-[1000px]">
+                    <Picture
+                      src={heroImage}
+                      alt={heroTitle}
+                      sizes={HERO_IMAGE_SIZES}
+                      fetchPriority="high"
+                      className="w-full max-w-md mx-auto transition-transform duration-500 transform-3d rotate-y-[-5deg] rotate-x-[5deg] drop-shadow-[0_25px_50px_rgba(0,0,0,0.4)]"
+                    />
+                  </div>
+                </FadeIn>
+              ) : null
+              // (
+              //   <FadeIn
+              //     onView={false}
+              //     delay={300}
+              //     className="relative"
+              //     id="lead-form"
+              //   >
+              //     {/* Trust Shield Badge - desktop only */}
+              //     <div className="hidden lg:flex absolute -left-4 -top-4 z-10 items-center gap-2 bg-eko-gold/10 border border-eko-gold/30 rounded-full px-4 py-2 backdrop-blur-xs">
+              //       <Shield className="w-4 h-4 text-eko-gold" />
+              //       <span className="text-xs font-semibold text-eko-gold">
+              //         Reliable, high-volume workflows
+              //       </span>
+              //     </div>
 
-                //     <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-                //     <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-                //       <div className="bg-eko-navy px-6 py-4">
-                //         <h3 className="text-lg font-bold text-white">
-                //           {leadForm?.title || "Get API Access"}
-                //         </h3>
-                //         <p className="text-white/70 text-sm">
-                //           Get started in 10 minutes
-                //         </p>
-                //       </div>
+              //     <div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
+              //     <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+              //       <div className="bg-eko-navy px-6 py-4">
+              //         <h3 className="text-lg font-bold text-white">
+              //           {leadForm?.title || "Get API Access"}
+              //         </h3>
+              //         <p className="text-white/70 text-sm">
+              //           Get started in 10 minutes
+              //         </p>
+              //       </div>
 
-                //       <div className="p-2">
-                //         <ZohoSignupForm />
-                //       </div>
-                //     </div>
-                //   </FadeIn>
-                // )
-              }
-            </div>
+              //       <div className="p-2">
+              //         <ZohoSignupForm />
+              //       </div>
+              //     </div>
+              //   </FadeIn>
+              // )
+            }
+          </div>
         </PageHero>
 
         {/* Overview Section */}

@@ -81,9 +81,9 @@ export const HeroSection = () => {
         </svg>
       </div>
 
-      {/* Floating Elements */}
-      <div className="hidden lg:block absolute top-1/4 left-10 w-64 h-64 bg-eko-gold/15 rounded-full blur-3xl animate-float" />
-      <div className="hidden lg:block absolute bottom-1/4 right-10 w-96 h-96 bg-eko-gold/20 rounded-full blur-3xl animate-float animation-delay-200" />
+      {/* Decorative glow blobs */}
+      <div className="hidden lg:block absolute top-1/4 left-10 w-64 h-64 bg-eko-gold/15 rounded-full blur-3xl" />
+      <div className="hidden lg:block absolute bottom-1/4 right-10 w-96 h-96 bg-eko-gold/20 rounded-full blur-3xl" />
 
       {/* Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 pb-16 lg:pt-32 lg:pb-24">
