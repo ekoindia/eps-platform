@@ -47,10 +47,6 @@ const PricingPage = () => {
           name="description"
           content="Transparent pay-per-use pricing for PAN, Aadhaar, bank account, GST, UPI and 25+ verification APIs. Estimate your monthly cost with our interactive pricing calculator."
         />
-        <meta
-          name="keywords"
-          content="verification API pricing, PAN verification API price, bank account verification API cost, KYC API pricing India, identity verification API rates"
-        />
         <link rel="canonical" href={`${SITE_URL}/pricing`} />
         <link rel="alternate" type="text/markdown" href={`${SITE_URL}/pricing.md`} />
         {jsonLdSchemas.map((schema, i) => (

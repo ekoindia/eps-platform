@@ -94,7 +94,6 @@ const ProductsPage = () => {
 			<Helmet>
 				<title>APIs & Products | Eko Platform Services</title>
 				<meta name="description" content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services. Production-ready APIs built for India's digital economy." />
-				<meta name="keywords" content="fintech API, payment API, verification API, KYC API, DMT API, AePS API, BBPS API, PAN verification, bank verification, India" />
 				<link rel="canonical" href={`${SITE_URL}/products`} />
 				<meta property="og:title" content="APIs & Products | Eko Platform Services" />
 				<meta property="og:description" content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services." />

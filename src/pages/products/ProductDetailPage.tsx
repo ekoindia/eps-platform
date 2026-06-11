@@ -26,7 +26,6 @@ const ProductDetailPage = () => {
       <Helmet>
         <title>{seo.title} | Eko Platform Services</title>
         <meta name="description" content={seo.description} />
-        <meta name="keywords" content={seo.keywords} />
         <link rel="canonical" href={`${SITE_URL}/products/${product.slug}`} />
         <meta property="og:title" content={`${seo.ogTitle ?? seo.title} | Eko Platform Services`} />
         <meta property="og:description" content={seo.ogDescription ?? seo.description} />

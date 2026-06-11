@@ -1,5 +1,6 @@
+import { defaultFilter } from "cmdk";
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -22,13 +23,75 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Fixed display order + headings of the result groups */
+/** Fixed display order + headings of the suggested (empty-query) groups */
 const GROUPS: { category: SearchCategory; heading: string }[] = [
   { category: "api", heading: "APIs" },
   { category: "industry", heading: "Industries" },
   { category: "solution", heading: "Solutions" },
   { category: "page", heading: "Pages" },
 ];
+
+/** Category chip labels shown per row in the flat (searching) view */
+const CATEGORY_LABELS: Record<SearchCategory, string> = {
+  api: "API",
+  industry: "Industry",
+  solution: "Solution",
+  page: "Page",
+};
+
+/** Curated items for the empty-query view */
+const SUGGESTED_ITEMS = SEARCH_INDEX.filter((item) => item.suggested);
+
+/**
+ * cmdk's fuzzy score, gated on the query appearing as a contiguous substring
+ * of the item's value + keywords. The default fuzzy filter matches scattered
+ * letter subsequences, so e.g. "pricing" matched half the index via long SEO
+ * keyword strings.
+ */
+const substringGatedFilter = (
+  value: string,
+  search: string,
+  keywords?: string[],
+): number => {
+  const haystack = `${value} ${keywords?.join(" ") ?? ""}`.toLowerCase();
+  if (!haystack.includes(search.trim().toLowerCase())) return 0;
+  return defaultFilter(value, search, keywords);
+};
+
+/** Shared result row used by both the grouped (suggested) and flat (searching) views */
+const ResultRow = ({
+  item,
+  showCategory,
+  onSelect,
+}: {
+  item: SearchItem;
+  showCategory?: boolean;
+  onSelect: (item: SearchItem) => void;
+}) => (
+  <CommandItem
+    value={`${item.label} ${item.id}`}
+    keywords={item.keywords}
+    onSelect={() => onSelect(item)}
+    className="group gap-3 px-3 py-2"
+  >
+    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+      <item.icon className="h-4 w-4 text-muted-foreground" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="truncate text-sm font-medium">{item.label}</div>
+      {item.sublabel && (
+        <div className="truncate text-xs text-muted-foreground group-data-[selected=true]:text-accent-foreground/75">
+          {item.sublabel}
+        </div>
+      )}
+    </div>
+    {showCategory && (
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/60 group-data-[selected=true]:text-accent-foreground/60">
+        {CATEGORY_LABELS[item.category]}
+      </span>
+    )}
+  </CommandItem>
+);
 
 /** Small keyboard-key chip used in the footer hints */
 const Kbd = ({ children }: { children: React.ReactNode }) => (
@@ -60,12 +123,6 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
     }
   }, [location.pathname, open, onOpenChange]);
 
-  // Empty query → curated "suggested" items only; otherwise the full index
-  const visibleItems = useMemo(
-    () => (query ? SEARCH_INDEX : SEARCH_INDEX.filter((item) => item.suggested)),
-    [query],
-  );
-
   const handleSelect = (item: SearchItem): void => {
     onOpenChange(false);
     if (item.action === "talk-to-sales") {
@@ -84,7 +141,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
         className="top-[12%] translate-y-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%] sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden"
       >
         <DialogTitle className="sr-only">Search</DialogTitle>
-        <Command loop>
+        <Command loop filter={substringGatedFilter}>
           <CommandInput
             placeholder="Search APIs, industries, solutions…"
             value={query}
@@ -105,39 +162,35 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
                 </p>
               </div>
             </CommandEmpty>
-            {GROUPS.map(({ category, heading }) => {
-              const groupItems = visibleItems.filter(
-                (item) => item.category === category,
-              );
-              if (groupItems.length === 0) return null;
-              return (
-                <CommandGroup key={category} heading={heading}>
-                  {groupItems.map((item) => (
-                    <CommandItem
-                      key={item.id}
-                      value={`${item.label} ${item.id}`}
-                      keywords={item.keywords}
-                      onSelect={() => handleSelect(item)}
-                      className="group gap-3 px-3 py-2"
-                    >
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <item.icon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">
-                          {item.label}
-                        </div>
-                        {item.sublabel && (
-                          <div className="truncate text-xs text-muted-foreground group-data-[selected=true]:text-accent-foreground/75">
-                            {item.sublabel}
-                          </div>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              );
-            })}
+            {query
+              ? // Searching → flat list so cmdk ranks all matches globally by
+                // score (cross-group reordering is broken in cmdk v1.1.1)
+                SEARCH_INDEX.map((item) => (
+                  <ResultRow
+                    key={item.id}
+                    item={item}
+                    showCategory
+                    onSelect={handleSelect}
+                  />
+                ))
+              : // Empty query → curated "suggested" items, grouped
+                GROUPS.map(({ category, heading }) => {
+                  const groupItems = SUGGESTED_ITEMS.filter(
+                    (item) => item.category === category,
+                  );
+                  if (groupItems.length === 0) return null;
+                  return (
+                    <CommandGroup key={category} heading={heading}>
+                      {groupItems.map((item) => (
+                        <ResultRow
+                          key={item.id}
+                          item={item}
+                          onSelect={handleSelect}
+                        />
+                      ))}
+                    </CommandGroup>
+                  );
+                })}
           </CommandList>
           <div className="flex items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
