@@ -44,7 +44,7 @@ This project is built with:
 
 ## How can I deploy this project?
 
-This project is a React SPA (Single Page Application) using client-side routing. It's configured to work seamlessly with multiple deployment platforms. Each platform has its own URL rewrite configuration to ensure proper routing.
+This project builds to **static pre-rendered HTML** (SSG) for every known route, which React hydrates into an SPA in the browser (see [Static Page Generation](docs/static-page-generation.md)). Unknown routes fall back to the SPA shell (`__spa-fallback.html`) via each platform's catch-all rewrite. It's configured to work seamlessly with multiple deployment platforms.
 
 #### Supported Platforms
 
@@ -71,7 +71,7 @@ This project is a React SPA (Single Page Application) using client-side routing.
 
 #### Why Multiple Configuration Files?
 
-This project includes platform-specific redirect configurations because each deployment platform has its own configuration format. When users directly visit URLs like `/products/aeps-api` or refresh the page, the server needs to serve `index.html` for all routes, allowing React Router to handle navigation client-side.
+This project includes platform-specific redirect configurations because each deployment platform has its own configuration format. Pre-rendered routes (e.g. `/products/aeps-api`) are served as static `index.html` files from their route directories; only URLs **not** in the pre-render manifest fall through to the catch-all, which serves `/__spa-fallback.html` so React Router can handle the route client-side.
 
 - **vercel.json** → Vercel deployments
 - **netlify.toml** / **_redirects** → Netlify deployments
@@ -83,4 +83,8 @@ These files don't conflict - each platform only reads its own configuration and 
 
 ## Detailed documentations:
 - [Static Page Generation (SSG) and SPA Fallback](docs/static-page-generation.md)
+- [SSG Pre-rendering & React Hydration Rules](docs/ssg-hydration.md)
 - [AI-Agent-Friendly Content Delivery and Markdown Generation](docs/markdown-generation.md)
+- [Pricing Page & API Pricing Calculator](docs/pricing-calculator.md)
+- [Command Palette Search (⌘K)](docs/command-palette-search.md)
+- [Stale-Chunk Auto-Reload After Redeploys](docs/chunk-error-auto-reload.md)

@@ -28,7 +28,11 @@ pre-rendered synchronously. The client variant uses `React.lazy` with
 code for the current route is downloaded on initial page load.
 
 Both files share the same route definitions and component tree. When adding a
-new route, it must be added to **both** `App.tsx` and `AppServer.tsx`.
+new route, it must be added to **both** `App.tsx` and `AppServer.tsx`. The two
+trees must stay structurally identical — including Suspense boundaries
+(`AppServer.tsx` mirrors the `<Suspense>` around `<Routes>` even though eager
+imports never suspend server-side). Divergence causes hydration mismatches;
+see [SSG hydration rules](ssg-hydration.md).
 
 Because pre-rendered pages already contain the full HTML, React 18's
 `hydrateRoot` attaches event handlers to the existing markup without showing
@@ -45,20 +49,21 @@ built deterministically from the same data modules used to render pages:
 
 ```
 /                          → home page
-/products/:slug            → one file per product slug  (18 routes)
-/products/eko-shield
-/products/eko-shield/document
+/products                  → products listing
+/products/:slug            → one file per product slug
 /industries                → industries listing
-/industries/:slug          → one file per industry slug (17 routes)
+/industries/:slug          → one file per industry slug
 /solutions                 → solutions listing
-/solutions/:slug           → one file per solution slug (12 routes)
+/solutions/:slug           → one file per solution slug
 /use-cases
+/pricing
 /about-us
 /blogs-media
 /tnc  /privacy-policy  /refund-policy  /grievance  /signup
 ```
 
-Total: ~60 routes. Adding a new product, industry, or solution slug to the
+Total: ~60 routes (63 at the time of writing — the build logs the exact
+count). Adding a new product, industry, or solution slug to the
 data layer automatically adds it to the pre-rendered set on the next build —
 no separate configuration needed.
 
@@ -85,6 +90,10 @@ npm run build
         │     rewrite /src/assets/* → /assets/* via manifest map
         │     inject <link rel="modulepreload"> for route's lazy chunk
         │     add fetchpriority="low" to main <script> tag
+        │     inline critical CSS (Beasties)
+        │     minify the document AROUND #root only (minifyAroundRoot —
+        │       React markup must stay byte-identical for hydration,
+        │       see docs/ssg-hydration.md)
         │     write dist/<route>/index.html
         ├── Saves original SPA shell as dist/__spa-fallback.html
         └── Generates dist/sitemap.xml
@@ -113,7 +122,13 @@ if (hasPrerenderedMarkup) {
     if (hydrated) return;
     hydrated = true;
     TRIGGER_EVENTS.forEach((e) => document.removeEventListener(e, doHydrate));
-    hydrateRoot(container, app);
+    hydrateRoot(container, app, {
+      // Logs hydration mismatches (React #418/#423) with component stacks,
+      // even in minified production builds — see docs/ssg-hydration.md
+      onRecoverableError: (error, errorInfo) => {
+        console.warn("[hydration]", error, errorInfo?.componentStack);
+      },
+    });
   }
 
   TRIGGER_EVENTS.forEach((e) =>
@@ -251,7 +266,7 @@ so the pre-rendered `index.html` is served for the home page:
 |----------|-------------|-----------------|
 | Vercel | `vercel.json` | `/__spa-fallback.html` |
 | Netlify | `netlify.toml` / `public/_redirects` | `/__spa-fallback.html` |
-| Nginx | `nginx.conf` — `try_files $uri $uri.html $uri/` | `/__spa-fallback.html` |
+| Nginx | `nginx.conf` — `try_files $uri $uri/` | `/__spa-fallback.html` |
 
 Pre-rendered `.html` files are served as exact static matches before the
 catch-all is reached, so there is no routing conflict.
@@ -268,12 +283,16 @@ ls dist/industries/
 ls dist/solutions/
 cat dist/sitemap.xml
 
-# Serve locally and open a pre-rendered page
+# Serve locally and open a pre-rendered page.
+# NOTE: use the trailing-slash URL — `vite preview` serves the homepage HTML
+# for the no-slash form (preview-only artifact; production servers resolve
+# the directory index correctly).
 npm run preview
-open http://localhost:4173/products/aeps-api
+open http://localhost:4173/products/aeps-api/
 
 # Verify content is server-rendered (disable JS in DevTools — page should still show content)
-# Verify no hydration warnings in the browser console
+# Verify no "[hydration]" warnings in the browser console (logged by
+# onRecoverableError in src/main.tsx — see docs/ssg-hydration.md)
 # Verify canonical and JSON-LD in View Source
 
 # Verify asset paths were rewritten (should be 0)

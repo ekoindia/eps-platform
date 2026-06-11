@@ -142,7 +142,8 @@ The HTML pages advertise their Markdown equivalents in two ways:
 Responsibilities:
 
 - Rewrites `/llms-full.txt` to `/index.md`
-- Keeps SPA fallback rewrite to `/index.html`
+- Keeps SPA fallback rewrite to `/__spa-fallback.html` (excluding `/assets/*`,
+	which must 404 for stale chunks — see docs/chunk-error-auto-reload.md)
 - Sets explicit headers for:
 	- `*.md` -> `text/markdown; charset=utf-8`
 	- `/llms.txt` -> `text/plain; charset=utf-8`
