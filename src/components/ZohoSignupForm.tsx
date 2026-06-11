@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { ZOHO_SIGNUP_EMBED_URL } from "@/lib/config/zoho";
-import { appendTrackingParams } from "@/hooks/use-tracking-params";
+import { buildLeadWebsiteUrl } from "@/hooks/use-tracking-params";
 import { isBrowser } from "@/lib/ssr-safe";
 import { SITE_URL } from "@/lib/config/site";
 
@@ -17,7 +17,9 @@ export const ZohoSignupForm = () => {
 
   useEffect(() => {
     if (!isBrowser()) return;
-    const website = appendTrackingParams(window.location.href);
+    // Tracking params + calculator selection, budgeted to the CRM's
+    // 450-char Website field limit
+    const website = buildLeadWebsiteUrl();
     setSrc(buildSrc(website, referrername));
   }, [pathname, referrername]);
 
