@@ -11,7 +11,7 @@ import {
 } from "@/lib/data/api-pricing";
 import { formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
-import { ArrowRight, Link2 } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, Link2 } from "lucide-react";
 
 interface QuoteSummaryProps {
   quote: Quote;
@@ -211,6 +211,11 @@ export const QuoteSummary = ({
               <Link2 className="w-3.5 h-3.5" /> Copy estimate link
             </Button>
           )}
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+            <a href="/eps-pricing-calculator.xlsx" download>
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Download Excel calculator
+            </a>
+          </Button>
         </div>
 
         <p className="text-[11px] text-muted-foreground/80 mt-4 leading-relaxed">
