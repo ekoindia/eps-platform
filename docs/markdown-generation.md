@@ -19,6 +19,10 @@ At build time, the site generates Markdown equivalents for:
 - LLM discovery index: `/llms.txt`
 - Full-content alias: `/llms-full.txt`
 
+A sibling plugin (`vite-plugin-generate-xlsx.ts`) generates the offline Excel
+pricing calculator at `/eps-pricing-calculator.xlsx` from the same pricing
+config — see docs/pricing-calculator.md.
+
 The main HTML pages continue to exist at their normal routes, for example:
 
 - HTML: `/products/aeps-api`

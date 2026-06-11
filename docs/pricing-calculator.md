@@ -131,6 +131,32 @@ docs/markdown-generation.md). `PRICING_FAQS` lives in `api-pricing.ts` so the
 HTML page, JSON-LD FAQPage schema, and Markdown share one source. Rate edits
 in `PRICED_APIS` flow into `/pricing.md` automatically.
 
+## Offline Excel calculator (`/eps-pricing-calculator.xlsx`)
+
+A downloadable companion workbook generated at build time from the same
+`api-pricing.ts` config — partners enter monthly volumes offline and Excel
+formulas compute line totals, subtotal, GST @ 18%, and the grand total.
+
+- **Renderer**: `ssg/render-pricing-xlsx.ts` — pure `renderPricingXlsx(data)`
+  → `Buffer` (unit-tested in `src/test/render-pricing-xlsx.test.ts`). Sheet
+  "Calculator" carries the usage-input column and formulas; sheet "Rate Card"
+  is a static reference listing.
+- **Plugin**: `vite-plugin-generate-xlsx.ts` (registered in `vite.config.ts`)
+  mirrors the markdown plugin — `closeBundle` writes
+  `dist/eps-pricing-calculator.xlsx`; dev middleware serves the route on the
+  fly during `npm run dev`. Pricing data is loaded via `ssrLoadModule`, so
+  the `exceljs` devDependency never reaches the client bundle (exceljs is
+  CJS-only — the renderer loads it via `createRequire` because named ESM
+  imports of CJS fail inside the node-ESM Vite config bundle).
+- **Protection**: both sheets are protected **without a password** — rate and
+  formula cells are locked, only the "Monthly usage" column is editable. The
+  goal is preventing accidental edits, not access control; "Unprotect Sheet"
+  works without a prompt.
+- **Entry point**: "Download Excel calculator" link in `QuoteSummary.tsx`'s
+  CTA box (covers desktop sidebar + mobile drawer).
+- Rate edits in `PRICED_APIS` flow into the workbook automatically on the
+  next build.
+
 ## Route registration (3 places)
 
 `src/App.tsx` (lazy), `src/AppServer.tsx` (eager — `React.lazy` unsupported in

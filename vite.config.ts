@@ -5,6 +5,7 @@ import { imagetools } from "vite-imagetools";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import path from "path";
 import { generateMarkdownPlugin } from "./vite-plugin-generate-markdown";
+import { generatePricingXlsxPlugin } from "./vite-plugin-generate-xlsx";
 import { prerenderPlugin } from "./ssg/plugin";
 
 // https://vitejs.dev/config/
@@ -21,6 +22,7 @@ export default defineConfig(({ mode }) => ({
     imagetools(),
     tailwindcss(),
     generateMarkdownPlugin(),
+    generatePricingXlsxPlugin(),
     mode !== "development" && prerenderPlugin(),
     // svgo for svgs + sharp for png/jpg. imagetools emits only avif/webp,
     // so png/jpg here only hits public assets (e.g. the OG preview) and any
