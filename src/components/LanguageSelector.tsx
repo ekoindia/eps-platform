@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Globe, ChevronDown, Check } from "lucide-react";
+import { Globe, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const languages = [
@@ -125,10 +125,10 @@ export const LanguageSelector = ({ isLight = true, showLabel = false }: { isLigh
           isLight ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
         )}
         aria-label="Select language"
+        title="Select language"
       >
         <Globe className="w-4 h-4" />
-        <span className={showLabel ? undefined : "hidden sm:inline"}>{selectedLang?.label || "English"}</span>
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+        {showLabel && <span>{selectedLang?.label || "English"}</span>}
       </button>
 
       {open && (

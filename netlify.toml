@@ -1,3 +1,10 @@
+# Missing hashed assets (stale chunks after a redeploy) must 404,
+# not serve the SPA shell as HTML with a 200.
+[[redirects]]
+  from = "/assets/*"
+  to = "/__spa-fallback.html"
+  status = 404
+
 [[redirects]]
   from = "/*"
   to = "/__spa-fallback.html"

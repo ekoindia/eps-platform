@@ -1707,8 +1707,13 @@ export const ACTIVE_SOLUTIONS_LIST: SolutionData[] = SOLUTIONS_LIST.map(
 ).filter((s) => s.packApis.length > 0);
 
 /**
- * Return up to `maxCount` solution packs whose `packApis` include the given API id,
- * shuffled randomly so the selection varies across page loads.
+ * Return up to `maxCount` solution packs whose `packApis` include the given API id.
+ *
+ * The selection is rotated deterministically by a hash of `apiId` so different
+ * API pages surface different packs. Must stay deterministic: this runs during
+ * SSG pre-rendering AND client hydration, and any randomness (e.g. the previous
+ * Math.random shuffle) makes the two renders disagree → React hydration
+ * mismatch (#418).
  */
 export function getSolutionPacksForApi(
   apiId: string,
@@ -1717,10 +1722,12 @@ export function getSolutionPacksForApi(
   const matching = ACTIVE_SOLUTIONS_LIST.filter((s) =>
     s.packApis.some((a) => a.apiId === apiId),
   );
-  // Fisher-Yates shuffle
-  for (let i = matching.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [matching[i], matching[j]] = [matching[j], matching[i]];
-  }
-  return matching.slice(0, maxCount);
+  if (matching.length === 0) return [];
+  const seed = Array.from(apiId).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
+  const offset = seed % matching.length;
+  const rotated = [...matching.slice(offset), ...matching.slice(0, offset)];
+  return rotated.slice(0, maxCount);
 }

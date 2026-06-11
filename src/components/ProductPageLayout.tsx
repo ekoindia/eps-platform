@@ -20,19 +20,22 @@ import {
   Briefcase,
   Building2,
   CheckCircle,
-  FileText,
   Landmark,
   Store,
   Users,
   Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-// import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 import { Picture, type PictureSource } from "@/components/Picture";
 import { SolutionCard } from "@/components/SolutionCard";
+import {
+  getPricedApisForProduct,
+  getStartingRate,
+  getStartingUnitLabel,
+} from "@/lib/data/api-pricing";
 import { getSolutionPacksForApi } from "@/lib/data/solutions";
-import { normalizeApiLabel } from "@/lib/utils";
+import { formatINRRate, normalizeApiLabel } from "@/lib/utils";
 import { Helmet } from "react-helmet-async";
 import { ApiChip } from "./ApiChip";
 
@@ -136,6 +139,13 @@ export const ProductPageLayout = ({
     () => (productId ? getSolutionPacksForApi(productId, 3) : []),
     [productId],
   );
+  const hasPricing = productId
+    ? getPricedApisForProduct(productId).length > 0
+    : false;
+  const startingRate = productId ? getStartingRate(productId) : undefined;
+  const startingUnitLabel = productId
+    ? getStartingUnitLabel(productId)
+    : "per verification";
 
   const categoryColors = {
     payment: "from-eko-gold/20 to-eko-navy/5",
@@ -200,7 +210,7 @@ export const ProductPageLayout = ({
                 )}
               </FadeIn>
               <FadeIn onView={false} delay={300}>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
                   <Button
                     variant="gold"
                     size="lg"
@@ -211,14 +221,35 @@ export const ProductPageLayout = ({
                       Get Sandbox Access <ArrowRight className="w-4 h-4" />
                     </span>
                   </Button>
-
-                  <Button variant="hero-outline" size="lg" asChild>
-                    <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-                      View Documentation
-                      <FileText className="w-4 h-4" />
-                    </a>
-                  </Button>
+                  <a
+                    href={docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
+                  >
+                    View Documentation
+                  </a>
                 </div>
+                {hasPricing && startingRate !== undefined && (
+                  <p className="flex flex-wrap items-center gap-x-2 text-white/60 text-xs mt-7">
+                    <span>
+                      Starts at{" "}
+                      <span className="text-eko-gold font-semibold">
+                        {formatINRRate(startingRate)}
+                      </span>{" "}
+                      {startingUnitLabel} · excl. GST
+                    </span>
+                    <span className="text-white/40" aria-hidden="true">
+                      ·
+                    </span>
+                    <Link
+                      to={`/pricing?apis=${productId}`}
+                      className="text-white/80 hover:text-white font-medium transition-colors"
+                    >
+                      View Pricing
+                    </Link>
+                  </p>
+                )}
               </FadeIn>
             </div>
 
@@ -564,11 +595,6 @@ export const ProductPageLayout = ({
             </div>
           </SectionContainer>
         )}
-
-        {/* Eko Shield Ad Banner */}
-        {/* {/verification|kyc/i.test(heroTitle) && (
-          <EkoShieldAdBanner/>
-        )} */}
 
         {/* Trust & Compliance */}
         {/* TODO: Fix how to show Trust & Compliance. The claims like "99.9% Uptime" should be legally/SLA backed. */}

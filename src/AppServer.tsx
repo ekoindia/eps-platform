@@ -7,12 +7,14 @@
  */
 import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 import { DefaultMeta } from "@/components/DefaultMeta";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Header } from "@/components/Header";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
+import { Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Index from "./pages/Index";
@@ -41,6 +43,9 @@ import SolutionDetailPage from "./pages/SolutionDetailPage";
 import SolutionsPage from "./pages/SolutionsPage";
 import UseCasesHubPage from "./pages/UseCasesHubPage";
 
+// Pricing
+import PricingPage from "./pages/PricingPage";
+
 function TrackingParamCapture() {
   useCaptureTrackingParams();
   return null;
@@ -59,46 +64,56 @@ const AppServer = ({
       <TrackingParamCapture />
       <ScrollToTop />
       <Header />
-      <AnimatedRoutes>
-        <Routes>
-          <Route path="/" element={<Index />} />
+      <ErrorBoundary>
+        <AnimatedRoutes>
+          {/* Mirrors the <Suspense> in App.tsx so server and client trees
+              match during hydration. Pages are eager here, so this boundary
+              never actually suspends during renderToString. */}
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Index />} />
 
-          {/* Eko Shield (specific routes before :slug wildcard) */}
-          {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
+              {/* Eko Shield (specific routes before :slug wildcard) */}
+              {/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
 
-          {/* Product API Pages */}
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/products/:slug" element={<ProductDetailPage />} />
+              {/* Product API Pages */}
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/products/:slug" element={<ProductDetailPage />} />
 
-          {/* Industry & Solution Pages */}
-          <Route path="/use-cases" element={<UseCasesHubPage />} />
-          <Route path="/industries" element={<IndustriesPage />} />
-          <Route path="/industries/:slug" element={<IndustryDetailPage />} />
-          <Route path="/solutions" element={<SolutionsPage />} />
-          <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+              {/* Industry & Solution Pages */}
+              <Route path="/use-cases" element={<UseCasesHubPage />} />
+              <Route path="/industries" element={<IndustriesPage />} />
+              <Route path="/industries/:slug" element={<IndustryDetailPage />} />
+              <Route path="/solutions" element={<SolutionsPage />} />
+              <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
 
-          {/* Company & Legal Pages */}
-          <Route path="/about-us" element={<AboutPage />} />
-          <Route path="/blogs-media" element={<BlogsMediaPage />} />
-          {/* Redirects for old routes */}
-          <Route
-            path="/blog"
-            element={<Navigate to="/blogs-media" replace />}
-          />
-          <Route
-            path="/press"
-            element={<Navigate to="/blogs-media" replace />}
-          />
-          <Route path="/tnc" element={<TermsPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/refund-policy" element={<RefundPolicyPage />} />
-          <Route path="/grievance" element={<GrievancePage />} />
-          <Route path="/signup" element={<SignupPage />} />
+              {/* Pricing */}
+              <Route path="/pricing" element={<PricingPage />} />
 
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AnimatedRoutes>
+              {/* Company & Legal Pages */}
+              <Route path="/about-us" element={<AboutPage />} />
+              <Route path="/blogs-media" element={<BlogsMediaPage />} />
+              {/* Redirects for old routes */}
+              <Route
+                path="/blog"
+                element={<Navigate to="/blogs-media" replace />}
+              />
+              <Route
+                path="/press"
+                element={<Navigate to="/blogs-media" replace />}
+              />
+              <Route path="/tnc" element={<TermsPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/refund-policy" element={<RefundPolicyPage />} />
+              <Route path="/grievance" element={<GrievancePage />} />
+              <Route path="/signup" element={<SignupPage />} />
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </AnimatedRoutes>
+      </ErrorBoundary>
     </TooltipProvider>
   </HelmetProvider>
 );

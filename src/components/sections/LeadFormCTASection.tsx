@@ -31,7 +31,11 @@ export const LeadFormCTASection = ({
   id = "lead-form",
 }: LeadFormCTASectionProps) => {
   return (
-    <SectionContainer variant="navy" id={id} className="relative overflow-hidden">
+    <SectionContainer
+      variant="navy"
+      id={id}
+      className="relative overflow-hidden"
+    >
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-eko-gold/5 rounded-full blur-3xl" />
       <div className="relative grid lg:grid-cols-2 gap-12 items-center">
@@ -59,9 +63,7 @@ export const LeadFormCTASection = ({
               <h3 className="text-lg font-bold text-white">{formTitle}</h3>
               <p className="text-white/70 text-sm">Get started in 10 minutes</p>
             </div>
-            <div className="p-2">
-              <ZohoSignupForm />
-            </div>
+            <ZohoSignupForm />
           </div>
         </FadeIn>
       </div>

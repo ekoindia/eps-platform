@@ -88,6 +88,7 @@ import bankImg from "@/assets/bank-verification.svg";
 import employeeImg from "@/assets/employee_verification.png?w=256;512&format=avif;webp&as=picture";
 // import gstImg from "@/assets/gst-verification.png?w=256;512&format=avif;webp&as=picture";
 import panImg from "@/assets/pan-verification.svg";
+import revGeoImg from "@/assets/reverse-geocoding.png?w=256;512&format=avif;webp&as=picture";
 import upiVerifyImg from "@/assets/upi-hero.png?w=256;512&format=avif;webp&as=picture";
 
 // ---------------------------------------------------------------------------
@@ -2629,6 +2630,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Convert latitude and longitude into structured Indian address data, including locality, city, state, PIN code, and country, for onboarding, field-agent verification, fraud checks, and compliance workflows.",
     category: "verification",
     icon: Globe,
+    heroImage: revGeoImg,
     docsUrl: "https://developers.eko.in/reference/reverse-geocoding",
     overview:
       "The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment.",

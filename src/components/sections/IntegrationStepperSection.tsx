@@ -43,13 +43,15 @@ export const IntegrationStepperSection = ({
               delay={i * 150}
               className="flex flex-1 gap-4 md:flex-col md:items-center md:text-center"
             >
-              {/* Marker + connector track: vertical on mobile, horizontal on desktop */}
-              <div className="flex flex-col items-center md:w-full md:flex-row">
+              {/* Marker + connector track: vertical on mobile, horizontal on desktop.
+                  Desktop: circle centered in column; connector absolutely positioned
+                  from this circle's right edge to the next column's circle. */}
+              <div className="relative flex flex-col items-center md:w-full">
                 <div className="flex h-10 w-10 md:h-14 md:w-14 shrink-0 items-center justify-center rounded-full bg-eko-gold font-bold text-eko-navy text-sm md:text-lg">
                   {i + 1}
                 </div>
                 {!isLast && (
-                  <div className="bg-white/20 w-0.5 flex-1 mt-2 md:mt-0 md:ml-2 md:h-0.5 md:w-auto" />
+                  <div className="bg-white/20 w-0.5 flex-1 mt-2 md:mt-0 md:absolute md:top-1/2 md:-translate-y-1/2 md:left-[calc(50%+2.25rem)] md:right-[calc(-50%+2.25rem)] md:h-0.5 md:w-auto" />
                 )}
               </div>
 

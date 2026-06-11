@@ -2,6 +2,10 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
+import { installChunkErrorReload } from "./lib/reload-on-chunk-error";
+
+// Recover from stale-chunk loads (dynamic imports 404 after a redeploy).
+installChunkErrorReload();
 
 const container = document.getElementById("root")!;
 const app = (
@@ -25,7 +29,13 @@ if (hasPrerenderedMarkup) {
     if (hydrated) return;
     hydrated = true;
     TRIGGER_EVENTS.forEach((e) => document.removeEventListener(e, doHydrate));
-    hydrateRoot(container, app);
+    hydrateRoot(container, app, {
+      // Surfaces hydration mismatches (React #418/#423) with component
+      // stacks even in minified production builds.
+      onRecoverableError: (error, errorInfo) => {
+        console.warn("[hydration]", error, errorInfo?.componentStack);
+      },
+    });
   }
 
   TRIGGER_EVENTS.forEach((e) =>

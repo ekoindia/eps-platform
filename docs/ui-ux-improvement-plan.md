@@ -26,7 +26,7 @@ Impact: H/M/L. Effort: S/M/L (hours/days).
 | H6 | Collapse **redundant CTA sections** (`LeadCaptureSection` + `CTASection` are near-duplicate) into one consolidated final-CTA band | H | M | `Index.tsx`, `CTASection.tsx`, `LeadCaptureSection.tsx` |
 | H7 | Products tabs: **show all categories at once** on desktop (3-up cards w/ category headers) so users can scan breadth without clicking. Tabs only on mobile. | M | M | `ProductsSection.tsx` |
 | H8 | `WhyEkoSection` cards — bullet-list overflow inside small cards is cramped. Move long bullets into a **modal/expandable** or tighten to ≤3 bullets per card | M | S | `WhyEkoSection.tsx` |
-| H9 | Add **search affordance** in header (cmd+K) — already have `cmdk` dep — search across APIs/industries/solutions | M | M | `Header.tsx` |
+| H9 | ✅ **DONE** — Add **search affordance** in header (cmd+K) — already have `cmdk` dep — search across APIs/industries/solutions. See [command-palette-search.md](./command-palette-search.md) | M | M | `Header.tsx` |
 | H10 | `DeveloperSection` — name the 3 steps explicitly ("1. Get API key → 2. Call sandbox → 3. Go live"), drop generic "Code/Key/Zap" labels | M | S | `DeveloperSection.tsx` |
 | H11 | `UseCasesSection` — every card should **link to its detail page** (currently text-only); add hover lift + arrow icon affordance | M | S | `UseCasesSection.tsx` |
 | H12 | Partner logo carousel: add **role tags** ("Banking partner", "Payment rail", "ID verification") below logos — bare logos lack context | M | M | `ComplianceSection.tsx` |

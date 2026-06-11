@@ -13,6 +13,7 @@ At build time, the site generates Markdown equivalents for:
 - Product pages: `/products/:slug.md`
 - Industry pages: `/industries/:slug.md`
 - Solution pages: `/solutions/:slug.md`
+- Pricing rate card: `/pricing.md`
 - Use cases hub: `/use-cases.md`
 - Site index: `/index.md`
 - LLM discovery index: `/llms.txt`
@@ -34,6 +35,7 @@ Primary content sources:
 - `src/lib/data/api-product-pages.ts`
 - `src/lib/data/industries.ts`
 - `src/lib/data/solutions.ts`
+- `src/lib/data/api-pricing.ts` (rates, pricing FAQs)
 
 If you want to change the generated Markdown for a product, industry, or
 solution page, update the corresponding content/data object first. In most
@@ -65,6 +67,12 @@ All Markdown generation logic lives in `src/lib/markdown/`.
 	Generates Markdown for solution pages. Includes API pack details, workflow,
 	industries using the solution, comparison tables, pricing, FAQs, and related
 	solutions.
+
+- `src/lib/markdown/render-pricing.ts`
+	Generates Markdown for the pricing page (`/pricing.md`). The interactive
+	calculator is HTML-only, so the Markdown carries the full rate card (grouped
+	per-transaction rates from `src/lib/data/api-pricing.ts`), billing notes
+	(GST, setup-fee waiver, bulk footnote), and the shared pricing FAQs.
 
 - `src/lib/markdown/render-index.ts`
 	Generates the shared top-level AI/LLM files:
@@ -142,7 +150,8 @@ The HTML pages advertise their Markdown equivalents in two ways:
 Responsibilities:
 
 - Rewrites `/llms-full.txt` to `/index.md`
-- Keeps SPA fallback rewrite to `/index.html`
+- Keeps SPA fallback rewrite to `/__spa-fallback.html` (excluding `/assets/*`,
+	which must 404 for stale chunks — see docs/chunk-error-auto-reload.md)
 - Sets explicit headers for:
 	- `*.md` -> `text/markdown; charset=utf-8`
 	- `/llms.txt` -> `text/plain; charset=utf-8`
@@ -223,6 +232,7 @@ After a build, generated files are available inside `dist/`, for example:
 - `dist/products/aeps-api.md`
 - `dist/industries/lending-nbfc.md`
 - `dist/solutions/lending-kyc-pack.md`
+- `dist/pricing.md`
 - `dist/index.md`
 - `dist/llms.txt`
 - `dist/llms-full.txt`
