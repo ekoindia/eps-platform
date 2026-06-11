@@ -1,25 +1,29 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Phone, Search, Globe } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatMobile } from "@/lib/utils";
-import { SALES_MOBILE } from "@/lib/config/site";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
-import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import type { DropdownKey } from "@/components/HeaderDropdownPanels";
+import { Button } from "@/components/ui/button";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { cn } from "@/lib/utils";
+import { openZohoChat } from "@/lib/zoho-chat";
+import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 const HeaderDropdownPanels = lazy(() =>
-	import("@/components/HeaderDropdownPanels").then((m) => ({ default: m.HeaderDropdownPanels }))
+  import("@/components/HeaderDropdownPanels").then((m) => ({
+    default: m.HeaderDropdownPanels,
+  })),
 );
 
 const CommandPalette = lazy(() =>
-	import("@/components/CommandPalette").then((m) => ({ default: m.CommandPalette }))
+  import("@/components/CommandPalette").then((m) => ({
+    default: m.CommandPalette,
+  })),
 );
 
 const LanguageSelector = lazy(() =>
-	import("@/components/LanguageSelector").then((m) => ({ default: m.LanguageSelector }))
+  import("@/components/LanguageSelector").then((m) => ({
+    default: m.LanguageSelector,
+  })),
 );
 
 /**
@@ -28,16 +32,18 @@ const LanguageSelector = lazy(() =>
  * shift on swap.
  */
 const LanguageSelectorFallback = ({ isLight }: { isLight: boolean }) => (
-	<button
-		className={cn(
-			"flex items-center text-sm font-medium transition-colors cursor-pointer rounded-md px-2 py-1.5 hover:bg-white/10",
-			isLight ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
-		)}
-		aria-label="Select language"
-		title="Select language"
-	>
-		<Globe className="w-4 h-4" />
-	</button>
+  <button
+    className={cn(
+      "flex items-center text-sm font-medium transition-colors cursor-pointer rounded-md px-2 py-1.5 hover:bg-white/10",
+      isLight
+        ? "text-white/90 hover:text-white"
+        : "text-eko-slate hover:text-eko-navy",
+    )}
+    aria-label="Select language"
+    title="Select language"
+  >
+    <Globe className="w-4 h-4" />
+  </button>
 );
 
 const navLinks = [
@@ -70,19 +76,25 @@ const NavDropdownButton = ({
     onClick={onClick}
     className={cn(
       "text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
-      useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-      isActive && activeNavClasses
+      useWhiteText
+        ? "text-white/90 hover:text-white"
+        : "text-eko-slate hover:text-eko-navy",
+      isActive && activeNavClasses,
     )}
   >
     {label}
-    <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+    <ChevronDown
+      className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")}
+    />
   </button>
 );
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeDesktopDropdown, setActiveDesktopDropdown] = useState<DropdownKey | null>(null);
-  const [activeMobileAccordion, setActiveMobileAccordion] = useState<DropdownKey | null>(null);
+  const [activeDesktopDropdown, setActiveDesktopDropdown] =
+    useState<DropdownKey | null>(null);
+  const [activeMobileAccordion, setActiveMobileAccordion] =
+    useState<DropdownKey | null>(null);
   // const [getStartedOpen, setGetStartedOpen] = useState(false);
   const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -139,7 +151,10 @@ export const Header = () => {
   };
 
   /** Hover handlers spread on every dropdown panel — keeps the dropdown open while mouse is in the panel. */
-  const panelHoverHandlers = { onMouseEnter: cancelClose, onMouseLeave: scheduleClose };
+  const panelHoverHandlers = {
+    onMouseEnter: cancelClose,
+    onMouseLeave: scheduleClose,
+  };
 
   const useWhiteText = true;
 
@@ -167,20 +182,33 @@ export const Header = () => {
   const activeNavClasses =
     "font-semibold relative after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-1.5 after:h-0.5 after:bg-eko-gold after:rounded-full";
 
-  const { direction: scrollDirection, y: scrollY } = useScrollDirection({ threshold: 8 });
+  const { direction: scrollDirection, y: scrollY } = useScrollDirection({
+    threshold: 8,
+  });
   const isScrolled = scrollY > 10;
   const anyDropdownOpen = activeDesktopDropdown !== null;
-  const isHidden = scrollDirection === "down" && scrollY > 100 && !anyDropdownOpen && !mobileMenuOpen;
+  const isHidden =
+    scrollDirection === "down" &&
+    scrollY > 100 &&
+    !anyDropdownOpen &&
+    !mobileMenuOpen;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
       const outsideAll =
-        (!productsDropdownRef.current || !productsDropdownRef.current.contains(target)) &&
-        !document.querySelector('[data-dropdown="products"]')?.contains(target) &&
-        (!useCasesDropdownRef.current || !useCasesDropdownRef.current.contains(target)) &&
-        !document.querySelector('[data-dropdown="usecases"]')?.contains(target) &&
-        (!companyDropdownRef.current || !companyDropdownRef.current.contains(target)) &&
+        (!productsDropdownRef.current ||
+          !productsDropdownRef.current.contains(target)) &&
+        !document
+          .querySelector('[data-dropdown="products"]')
+          ?.contains(target) &&
+        (!useCasesDropdownRef.current ||
+          !useCasesDropdownRef.current.contains(target)) &&
+        !document
+          .querySelector('[data-dropdown="usecases"]')
+          ?.contains(target) &&
+        (!companyDropdownRef.current ||
+          !companyDropdownRef.current.contains(target)) &&
         !document.querySelector('[data-dropdown="company"]')?.contains(target);
       if (outsideAll) setActiveDesktopDropdown(null);
     };
@@ -190,7 +218,8 @@ export const Header = () => {
 
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current !== undefined) window.clearTimeout(closeTimerRef.current);
+      if (closeTimerRef.current !== undefined)
+        window.clearTimeout(closeTimerRef.current);
       Object.values(openTimersRef.current).forEach((t) => {
         if (t !== undefined) window.clearTimeout(t);
       });
@@ -274,7 +303,7 @@ export const Header = () => {
           isScrolled
             ? "bg-[#00394bdd] backdrop-blur-md shadow-xs py-3"
             : "bg-[#00394b] py-5",
-          isHidden ? "-translate-y-full" : "translate-y-0"
+          isHidden ? "-translate-y-full" : "translate-y-0",
         )}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -283,7 +312,7 @@ export const Header = () => {
               <EkoLogo
                 className={cn(
                   "h-12 w-auto transition-transform duration-300 ease-out origin-left",
-                  isScrolled ? "scale-90" : "scale-100"
+                  isScrolled ? "scale-90" : "scale-100",
                 )}
                 isLight={useWhiteText && !isScrolled}
               />
@@ -305,11 +334,17 @@ export const Header = () => {
                     >
                       <NavDropdownButton
                         label={link.label}
-                        isOpen={activeDesktopDropdown === 'products'}
+                        isOpen={activeDesktopDropdown === "products"}
                         isActive={isNavActive(link.label)}
                         useWhiteText={useWhiteText}
                         activeNavClasses={activeNavClasses}
-                        onClick={() => setActiveDesktopDropdown(activeDesktopDropdown === 'products' ? null : 'products')}
+                        onClick={() =>
+                          setActiveDesktopDropdown(
+                            activeDesktopDropdown === "products"
+                              ? null
+                              : "products",
+                          )
+                        }
                       />
                     </div>
                   );
@@ -326,11 +361,17 @@ export const Header = () => {
                     >
                       <NavDropdownButton
                         label={link.label}
-                        isOpen={activeDesktopDropdown === 'useCases'}
+                        isOpen={activeDesktopDropdown === "useCases"}
                         isActive={isNavActive(link.label)}
                         useWhiteText={useWhiteText}
                         activeNavClasses={activeNavClasses}
-                        onClick={() => setActiveDesktopDropdown(activeDesktopDropdown === 'useCases' ? null : 'useCases')}
+                        onClick={() =>
+                          setActiveDesktopDropdown(
+                            activeDesktopDropdown === "useCases"
+                              ? null
+                              : "useCases",
+                          )
+                        }
                       />
                     </div>
                   );
@@ -347,11 +388,17 @@ export const Header = () => {
                     >
                       <NavDropdownButton
                         label={link.label}
-                        isOpen={activeDesktopDropdown === 'company'}
+                        isOpen={activeDesktopDropdown === "company"}
                         isActive={isNavActive(link.label)}
                         useWhiteText={useWhiteText}
                         activeNavClasses={activeNavClasses}
-                        onClick={() => setActiveDesktopDropdown(activeDesktopDropdown === 'company' ? null : 'company')}
+                        onClick={() =>
+                          setActiveDesktopDropdown(
+                            activeDesktopDropdown === "company"
+                              ? null
+                              : "company",
+                          )
+                        }
                       />
                     </div>
                   );
@@ -359,8 +406,10 @@ export const Header = () => {
 
                 const plainLinkClasses = cn(
                   "text-base font-medium tracking-tight transition-colors duration-200 cursor-pointer",
-                  useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                  isNavActive(link.label) && activeNavClasses
+                  useWhiteText
+                    ? "text-white/90 hover:text-white"
+                    : "text-eko-slate hover:text-eko-navy",
+                  isNavActive(link.label) && activeNavClasses,
                 );
                 // Internal links use <Link> for client-side routing; external open in a new tab
                 return link.external ? (
@@ -374,7 +423,11 @@ export const Header = () => {
                     {link.label}
                   </a>
                 ) : (
-                  <Link key={link.label} to={link.href} className={plainLinkClasses}>
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    className={plainLinkClasses}
+                  >
                     {link.label}
                   </Link>
                 );
@@ -398,13 +451,15 @@ export const Header = () => {
                 </span>
               </button>
               {lazyChunksReady ? (
-                <Suspense fallback={<LanguageSelectorFallback isLight={useWhiteText} />}>
+                <Suspense
+                  fallback={<LanguageSelectorFallback isLight={useWhiteText} />}
+                >
                   <LanguageSelector isLight={useWhiteText} />
                 </Suspense>
               ) : (
                 <LanguageSelectorFallback isLight={useWhiteText} />
               )}
-              <a
+              {/* <a
                 id="lnk-sales-phone-header-desktop"
                 href={`tel:+91${SALES_MOBILE}`}
                 className={cn(
@@ -414,27 +469,55 @@ export const Header = () => {
               >
                 <Phone className="w-4 h-4" />
                 {formatMobile(SALES_MOBILE)}
-              </a>
-              <Button id="btn-get-started-header-desktop" variant="gold" size="sm" onClick={() => openZohoChat()} className="cursor-pointer">
+              </a> */}
+              <Button
+                id="btn-get-started-header-desktop"
+                variant="gold"
+                size="sm"
+                onClick={() => openZohoChat()}
+                className="cursor-pointer"
+              >
                 Get Started
               </Button>
             </div>
 
             {/* Mobile: Search + Menu Buttons */}
             <div className="lg:hidden flex items-center gap-1">
-              <button className="p-2 cursor-pointer" onClick={openSearch} aria-label="Search">
-                <Search className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+              <button
+                className="p-2 cursor-pointer"
+                onClick={openSearch}
+                aria-label="Search"
+              >
+                <Search
+                  className={cn(
+                    "w-6 h-6",
+                    useWhiteText ? "text-white" : "text-eko-navy",
+                  )}
+                />
               </button>
-              <button className="p-2 cursor-pointer" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+              <button
+                className="p-2 cursor-pointer"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
                 {mobileMenuOpen ? (
-                  <X className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+                  <X
+                    className={cn(
+                      "w-6 h-6",
+                      useWhiteText ? "text-white" : "text-eko-navy",
+                    )}
+                  />
                 ) : (
-                  <Menu className={cn("w-6 h-6", useWhiteText ? "text-white" : "text-eko-navy")} />
+                  <Menu
+                    className={cn(
+                      "w-6 h-6",
+                      useWhiteText ? "text-white" : "text-eko-navy",
+                    )}
+                  />
                 )}
               </button>
             </div>
           </div>
-
         </div>
       </header>
 
