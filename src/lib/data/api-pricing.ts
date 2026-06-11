@@ -434,6 +434,20 @@ export const getStartingRate = (productId: string): number | undefined => {
 };
 
 /**
+ * Unit label for the API behind getStartingRate (the one holding the
+ * lowest per-transaction rate), e.g. "per lookup" for Reverse Geocoding.
+ * Falls back to the default "per verification".
+ * @param productId - Product id from api-products.ts
+ */
+export const getStartingUnitLabel = (productId: string): string => {
+  const startingRate = getStartingRate(productId);
+  const startingApi = getPricedApisForProduct(productId).find((api) =>
+    api.tiers.some((tier) => tier.rate === startingRate),
+  );
+  return startingApi?.unitLabel ?? "per verification";
+};
+
+/**
  * Resolves the applicable per-transaction rate for a monthly volume.
  * In "volume" mode (default) the matched slab's rate applies to all units.
  * @param api - The priced API

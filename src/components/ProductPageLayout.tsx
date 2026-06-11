@@ -20,8 +20,6 @@ import {
   Briefcase,
   Building2,
   CheckCircle,
-  FileText,
-  IndianRupee,
   Landmark,
   Store,
   Users,
@@ -34,6 +32,7 @@ import { SolutionCard } from "@/components/SolutionCard";
 import {
   getPricedApisForProduct,
   getStartingRate,
+  getStartingUnitLabel,
 } from "@/lib/data/api-pricing";
 import { getSolutionPacksForApi } from "@/lib/data/solutions";
 import { formatINRRate, normalizeApiLabel } from "@/lib/utils";
@@ -144,6 +143,9 @@ export const ProductPageLayout = ({
     ? getPricedApisForProduct(productId).length > 0
     : false;
   const startingRate = productId ? getStartingRate(productId) : undefined;
+  const startingUnitLabel = productId
+    ? getStartingUnitLabel(productId)
+    : "per verification";
 
   const categoryColors = {
     payment: "from-eko-gold/20 to-eko-navy/5",
@@ -208,7 +210,7 @@ export const ProductPageLayout = ({
                 )}
               </FadeIn>
               <FadeIn onView={false} delay={300}>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
                   <Button
                     variant="gold"
                     size="lg"
@@ -219,30 +221,33 @@ export const ProductPageLayout = ({
                       Get Sandbox Access <ArrowRight className="w-4 h-4" />
                     </span>
                   </Button>
-
-                  <Button variant="hero-outline" size="lg" asChild>
-                    <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-                      View Documentation
-                      <FileText className="w-4 h-4" />
-                    </a>
-                  </Button>
-
-                  {hasPricing && (
-                    <Button variant="hero-outline" size="lg" asChild>
-                      <Link to={`/pricing?apis=${productId}`}>
-                        View Pricing
-                        <IndianRupee className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                  )}
+                  <a
+                    href={docsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
+                  >
+                    View Documentation
+                  </a>
                 </div>
                 {hasPricing && startingRate !== undefined && (
-                  <p className="text-white/60 text-sm mt-4">
-                    Starts at{" "}
-                    <span className="text-eko-gold font-semibold">
-                      {formatINRRate(startingRate)}
-                    </span>{" "}
-                    per verification · excl. GST
+                  <p className="flex flex-wrap items-center gap-x-2 text-white/60 text-xs mt-7">
+                    <span>
+                      Starts at{" "}
+                      <span className="text-eko-gold font-semibold">
+                        {formatINRRate(startingRate)}
+                      </span>{" "}
+                      {startingUnitLabel} · excl. GST
+                    </span>
+                    <span className="text-white/40" aria-hidden="true">
+                      ·
+                    </span>
+                    <Link
+                      to={`/pricing?apis=${productId}`}
+                      className="text-white/80 hover:text-white font-medium transition-colors"
+                    >
+                      View Pricing
+                    </Link>
                   </p>
                 )}
               </FadeIn>
