@@ -123,6 +123,14 @@ Implemented in `src/hooks/use-tracking-params.ts`:
 - **SalesIQ chat**: `openZohoChat` pushes `visitor.info` with tracking
   params + `apis_interested` before opening (best-effort).
 
+## Markdown version (`/pricing.md`)
+
+`src/lib/markdown/render-pricing.ts` generates an AI-agent-friendly Markdown
+rate card from the same `api-pricing.ts` config (see
+docs/markdown-generation.md). `PRICING_FAQS` lives in `api-pricing.ts` so the
+HTML page, JSON-LD FAQPage schema, and Markdown share one source. Rate edits
+in `PRICED_APIS` flow into `/pricing.md` automatically.
+
 ## Route registration (3 places)
 
 `src/App.tsx` (lazy), `src/AppServer.tsx` (eager — `React.lazy` unsupported in

@@ -1,3 +1,4 @@
+import { AiHint } from "@/components/AiHint";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
@@ -7,12 +8,13 @@ import {
   SectionContainer,
   SectionHeader,
 } from "@/components/SectionContainer";
-import { FaqSection, type FaqItem } from "@/components/sections/FaqSection";
+import { FaqSection } from "@/components/sections/FaqSection";
 import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { SITE_URL } from "@/lib/config/site";
 import {
   HAS_VOLUME_DISCOUNTS,
+  PRICING_FAQS,
   SETUP_FEE_WAIVED,
 } from "@/lib/data/api-pricing";
 import { generatePricingJsonLd } from "@/lib/utils/json-ld";
@@ -24,43 +26,6 @@ import {
   Zap,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-
-const PRICING_FAQS: FaqItem[] = [
-  {
-    q: "How does billing work?",
-    a: "Usage is billed per successful API call — you pay only for verifications that return a result. There is no monthly minimum and no lock-in. Monthly invoices are available on the Connect portal.",
-  },
-  {
-    q: "Is there a setup fee?",
-    a: SETUP_FEE_WAIVED
-      ? "Setup fees are currently waived as a limited-time offer — you pay ₹0 to activate. Standard activation fees may apply for new integrations once the offer ends."
-      : "A one-time setup fee may apply per API or as a discounted bundle. The calculator shows the exact one-time fee for your selection before you sign up.",
-  },
-  {
-    q: "Are the listed prices inclusive of GST?",
-    a: "No. All listed rates are exclusive of GST, which is charged at 18%. The calculator lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number on the Connect portal for GST-compliant invoices.",
-  },
-  {
-    q: "Am I charged for failed verifications?",
-    a: "No. You are only billed for successful API responses. Failed or errored calls are not counted toward your usage.",
-  },
-  ...(HAS_VOLUME_DISCOUNTS
-    ? [
-        {
-          q: "Do you offer volume discounts?",
-          a: "Yes. Volume-based rates are built into the calculator — as your monthly volume grows, the applicable per-transaction rate drops automatically.",
-        },
-      ]
-    : []),
-  {
-    q: "Is there a free sandbox to test the APIs?",
-    a: "Yes. Sandbox access is free — sign up, test every API end-to-end with sample data, and move to production whenever you're ready.",
-  },
-  {
-    q: "Can prices change?",
-    a: "Commercials are subject to change based on service-provider terms. Any revision is communicated in advance, and your dashboard always reflects the rates applicable to your account.",
-  },
-];
 
 const TRUST_CHIPS = [
   { icon: IndianRupee, label: "Per-transaction billing" },
@@ -87,12 +52,15 @@ const PricingPage = () => {
           content="verification API pricing, PAN verification API price, bank account verification API cost, KYC API pricing India, identity verification API rates"
         />
         <link rel="canonical" href={`${SITE_URL}/pricing`} />
+        <link rel="alternate" type="text/markdown" href={`${SITE_URL}/pricing.md`} />
         {jsonLdSchemas.map((schema, i) => (
           <script key={i} type="application/ld+json">
             {JSON.stringify(schema)}
           </script>
         ))}
       </Helmet>
+
+      <AiHint mdPath="/pricing.md" />
 
       <div className="min-h-screen bg-background">
         {/* pb keeps the mobile sticky summary bar from covering the footer */}

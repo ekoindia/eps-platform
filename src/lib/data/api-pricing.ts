@@ -352,6 +352,53 @@ export const HAS_VOLUME_DISCOUNTS = PRICED_APIS.some(
   (api) => api.tiers.length > 1,
 );
 
+/** A pricing FAQ entry (compatible with FaqSection's FaqItem shape). */
+export interface PricingFaq {
+  q: string;
+  a: string;
+}
+
+/**
+ * Pricing FAQs — single source of truth for the /pricing page, its JSON-LD
+ * FAQPage schema, and the generated /pricing.md markdown.
+ */
+export const PRICING_FAQS: PricingFaq[] = [
+  {
+    q: "How does billing work?",
+    a: "Usage is billed per successful API call — you pay only for verifications that return a result. There is no monthly minimum and no lock-in. Monthly invoices are available on the Connect portal.",
+  },
+  {
+    q: "Is there a setup fee?",
+    a: SETUP_FEE_WAIVED
+      ? "Setup fees are currently waived as a limited-time offer — you pay ₹0 to activate. Standard activation fees may apply for new integrations once the offer ends."
+      : "A one-time setup fee may apply per API or as a discounted bundle. The calculator shows the exact one-time fee for your selection before you sign up.",
+  },
+  {
+    q: "Are the listed prices inclusive of GST?",
+    a: "No. All listed rates are exclusive of GST, which is charged at 18%. The calculator lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number on the Connect portal for GST-compliant invoices.",
+  },
+  {
+    q: "Am I charged for failed verifications?",
+    a: "No. You are only billed for successful API responses. Failed or errored calls are not counted toward your usage.",
+  },
+  ...(HAS_VOLUME_DISCOUNTS
+    ? [
+        {
+          q: "Do you offer volume discounts?",
+          a: "Yes. Volume-based rates are built into the calculator — as your monthly volume grows, the applicable per-transaction rate drops automatically.",
+        },
+      ]
+    : []),
+  {
+    q: "Is there a free sandbox to test the APIs?",
+    a: "Yes. Sandbox access is free — sign up, test every API end-to-end with sample data, and move to production whenever you're ready.",
+  },
+  {
+    q: "Can prices change?",
+    a: "Commercials are subject to change based on service-provider terms. Any revision is communicated in advance, and your dashboard always reflects the rates applicable to your account.",
+  },
+];
+
 /**
  * Display name for a priced API — bulk APIs get an asterisk pointing to
  * the "billed per individual verification" footnote.

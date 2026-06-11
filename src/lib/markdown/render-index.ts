@@ -91,6 +91,8 @@ export function renderSiteIndexMarkdown(
     h1("Eko Platform Services — Site Index"),
     "Eko provides a single API platform for payments, banking correspondent services, and identity verification across India. This is a machine-readable index linking to markdown versions of every page.",
     gettingStartedNotice(),
+    h2("Pricing"),
+    `- [Verification API pricing — full rate card](${SITE_URL}/pricing) ([markdown](${SITE_URL}/pricing.md))`,
     h2("Products (APIs)"),
     `Browse all products: [Products listing](${SITE_URL}/products) ([markdown](${SITE_URL}/products.md))`,
     renderProductSection("Verification APIs", productsByCategory.verification),
@@ -138,6 +140,7 @@ export function renderLlmsTxt(
   lines.push("");
   lines.push(`- ${indexPageNotice()}`);
   lines.push(`- [All Products](${SITE_URL}/products.md): Full listing of all API products by category`);
+  lines.push(`- [Pricing](${SITE_URL}/pricing.md): Full per-transaction rate card for all verification APIs`);
   // lines.push(`- [Use cases hub](${SITE_URL}/use-cases.md): Industries and solution packs`);
   lines.push("");
 

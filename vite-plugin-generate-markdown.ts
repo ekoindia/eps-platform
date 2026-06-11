@@ -109,6 +109,10 @@ export function generateMarkdownPlugin(): Plugin {
         );
         written++;
 
+        // -- Pricing rate card ------------------------------------------------
+        await writeFile(path.join(outDir, "pricing.md"), bundle.renderPricingMarkdown());
+        written++;
+
         // -- Use-cases hub --------------------------------------------------
         await writeFile(
           path.join(outDir, "use-cases.md"),
@@ -174,6 +178,7 @@ interface MarkdownBundle {
   renderSiteIndexMarkdown: (p: unknown[], i: unknown[], s: unknown[]) => string;
   renderLlmsTxt: (p: unknown[], i: unknown[], s: unknown[]) => string;
   renderProductsIndexMarkdown: (p: unknown[]) => string;
+  renderPricingMarkdown: () => string;
 }
 
 async function loadRenderBundle(
@@ -189,6 +194,7 @@ async function loadRenderBundle(
     renderSolutionMod,
     renderIndexMod,
     renderProductsIndexMod,
+    renderPricingMod,
   ] = await Promise.all([
     server.ssrLoadModule("/src/lib/data/api-products.ts"),
     server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -199,6 +205,7 @@ async function loadRenderBundle(
     server.ssrLoadModule("/src/lib/markdown/render-solution.ts"),
     server.ssrLoadModule("/src/lib/markdown/render-index.ts"),
     server.ssrLoadModule("/src/lib/markdown/render-products-index.ts"),
+    server.ssrLoadModule("/src/lib/markdown/render-pricing.ts"),
   ]);
 
   return {
@@ -213,6 +220,7 @@ async function loadRenderBundle(
     renderSiteIndexMarkdown: renderIndexMod.renderSiteIndexMarkdown,
     renderLlmsTxt: renderIndexMod.renderLlmsTxt,
     renderProductsIndexMarkdown: renderProductsIndexMod.renderProductsIndexMarkdown,
+    renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
   };
 }
 
@@ -233,6 +241,9 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
   }
   if (url === "/products.md") {
     return bundle.renderProductsIndexMarkdown(activeProducts);
+  }
+  if (url === "/pricing.md") {
+    return bundle.renderPricingMarkdown();
   }
 
   const productMatch = url.match(/^\/products\/([^/]+)\.md$/);
