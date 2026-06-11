@@ -440,6 +440,15 @@ export const HeaderDropdownPanels = ({
 							</div>
 						)}
 
+						{/* Pricing link */}
+						<Link
+							to="/pricing"
+							onClick={() => setMobileMenuOpen(false)}
+							className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
+						>
+							Pricing
+						</Link>
+
 						{/* Developers link */}
 						<a
 							href="https://developers.eko.in"

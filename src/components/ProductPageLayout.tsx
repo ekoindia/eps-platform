@@ -21,6 +21,7 @@ import {
   Building2,
   CheckCircle,
   FileText,
+  IndianRupee,
   Landmark,
   Store,
   Users,
@@ -31,8 +32,12 @@ import { Link } from "react-router-dom";
 import { FadeIn } from "@/components/FadeIn";
 import { Picture, type PictureSource } from "@/components/Picture";
 import { SolutionCard } from "@/components/SolutionCard";
+import {
+  getPricedApisForProduct,
+  getStartingRate,
+} from "@/lib/data/api-pricing";
 import { getSolutionPacksForApi } from "@/lib/data/solutions";
-import { normalizeApiLabel } from "@/lib/utils";
+import { formatINRRate, normalizeApiLabel } from "@/lib/utils";
 import { Helmet } from "react-helmet-async";
 import { ApiChip } from "./ApiChip";
 
@@ -136,6 +141,10 @@ export const ProductPageLayout = ({
     () => (productId ? getSolutionPacksForApi(productId, 3) : []),
     [productId],
   );
+  const hasPricing = productId
+    ? getPricedApisForProduct(productId).length > 0
+    : false;
+  const startingRate = productId ? getStartingRate(productId) : undefined;
 
   const categoryColors = {
     payment: "from-eko-gold/20 to-eko-navy/5",
@@ -218,7 +227,25 @@ export const ProductPageLayout = ({
                       <FileText className="w-4 h-4" />
                     </a>
                   </Button>
+
+                  {hasPricing && (
+                    <Button variant="hero-outline" size="lg" asChild>
+                      <Link to={`/pricing?apis=${productId}`}>
+                        View Pricing
+                        <IndianRupee className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  )}
                 </div>
+                {hasPricing && startingRate !== undefined && (
+                  <p className="text-white/60 text-sm mt-4">
+                    Starts at{" "}
+                    <span className="text-eko-gold font-semibold">
+                      {formatINRRate(startingRate)}
+                    </span>{" "}
+                    per verification · excl. GST
+                  </p>
+                )}
               </FadeIn>
             </div>
 

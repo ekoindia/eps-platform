@@ -36,6 +36,7 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
   },
   { pattern: /^\/solutions$/, src: "src/pages/SolutionsPage.tsx" },
   // Other pages
+  { pattern: /^\/pricing$/, src: "src/pages/PricingPage.tsx" },
   { pattern: /^\/use-cases$/, src: "src/pages/UseCasesHubPage.tsx" },
   { pattern: /^\/about-us$/, src: "src/pages/AboutPage.tsx" },
   { pattern: /^\/blogs-media$/, src: "src/pages/BlogsMediaPage.tsx" },
@@ -67,6 +68,9 @@ export const PRERENDER_ROUTES: string[] = [
   // Solutions
   "/solutions",
   ...SOLUTIONS_LIST.map((s) => `/solutions/${s.slug}`),
+
+  // Pricing
+  "/pricing",
 
   // Use-cases hub
   "/use-cases",

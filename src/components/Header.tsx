@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Phone, Search } from "lucide-react";
+import { Menu, X, ChevronDown, Phone, Search, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
-import { LanguageSelector } from "@/components/LanguageSelector";
 import type { DropdownKey } from "@/components/HeaderDropdownPanels";
 
 const HeaderDropdownPanels = lazy(() =>
@@ -19,9 +18,32 @@ const CommandPalette = lazy(() =>
 	import("@/components/CommandPalette").then((m) => ({ default: m.CommandPalette }))
 );
 
+const LanguageSelector = lazy(() =>
+	import("@/components/LanguageSelector").then((m) => ({ default: m.LanguageSelector }))
+);
+
+/**
+ * Static stand-in rendered during SSG and before the lazy LanguageSelector
+ * chunk loads. Must visually match the real trigger button to avoid layout
+ * shift on swap.
+ */
+const LanguageSelectorFallback = ({ isLight }: { isLight: boolean }) => (
+	<button
+		className={cn(
+			"flex items-center text-sm font-medium transition-colors cursor-pointer rounded-md px-2 py-1.5 hover:bg-white/10",
+			isLight ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy"
+		)}
+		aria-label="Select language"
+		title="Select language"
+	>
+		<Globe className="w-4 h-4" />
+	</button>
+);
+
 const navLinks = [
   { label: "Products", href: "/products", hasDropdown: true },
   { label: "Use Cases", href: "/use-cases", hasDropdown: true },
+  { label: "Pricing", href: "/pricing" },
   { label: "Developers", href: "https://developers.eko.in", external: true },
   { label: "Company", href: "#", hasDropdown: true },
 ];
@@ -66,6 +88,13 @@ export const Header = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   /** Palette chunk is mounted on first open and kept mounted afterwards */
   const [searchMounted, setSearchMounted] = useState(false);
+  /**
+   * Swaps the static language-selector placeholder for the lazy interactive
+   * component only after its chunk has loaded (post-hydration), so SSG markup
+   * and first client render stay identical — avoids hydration mismatch from
+   * rendering React.lazy under Suspense during renderToString.
+   */
+  const [langSelectorReady, setLangSelectorReady] = useState(false);
   const productsDropdownRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const useCasesDropdownRef = useRef<HTMLDivElement>(null);
@@ -126,6 +155,8 @@ export const Header = () => {
           path.startsWith("/industries") ||
           path.startsWith("/solutions")
         );
+      case "Pricing":
+        return path === "/pricing";
       case "Company":
         return path === "/about-us" || path.startsWith("/about-us/");
       default:
@@ -204,7 +235,8 @@ export const Header = () => {
       Promise.all([
         import("@/components/HeaderDropdownPanels"),
         import("@/components/CommandPalette"),
-      ]);
+        import("@/components/LanguageSelector"),
+      ]).then(() => setLangSelectorReady(true));
     if (typeof requestIdleCallback !== "undefined") {
       const handle = requestIdleCallback(load, { timeout: 2000 });
       return () => cancelIdleCallback(handle);
@@ -325,20 +357,26 @@ export const Header = () => {
                   );
                 }
 
-                return (
+                const plainLinkClasses = cn(
+                  "text-base font-medium tracking-tight transition-colors duration-200 cursor-pointer",
+                  useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
+                  isNavActive(link.label) && activeNavClasses
+                );
+                // Internal links use <Link> for client-side routing; external open in a new tab
+                return link.external ? (
                   <a
                     key={link.label}
                     href={link.href}
-                    target={link.external ? "_blank" : undefined}
-                    rel={link.external ? "noopener noreferrer" : undefined}
-                    className={cn(
-                      "text-base font-medium tracking-tight transition-colors duration-200 cursor-pointer",
-                      useWhiteText ? "text-white/90 hover:text-white" : "text-eko-slate hover:text-eko-navy",
-                      isNavActive(link.label) && activeNavClasses
-                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={plainLinkClasses}
                   >
                     {link.label}
                   </a>
+                ) : (
+                  <Link key={link.label} to={link.href} className={plainLinkClasses}>
+                    {link.label}
+                  </Link>
                 );
               })}
             </nav>
@@ -359,7 +397,13 @@ export const Header = () => {
                   <span className="kbd-os-other">Ctrl K</span>
                 </span>
               </button>
-              <LanguageSelector isLight={useWhiteText} />
+              {langSelectorReady ? (
+                <Suspense fallback={<LanguageSelectorFallback isLight={useWhiteText} />}>
+                  <LanguageSelector isLight={useWhiteText} />
+                </Suspense>
+              ) : (
+                <LanguageSelectorFallback isLight={useWhiteText} />
+              )}
               <a
                 id="lnk-sales-phone-header-desktop"
                 href={`tel:+91${SALES_MOBILE}`}

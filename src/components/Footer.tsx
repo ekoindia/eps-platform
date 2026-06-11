@@ -21,6 +21,7 @@ const footerLinks = {
     { label: "BC APIs", href: "/products#bc", internal: true },
     // { label: "Eko Shield", href: "/products/eko-shield", internal: true },
     { label: "All APIs", href: "/products", internal: true },
+    { label: "API Pricing", href: "/pricing", internal: true },
   ],
   developers: [
     { label: "Documentation", href: "https://developers.eko.in", external: true },

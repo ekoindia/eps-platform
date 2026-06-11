@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Building2,
+  Calculator,
   CreditCard,
   FileText,
   Home,
@@ -119,6 +120,16 @@ const buildPageItems = (): SearchItem[] => [
     category: "page",
     keywords: ["apis", "catalogue", "catalog", "products"],
     icon: LayoutGrid,
+    suggested: true,
+  },
+  {
+    id: "page:pricing",
+    label: "API Pricing",
+    sublabel: "Rates & cost calculator for verification APIs",
+    href: "/pricing",
+    category: "page",
+    keywords: ["pricing", "rates", "cost", "calculator", "price", "charges"],
+    icon: Calculator,
     suggested: true,
   },
   {

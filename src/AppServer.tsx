@@ -42,6 +42,9 @@ import SolutionDetailPage from "./pages/SolutionDetailPage";
 import SolutionsPage from "./pages/SolutionsPage";
 import UseCasesHubPage from "./pages/UseCasesHubPage";
 
+// Pricing
+import PricingPage from "./pages/PricingPage";
+
 function TrackingParamCapture() {
   useCaptureTrackingParams();
   return null;
@@ -78,6 +81,9 @@ const AppServer = ({
             <Route path="/industries/:slug" element={<IndustryDetailPage />} />
             <Route path="/solutions" element={<SolutionsPage />} />
             <Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+
+            {/* Pricing */}
+            <Route path="/pricing" element={<PricingPage />} />
 
             {/* Company & Legal Pages */}
             <Route path="/about-us" element={<AboutPage />} />

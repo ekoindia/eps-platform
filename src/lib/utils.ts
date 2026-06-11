@@ -26,6 +26,50 @@ export function formatMobile(mobile: string | number): string {
 
 
 /**
+ * Formats a number as Indian Rupees with en-IN digit grouping (lakh/crore),
+ * e.g. 100000 → "₹1,00,000".
+ * @param amount - The amount in INR.
+ * @param maxFractionDigits - Maximum decimal places to show (default 2).
+ * @param minFractionDigits - Minimum decimal places to show (default 0). Pass 2 for per-unit rates so "₹1.20" keeps its trailing zero.
+ * @returns Formatted INR currency string.
+ */
+export function formatINR(
+  amount: number,
+  maxFractionDigits = 2,
+  minFractionDigits = 0,
+): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: minFractionDigits,
+    maximumFractionDigits: maxFractionDigits,
+  }).format(amount);
+}
+
+/**
+ * Formats a per-transaction rate in INR with exactly two decimals,
+ * e.g. 1.2 → "₹1.20", 3 → "₹3.00".
+ * @param rate - The per-transaction rate in INR.
+ * @returns Formatted INR rate string.
+ */
+export const formatINRRate = (rate: number): string => formatINR(rate, 2, 2);
+
+/**
+ * Formats a number in compact Indian units for tick labels and chips,
+ * e.g. 500 → "500", 10000 → "10K", 100000 → "1L", 10000000 → "1Cr".
+ * @param value - The number to format.
+ * @returns Compact Indian-style number string.
+ */
+export function formatIndianCompact(value: number): string {
+  const format = (n: number) =>
+    Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+  if (value >= 10_000_000) return `${format(value / 10_000_000)}Cr`;
+  if (value >= 100_000) return `${format(value / 100_000)}L`;
+  if (value >= 1_000) return `${format(value / 1_000)}K`;
+  return String(value);
+}
+
+/**
  * Utility function to normalize API label: Append "API" suffix if not already present (both singular or plural), and convert to title case. E.g. "GST Verification" becomes "GST Verification API", while "PAN API" stays "PAN API".
  * MARK: Normalize API Label
  * @param {string} label - The original API label to normalize.
