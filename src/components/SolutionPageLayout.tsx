@@ -16,7 +16,6 @@ import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-// import EkoShieldAdBanner from "@/components/EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 
 interface SolutionPageLayoutProps {
@@ -303,11 +302,6 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
 
         {/* FAQ */}
         <FaqSection faqs={data.faqs} variant="default" />
-
-        {/* Eko Shield Ad Banner */}
-        {/* {data.packApis.map(resolvePackApi).filter(Boolean).some((api) => /verification|kyc/i.test(api.name)) && (
-          <EkoShieldAdBanner/>
-        )} */}
 
         {/* Related Solutions */}
         {data.relatedSolutions.length > 0 && (

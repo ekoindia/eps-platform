@@ -28,7 +28,6 @@ import {
   Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-// import EkoShieldAdBanner from "./EkoShieldAdBanner";
 import { FadeIn } from "@/components/FadeIn";
 import { Picture, type PictureSource } from "@/components/Picture";
 import { SolutionCard } from "@/components/SolutionCard";
@@ -591,11 +590,6 @@ export const ProductPageLayout = ({
             </div>
           </SectionContainer>
         )}
-
-        {/* Eko Shield Ad Banner */}
-        {/* {/verification|kyc/i.test(heroTitle) && (
-          <EkoShieldAdBanner/>
-        )} */}
 
         {/* Trust & Compliance */}
         {/* TODO: Fix how to show Trust & Compliance. The claims like "99.9% Uptime" should be legally/SLA backed. */}
