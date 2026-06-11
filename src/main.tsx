@@ -29,7 +29,13 @@ if (hasPrerenderedMarkup) {
     if (hydrated) return;
     hydrated = true;
     TRIGGER_EVENTS.forEach((e) => document.removeEventListener(e, doHydrate));
-    hydrateRoot(container, app);
+    hydrateRoot(container, app, {
+      // Surfaces hydration mismatches (React #418/#423) with component
+      // stacks even in minified production builds.
+      onRecoverableError: (error, errorInfo) => {
+        console.warn("[hydration]", error, errorInfo?.componentStack);
+      },
+    });
   }
 
   TRIGGER_EVENTS.forEach((e) =>

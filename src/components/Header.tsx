@@ -89,12 +89,12 @@ export const Header = () => {
   /** Palette chunk is mounted on first open and kept mounted afterwards */
   const [searchMounted, setSearchMounted] = useState(false);
   /**
-   * Swaps the static language-selector placeholder for the lazy interactive
-   * component only after its chunk has loaded (post-hydration), so SSG markup
-   * and first client render stay identical — avoids hydration mismatch from
-   * rendering React.lazy under Suspense during renderToString.
+   * Mounts the lazy header chunks (dropdown panels, language selector) only
+   * after they have loaded post-hydration, so SSG markup and first client
+   * render stay identical — rendering React.lazy under Suspense during
+   * renderToString causes hydration mismatches (React #418/#423).
    */
-  const [langSelectorReady, setLangSelectorReady] = useState(false);
+  const [lazyChunksReady, setLazyChunksReady] = useState(false);
   const productsDropdownRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const useCasesDropdownRef = useRef<HTMLDivElement>(null);
@@ -236,7 +236,7 @@ export const Header = () => {
         import("@/components/HeaderDropdownPanels"),
         import("@/components/CommandPalette"),
         import("@/components/LanguageSelector"),
-      ]).then(() => setLangSelectorReady(true));
+      ]).then(() => setLazyChunksReady(true));
     if (typeof requestIdleCallback !== "undefined") {
       const handle = requestIdleCallback(load, { timeout: 2000 });
       return () => cancelIdleCallback(handle);
@@ -397,7 +397,7 @@ export const Header = () => {
                   <span className="kbd-os-other">Ctrl K</span>
                 </span>
               </button>
-              {langSelectorReady ? (
+              {lazyChunksReady ? (
                 <Suspense fallback={<LanguageSelectorFallback isLight={useWhiteText} />}>
                   <LanguageSelector isLight={useWhiteText} />
                 </Suspense>
@@ -438,20 +438,22 @@ export const Header = () => {
         </div>
       </header>
 
-      <Suspense fallback={null}>
-        <HeaderDropdownPanels
-          activeDesktopDropdown={activeDesktopDropdown}
-          setActiveDesktopDropdown={setActiveDesktopDropdown}
-          activeMobileAccordion={activeMobileAccordion}
-          setActiveMobileAccordion={setActiveMobileAccordion}
-          mobileMenuOpen={mobileMenuOpen}
-          isScrolled={isScrolled}
-          talkToSalesOpen={talkToSalesOpen}
-          setMobileMenuOpen={setMobileMenuOpen}
-          setTalkToSalesOpen={setTalkToSalesOpen}
-          panelHoverHandlers={panelHoverHandlers}
-        />
-      </Suspense>
+      {lazyChunksReady && (
+        <Suspense fallback={null}>
+          <HeaderDropdownPanels
+            activeDesktopDropdown={activeDesktopDropdown}
+            setActiveDesktopDropdown={setActiveDesktopDropdown}
+            activeMobileAccordion={activeMobileAccordion}
+            setActiveMobileAccordion={setActiveMobileAccordion}
+            mobileMenuOpen={mobileMenuOpen}
+            isScrolled={isScrolled}
+            talkToSalesOpen={talkToSalesOpen}
+            setMobileMenuOpen={setMobileMenuOpen}
+            setTalkToSalesOpen={setTalkToSalesOpen}
+            panelHoverHandlers={panelHoverHandlers}
+          />
+        </Suspense>
+      )}
 
       {searchMounted && (
         <Suspense fallback={null}>

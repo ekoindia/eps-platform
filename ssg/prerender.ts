@@ -93,7 +93,7 @@ export async function prerenderAllPages(
       html = injectRoutePreload(html, route, routeChunkMap, chunkMap);
       html = addFetchPriorityLow(html);
       html = await beasties.process(html);
-      html = await minify(html, MINIFY_OPTIONS);
+      html = await minifyAroundRoot(html);
 
       // Determine output path:
       //   /                     → dist/index.html  (overwrite)
@@ -124,6 +124,42 @@ export async function prerenderAllPages(
 
   // Generate XML sitemap from the same route manifest
   await generateSitemap(routes, outDir);
+}
+
+/**
+ * Minify the document while leaving the React-rendered subtree (the innerHTML
+ * of `#root`) byte-for-byte untouched.
+ *
+ * html-minifier-terser mutates markup that `hydrateRoot` must match exactly
+ * against `renderToString` output: `removeComments` strips React's comment
+ * nodes (`<!--$-->` Suspense boundary markers, `<!-- -->` text separators),
+ * `collapseWhitespace` rewrites text nodes, and `minifyCSS` rewrites inline
+ * style attributes. Any of these causes React #418/#423 on every page load,
+ * making React throw away the pre-rendered HTML and re-render from scratch.
+ *
+ * The base template contains exactly one `</div>` (the `#root` close tag), so
+ * the last `</div>` in the document reliably ends the app subtree.
+ */
+async function minifyAroundRoot(html: string): Promise<string> {
+  const rootOpenTag = '<div id="root">';
+  const appStart = html.indexOf(rootOpenTag);
+  const appEnd = html.lastIndexOf("</div>");
+  if (appStart === -1 || appEnd <= appStart) {
+    return minify(html, MINIFY_OPTIONS);
+  }
+  const contentStart = appStart + rootOpenTag.length;
+  const appHtml = html.slice(contentStart, appEnd);
+  // Swap the app subtree for a text token and minify the still well-formed
+  // document; minifying severed fragments instead would make the minifier
+  // auto-close the open #root tag and push the app content out of #root.
+  const token = "__SSG_ROOT_HTML_TOKEN__";
+  const minified = await minify(
+    html.slice(0, contentStart) + token + html.slice(appEnd),
+    MINIFY_OPTIONS,
+  );
+  // Function replacer: appHtml contains `$` (React Suspense markers) which
+  // string replacement would expand as substitution patterns.
+  return minified.replace(token, () => appHtml);
 }
 
 /* ------------------------------------------------------------------ */
