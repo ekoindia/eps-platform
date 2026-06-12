@@ -10,6 +10,26 @@ import {
   type PricedApi,
 } from "@/lib/data/api-pricing";
 import {
+  AEPS_CASHOUT_SLABS,
+  AEPS_MINI_STATEMENT_COMMISSION,
+  AEPS_SETTLEMENT_CHARGES,
+  BBPS_CATEGORIES,
+  DMT_CUSTOMER_FEE_MIN,
+  DMT_CUSTOMER_FEE_PCT,
+  DMT_MAX_TXN_AMOUNT,
+  DMT_SENDER_KYC_FEE,
+  DMT_SLABS,
+  PAYMENTS_FAQS,
+  TDS_RATE,
+  type AmountSlab,
+} from "@/lib/data/payments-pricing";
+import {
+  CB_BANKS,
+  CB_FAQS,
+  CB_SETUP_FEE,
+  CB_TXN_SLABS,
+} from "@/lib/data/connected-banking-pricing";
+import {
   bulletList,
   canonicalNotice,
   frontMatter,
@@ -24,6 +44,22 @@ import {
 
 /** Format an INR rate for markdown, e.g. 1.2 → "₹1.20". */
 const formatRate = (rate: number): string => `₹${rate.toFixed(2)}`;
+
+/** Format an INR amount with Indian-style grouping, e.g. 75000 → "₹75,000". */
+const formatAmount = (amount: number): string =>
+  `₹${amount.toLocaleString("en-IN")}`;
+
+/** Format an amount-slab range, e.g. "₹101 – ₹3,000" or "₹1,00,001+". */
+const slabRange = (slab: AmountSlab): string =>
+  slab.upTo === null
+    ? `${formatAmount(slab.from)}+`
+    : `${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}`;
+
+/** Format a slab's commission/charge, e.g. "₹1.20" or "0.52% of amount". */
+const slabValue = (slab: AmountSlab): string =>
+  slab.flat !== undefined
+    ? formatRate(slab.flat)
+    : `${((slab.pct ?? 0) * 100).toFixed(2).replace(/\.?0+$/, "")}% of amount`;
 
 /** One rate-card table row: name (+ product link), rate, billing unit. */
 const rateRow = (api: PricedApi): string[] => {
@@ -40,9 +76,10 @@ const rateRow = (api: PricedApi): string[] => {
 };
 
 /**
- * Render `/pricing.md` — the full verification API rate card, mirroring the
- * HTML `/pricing` page. The interactive calculator is HTML-only, so this
- * document carries the complete rate card plus billing notes and FAQs.
+ * Render `/pricing.md` — the full rate card for ALL products, mirroring the
+ * HTML `/pricing` page: verification APIs (cost), DMT/AePS/BBPS commissions
+ * (earnings) and Connected Banking charges. The interactive calculators are
+ * HTML-only, so this document carries the complete tables, notes and FAQs.
  *
  * Pure function — no filesystem or network access — so it can be unit-tested.
  */
@@ -52,19 +89,21 @@ export function renderPricingMarkdown(): string {
   const blocks: (string | false | undefined)[] = [
     frontMatter({
       type: "pricing",
-      title: "Verification API Pricing & Rate Card | Eko Platform Services",
+      title:
+        "API Pricing & Commissions — Verification, Payments & Connected Banking | Eko Platform Services",
       description:
-        "Transparent pay-per-use pricing for PAN, bank account, GST, UPI and 25+ verification APIs. Full per-transaction rate card, exclusive of GST @ 18%.",
+        "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Full per-transaction rate card, exclusive of GST @ 18%.",
       canonical,
     }),
     canonicalNotice(canonical),
-    h1("Verification API Pricing — Full Rate Card"),
+    h1("EPS API Pricing — Full Rate Card & Commissions"),
     SETUP_FEE_WAIVED
-      ? "Transparent, pay-per-use API pricing. Setup fee waived for a limited time. No monthly minimums. Pay only for successful verifications."
+      ? "Transparent, pay-per-use API pricing. Setup fee waived for a limited time on verification APIs. No monthly minimums. Pay only for successful verifications."
       : "Transparent, pay-per-use API pricing. No monthly minimums. Pay only for successful verifications.",
-    `An interactive pricing calculator (pick APIs, set monthly volumes, see your estimated cost) is available on the HTML page: ${canonical}`,
+    "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Connected Banking charges.",
+    `Interactive pricing calculators (pick APIs, set monthly volumes, see your estimated cost or earnings) are available on the HTML page: ${canonical}`,
     gettingStartedNotice(),
-    h2("Rate Card"),
+    h2("Verification API Rate Card"),
     `All rates are in INR per transaction, **exclusive of GST @ ${Math.round(GST_RATE * 100)}%**.`,
   ];
 
@@ -84,6 +123,78 @@ export function renderPricingMarkdown(): string {
     );
   }
 
+  // ---- Payments & BC commissions (DMT, AePS, BBPS) ----
+  blocks.push(
+    h2("Payments & BC API Commissions (DMT, AePS, BBPS)"),
+    `Unlike verification APIs, these products **pay you a commission** per transaction. All commission figures are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts.`,
+    h3("Domestic Money Transfer (DMT)"),
+    markdownTable(
+      [
+        "Txn amount (INR)",
+        "Eko pricing (excl. GST)",
+        "Your commission (excl. GST)",
+        `After TDS @ ${Math.round(TDS_RATE * 100)}%`,
+      ],
+      DMT_SLABS.map((slab) => [
+        `${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}`,
+        formatRate(slab.ekoPricing),
+        formatRate(slab.commission),
+        formatRate(slab.commission * (1 - TDS_RATE)),
+      ]),
+    ),
+    bulletList([
+      `Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — paid by the sender.`,
+      `One-time sender KYC charge: ${formatAmount(DMT_SENDER_KYC_FEE)} (excl. GST), paid by the sender at registration.`,
+      `Maximum transaction amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)}.`,
+      "Actual earnings depend on your transaction-amount mix; commission applies per the slab of each transaction.",
+    ]),
+    h3("AePS — Aadhaar-Enabled Payment System"),
+    markdownTable(
+      ["Transaction bracket (INR)", "Cashout commission"],
+      AEPS_CASHOUT_SLABS.map((slab) => [slabRange(slab), slabValue(slab)]),
+    ),
+    `Mini statement: ${formatRate(AEPS_MINI_STATEMENT_COMMISSION)} per transaction.`,
+    "Fund settlement charges (paid by you, incl. GST on the charge):",
+    markdownTable(
+      ["Settlement bracket (INR)", "Charge"],
+      AEPS_SETTLEMENT_CHARGES.map((slab) => [
+        slabRange(slab),
+        `${slabValue(slab)} + GST`,
+      ]),
+    ),
+    h3("BBPS Bill Payments (category-level)"),
+    "Commission per transaction by bill category. Where rates vary by operator, the lowest operator rate is shown (conservative estimate) with the range in notes.",
+    markdownTable(
+      ["Category", "Commission (excl. GST)", "Notes"],
+      BBPS_CATEGORIES.map((category) => [
+        category.name,
+        category.slabs
+          .map((slab) =>
+            category.slabs.length > 1
+              ? `${slabRange(slab)}: ${slabValue(slab)}`
+              : slabValue(slab),
+          )
+          .join("; "),
+        category.rangeNote ?? "—",
+      ]),
+    ),
+    `Operator-wise commission for 100+ BBPS billers is available in the downloadable Excel rate card: ${SITE_URL}/eps-pricing-calculator.xlsx`,
+  );
+
+  // ---- Connected Banking ----
+  blocks.push(
+    h2("Connected Banking Pricing"),
+    "Virtual account & BaaS infrastructure. Connected Banking is a cost you pay (like verification APIs), not a commission product.",
+    bulletList([
+      `One-time setup fee: ${formatAmount(CB_SETUP_FEE)} + GST per bank per user.`,
+      `Available banks: ${CB_BANKS.join(", ")}.`,
+    ]),
+    markdownTable(
+      ["Transaction slab (INR)", "Charge per txn (excl. GST)"],
+      CB_TXN_SLABS.map((slab) => [slabRange(slab), slabValue(slab)]),
+    ),
+  );
+
   blocks.push(
     h2("Pricing Notes"),
     bulletList([
@@ -101,7 +212,7 @@ export function renderPricingMarkdown(): string {
     h2("FAQs"),
   );
 
-  for (const faq of PRICING_FAQS) {
+  for (const faq of [...PRICING_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS]) {
     blocks.push(`${h3(faq.q)}\n${faq.a}`);
   }
 

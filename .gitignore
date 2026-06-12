@@ -25,3 +25,4 @@ dist-ssr
 
 # Playwright MCP debug artifacts
 .playwright-mcp/
+.superpowers/

@@ -53,7 +53,9 @@ export const ApiPicker = ({ selectedIds, onToggle }: ApiPickerProps) => {
           />
         </div>
       </div>
-      <div className="max-h-[26rem] overflow-y-auto overscroll-contain">
+      {/* Internal scroll only on desktop — on mobile the list runs full
+          height so the page is the single vertical scroller */}
+      <div className="lg:max-h-[26rem] lg:overflow-y-auto overscroll-contain">
         {filteredGroups.length === 0 && (
           <p className="p-6 text-sm text-muted-foreground text-center">
             No APIs match "{query}"
@@ -61,7 +63,7 @@ export const ApiPicker = ({ selectedIds, onToggle }: ApiPickerProps) => {
         )}
         {filteredGroups.map((group) => (
           <div key={group.label}>
-            <div className="sticky top-0 z-10 px-4 py-1.5 bg-muted/90 backdrop-blur-xs text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="lg:sticky lg:top-0 z-10 px-4 py-1.5 bg-muted/90 backdrop-blur-xs text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {group.label}
             </div>
             {group.apis.map((api) => (

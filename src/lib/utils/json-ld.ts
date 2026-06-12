@@ -7,6 +7,10 @@ import {
 } from "@/lib/config/site";
 import type { ProductPageData } from "@/lib/data/api-product-pages";
 import { PRICED_APIS } from "@/lib/data/api-pricing";
+import {
+  CB_SETUP_FEE,
+  CB_TXN_SLABS,
+} from "@/lib/data/connected-banking-pricing";
 import type { FaqItem } from "@/components/sections/FaqSection";
 
 const ORG_ID = `${SITE_URL}/#organization`;
@@ -174,6 +178,49 @@ export function generatePricingJsonLd(faqs: FaqItem[]): object[] {
 				availability: "https://schema.org/InStock",
 				seller: { "@id": ORG_ID },
 			})),
+		},
+		{
+			// Connected Banking is a cost product, so Offer semantics apply.
+			// DMT/AePS/BBPS commissions are income to the buyer — deliberately
+			// NOT modelled as Offers; they are covered by the FAQPage entries.
+			"@type": "OfferCatalog",
+			"@id": `${pricingUrl}#banking-offers`,
+			name: "Connected Banking Pricing",
+			url: pricingUrl,
+			itemListElement: [
+				{
+					"@type": "Offer",
+					name: "Connected Banking — one-time setup (per bank per user)",
+					url: pricingUrl,
+					priceCurrency: "INR",
+					price: CB_SETUP_FEE.toFixed(2),
+					priceSpecification: {
+						"@type": "UnitPriceSpecification",
+						price: CB_SETUP_FEE.toFixed(2),
+						priceCurrency: "INR",
+						unitText: "one-time, per bank per user",
+						valueAddedTaxIncluded: false,
+					},
+					availability: "https://schema.org/InStock",
+					seller: { "@id": ORG_ID },
+				},
+				...CB_TXN_SLABS.map((slab) => ({
+					"@type": "Offer",
+					name: `Connected Banking — transactions of ₹${slab.from.toLocaleString("en-IN")}–₹${(slab.upTo ?? 0).toLocaleString("en-IN")}`,
+					url: pricingUrl,
+					priceCurrency: "INR",
+					price: (slab.flat ?? 0).toFixed(2),
+					priceSpecification: {
+						"@type": "UnitPriceSpecification",
+						price: (slab.flat ?? 0).toFixed(2),
+						priceCurrency: "INR",
+						unitText: "per transaction",
+						valueAddedTaxIncluded: false,
+					},
+					availability: "https://schema.org/InStock",
+					seller: { "@id": ORG_ID },
+				})),
+			],
 		},
 		{
 			"@type": "BreadcrumbList",
