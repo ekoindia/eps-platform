@@ -64,6 +64,33 @@ export function bulletList(items: string[]): string {
   return items.map((i) => `- ${i.trim()}`).join("\n");
 }
 
+/** Minimal structural shape of an amount slab (matches AmountSlab in payments-pricing). */
+export interface SlabLike {
+  from: number;
+  upTo: number | null;
+  flat?: number;
+  pct?: number;
+}
+
+/** Format an INR rate for markdown, e.g. 1.2 → "₹1.20". */
+export const formatRate = (rate: number): string => `₹${rate.toFixed(2)}`;
+
+/** Format an INR amount with Indian-style grouping, e.g. 75000 → "₹75,000". */
+export const formatAmount = (amount: number): string =>
+  `₹${amount.toLocaleString("en-IN")}`;
+
+/** Format an amount-slab range, e.g. "₹101 – ₹3,000" or "₹1,00,001+". */
+export const slabRange = (slab: SlabLike): string =>
+  slab.upTo === null
+    ? `${formatAmount(slab.from)}+`
+    : `${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}`;
+
+/** Format a slab's commission/charge, e.g. "₹1.20" or "0.52% of amount". */
+export const slabValue = (slab: SlabLike): string =>
+  slab.flat !== undefined
+    ? formatRate(slab.flat)
+    : `${((slab.pct ?? 0) * 100).toFixed(2).replace(/\.?0+$/, "")}% of amount`;
+
 /** Convenience heading helpers. */
 export const h1 = (s: string) => `# ${s}`;
 export const h2 = (s: string) => `## ${s}`;

@@ -21,7 +21,6 @@ import {
   DMT_SLABS,
   PAYMENTS_FAQS,
   TDS_RATE,
-  type AmountSlab,
 } from "@/lib/data/payments-pricing";
 import {
   CB_BANKS,
@@ -32,6 +31,8 @@ import {
 import {
   bulletList,
   canonicalNotice,
+  formatAmount,
+  formatRate,
   frontMatter,
   gettingStartedNotice,
   h1,
@@ -40,26 +41,9 @@ import {
   indexPageNotice,
   joinBlocks,
   markdownTable,
+  slabRange,
+  slabValue,
 } from "./shared";
-
-/** Format an INR rate for markdown, e.g. 1.2 → "₹1.20". */
-const formatRate = (rate: number): string => `₹${rate.toFixed(2)}`;
-
-/** Format an INR amount with Indian-style grouping, e.g. 75000 → "₹75,000". */
-const formatAmount = (amount: number): string =>
-  `₹${amount.toLocaleString("en-IN")}`;
-
-/** Format an amount-slab range, e.g. "₹101 – ₹3,000" or "₹1,00,001+". */
-const slabRange = (slab: AmountSlab): string =>
-  slab.upTo === null
-    ? `${formatAmount(slab.from)}+`
-    : `${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}`;
-
-/** Format a slab's commission/charge, e.g. "₹1.20" or "0.52% of amount". */
-const slabValue = (slab: AmountSlab): string =>
-  slab.flat !== undefined
-    ? formatRate(slab.flat)
-    : `${((slab.pct ?? 0) * 100).toFixed(2).replace(/\.?0+$/, "")}% of amount`;
 
 /** One rate-card table row: name (+ product link), rate, billing unit. */
 const rateRow = (api: PricedApi): string[] => {

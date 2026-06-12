@@ -40,6 +40,8 @@ Primary content sources:
 - `src/lib/data/industries.ts`
 - `src/lib/data/solutions.ts`
 - `src/lib/data/api-pricing.ts` (rates, pricing FAQs)
+- `src/lib/data/payments-pricing.ts` (DMT/AePS/BBPS commission slabs)
+- `src/lib/data/bbps-operators.ts` (BBPS operator count referenced in `/products.md`)
 
 If you want to change the generated Markdown for a product, industry, or
 solution page, update the corresponding content/data object first. In most
@@ -59,8 +61,21 @@ All Markdown generation logic lives in `src/lib/markdown/`.
 	FAQs, docs link, and related products.
 
 - `src/lib/markdown/render-products-index.ts`
-	Generates Markdown for the products listing page (`/products.md`). Lists all
-	active API products grouped by category (Verification, Payment, BC Agent).
+	Generates `/products.md` — a single comprehensive reference document covering
+	every active API product, grouped by category (Verification, Payment, BC
+	Agent). Designed to be sufficient standalone context for an LLM: each product
+	section carries its overview, features, key benefits, supported types, use
+	cases, compact endpoint one-liners (method + path + input/output field
+	labels), full pricing slabs (verification rate variants, DMT/AePS commission
+	slabs, BBPS category slabs with an operator-count pointer), product-specific
+	FAQs, and links to the HTML page, per-product Markdown, and API docs.
+	Repetitive boilerplate is intentionally excluded to keep the document
+	token-friendly: integration steps, per-product getting-started CTAs, and the
+	shared `COMMON_API_FAQS` (which data post-processing appends to every
+	product page) are filtered out; GST/TDS/billing notes appear once globally
+	at the top. The plugin passes in `API_PRODUCT_PAGES` and `COMMON_API_FAQS`
+	(page data stays injected so the renderer remains unit-testable without
+	asset imports); pricing data is imported directly from the pricing modules.
 
 - `src/lib/markdown/render-industry.ts`
 	Generates Markdown for industry pages. Includes challenge text, recommended

@@ -152,7 +152,7 @@ const PAN_FAQS = [
 ];
 
 /** FAQs appended to every API product page after product-specific FAQs */
-const COMMON_API_FAQS: FAQ[] = [
+export const COMMON_API_FAQS: FAQ[] = [
   {
     q: "How do I get started?",
     a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
