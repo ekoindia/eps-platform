@@ -329,30 +329,67 @@
   animation: page-fade-in 0.1s ease-in-out forwards;
 }
 
-/* FadeIn component — JS fallback (IntersectionObserver toggles class) */
-.fade-in-hidden {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+/* FadeIn — JS fallback path (IntersectionObserver adds .fade-in-visible).
+   Hidden state only when scripting is available: no-JS/crawler loads must
+   see the prerendered content. */
+@media (scripting: enabled) {
+  .fade-in-hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+  /* In browsers WITHOUT scroll-driven animations, .fade-in-css elements use
+     the same IO fallback, so they need the same hidden initial state. */
+  @supports not (animation-timeline: view()) {
+    .fade-in-css {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+  }
 }
 .fade-in-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* FadeIn — CSS-only path for browsers with scroll-driven animations (Chrome/Edge 115+) */
+/* FadeIn — CSS scroll-driven path (no JS, works pre-hydration).
+   IMPORTANT: no base opacity/transform outside the keyframes. The hidden
+   state comes only from `animation-fill-mode: both`, so when the view()
+   timeline is INACTIVE (full-page screenshot capture, print, non-scrolling
+   contexts) the animation simply doesn't apply and content stays VISIBLE.
+   A base `opacity: 0` made content vanish in those contexts. */
 @supports (animation-timeline: view()) {
   .fade-in-css {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fade-in-view 1s ease-out forwards;
+    animation: fade-in-view 1s ease-out both;
     animation-timeline: view();
     animation-range: entry 0% cover 20%;
+  }
+
+  /* Sticky pin, added by FadeIn's IntersectionObserver once the element is
+     seen: scroll-driven opacity tracks scroll position, so without this,
+     scrolling back up re-hides content and full-page screenshot tools
+     capture below-fold elements at their hidden `from` state. Removing the
+     animation reverts to the visible base styles; the transition smooths the
+     hand-off from whatever opacity the scrub had reached. */
+  .fade-in-css.fade-in-done {
+    animation: none;
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
   }
 
   @keyframes fade-in-view {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Accessibility failsafe: no entrance animation, content visible. */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-hidden, .fade-in-css {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
   }
 }
 

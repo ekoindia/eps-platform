@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
-const pastelColors = [
+/** Rotating pastel bg/text pairs for menu & card icons — indexed mod length */
+export const pastelColors = [
 	'bg-blue-100 text-blue-400',
 	'bg-purple-100 text-purple-400',
 	'bg-pink-100 text-pink-400',

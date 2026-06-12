@@ -2,22 +2,31 @@ import { useEffect, useRef, type ReactNode, type CSSProperties, type ElementType
 import { cn } from "@/lib/utils";
 
 interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, 'style'> {
-  children: ReactNode;
-  as?: ElementType;
-  className?: string;
-  style?: CSSProperties;
-  delay?: number;
-  /** Animate on scroll into view (default: true). Set false for animate-on-mount. */
-  onView?: boolean;
+	children: ReactNode;
+	as?: ElementType;
+	className?: string;
+	style?: CSSProperties;
+	delay?: number;
+	/** Animate on scroll into view (default: true). Set false for animate-on-mount. */
+	onView?: boolean;
 }
 
 /**
- * Progressive enhancement: when the browser supports CSS scroll-driven
- * animations (`animation-timeline: view()`), the fade-in runs entirely in CSS
- * via the `.fade-in-css` class defined in index.css — no IntersectionObserver,
- * no JS at all. Unsupported browsers (Firefox, Safari as of May 2025) fall back
- * to the original IntersectionObserver + `.fade-in-hidden`/`.fade-in-visible`
- * class-toggle approach.
+ * Progressive enhancement with a fail-visible contract:
+ *
+ * - `onView` with no delay renders `.fade-in-css`. In browsers with CSS
+ *   scroll-driven animations (`animation-timeline: view()`) the reveal runs
+ *   entirely in CSS — no IntersectionObserver, no hydration dependency. In
+ *   other browsers the same class gets the hidden initial state from CSS and
+ *   the IntersectionObserver below toggles `.fade-in-visible`.
+ * - A delay or `onView={false}` renders `.fade-in-hidden` and always uses the
+ *   JS path (timer or IntersectionObserver).
+ *
+ * The class choice depends only on props, never on environment detection, so
+ * SSG prerenders and client hydration always agree (React skips attribute
+ * patching during hydration; an environment-dependent class left stale
+ * `fade-in-hidden` classes locking content at opacity 0 — see
+ * src/test/fade-in-hydration.test.tsx and docs/ssg-hydration.md).
  *
  * TODO: Once `animation-timeline: view()` reaches baseline support across
  * Chrome, Firefox, and Safari (track at https://caniuse.com/css-animation-timeline),
@@ -26,74 +35,80 @@ interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, 'style'> {
  * `useEffect`, and `useRef` can all be deleted at that point.
  */
 const supportsScrollDriven =
-  typeof CSS !== "undefined" && CSS.supports("animation-timeline", "view()");
+	typeof CSS !== "undefined" && CSS.supports("animation-timeline", "view()");
 
 export function FadeIn({
-  children,
-  as: Tag = "div",
-  className,
-  style,
-  delay = 0,
-  onView = true,
-  ...rest
+	children,
+	as: Tag = "div",
+	className,
+	style,
+	delay = 0,
+	onView = true,
+	...rest
 }: FadeInProps) {
-  const ref = useRef<HTMLElement>(null);
-  const useCssOnly = supportsScrollDriven && onView && delay === 0;
+	const ref = useRef<HTMLElement>(null);
+	const cssCapable = onView && delay === 0;
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+	useEffect(() => {
+		const el = ref.current;
+		if (!el) return;
 
-    if (useCssOnly) {
-      // SSG hydration fix: the server can't detect scroll-driven animation
-      // support (no CSS API), so prerendered HTML carries `fade-in-hidden`.
-      // React skips attribute patching during hydration, leaving the stale
-      // class in the DOM and the element stuck at opacity 0. Sync it here.
-      if (el.classList.contains("fade-in-hidden")) {
-        el.classList.remove("fade-in-hidden");
-        el.classList.add("fade-in-css");
-      }
-      return;
-    }
+		// CSS scroll-driven animation handles the reveal (even before
+		// hydration). JS only pins the revealed state once the element is
+		// seen: scroll-driven opacity tracks scroll position, so without the
+		// pin, scrolling back up re-hides content and full-page screenshot
+		// tools capture below-fold elements at their hidden `from` state.
+		if (supportsScrollDriven && cssCapable) {
+			const observer = new IntersectionObserver(
+				([entry]) => {
+					if (entry.isIntersecting) {
+						el.classList.add("fade-in-done");
+						observer.disconnect();
+					}
+				},
+				{ threshold: 0.1 },
+			);
+			observer.observe(el);
+			return () => observer.disconnect();
+		}
 
-    const apply = () => {
-      el.classList.add("fade-in-visible");
-    };
+		const apply = () => {
+			el.classList.add("fade-in-visible");
+		};
 
-    if (!onView) {
-      const id = setTimeout(apply, delay);
-      return () => clearTimeout(id);
-    }
+		if (!onView) {
+			const id = setTimeout(apply, delay);
+			return () => clearTimeout(id);
+		}
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          if (delay) {
-            setTimeout(apply, delay);
-          } else {
-            apply();
-          }
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [delay, onView, useCssOnly]);
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry.isIntersecting) {
+					if (delay) {
+						setTimeout(apply, delay);
+					} else {
+						apply();
+					}
+					observer.disconnect();
+				}
+			},
+			{ threshold: 0.1 },
+		);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [delay, onView, cssCapable]);
 
-  return (
-    <Tag
-      ref={ref}
-      className={cn(useCssOnly ? "fade-in-css" : "fade-in-hidden", className)}
-      {...rest}
-      style={{
-        ...(!useCssOnly && delay ? { transitionDelay: `${delay}ms` } : {}),
-        ...(useCssOnly && delay ? { animationDelay: `${delay}ms` } : {}),
-        ...style,
-      }}
-    >
-      {children}
-    </Tag>
-  );
+	return (
+		<Tag
+			ref={ref}
+			className={cn(cssCapable ? "fade-in-css" : "fade-in-hidden", className)}
+			{...rest}
+			style={{
+				...(delay ? { transitionDelay: `${delay}ms` } : {}),
+				...style,
+			}}
+		>
+			{children}
+		</Tag>
+	);
 }
