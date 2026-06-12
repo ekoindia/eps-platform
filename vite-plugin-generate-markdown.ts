@@ -105,7 +105,11 @@ export function generateMarkdownPlugin(): Plugin {
         // -- Products listing -----------------------------------------------
         await writeFile(
           path.join(outDir, "products.md"),
-          bundle.renderProductsIndexMarkdown(activeProducts)
+          bundle.renderProductsIndexMarkdown(
+            activeProducts,
+            bundle.API_PRODUCT_PAGES,
+            bundle.COMMON_API_FAQS
+          )
         );
         written++;
 
@@ -169,6 +173,7 @@ interface MarkdownBundle {
     disabled?: boolean;
   }>;
   API_PRODUCT_PAGES: Record<string, unknown>;
+  COMMON_API_FAQS: Array<{ q: string; a: string }>;
   INDUSTRIES_LIST: Array<{ slug: string; name: string; category: string }>;
   SOLUTIONS_LIST: Array<{ slug: string; name: string }>;
   renderProductMarkdown: (p: unknown, d: unknown, r: unknown[]) => string;
@@ -177,7 +182,11 @@ interface MarkdownBundle {
   renderUseCasesHubMarkdown: (i: unknown[], s: unknown[]) => string;
   renderSiteIndexMarkdown: (p: unknown[], i: unknown[], s: unknown[]) => string;
   renderLlmsTxt: (p: unknown[], i: unknown[], s: unknown[]) => string;
-  renderProductsIndexMarkdown: (p: unknown[]) => string;
+  renderProductsIndexMarkdown: (
+    p: unknown[],
+    pages: Record<string, unknown>,
+    commonFaqs: Array<{ q: string; a: string }>
+  ) => string;
   renderPricingMarkdown: () => string;
 }
 
@@ -211,6 +220,7 @@ async function loadRenderBundle(
   return {
     API_PRODUCTS: productsMod.API_PRODUCTS,
     API_PRODUCT_PAGES: productPagesMod.API_PRODUCT_PAGES,
+    COMMON_API_FAQS: productPagesMod.COMMON_API_FAQS,
     INDUSTRIES_LIST: industriesMod.ACTIVE_INDUSTRIES_LIST,
     SOLUTIONS_LIST: solutionsMod.ACTIVE_SOLUTIONS_LIST,
     renderProductMarkdown: renderProductMod.renderProductMarkdown,
@@ -240,7 +250,11 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
     return bundle.renderUseCasesHubMarkdown(bundle.INDUSTRIES_LIST, bundle.SOLUTIONS_LIST);
   }
   if (url === "/products.md") {
-    return bundle.renderProductsIndexMarkdown(activeProducts);
+    return bundle.renderProductsIndexMarkdown(
+      activeProducts,
+      bundle.API_PRODUCT_PAGES,
+      bundle.COMMON_API_FAQS
+    );
   }
   if (url === "/pricing.md") {
     return bundle.renderPricingMarkdown();
