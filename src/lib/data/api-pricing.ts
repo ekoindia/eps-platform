@@ -26,6 +26,8 @@ export interface PricedApi {
   id: string;
   /** Display name, e.g. "PAN Verification (Lite)" */
   name: string;
+  /** Short tag label for product-card chips, e.g. "Lite". Falls back to name. */
+  shortName?: string;
   /**
    * Maps to ApiProductRef.id in api-products.ts. Optional — some priced APIs
    * (CKYC Download, Doctor Verification) have no product page.
@@ -102,6 +104,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "pan-lite",
     name: "PAN Verification (Lite)",
+    shortName: "Lite",
     productId: "pan",
     group: "PAN",
     tiers: [{ upTo: null, rate: 1.2 }],
@@ -110,6 +113,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "pan-comprehensive",
     name: "PAN Comprehensive",
+    shortName: "Comprehensive",
     productId: "pan",
     group: "PAN",
     tiers: [{ upTo: null, rate: 2.04 }],
@@ -117,6 +121,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "pan-bulk",
     name: "Bulk PAN Verification",
+    shortName: "Bulk",
     productId: "pan",
     group: "PAN",
     tiers: [{ upTo: null, rate: 1.2 }],
@@ -125,6 +130,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "pan-bulk-status",
     name: "Bulk PAN Status",
+    shortName: "Bulk Status",
     productId: "pan",
     group: "PAN",
     tiers: [{ upTo: null, rate: 1.2 }],
@@ -135,6 +141,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "bank-ifsc",
     name: "Bank Search by IFSC",
+    shortName: "IFSC Lookup",
     productId: "bank",
     group: "Bank Account",
     tiers: [{ upTo: null, rate: 0.18 }],
@@ -143,6 +150,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "bank-pennyless",
     name: "Bank Account Verification (Pennyless)",
+    shortName: "Pennyless",
     productId: "bank",
     group: "Bank Account",
     tiers: [{ upTo: null, rate: 2.04 }],
@@ -150,6 +158,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "bank-pennydrop",
     name: "Bank Account Verification (Pennydrop)",
+    shortName: "Pennydrop",
     productId: "bank",
     group: "Bank Account",
     tiers: [{ upTo: null, rate: 3.0 }],
@@ -158,6 +167,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "bank-bulk",
     name: "Bulk Bank Account Verification",
+    shortName: "Bulk",
     productId: "bank",
     group: "Bank Account",
     tiers: [{ upTo: null, rate: 2.04 }],
@@ -168,6 +178,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "upi-vpa",
     name: "UPI ID (VPA) Verification",
+    shortName: "VPA Verify",
     productId: "upi",
     group: "UPI",
     tiers: [{ upTo: null, rate: 2.64 }],
@@ -176,6 +187,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "upi-mobile-to-vpa",
     name: "Mobile to VPA",
+    shortName: "Mobile to VPA",
     productId: "upi",
     group: "UPI",
     tiers: [{ upTo: null, rate: 1.44 }],
@@ -186,6 +198,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "gst-basic",
     name: "GST Verification (Basic)",
+    shortName: "Basic",
     productId: "gst",
     group: "GST & Business",
     tiers: [{ upTo: null, rate: 0.72 }],
@@ -193,6 +206,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "gst-fetch-by-pan",
     name: "Fetch GST with PAN",
+    shortName: "Fetch by PAN",
     productId: "gst",
     group: "GST & Business",
     tiers: [{ upTo: null, rate: 2.04 }],
@@ -200,6 +214,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "gst-advance",
     name: "Advance GST",
+    shortName: "Advance",
     productId: "gst",
     group: "GST & Business",
     tiers: [{ upTo: null, rate: 4.2 }],
@@ -300,6 +315,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "epfo-passbook",
     name: "EPFO Passbook",
+    shortName: "EPFO Passbook",
     productId: "employee",
     group: "Employment",
     tiers: [{ upTo: null, rate: 7.2 }],
@@ -308,6 +324,7 @@ export const PRICED_APIS: PricedApi[] = [
   {
     id: "employee-detail",
     name: "Employee Detail",
+    shortName: "Employee Detail",
     productId: "employee",
     group: "Employment",
     tiers: [{ upTo: null, rate: 6.0 }],
@@ -446,6 +463,22 @@ export const getStartingUnitLabel = (productId: string): string => {
   );
   return startingApi?.unitLabel ?? "per verification";
 };
+
+/**
+ * Short tag labels for a product's priced APIs (shortName, falling back to
+ * name) — used for the variant chips on /products cards.
+ * @param productId - Product id from api-products.ts, e.g. "pan"
+ */
+export const getVariantLabels = (productId: string): string[] =>
+  getPricedApisForProduct(productId).map((api) => api.shortName ?? api.name);
+
+/**
+ * True when any of a product's priced APIs carries the `popular` flag —
+ * drives the "Popular" badge on /products cards.
+ * @param productId - Product id from api-products.ts
+ */
+export const hasPopularApi = (productId: string): boolean =>
+  getPricedApisForProduct(productId).some((api) => api.popular);
 
 /**
  * Resolves the applicable per-transaction rate for a monthly volume.

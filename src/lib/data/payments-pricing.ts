@@ -377,6 +377,48 @@ export const commissionPerTxn = (
   return category ? commissionForAmount(category.slabs, avgAmount) : 0;
 };
 
+/**
+ * Headline earnings figure for a product card on /products,
+ * e.g. "Earn up to ₹36.77 per transfer".
+ */
+export interface EarningsHighlight {
+  /** Max commission display, e.g. "₹36.77" or "3.04%" */
+  maxLabel: string;
+  /** Unit label, e.g. "per transfer" */
+  unitLabel: string;
+}
+
+/**
+ * Maximum BBPS commission rate across operators — sourced from the
+ * Mobile Prepaid rangeNote (BSNL 3.04%); operator-level rates only
+ * exist in notes, not slab data.
+ */
+const BBPS_MAX_COMMISSION_PCT = 3.04;
+
+/**
+ * Headline "Earn up to …" figure for a BC/payment product card.
+ * Returns undefined for products without commission data.
+ * @param productId - ApiProductRef.id from api-products.ts ("dmt" | "aeps" | "bbps")
+ */
+export const getEarningsHighlight = (
+  productId: string,
+): EarningsHighlight | undefined => {
+  if (productId === "dmt") {
+    const maxCommission = Math.max(...DMT_SLABS.map((slab) => slab.commission));
+    return { maxLabel: `₹${maxCommission}`, unitLabel: "per transfer" };
+  }
+  if (productId === "aeps") {
+    const maxFlat = Math.max(
+      ...AEPS_CASHOUT_SLABS.map((slab) => slab.flat ?? 0),
+    );
+    return { maxLabel: `₹${maxFlat}`, unitLabel: "per withdrawal" };
+  }
+  if (productId === "bbps") {
+    return { maxLabel: `${BBPS_MAX_COMMISSION_PCT}%`, unitLabel: "per bill" };
+  }
+  return undefined;
+};
+
 export interface EarningsSelection {
   productId: string;
   monthlyTxns: number;

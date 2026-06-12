@@ -7,6 +7,15 @@ import { SITE_URL } from "@/lib/config/site";
 import { FadeIn } from "@/components/FadeIn";
 import { getActiveProducts, type ApiProductRef } from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import {
+	getStartingRate,
+	getStartingUnitLabel,
+	getVariantLabels,
+	hasPopularApi,
+} from "@/lib/data/api-pricing";
+import { getEarningsHighlight } from "@/lib/data/payments-pricing";
+import { formatINRRate } from "@/lib/utils";
+import { pastelColors } from "@/components/DropdownGrid";
 import { ArrowRight } from "lucide-react";
 import { AiHint } from "@/components/AiHint";
 
@@ -15,6 +24,8 @@ interface CategoryGroup {
 	label: string;
 	description: string;
 	variant: "default" | "muted";
+	/** Tiny disclaimer rendered under the category's card grid */
+	footnote: string;
 }
 
 const PRODUCT_CATEGORIES: CategoryGroup[] = [
@@ -23,20 +34,26 @@ const PRODUCT_CATEGORIES: CategoryGroup[] = [
 		label: "Verification APIs",
 		description: "Real-time identity & document verification for onboarding and compliance",
 		variant: "default",
+		footnote: "All rates exclusive of GST @ 18%.",
 	},
 	{
 		key: "payment",
 		label: "Payment APIs",
 		description: "Process payments, payouts, and collections at scale",
 		variant: "muted",
+		footnote: "Commissions exclusive of GST @ 18%; TDS @ 2% applies on payouts.",
 	},
 	{
 		key: "bc",
 		label: "BC Agent APIs",
 		description: "Enable banking services at doorstep through Business Correspondent agents",
 		variant: "default",
+		footnote: "Commissions exclusive of GST @ 18%; TDS @ 2% applies on payouts.",
 	},
 ];
+
+/** Max number of API variant chips shown on a card before the "+N" overflow chip */
+const MAX_VARIANT_TAGS = 3;
 
 const groupProductsByCategory = (products: ApiProductRef[]): Record<string, ApiProductRef[]> => {
 	return products.reduce<Record<string, ApiProductRef[]>>((acc, product) => {
@@ -47,30 +64,92 @@ const groupProductsByCategory = (products: ApiProductRef[]): Record<string, ApiP
 	}, {});
 };
 
-const ApiProductCard = ({ product, delay }: { product: ApiProductRef; delay: number }) => {
+/**
+ * Pricing footer line for a product card: "From ₹X per verification" for
+ * Verification APIs (a cost) or "Earn up to ₹X per transfer" for BC/payment
+ * products (a commission). Null when the product has no pricing data.
+ */
+const CardPricingLine = ({ product }: { product: ApiProductRef }) => {
+	if (product.category === "verification") {
+		const startingRate = getStartingRate(product.id);
+		if (startingRate === undefined) return null;
+		return (
+			<span className="text-[11px] text-muted-foreground">
+				From{" "}
+				<span className="text-xs font-semibold text-eko-gold">
+					{formatINRRate(startingRate)}
+				</span>{" "}
+				{getStartingUnitLabel(product.id)}
+			</span>
+		);
+	}
+
+	const earnings = getEarningsHighlight(product.id);
+	if (!earnings) return null;
+	return (
+		<span className="text-[11px] text-muted-foreground">
+			Earn up to{" "}
+			<span className="text-xs font-semibold text-eko-success">
+				{earnings.maxLabel}
+			</span>{" "}
+			{earnings.unitLabel}
+		</span>
+	);
+};
+
+const ApiProductCard = ({ product, index }: { product: ApiProductRef; index: number }) => {
 	const pageData = API_PRODUCT_PAGES[product.id];
 	const Icon = pageData?.icon;
+	// Variant chips only make sense when a product spans multiple priced APIs
+	const variantLabels = getVariantLabels(product.id);
+	const visibleTags = variantLabels.length >= 2 ? variantLabels.slice(0, MAX_VARIANT_TAGS) : [];
+	const overflowCount = variantLabels.length - visibleTags.length;
+	const tagClassName =
+		"inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border border-border/50 bg-muted/50 text-muted-foreground";
 
 	return (
-		<FadeIn delay={delay}>
+		<FadeIn className="h-full">
 			<Link
 				to={product.href}
-				className="group block h-full p-6 rounded-2xl bg-card border border-border/50 shadow-card hover:shadow-card-hover hover:border-eko-gold/30 transition-all duration-300"
+				className="group relative flex flex-col h-full p-6 rounded-2xl bg-card border border-border/50 shadow-card hover:shadow-card-hover hover:border-eko-gold/30 transition-all duration-300"
 			>
+				{hasPopularApi(product.id) && (
+					<span className="absolute top-4 right-4 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-eko-gold/15 text-eko-gold">
+						Popular
+					</span>
+				)}
 				{Icon && (
-					<div className="w-10 h-10 rounded-xl bg-eko-gold/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-						<Icon className="w-5 h-5 text-eko-gold" />
+					<div
+						className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 ${pastelColors[index % pastelColors.length]}`}
+					>
+						<Icon className="w-5 h-5" />
 					</div>
 				)}
 				<h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-eko-gold transition-colors">
 					{product.name}
 				</h3>
-				<p className="text-muted-foreground text-sm leading-relaxed mb-4">
+				<p className="text-muted-foreground text-sm leading-relaxed">
 					{product.shortDesc}
 				</p>
-				<span className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-					Learn more <ArrowRight className="w-3.5 h-3.5" />
-				</span>
+				{visibleTags.length > 0 && (
+					// Static spans only — the whole card is a Link; nested anchors are invalid
+					<div className="flex flex-wrap gap-1.5 mt-4">
+						{visibleTags.map((label) => (
+							<span key={label} className={tagClassName}>
+								{label}
+							</span>
+						))}
+						{overflowCount > 0 && (
+							<span className={tagClassName}>+{overflowCount}</span>
+						)}
+					</div>
+				)}
+				<div className="flex items-center justify-between gap-2 mt-auto pt-4">
+					<CardPricingLine product={product} />
+					<span className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300 ml-auto">
+						Learn more <ArrowRight className="w-3.5 h-3.5" />
+					</span>
+				</div>
 			</Link>
 		</FadeIn>
 	);
@@ -140,9 +219,14 @@ const ProductsPage = () => {
 								<FadeIn><SectionHeader title={cat.label} subtitle={cat.description} /></FadeIn>
 								<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
 									{products.map((product, i) => (
-										<ApiProductCard key={product.id} product={product} delay={i * 100} />
+										<ApiProductCard key={product.id} product={product} index={i} />
 									))}
 								</div>
+								<FadeIn>
+									<p className="text-xs text-muted-foreground text-center mt-6">
+										{cat.footnote}
+									</p>
+								</FadeIn>
 							</SectionContainer>
 						);
 					})}

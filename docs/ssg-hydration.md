@@ -34,6 +34,28 @@ the pre-rendered DOM and re-render from scratch on every page load).
   `getSolutionPacksForApi` (`src/lib/data/solutions.ts`) rotates packs by a
   hash of `apiId` instead of `Math.random()` shuffle. Defer true randomness
   to `useEffect` + state.
+- **No environment detection in SSR-visible markup.** `FadeIn`
+  (`src/components/FadeIn.tsx`) once chose its class via
+  `CSS.supports("animation-timeline", "view()")` — the server prerendered
+  `fade-in-hidden` while supporting browsers rendered `fade-in-css`; React
+  skips attribute patching during hydration, so the stale hidden class locked
+  content at opacity 0. Class names (and any other rendered output) must
+  depend on props/data only; environment checks belong in `useEffect`.
+- **Never pair `animation-timeline: view()` with base hidden styles.** When
+  the view timeline is inactive (full-page screenshot capture, print, no
+  scrollable overflow) the animation stops applying and a base `opacity: 0`
+  makes prerendered content invisible. The hidden state for `.fade-in-css`
+  lives only inside the keyframes with `animation-fill-mode: both`
+  (`src/index.css`), so an inactive timeline degrades to visible content.
+  Scroll-driven reveals must also be **pinned once seen**: scrubbed opacity
+  tracks scroll position, so scrolling back up re-hides content and
+  full-page screenshot tools capture below-fold elements at their hidden
+  `from` state. FadeIn's IntersectionObserver adds `.fade-in-done`
+  (animation removed → visible base styles) on first intersection.
+- **JS-dependent hidden states must be gated on scripting.** `.fade-in-hidden`
+  (revealed only by an IntersectionObserver/timer) sits inside
+  `@media (scripting: enabled)` so no-JS loads and crawlers see the
+  prerendered content.
 
 ## Verifying
 

@@ -1,14 +1,26 @@
-// Regression test: SSG prerenders FadeIn with `fade-in-hidden` (no CSS API on
-// the server), but browsers with scroll-driven animation support hydrate with
-// `fade-in-css`. React skips attribute patching during hydration, so the DOM
-// keeps `fade-in-hidden` (opacity: 0) and content stays invisible on reload.
+// Regression tests for FadeIn's SSG/hydration contract.
+//
+// History: FadeIn once picked its class from environment detection
+// (CSS.supports), so SSG prerendered `fade-in-hidden` while supporting
+// browsers hydrated with `fade-in-css`. React skips attribute patching during
+// hydration, so the stale `fade-in-hidden` (opacity: 0) stayed in the DOM and
+// content was invisible on reload. The contract now: class choice depends
+// only on props, so server HTML and client render always agree, and the
+// hidden state for `.fade-in-css` exists only inside scroll-driven keyframes
+// (see index.css) so inactive timelines degrade to visible content.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { act } from "react";
 
-// IntersectionObserver stub for the jsdom environment (fallback path).
+type IntersectionCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
+
+// IntersectionObserver stub for jsdom that lets tests fire the callback.
+const observerCallbacks: IntersectionCallback[] = [];
 class IntersectionObserverStub {
+	constructor(callback: IntersectionCallback) {
+		observerCallbacks.push(callback);
+	}
 	observe(): void {}
 	unobserve(): void {}
 	disconnect(): void {}
@@ -27,6 +39,7 @@ describe("FadeIn SSG hydration", () => {
 	let root: Root | undefined;
 
 	beforeEach(() => {
+		observerCallbacks.length = 0;
 		vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
 		container = document.createElement("div");
 		document.body.appendChild(container);
@@ -42,15 +55,16 @@ describe("FadeIn SSG hydration", () => {
 		vi.resetModules();
 	});
 
-	it("becomes visible after hydrating server HTML in a scroll-driven-animation browser", async () => {
-		// Server render: CSS API unavailable → fallback class in the HTML.
+	it("renders the same class on the server and in a scroll-driven-animation browser", async () => {
+		// Server render: CSS API unavailable.
 		const ServerFadeIn = await importFadeIn(false);
 		const serverHtml = renderToString(
 			<ServerFadeIn>
 				<h2>Section title</h2>
 			</ServerFadeIn>,
 		);
-		expect(serverHtml).toContain("fade-in-hidden");
+		expect(serverHtml).toContain("fade-in-css");
+		expect(serverHtml).not.toContain("fade-in-hidden");
 		container.innerHTML = serverHtml;
 
 		// Client hydration: browser supports `animation-timeline: view()`.
@@ -64,11 +78,56 @@ describe("FadeIn SSG hydration", () => {
 			);
 		});
 
+		// No environment-dependent class divergence: the prerendered class
+		// survives hydration unchanged.
 		const el = container.firstElementChild as HTMLElement;
-		const visible =
-			!el.classList.contains("fade-in-hidden") ||
-			el.classList.contains("fade-in-visible");
-		expect(visible).toBe(true);
 		expect(el.classList.contains("fade-in-css")).toBe(true);
+		expect(el.classList.contains("fade-in-hidden")).toBe(false);
+
+		// Once seen, the reveal is pinned (sticky against scroll-up re-hide
+		// and full-page screenshot capture of below-fold content).
+		expect(observerCallbacks.length).toBe(1);
+		await act(async () => {
+			observerCallbacks[0]([{ isIntersecting: true }]);
+		});
+		expect(el.classList.contains("fade-in-done")).toBe(true);
+	});
+
+	it("falls back to IntersectionObserver in browsers without scroll-driven animations", async () => {
+		const FadeIn = await importFadeIn(false);
+		const serverHtml = renderToString(
+			<FadeIn>
+				<h2>Section title</h2>
+			</FadeIn>,
+		);
+		container.innerHTML = serverHtml;
+
+		await act(async () => {
+			root = hydrateRoot(
+				container,
+				<FadeIn>
+					<h2>Section title</h2>
+				</FadeIn>,
+			);
+		});
+
+		// The observer attached; entering the viewport reveals the element.
+		expect(observerCallbacks.length).toBe(1);
+		await act(async () => {
+			observerCallbacks[0]([{ isIntersecting: true }]);
+		});
+		const el = container.firstElementChild as HTMLElement;
+		expect(el.classList.contains("fade-in-visible")).toBe(true);
+	});
+
+	it("uses the JS path for delayed reveals even in supporting browsers", async () => {
+		const FadeIn = await importFadeIn(true);
+		const html = renderToString(
+			<FadeIn delay={100}>
+				<h2>Section title</h2>
+			</FadeIn>,
+		);
+		expect(html).toContain("fade-in-hidden");
+		expect(html).not.toContain("fade-in-css");
 	});
 });
