@@ -2,8 +2,12 @@ import { AiHint } from "@/components/AiHint";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
+import { ConnectedBankingCalculator } from "@/components/pricing/banking/ConnectedBankingCalculator";
+import { PaymentsCalculator } from "@/components/pricing/payments/PaymentsCalculator";
+import { PaymentsRateTable } from "@/components/pricing/payments/PaymentsRateTable";
 import { PricingCalculator } from "@/components/pricing/PricingCalculator";
 import { PricingTable } from "@/components/pricing/PricingTable";
+import { PricingTabs } from "@/components/pricing/PricingTabs";
 import {
   SectionContainer,
   SectionHeader,
@@ -17,6 +21,8 @@ import {
   PRICING_FAQS,
   SETUP_FEE_WAIVED,
 } from "@/lib/data/api-pricing";
+import { CB_FAQS } from "@/lib/data/connected-banking-pricing";
+import { PAYMENTS_FAQS } from "@/lib/data/payments-pricing";
 import { generatePricingJsonLd } from "@/lib/utils/json-ld";
 import {
   BadgeCheck,
@@ -36,16 +42,19 @@ const TRUST_CHIPS = [
   { icon: BadgeCheck, label: "Only successful calls billed" },
 ];
 
+/** All pricing FAQs — verification, payments & BC, connected banking */
+const ALL_FAQS = [...PRICING_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS];
+
 const PricingPage = () => {
-  const jsonLdSchemas = generatePricingJsonLd(PRICING_FAQS);
+  const jsonLdSchemas = generatePricingJsonLd(ALL_FAQS);
 
   return (
     <>
       <Helmet>
-        <title>Verification API Pricing & Calculator | Eko Platform Services</title>
+        <title>API Pricing & Commissions Calculator | Eko Platform Services</title>
         <meta
           name="description"
-          content="Transparent pay-per-use pricing for PAN, Aadhaar, bank account, GST, UPI and 25+ verification APIs. Estimate your monthly cost with our interactive pricing calculator."
+          content="Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
         />
         <link rel="canonical" href={`${SITE_URL}/pricing`} />
         <link rel="alternate" type="text/markdown" href={`${SITE_URL}/pricing.md`} />
@@ -68,12 +77,12 @@ const PricingPage = () => {
             />
             <FadeIn onView={false} delay={100} className="text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 text-balance">
-                Transparent, pay-per-use API pricing
+                Transparent API pricing & partner commissions
               </h1>
               <p className="text-xl text-white/70 max-w-2xl mx-auto mb-8">
                 {SETUP_FEE_WAIVED
-                  ? "Setup fee waived for a limited time. No monthly minimums. Pay only for successful verifications."
-                  : "No monthly minimums. Pay only for successful verifications."}
+                  ? "Pay per use for verification APIs — setup fee waived for a limited time. Earn commission on every DMT, AePS and BBPS transaction."
+                  : "Pay per use for verification APIs. Earn commission on every DMT, AePS and BBPS transaction."}
               </p>
               <div className="flex flex-wrap justify-center gap-3">
                 {SETUP_FEE_WAIVED && (
@@ -95,31 +104,69 @@ const PricingPage = () => {
             </FadeIn>
           </PageHero>
 
-          {/* Calculator */}
-          <SectionContainer id="calculator" className="scroll-mt-24">
-            <SectionHeader
-              badge="Pricing Calculator"
-              title="Estimate your monthly cost"
-              subtitle="Pick the APIs you need, set your monthly volumes, and see your cost instantly."
-            />
-            <PricingCalculator />
-          </SectionContainer>
+          <PricingTabs
+            verification={
+              <>
+                {/* Calculator */}
+                <SectionContainer id="calculator" className="scroll-mt-24 pt-10 lg:pt-14">
+                  <SectionHeader
+                    badge="Pricing Calculator"
+                    title="Estimate your monthly cost"
+                    subtitle="Pick the APIs you need, set your monthly volumes, and see your cost instantly."
+                  />
+                  <PricingCalculator />
+                </SectionContainer>
 
-          {/* Full rate card */}
-          <SectionContainer variant="muted" id="rate-card">
-            <SectionHeader
-              title="Full rate card"
-              subtitle="Every verification API at a glance — per transaction, exclusive of GST @ 18%."
-            />
-            <PricingTable />
-          </SectionContainer>
+                {/* Full rate card */}
+                <SectionContainer variant="muted" id="rate-card">
+                  <SectionHeader
+                    title="Full rate card"
+                    subtitle="Every verification API at a glance — per transaction, exclusive of GST @ 18%."
+                  />
+                  <PricingTable />
+                </SectionContainer>
+              </>
+            }
+            payments={
+              <>
+                {/* Earnings calculator */}
+                <SectionContainer id="payments-calculator" className="scroll-mt-24 pt-10 lg:pt-14">
+                  <SectionHeader
+                    badge="Earnings Calculator"
+                    title="Estimate your monthly earnings"
+                    subtitle="DMT, AePS and BBPS pay you a commission per transaction. Set your volumes and average amounts to see your estimated monthly earnings."
+                  />
+                  <PaymentsCalculator />
+                </SectionContainer>
 
-          {/* FAQ */}
-          <FaqSection faqs={PRICING_FAQS} variant="default" />
+                {/* Commission rate card */}
+                <SectionContainer variant="muted" id="payments-rates">
+                  <SectionHeader
+                    title="Commission rate card"
+                    subtitle="DMT, AePS and BBPS commissions at a glance — per transaction, exclusive of GST @ 18%."
+                  />
+                  <PaymentsRateTable />
+                </SectionContainer>
+              </>
+            }
+            banking={
+              <SectionContainer id="banking-calculator" className="scroll-mt-24 pt-10 lg:pt-14">
+                <SectionHeader
+                  badge="Connected Banking"
+                  title="Virtual accounts & BaaS pricing"
+                  subtitle="One-time setup per bank per user, plus simple per-transaction charges."
+                />
+                <ConnectedBankingCalculator />
+              </SectionContainer>
+            }
+          />
+
+          {/* FAQ — shared across tabs (matches the FAQPage JSON-LD) */}
+          <FaqSection faqs={ALL_FAQS} variant="default" />
 
           {/* Bottom CTA */}
           <LeadFormCTASection
-            heading="Start verifying today"
+            heading="Start building today"
             formTitle="Get API Access"
             description="Sign up now, test in the free sandbox, and go live in days — not weeks."
           />

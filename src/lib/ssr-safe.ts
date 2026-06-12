@@ -25,6 +25,14 @@ export const safeSessionStorage = {
       /* quota exceeded or restricted context — ignore */
     }
   },
+  removeItem(key: string): void {
+    if (!isBrowser()) return;
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      /* restricted context — ignore */
+    }
+  },
 };
 
 /**

@@ -80,10 +80,14 @@ export function generatePricingXlsxPlugin(): Plugin {
 async function loadPricingData(
   server: Pick<ViteDevServer, "ssrLoadModule">
 ): Promise<PricingXlsxData> {
-  const [pricingMod, siteMod] = await Promise.all([
-    server.ssrLoadModule("/src/lib/data/api-pricing.ts"),
-    server.ssrLoadModule("/src/lib/config/site.ts"),
-  ]);
+  const [pricingMod, siteMod, paymentsMod, cbMod, operatorsMod] =
+    await Promise.all([
+      server.ssrLoadModule("/src/lib/data/api-pricing.ts"),
+      server.ssrLoadModule("/src/lib/config/site.ts"),
+      server.ssrLoadModule("/src/lib/data/payments-pricing.ts"),
+      server.ssrLoadModule("/src/lib/data/connected-banking-pricing.ts"),
+      server.ssrLoadModule("/src/lib/data/bbps-operators.ts"),
+    ]);
 
   return {
     groups: pricingMod.PRICING_GROUPS,
@@ -93,5 +97,28 @@ async function loadPricingData(
     maxVolume: pricingMod.MAX_VOLUME,
     siteUrl: siteMod.SITE_URL,
     displayName: pricingMod.displayName,
+    dmt: {
+      slabs: paymentsMod.DMT_SLABS,
+      senderKycFee: paymentsMod.DMT_SENDER_KYC_FEE,
+      customerFeePct: paymentsMod.DMT_CUSTOMER_FEE_PCT,
+      customerFeeMin: paymentsMod.DMT_CUSTOMER_FEE_MIN,
+      maxTxnAmount: paymentsMod.DMT_MAX_TXN_AMOUNT,
+      tdsRate: paymentsMod.TDS_RATE,
+    },
+    aeps: {
+      cashoutSlabs: paymentsMod.AEPS_CASHOUT_SLABS,
+      miniStatementCommission: paymentsMod.AEPS_MINI_STATEMENT_COMMISSION,
+      settlementCharges: paymentsMod.AEPS_SETTLEMENT_CHARGES,
+    },
+    bbps: {
+      categories: paymentsMod.BBPS_CATEGORIES,
+      operators: operatorsMod.BBPS_OPERATORS,
+    },
+    cb: {
+      setupFee: cbMod.CB_SETUP_FEE,
+      banks: [...cbMod.CB_BANKS],
+      txnSlabs: cbMod.CB_TXN_SLABS,
+      maxBankUsers: cbMod.CB_MAX_BANK_USERS,
+    },
   };
 }
