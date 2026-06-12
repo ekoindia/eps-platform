@@ -54,22 +54,35 @@ export function FadeIn({
 		if (!el) return;
 
 		// CSS scroll-driven animation handles the reveal (even before
-		// hydration). JS only pins the revealed state once the element is
-		// seen: scroll-driven opacity tracks scroll position, so without the
-		// pin, scrolling back up re-hides content and full-page screenshot
-		// tools capture below-fold elements at their hidden `from` state.
+		// hydration). JS only pins the revealed state once the animation has
+		// COMPLETED: scroll-driven opacity tracks scroll position, so without
+		// the pin, scrolling back up re-hides content and full-page
+		// screenshot tools capture below-fold elements at their hidden
+		// `from` state. Pinning any earlier (e.g. on viewport entry) cuts the
+		// entrance animation short — removing the animation snaps opacity to
+		// the base value without a transition.
 		if (supportsScrollDriven && cssCapable) {
-			const observer = new IntersectionObserver(
-				([entry]) => {
-					if (entry.isIntersecting) {
-						el.classList.add("fade-in-done");
-						observer.disconnect();
-					}
-				},
-				{ threshold: 0.1 },
+			const pin = () => el.classList.add("fade-in-done");
+
+			// Already scrubbed past the animation range (e.g. the user
+			// scrolled by before hydration): past-range scroll-driven
+			// animations report "idle"/"finished", never "running".
+			const anim = (el.getAnimations?.() ?? []).find(
+				(a) => "animationName" in a && (a as CSSAnimation).animationName === "fade-in-view",
 			);
-			observer.observe(el);
-			return () => observer.disconnect();
+			if (anim && (anim.playState === "finished" || anim.playState === "idle")) {
+				pin();
+				return;
+			}
+
+			const onEnd = (event: AnimationEvent) => {
+				if (event.target === el && event.animationName === "fade-in-view") {
+					pin();
+					el.removeEventListener("animationend", onEnd);
+				}
+			};
+			el.addEventListener("animationend", onEnd);
+			return () => el.removeEventListener("animationend", onEnd);
 		}
 
 		const apply = () => {

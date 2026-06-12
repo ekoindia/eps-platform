@@ -84,11 +84,14 @@ describe("FadeIn SSG hydration", () => {
 		expect(el.classList.contains("fade-in-css")).toBe(true);
 		expect(el.classList.contains("fade-in-hidden")).toBe(false);
 
-		// Once seen, the reveal is pinned (sticky against scroll-up re-hide
-		// and full-page screenshot capture of below-fold content).
-		expect(observerCallbacks.length).toBe(1);
+		// No IntersectionObserver on the CSS path — the reveal is pinned only
+		// when the scroll-driven animation completes (sticky against
+		// scroll-up re-hide and full-page screenshot capture).
+		expect(observerCallbacks.length).toBe(0);
 		await act(async () => {
-			observerCallbacks[0]([{ isIntersecting: true }]);
+			const event = new Event("animationend") as AnimationEvent & { animationName: string };
+			Object.defineProperty(event, "animationName", { value: "fade-in-view" });
+			el.dispatchEvent(event);
 		});
 		expect(el.classList.contains("fade-in-done")).toBe(true);
 	});
