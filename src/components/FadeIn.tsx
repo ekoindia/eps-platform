@@ -41,10 +41,20 @@ export function FadeIn({
   const useCssOnly = supportsScrollDriven && onView && delay === 0;
 
   useEffect(() => {
-    if (useCssOnly) return;
-
     const el = ref.current;
     if (!el) return;
+
+    if (useCssOnly) {
+      // SSG hydration fix: the server can't detect scroll-driven animation
+      // support (no CSS API), so prerendered HTML carries `fade-in-hidden`.
+      // React skips attribute patching during hydration, leaving the stale
+      // class in the DOM and the element stuck at opacity 0. Sync it here.
+      if (el.classList.contains("fade-in-hidden")) {
+        el.classList.remove("fade-in-hidden");
+        el.classList.add("fade-in-css");
+      }
+      return;
+    }
 
     const apply = () => {
       el.classList.add("fade-in-visible");
