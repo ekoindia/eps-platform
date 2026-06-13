@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+	PRODUCTS_TXT_PARTS,
 	renderProductsIndexMarkdown,
 	renderProductsIndexText,
+	renderProductsIndexTextPart,
 } from "@/lib/markdown/render-products-index";
 import type { ProductPageDataShape } from "@/lib/markdown/render-product";
 import type { ApiProductRef } from "@/lib/data/api-products";
@@ -260,8 +262,12 @@ describe("renderProductsIndexText", () => {
 
 	it("groups the glance section into category sub-sections with inline summaries", () => {
 		expect(txt).toMatch(/#\d+\.\d+ Verification\n/);
+		// name + summary only — the URL is dropped here, it rides the detail section
 		expect(txt).toContain(
-			"  1. PAN Verification (https://eps.eko.in/products/pan-verification-api) — Full PAN identity fetch in <2 seconds",
+			"  1. PAN Verification — Full PAN identity fetch in <2 seconds",
+		);
+		expect(txt).not.toContain(
+			"PAN Verification (https://eps.eko.in/products/pan-verification-api) —",
 		);
 		// the glance no longer carries a "Category:" column
 		expect(txt).not.toContain("Category: Verification");
@@ -352,5 +358,61 @@ describe("renderProductsIndexText", () => {
 		// md reference kept to assert content parity, not size — the indented
 		// numbered-list table format can make the txt larger for table-heavy data.
 		expect(md).toContain("PAN Verification");
+	});
+});
+
+describe("renderProductsIndexTextPart", () => {
+	const part = {
+		slug: "products-verification-identity",
+		title: "Eko Verification APIs (Identity & KYC) — Reference",
+		shortLabel: "Identity & KYC verification",
+		lede: "Identity & KYC verification APIs from Eko.",
+		productIds: ["pan"],
+	};
+	const txt = renderProductsIndexTextPart(part, [panProduct], pages, COMMON_FAQS);
+
+	it("uses the part's H1 title and lede, not the combined one", () => {
+		expect(txt).toContain("Eko Verification APIs (Identity & KYC) — Reference");
+		expect(txt).not.toContain("Eko APIs & Products — Complete Reference");
+		expect(txt).toContain("Identity & KYC verification APIs from Eko.");
+	});
+
+	it("includes only the part's products", () => {
+		expect(txt).toContain("PAN Verification");
+		// no payment / BC product sections in an identity-only part
+		// (BBPS/AePS still appear in the shared pricing-notes boilerplate)
+		expect(txt).not.toMatch(/#\d+ Payment APIs/);
+		expect(txt).not.toMatch(/#\d+ BC Agent APIs/);
+		expect(txt).not.toContain("Domestic Money Transfer");
+		expect(txt).not.toContain("AePS Cashout");
+	});
+
+	it("stays self-contained: global notices plus its own glance, once each", () => {
+		expect(txt).toContain("GST @ 18%");
+		expect(txt).toContain("To get started");
+		expect(txt.match(/#1 Products at a Glance/g)).toHaveLength(1);
+	});
+
+	it("cross-links the sibling parts by public URL", () => {
+		expect(txt).toContain("Other parts:");
+		expect(txt).toContain("https://eps.eko.in/products-payments.txt");
+		expect(txt).toContain(
+			"https://eps.eko.in/products-verification-business.txt",
+		);
+	});
+
+	it("carries no bold markup and no glance URLs", () => {
+		expect(txt).not.toContain("**");
+		expect(txt).not.toContain(
+			"PAN Verification (https://eps.eko.in/products/pan-verification-api) —",
+		);
+	});
+
+	it("exposes three parts with unique slugs covering every active product once", () => {
+		expect(PRODUCTS_TXT_PARTS).toHaveLength(3);
+		const slugs = PRODUCTS_TXT_PARTS.map((p) => p.slug);
+		expect(new Set(slugs).size).toBe(3);
+		const ids = PRODUCTS_TXT_PARTS.flatMap((p) => p.productIds);
+		expect(new Set(ids).size).toBe(ids.length);
 	});
 });

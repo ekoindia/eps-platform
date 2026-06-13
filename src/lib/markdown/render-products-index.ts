@@ -314,13 +314,15 @@ const productSection = (
 		return joinBlocks(blocks).trimEnd();
 	}
 
-	blocks.push(page.overview || page.heroSubtitle || product.shortDesc);
+	// Pricing sits right under the description (before features) in every format.
+	blocks.push(page.overview || page.heroSubtitle || product.shortDesc, pricing);
 
 	if (page.features?.length) {
 		blocks.push(`**Features:**\n${titledBullets(page.features)}`);
 	}
 
-	const benefits = benefitsBlock(page);
+	// Key benefits omitted from the plain-text twin to keep the parts compact.
+	const benefits = fmt === "txt" ? undefined : benefitsBlock(page);
 	if (benefits) blocks.push(`**Key benefits:**\n${benefits}`);
 
 	if (page.types?.length) {
@@ -340,8 +342,6 @@ const productSection = (
 	const previews = previewLines(page);
 	if (previews) blocks.push(`**API endpoints:**\n${previews}`);
 
-	blocks.push(pricing);
-
 	const faqs = (page.faqs ?? []).filter((faq) => !commonQuestions.has(faq.q));
 	if (faqs.length > 0) blocks.push(`**FAQs:**\n${faqBullets(faqs)}`);
 
@@ -349,6 +349,75 @@ const productSection = (
 
 	return joinBlocks(blocks).trimEnd();
 };
+
+/**
+ * One standalone slice of the products reference — a subset of products rendered
+ * as a self-contained `txt` document with its own H1/lede. Used to split the
+ * otherwise-large `products.txt` into chatbot-trainable parts (each well under the
+ * size that times out Zoho SalesIQ's AnswerBot training).
+ */
+export interface ProductsIndexPart {
+	/** Emitted as `<slug>.txt`; also the public path `${SITE_URL}/<slug>.txt`. */
+	slug: string;
+	/** H1 override for the standalone document. */
+	title: string;
+	/** Short human label, used in the cross-links between sibling parts. */
+	shortLabel: string;
+	/** Lede paragraph override (sibling cross-links are appended automatically). */
+	lede: string;
+	/** Product ids to include, in display order; disabled ones are skipped. */
+	productIds: string[];
+}
+
+/**
+ * The split of `products.txt` into three trainable parts: identity/KYC
+ * verification, business/compliance verification, and payments + agent banking.
+ */
+export const PRODUCTS_TXT_PARTS: ProductsIndexPart[] = [
+	{
+		slug: "products-verification-identity",
+		title: "Eko EPS Verification APIs (Identity & KYC) — Reference",
+		shortLabel: "Identity & KYC verification",
+		lede: "Production-ready identity & KYC verification APIs from Eko EPS — validate individuals and their bank/UPI accounts in real time, built for India's digital economy. This document contains the full details of every identity & KYC verification API so it can be used standalone; per-product pages are linked in each section.",
+		productIds: [
+			"pan",
+			"aadhaar",
+			"bank",
+			"upi",
+			"digilocker",
+			"dl",
+			"voter-id",
+			"passport",
+			"name-match",
+			"email",
+		],
+	},
+	{
+		slug: "products-verification-business",
+		title: "Eko EPS Verification APIs (Business & Compliance) — Reference",
+		shortLabel: "Business & compliance verification",
+		lede: "Production-ready business & compliance verification APIs from Eko EPS — validate companies, directors, tax and regulatory status, built for India's digital economy. This document contains the full details of every business & compliance verification API so it can be used standalone; per-product pages are linked in each section.",
+		productIds: [
+			"gst",
+			"cin",
+			"din",
+			"itr",
+			"fssai",
+			"employee",
+			"rc",
+			"e-challan",
+			"ip",
+			"geocoding",
+		],
+	},
+	{
+		slug: "products-payments",
+		title: "Eko EPS Payments & Banking APIs (BBPS, DMT, AePS) — Reference",
+		shortLabel: "Payments & banking",
+		lede: "Production-ready payments & agent-banking APIs from Eko EPS — bill payments, domestic money transfer and Aadhaar-enabled cash withdrawal that pay YOU a commission per transaction, built for India's digital economy. This document contains the full details of every payments & banking API so it can be used standalone; per-product pages are linked in each section.",
+		productIds: ["bbps", "dmt", "aeps"],
+	},
+];
 
 /**
  * Render the products index in the requested `fmt`. Covers every active API
@@ -368,6 +437,7 @@ function renderProductsIndex(
 	pages: Record<string, ProductPageDataShape>,
 	commonFaqs: FAQ[],
 	fmt: MarkdownFormat,
+	opts: { title?: string; lede?: string; omitMoreInfo?: boolean } = {},
 ): string {
 	const commonQuestions = new Set(commonFaqs.map((faq) => faq.q));
 
@@ -408,11 +478,31 @@ function renderProductsIndex(
 		);
 	}
 
+	// Pricing notes carry only the clauses relevant to the products in this
+	// document: the verification "you pay per call" line and the commission/TDS
+	// line are each emitted only when that product type is actually present.
+	const hasVerification = products.some((p) => p.category === "verification");
+	const hasCommission = products.some(
+		(p) => p.category === "payment" || p.category === "bc",
+	);
+	const typeClauses = [
+		hasVerification ? "Verification APIs are a cost you pay per call" : undefined,
+		hasCommission
+			? `DMT, AePS and BBPS pay YOU a commission per transaction (TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts)`
+			: undefined,
+	].filter(Boolean);
+	const ratesWord = hasCommission ? "rates and commissions" : "rates";
+	const pricingNotes =
+		`**Pricing notes (apply to every product below):** All ${ratesWord} are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. Billing is per successful API call.` +
+		(typeClauses.length ? ` ${typeClauses.join("; ")}.` : "") +
+		(SETUP_FEE_WAIVED ? " Setup fees are currently waived." : "");
+
 	blocks.push(
-		heading(1, "Eko APIs & Products — Complete Reference", fmt),
-		"Production-ready fintech APIs for payments, verification, and agent banking — built for India's digital economy. This document contains the full details of every active Eko API so it can be used standalone; per-product pages are linked in each section.",
+		heading(1, opts.title ?? "Eko APIs & Products — Complete Reference", fmt),
+		opts.lede ??
+			"Production-ready fintech APIs for payments, verification, and agent banking — built for India's digital economy. This document contains the full details of every active Eko API so it can be used standalone; per-product pages are linked in each section.",
 		gettingStartedNotice(),
-		`**Pricing notes (apply to every product below):** All rates and commissions are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. Billing is per successful API call. Verification APIs are a cost you pay per call; DMT, AePS and BBPS pay YOU a commission per transaction (TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts).${SETUP_FEE_WAIVED ? " Setup fees are currently waived." : ""}`,
+		pricingNotes,
 	);
 
 	// Hierarchical heading numbers (used by the `txt` variant): top-level
@@ -441,10 +531,11 @@ function renderProductsIndex(
 			if (category.list.length === 0) continue;
 			blocks.push(
 				heading(3, categoryLabels[category.list[0].category], fmt, `${glanceNo}.${++glanceSub}`),
+				// Name only — the product's URL is repeated in its detailed section below.
 				category.list
 					.map(
 						(product, i) =>
-							`  ${i + 1}. ${link(product.name, `${SITE_URL}${product.href}`, fmt)} — ${product.shortDesc}`,
+							`  ${i + 1}. ${product.name} — ${product.shortDesc}`,
 					)
 					.join("\n"),
 			);
@@ -468,13 +559,15 @@ function renderProductsIndex(
 		});
 	}
 
-	blocks.push(
-		heading(2, "More Information", fmt, String(++section)),
-		bulletList([
-			`${link("Site index", `${SITE_URL}/index.md`, fmt)}: Full list of API products, industries, and solution packs`,
-			`${link("Pricing rate card", `${SITE_URL}/pricing.md`, fmt)}: Consolidated pricing for all APIs and other offerings`,
-		]),
-	);
+	if (!opts.omitMoreInfo) {
+		blocks.push(
+			heading(2, "More Information", fmt, String(++section)),
+			bulletList([
+				`${link("Site index", `${SITE_URL}/index.md`, fmt)}: Full list of API products, industries, and solution packs`,
+				`${link("Pricing rate card", `${SITE_URL}/pricing.md`, fmt)}: Consolidated pricing for all APIs and other offerings`,
+			]),
+		);
+	}
 
 	const out = joinBlocks(blocks);
 	// The txt variant carries no bold markup: strip every `**` emitted by the
@@ -499,4 +592,29 @@ export function renderProductsIndexText(
 	commonFaqs: FAQ[] = [],
 ): string {
 	return renderProductsIndex(products, pages, commonFaqs, "txt");
+}
+
+/**
+ * Render one standalone `txt` part (see {@link PRODUCTS_TXT_PARTS}) — a markup-light
+ * slice of the products reference scoped to `products`, with the part's own H1/lede
+ * and a trailing cross-link to its sibling parts. `products` is expected to be the
+ * active products for this part, already resolved in display order.
+ */
+export function renderProductsIndexTextPart(
+	part: ProductsIndexPart,
+	products: ApiProductRef[],
+	pages: Record<string, ProductPageDataShape> = {},
+	commonFaqs: FAQ[] = [],
+): string {
+	const siblings = PRODUCTS_TXT_PARTS.filter((p) => p.slug !== part.slug);
+	const crossLinks = siblings.length
+		? `\n\nThis reference is split into parts. Other parts: ${siblings
+				.map((p) => `${p.shortLabel} (${SITE_URL}/${p.slug}.txt)`)
+				.join(", ")}.`
+		: "";
+	return renderProductsIndex(products, pages, commonFaqs, "txt", {
+		title: part.title,
+		lede: part.lede + crossLinks,
+		omitMoreInfo: true,
+	});
 }
