@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { renderProductMarkdown } from "@/lib/markdown/render-product";
-import type { ProductPageDataShape } from "@/lib/markdown/render-product";
 import type { ApiProductRef } from "@/lib/data/api-products";
+import type { ProductPageDataShape } from "@/lib/markdown/render-product";
+import { renderProductMarkdown } from "@/lib/markdown/render-product";
+import { describe, expect, it } from "vitest";
 
 const product: ApiProductRef = {
   id: "pan",
@@ -52,18 +52,22 @@ describe("renderProductMarkdown", () => {
 
   it("includes YAML front-matter with canonical URL", () => {
     expect(md).toMatch(/^---\n/);
-    expect(md).toContain('canonical: "https://eps.eko.in/products/pan-verification-api"');
+    expect(md).toContain(
+      'canonical: "https://eps.eko.in/products/pan-verification-api"',
+    );
     expect(md).toContain('type: "product"');
   });
 
   it("includes the canonical notice and H1 hero title", () => {
-    expect(md).toContain("**Canonical URL:** https://eps.eko.in/products/pan-verification-api");
+    expect(md).toContain(
+      "**Canonical URL:** https://eps.eko.in/products/pan-verification-api",
+    );
     expect(md).toContain("# Verify PAN in under 2 seconds");
   });
 
   it("includes the shared get-started CTA", () => {
     expect(md).toContain(
-      "To get started, fill the form at https://eps.eko.in/signup (with your name and mobile number) or call us at +919513181707"
+      "To get started, fill the form at https://eps.eko.in/signup (with your name, mobile number and email) or call us at +919513181707",
     );
   });
 
@@ -83,7 +87,11 @@ describe("renderProductMarkdown", () => {
 
   it("links related products with markdown-version suffixes", () => {
     expect(md).toContain("## Related Products");
-    expect(md).toContain("(https://eps.eko.in/products/aadhaar-verification-api)");
-    expect(md).toContain("(https://eps.eko.in/products/aadhaar-verification-api.md)");
+    expect(md).toContain(
+      "(https://eps.eko.in/products/aadhaar-verification-api)",
+    );
+    expect(md).toContain(
+      "(https://eps.eko.in/products/aadhaar-verification-api.md)",
+    );
   });
 });
