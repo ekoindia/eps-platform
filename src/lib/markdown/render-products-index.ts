@@ -177,9 +177,23 @@ const verificationPricing = (
 	return notes.length > 0 ? `${rateTable}\n\n${bulletList(notes)}` : rateTable;
 };
 
+const dmtSenderNotes = [
+	`Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — paid by the sender.`,
+	`One-time sender KYC charge: ${formatAmount(DMT_SENDER_KYC_FEE)} (excl. GST), paid by the sender at registration.`,
+	`Maximum transaction amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)}.`,
+];
+
 /** DMT commission pricing — full slab table plus sender-fee notes. */
-const dmtPricing = (fmt: MarkdownFormat): string =>
-	[
+const dmtPricing = (fmt: MarkdownFormat): string => {
+	if (fmt === "txt") {
+		// Inline numbered slabs: "range: eko pricing (Commission: x, After TDS: y)".
+		const lines = DMT_SLABS.map((slab, i) => {
+			const afterTds = formatRate(slab.commission * (1 - TDS_RATE));
+			return `  ${i + 1}. ${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}: ${formatRate(slab.ekoPricing)} (Commission: ${formatRate(slab.commission)}, After TDS: ${afterTds})`;
+		});
+		return [lines.join("\n"), bulletList(dmtSenderNotes)].join("\n\n");
+	}
+	return [
 		table(
 			[
 				"Txn amount (INR)",
@@ -195,44 +209,65 @@ const dmtPricing = (fmt: MarkdownFormat): string =>
 			]),
 			fmt,
 		),
-		bulletList([
-			`Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — paid by the sender.`,
-			`One-time sender KYC charge: ${formatAmount(DMT_SENDER_KYC_FEE)} (excl. GST), paid by the sender at registration.`,
-			`Maximum transaction amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)}.`,
-		]),
+		bulletList(dmtSenderNotes),
 	].join("\n\n");
+};
 
 /** AePS commission pricing — cashout slabs plus mini-statement rate. */
-const aepsPricing = (fmt: MarkdownFormat): string =>
-	[
+const aepsPricing = (fmt: MarkdownFormat): string => {
+	const miniStatement = `Mini statement: ${formatRate(AEPS_MINI_STATEMENT_COMMISSION)} per transaction.`;
+	if (fmt === "txt") {
+		// Inline numbered slabs: "range: commission".
+		const lines = AEPS_CASHOUT_SLABS.map(
+			(slab, i) => `  ${i + 1}. ${slabRange(slab)}: ${slabValue(slab)}`,
+		);
+		return [lines.join("\n"), miniStatement].join("\n\n");
+	}
+	return [
 		table(
 			["Transaction bracket (INR)", "Cashout commission"],
 			AEPS_CASHOUT_SLABS.map((slab) => [slabRange(slab), slabValue(slab)]),
 			fmt,
 		),
-		`Mini statement: ${formatRate(AEPS_MINI_STATEMENT_COMMISSION)} per transaction.`,
+		miniStatement,
 	].join("\n\n");
+};
+
+/** Inline commission for one BBPS category, e.g. "₹0.72" or "slab: rate; …". */
+const bbpsCommissionInline = (category: (typeof BBPS_CATEGORIES)[number]): string =>
+	category.slabs
+		.map((slab) =>
+			category.slabs.length > 1
+				? `${slabRange(slab)}: ${slabValue(slab)}`
+				: slabValue(slab),
+		)
+		.join("; ");
+
+const bbpsOperatorPointer = `Operator-level commission for ${BBPS_OPERATORS.length}+ BBPS billers: ${SITE_URL}/eps-pricing-calculator.xlsx (also summarised at ${SITE_URL}/pricing.md).`;
 
 /** BBPS commission pricing — category-level slab table plus operator pointer. */
-const bbpsPricing = (fmt: MarkdownFormat): string =>
-	[
+const bbpsPricing = (fmt: MarkdownFormat): string => {
+	if (fmt === "txt") {
+		// Inline numbered list — one line per category, range notes in [brackets].
+		const lines = BBPS_CATEGORIES.map((category, i) => {
+			const note = category.rangeNote ? ` [${category.rangeNote}]` : "";
+			return `  ${i + 1}. ${category.name}: ${bbpsCommissionInline(category)}${note}`;
+		});
+		return [lines.join("\n"), bbpsOperatorPointer].join("\n\n");
+	}
+	return [
 		table(
 			["Category", "Commission (excl. GST)", "Notes"],
 			BBPS_CATEGORIES.map((category) => [
 				category.name,
-				category.slabs
-					.map((slab) =>
-						category.slabs.length > 1
-							? `${slabRange(slab)}: ${slabValue(slab)}`
-							: slabValue(slab),
-					)
-					.join("; "),
+				bbpsCommissionInline(category),
 				category.rangeNote ?? "—",
 			]),
 			fmt,
 		),
-		`Operator-level commission for ${BBPS_OPERATORS.length}+ BBPS billers: ${SITE_URL}/eps-pricing-calculator.xlsx (also summarised at ${SITE_URL}/pricing.md).`,
+		bbpsOperatorPointer,
 	].join("\n\n");
+};
 
 /** Pricing block for a product, switching on product id / category. */
 const pricingBlock = (product: ApiProductRef, fmt: MarkdownFormat): string => {
@@ -260,16 +295,22 @@ const productSection = (
 		fmt === "md" ? link("Markdown", `${SITE_URL}${product.href}.md`, fmt) : null;
 	const linksLine = (...parts: (string | null)[]): string =>
 		`**Links:** ${parts.filter(Boolean).join(sep)}`;
+	// BBPS/DMT inline their commission slabs, so the label spells out the basis.
+	const pricingLabel =
+		product.id === "bbps"
+			? "**Pricing (commission, excl. GST):**"
+			: product.id === "dmt"
+				? `**Pricing (excl. GST, TDS @ ${Math.round(TDS_RATE * 100)}%):**`
+				: product.id === "aeps"
+					? "**Pricing (commission):**"
+					: "**Pricing:**";
+	const pricing = `${pricingLabel}\n${pricingBlock(product, fmt)}`;
 	const blocks: (string | undefined)[] = [
 		heading(3, product.name, fmt, number),
 	];
 
 	if (!page) {
-		blocks.push(
-			product.shortDesc,
-			`**Pricing:**\n${pricingBlock(product, fmt)}`,
-			linksLine(pageLink, mdLink),
-		);
+		blocks.push(product.shortDesc, pricing, linksLine(pageLink, mdLink));
 		return joinBlocks(blocks).trimEnd();
 	}
 
@@ -299,7 +340,7 @@ const productSection = (
 	const previews = previewLines(page);
 	if (previews) blocks.push(`**API endpoints:**\n${previews}`);
 
-	blocks.push(`**Pricing:**\n${pricingBlock(product, fmt)}`);
+	blocks.push(pricing);
 
 	const faqs = (page.faqs ?? []).filter((faq) => !commonQuestions.has(faq.q));
 	if (faqs.length > 0) blocks.push(`**FAQs:**\n${faqBullets(faqs)}`);
