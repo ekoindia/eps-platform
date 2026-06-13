@@ -284,10 +284,35 @@ describe("renderProductsIndexText", () => {
 		expect(txt).not.toMatch(/^\| /m);
 		// Pricing content parity with the markdown variant.
 		expect(txt).toMatch(/₹\d/);
-		expect(txt).toContain("After TDS @ 2%");
+		expect(txt).toContain("After TDS: ₹2.81");
 		expect(txt).toContain("Mini statement: ₹0.75 per transaction.");
 		expect(txt).toContain("eps-pricing-calculator.xlsx");
 		expect(txt).toMatch(/Operator-level commission for \d+\+ BBPS billers/);
+	});
+
+	it("renders AePS cashout slabs as an inline numbered list", () => {
+		expect(txt).toContain("Pricing (commission):");
+		expect(txt).toMatch(/  1\. ₹101 – ₹3,000: 0\.4% of amount/);
+		expect(txt).toContain("Mini statement: ₹0.75 per transaction.");
+	});
+
+	it("renders DMT slabs as an inline numbered list with commission/after-TDS", () => {
+		expect(txt).toContain("Pricing (excl. GST, TDS @ 2%):");
+		expect(txt).toMatch(
+			/  1\. ₹100 – ₹1,000: ₹5\.67 \(Commission: ₹2\.87, After TDS: ₹2\.81\)/,
+		);
+		// sender notes still follow as bullets
+		expect(txt).toContain("Maximum transaction amount: ₹5,000.");
+	});
+
+	it("renders BBPS commission as an inline numbered list with [bracketed] notes", () => {
+		expect(txt).toContain("Pricing (commission, excl. GST):");
+		expect(txt).toMatch(
+			/  \d+\. Electricity Bill: ₹1 – ₹5,000: ₹1\.20; ₹5,001 – ₹20,000: 0\.52% of amount/,
+		);
+		// range notes ride inline in square brackets, not on a separate line
+		expect(txt).toMatch(/  \d+\. FASTag Recharge: ₹[\d.]+ \[[^\]]+\]/);
+		expect(txt).not.toContain("Notes: —");
 	});
 
 	it("compresses verification pricing to one line per variant", () => {
