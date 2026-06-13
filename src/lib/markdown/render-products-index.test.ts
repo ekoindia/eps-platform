@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { renderProductsIndexMarkdown } from "@/lib/markdown/render-products-index";
+import {
+	renderProductsIndexMarkdown,
+	renderProductsIndexText,
+} from "@/lib/markdown/render-products-index";
 import type { ProductPageDataShape } from "@/lib/markdown/render-product";
 import type { ApiProductRef } from "@/lib/data/api-products";
 import type { FAQ } from "@/components/ProductPageLayout";
@@ -227,5 +230,102 @@ describe("renderProductsIndexMarkdown", () => {
 	it("excludes repetitive boilerplate sections", () => {
 		expect(md).not.toContain("Integration Steps");
 		expect(md).not.toContain("Connected Banking");
+	});
+});
+
+describe("renderProductsIndexText", () => {
+	const txt = renderProductsIndexText(products, pages, COMMON_FAQS);
+	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS);
+
+	it("drops front-matter and the canonical notice", () => {
+		expect(txt).not.toMatch(/^---\n/);
+		expect(txt).not.toContain('type: "products-index"');
+		expect(txt).not.toContain("canonical:");
+		expect(txt).not.toContain("machine-readable Markdown version");
+	});
+
+	it("carries no bold markup anywhere", () => {
+		expect(txt).not.toContain("**");
+	});
+
+	it("uses '#'-numbered headings, no markdown '#' headings", () => {
+		expect(txt).toContain("Eko APIs & Products — Complete Reference");
+		expect(txt).toMatch(/#\d+ Verification APIs/);
+		expect(txt).toMatch(/#\d+\.\d+ PAN Verification/);
+		for (const line of txt.split("\n")) {
+			expect(line.startsWith("## ")).toBe(false);
+			expect(line.startsWith("### ")).toBe(false);
+		}
+	});
+
+	it("groups the glance section into category sub-sections with inline summaries", () => {
+		expect(txt).toMatch(/#\d+\.\d+ Verification\n/);
+		expect(txt).toContain(
+			"  1. PAN Verification (https://eps.eko.in/products/pan-verification-api) — Full PAN identity fetch in <2 seconds",
+		);
+		// the glance no longer carries a "Category:" column
+		expect(txt).not.toContain("Category: Verification");
+	});
+
+	it("renders labels and FAQs unbolded, filtering common FAQs", () => {
+		expect(txt).toContain("Pricing:");
+		expect(txt).toContain("- Is it real-time? Yes.");
+		expect(txt).not.toContain("How do I get started?");
+	});
+
+	it("keeps backtick endpoint one-liners", () => {
+		expect(txt).toContain(
+			"- `POST /pan/lite` — PAN Lite: inputs: PAN Number → outputs: PAN Status",
+		);
+	});
+
+	it("renders tables as indented numbered lists, not pipe tables", () => {
+		expect(txt).not.toContain("|---");
+		expect(txt).not.toMatch(/^\| /m);
+		// Pricing content parity with the markdown variant.
+		expect(txt).toMatch(/₹\d/);
+		expect(txt).toContain("After TDS @ 2%");
+		expect(txt).toContain("Mini statement: ₹0.75 per transaction.");
+		expect(txt).toContain("eps-pricing-calculator.xlsx");
+		expect(txt).toMatch(/Operator-level commission for \d+\+ BBPS billers/);
+	});
+
+	it("compresses verification pricing to one line per variant", () => {
+		// "Name: rate" on a single line, no stacked Rate:/Billing unit: lines.
+		expect(txt).toMatch(/  \d+\. PAN[^\n]*: ₹\d/);
+		expect(txt).not.toContain("Billing unit:");
+		// the implied per-verification unit is dropped
+		expect(txt).not.toContain(": ₹1.20 per verification");
+		// bulk variants keep their "*" marker and share one footnote
+		expect(txt).toContain("  * billed per record in bulk requests");
+	});
+
+	it("drops the markdown link and comma-joins the links line", () => {
+		expect(txt).toContain(
+			"Links: Page (https://eps.eko.in/products/pan-verification-api), API docs (https://developers.eko.in/docs/x)",
+		);
+		expect(txt).not.toContain("[Page](");
+		expect(txt).not.toContain("Markdown (");
+		expect(txt).not.toContain(" · ");
+	});
+
+	it("adds an extra blank line before H1/H2 sections only", () => {
+		// no leading blank at the very top (H1 title)
+		expect(txt.startsWith("\n")).toBe(false);
+		// H2 sections are preceded by two blank lines
+		expect(txt).toMatch(/\n\n\n#1 Products at a Glance/);
+		expect(txt).toMatch(/\n\n\n#\d+ Verification APIs/);
+		// H3 sub-sections keep a single blank line
+		expect(txt).toMatch(/[^\n]\n\n#1\.1 Verification/);
+		expect(txt).not.toMatch(/\n\n\n#1\.1 Verification/);
+	});
+
+	it("renders the same product set as the markdown twin", () => {
+		for (const product of products) {
+			expect(txt).toContain(product.name);
+		}
+		// md reference kept to assert content parity, not size — the indented
+		// numbered-list table format can make the txt larger for table-heavy data.
+		expect(md).toContain("PAN Verification");
 	});
 });
