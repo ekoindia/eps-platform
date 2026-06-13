@@ -113,16 +113,24 @@ export function generateMarkdownPlugin(): Plugin {
         );
         written++;
 
-        // Plain-text twin of products.md (markup-light, even smaller for LLMs).
-        await writeFile(
-          path.join(outDir, "products.txt"),
-          bundle.renderProductsIndexText(
-            activeProducts,
-            bundle.API_PRODUCT_PAGES,
-            bundle.COMMON_API_FAQS
-          )
-        );
-        written++;
+        // Plain-text twin of products.md, split into self-contained parts small
+        // enough to train Zoho SalesIQ's AnswerBot without timing out.
+        const productById = new Map(activeProducts.map((p) => [p.id, p]));
+        for (const part of bundle.PRODUCTS_TXT_PARTS) {
+          const partProducts = part.productIds
+            .map((id) => productById.get(id))
+            .filter((p): p is NonNullable<typeof p> => Boolean(p));
+          await writeFile(
+            path.join(outDir, `${part.slug}.txt`),
+            bundle.renderProductsIndexTextPart(
+              part,
+              partProducts,
+              bundle.API_PRODUCT_PAGES,
+              bundle.COMMON_API_FAQS
+            )
+          );
+          written++;
+        }
 
         // -- Pricing rate card ------------------------------------------------
         await writeFile(path.join(outDir, "pricing.md"), bundle.renderPricingMarkdown());
@@ -198,7 +206,15 @@ interface MarkdownBundle {
     pages: Record<string, unknown>,
     commonFaqs: Array<{ q: string; a: string }>
   ) => string;
-  renderProductsIndexText: (
+  PRODUCTS_TXT_PARTS: Array<{
+    slug: string;
+    title: string;
+    shortLabel: string;
+    lede: string;
+    productIds: string[];
+  }>;
+  renderProductsIndexTextPart: (
+    part: unknown,
     p: unknown[],
     pages: Record<string, unknown>,
     commonFaqs: Array<{ q: string; a: string }>
@@ -246,7 +262,8 @@ async function loadRenderBundle(
     renderSiteIndexMarkdown: renderIndexMod.renderSiteIndexMarkdown,
     renderLlmsTxt: renderIndexMod.renderLlmsTxt,
     renderProductsIndexMarkdown: renderProductsIndexMod.renderProductsIndexMarkdown,
-    renderProductsIndexText: renderProductsIndexMod.renderProductsIndexText,
+    PRODUCTS_TXT_PARTS: renderProductsIndexMod.PRODUCTS_TXT_PARTS,
+    renderProductsIndexTextPart: renderProductsIndexMod.renderProductsIndexTextPart,
     renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
   };
 }
@@ -273,12 +290,21 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
       bundle.COMMON_API_FAQS
     );
   }
-  if (url === "/products.txt") {
-    return bundle.renderProductsIndexText(
-      activeProducts,
-      bundle.API_PRODUCT_PAGES,
-      bundle.COMMON_API_FAQS
-    );
+  const partMatch = url.match(/^\/([^/]+)\.txt$/);
+  if (partMatch) {
+    const part = bundle.PRODUCTS_TXT_PARTS.find((p) => p.slug === partMatch[1]);
+    if (part) {
+      const productById = new Map(activeProducts.map((p) => [p.id, p]));
+      const partProducts = part.productIds
+        .map((id) => productById.get(id))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p));
+      return bundle.renderProductsIndexTextPart(
+        part,
+        partProducts,
+        bundle.API_PRODUCT_PAGES,
+        bundle.COMMON_API_FAQS
+      );
+    }
   }
   if (url === "/pricing.md") {
     return bundle.renderPricingMarkdown();
