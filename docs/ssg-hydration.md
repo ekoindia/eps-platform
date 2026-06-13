@@ -47,11 +47,12 @@ the pre-rendered DOM and re-render from scratch on every page load).
   makes prerendered content invisible. The hidden state for `.fade-in-css`
   lives only inside the keyframes with `animation-fill-mode: both`
   (`src/index.css`), so an inactive timeline degrades to visible content.
-  Scroll-driven reveals must also be **pinned once seen**: scrubbed opacity
-  tracks scroll position, so scrolling back up re-hides content and
+  Scroll-driven reveals must also be **pinned once complete**: scrubbed
+  opacity tracks scroll position, so scrolling back up re-hides content and
   full-page screenshot tools capture below-fold elements at their hidden
-  `from` state. FadeIn's IntersectionObserver adds `.fade-in-done`
-  (animation removed → visible base styles) on first intersection.
+  `from` state. FadeIn adds `.fade-in-done` (animation removed → visible
+  base styles) on `animationend` — not on viewport entry, which would cut
+  the entrance animation short with an opacity snap.
 - **JS-dependent hidden states must be gated on scripting.** `.fade-in-hidden`
   (revealed only by an IntersectionObserver/timer) sits inside
   `@media (scripting: enabled)` so no-JS loads and crawlers see the

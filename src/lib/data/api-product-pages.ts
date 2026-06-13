@@ -139,24 +139,8 @@ const VERIFICATION_STEPS_BASE = [
 // const comingSoonPreview = (apiName: string) =>
 //   ({ apiName, inputs: [], outputs: [], comingSoon: true });
 
-/** PAN entry FAQs — also used to generate jsonLd FAQPage below */
-const PAN_FAQS = [
-  {
-    q: "How fast is PAN verification?",
-    a: "PAN verification is real-time with sub-second response times for instant identity validation.",
-  },
-  {
-    q: "What details are returned?",
-    a: "PAN Lite returns PAN status, name match, DOB match, and Aadhaar seeding status. PAN Advanced returns holder name, PAN type, gender, date of birth, masked Aadhaar number, Aadhaar linking status, mobile number, email, and address.",
-  },
-];
-
 /** FAQs appended to every API product page after product-specific FAQs */
 export const COMMON_API_FAQS: FAQ[] = [
-  {
-    q: "How do I get started?",
-    a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
-  },
   {
     q: "Can the API handle high volumes?",
     a: "Yes. The API is designed to handle large-scale volumes reliably without performance degradation.",
@@ -176,6 +160,23 @@ export const COMMON_API_FAQS: FAQ[] = [
   {
     q: "How is API usage billed?",
     a: "Usage is billed per successful API call with no minimum commitment. Volume-based pricing tiers are available — contact our team for detailed rates.",
+  },
+  // TODO: Confirm, cleanup and re-enable these FAQs if relevant across multiple products
+  // {
+  //   q: "How long does integration take?",
+  //   a: "With our well-documented APIs and sandbox environment, most partners complete integration within 2-4 weeks including testing and certification.",
+  // },
+  // {
+  //   q: "How fast is DL verification?",
+  //   a: "Verification is real-time with instant structured responses for driving license details.",
+  // },
+  // {
+  //   q: "What is the rate limit?",
+  //   a: "Rate limits depend on your plan. Contact us for higher throughput requirements.",
+  // },
+  {
+    q: "How do I get started?",
+    a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
   },
 ];
 
@@ -290,10 +291,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       // "E-commerce Refunds",
     ],
     faqs: [
-      {
-        q: "What is the DMT API?",
-        a: "The DMT (Domestic Money Transfer) API enables instant money transfers to any bank account across India using IMPS and NEFT. It's designed for businesses that want to offer remittance services to their customers.",
-      },
+      // {
+      //   q: "What is the DMT API?",
+      //   a: "The DMT (Domestic Money Transfer) API enables instant money transfers to any bank account across India using IMPS and NEFT. It's designed for businesses that want to offer remittance services to their customers.",
+      // },
       // {
       //   q: "What is the transaction limit?",
       //   a: "Individual transaction limits vary based on the mode of transfer. IMPS supports up to ₹5 lakh per transaction, while NEFT and RTGS support higher limits for bulk transfers.",
@@ -302,10 +303,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         q: "How long does a transfer take?",
         a: "IMPS transfers are instant (within seconds). NEFT transfers are processed in batches throughout the day.",
       },
-      {
-        q: "What documents are required for integration?",
-        a: "You'll need business registration documents, PAN card, bank account details, and relevant licenses based on your business type. Our team will guide you through the complete process.",
-      },
+      // {
+      //   q: "What documents are required for integration?",
+      //   a: "You'll need business registration documents, PAN card, bank account details, and relevant licenses based on your business type. Our team will guide you through the complete process.",
+      // },
       {
         q: "Is there a settlement delay?",
         a: "Settlement timelines depend on your agreement. Most partners receive T+1 settlements, with options for same-day settlements for high-volume partners.",
@@ -422,13 +423,13 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Government Disbursements",
     ],
     faqs: [
-      {
-        q: "What is AePS?",
-        a: "AePS (Aadhaar Enabled Payment System) is a bank-led model that allows online financial transactions through Aadhaar authentication. It uses NPCI infrastructure and enables customers to use their Aadhaar for bank transactions.",
-      },
+      // {
+      //   q: "What is AePS?",
+      //   a: "AePS (Aadhaar Enabled Payment System) is a bank-led model that allows online financial transactions through Aadhaar authentication. It uses NPCI infrastructure and enables customers to use their Aadhaar for bank transactions.",
+      // },
       {
         q: "What biometric devices are supported?",
-        a: "We support all UIDAI-certified biometric devices including Morpho, Mantra, Startek, and others. Contact our team for the complete list of supported devices.",
+        a: "We support all UIDAI-certified biometric devices including Morpho, Mantra, Startek, and others.",
       },
       // {
       //   q: "What is the transaction limit for AePS?",
@@ -568,10 +569,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Corporate Solutions",
     ],
     faqs: [
-      {
-        q: "What is BBPS API?",
-        a: "BBPS (Bharat Bill Payment System) API is an RBI-mandated online bill payment system that enables customers to pay bills easily and securely. Our API allows you to integrate bill payment services into your platform.",
-      },
+      // {
+      //   q: "What is BBPS API?",
+      //   a: "BBPS (Bharat Bill Payment System) API is an RBI-mandated online bill payment system that enables customers to pay bills easily and securely. Our API allows you to integrate bill payment services into your platform.",
+      // },
       // {
       //   q: "How many billers are supported?",
       //   a: "Eko's BBPS API provides access to 20,000+ billers across 200+ categories including electricity, gas, water, DTH, broadband, insurance, EMI, FASTag, and more.",
@@ -584,10 +585,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         q: "Is BBPS API available 24/7?",
         a: "Yes, BBPS services are available 24/7. However, some billers may have specific operating hours for payment processing.",
       },
-      {
-        q: "How long does integration take?",
-        a: "With our well-documented APIs and sandbox environment, most partners complete integration within 2-4 weeks including testing and certification.",
-      },
+      // {
+      //   q: "How long does integration take?",
+      //   a: "With our well-documented APIs and sandbox environment, most partners complete integration within 2-4 weeks including testing and certification.",
+      // },
     ],
   },
 
@@ -838,18 +839,14 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Rental Collection",
     ],
     faqs: [
-      {
-        q: "How does the agent app work?",
-        a: "Agents download our white-label app, log in with credentials, and can immediately start collecting. The app shows assigned customers, amounts due, and allows cash/digital collection with instant receipts.",
-      },
-      {
-        q: "Is there a limit on collection amount?",
-        a: "You can configure daily limits and per-transaction limits for each agent based on your risk policy. Higher limits require additional verification.",
-      },
-      {
-        q: "How is fraud prevented?",
-        a: "Multiple layers including GPS location logging, photo capture of cash, digital receipts sent directly to customers, and real-time reconciliation. Any discrepancy is flagged immediately.",
-      },
+      // {
+      //   q: "Is there a limit on collection amount?",
+      //   a: "You can configure daily limits and per-transaction limits for each agent based on your risk policy. Higher limits require additional verification.",
+      // },
+      // {
+      //   q: "How is fraud prevented?",
+      //   a: "Multiple layers including GPS location logging, photo capture of cash, digital receipts sent directly to customers, and real-time reconciliation. Any discrepancy is flagged immediately.",
+      // },
       // {
       //   q: "Can we use our own collection app?",
       //   a: "Yes, our APIs can be integrated into your existing mobile app. We provide SDKs and complete documentation for custom integration.",
@@ -1198,7 +1195,16 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     leadForm: {
       title: "Get PAN Verification API Access",
     },
-    faqs: PAN_FAQS,
+    faqs: [
+      {
+        q: "How fast is PAN verification?",
+        a: "PAN verification is real-time with sub-second response times for instant identity validation.",
+      },
+      {
+        q: "What details are returned?",
+        a: "PAN Lite returns PAN status, name match, DOB match, and Aadhaar seeding status. PAN Advanced returns holder name, PAN type, gender, date of birth, masked Aadhaar number, Aadhaar linking status, mobile number, email, and address.",
+      },
+    ],
     inputOutputPreviews: [
       {
         apiName: "PAN Lite",
@@ -1446,10 +1452,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         q: "Is Aadhaar verification consent-based?",
         a: "Yes, all Aadhaar verification flows are designed with explicit user consent at the core, ensuring transparency and compliance.",
-      },
-      {
-        q: "How fast is the verification?",
-        a: "Verification is real-time with instant results returned in structured response payloads.",
       },
     ],
     // inputOutputPreview: comingSoonPreview("Aadhaar Verification"),
@@ -1748,10 +1750,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "The API returns GSTIN status, legal business name, trade name, constitution of business, taxpayer type, nature of business activities, registration date, last update date, state jurisdiction, and principal place of address.",
       },
       {
-        q: "Can I verify multiple GSTINs?",
-        a: "Yes, the API supports high-volume verification for batch processing needs.",
-      },
-      {
         q: "Is the data real-time?",
         a: "Yes, GSTIN details are verified in real time against official records.",
       },
@@ -1941,16 +1939,12 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     },
     faqs: [
       {
-        q: "What is a VPA?",
+        q: "What is a VPA/UPI-ID?",
         a: "VPA (Virtual Payment Address) is the UPI ID used for sending and receiving payments — for example, rajesh@okicici. This API verifies whether a VPA is valid and returns the registered payee name.",
       },
       {
         q: "Can I verify the registered phone number?",
         a: "Yes. The API accepts a UPI ID (VPA) and registered mobile number, and returns the verified payee details including recipient name.",
-      },
-      {
-        q: "How is the API secured?",
-        a: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography.",
       },
       {
         q: "What details are returned?",
@@ -2696,10 +2690,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       {
         q: "Can I use this for fraud detection?",
         a: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses for fraud prevention.",
-      },
-      {
-        q: "What is the rate limit?",
-        a: "Rate limits depend on your plan. Contact us for higher throughput requirements.",
       },
     ],
     inputOutputPreview: {

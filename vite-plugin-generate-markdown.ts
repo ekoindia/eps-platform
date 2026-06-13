@@ -113,6 +113,17 @@ export function generateMarkdownPlugin(): Plugin {
         );
         written++;
 
+        // Plain-text twin of products.md (markup-light, even smaller for LLMs).
+        await writeFile(
+          path.join(outDir, "products.txt"),
+          bundle.renderProductsIndexText(
+            activeProducts,
+            bundle.API_PRODUCT_PAGES,
+            bundle.COMMON_API_FAQS
+          )
+        );
+        written++;
+
         // -- Pricing rate card ------------------------------------------------
         await writeFile(path.join(outDir, "pricing.md"), bundle.renderPricingMarkdown());
         written++;
@@ -187,6 +198,11 @@ interface MarkdownBundle {
     pages: Record<string, unknown>,
     commonFaqs: Array<{ q: string; a: string }>
   ) => string;
+  renderProductsIndexText: (
+    p: unknown[],
+    pages: Record<string, unknown>,
+    commonFaqs: Array<{ q: string; a: string }>
+  ) => string;
   renderPricingMarkdown: () => string;
 }
 
@@ -230,6 +246,7 @@ async function loadRenderBundle(
     renderSiteIndexMarkdown: renderIndexMod.renderSiteIndexMarkdown,
     renderLlmsTxt: renderIndexMod.renderLlmsTxt,
     renderProductsIndexMarkdown: renderProductsIndexMod.renderProductsIndexMarkdown,
+    renderProductsIndexText: renderProductsIndexMod.renderProductsIndexText,
     renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
   };
 }
@@ -251,6 +268,13 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
   }
   if (url === "/products.md") {
     return bundle.renderProductsIndexMarkdown(
+      activeProducts,
+      bundle.API_PRODUCT_PAGES,
+      bundle.COMMON_API_FAQS
+    );
+  }
+  if (url === "/products.txt") {
+    return bundle.renderProductsIndexText(
       activeProducts,
       bundle.API_PRODUCT_PAGES,
       bundle.COMMON_API_FAQS

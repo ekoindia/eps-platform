@@ -1,4 +1,4 @@
-import { SALES_MOBILE, SITE_URL, SIGNUP_PAGE } from "@/lib/config/site";
+import { SALES_MOBILE, SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
 
 /**
  * Shared helpers for markdown rendering at build time.
@@ -10,12 +10,18 @@ import { SALES_MOBILE, SITE_URL, SIGNUP_PAGE } from "@/lib/config/site";
 /** Escape a string for safe use as a YAML scalar value (double-quoted form). */
 export function yamlString(value: string | undefined | null): string {
   if (value === undefined || value === null) return '""';
-  const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ").trim();
+  const escaped = value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, " ")
+    .trim();
   return `"${escaped}"`;
 }
 
 /** Render a simple front-matter block from a flat record of scalar/string[] values. */
-export function frontMatter(fields: Record<string, string | string[] | undefined>): string {
+export function frontMatter(
+  fields: Record<string, string | string[] | undefined>,
+): string {
   const lines: string[] = ["---"];
   for (const [key, value] of Object.entries(fields)) {
     if (value === undefined) continue;
@@ -33,24 +39,37 @@ export function frontMatter(fields: Record<string, string | string[] | undefined
 
 /** Collapse stray whitespace/newlines inside table cells so pipes don't break rows. */
 export function inlineCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
+  return value
+    .replace(/\|/g, "\\|")
+    .replace(/\s*\n\s*/g, " ")
+    .trim();
 }
 
 /** Build a GitHub-flavoured markdown table. */
 export function markdownTable(headers: string[], rows: string[][]): string {
   const head = `| ${headers.join(" | ")} |`;
   const sep = `| ${headers.map(() => "---").join(" | ")} |`;
-  const body = rows.map((r) => `| ${r.map(inlineCell).join(" | ")} |`).join("\n");
+  const body = rows
+    .map((r) => `| ${r.map(inlineCell).join(" | ")} |`)
+    .join("\n");
   return [head, sep, body].join("\n");
 }
 
 /** Joins non-empty blocks with two newlines, trimming trailing whitespace. */
-export function joinBlocks(blocks: Array<string | undefined | false | null>): string {
-  return blocks.filter((b): b is string => typeof b === "string" && b.trim().length > 0).join("\n\n") + "\n";
+export function joinBlocks(
+  blocks: Array<string | undefined | false | null>,
+): string {
+  return (
+    blocks
+      .filter((b): b is string => typeof b === "string" && b.trim().length > 0)
+      .join("\n\n") + "\n"
+  );
 }
 
 /** Render a numbered list of step objects. */
-export function renderSteps(steps: Array<{ title: string; desc: string; tip?: string }>): string {
+export function renderSteps(
+  steps: Array<{ title: string; desc: string; tip?: string }>,
+): string {
   return steps
     .map((s, i) => {
       const base = `${i + 1}. **${s.title}** — ${s.desc.trim()}`;
@@ -96,14 +115,62 @@ export const h1 = (s: string) => `# ${s}`;
 export const h2 = (s: string) => `## ${s}`;
 export const h3 = (s: string) => `### ${s}`;
 
+/** Output format for the products-index renderer: GitHub Markdown or plain text. */
+export type MarkdownFormat = "md" | "txt";
+
+/**
+ * Render a heading. In `md`, emits `#`/`##`/`###` by level. In `txt`, emits a
+ * bold, hash-numbered label (`**#1.2 Title**`); a missing `number` (the document
+ * title) drops the number prefix (`**Title**`). The caller owns the numbering.
+ */
+export function heading(
+  level: 1 | 2 | 3,
+  text: string,
+  fmt: MarkdownFormat,
+  number?: string,
+): string {
+  if (fmt === "md") return `${"#".repeat(level)} ${text}`;
+  const label = number ? `**#${number} ${text}**` : `**${text}**`;
+  // Top-level sections (H1/H2) get an extra leading blank line; the renderer
+  // trims any blank that lands at the very top of the document.
+  return level <= 2 ? `\n${label}` : label;
+}
+
+/**
+ * Render tabular data. In `md`, a GitHub table. In `txt`, an indented numbered
+ * list — one item per row labelled by its first column, with the remaining
+ * columns as indented `Header: value` lines beneath it (no pipes).
+ */
+export function table(
+  headers: string[],
+  rows: string[][],
+  fmt: MarkdownFormat,
+): string {
+  if (fmt === "md") return markdownTable(headers, rows);
+  return rows
+    .map((row, i) => {
+      const label = `  ${i + 1}. ${inlineCell(row[0] ?? "")}`;
+      const rest = row
+        .slice(1)
+        .map((cell, j) => `     ${headers[j + 1]}: ${inlineCell(cell)}`);
+      return [label, ...rest].join("\n");
+    })
+    .join("\n");
+}
+
+/** Render a link: `[text](url)` in `md`, `text (url)` in `txt`. */
+export function link(text: string, url: string, fmt: MarkdownFormat): string {
+  return fmt === "md" ? `[${text}](${url})` : `${text} (${url})`;
+}
+
 /** Add a canonical-notice block. */
 export function canonicalNotice(canonicalUrl: string): string {
-  return `> **Canonical URL:** ${canonicalUrl}\n> _This is a machine-readable Markdown version of the page for AI agents and LLMs. The primary (HTML) version lives at the canonical URL above._`;
+  return `> **Canonical URL:** ${canonicalUrl}\n> This is a machine-readable Markdown version of the page for AI agents and LLMs. The primary (HTML) version lives at the canonical URL above.`;
 }
 
 /** Add a shared get-started CTA block. */
 export function gettingStartedNotice(): string {
-  return `To get started, fill the form at ${SITE_URL}${SIGNUP_PAGE} (with your name and mobile number) or call us at +91${SALES_MOBILE}`;
+  return `To get started, fill the form at ${SITE_URL}${SIGNUP_PAGE} (with your name, mobile number and email) or call us at +91${SALES_MOBILE}`;
 }
 
 /** Get Index Page Link */

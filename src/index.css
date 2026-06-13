@@ -366,15 +366,13 @@
     animation-range: entry 0% cover 20%;
   }
 
-  /* Sticky pin, added by FadeIn's IntersectionObserver once the element is
-     seen: scroll-driven opacity tracks scroll position, so without this,
-     scrolling back up re-hides content and full-page screenshot tools
-     capture below-fold elements at their hidden `from` state. Removing the
-     animation reverts to the visible base styles; the transition smooths the
-     hand-off from whatever opacity the scrub had reached. */
+  /* Sticky pin, added by FadeIn when the scroll-driven animation COMPLETES
+     (animationend): scroll-driven opacity tracks scroll position, so without
+     this, scrolling back up re-hides content and full-page screenshot tools
+     capture below-fold elements at their hidden `from` state. The animation
+     is at opacity 1 when the pin lands, so removing it is seamless. */
   .fade-in-css.fade-in-done {
     animation: none;
-    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
   }
 
   @keyframes fade-in-view {
