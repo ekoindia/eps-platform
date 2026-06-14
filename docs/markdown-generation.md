@@ -36,12 +36,19 @@ HTML pages. This avoids maintaining a second content source.
 Primary content sources:
 
 - `src/lib/data/api-products.ts`
-- `src/lib/data/api-product-pages.ts`
+- `src/lib/data/api-product-pages.ts` (marketing/content only — **no** technical API data)
+- `src/lib/data/api-specs.ts` (technical REST specs: endpoints, params, request/response shapes, docs links — see docs/api-specs.md)
 - `src/lib/data/industries.ts`
 - `src/lib/data/solutions.ts`
 - `src/lib/data/api-pricing.ts` (rates, pricing FAQs)
 - `src/lib/data/payments-pricing.ts` (DMT/AePS/BBPS commission slabs)
 - `src/lib/data/bbps-operators.ts` (BBPS operator count referenced in `/products.md`)
+
+The per-product **API endpoint one-liners** and the **API docs link** in the
+generated Markdown are derived from `api-specs.ts` (via
+`src/lib/data/api-spec-previews.ts`), not from the product page data. The
+renderers accept the product's specs as an optional argument that defaults to a
+registry lookup, so they stay pure and unit-testable.
 
 If you want to change the generated Markdown for a product, industry, or
 solution page, update the corresponding content/data object first. In most
@@ -58,7 +65,9 @@ All Markdown generation logic lives in `src/lib/markdown/`.
 - `src/lib/markdown/render-product.ts`
 	Generates Markdown for product detail pages from product page data. Includes
 	sections such as overview, benefits, features, use cases, integration steps,
-	FAQs, docs link, and related products.
+	FAQs, docs link, and related products. API previews (per-endpoint inputs/
+	outputs) and the developer-docs link are derived from `api-specs.ts` via the
+	optional `specs` argument (defaults to `getSpecsForProduct(product.id)`).
 
 - `src/lib/markdown/render-products-index.ts`
 	Generates `/products.md` — a single comprehensive reference document covering
@@ -76,6 +85,9 @@ All Markdown generation logic lives in `src/lib/markdown/`.
 	at the top. The plugin passes in `API_PRODUCT_PAGES` and `COMMON_API_FAQS`
 	(page data stays injected so the renderer remains unit-testable without
 	asset imports); pricing data is imported directly from the pricing modules.
+	The endpoint one-liners and per-product API-docs links come from
+	`api-specs.ts` (via `api-spec-previews.ts`); an optional `specsByProduct`
+	argument overrides the registry lookup for deterministic tests.
 
 - `src/lib/markdown/render-industry.ts`
 	Generates Markdown for industry pages. Includes challenge text, recommended
@@ -195,7 +207,8 @@ There are three ways generated Markdown changes:
 
 1. **Change the page content data**
 	 Update the objects in:
-	 - `src/lib/data/api-product-pages.ts`
+	 - `src/lib/data/api-product-pages.ts` (product marketing/content)
+	 - `src/lib/data/api-specs.ts` (technical endpoints, previews, docs links — see docs/api-specs.md)
 	 - `src/lib/data/industries.ts`
 	 - `src/lib/data/solutions.ts`
 

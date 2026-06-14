@@ -31,15 +31,19 @@ This project is built with:
 
 
 ## Product Data Files (in `src/lib/data/`):
-- [`api-product-pages.ts`](src/lib/data/api-product-pages.ts) - Detailed data for product pages (e.g. AEPS API, Lending API)
 - [`api-products.ts`](src/lib/data/api-products.ts) - List of API products with metadata
+- [`api-product-pages.ts`](src/lib/data/api-product-pages.ts) - Product-page **marketing/content** (hero, features, FAQs, SEO). No technical API data.
+- [`api-specs.ts`](src/lib/data/api-specs.ts) - **Technical REST API specs** (one entry per API), with the shared `api-auth.ts` / `api-error-codes.ts` / `api-specs-common.ts` layer. See [docs/api-specs.md](docs/api-specs.md).
 - [`industries.ts`](src/lib/data/industries.ts) - List of industries and their associated data
 - [`solutions.ts`](src/lib/data/solutions.ts) - List of solutions and their associated data
+
+> A full index of **every** configuration file in the project lives in [docs/configuration.md](docs/configuration.md).
 
 
 ## How to Add/Remove an API Product?
 1. Add data in `src/lib/data/api-products.ts` and `src/lib/data/api-product-pages.ts` for the new product, following the existing structures.
-2. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs widget.
+2. Add the product's REST API(s) to `src/lib/data/api-specs.ts` (each `ApiSpec.productId` references the product id) — this drives the on-page API preview and developer-docs link. See [docs/api-specs.md](docs/api-specs.md).
+3. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs widget.
 
 
 ## How can I deploy this project?
@@ -82,6 +86,8 @@ These files don't conflict - each platform only reads its own configuration and 
 
 
 ## Detailed documentations:
+- [Configuration Guide — every config file in one place](docs/configuration.md)
+- [API Technical Specifications (developer-reference data)](docs/api-specs.md)
 - [Static Page Generation (SSG) and SPA Fallback](docs/static-page-generation.md)
 - [SSG Pre-rendering & React Hydration Rules](docs/ssg-hydration.md)
 - [AI-Agent-Friendly Content Delivery and Markdown Generation](docs/markdown-generation.md)
