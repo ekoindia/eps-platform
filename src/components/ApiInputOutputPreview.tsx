@@ -50,6 +50,7 @@ interface ApiInputOutputPreviewProps {
   sampleJson?: ApiSampleJson;
 }
 
+// MARK: Term Body
 const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
   const indent = (depth: number) => "  ".repeat(depth);
 
@@ -60,24 +61,24 @@ const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
     if (typeof value === "boolean")
       return <span className="text-sky-400">{String(value)}</span>;
     if (typeof value === "number")
-      return <span className="text-amber-400">{value}</span>;
+      return <span className="text-amber-300">{value}</span>;
 
     if (Array.isArray(value)) {
-      if (value.length === 0) return <span className="text-white/60">[]</span>;
+      if (value.length === 0) return <span className="text-slate-500">[]</span>;
       return (
         <>
-          <span className="text-white/60">[</span>
+          <span className="text-slate-500">[</span>
           {"\n"}
           {value.map((item, i) => (
             <span key={i}>
               {indent(depth + 1)}
               {renderValue(item, depth + 1)}
-              {i < value.length - 1 && <span className="text-white/60">,</span>}
+              {i < value.length - 1 && <span className="text-slate-500">,</span>}
               {"\n"}
             </span>
           ))}
           {indent(depth)}
-          <span className="text-white/60">]</span>
+          <span className="text-slate-500">]</span>
         </>
       );
     }
@@ -85,30 +86,30 @@ const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
     if (typeof value === "object") {
       const entries = Object.entries(value as Record<string, unknown>);
       if (entries.length === 0)
-        return <span className="text-white/60">{"{}"}</span>;
+        return <span className="text-slate-500">{"{}"}</span>;
       return (
         <>
-          <span className="text-white/60">{"{"}</span>
+          <span className="text-slate-500">{"{"}</span>
           {"\n"}
           {entries.map(([key, val], i) => (
             <span key={key}>
               {indent(depth + 1)}
-              <span className="text-purple-400">"{key}"</span>
-              <span className="text-white/60">: </span>
+              <span className="text-sky-300">"{key}"</span>
+              <span className="text-slate-500">: </span>
               {renderValue(val, depth + 1)}
               {i < entries.length - 1 && (
-                <span className="text-white/60">,</span>
+                <span className="text-slate-500">,</span>
               )}
               {"\n"}
             </span>
           ))}
           {indent(depth)}
-          <span className="text-white/60">{"}"}</span>
+          <span className="text-slate-500">{"}"}</span>
         </>
       );
     }
 
-    return <span className="text-white">{String(value)}</span>;
+    return <span className="text-slate-200">{String(value)}</span>;
   };
 
   return (
@@ -118,25 +119,41 @@ const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
   );
 };
 
+// MARK: Term Header
 const TerminalHeader = ({
   label,
   badgeText,
 }: {
   label: string;
   badgeText: string;
-}) => (
-  <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-    <div className="flex gap-1.5">
-      <span className="w-3 h-3 rounded-full bg-red-500/80" />
-      <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
-      <span className="w-3 h-3 rounded-full bg-green-500/80" />
+}) => {
+  const isResponse = badgeText.toUpperCase() === "RESPONSE";
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/5">
+      <div className="flex gap-2">
+        <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+        <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+        <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
+      </div>
+      <span className="text-white/55 text-xs font-mono ml-1.5 truncate">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-mono font-medium tracking-wide",
+          isResponse
+            ? "bg-eko-success/15 text-eko-success border border-eko-success/30"
+            : "bg-white/10 text-white/55 border border-white/10",
+        )}
+      >
+        {isResponse && (
+          <span className="w-1.5 h-1.5 rounded-full bg-eko-success" />
+        )}
+        {badgeText}
+      </span>
     </div>
-    <Badge className="bg-white/10 text-white/70 border-0 text-[10px] font-mono ml-auto">
-      {badgeText}
-    </Badge>
-    <span className="text-white/40 text-xs font-mono">{label}</span>
-  </div>
-);
+  );
+};
 
 /**
  * Section heading
@@ -449,7 +466,7 @@ const PreviewContent = ({
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
                   REQUEST
                 </Badge>
-                <span className="text-white/60 text-xs ml-auto font-mono">
+                <span className="text-slate-500 text-xs ml-auto font-mono">
                   {endpoint ? `POST ${endpoint}` : ""}
                 </span>
               </div>
@@ -485,7 +502,7 @@ const PreviewContent = ({
                 <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
                   RESPONSE
                 </Badge>
-                <span className="text-white/60 text-xs ml-auto font-mono">
+                <span className="text-slate-500 text-xs ml-auto font-mono">
                   200 OK
                 </span>
               </div>
