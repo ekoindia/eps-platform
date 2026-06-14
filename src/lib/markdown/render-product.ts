@@ -1,9 +1,14 @@
 import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
 import type { ApiProductRef } from "@/lib/data/api-products";
+import {
+  primaryDocsUrl,
+  specsToPreviews,
+  specsToVerifiableFields,
+  verifyHeading,
+} from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
-import { primaryDocsUrl, specsToPreviews } from "@/lib/data/api-spec-previews";
 import {
   bulletList,
   canonicalNotice,
@@ -52,10 +57,10 @@ export function renderProductMarkdown(
       title: page.seo.title,
       description: page.seo.description,
       // keywords: page.seo.keywords,
-      slug: product.slug,
+      // slug: product.slug,
       category: page.category,
       canonical,
-      docs_url: docsUrl,
+      // docs_url: docsUrl,
     }),
     canonicalNotice(canonical),
     h1(page.heroTitle || page.title),
@@ -68,22 +73,28 @@ export function renderProductMarkdown(
     blocks.push(h2("Overview"), page.overview);
   }
 
-  if (page.keyBenefits && page.keyBenefits.length > 0) {
-    blocks.push(h2("Key Benefits"), bulletList(page.keyBenefits));
-  }
+  // if (page.keyBenefits && page.keyBenefits.length > 0) {
+  //   blocks.push(h2("Key Benefits"), bulletList(page.keyBenefits));
+  // }
 
   if (page.features && page.features.length > 0) {
-    blocks.push(h2("Features"));
-    for (const f of page.features) {
-      blocks.push(`${h3(f.title)}\n${f.desc}`);
-    }
+    blocks.push(
+      h2("Features"),
+      bulletList(page.features.map((f) => f.title + ": " + f.desc)),
+    );
+    // for (const f of page.features) {
+    //   blocks.push(`${h3(f.title)}\n${f.desc}`);
+    // }
   }
 
   if (page.benefits && page.benefits.length > 0) {
-    blocks.push(h2("Benefits"));
-    for (const b of page.benefits) {
-      blocks.push(`${h3(b.title)}\n${b.desc}`);
-    }
+    blocks.push(
+      h2("Benefits"),
+      bulletList(page.benefits.map((b) => b.title + ": " + b.desc)),
+    );
+    // for (const b of page.benefits) {
+    //   blocks.push(`${h3(b.title)}\n${b.desc}`);
+    // }
   }
 
   if (page.types && page.types.length > 0) {
@@ -99,6 +110,22 @@ export function renderProductMarkdown(
 
   if (page.useCases && page.useCases.length > 0) {
     blocks.push(h2("Use Cases"), bulletList(page.useCases));
+  }
+
+  if (page.category === "verification") {
+    const verifiable = specsToVerifiableFields(specs);
+    if (verifiable.length > 0) {
+      blocks.push(
+        h2(verifyHeading(product.name)),
+        bulletList(
+          verifiable.map((f) =>
+            f.description
+              ? `**${f.label}** — ${f.description}`
+              : `**${f.label}**`,
+          ),
+        ),
+      );
+    }
   }
 
   for (const preview of specsToPreviews(specs)) {
@@ -146,10 +173,7 @@ export function renderProductMarkdown(
   }
 
   if (docsUrl) {
-    blocks.push(
-      h2("API Documentation"),
-      `- [Full developer docs](${docsUrl})`,
-    );
+    blocks.push(h2("API Documentation"), `- [Full developer docs](${docsUrl})`);
   }
 
   if (relatedProducts.length > 0) {

@@ -128,7 +128,13 @@ const specsByProduct: Record<string, ApiSpec[]> = {
 			],
 			sampleRequest: { pan_number: "ABCDE1234F" },
 			responseData: [
-				{ name: "pan_status", type: "string", imp: true, example: "VALID" },
+				{
+					name: "pan_status",
+					type: "string",
+					imp: true,
+					description: "PAN validity status",
+					example: "VALID",
+				},
 			],
 		}),
 	],
@@ -209,6 +215,20 @@ describe("renderProductsIndexMarkdown", () => {
 		// sample values and comingSoon previews are excluded
 		expect(md).not.toContain("ABCDE1234F");
 		expect(md).not.toContain("Secret Input");
+	});
+
+	it("renders a 'What Can You Verify' block for verification products only", () => {
+		const panSection = md.slice(
+			md.indexOf("### PAN Verification"),
+			md.indexOf("### Mystery Verification"),
+		);
+		expect(panSection).toContain(
+			"**What Can You Verify With PAN Verification API?**",
+		);
+		expect(panSection).toContain("- **Pan Status** — PAN validity status");
+		// payment/BC sections never carry the block
+		const bbpsSection = md.slice(md.indexOf("### BBPS"));
+		expect(bbpsSection).not.toContain("What Can You Verify");
 	});
 
 	it("renders endpoint one-liners from the singular preview via sampleJson", () => {

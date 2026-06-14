@@ -63,7 +63,20 @@ const specs: ApiSpec[] = [
     ],
     sampleRequest: { pan_number: "ABCDE1234F" },
     responseData: [
-      { name: "pan_status", type: "string", imp: true, example: "VALID" },
+      {
+        name: "pan_status",
+        type: "string",
+        imp: true,
+        description: "PAN validity status",
+        example: "VALID",
+      },
+      {
+        name: "full_name",
+        type: "string",
+        imp: true,
+        description: "Registered PAN holder name",
+        example: "Rajesh Kumar",
+      },
     ],
     sampleSuccessResponse: {},
   },
@@ -95,7 +108,7 @@ describe("renderProductMarkdown", () => {
 
   it("renders major sections", () => {
     expect(md).toContain("## Features");
-    expect(md).toContain("### Fast");
+    expect(md).toContain("- Fast: Sub-second response times.");
     expect(md).toContain("## Integration Steps");
     expect(md).toContain("1. **Sign Up** — Create an account.");
     expect(md).toContain("> Tip: Takes a minute");
@@ -105,6 +118,16 @@ describe("renderProductMarkdown", () => {
     expect(md).toContain("### Is it real-time?");
     expect(md).toContain("## API Documentation");
     expect(md).toContain("https://developers.eko.in/docs/pan");
+  });
+
+  it("renders the 'What Can You Verify' section from imp fields", () => {
+    expect(md).toContain("## What Can You Verify With PAN Verification API?");
+    expect(md).toContain("- **Pan Status** — PAN validity status");
+    expect(md).toContain("- **Full Name** — Registered PAN holder name");
+    // it sits above the API preview section
+    expect(md.indexOf("## What Can You Verify")).toBeLessThan(
+      md.indexOf("## API Preview"),
+    );
   });
 
   it("links related products with markdown-version suffixes", () => {

@@ -6,6 +6,7 @@ import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import {
   getApiPreviewsForProduct,
   getProductDocsUrl,
+  getVerifiableFieldsForProduct,
 } from "@/lib/data/api-spec-previews";
 import { AiHint } from "@/components/AiHint";
 import { SITE_URL } from "@/lib/config/site";
@@ -30,6 +31,7 @@ const ProductDetailPage = () => {
   // the full set powers the developer reference.
   const inputOutputPreviews = getApiPreviewsForProduct(product.id, 6);
   const docsUrl = getProductDocsUrl(product.id);
+  const verifiableFields = getVerifiableFieldsForProduct(product.id);
 
   return (
     <>
@@ -58,6 +60,9 @@ const ProductDetailPage = () => {
         docsUrl={docsUrl}
         inputOutputPreviews={
           inputOutputPreviews.length > 0 ? inputOutputPreviews : undefined
+        }
+        verifiableFields={
+          verifiableFields.length > 0 ? verifiableFields : undefined
         }
       />
     </>
