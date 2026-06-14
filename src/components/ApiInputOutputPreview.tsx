@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/FadeIn";
 import { SectionContainer } from "@/components/SectionContainer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle, ArrowRight, Clock, Send, Download } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { cn, normalizeApiLabel } from "@/lib/utils";
-import { ApiProductRelevance } from "@/lib/data/api-products";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_DEFAULT_VERSION } from "@/lib/config/site";
+import { ApiProductRelevance } from "@/lib/data/api-products";
+import { cn, normalizeApiLabel } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, Download, Send } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export interface ApiField {
   label: string;
@@ -55,43 +55,55 @@ const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
 
   const renderValue = (value: unknown, depth: number): JSX.Element => {
     if (value === null) return <span className="text-sky-400">null</span>;
-    if (typeof value === "string") return <span className="text-emerald-400">"{value}"</span>;
-    if (typeof value === "boolean") return <span className="text-sky-400">{String(value)}</span>;
-    if (typeof value === "number") return <span className="text-amber-400">{value}</span>;
+    if (typeof value === "string")
+      return <span className="text-emerald-400">"{value}"</span>;
+    if (typeof value === "boolean")
+      return <span className="text-sky-400">{String(value)}</span>;
+    if (typeof value === "number")
+      return <span className="text-amber-400">{value}</span>;
 
     if (Array.isArray(value)) {
       if (value.length === 0) return <span className="text-white/60">[]</span>;
       return (
         <>
-          <span className="text-white/60">[</span>{"\n"}
+          <span className="text-white/60">[</span>
+          {"\n"}
           {value.map((item, i) => (
             <span key={i}>
-              {indent(depth + 1)}{renderValue(item, depth + 1)}
+              {indent(depth + 1)}
+              {renderValue(item, depth + 1)}
               {i < value.length - 1 && <span className="text-white/60">,</span>}
               {"\n"}
             </span>
           ))}
-          {indent(depth)}<span className="text-white/60">]</span>
+          {indent(depth)}
+          <span className="text-white/60">]</span>
         </>
       );
     }
 
     if (typeof value === "object") {
       const entries = Object.entries(value as Record<string, unknown>);
-      if (entries.length === 0) return <span className="text-white/60">{"{}"}</span>;
+      if (entries.length === 0)
+        return <span className="text-white/60">{"{}"}</span>;
       return (
         <>
-          <span className="text-white/60">{"{"}</span>{"\n"}
+          <span className="text-white/60">{"{"}</span>
+          {"\n"}
           {entries.map(([key, val], i) => (
             <span key={key}>
-              {indent(depth + 1)}<span className="text-purple-400">"{key}"</span>
+              {indent(depth + 1)}
+              <span className="text-purple-400">"{key}"</span>
               <span className="text-white/60">: </span>
               {renderValue(val, depth + 1)}
-              {i < entries.length - 1 && <span className="text-white/60">,</span>}
+              {i < entries.length - 1 && (
+                <span className="text-white/60">,</span>
+              )}
               {"\n"}
             </span>
           ))}
-          {indent(depth)}<span className="text-white/60">{"}"}</span>
+          {indent(depth)}
+          <span className="text-white/60">{"}"}</span>
         </>
       );
     }
@@ -106,19 +118,25 @@ const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
   );
 };
 
-const TerminalHeader = ({ label, badgeText }: { label: string; badgeText: string }) => (
+const TerminalHeader = ({
+  label,
+  badgeText,
+}: {
+  label: string;
+  badgeText: string;
+}) => (
   <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
     <div className="flex gap-1.5">
       <span className="w-3 h-3 rounded-full bg-red-500/80" />
       <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
       <span className="w-3 h-3 rounded-full bg-green-500/80" />
     </div>
-    <Badge className="bg-white/10 text-white/70 border-0 text-[10px] font-mono ml-auto">{badgeText}</Badge>
+    <Badge className="bg-white/10 text-white/70 border-0 text-[10px] font-mono ml-auto">
+      {badgeText}
+    </Badge>
     <span className="text-white/40 text-xs font-mono">{label}</span>
   </div>
 );
-
-
 
 /**
  * Section heading
@@ -126,15 +144,26 @@ const TerminalHeader = ({ label, badgeText }: { label: string; badgeText: string
  * @param {string} apiName - The name of the API for which the preview is coming soon, e.g. "GST Verification". Used in the message to users.
  * @returns
  */
-const SectionHeader = ({ title, description, className = "mb-10" }: { title: string; description?: string; className?: string }) => {
-  const label = normalizeApiLabel(title) + " Flow – Sample Request and Response";
+const SectionHeader = ({
+  title,
+  description,
+  className = "mb-10",
+}: {
+  title: string;
+  description?: string;
+  className?: string;
+}) => {
+  const label =
+    normalizeApiLabel(title) + " Flow – Sample Request and Response";
 
   return (
     <FadeIn className={`text-center ${className}`}>
-      <span className={cn(
-        "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
-        "bg-primary/20 text-amber-700"
-      )}>
+      <span
+        className={cn(
+          "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
+          "bg-primary/20 text-amber-700",
+        )}
+      >
         Simplified API Preview
       </span>
       <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 max-w-[650px] text-center mx-auto">
@@ -144,7 +173,9 @@ const SectionHeader = ({ title, description, className = "mb-10" }: { title: str
         Send simple inputs. Get rich, verified data in seconds.
       </p>
       {description && (
-        <p className="text-sm text-muted-foreground max-w-xl mx-auto mt-2">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-xl mx-auto mt-2">
+          {description}
+        </p>
       )}
     </FadeIn>
   );
@@ -161,7 +192,9 @@ const ComingSoonBlock = ({ apiName }: { apiName: string }) => (
     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
       <Clock className="w-8 h-8 text-muted-foreground" />
     </div>
-    <Badge variant="secondary" className="text-sm px-4 py-1.5 mb-3">Coming Soon</Badge>
+    <Badge variant="secondary" className="text-sm px-4 py-1.5 mb-3">
+      Coming Soon
+    </Badge>
     <p className="text-muted-foreground text-sm mt-2">
       {apiName} preview will be available shortly.
     </p>
@@ -197,7 +230,14 @@ export const ApiInputOutputPreview = ({
       );
     }
 
-    return <MultiApiPreview previews={previews} sectionTitle={apiName} fallbackDocsUrl={docsUrl} activeApiName={activeApiName} />;
+    return (
+      <MultiApiPreview
+        previews={previews}
+        sectionTitle={apiName}
+        fallbackDocsUrl={docsUrl}
+        activeApiName={activeApiName}
+      />
+    );
   }
 
   // Legacy single-API mode
@@ -234,10 +274,11 @@ const MultiApiPreview = ({
   activeApiName?: string;
 }) => {
   const [activeApi, setActiveApi] = useState(previews[0].apiName);
-  const activePreview = previews.find(p => p.apiName === activeApi) || previews[0];
+  const activePreview =
+    previews.find((p) => p.apiName === activeApi) || previews[0];
 
   useEffect(() => {
-    if (activeApiName && previews.some(p => p.apiName === activeApiName)) {
+    if (activeApiName && previews.some((p) => p.apiName === activeApiName)) {
       setActiveApi(activeApiName);
     }
   }, [activeApiName, previews]);
@@ -249,11 +290,11 @@ const MultiApiPreview = ({
       {/* Sub-API Selector */}
       <div className="flex justify-center mb-8">
         <div className="inline-flex flex-wrap justify-center gap-2 p-1.5 bg-card border border-border/90 rounded-xl">
-          {previews.map(p => (
+          {previews.map((p) => (
             <button
               key={p.apiName}
               onClick={() => setActiveApi(p.apiName)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                 activeApi === p.apiName
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -267,8 +308,13 @@ const MultiApiPreview = ({
 
       {/* Active API description */}
       {activePreview.description && (
-        <FadeIn key={activePreview.apiName + "-desc"} className="text-center mb-6">
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">{activePreview.description}</p>
+        <FadeIn
+          key={activePreview.apiName + "-desc"}
+          className="text-center mb-6"
+        >
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+            {activePreview.description}
+          </p>
         </FadeIn>
       )}
 
@@ -334,7 +380,12 @@ const SingleApiPreview = ({
   return (
     <SectionContainer className="bg-muted/30">
       <SectionHeader title={sectionTitle} description={description} />
-      <PreviewContent inputs={inputs} outputs={outputs} docsUrl={docsUrl} sampleJson={sampleJson} />
+      <PreviewContent
+        inputs={inputs}
+        outputs={outputs}
+        docsUrl={docsUrl}
+        sampleJson={sampleJson}
+      />
     </SectionContainer>
   );
 };
@@ -371,13 +422,13 @@ const PreviewContent = ({
             <TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-xs">
               <TabsTrigger
                 value="visual"
-                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
+                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs rounded-md"
               >
                 Visual
               </TabsTrigger>
               <TabsTrigger
                 value="json"
-                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs"
+                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs rounded-md"
               >
                 JSON
               </TabsTrigger>
@@ -389,21 +440,34 @@ const PreviewContent = ({
         <TabsContent value="visual">
           <div className="grid lg:grid-cols-2 gap-6">
             {/* MARK: REQUEST */}
-            <FadeIn delay={100} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
+            <FadeIn
+              delay={100}
+              className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs"
+            >
               <div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
                 <Send className="w-4 h-4 text-white/70" />
-                <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">REQUEST</Badge>
-                <span className="text-white/60 text-xs ml-auto font-mono">{endpoint ? `POST ${endpoint}` : ""}</span>
+                <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
+                  REQUEST
+                </Badge>
+                <span className="text-white/60 text-xs ml-auto font-mono">
+                  {endpoint ? `POST ${endpoint}` : ""}
+                </span>
               </div>
               <div className="p-6 flex flex-col gap-4">
                 {inputs?.map((field, i) => {
                   const Icon = field.icon;
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      {Icon && <Icon className="w-4 h-4 text-muted-foreground shrink-0" />}
+                      {Icon && (
+                        <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                      )}
                       <div className="flex-1 flex items-center justify-between gap-4 py-2 border-b border-border/30 last:border-0">
-                        <span className="text-sm text-muted-foreground">{field.label}</span>
-                        <span className="text-sm font-mono font-medium text-foreground bg-muted/50 px-3 py-1 rounded-md">{field.value}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {field.label}
+                        </span>
+                        <span className="text-sm font-mono font-medium text-foreground bg-muted/50 px-3 py-1 rounded-md">
+                          {field.value}
+                        </span>
                       </div>
                     </div>
                   );
@@ -412,11 +476,18 @@ const PreviewContent = ({
             </FadeIn>
 
             {/* MARK: RESPONSE */}
-            <FadeIn delay={200} className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs">
+            <FadeIn
+              delay={200}
+              className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs"
+            >
               <div className="flex items-center gap-3 px-6 py-4 bg-linear-to-r from-eko-success/90 to-eko-success">
                 <Download className="w-4 h-4 text-white/70" />
-                <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">RESPONSE</Badge>
-                <span className="text-white/60 text-xs ml-auto font-mono">200 OK</span>
+                <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
+                  RESPONSE
+                </Badge>
+                <span className="text-white/60 text-xs ml-auto font-mono">
+                  200 OK
+                </span>
               </div>
               <div className="p-6 flex flex-col gap-3">
                 {outputs?.map((field, i) => {
@@ -429,8 +500,12 @@ const PreviewContent = ({
                         <CheckCircle className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
                       )}
                       <div className="flex-1 flex items-center justify-between gap-4 py-1">
-                        <span className="text-sm text-muted-foreground">{field.label}</span>
-                        <span className="text-sm font-mono font-medium text-foreground text-right">{field.value}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {field.label}
+                        </span>
+                        <span className="text-sm font-mono font-medium text-foreground text-right">
+                          {field.value}
+                        </span>
                       </div>
                     </div>
                   );
@@ -444,14 +519,23 @@ const PreviewContent = ({
         {showJsonTab && (
           <TabsContent value="json">
             <div className="grid lg:grid-cols-2 gap-6">
-              <div className="code-block rounded-2xl overflow-hidden">
-                <TerminalHeader label={`${sampleJson.method} /${sampleJson.apiVersion ?? API_DEFAULT_VERSION}${sampleJson.endpoint}`} badgeText="REQUEST" />
+              <FadeIn
+                delay={100}
+                className="code-block rounded-2xl overflow-hidden"
+              >
+                <TerminalHeader
+                  label={`${sampleJson.method} /${sampleJson.apiVersion ?? API_DEFAULT_VERSION}${sampleJson.endpoint}`}
+                  badgeText="REQUEST"
+                />
                 <JsonHighlight json={sampleJson.request} />
-              </div>
-              <div className="code-block rounded-2xl overflow-hidden">
+              </FadeIn>
+              <FadeIn
+                delay={200}
+                className="code-block rounded-2xl overflow-hidden"
+              >
                 <TerminalHeader label="200 OK" badgeText="RESPONSE" />
                 <JsonHighlight json={sampleJson.response} />
-              </div>
+              </FadeIn>
             </div>
           </TabsContent>
         )}
