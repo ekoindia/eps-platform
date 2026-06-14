@@ -1,4 +1,5 @@
 import type { ApiProductRef } from "@/lib/data/api-products";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
 import type { ProductPageDataShape } from "@/lib/markdown/render-product";
 import { renderProductMarkdown } from "@/lib/markdown/render-product";
 import { describe, expect, it } from "vitest";
@@ -23,7 +24,6 @@ const page: ProductPageDataShape = {
   heroTitle: "Verify PAN in under 2 seconds",
   heroSubtitle: "Real-time PAN identity lookup for onboarding and KYC.",
   category: "verification",
-  docsUrl: "https://developers.eko.in/docs/pan",
   features: [
     { title: "Fast", desc: "Sub-second response times." },
     { title: "Accurate", desc: "Direct from source of truth." },
@@ -47,8 +47,30 @@ const related: ApiProductRef[] = [
   },
 ];
 
+const specs: ApiSpec[] = [
+  {
+    id: "pan-lite",
+    productId: "pan",
+    name: "PAN Lite",
+    slug: "pan-lite",
+    summary: "Quick PAN validation.",
+    category: "verification",
+    method: "POST",
+    path: "/pan/lite",
+    docsUrl: "https://developers.eko.in/docs/pan",
+    extraRequestParams: [
+      { name: "pan_number", in: "body", type: "string", required: true },
+    ],
+    sampleRequest: { pan_number: "ABCDE1234F" },
+    responseData: [
+      { name: "pan_status", type: "string", imp: true, example: "VALID" },
+    ],
+    sampleSuccessResponse: {},
+  },
+];
+
 describe("renderProductMarkdown", () => {
-  const md = renderProductMarkdown(product, page, related);
+  const md = renderProductMarkdown(product, page, related, specs);
 
   it("includes YAML front-matter with canonical URL", () => {
     expect(md).toMatch(/^---\n/);

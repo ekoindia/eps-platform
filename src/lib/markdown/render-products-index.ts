@@ -20,6 +20,9 @@ import {
 	DMT_SLABS,
 	TDS_RATE,
 } from "@/lib/data/payments-pricing";
+import { getSpecsForProduct } from "@/lib/data/api-specs";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
+import { primaryDocsUrl, specsToPreviews } from "@/lib/data/api-spec-previews";
 import type { ProductPageDataShape } from "./render-product";
 import {
 	bulletList,
@@ -49,29 +52,12 @@ const titledBullets = (items: { title: string; desc: string }[]): string =>
 const faqBullets = (faqs: FAQ[]): string =>
 	faqs.map((faq) => `- **${faq.q}** ${faq.a.trim()}`).join("\n");
 
-/** Minimal preview shape shared by `inputOutputPreview` and `inputOutputPreviews[]`. */
-interface PreviewLike {
-	apiName: string;
-	method?: string;
-	endpoint?: string;
-	inputs?: { label: string }[];
-	outputs?: { label: string }[];
-	comingSoon?: boolean;
-	sampleJson?: { method: string; endpoint: string };
-}
-
 /**
- * Build compact one-line endpoint summaries from a page's API previews —
+ * Build compact one-line endpoint summaries from a product's API specs —
  * endpoint + input/output field labels only (no sample values or JSON).
  */
-const previewLines = (page: ProductPageDataShape): string | undefined => {
-	const previews: PreviewLike[] = page.inputOutputPreviews?.length
-		? page.inputOutputPreviews
-		: page.inputOutputPreview
-			? [page.inputOutputPreview]
-			: [];
-
-	const lines = previews
+const previewLines = (specs: ApiSpec[]): string | undefined => {
+	const lines = specsToPreviews(specs)
 		.filter((preview) => !preview.comingSoon)
 		.map((preview) => {
 			const inputs = (preview.inputs ?? []).map((field) => field.label);
@@ -286,6 +272,7 @@ const productSection = (
 	commonQuestions: Set<string>,
 	fmt: MarkdownFormat,
 	number: string,
+	specs: ApiSpec[],
 ): string => {
 	// md links to the per-product markdown twin and joins with " · "; txt drops
 	// the markdown link and uses a plain comma separator.
@@ -339,13 +326,20 @@ const productSection = (
 		blocks.push(`**Use cases:** ${inlineList(page.useCases)}`);
 	}
 
-	const previews = previewLines(page);
+	const previews = previewLines(specs);
 	if (previews) blocks.push(`**API endpoints:**\n${previews}`);
 
 	const faqs = (page.faqs ?? []).filter((faq) => !commonQuestions.has(faq.q));
 	if (faqs.length > 0) blocks.push(`**FAQs:**\n${faqBullets(faqs)}`);
 
-	blocks.push(linksLine(pageLink, mdLink, link("API docs", page.docsUrl, fmt)));
+	const docsUrl = primaryDocsUrl(specs);
+	blocks.push(
+		linksLine(
+			pageLink,
+			mdLink,
+			docsUrl ? link("API docs", docsUrl, fmt) : null,
+		),
+	);
 
 	return joinBlocks(blocks).trimEnd();
 };
@@ -437,9 +431,17 @@ function renderProductsIndex(
 	pages: Record<string, ProductPageDataShape>,
 	commonFaqs: FAQ[],
 	fmt: MarkdownFormat,
-	opts: { title?: string; lede?: string; omitMoreInfo?: boolean } = {},
+	opts: {
+		title?: string;
+		lede?: string;
+		omitMoreInfo?: boolean;
+		specsByProduct?: Record<string, ApiSpec[]>;
+	} = {},
 ): string {
 	const commonQuestions = new Set(commonFaqs.map((faq) => faq.q));
+	// Technical specs come from the registry unless explicitly supplied (tests).
+	const specsFor = (id: string): ApiSpec[] =>
+		opts.specsByProduct?.[id] ?? getSpecsForProduct(id);
 
 	const categories: { label: string; list: ApiProductRef[] }[] = [
 		{
@@ -554,6 +556,7 @@ function renderProductsIndex(
 					commonQuestions,
 					fmt,
 					`${n}.${i + 1}`,
+					specsFor(product.id),
 				),
 			);
 		});
@@ -581,8 +584,11 @@ export function renderProductsIndexMarkdown(
 	products: ApiProductRef[],
 	pages: Record<string, ProductPageDataShape> = {},
 	commonFaqs: FAQ[] = [],
+	specsByProduct?: Record<string, ApiSpec[]>,
 ): string {
-	return renderProductsIndex(products, pages, commonFaqs, "md");
+	return renderProductsIndex(products, pages, commonFaqs, "md", {
+		specsByProduct,
+	});
 }
 
 /** Render `/products.txt` — markup-light plain-text twin of `products.md`. */
@@ -590,8 +596,11 @@ export function renderProductsIndexText(
 	products: ApiProductRef[],
 	pages: Record<string, ProductPageDataShape> = {},
 	commonFaqs: FAQ[] = [],
+	specsByProduct?: Record<string, ApiSpec[]>,
 ): string {
-	return renderProductsIndex(products, pages, commonFaqs, "txt");
+	return renderProductsIndex(products, pages, commonFaqs, "txt", {
+		specsByProduct,
+	});
 }
 
 /**
@@ -605,6 +614,7 @@ export function renderProductsIndexTextPart(
 	products: ApiProductRef[],
 	pages: Record<string, ProductPageDataShape> = {},
 	commonFaqs: FAQ[] = [],
+	specsByProduct?: Record<string, ApiSpec[]>,
 ): string {
 	const siblings = PRODUCTS_TXT_PARTS.filter((p) => p.slug !== part.slug);
 	const crossLinks = siblings.length
@@ -616,5 +626,6 @@ export function renderProductsIndexTextPart(
 		title: part.title,
 		lede: part.lede + crossLinks,
 		omitMoreInfo: true,
+		specsByProduct,
 	});
 }

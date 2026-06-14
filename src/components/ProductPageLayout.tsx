@@ -68,7 +68,7 @@ export interface ProductPageLayoutProps {
   keyBenefits?: string[];
   integrationSteps: IntegrationStep[];
   faqs: FAQ[];
-  docsUrl: string;
+  docsUrl?: string;
   category: "payment" | "verification" | "platform";
   useCases?: string[];
   whoShouldUse?: string[];
@@ -88,6 +88,16 @@ export interface ProductPageLayoutProps {
   heroImage?: PictureSource;
   productId?: string;
 }
+
+/**
+ * Marketing/content fields authored in `api-product-pages.ts`. Technical API
+ * data (`docsUrl`, `inputOutputPreview(s)`) is intentionally excluded — it now
+ * lives in `api-specs.ts` and is injected by the route via spec resolvers.
+ */
+export type ProductPageContent = Omit<
+  ProductPageLayoutProps,
+  "docsUrl" | "inputOutputPreview" | "inputOutputPreviews" | "productId"
+>;
 
 /** Hero image `sizes`, shared by the <Picture> and its preload <link>. */
 const HERO_IMAGE_SIZES =
@@ -221,14 +231,16 @@ export const ProductPageLayout = ({
                       Get Sandbox Access <ArrowRight className="w-4 h-4" />
                     </span>
                   </Button>
-                  <a
-                    href={docsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
-                  >
-                    View Documentation
-                  </a>
+                  {docsUrl && (
+                    <a
+                      href={docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
+                    >
+                      View Documentation
+                    </a>
+                  )}
                 </div>
                 {hasPricing && startingRate !== undefined && (
                   <p className="flex flex-wrap items-center gap-x-2 text-white/60 text-xs mt-7">

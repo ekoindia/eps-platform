@@ -1,6 +1,9 @@
-import type { ProductPageLayoutProps } from "@/components/ProductPageLayout";
+import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
 import type { ApiProductRef } from "@/lib/data/api-products";
+import { getSpecsForProduct } from "@/lib/data/api-specs";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
+import { primaryDocsUrl, specsToPreviews } from "@/lib/data/api-spec-previews";
 import {
   bulletList,
   canonicalNotice,
@@ -23,7 +26,7 @@ export interface ProductPageSeoShape {
   ogDescription?: string;
 }
 
-export interface ProductPageDataShape extends ProductPageLayoutProps {
+export interface ProductPageDataShape extends ProductPageContent {
   seo: ProductPageSeoShape;
 }
 
@@ -31,13 +34,17 @@ export interface ProductPageDataShape extends ProductPageLayoutProps {
  * Render a Markdown document for a single product page.
  *
  * Pure function — no filesystem or network access — so it can be unit-tested.
+ * Technical API details come from `specs` (defaulting to the spec registry for
+ * `product.id`); pass them explicitly in tests for determinism.
  */
 export function renderProductMarkdown(
   product: ApiProductRef,
   page: ProductPageDataShape,
   relatedProducts: ApiProductRef[] = [],
+  specs: ApiSpec[] = getSpecsForProduct(product.id),
 ): string {
   const canonical = `${SITE_URL}/products/${product.slug}`;
+  const docsUrl = primaryDocsUrl(specs);
 
   const blocks: (string | false | undefined)[] = [
     frontMatter({
@@ -48,7 +55,7 @@ export function renderProductMarkdown(
       slug: product.slug,
       category: page.category,
       canonical,
-      docs_url: page.docsUrl,
+      docs_url: docsUrl,
     }),
     canonicalNotice(canonical),
     h1(page.heroTitle || page.title),
@@ -94,24 +101,29 @@ export function renderProductMarkdown(
     blocks.push(h2("Use Cases"), bulletList(page.useCases));
   }
 
-  if (page.inputOutputPreview && !page.inputOutputPreview.comingSoon) {
-    const iop = page.inputOutputPreview;
-    blocks.push(h2(`API Preview — ${iop.apiName}`));
-    if (iop.inputs && iop.inputs.length > 0) {
+  for (const preview of specsToPreviews(specs)) {
+    if (preview.comingSoon) continue;
+    const endpoint = preview.sampleJson?.endpoint ?? preview.endpoint;
+    const method = preview.sampleJson?.method ?? preview.method;
+    blocks.push(h2(`API Preview — ${preview.apiName}`));
+    if (endpoint) {
+      blocks.push(`\`${method ? `${method} ` : ""}${endpoint}\``);
+    }
+    if (preview.inputs && preview.inputs.length > 0) {
       blocks.push(
         h3("Example inputs"),
         markdownTable(
           ["Field", "Value"],
-          iop.inputs.map((f) => [f.label, f.value]),
+          preview.inputs.map((f) => [f.label, f.value]),
         ),
       );
     }
-    if (iop.outputs && iop.outputs.length > 0) {
+    if (preview.outputs && preview.outputs.length > 0) {
       blocks.push(
         h3("Example outputs"),
         markdownTable(
           ["Field", "Value"],
-          iop.outputs.map((f) => [f.label, f.value]),
+          preview.outputs.map((f) => [f.label, f.value]),
         ),
       );
     }
@@ -133,10 +145,12 @@ export function renderProductMarkdown(
     }
   }
 
-  blocks.push(
-    h2("API Documentation"),
-    `- [Full developer docs](${page.docsUrl})`,
-  );
+  if (docsUrl) {
+    blocks.push(
+      h2("API Documentation"),
+      `- [Full developer docs](${docsUrl})`,
+    );
+  }
 
   if (relatedProducts.length > 0) {
     blocks.push(

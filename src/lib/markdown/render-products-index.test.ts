@@ -7,7 +7,26 @@ import {
 } from "@/lib/markdown/render-products-index";
 import type { ProductPageDataShape } from "@/lib/markdown/render-product";
 import type { ApiProductRef } from "@/lib/data/api-products";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
 import type { FAQ } from "@/components/ProductPageLayout";
+
+/** Minimal ApiSpec fixture builder for deterministic preview/docs rendering. */
+const makeSpec = (overrides: Partial<ApiSpec>): ApiSpec => ({
+	id: "spec",
+	productId: "pan",
+	name: "Spec",
+	slug: "spec",
+	summary: "",
+	category: "verification",
+	method: "POST",
+	path: "/spec",
+	docsUrl: "https://developers.eko.in/docs/x",
+	extraRequestParams: [],
+	sampleRequest: {},
+	responseData: [],
+	sampleSuccessResponse: {},
+	...overrides,
+});
 
 const COMMON_FAQS: FAQ[] = [
 	{ q: "How do I get started?", a: "Sign up and integrate." },
@@ -23,7 +42,6 @@ const makePage = (
 	heroTitle: "H",
 	heroSubtitle: "Hero subtitle.",
 	category: "verification",
-	docsUrl: "https://developers.eko.in/docs/x",
 	features: [{ title: "Fast", desc: "Sub-second response." }],
 	integrationSteps: [{ title: "Sign Up", desc: "Create an account." }],
 	faqs: [],
@@ -48,21 +66,6 @@ const panPage = makePage({
 		{ q: "Is it real-time?", a: "Yes." },
 		{ q: "How do I get started?", a: "Sign up and integrate." },
 	],
-	inputOutputPreviews: [
-		{
-			apiName: "PAN Lite",
-			method: "POST",
-			endpoint: "/pan/lite",
-			inputs: [{ label: "PAN Number", value: "ABCDE1234F" }],
-			outputs: [{ label: "PAN Status", value: "VALID" }],
-		},
-		{
-			apiName: "PAN Hidden",
-			comingSoon: true,
-			inputs: [{ label: "Secret Input", value: "x" }],
-			outputs: [],
-		},
-	],
 });
 
 const unpricedProduct: ApiProductRef = {
@@ -74,19 +77,7 @@ const unpricedProduct: ApiProductRef = {
 	shortDesc: "Mystery checks",
 };
 
-const unpricedPage = makePage({
-	inputOutputPreview: {
-		apiName: "Mystery Check",
-		inputs: [{ label: "Mystery ID", value: "123" }],
-		outputs: [{ label: "Mystery Status", value: "OK" }],
-		sampleJson: {
-			method: "POST",
-			endpoint: "/mystery/check",
-			request: {},
-			response: {},
-		},
-	},
-});
+const unpricedPage = makePage({});
 
 const dmtProduct: ApiProductRef = {
 	id: "dmt",
@@ -124,8 +115,45 @@ const pages: Record<string, ProductPageDataShape> = {
 	bbps: makePage({ category: "payment" }),
 };
 
+// Deterministic technical specs for the renderers — keeps preview/docs output
+// independent of the live `api-specs.ts` registry.
+const specsByProduct: Record<string, ApiSpec[]> = {
+	pan: [
+		makeSpec({
+			id: "pan-lite",
+			name: "PAN Lite",
+			path: "/pan/lite",
+			extraRequestParams: [
+				{ name: "pan_number", in: "body", type: "string", required: true },
+			],
+			sampleRequest: { pan_number: "ABCDE1234F" },
+			responseData: [
+				{ name: "pan_status", type: "string", imp: true, example: "VALID" },
+			],
+		}),
+	],
+	"not-a-priced-product": [
+		makeSpec({
+			productId: "not-a-priced-product",
+			id: "mystery-check",
+			name: "Mystery Check",
+			path: "/mystery/check",
+			extraRequestParams: [
+				{ name: "mystery_id", in: "body", type: "string", required: true },
+			],
+			sampleRequest: { mystery_id: "123" },
+			responseData: [
+				{ name: "mystery_status", type: "string", imp: true, example: "OK" },
+			],
+		}),
+	],
+	dmt: [],
+	aeps: [],
+	bbps: [],
+};
+
 describe("renderProductsIndexMarkdown", () => {
-	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS);
+	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS, specsByProduct);
 
 	it("includes YAML front-matter with canonical URL", () => {
 		expect(md).toMatch(/^---\n/);
@@ -150,6 +178,7 @@ describe("renderProductsIndexMarkdown", () => {
 			[panProduct],
 			pages,
 			COMMON_FAQS,
+			specsByProduct,
 		);
 		expect(verificationOnly).toContain("## Verification APIs");
 		expect(verificationOnly).not.toContain("## Payment APIs");
@@ -175,7 +204,7 @@ describe("renderProductsIndexMarkdown", () => {
 
 	it("renders compact endpoint one-liners from the previews array", () => {
 		expect(md).toContain(
-			"- `POST /pan/lite` — PAN Lite: inputs: PAN Number → outputs: PAN Status",
+			"- `POST /pan/lite` — PAN Lite: inputs: Pan Number → outputs: Pan Status",
 		);
 		// sample values and comingSoon previews are excluded
 		expect(md).not.toContain("ABCDE1234F");
@@ -184,7 +213,7 @@ describe("renderProductsIndexMarkdown", () => {
 
 	it("renders endpoint one-liners from the singular preview via sampleJson", () => {
 		expect(md).toContain(
-			"- `POST /mystery/check` — Mystery Check: inputs: Mystery ID → outputs: Mystery Status",
+			"- `POST /mystery/check` — Mystery Check: inputs: Mystery Id → outputs: Mystery Status",
 		);
 	});
 
@@ -236,8 +265,8 @@ describe("renderProductsIndexMarkdown", () => {
 });
 
 describe("renderProductsIndexText", () => {
-	const txt = renderProductsIndexText(products, pages, COMMON_FAQS);
-	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS);
+	const txt = renderProductsIndexText(products, pages, COMMON_FAQS, specsByProduct);
+	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS, specsByProduct);
 
 	it("drops front-matter and the canonical notice", () => {
 		expect(txt).not.toMatch(/^---\n/);
@@ -281,7 +310,7 @@ describe("renderProductsIndexText", () => {
 
 	it("keeps backtick endpoint one-liners", () => {
 		expect(txt).toContain(
-			"- `POST /pan/lite` — PAN Lite: inputs: PAN Number → outputs: PAN Status",
+			"- `POST /pan/lite` — PAN Lite: inputs: Pan Number → outputs: Pan Status",
 		);
 	});
 
@@ -369,7 +398,7 @@ describe("renderProductsIndexTextPart", () => {
 		lede: "Identity & KYC verification APIs from Eko.",
 		productIds: ["pan"],
 	};
-	const txt = renderProductsIndexTextPart(part, [panProduct], pages, COMMON_FAQS);
+	const txt = renderProductsIndexTextPart(part, [panProduct], pages, COMMON_FAQS, specsByProduct);
 
 	it("uses the part's H1 title and lede, not the combined one", () => {
 		expect(txt).toContain("Eko Verification APIs (Identity & KYC) — Reference");
