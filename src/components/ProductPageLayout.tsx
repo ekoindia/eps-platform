@@ -8,11 +8,26 @@ import type {
   ApiSampleJson,
 } from "@/components/ApiInputOutputPreview";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
+import { FadeIn } from "@/components/FadeIn";
+import { Picture, type PictureSource } from "@/components/Picture";
 import { SectionContainer } from "@/components/SectionContainer";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { IntegrationStepperSection } from "@/components/sections/IntegrationStepperSection";
 import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
+import { SolutionCard } from "@/components/SolutionCard";
+import {
+  getPricedApisForProduct,
+  getStartingRate,
+  getStartingUnitLabel,
+} from "@/lib/data/api-pricing";
+import { API_PRODUCTS_MAP } from "@/lib/data/api-products";
+import {
+  type VerifiableField,
+  verifyHeading,
+} from "@/lib/data/api-spec-previews";
+import { getSolutionPacksForApi } from "@/lib/data/solutions";
+import { formatINRRate, normalizeApiLabel } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -25,18 +40,8 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { FadeIn } from "@/components/FadeIn";
-import { Picture, type PictureSource } from "@/components/Picture";
-import { SolutionCard } from "@/components/SolutionCard";
-import {
-  getPricedApisForProduct,
-  getStartingRate,
-  getStartingUnitLabel,
-} from "@/lib/data/api-pricing";
-import { getSolutionPacksForApi } from "@/lib/data/solutions";
-import { formatINRRate, normalizeApiLabel } from "@/lib/utils";
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 import { ApiChip } from "./ApiChip";
 
 export interface ProductFeature {
@@ -68,7 +73,7 @@ export interface ProductPageLayoutProps {
   keyBenefits?: string[];
   integrationSteps: IntegrationStep[];
   faqs: FAQ[];
-  docsUrl: string;
+  docsUrl?: string;
   category: "payment" | "verification" | "platform";
   useCases?: string[];
   whoShouldUse?: string[];
@@ -85,9 +90,25 @@ export interface ProductPageLayoutProps {
     sampleJson?: ApiSampleJson;
   };
   inputOutputPreviews?: ApiPreviewItem[];
+  /** Deduped important response fields across the product's APIs (verification). */
+  verifiableFields?: VerifiableField[];
   heroImage?: PictureSource;
   productId?: string;
 }
+
+/**
+ * Marketing/content fields authored in `api-product-pages.ts`. Technical API
+ * data (`docsUrl`, `inputOutputPreview(s)`) is intentionally excluded — it now
+ * lives in `api-specs.ts` and is injected by the route via spec resolvers.
+ */
+export type ProductPageContent = Omit<
+  ProductPageLayoutProps,
+  | "docsUrl"
+  | "inputOutputPreview"
+  | "inputOutputPreviews"
+  | "verifiableFields"
+  | "productId"
+>;
 
 /** Hero image `sizes`, shared by the <Picture> and its preload <link>. */
 const HERO_IMAGE_SIZES =
@@ -130,6 +151,7 @@ export const ProductPageLayout = ({
   types,
   inputOutputPreview,
   inputOutputPreviews,
+  verifiableFields,
   heroImage,
   productId,
 }: ProductPageLayoutProps) => {
@@ -165,6 +187,7 @@ export const ProductPageLayout = ({
     });
   };
 
+  // MARK: jsx
   return (
     <div className="min-h-screen bg-background">
       <main>
@@ -195,19 +218,21 @@ export const ProductPageLayout = ({
                 </p>
 
                 {/* API Chip Row */}
-                {inputOutputPreviews && inputOutputPreviews.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-10">
-                    {inputOutputPreviews.map((chip) => (
-                      <ApiChip
-                        key={chip.apiName}
-                        name={normalizeApiLabel(chip.apiName)}
-                        relevance={chip.relevance}
-                        onClick={() => scrollToApiPreview(chip.apiName)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    ))}
-                  </div>
-                )}
+                {category === "verification" &&
+                  inputOutputPreviews &&
+                  inputOutputPreviews.length > 1 && (
+                    <div className="flex flex-wrap gap-2 mb-10">
+                      {inputOutputPreviews.map((chip) => (
+                        <ApiChip
+                          key={chip.apiName}
+                          name={normalizeApiLabel(chip.apiName)}
+                          // relevance={chip.relevance}
+                          onClick={() => scrollToApiPreview(chip.apiName)}
+                          className="bg-white/10 border-white/20 text-white"
+                        />
+                      ))}
+                    </div>
+                  )}
               </FadeIn>
               <FadeIn onView={false} delay={300}>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
@@ -221,14 +246,16 @@ export const ProductPageLayout = ({
                       Get Sandbox Access <ArrowRight className="w-4 h-4" />
                     </span>
                   </Button>
-                  <a
-                    href={docsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
-                  >
-                    View Documentation
-                  </a>
+                  {docsUrl && (
+                    <a
+                      href={docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
+                    >
+                      View Documentation
+                    </a>
+                  )}
                 </div>
                 {hasPricing && startingRate !== undefined && (
                   <p className="flex flex-wrap items-center gap-x-2 text-white/60 text-xs mt-7">
@@ -253,7 +280,9 @@ export const ProductPageLayout = ({
               </FadeIn>
             </div>
 
-            {/* Right: Hero Image or Lead Form */}
+            {/*
+              MARK: Hero Image
+            */}
             {
               heroImage ? (
                 <FadeIn
@@ -331,22 +360,26 @@ export const ProductPageLayout = ({
           </div>
         </PageHero>
 
-        {/* Overview Section */}
+        {/*
+          MARK: Overview
+        */}
         {overview && (
           <SectionContainer>
             <FadeIn className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Overview
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-prose text-justify mx-auto">
                 {overview}
               </p>
             </FadeIn>
           </SectionContainer>
         )}
 
-        {/* Key Benefits */}
-        {keyBenefits && keyBenefits.length > 0 && (
+        {/*
+          MARK: Key Benefits
+        */}
+        {/* {keyBenefits && keyBenefits.length > 0 && (
           <SectionContainer className="bg-muted/30">
             <FadeIn className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -366,34 +399,81 @@ export const ProductPageLayout = ({
               ))}
             </div>
           </SectionContainer>
-        )}
+        )} */}
 
-        {/* API Input/Output Preview Section */}
-        {(inputOutputPreviews || inputOutputPreview) && (
-          <div ref={apiPreviewRef}>
-            {inputOutputPreviews ? (
-              <ApiInputOutputPreview
-                apiName={title}
-                previews={inputOutputPreviews}
-                docsUrl={docsUrl}
-                activeApiName={selectedApiName ?? undefined}
-              />
-            ) : (
-              inputOutputPreview && (
+        {/*
+          MARK: What Can You Verify
+        */}
+        {category === "verification" &&
+          verifiableFields &&
+          verifiableFields.length > 0 && (
+            <SectionContainer>
+              <FadeIn className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                  {verifyHeading(
+                    (productId && API_PRODUCTS_MAP[productId]?.name) || title,
+                  )}
+                </h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Key details returned across all {title} endpoints, ready to
+                  power your KYC and onboarding workflows.
+                </p>
+              </FadeIn>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+                {verifiableFields.map((field, i) => (
+                  <FadeIn
+                    key={field.label + i}
+                    delay={i * 60}
+                    className="flex items-start gap-3 p-5 bg-card border border-border/50 rounded-xl"
+                  >
+                    <CheckCircle className="w-5 h-5 text-eko-gold shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-foreground font-semibold">
+                        {field.label}
+                      </p>
+                      {field.description && (
+                        <p className="text-muted-foreground text-sm mt-1">
+                          {field.description}
+                        </p>
+                      )}
+                    </div>
+                  </FadeIn>
+                ))}
+              </div>
+            </SectionContainer>
+          )}
+
+        {/*
+          MARK: API Input/Output
+        */}
+        {category === "verification" &&
+          (inputOutputPreviews || inputOutputPreview) && (
+            <div ref={apiPreviewRef}>
+              {inputOutputPreviews ? (
                 <ApiInputOutputPreview
-                  apiName={inputOutputPreview.apiName}
-                  inputs={inputOutputPreview.inputs}
-                  outputs={inputOutputPreview.outputs}
-                  comingSoon={inputOutputPreview.comingSoon}
+                  apiName={title}
+                  previews={inputOutputPreviews}
                   docsUrl={docsUrl}
-                  sampleJson={inputOutputPreview.sampleJson}
+                  activeApiName={selectedApiName ?? undefined}
                 />
-              )
-            )}
-          </div>
-        )}
+              ) : (
+                inputOutputPreview && (
+                  <ApiInputOutputPreview
+                    apiName={inputOutputPreview.apiName}
+                    inputs={inputOutputPreview.inputs}
+                    outputs={inputOutputPreview.outputs}
+                    comingSoon={inputOutputPreview.comingSoon}
+                    docsUrl={docsUrl}
+                    sampleJson={inputOutputPreview.sampleJson}
+                  />
+                )
+              )}
+            </div>
+          )}
 
-        {/* Features Section */}
+        {/*
+          MARK: Features
+        */}
         <SectionContainer>
           <FadeIn className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">

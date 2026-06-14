@@ -14,7 +14,7 @@ npm run preview      # Preview production build locally
 
 ## Architecture at a Glance
 
-- **Data-driven pages** — Product, Industry, and Solution pages are generated from data in [`src/lib/data/`](src/lib/data/). Edit data there, not individual page files.
+- **Data-driven pages** — Product, Industry, and Solution pages are generated from data in [`src/lib/data/`](src/lib/data/). Edit data there, not individual page files. Product **marketing/content** is in `api-product-pages.ts`; **technical REST API specs** (endpoints, params, request/response shapes, docs links) are separate in `api-specs.ts` ([docs/api-specs.md](docs/api-specs.md)). A full index of every config file is in [docs/configuration.md](docs/configuration.md).
 - **SSG + SPA hybrid** — All routes are pre-rendered to static HTML at build time ([docs/static-page-generation.md](docs/static-page-generation.md)). Client hydrates on idle/interaction.
 - **Dual App entry** — [`App.tsx`](src/App.tsx) (client, `React.lazy`) vs [`AppServer.tsx`](src/AppServer.tsx) (SSG, eager imports). New routes must be added to **both**.
 - **Route manifest** — [`ssg/routes.ts`](ssg/routes.ts) is the single source of truth for all pre-rendered routes. Add new routes there too.
@@ -103,7 +103,7 @@ npm run preview      # Preview production build locally
 
 ## Adding New Pages Checklist
 
-1. Add data to the appropriate file in `src/lib/data/`.
+1. Add data to the appropriate file in `src/lib/data/` (product pages: marketing in `api-product-pages.ts`, technical APIs in `api-specs.ts`).
 2. Create the page component using the correct `*PageLayout`.
 3. Add route to both `App.tsx` (lazy) and `AppServer.tsx` (eager).
 4. Add route entry to `ssg/routes.ts`.

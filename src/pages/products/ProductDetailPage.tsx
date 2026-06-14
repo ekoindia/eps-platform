@@ -3,6 +3,11 @@ import { Helmet } from "react-helmet-async";
 import { ProductPageLayout } from "@/components/ProductPageLayout";
 import { API_PRODUCTS } from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import {
+  getApiPreviewsForProduct,
+  getProductDocsUrl,
+  getVerifiableFieldsForProduct,
+} from "@/lib/data/api-spec-previews";
 import { AiHint } from "@/components/AiHint";
 import { SITE_URL } from "@/lib/config/site";
 import { generateProductJsonLd } from "@/lib/utils/json-ld";
@@ -20,6 +25,13 @@ const ProductDetailPage = () => {
 
   const { seo, ...layoutProps } = pageData;
   const jsonLdSchemas = generateProductJsonLd(pageData, product.slug);
+
+  // Technical API details are sourced from the spec registry (api-specs.ts),
+  // not the marketing page data. Cap on-page previews to keep the page focused;
+  // the full set powers the developer reference.
+  const inputOutputPreviews = getApiPreviewsForProduct(product.id, 6);
+  const docsUrl = getProductDocsUrl(product.id);
+  const verifiableFields = getVerifiableFieldsForProduct(product.id);
 
   return (
     <>
@@ -42,7 +54,17 @@ const ProductDetailPage = () => {
       </Helmet>
 
       <AiHint mdPath={`/products/${product.slug}.md`} />
-      <ProductPageLayout {...layoutProps} productId={product.id} />
+      <ProductPageLayout
+        {...layoutProps}
+        productId={product.id}
+        docsUrl={docsUrl}
+        inputOutputPreviews={
+          inputOutputPreviews.length > 0 ? inputOutputPreviews : undefined
+        }
+        verifiableFields={
+          verifiableFields.length > 0 ? verifiableFields : undefined
+        }
+      />
     </>
   );
 };

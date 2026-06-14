@@ -1,4 +1,5 @@
 import type { ApiProductRef } from "@/lib/data/api-products";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
 import type { ProductPageDataShape } from "@/lib/markdown/render-product";
 import { renderProductMarkdown } from "@/lib/markdown/render-product";
 import { describe, expect, it } from "vitest";
@@ -23,7 +24,6 @@ const page: ProductPageDataShape = {
   heroTitle: "Verify PAN in under 2 seconds",
   heroSubtitle: "Real-time PAN identity lookup for onboarding and KYC.",
   category: "verification",
-  docsUrl: "https://developers.eko.in/docs/pan",
   features: [
     { title: "Fast", desc: "Sub-second response times." },
     { title: "Accurate", desc: "Direct from source of truth." },
@@ -47,8 +47,43 @@ const related: ApiProductRef[] = [
   },
 ];
 
+const specs: ApiSpec[] = [
+  {
+    id: "pan-lite",
+    productId: "pan",
+    name: "PAN Lite",
+    slug: "pan-lite",
+    summary: "Quick PAN validation.",
+    category: "verification",
+    method: "POST",
+    path: "/pan/lite",
+    docsUrl: "https://developers.eko.in/docs/pan",
+    extraRequestParams: [
+      { name: "pan_number", in: "body", type: "string", required: true },
+    ],
+    sampleRequest: { pan_number: "ABCDE1234F" },
+    responseData: [
+      {
+        name: "pan_status",
+        type: "string",
+        imp: true,
+        description: "PAN validity status",
+        example: "VALID",
+      },
+      {
+        name: "full_name",
+        type: "string",
+        imp: true,
+        description: "Registered PAN holder name",
+        example: "Rajesh Kumar",
+      },
+    ],
+    sampleSuccessResponse: {},
+  },
+];
+
 describe("renderProductMarkdown", () => {
-  const md = renderProductMarkdown(product, page, related);
+  const md = renderProductMarkdown(product, page, related, specs);
 
   it("includes YAML front-matter with canonical URL", () => {
     expect(md).toMatch(/^---\n/);
@@ -73,7 +108,7 @@ describe("renderProductMarkdown", () => {
 
   it("renders major sections", () => {
     expect(md).toContain("## Features");
-    expect(md).toContain("### Fast");
+    expect(md).toContain("- Fast: Sub-second response times.");
     expect(md).toContain("## Integration Steps");
     expect(md).toContain("1. **Sign Up** — Create an account.");
     expect(md).toContain("> Tip: Takes a minute");
@@ -83,6 +118,16 @@ describe("renderProductMarkdown", () => {
     expect(md).toContain("### Is it real-time?");
     expect(md).toContain("## API Documentation");
     expect(md).toContain("https://developers.eko.in/docs/pan");
+  });
+
+  it("renders the 'What Can You Verify' section from imp fields", () => {
+    expect(md).toContain("## What Can You Verify With PAN Verification API?");
+    expect(md).toContain("- **Pan Status** — PAN validity status");
+    expect(md).toContain("- **Full Name** — Registered PAN holder name");
+    // it sits above the API preview section
+    expect(md.indexOf("## What Can You Verify")).toBeLessThan(
+      md.indexOf("## API Preview"),
+    );
   });
 
   it("links related products with markdown-version suffixes", () => {

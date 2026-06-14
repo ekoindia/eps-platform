@@ -69,7 +69,7 @@ import {
 
 import type {
   FAQ,
-  ProductPageLayoutProps,
+  ProductPageContent,
 } from "@/components/ProductPageLayout";
 
 // ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ export interface ProductPageSeo {
   ogDescription?: string;
 }
 
-export interface ProductPageData extends ProductPageLayoutProps {
+export interface ProductPageData extends ProductPageContent {
   seo: ProductPageSeo;
 }
 
@@ -206,7 +206,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Enable assisted domestic money transfers through retailers, agents, CSPs, and fintech platforms. Let customers send money to bank accounts across India using IMPS and NEFT, with real-time status updates and transaction receipts.",
     category: "payment",
     icon: Banknote,
-    docsUrl: "https://developers.eko.in/reference/fino-dmt-flow",
     heroImage: moneyTransferImg,
     features: [
       {
@@ -336,7 +335,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Enable Aadhaar-based banking services through secure AePS APIs. Let your retailers, agents, or assisted-service network offer cash withdrawal, balance enquiry, and mini statement services using Aadhaar authentication.",
     category: "payment",
     icon: Fingerprint,
-    docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
     heroImage: aepsImg,
     features: [
       {
@@ -467,7 +465,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Integrate Eko’s BBPS API to let customers fetch bills, pay utility bills, and track transaction status across electricity, gas, water, DTH, broadband, FASTag, insurance, credit card, EMI, LPG, and loan repayment categories.",
     category: "payment",
     icon: Receipt,
-    docsUrl: "https://developers.eko.in/reference/bbps-pay",
     heroImage: bbpsImg,
     types: [
       { label: "Electricity", icon: Zap },
@@ -613,7 +610,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Enable seamless UPI payments through dynamic QR codes. Perfect for retail stores, restaurants, and any business accepting digital payments.",
     category: "payment",
     icon: QrCode,
-    docsUrl: "https://developers.eko.in/reference/upi-generate-static-qr",
     heroImage: qrImg,
     features: [
       {
@@ -746,7 +742,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Enable your field agents to collect cash and instantly credit customer accounts. Reduce collection costs, improve efficiency, and provide real-time visibility.",
     category: "payment",
     icon: Receipt,
-    docsUrl: "https://developers.eko.in/v1/reference/get-cms-url",
     heroImage: cmsImg,
     features: [
       {
@@ -879,7 +874,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Pay your employees and vendors directly from your digital wallet balance. Easy-to-use, reliable, and secure fund transfer API for instant salary disbursals and vendor payments.",
     category: "payment",
     icon: Send,
-    docsUrl: "https://developers.eko.in/docs/fund-transfer",
     heroImage: payoutImg,
     features: [
       {
@@ -1007,7 +1001,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Send money instantly to any UPI ID - VPAs, mobile numbers, or linked bank accounts. Perfect for vendor payments, refunds, and disbursements.",
     category: "payment",
     icon: Banknote,
-    docsUrl: "https://developers.eko.in/reference/upi-vpa-payment",
     heroImage: payoutImg,
     features: [
       {
@@ -1134,7 +1127,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Choose from PAN Lite, PAN Advanced, and Bulk PAN Verification APIs to validate PAN details in real time for customer KYC, lending, merchant onboarding, and compliance workflows.",
     category: "verification",
     icon: FileText,
-    docsUrl: "https://developers.eko.in/reference/pan-lite",
     heroImage: panImg,
     overview:
       "The PAN Verification API enables businesses to validate Permanent Account Number (PAN) details instantly. It is designed for compliance-driven onboarding, fraud prevention, and identity verification use cases across financial and enterprise platforms.",
@@ -1205,172 +1197,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "PAN Lite returns PAN status, name match, DOB match, and Aadhaar seeding status. PAN Advanced returns holder name, PAN type, gender, date of birth, masked Aadhaar number, Aadhaar linking status, mobile number, email, and address.",
       },
     ],
-    inputOutputPreviews: [
-      {
-        apiName: "PAN Lite",
-        description:
-          "Quick PAN validation with match results for basic KYC checks.",
-        bestFor: "Basic PAN status checks",
-        docsUrl: "https://developers.eko.in/reference/pan-lite",
-        endpoint: "/pan-lite",
-        inputs: [
-          { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
-          { label: "Full Name", value: "Rajesh Kumar", icon: User },
-          { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
-        ],
-        outputs: [
-          { label: "PAN Status", value: "Valid" },
-          { label: "Name Match", value: "Matched" },
-          { label: "DOB Match", value: "Matched" },
-          {
-            label: "Aadhaar Seeding Status",
-            value: "Seeded",
-            icon: Fingerprint,
-          },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/pan-lite",
-          request: {
-            initiator_id: "9876543210",
-            pan_number: "ABCDE1234F",
-            name: "Rajesh Kumar",
-            dob: "1994-08-29",
-            client_ref_id: "PAN-REQ-20240101-001",
-            user_code: "20810200",
-            source: "API",
-          },
-          response: {
-            status: 0,
-            response_status_id: 0,
-            data: {
-              pan: "ABCDE1234F",
-              name: "Rajesh Kumar",
-              dob: "1994-08-29",
-              name_match: "Y",
-              dob_match: "Y",
-              pan_status: "E",
-              status: "VALID",
-              aadhaar_seeding_status: "Y",
-              aadhaar_seeding_status_desc: "Aadhaar is linked to PAN",
-            },
-            message: "PAN verification successful",
-            response_type_id: 1388,
-          },
-        },
-      },
-      {
-        apiName: "PAN Advanced",
-        description:
-          "Detailed PAN data including holder name, category, and Aadhaar seeding status.",
-        bestFor: "KYC workflows needing richer match details",
-        docsUrl: "https://developers.eko.in/reference/pan-advanced",
-        endpoint: "/pan-advanced",
-        inputs: [
-          { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
-          { label: "Full Name", value: "Rajesh Kumar", icon: User },
-          { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
-        ],
-        outputs: [
-          { label: "Registered Name", value: "Rajesh Kumar", icon: User },
-          { label: "PAN Type", value: "Individual" },
-          { label: "Gender", value: "Male", icon: User },
-          { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
-          {
-            label: "Masked Aadhaar",
-            value: "XXXX-XXXX-1234",
-            icon: Fingerprint,
-          },
-          { label: "Aadhaar Linked?", value: "Yes" },
-          { label: "Mobile Number", value: "9876543210", icon: Smartphone },
-          { label: "Email", value: "rajesh.kumar@example.com", icon: Mail },
-          {
-            label: "Address (Full)",
-            value: "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
-            icon: MapPin,
-          },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/pan-advanced",
-          request: {
-            initiator_id: "9876543210",
-            pan: "ABCDE1234F",
-            name: "Rajesh Kumar",
-            dob: "1994-08-29",
-            client_ref_id: "PAN-ADV-20240101-001",
-            user_code: "20810200",
-          },
-          response: {
-            status: 0,
-            data: {
-              pan: "ABCDE1234F",
-              name_provided: "Rajesh Kumar",
-              registered_name: "Rajesh Kumar",
-              first_name: "Rajesh",
-              last_name: "Kumar",
-              type: "Individual",
-              gender: "M",
-              date_of_birth: "1994-08-29",
-              masked_aadhaar_number: "XXXX XXXX 1234",
-              aadhaar_linked: true,
-              email: "rajesh.kumar@example.com",
-              mobile_number: "9876543210",
-              address: {
-                full_address:
-                  "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
-                city: "Mumbai",
-                state: "Maharashtra",
-                pincode: 400072,
-              },
-            },
-            message: "PAN Advanced verification successful",
-          },
-        },
-      },
-      {
-        apiName: "Bulk PAN Verification",
-        description:
-          "Verify multiple PANs in a single async batch request for high-volume operations.",
-        bestFor: "High-volume PAN verification with async processing",
-        docsUrl: "https://developers.eko.in/reference/pan-bulk-verify",
-        endpoint: "/pan/bulk",
-        inputs: [
-          { label: "Entry 1", value: "John (ABCPV1234D)", icon: User },
-          { label: "Entry 2", value: "John Doe (ABCPV1234L)", icon: User },
-        ],
-        outputs: [
-          { label: "Status", value: "Processing" },
-          { label: "Reference ID", value: "REF123456", icon: Hash },
-          { label: "Batch ID", value: "BLK789" },
-          {
-            label: "Note",
-            value: "Poll Bulk PAN Verification Status API for results",
-            icon: Info,
-          },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/pan/bulk",
-          request: {
-            initiator_id: "9876543210",
-            client_ref_id: "BULK-PAN-20240101-001",
-            entries: [
-              { pan: "ABCPV1234D", name: "John", source: "API" },
-              { pan: "ABCPV1234L", name: "John Doe", source: "API" },
-            ],
-          },
-          response: {
-            status: 0,
-            data: {
-              reference_id: 123456,
-            },
-            message:
-              "Bulk PAN verification request accepted. Poll status API for results.",
-          },
-        },
-      },
-    ],
   },
 
   // -------------------------------------------------------------------------
@@ -1391,7 +1217,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify Aadhaar details through consent-based, real-time verification workflows.",
     category: "verification",
     icon: ShieldCheck,
-    docsUrl: "https://developers.eko.in/reference/aadhaar-verification-apis",
     heroImage: aadhaarImg,
     overview:
       "The Aadhaar Verification API enables businesses to validate Aadhaar details securely as part of identity verification and KYC processes. It is designed for regulated onboarding, fraud prevention, and compliance-driven use cases.",
@@ -1476,7 +1301,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify bank account details to prevent failed transactions and reduce operational costs. Instant verification with penny-drop and account holder name matching.",
     category: "verification",
     icon: Building2,
-    docsUrl: "https://developers.eko.in/reference/bank-account-verification",
     heroImage: bankImg,
     features: [
       {
@@ -1581,91 +1405,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Failed verifications return specific error codes indicating the reason - invalid account, closed account, incorrect IFSC, etc. - helping you take appropriate action.",
       },
     ],
-    inputOutputPreviews: [
-      {
-        apiName: "Bank Account Verification",
-        description:
-          "Verify a bank account number by transferring ₹1 to retrieve the name of the account holder",
-        docsUrl:
-          "https://developers.eko.in/reference/bank-account-verification",
-        endpoint: "/bank-account-verification",
-        inputs: [
-          { label: "Account Number", value: "1234567890", icon: Hash },
-          { label: "IFSC Code", value: "SBIN0001234", icon: Hash },
-        ],
-        outputs: [
-          { label: "Account Status", value: "Valid", icon: CheckCircle },
-          { label: "Account Holder Name", value: "Rajesh Kumar", icon: User },
-          { label: "Bank", value: "State Bank of India", icon: Building },
-          { label: "Branch", value: "MG Road Branch", icon: MapPin },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/bank-account/sync",
-          request: {
-            initiator_id: "9876543210",
-            user_code: "20810200",
-            bank_account: 1234567890,
-            ifsc: "SBIN0001234",
-            client_ref_id: "BANK-VER-20240101-001",
-          },
-          response: {
-            status: 0,
-            data: {
-              account_exists: true,
-              account_name: "Rajesh Kumar",
-              ifsc: "SBIN0001234",
-              bank: "State Bank of India",
-              branch: "MG Road Branch",
-              utr: "431712345678",
-            },
-            message: "Bank account verification successful",
-          },
-        },
-      },
-      {
-        apiName: "Bulk Bank Account Verification",
-        description: "Verify multiple bank accounts in a single API call",
-        docsUrl:
-          "https://developers.eko.in/reference/bulk-bank-account-verification",
-        endpoint: "/bulk-bank-account-verification",
-        inputs: [
-          { label: "Entry 1", value: "1234567890, SBIN0001234", icon: Hash },
-          { label: "Entry 2", value: "9876543210, HDFC0005678", icon: Hash },
-        ],
-        outputs: [
-          { label: "Status", value: "Received", icon: CheckCircle },
-          { label: "Reference ID", value: "123456", icon: Hash },
-          { label: "Bulk Verification ID", value: "3356655212", icon: Hash },
-          {
-            label: "Note",
-            value: "Poll Bulk Bank Account Verification Status API for results",
-            icon: Info,
-          },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/bank-account/bulk",
-          request: {
-            initiator_id: "9876543210",
-            client_ref_id: "BULK-BANK-20240101-001",
-            entries: [
-              { bank_account: "1234567890", ifsc: "SBIN0001234" },
-              { bank_account: "9876543210", ifsc: "HDFC0005678" },
-            ],
-          },
-          response: {
-            status: 0,
-            data: {
-              reference_id: 123456,
-              bulk_verification_id: "3356655212",
-            },
-            message:
-              "Bulk verification request accepted. Poll status API for results.",
-          },
-        },
-      },
-    ],
   },
 
   // -------------------------------------------------------------------------
@@ -1687,7 +1426,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify GSTIN status, legal name, trade name, taxpayer type, registration details, and principal address in real time for vendor onboarding, merchant verification, KYB, and compliance workflows.",
     category: "verification",
     icon: BarChart3,
-    docsUrl: "https://developers.eko.in/reference/verify-gstin",
     // heroImage: gstImg,
     overview:
       "The GST Verification API enables businesses to validate GSTIN details instantly. It is designed for compliance-driven onboarding, vendor verification, and business identity checks where accuracy and traceability are critical.",
@@ -1754,118 +1492,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes, GSTIN details are verified in real time against official records.",
       },
     ],
-    inputOutputPreviews: [
-      {
-        apiName: "GST Verification",
-        description:
-          "Validate GSTIN details instantly for vendor onboarding and compliance",
-        docsUrl: "https://developers.eko.in/reference/verify-gstin",
-        endpoint: "/verify-gstin",
-        inputs: [
-          { label: "GST Number", value: "29ABCDE1234F1Z5", icon: FileText },
-          { label: "Business Name", value: "Acme Pvt Ltd", icon: Building },
-        ],
-        outputs: [
-          { label: "GST Status", value: "Active" },
-          {
-            label: "Legal Name",
-            value: "Acme Private Limited",
-            icon: Building,
-          },
-          {
-            label: "Trade Name",
-            value: "Acme Private Limited",
-            icon: Building,
-          },
-          { label: "Address", value: "123, MG Road, Bangalore", icon: MapPin },
-          { label: "Constitution", value: "Private Limited", icon: Building },
-          {
-            label: "Nature of Business",
-            value:
-              "Wholesale, Supplier of Services, Recipient of Goods or Services",
-            icon: Briefcase,
-          },
-          { label: "Taxpayer Type", value: "Regular", icon: User },
-          { label: "Registration Date", value: "01/07/2017", icon: Calendar },
-          { label: "Update Date", value: "01/02/2022", icon: Calendar },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/gstin",
-          request: {
-            initiator_id: "9876543210",
-            client_ref_id: "GST-VER-20240101-001",
-            gstin: "29ABCDE1234F1Z5",
-            business_name: "Acme Pvt Ltd",
-            user_code: "20810200",
-          },
-          response: {
-            status: 0,
-            data: {
-              gstin: "29ABCDE1234F1Z5",
-              gst_in_status: "Active",
-              valid: true,
-              legal_name_of_business: "Acme Private Limited",
-              constitution_of_business: "Private Limited Company",
-              taxpayer_type: "Regular",
-              nature_of_business_activities: "Wholesale, Supplier of Services",
-              date_of_registration: "01/07/2017",
-              last_update_date: "01/02/2022",
-              state_jurisdiction: "Karnataka",
-              principal_place_address:
-                "123, MG Road, Bangalore, Karnataka 560001",
-            },
-            message: "GSTIN verification successful",
-          },
-        },
-      },
-      {
-        apiName: "Fetch GSTIN with PAN",
-        description: "Fetch a list of GSTIN associated with a PAN",
-        docsUrl: "https://developers.eko.in/reference/gstin-with-pan",
-        endpoint: "/gstin-with-pan",
-        inputs: [
-          { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
-        ],
-        outputs: [
-          {
-            label: "GSTIN List",
-            value:
-              "29ABCDE1234F1Z5 (Maharashtra / Active), 27ABCDE1234F1Z2 (Karnataka / Inactive)",
-            icon: FileText,
-          },
-        ],
-        sampleJson: {
-          method: "POST",
-          endpoint: "/tools/kyc/gstin-with-pan",
-          request: {
-            initiator_id: "9876543210",
-            pan: "ABCDE1234F",
-            user_code: "20810200",
-            source: "API",
-          },
-          response: {
-            status: 0,
-            data: {
-              pan: "ABCDE1234F",
-              gstin_list: [
-                {
-                  gstin: "29ABCDE1234F1Z5",
-                  status: "Active",
-                  state: "Maharashtra",
-                },
-                {
-                  gstin: "27ABCDE1234F1Z2",
-                  status: "Inactive",
-                  state: "Karnataka",
-                },
-              ],
-            },
-            message: "GSTIN fetch successful",
-          },
-        },
-      },
-    ],
   },
 
   // -------------------------------------------------------------------------
@@ -1887,7 +1513,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Validate UPI IDs — also known as Virtual Payment Address (VPA) — and registered phone numbers in real time. Confirm payee name before initiating transfers to reduce payout failures and payment fraud.",
     category: "verification",
     icon: Zap,
-    docsUrl: "https://developers.eko.in/reference/upi-validate-vpa",
     heroImage: upiVerifyImg,
     overview:
       "The UPI ID (VPA) Verification API validates Virtual Payment Addresses and registered phone numbers in real time. It returns the verified payee name, VPA, and registered mobile — helping you confirm the recipient before initiating UPI transfers and reducing wrong-payee payment failures.",
@@ -1951,44 +1576,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "The API returns the verified UPI ID (VPA), recipient name, registered mobile number, transaction ID, and verification status.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "UPI ID (VPA) Verification",
-      inputs: [
-        { label: "UPI ID (VPA)", value: "rajesh.kumar@okicici", icon: Zap },
-        { label: "Mobile Number", value: "9876543210", icon: Phone },
-      ],
-      outputs: [
-        { label: "Status", value: "Transaction Success", icon: CheckCircle },
-        { label: "Recipient Name", value: "Rajesh Kumar", icon: User },
-        { label: "UPI ID (VPA)", value: "rajesh.kumar@okicici", icon: Zap },
-        { label: "Mobile Number", value: "9876543210", icon: Phone },
-        { label: "Transaction ID", value: "3560508954", icon: Hash },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/customer/payment/upi/validate-vpa",
-        request: {
-          initiator_id: "9876543210",
-          user_code: "20810200",
-          customer_vpa: "rajesh.kumar@okicici",
-          client_ref_id: "VPA-VAL-20240101-001",
-          recipient_mobile: "9876543210",
-          name: "Rajesh Kumar",
-          latlong: "28.6139,77.2090",
-        },
-        response: {
-          status: 0,
-          data: {
-            vpa: "rajesh.kumar@okicici",
-            valid: true,
-            recipient_name: "Rajesh Kumar",
-            mobile_number: "9876543210",
-            transaction_id: "3560508954",
-          },
-          message: "VPA validation successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2009,7 +1596,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify driving license details in real time to strengthen KYC and reduce identity fraud.",
     category: "verification",
     icon: Truck,
-    docsUrl: "https://developers.eko.in/reference/driving-license",
     // heroImage: dlImg,
     overview:
       "The Driving License Verification API enables businesses to validate driving license details instantly as part of identity verification and onboarding workflows. It helps confirm user identity, reduce impersonation risk, and meet compliance requirements.",
@@ -2080,59 +1666,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes, it's ideal for onboarding drivers, delivery partners, and agents requiring identity confirmation.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "DL Verification",
-      inputs: [
-        {
-          label: "Driving License Number",
-          value: "MH0220190001234",
-          icon: CreditCard,
-        },
-      ],
-      outputs: [
-        { label: "Name", value: "Rajesh Kumar" },
-        { label: "Date of Birth", value: "29/08/1994" },
-        { label: "Address", value: "123, Andheri West, Mumbai" },
-        { label: "Date of Issue", value: "15/03/2019" },
-        { label: "DL Validity", value: "14/03/2039" },
-        { label: "Father's/Husband's Name", value: "Suresh Kumar" },
-        { label: "Badge Details", value: "Transport" },
-        { label: "COV Details", value: "LMV, MCWG" },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/driving-license",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "DL-VER-20240101-001",
-          dl_number: "MH0220190001234",
-          dob: "1994-08-29",
-          user_code: "20810200",
-          source: "API",
-        },
-        response: {
-          status: 0,
-          data: {
-            dl_number: "MH0220190001234",
-            dob: "1994-08-29",
-            status: "Active",
-            details_of_driving_licence: {
-              name: "Rajesh Kumar",
-              father_or_husband_name: "Suresh Kumar",
-              date_of_issue: "2019-03-15",
-              status: "Active",
-              address_list: [{ complete_address: "123, Andheri West, Mumbai" }],
-            },
-            dl_validity: {
-              non_transport: { from: "2019-03-15", to: "2039-03-14" },
-              transport: { from: "2019-03-15", to: "2039-03-14" },
-            },
-            badge_details: [{ class_of_vehicle: ["LMV", "MCWG"] }],
-          },
-          message: "DL verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2155,7 +1688,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Get complete vehicle information from a registration number — owner details, chassis, engine, insurance status, blacklist check, permits, and more. Pan-India coverage via VAHAN database.",
     category: "verification",
     icon: Truck,
-    docsUrl: "https://developers.eko.in/reference/vehicle-rc",
     overview:
       "The Vehicle & RC Verification API enables businesses to fetch comprehensive vehicle information using a registration number. It returns RC status, owner details, chassis and engine numbers, manufacturer and model, insurance validity, permit details, blacklist and challan status, and more — all in a single API call. Designed for platforms that onboard drivers or vehicles, verify fleet compliance, underwrite motor insurance, or assess vehicle-related risk.",
     keyBenefits: [
@@ -2255,68 +1787,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "No. Field availability may vary by vehicle type, RTO/source record, partner configuration, and data availability. The API response should be handled programmatically for missing or unavailable fields.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Vehicle & RC Verification",
-      inputs: [{ label: "Vehicle Number", value: "HR26DA8398", icon: Car }],
-      outputs: [
-        { label: "Owner Name", value: "Arya ****", icon: User },
-        { label: "RC Status", value: "Active", icon: CheckCircle },
-        { label: "Blacklist Status", value: "Not Blacklisted", icon: Shield },
-        { label: "Vehicle Class", value: "Motor Car", icon: Car },
-        { label: "Fuel Type", value: "Petrol", icon: Flame },
-        { label: "Manufacturer", value: "Mahindra & Mahindra", icon: Building },
-        { label: "Body Type", value: "Hard Top", icon: Car },
-        { label: "Vehicle Color", value: "Dark Grey", icon: Palette },
-        { label: "Chassis Number", value: "MA1**************", icon: Hash },
-        { label: "Engine Number", value: "N**********", icon: Hash },
-        { label: "Registration Date", value: "2020", icon: Calendar },
-        { label: "RC Expiry Date", value: "2039", icon: Calendar },
-        {
-          label: "Insurance Company",
-          value: "Tata AIG General Insurance",
-          icon: Shield,
-        },
-        { label: "Insurance Valid Upto", value: "2025", icon: Calendar },
-        { label: "Emission Norms", value: "Bharat Stage VI", icon: Leaf },
-        { label: "Financier", value: "****** Bank Ltd", icon: Building },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/vehicle-rc",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "RC-VER-20240101-001",
-          vehicle_number: "HR26DA8398",
-          user_code: "20810200",
-          source: "API",
-        },
-        response: {
-          status: 0,
-          data: {
-            reg_no: "HR26DA8398",
-            owner: "Arya ****",
-            rc_status: "Active",
-            class: "Motor Car",
-            vehicle_manufacturer_name: "Mahindra & Mahindra",
-            model: "XUV300",
-            vehicle_color: "Dark Grey",
-            chassis: "MA1**************",
-            engine: "N**********",
-            reg_date: "2020-06-15",
-            rc_expiry_date: "2039-06-14",
-            vehicle_insurance_company_name: "Tata AIG General Insurance",
-            vehicle_insurance_upto: "2025-06-14",
-            fuel_type: "Petrol",
-            body_type: "Hard Top",
-            emission_norms: "Bharat Stage VI",
-            financier: "****** Bank Ltd",
-            blacklist_status: "Not Blacklisted",
-            is_commercial: false,
-          },
-          message: "Vehicle RC verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2338,7 +1808,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Fetch and verify user-consented digital documents such as Aadhaar, PAN, driving licence, and other DigiLocker-issued records through secure, paperless API workflows for onboarding, lending, and compliance.",
     category: "verification",
     icon: FolderCheck,
-    docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
     overview:
       "The DigiLocker API enables businesses to fetch and verify user documents digitally with explicit consent. It eliminates manual document collection, reduces fraud, and accelerates onboarding through trusted digital records.",
     keyBenefits: [
@@ -2412,48 +1881,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes, the API enables fully paperless document verification, eliminating manual collection.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "DigiLocker",
-      inputs: [
-        { label: "Document Requested", value: "AADHAAR", icon: FileText },
-        {
-          label: "Redirect URL",
-          value: "https://yourapp.com/callback",
-          icon: Globe,
-        },
-      ],
-      outputs: [
-        { label: "Status", value: "Success", icon: CheckCircle },
-        {
-          label: "DigiLocker URL",
-          value:
-            "https://digilocker.gov.in/link-verification?verification_id=123456",
-          icon: Globe,
-        },
-        { label: "Reference ID", value: "12345", icon: Hash },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/digilocker",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "DGL-20240101-001",
-          document_requested: ["AADHAAR"],
-          redirect_url: "https://yourapp.com/callback",
-          user_code: "20810200",
-        },
-        response: {
-          status: 0,
-          data: {
-            reference_id: 12345,
-            url: "https://digilocker.gov.in/link-verification?verification_id=123456",
-            document_requested: ["AADHAAR"],
-            redirect_url: "https://yourapp.com/callback",
-          },
-          message: "DigiLocker URL created successfully",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2476,7 +1903,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     category: "verification",
     icon: Briefcase,
     heroImage: employeeImg,
-    docsUrl: "https://developers.eko.in/reference/advance-employment",
     overview:
       "The Employee Verification API enables organizations to verify employee identity and related details digitally during hiring and onboarding. It is designed to reduce hiring risk, improve compliance, and streamline workforce verification workflows.",
     keyBenefits: [
@@ -2539,71 +1965,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes, the API integrates seamlessly into HRMS, ATS, and onboarding platforms.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Employee Verification",
-      inputs: [
-        { label: "Phone Number", value: "+91 98765 43210", icon: Phone },
-      ],
-      outputs: [
-        { label: "Employee Name", value: "Rajesh Kumar", icon: User },
-        { label: "Gender", value: "Male", icon: User },
-        { label: "Date of Birth", value: "29/08/1994", icon: Calendar },
-        { label: "Aadhaar Verified", value: "No" },
-        { label: "PAN Number", value: "ABCDE1234F", icon: IdCard },
-        { label: "UAN", value: "1001234567890", icon: IdCard },
-        { label: "Member ID", value: "MH/BOM/12345", icon: IdCard },
-        { label: "Company Name", value: "Acme Pvt Ltd", icon: Building },
-        { label: "Joining Date", value: "01/04/2019", icon: Calendar },
-        { label: "Exit Date", value: "30/06/2023", icon: Calendar },
-        { label: "Exit Reason", value: "Resignation", icon: Info },
-        {
-          label: "EPFO Details…",
-          value: "PF Filing?, Name Unique?, …",
-          icon: Info,
-        },
-        {
-          label: "Employer Info…",
-          value: "Name, Setup Date, PF Filing Details, …",
-          icon: Info,
-        },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/advance-employment",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "EMP-VER-20240101-001",
-          phone: "9876543210",
-          source: "API",
-          user_code: "20810200",
-        },
-        response: {
-          status: 0,
-          data: {
-            uan_details: [
-              {
-                uan: "1001234567890",
-                basic_details: {
-                  employee_name: "Rajesh Kumar",
-                  gender: "Male",
-                  dob: "1994-08-29",
-                  phone: "9876543210",
-                  aadhaar_verified: false,
-                },
-                employment_details: {
-                  member_id: "MH/BOM/12345",
-                  establishment_name: "Acme Pvt Ltd",
-                  joining_date: "2019-04-01",
-                  exit_date: "2023-06-30",
-                  leave_reason: "Resignation",
-                },
-              },
-            ],
-          },
-          message: "Employee verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2625,7 +1986,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
     category: "verification",
     icon: Globe,
     heroImage: revGeoImg,
-    docsUrl: "https://developers.eko.in/reference/reverse-geocoding",
     overview:
       "The Reverse Geocoding API enables businesses to translate latitude and longitude coordinates into structured address information. It is designed for address validation, geo-compliance checks, and location-based risk assessment.",
     keyBenefits: [
@@ -2692,53 +2052,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes, you can cross-check customer-provided addresses against GPS-derived addresses for fraud prevention.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Reverse Geocoding",
-      inputs: [
-        { label: "Latitude", value: "19.0760", icon: MapPin },
-        { label: "Longitude", value: "72.8777", icon: MapPin },
-      ],
-      outputs: [
-        {
-          label: "Address",
-          value: "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus",
-          icon: MapPin,
-        },
-        { label: "City", value: "Mumbai", icon: MapPin },
-        { label: "State", value: "Maharashtra", icon: MapPin },
-        { label: "PIN Code", value: "400001", icon: MapPin },
-        { label: "Country", value: "India", icon: MapPin },
-        { label: "State Code", value: "MH", icon: MapPin },
-        { label: "Country Code", value: "IN", icon: MapPin },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/reverse-geocoding",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "GEO-20240101-001",
-          latitude: "19.0760",
-          longitude: "72.8777",
-          user_code: "20810200",
-          source: "API",
-        },
-        response: {
-          status: 0,
-          data: {
-            latitude: "19.0760",
-            longitude: "72.8777",
-            address: "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus",
-            city: "Mumbai",
-            state: "Maharashtra",
-            statecode: "MH",
-            countrycode: "IN",
-            pincode: "400001",
-            score: 0.95,
-          },
-          message: "Reverse geocoding successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2760,7 +2073,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Validate Voter ID (EPIC) card details instantly — fetch name, age, address, and constituency information for identity verification and onboarding workflows.",
     category: "verification",
     icon: Vote,
-    docsUrl: "https://developers.eko.in/reference/voter-id",
     overview:
       "The Voter ID Verification API enables businesses to validate Electoral Photo Identity Card (EPIC) details against government records. Use it for identity verification, address confirmation, and compliance workflows.",
     keyBenefits: [
@@ -2831,66 +2143,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "No. Field availability may vary by record, geography, source availability, and partner configuration. Your integration should handle unavailable or missing fields programmatically.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Voter ID Verification",
-      inputs: [
-        { label: "EPIC Number", value: "ABC1234567", icon: IdCard },
-        { label: "Name", value: "Rajesh Kumar", icon: User },
-      ],
-      outputs: [
-        { label: "Name", value: "Rajesh Kumar", icon: User },
-        { label: "Name (Regional)", value: "राजेश कुमार" },
-        { label: "Age", value: "34", icon: Calendar },
-        { label: "Gender", value: "Male", icon: User },
-        { label: "Father's Name", value: "Suresh Kumar", icon: User },
-        { label: "Address", value: "Ward 12, Sector 5, Noida", icon: MapPin },
-        { label: "Assembly Constituency", value: "Noida (62)", icon: MapPin },
-        {
-          label: "Parliamentary Constituency",
-          value: "Gautam Buddha Nagar",
-          icon: MapPin,
-        },
-        {
-          label: "Polling Station",
-          value: "Govt. School Noida Sec 5",
-          icon: MapPin,
-        },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/voter-id",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "VOTER-20240101-001",
-          epic_number: "ABC1234567",
-          name: "Rajesh Kumar",
-          source: "API",
-          user_code: "20810200",
-        },
-        response: {
-          status: 0,
-          data: {
-            name: "Rajesh Kumar",
-            age: "34",
-            dob: "1994-08-29",
-            gender: "Male",
-            father_name: "Suresh Kumar",
-            epic_number: "ABC1234567",
-            address: "Ward 12, Sector 5, Noida",
-            state: "Uttar Pradesh",
-            assembly_constituency: "Noida (62)",
-            parliamentary_constituency: "Gautam Buddha Nagar",
-            polling_station: "Govt. School Noida Sec 5",
-            split_address: {
-              district: ["Gautam Buddha Nagar"],
-              city: ["Noida"],
-              pincode: "201301",
-            },
-          },
-          message: "Voter ID verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -2912,7 +2164,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify Indian passport application details using passport file number and date of birth. Retrieve verification status, holder name, date of birth, application type, and application received date for KYC, employee BGV, travel, and compliance workflows.",
     category: "verification",
     icon: Plane,
-    docsUrl: "https://developers.eko.in/reference/passport",
     overview:
       "The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth.",
     keyBenefits: [
@@ -3000,50 +2251,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Verification is real-time with sub-second response times.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Passport Verification",
-      inputs: [
-        {
-          label: "Passport File Number",
-          value: "PA1079341954215",
-          icon: FileText,
-        },
-        { label: "Date of Birth", value: "1994-08-29", icon: Calendar },
-        { label: "Name", value: "Rajesh Kumar", icon: User },
-      ],
-      outputs: [
-        { label: "File Number", value: "PA1079341954215", icon: FileText },
-        { label: "Name", value: "Rajesh Kumar", icon: User },
-        { label: "Date of Birth", value: "1994-08-29", icon: Calendar },
-        { label: "Application Type", value: "Normal" },
-        { label: "Application Received Date", value: "2023-01-15" },
-        { label: "Status", value: "VALID", icon: CheckCircle },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/passport",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "PASS-20240101-001",
-          file_number: "J8369854",
-          dob: "1994-08-29",
-          name: "Rajesh Kumar",
-          user_code: "20810200",
-          source: "API",
-        },
-        response: {
-          status: 0,
-          data: {
-            file_number: "J8369854",
-            name: "Rajesh Kumar",
-            dob: "1994-08-29",
-            application_type: "Normal",
-            application_received_date: "2023-01-15",
-          },
-          message: "Passport verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -3064,7 +2271,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify Company Identification Numbers (CIN) instantly — fetch company name, registration number, incorporation date, directors, and status from Ministry of Corporate Affairs records.",
     category: "verification",
     icon: Landmark,
-    docsUrl: "https://developers.eko.in/reference/cin",
     overview:
       "The CIN Verification API enables businesses to validate Company Identification Numbers against MCA records. Use it for KYB workflows, corporate due diligence, vendor verification, and compliance checks.",
     keyBenefits: [
@@ -3139,72 +2345,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "No. Field availability may vary by MCA record, company type, data availability, and partner configuration. Your integration should handle unavailable or missing fields programmatically.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "CIN Verification",
-      inputs: [
-        { label: "CIN", value: "U72900KA2015PTC082988", icon: Building },
-      ],
-      outputs: [
-        {
-          label: "Company Name",
-          value: "Acme Technologies Pvt Ltd",
-          icon: Building,
-        },
-        { label: "CIN Status", value: "Active", icon: CheckCircle },
-        { label: "Registration Number", value: "82987", icon: Hash },
-        { label: "Incorporation Date", value: "2015-09-23", icon: Calendar },
-        { label: "Email", value: "contact@acmetech.in", icon: Mail },
-        { label: "Incorporation Country", value: "India", icon: Globe },
-        {
-          label: "Director 1",
-          value: "Rahul Mehta (DIN: 07168822) — Director",
-          icon: User,
-        },
-        {
-          label: "Director 2",
-          value: "Priya Sharma (DIN: 07168826) — Director",
-          icon: User,
-        },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/cin",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "CIN-20240101-001",
-          cin: "U72900KA2015PTC082988",
-          user_code: "20810200",
-          source: "API",
-        },
-        response: {
-          status: 0,
-          data: {
-            cin: "U72900KA2015PTC082988",
-            company_name: "Acme Technologies Pvt Ltd",
-            registration_number: 82987,
-            incorporation_date: "2015-09-23",
-            cin_status: "Active",
-            email: "contact@acmetech.in",
-            incorporation_country: "India",
-            director_details: [
-              {
-                name: "Rahul Mehta",
-                din: "07168822",
-                designation: "Director",
-                dob: "1985-03-12",
-              },
-              {
-                name: "Priya Sharma",
-                din: "07168826",
-                designation: "Director",
-                dob: "1988-07-25",
-              },
-            ],
-          },
-          message: "CIN verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -3225,7 +2365,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify IP addresses in real time — detect proxies, geo-locate users, and assess risk scores for fraud prevention and geo-compliance workflows.",
     category: "verification",
     icon: Globe2,
-    docsUrl: "https://developers.eko.in/reference/ip",
     overview:
       "The IP Verification API enables businesses to geo-locate IP addresses, detect proxies and VPNs, and assess risk scores. Use it for fraud prevention, geo-compliance, and user location verification.",
     keyBenefits: [
@@ -3296,43 +2435,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes. The API is designed for inline transaction-level fraud checks with sub-second response times.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "IP Verification",
-      inputs: [{ label: "IP Address", value: "103.21.58.193", icon: Globe2 }],
-      outputs: [
-        { label: "Country", value: "India (IN)", icon: Globe2 },
-        { label: "Region", value: "Maharashtra", icon: MapPin },
-        { label: "City", value: "Mumbai", icon: MapPin },
-        { label: "Proxy Type", value: "None", icon: Shield },
-        { label: "City Risk Score", value: "12 / 100", icon: AlertTriangle },
-        { label: "Proxy Risk Score", value: "0 / 100", icon: AlertTriangle },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/ip",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "IP-20240101-001",
-          ip_address: "103.21.58.193",
-          source: "API",
-          user_code: "20810200",
-        },
-        response: {
-          status: 0,
-          data: {
-            ip_address: "103.21.58.193",
-            proxy_type: "None",
-            country_code: "IN",
-            country_name: "India",
-            region_name: "Maharashtra",
-            city_name: "Mumbai",
-            city_risk_score: "12",
-            proxy_type_risk_score: "0",
-          },
-          message: "IP verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -3354,7 +2456,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "AI-powered name comparison trained on 100M+ Indian name records. Compare names across PAN, Aadhaar, bank, and GST records — get a match score (0–1) and category (Direct Match, Partial Match, No Match) for automated KYC decisions.",
     category: "verification",
     icon: ScanText,
-    docsUrl: "https://developers.eko.in/reference/name-match",
     overview:
       "Name Match is an AI-powered name comparison API built for India's complex naming conventions. Trained on over 100 million Indian name records, it handles initials, abbreviations, phonetic and regional spelling variants, salutation patterns, and subset matching — returning a match score (0 to 1) and match category for automated decision-making.",
     keyBenefits: [
@@ -3427,44 +2528,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes. Cross-validating supplier PAN name, GST trade name, and bank account holder name catches fake invoice fraud that manual review misses.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Good Partial Match",
-      inputs: [
-        { label: "Name 1", value: "S K Mishra", icon: User },
-        { label: "Name 2", value: "Satish Kumar Mishra", icon: User },
-      ],
-      outputs: [
-        { label: "Status", value: "Success", icon: CheckCircle },
-        { label: "Match Score", value: "0.92" },
-        {
-          label: "Match Category",
-          value: "Good Partial Match",
-          icon: CheckCircle,
-        },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/name-match",
-        request: {
-          initiator_id: "9876543210",
-          client_ref_id: "NAME-20240101-001",
-          name_1: "S K Mishra",
-          name_2: "Satish Kumar Mishra",
-          source: "API",
-          user_code: "20810200",
-        },
-        response: {
-          status: 0,
-          data: {
-            name_1: "S K Mishra",
-            name_2: "Satish Kumar Mishra",
-            score: 0.92,
-            reason: "Names match with initials expanded",
-          },
-          message: "Name match successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -3485,7 +2548,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Verify income tax return filing and compliance status using PAN — assess borrower and business creditworthiness with real-time ITR data for lending and due diligence workflows.",
     category: "verification",
     icon: IndianRupee,
-    docsUrl: "https://developers.eko.in/reference/itr-compliance",
     overview:
       "The ITR Compliance Check API enables businesses to verify income tax return filing status using a PAN number. Use it for credit assessment, lending due diligence, and compliance verification.",
     keyBenefits: [
@@ -3559,35 +2621,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "The API returns results in real time with sub-second response times.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "ITR Compliance Check",
-      inputs: [{ label: "PAN Number", value: "ABCDE1234F", icon: CreditCard }],
-      outputs: [
-        { label: "PAN Number", value: "ABCDE1234F", icon: CreditCard },
-        { label: "ITR Filing Status", value: "Filed", icon: CheckCircle },
-        { label: "Assessment Year", value: "2024-25" },
-        { label: "Compliance Status", value: "Compliant", icon: Shield },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/touras/itr-compliance",
-        request: {
-          initiator_id: "9876543210",
-          user_code: "20810200",
-          pan_number: "ABCDE1234F",
-        },
-        response: {
-          status: 0,
-          data: {
-            pan_number: "ABCDE1234F",
-            itr_filed: true,
-            assessment_year: "2024-25",
-            compliance_status: "Compliant",
-          },
-          message: "ITR compliance check successful",
-        },
-      },
-    },
   },
 
   // ------------------------------------
@@ -3609,7 +2642,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Validate Director Identification Numbers (DIN) against MCA records — verify director identity, designation, and associated companies for KYB and compliance workflows.",
     category: "verification",
     icon: BadgeCheck,
-    docsUrl: "https://developers.eko.in/reference/din-verification",
     overview:
       "The DIN Verification API enables businesses to validate Director Identification Numbers against Ministry of Corporate Affairs records. Use it for corporate due diligence, KYB workflows, and director background checks.",
     keyBenefits: [
@@ -3680,40 +2712,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Each API call verifies one DIN. For bulk verification, you can make parallel API calls.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "DIN Verification",
-      inputs: [{ label: "DIN Number", value: "06731826", icon: BadgeCheck }],
-      outputs: [
-        { label: "Director Name", value: "Abhishek Sagar", icon: User },
-        { label: "DIN Status", value: "Active", icon: CheckCircle },
-        { label: "Designation", value: "Director" },
-        {
-          label: "Associated Company",
-          value: "Eko India Financial Services Pvt Ltd",
-          icon: Building,
-        },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/touras/din-verification",
-        request: {
-          initiator_id: "9876543210",
-          user_code: "20810200",
-          din_number: "06731826",
-        },
-        response: {
-          status: 0,
-          data: {
-            din: "06731826",
-            director_name: "Abhishek Sagar",
-            din_status: "Active",
-            designation: "Director",
-            company_name: "Eko India Financial Services Pvt Ltd",
-          },
-          message: "DIN verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -3735,7 +2733,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Fetch pending traffic challans for any vehicle using its registration number — automate fleet compliance monitoring, insurance risk assessment, and driver onboarding checks.",
     category: "verification",
     icon: TicketCheck,
-    docsUrl: "https://developers.eko.in/reference/e-challan",
     overview:
       "The E-Challan Verification API enables businesses to check pending traffic challans for a vehicle using its registration number. Use it for fleet compliance, insurance underwriting, and gig worker onboarding.",
     keyBenefits: [
@@ -3806,50 +2803,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes. Challan history indicates driving behavior risk — insurers use this data for underwriting and premium calculation.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "E-Challan Verification",
-      inputs: [
-        { label: "Registration Number", value: "MH02AB1234", icon: Car },
-      ],
-      outputs: [
-        { label: "Vehicle Number", value: "MH02AB1234", icon: Car },
-        { label: "Pending Challans", value: "2", icon: TicketCheck },
-        { label: "Total Fine Amount", value: "₹3,500", icon: IndianRupee },
-        { label: "Latest Violation", value: "Overspeeding — 2024-12-10" },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/touras/e-challan",
-        request: {
-          initiator_id: "9876543210",
-          user_code: "20810200",
-          registration_number: "MH02AB1234",
-        },
-        response: {
-          status: 0,
-          data: {
-            vehicle_number: "MH02AB1234",
-            pending_challans: 2,
-            total_fine_amount: 3500,
-            challans: [
-              {
-                violation: "Overspeeding",
-                date: "2024-12-10",
-                fine: 2000,
-                status: "Pending",
-              },
-              {
-                violation: "Red Light Jump",
-                date: "2024-11-05",
-                fine: 1500,
-                status: "Pending",
-              },
-            ],
-          },
-          message: "E-Challan check successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -3870,7 +2823,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Catch invalid, dummy, and mistyped email addresses in real time. Verify that an email domain actually exists and can receive messages — reduce bounce rates, block fake signups, and ensure valid contact data during onboarding.",
     category: "verification",
     icon: MailCheck,
-    docsUrl: "https://developers.eko.in/reference/email-check",
     overview:
       "The Email Verification API helps businesses catch invalid, dummy, and mistyped email addresses before they enter your system. It checks whether the email domain is real and can receive messages, and returns domain age to help assess trust — a newly created domain with no mail infrastructure is a strong fraud signal.",
     keyBenefits: [
@@ -3942,56 +2894,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "Yes. You can validate email lists by making parallel API calls to clean your contact database and remove invalid entries.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "Email Verification",
-      inputs: [
-        {
-          label: "Email Address",
-          value: "rajesh.kumar@example.com",
-          icon: Mail,
-        },
-      ],
-      outputs: [
-        { label: "Status", value: "Success", icon: MailCheck },
-        {
-          label: "Message",
-          value: "Email verification successful",
-          icon: CheckCircle,
-        },
-        { label: "Domain", value: "example.com", icon: Globe },
-        {
-          label: "Domain Age",
-          value: "6,970 days (~19 years)",
-          icon: Calendar,
-        },
-        {
-          label: "MX Records",
-          value: "aspmx.l.google.com (+ 4 more)",
-          icon: Shield,
-        },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/touras/check-email",
-        request: {
-          initiator_id: "9876543210",
-          user_code: "20810200",
-          email: "rajesh.kumar@example.com",
-        },
-        response: {
-          status: 0,
-          data: {
-            email: "rajesh.kumar@example.com",
-            domain: "example.com",
-            domain_age_days: 6970,
-            mx_records: ["aspmx.l.google.com", "alt1.aspmx.l.google.com"],
-            is_valid: true,
-            is_disposable: false,
-          },
-          message: "Email verification successful",
-        },
-      },
-    },
   },
 
   // -------------------------------------------------------------------------
@@ -4012,7 +2914,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
       "Validate FSSAI food license details and status instantly — verify food business registration for marketplace onboarding, delivery platform compliance, and regulatory checks.",
     category: "verification",
     icon: Utensils,
-    docsUrl: "https://developers.eko.in/reference/fssai-verification",
     overview:
       "The FSSAI License Verification API enables businesses to validate Food Safety and Standards Authority of India (FSSAI) license details. Use it for food business onboarding, delivery platform compliance, and food safety regulatory checks.",
     keyBenefits: [
@@ -4086,57 +2987,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
         a: "The API returns results in real time with sub-second response times.",
       },
     ],
-    inputOutputPreview: {
-      apiName: "FSSAI License Verification",
-      inputs: [
-        {
-          label: "FSSAI License Number",
-          value: "11521998000045",
-          icon: Utensils,
-        },
-      ],
-      outputs: [
-        { label: "License Number", value: "11521998000045", icon: Utensils },
-        { label: "Status", value: "Active", icon: CheckCircle },
-        { label: "License Category", value: "State License" },
-        {
-          label: "Business Name",
-          value: "Spice Garden Restaurant",
-          icon: Building,
-        },
-        {
-          label: "Address",
-          value: "123 Main Street, Mumbai, Maharashtra",
-          icon: MapPin,
-        },
-        { label: "State", value: "Maharashtra", icon: MapPin },
-        { label: "PIN Code", value: "400001", icon: MapPin },
-        { label: "Expiry Date", value: "2026-03-15", icon: Calendar },
-      ],
-      sampleJson: {
-        method: "POST",
-        endpoint: "/tools/kyc/touras/fetch-fssai",
-        request: {
-          initiator_id: "9876543210",
-          user_code: "20810200",
-          fssai: "11521998000045",
-        },
-        response: {
-          status: 0,
-          data: {
-            fssai_number: "11521998000045",
-            license_status: "Active",
-            license_category: "State License",
-            business_name: "Spice Garden Restaurant",
-            address: "123 Main Street, Mumbai, Maharashtra",
-            state: "Maharashtra",
-            pincode: "400001",
-            expiry_date: "2026-03-15",
-          },
-          message: "FSSAI verification successful",
-        },
-      },
-    },
   },
 };
 

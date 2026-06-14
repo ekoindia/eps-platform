@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface IntegrationStepperSectionProps {
   integrationSteps: IntegrationStep[];
-  docsUrl: string;
+  docsUrl?: string;
 }
 
 /**
@@ -72,14 +72,16 @@ export const IntegrationStepperSection = ({
         })}
       </ol>
 
-      <div className="text-center mt-10">
-        <Button variant="gold" size="lg" asChild>
-          <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-            View Documentation
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </Button>
-      </div>
+      {docsUrl && (
+        <div className="text-center mt-10">
+          <Button variant="gold" size="lg" asChild>
+            <a href={docsUrl} target="_blank" rel="noopener noreferrer">
+              View Documentation
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </Button>
+        </div>
+      )}
     </SectionContainer>
   );
 };
