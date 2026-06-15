@@ -52,7 +52,6 @@ const panProduct: ApiProductRef = {
 	id: "pan",
 	name: "PAN Verification",
 	slug: "pan-verification-api",
-	href: "/products/pan-verification-api",
 	category: "verification",
 	shortDesc: "Full PAN identity fetch in <2 seconds",
 };
@@ -72,7 +71,6 @@ const unpricedProduct: ApiProductRef = {
 	id: "not-a-priced-product",
 	name: "Mystery Verification",
 	slug: "mystery-api",
-	href: "/products/mystery-api",
 	category: "verification",
 	shortDesc: "Mystery checks",
 };
@@ -83,7 +81,6 @@ const dmtProduct: ApiProductRef = {
 	id: "dmt",
 	name: "Domestic Money Transfer (DMT)",
 	slug: "dmt-api",
-	href: "/products/dmt-api",
 	category: "bc",
 	shortDesc: "Send money to any bank account",
 };
@@ -92,7 +89,6 @@ const aepsProduct: ApiProductRef = {
 	id: "aeps",
 	name: "AePS Cashout",
 	slug: "aeps-api",
-	href: "/products/aeps-api",
 	category: "bc",
 	shortDesc: "Aadhaar-enabled cash withdrawal",
 };
@@ -101,7 +97,6 @@ const bbpsProduct: ApiProductRef = {
 	id: "bbps",
 	name: "BBPS",
 	slug: "bbps-api",
-	href: "/products/bbps-api",
 	category: "payment",
 	shortDesc: "Bill payments",
 };

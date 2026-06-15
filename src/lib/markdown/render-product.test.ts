@@ -8,7 +8,6 @@ const product: ApiProductRef = {
   id: "pan",
   name: "PAN Verification",
   slug: "pan-verification-api",
-  href: "/products/pan-verification-api",
   category: "verification",
   shortDesc: "Full PAN identity fetch in <2 seconds",
 };
@@ -41,7 +40,6 @@ const related: ApiProductRef[] = [
     id: "aadhaar",
     name: "Aadhaar Verification",
     slug: "aadhaar-verification-api",
-    href: "/products/aadhaar-verification-api",
     category: "verification",
     shortDesc: "Aadhaar-based identity",
   },
