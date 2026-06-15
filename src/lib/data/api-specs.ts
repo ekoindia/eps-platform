@@ -6190,9 +6190,12 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/pan-lite",
 		docsUrl: "https://developers.eko.in/reference/pan-lite",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/pan-lite",
 		extraRequestParams: [
 			{
 				name: "pan_number",
+				label: "PAN Number",
 				in: "body",
 				type: "string",
 				required: true,
@@ -6210,6 +6213,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
+				label: "Date of Birth",
 				in: "body",
 				type: "string",
 				required: true,
@@ -6229,9 +6233,9 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "pan",
+				label: "PAN Number",
 				type: "string",
 				description: "The PAN number submitted in the request.",
-				imp: true,
 				example: "ABCDE1234F",
 			},
 			{
@@ -6243,13 +6247,14 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
+				label: "Date of Birth",
 				type: "string",
 				description: "Date of birth as submitted in the request (YYYY-MM-DD).",
-				imp: true,
 				example: "1994-08-29",
 			},
 			{
 				name: "name_match",
+				label: "Name Matched?",
 				type: "string",
 				description:
 					"Whether the submitted name matches the PAN record. Values: 'Y' (match), 'N' (no match), or null (unavailable).",
@@ -6258,6 +6263,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob_match",
+				label: "DOB Matched?",
 				type: "string",
 				description:
 					"Whether the submitted date of birth matches the PAN record. Values: 'Y' (match), 'N' (no match), or null (unavailable).",
@@ -6266,14 +6272,16 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_status",
+				label: "PAN Activation Status",
 				type: "string",
 				description:
-					"Granular PAN activation status code. E = Valid; EC = Valid (Acquisition); N = Non-existent; X = Deactivated; F = Fake; D = Deleted; EA = Valid (Amalgamation); ED = Valid (Death); EI = Valid (Dissolution); EL = Valid (Liquidated); EM = Valid (Merger); EP = Valid (Partition); ES = Valid (Split); EU = Valid (Under Liquidation).",
+					"Granular PAN activation status code. E: Valid, EC: Valid (Acquisition), N: Non-existent, X: Deactivated, F: Fake, D: Deleted, EA: Valid (Amalgamation), ED: Valid (Death), EI: Valid (Dissolution), EL: Valid (Liquidated), EM: Valid (Merger), EP: Valid (Partition), ES: Valid (Split), EU: Valid (Under Liquidation)",
 				imp: true,
 				example: "E",
 			},
 			{
 				name: "status",
+				label: "PAN Validity Status",
 				type: "string",
 				description: "High-level PAN validity: 'VALID' or 'INVALID'.",
 				imp: true,
@@ -6358,9 +6366,11 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/pan-advanced",
 		docsUrl: "https://developers.eko.in/reference/pan-advanced",
+		sourceDoc: "https://www.cashfree.com/docs/api-reference/vrs/v2/pan/pan-360",
 		extraRequestParams: [
 			{
 				name: "pan",
+				label: "PAN Number",
 				in: "body",
 				type: "string",
 				required: true,
@@ -6379,6 +6389,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
+				label: "Date of Birth",
 				in: "body",
 				type: "string",
 				required: true,
@@ -6398,9 +6409,10 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "pan",
+				label: "PAN Number",
 				type: "string",
 				description: "PAN number submitted in the request.",
-				imp: true,
+				// imp: true,
 				example: "ABCDE1234F",
 			},
 			{
@@ -6418,6 +6430,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name_pan_card",
+				label: "Name on PAN Card",
 				type: "string",
 				description: "Name printed on the physical PAN card.",
 				imp: true,
@@ -6601,6 +6614,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/pan/bulk",
 		docsUrl: "https://developers.eko.in/reference/pan-bulk-verify",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/verify-pan-in-bulk",
 		extraRequestParams: [
 			{
 				name: "entries",
@@ -6681,512 +6696,198 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aadhaar-kyc-consent-languages",
-		productId: "aadhaar",
-		name: "Get Aadhaar KYC Consent Languages",
-		slug: "aadhaar-kyc-consent-languages",
+		id: "pan-bulk-status",
+		productId: "pan",
+		name: "Check Bulk PAN Verification Status",
+		slug: "pan-bulk-status",
 		summary:
-			"Fetch the list of languages available for displaying Aadhaar KYC consent to the user.",
+			"Poll the result of a Bulk PAN Verification batch using the reference_id returned when the batch was submitted.",
 		description:
-			"Returns the supported consent languages for the DigiKhata Aadhaar KYC flow. The `pkid` value from this response is passed as `consent_language` in the subsequent Get Consent Details call. This is the first step before displaying a localised consent screen to the customer.",
+			"Retrieves the per-PAN results for a batch previously submitted via the Bulk PAN Verification API. Because bulk verification runs asynchronously, callers poll this endpoint with the reference_id from the submit response until the batch finishes processing. The response returns a count and an array of entries, one per PAN, each carrying the validity, registered name, name-match score/result, Aadhaar-seeding status, and PAN status.",
 		category: "verification",
 		relevance: "M",
 		bestFor:
-			"Apps that need to show Aadhaar consent in the customer's preferred regional language before KYC.",
+			"Fetching individual PAN results after submitting a batch to the Bulk PAN Verification API.",
 		method: "GET",
-		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/languages",
-		docsUrl:
-			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-languages",
+		path: "/tools/kyc/pan/bulk/status",
+		docsUrl: "https://developers.eko.in/reference/bulk-pan-verification-status",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan/verify-pan-in-bulk",
 		extraRequestParams: [
 			{
-				name: "customer_id",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Mobile number of the sender whose Aadhaar KYC is being initiated.",
-				example: "9876543210",
-			},
-			{
-				name: "org_id",
-				in: "query",
-				type: "string",
-				required: true,
-				description: "Organisation identifier. Defaults to 1.",
-				example: "1",
-			},
-		],
-		omitCommonParams: ["source"],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-001",
-			org_id: "1",
-		},
-		responseData: [
-			{
-				name: "languages",
-				type: "array",
-				description: "List of supported consent languages.",
-				children: [
-					{
-						name: "pkid",
-						type: "string",
-						description:
-							"Primary key identifier for the language. Pass this as `consent_language` in the Get Consent Details call.",
-						example: "1",
-					},
-					{
-						name: "language_name",
-						type: "string",
-						description: "Human-readable language name (e.g. English, Hindi).",
-						example: "English",
-					},
-					{
-						name: "language_code",
-						type: "string",
-						description: "ISO language code.",
-						example: "en",
-					},
-				],
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				languages: [
-					{
-						pkid: "1",
-						language_name: "English",
-						language_code: "en",
-					},
-					{
-						pkid: "2",
-						language_name: "Hindi",
-						language_code: "hi",
-					},
-				],
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Invalid or missing org_id",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "Invalid organisation identifier.",
-					response_type_id: 1388,
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "aadhaar-kyc-consent-details",
-		productId: "aadhaar",
-		name: "Get Aadhaar KYC Consent Details",
-		slug: "aadhaar-kyc-consent-details",
-		summary:
-			"Retrieve the localised Aadhaar KYC consent text to be shown to the customer before initiating OTP.",
-		description:
-			"Returns the full consent text (in the chosen language) that must be presented to the customer before dispatching an Aadhaar OTP. Displaying and recording this consent is a regulatory requirement under the Aadhaar (Authentication) Regulations.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"Regulated onboarding flows that must capture explicit, localised customer consent before Aadhaar verification.",
-		method: "GET",
-		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/details",
-		docsUrl:
-			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-details",
-		extraRequestParams: [
-			{
-				name: "customer_id",
-				in: "path",
-				type: "string",
-				required: true,
-				description: "Mobile number of the sender.",
-				example: "9876543210",
-			},
-			{
-				name: "org_id",
-				in: "query",
-				type: "string",
-				required: true,
-				description: "Organisation identifier. Defaults to 1.",
-				example: "1",
-			},
-			{
-				name: "consent_language",
+				name: "reference_id",
 				in: "query",
 				type: "string",
 				required: true,
 				description:
-					"The `pkid` returned by Get Aadhaar KYC Consent Languages — selects the language for the consent text.",
-				example: "1",
-			},
-		],
-		omitCommonParams: ["source"],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-002",
-			org_id: "1",
-			consent_language: "1",
-		},
-		responseData: [
-			{
-				name: "consent_text",
-				type: "string",
-				description:
-					"Full localised consent text to be displayed to the customer before Aadhaar OTP dispatch.",
-				example:
-					"I hereby provide my consent to verify my Aadhaar details with UIDAI...",
-			},
-			{
-				name: "language_name",
-				type: "string",
-				description: "Language in which the consent text is returned.",
-				example: "English",
-			},
-			{
-				name: "consent_version",
-				type: "string",
-				description:
-					"Version identifier of the consent text for audit purposes.",
-				example: "v2.0",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				consent_text:
-					"I hereby voluntarily provide my consent to verify my Aadhaar details with UIDAI for KYC purposes. I understand that my biometric/OTP-based authentication will be used solely for identity verification.",
-				language_name: "English",
-				consent_version: "v2.0",
-			},
-		},
-	},
-	{
-		id: "aadhaar-generate-otp",
-		productId: "aadhaar",
-		name: "Generate Sender Aadhaar OTP",
-		slug: "aadhaar-generate-otp",
-		summary:
-			"Trigger an OTP to the mobile number linked with the sender's Aadhaar for identity verification.",
-		description:
-			"Dispatches a one-time password to the mobile number registered with UIDAI for the given Aadhaar. This is step 2 of the DigiKhata Aadhaar KYC flow — called after obtaining customer consent. The `otp_ref_id` returned must be stored and passed to the Validate OTP call.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"PPI/DigiKhata onboarding flows requiring OTP-based Aadhaar verification as part of digital KYC.",
-		method: "POST",
-		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp",
-		docsUrl: "https://developers.eko.in/reference/generate-sender-aadhaar-otp",
-		extraRequestParams: [
-			{
-				name: "customer_id",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Mobile number of the sender for whom the Aadhaar OTP is being generated.",
-				example: "9876543210",
-			},
-			{
-				name: "aadhar",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "12-digit Aadhaar number of the sender.",
-				example: "123456789012",
-			},
-		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-003",
-			aadhar: "123456789012",
-		},
-		responseData: [
-			{
-				name: "otp_ref_id",
-				type: "string",
-				description:
-					"Reference ID for the OTP session. Must be passed to the Validate Aadhaar OTP API.",
-				example: "84729301",
-			},
-			{
-				name: "mobile_hint",
-				type: "string",
-				description:
-					"Masked mobile number to which the OTP was dispatched (e.g. ******7890).",
-				example: "******7890",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "OTP sent successfully",
-			response_type_id: 1388,
-			data: {
-				otp_ref_id: "84729301",
-				mobile_hint: "******7890",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Invalid Aadhaar number format",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 301,
-					message: "Invalid Aadhaar number. Please check and retry.",
-					response_type_id: 1388,
-					data: {},
-				},
-			},
-			{
-				scenario: "UIDAI service unavailable",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 500,
-					message:
-						"UIDAI service is temporarily unavailable. Please try again later.",
-					response_type_id: 1388,
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "aadhaar-submit-otp",
-		productId: "aadhaar",
-		name: "Validate Sender Aadhaar OTP",
-		slug: "aadhaar-submit-otp",
-		summary:
-			"Verify the OTP entered by the customer to complete Aadhaar-based identity verification and download the Aadhaar XML.",
-		description:
-			"Validates the OTP received on the Aadhaar-linked mobile number against the `otp_ref_id` from the Generate OTP step. On success, UIDAI confirms identity and returns the verified Aadhaar details (name, date of birth, gender, address, masked Aadhaar number, and optional photo) from the Aadhaar XML. This is the final verification step in the DigiKhata KYC flow.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"Completing Aadhaar OTP verification and obtaining the full Aadhaar XML data payload for KYC records.",
-		method: "POST",
-		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp/verify",
-		docsUrl: "https://developers.eko.in/reference/verify-aadhaar-otp",
-		extraRequestParams: [
-			{
-				name: "customer_id",
-				in: "path",
-				type: "string",
-				required: true,
-				description: "Mobile number of the sender.",
-				example: "9876543210",
-			},
-			{
-				name: "otp",
-				in: "body",
-				type: "string",
-				required: false,
-				description: "The OTP received on the Aadhaar-linked mobile number.",
+					"Unique id returned by the Bulk PAN Verification API for the submitted batch.",
 				example: "123456",
 			},
 			{
-				name: "otp_ref_id",
-				in: "body",
+				name: "bulk_reference_id",
+				in: "query",
 				type: "string",
-				required: true,
+				required: false,
 				description:
-					"Reference ID from the Generate Sender Aadhaar OTP response.",
-				example: "84729301",
+					"Unique id created to identify the bulk request, if you tracked one at submit time.",
+				example: "BULK-PAN-20240101-001",
 			},
 		],
 		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-004",
-			otp: "123456",
-			otp_ref_id: "84729301",
+			headers: {
+				developer_key: "becbbce45f79c6f5109f848acd540567",
+				"secret-key": "<computed>",
+				"secret-key-timestamp": "1718000000000",
+			},
+			query: {
+				initiator_id: "9876543210",
+				reference_id: "123456",
+			},
 		},
 		responseData: [
 			{
-				name: "verified",
-				type: "boolean",
-				description: "True if Aadhaar OTP verification was successful.",
+				name: "count",
+				type: "number",
+				description: "Number of entries in the results array.",
 				imp: true,
-				example: true,
+				example: 2,
 			},
 			{
-				name: "name",
-				type: "string",
-				description: "Full name as registered in UIDAI.",
-				imp: true,
-				example: "Rahul Kumar",
-			},
-			{
-				name: "dob",
-				type: "string",
-				description: "Date of birth from Aadhaar record (DD-MM-YYYY).",
-				imp: true,
-				example: "15-08-1990",
-			},
-			{
-				name: "gender",
-				type: "string",
-				description:
-					"Gender as per Aadhaar: M (Male), F (Female), T (Transgender).",
-				imp: true,
-				example: "M",
-			},
-			{
-				name: "masked_aadhaar",
-				type: "string",
-				description:
-					"Aadhaar number with first 8 digits masked (XXXX-XXXX-1234).",
-				imp: true,
-				example: "XXXX-XXXX-9012",
-			},
-			{
-				name: "address",
-				type: "object",
-				description: "Residential address as per Aadhaar XML.",
+				name: "entries",
+				type: "array",
+				description: "Per-PAN verification results for the batch.",
 				imp: true,
 				children: [
 					{
-						name: "house",
+						name: "pan",
 						type: "string",
-						description: "House/flat number.",
+						description: "10-character PAN identifier.",
 						imp: true,
-						example: "42",
+						example: "ABCPV1234D",
 					},
 					{
-						name: "street",
+						name: "valid",
 						type: "string",
-						description: "Street or locality.",
-						imp: true,
-						example: "MG Road",
+						description: "PAN card validity status.",
+						example: "true",
 					},
 					{
-						name: "landmark",
+						name: "registered_name",
 						type: "string",
-						description: "Nearby landmark.",
-						example: "Near Central Mall",
+						description: "Name on record against the PAN.",
+						example: "John Doe",
 					},
 					{
-						name: "village_or_city",
+						name: "name_provided",
 						type: "string",
-						description: "Village or city name.",
-						imp: true,
-						example: "Bengaluru",
+						description: "Name submitted in the bulk request for this PAN.",
+						example: "John",
 					},
 					{
-						name: "sub_district",
+						name: "name_match_score",
 						type: "string",
-						description: "Sub-district (taluka/tehsil).",
-						example: "Shivajinagar",
+						description: "Name verification score.",
+						example: "82.5",
 					},
 					{
-						name: "district",
+						name: "name_match_result",
 						type: "string",
-						description: "District name.",
-						imp: true,
-						example: "Bengaluru Urban",
+						description: "Name match result.",
+						example: "GOOD_PARTIAL_MATCH",
 					},
 					{
-						name: "state",
+						name: "aadhaar_seeding_status",
 						type: "string",
-						description: "State name.",
-						imp: true,
-						example: "Karnataka",
+						description: "Aadhaar-PAN linkage status.",
+						example: "Y",
 					},
 					{
-						name: "pincode",
+						name: "pan_status",
 						type: "string",
-						description: "6-digit postal code.",
-						imp: true,
-						example: "560001",
+						description: "Current PAN status.",
+						example: "VALID",
+					},
+					{
+						name: "message",
+						type: "string",
+						description: "Success or failure details for this entry.",
+						example: "PAN verified successfully",
+					},
+					{
+						name: "reference_id",
+						type: "string",
+						description: "Unique reference identifier for the entry.",
+						example: "123456",
+					},
+					{
+						name: "last_updated_at",
+						type: "string",
+						description: "Timestamp when the entry was last updated.",
+						example: "2024-01-01 12:30:45",
 					},
 				],
-			},
-			{
-				name: "photo",
-				type: "string",
-				description: "Base64-encoded photograph from the Aadhaar XML.",
-				imp: true,
-				example: "/9j/4AAQSkZJRgABAQ...",
-			},
-			{
-				name: "care_of",
-				type: "string",
-				description: "Guardian or parent name (C/O field from Aadhaar).",
-				example: "S/O Suresh Kumar",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message: "Aadhaar verified successfully",
+			message: "Success",
 			response_type_id: 1388,
 			data: {
-				verified: true,
-				name: "Rahul Kumar",
-				dob: "15-08-1990",
-				gender: "M",
-				masked_aadhaar: "XXXX-XXXX-9012",
-				care_of: "S/O Suresh Kumar",
-				photo: "/9j/4AAQSkZJRgABAQ...",
-				address: {
-					house: "42",
-					street: "MG Road",
-					landmark: "Near Central Mall",
-					village_or_city: "Bengaluru",
-					sub_district: "Shivajinagar",
-					district: "Bengaluru Urban",
-					state: "Karnataka",
-					pincode: "560001",
-				},
+				count: 2,
+				entries: [
+					{
+						pan: "ABCPV1234D",
+						valid: "true",
+						registered_name: "John Doe",
+						name_provided: "John",
+						name_match_score: "82.5",
+						name_match_result: "GOOD_PARTIAL_MATCH",
+						aadhaar_seeding_status: "Y",
+						pan_status: "VALID",
+						message: "PAN verified successfully",
+						reference_id: "123456",
+						last_updated_at: "2024-01-01 12:30:45",
+					},
+					{
+						pan: "ABCPV1234L",
+						valid: "true",
+						registered_name: "John Doe",
+						name_provided: "John Doe",
+						name_match_score: "100",
+						name_match_result: "EXACT_MATCH",
+						aadhaar_seeding_status: "Y",
+						pan_status: "VALID",
+						message: "PAN verified successfully",
+						reference_id: "123456",
+						last_updated_at: "2024-01-01 12:30:46",
+					},
+				],
 			},
 		},
 		errorScenarios: [
 			{
-				scenario: "Wrong OTP entered",
-				statusCode: 200,
+				scenario: "Missing reference_id",
+				statusCode: 400,
 				example: {
 					status: 1,
-					response_status_id: 302,
-					message: "Wrong OTP. Please check and retry.",
-					response_type_id: 1388,
-					data: {},
+					message: "Bad request — reference_id is required",
 				},
 			},
 			{
-				scenario: "OTP has expired",
-				statusCode: 200,
+				scenario: "Unknown or expired reference_id",
+				statusCode: 404,
 				example: {
 					status: 1,
-					response_status_id: 303,
-					message: "OTP expired. Please regenerate.",
-					response_type_id: 1388,
-					data: {},
+					message: "No batch found for the supplied reference_id",
 				},
 			},
 		],
 	},
+
 	{
 		id: "aadhaar-dmt-fino-ekyc",
-		productId: "aadhaar",
+		productId: "dmt",
 		name: "DMT Fino Sender eKYC (Biometric)",
 		slug: "aadhaar-dmt-fino-ekyc",
 		summary:
@@ -7279,7 +6980,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-dmt-fino-verify-otp",
-		productId: "aadhaar",
+		productId: "dmt",
 		name: "Validate Sender eKYC OTP (DMT Fino)",
 		slug: "aadhaar-dmt-fino-verify-otp",
 		summary: "Verify the OTP to complete Aadhaar eKYC for a DMT Fino sender.",
@@ -7421,7 +7122,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-dmt-levin-validate",
-		productId: "aadhaar",
+		productId: "dmt",
 		name: "Validate Aadhaar & Generate OTP (DMT Levin)",
 		slug: "aadhaar-dmt-levin-validate",
 		summary:
@@ -7520,7 +7221,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-dmt-levin-verify-otp",
-		productId: "aadhaar",
+		productId: "dmt",
 		name: "Validate Sender Aadhaar OTP (DMT Levin)",
 		slug: "aadhaar-dmt-levin-verify-otp",
 		summary:
@@ -7665,7 +7366,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-ppi-levin-validate",
-		productId: "aadhaar",
+		productId: "ppi-levin",
 		name: "Validate Aadhaar (PPI Levin)",
 		slug: "aadhaar-ppi-levin-validate",
 		summary:
@@ -7766,7 +7467,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-ppi-levin-verify-otp",
-		productId: "aadhaar",
+		productId: "ppi-levin",
 		name: "Validate Aadhaar OTP (PPI Levin)",
 		slug: "aadhaar-ppi-levin-verify-otp",
 		summary:
@@ -7909,10 +7610,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aadhaar-digilocker-create-url",
-		productId: "aadhaar",
+		id: "digilocker-create-url",
+		productId: "digilocker",
 		name: "Create DigiLocker URL",
-		slug: "aadhaar-digilocker-create-url",
+		slug: "digilocker-create-url",
 		summary:
 			"Generate a DigiLocker redirect URL to initiate consent-based Aadhaar document retrieval.",
 		description:
@@ -7924,6 +7625,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/digilocker",
 		docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/digilocker/create-digilocker-url",
 		extraRequestParams: [
 			{
 				name: "document_requested",
@@ -7936,6 +7639,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "redirect_url",
+				label: "Redirection URL",
 				in: "body",
 				type: "string",
 				required: true,
@@ -7962,6 +7666,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "url",
+				label: "DigiLocker URL",
 				type: "string",
 				description:
 					"DigiLocker redirect URL. Present this URL to the customer to begin document authorisation.",
@@ -7976,6 +7681,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "redirect_url",
+				label: "Redirection URL",
 				type: "string",
 				description: "The callback URL provided in the request.",
 				example: "https://yourapp.com/kyc/callback",
@@ -8008,10 +7714,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aadhaar-digilocker-get-document",
-		productId: "aadhaar",
+		id: "digilocker-get-document",
+		productId: "digilocker",
 		name: "Get DigiLocker Document",
-		slug: "aadhaar-digilocker-get-document",
+		slug: "digilocker-get-document",
 		summary:
 			"Retrieve verified Aadhaar details from DigiLocker after the customer completes the consent journey.",
 		description:
@@ -8023,6 +7729,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/digilocker/document",
 		docsUrl: "https://developers.eko.in/reference/get-digilocker-document",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/digilocker/get-document-from-digilocker",
 		extraRequestParams: [
 			{
 				name: "document_type",
@@ -8082,6 +7790,7 @@ export const API_SPECS: ApiSpec[] = [
 					},
 					{
 						name: "dob",
+						label: "Date of Birth",
 						type: "string",
 						description: "Date of birth from the verified document.",
 						imp: true,
@@ -8230,6 +7939,156 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "digilocker-verification-status",
+		productId: "digilocker",
+		name: "DigiLocker Verification Status",
+		slug: "digilocker-verification-status",
+		summary:
+			"Check whether a user has completed the DigiLocker consent and verification flow.",
+		description:
+			"Poll this endpoint after redirecting the user to the DigiLocker URL. Returns the user's consent status and basic identity details (name, DOB, gender, mobile) once the consent flow is complete. Use reference_id from the Create DigiLocker URL response.",
+		category: "verification",
+		relevance: "M",
+		bestFor:
+			"Polling for consent completion before fetching the full document data.",
+		method: "GET",
+		path: "/tools/kyc/digilocker/status",
+		docsUrl:
+			"https://developers.eko.in/reference/digilocker-verification-status",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/digilocker/get-digilocker-verification-status",
+		extraRequestParams: [
+			{
+				name: "reference_id",
+				in: "query",
+				type: "number",
+				required: true,
+				description:
+					"Unique identifier received from the Create DigiLocker URL API response.",
+				example: 12345,
+			},
+		],
+		omitCommonParams: ["user_code", "source"],
+		sampleRequest: {
+			initiator_id: "9876543210",
+			client_ref_id: "DGL-STATUS-001",
+			reference_id: 12345,
+		},
+		responseData: [
+			{
+				name: "user_details",
+				type: "object",
+				description:
+					"Identity details of the individual who completed the DigiLocker consent flow.",
+				imp: true,
+				children: [
+					{
+						name: "name",
+						type: "string",
+						description:
+							"Full name of the individual as registered in DigiLocker.",
+						imp: true,
+						example: "Rahul Sharma",
+					},
+					{
+						name: "dob",
+						type: "string",
+						description: "Date of birth in DD-MM-YYYY format.",
+						imp: true,
+						example: "15-08-1990",
+					},
+					{
+						name: "gender",
+						type: "string",
+						description: "Gender of the individual (M / F / T).",
+						imp: true,
+						example: "M",
+					},
+					{
+						name: "eaadhaar",
+						type: "string",
+						description:
+							"Indicates whether the individual's e-Aadhaar is available in DigiLocker.",
+						imp: true,
+						example: "Y",
+					},
+					{
+						name: "mobile",
+						type: "string",
+						description:
+							"Mobile number linked to the individual's DigiLocker account.",
+						example: "98XXXXXXXX",
+					},
+				],
+			},
+			{
+				name: "document_requested",
+				type: "array",
+				description:
+					"List of document types that were requested in the original session.",
+				example: ["AADHAAR"],
+			},
+			{
+				name: "document_consent",
+				type: "array",
+				description:
+					"Consent status objects per requested document type. Indicates which documents the user approved for sharing.",
+				imp: true,
+				example: [
+					{
+						document_type: "AADHAAR",
+						consent: "Y",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message: "Verification status fetched successfully",
+			response_type_id: 1389,
+			data: {
+				user_details: {
+					name: "Rahul Sharma",
+					dob: "15-08-1990",
+					gender: "M",
+					eaadhaar: "Y",
+					mobile: "98XXXXXXXX",
+				},
+				document_requested: ["AADHAAR"],
+				document_consent: [
+					{
+						document_type: "AADHAAR",
+						consent: "Y",
+					},
+				],
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Consent flow not yet completed by user",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: -1,
+					message:
+						"Verification pending. User has not completed DigiLocker consent.",
+					data: {},
+				},
+			},
+			{
+				scenario: "Invalid or expired reference_id",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: -1,
+					message: "Invalid reference_id",
+					data: {},
+				},
+			},
+		],
+	},
+	{
 		id: "bank-account-verification",
 		productId: "bank",
 		name: "Bank Account Verification",
@@ -8245,6 +8104,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/bank-account/sync",
 		docsUrl: "https://developers.eko.in/reference/bank-account-verification",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/bav-v2/bank-account-verification-sync-v2",
 		extraRequestParams: [
 			{
 				name: "bank_account",
@@ -8256,6 +8117,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
+				label: "IFSC Code",
 				in: "body",
 				type: "string",
 				required: true,
@@ -8274,6 +8136,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "account_exists",
+				label: "Account Exists?",
 				type: "boolean",
 				description: "Whether the bank account is valid and active.",
 				imp: true,
@@ -8281,6 +8144,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account_name",
+				label: "Account Holder's Name",
 				type: "string",
 				description:
 					"Account holder name as registered with the bank. Use for name matching against provided details.",
@@ -8289,6 +8153,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
+				label: "IFSC Code",
 				type: "string",
 				description:
 					"IFSC code confirmed by the bank for the verified account.",
@@ -8311,6 +8176,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "utr",
+				label: "Penny-Drop UTR",
 				type: "string",
 				description:
 					"Unique Transaction Reference number of the ₹1 penny-drop credit. Useful for reconciliation.",
@@ -8407,6 +8273,8 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/tools/kyc/bank-account/bulk",
 		docsUrl:
 			"https://developers.eko.in/reference/bulk-bank-account-verification",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/bav-v2/bulk-bank-account-verification-v2",
 		extraRequestParams: [
 			{
 				name: "entries",
@@ -8526,6 +8394,174 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "bulk-bank-account-verification-status",
+		productId: "bank",
+		name: "Check Bulk Bank Account Verification Status",
+		slug: "bulk-bank-account-verification-status",
+		summary:
+			"Poll for per-account results of a Bulk Bank Account Verification batch using the bulk_reference_id returned at submit time.",
+		description:
+			"Companion to the Bulk Bank Account Verification API. Because the batch runs asynchronously, callers poll this endpoint with the bulk_reference_id from the submit response to retrieve per-account penny-drop results as they complete. The response returns an entries array, one object per submitted account, each carrying the account-holder name at bank, bank/branch/MICR details, UTR, name-match score/result, and account status.",
+		category: "verification",
+		relevance: "M",
+		bestFor:
+			"Fetching individual account results after submitting a batch to the Bulk Bank Account Verification API.",
+		method: "GET",
+		path: "/tools/kyc/bank-account/bulk/status",
+		docsUrl:
+			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/bav-v2/get-bulk-bav-status-v2",
+		extraRequestParams: [
+			{
+				name: "bulk_reference_id",
+				in: "query",
+				type: "string",
+				required: true,
+				description:
+					"Unique id returned by the Bulk Bank Account Verification API for the submitted batch.",
+				example: "3356655212",
+			},
+		],
+		sampleRequest: {
+			headers: {
+				developer_key: "becbbce45f79c6f5109f848acd540567",
+				"secret-key": "<computed>",
+				"secret-key-timestamp": "1718000000000",
+			},
+			query: {
+				initiator_id: "9876543210",
+				bulk_reference_id: "3356655212",
+			},
+		},
+		responseData: [
+			{
+				name: "entries",
+				type: "array",
+				description:
+					"Per-account verification results — one object for each account submitted in the batch.",
+				imp: true,
+				children: [
+					{
+						name: "reference_id",
+						type: "string",
+						description:
+							"Unique reference id created for this account's verification.",
+						example: "983654",
+					},
+					{
+						name: "name_at_bank",
+						type: "string",
+						description: "Account holder name as per bank records.",
+						imp: true,
+						example: "JOHN DOE",
+					},
+					{
+						name: "bank_name",
+						type: "string",
+						description: "Name of the financial institution.",
+						imp: true,
+						example: "STATE BANK OF INDIA",
+					},
+					{
+						name: "utr",
+						type: "string",
+						description:
+							"Unique transaction reference number for the penny-drop credit.",
+						example: "SBIN0123456789",
+					},
+					{
+						name: "city",
+						type: "string",
+						description: "City where the bank branch is located.",
+						example: "BANGALORE",
+					},
+					{
+						name: "branch",
+						type: "string",
+						description: "Bank branch name.",
+						example: "MG ROAD",
+					},
+					{
+						name: "micr",
+						type: "string",
+						description: "MICR (ECS identification) code of the branch.",
+						example: "560002001",
+					},
+					{
+						name: "name_match_score",
+						type: "string",
+						description:
+							"Confidence score for the supplied-name vs name-at-bank match.",
+						imp: true,
+						example: "100",
+					},
+					{
+						name: "name_match_result",
+						type: "string",
+						description: "Name match result (e.g. MATCH / NO_MATCH).",
+						imp: true,
+						example: "MATCH",
+					},
+					{
+						name: "account_status",
+						type: "string",
+						description: "Current status of the bank account verification.",
+						imp: true,
+						example: "VALID",
+					},
+					{
+						name: "account_status_code",
+						type: "number",
+						description: "Numeric code representing the account status.",
+						example: 0,
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message: "Success",
+			response_type_id: 1388,
+			data: {
+				entries: [
+					{
+						reference_id: "983654",
+						name_at_bank: "JOHN DOE",
+						bank_name: "STATE BANK OF INDIA",
+						utr: "SBIN0123456789",
+						city: "BANGALORE",
+						branch: "MG ROAD",
+						micr: "560002001",
+						name_match_score: "100",
+						name_match_result: "MATCH",
+						account_status: "VALID",
+						account_status_code: 0,
+					},
+				],
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Missing bulk_reference_id",
+				statusCode: 400,
+				example: {
+					status: 1,
+					message: "Bad request — bulk_reference_id is required",
+				},
+			},
+			{
+				scenario: "Unknown or expired bulk_reference_id",
+				statusCode: 404,
+				example: {
+					status: 1,
+					message: "No batch found for the supplied bulk_reference_id",
+				},
+			},
+		],
+	},
+	{
 		id: "verify-gstin",
 		productId: "gst",
 		name: "GST Verification",
@@ -8541,6 +8577,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/gstin",
 		docsUrl: "https://developers.eko.in/reference/verify-gstin",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/gstin/verify-gstin",
 		extraRequestParams: [
 			{
 				name: "gstin",
@@ -8907,6 +8945,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/gstin-with-pan",
 		docsUrl: "https://developers.eko.in/reference/gstin-with-pan",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/pan-to-gstin/fetch-gstin-with-pan",
 		extraRequestParams: [
 			{
 				name: "pan",
@@ -9021,489 +9061,6 @@ export const API_SPECS: ApiSpec[] = [
 					status: 1,
 					response_status_id: -1,
 					message: "Forbidden: invalid authentication credentials",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "create-digilocker-url",
-		productId: "digilocker",
-		name: "Create DigiLocker URL",
-		slug: "create-digilocker-url",
-		summary: "Generate a consent-redirect URL for DigiLocker document access.",
-		description:
-			"Initiates the DigiLocker consent flow by creating a session-bound URL. Redirect the end-user to this URL; they authenticate with DigiLocker, grant consent for the requested documents, and are then returned to your redirect_url. Use the returned reference_id to poll status or fetch documents in subsequent calls.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"Digital onboarding and paperless KYC flows that need consent-based Aadhaar or government document access.",
-		method: "POST",
-		path: "/tools/kyc/digilocker",
-		docsUrl: "https://developers.eko.in/reference/create-digilocker-url",
-		extraRequestParams: [
-			{
-				name: "document_requested",
-				in: "body",
-				type: "array",
-				required: true,
-				description:
-					"List of document types to request consent for. Currently only 'AADHAAR' is supported.",
-				example: ["AADHAAR"],
-			},
-			{
-				name: "redirect_url",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"The URL the user is redirected to after completing the DigiLocker consent journey.",
-				example: "https://yourapp.com/digilocker/callback",
-			},
-		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DGL-20240101-001",
-			document_requested: ["AADHAAR"],
-			redirect_url: "https://yourapp.com/digilocker/callback",
-		},
-		responseData: [
-			{
-				name: "reference_id",
-				type: "number",
-				description:
-					"Unique session identifier for this DigiLocker request. Use this value in the Verification Status and Get Document APIs.",
-				imp: true,
-				example: 12345,
-			},
-			{
-				name: "url",
-				type: "string",
-				description:
-					"DigiLocker consent URL to redirect the end-user to. Valid for the current session only.",
-				imp: true,
-				example:
-					"https://digilocker.gov.in/link-verification?verification_id=123456",
-			},
-			{
-				name: "document_requested",
-				type: "array",
-				description: "Echo of the document types requested in this session.",
-				example: ["AADHAAR"],
-			},
-			{
-				name: "redirect_url",
-				type: "string",
-				description:
-					"Echo of the redirect URL the user will be sent to after consent.",
-				example: "https://yourapp.com/digilocker/callback",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "DigiLocker URL created successfully",
-			response_type_id: 1388,
-			data: {
-				reference_id: 12345,
-				url: "https://digilocker.gov.in/link-verification?verification_id=123456",
-				document_requested: ["AADHAAR"],
-				redirect_url: "https://yourapp.com/digilocker/callback",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Invalid or missing redirect_url",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Invalid redirect_url provided",
-					data: {},
-				},
-			},
-			{
-				scenario: "Unsupported document type requested",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message:
-						"Unsupported document type. Only AADHAAR is currently supported.",
-					data: {},
-				},
-			},
-			{
-				scenario: "Authentication failure (wrong secret-key or timestamp)",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Forbidden",
-				},
-			},
-		],
-	},
-	{
-		id: "digilocker-verification-status",
-		productId: "digilocker",
-		name: "DigiLocker Verification Status",
-		slug: "digilocker-verification-status",
-		summary:
-			"Check whether a user has completed the DigiLocker consent and verification flow.",
-		description:
-			"Poll this endpoint after redirecting the user to the DigiLocker URL. Returns the user's consent status and basic identity details (name, DOB, gender, mobile) once the consent flow is complete. Use reference_id from the Create DigiLocker URL response.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"Polling for consent completion before fetching the full document data.",
-		method: "GET",
-		path: "/tools/kyc/digilocker/status",
-		docsUrl:
-			"https://developers.eko.in/reference/digilocker-verification-status",
-		extraRequestParams: [
-			{
-				name: "reference_id",
-				in: "query",
-				type: "number",
-				required: true,
-				description:
-					"Unique identifier received from the Create DigiLocker URL API response.",
-				example: 12345,
-			},
-		],
-		omitCommonParams: ["user_code", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "DGL-STATUS-001",
-			reference_id: 12345,
-		},
-		responseData: [
-			{
-				name: "user_details",
-				type: "object",
-				description:
-					"Identity details of the individual who completed the DigiLocker consent flow.",
-				imp: true,
-				children: [
-					{
-						name: "name",
-						type: "string",
-						description:
-							"Full name of the individual as registered in DigiLocker.",
-						imp: true,
-						example: "Rahul Sharma",
-					},
-					{
-						name: "dob",
-						type: "string",
-						description: "Date of birth in DD-MM-YYYY format.",
-						imp: true,
-						example: "15-08-1990",
-					},
-					{
-						name: "gender",
-						type: "string",
-						description: "Gender of the individual (M / F / T).",
-						imp: true,
-						example: "M",
-					},
-					{
-						name: "eaadhaar",
-						type: "string",
-						description:
-							"Indicates whether the individual's e-Aadhaar is available in DigiLocker.",
-						imp: true,
-						example: "Y",
-					},
-					{
-						name: "mobile",
-						type: "string",
-						description:
-							"Mobile number linked to the individual's DigiLocker account.",
-						example: "98XXXXXXXX",
-					},
-				],
-			},
-			{
-				name: "document_requested",
-				type: "array",
-				description:
-					"List of document types that were requested in the original session.",
-				example: ["AADHAAR"],
-			},
-			{
-				name: "document_consent",
-				type: "array",
-				description:
-					"Consent status objects per requested document type. Indicates which documents the user approved for sharing.",
-				imp: true,
-				example: [
-					{
-						document_type: "AADHAAR",
-						consent: "Y",
-					},
-				],
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Verification status fetched successfully",
-			response_type_id: 1389,
-			data: {
-				user_details: {
-					name: "Rahul Sharma",
-					dob: "15-08-1990",
-					gender: "M",
-					eaadhaar: "Y",
-					mobile: "98XXXXXXXX",
-				},
-				document_requested: ["AADHAAR"],
-				document_consent: [
-					{
-						document_type: "AADHAAR",
-						consent: "Y",
-					},
-				],
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Consent flow not yet completed by user",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message:
-						"Verification pending. User has not completed DigiLocker consent.",
-					data: {},
-				},
-			},
-			{
-				scenario: "Invalid or expired reference_id",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Invalid reference_id",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "get-digilocker-document",
-		productId: "digilocker",
-		name: "Get DigiLocker Document",
-		slug: "get-digilocker-document",
-		summary:
-			"Fetch the actual consented document data from the user's DigiLocker account.",
-		description:
-			"After the user has granted consent (confirmed via the Verification Status API), call this endpoint to retrieve the full document payload. Requires both the verification_id (from the DigiLocker redirect callback) and the reference_id (from the Create DigiLocker URL response). Currently supports Aadhaar XML document data.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"Retrieving the full Aadhaar or government document data once the user has completed the DigiLocker consent flow.",
-		method: "POST",
-		path: "/tools/kyc/digilocker/document",
-		docsUrl: "https://developers.eko.in/reference/get-digilocker-document",
-		extraRequestParams: [
-			{
-				name: "document_type",
-				in: "body",
-				type: "array",
-				required: true,
-				description:
-					"List of document types to fetch. Must match the documents consented to in the session.",
-				example: ["AADHAAR"],
-			},
-			{
-				name: "verification_id",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Unique verification identifier received in the DigiLocker redirect callback URL after consent.",
-				example: "abc123xyz",
-			},
-			{
-				name: "reference_id",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Unique session reference ID received from the Create DigiLocker URL API response.",
-				example: "12345",
-			},
-		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DGL-DOC-20240101-001",
-			source: "API",
-			document_type: ["AADHAAR"],
-			verification_id: "abc123xyz",
-			reference_id: "12345",
-		},
-		responseData: [
-			{
-				name: "document_type",
-				type: "string",
-				description: "The type of document fetched.",
-				imp: true,
-				example: "AADHAAR",
-			},
-			{
-				name: "document_data",
-				type: "object",
-				description:
-					"Parsed document payload. Fields vary by document type; for AADHAAR this reflects the e-Aadhaar XML structure.",
-				imp: true,
-				children: [
-					{
-						name: "name",
-						type: "string",
-						description: "Full name of the Aadhaar holder.",
-						imp: true,
-						example: "Rahul Sharma",
-					},
-					{
-						name: "dob",
-						type: "string",
-						description: "Date of birth as on the Aadhaar card.",
-						imp: true,
-						example: "15-08-1990",
-					},
-					{
-						name: "gender",
-						type: "string",
-						description: "Gender of the holder (M / F / T).",
-						imp: true,
-						example: "M",
-					},
-					{
-						name: "aadhaar_number",
-						type: "string",
-						description: "Masked Aadhaar number (last 4 digits visible).",
-						imp: true,
-						example: "XXXX-XXXX-1234",
-					},
-					{
-						name: "address",
-						type: "object",
-						description: "Permanent address of the Aadhaar holder.",
-						imp: true,
-						children: [
-							{
-								name: "house",
-								type: "string",
-								description: "House / flat number.",
-								example: "123",
-							},
-							{
-								name: "street",
-								type: "string",
-								description: "Street name.",
-								example: "MG Road",
-							},
-							{
-								name: "locality",
-								type: "string",
-								description: "Locality or area.",
-								example: "Karol Bagh",
-							},
-							{
-								name: "city",
-								type: "string",
-								description: "City name.",
-								example: "New Delhi",
-							},
-							{
-								name: "state",
-								type: "string",
-								description: "State name.",
-								example: "Delhi",
-							},
-							{
-								name: "pincode",
-								type: "string",
-								description: "6-digit PIN code.",
-								example: "110005",
-							},
-						],
-					},
-					{
-						name: "photo",
-						type: "string",
-						description: "Base64-encoded photograph of the Aadhaar holder.",
-						example: "<base64-encoded-image>",
-					},
-				],
-			},
-			{
-				name: "consent_status",
-				type: "string",
-				description: "Consent approval status for the fetched document.",
-				imp: true,
-				example: "Y",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Document fetched successfully",
-			response_type_id: 1390,
-			data: {
-				document_type: "AADHAAR",
-				consent_status: "Y",
-				document_data: {
-					name: "Rahul Sharma",
-					dob: "15-08-1990",
-					gender: "M",
-					aadhaar_number: "XXXX-XXXX-1234",
-					address: {
-						house: "123",
-						street: "MG Road",
-						locality: "Karol Bagh",
-						city: "New Delhi",
-						state: "Delhi",
-						pincode: "110005",
-					},
-					photo: "<base64-encoded-image>",
-				},
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "User consent not granted for the requested document",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "User has not consented to share the requested document.",
-					data: {},
-				},
-			},
-			{
-				scenario: "Invalid verification_id or reference_id",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Invalid verification_id or reference_id",
-					data: {},
-				},
-			},
-			{
-				scenario: "Document not available in user's DigiLocker",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message:
-						"Requested document not available in user's DigiLocker account.",
 					data: {},
 				},
 			},
@@ -9686,6 +9243,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/driving-license",
 		docsUrl: "https://developers.eko.in/reference/driving-license",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/driving-license/verify-driving-licence-details",
 		extraRequestParams: [
 			{
 				name: "dl_number",
@@ -10082,6 +9641,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/vehicle-rc",
 		docsUrl: "https://developers.eko.in/reference/vehicle-rc",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/vehicle-rc/get-vehicle-rc-details-1",
 		extraRequestParams: [
 			{
 				name: "vehicle_number",
@@ -10742,6 +10303,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/advance-employment",
 		docsUrl: "https://developers.eko.in/reference/advance-employment",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/advanced-employment/get-employment-details",
 		extraRequestParams: [
 			{
 				name: "phone",
@@ -11301,6 +10864,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/reverse-geocoding",
 		docsUrl: "https://developers.eko.in/reference/reverse-geocoding",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/reverse-geocoding/reverse-geocoding",
 		extraRequestParams: [
 			{
 				name: "latitude",
@@ -11467,6 +11032,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/voter-id",
 		docsUrl: "https://developers.eko.in/reference/voter-id",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/voter-id/verify-voter-id",
 		extraRequestParams: [
 			{
 				name: "epic_number",
@@ -11768,6 +11335,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/passport",
 		docsUrl: "https://developers.eko.in/reference/passport",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/passport/verify-passport",
 		extraRequestParams: [
 			{
 				name: "file_number",
@@ -11914,6 +11483,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/cin",
 		docsUrl: "https://developers.eko.in/reference/cin",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/cin/verify-cin",
 		extraRequestParams: [
 			{
 				name: "cin",
@@ -12121,6 +11692,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/ip",
 		docsUrl: "https://developers.eko.in/reference/ip",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/ip/verify-ip#verify-ip",
 		extraRequestParams: [
 			{
 				name: "ip_address",
@@ -12264,6 +11837,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/name-match",
 		docsUrl: "https://developers.eko.in/reference/name-match",
+		sourceDoc:
+			"https://www.cashfree.com/docs/api-reference/vrs/v2/name-match/name-match#verify-name-match",
 		extraRequestParams: [
 			{
 				name: "name_1",
@@ -12388,6 +11963,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/touras/itr-compliance",
 		docsUrl: "https://developers.eko.in/reference/itr-compliance",
+		sourceDoc:
+			"https://docs.touras.in/verification-suite?pageId=ITR-Compliance",
 		extraRequestParams: [
 			{
 				name: "pan_number",
@@ -12568,6 +12145,7 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/touras/din-verification",
 		docsUrl: "https://developers.eko.in/reference/din-verification",
+		sourceDoc: "https://docs.touras.in/verification-suite?pageId=DIN",
 		extraRequestParams: [
 			{
 				name: "din_number",
@@ -12701,6 +12279,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/touras/e-challan",
 		docsUrl: "https://developers.eko.in/reference/e-challan",
+		sourceDoc:
+			"https://docs.touras.in/verification-suite?pageId=Vehicle-Challan",
 		extraRequestParams: [
 			{
 				name: "registration_number",
@@ -12932,6 +12512,8 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/touras/check-email",
 		docsUrl: "https://developers.eko.in/reference/email-check",
+		sourceDoc:
+			"https://docs.touras.in/verification-suite?pageId=Email_verification",
 		extraRequestParams: [
 			{
 				name: "email",
@@ -13101,6 +12683,7 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/tools/kyc/touras/fetch-fssai",
 		docsUrl: "https://developers.eko.in/reference/fssai-verification",
+		sourceDoc: "https://docs.touras.in/verification-suite?pageId=FSSAI",
 		extraRequestParams: [
 			{
 				name: "fssai",
