@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { DocsNavTree } from "./DocsNavTree";
+import { DocsThemeToggle, type DocsTheme } from "./DocsThemeToggle";
+
+const THEME_KEY = "eko-docs-theme";
 
 /**
- * Three-pane docs shell: sticky left nav, page-scrolled middle content, and a
- * right rail (endpoint pages only) that scrolls WITH the page — no inner
- * scrollbar. The fixed site header is ~88px tall, so panes/content offset by
- * that. On <lg the nav collapses into a Sheet and the right rail stacks below
- * the content. Pure layout — prerenders cleanly.
+ * Three-pane docs shell: left nav, page-scrolled middle content, and a right
+ * rail (endpoint pages only) — all flowing together so nothing leaves a gap
+ * when the fixed ~88px site header hides on scroll. On <lg the nav collapses
+ * into a Sheet and the right rail stacks below.
+ *
+ * Theme is DOCS-LOCAL: a `.dark` class on this root subtree (persisted in
+ * localStorage) flips only the docs to dark; the rest of the site is untouched.
+ * Server renders light and the client applies the saved theme after mount, so
+ * there is no hydration mismatch.
  */
 export const DocsLayout = ({
 	children,
@@ -20,11 +27,33 @@ export const DocsLayout = ({
 	rightPane?: React.ReactNode;
 }) => {
 	const [open, setOpen] = useState(false);
+	const [theme, setTheme] = useState<DocsTheme>("light");
+
+	useEffect(() => {
+		const saved = localStorage.getItem(THEME_KEY);
+		if (saved === "dark" || saved === "light") setTheme(saved);
+	}, []);
+
+	const toggleTheme = () =>
+		setTheme((t) => {
+			const next = t === "dark" ? "light" : "dark";
+			try {
+				localStorage.setItem(THEME_KEY, next);
+			} catch {
+				/* ignore */
+			}
+			return next;
+		});
 
 	return (
-		<div className="bg-background">
-			{/* Mobile nav toggle (clears the fixed header) */}
-			<div className="sticky top-[5.5rem] z-30 flex items-center gap-3 border-b border-border/60 bg-background/95 px-4 py-2.5 backdrop-blur lg:hidden">
+		<div
+			className={cn(
+				"bg-background text-foreground",
+				theme === "dark" && "dark",
+			)}
+		>
+			{/* Mobile toolbar (clears the fixed header) */}
+			<div className="sticky top-[5.5rem] z-30 flex items-center justify-between gap-3 border-b border-border/60 bg-background/95 px-4 py-2.5 backdrop-blur lg:hidden">
 				<Sheet open={open} onOpenChange={setOpen}>
 					<SheetTrigger asChild>
 						<Button variant="outline" size="sm" className="gap-2">
@@ -39,6 +68,7 @@ export const DocsLayout = ({
 						<DocsNavTree onNavigate={() => setOpen(false)} />
 					</SheetContent>
 				</Sheet>
+				<DocsThemeToggle theme={theme} onToggle={toggleTheme} />
 			</div>
 
 			<div
@@ -50,9 +80,15 @@ export const DocsLayout = ({
 				)}
 			>
 				{/* Left nav — flows with the page (scrolls together with the other
-            panes), so it never leaves a gap when the fixed header hides. */}
+            panes). A compact theme toggle sits at the top on desktop. */}
 				<aside className="hidden border-r border-border/60 lg:block">
 					<div className="px-3 pb-16 pt-24">
+						<div className="mb-2 flex items-center justify-between px-3">
+							<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+								Docs
+							</span>
+							<DocsThemeToggle theme={theme} onToggle={toggleTheme} />
+						</div>
 						<DocsNavTree />
 					</div>
 				</aside>

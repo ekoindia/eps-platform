@@ -7,7 +7,11 @@
 /* Eko Design System - Enterprise Fintech Aesthetic */
 /* Fonts loaded asynchronously via index.html */
 
-@theme {
+@theme inline {
+	/* `inline` keeps the semantic `--color-*: var(--token)` bindings LIVE so
+	   utilities resolve the runtime CSS vars at use-site — required for the
+	   docs-local `.dark` subtree (and any future dark mode) to actually switch.
+	   Without it, Tailwind resolves these to the :root value at build time. */
 	/* Brand colors — exposed as utilities (bg-eko-gold etc.) */
 	--color-eko-gold: hsl(42 96% 54%);
 	--color-eko-gold-hover: hsl(42 96% 48%);

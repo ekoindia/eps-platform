@@ -12,6 +12,7 @@ import {
 	RESERVED_SLUGS,
 } from "@/lib/data/docs-registry";
 import { API_SPECS } from "@/lib/data/api-specs";
+import { GUIDES } from "@/content/docs/docs-guides";
 
 describe("endpointSlug", () => {
 	it("is the spec slug with no method prefix", () => {
@@ -97,5 +98,36 @@ describe("buildNavTree", () => {
 				}
 			}
 		}
+	});
+});
+
+describe("route parity", () => {
+	it("getAllDocSlugs is exactly guides + documented endpoints (no extras/dupes)", () => {
+		const slugs = getAllDocSlugs();
+		expect(new Set(slugs).size).toBe(slugs.length);
+		expect(slugs.length).toBe(GUIDES.length + getDocumentedSpecs().length);
+		for (const g of GUIDES) expect(slugs).toContain(g.slug);
+		for (const s of getDocumentedSpecs()) expect(slugs).toContain(s.slug);
+	});
+
+	it("every nav endpoint + guide link resolves to a routable slug", () => {
+		const slugs = new Set(getAllDocSlugs());
+		const nav = buildNavTree();
+		for (const g of nav.guides) expect(slugs.has(g.slug)).toBe(true);
+		for (const c of nav.categories)
+			for (const p of c.products)
+				for (const ep of p.endpoints) expect(slugs.has(ep.slug)).toBe(true);
+	});
+
+	it("no nav endpoint is a -status helper", () => {
+		const nav = buildNavTree();
+		const navSlugs = nav.categories.flatMap((c) =>
+			c.products.flatMap((p) => p.endpoints.map((e) => e.slug)),
+		);
+		for (const spec of getDocumentedSpecs())
+			expect(spec.id.endsWith("-status")).toBe(false);
+		expect(navSlugs.every((s) => getDocBySlug(s)?.kind === "endpoint")).toBe(
+			true,
+		);
 	});
 });
