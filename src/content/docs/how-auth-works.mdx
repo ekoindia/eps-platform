@@ -1,0 +1,58 @@
+# How Auth Works
+
+Every Eko API request is authenticated with a static key plus a per-request
+HMAC signature. Nothing secret ever travels on the wire in plain form.
+
+## The two keys
+
+| Key               | Where it comes from                                   | How it's used                                                            |
+| ----------------- | ----------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Access Key**    | Shared once, kept server-side only                    | Never sent in a request; used to compute `secret-key` and `request_hash` |
+| **Developer Key** | UAT key from your dashboard; production key after KYC | Sent as the `developer_key` header                                       |
+
+## Request headers
+
+| Header                 | Required         | Description                                            |
+| ---------------------- | ---------------- | ------------------------------------------------------ |
+| `developer_key`        | yes              | Your static developer key.                             |
+| `secret-key`           | yes              | Per-request HMAC signature (see below).                |
+| `secret-key-timestamp` | yes              | Current time in **milliseconds** since the UNIX epoch. |
+| `content-type`         | yes              | `application/json`                                     |
+| `request_hash`         | money-debit only | HMAC over the API's signed parameters (see below).     |
+
+## Computing the `secret-key`
+
+The signature binds the request to a timestamp, so it must be generated fresh
+for every call:
+
+1. Base64-encode the `access_key`.
+2. Take the current timestamp in milliseconds, as a string.
+3. Compute `HMAC-SHA256(timestamp, base64(access_key))`.
+4. Base64-encode the result — that's the `secret-key`.
+
+Send the same timestamp in `secret-key-timestamp`. A stale or mismatched
+timestamp returns `403 Forbidden`.
+
+```
+secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
+```
+
+## Computing the `request_hash` (financial APIs)
+
+Money-debit endpoints require an extra signature over the request parameters:
+
+1. Concatenate the API-specific parameters **in the documented order**.
+2. Base64-encode the `access_key`.
+3. Compute `HMAC-SHA256(concatenated-params, base64(access_key))`.
+4. Base64-encode the result — that's the `request_hash`.
+
+The parameter sequence varies per API; each financial endpoint's page lists the
+order it expects.
+
+## Why sign client-side
+
+Because the `access_key` never leaves your server, a leaked request can't be
+replayed or forged — the timestamp-bound signature is only valid for a short
+window. When using the in-page **Test Request** console, signing happens locally
+in your browser with the UAT credentials you supply; they are never sent
+anywhere except the sandbox API itself.

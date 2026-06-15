@@ -4,16 +4,17 @@ import { AiHint } from "@/components/AiHint";
 import { CodeSamples } from "@/components/docs/CodeSamples";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { EndpointDetail } from "@/components/docs/EndpointDetail";
+import { MdxGuide } from "@/components/docs/MdxGuide";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { SITE_URL } from "@/lib/config/site";
 import { docsHref, getDocBySlug } from "@/lib/data/docs-registry";
 import NotFound from "@/pages/NotFound";
 
 /**
- * `/docs/<slug>` — resolves a single doc node (endpoint or guide) and renders
- * it in the 3-pane shell. Endpoints get a right rail of language-tabbed code
- * samples + example response; the live try-it console arrives in a later phase.
- * Unknown slugs fall through to NotFound.
+ * `/docs/<slug>` — resolves a single doc node and renders it in the 3-pane
+ * shell: an MDX guide (no right rail) or an API endpoint (with a code-samples
+ * right rail). Each carries SEO meta + a markdown-twin alternate link. Unknown
+ * slugs fall through to NotFound.
  */
 const DocDetailPage = () => {
 	const { slug } = useParams<{ slug: string }>();
@@ -21,13 +22,42 @@ const DocDetailPage = () => {
 
 	if (!node) return <NotFound />;
 
-	// Guides render via the MDX pipeline (added in a later phase); until then a
-	// guide node has no component to show.
-	if (node.kind !== "endpoint" || !node.spec) return <NotFound />;
-
-	const spec = node.spec;
 	const canonical = `${SITE_URL}${docsHref(node.slug)}`;
 	const mdPath = `${docsHref(node.slug)}.md`;
+
+	if (node.kind === "guide") {
+		return (
+			<>
+				<Helmet>
+					<title>
+						{node.title}
+						{SITE_TITLE_SUFFIX}
+					</title>
+					{node.summary && <meta name="description" content={node.summary} />}
+					<link rel="canonical" href={canonical} />
+					<meta property="og:title" content={node.title} />
+					{node.summary && (
+						<meta property="og:description" content={node.summary} />
+					)}
+					<meta property="og:type" content="article" />
+					<link
+						rel="alternate"
+						type="text/markdown"
+						title="Markdown version"
+						href={mdPath}
+					/>
+				</Helmet>
+				<AiHint mdPath={mdPath} />
+
+				<DocsLayout>
+					<MdxGuide slug={node.slug} />
+				</DocsLayout>
+			</>
+		);
+	}
+
+	if (!node.spec) return <NotFound />;
+	const spec = node.spec;
 
 	return (
 		<>

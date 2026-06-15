@@ -25,7 +25,19 @@ export function generateMarkdownPlugin(): Plugin {
 				try {
 					const url = req.url?.split("?")[0] ?? "";
 					const bundle = await loadRenderBundle(server);
-					const body = renderDevRoute(url, bundle);
+					let body = renderDevRoute(url, bundle);
+					// Guide twins need an async file read, so they're not handled by
+					// the sync renderDevRoute.
+					if (body === null) {
+						const guideMd = url.match(/^\/docs\/([^/]+)\.md$/);
+						const guide = guideMd
+							? bundle.GUIDES.find((g) => g.slug === guideMd[1])
+							: undefined;
+						if (guide) {
+							const raw = await readGuideSource(server.config.root, guide.slug);
+							body = bundle.renderGuideMarkdown(guide, raw);
+						}
+					}
 					if (body === null) {
 						next();
 						return;
@@ -178,6 +190,15 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				for (const guide of bundle.GUIDES) {
+					const raw = await readGuideSource(resolvedConfig.root, guide.slug);
+					await writeFile(
+						path.join(outDir, "docs", `${guide.slug}.md`),
+						bundle.renderGuideMarkdown(guide, raw),
+					);
+					written++;
+				}
+
 				// -- Site index -----------------------------------------------------
 				await writeFile(
 					path.join(outDir, "index.md"),
@@ -264,6 +285,19 @@ interface MarkdownBundle {
 	DOCUMENTED_SPECS: Array<{ slug: string }>;
 	renderEndpointMarkdown: (spec: unknown) => string;
 	renderDocsIndexMarkdown: () => string;
+	GUIDES: Array<{ slug: string; title: string; summary?: string }>;
+	renderGuideMarkdown: (
+		meta: { slug: string; title: string; summary?: string },
+		rawBody: string,
+	) => string;
+}
+
+/** Read a guide's raw `.mdx` source (pure markdown) from the content dir. */
+async function readGuideSource(root: string, slug: string): Promise<string> {
+	return fs.readFile(
+		path.join(root, "src/content/docs", `${slug}.mdx`),
+		"utf8",
+	);
 }
 
 async function loadRenderBundle(
@@ -282,6 +316,7 @@ async function loadRenderBundle(
 		renderPricingMod,
 		docsRegistryMod,
 		renderDocMod,
+		docsGuidesMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -295,6 +330,7 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-pricing.ts"),
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
+		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
 	]);
 
 	return {
@@ -318,6 +354,8 @@ async function loadRenderBundle(
 		DOCUMENTED_SPECS: docsRegistryMod.getDocumentedSpecs(),
 		renderEndpointMarkdown: renderDocMod.renderEndpointMarkdown,
 		renderDocsIndexMarkdown: renderDocMod.renderDocsIndexMarkdown,
+		GUIDES: docsGuidesMod.GUIDES,
+		renderGuideMarkdown: renderDocMod.renderGuideMarkdown,
 	};
 }
 

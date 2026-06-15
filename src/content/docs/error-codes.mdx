@@ -1,0 +1,46 @@
+# Error Codes
+
+Eko APIs report status at two levels: the transport-level **HTTP status code**
+and the business-level **`response_status_id`** inside the response envelope. A
+`200 OK` with a non-zero `response_status_id` is a successful call that returned
+a business error — always check both.
+
+## HTTP status codes
+
+| Code  | Meaning                                                       |
+| ----- | ------------------------------------------------------------- |
+| `200` | OK — response returned by our system.                         |
+| `403` | Forbidden — incorrect `secret-key` or timestamp.              |
+| `404` | Not Found — wrong request URL.                                |
+| `405` | Method Not Allowed — incorrect HTTP method.                   |
+| `415` | Unsupported Media Type — wrong `Content-Type` header.         |
+| `500` | Internal Server Error — connectivity or URL misconfiguration. |
+
+## Transaction status codes (`response_status_id`)
+
+| Code  | Meaning                                     |
+| ----- | ------------------------------------------- |
+| `0`   | Success.                                    |
+| `17`  | User wallet already exists.                 |
+| `302` | Wrong OTP.                                  |
+| `303` | OTP expired.                                |
+| `327` | Enrollment done; verification pending.      |
+| `342` | Recipient already registered.               |
+| `347` | Insufficient balance.                       |
+| `463` | User not found.                             |
+| `585` | Customer already KYC approved.              |
+| `945` | Sender/beneficiary monthly limit exhausted. |
+
+## The response envelope
+
+| Field                | Type   | Meaning                                      |
+| -------------------- | ------ | -------------------------------------------- |
+| `status`             | number | Primary success indicator (`0` = success).   |
+| `response_status_id` | number | Granular status id — the codes above.        |
+| `message`            | string | Human-readable result or error message.      |
+| `response_type_id`   | number | Response type id for non-financial requests. |
+
+Financial (money-debit) responses additionally carry `tx_status`
+(`0`=Success, `1`=Fail, `2`=Awaited, `3`=Refund Pending, `4`=Refunded,
+`5`=On Hold) and `txstatus_desc`. When `tx_status` is `2` (Awaited), poll the
+relevant status endpoint rather than retrying the debit.

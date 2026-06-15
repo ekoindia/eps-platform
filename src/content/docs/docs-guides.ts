@@ -29,4 +29,25 @@ export interface GuideMeta {
  * ship first. Keep in sync with the `.mdx` files in this directory and the
  * eager component map in `docs-guide-components.tsx`.
  */
-export const GUIDES: GuideMeta[] = [];
+export const GUIDES: GuideMeta[] = [
+	{
+		slug: "quickstart",
+		title: "Quickstart",
+		order: 1,
+		summary: "From zero to your first verified API call in minutes.",
+	},
+	{
+		slug: "how-auth-works",
+		title: "How Auth Works",
+		order: 2,
+		summary:
+			"Keys, request signing, and the per-request HMAC secret-key + request_hash.",
+	},
+	{
+		slug: "error-codes",
+		title: "Error Codes",
+		order: 3,
+		summary:
+			"HTTP status codes, transaction status ids, and the response envelope.",
+	},
+];

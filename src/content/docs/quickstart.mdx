@@ -1,0 +1,44 @@
+# Quickstart
+
+Get from zero to your first verified API call in a few minutes.
+
+## 1. Get UAT credentials
+
+Eko's sandbox (UAT) is self-serve. Sign up to receive your **developer key** and
+**access key** for the sandbox environment — no KYC required to start testing.
+
+> Production credentials are issued after organisational KYC at
+> [connect.eko.in](https://connect.eko.in).
+
+## 2. Know your environments
+
+Sandbox and production share the same paths and differ only by base URL:
+
+| Environment   | Base URL                                 |
+| ------------- | ---------------------------------------- |
+| UAT / Sandbox | `https://staging.eko.in:25004/ekoapi/v3` |
+| Production    | `https://api.eko.in/ekoapi/v3`           |
+
+The full endpoint URL is always `baseUrl + path` — e.g. the PAN Lite path
+`/tools/kyc/pan-lite` becomes
+`https://staging.eko.in:25004/ekoapi/v3/tools/kyc/pan-lite` in UAT.
+
+## 3. Sign your request
+
+Every request carries four auth headers (`developer_key`, `secret-key`,
+`secret-key-timestamp`, `content-type`); money-debit APIs add a `request_hash`.
+The `secret-key` is an HMAC signature computed per request — see
+[How Auth Works](/docs/how-auth-works) for the exact algorithm.
+
+## 4. Make your first call
+
+Pick an endpoint from the sidebar (start with **PAN Lite**), copy the cURL or
+JavaScript sample from the right rail, drop in your credentials, and send it.
+Each endpoint page documents its parameters, response fields, and error
+scenarios.
+
+## 5. Handle the response
+
+Responses use a shared envelope: `status` (`0` = success), `response_status_id`
+(see [Error Codes](/docs/error-codes)), and a `message`. The API-specific
+payload lives under `data`.

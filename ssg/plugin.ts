@@ -7,9 +7,11 @@
  * via `ssrLoadModule`, then tears down.
  */
 import path from "node:path";
+import mdx from "@mdx-js/rollup";
 import type { Plugin, ResolvedConfig } from "vite";
 import { createServer } from "vite";
 import { imagetools } from "vite-imagetools";
+import { mdxOptions } from "./mdx-options";
 
 export function prerenderPlugin(): Plugin {
 	let resolvedConfig: ResolvedConfig | undefined;
@@ -36,7 +38,9 @@ export function prerenderPlugin(): Plugin {
 				root: resolvedConfig.root,
 				configFile: false,
 				logLevel: "warn",
-				plugins: [imagetools()],
+				// MDX before imagetools so `.mdx` guide imports reachable from the
+				// eager AppServer tree compile during prerender.
+				plugins: [{ enforce: "pre", ...mdx(mdxOptions) }, imagetools()],
 				server: { middlewareMode: true, hmr: false },
 				appType: "custom",
 				optimizeDeps: { noDiscovery: true, include: [] },

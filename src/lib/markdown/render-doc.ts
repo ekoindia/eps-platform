@@ -115,6 +115,27 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 	]);
 }
 
+/**
+ * Render a guide's `/docs/<slug>.md` twin from its raw MDX source. Guides are
+ * authored as pure GFM markdown (no JSX/imports), so the raw body is valid
+ * markdown — we just prepend front-matter + the canonical notice.
+ */
+export function renderGuideMarkdown(
+	meta: { slug: string; title: string; summary?: string },
+	rawBody: string,
+): string {
+	const canonical = `${SITE_URL}${docsHref(meta.slug)}`;
+	return joinBlocks([
+		frontMatter({
+			title: meta.title,
+			description: meta.summary,
+			canonical,
+		}),
+		canonicalNotice(canonical),
+		rawBody.trim(),
+	]);
+}
+
 /** Render the `/docs.md` overview: every documented endpoint, grouped. */
 export function renderDocsIndexMarkdown(): string {
 	const nav = buildNavTree();
