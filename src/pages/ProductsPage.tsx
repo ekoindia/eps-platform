@@ -36,7 +36,8 @@ const PRODUCT_CATEGORIES: CategoryGroup[] = [
 	{
 		key: "verification",
 		label: "Verification APIs",
-		description: "Real-time identity & document verification for onboarding and compliance",
+		description:
+			"Real-time identity & document verification for onboarding and compliance",
 		variant: "default",
 		footnote: "All rates exclusive of GST @ 18%.",
 	},
@@ -45,21 +46,26 @@ const PRODUCT_CATEGORIES: CategoryGroup[] = [
 		label: "Payment APIs",
 		description: "Process payments, payouts, and collections at scale",
 		variant: "muted",
-		footnote: "Commissions exclusive of GST @ 18%; TDS @ 2% applies on payouts.",
+		footnote:
+			"Commissions exclusive of GST @ 18%; TDS @ 2% applies on payouts.",
 	},
 	{
 		key: "bc",
 		label: "BC Agent APIs",
-		description: "Enable banking services at doorstep through Business Correspondent agents",
+		description:
+			"Enable banking services at doorstep through Business Correspondent agents",
 		variant: "default",
-		footnote: "Commissions exclusive of GST @ 18%; TDS @ 2% applies on payouts.",
+		footnote:
+			"Commissions exclusive of GST @ 18%; TDS @ 2% applies on payouts.",
 	},
 ];
 
 /** Max number of API variant chips shown on a card before the "+N" overflow chip */
 const MAX_VARIANT_TAGS = 3;
 
-const groupProductsByCategory = (products: ApiProductRef[]): Record<string, ApiProductRef[]> => {
+const groupProductsByCategory = (
+	products: ApiProductRef[],
+): Record<string, ApiProductRef[]> => {
 	return products.reduce<Record<string, ApiProductRef[]>>((acc, product) => {
 		const cat = product.category;
 		if (!acc[cat]) acc[cat] = [];
@@ -101,12 +107,19 @@ const CardPricingLine = ({ product }: { product: ApiProductRef }) => {
 	);
 };
 
-const ApiProductCard = ({ product, index }: { product: ApiProductRef; index: number }) => {
+const ApiProductCard = ({
+	product,
+	index,
+}: {
+	product: ApiProductRef;
+	index: number;
+}) => {
 	const pageData = API_PRODUCT_PAGES[product.id];
 	const Icon = pageData?.icon;
 	// Variant chips only make sense when a product spans multiple priced APIs
 	const variantLabels = getVariantLabels(product.id);
-	const visibleTags = variantLabels.length >= 2 ? variantLabels.slice(0, MAX_VARIANT_TAGS) : [];
+	const visibleTags =
+		variantLabels.length >= 2 ? variantLabels.slice(0, MAX_VARIANT_TAGS) : [];
 	const overflowCount = variantLabels.length - visibleTags.length;
 	const tagClassName =
 		"inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border border-border/50 bg-muted/50 text-muted-foreground";
@@ -168,7 +181,12 @@ const ProductsPage = () => {
 		"@type": "BreadcrumbList",
 		itemListElement: [
 			{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-			{ "@type": "ListItem", position: 2, name: "Products", item: `${SITE_URL}/products` },
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: "Products",
+				item: `${SITE_URL}/products`,
+			},
 		],
 	};
 
@@ -176,12 +194,25 @@ const ProductsPage = () => {
 		<>
 			<Helmet>
 				<title>APIs & Products | Eko Platform Services</title>
-				<meta name="description" content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services. Production-ready APIs built for India's digital economy." />
+				<meta
+					name="description"
+					content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services. Production-ready APIs built for India's digital economy."
+				/>
 				<link rel="canonical" href={`${SITE_URL}/products`} />
-				<meta property="og:title" content="APIs & Products | Eko Platform Services" />
-				<meta property="og:description" content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services." />
+				<meta
+					property="og:title"
+					content="APIs & Products | Eko Platform Services"
+				/>
+				<meta
+					property="og:description"
+					content="Explore Eko's full suite of fintech APIs — payments, verification, and BC agent services."
+				/>
 				<meta property="og:url" content={`${SITE_URL}/products`} />
-				<link rel="alternate" type="text/markdown" href={`${SITE_URL}/products.md`} />
+				<link
+					rel="alternate"
+					type="text/markdown"
+					href={`${SITE_URL}/products.md`}
+				/>
 				<script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
 			</Helmet>
 			<div className="min-h-screen bg-background">
@@ -192,10 +223,9 @@ const ProductsPage = () => {
 						<div className="absolute inset-0 bg-linear-to-br from-eko-navy via-eko-navy to-eko-navy-light opacity-90" />
 						<div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
 							<div className="text-left">
-								<BreadcrumbNav crumbs={[
-									{ label: "Home", href: "/" },
-									{ label: "Products" },
-								]} />
+								<BreadcrumbNav
+									crumbs={[{ label: "Home", href: "/" }, { label: "Products" }]}
+								/>
 							</div>
 							<FadeIn onView={false} delay={100} className="text-center">
 								<span className="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4 bg-white/10 text-white/90">
@@ -207,7 +237,8 @@ const ProductsPage = () => {
 							</FadeIn>
 							<FadeIn onView={false} delay={200} className="text-center">
 								<p className="text-xl text-white/70 max-w-2xl mx-auto">
-									Production-ready fintech APIs for payments, verification, and agent banking — built for India's digital economy.
+									Production-ready fintech APIs for payments, verification, and
+									agent banking — built for India's digital economy.
 								</p>
 							</FadeIn>
 						</div>
@@ -219,11 +250,21 @@ const ProductsPage = () => {
 						if (!products || products.length === 0) return null;
 
 						return (
-							<SectionContainer key={cat.key} variant={cat.variant} id={cat.key}>
-								<FadeIn><SectionHeader title={cat.label} subtitle={cat.description} /></FadeIn>
+							<SectionContainer
+								key={cat.key}
+								variant={cat.variant}
+								id={cat.key}
+							>
+								<FadeIn>
+									<SectionHeader title={cat.label} subtitle={cat.description} />
+								</FadeIn>
 								<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
 									{products.map((product, i) => (
-										<ApiProductCard key={product.id} product={product} index={i} />
+										<ApiProductCard
+											key={product.id}
+											product={product}
+											index={i}
+										/>
 									))}
 								</div>
 								<FadeIn>

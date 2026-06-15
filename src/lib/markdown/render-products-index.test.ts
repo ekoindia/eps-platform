@@ -101,7 +101,13 @@ const bbpsProduct: ApiProductRef = {
 	shortDesc: "Bill payments",
 };
 
-const products = [panProduct, unpricedProduct, bbpsProduct, dmtProduct, aepsProduct];
+const products = [
+	panProduct,
+	unpricedProduct,
+	bbpsProduct,
+	dmtProduct,
+	aepsProduct,
+];
 const pages: Record<string, ProductPageDataShape> = {
 	pan: panPage,
 	"not-a-priced-product": unpricedPage,
@@ -154,7 +160,12 @@ const specsByProduct: Record<string, ApiSpec[]> = {
 };
 
 describe("renderProductsIndexMarkdown", () => {
-	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS, specsByProduct);
+	const md = renderProductsIndexMarkdown(
+		products,
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
 
 	it("includes YAML front-matter with canonical URL", () => {
 		expect(md).toMatch(/^---\n/);
@@ -280,8 +291,18 @@ describe("renderProductsIndexMarkdown", () => {
 });
 
 describe("renderProductsIndexText", () => {
-	const txt = renderProductsIndexText(products, pages, COMMON_FAQS, specsByProduct);
-	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS, specsByProduct);
+	const txt = renderProductsIndexText(
+		products,
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
+	const md = renderProductsIndexMarkdown(
+		products,
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
 
 	it("drops front-matter and the canonical notice", () => {
 		expect(txt).not.toMatch(/^---\n/);
@@ -413,7 +434,13 @@ describe("renderProductsIndexTextPart", () => {
 		lede: "Identity & KYC verification APIs from Eko.",
 		productIds: ["pan"],
 	};
-	const txt = renderProductsIndexTextPart(part, [panProduct], pages, COMMON_FAQS, specsByProduct);
+	const txt = renderProductsIndexTextPart(
+		part,
+		[panProduct],
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
 
 	it("uses the part's H1 title and lede, not the combined one", () => {
 		expect(txt).toContain("Eko Verification APIs (Identity & KYC) — Reference");

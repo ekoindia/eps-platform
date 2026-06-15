@@ -52,12 +52,24 @@ function getPathContext(pathname: string): PathContext {
 const NotFound = () => {
 	const location = useLocation();
 
-	const ctx = useMemo(() => getPathContext(location.pathname), [location.pathname]);
-	const featuredSolutions = useMemo(() => ACTIVE_SOLUTIONS_LIST.slice(0, 3), []);
-	const featuredIndustries = useMemo(() => ACTIVE_INDUSTRIES_LIST.slice(0, 3), []);
+	const ctx = useMemo(
+		() => getPathContext(location.pathname),
+		[location.pathname],
+	);
+	const featuredSolutions = useMemo(
+		() => ACTIVE_SOLUTIONS_LIST.slice(0, 3),
+		[],
+	);
+	const featuredIndustries = useMemo(
+		() => ACTIVE_INDUSTRIES_LIST.slice(0, 3),
+		[],
+	);
 
 	useEffect(() => {
-		console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+		console.error(
+			"404 Error: User attempted to access non-existent route:",
+			location.pathname,
+		);
 	}, [location.pathname]);
 
 	return (
@@ -68,7 +80,10 @@ const NotFound = () => {
 			</Helmet>
 
 			{/* Hero Section */}
-			<SectionContainer variant="muted" className="pt-32 lg:pt-40 pb-16 lg:pb-20">
+			<SectionContainer
+				variant="muted"
+				className="pt-32 lg:pt-40 pb-16 lg:pb-20"
+			>
 				<FadeIn className="text-center max-w-2xl mx-auto">
 					<div className="w-20 h-20 rounded-2xl bg-eko-gold/10 flex items-center justify-center mx-auto mb-8">
 						<SearchX className="w-10 h-10 text-eko-gold" />

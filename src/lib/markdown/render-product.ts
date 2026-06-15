@@ -2,37 +2,37 @@ import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import {
-  primaryDocsUrl,
-  specsToPreviews,
-  specsToVerifiableFields,
-  verifyHeading,
+	primaryDocsUrl,
+	specsToPreviews,
+	specsToVerifiableFields,
+	verifyHeading,
 } from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
-  bulletList,
-  canonicalNotice,
-  frontMatter,
-  gettingStartedNotice,
-  h1,
-  h2,
-  h3,
-  indexPageNotice,
-  joinBlocks,
-  markdownTable,
-  renderSteps,
+	bulletList,
+	canonicalNotice,
+	frontMatter,
+	gettingStartedNotice,
+	h1,
+	h2,
+	h3,
+	indexPageNotice,
+	joinBlocks,
+	markdownTable,
+	renderSteps,
 } from "./shared";
 
 export interface ProductPageSeoShape {
-  title: string;
-  description: string;
-  keywords: string;
-  ogTitle?: string;
-  ogDescription?: string;
+	title: string;
+	description: string;
+	keywords: string;
+	ogTitle?: string;
+	ogDescription?: string;
 }
 
 export interface ProductPageDataShape extends ProductPageContent {
-  seo: ProductPageSeoShape;
+	seo: ProductPageSeoShape;
 }
 
 /**
@@ -43,152 +43,152 @@ export interface ProductPageDataShape extends ProductPageContent {
  * `product.id`); pass them explicitly in tests for determinism.
  */
 export function renderProductMarkdown(
-  product: ApiProductRef,
-  page: ProductPageDataShape,
-  relatedProducts: ApiProductRef[] = [],
-  specs: ApiSpec[] = getSpecsForProduct(product.id),
+	product: ApiProductRef,
+	page: ProductPageDataShape,
+	relatedProducts: ApiProductRef[] = [],
+	specs: ApiSpec[] = getSpecsForProduct(product.id),
 ): string {
-  const canonical = `${SITE_URL}${productHref(product.slug)}`;
-  const docsUrl = primaryDocsUrl(specs);
+	const canonical = `${SITE_URL}${productHref(product.slug)}`;
+	const docsUrl = primaryDocsUrl(specs);
 
-  const blocks: (string | false | undefined)[] = [
-    frontMatter({
-      type: "product",
-      title: page.seo.title,
-      description: page.seo.description,
-      // keywords: page.seo.keywords,
-      // slug: product.slug,
-      category: page.category,
-      canonical,
-      // docs_url: docsUrl,
-    }),
-    canonicalNotice(canonical),
-    h1(page.heroTitle || page.title),
-    page.heroSubtitle,
-    page.desc && page.desc !== page.heroSubtitle ? `_${page.desc}_` : undefined,
-    gettingStartedNotice(),
-  ];
+	const blocks: (string | false | undefined)[] = [
+		frontMatter({
+			type: "product",
+			title: page.seo.title,
+			description: page.seo.description,
+			// keywords: page.seo.keywords,
+			// slug: product.slug,
+			category: page.category,
+			canonical,
+			// docs_url: docsUrl,
+		}),
+		canonicalNotice(canonical),
+		h1(page.heroTitle || page.title),
+		page.heroSubtitle,
+		page.desc && page.desc !== page.heroSubtitle ? `_${page.desc}_` : undefined,
+		gettingStartedNotice(),
+	];
 
-  if (page.overview) {
-    blocks.push(h2("Overview"), page.overview);
-  }
+	if (page.overview) {
+		blocks.push(h2("Overview"), page.overview);
+	}
 
-  // if (page.keyBenefits && page.keyBenefits.length > 0) {
-  //   blocks.push(h2("Key Benefits"), bulletList(page.keyBenefits));
-  // }
+	// if (page.keyBenefits && page.keyBenefits.length > 0) {
+	//   blocks.push(h2("Key Benefits"), bulletList(page.keyBenefits));
+	// }
 
-  if (page.features && page.features.length > 0) {
-    blocks.push(
-      h2("Features"),
-      bulletList(page.features.map((f) => f.title + ": " + f.desc)),
-    );
-    // for (const f of page.features) {
-    //   blocks.push(`${h3(f.title)}\n${f.desc}`);
-    // }
-  }
+	if (page.features && page.features.length > 0) {
+		blocks.push(
+			h2("Features"),
+			bulletList(page.features.map((f) => f.title + ": " + f.desc)),
+		);
+		// for (const f of page.features) {
+		//   blocks.push(`${h3(f.title)}\n${f.desc}`);
+		// }
+	}
 
-  if (page.benefits && page.benefits.length > 0) {
-    blocks.push(
-      h2("Benefits"),
-      bulletList(page.benefits.map((b) => b.title + ": " + b.desc)),
-    );
-    // for (const b of page.benefits) {
-    //   blocks.push(`${h3(b.title)}\n${b.desc}`);
-    // }
-  }
+	if (page.benefits && page.benefits.length > 0) {
+		blocks.push(
+			h2("Benefits"),
+			bulletList(page.benefits.map((b) => b.title + ": " + b.desc)),
+		);
+		// for (const b of page.benefits) {
+		//   blocks.push(`${h3(b.title)}\n${b.desc}`);
+		// }
+	}
 
-  if (page.types && page.types.length > 0) {
-    blocks.push(
-      h2("Supported Types"),
-      bulletList(page.types.map((t) => t.label)),
-    );
-  }
+	if (page.types && page.types.length > 0) {
+		blocks.push(
+			h2("Supported Types"),
+			bulletList(page.types.map((t) => t.label)),
+		);
+	}
 
-  if (page.whoShouldUse && page.whoShouldUse.length > 0) {
-    blocks.push(h2("Who Should Use This"), bulletList(page.whoShouldUse));
-  }
+	if (page.whoShouldUse && page.whoShouldUse.length > 0) {
+		blocks.push(h2("Who Should Use This"), bulletList(page.whoShouldUse));
+	}
 
-  if (page.useCases && page.useCases.length > 0) {
-    blocks.push(h2("Use Cases"), bulletList(page.useCases));
-  }
+	if (page.useCases && page.useCases.length > 0) {
+		blocks.push(h2("Use Cases"), bulletList(page.useCases));
+	}
 
-  if (page.category === "verification") {
-    const verifiable = specsToVerifiableFields(specs);
-    if (verifiable.length > 0) {
-      blocks.push(
-        h2(verifyHeading(product.name)),
-        bulletList(
-          verifiable.map((f) =>
-            f.description
-              ? `**${f.label}** — ${f.description}`
-              : `**${f.label}**`,
-          ),
-        ),
-      );
-    }
-  }
+	if (page.category === "verification") {
+		const verifiable = specsToVerifiableFields(specs);
+		if (verifiable.length > 0) {
+			blocks.push(
+				h2(verifyHeading(product.name)),
+				bulletList(
+					verifiable.map((f) =>
+						f.description
+							? `**${f.label}** — ${f.description}`
+							: `**${f.label}**`,
+					),
+				),
+			);
+		}
+	}
 
-  for (const preview of specsToPreviews(specs)) {
-    if (preview.comingSoon) continue;
-    const endpoint = preview.sampleJson?.endpoint ?? preview.endpoint;
-    const method = preview.sampleJson?.method ?? preview.method;
-    blocks.push(h2(`API Preview — ${preview.apiName}`));
-    if (endpoint) {
-      blocks.push(`\`${method ? `${method} ` : ""}${endpoint}\``);
-    }
-    if (preview.inputs && preview.inputs.length > 0) {
-      blocks.push(
-        h3("Example inputs"),
-        markdownTable(
-          ["Field", "Value"],
-          preview.inputs.map((f) => [f.label, f.value]),
-        ),
-      );
-    }
-    if (preview.outputs && preview.outputs.length > 0) {
-      blocks.push(
-        h3("Example outputs"),
-        markdownTable(
-          ["Field", "Value"],
-          preview.outputs.map((f) => [f.label, f.value]),
-        ),
-      );
-    }
-  }
+	for (const preview of specsToPreviews(specs)) {
+		if (preview.comingSoon) continue;
+		const endpoint = preview.sampleJson?.endpoint ?? preview.endpoint;
+		const method = preview.sampleJson?.method ?? preview.method;
+		blocks.push(h2(`API Preview — ${preview.apiName}`));
+		if (endpoint) {
+			blocks.push(`\`${method ? `${method} ` : ""}${endpoint}\``);
+		}
+		if (preview.inputs && preview.inputs.length > 0) {
+			blocks.push(
+				h3("Example inputs"),
+				markdownTable(
+					["Field", "Value"],
+					preview.inputs.map((f) => [f.label, f.value]),
+				),
+			);
+		}
+		if (preview.outputs && preview.outputs.length > 0) {
+			blocks.push(
+				h3("Example outputs"),
+				markdownTable(
+					["Field", "Value"],
+					preview.outputs.map((f) => [f.label, f.value]),
+				),
+			);
+		}
+	}
 
-  if (page.integrationSteps && page.integrationSteps.length > 0) {
-    blocks.push(h2("Integration Steps"), renderSteps(page.integrationSteps));
-  }
+	if (page.integrationSteps && page.integrationSteps.length > 0) {
+		blocks.push(h2("Integration Steps"), renderSteps(page.integrationSteps));
+	}
 
-  // TODO: Fix how to show Trust & Compliance. The claims like "99.9% Uptime" should be legally/SLA backed.
-  // if (page.trustAndCompliance && page.trustAndCompliance.length > 0) {
-  //   blocks.push(h2("Trust & Compliance"), bulletList(page.trustAndCompliance));
-  // }
+	// TODO: Fix how to show Trust & Compliance. The claims like "99.9% Uptime" should be legally/SLA backed.
+	// if (page.trustAndCompliance && page.trustAndCompliance.length > 0) {
+	//   blocks.push(h2("Trust & Compliance"), bulletList(page.trustAndCompliance));
+	// }
 
-  if (page.faqs && page.faqs.length > 0) {
-    blocks.push(h2("FAQs"));
-    for (const f of page.faqs) {
-      blocks.push(`${h3(f.q)}\n${f.a}`);
-    }
-  }
+	if (page.faqs && page.faqs.length > 0) {
+		blocks.push(h2("FAQs"));
+		for (const f of page.faqs) {
+			blocks.push(`${h3(f.q)}\n${f.a}`);
+		}
+	}
 
-  if (docsUrl) {
-    blocks.push(h2("API Documentation"), `- [Full developer docs](${docsUrl})`);
-  }
+	if (docsUrl) {
+		blocks.push(h2("API Documentation"), `- [Full developer docs](${docsUrl})`);
+	}
 
-  if (relatedProducts.length > 0) {
-    blocks.push(
-      h2("Related Products"),
-      relatedProducts
-        .map(
-          (p) =>
-            `- [${p.name}](${SITE_URL}${productHref(p.slug)}): ${p.shortDesc} ([markdown](${SITE_URL}${productHref(p.slug)}.md))`,
-        )
-        .join("\n"),
-    );
-  }
+	if (relatedProducts.length > 0) {
+		blocks.push(
+			h2("Related Products"),
+			relatedProducts
+				.map(
+					(p) =>
+						`- [${p.name}](${SITE_URL}${productHref(p.slug)}): ${p.shortDesc} ([markdown](${SITE_URL}${productHref(p.slug)}.md))`,
+				)
+				.join("\n"),
+		);
+	}
 
-  blocks.push(`- ${indexPageNotice()}`);
+	blocks.push(`- ${indexPageNotice()}`);
 
-  return joinBlocks(blocks);
+	return joinBlocks(blocks);
 }

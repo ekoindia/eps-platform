@@ -1,15 +1,15 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import {
-  isChunkLoadError,
-  reloadOnceForStaleChunk,
+	isChunkLoadError,
+	reloadOnceForStaleChunk,
 } from "@/lib/reload-on-chunk-error";
 
 interface ErrorBoundaryProps {
-  children: ReactNode;
+	children: ReactNode;
 }
 
 interface ErrorBoundaryState {
-  error: Error | null;
+	error: Error | null;
 }
 
 /**
@@ -20,38 +20,38 @@ interface ErrorBoundaryState {
  * when no boundary exists.
  */
 export class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
+	ErrorBoundaryProps,
+	ErrorBoundaryState
 > {
-  state: ErrorBoundaryState = { error: null };
+	state: ErrorBoundaryState = { error: null };
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error };
-  }
+	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+		return { error };
+	}
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    if (isChunkLoadError(error) && reloadOnceForStaleChunk()) return;
-    console.error("Unhandled render error:", error, errorInfo.componentStack);
-  }
+	componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+		if (isChunkLoadError(error) && reloadOnceForStaleChunk()) return;
+		console.error("Unhandled render error:", error, errorInfo.componentStack);
+	}
 
-  render(): ReactNode {
-    if (this.state.error) {
-      return (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-          <h1 className="text-2xl font-semibold">Something went wrong</h1>
-          <p className="text-muted-foreground">
-            Please reload the page to continue.
-          </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Reload page
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
+	render(): ReactNode {
+		if (this.state.error) {
+			return (
+				<div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+					<h1 className="text-2xl font-semibold">Something went wrong</h1>
+					<p className="text-muted-foreground">
+						Please reload the page to continue.
+					</p>
+					<button
+						type="button"
+						onClick={() => window.location.reload()}
+						className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+					>
+						Reload page
+					</button>
+				</div>
+			);
+		}
+		return this.props.children;
+	}
 }

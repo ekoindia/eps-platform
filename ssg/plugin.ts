@@ -12,53 +12,50 @@ import { createServer } from "vite";
 import { imagetools } from "vite-imagetools";
 
 export function prerenderPlugin(): Plugin {
-  let resolvedConfig: ResolvedConfig | undefined;
+	let resolvedConfig: ResolvedConfig | undefined;
 
-  return {
-    name: "eko:prerender-pages",
+	return {
+		name: "eko:prerender-pages",
 
-    configResolved(c) {
-      resolvedConfig = c;
-    },
+		configResolved(c) {
+			resolvedConfig = c;
+		},
 
-    async closeBundle() {
-      if (!resolvedConfig) return;
-      if (resolvedConfig.command !== "build") return;
-      if (resolvedConfig.build.ssr) return; // skip if this is itself an SSR build
+		async closeBundle() {
+			if (!resolvedConfig) return;
+			if (resolvedConfig.command !== "build") return;
+			if (resolvedConfig.build.ssr) return; // skip if this is itself an SSR build
 
-      const outDir = path.resolve(
-        resolvedConfig.root,
-        resolvedConfig.build.outDir,
-      );
+			const outDir = path.resolve(
+				resolvedConfig.root,
+				resolvedConfig.build.outDir,
+			);
 
-      // Spin up a minimal Vite SSR server (same pattern as the markdown plugin)
-      const ssrServer = await createServer({
-        root: resolvedConfig.root,
-        configFile: false,
-        logLevel: "warn",
-        plugins: [imagetools()],
-        server: { middlewareMode: true, hmr: false },
-        appType: "custom",
-        optimizeDeps: { noDiscovery: true, include: [] },
-        resolve: { alias: resolvedConfig.resolve.alias },
-        // Force CJS packages through Vite's transform so named imports work
-        ssr: {
-          noExternal: [
-            "react-helmet-async",
-            "react-router-dom",
-          ],
-        },
-      });
+			// Spin up a minimal Vite SSR server (same pattern as the markdown plugin)
+			const ssrServer = await createServer({
+				root: resolvedConfig.root,
+				configFile: false,
+				logLevel: "warn",
+				plugins: [imagetools()],
+				server: { middlewareMode: true, hmr: false },
+				appType: "custom",
+				optimizeDeps: { noDiscovery: true, include: [] },
+				resolve: { alias: resolvedConfig.resolve.alias },
+				// Force CJS packages through Vite's transform so named imports work
+				ssr: {
+					noExternal: ["react-helmet-async", "react-router-dom"],
+				},
+			});
 
-      try {
-        const { prerenderAllPages } = (await ssrServer.ssrLoadModule(
-          "/ssg/prerender.ts",
-        )) as typeof import("./prerender");
+			try {
+				const { prerenderAllPages } = (await ssrServer.ssrLoadModule(
+					"/ssg/prerender.ts",
+				)) as typeof import("./prerender");
 
-        await prerenderAllPages(outDir, ssrServer);
-      } finally {
-        await ssrServer.close();
-      }
-    },
-  };
+				await prerenderAllPages(outDir, ssrServer);
+			} finally {
+				await ssrServer.close();
+			}
+		},
+	};
 }

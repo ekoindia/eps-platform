@@ -2,10 +2,14 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import { createServer } from "vite";
-import { renderPricingXlsx, type PricingXlsxData } from "./ssg/render-pricing-xlsx";
+import {
+	renderPricingXlsx,
+	type PricingXlsxData,
+} from "./ssg/render-pricing-xlsx";
 
 const XLSX_ROUTE = "/eps-pricing-calculator.xlsx";
-const XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const XLSX_CONTENT_TYPE =
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 /**
  * Vite plugin: after `vite build`, generate the offline Excel pricing
@@ -18,107 +22,117 @@ const XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreads
  * this node-side pipeline and never reaches the client bundle.
  */
 export function generatePricingXlsxPlugin(): Plugin {
-  let resolvedConfig: ResolvedConfig | undefined;
+	let resolvedConfig: ResolvedConfig | undefined;
 
-  return {
-    name: "eko:generate-xlsx",
-    configResolved(c) {
-      resolvedConfig = c;
-    },
-    configureServer(server) {
-      server.middlewares.use(async (req, res, next) => {
-        if (req.url?.split("?")[0] !== XLSX_ROUTE) {
-          next();
-          return;
-        }
-        try {
-          const buffer = await renderPricingXlsx(await loadPricingData(server));
-          res.statusCode = 200;
-          res.setHeader("Content-Type", XLSX_CONTENT_TYPE);
-          res.setHeader("Content-Disposition", 'attachment; filename="eps-pricing-calculator.xlsx"');
-          res.setHeader("Cache-Control", "no-cache");
-          res.end(buffer);
-        } catch (err) {
-          server.config.logger.error(`[eko:xlsx] ${(err as Error).message}`);
-          next(err);
-        }
-      });
-    },
-    async closeBundle() {
-      if (!resolvedConfig) return;
-      if (resolvedConfig.command !== "build") return;
-      if (resolvedConfig.build.ssr) return; // skip SSR builds if ever added
-      const outDir = path.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
+	return {
+		name: "eko:generate-xlsx",
+		configResolved(c) {
+			resolvedConfig = c;
+		},
+		configureServer(server) {
+			server.middlewares.use(async (req, res, next) => {
+				if (req.url?.split("?")[0] !== XLSX_ROUTE) {
+					next();
+					return;
+				}
+				try {
+					const buffer = await renderPricingXlsx(await loadPricingData(server));
+					res.statusCode = 200;
+					res.setHeader("Content-Type", XLSX_CONTENT_TYPE);
+					res.setHeader(
+						"Content-Disposition",
+						'attachment; filename="eps-pricing-calculator.xlsx"',
+					);
+					res.setHeader("Cache-Control", "no-cache");
+					res.end(buffer);
+				} catch (err) {
+					server.config.logger.error(`[eko:xlsx] ${(err as Error).message}`);
+					next(err);
+				}
+			});
+		},
+		async closeBundle() {
+			if (!resolvedConfig) return;
+			if (resolvedConfig.command !== "build") return;
+			if (resolvedConfig.build.ssr) return; // skip SSR builds if ever added
+			const outDir = path.resolve(
+				resolvedConfig.root,
+				resolvedConfig.build.outDir,
+			);
 
-      // Spin up a minimal Vite SSR server to load our TS source files.
-      const ssrServer = await createServer({
-        root: resolvedConfig.root,
-        configFile: false,
-        logLevel: "warn",
-        server: { middlewareMode: true, hmr: false },
-        appType: "custom",
-        // Avoid the dep-optimize warmup whose pending esbuild context emits a
-        // noisy "The build was canceled" on close().
-        optimizeDeps: { noDiscovery: true, include: [] },
-        // Reuse the same aliases as the build config.
-        resolve: { alias: resolvedConfig.resolve.alias },
-      });
+			// Spin up a minimal Vite SSR server to load our TS source files.
+			const ssrServer = await createServer({
+				root: resolvedConfig.root,
+				configFile: false,
+				logLevel: "warn",
+				server: { middlewareMode: true, hmr: false },
+				appType: "custom",
+				// Avoid the dep-optimize warmup whose pending esbuild context emits a
+				// noisy "The build was canceled" on close().
+				optimizeDeps: { noDiscovery: true, include: [] },
+				// Reuse the same aliases as the build config.
+				resolve: { alias: resolvedConfig.resolve.alias },
+			});
 
-      try {
-        const buffer = await renderPricingXlsx(await loadPricingData(ssrServer));
-        await fs.writeFile(path.join(outDir, XLSX_ROUTE.slice(1)), buffer);
-        // eslint-disable-next-line no-console
-        console.log(`\n[eko:xlsx] wrote ${XLSX_ROUTE.slice(1)} to ${path.relative(resolvedConfig.root, outDir)}/`);
-      } finally {
-        await ssrServer.close();
-      }
-    },
-  };
+			try {
+				const buffer = await renderPricingXlsx(
+					await loadPricingData(ssrServer),
+				);
+				await fs.writeFile(path.join(outDir, XLSX_ROUTE.slice(1)), buffer);
+				// eslint-disable-next-line no-console
+				console.log(
+					`\n[eko:xlsx] wrote ${XLSX_ROUTE.slice(1)} to ${path.relative(resolvedConfig.root, outDir)}/`,
+				);
+			} finally {
+				await ssrServer.close();
+			}
+		},
+	};
 }
 
 /** Load pricing config + site constants through Vite's SSR module loader. */
 async function loadPricingData(
-  server: Pick<ViteDevServer, "ssrLoadModule">
+	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<PricingXlsxData> {
-  const [pricingMod, siteMod, paymentsMod, cbMod, operatorsMod] =
-    await Promise.all([
-      server.ssrLoadModule("/src/lib/data/api-pricing.ts"),
-      server.ssrLoadModule("/src/lib/config/site.ts"),
-      server.ssrLoadModule("/src/lib/data/payments-pricing.ts"),
-      server.ssrLoadModule("/src/lib/data/connected-banking-pricing.ts"),
-      server.ssrLoadModule("/src/lib/data/bbps-operators.ts"),
-    ]);
+	const [pricingMod, siteMod, paymentsMod, cbMod, operatorsMod] =
+		await Promise.all([
+			server.ssrLoadModule("/src/lib/data/api-pricing.ts"),
+			server.ssrLoadModule("/src/lib/config/site.ts"),
+			server.ssrLoadModule("/src/lib/data/payments-pricing.ts"),
+			server.ssrLoadModule("/src/lib/data/connected-banking-pricing.ts"),
+			server.ssrLoadModule("/src/lib/data/bbps-operators.ts"),
+		]);
 
-  return {
-    groups: pricingMod.PRICING_GROUPS,
-    gstRate: pricingMod.GST_RATE,
-    setupFeeWaived: pricingMod.SETUP_FEE_WAIVED,
-    hasVolumeDiscounts: pricingMod.HAS_VOLUME_DISCOUNTS,
-    maxVolume: pricingMod.MAX_VOLUME,
-    siteUrl: siteMod.SITE_URL,
-    displayName: pricingMod.displayName,
-    dmt: {
-      slabs: paymentsMod.DMT_SLABS,
-      senderKycFee: paymentsMod.DMT_SENDER_KYC_FEE,
-      customerFeePct: paymentsMod.DMT_CUSTOMER_FEE_PCT,
-      customerFeeMin: paymentsMod.DMT_CUSTOMER_FEE_MIN,
-      maxTxnAmount: paymentsMod.DMT_MAX_TXN_AMOUNT,
-      tdsRate: paymentsMod.TDS_RATE,
-    },
-    aeps: {
-      cashoutSlabs: paymentsMod.AEPS_CASHOUT_SLABS,
-      miniStatementCommission: paymentsMod.AEPS_MINI_STATEMENT_COMMISSION,
-      settlementCharges: paymentsMod.AEPS_SETTLEMENT_CHARGES,
-    },
-    bbps: {
-      categories: paymentsMod.BBPS_CATEGORIES,
-      operators: operatorsMod.BBPS_OPERATORS,
-    },
-    cb: {
-      setupFee: cbMod.CB_SETUP_FEE,
-      banks: [...cbMod.CB_BANKS],
-      txnSlabs: cbMod.CB_TXN_SLABS,
-      maxBankUsers: cbMod.CB_MAX_BANK_USERS,
-    },
-  };
+	return {
+		groups: pricingMod.PRICING_GROUPS,
+		gstRate: pricingMod.GST_RATE,
+		setupFeeWaived: pricingMod.SETUP_FEE_WAIVED,
+		hasVolumeDiscounts: pricingMod.HAS_VOLUME_DISCOUNTS,
+		maxVolume: pricingMod.MAX_VOLUME,
+		siteUrl: siteMod.SITE_URL,
+		displayName: pricingMod.displayName,
+		dmt: {
+			slabs: paymentsMod.DMT_SLABS,
+			senderKycFee: paymentsMod.DMT_SENDER_KYC_FEE,
+			customerFeePct: paymentsMod.DMT_CUSTOMER_FEE_PCT,
+			customerFeeMin: paymentsMod.DMT_CUSTOMER_FEE_MIN,
+			maxTxnAmount: paymentsMod.DMT_MAX_TXN_AMOUNT,
+			tdsRate: paymentsMod.TDS_RATE,
+		},
+		aeps: {
+			cashoutSlabs: paymentsMod.AEPS_CASHOUT_SLABS,
+			miniStatementCommission: paymentsMod.AEPS_MINI_STATEMENT_COMMISSION,
+			settlementCharges: paymentsMod.AEPS_SETTLEMENT_CHARGES,
+		},
+		bbps: {
+			categories: paymentsMod.BBPS_CATEGORIES,
+			operators: operatorsMod.BBPS_OPERATORS,
+		},
+		cb: {
+			setupFee: cbMod.CB_SETUP_FEE,
+			banks: [...cbMod.CB_BANKS],
+			txnSlabs: cbMod.CB_TXN_SLABS,
+			maxBankUsers: cbMod.CB_MAX_BANK_USERS,
+		},
+	};
 }

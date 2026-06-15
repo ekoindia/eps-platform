@@ -1,34 +1,43 @@
 {
-  "rewrites": [
-    {
-      "source": "/llms-full.txt",
-      "destination": "/index.md"
-    },
-    {
-      "source": "/((?!assets/).*)",
-      "destination": "/__spa-fallback.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/(.*)\\.md",
-      "headers": [
-        { "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
-      ]
-    },
-    {
-      "source": "/llms.txt",
-      "headers": [
-        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
-      ]
-    }
-  ]
+	"rewrites": [
+		{
+			"source": "/llms-full.txt",
+			"destination": "/index.md"
+		},
+		{
+			"source": "/((?!assets/).*)",
+			"destination": "/__spa-fallback.html"
+		}
+	],
+	"headers": [
+		{
+			"source": "/assets/(.*)",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=31536000, immutable"
+				}
+			]
+		},
+		{
+			"source": "/(.*)\\.md",
+			"headers": [
+				{ "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=300, must-revalidate"
+				}
+			]
+		},
+		{
+			"source": "/llms.txt",
+			"headers": [
+				{ "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=300, must-revalidate"
+				}
+			]
+		}
+	]
 }

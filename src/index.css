@@ -8,130 +8,198 @@
 /* Fonts loaded asynchronously via index.html */
 
 @theme {
-  /* Brand colors — exposed as utilities (bg-eko-gold etc.) */
-  --color-eko-gold: hsl(42 96% 54%);
-  --color-eko-gold-hover: hsl(42 96% 48%);
-  --color-eko-gold-light: hsl(42 96% 95%);
-  --color-eko-navy: hsl(195 91% 15%);
-  --color-eko-navy-light: hsl(195 60% 25%);
-  --color-eko-slate: hsl(0 0% 33%);
-  --color-eko-success: hsl(142 76% 36%);
+	/* Brand colors — exposed as utilities (bg-eko-gold etc.) */
+	--color-eko-gold: hsl(42 96% 54%);
+	--color-eko-gold-hover: hsl(42 96% 48%);
+	--color-eko-gold-light: hsl(42 96% 95%);
+	--color-eko-navy: hsl(195 91% 15%);
+	--color-eko-navy-light: hsl(195 60% 25%);
+	--color-eko-slate: hsl(0 0% 33%);
+	--color-eko-success: hsl(142 76% 36%);
 
-  /* Semantic tokens — bind to runtime CSS vars for dark-mode switching */
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+	/* Semantic tokens — bind to runtime CSS vars for dark-mode switching */
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
 
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
 
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
 
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
 
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
 
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
 
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
 
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
 
-  --color-sidebar: var(--sidebar-background);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar: var(--sidebar-background);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
 
-  /* Fonts */
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+	/* Fonts */
+	--font-sans: "Inter", system-ui, sans-serif;
+	--font-mono: "JetBrains Mono", monospace;
 
-  /* Radius */
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+	/* Radius */
+	--radius-lg: var(--radius);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 4px);
 
-  /* Custom shadows — utility names: shadow-gold, shadow-navy, shadow-card, shadow-card-hover */
-  --shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
-  --shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-card-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+	/* Custom shadows — utility names: shadow-gold, shadow-navy, shadow-card, shadow-card-hover */
+	--shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
+	--shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
+	--shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+	--shadow-card-hover:
+		0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
-  /* Keyframes — registered as values so animation utilities can use them */
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-  --animate-fade-up: fade-up 0.6s ease-out both;
-  --animate-fade-in: fade-in 0.4s ease-out both;
-  --animate-slide-left: slide-left 0.6s ease-out both;
-  --animate-slide-right: slide-right 0.6s ease-out both;
-  --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
-  --animate-scroll-x: scroll-x 20s linear infinite;
-  --animate-menu-slide-down-in: menu-slide-down-in 0.3s ease-out forwards;
-  --animate-scale-in: scale-in 0.2s ease-out forwards;
-  --animate-menu-fullwidth-reveal: menu-fullwidth-reveal 0.2s ease-out forwards;
-  --animate-chevron-scroll: chevron-scroll 1.8s ease-in-out 10;
+	/* Keyframes — registered as values so animation utilities can use them */
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
+	--animate-fade-up: fade-up 0.6s ease-out both;
+	--animate-fade-in: fade-in 0.4s ease-out both;
+	--animate-slide-left: slide-left 0.6s ease-out both;
+	--animate-slide-right: slide-right 0.6s ease-out both;
+	--animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+	--animate-scroll-x: scroll-x 20s linear infinite;
+	--animate-menu-slide-down-in: menu-slide-down-in 0.3s ease-out forwards;
+	--animate-scale-in: scale-in 0.2s ease-out forwards;
+	--animate-menu-fullwidth-reveal: menu-fullwidth-reveal 0.2s ease-out forwards;
+	--animate-chevron-scroll: chevron-scroll 1.8s ease-in-out 10;
 
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
-  }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
-  }
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes slide-left {
-    from { opacity: 0; transform: translateX(-30px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes slide-right {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-  @keyframes scroll-x {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  @keyframes menu-slide-down-in {
-    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
-  }
-  @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  @keyframes menu-fullwidth-reveal {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes chevron-scroll {
-    0% { opacity: 0.15; transform: translateY(0); }
-    40% { opacity: 0.7; transform: translateY(4px); }
-    80%, 100% { opacity: 0.15; transform: translateY(0); }
-  }
+	@keyframes accordion-down {
+		from {
+			height: 0;
+		}
+		to {
+			height: var(--radix-accordion-content-height);
+		}
+	}
+	@keyframes accordion-up {
+		from {
+			height: var(--radix-accordion-content-height);
+		}
+		to {
+			height: 0;
+		}
+	}
+	@keyframes fade-up {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	@keyframes slide-left {
+		from {
+			opacity: 0;
+			transform: translateX(-30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+	@keyframes slide-right {
+		from {
+			opacity: 0;
+			transform: translateX(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+	@keyframes pulse-soft {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.7;
+		}
+	}
+	@keyframes scroll-x {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-50%);
+		}
+	}
+	@keyframes menu-slide-down-in {
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
+	}
+	@keyframes scale-in {
+		from {
+			opacity: 0;
+			transform: scale(0.95);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+	@keyframes menu-fullwidth-reveal {
+		from {
+			opacity: 0;
+			transform: translateY(-8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes chevron-scroll {
+		0% {
+			opacity: 0.15;
+			transform: translateY(0);
+		}
+		40% {
+			opacity: 0.7;
+			transform: translateY(4px);
+		}
+		80%,
+		100% {
+			opacity: 0.15;
+			transform: translateY(0);
+		}
+	}
 }
 
 /* Container utility — replaces v3 theme.container { center, padding, screens: {2xl: 1400px} }.
@@ -139,218 +207,264 @@
    (these custom declarations are emitted after the built-in media steps), so the container
    is full-width below 1400px and capped at 1400px on wider screens. */
 @utility container {
-  width: 100%;
-  max-width: 1400px;
-  margin-inline: auto;
-  padding-inline: 2rem;
+	width: 100%;
+	max-width: 1400px;
+	margin-inline: auto;
+	padding-inline: 2rem;
 }
 
 @layer base {
-  :root {
-    /* Brand Colors - Eko Identity */
-    --eko-gold: hsl(42 96% 54%);
-    --eko-gold-hover: hsl(42 96% 48%);
-    --eko-gold-light: hsl(42 96% 95%);
-    --eko-navy: hsl(195 91% 15%);
-    --eko-navy-light: hsl(195 60% 25%);
-    --eko-slate: hsl(0 0% 33%);
-    --eko-success: hsl(142 76% 36%);
+	:root {
+		/* Brand Colors - Eko Identity */
+		--eko-gold: hsl(42 96% 54%);
+		--eko-gold-hover: hsl(42 96% 48%);
+		--eko-gold-light: hsl(42 96% 95%);
+		--eko-navy: hsl(195 91% 15%);
+		--eko-navy-light: hsl(195 60% 25%);
+		--eko-slate: hsl(0 0% 33%);
+		--eko-success: hsl(142 76% 36%);
 
-    /* Semantic Tokens */
-    --background: hsl(0 0% 100%);
-    --foreground: hsl(195 91% 15%);
+		/* Semantic Tokens */
+		--background: hsl(0 0% 100%);
+		--foreground: hsl(195 91% 15%);
 
-    --card: hsl(0 0% 100%);
-    --card-foreground: hsl(195 91% 15%);
+		--card: hsl(0 0% 100%);
+		--card-foreground: hsl(195 91% 15%);
 
-    --popover: hsl(0 0% 100%);
-    --popover-foreground: hsl(195 91% 15%);
+		--popover: hsl(0 0% 100%);
+		--popover-foreground: hsl(195 91% 15%);
 
-    --primary: hsl(42 96% 54%);
-    --primary-foreground: hsl(195 91% 15%);
+		--primary: hsl(42 96% 54%);
+		--primary-foreground: hsl(195 91% 15%);
 
-    --secondary: hsl(210 20% 96%);
-    --secondary-foreground: hsl(195 91% 15%);
+		--secondary: hsl(210 20% 96%);
+		--secondary-foreground: hsl(195 91% 15%);
 
-    --muted: hsl(210 20% 96%);
-    --muted-foreground: hsl(0 0% 33%);
+		--muted: hsl(210 20% 96%);
+		--muted-foreground: hsl(0 0% 33%);
 
-    --accent: hsl(195 91% 15%);
-    --accent-foreground: hsl(0 0% 100%);
+		--accent: hsl(195 91% 15%);
+		--accent-foreground: hsl(0 0% 100%);
 
-    --destructive: hsl(0 84% 60%);
-    --destructive-foreground: hsl(0 0% 100%);
+		--destructive: hsl(0 84% 60%);
+		--destructive-foreground: hsl(0 0% 100%);
 
-    --border: hsl(210 20% 90%);
-    --input: hsl(210 20% 90%);
-    --ring: hsl(42 96% 54%);
+		--border: hsl(210 20% 90%);
+		--input: hsl(210 20% 90%);
+		--ring: hsl(42 96% 54%);
 
-    --radius: 0.5rem;
+		--radius: 0.5rem;
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(195 91% 15%) 0%, hsl(195 60% 20%) 100%);
-    --gradient-gold: linear-gradient(135deg, hsl(42 96% 54%) 0%, hsl(38 95% 50%) 100%);
-    --gradient-shine: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+		/* Gradients */
+		--gradient-hero: linear-gradient(
+			135deg,
+			hsl(195 91% 15%) 0%,
+			hsl(195 60% 20%) 100%
+		);
+		--gradient-gold: linear-gradient(
+			135deg,
+			hsl(42 96% 54%) 0%,
+			hsl(38 95% 50%) 100%
+		);
+		--gradient-shine: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.2),
+			transparent
+		);
 
-    /* App shadows (raw values consumed via var()) — renamed from --shadow-* to avoid
+		/* App shadows (raw values consumed via var()) — renamed from --shadow-* to avoid
        collision with Tailwind v4's registered --shadow-* theme variables. */
-    --app-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --app-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --app-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --app-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --app-shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
-    --app-shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
+		--app-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+		--app-shadow-md:
+			0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+		--app-shadow-lg:
+			0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+		--app-shadow-xl:
+			0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+		--app-shadow-gold: 0 4px 14px 0 hsl(42 96% 54% / 0.3);
+		--app-shadow-navy: 0 4px 14px 0 hsl(195 91% 15% / 0.15);
 
-    /* Sidebar */
-    --sidebar-background: hsl(0 0% 98%);
-    --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(240 5.9% 10%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(240 4.8% 95.9%);
-    --sidebar-accent-foreground: hsl(240 5.9% 10%);
-    --sidebar-border: hsl(220 13% 91%);
-    --sidebar-ring: hsl(42 96% 54%);
-  }
+		/* Sidebar */
+		--sidebar-background: hsl(0 0% 98%);
+		--sidebar-foreground: hsl(240 5.3% 26.1%);
+		--sidebar-primary: hsl(240 5.9% 10%);
+		--sidebar-primary-foreground: hsl(0 0% 98%);
+		--sidebar-accent: hsl(240 4.8% 95.9%);
+		--sidebar-accent-foreground: hsl(240 5.9% 10%);
+		--sidebar-border: hsl(220 13% 91%);
+		--sidebar-ring: hsl(42 96% 54%);
+	}
 
-  .dark {
-    --background: hsl(195 91% 10%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(195 80% 12%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(195 80% 12%);
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(42 96% 54%);
-    --primary-foreground: hsl(195 91% 15%);
-    --secondary: hsl(195 40% 20%);
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(195 40% 20%);
-    --muted-foreground: hsl(210 20% 70%);
-    --accent: hsl(42 96% 54%);
-    --accent-foreground: hsl(195 91% 15%);
-    --destructive: hsl(0 62.8% 30.6%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(195 40% 20%);
-    --input: hsl(195 40% 20%);
-    --ring: hsl(42 96% 54%);
-  }
+	.dark {
+		--background: hsl(195 91% 10%);
+		--foreground: hsl(0 0% 98%);
+		--card: hsl(195 80% 12%);
+		--card-foreground: hsl(0 0% 98%);
+		--popover: hsl(195 80% 12%);
+		--popover-foreground: hsl(0 0% 98%);
+		--primary: hsl(42 96% 54%);
+		--primary-foreground: hsl(195 91% 15%);
+		--secondary: hsl(195 40% 20%);
+		--secondary-foreground: hsl(0 0% 98%);
+		--muted: hsl(195 40% 20%);
+		--muted-foreground: hsl(210 20% 70%);
+		--accent: hsl(42 96% 54%);
+		--accent-foreground: hsl(195 91% 15%);
+		--destructive: hsl(0 62.8% 30.6%);
+		--destructive-foreground: hsl(0 0% 98%);
+		--border: hsl(195 40% 20%);
+		--input: hsl(195 40% 20%);
+		--ring: hsl(42 96% 54%);
+	}
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+	* {
+		@apply border-border;
+	}
 
-  html {
-    scroll-behavior: smooth;
-  }
+	html {
+		scroll-behavior: smooth;
+	}
 
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
-  }
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		font-family: "Inter", system-ui, sans-serif;
+	}
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-foreground;
-  }
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-semibold tracking-tight text-foreground;
+	}
 
-  code, pre {
-    font-family: 'JetBrains Mono', monospace;
-  }
+	code,
+	pre {
+		font-family: "JetBrains Mono", monospace;
+	}
 }
 
 @layer components {
-  /* Hero Section Styles */
-  .hero-gradient {
-    background: var(--gradient-hero);
-  }
+	/* Hero Section Styles */
+	.hero-gradient {
+		background: var(--gradient-hero);
+	}
 
-  .hero-pattern {
-    background-image:
-      radial-gradient(circle at 25% 25%, hsl(42 96% 54% / 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, hsl(42 96% 54% / 0.05) 0%, transparent 50%);
-    background-color: transparent;
-  }
+	.hero-pattern {
+		background-image:
+			radial-gradient(
+				circle at 25% 25%,
+				hsl(42 96% 54% / 0.08) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 75% 75%,
+				hsl(42 96% 54% / 0.05) 0%,
+				transparent 50%
+			);
+		background-color: transparent;
+	}
 
-  .hero-gradient.hero-pattern {
-    background:
-      radial-gradient(circle at 25% 25%, hsl(42 96% 54% / 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, hsl(42 96% 54% / 0.05) 0%, transparent 50%),
-      var(--gradient-hero);
-  }
+	.hero-gradient.hero-pattern {
+		background:
+			radial-gradient(
+				circle at 25% 25%,
+				hsl(42 96% 54% / 0.08) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 75% 75%,
+				hsl(42 96% 54% / 0.05) 0%,
+				transparent 50%
+			),
+			var(--gradient-hero);
+	}
 
-  /* Code Block Styling */
-  .code-block {
-    @apply rounded-xl overflow-hidden shadow-xl;
-    background: #0d2837;
-  }
+	/* Code Block Styling */
+	.code-block {
+		@apply rounded-xl overflow-hidden shadow-xl;
+		background: #0d2837;
+	}
 
-  .code-header {
-    @apply flex items-center gap-2 px-4 py-3 border-b border-white/10;
-  }
+	.code-header {
+		@apply flex items-center gap-2 px-4 py-3 border-b border-white/10;
+	}
 
-  .code-dot {
-    @apply w-3 h-3 rounded-full;
-  }
+	.code-dot {
+		@apply w-3 h-3 rounded-full;
+	}
 
-  /* Card Hover Effects */
-  .card-hover {
-    @apply transition-all duration-300 ease-out;
-  }
+	/* Card Hover Effects */
+	.card-hover {
+		@apply transition-all duration-300 ease-out;
+	}
 
-  .card-hover:hover {
-    @apply -translate-y-1;
-    box-shadow: var(--app-shadow-xl);
-  }
+	.card-hover:hover {
+		@apply -translate-y-1;
+		box-shadow: var(--app-shadow-xl);
+	}
 
-  /* Feature Icon Container */
-  .icon-container {
-    @apply w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300;
-    background: var(--eko-gold-light);
-  }
+	/* Feature Icon Container */
+	.icon-container {
+		@apply w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300;
+		background: var(--eko-gold-light);
+	}
 
-  .icon-container svg {
-    @apply w-6 h-6 text-primary;
-  }
+	.icon-container svg {
+		@apply w-6 h-6 text-primary;
+	}
 }
 
 @layer utilities {
-  .text-gradient-gold {
-    @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-gold);
-  }
+	.text-gradient-gold {
+		@apply bg-clip-text text-transparent;
+		background-image: var(--gradient-gold);
+	}
 }
 
 /* Page transition fade-in (CSS-only, no JS reflow) */
 @keyframes page-fade-in {
-  from { opacity: 0.8; }
-  to { opacity: 1; }
+	from {
+		opacity: 0.8;
+	}
+	to {
+		opacity: 1;
+	}
 }
 .animate-page-fade-in {
-  animation: page-fade-in 0.1s ease-in-out forwards;
+	animation: page-fade-in 0.1s ease-in-out forwards;
 }
 
 /* FadeIn — JS fallback path (IntersectionObserver adds .fade-in-visible).
    Hidden state only when scripting is available: no-JS/crawler loads must
    see the prerendered content. */
 @media (scripting: enabled) {
-  .fade-in-hidden {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-  }
-  /* In browsers WITHOUT scroll-driven animations, .fade-in-css elements use
+	.fade-in-hidden {
+		opacity: 0;
+		transform: translateY(20px);
+		transition:
+			opacity 0.5s ease-out,
+			transform 0.5s ease-out;
+	}
+	/* In browsers WITHOUT scroll-driven animations, .fade-in-css elements use
      the same IO fallback, so they need the same hidden initial state. */
-  @supports not (animation-timeline: view()) {
-    .fade-in-css {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    }
-  }
+	@supports not (animation-timeline: view()) {
+		.fade-in-css {
+			opacity: 0;
+			transform: translateY(20px);
+			transition:
+				opacity 0.5s ease-out,
+				transform 0.5s ease-out;
+		}
+	}
 }
 .fade-in-visible {
-  opacity: 1;
-  transform: translateY(0);
+	opacity: 1;
+	transform: translateY(0);
 }
 
 /* FadeIn — CSS scroll-driven path (no JS, works pre-hydration).
@@ -360,59 +474,75 @@
    contexts) the animation simply doesn't apply and content stays VISIBLE.
    A base `opacity: 0` made content vanish in those contexts. */
 @supports (animation-timeline: view()) {
-  .fade-in-css {
-    animation: fade-in-view 1s ease-out both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 20%;
-  }
+	.fade-in-css {
+		animation: fade-in-view 1s ease-out both;
+		animation-timeline: view();
+		animation-range: entry 0% cover 20%;
+	}
 
-  /* Sticky pin, added by FadeIn when the scroll-driven animation COMPLETES
+	/* Sticky pin, added by FadeIn when the scroll-driven animation COMPLETES
      (animationend): scroll-driven opacity tracks scroll position, so without
      this, scrolling back up re-hides content and full-page screenshot tools
      capture below-fold elements at their hidden `from` state. The animation
      is at opacity 1 when the pin lands, so removing it is seamless. */
-  .fade-in-css.fade-in-done {
-    animation: none;
-  }
+	.fade-in-css.fade-in-done {
+		animation: none;
+	}
 
-  @keyframes fade-in-view {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+	@keyframes fade-in-view {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 }
 
 /* Accessibility failsafe: no entrance animation, content visible. */
 @media (prefers-reduced-motion: reduce) {
-  .fade-in-hidden, .fade-in-css {
-    animation: none;
-    transition: none;
-    opacity: 1;
-    transform: none;
-  }
+	.fade-in-hidden,
+	.fade-in-css {
+		animation: none;
+		transition: none;
+		opacity: 1;
+		transform: none;
+	}
 }
 
-.animation-delay-100 { animation-delay: 100ms; }
-.animation-delay-200 { animation-delay: 200ms; }
-.animation-delay-300 { animation-delay: 300ms; }
-.animation-delay-400 { animation-delay: 400ms; }
+.animation-delay-100 {
+	animation-delay: 100ms;
+}
+.animation-delay-200 {
+	animation-delay: 200ms;
+}
+.animation-delay-300 {
+	animation-delay: 300ms;
+}
+.animation-delay-400 {
+	animation-delay: 400ms;
+}
 
 p {
-  line-height: 1.5;
-  margin-bottom: 1em;
+	line-height: 1.5;
+	margin-bottom: 1em;
 }
 
 /* Command palette — OS-specific keyboard hint (data-os set by inline script in index.html) */
 html[data-os="mac"] .kbd-os-other {
-  display: none;
+	display: none;
 }
 html:not([data-os="mac"]) .kbd-os-mac {
-  display: none;
+	display: none;
 }
 
 /* Hide Google Translate default bar */
-.goog-te-banner-frame, .skiptranslate {
-  display: none !important;
+.goog-te-banner-frame,
+.skiptranslate {
+	display: none !important;
 }
 body {
-  top: 0 !important;
+	top: 0 !important;
 }

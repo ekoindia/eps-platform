@@ -9,21 +9,21 @@ import type { renderPage as RenderPageFn } from "../src/entry-server";
  * produce a fully self-contained HTML string ready to write to disk.
  */
 export function renderRoute(
-  url: string,
-  template: string,
-  renderPage: typeof RenderPageFn,
+	url: string,
+	template: string,
+	renderPage: typeof RenderPageFn,
 ): string {
-  const { html, head } = renderPage(url);
+	const { html, head } = renderPage(url);
 
-  let output = template;
+	let output = template;
 
-  // Inject Helmet <head> tags (title, meta, link, script)
-  if (head) {
-    output = output.replace("<!--ssr-head-->", head);
-  }
+	// Inject Helmet <head> tags (title, meta, link, script)
+	if (head) {
+		output = output.replace("<!--ssr-head-->", head);
+	}
 
-  // Inject rendered React tree into the root element
-  output = output.replace("<!--ssr-outlet-->", html);
+	// Inject rendered React tree into the root element
+	output = output.replace("<!--ssr-outlet-->", html);
 
-  return output;
+	return output;
 }

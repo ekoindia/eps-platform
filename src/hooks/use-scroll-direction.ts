@@ -19,13 +19,17 @@ interface ScrollState {
  * Direction only flips after `threshold` px of movement in the opposite
  * direction, debouncing micro-scrolls.
  */
-export function useScrollDirection(options: UseScrollDirectionOptions = {}): ScrollState {
+export function useScrollDirection(
+	options: UseScrollDirectionOptions = {},
+): ScrollState {
 	const { threshold = 8 } = options;
 	const [state, setState] = useState<ScrollState>({
 		direction: "up",
 		y: typeof window === "undefined" ? 0 : window.scrollY,
 	});
-	const lastYRef = useRef<number>(typeof window === "undefined" ? 0 : window.scrollY);
+	const lastYRef = useRef<number>(
+		typeof window === "undefined" ? 0 : window.scrollY,
+	);
 	const tickingRef = useRef<boolean>(false);
 
 	useEffect(() => {
@@ -40,10 +44,12 @@ export function useScrollDirection(options: UseScrollDirectionOptions = {}): Scr
 				setState((prev) =>
 					prev.direction === direction && prev.y === currentY
 						? prev
-						: { direction, y: currentY }
+						: { direction, y: currentY },
 				);
 			} else {
-				setState((prev) => (prev.y === currentY ? prev : { ...prev, y: currentY }));
+				setState((prev) =>
+					prev.y === currentY ? prev : { ...prev, y: currentY },
+				);
 			}
 			tickingRef.current = false;
 		};

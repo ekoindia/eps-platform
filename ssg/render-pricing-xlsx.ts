@@ -32,36 +32,38 @@ const ExcelJS: typeof import("exceljs") = nodeRequire("exceljs");
  *
  * Pure function — no filesystem or network access — so it can be unit-tested.
  */
-export async function renderPricingXlsx(data: PricingXlsxData): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Eko Platform Services";
-  workbook.created = new Date();
-  workbook.title =
-    "Eko Platform Services — API Pricing & Commission Calculator";
+export async function renderPricingXlsx(
+	data: PricingXlsxData,
+): Promise<Buffer> {
+	const workbook = new ExcelJS.Workbook();
+	workbook.creator = "Eko Platform Services";
+	workbook.created = new Date();
+	workbook.title =
+		"Eko Platform Services — API Pricing & Commission Calculator";
 
-  // Create worksheets up-front so tab order is independent of build order
-  // (the Payments Rate Card must be BUILT before the earnings sheet to hand
-  // over its DMT VLOOKUP range, but appears later in the tab order).
-  const wsIndex = workbook.addWorksheet(SHEETS.index);
-  const wsVerificationCalc = workbook.addWorksheet(
-    SHEETS.verificationCalculator,
-  );
-  const wsPaymentsEarnings = workbook.addWorksheet(SHEETS.paymentsEarnings);
-  const wsConnectedBanking = workbook.addWorksheet(SHEETS.connectedBanking);
-  const wsVerificationRate = workbook.addWorksheet(SHEETS.verificationRateCard);
-  const wsPaymentsRate = workbook.addWorksheet(SHEETS.paymentsRateCard);
-  const wsBbpsOperators = workbook.addWorksheet(SHEETS.bbpsOperators);
+	// Create worksheets up-front so tab order is independent of build order
+	// (the Payments Rate Card must be BUILT before the earnings sheet to hand
+	// over its DMT VLOOKUP range, but appears later in the tab order).
+	const wsIndex = workbook.addWorksheet(SHEETS.index);
+	const wsVerificationCalc = workbook.addWorksheet(
+		SHEETS.verificationCalculator,
+	);
+	const wsPaymentsEarnings = workbook.addWorksheet(SHEETS.paymentsEarnings);
+	const wsConnectedBanking = workbook.addWorksheet(SHEETS.connectedBanking);
+	const wsVerificationRate = workbook.addWorksheet(SHEETS.verificationRateCard);
+	const wsPaymentsRate = workbook.addWorksheet(SHEETS.paymentsRateCard);
+	const wsBbpsOperators = workbook.addWorksheet(SHEETS.bbpsOperators);
 
-  await buildIndexSheet(wsIndex, data);
-  await buildVerificationCalculatorSheet(wsVerificationCalc, data);
-  const { dmtLookupRange } = await buildPaymentsRateCardSheet(
-    wsPaymentsRate,
-    data,
-  );
-  await buildPaymentsEarningsSheet(wsPaymentsEarnings, data, dmtLookupRange);
-  await buildConnectedBankingSheet(wsConnectedBanking, data);
-  await buildVerificationRateCardSheet(wsVerificationRate, data);
-  await buildBbpsOperatorsSheet(wsBbpsOperators, data);
+	await buildIndexSheet(wsIndex, data);
+	await buildVerificationCalculatorSheet(wsVerificationCalc, data);
+	const { dmtLookupRange } = await buildPaymentsRateCardSheet(
+		wsPaymentsRate,
+		data,
+	);
+	await buildPaymentsEarningsSheet(wsPaymentsEarnings, data, dmtLookupRange);
+	await buildConnectedBankingSheet(wsConnectedBanking, data);
+	await buildVerificationRateCardSheet(wsVerificationRate, data);
+	await buildBbpsOperatorsSheet(wsBbpsOperators, data);
 
-  return Buffer.from(await workbook.xlsx.writeBuffer());
+	return Buffer.from(await workbook.xlsx.writeBuffer());
 }

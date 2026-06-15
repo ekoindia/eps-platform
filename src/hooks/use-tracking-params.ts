@@ -4,9 +4,19 @@ import { safeSessionStorage } from "@/lib/ssr-safe";
 
 /** Exact ad-platform keys that don't follow a prefix convention */
 const TRACKING_EXACT = new Set([
-  "gclid", "gbraid", "wbraid",                      // Google Ads click IDs
-  "fbclid", "msclkid", "ttclid", "twclid", "li_fat_id", // other ad platforms
-  "campaign_name", "adgroup", "matchtype", "network", "keyword",
+	"gclid",
+	"gbraid",
+	"wbraid", // Google Ads click IDs
+	"fbclid",
+	"msclkid",
+	"ttclid",
+	"twclid",
+	"li_fat_id", // other ad platforms
+	"campaign_name",
+	"adgroup",
+	"matchtype",
+	"network",
+	"keyword",
 ]);
 
 /** Prefix families: utm_* (utm_source, utm_adgroup, …), gad_*, gcl_* */
@@ -24,11 +34,11 @@ const CRM_URL_MAX_LEN = 450;
  * @param key - Query parameter name.
  */
 export const isTrackingParam = (key: string): boolean => {
-  const lower = key.toLowerCase();
-  return (
-    TRACKING_EXACT.has(lower) ||
-    TRACKING_PREFIXES.some((prefix) => lower.startsWith(prefix))
-  );
+	const lower = key.toLowerCase();
+	return (
+		TRACKING_EXACT.has(lower) ||
+		TRACKING_PREFIXES.some((prefix) => lower.startsWith(prefix))
+	);
 };
 
 /**
@@ -40,50 +50,50 @@ export const isTrackingParam = (key: string): boolean => {
  *    matter which Link/navigation dropped them.
  */
 export function useCaptureTrackingParams() {
-  const { pathname, search, hash } = useLocation();
-  const navigate = useNavigate();
+	const { pathname, search, hash } = useLocation();
+	const navigate = useNavigate();
 
-  useEffect(() => {
-    const params = new URLSearchParams(search);
+	useEffect(() => {
+		const params = new URLSearchParams(search);
 
-    // 1. Capture tracking params present in the URL (first-touch merge)
-    const captured: Record<string, string> = {};
-    params.forEach((value, key) => {
-      if (value && isTrackingParam(key)) captured[key] = value;
-    });
-    if (Object.keys(captured).length > 0) {
-      const existing = getStoredTrackingParams();
-      safeSessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ ...captured, ...existing }),
-      );
-    }
+		// 1. Capture tracking params present in the URL (first-touch merge)
+		const captured: Record<string, string> = {};
+		params.forEach((value, key) => {
+			if (value && isTrackingParam(key)) captured[key] = value;
+		});
+		if (Object.keys(captured).length > 0) {
+			const existing = getStoredTrackingParams();
+			safeSessionStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({ ...captured, ...existing }),
+			);
+		}
 
-    // 2. Re-append stored params missing from the current URL
-    const stored = getStoredTrackingParams();
-    let changed = false;
-    Object.entries(stored).forEach(([key, value]) => {
-      if (!params.has(key)) {
-        params.set(key, value);
-        changed = true;
-      }
-    });
-    if (changed) {
-      navigate(
-        { pathname, search: `?${params.toString()}`, hash },
-        { replace: true, preventScrollReset: true },
-      );
-    }
-  }, [pathname, search, hash, navigate]);
+		// 2. Re-append stored params missing from the current URL
+		const stored = getStoredTrackingParams();
+		let changed = false;
+		Object.entries(stored).forEach(([key, value]) => {
+			if (!params.has(key)) {
+				params.set(key, value);
+				changed = true;
+			}
+		});
+		if (changed) {
+			navigate(
+				{ pathname, search: `?${params.toString()}`, hash },
+				{ replace: true, preventScrollReset: true },
+			);
+		}
+	}, [pathname, search, hash, navigate]);
 }
 
 /** Returns tracking params saved from the landing URL, or an empty object. */
 export function getStoredTrackingParams(): Record<string, string> {
-  try {
-    return JSON.parse(safeSessionStorage.getItem(STORAGE_KEY) || "{}");
-  } catch {
-    return {};
-  }
+	try {
+		return JSON.parse(safeSessionStorage.getItem(STORAGE_KEY) || "{}");
+	} catch {
+		return {};
+	}
 }
 
 /**
@@ -91,17 +101,17 @@ export function getStoredTrackingParams(): Record<string, string> {
  * Skips non-string `to` values (objects / functions) and external hrefs.
  */
 export function appendTrackingParams(to: string): string {
-  const stored = getStoredTrackingParams();
-  if (Object.keys(stored).length === 0) return to;
+	const stored = getStoredTrackingParams();
+	if (Object.keys(stored).length === 0) return to;
 
-  const [path, existingSearch] = to.split("?");
-  const params = new URLSearchParams(existingSearch || "");
+	const [path, existingSearch] = to.split("?");
+	const params = new URLSearchParams(existingSearch || "");
 
-  Object.entries(stored).forEach(([k, v]) => {
-    if (!params.has(k)) params.set(k, v);   // don't overwrite explicit params
-  });
+	Object.entries(stored).forEach(([k, v]) => {
+		if (!params.has(k)) params.set(k, v); // don't overwrite explicit params
+	});
 
-  return `${path}?${params.toString()}`;
+	return `${path}?${params.toString()}`;
 }
 
 /**
@@ -111,16 +121,16 @@ export function appendTrackingParams(to: string): string {
  * @param sel - Serialized selection, e.g. "pan-lite:50000,upi-vpa:10000".
  */
 export function saveCalculatorContext(sel: string): void {
-  if (sel) {
-    safeSessionStorage.setItem(CALC_STORAGE_KEY, sel);
-  } else {
-    safeSessionStorage.removeItem(CALC_STORAGE_KEY);
-  }
+	if (sel) {
+		safeSessionStorage.setItem(CALC_STORAGE_KEY, sel);
+	} else {
+		safeSessionStorage.removeItem(CALC_STORAGE_KEY);
+	}
 }
 
 /** Returns the saved calculator selection, or an empty string. */
 export function getCalculatorContext(): string {
-  return safeSessionStorage.getItem(CALC_STORAGE_KEY) || "";
+	return safeSessionStorage.getItem(CALC_STORAGE_KEY) || "";
 }
 
 /**
@@ -133,41 +143,41 @@ export function getCalculatorContext(): string {
  * @param maxLen - CRM field limit (default 450).
  */
 export function buildLeadWebsiteUrl(maxLen = CRM_URL_MAX_LEN): string {
-  const base = window.location.origin + window.location.pathname;
-  const tracking = new URLSearchParams();
-  Object.entries(getStoredTrackingParams()).forEach(([k, v]) =>
-    tracking.set(k, v),
-  );
-  // Include tracking params present in the URL but not yet stored
-  new URLSearchParams(window.location.search).forEach((value, key) => {
-    if (value && isTrackingParam(key) && !tracking.has(key)) {
-      tracking.set(key, value);
-    }
-  });
+	const base = window.location.origin + window.location.pathname;
+	const tracking = new URLSearchParams();
+	Object.entries(getStoredTrackingParams()).forEach(([k, v]) =>
+		tracking.set(k, v),
+	);
+	// Include tracking params present in the URL but not yet stored
+	new URLSearchParams(window.location.search).forEach((value, key) => {
+		if (value && isTrackingParam(key) && !tracking.has(key)) {
+			tracking.set(key, value);
+		}
+	});
 
-  const withParams = (extra?: { key: string; value: string }): string => {
-    const params = new URLSearchParams(tracking);
-    if (extra) params.set(extra.key, extra.value);
-    const query = params.toString();
-    return query ? `${base}?${query}` : base;
-  };
+	const withParams = (extra?: { key: string; value: string }): string => {
+		const params = new URLSearchParams(tracking);
+		if (extra) params.set(extra.key, extra.value);
+		const query = params.toString();
+		return query ? `${base}?${query}` : base;
+	};
 
-  const sel = getCalculatorContext();
-  const candidates = sel
-    ? [
-        withParams({ key: "sel", value: sel }),
-        // ids only, volumes stripped — shorter
-        withParams({
-          key: "apis",
-          value: sel
-            .split(",")
-            .map((pair) => pair.split(":")[0])
-            .join(","),
-        }),
-        withParams(),
-      ]
-    : [withParams()];
+	const sel = getCalculatorContext();
+	const candidates = sel
+		? [
+				withParams({ key: "sel", value: sel }),
+				// ids only, volumes stripped — shorter
+				withParams({
+					key: "apis",
+					value: sel
+						.split(",")
+						.map((pair) => pair.split(":")[0])
+						.join(","),
+				}),
+				withParams(),
+			]
+		: [withParams()];
 
-  const fitting = candidates.find((url) => url.length <= maxLen);
-  return fitting ?? candidates[candidates.length - 1].slice(0, maxLen);
+	const fitting = candidates.find((url) => url.length <= maxLen);
+	return fitting ?? candidates[candidates.length - 1].slice(0, maxLen);
 }

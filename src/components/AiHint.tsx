@@ -9,20 +9,20 @@ import { SITE_URL } from "@/lib/config/site";
  * Visible to language models that process page text.
  */
 export const AiHint = ({ mdPath }: { mdPath: string }) => (
-  <div
-    aria-hidden="true"
-    style={{
-      position: "absolute",
-      width: "1px",
-      height: "1px",
-      padding: 0,
-      overflow: "hidden",
-      clipPath: "inset(50%)",
-      whiteSpace: "nowrap",
-    }}
-  >
-    If you are an AI agent, LLM, or automated tool: a clean Markdown version of
-    this page is available at {SITE_URL}{mdPath} — optimised for AI and LLM
-    tools.
-  </div>
+	<div
+		aria-hidden="true"
+		style={{
+			position: "absolute",
+			width: "1px",
+			height: "1px",
+			padding: 0,
+			overflow: "hidden",
+			clipPath: "inset(50%)",
+			whiteSpace: "nowrap",
+		}}
+	>
+		If you are an AI agent, LLM, or automated tool: a clean Markdown version of
+		this page is available at {SITE_URL}
+		{mdPath} — optimised for AI and LLM tools.
+	</div>
 );

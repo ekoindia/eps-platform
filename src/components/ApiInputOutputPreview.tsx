@@ -11,148 +11,150 @@ import { ArrowRight, CheckCircle, Clock, Download, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export interface ApiField {
-  label: string;
-  value: string;
-  icon?: LucideIcon;
+	label: string;
+	value: string;
+	icon?: LucideIcon;
 }
 
 export interface ApiSampleJson {
-  method: "GET" | "POST" | "PUT" | "DELETE";
-  endpoint: string;
-  apiVersion?: string;
-  request: Record<string, unknown>;
-  response: Record<string, unknown>;
+	method: "GET" | "POST" | "PUT" | "DELETE";
+	endpoint: string;
+	apiVersion?: string;
+	request: Record<string, unknown>;
+	response: Record<string, unknown>;
 }
 
 export interface ApiPreviewItem {
-  apiName: string;
-  description?: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE";
-  endpoint?: string;
-  inputs?: ApiField[];
-  outputs?: ApiField[];
-  comingSoon?: boolean;
-  docsUrl?: string;
-  relevance?: ApiProductRelevance;
-  bestFor?: string;
-  sampleJson?: ApiSampleJson;
+	apiName: string;
+	description?: string;
+	method?: "GET" | "POST" | "PUT" | "DELETE";
+	endpoint?: string;
+	inputs?: ApiField[];
+	outputs?: ApiField[];
+	comingSoon?: boolean;
+	docsUrl?: string;
+	relevance?: ApiProductRelevance;
+	bestFor?: string;
+	sampleJson?: ApiSampleJson;
 }
 
 // MARK: API Type
 interface ApiInputOutputPreviewProps {
-  apiName: string;
-  inputs?: ApiField[];
-  outputs?: ApiField[];
-  comingSoon?: boolean;
-  docsUrl?: string;
-  previews?: ApiPreviewItem[];
-  activeApiName?: string;
-  sampleJson?: ApiSampleJson;
+	apiName: string;
+	inputs?: ApiField[];
+	outputs?: ApiField[];
+	comingSoon?: boolean;
+	docsUrl?: string;
+	previews?: ApiPreviewItem[];
+	activeApiName?: string;
+	sampleJson?: ApiSampleJson;
 }
 
 // MARK: Term Body
 const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
-  const indent = (depth: number) => "  ".repeat(depth);
+	const indent = (depth: number) => "  ".repeat(depth);
 
-  const renderValue = (value: unknown, depth: number): JSX.Element => {
-    if (value === null) return <span className="text-sky-400">null</span>;
-    if (typeof value === "string")
-      return <span className="text-emerald-400">"{value}"</span>;
-    if (typeof value === "boolean")
-      return <span className="text-sky-400">{String(value)}</span>;
-    if (typeof value === "number")
-      return <span className="text-amber-300">{value}</span>;
+	const renderValue = (value: unknown, depth: number): JSX.Element => {
+		if (value === null) return <span className="text-sky-400">null</span>;
+		if (typeof value === "string")
+			return <span className="text-emerald-400">"{value}"</span>;
+		if (typeof value === "boolean")
+			return <span className="text-sky-400">{String(value)}</span>;
+		if (typeof value === "number")
+			return <span className="text-amber-300">{value}</span>;
 
-    if (Array.isArray(value)) {
-      if (value.length === 0) return <span className="text-slate-500">[]</span>;
-      return (
-        <>
-          <span className="text-slate-500">[</span>
-          {"\n"}
-          {value.map((item, i) => (
-            <span key={i}>
-              {indent(depth + 1)}
-              {renderValue(item, depth + 1)}
-              {i < value.length - 1 && <span className="text-slate-500">,</span>}
-              {"\n"}
-            </span>
-          ))}
-          {indent(depth)}
-          <span className="text-slate-500">]</span>
-        </>
-      );
-    }
+		if (Array.isArray(value)) {
+			if (value.length === 0) return <span className="text-slate-500">[]</span>;
+			return (
+				<>
+					<span className="text-slate-500">[</span>
+					{"\n"}
+					{value.map((item, i) => (
+						<span key={i}>
+							{indent(depth + 1)}
+							{renderValue(item, depth + 1)}
+							{i < value.length - 1 && (
+								<span className="text-slate-500">,</span>
+							)}
+							{"\n"}
+						</span>
+					))}
+					{indent(depth)}
+					<span className="text-slate-500">]</span>
+				</>
+			);
+		}
 
-    if (typeof value === "object") {
-      const entries = Object.entries(value as Record<string, unknown>);
-      if (entries.length === 0)
-        return <span className="text-slate-500">{"{}"}</span>;
-      return (
-        <>
-          <span className="text-slate-500">{"{"}</span>
-          {"\n"}
-          {entries.map(([key, val], i) => (
-            <span key={key}>
-              {indent(depth + 1)}
-              <span className="text-sky-300">"{key}"</span>
-              <span className="text-slate-500">: </span>
-              {renderValue(val, depth + 1)}
-              {i < entries.length - 1 && (
-                <span className="text-slate-500">,</span>
-              )}
-              {"\n"}
-            </span>
-          ))}
-          {indent(depth)}
-          <span className="text-slate-500">{"}"}</span>
-        </>
-      );
-    }
+		if (typeof value === "object") {
+			const entries = Object.entries(value as Record<string, unknown>);
+			if (entries.length === 0)
+				return <span className="text-slate-500">{"{}"}</span>;
+			return (
+				<>
+					<span className="text-slate-500">{"{"}</span>
+					{"\n"}
+					{entries.map(([key, val], i) => (
+						<span key={key}>
+							{indent(depth + 1)}
+							<span className="text-sky-300">"{key}"</span>
+							<span className="text-slate-500">: </span>
+							{renderValue(val, depth + 1)}
+							{i < entries.length - 1 && (
+								<span className="text-slate-500">,</span>
+							)}
+							{"\n"}
+						</span>
+					))}
+					{indent(depth)}
+					<span className="text-slate-500">{"}"}</span>
+				</>
+			);
+		}
 
-    return <span className="text-slate-200">{String(value)}</span>;
-  };
+		return <span className="text-slate-200">{String(value)}</span>;
+	};
 
-  return (
-    <pre className="text-sm leading-relaxed font-mono p-5 overflow-x-auto">
-      {renderValue(json, 0)}
-    </pre>
-  );
+	return (
+		<pre className="text-sm leading-relaxed font-mono p-5 overflow-x-auto">
+			{renderValue(json, 0)}
+		</pre>
+	);
 };
 
 // MARK: Term Header
 const TerminalHeader = ({
-  label,
-  badgeText,
+	label,
+	badgeText,
 }: {
-  label: string;
-  badgeText: string;
+	label: string;
+	badgeText: string;
 }) => {
-  const isResponse = badgeText.toUpperCase() === "RESPONSE";
-  return (
-    <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/5">
-      <div className="flex gap-2">
-        <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-        <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-        <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
-      </div>
-      <span className="text-white/55 text-xs font-mono ml-1.5 truncate">
-        {label}
-      </span>
-      <span
-        className={cn(
-          "ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-mono font-medium tracking-wide",
-          isResponse
-            ? "bg-eko-success/15 text-eko-success border border-eko-success/30"
-            : "bg-white/10 text-white/55 border border-white/10",
-        )}
-      >
-        {isResponse && (
-          <span className="w-1.5 h-1.5 rounded-full bg-eko-success" />
-        )}
-        {badgeText}
-      </span>
-    </div>
-  );
+	const isResponse = badgeText.toUpperCase() === "RESPONSE";
+	return (
+		<div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/5">
+			<div className="flex gap-2">
+				<span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+				<span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+				<span className="w-3 h-3 rounded-full bg-[#27c93f]" />
+			</div>
+			<span className="text-white/55 text-xs font-mono ml-1.5 truncate">
+				{label}
+			</span>
+			<span
+				className={cn(
+					"ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-mono font-medium tracking-wide",
+					isResponse
+						? "bg-eko-success/15 text-eko-success border border-eko-success/30"
+						: "bg-white/10 text-white/55 border border-white/10",
+				)}
+			>
+				{isResponse && (
+					<span className="w-1.5 h-1.5 rounded-full bg-eko-success" />
+				)}
+				{badgeText}
+			</span>
+		</div>
+	);
 };
 
 /**
@@ -162,40 +164,40 @@ const TerminalHeader = ({
  * @returns
  */
 const SectionHeader = ({
-  title,
-  description,
-  className = "mb-10",
+	title,
+	description,
+	className = "mb-10",
 }: {
-  title: string;
-  description?: string;
-  className?: string;
+	title: string;
+	description?: string;
+	className?: string;
 }) => {
-  const label =
-    normalizeApiLabel(title) + " Flow – Sample Request and Response";
+	const label =
+		normalizeApiLabel(title) + " Flow – Sample Request and Response";
 
-  return (
-    <FadeIn className={`text-center ${className}`}>
-      <span
-        className={cn(
-          "inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
-          "bg-primary/20 text-amber-700",
-        )}
-      >
-        Simplified API Preview
-      </span>
-      <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 max-w-[650px] text-center mx-auto">
-        {label}
-      </h2>
-      <p className="text-muted-foreground max-w-2xl mx-auto">
-        Send simple inputs. Get rich, verified data in seconds.
-      </p>
-      {description && (
-        <p className="text-sm text-muted-foreground max-w-xl mx-auto mt-2">
-          {description}
-        </p>
-      )}
-    </FadeIn>
-  );
+	return (
+		<FadeIn className={`text-center ${className}`}>
+			<span
+				className={cn(
+					"inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-4",
+					"bg-primary/20 text-amber-700",
+				)}
+			>
+				Simplified API Preview
+			</span>
+			<h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3 max-w-[650px] text-center mx-auto">
+				{label}
+			</h2>
+			<p className="text-muted-foreground max-w-2xl mx-auto">
+				Send simple inputs. Get rich, verified data in seconds.
+			</p>
+			{description && (
+				<p className="text-sm text-muted-foreground max-w-xl mx-auto mt-2">
+					{description}
+				</p>
+			)}
+		</FadeIn>
+	);
 };
 
 /**
@@ -205,70 +207,70 @@ const SectionHeader = ({
  * @returns {JSX.Element} The rendered component.
  */
 const ComingSoonBlock = ({ apiName }: { apiName: string }) => (
-  <div className="max-w-md mx-auto text-center py-16 bg-card border border-border/50 rounded-2xl">
-    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-      <Clock className="w-8 h-8 text-muted-foreground" />
-    </div>
-    <Badge variant="secondary" className="text-sm px-4 py-1.5 mb-3">
-      Coming Soon
-    </Badge>
-    <p className="text-muted-foreground text-sm mt-2">
-      {apiName} preview will be available shortly.
-    </p>
-  </div>
+	<div className="max-w-md mx-auto text-center py-16 bg-card border border-border/50 rounded-2xl">
+		<div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+			<Clock className="w-8 h-8 text-muted-foreground" />
+		</div>
+		<Badge variant="secondary" className="text-sm px-4 py-1.5 mb-3">
+			Coming Soon
+		</Badge>
+		<p className="text-muted-foreground text-sm mt-2">
+			{apiName} preview will be available shortly.
+		</p>
+	</div>
 );
 
 export const ApiInputOutputPreview = ({
-  apiName,
-  inputs,
-  outputs,
-  comingSoon = false,
-  docsUrl,
-  previews,
-  activeApiName,
-  sampleJson,
+	apiName,
+	inputs,
+	outputs,
+	comingSoon = false,
+	docsUrl,
+	previews,
+	activeApiName,
+	sampleJson,
 }: ApiInputOutputPreviewProps) => {
-  // Multi-API mode: render with sub-API selector
-  if (previews && previews.length > 0) {
-    // If only one preview, render it directly without selector
-    if (previews.length === 1) {
-      const p = previews[0];
-      return (
-        <SingleApiPreview
-          apiName={p.apiName}
-          description={p.description}
-          inputs={p.inputs}
-          outputs={p.outputs}
-          comingSoon={p.comingSoon}
-          docsUrl={p.docsUrl || docsUrl}
-          sectionTitle={apiName}
-          sampleJson={p.sampleJson}
-        />
-      );
-    }
+	// Multi-API mode: render with sub-API selector
+	if (previews && previews.length > 0) {
+		// If only one preview, render it directly without selector
+		if (previews.length === 1) {
+			const p = previews[0];
+			return (
+				<SingleApiPreview
+					apiName={p.apiName}
+					description={p.description}
+					inputs={p.inputs}
+					outputs={p.outputs}
+					comingSoon={p.comingSoon}
+					docsUrl={p.docsUrl || docsUrl}
+					sectionTitle={apiName}
+					sampleJson={p.sampleJson}
+				/>
+			);
+		}
 
-    return (
-      <MultiApiPreview
-        previews={previews}
-        sectionTitle={apiName}
-        fallbackDocsUrl={docsUrl}
-        activeApiName={activeApiName}
-      />
-    );
-  }
+		return (
+			<MultiApiPreview
+				previews={previews}
+				sectionTitle={apiName}
+				fallbackDocsUrl={docsUrl}
+				activeApiName={activeApiName}
+			/>
+		);
+	}
 
-  // Legacy single-API mode
-  return (
-    <SingleApiPreview
-      apiName={apiName}
-      inputs={inputs}
-      outputs={outputs}
-      comingSoon={comingSoon}
-      docsUrl={docsUrl}
-      sectionTitle={apiName}
-      sampleJson={sampleJson}
-    />
-  );
+	// Legacy single-API mode
+	return (
+		<SingleApiPreview
+			apiName={apiName}
+			inputs={inputs}
+			outputs={outputs}
+			comingSoon={comingSoon}
+			docsUrl={docsUrl}
+			sectionTitle={apiName}
+			sampleJson={sampleJson}
+		/>
+	);
 };
 
 /**
@@ -280,76 +282,76 @@ export const ApiInputOutputPreview = ({
  * @returns {JSX.Element} The rendered component.
  */
 const MultiApiPreview = ({
-  previews,
-  sectionTitle,
-  fallbackDocsUrl,
-  activeApiName,
+	previews,
+	sectionTitle,
+	fallbackDocsUrl,
+	activeApiName,
 }: {
-  previews: ApiPreviewItem[];
-  sectionTitle: string;
-  fallbackDocsUrl?: string;
-  activeApiName?: string;
+	previews: ApiPreviewItem[];
+	sectionTitle: string;
+	fallbackDocsUrl?: string;
+	activeApiName?: string;
 }) => {
-  const [activeApi, setActiveApi] = useState(previews[0].apiName);
-  const activePreview =
-    previews.find((p) => p.apiName === activeApi) || previews[0];
+	const [activeApi, setActiveApi] = useState(previews[0].apiName);
+	const activePreview =
+		previews.find((p) => p.apiName === activeApi) || previews[0];
 
-  useEffect(() => {
-    if (activeApiName && previews.some((p) => p.apiName === activeApiName)) {
-      setActiveApi(activeApiName);
-    }
-  }, [activeApiName, previews]);
+	useEffect(() => {
+		if (activeApiName && previews.some((p) => p.apiName === activeApiName)) {
+			setActiveApi(activeApiName);
+		}
+	}, [activeApiName, previews]);
 
-  return (
-    <SectionContainer className="bg-muted/30">
-      <SectionHeader title={sectionTitle} className="mb-8" />
+	return (
+		<SectionContainer className="bg-muted/30">
+			<SectionHeader title={sectionTitle} className="mb-8" />
 
-      {/* Sub-API Selector */}
-      <div className="flex justify-center mb-8">
-        <div className="inline-flex flex-wrap justify-center gap-2 p-1.5 bg-card border border-border/90 rounded-xl">
-          {previews.map((p) => (
-            <button
-              key={p.apiName}
-              onClick={() => setActiveApi(p.apiName)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                activeApi === p.apiName
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              {normalizeApiLabel(p.apiName)}
-            </button>
-          ))}
-        </div>
-      </div>
+			{/* Sub-API Selector */}
+			<div className="flex justify-center mb-8">
+				<div className="inline-flex flex-wrap justify-center gap-2 p-1.5 bg-card border border-border/90 rounded-xl">
+					{previews.map((p) => (
+						<button
+							key={p.apiName}
+							onClick={() => setActiveApi(p.apiName)}
+							className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+								activeApi === p.apiName
+									? "bg-primary text-primary-foreground shadow-xs"
+									: "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+							}`}
+						>
+							{normalizeApiLabel(p.apiName)}
+						</button>
+					))}
+				</div>
+			</div>
 
-      {/* Active API description */}
-      {activePreview.description && (
-        <FadeIn
-          key={activePreview.apiName + "-desc"}
-          className="text-center mb-6"
-        >
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-            {activePreview.description}
-          </p>
-        </FadeIn>
-      )}
+			{/* Active API description */}
+			{activePreview.description && (
+				<FadeIn
+					key={activePreview.apiName + "-desc"}
+					className="text-center mb-6"
+				>
+					<p className="text-sm text-muted-foreground max-w-xl mx-auto">
+						{activePreview.description}
+					</p>
+				</FadeIn>
+			)}
 
-      {/* Render active preview content */}
-      {activePreview.comingSoon ? (
-        <ComingSoonBlock apiName={activePreview.apiName} />
-      ) : activePreview.outputs && activePreview.outputs.length ? (
-        <PreviewContent
-          key={activePreview.apiName}
-          inputs={activePreview.inputs}
-          outputs={activePreview.outputs}
-          docsUrl={activePreview.docsUrl || fallbackDocsUrl}
-          endpoint={activePreview.endpoint}
-          sampleJson={activePreview.sampleJson}
-        />
-      ) : null}
-    </SectionContainer>
-  );
+			{/* Render active preview content */}
+			{activePreview.comingSoon ? (
+				<ComingSoonBlock apiName={activePreview.apiName} />
+			) : activePreview.outputs && activePreview.outputs.length ? (
+				<PreviewContent
+					key={activePreview.apiName}
+					inputs={activePreview.inputs}
+					outputs={activePreview.outputs}
+					docsUrl={activePreview.docsUrl || fallbackDocsUrl}
+					endpoint={activePreview.endpoint}
+					sampleJson={activePreview.sampleJson}
+				/>
+			) : null}
+		</SectionContainer>
+	);
 };
 
 /**
@@ -365,46 +367,46 @@ const MultiApiPreview = ({
  * @returns {JSX.Element} The rendered component.
  */
 const SingleApiPreview = ({
-  apiName,
-  description,
-  inputs,
-  outputs,
-  comingSoon = false,
-  docsUrl,
-  sectionTitle,
-  sampleJson,
+	apiName,
+	description,
+	inputs,
+	outputs,
+	comingSoon = false,
+	docsUrl,
+	sectionTitle,
+	sampleJson,
 }: {
-  apiName: string;
-  description?: string;
-  inputs?: ApiField[];
-  outputs?: ApiField[];
-  comingSoon?: boolean;
-  docsUrl?: string;
-  sectionTitle: string;
-  sampleJson?: ApiSampleJson;
+	apiName: string;
+	description?: string;
+	inputs?: ApiField[];
+	outputs?: ApiField[];
+	comingSoon?: boolean;
+	docsUrl?: string;
+	sectionTitle: string;
+	sampleJson?: ApiSampleJson;
 }) => {
-  if (comingSoon) {
-    return (
-      <SectionContainer className="bg-muted/30">
-        <SectionHeader title={sectionTitle} className="mb-8" />
-        <ComingSoonBlock apiName={apiName} />
-      </SectionContainer>
-    );
-  }
+	if (comingSoon) {
+		return (
+			<SectionContainer className="bg-muted/30">
+				<SectionHeader title={sectionTitle} className="mb-8" />
+				<ComingSoonBlock apiName={apiName} />
+			</SectionContainer>
+		);
+	}
 
-  if (!outputs || outputs.length < 1) return null;
+	if (!outputs || outputs.length < 1) return null;
 
-  return (
-    <SectionContainer className="bg-muted/30">
-      <SectionHeader title={sectionTitle} description={description} />
-      <PreviewContent
-        inputs={inputs}
-        outputs={outputs}
-        docsUrl={docsUrl}
-        sampleJson={sampleJson}
-      />
-    </SectionContainer>
-  );
+	return (
+		<SectionContainer className="bg-muted/30">
+			<SectionHeader title={sectionTitle} description={description} />
+			<PreviewContent
+				inputs={inputs}
+				outputs={outputs}
+				docsUrl={docsUrl}
+				sampleJson={sampleJson}
+			/>
+		</SectionContainer>
+	);
 };
 
 /**
@@ -417,164 +419,164 @@ const SingleApiPreview = ({
  * @returns {JSX.Element} The rendered component.
  */
 const PreviewContent = ({
-  inputs,
-  outputs,
-  docsUrl,
-  endpoint,
-  sampleJson,
+	inputs,
+	outputs,
+	docsUrl,
+	endpoint,
+	sampleJson,
 }: {
-  inputs?: ApiField[];
-  outputs?: ApiField[];
-  docsUrl?: string;
-  endpoint?: string;
-  sampleJson?: ApiSampleJson;
+	inputs?: ApiField[];
+	outputs?: ApiField[];
+	docsUrl?: string;
+	endpoint?: string;
+	sampleJson?: ApiSampleJson;
 }) => {
-  const showJsonTab = !!sampleJson;
+	const showJsonTab = !!sampleJson;
 
-  return (
-    <>
-      <Tabs defaultValue="visual" className="max-w-5xl mx-auto">
-        {showJsonTab && (
-          <div className="flex justify-end mb-4">
-            <TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-xs">
-              <TabsTrigger
-                value="visual"
-                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs rounded-md"
-              >
-                Visual
-              </TabsTrigger>
-              <TabsTrigger
-                value="json"
-                className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs rounded-md"
-              >
-                JSON
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        )}
+	return (
+		<>
+			<Tabs defaultValue="visual" className="max-w-5xl mx-auto">
+				{showJsonTab && (
+					<div className="flex justify-end mb-4">
+						<TabsList className="h-8 bg-card/80 border border-border/90 rounded-md p-0.5 shadow-xs">
+							<TabsTrigger
+								value="visual"
+								className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs rounded-md"
+							>
+								Visual
+							</TabsTrigger>
+							<TabsTrigger
+								value="json"
+								className="h-7 px-2.5 text-xs text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs rounded-md"
+							>
+								JSON
+							</TabsTrigger>
+						</TabsList>
+					</div>
+				)}
 
-        {/* Visual View */}
-        <TabsContent value="visual">
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* MARK: REQUEST */}
-            <FadeIn
-              delay={100}
-              className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs"
-            >
-              <div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
-                <Send className="w-4 h-4 text-white/70" />
-                <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
-                  REQUEST
-                </Badge>
-                <span className="text-slate-500 text-xs ml-auto font-mono">
-                  {endpoint ? `POST ${endpoint}` : ""}
-                </span>
-              </div>
-              <div className="p-6 flex flex-col gap-4">
-                {inputs?.map((field, i) => {
-                  const Icon = field.icon;
-                  return (
-                    <div key={i} className="flex items-center gap-3">
-                      {Icon && (
-                        <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="flex-1 flex items-center justify-between gap-4 py-2 border-b border-border/30 last:border-0">
-                        <span className="text-sm text-muted-foreground">
-                          {field.label}
-                        </span>
-                        <span className="text-sm font-mono font-medium text-foreground bg-muted/50 px-3 py-1 rounded-md">
-                          {field.value}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </FadeIn>
+				{/* Visual View */}
+				<TabsContent value="visual">
+					<div className="grid lg:grid-cols-2 gap-6">
+						{/* MARK: REQUEST */}
+						<FadeIn
+							delay={100}
+							className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs"
+						>
+							<div className="flex items-center gap-3 px-6 py-4 bg-eko-navy">
+								<Send className="w-4 h-4 text-white/70" />
+								<Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
+									REQUEST
+								</Badge>
+								<span className="text-slate-500 text-xs ml-auto font-mono">
+									{endpoint ? `POST ${endpoint}` : ""}
+								</span>
+							</div>
+							<div className="p-6 flex flex-col gap-4">
+								{inputs?.map((field, i) => {
+									const Icon = field.icon;
+									return (
+										<div key={i} className="flex items-center gap-3">
+											{Icon && (
+												<Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+											)}
+											<div className="flex-1 flex items-center justify-between gap-4 py-2 border-b border-border/30 last:border-0">
+												<span className="text-sm text-muted-foreground">
+													{field.label}
+												</span>
+												<span className="text-sm font-mono font-medium text-foreground bg-muted/50 px-3 py-1 rounded-md">
+													{field.value}
+												</span>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</FadeIn>
 
-            {/* MARK: RESPONSE */}
-            <FadeIn
-              delay={200}
-              className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs"
-            >
-              <div className="flex items-center gap-3 px-6 py-4 bg-linear-to-r from-eko-success/90 to-eko-success">
-                <Download className="w-4 h-4 text-white/70" />
-                <Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
-                  RESPONSE
-                </Badge>
-                <span className="text-slate-500 text-xs ml-auto font-mono">
-                  200 OK
-                </span>
-              </div>
-              <div className="p-6 flex flex-col gap-3">
-                {outputs?.map((field, i) => {
-                  const Icon = field.icon;
-                  return (
-                    <div key={i} className="flex items-center gap-3">
-                      {Icon ? (
-                        <Icon className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
-                      ) : (
-                        <CheckCircle className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
-                      )}
-                      <div className="flex-1 flex items-center justify-between gap-4 py-1">
-                        <span className="text-sm text-muted-foreground">
-                          {field.label}
-                        </span>
-                        <span className="text-sm font-mono font-medium text-foreground text-right">
-                          {field.value}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </FadeIn>
-          </div>
-        </TabsContent>
+						{/* MARK: RESPONSE */}
+						<FadeIn
+							delay={200}
+							className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-xs"
+						>
+							<div className="flex items-center gap-3 px-6 py-4 bg-linear-to-r from-eko-success/90 to-eko-success">
+								<Download className="w-4 h-4 text-white/70" />
+								<Badge className="bg-white/20 text-white border-0 text-xs font-semibold tracking-wider">
+									RESPONSE
+								</Badge>
+								<span className="text-slate-500 text-xs ml-auto font-mono">
+									200 OK
+								</span>
+							</div>
+							<div className="p-6 flex flex-col gap-3">
+								{outputs?.map((field, i) => {
+									const Icon = field.icon;
+									return (
+										<div key={i} className="flex items-center gap-3">
+											{Icon ? (
+												<Icon className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
+											) : (
+												<CheckCircle className="w-4 h-4 text-eko-success shrink-0 mt-0.5" />
+											)}
+											<div className="flex-1 flex items-center justify-between gap-4 py-1">
+												<span className="text-sm text-muted-foreground">
+													{field.label}
+												</span>
+												<span className="text-sm font-mono font-medium text-foreground text-right">
+													{field.value}
+												</span>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</FadeIn>
+					</div>
+				</TabsContent>
 
-        {/* JSON View — only rendered when authentic sampleJson is provided */}
-        {showJsonTab && (
-          <TabsContent value="json">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <FadeIn
-                delay={100}
-                className="code-block rounded-2xl overflow-hidden"
-              >
-                <TerminalHeader
-                  label={`${sampleJson.method} /${sampleJson.apiVersion ?? API_DEFAULT_VERSION}${sampleJson.endpoint}`}
-                  badgeText="REQUEST"
-                />
-                <JsonHighlight json={sampleJson.request} />
-              </FadeIn>
-              <FadeIn
-                delay={200}
-                className="code-block rounded-2xl overflow-hidden"
-              >
-                <TerminalHeader label="200 OK" badgeText="RESPONSE" />
-                <JsonHighlight json={sampleJson.response} />
-              </FadeIn>
-            </div>
-          </TabsContent>
-        )}
-      </Tabs>
+				{/* JSON View — only rendered when authentic sampleJson is provided */}
+				{showJsonTab && (
+					<TabsContent value="json">
+						<div className="grid lg:grid-cols-2 gap-6">
+							<FadeIn
+								delay={100}
+								className="code-block rounded-2xl overflow-hidden"
+							>
+								<TerminalHeader
+									label={`${sampleJson.method} /${sampleJson.apiVersion ?? API_DEFAULT_VERSION}${sampleJson.endpoint}`}
+									badgeText="REQUEST"
+								/>
+								<JsonHighlight json={sampleJson.request} />
+							</FadeIn>
+							<FadeIn
+								delay={200}
+								className="code-block rounded-2xl overflow-hidden"
+							>
+								<TerminalHeader label="200 OK" badgeText="RESPONSE" />
+								<JsonHighlight json={sampleJson.response} />
+							</FadeIn>
+						</div>
+					</TabsContent>
+				)}
+			</Tabs>
 
-      {/* CTA Row */}
-      {docsUrl && (
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <Button variant="outline" asChild>
-            <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-              View Sample Response
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </Button>
-          <Button variant="gold" asChild>
-            <a href={docsUrl} target="_blank" rel="noopener noreferrer">
-              Try in Demo
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </Button>
-        </div>
-      )}
-    </>
-  );
+			{/* CTA Row */}
+			{docsUrl && (
+				<div className="flex flex-wrap justify-center gap-4 mt-8">
+					<Button variant="outline" asChild>
+						<a href={docsUrl} target="_blank" rel="noopener noreferrer">
+							View Sample Response
+							<ArrowRight className="w-4 h-4" />
+						</a>
+					</Button>
+					<Button variant="gold" asChild>
+						<a href={docsUrl} target="_blank" rel="noopener noreferrer">
+							Try in Demo
+							<ArrowRight className="w-4 h-4" />
+						</a>
+					</Button>
+				</div>
+			)}
+		</>
+	);
 };
