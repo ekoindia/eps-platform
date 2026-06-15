@@ -164,6 +164,20 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- Developer docs -------------------------------------------------
+				for (const spec of bundle.DOCUMENTED_SPECS) {
+					await writeFile(
+						path.join(outDir, "docs", `${spec.slug}.md`),
+						bundle.renderEndpointMarkdown(spec),
+					);
+					written++;
+				}
+				await writeFile(
+					path.join(outDir, "docs.md"),
+					bundle.renderDocsIndexMarkdown(),
+				);
+				written++;
+
 				// -- Site index -----------------------------------------------------
 				await writeFile(
 					path.join(outDir, "index.md"),
@@ -247,6 +261,9 @@ interface MarkdownBundle {
 		commonFaqs: Array<{ q: string; a: string }>,
 	) => string;
 	renderPricingMarkdown: () => string;
+	DOCUMENTED_SPECS: Array<{ slug: string }>;
+	renderEndpointMarkdown: (spec: unknown) => string;
+	renderDocsIndexMarkdown: () => string;
 }
 
 async function loadRenderBundle(
@@ -263,6 +280,8 @@ async function loadRenderBundle(
 		renderIndexMod,
 		renderProductsIndexMod,
 		renderPricingMod,
+		docsRegistryMod,
+		renderDocMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -274,6 +293,8 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-products-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-pricing.ts"),
+		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
 	]);
 
 	return {
@@ -294,6 +315,9 @@ async function loadRenderBundle(
 		renderProductsIndexTextPart:
 			renderProductsIndexMod.renderProductsIndexTextPart,
 		renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
+		DOCUMENTED_SPECS: docsRegistryMod.getDocumentedSpecs(),
+		renderEndpointMarkdown: renderDocMod.renderEndpointMarkdown,
+		renderDocsIndexMarkdown: renderDocMod.renderDocsIndexMarkdown,
 	};
 }
 
@@ -344,6 +368,14 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/pricing.md") {
 		return bundle.renderPricingMarkdown();
+	}
+	if (url === "/docs.md") {
+		return bundle.renderDocsIndexMarkdown();
+	}
+	const docMatch = url.match(/^\/docs\/([^/]+)\.md$/);
+	if (docMatch) {
+		const spec = bundle.DOCUMENTED_SPECS.find((s) => s.slug === docMatch[1]);
+		return spec ? bundle.renderEndpointMarkdown(spec) : null;
 	}
 
 	const productMatch = url.match(/^\/products\/([^/]+)\.md$/);

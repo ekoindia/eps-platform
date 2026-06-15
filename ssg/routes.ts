@@ -5,6 +5,7 @@
  * at build time. Adding or removing a route here is all that's needed.
  */
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
+import { docsHref, getAllDocSlugs } from "@/lib/data/docs-registry";
 import { INDUSTRIES_LIST } from "@/lib/data/industries";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 
@@ -35,6 +36,9 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 		src: "src/pages/SolutionDetailPage.tsx",
 	},
 	{ pattern: /^\/solutions$/, src: "src/pages/SolutionsPage.tsx" },
+	// Developer docs (detail before the index)
+	{ pattern: /^\/docs\/.+/, src: "src/pages/docs/DocDetailPage.tsx" },
+	{ pattern: /^\/docs\/?$/, src: "src/pages/docs/DocsIndexPage.tsx" },
 	// Other pages
 	{ pattern: /^\/pricing$/, src: "src/pages/PricingPage.tsx" },
 	{ pattern: /^\/use-cases$/, src: "src/pages/UseCasesHubPage.tsx" },
@@ -71,6 +75,10 @@ export const PRERENDER_ROUTES: string[] = [
 
 	// Pricing
 	"/pricing",
+
+	// Developer docs (overview + every guide & endpoint slug)
+	"/docs",
+	...getAllDocSlugs().map((slug) => docsHref(slug)),
 
 	// Use-cases hub
 	"/use-cases",

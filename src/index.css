@@ -386,8 +386,29 @@
 
 	/* Code Block Styling */
 	.code-block {
-		@apply rounded-xl overflow-hidden shadow-xl;
+		@apply rounded-xl shadow-xl;
 		background: #0d2837;
+		color: #e2e8f0;
+	}
+
+	/* Thin, theme-matched scrollbars for docs code panes */
+	.docs-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+	}
+	.docs-scroll::-webkit-scrollbar {
+		height: 8px;
+		width: 8px;
+	}
+	.docs-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.docs-scroll::-webkit-scrollbar-thumb {
+		background-color: rgb(255 255 255 / 0.18);
+		border-radius: 9999px;
+	}
+	.docs-scroll::-webkit-scrollbar-thumb:hover {
+		background-color: rgb(255 255 255 / 0.3);
 	}
 
 	.code-header {

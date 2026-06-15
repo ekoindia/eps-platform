@@ -5,6 +5,7 @@ import { imagetools } from "vite-imagetools";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import path from "path";
 import { generateMarkdownPlugin } from "./vite-plugin-generate-markdown";
+import { generateOpenApiPlugin } from "./vite-plugin-generate-openapi";
 import { generatePricingXlsxPlugin } from "./vite-plugin-generate-xlsx";
 import { prerenderPlugin } from "./ssg/plugin";
 
@@ -22,6 +23,7 @@ export default defineConfig(({ mode }) => ({
 		imagetools(),
 		tailwindcss(),
 		generateMarkdownPlugin(),
+		generateOpenApiPlugin(),
 		generatePricingXlsxPlugin(),
 		mode !== "development" && prerenderPlugin(),
 		// svgo for svgs + sharp for png/jpg. imagetools emits only avif/webp,
