@@ -195,7 +195,9 @@ describe("renderPricingXlsx", () => {
 			expect(unlockedCells).toBe(PRICED_APIS.length);
 
 			for (const ws of [calculator, rateCard, earnings, banking]) {
-				const protection = ws.sheetProtection as Record<string, unknown>;
+				const protection = (
+					ws as unknown as { sheetProtection: Record<string, unknown> }
+				).sheetProtection;
 				expect(protection.sheet).toBe(true);
 				expect(protection.algorithmName).toBeUndefined(); // no password hash
 			}
