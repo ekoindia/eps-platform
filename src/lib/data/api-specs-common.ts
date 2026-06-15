@@ -85,6 +85,12 @@ export interface ApiSpec {
 	sourceDoc?: string;
 	/** Money-debit API: adds `request_hash` header + financial envelope. */
 	financial?: boolean;
+	/**
+	 * For financial APIs: the exact body-parameter names, in order, that are
+	 * concatenated and HMAC-signed to produce `request_hash`. Only when present
+	 * can the try-it console compute a valid `request_hash`; otherwise live-send
+	 * for that endpoint stays disabled (the order is API-specific). */
+	requestHashParams?: string[];
 	/** API-specific request params ONLY (common ones are inherited). */
 	extraRequestParams: ApiParam[];
 	/** Rare: drop a common request param that does not apply to this API. */

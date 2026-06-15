@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { Check, Copy, Play } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	SAMPLE_LANGS,
@@ -9,6 +16,7 @@ import {
 	type SampleLang,
 } from "@/lib/docs/code-samples";
 import { HttpMethodTag } from "./HttpMethodTag";
+import { TryItPanel } from "./TryItPanel";
 
 const CopyButton = ({ text }: { text: string }) => {
 	const [copied, setCopied] = useState(false);
@@ -100,19 +108,29 @@ export const CodeSamples = ({ spec }: { spec: ApiSpec }) => {
 				<NumberedCode code={code} />
 
 				<div className="flex justify-end border-t border-white/10 px-3 py-2.5">
-					<button
-						type="button"
-						onClick={() =>
-							toast.info("Live request console is coming soon.", {
-								description:
-									"You'll be able to send a signed sandbox request here.",
-							})
-						}
-						className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-eko-navy transition-transform hover:-translate-y-0.5"
-					>
-						<Play className="h-3.5 w-3.5 fill-current" />
-						Test Request
-					</button>
+					<Dialog>
+						<DialogTrigger asChild>
+							<button
+								type="button"
+								className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-eko-navy transition-transform hover:-translate-y-0.5"
+							>
+								<Play className="h-3.5 w-3.5 fill-current" />
+								Test Request
+							</button>
+						</DialogTrigger>
+						<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+							<DialogHeader>
+								<DialogTitle className="flex items-center gap-2">
+									<HttpMethodTag method={spec.method} className="text-xs" />
+									<span>{spec.name}</span>
+								</DialogTitle>
+								<DialogDescription className="font-mono text-xs">
+									{spec.path}
+								</DialogDescription>
+							</DialogHeader>
+							<TryItPanel spec={spec} />
+						</DialogContent>
+					</Dialog>
 				</div>
 			</div>
 

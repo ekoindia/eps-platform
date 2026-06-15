@@ -34,16 +34,30 @@ const HEADER_PLACEHOLDER: Record<string, string> = {
 const headerValue = (h: ApiParam): string =>
 	HEADER_PLACEHOLDER[h.name] ?? (h.example != null ? String(h.example) : "");
 
-/** Substitute `{path_param}` tokens using example values where available. */
-const resolveUrl = (spec: ApiSpec): string => {
+/**
+ * Substitute `{path_param}` tokens using values from `body` (falling back to
+ * the param's example) and return the full base-URL-prefixed endpoint URL.
+ */
+export const resolveEndpointUrl = (
+	spec: ApiSpec,
+	body?: Record<string, unknown>,
+): string => {
 	const pathParams = resolveRequestParams(spec).filter((p) => p.in === "path");
 	let path = spec.path;
 	for (const p of pathParams) {
-		const example = p.example != null ? String(p.example) : `<${p.name}>`;
-		path = path.replace(`{${p.name}}`, example);
+		const fromBody = body?.[p.name];
+		const value =
+			fromBody != null
+				? String(fromBody)
+				: p.example != null
+					? String(p.example)
+					: `<${p.name}>`;
+		path = path.replace(`{${p.name}}`, value);
 	}
 	return `${DEFAULT_BASE_URL}${path}`;
 };
+
+const resolveUrl = (spec: ApiSpec): string => resolveEndpointUrl(spec);
 
 const hasBody = (spec: ApiSpec): boolean =>
 	spec.method !== "GET" && Object.keys(spec.sampleRequest).length > 0;
