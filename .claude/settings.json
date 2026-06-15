@@ -1,0 +1,60 @@
+{
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Write|Edit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [ -n \"$f\" ] && npx prettier --write \"$f\" --ignore-unknown 2>/dev/null || true",
+						"timeout": 15,
+						"statusMessage": "✨ Formatting..."
+					},
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx eslint \"$f\" || exit 2",
+						"asyncRewake": true,
+						"timeout": 30,
+						"statusMessage": "🔍 Linting..."
+					},
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx vitest related \"$f\" || exit 2",
+						"asyncRewake": true,
+						"timeout": 60,
+						"statusMessage": "🧪 Running related tests..."
+					},
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx tsc --noEmit || exit 2",
+						"asyncRewake": true,
+						"timeout": 30,
+						"statusMessage": "🔍 Type-checking..."
+					}
+				]
+			}
+		],
+		"Stop": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "npm run build 2>&1 || exit 2",
+						"asyncRewake": true,
+						"timeout": 120,
+						"statusMessage": "🏗️ Checking build..."
+					},
+					{
+						"type": "command",
+						"command": "osascript -e 'display notification \"Claude Code finished\" with title \"Claude Code\"' 2>/dev/null || true"
+					},
+					{
+						"type": "command",
+						"command": "git status --short 2>/dev/null | jq -Rs '{\"hookSpecificOutput\": {\"hookEventName\": \"Stop\", \"additionalContext\": (\"Changed files:\\n\" + .)}}'",
+						"timeout": 10
+					}
+				]
+			}
+		]
+	}
+}
