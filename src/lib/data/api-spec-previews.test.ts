@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	getApiPreviewsForProduct,
 	getVerifiableFieldsForProduct,
+	specsToVerifiableFields,
 } from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 
@@ -34,5 +35,41 @@ describe("product-page adapters hide -status helper APIs", () => {
 		// Adapter output must match the non-status spec set, not the full set.
 		expect(withoutStatus.length).toBeLessThan(withStatus.length);
 		expect(getVerifiableFieldsForProduct("pan")).not.toHaveLength(0);
+	});
+});
+
+/**
+ * "What can you verify" must drop any response param whose name contains
+ * `reference_id` (async-job tracking ids, not verifiable attributes). The
+ * `aeps-daily-auth` spec carries an imp-flagged `reference_id` response field
+ * and is the representative fixture.
+ */
+describe("verifiable fields exclude reference_id params", () => {
+	it("aeps-daily-auth still has an imp reference_id response field (guards fixture)", () => {
+		const spec = getSpecsForProduct("aeps").find(
+			(s) => s.id === "aeps-daily-auth",
+		);
+		expect(spec).toBeTruthy();
+		const refField = spec?.responseData.find((f) => f.name === "reference_id");
+		expect(refField?.imp).toBe(true);
+	});
+
+	it("specsToVerifiableFields omits reference_id-named fields", () => {
+		const spec = getSpecsForProduct("aeps").find(
+			(s) => s.id === "aeps-daily-auth",
+		);
+		expect(spec).toBeTruthy();
+		const fields = specsToVerifiableFields([spec!]);
+		// other imp fields (e.g. auth_status) still surface
+		expect(fields.length).toBeGreaterThan(0);
+		expect(fields.some((f) => /reference[ _]?id/i.test(f.label))).toBe(false);
+	});
+
+	it("getVerifiableFieldsForProduct omits reference_id for aeps", () => {
+		expect(
+			getVerifiableFieldsForProduct("aeps").some((f) =>
+				/reference[ _]?id/i.test(f.label),
+			),
+		).toBe(false);
 	});
 });
