@@ -15,6 +15,18 @@ import type {
 import { getSpecsForProduct } from "./api-specs";
 import type { ApiSpec, ResponseField } from "./api-specs-common";
 
+/**
+ * Helper APIs that poll the status of a bulk/async verification job. Their ids
+ * end in `-status` (e.g. `pan-bulk-status`). They are hidden from product-page
+ * UI (top tags, sample request/response, "what can you verify") since they are
+ * not standalone verification products.
+ */
+const isStatusSpec = (spec: ApiSpec): boolean => spec.id.endsWith("-status");
+
+/** Product-page-visible specs for a product (excludes `-status` helper APIs). */
+const getDisplaySpecsForProduct = (productId: string): ApiSpec[] =>
+	getSpecsForProduct(productId).filter((spec) => !isStatusSpec(spec));
+
 /** snake_case / kebab / camelCase -> "Title Case" label. */
 const humanizeLabel = (name: string): string =>
 	name
@@ -107,11 +119,12 @@ export const primaryDocsUrl = (specs: ApiSpec[]): string | undefined =>
 export const getApiPreviewsForProduct = (
 	productId: string,
 	limit?: number,
-): ApiPreviewItem[] => specsToPreviews(getSpecsForProduct(productId), limit);
+): ApiPreviewItem[] =>
+	specsToPreviews(getDisplaySpecsForProduct(productId), limit);
 
 /** Convenience: primary docs url for a product id via the global registry. */
 export const getProductDocsUrl = (productId: string): string | undefined =>
-	primaryDocsUrl(getSpecsForProduct(productId));
+	primaryDocsUrl(getDisplaySpecsForProduct(productId));
 
 // ---------------------------------------------------------------------------
 // "What can you verify" — important (imp) response fields, deduped per product
@@ -167,7 +180,8 @@ export const specsToVerifiableFields = (
 /** Convenience: verifiable fields for a product id via the global registry. */
 export const getVerifiableFieldsForProduct = (
 	productId: string,
-): VerifiableField[] => specsToVerifiableFields(getSpecsForProduct(productId));
+): VerifiableField[] =>
+	specsToVerifiableFields(getDisplaySpecsForProduct(productId));
 
 /** Section heading, e.g. "What Can You Verify With PAN Verification API?". */
 export const verifyHeading = (productName: string): string =>
