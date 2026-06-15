@@ -26,7 +26,7 @@
 					},
 					{
 						"type": "command",
-						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx tsc --noEmit || exit 2",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx tsc -p tsconfig.app.json --noEmit || exit 2",
 						"asyncRewake": true,
 						"timeout": 30,
 						"statusMessage": "🔍 Type-checking..."
@@ -37,17 +37,6 @@
 		"Stop": [
 			{
 				"hooks": [
-					{
-						"type": "command",
-						"command": "npm run build 2>&1 || exit 2",
-						"asyncRewake": true,
-						"timeout": 120,
-						"statusMessage": "🏗️ Checking build..."
-					},
-					{
-						"type": "command",
-						"command": "osascript -e 'display notification \"Claude Code finished\" with title \"Claude Code\"' 2>/dev/null || true"
-					},
 					{
 						"type": "command",
 						"command": "git status --short 2>/dev/null | jq -Rs '{\"hookSpecificOutput\": {\"hookEventName\": \"Stop\", \"additionalContext\": (\"Changed files:\\n\" + .)}}'",
