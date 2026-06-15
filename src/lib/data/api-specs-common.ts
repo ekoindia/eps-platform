@@ -80,6 +80,8 @@ export interface ApiSpec {
   path: string;
   /** Developer-portal reference link. */
   docsUrl: string;
+  /** API reference URL from the source website (actual provider of the API) */
+  sourceDoc?: string;
   /** Money-debit API: adds `request_hash` header + financial envelope. */
   financial?: boolean;
   /** API-specific request params ONLY (common ones are inherited). */
