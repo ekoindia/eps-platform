@@ -165,6 +165,7 @@ export const specsToVerifiableFields = (
 	const byName = new Map<string, VerifiableField>();
 	for (const spec of specs) {
 		for (const f of collectImpFields(spec.responseData)) {
+			if (f.name.toLowerCase().includes("reference_id")) continue;
 			const key = f.name.toLowerCase();
 			const existing = byName.get(key);
 			if (!existing) {
