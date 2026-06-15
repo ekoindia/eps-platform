@@ -33,17 +33,6 @@
 					}
 				]
 			}
-		],
-		"Stop": [
-			{
-				"hooks": [
-					{
-						"type": "command",
-						"command": "git status --short 2>/dev/null | jq -Rs '{\"hookSpecificOutput\": {\"hookEventName\": \"Stop\", \"additionalContext\": (\"Changed files:\\n\" + .)}}'",
-						"timeout": 10
-					}
-				]
-			}
 		]
 	}
 }
