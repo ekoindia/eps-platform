@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import {
   HAS_VOLUME_DISCOUNTS,
   PRICING_GROUPS,
@@ -57,7 +57,7 @@ const RateRow = ({ api }: { api: PricedApi }) => {
         </div>
         {product && (
           <Link
-            to={product.href}
+            to={productHref(product.slug)}
             className="inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-eko-gold transition-colors"
           >
             {product.shortName ?? product.name}

@@ -5,7 +5,11 @@ import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { SITE_URL } from "@/lib/config/site";
 import { FadeIn } from "@/components/FadeIn";
-import { getActiveProducts, type ApiProductRef } from "@/lib/data/api-products";
+import {
+	getActiveProducts,
+	productHref,
+	type ApiProductRef,
+} from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import {
 	getStartingRate,
@@ -110,7 +114,7 @@ const ApiProductCard = ({ product, index }: { product: ApiProductRef; index: num
 	return (
 		<FadeIn className="h-full">
 			<Link
-				to={product.href}
+				to={productHref(product.slug)}
 				className="group relative flex flex-col h-full p-6 rounded-2xl bg-card border border-border/50 shadow-card hover:shadow-card-hover hover:border-eko-gold/30 transition-all duration-300"
 			>
 				{hasPopularApi(product.id) && (

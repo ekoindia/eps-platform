@@ -1,5 +1,5 @@
 import { SITE_URL } from "@/lib/config/site";
-import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import {
   GST_RATE,
   HAS_VOLUME_DISCOUNTS,
@@ -55,7 +55,7 @@ const rateRow = (api: PricedApi): string[] => {
     name,
     formatRate(rate),
     api.unitLabel ?? "per verification",
-    product ? `[${product.shortName ?? product.name}](${SITE_URL}${product.href}.md)` : "—",
+    product ? `[${product.shortName ?? product.name}](${SITE_URL}${productHref(product.slug)}.md)` : "—",
   ];
 };
 

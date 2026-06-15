@@ -6,6 +6,7 @@ import {
   PARENT_SITE_NAME,
 } from "@/lib/config/site";
 import type { ProductPageData } from "@/lib/data/api-product-pages";
+import { productHref } from "@/lib/data/api-products";
 import { PRICED_APIS } from "@/lib/data/api-pricing";
 import {
   CB_SETUP_FEE,
@@ -33,7 +34,7 @@ export function generateProductJsonLd(
 	pageData: ProductPageData,
 	slug: string,
 ): object[] {
-	const productUrl = `${SITE_URL}/products/${slug}`;
+	const productUrl = `${SITE_URL}${productHref(slug)}`;
 	const productId = `${productUrl}#product`;
 
 	const graph: object[] = [

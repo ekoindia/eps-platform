@@ -1,6 +1,6 @@
 import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
-import type { ApiProductRef } from "@/lib/data/api-products";
+import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import {
   primaryDocsUrl,
   specsToPreviews,
@@ -48,7 +48,7 @@ export function renderProductMarkdown(
   relatedProducts: ApiProductRef[] = [],
   specs: ApiSpec[] = getSpecsForProduct(product.id),
 ): string {
-  const canonical = `${SITE_URL}/products/${product.slug}`;
+  const canonical = `${SITE_URL}${productHref(product.slug)}`;
   const docsUrl = primaryDocsUrl(specs);
 
   const blocks: (string | false | undefined)[] = [
@@ -182,7 +182,7 @@ export function renderProductMarkdown(
       relatedProducts
         .map(
           (p) =>
-            `- [${p.name}](${SITE_URL}${p.href}): ${p.shortDesc} ([markdown](${SITE_URL}${p.href}.md))`,
+            `- [${p.name}](${SITE_URL}${productHref(p.slug)}): ${p.shortDesc} ([markdown](${SITE_URL}${productHref(p.slug)}.md))`,
         )
         .join("\n"),
     );

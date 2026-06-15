@@ -1,4 +1,4 @@
-import type { ApiProductRef } from "@/lib/data/api-products";
+import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
 import { SITE_URL } from "@/lib/config/site";
@@ -75,7 +75,7 @@ export function renderSiteIndexMarkdown(
       : `### ${label}\n${list
           .map(
             (p) =>
-              `- [${p.name}](${SITE_URL}${p.href}) — ${p.shortDesc} ([markdown](${SITE_URL}${p.href}.md))`
+              `- [${p.name}](${SITE_URL}${productHref(p.slug)}) — ${p.shortDesc} ([markdown](${SITE_URL}${productHref(p.slug)}.md))`
           )
           .join("\n")}`;
 
@@ -146,7 +146,7 @@ export function renderLlmsTxt(
 
   lines.push("## Products");
   for (const p of products) {
-    lines.push(`- [${p.name}](${SITE_URL}${p.href}.md): ${p.shortDesc}`);
+    lines.push(`- [${p.name}](${SITE_URL}${productHref(p.slug)}.md): ${p.shortDesc}`);
   }
   lines.push("");
 

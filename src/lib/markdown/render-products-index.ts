@@ -7,7 +7,7 @@ import {
   getPricedApisForProduct,
   type PricedApi,
 } from "@/lib/data/api-pricing";
-import type { ApiProductRef } from "@/lib/data/api-products";
+import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import {
   primaryDocsUrl,
   specsToPreviews,
@@ -285,10 +285,10 @@ const productSection = (
   // md links to the per-product markdown twin and joins with " · "; txt drops
   // the markdown link and uses a plain comma separator.
   const sep = fmt === "md" ? " · " : ", ";
-  const pageLink = link("Page", `${SITE_URL}${product.href}`, fmt);
+  const pageLink = link("Page", `${SITE_URL}${productHref(product.slug)}`, fmt);
   const mdLink =
     fmt === "md"
-      ? link("Markdown", `${SITE_URL}${product.href}.md`, fmt)
+      ? link("Markdown", `${SITE_URL}${productHref(product.slug)}.md`, fmt)
       : null;
   const linksLine = (...parts: (string | null)[]): string =>
     `**Links:** ${parts.filter(Boolean).join(sep)}`;
@@ -545,7 +545,7 @@ function renderProductsIndex(
       table(
         ["Product", "Category", "Summary"],
         products.map((product) => [
-          link(product.name, `${SITE_URL}${product.href}`, fmt),
+          link(product.name, `${SITE_URL}${productHref(product.slug)}`, fmt),
           categoryLabels[product.category],
           product.shortDesc,
         ]),

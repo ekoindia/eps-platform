@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
-import { getActiveProducts } from "@/lib/data/api-products";
+import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 
@@ -63,7 +63,7 @@ const buildApiItems = (): SearchItem[] =>
     id: `api:${p.slug}`,
     label: p.name,
     sublabel: p.shortDesc,
-    href: p.href,
+    href: productHref(p.slug),
     category: "api" as const,
     keywords: [
       ...(p.shortName ? [p.shortName] : []),

@@ -1,5 +1,9 @@
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
-import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS_MAP } from "@/lib/data/api-products";
+import {
+  ACTIVE_PRODUCTS_MAP,
+  API_PRODUCTS_MAP,
+  productHref,
+} from "@/lib/data/api-products";
 import type { LucideIcon } from "lucide-react";
 import {
   Banknote,
@@ -49,7 +53,7 @@ export function resolvePackApi(ref: PackApiRef): ResolvedPackApi | null {
     icon: ref.iconOverride ?? page?.icon ?? FileText,
     what: ref.what,
     why: ref.why,
-    href: product.href,
+    href: productHref(product.slug),
   };
 }
 

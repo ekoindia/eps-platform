@@ -19,7 +19,7 @@ import { DropdownGrid, DropdownColumnHeader } from "@/components/DropdownGrid";
 import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { getActiveProducts } from "@/lib/data/api-products";
+import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
@@ -36,15 +36,15 @@ const activeProducts = getActiveProducts();
 
 const bcApis = activeProducts
 	.filter((p) => p.category === "bc")
-	.map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
+	.map((p) => ({ label: p.name, href: productHref(p.slug), shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
 
 const paymentApis = activeProducts
 	.filter((p) => p.category === "payment")
-	.map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
+	.map((p) => ({ label: p.name, href: productHref(p.slug), shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
 
 const verificationApis = activeProducts
 	.filter((p) => p.category === "verification")
-	.map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
+	.map((p) => ({ label: p.name, href: productHref(p.slug), shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
 
 const companyLinks = [
 	{ label: "About Eko", href: "/about-us", internal: true },
