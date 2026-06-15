@@ -3,13 +3,11 @@ import { ReactNode } from "react";
 import { PageTransition } from "./PageTransition";
 
 interface AnimatedRoutesProps {
-  children: ReactNode;
+	children: ReactNode;
 }
 
 export function AnimatedRoutes({ children }: AnimatedRoutesProps) {
-  const location = useLocation();
+	const location = useLocation();
 
-  return (
-    <PageTransition key={location.pathname}>{children}</PageTransition>
-  );
+	return <PageTransition key={location.pathname}>{children}</PageTransition>;
 }

@@ -7,7 +7,7 @@ import { twMerge } from "tailwind-merge";
  * @returns A string of merged class names.
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+	return twMerge(clsx(inputs));
 }
 
 /**
@@ -16,14 +16,12 @@ export function cn(...inputs: ClassValue[]) {
  * @returns A formatted mobile number string.
  */
 export function formatMobile(mobile: string | number): string {
-  const mobileStr = String(mobile).replace(/\s+/g, ""); // Remove any existing spaces
-  if (mobileStr.length === 10) {
-    return `+91 ${mobileStr.slice(0, 3)} ${mobileStr.slice(3, 6)} ${mobileStr.slice(6)}`;
-  }
-  return mobileStr;
+	const mobileStr = String(mobile).replace(/\s+/g, ""); // Remove any existing spaces
+	if (mobileStr.length === 10) {
+		return `+91 ${mobileStr.slice(0, 3)} ${mobileStr.slice(3, 6)} ${mobileStr.slice(6)}`;
+	}
+	return mobileStr;
 }
-
-
 
 /**
  * Formats a number as Indian Rupees with en-IN digit grouping (lakh/crore),
@@ -34,16 +32,16 @@ export function formatMobile(mobile: string | number): string {
  * @returns Formatted INR currency string.
  */
 export function formatINR(
-  amount: number,
-  maxFractionDigits = 2,
-  minFractionDigits = 0,
+	amount: number,
+	maxFractionDigits = 2,
+	minFractionDigits = 0,
 ): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: minFractionDigits,
-    maximumFractionDigits: maxFractionDigits,
-  }).format(amount);
+	return new Intl.NumberFormat("en-IN", {
+		style: "currency",
+		currency: "INR",
+		minimumFractionDigits: minFractionDigits,
+		maximumFractionDigits: maxFractionDigits,
+	}).format(amount);
 }
 
 /**
@@ -61,12 +59,12 @@ export const formatINRRate = (rate: number): string => formatINR(rate, 2, 2);
  * @returns Compact Indian-style number string.
  */
 export function formatIndianCompact(value: number): string {
-  const format = (n: number) =>
-    Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
-  if (value >= 10_000_000) return `${format(value / 10_000_000)}Cr`;
-  if (value >= 100_000) return `${format(value / 100_000)}L`;
-  if (value >= 1_000) return `${format(value / 1_000)}K`;
-  return String(value);
+	const format = (n: number) =>
+		Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+	if (value >= 10_000_000) return `${format(value / 10_000_000)}Cr`;
+	if (value >= 100_000) return `${format(value / 100_000)}L`;
+	if (value >= 1_000) return `${format(value / 1_000)}K`;
+	return String(value);
 }
 
 /**
@@ -76,6 +74,8 @@ export function formatIndianCompact(value: number): string {
  * @return {string} The normalized API label with "API" suffix if it wasn't already present.
  */
 export const normalizeApiLabel = (label: string): string => {
-  const _label = label.trim().toLowerCase();
-  return label + (_label.endsWith("api") || _label.endsWith("apis") ? "" : " API");
+	const _label = label.trim().toLowerCase();
+	return (
+		label + (_label.endsWith("api") || _label.endsWith("apis") ? "" : " API")
+	);
 };

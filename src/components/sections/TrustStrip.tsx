@@ -8,13 +8,13 @@ import type { ReactNode } from "react";
 export type TrustBadge = string | { label: string; icon?: ReactNode };
 
 interface TrustStripProps {
-  items: TrustBadge[];
-  /** Container classes. */
-  className?: string;
-  /** Per-item wrapper classes. */
-  itemClassName?: string;
-  /** Icon used when an item doesn't supply its own. */
-  defaultIcon?: ReactNode;
+	items: TrustBadge[];
+	/** Container classes. */
+	className?: string;
+	/** Per-item wrapper classes. */
+	itemClassName?: string;
+	/** Icon used when an item doesn't supply its own. */
+	defaultIcon?: ReactNode;
 }
 
 /**
@@ -24,23 +24,23 @@ interface TrustStripProps {
  * icons via the object form).
  */
 export const TrustStrip = ({
-  items,
-  className = "flex flex-wrap gap-4 mb-8",
-  itemClassName = "inline-flex items-center gap-1.5 text-sm text-white/70",
-  defaultIcon = <CheckCircle className="w-4 h-4 text-eko-gold shrink-0" />,
+	items,
+	className = "flex flex-wrap gap-4 mb-8",
+	itemClassName = "inline-flex items-center gap-1.5 text-sm text-white/70",
+	defaultIcon = <CheckCircle className="w-4 h-4 text-eko-gold shrink-0" />,
 }: TrustStripProps) => {
-  return (
-    <div className={className}>
-      {items.map((item) => {
-        const label = typeof item === "string" ? item : item.label;
-        const icon = typeof item === "string" ? undefined : item.icon;
-        return (
-          <span key={label} className={itemClassName}>
-            {icon ?? defaultIcon}
-            {label}
-          </span>
-        );
-      })}
-    </div>
-  );
+	return (
+		<div className={className}>
+			{items.map((item) => {
+				const label = typeof item === "string" ? item : item.label;
+				const icon = typeof item === "string" ? undefined : item.icon;
+				return (
+					<span key={label} className={itemClassName}>
+						{icon ?? defaultIcon}
+						{label}
+					</span>
+				);
+			})}
+		</div>
+	);
 };

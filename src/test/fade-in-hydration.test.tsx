@@ -13,7 +13,9 @@ import { renderToString } from "react-dom/server";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { act } from "react";
 
-type IntersectionCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
+type IntersectionCallback = (
+	entries: Array<{ isIntersecting: boolean }>,
+) => void;
 
 // IntersectionObserver stub for jsdom that lets tests fire the callback.
 const observerCallbacks: IntersectionCallback[] = [];
@@ -89,7 +91,9 @@ describe("FadeIn SSG hydration", () => {
 		// scroll-up re-hide and full-page screenshot capture).
 		expect(observerCallbacks.length).toBe(0);
 		await act(async () => {
-			const event = new Event("animationend") as AnimationEvent & { animationName: string };
+			const event = new Event("animationend") as AnimationEvent & {
+				animationName: string;
+			};
 			Object.defineProperty(event, "animationName", { value: "fade-in-view" });
 			el.dispatchEvent(event);
 		});

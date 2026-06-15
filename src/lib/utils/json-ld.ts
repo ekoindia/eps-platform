@@ -1,15 +1,16 @@
 import {
-  SITE_URL,
-  SITE_ORG_NAME,
-  SITE_LOGO_URL,
-  PARENT_SITE_URL,
-  PARENT_SITE_NAME,
+	SITE_URL,
+	SITE_ORG_NAME,
+	SITE_LOGO_URL,
+	PARENT_SITE_URL,
+	PARENT_SITE_NAME,
 } from "@/lib/config/site";
 import type { ProductPageData } from "@/lib/data/api-product-pages";
+import { productHref } from "@/lib/data/api-products";
 import { PRICED_APIS } from "@/lib/data/api-pricing";
 import {
-  CB_SETUP_FEE,
-  CB_TXN_SLABS,
+	CB_SETUP_FEE,
+	CB_TXN_SLABS,
 } from "@/lib/data/connected-banking-pricing";
 import type { FaqItem } from "@/components/sections/FaqSection";
 
@@ -33,7 +34,7 @@ export function generateProductJsonLd(
 	pageData: ProductPageData,
 	slug: string,
 ): object[] {
-	const productUrl = `${SITE_URL}/products/${slug}`;
+	const productUrl = `${SITE_URL}${productHref(slug)}`;
 	const productId = `${productUrl}#product`;
 
 	const graph: object[] = [
@@ -47,7 +48,7 @@ export function generateProductJsonLd(
 				"@type": "Organization",
 				name: PARENT_SITE_NAME,
 				url: PARENT_SITE_URL,
-			}
+			},
 		},
 		{
 			"@type": ["Product", "SoftwareApplication"],

@@ -91,7 +91,9 @@ export const ProductsMegaPanel = ({
 				style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
 			>
 				<p className="text-sm font-bold text-white">Ready to integrate?</p>
-				<p className="text-xs text-white/70 mt-0.5">Go live with Eko APIs in days, not months.</p>
+				<p className="text-xs text-white/70 mt-0.5">
+					Go live with Eko APIs in days, not months.
+				</p>
 				<Button
 					variant="gold"
 					size="sm"

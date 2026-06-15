@@ -10,7 +10,7 @@
  * The data here is rich enough to render a developer API reference portal.
  */
 import { AUTH_HEADERS, FINANCIAL_AUTH_HEADERS } from "./api-auth";
-import type { ApiProductRelevance } from "./api-products";
+import type { ApiProductId, ApiProductRelevance } from "./api-products";
 
 // ---------------------------------------------------------------------------
 // Primitive shapes
@@ -18,13 +18,13 @@ import type { ApiProductRelevance } from "./api-products";
 
 /** A single request parameter (header / path / query / body field). */
 export interface ApiParam {
-  name: string;
-  label?: string;
-  in: "path" | "query" | "header" | "body";
-  type: string;
-  required: boolean;
-  description?: string;
-  example?: unknown;
+	name: string;
+	label?: string;
+	in: "path" | "query" | "header" | "body";
+	type: string;
+	required: boolean;
+	description?: string;
+	example?: unknown;
 }
 
 /**
@@ -34,22 +34,22 @@ export interface ApiParam {
  * "What can you verify?" data — and can appear on nested fields too.
  */
 export interface ResponseField {
-  name: string;
-  label?: string;
-  type: "string" | "number" | "boolean" | "object" | "array" | "null";
-  description?: string;
-  /** Highlight as an important verifiable field ("What can you verify?"). */
-  imp?: boolean;
-  example?: unknown;
-  /** Child fields for `object`, or the element shape for `array` of objects. */
-  children?: ResponseField[];
+	name: string;
+	label?: string;
+	type: "string" | "number" | "boolean" | "object" | "array" | "null";
+	description?: string;
+	/** Highlight as an important verifiable field ("What can you verify?"). */
+	imp?: boolean;
+	example?: unknown;
+	/** Child fields for `object`, or the element shape for `array` of objects. */
+	children?: ResponseField[];
 }
 
 /** A documented non-success / edge-case response example. */
 export interface ApiErrorScenario {
-  scenario: string;
-  statusCode?: number;
-  example: Record<string, unknown>;
+	scenario: string;
+	statusCode?: number;
+	example: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,37 +62,40 @@ export interface ApiErrorScenario {
  * NOT be duplicated here. Declare only what is unique to this endpoint.
  */
 export interface ApiSpec {
-  /** Unique kebab-case id, e.g. "pan-lite". */
-  id: string;
-  /** FK to `API_PRODUCTS.id` — many APIs map to one product. */
-  productId: string;
-  /** Display name, e.g. "PAN Lite". */
-  name: string;
-  /** Portal route slug. */
-  slug: string;
-  summary: string;
-  description?: string;
-  category: "bc" | "payment" | "verification";
-  relevance?: ApiProductRelevance;
-  bestFor?: string;
-  method: "GET" | "POST" | "PUT" | "DELETE";
-  /** Relative path; full URL = environment baseUrl + path. */
-  path: string;
-  /** Developer-portal reference link. */
-  docsUrl: string;
-  /** Money-debit API: adds `request_hash` header + financial envelope. */
-  financial?: boolean;
-  /** API-specific request params ONLY (common ones are inherited). */
-  extraRequestParams: ApiParam[];
-  /** Rare: drop a common request param that does not apply to this API. */
-  omitCommonParams?: string[];
-  /** Full request example (incl. common keys) for copy-paste. */
-  sampleRequest: Record<string, unknown>;
-  /** ONLY the `data` subtree of the response, with `imp` markers. */
-  responseData: ResponseField[];
-  /** Full success response example (envelope + data). */
-  sampleSuccessResponse: Record<string, unknown>;
-  errorScenarios?: ApiErrorScenario[];
+	/** Unique kebab-case id, e.g. "pan-lite". */
+	id: string;
+	/** FK to `API_PRODUCTS.id` — many APIs map to one product. Typed as the
+	 * literal id union so a bad reference is a compile error. */
+	productId: ApiProductId;
+	/** Display name, e.g. "PAN Lite". */
+	name: string;
+	/** Portal route slug. */
+	slug: string;
+	summary: string;
+	description?: string;
+	category: "bc" | "payment" | "verification";
+	relevance?: ApiProductRelevance;
+	bestFor?: string;
+	method: "GET" | "POST" | "PUT" | "DELETE";
+	/** Relative path; full URL = environment baseUrl + path. */
+	path: string;
+	/** Developer-portal reference link. */
+	docsUrl: string;
+	/** API reference URL from the source website (actual provider of the API) */
+	sourceDoc?: string;
+	/** Money-debit API: adds `request_hash` header + financial envelope. */
+	financial?: boolean;
+	/** API-specific request params ONLY (common ones are inherited). */
+	extraRequestParams: ApiParam[];
+	/** Rare: drop a common request param that does not apply to this API. */
+	omitCommonParams?: string[];
+	/** Full request example (incl. common keys) for copy-paste. */
+	sampleRequest: Record<string, unknown>;
+	/** ONLY the `data` subtree of the response, with `imp` markers. */
+	responseData: ResponseField[];
+	/** Full success response example (envelope + data). */
+	sampleSuccessResponse: Record<string, unknown>;
+	errorScenarios?: ApiErrorScenario[];
 }
 
 // ---------------------------------------------------------------------------
@@ -100,39 +103,39 @@ export interface ApiSpec {
 // ---------------------------------------------------------------------------
 
 export const COMMON_REQUEST_PARAMS: ApiParam[] = [
-  {
-    name: "initiator_id",
-    in: "body",
-    type: "string",
-    required: true,
-    description:
-      "Registered mobile number of the API user (see Platform Credentials).",
-    example: "9876543210",
-  },
-  {
-    name: "user_code",
-    in: "body",
-    type: "string",
-    required: true,
-    description: "User code of the retailer/agent the service is run for.",
-    example: "20810200",
-  },
-  {
-    name: "client_ref_id",
-    in: "body",
-    type: "string",
-    required: false,
-    description: "Unique reference id per API call, generated by your system.",
-    example: "REQ-20240101-001",
-  },
-  {
-    name: "source",
-    in: "body",
-    type: "string",
-    required: false,
-    description: "Request source. Defaults to 'API'.",
-    example: "API",
-  },
+	{
+		name: "initiator_id",
+		in: "body",
+		type: "string",
+		required: true,
+		description:
+			"Registered mobile number of the API user (see Platform Credentials).",
+		example: "9876543210",
+	},
+	{
+		name: "user_code",
+		in: "body",
+		type: "string",
+		required: true,
+		description: "User code of the retailer/agent the service is run for.",
+		example: "20810200",
+	},
+	{
+		name: "client_ref_id",
+		in: "body",
+		type: "string",
+		required: false,
+		description: "Unique reference id per API call, generated by your system.",
+		example: "REQ-20240101-001",
+	},
+	{
+		name: "source",
+		in: "body",
+		type: "string",
+		required: false,
+		description: "Request source. Defaults to 'API'.",
+		example: "API",
+	},
 ];
 
 // ---------------------------------------------------------------------------
@@ -140,48 +143,48 @@ export const COMMON_REQUEST_PARAMS: ApiParam[] = [
 // ---------------------------------------------------------------------------
 
 export const COMMON_RESPONSE_ENVELOPE: ResponseField[] = [
-  {
-    name: "status",
-    type: "number",
-    description: "Primary success indicator (0 = success).",
-    example: 0,
-  },
-  {
-    name: "response_status_id",
-    type: "number",
-    description: "Granular status id; see the shared error-codes table.",
-    example: 0,
-  },
-  {
-    name: "message",
-    type: "string",
-    description: "Human-readable response / error message.",
-    example: "Verification successful",
-  },
-  {
-    name: "response_type_id",
-    type: "number",
-    description: "Response type id for non-financial requests.",
-    example: 1388,
-  },
+	{
+		name: "status",
+		type: "number",
+		description: "Primary success indicator (0 = success).",
+		example: 0,
+	},
+	{
+		name: "response_status_id",
+		type: "number",
+		description: "Granular status id; see the shared error-codes table.",
+		example: 0,
+	},
+	{
+		name: "message",
+		type: "string",
+		description: "Human-readable response / error message.",
+		example: "Verification successful",
+	},
+	{
+		name: "response_type_id",
+		type: "number",
+		description: "Response type id for non-financial requests.",
+		example: 1388,
+	},
 ];
 
 /** Financial APIs additionally return transaction-state fields. */
 export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
-  ...COMMON_RESPONSE_ENVELOPE,
-  {
-    name: "tx_status",
-    type: "string",
-    description:
-      "Transaction state: 0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold.",
-    example: "0",
-  },
-  {
-    name: "txstatus_desc",
-    type: "string",
-    description: "Human-readable transaction status.",
-    example: "Success",
-  },
+	...COMMON_RESPONSE_ENVELOPE,
+	{
+		name: "tx_status",
+		type: "string",
+		description:
+			"Transaction state: 0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold.",
+		example: "0",
+	},
+	{
+		name: "txstatus_desc",
+		type: "string",
+		description: "Human-readable transaction status.",
+		example: "Success",
+	},
 ];
 
 // ---------------------------------------------------------------------------
@@ -190,27 +193,27 @@ export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
 
 /** Full header set for an API (auth headers, + request_hash if financial). */
 export const resolveHeaders = (spec: ApiSpec): ApiParam[] =>
-  spec.financial ? FINANCIAL_AUTH_HEADERS : AUTH_HEADERS;
+	spec.financial ? FINANCIAL_AUTH_HEADERS : AUTH_HEADERS;
 
 /** Common request params (minus any omitted) followed by API-specific ones. */
 export const resolveRequestParams = (spec: ApiSpec): ApiParam[] => {
-  const omit = new Set(spec.omitCommonParams ?? []);
-  const common = COMMON_REQUEST_PARAMS.filter((p) => !omit.has(p.name));
-  return [...common, ...spec.extraRequestParams];
+	const omit = new Set(spec.omitCommonParams ?? []);
+	const common = COMMON_REQUEST_PARAMS.filter((p) => !omit.has(p.name));
+	return [...common, ...spec.extraRequestParams];
 };
 
 /** Full response tree: envelope with `data` set to the API-specific subtree. */
 export const resolveResponseFields = (spec: ApiSpec): ResponseField[] => {
-  const envelope = spec.financial
-    ? FINANCIAL_RESPONSE_ENVELOPE
-    : COMMON_RESPONSE_ENVELOPE;
-  return [
-    ...envelope,
-    {
-      name: "data",
-      type: "object",
-      description: "API-specific response payload.",
-      children: spec.responseData,
-    },
-  ];
+	const envelope = spec.financial
+		? FINANCIAL_RESPONSE_ENVELOPE
+		: COMMON_RESPONSE_ENVELOPE;
+	return [
+		...envelope,
+		{
+			name: "data",
+			type: "object",
+			description: "API-specific response payload.",
+			children: spec.responseData,
+		},
+	];
 };

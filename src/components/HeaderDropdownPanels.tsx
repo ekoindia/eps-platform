@@ -11,7 +11,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatMobile } from "@/lib/utils";
 import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
-import { FaFacebookF, FaLinkedinIn, FaInstagram, FaYoutube } from "react-icons/fa";
+import {
+	FaFacebookF,
+	FaLinkedinIn,
+	FaInstagram,
+	FaYoutube,
+} from "react-icons/fa";
 import { XIcon } from "@/components/icons/XIcon";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { EkoLogo } from "@/components/EkoLogo";
@@ -19,13 +24,15 @@ import { DropdownGrid, DropdownColumnHeader } from "@/components/DropdownGrid";
 import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { getActiveProducts } from "@/lib/data/api-products";
+import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 
 const TalkToSalesDialog = lazy(() =>
-	import("@/components/TalkToSalesDialog").then((m) => ({ default: m.TalkToSalesDialog }))
+	import("@/components/TalkToSalesDialog").then((m) => ({
+		default: m.TalkToSalesDialog,
+	})),
 );
 
 /* ------------------------------------------------------------------ */
@@ -36,15 +43,30 @@ const activeProducts = getActiveProducts();
 
 const bcApis = activeProducts
 	.filter((p) => p.category === "bc")
-	.map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
+	.map((p) => ({
+		label: p.name,
+		href: productHref(p.slug),
+		shortDesc: p.shortDesc,
+		icon: API_PRODUCT_PAGES[p.id].icon,
+	}));
 
 const paymentApis = activeProducts
 	.filter((p) => p.category === "payment")
-	.map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
+	.map((p) => ({
+		label: p.name,
+		href: productHref(p.slug),
+		shortDesc: p.shortDesc,
+		icon: API_PRODUCT_PAGES[p.id].icon,
+	}));
 
 const verificationApis = activeProducts
 	.filter((p) => p.category === "verification")
-	.map((p) => ({ label: p.name, href: p.href, shortDesc: p.shortDesc, icon: API_PRODUCT_PAGES[p.id].icon }));
+	.map((p) => ({
+		label: p.name,
+		href: productHref(p.slug),
+		shortDesc: p.shortDesc,
+		icon: API_PRODUCT_PAGES[p.id].icon,
+	}));
 
 const companyLinks = [
 	{ label: "About Eko", href: "/about-us", internal: true },
@@ -53,16 +75,50 @@ const companyLinks = [
 ];
 
 const companySocialLinks = [
-	{ icon: FaLinkedinIn, href: SOCIAL_LINKS.linkedin, label: "LinkedIn", iconBg: "bg-[#0A66C2]/15", iconColor: "text-[#0A66C2]" },
-	{ icon: FaFacebookF, href: SOCIAL_LINKS.facebook, label: "Facebook", iconBg: "bg-[#1877F2]/15", iconColor: "text-[#1877F2]" },
-	{ icon: FaInstagram, href: SOCIAL_LINKS.instagram, label: "Instagram", iconBg: "bg-[#E4405F]/15", iconColor: "text-[#E4405F]" },
-	{ icon: FaYoutube, href: SOCIAL_LINKS.youtube, label: "YouTube", iconBg: "bg-[#FF0000]/15", iconColor: "text-[#FF0000]" },
-	{ icon: XIcon, href: SOCIAL_LINKS.x, label: "X (Twitter)", iconBg: "bg-[#1D1D1D]/10", iconColor: "text-[#1D1D1D]" },
+	{
+		icon: FaLinkedinIn,
+		href: SOCIAL_LINKS.linkedin,
+		label: "LinkedIn",
+		iconBg: "bg-[#0A66C2]/15",
+		iconColor: "text-[#0A66C2]",
+	},
+	{
+		icon: FaFacebookF,
+		href: SOCIAL_LINKS.facebook,
+		label: "Facebook",
+		iconBg: "bg-[#1877F2]/15",
+		iconColor: "text-[#1877F2]",
+	},
+	{
+		icon: FaInstagram,
+		href: SOCIAL_LINKS.instagram,
+		label: "Instagram",
+		iconBg: "bg-[#E4405F]/15",
+		iconColor: "text-[#E4405F]",
+	},
+	{
+		icon: FaYoutube,
+		href: SOCIAL_LINKS.youtube,
+		label: "YouTube",
+		iconBg: "bg-[#FF0000]/15",
+		iconColor: "text-[#FF0000]",
+	},
+	{
+		icon: XIcon,
+		href: SOCIAL_LINKS.x,
+		label: "X (Twitter)",
+		iconBg: "bg-[#1D1D1D]/10",
+		iconColor: "text-[#1D1D1D]",
+	},
 ];
 
 const NAV_MAX_ITEMS = 8;
-const navIndustries = ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority === 1).slice(0, NAV_MAX_ITEMS);
-const navSolutions = ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority === 1).slice(0, NAV_MAX_ITEMS);
+const navIndustries = ACTIVE_INDUSTRIES_LIST.filter(
+	(i) => i.priority === 1,
+).slice(0, NAV_MAX_ITEMS);
+const navSolutions = ACTIVE_SOLUTIONS_LIST.filter(
+	(s) => s.priority === 1,
+).slice(0, NAV_MAX_ITEMS);
 
 /** Mobile-accordion product sections; the desktop panel renders ProductsMegaPanel directly. */
 const apiColumns: Array<{
@@ -70,7 +126,11 @@ const apiColumns: Array<{
 	items: typeof verificationApis;
 	seeAllLink?: { label: string; href: string };
 }> = [
-	{ title: "Verification APIs", items: verificationApis, seeAllLink: { label: "See all products →", href: "/products" } },
+	{
+		title: "Verification APIs",
+		items: verificationApis,
+		seeAllLink: { label: "See all products →", href: "/products" },
+	},
 	{ title: "Payment APIs", items: paymentApis },
 	{ title: "BC APIs", items: bcApis },
 ];
@@ -80,7 +140,7 @@ const apiColumns: Array<{
 /* ------------------------------------------------------------------ */
 
 type HoverHandlers = { onMouseEnter: () => void; onMouseLeave: () => void };
-export type DropdownKey = 'products' | 'useCases' | 'company';
+export type DropdownKey = "products" | "useCases" | "company";
 
 /**
  * Full-width dropdown panel pinned below the fixed header.
@@ -99,7 +159,7 @@ const FullWidthDropdownPanel = ({
 		{...props}
 		className={cn(
 			"fixed left-0 right-0 w-full bg-white shadow-lg border-b border-border/30 overflow-hidden z-50 animate-menu-fullwidth-reveal",
-			isScrolled ? "top-[60px]" : "top-[82px]"
+			isScrolled ? "top-[60px]" : "top-[82px]",
 		)}
 	>
 		{children}
@@ -206,8 +266,12 @@ export const HeaderDropdownPanels = ({
 	return (
 		<>
 			{/* ── Desktop: Products dropdown ─────────────────────────────── */}
-			{activeDesktopDropdown === 'products' && (
-			<FullWidthDropdownPanel isScrolled={isScrolled} data-dropdown="products" {...panelHoverHandlers}>
+			{activeDesktopDropdown === "products" && (
+				<FullWidthDropdownPanel
+					isScrolled={isScrolled}
+					data-dropdown="products"
+					{...panelHoverHandlers}
+				>
 					<ProductsMegaPanel
 						verificationApis={verificationApis}
 						paymentApis={paymentApis}
@@ -218,14 +282,18 @@ export const HeaderDropdownPanels = ({
 			)}
 
 			{/* ── Desktop: Use Cases dropdown ────────────────────────────── */}
-			{activeDesktopDropdown === 'useCases' && (
-			<FullWidthDropdownPanel isScrolled={isScrolled} data-dropdown="usecases" {...panelHoverHandlers}>
+			{activeDesktopDropdown === "useCases" && (
+				<FullWidthDropdownPanel
+					isScrolled={isScrolled}
+					data-dropdown="usecases"
+					{...panelHoverHandlers}
+				>
 					{/* Featured banner */}
 					<div className="bg-linear-to-r from-[#00394b] to-[#005a6e]">
 						<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 							<Link
 								to="/use-cases"
-							onClick={() => setActiveDesktopDropdown(null)}
+								onClick={() => setActiveDesktopDropdown(null)}
 								className="block py-3 group cursor-pointer"
 							>
 								<div className="flex items-center gap-3">
@@ -233,8 +301,12 @@ export const HeaderDropdownPanels = ({
 										<Briefcase className="w-4 h-4 text-eko-gold" />
 									</div>
 									<div className="flex-1">
-										<span className="text-sm font-bold text-white">Explore All Use Cases</span>
-										<p className="text-xs text-white/70">Discover how Eko APIs power businesses across industries</p>
+										<span className="text-sm font-bold text-white">
+											Explore All Use Cases
+										</span>
+										<p className="text-xs text-white/70">
+											Discover how Eko APIs power businesses across industries
+										</p>
 									</div>
 									<ArrowRight className="w-5 h-5 text-white/50 group-hover:text-eko-gold group-hover:translate-x-1 transition-all shrink-0" />
 								</div>
@@ -271,7 +343,7 @@ export const HeaderDropdownPanels = ({
 			)}
 
 			{/* ── Desktop: Company dropdown ──────────────────────────────── */}
-			{activeDesktopDropdown === 'company' && (
+			{activeDesktopDropdown === "company" && (
 				<div
 					className="fixed top-24 left-1/2 -translate-x-1/2 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
 					data-dropdown="company"
@@ -302,7 +374,12 @@ export const HeaderDropdownPanels = ({
 									rel="noopener noreferrer"
 									className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
 								>
-									<span className={cn("w-6 h-6 rounded-full flex items-center justify-center shrink-0", social.iconBg)}>
+									<span
+										className={cn(
+											"w-6 h-6 rounded-full flex items-center justify-center shrink-0",
+											social.iconBg,
+										)}
+									>
 										<social.icon className={cn("w-3 h-3", social.iconColor)} />
 									</span>
 									{social.label}
@@ -314,11 +391,12 @@ export const HeaderDropdownPanels = ({
 			)}
 
 			{/* ── Backdrop for full-width dropdowns ─────────────────────── */}
-			{(activeDesktopDropdown === 'products' || activeDesktopDropdown === 'useCases') && (
+			{(activeDesktopDropdown === "products" ||
+				activeDesktopDropdown === "useCases") && (
 				<div
 					className={cn(
 						"fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 animate-fade-in",
-						isScrolled ? "top-[60px]" : "top-[82px]"
+						isScrolled ? "top-[60px]" : "top-[82px]",
 					)}
 					onClick={() => setActiveDesktopDropdown(null)}
 				/>
@@ -326,9 +404,16 @@ export const HeaderDropdownPanels = ({
 
 			{/* ── Mobile side drawer ─────────────────────────────────────── */}
 			<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-				<SheetContent side="right" className="w-[88vw] sm:max-w-sm sm:w-[400px] p-0 flex flex-col gap-0 lg:hidden">
+				<SheetContent
+					side="right"
+					className="w-[88vw] sm:max-w-sm sm:w-[400px] p-0 flex flex-col gap-0 lg:hidden"
+				>
 					<div className="flex items-center justify-between px-5 py-4 border-b border-eko-navy/10 shrink-0">
-						<Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center">
+						<Link
+							to="/"
+							onClick={() => setMobileMenuOpen(false)}
+							className="flex items-center"
+						>
 							<EkoLogo className="h-9 w-auto" />
 						</Link>
 					</div>
@@ -337,10 +422,14 @@ export const HeaderDropdownPanels = ({
 						{/* Products Accordion */}
 						<MobileAccordionButton
 							label="Products"
-							isOpen={activeMobileAccordion === 'products'}
-							onClick={() => setActiveMobileAccordion(activeMobileAccordion === 'products' ? null : 'products')}
+							isOpen={activeMobileAccordion === "products"}
+							onClick={() =>
+								setActiveMobileAccordion(
+									activeMobileAccordion === "products" ? null : "products",
+								)
+							}
 						/>
-						{activeMobileAccordion === 'products' && (
+						{activeMobileAccordion === "products" && (
 							<div className="pl-4 flex flex-col gap-1">
 								{apiColumns.map((col) => (
 									<div key={col.title}>
@@ -374,10 +463,14 @@ export const HeaderDropdownPanels = ({
 						{/* Company Accordion */}
 						<MobileAccordionButton
 							label="Company"
-							isOpen={activeMobileAccordion === 'company'}
-							onClick={() => setActiveMobileAccordion(activeMobileAccordion === 'company' ? null : 'company')}
+							isOpen={activeMobileAccordion === "company"}
+							onClick={() =>
+								setActiveMobileAccordion(
+									activeMobileAccordion === "company" ? null : "company",
+								)
+							}
 						/>
-						{activeMobileAccordion === 'company' && (
+						{activeMobileAccordion === "company" && (
 							<div className="pl-4 flex flex-col gap-1">
 								{companyLinks.map((item) => (
 									<CompanyLinkItem
@@ -393,12 +486,18 @@ export const HeaderDropdownPanels = ({
 						{/* Use Cases Accordion */}
 						<MobileAccordionButton
 							label="Use Cases"
-							isOpen={activeMobileAccordion === 'useCases'}
-							onClick={() => setActiveMobileAccordion(activeMobileAccordion === 'useCases' ? null : 'useCases')}
+							isOpen={activeMobileAccordion === "useCases"}
+							onClick={() =>
+								setActiveMobileAccordion(
+									activeMobileAccordion === "useCases" ? null : "useCases",
+								)
+							}
 						/>
-						{activeMobileAccordion === 'useCases' && (
+						{activeMobileAccordion === "useCases" && (
 							<div className="pl-4 flex flex-col gap-1">
-								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">Industries</p>
+								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">
+									Industries
+								</p>
 								{navIndustries.map((item) => (
 									<Link
 										key={item.slug}
@@ -418,7 +517,9 @@ export const HeaderDropdownPanels = ({
 									See all industries →
 								</Link>
 
-								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">Solution Packs</p>
+								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
+									Solution Packs
+								</p>
 								{navSolutions.map((item) => (
 									<Link
 										key={item.slug}
@@ -492,7 +593,10 @@ export const HeaderDropdownPanels = ({
 			{/* ── TalkToSales dialog ─────────────────────────────────────── */}
 			{talkToSalesOpen && (
 				<Suspense fallback={null}>
-					<TalkToSalesDialog open={talkToSalesOpen} onOpenChange={setTalkToSalesOpen} />
+					<TalkToSalesDialog
+						open={talkToSalesOpen}
+						onOpenChange={setTalkToSalesOpen}
+					/>
 				</Suspense>
 			)}
 		</>

@@ -1,0 +1,38 @@
+{
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Write|Edit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [ -n \"$f\" ] && npx prettier --write \"$f\" --ignore-unknown 2>/dev/null || true",
+						"timeout": 15,
+						"statusMessage": "✨ Formatting..."
+					},
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx eslint \"$f\" || exit 2",
+						"asyncRewake": true,
+						"timeout": 30,
+						"statusMessage": "🔍 Linting..."
+					},
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx vitest related \"$f\" || exit 2",
+						"asyncRewake": true,
+						"timeout": 60,
+						"statusMessage": "🧪 Running related tests..."
+					},
+					{
+						"type": "command",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx tsc -p tsconfig.app.json --noEmit || exit 2",
+						"asyncRewake": true,
+						"timeout": 30,
+						"statusMessage": "🔍 Type-checking..."
+					}
+				]
+			}
+		]
+	}
+}

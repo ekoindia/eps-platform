@@ -1,13 +1,9 @@
 import { ReactNode } from "react";
 
 interface PageTransitionProps {
-  children: ReactNode;
+	children: ReactNode;
 }
 
 export function PageTransition({ children }: PageTransitionProps) {
-  return (
-    <div className="animate-page-fade-in">
-      {children}
-    </div>
-  );
+	return <div className="animate-page-fade-in">{children}</div>;
 }

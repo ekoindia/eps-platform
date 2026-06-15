@@ -1,7 +1,14 @@
-import { useEffect, useRef, type ReactNode, type CSSProperties, type ElementType, type HTMLAttributes } from "react";
+import {
+	useEffect,
+	useRef,
+	type ReactNode,
+	type CSSProperties,
+	type ElementType,
+	type HTMLAttributes,
+} from "react";
 import { cn } from "@/lib/utils";
 
-interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, 'style'> {
+interface FadeInProps extends Omit<HTMLAttributes<HTMLElement>, "style"> {
 	children: ReactNode;
 	as?: ElementType;
 	className?: string;
@@ -68,9 +75,14 @@ export function FadeIn({
 			// scrolled by before hydration): past-range scroll-driven
 			// animations report "idle"/"finished", never "running".
 			const anim = (el.getAnimations?.() ?? []).find(
-				(a) => "animationName" in a && (a as CSSAnimation).animationName === "fade-in-view",
+				(a) =>
+					"animationName" in a &&
+					(a as CSSAnimation).animationName === "fade-in-view",
 			);
-			if (anim && (anim.playState === "finished" || anim.playState === "idle")) {
+			if (
+				anim &&
+				(anim.playState === "finished" || anim.playState === "idle")
+			) {
 				pin();
 				return;
 			}

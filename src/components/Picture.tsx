@@ -55,7 +55,12 @@ export const Picture = ({
 	return (
 		<picture style={{ display: "contents" }}>
 			{Object.entries(src.sources).map(([format, srcset]) => (
-				<source key={format} type={`image/${format}`} srcSet={srcset} sizes={sizes} />
+				<source
+					key={format}
+					type={`image/${format}`}
+					srcSet={srcset}
+					sizes={sizes}
+				/>
 			))}
 			<img
 				src={src.img.src}

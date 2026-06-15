@@ -6,7 +6,7 @@ import {
 	renderProductsIndexTextPart,
 } from "@/lib/markdown/render-products-index";
 import type { ProductPageDataShape } from "@/lib/markdown/render-product";
-import type { ApiProductRef } from "@/lib/data/api-products";
+import type { ApiProductId, ApiProductRef } from "@/lib/data/api-products";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import type { FAQ } from "@/components/ProductPageLayout";
 
@@ -52,7 +52,6 @@ const panProduct: ApiProductRef = {
 	id: "pan",
 	name: "PAN Verification",
 	slug: "pan-verification-api",
-	href: "/products/pan-verification-api",
 	category: "verification",
 	shortDesc: "Full PAN identity fetch in <2 seconds",
 };
@@ -72,7 +71,6 @@ const unpricedProduct: ApiProductRef = {
 	id: "not-a-priced-product",
 	name: "Mystery Verification",
 	slug: "mystery-api",
-	href: "/products/mystery-api",
 	category: "verification",
 	shortDesc: "Mystery checks",
 };
@@ -83,7 +81,6 @@ const dmtProduct: ApiProductRef = {
 	id: "dmt",
 	name: "Domestic Money Transfer (DMT)",
 	slug: "dmt-api",
-	href: "/products/dmt-api",
 	category: "bc",
 	shortDesc: "Send money to any bank account",
 };
@@ -92,7 +89,6 @@ const aepsProduct: ApiProductRef = {
 	id: "aeps",
 	name: "AePS Cashout",
 	slug: "aeps-api",
-	href: "/products/aeps-api",
 	category: "bc",
 	shortDesc: "Aadhaar-enabled cash withdrawal",
 };
@@ -101,12 +97,17 @@ const bbpsProduct: ApiProductRef = {
 	id: "bbps",
 	name: "BBPS",
 	slug: "bbps-api",
-	href: "/products/bbps-api",
 	category: "payment",
 	shortDesc: "Bill payments",
 };
 
-const products = [panProduct, unpricedProduct, bbpsProduct, dmtProduct, aepsProduct];
+const products = [
+	panProduct,
+	unpricedProduct,
+	bbpsProduct,
+	dmtProduct,
+	aepsProduct,
+];
 const pages: Record<string, ProductPageDataShape> = {
 	pan: panPage,
 	"not-a-priced-product": unpricedPage,
@@ -140,7 +141,9 @@ const specsByProduct: Record<string, ApiSpec[]> = {
 	],
 	"not-a-priced-product": [
 		makeSpec({
-			productId: "not-a-priced-product",
+			// Deliberately not a real product id — exercises rendering of a
+			// product absent from the priced set. Cast past the literal union.
+			productId: "not-a-priced-product" as ApiProductId,
 			id: "mystery-check",
 			name: "Mystery Check",
 			path: "/mystery/check",
@@ -159,7 +162,12 @@ const specsByProduct: Record<string, ApiSpec[]> = {
 };
 
 describe("renderProductsIndexMarkdown", () => {
-	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS, specsByProduct);
+	const md = renderProductsIndexMarkdown(
+		products,
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
 
 	it("includes YAML front-matter with canonical URL", () => {
 		expect(md).toMatch(/^---\n/);
@@ -285,8 +293,18 @@ describe("renderProductsIndexMarkdown", () => {
 });
 
 describe("renderProductsIndexText", () => {
-	const txt = renderProductsIndexText(products, pages, COMMON_FAQS, specsByProduct);
-	const md = renderProductsIndexMarkdown(products, pages, COMMON_FAQS, specsByProduct);
+	const txt = renderProductsIndexText(
+		products,
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
+	const md = renderProductsIndexMarkdown(
+		products,
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
 
 	it("drops front-matter and the canonical notice", () => {
 		expect(txt).not.toMatch(/^---\n/);
@@ -347,14 +365,14 @@ describe("renderProductsIndexText", () => {
 
 	it("renders AePS cashout slabs as an inline numbered list", () => {
 		expect(txt).toContain("Pricing (commission):");
-		expect(txt).toMatch(/  1\. ₹101 – ₹3,000: 0\.4% of amount/);
+		expect(txt).toMatch(/ {2}1\. ₹101 – ₹3,000: 0\.4% of amount/);
 		expect(txt).toContain("Mini statement: ₹0.75 per transaction.");
 	});
 
 	it("renders DMT slabs as an inline numbered list with commission/after-TDS", () => {
 		expect(txt).toContain("Pricing (excl. GST, TDS @ 2%):");
 		expect(txt).toMatch(
-			/  1\. ₹100 – ₹1,000: ₹5\.67 \(Commission: ₹2\.87, After TDS: ₹2\.81\)/,
+			/ {2}1\. ₹100 – ₹1,000: ₹5\.67 \(Commission: ₹2\.87, After TDS: ₹2\.81\)/,
 		);
 		// sender notes still follow as bullets
 		expect(txt).toContain("Maximum transaction amount: ₹5,000.");
@@ -363,16 +381,16 @@ describe("renderProductsIndexText", () => {
 	it("renders BBPS commission as an inline numbered list with [bracketed] notes", () => {
 		expect(txt).toContain("Pricing (commission, excl. GST):");
 		expect(txt).toMatch(
-			/  \d+\. Electricity Bill: ₹1 – ₹5,000: ₹1\.20; ₹5,001 – ₹20,000: 0\.52% of amount/,
+			/ {2}\d+\. Electricity Bill: ₹1 – ₹5,000: ₹1\.20; ₹5,001 – ₹20,000: 0\.52% of amount/,
 		);
 		// range notes ride inline in square brackets, not on a separate line
-		expect(txt).toMatch(/  \d+\. FASTag Recharge: ₹[\d.]+ \[[^\]]+\]/);
+		expect(txt).toMatch(/ {2}\d+\. FASTag Recharge: ₹[\d.]+ \[[^\]]+\]/);
 		expect(txt).not.toContain("Notes: —");
 	});
 
 	it("compresses verification pricing to one line per variant", () => {
 		// "Name: rate" on a single line, no stacked Rate:/Billing unit: lines.
-		expect(txt).toMatch(/  \d+\. PAN[^\n]*: ₹\d/);
+		expect(txt).toMatch(/ {2}\d+\. PAN[^\n]*: ₹\d/);
 		expect(txt).not.toContain("Billing unit:");
 		// the implied per-verification unit is dropped
 		expect(txt).not.toContain(": ₹1.20 per verification");
@@ -418,7 +436,13 @@ describe("renderProductsIndexTextPart", () => {
 		lede: "Identity & KYC verification APIs from Eko.",
 		productIds: ["pan"],
 	};
-	const txt = renderProductsIndexTextPart(part, [panProduct], pages, COMMON_FAQS, specsByProduct);
+	const txt = renderProductsIndexTextPart(
+		part,
+		[panProduct],
+		pages,
+		COMMON_FAQS,
+		specsByProduct,
+	);
 
 	it("uses the part's H1 title and lede, not the combined one", () => {
 		expect(txt).toContain("Eko Verification APIs (Identity & KYC) — Reference");

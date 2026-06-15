@@ -14,35 +14,35 @@ import { HelmetServerState } from "react-helmet-async";
 import App from "./AppServer";
 
 interface RenderResult {
-  /** The rendered HTML for inside <div id="root"> */
-  html: string;
-  /** Serialised <head> tags (title, meta, link, script) to inject into the template */
-  head: string;
+	/** The rendered HTML for inside <div id="root"> */
+	html: string;
+	/** Serialised <head> tags (title, meta, link, script) to inject into the template */
+	head: string;
 }
 
 export function renderPage(url: string): RenderResult {
-  // react-helmet-async requires a mutable context object
-  const helmetContext: { helmet?: HelmetServerState } = {};
+	// react-helmet-async requires a mutable context object
+	const helmetContext: { helmet?: HelmetServerState } = {};
 
-  const html = renderToString(
-    <StaticRouter location={url}>
-      <App helmetContext={helmetContext} />
-    </StaticRouter>,
-  );
+	const html = renderToString(
+		<StaticRouter location={url}>
+			<App helmetContext={helmetContext} />
+		</StaticRouter>,
+	);
 
-  const { helmet } = helmetContext;
+	const { helmet } = helmetContext;
 
-  // Combine all head tags produced by <Helmet> across the component tree
-  const head = helmet
-    ? [
-        helmet.title.toString(),
-        helmet.meta.toString(),
-        helmet.link.toString(),
-        helmet.script.toString(),
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : "";
+	// Combine all head tags produced by <Helmet> across the component tree
+	const head = helmet
+		? [
+				helmet.title.toString(),
+				helmet.meta.toString(),
+				helmet.link.toString(),
+				helmet.script.toString(),
+			]
+				.filter(Boolean)
+				.join("\n")
+		: "";
 
-  return { html, head };
+	return { html, head };
 }

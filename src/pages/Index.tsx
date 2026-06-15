@@ -12,26 +12,26 @@ import { CTASection } from "@/components/sections/CTASection";
 import { LeadCaptureSection } from "@/components/sections/LeadCaptureSection";
 
 const Index = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Helmet>
-        <link rel="canonical" href={SITE_URL} />
-      </Helmet>
+	return (
+		<div className="min-h-screen bg-background">
+			<Helmet>
+				<link rel="canonical" href={SITE_URL} />
+			</Helmet>
 
-      <main>
-        <HeroSection />
-        <WhyEkoSection />
-        <ProductsSection />
-        <DeveloperSection />
-        <UseCasesSection />
-        <ComplianceSection />
-        <LeadCaptureSection />
-        <CTASection />
-      </main>
+			<main>
+				<HeroSection />
+				<WhyEkoSection />
+				<ProductsSection />
+				<DeveloperSection />
+				<UseCasesSection />
+				<ComplianceSection />
+				<LeadCaptureSection />
+				<CTASection />
+			</main>
 
-      <Footer />
-    </div>
-  );
+			<Footer />
+		</div>
+	);
 };
 
 export default Index;

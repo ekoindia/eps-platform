@@ -21,7 +21,11 @@ export interface ApiErrorCode {
 
 /** Transport-level HTTP status codes. */
 export const HTTP_STATUS_CODES: ApiErrorCode[] = [
-	{ code: 200, scope: "http", meaning: "OK — response returned by our system." },
+	{
+		code: 200,
+		scope: "http",
+		meaning: "OK — response returned by our system.",
+	},
 	{
 		code: 403,
 		scope: "http",
