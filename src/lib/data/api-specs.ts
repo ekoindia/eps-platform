@@ -6481,6 +6481,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar_linked",
+				label: "Aadhaar Linked?",
 				type: "boolean",
 				description: "Whether the PAN is linked to an Aadhaar number.",
 				imp: true,
@@ -6503,7 +6504,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "address",
 				type: "object",
-				description: "Structured address of the PAN holder.",
+				description: "Structured address fields of the PAN holder.",
 				imp: true,
 				children: [
 					{
@@ -8609,6 +8610,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "gstin",
+				label: "GSTIN",
 				type: "string",
 				description:
 					"The GSTIN that was verified, echoed back from the government source.",
@@ -8617,6 +8619,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "valid",
+				label: "Is GSTIN Valid?",
 				type: "boolean",
 				description:
 					"True if the GSTIN was found and is a valid registered number; false otherwise.",
@@ -8625,6 +8628,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "gst_in_status",
+				label: "GSTIN Status",
 				type: "string",
 				description:
 					"Current registration status of the GSTIN (e.g. Active, Cancelled, Suspended).",
@@ -8967,6 +8971,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "pan",
+				label: "PAN Number",
 				type: "string",
 				description:
 					"The PAN submitted in the request, echoed back for reference.",
@@ -8975,6 +8980,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "gstin_list",
+				label: "List of GSTINs",
 				type: "array",
 				description:
 					"List of all GSTIN registrations linked to the given PAN. Each element represents one GST registration across a state.",
@@ -8982,6 +8988,7 @@ export const API_SPECS: ApiSpec[] = [
 				children: [
 					{
 						name: "gstin",
+						label: "GSTIN",
 						type: "string",
 						description: "A GSTIN number associated with the PAN.",
 						imp: true,
@@ -8989,6 +8996,7 @@ export const API_SPECS: ApiSpec[] = [
 					},
 					{
 						name: "status",
+						label: "GSTIN Status",
 						type: "string",
 						description:
 							"Current registration status of this GSTIN (e.g. Active, Inactive, Cancelled).",
@@ -8997,6 +9005,7 @@ export const API_SPECS: ApiSpec[] = [
 					},
 					{
 						name: "state",
+						label: "State of Registration",
 						type: "string",
 						description:
 							"Indian state or union territory where this GSTIN is registered.",
@@ -9143,6 +9152,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "valid",
+				label: "Is VPA Valid?",
 				type: "boolean",
 				description:
 					"Whether the VPA is active and valid. true = valid VPA; false = invalid or inactive.",
@@ -9275,6 +9285,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "dl_number",
+				label: "Driving License Number",
 				type: "string",
 				description: "The driving license number that was verified.",
 				imp: true,
@@ -9282,6 +9293,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
+				label: "Date of Birth",
 				type: "string",
 				description:
 					"Date of birth of the DL holder as returned by the authority.",
@@ -9677,6 +9689,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reg_no",
+				label: "Vehicle Registration Number",
 				type: "string",
 				description:
 					"Vehicle registration number as recorded in the VAHAN database.",
@@ -9685,6 +9698,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "rc_status",
+				label: "RC Status",
 				type: "string",
 				description:
 					"Current RC status — 'Active', 'Inactive', 'Suspended', etc.",
@@ -9706,6 +9720,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "owner_father_name",
+				label: "Father's Name of Owner",
 				type: "string",
 				description: "Father's name of the registered owner.",
 				imp: true,
@@ -9816,6 +9831,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reg_authority",
+				label: "Registration Authority (RTO)",
 				type: "string",
 				description: "Regional Transport Office (RTO) that issued the RC.",
 				imp: true,
@@ -9823,6 +9839,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reg_date",
+				label: "Date of Registration",
 				type: "string",
 				description: "Date of first registration of the vehicle (YYYY-MM-DD).",
 				imp: true,
@@ -9830,6 +9847,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "rc_expiry_date",
+				label: "RC Expiry Date",
 				type: "string",
 				description:
 					"RC validity expiry date (YYYY-MM-DD). Private vehicles are typically 15 years from registration.",
@@ -9860,6 +9878,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "is_commercial",
+				label: "Is Commercial Vehicle?",
 				type: "boolean",
 				description: "True if the vehicle is registered for commercial use.",
 				imp: true,
@@ -9930,6 +9949,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "vehicle_manufacturing_month_year",
+				label: "Manufacturing Month and Year",
 				type: "string",
 				description: "Month and year of vehicle manufacture.",
 				example: "May 2020",
@@ -10007,6 +10027,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "rc_financer",
+				label: "RC Financier",
 				type: "string",
 				description:
 					"Name of the financier / lending institution if the vehicle is under a loan.",
@@ -10021,6 +10042,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pucc_number",
+				label: "PUCC Number",
 				type: "string",
 				description: "Pollution Under Control Certificate (PUCC) number.",
 				example: "DL-EW-123456",
@@ -10332,6 +10354,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "uan_details",
+				label: "UAN Records",
 				type: "array",
 				description:
 					"List of UAN records associated with the employee's phone number. One entry per UAN.",
@@ -10339,6 +10362,7 @@ export const API_SPECS: ApiSpec[] = [
 				children: [
 					{
 						name: "uan",
+						label: "Universal Account Number (UAN)",
 						type: "string",
 						description:
 							"Universal Account Number assigned to the employee by EPFO.",
@@ -10381,6 +10405,7 @@ export const API_SPECS: ApiSpec[] = [
 							},
 							{
 								name: "dob",
+								label: "Employee's DOB",
 								type: "string",
 								description:
 									"Date of birth of the employee in YYYY-MM-DD format.",
@@ -10395,6 +10420,7 @@ export const API_SPECS: ApiSpec[] = [
 							},
 							{
 								name: "aadhaar_verified",
+								label: "Is Aadhaar Verified?",
 								type: "boolean",
 								description:
 									"Whether the employee's Aadhaar is linked and verified against this UAN.",
@@ -10480,6 +10506,7 @@ export const API_SPECS: ApiSpec[] = [
 						children: [
 							{
 								name: "pan",
+								label: "PAN Number",
 								type: "string",
 								description: "PAN number linked to the employee.",
 								imp: true,
@@ -10547,6 +10574,7 @@ export const API_SPECS: ApiSpec[] = [
 						children: [
 							{
 								name: "uan",
+								label: "Universal Account Number (UAN)",
 								type: "string",
 								description: "UAN for the most recent employment.",
 								imp: true,
@@ -10577,6 +10605,7 @@ export const API_SPECS: ApiSpec[] = [
 							},
 							{
 								name: "employed",
+								label: "Is Currently Employed?",
 								type: "boolean",
 								description:
 									"Whether the employee is currently active in this establishment per EPFO records.",
@@ -10690,6 +10719,7 @@ export const API_SPECS: ApiSpec[] = [
 							},
 							{
 								name: "pf_filing_details",
+								label: "PF Filing History",
 								type: "array",
 								description:
 									"Monthly PF contribution records filed by the employer. Each entry represents one wage month.",
@@ -11065,6 +11095,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "name",
+				label: "Cardholder's Name",
 				type: "string",
 				description: "Cardholder's full name as recorded on the voter ID.",
 				imp: true,
@@ -11072,6 +11103,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name_in_regional_lang",
+				label: "Name in Regional Language",
 				type: "string",
 				description: "Cardholder's name in the regional/vernacular script.",
 				imp: true,
@@ -11086,6 +11118,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
+				label: "Date of Birth",
 				type: "string",
 				description: "Date of birth in YYYY-MM-DD format.",
 				imp: true,
@@ -11100,6 +11133,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "father_name",
+				label: "Father's Name",
 				type: "string",
 				description: "Father's name as on the voter record.",
 				imp: true,
@@ -11107,6 +11141,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "relation_type",
+				label: "Guardian Relationship",
 				type: "string",
 				description:
 					"Relationship type of the guardian (e.g., Father, Husband).",
@@ -11120,12 +11155,14 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "relation_name_in_regional_lang",
+				label: "Guardian's Name in Regional Language",
 				type: "string",
 				description: "Guardian's name in the regional/vernacular script.",
 				example: "सुरेश कुमार",
 			},
 			{
 				name: "epic_number",
+				label: "EPIC Number",
 				type: "string",
 				description: "The EPIC number that was verified.",
 				imp: true,
@@ -11394,6 +11431,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
+				label: "Date of Birth",
 				type: "string",
 				description:
 					"Date of birth of the passport holder (YYYY-MM-DD) as registered in the passport application.",
@@ -11506,6 +11544,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "cin",
+				label: "Company Identification Number (CIN)",
 				type: "string",
 				description:
 					"The CIN submitted in the request, echoed back for confirmation.",
@@ -11536,6 +11575,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "cin_status",
+				label: "CIN Status",
 				type: "string",
 				description:
 					"Current status of the CIN as recorded by MCA — e.g. Active, Strike-Off, Dormant, Under Liquidation.",
@@ -11544,6 +11584,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "email",
+				label: "Company Email",
 				type: "string",
 				description: "Company email address from MCA records.",
 				example: "contact@acmetech.in",
@@ -11585,6 +11626,7 @@ export const API_SPECS: ApiSpec[] = [
 					},
 					{
 						name: "dob",
+						label: "Director's DOB",
 						type: "string",
 						description: "Date of birth of the director, in YYYY-MM-DD format.",
 						example: "1985-03-12",
@@ -11986,6 +12028,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "pan_number",
+				label: "PAN Number",
 				type: "string",
 				description:
 					"The PAN number that was queried, echoed back from the source for confirmation.",
@@ -11994,6 +12037,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "itr_filed",
+				label: "ITR Filed Flag",
 				type: "boolean",
 				description:
 					"Indicates whether the PAN holder has filed an income tax return for the queried assessment year. true = filed; false = not filed.",
@@ -12167,6 +12211,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "din",
+				label: "Director Identification Number (DIN)",
 				type: "string",
 				description:
 					"The DIN submitted in the request, echoed back for confirmation.",
@@ -12175,6 +12220,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "director_name",
+				label: "Director's Name",
 				type: "string",
 				description: "Full legal name of the director as registered with MCA.",
 				imp: true,
@@ -12182,6 +12228,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "din_status",
+				label: "DIN Status",
 				type: "string",
 				description:
 					"Current status of the DIN as recorded by MCA — e.g. Active, Deactivated, Surrendered, Disqualified.",
@@ -12326,6 +12373,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "challans",
+				label: "Challan Records",
 				type: "array",
 				description:
 					"List of individual challan records. Each element represents one traffic violation.",
@@ -12550,6 +12598,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "is_valid",
+				label: "Is Email Valid?",
 				type: "boolean",
 				description:
 					"Whether the email address is valid and deliverable. true = domain has live MX records and can receive mail; false = domain has no mail server or is otherwise undeliverable.",
@@ -12558,6 +12607,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "is_disposable",
+				label: "Is Disposable Email?",
 				type: "boolean",
 				description:
 					"Whether the email domain belongs to a known disposable / temporary email provider. true = disposable (high fraud risk); false = regular email domain.",
@@ -12566,6 +12616,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "domain_age_days",
+				label: "Domain Age (Days)",
 				type: "number",
 				description:
 					"Age of the email domain in days since registration. Newly created domains (< 30 days) are a strong fraud signal; legitimate email providers have domains that are years old.",
@@ -12574,6 +12625,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "mx_records",
+				label: "MX Records",
 				type: "array",
 				description:
 					"List of MX (mail exchange) hostnames discovered for the domain, ordered by priority. An empty array means the domain cannot receive email.",
@@ -12704,6 +12756,7 @@ export const API_SPECS: ApiSpec[] = [
 		responseData: [
 			{
 				name: "fssai_number",
+				label: "FSSAI License Number",
 				type: "string",
 				description: "The FSSAI license number that was queried.",
 				imp: true,
