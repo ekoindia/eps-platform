@@ -412,6 +412,9 @@ export const ProductPageLayout = ({
 								<h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
 									{verifyHeading(
 										(productId && API_PRODUCTS_MAP[productId]?.name) || title,
+										inputOutputPreviews && inputOutputPreviews.length > 1
+											? true
+											: false,
 									)}
 								</h2>
 								<p className="text-muted-foreground max-w-2xl mx-auto">
@@ -424,7 +427,7 @@ export const ProductPageLayout = ({
 									<FadeIn
 										key={field.label + i}
 										delay={i * 60}
-										className="flex items-start gap-3 p-5 bg-card border border-border/50 rounded-xl"
+										className="flex items-start gap-3 p-4 bg-card border border-border/50 rounded-xl"
 									>
 										<CheckCircle className="w-5 h-5 text-eko-gold shrink-0 mt-0.5" />
 										<div>
@@ -432,7 +435,7 @@ export const ProductPageLayout = ({
 												{field.label}
 											</p>
 											{field.description && (
-												<p className="text-muted-foreground text-sm mt-1">
+												<p className="text-muted-foreground text-sm line-clamp-5">
 													{field.description}
 												</p>
 											)}

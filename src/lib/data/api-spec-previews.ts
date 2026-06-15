@@ -184,5 +184,10 @@ export const getVerifiableFieldsForProduct = (
 	specsToVerifiableFields(getDisplaySpecsForProduct(productId));
 
 /** Section heading, e.g. "What Can You Verify With PAN Verification API?". */
-export const verifyHeading = (productName: string): string =>
-	`What Can You Verify With ${productName.replace(/\s+API$/i, "")} API?`;
+export const verifyHeading = (
+	productName: string,
+	multiApi?: boolean,
+): string =>
+	`What Can You Verify With ${productName.replace(/\s+API$/i, "")} API${
+		multiApi ? "s" : ""
+	}?`;
