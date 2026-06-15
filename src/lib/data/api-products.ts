@@ -18,7 +18,7 @@ export const PRODUCTS_SECTION_SLUG = "products";
 export const productHref = (slug: string): string =>
 	`/${PRODUCTS_SECTION_SLUG}/${slug}`;
 
-export const API_PRODUCTS: ApiProductRef[] = [
+const API_PRODUCTS_DATA = [
 	// BC APIs
 	{
 		id: "dmt",
@@ -35,6 +35,15 @@ export const API_PRODUCTS: ApiProductRef[] = [
 		slug: "aeps-api",
 		category: "bc",
 		shortDesc: "Aadhaar-enabled biometric cash withdrawal & transfer",
+	},
+	{
+		// TODO: FIX
+		id: "ppi-levin",
+		name: "PPI Transactions (Levin)",
+		slug: "ppi-levin-api",
+		category: "bc",
+		shortDesc: "Prepaid Instrument (PPI) wallet management and transactions",
+		disabled: true,
 	},
 
 	// Payment APIs
@@ -231,7 +240,20 @@ export const API_PRODUCTS: ApiProductRef[] = [
 		category: "verification",
 		shortDesc: "Verify FSSAI food license details and status",
 	},
-];
+] as const;
+
+/**
+ * Union of every defined product id — the valid values for `ApiSpec.productId`.
+ * Derived from the literal `as const` data so the FK is checked at compile time.
+ */
+export type ApiProductId = (typeof API_PRODUCTS_DATA)[number]["id"];
+
+/**
+ * All defined API products. Exposed as `readonly ApiProductRef[]` so consumers
+ * see the uniform interface shape (every optional key present in the type),
+ * while {@link ApiProductId} above keeps the literal id union for FK checking.
+ */
+export const API_PRODUCTS: readonly ApiProductRef[] = API_PRODUCTS_DATA;
 
 /** Map of all products for quick lookup by ID */
 export const API_PRODUCTS_MAP: Record<string, ApiProductRef> =

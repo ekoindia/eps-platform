@@ -10,7 +10,7 @@
  * The data here is rich enough to render a developer API reference portal.
  */
 import { AUTH_HEADERS, FINANCIAL_AUTH_HEADERS } from "./api-auth";
-import type { ApiProductRelevance } from "./api-products";
+import type { ApiProductId, ApiProductRelevance } from "./api-products";
 
 // ---------------------------------------------------------------------------
 // Primitive shapes
@@ -64,8 +64,9 @@ export interface ApiErrorScenario {
 export interface ApiSpec {
 	/** Unique kebab-case id, e.g. "pan-lite". */
 	id: string;
-	/** FK to `API_PRODUCTS.id` — many APIs map to one product. */
-	productId: string;
+	/** FK to `API_PRODUCTS.id` — many APIs map to one product. Typed as the
+	 * literal id union so a bad reference is a compile error. */
+	productId: ApiProductId;
 	/** Display name, e.g. "PAN Lite". */
 	name: string;
 	/** Portal route slug. */
