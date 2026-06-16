@@ -19,14 +19,16 @@ import { createServer } from "vite";
 async function buildFiles(
 	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<Record<string, string>> {
-	const [registry, builder, packs, sdk, postman, fixtures] = await Promise.all([
-		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
-		server.ssrLoadModule("/src/lib/agent/build-agent-bundle.ts"),
-		server.ssrLoadModule("/src/lib/agent/build-context-pack.ts"),
-		server.ssrLoadModule("/src/lib/sdk/build-sdk-surface.ts"),
-		server.ssrLoadModule("/src/lib/sdk/build-postman.ts"),
-		server.ssrLoadModule("/src/lib/agent/build-fixtures.ts"),
-	]);
+	const [registry, builder, packs, sdk, postman, fixtures, matrix] =
+		await Promise.all([
+			server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
+			server.ssrLoadModule("/src/lib/agent/build-agent-bundle.ts"),
+			server.ssrLoadModule("/src/lib/agent/build-context-pack.ts"),
+			server.ssrLoadModule("/src/lib/sdk/build-sdk-surface.ts"),
+			server.ssrLoadModule("/src/lib/sdk/build-postman.ts"),
+			server.ssrLoadModule("/src/lib/agent/build-fixtures.ts"),
+			server.ssrLoadModule("/src/lib/agent/build-install-matrix.ts"),
+		]);
 	const specs = registry.getDocumentedSpecs();
 	const bundle = builder.buildAgentBundle(specs);
 
@@ -49,6 +51,7 @@ async function buildFiles(
 	);
 
 	files["agent/fixtures.json"] = j(fixtures.buildFixtures(bundle));
+	files["agent/install-matrix.json"] = j(matrix.buildInstallMatrix());
 
 	return files;
 }
