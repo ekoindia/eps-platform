@@ -1,0 +1,27 @@
+{
+	"name": "@ekoindia/eps-sdk",
+	"version": "0.1.0",
+	"description": "Backend-only Node.js SDK for Eko Platform Services (EPS) APIs, with request signing built in.",
+	"license": "MIT",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist",
+		"data"
+	],
+	"scripts": {
+		"bake": "node scripts/bake-surface.mjs",
+		"build": "tsup",
+		"test": "vitest run",
+		"prepublishOnly": "npm run bake && npm run build"
+	},
+	"devDependencies": {
+		"tsup": "^8.0.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}
