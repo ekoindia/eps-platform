@@ -46,6 +46,9 @@ import UseCasesHubPage from "./pages/UseCasesHubPage";
 // Pricing
 import PricingPage from "./pages/PricingPage";
 
+// AI Agents
+import AgentsPage from "./pages/AgentsPage";
+
 // Developer Docs
 import DocsIndexPage from "./pages/docs/DocsIndexPage";
 import DocDetailPage from "./pages/docs/DocDetailPage";
@@ -96,6 +99,9 @@ const AppServer = ({
 
 							{/* Pricing */}
 							<Route path="/pricing" element={<PricingPage />} />
+
+							{/* AI Agents */}
+							<Route path="/agents" element={<AgentsPage />} />
 
 							{/* Developer Docs */}
 							<Route path="/docs" element={<DocsIndexPage />} />
