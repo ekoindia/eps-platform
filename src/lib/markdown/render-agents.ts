@@ -2,6 +2,7 @@
  * Renders `/agents.md` — the markdown twin of the `/agents` hub page. Lists the
  * agent artifacts (packs, bundle, MCP, recipes) generated from the spec layer.
  */
+import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
 import { SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
@@ -35,6 +36,49 @@ export function renderAgentsMarkdown(): string {
 	lines.push("```bash");
 	lines.push("npx -y @ekoindia/eps-context-mcp");
 	lines.push("```");
+	lines.push("");
+
+	lines.push("## Offline mock server");
+	lines.push("");
+	lines.push(
+		"Develop and test EPS integrations offline — the mock server replays golden " +
+			"sample responses (with recipe-aware error branching) so agents never touch " +
+			"the live API:",
+	);
+	lines.push("");
+	lines.push("```bash");
+	lines.push("npx -y @ekoindia/eps-mock-server");
+	lines.push("```");
+	lines.push("");
+
+	lines.push("## Claude Code plugin");
+	lines.push("");
+	lines.push(
+		"One install wires the `eps` MCP, the `integrate-eps` and `sign-request` " +
+			"skills, and the `/eps` slash command into Claude Code:",
+	);
+	lines.push("");
+	lines.push("```bash");
+	lines.push("/plugin install eps");
+	lines.push("```");
+	lines.push("");
+
+	lines.push("## Install matrix");
+	lines.push(
+		"EPS rides on open standards (MCP + `AGENTS.md`-style context packs), so it " +
+			"works in any modern coding agent. Wire it into each harness:",
+	);
+	lines.push(
+		markdownTable(
+			["Harness", "MCP command", "Pack file", "Placement"],
+			buildInstallMatrix().map((h) => [
+				h.name,
+				h.mcp ? `\`${h.mcp}\`` : "—",
+				h.packFile ? `[${h.packFile}](${SITE_URL}/agent/${h.packFile})` : "—",
+				h.packPlacement ? `\`${h.packPlacement}\`` : "—",
+			]),
+		),
+	);
 	lines.push("");
 
 	lines.push("## Machine bundle");
