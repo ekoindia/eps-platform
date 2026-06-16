@@ -210,6 +210,13 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- Agents hub -----------------------------------------------------
+				await writeFile(
+					path.join(outDir, "agents.md"),
+					bundle.renderAgentsMarkdown(),
+				);
+				written++;
+
 				// -- llms.txt -------------------------------------------------------
 				await writeFile(
 					path.join(outDir, "llms.txt"),
@@ -290,6 +297,7 @@ interface MarkdownBundle {
 		meta: { slug: string; title: string; summary?: string },
 		rawBody: string,
 	) => string;
+	renderAgentsMarkdown: () => string;
 }
 
 /** Read a guide's raw `.mdx` source (pure markdown) from the content dir. */
@@ -317,6 +325,7 @@ async function loadRenderBundle(
 		docsRegistryMod,
 		renderDocMod,
 		docsGuidesMod,
+		renderAgentsMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -331,6 +340,7 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
 		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-agents.ts"),
 	]);
 
 	return {
@@ -356,6 +366,7 @@ async function loadRenderBundle(
 		renderDocsIndexMarkdown: renderDocMod.renderDocsIndexMarkdown,
 		GUIDES: docsGuidesMod.GUIDES,
 		renderGuideMarkdown: renderDocMod.renderGuideMarkdown,
+		renderAgentsMarkdown: renderAgentsMod.renderAgentsMarkdown,
 	};
 }
 
@@ -409,6 +420,9 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/docs.md") {
 		return bundle.renderDocsIndexMarkdown();
+	}
+	if (url === "/agents.md") {
+		return bundle.renderAgentsMarkdown();
 	}
 	const docMatch = url.match(/^\/docs\/([^/]+)\.md$/);
 	if (docMatch) {

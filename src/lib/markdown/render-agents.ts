@@ -1,0 +1,54 @@
+/**
+ * Renders `/agents.md` — the markdown twin of the `/agents` hub page. Lists the
+ * agent artifacts (packs, bundle, MCP, recipes) generated from the spec layer.
+ */
+import { SITE_URL } from "@/lib/config/site";
+import { RECIPES } from "@/lib/data/api-recipes";
+import { markdownTable } from "@/lib/markdown/shared";
+
+export function renderAgentsMarkdown(): string {
+	const lines: string[] = [];
+	lines.push("# EPS for AI agents");
+	lines.push("");
+	lines.push(
+		"Everything an AI coding agent needs to integrate Eko Platform Services, " +
+			"auto-generated from our API source of truth.",
+	);
+	lines.push("");
+
+	lines.push("## Context packs");
+	lines.push(
+		markdownTable(
+			["Target", "File"],
+			[
+				["Any agent (AGENTS.md)", `${SITE_URL}/agent/AGENTS.md`],
+				["Claude Code (CLAUDE.md)", `${SITE_URL}/agent/CLAUDE.md`],
+				["Cursor (.cursorrules)", `${SITE_URL}/agent/.cursorrules`],
+				["GitHub Copilot", `${SITE_URL}/agent/copilot-instructions.md`],
+			],
+		),
+	);
+	lines.push("");
+
+	lines.push("## Local MCP server");
+	lines.push("");
+	lines.push("```bash");
+	lines.push("npx -y @ekoindia/eps-context-mcp");
+	lines.push("```");
+	lines.push("");
+
+	lines.push("## Machine bundle");
+	lines.push(
+		`- Canonical: ${SITE_URL}/agent/eps.json\n` +
+			`- Index: ${SITE_URL}/agent/index.json\n` +
+			`- Per-API: ${SITE_URL}/agent/api/<slug>.json\n` +
+			`- OpenAPI: ${SITE_URL}/openapi.json`,
+	);
+	lines.push("");
+
+	lines.push("## Recipes");
+	for (const r of RECIPES) lines.push(`- **${r.name}** — ${r.summary}`);
+	lines.push("");
+
+	return lines.join("\n");
+}
