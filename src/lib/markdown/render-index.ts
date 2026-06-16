@@ -172,5 +172,22 @@ export function renderLlmsTxt(
 	}
 	lines.push("");
 
+	lines.push("## For AI coding agents");
+	lines.push(
+		`- [Context pack (AGENTS.md)](${SITE_URL}/agent/AGENTS.md): Drop-in instructions for any agent — auth, endpoints, recipes`,
+	);
+	lines.push(
+		`- [Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe`,
+	);
+	lines.push(
+		`- [Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for detail`,
+	);
+	lines.push(`- [OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`);
+	lines.push("- Local MCP: `npx -y @ekoindia/eps-context-mcp`");
+	lines.push(
+		`- [Agents hub](${SITE_URL}/agents): All agent artifacts + install instructions`,
+	);
+	lines.push("");
+
 	return lines.join("\n");
 }
