@@ -1,4 +1,5 @@
-import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	resolveHeaders,
@@ -40,29 +41,31 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 	return (
 		<article>
 			<header>
-				<div className="flex items-center gap-2.5">
-					<HttpMethodTag method={spec.method} className="text-xs" />
-					<code className="break-all font-mono text-sm text-muted-foreground">
-						{spec.path}
-					</code>
-				</div>
-				<h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
+				<h1 className="text-3xl font-bold tracking-tight text-foreground">
+					<HttpMethodTag
+						method={spec.method}
+						variant="solid"
+						className="mr-3 rounded-md px-2 py-1 align-middle text-sm"
+					/>
 					{spec.name}
 				</h1>
 				<p className="mt-2 text-base text-muted-foreground">{spec.summary}</p>
-				<div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 font-mono text-xs text-muted-foreground">
-					<span className="rounded bg-eko-gold-light px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-eko-navy dark:bg-eko-gold/15 dark:text-eko-gold">
-						UAT
-					</span>
-					<span className="text-foreground/70">Base URL</span>
-					<span className="break-all">{DEFAULT_BASE_URL}</span>
+				<div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-lg border border-border/60 bg-muted/30 px-4 py-2.5 font-mono text-xs text-muted-foreground">
+					<HttpMethodTag method={spec.method} />
+					<span className="break-all text-foreground/70">{spec.path}</span>
 				</div>
 			</header>
 
 			{spec.description && (
-				<p className="mt-6 text-[0.9375rem] leading-relaxed text-foreground/80">
-					{spec.description}
-				</p>
+				<div className="docs-inline-code-prose mt-6 text-[0.9375rem] leading-relaxed text-foreground/80 [&_a]:font-medium [&_a]:text-eko-navy [&_a]:underline dark:[&_a]:text-eko-gold [&_strong]:font-semibold [&_strong]:text-foreground [&_p]:my-0 [&_p+p]:mt-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1">
+					<ReactMarkdown
+						remarkPlugins={[remarkGfm]}
+						disallowedElements={["h1", "h2", "h3", "h4", "h5", "h6"]}
+						unwrapDisallowed
+					>
+						{spec.description}
+					</ReactMarkdown>
+				</div>
 			)}
 
 			{pathParams.length > 0 && (

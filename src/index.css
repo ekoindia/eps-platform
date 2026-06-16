@@ -60,7 +60,9 @@
 
 	/* Fonts */
 	--font-sans: "Inter", system-ui, sans-serif;
-	--font-mono: "JetBrains Mono", monospace;
+	--font-mono:
+		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+		"Courier New", monospace;
 
 	/* Radius */
 	--radius-lg: var(--radius);
@@ -355,7 +357,7 @@
 
 	code,
 	pre {
-		font-family: "JetBrains Mono", monospace;
+		font-family: var(--font-mono);
 	}
 }
 
@@ -455,6 +457,17 @@
 	.text-gradient-gold {
 		@apply bg-clip-text text-transparent;
 		background-image: var(--gradient-gold);
+	}
+
+	/* Inline code pill — shared by MdxGuide prose and EndpointDetail ReactMarkdown.
+	   Must live in utilities layer so it out-ranks @tailwindcss/typography's
+	   prose code::before backtick rule (same layer, higher specificity wins). */
+	.docs-inline-code-prose :not(pre) > code {
+		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.875em] font-normal;
+	}
+	.docs-inline-code-prose :not(pre) > code::before,
+	.docs-inline-code-prose :not(pre) > code::after {
+		content: "";
 	}
 }
 

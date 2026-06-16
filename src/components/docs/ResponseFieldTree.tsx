@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { ResponseField } from "@/lib/data/api-specs-common";
+import { InlineCode } from "./InlineCode";
 
 /**
  * Recursively renders a (possibly nested) response-field tree as an indented
@@ -22,16 +23,16 @@ export const ResponseFieldTree = ({
 		{fields.map((field) => (
 			<li key={field.name}>
 				<div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-					<code
+					<InlineCode
 						className={cn(
-							"font-mono text-sm",
+							"text-sm",
 							field.imp
 								? "font-semibold text-foreground"
-								: "text-foreground/90",
+								: "font-normal text-foreground/90",
 						)}
 					>
 						{field.name}
-					</code>
+					</InlineCode>
 					<span className="font-mono text-xs text-muted-foreground">
 						{field.type}
 					</span>

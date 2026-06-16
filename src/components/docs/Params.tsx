@@ -1,4 +1,5 @@
 import type { ApiParam } from "@/lib/data/api-specs-common";
+import { InlineCode } from "./InlineCode";
 import { FieldList } from "./FieldList";
 
 /** Dense 4-column table — used on wide (xl) screens where there's room. */
@@ -17,9 +18,9 @@ const ParamTable = ({ params }: { params: ApiParam[] }) => (
 				{params.map((p) => (
 					<tr key={`${p.in}-${p.name}`} className="align-top">
 						<td className="px-4 py-2.5">
-							<code className="font-mono text-[0.8125rem] text-foreground">
+							<InlineCode className="text-[0.8125rem] text-foreground">
 								{p.name}
-							</code>
+							</InlineCode>
 							{p.label && (
 								<span className="block text-xs text-muted-foreground">
 									{p.label}

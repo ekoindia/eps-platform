@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { ApiParam } from "@/lib/data/api-specs-common";
+import { InlineCode } from "./InlineCode";
 
 /**
  * Scalar-style parameter list: each field on its own row — `name  type
@@ -12,9 +13,9 @@ export const FieldList = ({ params }: { params: ApiParam[] }) => (
 		{params.map((p) => (
 			<div key={`${p.in}-${p.name}`} className="px-4 py-3">
 				<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-					<code className="font-mono text-sm font-medium text-foreground">
+					<InlineCode className="text-sm font-medium text-foreground">
 						{p.name}
-					</code>
+					</InlineCode>
 					<span className="font-mono text-xs text-muted-foreground">
 						{p.type}
 					</span>
