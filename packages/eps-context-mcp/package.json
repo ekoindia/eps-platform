@@ -1,0 +1,32 @@
+{
+	"name": "@ekoindia/eps-context-mcp",
+	"version": "0.1.0",
+	"description": "Local MCP server giving AI coding agents context for Eko Platform Services (EPS) APIs.",
+	"license": "MIT",
+	"type": "module",
+	"bin": {
+		"eps-context-mcp": "./dist/index.js"
+	},
+	"files": [
+		"dist",
+		"data"
+	],
+	"scripts": {
+		"bake": "node scripts/bake-bundle.mjs",
+		"build": "tsup",
+		"test": "vitest run",
+		"prepublishOnly": "npm run bake && npm run build"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.0.0",
+		"zod": "^3.25.76"
+	},
+	"devDependencies": {
+		"tsup": "^8.0.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}
