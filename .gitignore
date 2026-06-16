@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Env files (never commit secrets); keep .env.example tracked
+.env
+.env.*
+!.env.example
+
 # Ignore TypeScript incremental compilation cache
 *.tsbuildinfo
 

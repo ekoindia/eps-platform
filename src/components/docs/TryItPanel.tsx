@@ -52,8 +52,8 @@ export const TryItPanel = ({ spec }: { spec: ApiSpec }) => {
 		}
 		if (import.meta.env.DEV) {
 			const dev = {
-				developerKey: import.meta.env.VITE_EKO_DEVELOPER_KEY ?? "",
-				accessKey: import.meta.env.VITE_EKO_ACCESS_KEY ?? "",
+				developerKey: import.meta.env.VITE_EPS_UAT_DEVELOPER_KEY ?? "",
+				accessKey: import.meta.env.VITE_EPS_UAT_ACCESS_KEY ?? "",
 			};
 			if (dev.developerKey || dev.accessKey) setCreds(dev);
 		}
