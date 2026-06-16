@@ -1,0 +1,3473 @@
+[
+  {
+    "slug": "dmt-get-sender",
+    "method": "GET",
+    "path": "/customer/profile/{customer_id}/dmt-fino",
+    "request": {
+      "method": "GET",
+      "path": "/customer/profile/9123456789/dmt-fino",
+      "queryParams": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200"
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Customer found",
+      "response_type_id": 1388,
+      "data": {
+        "customer_id": "9123456789",
+        "name": "Ramesh Kumar",
+        "dob": "1990-05-15",
+        "kyc_verified": true,
+        "available_limit": 25000,
+        "used_limit": 0,
+        "monthly_limit": 25000,
+        "state": 0
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Sender not found — proceed to Onboard Sender",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "Customer not found",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dmt-onboard-sender",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-fino",
+    "request": {
+      "customer_id": "9123456789",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "name": "Ramesh Kumar",
+      "dob": "1990-05-15",
+      "residence_address": "[\"123 Main Street\", \"Connaught Place\", \"New Delhi\", \"110001\"]"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Customer registered successfully",
+      "response_type_id": 1388,
+      "data": {
+        "customer_id": "9123456789",
+        "state": 10,
+        "otp_ref_id": "OTP20240101001",
+        "available_limit": 5000
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Sender already exists in the system",
+        "responseStatusId": 17,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 17,
+          "message": "User wallet already exists",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dmt-sender-ekyc",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-fino/ekyc",
+    "request": {
+      "customer_id": "9123456789",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "aadhar": "234567890123",
+      "piddata": "<PidData><Resp errCode=\"0\" errInfo=\"Capture Success\" /></PidData>"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "OTP sent for eKYC verification",
+      "response_type_id": 1388,
+      "data": {
+        "kyc_request_id": "KYC20240101001",
+        "otp_ref_id": "OTPREF20240101001",
+        "mobile": "XXXXXXX789"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Sender already KYC verified — no further upgrade needed",
+        "responseStatusId": 585,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 585,
+          "message": "Customer already KYC approved",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dmt-validate-ekyc-otp",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-fino/otp/verify",
+    "request": {
+      "customer_id": "9123456789",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "otp": "784512",
+      "otp_ref_id": "OTPREF20240101001",
+      "kyc_request_id": "KYC20240101001"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "eKYC verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "customer_id": "9123456789",
+        "kyc_verified": true,
+        "available_limit": 25000
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Incorrect OTP entered",
+        "responseStatusId": 302,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 302,
+          "message": "Wrong OTP",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "OTP has expired",
+        "responseStatusId": 303,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 303,
+          "message": "OTP expired",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dmt-get-recipients",
+    "method": "GET",
+    "path": "/customer/payment/dmt-fino/sender/{customer_id}/recipients",
+    "request": {
+      "method": "GET",
+      "path": "/customer/payment/dmt-fino/sender/9123456789/recipients",
+      "queryParams": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200"
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Success",
+      "response_type_id": 1388,
+      "data": {
+        "count": 2,
+        "recipient": [
+          {
+            "recipient_id": 98765,
+            "recipient_name": "Sunil Sharma",
+            "account": "012345678901",
+            "ifsc": "SBIN0001234",
+            "bank_name": "State Bank of India",
+            "recipient_mobile": "9988776655",
+            "is_verified": true
+          },
+          {
+            "recipient_id": 98766,
+            "recipient_name": "Priya Verma",
+            "account": "987654321098",
+            "ifsc": "HDFC0002345",
+            "bank_name": "HDFC Bank",
+            "recipient_mobile": "9811223344",
+            "is_verified": true
+          }
+        ]
+      }
+    },
+    "errors": []
+  },
+  {
+    "slug": "dmt-add-recipient",
+    "method": "POST",
+    "path": "/customer/payment/dmt-fino/sender/{customer_id}/recipient1",
+    "request": {
+      "customer_id": "9123456789",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "recipient_name": "Sunil Sharma",
+      "account": "012345678901",
+      "ifsc": "SBIN0001234",
+      "bank_id": 20,
+      "recipient_mobile": "9988776655",
+      "recipient_type": "3"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Recipient added successfully",
+      "response_type_id": 1388,
+      "data": {
+        "recipient_id": 98765,
+        "recipient_name": "Sunil Sharma",
+        "account": "012345678901",
+        "ifsc": "SBIN0001234",
+        "is_verified": false
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Recipient already registered for this sender",
+        "responseStatusId": 342,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 342,
+          "message": "Recipient already registered",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dmt-send-otp",
+    "method": "POST",
+    "path": "/customer/payment/dmt-fino/otp",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "customer_id": "9123456789",
+      "recipient_id": 98765,
+      "amount": 500
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "OTP sent successfully",
+      "response_type_id": 1388,
+      "data": {
+        "otp_ref_id": "TXNOTP20240101001",
+        "mobile": "XXXXXX6789"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Sender monthly limit exhausted",
+        "responseStatusId": 945,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 945,
+          "message": "Sender/beneficiary monthly limit exhausted",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "dmt-initiate-transfer",
+    "method": "POST",
+    "path": "/customer/payment/dmt-fino",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REF-20240101-001",
+      "customer_id": "9123456789",
+      "recipient_id": 98765,
+      "amount": 500,
+      "otp": "251834",
+      "otp_ref_id": "TXNOTP20240101001",
+      "latlong": "28.6139,77.2090",
+      "state": "1",
+      "recipient_id_type": "1",
+      "channel": 2,
+      "currency": "INR"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Transaction successful",
+      "tx_status": "0",
+      "txstatus_desc": "Success",
+      "data": {
+        "tid": "2309876543",
+        "utrnumber": "412345678901",
+        "amount": 500,
+        "tx_status": "0",
+        "recipient_name": "Sunil Sharma",
+        "account": "012345678901",
+        "ifsc": "SBIN0001234",
+        "fee": 5,
+        "commission": 3,
+        "balance": 4495,
+        "client_ref_id": "REF-20240101-001",
+        "timestamp": "2024-01-01T10:30:05Z"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Insufficient balance in agent wallet",
+        "responseStatusId": 347,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 347,
+          "message": "Insufficient balance",
+          "tx_status": "1",
+          "txstatus_desc": "Failed",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Transaction pending / awaited — poll Get Transaction Status",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "Transaction in progress",
+          "tx_status": "2",
+          "txstatus_desc": "Awaited",
+          "data": {
+            "tid": "2309876543",
+            "amount": 500
+          }
+        }
+      },
+      {
+        "scenario": "Wrong OTP entered",
+        "responseStatusId": 302,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 302,
+          "message": "Wrong OTP",
+          "tx_status": "1",
+          "txstatus_desc": "Failed",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Sender monthly limit exhausted",
+        "responseStatusId": 945,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 945,
+          "message": "Sender/beneficiary monthly limit exhausted",
+          "tx_status": "1",
+          "txstatus_desc": "Failed",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-cash-withdrawal",
+    "method": "POST",
+    "path": "/customer/collection/aeps-fingpay",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "CW-20240101-001",
+      "source": "API",
+      "service_type": 2,
+      "customer_id": "9876543210",
+      "bank_code": "607153",
+      "amount": 1000,
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR",
+      "piddata": "<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+      "pipe": 0,
+      "notify_customer": 1,
+      "latlong": "28.6139,77.2090",
+      "source_ip": "103.56.78.90",
+      "reference_id": "DAKYC20240101001"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Cash Withdrawal successful",
+      "tx_status": "0",
+      "txstatus_desc": "Success",
+      "data": {
+        "tid": "EKO20240101001234",
+        "tx_status": "0",
+        "txstatus_desc": "Success",
+        "amount": 1000,
+        "bank_name": "State Bank of India",
+        "bank_ref_num": "NPCI20240101ABCD",
+        "balance": "4500.00",
+        "aadhaar_ref_num": "UIDAI123456789",
+        "service_type": 2
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Biometric authentication failure",
+        "responseStatusId": 108,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 108,
+          "message": "Biometric authentication failed. Please retry with a fresh fingerprint scan.",
+          "tx_status": "1",
+          "txstatus_desc": "Failed",
+          "data": {
+            "tid": "EKO20240101001235",
+            "tx_status": "1",
+            "amount": 1000
+          }
+        }
+      },
+      {
+        "scenario": "Insufficient balance in customer account",
+        "responseStatusId": 347,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 347,
+          "message": "Insufficient balance in customer account.",
+          "tx_status": "1",
+          "txstatus_desc": "Failed",
+          "data": {
+            "tid": "EKO20240101001236",
+            "tx_status": "1",
+            "amount": 1000
+          }
+        }
+      },
+      {
+        "scenario": "Daily 2FA reference_id missing or invalid",
+        "responseStatusId": 155,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 155,
+          "message": "Daily authentication (2FA) required. Complete daily eKYC before performing transactions.",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Transaction awaited / bank timeout",
+        "responseStatusId": 2,
+        "statusCode": 200,
+        "example": {
+          "status": 2,
+          "response_status_id": 2,
+          "message": "Transaction is being processed. Check status using Transaction Inquiry API.",
+          "tx_status": "2",
+          "txstatus_desc": "Awaited",
+          "data": {
+            "tid": "EKO20240101001237",
+            "tx_status": "2"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-balance-enquiry",
+    "method": "POST",
+    "path": "/customer/collection/aeps-fingpay",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "BE-20240101-001",
+      "source": "API",
+      "service_type": 3,
+      "customer_id": "9876543210",
+      "bank_code": "607153",
+      "amount": 0,
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR",
+      "piddata": "<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+      "pipe": 0,
+      "notify_customer": 0,
+      "latlong": "28.6139,77.2090",
+      "source_ip": "103.56.78.90"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Balance Enquiry successful",
+      "tx_status": "0",
+      "txstatus_desc": "Success",
+      "data": {
+        "tid": "EKO20240101005678",
+        "tx_status": "0",
+        "txstatus_desc": "Success",
+        "balance": "5500.75",
+        "bank_name": "State Bank of India",
+        "bank_ref_num": "NPCI20240101EFGH",
+        "aadhaar_ref_num": "UIDAI987654321"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Bank server timeout / balance unavailable",
+        "responseStatusId": 108,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 108,
+          "message": "Unable to fetch balance. Bank server did not respond in time.",
+          "tx_status": "1",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Aadhaar not linked to selected bank",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "Aadhaar not linked to this bank. Please select the correct bank.",
+          "tx_status": "1",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-activate-fingpay",
+    "method": "PUT",
+    "path": "/admin/network/agent/{user_code}/aeps-fingpay/activate",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "modelname": "Morpho 1300E3",
+      "devicenumber": "SN1234567890",
+      "office_address": {
+        "line": "Shop No. 5, Gandhi Market",
+        "city": "Patna",
+        "state": "Bihar",
+        "pincode": "800001"
+      },
+      "address_as_per_proof": {
+        "line": "Shop No. 5, Gandhi Market",
+        "city": "Patna",
+        "state": "Bihar",
+        "pincode": "800001"
+      },
+      "pan_card": "<multipart binary>",
+      "aadhar_front": "<multipart binary>",
+      "aadhar_back": "<multipart binary>"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "AePS Fingpay activation request submitted successfully. Approval expected within 2-3 business days.",
+      "response_type_id": 1388,
+      "data": {
+        "activation_status": "pending",
+        "activation_id": "ACT20240101001",
+        "message": "Activation request submitted. Approval expected within 2-3 business days."
+      }
+    },
+    "errors": [
+      {
+        "scenario": "File format not accepted (PNG uploaded)",
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "message": "Invalid file format. Only JPEG, JPG, and PDF are accepted."
+        }
+      },
+      {
+        "scenario": "File size exceeds 1 MB",
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "message": "File size exceeds the maximum allowed limit of 1 MB."
+        }
+      },
+      {
+        "scenario": "Agent user_code not found",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "Agent not found. Please verify the user_code.",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-daily-auth",
+    "method": "POST",
+    "path": "/customer/aeps/fingpay/kyc/daily",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "DAUTH-20240101-001",
+      "source": "API",
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR",
+      "piddata": "<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+      "latlong": "25.5941,85.1376",
+      "source_ip": "103.56.78.90"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Daily authentication successful. You can now process Cash Withdrawal transactions.",
+      "response_type_id": 1388,
+      "data": {
+        "reference_id": "DAKYC20240101001",
+        "auth_status": "success",
+        "valid_till": "2024-01-01T23:59:59+05:30"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Biometric authentication failed",
+        "responseStatusId": 108,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 108,
+          "message": "Daily biometric authentication failed. Please re-scan fingerprint.",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "eKYC not completed — daily auth not yet eligible",
+        "responseStatusId": 327,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 327,
+          "message": "eKYC not completed or daily auth not eligible yet (minimum 3 days after eKYC required).",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Daily auth already completed for today",
+        "responseStatusId": 17,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 17,
+          "message": "Daily authentication already completed for today. Use the existing reference_id for transactions.",
+          "data": {
+            "reference_id": "DAKYC20240101001"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-mini-statement",
+    "method": "POST",
+    "path": "/customer/collection/aeps-fingpay",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "MS-20240101-001",
+      "source": "API",
+      "service_type": 4,
+      "customer_id": "9876543210",
+      "bank_code": "607153",
+      "amount": 0,
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR",
+      "piddata": "<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+      "pipe": 0,
+      "notify_customer": 0,
+      "latlong": "28.6139,77.2090",
+      "source_ip": "103.56.78.90"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Mini Statement fetched successfully",
+      "tx_status": "0",
+      "txstatus_desc": "Success",
+      "data": {
+        "tid": "EKO20240101009012",
+        "tx_status": "0",
+        "txstatus_desc": "Success",
+        "bank_name": "Punjab National Bank",
+        "bank_ref_num": "NPCI20240101IJKL",
+        "ministatement": [
+          {
+            "date": "2024-01-01",
+            "amount": "500.00",
+            "txn_type": "D",
+            "narration": "AePS CW"
+          },
+          {
+            "date": "2023-12-30",
+            "amount": "2000.00",
+            "txn_type": "C",
+            "narration": "NEFT CR"
+          },
+          {
+            "date": "2023-12-28",
+            "amount": "300.00",
+            "txn_type": "D",
+            "narration": "AePS CW"
+          }
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Mini statement not supported by bank",
+        "responseStatusId": 108,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 108,
+          "message": "Mini statement service not available for this bank.",
+          "tx_status": "1",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-aadhaar-pay",
+    "method": "POST",
+    "path": "/customer/collection/aeps-fingpay",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "AP-20240101-001",
+      "source": "API",
+      "service_type": 5,
+      "customer_id": "9876543210",
+      "bank_code": "607153",
+      "amount": 250,
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR",
+      "piddata": "<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+      "pipe": 0,
+      "notify_customer": 1,
+      "latlong": "28.6139,77.2090",
+      "source_ip": "103.56.78.90"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Aadhaar Pay successful",
+      "tx_status": "0",
+      "txstatus_desc": "Success",
+      "data": {
+        "tid": "EKO20240101012345",
+        "tx_status": "0",
+        "txstatus_desc": "Success",
+        "amount": 250,
+        "bank_name": "Bank of Baroda",
+        "bank_ref_num": "NPCI20240101MNOP"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Biometric authentication failed",
+        "responseStatusId": 108,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 108,
+          "message": "Fingerprint authentication failed. Please re-scan.",
+          "tx_status": "1",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-send-otp-kyc",
+    "method": "POST",
+    "path": "/customer/aeps/fingpay/kyc/otp",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "KYCOTP-20240101-001",
+      "source": "API",
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "OTP sent successfully to Aadhaar-linked mobile number.",
+      "response_type_id": 1388,
+      "data": {
+        "otp_ref_id": "OTPREF20240101001",
+        "mobile_hint": "******7890"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "OTP already sent / too many requests",
+        "responseStatusId": 302,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 302,
+          "message": "OTP already sent. Please wait before requesting a new OTP."
+        }
+      },
+      {
+        "scenario": "Aadhaar not eligible for eKYC",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "Aadhaar not found or not eligible for eKYC.",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aeps-biometric-ekyc",
+    "method": "POST",
+    "path": "/customer/aeps/fingpay/kyc/biometric",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "KYCBIO-20240101-001",
+      "source": "API",
+      "aadhaar": "BASE64_ENCRYPTED_AADHAAR",
+      "piddata": "<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+      "otp_ref_id": "OTPREF20240101001"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Biometric eKYC completed successfully. Agent is now eligible for AePS transactions.",
+      "response_type_id": 1388,
+      "data": {
+        "kyc_status": "completed",
+        "aadhaar_ref_num": "UIDAI112233445"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Biometric match failed",
+        "responseStatusId": 108,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 108,
+          "message": "Biometric verification failed. Please retry with a fresh fingerprint scan.",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "OTP session expired",
+        "responseStatusId": 303,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 303,
+          "message": "OTP reference expired. Please restart the eKYC flow from Send OTP.",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "bbps-get-categories",
+    "method": "GET",
+    "path": "/customer/payment/bbps/categories",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000"
+      },
+      "query": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200"
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Success",
+      "response_type_id": 1388,
+      "data": {
+        "categories": [
+          {
+            "id": 1,
+            "category_name": "Prepaid"
+          },
+          {
+            "id": 2,
+            "category_name": "DTH"
+          },
+          {
+            "id": 4,
+            "category_name": "Postpaid"
+          },
+          {
+            "id": 5,
+            "category_name": "Electricity"
+          },
+          {
+            "id": 6,
+            "category_name": "Gas"
+          },
+          {
+            "id": 7,
+            "category_name": "Water"
+          },
+          {
+            "id": 8,
+            "category_name": "Broadband"
+          },
+          {
+            "id": 9,
+            "category_name": "Landline"
+          },
+          {
+            "id": 10,
+            "category_name": "Insurance"
+          },
+          {
+            "id": 11,
+            "category_name": "FASTag"
+          },
+          {
+            "id": 12,
+            "category_name": "LPG Booking"
+          },
+          {
+            "id": 13,
+            "category_name": "EMI Payments"
+          },
+          {
+            "id": 14,
+            "category_name": "Credit Card"
+          },
+          {
+            "id": 15,
+            "category_name": "Education"
+          },
+          {
+            "id": 16,
+            "category_name": "Metro"
+          },
+          {
+            "id": 17,
+            "category_name": "Municipal Corp"
+          }
+        ]
+      }
+    },
+    "errors": []
+  },
+  {
+    "slug": "bbps-get-locations",
+    "method": "GET",
+    "path": "/customer/payment/bbps/locations",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000"
+      },
+      "query": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200"
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Success",
+      "response_type_id": 1388,
+      "data": {
+        "locations": [
+          {
+            "id": 1,
+            "location_name": "Andhra Pradesh"
+          },
+          {
+            "id": 2,
+            "location_name": "Bihar"
+          },
+          {
+            "id": 3,
+            "location_name": "Gujarat"
+          },
+          {
+            "id": 4,
+            "location_name": "Karnataka"
+          },
+          {
+            "id": 5,
+            "location_name": "Maharashtra"
+          },
+          {
+            "id": 6,
+            "location_name": "Rajasthan"
+          },
+          {
+            "id": 7,
+            "location_name": "Delhi"
+          },
+          {
+            "id": 8,
+            "location_name": "Tamil Nadu"
+          },
+          {
+            "id": 9,
+            "location_name": "Uttar Pradesh"
+          },
+          {
+            "id": 10,
+            "location_name": "West Bengal"
+          }
+        ]
+      }
+    },
+    "errors": []
+  },
+  {
+    "slug": "bbps-get-operators",
+    "method": "GET",
+    "path": "/customer/payment/bbps/operators",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000"
+      },
+      "query": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200",
+        "category": 5,
+        "location": 7
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Success",
+      "response_type_id": 1388,
+      "data": {
+        "operators": [
+          {
+            "operator_id": 83,
+            "operator_name": "BSES Rajdhani",
+            "category_id": 5,
+            "billFetchResponse": 1,
+            "high_commission_channel": 0
+          },
+          {
+            "operator_id": 84,
+            "operator_name": "BSES Yamuna",
+            "category_id": 5,
+            "billFetchResponse": 1,
+            "high_commission_channel": 0
+          },
+          {
+            "operator_id": 87,
+            "operator_name": "Tata Power Delhi Distribution",
+            "category_id": 5,
+            "billFetchResponse": 0,
+            "high_commission_channel": 0
+          }
+        ]
+      }
+    },
+    "errors": []
+  },
+  {
+    "slug": "bbps-get-operator-parameters",
+    "method": "GET",
+    "path": "/customer/payment/bbps/operator/{operator_id}/parameters",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000"
+      },
+      "path": {
+        "operator_id": 83
+      },
+      "query": {
+        "initiator_id": "9876543210"
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Success",
+      "response_type_id": 1388,
+      "data": {
+        "fetchBill": 1,
+        "BBPS": 1,
+        "data": [
+          {
+            "param_name": "utility_acc_no",
+            "param_label": "Consumer Number",
+            "param_type": "Numeric",
+            "regex": "^[0-9]{10,12}$",
+            "error_message": "Please enter a valid 10-12 digit consumer number."
+          }
+        ]
+      }
+    },
+    "errors": []
+  },
+  {
+    "slug": "bbps-fetch-bill",
+    "method": "GET",
+    "path": "/customer/payment/bbps/bill",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000"
+      },
+      "query": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200",
+        "client_ref_id": "BFETCH-20240601-001",
+        "utility_acc_no": "1234567890",
+        "confirmation_mobile_no": "9999988888",
+        "sender_name": "Ramesh Kumar",
+        "operator_id": "83",
+        "source_ip": "192.168.1.1",
+        "latlong": "28.6139,77.2090",
+        "hc_channel": 0
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Bill fetched successfully",
+      "response_type_id": 1388,
+      "data": {
+        "bill_amount": "135000",
+        "due_date": "30/06/2024",
+        "bill_number": "BN20240601XYZ",
+        "bill_date": "01/06/2024",
+        "customer_name": "Ramesh Kumar",
+        "billfetchresponse": "eyJhbGciOiJSUzI1NiJ9..."
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid consumer number — biller returns no bill",
+        "responseStatusId": 131,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 131,
+          "message": "Invalid account number. Please check and retry.",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Biller system unavailable",
+        "responseStatusId": 151,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 151,
+          "message": "Biller system is temporarily unavailable. Please try again later.",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "bbps-pay-bill",
+    "method": "POST",
+    "path": "/customer/payment/bbps",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000",
+        "content-type": "application/json"
+      },
+      "body": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200",
+        "client_ref_id": "BBPS-20240601-001",
+        "utility_acc_no": "1234567890",
+        "confirmation_mobile_no": "9999988888",
+        "sender_name": "Ramesh Kumar",
+        "operator_id": "83",
+        "amount": "1350",
+        "source_ip": "192.168.1.1",
+        "latlong": "28.6139,77.2090",
+        "billfetchresponse": "eyJhbGciOiJSUzI1NiJ9..."
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Bill payment successful",
+      "response_type_id": 2,
+      "tx_status": "0",
+      "txstatus_desc": "Success",
+      "data": {
+        "tid": "1734567890",
+        "operator_ref_id": "BBPS202406011234",
+        "amount": "1350",
+        "balance": "4820.50",
+        "utility_acc_no": "1234567890",
+        "client_ref_id": "BBPS-20240601-001"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Insufficient agent wallet balance",
+        "responseStatusId": 347,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 347,
+          "message": "Insufficient balance.",
+          "tx_status": "1",
+          "txstatus_desc": "Fail",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Transaction awaited — biller not confirmed yet",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "Transaction is being processed.",
+          "tx_status": "2",
+          "txstatus_desc": "Response Awaited",
+          "data": {
+            "tid": "1734567891",
+            "amount": "1350"
+          }
+        }
+      },
+      {
+        "scenario": "Amount mismatch — pay amount differs from fetched bill",
+        "responseStatusId": 148,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 148,
+          "message": "Amount mismatch. Please fetch the bill again and retry.",
+          "tx_status": "1",
+          "txstatus_desc": "Fail",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "bbps-activate-service",
+    "method": "PUT",
+    "path": "/user/service/activate",
+    "request": {
+      "headers": {
+        "developer_key": "becbbce45f79c6f5109f848acd540567",
+        "secret-key": "<computed>",
+        "secret-key-timestamp": "1718000000000",
+        "content-type": "application/json"
+      },
+      "body": {
+        "initiator_id": "9876543210",
+        "user_code": "20810200",
+        "service_code": 53,
+        "latlong": "28.6139,77.2090"
+      }
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "BBPS service activated successfully",
+      "response_type_id": 1388,
+      "data": {
+        "service_code": 53,
+        "service_status": "activated"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Service already activated for this agent",
+        "responseStatusId": 17,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 17,
+          "message": "Service is already active for this user.",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "pan-lite",
+    "method": "POST",
+    "path": "/tools/kyc/pan-lite",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "PAN-REQ-20240101-001",
+      "source": "API",
+      "pan_number": "ABCDE1234F",
+      "name": "Rajesh Kumar",
+      "dob": "1994-08-29"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "PAN verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "pan": "ABCDE1234F",
+        "name": "Rajesh Kumar",
+        "dob": "1994-08-29",
+        "name_match": "Y",
+        "dob_match": "Y",
+        "pan_status": "E",
+        "status": "VALID",
+        "aadhaar_seeding_status": "Y",
+        "aadhaar_seeding_status_desc": "Aadhaar is linked to PAN"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or non-existent PAN",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "PAN not found or invalid",
+          "response_type_id": 1388,
+          "data": {
+            "pan": "ABCDE1234F",
+            "pan_status": "N",
+            "status": "INVALID",
+            "name_match": null,
+            "dob_match": null,
+            "aadhaar_seeding_status": null,
+            "aadhaar_seeding_status_desc": null
+          }
+        }
+      },
+      {
+        "scenario": "Missing required parameter",
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "message": "Bad request — missing or malformed parameter"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "pan-advanced",
+    "method": "POST",
+    "path": "/tools/kyc/pan-advanced",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "PAN-ADV-20240101-001",
+      "pan": "ABCDE1234F",
+      "name": "Rajesh Kumar",
+      "dob": "1994-08-29"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "PAN Advanced verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "pan": "ABCDE1234F",
+        "name_provided": "Rajesh Kumar",
+        "registered_name": "Rajesh Kumar",
+        "name_pan_card": "Rajesh Kumar",
+        "first_name": "Rajesh",
+        "last_name": "Kumar",
+        "type": "Individual",
+        "gender": "M",
+        "date_of_birth": "1994-08-29",
+        "masked_aadhaar_number": "XXXX XXXX 1234",
+        "aadhaar_linked": true,
+        "email": "rajesh.kumar@example.com",
+        "mobile_number": "9876543210",
+        "address": {
+          "full_address": "Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
+          "street": "Woodland Heights, Ghatkopar",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "pincode": 400072,
+          "country": "India"
+        }
+      }
+    },
+    "errors": [
+      {
+        "scenario": "PAN not found in database",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "PAN not found or verification failed",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required parameter",
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "message": "Bad request — missing or malformed parameter"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "pan-bulk-verify",
+    "method": "POST",
+    "path": "/tools/kyc/pan/bulk",
+    "request": {
+      "initiator_id": "9876543210",
+      "client_ref_id": "BULK-PAN-20240101-001",
+      "entries": [
+        {
+          "pan": "ABCPV1234D",
+          "name": "John",
+          "source": "API"
+        },
+        {
+          "pan": "ABCPV1234L",
+          "name": "John Doe",
+          "source": "API"
+        }
+      ]
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Bulk PAN verification request accepted. Poll status API for results.",
+      "response_type_id": 1388,
+      "data": {
+        "reference_id": 123456
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Empty or missing entries array",
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "message": "Bad request — entries array is required and must not be empty"
+        }
+      },
+      {
+        "scenario": "Malformed PAN in one or more entries",
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "message": "Bad request — one or more entries contain an invalid PAN format"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aadhaar-dmt-fino-ekyc",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-fino/ekyc",
+    "request": {
+      "customer_id": "9876543210",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-005",
+      "aadhar": "123456789012",
+      "piddata": "<PidData><Data type=\"X\">BIOMETRIC_BLOCK_BASE64</Data></PidData>"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "eKYC OTP dispatched successfully",
+      "response_type_id": 1388,
+      "data": {
+        "otp_ref_id": "58201938",
+        "kyc_request_id": "KYC-20240101-005"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Biometric authentication failure",
+        "responseStatusId": 301,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 301,
+          "message": "Biometric authentication failed. Please re-capture fingerprint.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aadhaar-dmt-fino-verify-otp",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-fino/otp/verify",
+    "request": {
+      "customer_id": "9876543210",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-006",
+      "otp": "456789",
+      "otp_ref_id": "58201938",
+      "kyc_request_id": "KYC-20240101-005"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "eKYC verified successfully",
+      "response_type_id": 1388,
+      "data": {
+        "kyc_status": "SUCCESS",
+        "name": "Priya Sharma",
+        "dob": "20-03-1985",
+        "gender": "F",
+        "masked_aadhaar": "XXXX-XXXX-5678",
+        "kyc_request_id": "KYC-20240101-005"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Wrong OTP entered",
+        "responseStatusId": 302,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 302,
+          "message": "Wrong OTP. Please check and retry.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "OTP has expired",
+        "responseStatusId": 303,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 303,
+          "message": "OTP expired. Please regenerate.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aadhaar-dmt-levin-validate",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-levin/aadhaar",
+    "request": {
+      "customer_id": 9876543210,
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-007",
+      "aadhar": "123456789012",
+      "otp_ref_id": "73849201",
+      "additional_info": "1"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Aadhaar OTP dispatched successfully",
+      "response_type_id": 1388,
+      "data": {
+        "otp_ref_id": "93847201",
+        "mobile_hint": "******3210"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid Aadhaar number",
+        "responseStatusId": 301,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 301,
+          "message": "Invalid Aadhaar number provided.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "aadhaar-dmt-levin-verify-otp",
+    "method": "POST",
+    "path": "/customer/account/{customer_id}/dmt-levin/otp/verify",
+    "request": {
+      "customer_id": "9876543210",
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-008",
+      "otp": 123456,
+      "otp_ref_id": 93847201,
+      "intent_id": "20",
+      "additional_info": "1"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Aadhaar OTP verified successfully",
+      "response_type_id": 1388,
+      "data": {
+        "verified": true,
+        "name": "Arjun Mehta",
+        "gender": "M",
+        "dob": "10-01-1988",
+        "masked_aadhaar": "XXXX-XXXX-3456"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Wrong OTP",
+        "responseStatusId": 302,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 302,
+          "message": "Wrong OTP. Please check and retry.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "OTP expired",
+        "responseStatusId": 303,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 303,
+          "message": "OTP expired. Please regenerate.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "digilocker-create-url",
+    "method": "POST",
+    "path": "/tools/kyc/digilocker",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-011",
+      "document_requested": [
+        "AADHAAR"
+      ],
+      "redirect_url": "https://yourapp.com/kyc/callback"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "DigiLocker URL created successfully",
+      "response_type_id": 1388,
+      "data": {
+        "reference_id": 7483920,
+        "url": "https://digilocker.gov.in/auth?session_id=abc123xyz",
+        "document_requested": [
+          "AADHAAR"
+        ],
+        "redirect_url": "https://yourapp.com/kyc/callback"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid redirect_url format",
+        "responseStatusId": 301,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 301,
+          "message": "Invalid redirect URL provided.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "digilocker-get-document",
+    "method": "POST",
+    "path": "/tools/kyc/digilocker/document",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-012",
+      "source": "API",
+      "document_type": [
+        "AADHAAR"
+      ],
+      "verification_id": "vrf_digilocker_abc123",
+      "reference_id": "7483920"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Documents retrieved successfully",
+      "response_type_id": 1388,
+      "data": {
+        "verification_status": "SUCCESS",
+        "documents": [
+          {
+            "document_type": "AADHAAR",
+            "name": "Vikram Singh",
+            "dob": "12-11-1987",
+            "gender": "M",
+            "masked_aadhaar": "XXXX-XXXX-2345",
+            "photo": "/9j/4AAQSkZJRgABAQ...",
+            "issue_date": "01-01-2020",
+            "address": {
+              "house": "15B",
+              "street": "Nehru Street",
+              "village_or_city": "Chennai",
+              "district": "Chennai",
+              "state": "Tamil Nadu",
+              "pincode": "600001"
+            }
+          }
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Customer has not completed DigiLocker authorisation yet",
+        "responseStatusId": 327,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 327,
+          "message": "Verification pending. Customer has not completed DigiLocker consent.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Invalid reference_id",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "Invalid reference ID. Please check and retry.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "bank-account-verification",
+    "method": "POST",
+    "path": "/tools/kyc/bank-account/sync",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "bank_account": 1234567890,
+      "ifsc": "SBIN0001234",
+      "client_ref_id": "BANK-VER-20240101-001"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Bank account verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "account_exists": true,
+        "account_name": "Rajesh Kumar",
+        "ifsc": "SBIN0001234",
+        "bank": "State Bank of India",
+        "branch": "MG Road Branch",
+        "utr": "431712345678"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid IFSC code — malformed or non-existent IFSC provided",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid IFSC code",
+          "response_type_id": 1388,
+          "data": {
+            "account_exists": false,
+            "account_name": null,
+            "ifsc": "INVALID001",
+            "bank": null,
+            "branch": null,
+            "utr": null
+          }
+        }
+      },
+      {
+        "scenario": "Invalid or non-existent bank account number — penny drop failed",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid Account",
+          "response_type_id": 1388,
+          "data": {
+            "account_exists": false,
+            "account_name": null,
+            "ifsc": "SBIN0001234",
+            "bank": "State Bank of India",
+            "branch": "MG Road Branch",
+            "utr": null
+          }
+        }
+      },
+      {
+        "scenario": "Bank not supported — not live on IMPS (e.g. Deutsche Bank, Fincare SFB)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Bank not supported for verification",
+          "response_type_id": 1388,
+          "data": {
+            "account_exists": false,
+            "account_name": null,
+            "ifsc": null,
+            "bank": null,
+            "branch": null,
+            "utr": null
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "bulk-bank-account-verification",
+    "method": "POST",
+    "path": "/tools/kyc/bank-account/bulk",
+    "request": {
+      "initiator_id": "9876543210",
+      "client_ref_id": "BULK-BANK-20240101-001",
+      "entries": [
+        {
+          "bank_account": "1234567890",
+          "ifsc": "SBIN0001234"
+        },
+        {
+          "bank_account": "9876543210",
+          "ifsc": "HDFC0005678"
+        }
+      ]
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Bulk verification request accepted. Poll status API for results.",
+      "response_type_id": 1388,
+      "data": {
+        "bulk_reference_id": "3356655212",
+        "reference_id": 123456
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or malformed entries array — missing required fields in one or more entries",
+        "responseStatusId": -1,
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid request: entries array is missing or malformed",
+          "data": null
+        }
+      },
+      {
+        "scenario": "Invalid IFSC in one or more entries — batch accepted but affected entries fail in status poll",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "Bulk verification request accepted. Poll status API for results.",
+          "response_type_id": 1388,
+          "data": {
+            "bulk_reference_id": "3356655213",
+            "reference_id": 123457
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "verify-gstin",
+    "method": "POST",
+    "path": "/tools/kyc/gstin",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "GST-VER-20240101-001",
+      "gstin": "29ABCDE1234F1Z5",
+      "business_name": "Acme Pvt Ltd"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "GSTIN verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "gstin": "29ABCDE1234F1Z5",
+        "valid": true,
+        "gst_in_status": "Active",
+        "legal_name_of_business": "Acme Private Limited",
+        "taxpayer_type": "Regular",
+        "constitution_of_business": "Private Limited Company",
+        "date_of_registration": "01/07/2017",
+        "last_update_date": "01/02/2022",
+        "cancellation_date": "",
+        "nature_of_business_activities": "Wholesale, Supplier of Services, Recipient of Goods or Services",
+        "state_jurisdiction": "Karnataka",
+        "center_jurisdiction": "Commissionerate of Central Tax, Bangalore",
+        "principal_place_address": "123, MG Road, Bangalore, Karnataka 560001",
+        "principal_place_split_address": {
+          "flat_number": "123",
+          "building_name": "MG Towers",
+          "street": "MG Road",
+          "location": "Bangalore",
+          "city": "Bangalore",
+          "district": "Bangalore Urban",
+          "state": "Karnataka",
+          "pincode": "560001",
+          "latitude": 12.9716,
+          "longitude": 77.5946
+        },
+        "additional_address_array": [],
+        "message": "GSTIN verification successful",
+        "status_code": 1
+      }
+    },
+    "errors": [
+      {
+        "scenario": "GSTIN not found / does not exist in government records",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "GSTIN doesn't exist",
+          "response_type_id": 1388,
+          "data": {
+            "valid": false,
+            "gst_in_status": ""
+          }
+        }
+      },
+      {
+        "scenario": "Missing required field (gstin or business_name not supplied)",
+        "responseStatusId": -1,
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Bad request: required parameter missing",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key / timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Forbidden: invalid authentication credentials",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "gstin-with-pan",
+    "method": "POST",
+    "path": "/tools/kyc/gstin-with-pan",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "source": "API",
+      "pan": "ABCDE1234F"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "GSTIN fetch successful",
+      "response_type_id": 1388,
+      "data": {
+        "pan": "ABCDE1234F",
+        "gstin_list": [
+          {
+            "gstin": "29ABCDE1234F1Z5",
+            "status": "Active",
+            "state": "Maharashtra"
+          },
+          {
+            "gstin": "27ABCDE1234F1Z2",
+            "status": "Inactive",
+            "state": "Karnataka"
+          }
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "No GSTINs found for the given PAN",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "No GSTIN found for the provided PAN",
+          "response_type_id": 1388,
+          "data": {
+            "pan": "ABCDE1234F",
+            "gstin_list": []
+          }
+        }
+      },
+      {
+        "scenario": "Invalid PAN format",
+        "responseStatusId": -1,
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Bad request: invalid PAN format",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key / timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Forbidden: invalid authentication credentials",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "upi-validate-vpa",
+    "method": "POST",
+    "path": "/customer/payment/upi/validate-vpa",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "VPA-VAL-20240101-001",
+      "source": "API",
+      "customer_vpa": "rajesh.kumar@okicici",
+      "recipient_mobile": "9876543210",
+      "name": "Rajesh Kumar",
+      "latlong": "28.6139,77.2090"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "VPA validation successful",
+      "response_type_id": 1388,
+      "data": {
+        "vpa": "rajesh.kumar@okicici",
+        "valid": true,
+        "recipient_name": "Rajesh Kumar",
+        "mobile_number": "9876543210",
+        "transaction_id": "3560508954"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or non-existent VPA",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "VPA is invalid or does not exist",
+          "response_type_id": 1388,
+          "data": {
+            "vpa": "invalid.user@okicici",
+            "valid": false,
+            "recipient_name": null,
+            "mobile_number": null,
+            "transaction_id": "3560508955"
+          }
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong secret-key or stale timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Unauthorized — invalid secret-key or secret-key-timestamp.",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "User (retailer) not found",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "User not found",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "driving-license",
+    "method": "POST",
+    "path": "/tools/kyc/driving-license",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "DL-VER-20240101-001",
+      "source": "API",
+      "dl_number": "MH0220190001234",
+      "dob": "1994-08-29"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "DL verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "dl_number": "MH0220190001234",
+        "dob": "1994-08-29",
+        "status": "Active",
+        "details_of_driving_licence": {
+          "name": "Rajesh Kumar",
+          "father_or_husband_name": "Suresh Kumar",
+          "date_of_issue": "2019-03-15",
+          "date_of_last_transaction": "2023-01-10",
+          "last_transacted_at": "Mumbai RTO",
+          "status": "Active",
+          "address_list": [
+            {
+              "complete_address": "123, Andheri West, Mumbai, Maharashtra - 400053",
+              "type": "permanent",
+              "split_address": {}
+            }
+          ],
+          "address": "123, Andheri West, Mumbai",
+          "photo": "/9j/4AAQSkZJRgAB...",
+          "cov_details": [
+            {
+              "cov": "LMV",
+              "issue_date": "2019-03-15"
+            },
+            {
+              "cov": "MCWG",
+              "issue_date": "2019-03-15"
+            }
+          ]
+        },
+        "dl_validity": {
+          "non_transport": {
+            "from": "2019-03-15",
+            "to": "2039-03-14"
+          },
+          "transport": {
+            "from": "2019-03-15",
+            "to": "2024-03-14"
+          },
+          "hazardous_valid_till": null,
+          "hill_valid_till": null
+        },
+        "badge_details": [
+          {
+            "badge_no": "MH-BADGE-001",
+            "badge_issue_date": "2019-03-15",
+            "class_of_vehicle": [
+              "LMV",
+              "MCWG"
+            ]
+          }
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "DL number not found in government records",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "No record found for the provided DL number",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "DOB mismatch — provided DOB does not match authority records",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Date of birth does not match DL records",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Invalid DL number format",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Invalid driving license number format",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong secret-key or timestamp",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Unauthorized: invalid secret-key or timestamp"
+        }
+      },
+      {
+        "scenario": "Upstream authority service temporarily unavailable",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Source unavailable. Please try again.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "vehicle-rc",
+    "method": "POST",
+    "path": "/tools/kyc/vehicle-rc",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "RC-VER-20240101-001",
+      "source": "API",
+      "vehicle_number": "HR26DA8398"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Vehicle RC verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "reference_id": "EKO-RC-9876543210-001",
+        "status": "Active",
+        "reg_no": "HR26DA8398",
+        "rc_status": "Active",
+        "status_as_on": "2024-01-01",
+        "owner": "Arya Sharma",
+        "owner_father_name": "Rajesh Sharma",
+        "owner_count": 1,
+        "mobile_number": "98XXXXXXXX",
+        "present_address": "123, Sector 45, Gurgaon, Haryana 122003",
+        "split_present_address": {
+          "house_flat_number": "123",
+          "street": "Sector 45",
+          "city": "Gurgaon",
+          "state": "Haryana",
+          "pincode": "122003"
+        },
+        "permanent_address": "456, MG Road, Gurgaon, Haryana 122001",
+        "split_permanent_address": {
+          "house_flat_number": "456",
+          "street": "MG Road",
+          "city": "Gurgaon",
+          "state": "Haryana",
+          "pincode": "122001"
+        },
+        "reg_authority": "HR-26 Gurgaon",
+        "reg_date": "2020-06-15",
+        "rc_expiry_date": "2039-06-14",
+        "class": "Motor Car",
+        "vehicle_category": "LMV",
+        "type": "Private",
+        "is_commercial": false,
+        "vehicle_manufacturer_name": "Mahindra & Mahindra",
+        "model": "XUV300",
+        "body_type": "Hard Top",
+        "vehicle_color": "Dark Grey",
+        "fuel_type": "Petrol",
+        "norms_type": "Bharat Stage VI",
+        "emission_norms": "Bharat Stage VI",
+        "chassis": "MA1TE2ELXLM123456",
+        "engine": "N10A1234567",
+        "vehicle_manufacturing_month_year": "May 2020",
+        "vehicle_cubic_capacity": "1497",
+        "vehicle_cylinders_no": "4",
+        "vehicle_seat_capacity": "5",
+        "vehicle_sleeper_capacity": "0",
+        "vehicle_standing_capacity": "0",
+        "gross_vehicle_weight": "1680",
+        "unladen_weight": "1230",
+        "wheelbase": "2600",
+        "vehicle_insurance_company_name": "Tata AIG General Insurance",
+        "vehicle_insurance_policy_number": "0165274682",
+        "vehicle_insurance_upto": "2025-06-14",
+        "rc_financer": "HDFC Bank Ltd",
+        "vehicle_tax_upto": "2024-06-14",
+        "pucc_number": "DL-EW-123456",
+        "pucc_upto": "2024-12-31",
+        "blacklist_status": "Not Blacklisted",
+        "blacklist_details": {},
+        "challan_details": {},
+        "noc_details": null,
+        "non_use_status": null,
+        "non_use_from": null,
+        "non_use_to": null,
+        "permit_number": null,
+        "permit_type": null,
+        "permit_issue_date": null,
+        "permit_valid_from": null,
+        "permit_valid_upto": null,
+        "national_permit_number": null,
+        "national_permit_upto": null,
+        "national_permit_issued_by": null
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or unrecognised vehicle number",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Vehicle number not found in VAHAN database",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required parameter (vehicle_number not supplied)",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "vehicle_number is required",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden: invalid secret-key or timestamp mismatch"
+        }
+      },
+      {
+        "scenario": "VAHAN source temporarily unavailable",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Source temporarily unavailable. Please try again.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "advance-employment",
+    "method": "POST",
+    "path": "/tools/kyc/advance-employment",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "EMP-VER-20240101-001",
+      "source": "API",
+      "phone": "9876543210"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Employee verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "input": {
+          "phone": "9876543210"
+        },
+        "uan_details": [
+          {
+            "uan": "1001234567890",
+            "source": "EPFO",
+            "source_score": 95,
+            "basic_details": {
+              "employee_name": "Rajesh Kumar",
+              "gender": "Male",
+              "dob": "1994-08-29",
+              "phone": "9876543210",
+              "aadhaar_verified": false,
+              "employee_confidence_score": 88
+            },
+            "employment_details": {
+              "member_id": "MH/BOM/12345/000/0000001",
+              "establishment_id": "MHBAN0012345000",
+              "establishment_name": "Acme Pvt Ltd",
+              "joining_date": "2019-04-01",
+              "exit_date": "2023-06-30",
+              "leave_reason": "Resignation",
+              "employer_confidence_score": 90
+            },
+            "additional_details": {
+              "pan": "ABCDE1234F",
+              "aadhaar": "XXXX-XXXX-1234",
+              "email": "rajesh.kumar@example.com",
+              "ifsc": "HDFC0001234",
+              "bank_account": "XXXX1234",
+              "bank_address": "HDFC Bank, Andheri West, Mumbai",
+              "relative_name": "Sunita Kumar",
+              "relation": "Spouse"
+            }
+          }
+        ],
+        "recent_employment_details": {
+          "employee_details": {
+            "uan": "1001234567890",
+            "member_id": "MH/BOM/12345/000/0000001",
+            "joining_date": "2019-04-01",
+            "exit_date": "2023-06-30",
+            "employed": false,
+            "exit_date_marked": true,
+            "employee_name_match": true,
+            "epfo": {
+              "recent": true,
+              "name_unique": true,
+              "pf_filings_details": true
+            }
+          },
+          "employer_details": {
+            "establishment_id": "MHBAN0012345000",
+            "establishment_name": "Acme Pvt Ltd",
+            "setup_date": "2005-03-15",
+            "ownership_type": "Private",
+            "employer_confidence_score": 90,
+            "employer_name_match": true,
+            "pf_filing_details": [
+              {
+                "wage_month": "2023-05",
+                "total_amount": 1800,
+                "employees_count": 120
+              },
+              {
+                "wage_month": "2023-04",
+                "total_amount": 1800,
+                "employees_count": 118
+              },
+              {
+                "wage_month": "2023-03",
+                "total_amount": 1750,
+                "employees_count": 115
+              }
+            ]
+          }
+        }
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Phone number not linked to any UAN in EPFO records",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "No UAN found for the provided phone number",
+          "response_type_id": 1388,
+          "data": {
+            "uan_details": [],
+            "recent_employment_details": null
+          }
+        }
+      },
+      {
+        "scenario": "Missing required parameter (phone)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "phone is required",
+          "response_type_id": 1388,
+          "data": null
+        }
+      },
+      {
+        "scenario": "Invalid or unauthorized developer key",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden: invalid developer_key or secret-key"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "reverse-geocoding",
+    "method": "POST",
+    "path": "/tools/kyc/reverse-geocoding",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "GEO-20240101-001",
+      "source": "API",
+      "latitude": "19.0760",
+      "longitude": "72.8777"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Reverse geocoding successful",
+      "response_type_id": 1388,
+      "data": {
+        "latitude": "19.0760",
+        "longitude": "72.8777",
+        "address": "6/B Mahatyagi Road, Chhatrapati Shivaji Terminus",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "statecode": "MH",
+        "countrycode": "IN",
+        "pincode": "400001",
+        "score": 0.95,
+        "status": "OK"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or out-of-range coordinates",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid latitude or longitude value",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required parameter (latitude or longitude omitted)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Required parameter missing",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong secret-key or timestamp",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "voter-id",
+    "method": "POST",
+    "path": "/tools/kyc/voter-id",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "VOTER-20240101-001",
+      "source": "API",
+      "epic_number": "ABC1234567",
+      "name": "Rajesh Kumar"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Voter ID verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "name": "Rajesh Kumar",
+        "name_in_regional_lang": "राजेश कुमार",
+        "age": "34",
+        "dob": "1994-08-29",
+        "gender": "Male",
+        "father_name": "Suresh Kumar",
+        "relation_type": "Father",
+        "relation_name": "Suresh Kumar",
+        "relation_name_in_regional_lang": "सुरेश कुमार",
+        "epic_number": "ABC1234567",
+        "address": "Ward 12, Sector 5, Noida",
+        "state": "Uttar Pradesh",
+        "split_address": {
+          "district": [
+            "Gautam Buddha Nagar"
+          ],
+          "city": [
+            "Noida"
+          ],
+          "state": [
+            [
+              "Uttar Pradesh"
+            ]
+          ],
+          "pincode": "201301",
+          "country": [
+            "India"
+          ],
+          "address_line": "Ward 12, Sector 5, Noida, Gautam Buddha Nagar, Uttar Pradesh - 201301"
+        },
+        "assembly_constituency": "Noida (62)",
+        "assembly_constituency_number": "62",
+        "parliamentary_constituency": "Gautam Buddha Nagar",
+        "parliamentary_constituency_number": "47",
+        "part_number": "142",
+        "part_name": "Sector 5 Ward",
+        "serial_number": "312",
+        "polling_station": "Govt. School Noida Sec 5"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or non-existent EPIC number",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "No record found for the provided EPIC number",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required parameter (epic_number)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "epic_number is required",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden — incorrect secret-key or timestamp"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "passport",
+    "method": "POST",
+    "path": "/tools/kyc/passport",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "PASS-20240101-001",
+      "source": "API",
+      "file_number": "J8369854",
+      "dob": "1994-08-29",
+      "name": "Rajesh Kumar"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Passport verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "file_number": "J8369854",
+        "name": "Rajesh Kumar",
+        "dob": "1994-08-29",
+        "application_type": "Normal",
+        "application_received_date": "2023-01-15"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or non-existent passport file number / DOB mismatch",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Passport details not found. Please verify the file number and date of birth.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required field (file_number or dob not supplied)",
+        "responseStatusId": -1,
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Bad request: required parameter missing",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key / timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Forbidden: invalid authentication credentials",
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "cin",
+    "method": "POST",
+    "path": "/tools/kyc/cin",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "CIN-20240101-001",
+      "source": "API",
+      "cin": "U72900KA2015PTC082988"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "CIN verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "cin": "U72900KA2015PTC082988",
+        "company_name": "Acme Technologies Pvt Ltd",
+        "registration_number": 82987,
+        "incorporation_date": "2015-09-23",
+        "cin_status": "Active",
+        "email": "contact@acmetech.in",
+        "incorporation_country": "India",
+        "director_details": [
+          {
+            "name": "Rahul Mehta",
+            "din": "07168822",
+            "designation": "Director",
+            "dob": "1985-03-12",
+            "address": "123 MG Road, Bengaluru, Karnataka 560001"
+          },
+          {
+            "name": "Priya Sharma",
+            "din": "07168826",
+            "designation": "Director",
+            "dob": "1988-07-25",
+            "address": "45 Residency Road, Bengaluru, Karnataka 560025"
+          }
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or malformed CIN",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid CIN. Please provide a valid 21-character CIN.",
+          "response_type_id": 1388,
+          "data": null
+        }
+      },
+      {
+        "scenario": "CIN not found in MCA records",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "No records found for the provided CIN.",
+          "response_type_id": 1388,
+          "data": null
+        }
+      },
+      {
+        "scenario": "Authentication failure — invalid secret-key or timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Forbidden: invalid or expired secret-key.",
+          "data": null
+        }
+      },
+      {
+        "scenario": "Missing required body parameter (cin)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "cin is required.",
+          "response_type_id": 1388,
+          "data": null
+        }
+      }
+    ]
+  },
+  {
+    "slug": "ip",
+    "method": "POST",
+    "path": "/tools/kyc/ip",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "IP-20240101-001",
+      "source": "API",
+      "ip_address": "103.21.58.193"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "IP verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "ip_address": "103.21.58.193",
+        "proxy_type": "None",
+        "country_code": "IN",
+        "country_name": "India",
+        "region_name": "Maharashtra",
+        "city_name": "Mumbai",
+        "city_risk_score": "12",
+        "proxy_type_risk_score": "0"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or malformed IP address supplied",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid IP address",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required parameter ip_address",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "ip_address is required",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Unauthorized"
+        }
+      }
+    ]
+  },
+  {
+    "slug": "name-match",
+    "method": "POST",
+    "path": "/tools/kyc/name-match",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "NAME-20240101-001",
+      "source": "API",
+      "name_1": "S K Mishra",
+      "name_2": "Satish Kumar Mishra"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Name match successful",
+      "response_type_id": 1388,
+      "data": {
+        "name_1": "S K Mishra",
+        "name_2": "Satish Kumar Mishra",
+        "score": 0.92,
+        "reason": "Names match with initials expanded"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "One or both name parameters missing or empty",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "name_1 and name_2 are required fields.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "No match — names are unrelated (score ≤ 0.33)",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "Name match successful",
+          "response_type_id": 1388,
+          "data": {
+            "name_1": "Ramesh Gupta",
+            "name_2": "Priya Sharma",
+            "score": 0.05,
+            "reason": "Names do not match"
+          }
+        }
+      },
+      {
+        "scenario": "Invalid / missing developer_key — authentication failure",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden — incorrect developer_key or secret-key."
+        }
+      }
+    ]
+  },
+  {
+    "slug": "itr-compliance",
+    "method": "POST",
+    "path": "/tools/kyc/touras/itr-compliance",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "ITR-CHK-20240101-001",
+      "source": "API",
+      "pan_number": "ABCDE1234F"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "ITR compliance check successful",
+      "response_type_id": 1388,
+      "data": {
+        "pan_number": "ABCDE1234F",
+        "itr_filed": true,
+        "assessment_year": "2024-25",
+        "compliance_status": "Compliant",
+        "filing_status": "Filed",
+        "filing_date": "2024-07-25",
+        "acknowledgement_number": "123456789012345"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "PAN not found in Income Tax Department records",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "No ITR record found for the provided PAN number",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "ITR not filed for the queried assessment year",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "ITR compliance check successful",
+          "response_type_id": 1388,
+          "data": {
+            "pan_number": "ABCDE1234F",
+            "itr_filed": false,
+            "assessment_year": "2024-25",
+            "compliance_status": "Non-Compliant",
+            "filing_status": "Not Filed"
+          }
+        }
+      },
+      {
+        "scenario": "Invalid PAN format — must be 10 alphanumeric characters matching AAAAA9999A pattern",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Invalid PAN number format",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required field — pan_number not supplied in the request body",
+        "responseStatusId": -1,
+        "statusCode": 400,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Bad request: pan_number is required",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key or timestamp",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Unauthorized: invalid secret-key or timestamp"
+        }
+      },
+      {
+        "scenario": "Upstream ITR source temporarily unavailable",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Source unavailable. Please try again.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "din-verification",
+    "method": "POST",
+    "path": "/tools/kyc/touras/din-verification",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "DIN-20240101-001",
+      "source": "API",
+      "din_number": "06731826"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "DIN verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "din": "06731826",
+        "director_name": "Abhishek Sagar",
+        "din_status": "Active",
+        "designation": "Director",
+        "company_name": "Eko India Financial Services Pvt Ltd"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or malformed DIN (not 8 digits)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Invalid DIN. Please provide a valid 8-digit DIN.",
+          "response_type_id": 1388,
+          "data": null
+        }
+      },
+      {
+        "scenario": "DIN not found in MCA records",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "No records found for the provided DIN.",
+          "response_type_id": 1388,
+          "data": null
+        }
+      },
+      {
+        "scenario": "Authentication failure — invalid secret-key or timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Forbidden: invalid or expired secret-key.",
+          "data": null
+        }
+      },
+      {
+        "scenario": "Missing required body parameter (din_number)",
+        "responseStatusId": -1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "din_number is required.",
+          "response_type_id": 1388,
+          "data": null
+        }
+      }
+    ]
+  },
+  {
+    "slug": "e-challan",
+    "method": "POST",
+    "path": "/tools/kyc/touras/e-challan",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "CHALLAN-20240101-001",
+      "source": "API",
+      "registration_number": "MH02AB1234"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "E-Challan check successful",
+      "response_type_id": 1388,
+      "data": {
+        "vehicle_number": "MH02AB1234",
+        "pending_challans": 2,
+        "total_fine_amount": 3500,
+        "challans": [
+          {
+            "challan_number": "MH2024001234",
+            "challan_id": "EC20241210",
+            "violation": "Overspeeding",
+            "date": "2024-12-10",
+            "fine": 2000,
+            "status": "Pending",
+            "state": "Maharashtra",
+            "issuing_authority": "Mumbai Traffic Police",
+            "payment_source": "Online"
+          },
+          {
+            "challan_number": "MH2024000987",
+            "challan_id": "EC20241105",
+            "violation": "Red Light Jump",
+            "date": "2024-11-05",
+            "fine": 1500,
+            "status": "Pending",
+            "state": "Maharashtra",
+            "issuing_authority": "Mumbai Traffic Police",
+            "payment_source": "Online"
+          }
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Vehicle registration number not found in the national e-challan system",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "No records found for the given registration number",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Missing required parameter — registration_number not supplied",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "registration_number is required",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "No pending challans found for the vehicle (clean record)",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "E-Challan check successful",
+          "response_type_id": 1388,
+          "data": {
+            "vehicle_number": "MH02AB1234",
+            "pending_challans": 0,
+            "total_fine_amount": 0,
+            "challans": []
+          }
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong or expired secret-key",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden: invalid secret-key or timestamp mismatch"
+        }
+      },
+      {
+        "scenario": "E-challan source (Parivahan) temporarily unavailable",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Source temporarily unavailable. Please try again.",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "check-email",
+    "method": "POST",
+    "path": "/tools/kyc/touras/check-email",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "EMAIL-CHK-20240101-001",
+      "source": "API",
+      "email": "rajesh.kumar@example.com"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "Email verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "email": "rajesh.kumar@example.com",
+        "domain": "example.com",
+        "is_valid": true,
+        "is_disposable": false,
+        "domain_age_days": 6970,
+        "mx_records": [
+          "aspmx.l.google.com",
+          "alt1.aspmx.l.google.com",
+          "alt2.aspmx.l.google.com",
+          "alt3.aspmx.l.google.com",
+          "alt4.aspmx.l.google.com"
+        ]
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid email — domain has no MX records or does not exist",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Email verification failed — domain has no mail server",
+          "response_type_id": 1388,
+          "data": {
+            "email": "test@nonexistentdomain12345.xyz",
+            "domain": "nonexistentdomain12345.xyz",
+            "is_valid": false,
+            "is_disposable": false,
+            "domain_age_days": null,
+            "mx_records": []
+          }
+        }
+      },
+      {
+        "scenario": "Disposable / temporary email address detected",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "Email verification successful",
+          "response_type_id": 1388,
+          "data": {
+            "email": "temp123@mailinator.com",
+            "domain": "mailinator.com",
+            "is_valid": true,
+            "is_disposable": true,
+            "domain_age_days": 7300,
+            "mx_records": [
+              "mail.mailinator.com"
+            ]
+          }
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong secret-key or stale timestamp",
+        "responseStatusId": -1,
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "response_status_id": -1,
+          "message": "Unauthorized — invalid secret-key or secret-key-timestamp.",
+          "data": {}
+        }
+      },
+      {
+        "scenario": "User (retailer) not found",
+        "responseStatusId": 463,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 463,
+          "message": "User not found",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      }
+    ]
+  },
+  {
+    "slug": "fetch-fssai",
+    "method": "POST",
+    "path": "/tools/kyc/touras/fetch-fssai",
+    "request": {
+      "initiator_id": "9876543210",
+      "user_code": "20810200",
+      "client_ref_id": "REQ-20240101-001",
+      "fssai": "11521998000045"
+    },
+    "successResponse": {
+      "status": 0,
+      "response_status_id": 0,
+      "message": "FSSAI verification successful",
+      "response_type_id": 1388,
+      "data": {
+        "fssai_number": "11521998000045",
+        "license_status": "Active",
+        "license_category": "State License",
+        "business_name": "Spice Garden Restaurant",
+        "address": "123 Main Street, Mumbai, Maharashtra",
+        "state": "Maharashtra",
+        "pincode": "400001",
+        "expiry_date": "2026-03-15"
+      }
+    },
+    "errors": [
+      {
+        "scenario": "Invalid or non-existent FSSAI license number",
+        "responseStatusId": 1,
+        "statusCode": 200,
+        "example": {
+          "status": 1,
+          "response_status_id": 1,
+          "message": "Invalid FSSAI license number",
+          "response_type_id": 1388,
+          "data": {}
+        }
+      },
+      {
+        "scenario": "Authentication failure — wrong secret-key or timestamp",
+        "statusCode": 403,
+        "example": {
+          "status": 1,
+          "message": "Forbidden: invalid authentication credentials"
+        }
+      },
+      {
+        "scenario": "Expired FSSAI license — license found but no longer valid",
+        "responseStatusId": 0,
+        "statusCode": 200,
+        "example": {
+          "status": 0,
+          "response_status_id": 0,
+          "message": "FSSAI verification successful",
+          "response_type_id": 1388,
+          "data": {
+            "fssai_number": "10012345000012",
+            "license_status": "Expired",
+            "license_category": "State License",
+            "business_name": "Old Dhaba Pvt Ltd",
+            "address": "45 Ring Road, Delhi",
+            "state": "Delhi",
+            "pincode": "110001",
+            "expiry_date": "2023-08-31"
+          }
+        }
+      }
+    ]
+  }
+]
