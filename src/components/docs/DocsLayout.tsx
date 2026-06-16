@@ -34,6 +34,14 @@ export const DocsLayout = ({
 		if (saved === "dark" || saved === "light") setTheme(saved);
 	}, []);
 
+	// Tint the page root (html) so the over-scroll bounce area matches the
+	// docs-local dark theme instead of flashing the light site background.
+	useEffect(() => {
+		const root = document.documentElement;
+		root.classList.toggle("docs-dark", theme === "dark");
+		return () => root.classList.remove("docs-dark");
+	}, [theme]);
+
 	const toggleTheme = () =>
 		setTheme((t) => {
 			const next = t === "dark" ? "light" : "dark";
@@ -48,7 +56,7 @@ export const DocsLayout = ({
 	return (
 		<div
 			className={cn(
-				"bg-background text-foreground",
+				"min-h-screen bg-background text-foreground",
 				theme === "dark" && "dark",
 			)}
 		>
@@ -75,14 +83,14 @@ export const DocsLayout = ({
 				className={cn(
 					"mx-auto grid max-w-[100rem] gap-0",
 					rightPane
-						? "lg:grid-cols-[16rem_minmax(0,1fr)_20rem] xl:grid-cols-[16rem_minmax(0,1fr)_24rem]"
+						? "lg:grid-cols-[16rem_minmax(0,1fr)_23rem] xl:grid-cols-[16rem_minmax(0,1fr)_28rem]"
 						: "lg:grid-cols-[16rem_minmax(0,1fr)]",
 				)}
 			>
 				{/* Left nav — flows with the page (scrolls together with the other
             panes). A compact theme toggle sits at the top on desktop. */}
 				<aside className="hidden border-r border-border/60 lg:block">
-					<div className="px-3 pb-16 pt-24">
+					<div className="px-3 pb-16 pt-32">
 						<div className="mb-2 flex items-center justify-between px-3">
 							<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 								Docs
@@ -94,14 +102,14 @@ export const DocsLayout = ({
 				</aside>
 
 				{/* Middle content — top padding clears the fixed header */}
-				<main className="min-w-0 px-5 pb-16 pt-24 sm:px-8 lg:px-12">
+				<main className="min-w-0 px-5 pb-16 pt-32 sm:px-8 lg:px-12">
 					<div className="mx-auto max-w-3xl">{children}</div>
 				</main>
 
 				{/* Right rail — flows with the page (no inner scrollbar). Stacks
             below the content on <lg screens. */}
 				{rightPane && (
-					<aside className="min-w-0 border-border/60 px-5 pb-16 pt-8 lg:border-l lg:pt-24">
+					<aside className="min-w-0 border-border/60 px-3 pb-16 pt-8 lg:border-l lg:pt-32">
 						{rightPane}
 					</aside>
 				)}
