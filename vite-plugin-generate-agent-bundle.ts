@@ -19,11 +19,12 @@ import { createServer } from "vite";
 async function buildFiles(
 	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<Record<string, string>> {
-	const [registry, builder, packs, sdk] = await Promise.all([
+	const [registry, builder, packs, sdk, postman] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/agent/build-agent-bundle.ts"),
 		server.ssrLoadModule("/src/lib/agent/build-context-pack.ts"),
 		server.ssrLoadModule("/src/lib/sdk/build-sdk-surface.ts"),
+		server.ssrLoadModule("/src/lib/sdk/build-postman.ts"),
 	]);
 	const specs = registry.getDocumentedSpecs();
 	const bundle = builder.buildAgentBundle(specs);
@@ -42,6 +43,9 @@ async function buildFiles(
 		files[`agent/${pack.file}`] = pack.build(bundle);
 
 	files["agent/sdk-surface.json"] = j(sdk.buildSdkSurface(bundle));
+	files["agent/eps.postman_collection.json"] = j(
+		postman.buildPostmanCollection(bundle),
+	);
 
 	return files;
 }
