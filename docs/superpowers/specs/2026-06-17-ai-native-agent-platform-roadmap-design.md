@@ -101,9 +101,9 @@ Ordered so each phase ships independently and value compounds. Scored loosely on
 - SDKs with **HMAC signing baked in correctly** — fixing what generic OpenAPI
   codegen breaks. **Backend-only by design**; generated README + a runtime guard
   make clear `access_key`/`secret-key` must never reach a frontend.
-- Language priority (matches user base): **PHP → Java → C#/.NET → JS/TS (Node)
-  → Python.** Suggested addition: **Go** (common for fintech backends) as an
-  optional later target. Kotlin is covered via the JVM/Java artifact.
+- Language targets (priority by user base): **PHP → Java → C#/.NET → JS/TS
+  (Node) → Python → Go.** Go is a first-class target (common for fintech
+  backends). Kotlin is covered via the JVM/Java artifact.
 - Companion static exports: **Postman / Bruno** collections (with signing
   pre-request scripts), plus HTTPie/curl snippets.
 - **Runtime:** static packages (NPM/Packagist/Maven/NuGet/PyPI).
