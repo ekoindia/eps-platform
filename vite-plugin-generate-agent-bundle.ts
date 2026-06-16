@@ -19,10 +19,11 @@ import { createServer } from "vite";
 async function buildFiles(
 	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<Record<string, string>> {
-	const [registry, builder, packs] = await Promise.all([
+	const [registry, builder, packs, sdk] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/agent/build-agent-bundle.ts"),
 		server.ssrLoadModule("/src/lib/agent/build-context-pack.ts"),
+		server.ssrLoadModule("/src/lib/sdk/build-sdk-surface.ts"),
 	]);
 	const specs = registry.getDocumentedSpecs();
 	const bundle = builder.buildAgentBundle(specs);
@@ -39,6 +40,8 @@ async function buildFiles(
 
 	for (const pack of packs.CONTEXT_PACK_FILES)
 		files[`agent/${pack.file}`] = pack.build(bundle);
+
+	files["agent/sdk-surface.json"] = j(sdk.buildSdkSurface(bundle));
 
 	return files;
 }
