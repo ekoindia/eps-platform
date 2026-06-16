@@ -41,11 +41,11 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 	return (
 		<article>
 			<header>
-				<h1 className="text-3xl font-bold tracking-tight text-foreground">
+				<h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight text-foreground">
 					<HttpMethodTag
 						method={spec.method}
 						variant="solid"
-						className="mr-3 rounded-md px-2 py-1 align-middle text-sm"
+						className="rounded-md px-2 py-1 text-sm"
 					/>
 					{spec.name}
 				</h1>

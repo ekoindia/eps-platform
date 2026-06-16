@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { Check, Copy, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
+import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	SAMPLE_LANGS,
@@ -16,7 +9,6 @@ import {
 	type SampleLang,
 } from "@/lib/docs/code-samples";
 import { HttpMethodTag } from "./HttpMethodTag";
-import { TryItPanel } from "./TryItPanel";
 
 const CopyButton = ({ text }: { text: string }) => {
 	const [copied, setCopied] = useState(false);
@@ -66,15 +58,32 @@ const NumberedCode = ({ code }: { code: string }) => {
  *   • a request card with a `METHOD /path` header, language tabs, line-numbered
  *     code and a "Test Request" action;
  *   • an example-response card with a status header.
- * Code samples come from the pure generators; auth values are placeholders that
- * the live console (later phase) fills with locally-signed values.
+ * Code samples come from the pure generators; auth values are placeholders. The
+ * "Test Request" action hands off to the Scalar "Try it" modal (`onTest`), which
+ * signs and sends live sandbox requests. The cURL/JS/Python samples double as the
+ * copy-and-run fallback when the modal/proxy is unavailable.
  */
-export const CodeSamples = ({ spec }: { spec: ApiSpec }) => {
+export const CodeSamples = ({
+	spec,
+	onTest,
+}: {
+	spec: ApiSpec;
+	onTest?: (path: string, method: string) => void;
+}) => {
 	const [lang, setLang] = useState<SampleLang>(SAMPLE_LANGS[0].id);
 	const code = sampleFor(spec, lang);
 
 	return (
 		<div className="space-y-6">
+			{/* UAT base URL — the environment every sample/try-it call targets */}
+			<div className="code-block flex flex-wrap items-center gap-2 px-4 py-2.5 font-mono text-xs text-white/70">
+				<span className="rounded bg-eko-gold/15 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-eko-gold">
+					UAT
+				</span>
+				<span className="text-white/50">Base URL</span>
+				<span className="break-all">{DEFAULT_BASE_URL}</span>
+			</div>
+
 			{/* Request card */}
 			<div className="code-block overflow-hidden">
 				<div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
@@ -108,29 +117,15 @@ export const CodeSamples = ({ spec }: { spec: ApiSpec }) => {
 				<NumberedCode code={code} />
 
 				<div className="flex justify-end border-t border-white/10 px-3 py-2.5">
-					<Dialog>
-						<DialogTrigger asChild>
-							<button
-								type="button"
-								className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-eko-navy transition-transform hover:-translate-y-0.5"
-							>
-								<Play className="h-3.5 w-3.5 fill-current" />
-								Test Request
-							</button>
-						</DialogTrigger>
-						<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-							<DialogHeader>
-								<DialogTitle className="flex items-center gap-2">
-									<HttpMethodTag method={spec.method} className="text-xs" />
-									<span>{spec.name}</span>
-								</DialogTitle>
-								<DialogDescription className="font-mono text-xs">
-									{spec.path}
-								</DialogDescription>
-							</DialogHeader>
-							<TryItPanel spec={spec} />
-						</DialogContent>
-					</Dialog>
+					<button
+						type="button"
+						onClick={() => onTest?.(spec.path, spec.method)}
+						disabled={!onTest}
+						className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-eko-navy transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						<Play className="h-3.5 w-3.5 fill-current" />
+						Test Request
+					</button>
 				</div>
 			</div>
 

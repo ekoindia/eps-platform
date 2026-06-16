@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { Menu } from "lucide-react";
+import { useEffect, useState } from "react";
 import { DocsNavTree } from "./DocsNavTree";
 import { DocsThemeToggle, type DocsTheme } from "./DocsThemeToggle";
 
@@ -90,7 +90,7 @@ export const DocsLayout = ({
 				{/* Left nav — flows with the page (scrolls together with the other
             panes). A compact theme toggle sits at the top on desktop. */}
 				<aside className="hidden border-r border-border/60 lg:block">
-					<div className="px-3 pb-16 pt-32">
+					<div className="px-3 pb-16 pt-28">
 						<div className="mb-2 flex items-center justify-between px-3">
 							<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 								Docs

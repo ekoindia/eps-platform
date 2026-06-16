@@ -5,6 +5,7 @@ import { CodeSamples } from "@/components/docs/CodeSamples";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { EndpointDetail } from "@/components/docs/EndpointDetail";
 import { MdxGuide } from "@/components/docs/MdxGuide";
+import { useTryIt } from "@/components/docs/useTryIt";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { SITE_URL } from "@/lib/config/site";
 import { docsHref, getDocBySlug } from "@/lib/data/docs-registry";
@@ -18,6 +19,8 @@ import NotFound from "@/pages/NotFound";
  */
 const DocDetailPage = () => {
 	const { slug } = useParams<{ slug: string }>();
+	// Stable hook call before any early return; opens the Scalar "Try it" modal.
+	const onTest = useTryIt();
 	const node = slug ? getDocBySlug(slug) : undefined;
 
 	if (!node) return <NotFound />;
@@ -79,7 +82,7 @@ const DocDetailPage = () => {
 			</Helmet>
 			<AiHint mdPath={mdPath} />
 
-			<DocsLayout rightPane={<CodeSamples spec={spec} />}>
+			<DocsLayout rightPane={<CodeSamples spec={spec} onTest={onTest} />}>
 				<EndpointDetail spec={spec} />
 			</DocsLayout>
 		</>

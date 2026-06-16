@@ -81,7 +81,8 @@ time (see [try-it-now.md](try-it-now.md)) — the static samples stay placeholde
 2. State `lang` defaults to `"curl"`; `sampleFor(spec, lang)` produces the string.
 3. Language tabs call `setLang()` → re-render with the new snippet.
 4. `<NumberedCode>` shows line-numbered code with a copy button; a "Test Request"
-   button opens the `TryItPanel` dialog.
+   button calls `onTest(path, method)`, which opens the Scalar "Try it" modal
+   (see [try-it-now.md](try-it-now.md)).
 5. A second card renders `spec.sampleSuccessResponse` as line-numbered JSON.
 
 ## When generation happens

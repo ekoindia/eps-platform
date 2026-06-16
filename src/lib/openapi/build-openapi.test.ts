@@ -12,12 +12,14 @@ import type { ApiSpec } from "@/lib/data/api-specs-common";
 const specs = getDocumentedSpecs();
 const doc = buildOpenApiDocument(specs);
 
-const allOperations = (): Array<{
+const allOperations = (
+	source: OpenAPIV3_1.Document = doc,
+): Array<{
 	spec: undefined;
 	op: OpenAPIV3_1.OperationObject;
 }> => {
 	const ops: Array<{ spec: undefined; op: OpenAPIV3_1.OperationObject }> = [];
-	for (const path of Object.values(doc.paths ?? {})) {
+	for (const path of Object.values(source.paths ?? {})) {
 		for (const method of ["get", "post", "put", "delete"] as const) {
 			const op = (path as Record<string, unknown>)[method] as
 				| OpenAPIV3_1.OperationObject
@@ -110,5 +112,65 @@ describe("buildOpenApiDocument", () => {
 		expect(operationIdFor({ id: "dmt-get-sender" } as ApiSpec)).toBe(
 			"dmtGetSender",
 		);
+	});
+
+	it("the public (non-interactive) doc carries no interactive auth bits", () => {
+		// Guards the pristine /openapi.json artifact: the Scalar-only security
+		// schemes and per-operation security must never leak into the public doc.
+		expect(
+			(doc.components as Record<string, unknown> | undefined)?.securitySchemes,
+		).toBeUndefined();
+		for (const { op } of allOperations())
+			expect((op as Record<string, unknown>).security).toBeUndefined();
+	});
+});
+
+describe("buildOpenApiDocument({ interactive: true })", () => {
+	const idoc = buildOpenApiDocument(specs, { interactive: true });
+	const headerNames = (op: OpenAPIV3_1.OperationObject): string[] =>
+		(op.parameters ?? [])
+			.filter(
+				(p): p is OpenAPIV3_1.ParameterObject => "in" in p && p.in === "header",
+			)
+			.map((p) => p.name);
+
+	it("declares developer_key + access_key as apiKey header schemes", () => {
+		const schemes = (idoc.components as Record<string, unknown> | undefined)
+			?.securitySchemes as Record<string, Record<string, unknown>> | undefined;
+		expect(schemes?.developerKey).toMatchObject({
+			type: "apiKey",
+			in: "header",
+			name: "developer_key",
+		});
+		expect(schemes?.accessKey).toMatchObject({
+			type: "apiKey",
+			in: "header",
+			name: "access_key",
+		});
+	});
+
+	it("requires both keys on every operation", () => {
+		const ops = allOperations(idoc);
+		expect(ops.length).toBeGreaterThan(0);
+		for (const { op } of ops)
+			expect((op as Record<string, unknown>).security).toEqual([
+				{ developerKey: [], accessKey: [] },
+			]);
+	});
+
+	it("drops signing headers from params (schemes + plugin supply them)", () => {
+		for (const { op } of allOperations(idoc)) {
+			const names = headerNames(op);
+			expect(names).not.toContain("developer_key");
+			expect(names).not.toContain("secret-key");
+			expect(names).not.toContain("secret-key-timestamp");
+		}
+	});
+
+	it("drops content-type only on operations that carry a JSON body", () => {
+		for (const { op } of allOperations(idoc)) {
+			const hasBody = Boolean((op as Record<string, unknown>).requestBody);
+			if (hasBody) expect(headerNames(op)).not.toContain("content-type");
+		}
 	});
 });

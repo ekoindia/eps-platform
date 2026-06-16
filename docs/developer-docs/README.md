@@ -19,7 +19,7 @@ all are derived at read time from typed data.
 | [navigation-and-categories.md](navigation-and-categories.md) | The docs registry, the flat `/docs/<slug>` URL model, slug-collision guard, and how the left-menu categories are built. |
 | [mdx-guides.md](mdx-guides.md) | Prose guides (Quickstart, How Auth Works, Error Codes): MDX config, metadata vs component registries, routing. |
 | [code-samples.md](code-samples.md) | The pure cURL / JavaScript / Python generators and where they render. |
-| [try-it-now.md](try-it-now.md) | The in-browser console, client-side HMAC signing, and the direct-fetch / CORS model (and why there is **no** proxy). |
+| [try-it-now.md](try-it-now.md) | The Scalar "Try it" modal, the `beforeRequest` HMAC signing plugin, the interactive OpenAPI doc, and the CORS proxy. |
 | [layout-ssg-theming.md](layout-ssg-theming.md) | The 3-pane layout, SSG prerendering, and the docs-local dark theme toggle. |
 
 ## High-level data flow
@@ -46,7 +46,7 @@ api-specs-common.ts ─┼─┴──> api-specs.ts          │
                                           ▼                              ▼
                                   guide → MdxGuide          endpoint → EndpointDetail
                                                                  + CodeSamples (right rail)
-                                                                 + TryItPanel (dialog)
+                                                                 + Scalar "Try it" modal (onTest)
 ```
 
 ## Key directories

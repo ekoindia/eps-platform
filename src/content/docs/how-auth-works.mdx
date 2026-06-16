@@ -40,6 +40,7 @@ secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
 
 Because the `access_key` never leaves your server, a leaked request can't be
 replayed or forged — the timestamp-bound signature is only valid for a short
-window. When using the in-page **Test Request** console, signing happens locally
-in your browser with the UAT credentials you supply; they are never sent
-anywhere except the sandbox API itself.
+window. When using the in-page **Test Request** modal, signing happens locally
+in your browser with the UAT credentials you supply: your `access_key` is used
+only to compute the signature and is stripped before the request is sent — it is
+never transmitted.

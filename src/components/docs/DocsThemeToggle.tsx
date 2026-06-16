@@ -1,5 +1,5 @@
-import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Moon, Sun } from "lucide-react";
 
 export type DocsTheme = "light" | "dark";
 
@@ -25,7 +25,7 @@ export const DocsThemeToggle = ({
 		}
 		title={theme === "dark" ? "Light theme" : "Dark theme"}
 		className={cn(
-			"inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+			"inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer",
 			className,
 		)}
 	>
