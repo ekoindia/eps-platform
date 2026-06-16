@@ -19,9 +19,10 @@ import { createServer } from "vite";
 async function buildFiles(
 	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<Record<string, string>> {
-	const [registry, builder] = await Promise.all([
+	const [registry, builder, packs] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/agent/build-agent-bundle.ts"),
+		server.ssrLoadModule("/src/lib/agent/build-context-pack.ts"),
 	]);
 	const specs = registry.getDocumentedSpecs();
 	const bundle = builder.buildAgentBundle(specs);
@@ -35,6 +36,9 @@ async function buildFiles(
 		files[`agent/api/${api.slug}.json`] = j(builder.buildApi(bundle, api.slug));
 	for (const topic of Object.keys(bundle.topics))
 		files[`agent/topic/${topic}.json`] = j(builder.buildTopic(bundle, topic));
+
+	for (const pack of packs.CONTEXT_PACK_FILES)
+		files[`agent/${pack.file}`] = pack.build(bundle);
 
 	return files;
 }
