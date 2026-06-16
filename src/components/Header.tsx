@@ -50,6 +50,7 @@ const navLinks = [
 	{ label: "Products", href: "/products", hasDropdown: true },
 	{ label: "Use Cases", href: "/use-cases", hasDropdown: true },
 	{ label: "Pricing", href: "/pricing" },
+	{ label: "AI Agents", href: "/agents" },
 	{ label: "Developers", href: "https://developers.eko.in", external: true },
 	{ label: "Company", href: "#", hasDropdown: true },
 ];

@@ -1,5 +1,6 @@
 import {
 	BookOpen,
+	Bot,
 	Building2,
 	Calculator,
 	CreditCard,
@@ -128,6 +129,25 @@ const buildPageItems = (): SearchItem[] => [
 		category: "page",
 		keywords: ["pricing", "rates", "cost", "calculator", "price", "charges"],
 		icon: Calculator,
+		suggested: true,
+	},
+	{
+		id: "page:agents",
+		label: "EPS for AI agents",
+		sublabel: "Context packs, MCP server, machine bundle",
+		href: "/agents",
+		category: "page",
+		keywords: [
+			"ai",
+			"agent",
+			"mcp",
+			"llm",
+			"claude",
+			"cursor",
+			"copilot",
+			"openapi",
+		],
+		icon: Bot,
 		suggested: true,
 	},
 	{
