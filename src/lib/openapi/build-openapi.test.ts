@@ -105,22 +105,6 @@ describe("buildOpenApiDocument", () => {
 		expect(headerNames).toContain("secret-key-timestamp");
 	});
 
-	it("financial specs additionally require request_hash", () => {
-		const financial = specs.find((s) => s.financial);
-		if (!financial) return; // no financial spec in the documented set
-		const path = doc.paths?.[financial.path] as Record<
-			string,
-			OpenAPIV3_1.OperationObject
-		>;
-		const op = path[financial.method.toLowerCase()];
-		const headers = (op.parameters ?? [])
-			.filter(
-				(p): p is OpenAPIV3_1.ParameterObject => "in" in p && p.in === "header",
-			)
-			.map((p) => p.name);
-		expect(headers).toContain("request_hash");
-	});
-
 	it("operationIdFor camel-cases kebab ids", () => {
 		expect(operationIdFor({ id: "pan-lite" } as ApiSpec)).toBe("panLite");
 		expect(operationIdFor({ id: "dmt-get-sender" } as ApiSpec)).toBe(

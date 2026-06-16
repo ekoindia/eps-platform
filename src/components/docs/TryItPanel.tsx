@@ -21,10 +21,6 @@ interface Result {
 	error?: string;
 }
 
-/** Financial endpoints can only be sent live once their signing order is known. */
-const canSend = (spec: ApiSpec): boolean =>
-	!spec.financial || Boolean(spec.requestHashParams?.length);
-
 /**
  * In-browser "Try it" console. The user supplies UAT credentials; we sign the
  * request locally with Web Crypto at send time and call the sandbox directly —
@@ -74,7 +70,6 @@ export const TryItPanel = ({ spec }: { spec: ApiSpec }) => {
 	};
 
 	const hasCreds = creds.developerKey.trim() && creds.accessKey.trim();
-	const sendable = canSend(spec);
 
 	const send = async () => {
 		setResult(null);
@@ -88,7 +83,7 @@ export const TryItPanel = ({ spec }: { spec: ApiSpec }) => {
 
 		setSending(true);
 		try {
-			const headers = await buildSignedHeaders(spec, creds, body, Date.now());
+			const headers = await buildSignedHeaders(creds, Date.now());
 			const url = resolveEndpointUrl(spec, body);
 			const res = await fetch(url, {
 				method: spec.method,
@@ -172,23 +167,15 @@ export const TryItPanel = ({ spec }: { spec: ApiSpec }) => {
 				</label>
 			)}
 
-			{!sendable ? (
-				<p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
-					Live send is disabled for this money-debit API until its{" "}
-					<code className="font-mono">request_hash</code> parameter order is
-					configured. Use the code samples with your own signing instead.
-				</p>
-			) : (
-				<Button
-					variant="gold"
-					onClick={send}
-					disabled={!hasCreds || sending}
-					className="w-full gap-2"
-				>
-					{sending && <Loader2 className="h-4 w-4 animate-spin" />}
-					{sending ? "Sending…" : "Send request"}
-				</Button>
-			)}
+			<Button
+				variant="gold"
+				onClick={send}
+				disabled={!hasCreds || sending}
+				className="w-full gap-2"
+			>
+				{sending && <Loader2 className="h-4 w-4 animate-spin" />}
+				{sending ? "Sending…" : "Send request"}
+			</Button>
 
 			{result && (
 				<div className="space-y-1">

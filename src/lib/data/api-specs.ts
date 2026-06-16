@@ -843,7 +843,7 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
-			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account. Requires the OTP and otp_ref_id from Send Transaction OTP, the merchant's GPS coordinates (latlong), and a request_hash for financial security. The response returns a tid (Eko transaction ID) and the banking UTR for the IMPS transaction. Always poll Get Transaction Status if tx_status is 2 (Awaited).",
+			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account. Requires the OTP and otp_ref_id from Send Transaction OTP and the merchant's GPS coordinates (latlong). The response returns a tid (Eko transaction ID) and the banking UTR for the IMPS transaction. Always poll Get Transaction Status if tx_status is 2 (Awaited).",
 		category: "bc",
 		relevance: "M",
 		bestFor:
@@ -1120,7 +1120,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day. Cash Withdrawal (service_type=2) mandates the request_hash financial header. The request_hash is computed as HMAC-SHA256 of: secret_key_timestamp + aadhaar_encrypted + amount + user_code.",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day.",
 		category: "bc",
 		relevance: "H",
 		bestFor:
@@ -1385,7 +1385,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
-			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the same `aeps-fingpay` endpoint as Cash Withdrawal but with service_type=3 and amount=0. No money movement occurs, so the request_hash financial header is still required (AePS endpoint always requires it) but no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
+			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the same `aeps-fingpay` endpoint as Cash Withdrawal but with service_type=3 and amount=0. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
 		category: "bc",
 		relevance: "H",
 		bestFor:
@@ -3196,7 +3196,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
-			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included. A `request_hash` is mandatory and is computed from: `secret_key_timestamp + utility_acc_no + amount + user_code`.",
+			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included.",
 		category: "payment",
 		relevance: "M",
 		bestFor:
@@ -3296,8 +3296,6 @@ export const API_SPECS: ApiSpec[] = [
 				developer_key: "becbbce45f79c6f5109f848acd540567",
 				"secret-key": "<computed>",
 				"secret-key-timestamp": "1718000000000",
-				request_hash:
-					"<computed: HMAC-SHA256(timestamp+utility_acc_no+amount+user_code)>",
 				"content-type": "application/json",
 			},
 			body: {
@@ -3889,7 +3887,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Transfer funds from your e-wallet to any Indian bank account via IMPS, NEFT, or RTGS.",
 		description:
-			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). Requires `request_hash` for fraud prevention. On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
+			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
 		category: "payment",
 		relevance: "M",
 		bestFor:
@@ -4487,7 +4485,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Validate a bank account by sending a small test credit and confirming the account holder's name.",
 		description:
-			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet and `request_hash` is required because it is a financial transaction.",
+			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet because it is a financial transaction.",
 		category: "payment",
 		relevance: "M",
 		bestFor:
@@ -4876,7 +4874,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Send an instant UPI payout to any VPA (UPI ID) — vendor payments, disbursements, refunds, or salary credits — with real-time settlement.",
 		description:
-			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call: you must include the request_hash header computed from initiator_id + amount + customer_vpa (concatenated in that order) to prevent replay attacks.",
+			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call.",
 		category: "payment",
 		relevance: "H",
 		bestFor:
@@ -5110,16 +5108,6 @@ export const API_SPECS: ApiSpec[] = [
 						bank_ref_num: "",
 						customer_vpa: "invalid@okicici",
 					},
-				},
-			},
-			{
-				scenario: "Missing or invalid request_hash",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid or missing request_hash header.",
-					data: {},
 				},
 			},
 		],

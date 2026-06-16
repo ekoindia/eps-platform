@@ -27,7 +27,6 @@ const HEADER_PLACEHOLDER: Record<string, string> = {
 	developer_key: "<your_developer_key>",
 	"secret-key": "<computed_secret_key>",
 	"secret-key-timestamp": "<timestamp_ms>",
-	request_hash: "<computed_request_hash>",
 	"content-type": "application/json",
 };
 
@@ -65,7 +64,7 @@ const hasBody = (spec: ApiSpec): boolean =>
 export const toCurl = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
 	const lines = [`curl --request ${spec.method} \\`, `  --url '${url}' \\`];
-	const headers = resolveHeaders(spec);
+	const headers = resolveHeaders();
 	headers.forEach((h, i) => {
 		const last = i === headers.length - 1 && !hasBody(spec);
 		lines.push(`  --header '${h.name}: ${headerValue(h)}'${last ? "" : " \\"}`);
@@ -79,7 +78,7 @@ export const toCurl = (spec: ApiSpec): string => {
 export const toJsFetch = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
 	const headers = Object.fromEntries(
-		resolveHeaders(spec).map((h) => [h.name, headerValue(h)]),
+		resolveHeaders().map((h) => [h.name, headerValue(h)]),
 	);
 	const init: Record<string, unknown> = {
 		method: spec.method,
@@ -100,7 +99,7 @@ export const toJsFetch = (spec: ApiSpec): string => {
 export const toPython = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
 	const headers = Object.fromEntries(
-		resolveHeaders(spec).map((h) => [h.name, headerValue(h)]),
+		resolveHeaders().map((h) => [h.name, headerValue(h)]),
 	);
 	const lines = [
 		"import requests",

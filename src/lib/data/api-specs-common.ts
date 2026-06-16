@@ -9,7 +9,7 @@
  *
  * The data here is rich enough to render a developer API reference portal.
  */
-import { AUTH_HEADERS, FINANCIAL_AUTH_HEADERS } from "./api-auth";
+import { AUTH_HEADERS } from "./api-auth";
 import type { ApiProductId, ApiProductRelevance } from "./api-products";
 
 // ---------------------------------------------------------------------------
@@ -83,14 +83,8 @@ export interface ApiSpec {
 	docsUrl: string;
 	/** API reference URL from the source website (actual provider of the API) */
 	sourceDoc?: string;
-	/** Money-debit API: adds `request_hash` header + financial envelope. */
+	/** Money-debit API: returns the financial response envelope (tx_status, etc.). */
 	financial?: boolean;
-	/**
-	 * For financial APIs: the exact body-parameter names, in order, that are
-	 * concatenated and HMAC-signed to produce `request_hash`. Only when present
-	 * can the try-it console compute a valid `request_hash`; otherwise live-send
-	 * for that endpoint stays disabled (the order is API-specific). */
-	requestHashParams?: string[];
 	/** API-specific request params ONLY (common ones are inherited). */
 	extraRequestParams: ApiParam[];
 	/** Rare: drop a common request param that does not apply to this API. */
@@ -197,9 +191,8 @@ export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
 // Resolvers — reassemble full views without storing duplicates
 // ---------------------------------------------------------------------------
 
-/** Full header set for an API (auth headers, + request_hash if financial). */
-export const resolveHeaders = (spec: ApiSpec): ApiParam[] =>
-	spec.financial ? FINANCIAL_AUTH_HEADERS : AUTH_HEADERS;
+/** Full auth header set for an API — identical on every request. */
+export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;
 
 /** Common request params (minus any omitted) followed by API-specific ones. */
 export const resolveRequestParams = (spec: ApiSpec): ApiParam[] => {

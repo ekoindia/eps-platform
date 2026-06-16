@@ -5,20 +5,19 @@ HMAC signature. Nothing secret ever travels on the wire in plain form.
 
 ## The two keys
 
-| Key               | Where it comes from                                   | How it's used                                                            |
-| ----------------- | ----------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Access Key**    | Shared once, kept server-side only                    | Never sent in a request; used to compute `secret-key` and `request_hash` |
-| **Developer Key** | UAT key from your dashboard; production key after KYC | Sent as the `developer_key` header                                       |
+| Key               | Where it comes from                                   | How it's used                                             |
+| ----------------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| **Access Key**    | Shared once, kept server-side only                    | Never sent in a request; used to compute the `secret-key` |
+| **Developer Key** | UAT key from your dashboard; production key after KYC | Sent as the `developer_key` header                        |
 
 ## Request headers
 
-| Header                 | Required         | Description                                            |
-| ---------------------- | ---------------- | ------------------------------------------------------ |
-| `developer_key`        | yes              | Your static developer key.                             |
-| `secret-key`           | yes              | Per-request HMAC signature (see below).                |
-| `secret-key-timestamp` | yes              | Current time in **milliseconds** since the UNIX epoch. |
-| `content-type`         | yes              | `application/json`                                     |
-| `request_hash`         | money-debit only | HMAC over the API's signed parameters (see below).     |
+| Header                 | Required | Description                                            |
+| ---------------------- | -------- | ------------------------------------------------------ |
+| `developer_key`        | yes      | Your static developer key.                             |
+| `secret-key`           | yes      | Per-request HMAC signature (see below).                |
+| `secret-key-timestamp` | yes      | Current time in **milliseconds** since the UNIX epoch. |
+| `content-type`         | yes      | `application/json`                                     |
 
 ## Computing the `secret-key`
 
@@ -36,18 +35,6 @@ timestamp returns `403 Forbidden`.
 ```
 secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
 ```
-
-## Computing the `request_hash` (financial APIs)
-
-Money-debit endpoints require an extra signature over the request parameters:
-
-1. Concatenate the API-specific parameters **in the documented order**.
-2. Base64-encode the `access_key`.
-3. Compute `HMAC-SHA256(concatenated-params, base64(access_key))`.
-4. Base64-encode the result — that's the `request_hash`.
-
-The parameter sequence varies per API; each financial endpoint's page lists the
-order it expects.
 
 ## Why sign client-side
 

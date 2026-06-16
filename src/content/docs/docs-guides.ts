@@ -40,8 +40,7 @@ export const GUIDES: GuideMeta[] = [
 		slug: "how-auth-works",
 		title: "How Auth Works",
 		order: 2,
-		summary:
-			"Keys, request signing, and the per-request HMAC secret-key + request_hash.",
+		summary: "Keys, request signing, and the per-request HMAC secret-key.",
 	},
 	{
 		slug: "error-codes",

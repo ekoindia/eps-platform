@@ -6,15 +6,8 @@
  * UAT `access_key` is used to sign in the browser and is never sent anywhere
  * except, indirectly, as the computed signature on the sandbox request.
  *
- *   secret-key   = base64( HMAC-SHA256( timestamp,            base64(access_key) ) )
- *   request_hash = base64( HMAC-SHA256( concatenated-params,  base64(access_key) ) )
- *
- * NOTE: `request_hash` is only emitted for endpoints that declare the exact
- * parameter order (`ApiSpec.requestHashParams`). The order + concatenation is
- * API-specific and unverified against a live call, so financial endpoints
- * without it must not be "sent" blindly.
+ *   secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
  */
-import type { ApiSpec } from "@/lib/data/api-specs-common";
 
 /** base64 of a UTF-8 string (e.g. the access key). */
 const base64Utf8 = (value: string): string =>
@@ -51,45 +44,23 @@ export const computeSecretKey = (
 	timestamp: string,
 ): Promise<string> => hmacSha256Base64(timestamp, base64Utf8(accessKey));
 
-/**
- * Compute `request_hash` by concatenating the declared params (in order) from
- * the body and signing them. Returns null when the spec declares no order.
- */
-export const computeRequestHash = async (
-	spec: Pick<ApiSpec, "financial" | "requestHashParams">,
-	body: Record<string, unknown>,
-	accessKey: string,
-): Promise<string | null> => {
-	if (!spec.financial || !spec.requestHashParams?.length) return null;
-	const concatenated = spec.requestHashParams
-		.map((name) => String(body[name] ?? ""))
-		.join("");
-	return hmacSha256Base64(concatenated, base64Utf8(accessKey));
-};
-
 export interface SignedHeaders {
 	developer_key: string;
 	"secret-key": string;
 	"secret-key-timestamp": string;
 	"content-type": string;
-	request_hash?: string;
 }
 
 /** Build the full signed header set for a request, signing at call time. */
 export const buildSignedHeaders = async (
-	spec: Pick<ApiSpec, "financial" | "requestHashParams">,
 	creds: { developerKey: string; accessKey: string },
-	body: Record<string, unknown>,
 	now: number,
 ): Promise<SignedHeaders> => {
 	const timestamp = String(now);
-	const headers: SignedHeaders = {
+	return {
 		developer_key: creds.developerKey,
 		"secret-key": await computeSecretKey(creds.accessKey, timestamp),
 		"secret-key-timestamp": timestamp,
 		"content-type": "application/json",
 	};
-	const requestHash = await computeRequestHash(spec, body, creds.accessKey);
-	if (requestHash) headers.request_hash = requestHash;
-	return headers;
 };

@@ -107,7 +107,7 @@ const buildOperationParams = (
 ): { parameters: Json[]; requestBody?: Json } => {
 	const parameters: Json[] = [];
 
-	for (const header of resolveHeaders(spec)) {
+	for (const header of resolveHeaders()) {
 		parameters.push({
 			name: header.name,
 			in: "header",
@@ -287,7 +287,7 @@ export const buildOpenApiDocument = (
 				"",
 				"**Authentication.** Every request carries `developer_key`, a per-request",
 				"`secret-key` (an HMAC-SHA256 signature), and `secret-key-timestamp`",
-				"headers; money-debit endpoints additionally require `request_hash`. These",
+				"headers. These",
 				"are modeled as required header parameters, not a security scheme — a",
 				`generated client cannot sign requests on its own. See ${API_AUTH_DOCS_URL}.`,
 			].join("\n"),

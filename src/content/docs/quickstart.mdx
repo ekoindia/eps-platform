@@ -26,7 +26,7 @@ The full endpoint URL is always `baseUrl + path` — e.g. the PAN Lite path
 ## 3. Sign your request
 
 Every request carries four auth headers (`developer_key`, `secret-key`,
-`secret-key-timestamp`, `content-type`); money-debit APIs add a `request_hash`.
+`secret-key-timestamp`, `content-type`).
 The `secret-key` is an HMAC signature computed per request — see
 [How Auth Works](/docs/how-auth-works) for the exact algorithm.
 
