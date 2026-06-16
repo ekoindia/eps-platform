@@ -14,6 +14,21 @@ const BUNDLE_LINKS = [
 	{ label: "OpenAPI 3.1 (openapi.json)", href: "/openapi.json" },
 ];
 
+const SDK_LINKS = [
+	{
+		label: "@ekoindia/eps-sdk (npm — Node.js)",
+		href: "https://www.npmjs.com/package/@ekoindia/eps-sdk",
+	},
+	{
+		label: "ekoindia/eps-sdk (Composer — PHP)",
+		href: "https://packagist.org/packages/ekoindia/eps-sdk",
+	},
+	{
+		label: "Postman collection (eps.postman_collection.json)",
+		href: "/agent/eps.postman_collection.json",
+	},
+];
+
 const AgentsPage = () => {
 	return (
 		<LegalPageLayout
@@ -44,6 +59,19 @@ const AgentsPage = () => {
 				{BUNDLE_LINKS.map((b) => (
 					<li key={b.href}>
 						<a href={b.href}>{b.label}</a>
+					</li>
+				))}
+			</ul>
+
+			<h2>SDKs &amp; tools</h2>
+			<p>
+				Backend-only signed SDKs (HMAC baked in) and a ready-to-run Postman
+				collection. Keep your <code>access_key</code> server-side only.
+			</p>
+			<ul>
+				{SDK_LINKS.map((s) => (
+					<li key={s.href}>
+						<a href={s.href}>{s.label}</a>
 					</li>
 				))}
 			</ul>

@@ -46,6 +46,28 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push("");
 
+	lines.push("## SDKs & tools");
+	lines.push(
+		markdownTable(
+			["Tool", "Link"],
+			[
+				[
+					"@ekoindia/eps-sdk (npm — Node.js)",
+					"https://www.npmjs.com/package/@ekoindia/eps-sdk",
+				],
+				[
+					"ekoindia/eps-sdk (Composer — PHP)",
+					"https://packagist.org/packages/ekoindia/eps-sdk",
+				],
+				["Postman collection", `${SITE_URL}/agent/eps.postman_collection.json`],
+			],
+		),
+	);
+	lines.push(
+		"Backend-only signed SDKs (HMAC baked in); keep `access_key` server-side only.",
+	);
+	lines.push("");
+
 	lines.push("## Recipes");
 	for (const r of RECIPES) lines.push(`- **${r.name}** — ${r.summary}`);
 	lines.push("");
