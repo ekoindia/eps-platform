@@ -1,0 +1,717 @@
+{
+  "apiVersion": "v3",
+  "bundleVersion": "ea7ac3d0",
+  "environments": [
+    {
+      "id": "sandbox",
+      "label": "UAT / Sandbox",
+      "baseUrl": "https://staging.eko.in:25004/ekoapi/v3",
+      "note": "Self-serve credentials available immediately on signup."
+    },
+    {
+      "id": "production",
+      "label": "Production",
+      "baseUrl": "https://api.eko.in/ekoapi/v3",
+      "note": "Credentials issued after organizational KYC at https://connect.eko.in."
+    }
+  ],
+  "endpoints": [
+    {
+      "slug": "dmt-get-sender",
+      "method": "GET",
+      "path": "/customer/profile/{customer_id}/dmt-fino",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id"
+      ]
+    },
+    {
+      "slug": "dmt-onboard-sender",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-fino",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "name",
+        "dob",
+        "residence_address"
+      ]
+    },
+    {
+      "slug": "dmt-sender-ekyc",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-fino/ekyc",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "aadhar",
+        "piddata"
+      ]
+    },
+    {
+      "slug": "dmt-validate-ekyc-otp",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-fino/otp/verify",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "otp",
+        "otp_ref_id",
+        "kyc_request_id"
+      ]
+    },
+    {
+      "slug": "dmt-get-recipients",
+      "method": "GET",
+      "path": "/customer/payment/dmt-fino/sender/{customer_id}/recipients",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id"
+      ]
+    },
+    {
+      "slug": "dmt-add-recipient",
+      "method": "POST",
+      "path": "/customer/payment/dmt-fino/sender/{customer_id}/recipient1",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "recipient_name",
+        "account",
+        "ifsc",
+        "bank_id",
+        "recipient_mobile",
+        "recipient_type"
+      ]
+    },
+    {
+      "slug": "dmt-send-otp",
+      "method": "POST",
+      "path": "/customer/payment/dmt-fino/otp",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "recipient_id",
+        "amount",
+        "customer_id"
+      ]
+    },
+    {
+      "slug": "dmt-initiate-transfer",
+      "method": "POST",
+      "path": "/customer/payment/dmt-fino",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "recipient_id",
+        "amount",
+        "customer_id",
+        "otp",
+        "otp_ref_id",
+        "latlong",
+        "state",
+        "recipient_id_type"
+      ]
+    },
+    {
+      "slug": "aeps-cash-withdrawal",
+      "method": "POST",
+      "path": "/customer/collection/aeps-fingpay",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "service_type",
+        "customer_id",
+        "bank_code",
+        "amount",
+        "aadhaar",
+        "piddata",
+        "pipe",
+        "notify_customer",
+        "latlong",
+        "source_ip",
+        "reference_id"
+      ]
+    },
+    {
+      "slug": "aeps-balance-enquiry",
+      "method": "POST",
+      "path": "/customer/collection/aeps-fingpay",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "service_type",
+        "customer_id",
+        "bank_code",
+        "amount",
+        "aadhaar",
+        "piddata",
+        "pipe",
+        "notify_customer",
+        "latlong",
+        "source_ip"
+      ]
+    },
+    {
+      "slug": "aeps-activate-fingpay",
+      "method": "PUT",
+      "path": "/admin/network/agent/{user_code}/aeps-fingpay/activate",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "user_code",
+        "modelname",
+        "devicenumber",
+        "office_address",
+        "address_as_per_proof",
+        "pan_card",
+        "aadhar_front",
+        "aadhar_back"
+      ]
+    },
+    {
+      "slug": "aeps-daily-auth",
+      "method": "POST",
+      "path": "/customer/aeps/fingpay/kyc/daily",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "aadhaar",
+        "piddata",
+        "latlong",
+        "source_ip"
+      ]
+    },
+    {
+      "slug": "aeps-mini-statement",
+      "method": "POST",
+      "path": "/customer/collection/aeps-fingpay",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "service_type",
+        "customer_id",
+        "bank_code",
+        "amount",
+        "aadhaar",
+        "piddata",
+        "pipe",
+        "notify_customer",
+        "latlong",
+        "source_ip"
+      ]
+    },
+    {
+      "slug": "aeps-aadhaar-pay",
+      "method": "POST",
+      "path": "/customer/collection/aeps-fingpay",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "service_type",
+        "customer_id",
+        "bank_code",
+        "amount",
+        "aadhaar",
+        "piddata",
+        "pipe",
+        "notify_customer",
+        "latlong",
+        "source_ip"
+      ]
+    },
+    {
+      "slug": "aeps-send-otp-kyc",
+      "method": "POST",
+      "path": "/customer/aeps/fingpay/kyc/otp",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "aadhaar"
+      ]
+    },
+    {
+      "slug": "aeps-biometric-ekyc",
+      "method": "POST",
+      "path": "/customer/aeps/fingpay/kyc/biometric",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "aadhaar",
+        "piddata",
+        "otp_ref_id"
+      ]
+    },
+    {
+      "slug": "bbps-get-categories",
+      "method": "GET",
+      "path": "/customer/payment/bbps/categories",
+      "requiredParams": [
+        "initiator_id",
+        "user_code"
+      ]
+    },
+    {
+      "slug": "bbps-get-locations",
+      "method": "GET",
+      "path": "/customer/payment/bbps/locations",
+      "requiredParams": [
+        "initiator_id",
+        "user_code"
+      ]
+    },
+    {
+      "slug": "bbps-get-operators",
+      "method": "GET",
+      "path": "/customer/payment/bbps/operators",
+      "requiredParams": [
+        "initiator_id",
+        "user_code"
+      ]
+    },
+    {
+      "slug": "bbps-get-operator-parameters",
+      "method": "GET",
+      "path": "/customer/payment/bbps/operator/{operator_id}/parameters",
+      "requiredParams": [
+        "initiator_id",
+        "operator_id"
+      ]
+    },
+    {
+      "slug": "bbps-fetch-bill",
+      "method": "GET",
+      "path": "/customer/payment/bbps/bill",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "utility_acc_no",
+        "confirmation_mobile_no",
+        "sender_name",
+        "operator_id",
+        "source_ip",
+        "latlong"
+      ]
+    },
+    {
+      "slug": "bbps-pay-bill",
+      "method": "POST",
+      "path": "/customer/payment/bbps",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "utility_acc_no",
+        "confirmation_mobile_no",
+        "sender_name",
+        "operator_id",
+        "amount",
+        "source_ip",
+        "latlong"
+      ]
+    },
+    {
+      "slug": "bbps-activate-service",
+      "method": "PUT",
+      "path": "/user/service/activate",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "service_code",
+        "latlong"
+      ]
+    },
+    {
+      "slug": "pan-lite",
+      "method": "POST",
+      "path": "/tools/kyc/pan-lite",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "pan_number",
+        "name",
+        "dob"
+      ]
+    },
+    {
+      "slug": "pan-advanced",
+      "method": "POST",
+      "path": "/tools/kyc/pan-advanced",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "pan",
+        "name",
+        "dob"
+      ]
+    },
+    {
+      "slug": "pan-bulk-verify",
+      "method": "POST",
+      "path": "/tools/kyc/pan/bulk",
+      "requiredParams": [
+        "initiator_id",
+        "entries"
+      ]
+    },
+    {
+      "slug": "aadhaar-dmt-fino-ekyc",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-fino/ekyc",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "aadhar",
+        "piddata"
+      ]
+    },
+    {
+      "slug": "aadhaar-dmt-fino-verify-otp",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-fino/otp/verify",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "otp",
+        "otp_ref_id",
+        "kyc_request_id"
+      ]
+    },
+    {
+      "slug": "aadhaar-dmt-levin-validate",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-levin/aadhaar",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "aadhar",
+        "otp_ref_id",
+        "additional_info"
+      ]
+    },
+    {
+      "slug": "aadhaar-dmt-levin-verify-otp",
+      "method": "POST",
+      "path": "/customer/account/{customer_id}/dmt-levin/otp/verify",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_id",
+        "otp_ref_id"
+      ]
+    },
+    {
+      "slug": "digilocker-create-url",
+      "method": "POST",
+      "path": "/tools/kyc/digilocker",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "document_requested",
+        "redirect_url"
+      ]
+    },
+    {
+      "slug": "digilocker-get-document",
+      "method": "POST",
+      "path": "/tools/kyc/digilocker/document",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "document_type",
+        "verification_id",
+        "reference_id"
+      ]
+    },
+    {
+      "slug": "bank-account-verification",
+      "method": "POST",
+      "path": "/tools/kyc/bank-account/sync",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "bank_account",
+        "ifsc"
+      ]
+    },
+    {
+      "slug": "bulk-bank-account-verification",
+      "method": "POST",
+      "path": "/tools/kyc/bank-account/bulk",
+      "requiredParams": [
+        "initiator_id",
+        "entries",
+        "entries[].bank_account",
+        "entries[].ifsc"
+      ]
+    },
+    {
+      "slug": "verify-gstin",
+      "method": "POST",
+      "path": "/tools/kyc/gstin",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "gstin",
+        "business_name"
+      ]
+    },
+    {
+      "slug": "gstin-with-pan",
+      "method": "POST",
+      "path": "/tools/kyc/gstin-with-pan",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "pan"
+      ]
+    },
+    {
+      "slug": "upi-validate-vpa",
+      "method": "POST",
+      "path": "/customer/payment/upi/validate-vpa",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "customer_vpa",
+        "recipient_mobile",
+        "name",
+        "latlong"
+      ]
+    },
+    {
+      "slug": "driving-license",
+      "method": "POST",
+      "path": "/tools/kyc/driving-license",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "dl_number",
+        "dob"
+      ]
+    },
+    {
+      "slug": "vehicle-rc",
+      "method": "POST",
+      "path": "/tools/kyc/vehicle-rc",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "vehicle_number"
+      ]
+    },
+    {
+      "slug": "advance-employment",
+      "method": "POST",
+      "path": "/tools/kyc/advance-employment",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "phone"
+      ]
+    },
+    {
+      "slug": "reverse-geocoding",
+      "method": "POST",
+      "path": "/tools/kyc/reverse-geocoding",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "latitude",
+        "longitude"
+      ]
+    },
+    {
+      "slug": "voter-id",
+      "method": "POST",
+      "path": "/tools/kyc/voter-id",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "epic_number"
+      ]
+    },
+    {
+      "slug": "passport",
+      "method": "POST",
+      "path": "/tools/kyc/passport",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "file_number",
+        "dob"
+      ]
+    },
+    {
+      "slug": "cin",
+      "method": "POST",
+      "path": "/tools/kyc/cin",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "cin"
+      ]
+    },
+    {
+      "slug": "ip",
+      "method": "POST",
+      "path": "/tools/kyc/ip",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "ip_address"
+      ]
+    },
+    {
+      "slug": "name-match",
+      "method": "POST",
+      "path": "/tools/kyc/name-match",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "name_1",
+        "name_2"
+      ]
+    },
+    {
+      "slug": "itr-compliance",
+      "method": "POST",
+      "path": "/tools/kyc/touras/itr-compliance",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "pan_number"
+      ]
+    },
+    {
+      "slug": "din-verification",
+      "method": "POST",
+      "path": "/tools/kyc/touras/din-verification",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "din_number"
+      ]
+    },
+    {
+      "slug": "e-challan",
+      "method": "POST",
+      "path": "/tools/kyc/touras/e-challan",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "registration_number"
+      ]
+    },
+    {
+      "slug": "check-email",
+      "method": "POST",
+      "path": "/tools/kyc/touras/check-email",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "email"
+      ]
+    },
+    {
+      "slug": "fetch-fssai",
+      "method": "POST",
+      "path": "/tools/kyc/touras/fetch-fssai",
+      "requiredParams": [
+        "initiator_id",
+        "user_code",
+        "fssai"
+      ]
+    }
+  ],
+  "errorCodes": [
+    {
+      "code": 200,
+      "scope": "http",
+      "meaning": "OK — response returned by our system."
+    },
+    {
+      "code": 403,
+      "scope": "http",
+      "meaning": "Forbidden — incorrect secret-key or timestamp."
+    },
+    {
+      "code": 404,
+      "scope": "http",
+      "meaning": "Not Found — wrong request URL."
+    },
+    {
+      "code": 405,
+      "scope": "http",
+      "meaning": "Method Not Allowed — incorrect HTTP method."
+    },
+    {
+      "code": 415,
+      "scope": "http",
+      "meaning": "Unsupported Media Type — wrong Content-Type header."
+    },
+    {
+      "code": 500,
+      "scope": "http",
+      "meaning": "Internal Server Error — connectivity or URL misconfiguration."
+    },
+    {
+      "code": 0,
+      "scope": "transaction",
+      "meaning": "Success."
+    },
+    {
+      "code": 17,
+      "scope": "transaction",
+      "meaning": "User wallet already exists."
+    },
+    {
+      "code": 302,
+      "scope": "transaction",
+      "meaning": "Wrong OTP."
+    },
+    {
+      "code": 303,
+      "scope": "transaction",
+      "meaning": "OTP expired."
+    },
+    {
+      "code": 327,
+      "scope": "transaction",
+      "meaning": "Enrollment done; verification pending."
+    },
+    {
+      "code": 342,
+      "scope": "transaction",
+      "meaning": "Recipient already registered."
+    },
+    {
+      "code": 347,
+      "scope": "transaction",
+      "meaning": "Insufficient balance."
+    },
+    {
+      "code": 463,
+      "scope": "transaction",
+      "meaning": "User not found."
+    },
+    {
+      "code": 585,
+      "scope": "transaction",
+      "meaning": "Customer already KYC approved."
+    },
+    {
+      "code": 945,
+      "scope": "transaction",
+      "meaning": "Sender/beneficiary monthly limit exhausted."
+    }
+  ]
+}

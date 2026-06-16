@@ -1,0 +1,22 @@
+{
+	"name": "ekoindia/eps-sdk",
+	"description": "Backend-only PHP SDK for Eko Platform Services (EPS) APIs, with request signing built in.",
+	"type": "library",
+	"license": "MIT",
+	"require": {
+		"php": ">=8.1"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^10"
+	},
+	"autoload": {
+		"psr-4": {
+			"Eko\\Eps\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Eko\\Eps\\Tests\\": "tests/"
+		}
+	}
+}
