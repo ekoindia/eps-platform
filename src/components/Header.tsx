@@ -1,6 +1,6 @@
 import { EkoLogo } from "@/components/EkoLogo";
-import type { DropdownKey } from "@/components/HeaderDropdownPanels";
 import { Button } from "@/components/ui/button";
+import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -46,15 +46,6 @@ const LanguageSelectorFallback = ({ isLight }: { isLight: boolean }) => (
 	</button>
 );
 
-const navLinks = [
-	{ label: "Products", href: "/products", hasDropdown: true },
-	{ label: "Use Cases", href: "/use-cases", hasDropdown: true },
-	{ label: "Pricing", href: "/pricing" },
-	{ label: "AI Agents", href: "/ai" },
-	{ label: "Developers", href: "https://developers.eko.in", external: true },
-	{ label: "Company", href: "#", hasDropdown: true },
-];
-
 /**
  * Desktop navigation dropdown trigger button with a chevron indicator.
  */
@@ -76,7 +67,7 @@ const NavDropdownButton = ({
 	<button
 		onClick={onClick}
 		className={cn(
-			"text-base font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
+			"text-sm font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
 			useWhiteText
 				? "text-white/90 hover:text-white"
 				: "text-eko-slate hover:text-eko-navy",
@@ -294,6 +285,20 @@ export const Header = () => {
 	const useCasesEnterHandler = getTriggerEnterHandler("useCases");
 	const companyEnterHandler = getTriggerEnterHandler("company");
 
+	/**
+	 * Runtime wiring per dropdown (container ref + hover-enter handler), keyed by
+	 * the link's `dropdownKey`. Static config lives in `navLinks`; only these
+	 * non-serializable values must be built inside the component.
+	 */
+	const dropdownWiring: Record<
+		DropdownKey,
+		{ ref: React.RefObject<HTMLDivElement | null>; enter: () => void }
+	> = {
+		products: { ref: productsDropdownRef, enter: productsEnterHandler },
+		useCases: { ref: useCasesDropdownRef, enter: useCasesEnterHandler },
+		company: { ref: companyDropdownRef, enter: companyEnterHandler },
+	};
+
 	return (
 		<>
 			<header
@@ -321,83 +326,31 @@ export const Header = () => {
 
 						{/*
               Desktop Navigation
-              MARK: Products
             */}
 						<nav className="hidden lg:flex items-center gap-8">
 							{navLinks.map((link) => {
-								if (link.label === "Products") {
+								if (link.dropdownKey) {
+									const key = link.dropdownKey;
+									const { ref, enter } = dropdownWiring[key];
 									return (
 										<div
 											key={link.label}
-											className="relative"
-											ref={productsDropdownRef}
-											onMouseEnter={productsEnterHandler}
+											className={cn(
+												"relative",
+												key === "company" && "company-nav-trigger",
+											)}
+											ref={ref}
+											onMouseEnter={enter}
 										>
 											<NavDropdownButton
 												label={link.label}
-												isOpen={activeDesktopDropdown === "products"}
+												isOpen={activeDesktopDropdown === key}
 												isActive={isNavActive(link.label)}
 												useWhiteText={useWhiteText}
 												activeNavClasses={activeNavClasses}
 												onClick={() =>
 													setActiveDesktopDropdown(
-														activeDesktopDropdown === "products"
-															? null
-															: "products",
-													)
-												}
-											/>
-										</div>
-									);
-								}
-
-								// MARK: Use Cases
-								if (link.label === "Use Cases") {
-									return (
-										<div
-											key={link.label}
-											className="relative"
-											ref={useCasesDropdownRef}
-											onMouseEnter={useCasesEnterHandler}
-										>
-											<NavDropdownButton
-												label={link.label}
-												isOpen={activeDesktopDropdown === "useCases"}
-												isActive={isNavActive(link.label)}
-												useWhiteText={useWhiteText}
-												activeNavClasses={activeNavClasses}
-												onClick={() =>
-													setActiveDesktopDropdown(
-														activeDesktopDropdown === "useCases"
-															? null
-															: "useCases",
-													)
-												}
-											/>
-										</div>
-									);
-								}
-
-								// MARK: Company
-								if (link.label === "Company") {
-									return (
-										<div
-											key={link.label}
-											className="relative"
-											ref={companyDropdownRef}
-											onMouseEnter={companyEnterHandler}
-										>
-											<NavDropdownButton
-												label={link.label}
-												isOpen={activeDesktopDropdown === "company"}
-												isActive={isNavActive(link.label)}
-												useWhiteText={useWhiteText}
-												activeNavClasses={activeNavClasses}
-												onClick={() =>
-													setActiveDesktopDropdown(
-														activeDesktopDropdown === "company"
-															? null
-															: "company",
+														activeDesktopDropdown === key ? null : key,
 													)
 												}
 											/>
@@ -406,7 +359,7 @@ export const Header = () => {
 								}
 
 								const plainLinkClasses = cn(
-									"text-base font-medium tracking-tight transition-colors duration-200 cursor-pointer",
+									"text-sm font-medium tracking-tight transition-colors duration-200 cursor-pointer",
 									useWhiteText
 										? "text-white/90 hover:text-white"
 										: "text-eko-slate hover:text-eko-navy",
@@ -415,7 +368,7 @@ export const Header = () => {
 								// Internal links use <Link> for client-side routing; external open in a new tab
 								return link.external ? (
 									<a
-										key={link.label}
+										key={link.href ?? link.label}
 										href={link.href}
 										target="_blank"
 										rel="noopener noreferrer"
@@ -425,8 +378,8 @@ export const Header = () => {
 									</a>
 								) : (
 									<Link
-										key={link.label}
-										to={link.href}
+										key={link.href ?? link.label}
+										to={link.href ?? "#"}
 										className={plainLinkClasses}
 									>
 										{link.label}
@@ -435,8 +388,10 @@ export const Header = () => {
 							})}
 						</nav>
 
-						{/* Desktop CTA */}
 						<div className="hidden lg:flex items-center gap-4">
+							{/*
+                MARK: Desktop Search
+               */}
 							<button
 								id="btn-search-header-desktop"
 								onClick={openSearch}
@@ -451,6 +406,10 @@ export const Header = () => {
 									<span className="kbd-os-other">Ctrl K</span>
 								</span>
 							</button>
+
+							{/*
+                MARK: Language
+               */}
 							{lazyChunksReady ? (
 								<Suspense
 									fallback={<LanguageSelectorFallback isLight={useWhiteText} />}
@@ -460,6 +419,7 @@ export const Header = () => {
 							) : (
 								<LanguageSelectorFallback isLight={useWhiteText} />
 							)}
+
 							{/* <a
                 id="lnk-sales-phone-header-desktop"
                 href={`tel:+91${SALES_MOBILE}`}
@@ -471,6 +431,10 @@ export const Header = () => {
                 <Phone className="w-4 h-4" />
                 {formatMobile(SALES_MOBILE)}
               </a> */}
+
+							{/*
+                MARK: Desktop CTA
+              */}
 							<Button
 								id="btn-get-started-header-desktop"
 								variant="gold"
@@ -482,8 +446,10 @@ export const Header = () => {
 							</Button>
 						</div>
 
-						{/* Mobile: Search + Menu Buttons */}
 						<div className="lg:hidden flex items-center gap-1">
+							{/*
+                MARK: Mobile Search
+              */}
 							<button
 								className="p-2 cursor-pointer"
 								onClick={openSearch}
@@ -496,6 +462,10 @@ export const Header = () => {
 									)}
 								/>
 							</button>
+
+							{/*
+                MARK: Mobile Menu
+              */}
 							<button
 								className="p-2 cursor-pointer"
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
