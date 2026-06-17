@@ -67,7 +67,11 @@ export function generateAgentBundlePlugin(): Plugin {
 		configureServer(server) {
 			server.middlewares.use(async (req, res, next) => {
 				const url = req.url?.split("?")[0] ?? "";
-				if (!url.startsWith("/agent/") || !url.endsWith(".json")) {
+				// Serve EVERY emitted /agent/* artifact (bundle slices AND the
+				// context packs: .md / .cursorrules / copilot-instructions.md), so
+				// dev mirrors the built output. Serving only .json here made the
+				// packs fall through to the SPA fallback (a 404 page in the browser).
+				if (!url.startsWith("/agent/")) {
 					next();
 					return;
 				}
@@ -79,8 +83,13 @@ export function generateAgentBundlePlugin(): Plugin {
 						next();
 						return;
 					}
+					const contentType = key.endsWith(".json")
+						? "application/json; charset=utf-8"
+						: key.endsWith(".md")
+							? "text/markdown; charset=utf-8"
+							: "text/plain; charset=utf-8";
 					res.statusCode = 200;
-					res.setHeader("Content-Type", "application/json; charset=utf-8");
+					res.setHeader("Content-Type", contentType);
 					res.setHeader("Cache-Control", "no-cache");
 					res.end(body);
 				} catch (err) {
