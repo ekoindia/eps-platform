@@ -38,7 +38,7 @@ export const API_ENVIRONMENTS: Record<
 	},
 	production: {
 		label: "Production",
-		baseUrl: `https://api.eko.in/ekoapi/${API_VERSION}`,
+		baseUrl: `https://api.eko.in/ekoicici/${API_VERSION}`,
 		note: "Credentials issued after organizational KYC at https://connect.eko.in.",
 	},
 };
