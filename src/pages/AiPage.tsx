@@ -465,7 +465,7 @@ const AiPage = () => {
 								<div className="flex flex-col gap-3">
 									<CommandBlock
 										caption="Step 1"
-										text="/plugin marketplace add ekoindia/eko-eps-website"
+										text="/plugin marketplace add ekoindia/eko-eps-platform"
 										prompt=""
 									/>
 									<CommandBlock

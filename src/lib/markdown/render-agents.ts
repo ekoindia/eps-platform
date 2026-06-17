@@ -59,7 +59,7 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push("");
 	lines.push("```bash");
-	lines.push("/plugin marketplace add ekoindia/eko-eps-website");
+	lines.push("/plugin marketplace add ekoindia/eko-eps-platform");
 	lines.push("/plugin install eps@ekoindia");
 	lines.push("```");
 	lines.push("");

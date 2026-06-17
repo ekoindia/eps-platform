@@ -77,7 +77,7 @@ nothing needs to be pre-created on npm besides the org.
 
 - Nothing beyond merging `.claude-plugin/marketplace.json` (already at the repo
   root, listing `packages/claude-plugin-eps` as plugin `eps`) to the default
-  branch so users can `/plugin marketplace add ekoindia/eko-eps-website`.
+  branch so users can `/plugin marketplace add ekoindia/eko-eps-platform`.
 
 ## 3. Release flow
 
@@ -150,7 +150,7 @@ Run after the first publish:
 - [ ] `npx -y @ekoindia/eps-mock-server` serves on `:4010`.
 - [ ] `npm i @ekoindia/eps-sdk` resolves and installs.
 - [ ] `composer require ekoindia/eps-sdk` resolves from Packagist.
-- [ ] In Claude Code: `/plugin marketplace add ekoindia/eko-eps-website` then
+- [ ] In Claude Code: `/plugin marketplace add ekoindia/eko-eps-platform` then
       `/plugin install eps@ekoindia` works (and the `eps` MCP + skills +
       `/eps` command load).
 

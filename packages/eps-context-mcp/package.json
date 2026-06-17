@@ -6,7 +6,7 @@
 	"type": "module",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ekoindia/eko-eps-website.git",
+		"url": "https://github.com/ekoindia/eko-eps-platform.git",
 		"directory": "packages/eps-context-mcp"
 	},
 	"publishConfig": {
