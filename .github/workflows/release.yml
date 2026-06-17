@@ -1,0 +1,104 @@
+# Release workflow — publishes packages on a version tag push (vX.Y.Z).
+#
+# Required repository secrets:
+#   NPM_TOKEN          npm automation token with publish rights on the @ekoindia
+#                      scope. Used as NODE_AUTH_TOKEN for `npm publish`.
+#   SDK_PHP_DEPLOY_KEY SSH deploy key (write access) for the PHP mirror repo
+#                      ekoindia/eps-sdk-php. Used by the php-split job to push the
+#                      subtree-split history + tag to Packagist's source repo.
+#                      TODO: required for php-split — see job notes below.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  npm-publish:
+    name: Publish npm packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Repo-root build emits dist/agent/*.json that each package bakes from.
+      - name: Build agent bundles
+        run: npm run build
+
+      - name: Publish @ekoindia/eps-context-mcp
+        working-directory: packages/eps-context-mcp
+        run: |
+          npm run bake
+          npm run build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @ekoindia/eps-sdk
+        working-directory: packages/sdk-js
+        run: |
+          npm run bake
+          npm run build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @ekoindia/eps-mock-server
+        working-directory: packages/eps-mock-server
+        run: |
+          npm run bake
+          npm run build
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  php-split:
+    name: Split + publish PHP SDK
+    runs-on: ubuntu-latest
+    # TODO: requires SDK_PHP_DEPLOY_KEY secret + ekoindia/eps-sdk-php mirror repo.
+    # Until both exist, this job is a documented scaffold. Packagist watches the
+    # mirror repo (ekoindia/eps-sdk-php); pushing the subtree + tag there
+    # triggers a new package release. Composer cannot install a package living
+    # in a monorepo subdirectory, hence the read-only split mirror.
+    #
+    # The symplify/monorepo-split-github-action pushes packages/sdk-php to the
+    # mirror with rewritten history and propagates the current tag.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # TODO: enable once SDK_PHP_DEPLOY_KEY + ekoindia/eps-sdk-php exist.
+      - name: Split packages/sdk-php to ekoindia/eps-sdk-php
+        uses: symplify/monorepo-split-github-action@v2.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # The subdirectory in this monorepo to split out.
+          package_directory: packages/sdk-php
+          # Target mirror repository (read-only, watched by Packagist).
+          repository_organization: ekoindia
+          repository_name: eps-sdk-php
+          # SSH deploy key with write access on the mirror repo.
+          user_name: "eko-ci"
+          user_email: "ci@eko.in"
+          # The tag that triggered this workflow is propagated to the mirror.
+          tag: ${{ github.ref_name }}
+          # TODO: provide the deploy key for push access.
+          # The action reads it from the SSH agent / known_hosts; configure via
+          # webfactory/ssh-agent before this step, e.g.:
+          #   - uses: webfactory/ssh-agent@v0.9.0
+          #     with:
+          #       ssh-private-key: ${{ secrets.SDK_PHP_DEPLOY_KEY }}
