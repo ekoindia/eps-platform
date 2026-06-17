@@ -54,12 +54,13 @@ export function renderAgentsMarkdown(): string {
 	lines.push("## Claude Code plugin");
 	lines.push("");
 	lines.push(
-		"One install wires the `eps` MCP, the `integrate-eps` and `sign-request` " +
-			"skills, and the `/eps` slash command into Claude Code:",
+		"One install wires the `eps` MCP, the `integrate-eps`, `sign-request` and " +
+			"`run-a-recipe` skills, and the `/eps` slash command into Claude Code:",
 	);
 	lines.push("");
 	lines.push("```bash");
-	lines.push("/plugin install eps");
+	lines.push("/plugin marketplace add ekoindia/eko-eps-website");
+	lines.push("/plugin install eps@ekoindia");
 	lines.push("```");
 	lines.push("");
 

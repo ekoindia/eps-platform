@@ -60,15 +60,20 @@ const DIFFERENTIATORS: Differentiator[] = [
 
 /* -------------------------------- Artifacts ------------------------------- */
 
+interface ArtifactLink {
+	label: string;
+	href: string;
+	external?: boolean;
+}
+
 interface Artifact {
 	icon: LucideIcon;
 	title: string;
 	body: string;
 	/** A copyable command shown inline. */
 	command?: string;
-	/** A download / external link. */
-	link?: { label: string; href: string; external?: boolean };
-	secondaryLink?: { label: string; href: string; external?: boolean };
+	/** Download / external links (first is rendered as the primary link). */
+	links?: ArtifactLink[];
 }
 
 const ARTIFACTS: Artifact[] = [
@@ -76,8 +81,15 @@ const ARTIFACTS: Artifact[] = [
 		icon: FileTerminal,
 		title: "Context packs",
 		body: "Drop-in instructions for any agent — auth, endpoints, and recipes in one file.",
-		link: { label: "AGENTS.md", href: "/agent/AGENTS.md" },
-		secondaryLink: { label: "CLAUDE.md", href: "/agent/CLAUDE.md" },
+		links: [
+			{ label: "AGENTS.md", href: "/agent/AGENTS.md" },
+			{ label: "CLAUDE.md", href: "/agent/CLAUDE.md" },
+			{ label: ".cursorrules", href: "/agent/.cursorrules" },
+			{
+				label: "copilot-instructions.md",
+				href: "/agent/copilot-instructions.md",
+			},
+		],
 	},
 	{
 		icon: PlugZap,
@@ -90,11 +102,13 @@ const ARTIFACTS: Artifact[] = [
 		title: "Signed SDKs",
 		body: "Backend-only SDKs with HMAC signing baked in. Keep your access_key server-side.",
 		command: "npm i @ekoindia/eps-sdk",
-		secondaryLink: {
-			label: "composer require ekoindia/eps-sdk",
-			href: "https://packagist.org/packages/ekoindia/eps-sdk",
-			external: true,
-		},
+		links: [
+			{
+				label: "composer require ekoindia/eps-sdk",
+				href: "https://packagist.org/packages/ekoindia/eps-sdk",
+				external: true,
+			},
+		],
 	},
 	{
 		icon: ServerCog,
@@ -106,17 +120,22 @@ const ARTIFACTS: Artifact[] = [
 		icon: Boxes,
 		title: "Postman collection",
 		body: "Every EPS endpoint, ready to import and run against the sandbox.",
-		link: {
-			label: "eps.postman_collection.json",
-			href: "/agent/eps.postman_collection.json",
-		},
+		links: [
+			{
+				label: "eps.postman_collection.json",
+				href: "/agent/eps.postman_collection.json",
+			},
+		],
 	},
 	{
 		icon: FileJson,
 		title: "Machine bundle + OpenAPI",
-		body: "Canonical JSON of every endpoint, topic, and recipe — plus an OpenAPI 3.1 document.",
-		link: { label: "eps.json", href: "/agent/eps.json" },
-		secondaryLink: { label: "openapi.json", href: "/openapi.json" },
+		body: "Canonical JSON of every endpoint, topic, and recipe — plus the compact index and an OpenAPI 3.1 document.",
+		links: [
+			{ label: "eps.json", href: "/agent/eps.json" },
+			{ label: "index.json", href: "/agent/index.json" },
+			{ label: "openapi.json", href: "/openapi.json" },
+		],
 	},
 ];
 
@@ -467,35 +486,34 @@ const AiPage = () => {
 														<CopyButton text={a.command} />
 													</div>
 												)}
-												{a.link && (
-													<a
-														href={a.link.href}
-														{...(a.link.external
-															? {
-																	target: "_blank",
-																	rel: "noopener noreferrer",
-																}
-															: {})}
-														className="inline-flex items-center gap-1.5 text-sm font-medium text-eko-navy underline-offset-2 hover:text-eko-gold-hover hover:underline"
-													>
-														<Download className="h-3.5 w-3.5" />
-														{a.link.label}
-													</a>
-												)}
-												{a.secondaryLink && (
-													<a
-														href={a.secondaryLink.href}
-														{...(a.secondaryLink.external
-															? {
-																	target: "_blank",
-																	rel: "noopener noreferrer",
-																}
-															: {})}
-														className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground underline-offset-2 hover:text-eko-navy hover:underline"
-													>
-														{a.secondaryLink.label}
-													</a>
-												)}
+												{a.links?.map((l, li) => {
+													const ext = l.external
+														? {
+																target: "_blank",
+																rel: "noopener noreferrer",
+															}
+														: {};
+													return li === 0 ? (
+														<a
+															key={l.href}
+															href={l.href}
+															{...ext}
+															className="inline-flex items-center gap-1.5 text-sm font-medium text-eko-navy underline-offset-2 hover:text-eko-gold-hover hover:underline"
+														>
+															<Download className="h-3.5 w-3.5" />
+															{l.label}
+														</a>
+													) : (
+														<a
+															key={l.href}
+															href={l.href}
+															{...ext}
+															className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground underline-offset-2 hover:text-eko-navy hover:underline"
+														>
+															{l.label}
+														</a>
+													);
+												})}
 											</div>
 										</Card>
 									</FadeIn>
