@@ -118,22 +118,27 @@ Per project convention (core feature → maintain a detailed doc in `docs/`), it
 
 ---
 
-## 7. Open decisions (need your input before finalizing docs)
+## 7. Decisions (RESOLVED 2026-06-17)
 
-1. **Distribution channel:** public npm + Packagist (recommended, frictionless) vs GitHub Packages (private/internal) vs dual. Drives the release runbook + the exact commands shown on `/agents`.
-2. **Claude Code marketplace location:** this repo vs a dedicated `ekoindia/eko-claude-plugins` repo.
-3. **Monorepo vs split repos** for the publishable packages (esp. PHP/Packagist).
-4. **`/agents` redesign:** approve a dedicated marketing-grade redesign (via `frontend-design`) — and confirm the route/name (`/agents` vs `/ai` vs `/developers/ai`).
-5. **Scope of next SDK languages** (Java/C#/Python/Go) — now or later.
+1. **Distribution channel:** **public npm + Packagist.** (GitHub Packages rejected for public reach — breaks `npx`/Composer UX.)
+2. **Claude Code marketplace location:** **this repo** (`.claude-plugin/marketplace.json` at repo root listing `packages/claude-plugin-eps`).
+3. **Monorepo vs split:** stay monorepo. npm publishes from subfolders. **PHP/Packagist requires a read-only subtree-split mirror repo** (e.g. `ekoindia/eps-sdk-php`) auto-pushed by CI — the one exception, since Packagist reads `composer.json` from a repo root.
+4. **`/agents` redesign:** **approved** (via `frontend-design`); **rename the route `/agents` → `/ai`** (keep `/ai.md` as the lean text twin).
+5. **Next SDK languages (Java/C#/Python/Go):** **later** — only after everything in the current scope is finalized + published.
+
+### Residual dependencies that require your action (cannot be done in-repo)
+- npm: an `@ekoindia`-org **`NPM_TOKEN`** added as a GitHub Actions secret; confirm the org exists.
+- Packagist: an account to submit the PHP mirror repo once (CI keeps it updated via webhook/tag).
+- Pick the **marketplace name** used in `/plugin install eps@<name>` (proposed: `ekoindia`).
 
 ---
 
-## 8. Recommended next steps (in order)
+## 8. Execution plan (in order)
 
-1. **Decide §7.1–§7.4.**
-2. **Publishing pipeline:** add `publishConfig.access: public`, a `.github/workflows` release job (bake → build → test → `npm publish` / git-tag for Packagist), and the marketplace manifest. Then publish `0.1.0` and verify each one-liner actually works.
-3. **Redesign `/agents`** into a marketing page (`frontend-design`).
-4. **Write the feature doc + release runbook** (`docs/ai-agent-platform.md`, `docs/releasing-agent-packages.md`).
-5. **CI for PHP** (composer install + phpunit) and a live Claude Code plugin smoke.
+1. **Route rename `/agents` → `/ai`** (App.tsx, AppServer.tsx, ssg/routes.ts, nav, search-index, markdown gen → `/ai.md`); update hub's `/plugin install` label to the real marketplace command.
+2. **Redesign `/ai`** into a world-class marketing page (`frontend-design`): hero + value prop, copy-to-clipboard per-harness install tabs (from `install-matrix.json`), artifact cards, the HMAC-signing differentiator, recipe step-flows. Dedicated page (not `LegalPageLayout`).
+3. **Publishing pipeline (authorable now):** add `publishConfig.access: public` to the 3 npm packages; `.github/workflows` for (a) CI tests across workspaces (incl. PHP via Composer), (b) release-on-tag → `npm publish` for the 3 npm packages, (c) subtree-split push of the PHP SDK to its mirror repo. Add `.claude-plugin/marketplace.json` and fix the hub install command.
+4. **Docs:** `docs/ai-agent-platform.md` (feature doc) + `docs/releasing-agent-packages.md` (release runbook incl. the credential steps above); cross-link from `markdown-generation.md`/`api-specs.md`.
+5. **You:** add `NPM_TOKEN`, create/submit the Packagist mirror, then trigger the release; live-load the Claude Code plugin once.
 6. **Merge `feature/ai-native-agent-platform` → `dev`**, then prod via PR (`dev → main`).
 7. (Later) Java/C#/Python/Go SDKs; Bruno collection.
