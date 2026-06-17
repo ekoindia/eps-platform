@@ -133,12 +133,17 @@ Per project convention (core feature → maintain a detailed doc in `docs/`), it
 
 ---
 
-## 8. Execution plan (in order)
+## 8. Execution plan — progress
 
-1. **Route rename `/agents` → `/ai`** (App.tsx, AppServer.tsx, ssg/routes.ts, nav, search-index, markdown gen → `/ai.md`); update hub's `/plugin install` label to the real marketplace command.
-2. **Redesign `/ai`** into a world-class marketing page (`frontend-design`): hero + value prop, copy-to-clipboard per-harness install tabs (from `install-matrix.json`), artifact cards, the HMAC-signing differentiator, recipe step-flows. Dedicated page (not `LegalPageLayout`).
-3. **Publishing pipeline (authorable now):** add `publishConfig.access: public` to the 3 npm packages; `.github/workflows` for (a) CI tests across workspaces (incl. PHP via Composer), (b) release-on-tag → `npm publish` for the 3 npm packages, (c) subtree-split push of the PHP SDK to its mirror repo. Add `.claude-plugin/marketplace.json` and fix the hub install command.
-4. **Docs:** `docs/ai-agent-platform.md` (feature doc) + `docs/releasing-agent-packages.md` (release runbook incl. the credential steps above); cross-link from `markdown-generation.md`/`api-specs.md`.
-5. **You:** add `NPM_TOKEN`, create/submit the Packagist mirror, then trigger the release; live-load the Claude Code plugin once.
-6. **Merge `feature/ai-native-agent-platform` → `dev`**, then prod via PR (`dev → main`).
-7. (Later) Java/C#/Python/Go SDKs; Bruno collection.
+**Done in this session (authorable work — all committed on the branch, all gates green):**
+1. ✅ **Route rename `/agents` → `/ai`** (App.tsx, AppServer.tsx, ssg/routes.ts, nav, search-index, markdown gen → `/ai.md`); hub shows the real `/plugin marketplace add ekoindia/eko-eps-website` + `/plugin install eps@ekoindia` commands.
+2. ✅ **Redesigned `/ai`** as a world-class marketing page (dedicated page, not `LegalPageLayout`): navy/gold hero + agent-terminal, differentiator cards, tabbed copy-to-clipboard installs (from `install-matrix.json`), artifact grid, recipe step-flows, CTA band. Verified rendered in-browser.
+3. ✅ **Publishing pipeline:** `publishConfig.access: public` + `repository` on the 3 npm packages; `.claude-plugin/marketplace.json` (`ekoindia`); `.github/workflows/ci.yml` (lint/build/vitest across workspaces + PHP phpunit) and `release.yml` (tag `v*.*.*` → `npm publish` ×3 + PHP subtree-split scaffold).
+4. ✅ **Docs:** `docs/ai-agent-platform.md` (feature doc) + `docs/releasing-agent-packages.md` (runbook); cross-linked from `markdown-generation.md`/`api-specs.md`.
+
+**Remaining — requires YOUR action (cannot be done in-repo):**
+5. ☐ Add GitHub secret `NPM_TOKEN` (npm automation token, publish on `@ekoindia`). ☐ Create the PHP mirror repo `ekoindia/eps-sdk-php` + secret `SDK_PHP_DEPLOY_KEY`; submit it to Packagist once. ☐ Tag `v0.1.0` to trigger `release.yml`. ☐ Live-load the Claude Code plugin once to smoke-test. (Minor: `marketplace.json` `owner.url` is non-standard-but-tolerated — switch to `name`-only or `email` if you want strict schema.)
+6. ☐ **Merge `feature/ai-native-agent-platform` → `dev`**, then prod via PR (`dev → main`).
+7. ☐ (Later) Java/C#/Python/Go SDKs; Bruno collection.
+
+**Note:** §3 ("what was NOT done") above describes the snapshot *before* this session's execution; items 1–4 there (publishing config, CI, marketplace, route/redesign, docs) are now addressed. Publishing itself still awaits the credentials in step 5.
