@@ -1,8 +1,22 @@
 # Release workflow — publishes packages on a version tag push (vX.Y.Z).
 #
+# npm auth is two-phase (see docs/releasing-agent-packages.md §2):
+#   Phase A (bootstrap): NPM_TOKEN is required for the very FIRST publish of each
+#     @ekoindia/* package, because a package's npm Trusted Publisher config can
+#     only be created after the package exists. Bootstrap publishes do NOT get
+#     OIDC provenance. Prefer local/manual first publishes (see runbook) so a
+#     mid-run failure doesn't half-publish the tag.
+#   Phase B (steady-state): once a Trusted Publisher is configured per package on
+#     npmjs.com, OIDC (id-token: write, granted job-level below) authenticates
+#     publishes — provenance is then automatic. At that point delete the
+#     NPM_TOKEN secret and remove the NODE_AUTH_TOKEN lines from the publish
+#     steps below. Adding id-token alone does NOT switch auth; the token is the
+#     fallback until each package's Trusted Publisher exists.
+#
 # Required repository secrets:
-#   NPM_TOKEN          npm automation token with publish rights on the @ekoindia
-#                      scope. Used as NODE_AUTH_TOKEN for `npm publish`.
+#   NPM_TOKEN          BOOTSTRAP-ONLY. npm automation token with publish rights on
+#                      the @ekoindia scope. Used as NODE_AUTH_TOKEN for
+#                      `npm publish`. Delete after Trusted Publishers are set up.
 #   SDK_PHP_DEPLOY_KEY SSH deploy key (write access) for the PHP mirror repo
 #                      ekoindia/eps-sdk-php. Used by the php-split job to push the
 #                      subtree-split history + tag to Packagist's source repo.
@@ -19,6 +33,10 @@ jobs:
   npm-publish:
     name: Publish npm packages
     runs-on: ubuntu-latest
+    # Job-level so OIDC is scoped to publishing only — php-split must NOT get it.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,8 +44,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # OIDC Trusted Publishing requires Node >=22.14.0 (ships npm >=11.5.1).
+          node-version: "22.14.0"
           registry-url: https://registry.npmjs.org
+          # npm recommends disabling the package cache on publish jobs.
+          package-manager-cache: false
 
       - name: Install dependencies
         run: npm ci

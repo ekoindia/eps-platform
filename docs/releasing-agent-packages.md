@@ -28,11 +28,38 @@ These cannot be done in-repo and must be done once before the first release.
 
 ### npm
 
+npm auth runs in two phases. A package's **Trusted Publisher** (OIDC) config can
+only be created *after* the package exists on npm, so the very first publish of
+each package needs a token; OIDC takes over afterward. Node ≥22.14.0 / npm
+≥11.5.1 are required for OIDC (the workflow pins Node `22.14.0`); under OIDC,
+provenance attestations are generated automatically — no `--provenance` flag and
+no token. Package records auto-create on first `npm publish --access public`, so
+nothing needs to be pre-created on npm besides the org.
+
+**Phase A — Bootstrap (one-time per package):**
+
 1. Confirm the **`@ekoindia` npm org** exists (scoped packages require it).
-2. Create an **automation `NPM_TOKEN`** with publish rights on the `@ekoindia`
-   scope.
-3. Add it as a GitHub Actions repository secret named **`NPM_TOKEN`** (consumed
-   as `NODE_AUTH_TOKEN` by `npm publish` in `release.yml`).
+2. Create a short-lived **automation `NPM_TOKEN`** with publish rights on the
+   `@ekoindia` scope; add it as a GitHub Actions repository secret named
+   **`NPM_TOKEN`** (consumed as `NODE_AUTH_TOKEN` by `npm publish`).
+3. Publish each of the three packages **once**. Prefer a **local/manual** first
+   publish from a maintainer machine (`npm publish --access public` per package)
+   over the tag workflow: if the tag run publishes package 1 then fails on
+   package 2, re-running the same tag fails because package 1's version already
+   exists. Recovery if that happens: bump the failed package(s) and push a new
+   tag, or finish the remaining first-publishes locally.
+
+**Phase B — OIDC steady-state (after each package exists):**
+
+4. On npmjs.com, for **each** package → *Settings → Trusted Publisher* → add a
+   GitHub Actions publisher: org `ekoindia`, this repo, workflow filename
+   **`release.yml`** (filename only, not the full `.github/workflows/...` path),
+   and set **Allowed actions** to **`npm publish`**.
+5. `release.yml` already grants `id-token: write` at the `npm-publish` job level.
+   Once all three Trusted Publishers exist, **delete the `NPM_TOKEN` secret** and
+   remove the `NODE_AUTH_TOKEN` lines from the publish steps. (Adding
+   `id-token: write` alone does **not** switch auth — the token is the fallback
+   until the Trusted Publisher is configured.)
 
 ### PHP / Packagist
 
@@ -59,12 +86,15 @@ Driven by **`.github/workflows/release.yml`**, triggered on pushing a
 
 ### Job `npm-publish`
 
-1. Checks out, sets up Node 20 with `registry-url: https://registry.npmjs.org`.
+1. Checks out, sets up Node `22.14.0` with `registry-url:
+   https://registry.npmjs.org` and `id-token: write` (job-scoped, for OIDC).
 2. `npm ci`, then `npm run build` (repo-root build emits `dist/agent/*.json`
    and then runs `bake:all`, copying them into each package's `data/`).
 3. For each of the three npm packages, in its directory: `npm run bake`,
-   `npm run build`, then `npm publish --access public` with
-   `NODE_AUTH_TOKEN=${{ secrets.NPM_TOKEN }}`.
+   `npm run build`, then `npm publish --access public`. Authenticated via the
+   package's Trusted Publisher (OIDC) once configured; `NODE_AUTH_TOKEN=${{
+   secrets.NPM_TOKEN }}` remains as the bootstrap fallback (Phase A) and is
+   removed afterward (Phase B). Provenance is automatic under OIDC.
 
 All three npm packages already declare `"publishConfig": { "access": "public" }`
 (scoped packages are private by default), and each has a `prepublishOnly` that
@@ -100,6 +130,10 @@ Pushing the tag to the mirror is what triggers the Packagist release.
 ## 5. CI (`.github/workflows/ci.yml`)
 
 Runs on pull requests and on pushes to `dev`, `main`, and `feature/**`.
+
+> **CI never publishes.** Branch pushes (dev/main/feature) and PRs run only
+> lint/build/test here. Nothing is published to npm or Packagist except on a
+> pushed `vX.Y.Z` tag, which triggers `release.yml` (§3) — not this workflow.
 
 - **Job `web-and-packages`** (Node 20): `npm ci` → `npm run lint` →
   `npm run build` (website + agent bundles) → `npx vitest run` (website tests) →
