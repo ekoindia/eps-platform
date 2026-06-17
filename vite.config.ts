@@ -8,6 +8,7 @@ import path from "path";
 import { mdxOptions } from "./ssg/mdx-options";
 import { generateMarkdownPlugin } from "./vite-plugin-generate-markdown";
 import { generateOpenApiPlugin } from "./vite-plugin-generate-openapi";
+import { generateAgentBundlePlugin } from "./vite-plugin-generate-agent-bundle";
 import { generatePricingXlsxPlugin } from "./vite-plugin-generate-xlsx";
 import { prerenderPlugin } from "./ssg/plugin";
 
@@ -28,6 +29,7 @@ export default defineConfig(({ mode }) => ({
 		tailwindcss(),
 		generateMarkdownPlugin(),
 		generateOpenApiPlugin(),
+		generateAgentBundlePlugin(),
 		generatePricingXlsxPlugin(),
 		mode !== "development" && prerenderPlugin(),
 		// svgo for svgs + sharp for png/jpg. imagetools emits only avif/webp,

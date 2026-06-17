@@ -41,6 +41,7 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 	{ pattern: /^\/docs\/?$/, src: "src/pages/docs/DocsIndexPage.tsx" },
 	// Other pages
 	{ pattern: /^\/pricing$/, src: "src/pages/PricingPage.tsx" },
+	{ pattern: /^\/ai$/, src: "src/pages/AiPage.tsx" },
 	{ pattern: /^\/use-cases$/, src: "src/pages/UseCasesHubPage.tsx" },
 	{ pattern: /^\/about-us$/, src: "src/pages/AboutPage.tsx" },
 	{ pattern: /^\/blogs-media$/, src: "src/pages/BlogsMediaPage.tsx" },
@@ -75,6 +76,9 @@ export const PRERENDER_ROUTES: string[] = [
 
 	// Pricing
 	"/pricing",
+
+	// AI Agents
+	"/ai",
 
 	// Developer docs (overview + every guide & endpoint slug)
 	"/docs",

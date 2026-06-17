@@ -591,3 +591,30 @@ html:not([data-os="mac"]) .kbd-os-mac {
 body {
 	top: 0 !important;
 }
+
+/* ── Desktop Company dropdown: anchor under its nav trigger ──────────────
+   The panel is narrow (360px) while the "Company" nav item sits far right,
+   so the default centred positioning (Tailwind `left-1/2 -translate-x-1/2`)
+   looks detached. Where CSS anchor positioning is supported (Chromium 125+),
+   pin the panel to the trigger's bottom-centre — the browser re-tracks it on
+   scroll/resize/scale with no JS. Unsupported browsers (Firefox/Safari) keep
+   the centred Tailwind fallback. These rules are unlayered, so they out-rank
+   Tailwind's layered top/left/translate utilities.
+   Gated on `top: anchor(...)` (the function actually used), not merely
+   `anchor-name`, so partial implementations don't half-apply. */
+.company-nav-trigger {
+	anchor-name: --company-trigger;
+}
+
+@supports (top: anchor(bottom)) {
+	.company-dropdown {
+		position-anchor: --company-trigger;
+		top: calc(anchor(bottom) + 0.5rem);
+		bottom: auto;
+		/* override the centred fallback (left-1/2 + -translate-x-1/2) */
+		left: auto;
+		right: auto;
+		translate: none;
+		justify-self: anchor-center;
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"name": "ekoindia",
+	"owner": {
+		"name": "Eko India",
+		"url": "https://eko.in"
+	},
+	"plugins": [
+		{
+			"name": "eps",
+			"source": "./packages/claude-plugin-eps",
+			"description": "Eko Platform Services — context MCP, skills, and commands for integrating EPS APIs from any AI coding agent."
+		}
+	]
+}

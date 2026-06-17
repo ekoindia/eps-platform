@@ -3,10 +3,14 @@
 	"private": true,
 	"version": "0.0.0",
 	"type": "module",
+	"workspaces": [
+		"packages/*"
+	],
 	"scripts": {
 		"dev": "vite",
-		"build": "vite build",
-		"build:dev": "vite build --mode development",
+		"build": "vite build && npm run bake:all",
+		"build:dev": "vite build --mode development && npm run bake:all",
+		"bake:all": "node packages/eps-context-mcp/scripts/bake-bundle.mjs && node packages/sdk-js/scripts/bake-surface.mjs && node packages/sdk-php/scripts/bake-surface.mjs && node packages/eps-mock-server/scripts/bake-fixtures.mjs",
 		"lint": "eslint .",
 		"preview": "vite preview",
 		"test": "vitest run",

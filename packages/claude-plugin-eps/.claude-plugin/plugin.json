@@ -1,0 +1,8 @@
+{
+	"name": "eps",
+	"description": "Eko Platform Services — context MCP, skills, and commands for integrating EPS APIs.",
+	"version": "0.1.0",
+	"mcpServers": {
+		"eps": { "command": "npx", "args": ["-y", "@ekoindia/eps-context-mcp"] }
+	}
+}

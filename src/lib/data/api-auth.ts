@@ -33,12 +33,12 @@ export const API_ENVIRONMENTS: Record<
 > = {
 	sandbox: {
 		label: "UAT / Sandbox",
-		baseUrl: `https://staging.eko.in:25004/ekoapi/${API_VERSION}`,
+		baseUrl: `https://staging.eko.in/ekoapi/${API_VERSION}`,
 		note: "Self-serve credentials available immediately on signup.",
 	},
 	production: {
 		label: "Production",
-		baseUrl: `https://api.eko.in/ekoapi/${API_VERSION}`,
+		baseUrl: `https://api.eko.in/ekoicici/${API_VERSION}`,
 		note: "Credentials issued after organizational KYC at https://connect.eko.in.",
 	},
 };

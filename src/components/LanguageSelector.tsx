@@ -35,9 +35,16 @@ declare global {
 export const LanguageSelector = ({
 	isLight = true,
 	showLabel = false,
+	placement = "bottom-right",
 }: {
 	isLight?: boolean;
 	showLabel?: boolean;
+	/**
+	 * Where the menu opens relative to the trigger. Default `bottom-right`
+	 * (header, top of page). Use `top-left` when anchored near the viewport
+	 * bottom-left, e.g. the mobile drawer footer, so the menu stays on-screen.
+	 */
+	placement?: "bottom-right" | "top-left";
 }) => {
 	const [open, setOpen] = useState(false);
 	const [selected, setSelected] = useState("en");
@@ -144,13 +151,22 @@ export const LanguageSelector = ({
 				)}
 				aria-label="Select language"
 				title="Select language"
+				aria-haspopup="listbox"
+				aria-expanded={open}
 			>
 				<Globe className="w-4 h-4" />
 				{showLabel && <span>{selectedLang?.label || "English"}</span>}
 			</button>
 
 			{open && (
-				<div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-border/50 py-2 z-[60] max-h-80 overflow-y-auto">
+				<div
+					className={cn(
+						"absolute w-48 bg-white rounded-xl shadow-xl border border-border/50 py-2 z-[60] max-h-80 overflow-y-auto",
+						placement === "top-left"
+							? "bottom-full left-0 mb-2"
+							: "top-full right-0 mt-2",
+					)}
+				>
 					{languages.map((lang) => (
 						<button
 							key={lang.code}

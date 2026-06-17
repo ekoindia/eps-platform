@@ -72,7 +72,7 @@ Supporting primitives (same file, lines ~19–53):
 **Environments** (`api-auth.ts`, `API_ENVIRONMENTS`):
 
 ```typescript
-sandbox:    https://staging.eko.in:25004/ekoapi/${API_VERSION}   // DEFAULT_BASE_URL
+sandbox:    https://staging.eko.in/ekoapi/${API_VERSION}   // DEFAULT_BASE_URL
 production: https://api.eko.in/ekoapi/${API_VERSION}
 ```
 
