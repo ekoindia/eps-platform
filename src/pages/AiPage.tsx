@@ -1,5 +1,6 @@
 import { AiHint } from "@/components/AiHint";
 import { FadeIn } from "@/components/FadeIn";
+import { HarnessIcon } from "@/components/icons/HarnessIcon";
 import { Footer } from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -355,8 +356,9 @@ const AiPage = () => {
 										<TabsTrigger
 											key={h.id}
 											value={h.id}
-											className="rounded-full border border-border bg-background px-4 py-2 data-[state=active]:border-eko-navy data-[state=active]:bg-eko-navy data-[state=active]:text-white"
+											className="gap-2 rounded-full border border-border bg-background px-4 py-2 data-[state=active]:border-eko-navy data-[state=active]:bg-eko-navy data-[state=active]:text-white"
 										>
+											<HarnessIcon id={h.id} className="h-4 w-4 shrink-0" />
 											{h.name}
 										</TabsTrigger>
 									))}
@@ -366,7 +368,8 @@ const AiPage = () => {
 									<TabsContent key={h.id} value={h.id} className="mt-6">
 										<Card className="space-y-5 p-6 lg:p-8">
 											<div className="flex items-center justify-between gap-4">
-												<h3 className="text-xl font-semibold text-foreground">
+												<h3 className="flex items-center gap-2.5 text-xl font-semibold text-foreground">
+													<HarnessIcon id={h.id} className="h-5 w-5 shrink-0" />
 													{h.name}
 												</h3>
 												<div className="flex gap-2">
