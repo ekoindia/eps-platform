@@ -61,7 +61,7 @@ Driven by **`.github/workflows/release.yml`**, triggered on pushing a
 
 1. Checks out, sets up Node 20 with `registry-url: https://registry.npmjs.org`.
 2. `npm ci`, then `npm run build` (repo-root build emits `dist/agent/*.json`
-   that each package bakes from).
+   and then runs `bake:all`, copying them into each package's `data/`).
 3. For each of the three npm packages, in its directory: `npm run bake`,
    `npm run build`, then `npm publish --access public` with
    `NODE_AUTH_TOKEN=${{ secrets.NPM_TOKEN }}`.
@@ -69,6 +69,14 @@ Driven by **`.github/workflows/release.yml`**, triggered on pushing a
 All three npm packages already declare `"publishConfig": { "access": "public" }`
 (scoped packages are private by default), and each has a `prepublishOnly` that
 runs `bake` + `build` as a safety net.
+
+> **Package `data/*.json` is generated, never committed.** The baked artifacts
+> are gitignored (`packages/*/data/`) and recreated on every root build via the
+> `bake:all` script — so they cannot drift from `src/` or leak environment
+> values into git. Any fresh checkout (CI included) must run `npm run build`
+> before package tests or publish. The PHP SDK has no npm scripts, so its
+> surface is baked by `packages/sdk-php/scripts/bake-surface.mjs`, invoked from
+> the root `bake:all`.
 
 ### Job `php-split`
 

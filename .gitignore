@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Baked agent/SDK artifacts — generated from src/ at build time (npm run bake:all).
+# Never committed; created fresh on every root build and on package prepublish.
+packages/*/data/
+
 # Env files (never commit secrets); keep .env.example tracked
 .env
 .env.*

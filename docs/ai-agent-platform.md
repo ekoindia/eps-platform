@@ -192,14 +192,21 @@ into every context pack. Cross-language SDK conformance is pinned by
    `src/lib/data/api-recipes.ts` (recipes), or the shared
    auth/error/product/environment data.
 2. Run `npm run build`. This regenerates every `/agent/*` artifact into
-   `dist/agent/` (and the dev server serves the new output live).
-3. Re-bake the packages so their committed `data/*.json` matches, e.g.:
+   `dist/agent/` (and the dev server serves the new output live), then runs
+   `bake:all`, which copies the fresh artifacts into each package's `data/`
+   directory.
 
-   ```bash
-   npm run bake -w @ekoindia/eps-context-mcp   # data/eps.json
-   npm run bake -w @ekoindia/eps-sdk           # data/sdk-surface.json
-   npm run bake -w @ekoindia/eps-mock-server   # data/fixtures.json
-   ```
+That is the whole loop — there is no separate re-bake step. The package
+`data/*.json` files are **generated, not committed**: they are gitignored
+(`packages/*/data/`) and recreated on every root build, so they can never
+drift from `src/` or leak environment values into git.
 
-   (On publish, each package's `prepublishOnly` runs `bake` + `build`
-   automatically — see the release runbook.)
+```bash
+npm run bake:all   # re-bake all four packages without a full rebuild
+```
+
+`bake:all` covers `eps.json` (eps-context-mcp), `sdk-surface.json` (sdk-js
+**and** sdk-php), and `fixtures.json` (eps-mock-server). It reads from
+`dist/agent/`, so a prior `npm run build` must have populated that directory.
+On publish, each npm package's `prepublishOnly` also runs `bake` + `build` as a
+safety net — see the release runbook.
