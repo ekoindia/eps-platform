@@ -1,5 +1,5 @@
 /**
- * Pure builder for the per-harness install matrix shown on /agents. Documents
+ * Pure builder for the per-harness install matrix shown on /ai. Documents
  * the wiring (MCP config and/or context-pack file) for each supported coding
  * agent. The capability is provided by the open standards (MCP + AGENTS.md);
  * this just records how to enable it per tool. No I/O, no Date.

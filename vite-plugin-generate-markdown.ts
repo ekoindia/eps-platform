@@ -210,9 +210,9 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
-				// -- Agents hub -----------------------------------------------------
+				// -- AI hub ---------------------------------------------------------
 				await writeFile(
-					path.join(outDir, "agents.md"),
+					path.join(outDir, "ai.md"),
 					bundle.renderAgentsMarkdown(),
 				);
 				written++;
@@ -421,7 +421,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	if (url === "/docs.md") {
 		return bundle.renderDocsIndexMarkdown();
 	}
-	if (url === "/agents.md") {
+	if (url === "/ai.md") {
 		return bundle.renderAgentsMarkdown();
 	}
 	const docMatch = url.match(/^\/docs\/([^/]+)\.md$/);

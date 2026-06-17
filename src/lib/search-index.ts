@@ -132,10 +132,10 @@ const buildPageItems = (): SearchItem[] => [
 		suggested: true,
 	},
 	{
-		id: "page:agents",
+		id: "page:ai",
 		label: "EPS for AI agents",
 		sublabel: "Context packs, MCP server, machine bundle",
-		href: "/agents",
+		href: "/ai",
 		category: "page",
 		keywords: [
 			"ai",

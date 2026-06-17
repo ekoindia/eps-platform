@@ -185,7 +185,7 @@ export function renderLlmsTxt(
 	lines.push(`- [OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`);
 	lines.push("- Local MCP: `npx -y @ekoindia/eps-context-mcp`");
 	lines.push(
-		`- [Agents hub](${SITE_URL}/agents): All agent artifacts + install instructions`,
+		`- [AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
 	);
 	lines.push("");
 

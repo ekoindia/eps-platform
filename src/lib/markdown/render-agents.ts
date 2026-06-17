@@ -1,5 +1,5 @@
 /**
- * Renders `/agents.md` — the markdown twin of the `/agents` hub page. Lists the
+ * Renders `/ai.md` — the markdown twin of the `/ai` hub page. Lists the
  * agent artifacts (packs, bundle, MCP, recipes) generated from the spec layer.
  */
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";

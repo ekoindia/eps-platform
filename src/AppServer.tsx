@@ -47,7 +47,7 @@ import UseCasesHubPage from "./pages/UseCasesHubPage";
 import PricingPage from "./pages/PricingPage";
 
 // AI Agents
-import AgentsPage from "./pages/AgentsPage";
+import AiPage from "./pages/AiPage";
 
 // Developer Docs
 import DocsIndexPage from "./pages/docs/DocsIndexPage";
@@ -101,7 +101,7 @@ const AppServer = ({
 							<Route path="/pricing" element={<PricingPage />} />
 
 							{/* AI Agents */}
-							<Route path="/agents" element={<AgentsPage />} />
+							<Route path="/ai" element={<AiPage />} />
 
 							{/* Developer Docs */}
 							<Route path="/docs" element={<DocsIndexPage />} />
