@@ -40,11 +40,10 @@ export const HARNESSES: HarnessInstall[] = [
 		packPlacement: "./AGENTS.md",
 	},
 	{
-		id: "gemini-cli",
-		name: "Gemini CLI",
-		mcp: MCP_CMD,
-		packFile: "AGENTS.md",
-		packPlacement: "./GEMINI.md",
+		id: "copilot",
+		name: "GitHub Copilot",
+		packFile: "copilot-instructions.md",
+		packPlacement: "./.github/copilot-instructions.md",
 	},
 	{
 		id: "opencode",
@@ -53,20 +52,21 @@ export const HARNESSES: HarnessInstall[] = [
 		packFile: "AGENTS.md",
 		packPlacement: "./AGENTS.md",
 	},
-	{ id: "continue", name: "Continue", mcp: MCP_CMD },
 	{
-		id: "copilot",
-		name: "GitHub Copilot",
-		packFile: "copilot-instructions.md",
-		packPlacement: "./.github/copilot-instructions.md",
-	},
-	{
-		id: "windsurf",
-		name: "Windsurf",
+		id: "gemini-cli",
+		name: "Gemini CLI",
+		mcp: MCP_CMD,
 		packFile: "AGENTS.md",
-		packPlacement: "./.windsurfrules",
+		packPlacement: "./GEMINI.md",
 	},
-	{ id: "cody", name: "Cody", packFile: "AGENTS.md" },
+	// { id: "continue", name: "Continue", mcp: MCP_CMD },	// Acquired by Cursor. No public docs or API, so omitting for now.
+	// {
+	// 	id: "windsurf",
+	// 	name: "Windsurf",
+	// 	packFile: "AGENTS.md",
+	// 	packPlacement: "./.windsurfrules",
+	// }, // Windsurf is now "Devin Desktop". Ommiting to avoid confusion, until we can verify MCP support and get updated pack instructions.
+	// { id: "cody", name: "Cody", packFile: "AGENTS.md" },
 	{ id: "zed", name: "Zed", mcp: MCP_CMD, packFile: "AGENTS.md" },
 	{
 		id: "aider",
