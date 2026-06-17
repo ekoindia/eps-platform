@@ -13,7 +13,7 @@
 		"access": "public"
 	},
 	"bin": {
-		"eps-context-mcp": "./dist/index.js"
+		"eps-context-mcp": "dist/index.js"
 	},
 	"files": [
 		"dist",
