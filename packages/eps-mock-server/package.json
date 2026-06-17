@@ -4,6 +4,14 @@
 	"description": "Offline mock server replaying EPS sample responses for local agent development and tests.",
 	"license": "MIT",
 	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ekoindia/eko-eps-website.git",
+		"directory": "packages/eps-mock-server"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"bin": {
 		"eps-mock-server": "./dist/index.js"
 	},

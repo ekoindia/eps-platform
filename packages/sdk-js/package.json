@@ -4,6 +4,14 @@
 	"description": "Backend-only Node.js SDK for Eko Platform Services (EPS) APIs, with request signing built in.",
 	"license": "MIT",
 	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ekoindia/eko-eps-website.git",
+		"directory": "packages/sdk-js"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"files": [

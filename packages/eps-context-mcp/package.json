@@ -4,6 +4,14 @@
 	"description": "Local MCP server giving AI coding agents context for Eko Platform Services (EPS) APIs.",
 	"license": "MIT",
 	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ekoindia/eko-eps-website.git",
+		"directory": "packages/eps-context-mcp"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"bin": {
 		"eps-context-mcp": "./dist/index.js"
 	},
