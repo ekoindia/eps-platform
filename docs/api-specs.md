@@ -1,5 +1,7 @@
 # API Technical Specifications
 
+> See also: [docs/ai-agent-platform.md](./ai-agent-platform.md) for the AI-agent artifact layer (`/agent/*`) generated from these specs.
+
 The single source of truth for **endpoint-level REST details** of every Eko API
 — method, path, headers, request params, request/response examples, nested
 response field trees (with verification `imp` flags), and error scenarios. Rich
