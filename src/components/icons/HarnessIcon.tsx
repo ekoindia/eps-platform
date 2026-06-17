@@ -6,7 +6,7 @@
  * adapt to the pill's active/inactive text color.
  */
 import type { ComponentType } from "react";
-import { Code2 } from "lucide-react";
+import { Boxes, Code2 } from "lucide-react";
 import {
 	SiClaude,
 	SiGithubcopilot,
@@ -31,6 +31,7 @@ const ICON_MAP: Record<string, IconComponent> = {
 	windsurf: SiWindsurf,
 	zed: SiZedindustries,
 	"jetbrains-ai": SiJetbrains,
+	others: Boxes,
 };
 
 interface HarnessIconProps {

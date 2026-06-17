@@ -1,7 +1,8 @@
 import { AiHint } from "@/components/AiHint";
+import { InlineCode } from "@/components/docs/InlineCode";
 import { FadeIn } from "@/components/FadeIn";
-import { HarnessIcon } from "@/components/icons/HarnessIcon";
 import { Footer } from "@/components/Footer";
+import { HarnessIcon } from "@/components/icons/HarnessIcon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,7 +29,7 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { CommandBlock, CopyButton } from "./ai/CommandBlock";
+import { CommandBlock, ConfigBlock, CopyButton } from "./ai/CommandBlock";
 
 const MCP_CMD = "npx -y @ekoindia/eps-context-mcp";
 const INSTALL_MATRIX = buildInstallMatrix();
@@ -206,7 +207,7 @@ const AiPage = () => {
 									className="mt-6 animate-fade-up text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
 									style={{ animationDelay: "80ms" }}
 								>
-									Integrate EPS from any{" "}
+									Integrate EPS APIs from any{" "}
 									<span className="text-gradient-gold">AI coding agent</span>
 								</h1>
 
@@ -341,17 +342,17 @@ const AiPage = () => {
 								Install by harness
 							</span>
 							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
-								Wire EPS into your agent
+								Wire EPS into your AI agent
 							</h2>
 							<p className="mt-4 text-lg text-muted-foreground">
-								Pick your tool. Each tab gives you the MCP command and the
-								context-pack file, ready to copy.
+								Pick your <strong>development tool</strong>. Get a ready-to-copy
+								MCP install command and download the AI-context file.
 							</p>
 						</FadeIn>
 
 						<FadeIn className="mx-auto max-w-4xl">
 							<Tabs defaultValue={INSTALL_MATRIX[0]?.id} className="w-full">
-								<TabsList className="flex h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
+								<TabsList className="flex h-auto flex-wrap justify-center gap-1 bg-transparent p-0">
 									{INSTALL_MATRIX.map((h) => (
 										<TabsTrigger
 											key={h.id}
@@ -381,11 +382,33 @@ const AiPage = () => {
 											</div>
 
 											{h.mcp ? (
-												<CommandBlock text={h.mcp} caption="MCP command" />
+												<div className="flex flex-col gap-3">
+													{h.mcp.command && (
+														<CommandBlock
+															text={h.mcp.command}
+															caption="MCP install command"
+														/>
+													)}
+													{h.mcp.configSnippet && (
+														<ConfigBlock
+															text={h.mcp.configSnippet}
+															caption={
+																h.mcp.configFile
+																	? `MCP config · ${h.mcp.configFile}`
+																	: "MCP config"
+															}
+														/>
+													)}
+													{h.mcp.note && (
+														<p className="text-xs text-muted-foreground">
+															{h.mcp.note}
+														</p>
+													)}
+												</div>
 											) : (
 												<p className="text-sm text-muted-foreground">
-													This harness doesn't run MCP — use the context pack
-													below.
+													{h.name} has no native MCP client — use the context
+													pack below instead.
 												</p>
 											)}
 
@@ -419,26 +442,37 @@ const AiPage = () => {
 
 							{/* Claude Code plugin highlight */}
 							<Card className="mt-6 border-eko-gold/30 bg-eko-gold-light/60 p-6 lg:p-8">
-								<div className="mb-4 flex items-center gap-3">
+								<div className="mb-8 flex items-center gap-3">
 									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-eko-navy">
 										<PlugZap className="h-5 w-5 text-eko-gold" />
 									</div>
 									<div>
 										<h3 className="text-lg font-semibold text-foreground">
-											Claude Code plugin
+											Install Claude Code Plugin
 										</h3>
-										<p className="text-sm text-muted-foreground">
-											One install wires the EPS MCP, skills, and the{" "}
-											<code className="font-mono">/eps</code> command.
-										</p>
+										<div className="text-xs pt-1 text-muted-foreground">
+											One install wires the <strong>EPS MCP</strong>,{" "}
+											<strong>skills</strong>, and the{" "}
+											<InlineCode className="font-bold">/eps</InlineCode>{" "}
+											command for Claude Code.
+										</div>
 									</div>
 								</div>
-								<div className="grid gap-3 sm:grid-cols-2">
+								<p className="mb-3 text-sm text-muted-foreground">
+									Enter both commands inside the Claude Code prompt, in this
+									order:
+								</p>
+								<div className="flex flex-col gap-3">
 									<CommandBlock
+										caption="Step 1"
 										text="/plugin marketplace add ekoindia/eko-eps-website"
 										prompt=""
 									/>
-									<CommandBlock text="/plugin install eps@ekoindia" prompt="" />
+									<CommandBlock
+										caption="Step 2"
+										text="/plugin install eps@ekoindia"
+										prompt=""
+									/>
 								</div>
 							</Card>
 						</FadeIn>

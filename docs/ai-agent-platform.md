@@ -89,7 +89,7 @@ Emitted by `buildFiles()` in `vite-plugin-generate-agent-bundle.ts` to
 | `agent/copilot-instructions.md` | Same body, for `.github/copilot-instructions.md` | `CONTEXT_PACK_FILES` | GitHub Copilot |
 | `agent/sdk-surface.json` | Language-neutral SDK surface (endpoints + signing contract) | `buildSdkSurface` | JS SDK + PHP SDK (baked into each) |
 | `agent/fixtures.json` | Sample success + error responses per endpoint | `buildFixtures` | `@ekoindia/eps-mock-server` (baked) |
-| `agent/install-matrix.json` | Per-harness wiring (MCP command and/or pack file) | `buildInstallMatrix` | `/ai` hub page + `/ai.md` |
+| `agent/install-matrix.json` | Per-harness MCP wiring (`mcp.command` and/or `mcp.configFile` + `mcp.configSnippet`) and/or pack file | `buildInstallMatrix` | `/ai` hub page + `/ai.md` |
 | `agent/eps.postman_collection.json` | Postman collection with an HMAC signing pre-request script | `buildPostmanCollection` | Postman import |
 
 The four context packs (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`,
@@ -164,7 +164,12 @@ the same sources as the bundle:
 
 - The **install matrix** (per-harness tabs with copy-to-clipboard snippets)
   comes from `buildInstallMatrix()` (`src/lib/agent/build-install-matrix.ts`),
-  the same data emitted to `/agent/install-matrix.json`.
+  the same data emitted to `/agent/install-matrix.json`. MCP install is recorded
+  the way each harness actually accepts it — a CLI command (`claude mcp add`,
+  `copilot mcp add`, `gemini mcp add`), a JSON config file (Cursor `mcpServers`,
+  VS Code Copilot `servers`, opencode `mcp`, Zed `context_servers`), or a TOML
+  table (Codex `mcp_servers`) — never a bare `npx` line no harness runs verbatim.
+  Harnesses with no native MCP client (aider) fall back to the context pack.
 - The **recipes** come from `RECIPES` (`src/lib/data/api-recipes.ts`).
 
 `/ai.md` is the lean Markdown twin, rendered by

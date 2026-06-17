@@ -71,10 +71,12 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push(
 		markdownTable(
-			["Harness", "MCP command", "Pack file", "Placement"],
+			["Harness", "MCP install", "Pack file", "Placement"],
 			buildInstallMatrix().map((h) => [
 				h.name,
-				h.mcp ? `\`${h.mcp}\`` : "—",
+				h.mcp
+					? `\`${h.mcp.command ?? h.mcp.configFile ?? "MCP config"}\``
+					: "—",
 				h.packFile ? `[${h.packFile}](${SITE_URL}/agent/${h.packFile})` : "—",
 				h.packPlacement ? `\`${h.packPlacement}\`` : "—",
 			]),

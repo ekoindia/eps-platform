@@ -118,3 +118,36 @@ export const CommandBlock = ({
 		</div>
 	);
 };
+
+interface ConfigBlockProps {
+	/** Multi-line snippet (JSON/TOML) shown and copied verbatim. */
+	text: string;
+	/** Optional tiny label above the block (e.g. a config file path). */
+	caption?: string;
+	className?: string;
+}
+
+/**
+ * A copyable multi-line config snippet on the light card surface. Mirrors
+ * {@link CommandBlock} but preserves whitespace for JSON/TOML blocks (MCP
+ * config files) instead of forcing a single line.
+ */
+export const ConfigBlock = ({ text, caption, className }: ConfigBlockProps) => (
+	<div className={cn("flex flex-col gap-1.5", className)}>
+		{caption && (
+			<span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+				{caption}
+			</span>
+		)}
+		<div className="relative rounded-lg border border-border bg-eko-navy">
+			<CopyButton
+				text={text}
+				label="Copy config"
+				className="absolute right-1.5 top-1.5 text-white"
+			/>
+			<pre className="overflow-x-auto px-4 py-3 pr-12 font-mono text-xs leading-relaxed text-white docs-scroll">
+				<code>{text}</code>
+			</pre>
+		</div>
+	</div>
+);
