@@ -10,6 +10,9 @@ export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
 
 export const API_DEFAULT_VERSION = "v3";
 
+/** Command to run the EPS context MCP server (used on the AI + docs pages). */
+export const EPS_MCP_CMD = "npx -y @ekoindia/eps-context-mcp";
+
 export const PARENT_SITE_URL = "https://eko.in";
 export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";
 

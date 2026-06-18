@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import type { ResponseField } from "@/lib/data/api-specs-common";
+import { cn } from "@/lib/utils";
 import { InlineCode } from "./InlineCode";
 
 /**
@@ -26,7 +26,7 @@ export const ResponseFieldTree = ({
 					<InlineCode
 						className={cn(
 							"text-sm",
-							field.imp
+							field.imp || (field.children && field.children.length > 0)
 								? "font-semibold text-foreground"
 								: "font-normal text-foreground/90",
 						)}
@@ -36,14 +36,14 @@ export const ResponseFieldTree = ({
 					<span className="font-mono text-xs text-muted-foreground">
 						{field.type}
 					</span>
-					{field.imp && (
+					{/* {field.imp && (
 						<span className="rounded-full bg-eko-gold-light px-2 py-0.5 text-[0.625rem] font-medium text-eko-navy dark:bg-eko-gold/15 dark:text-eko-gold">
 							verifiable
 						</span>
-					)}
+					)} */}
 				</div>
 				{(field.label || field.description) && (
-					<p className="mt-0.5 text-sm text-muted-foreground">
+					<p className="mt-1 ml-1 text-xs text-muted-foreground">
 						{field.description ?? field.label}
 					</p>
 				)}

@@ -39,28 +39,50 @@ final class EpsClient
         ];
     }
 
-    public function call(string $slug, array $params = []): array
+    /**
+     * Resolve a slug + params into the wire target: the final URL (path tokens
+     * filled, query string appended for GET) and the JSON body (non-GET only).
+     * Exposed for testing; `call()` builds on it.
+     *
+     * @return array{url: string, body: ?string}
+     */
+    public function resolveTarget(string $slug, array $params = []): array
     {
         $endpoint = null;
         foreach ($this->surface['endpoints'] as $e) if ($e['slug'] === $slug) { $endpoint = $e; break; }
         if ($endpoint === null) throw new \InvalidArgumentException("Unknown endpoint slug: $slug");
 
+        // Path params (e.g. {customer_id}) fill the URL; the rest become the
+        // query string on GET, or the JSON body on every other method.
         $path = $endpoint['path'];
-        $body = [];
+        $rest = [];
         foreach ($params as $k => $v) {
             $token = '{' . $k . '}';
             if (str_contains($path, $token)) $path = str_replace($token, rawurlencode((string) $v), $path);
-            else $body[$k] = $v;
+            else $rest[$k] = $v;
         }
-        $ch = curl_init($this->baseUrl . $path);
+        $url = $this->baseUrl . $path;
+        $body = null;
+        if ($endpoint['method'] === 'GET') {
+            if (!empty($rest)) $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($rest);
+        } else {
+            $body = json_encode($rest);
+        }
+        return ['url' => $url, 'body' => $body, 'method' => $endpoint['method']];
+    }
+
+    public function call(string $slug, array $params = []): array
+    {
+        $target = $this->resolveTarget($slug, $params);
+        $ch = curl_init($target['url']);
         $headers = $this->buildHeaders();
         $headerLines = array_map(fn ($k, $v) => "$k: $v", array_keys($headers), $headers);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $endpoint['method'],
+            CURLOPT_CUSTOMREQUEST => $target['method'],
             CURLOPT_HTTPHEADER => $headerLines,
         ]);
-        if ($endpoint['method'] !== 'GET') curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+        if ($target['body'] !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $target['body']);
         $res = curl_exec($ch);
         curl_close($ch);
         return json_decode($res, true) ?? [];

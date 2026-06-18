@@ -1,10 +1,10 @@
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import {
 	buildNavTree,
 	docsHref,
 	type NavEndpoint,
 } from "@/lib/data/docs-registry";
+import { cn } from "@/lib/utils";
+import { Link, useLocation } from "react-router-dom";
 import { HttpMethodTag } from "./HttpMethodTag";
 
 /**
@@ -22,9 +22,9 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 	const itemClass = (active: boolean) =>
 		cn(
-			"flex items-start justify-between gap-2 rounded-md py-1.5 pl-3 pr-2 text-sm transition-colors",
+			"flex items-start justify-between gap-2 rounded-md py-1.5 pl-3 pr-2 text-xs transition-colors",
 			active
-				? "bg-eko-gold-light font-medium text-eko-navy dark:bg-eko-gold/15 dark:text-foreground"
+				? "bg-slate-300 font-medium text-eko-navy dark:bg-eko-gold/15 dark:text-foreground"
 				: "text-muted-foreground hover:bg-muted hover:text-foreground",
 		);
 
@@ -35,7 +35,12 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 			className={itemClass(isActive(ep.slug))}
 		>
 			<span className="line-clamp-2">{ep.title}</span>
-			<HttpMethodTag method={ep.method} short className="mt-0.5 shrink-0" />
+			<HttpMethodTag
+				method={ep.method}
+				short
+				className="mt-0.5 shrink-0 text-[0.45rem] rounded font-bold"
+				variant="solid"
+			/>
 		</Link>
 	);
 

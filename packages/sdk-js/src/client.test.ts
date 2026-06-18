@@ -35,6 +35,32 @@ describe("EpsClient.call", () => {
 		expect(headers["secret-key-timestamp"]).toBe("1700000000000");
 	});
 
+	it("puts non-path params in the query string for GET (no body)", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await client.call("dmt-get-sender", {
+			customer_id: "9123456789",
+			initiator_id: "9876543210",
+			user_code: "20810200",
+		});
+		const [url, init] = fetchMock.mock.calls[0];
+		// path token filled, query params appended, no body sent
+		expect(String(url)).toContain("/customer/profile/9123456789");
+		expect(String(url)).toContain("initiator_id=9876543210");
+		expect(String(url)).toContain("user_code=20810200");
+		expect(String(url)).not.toContain("{customer_id}");
+		expect(init!.body).toBeUndefined();
+	});
+
 	it("throws when constructed in a browser-like environment", () => {
 		(globalThis as { window?: unknown }).window = {};
 		expect(

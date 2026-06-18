@@ -89,7 +89,7 @@ export const DocsLayout = ({
 			>
 				{/* Left nav — flows with the page (scrolls together with the other
             panes). A compact theme toggle sits at the top on desktop. */}
-				<aside className="hidden border-r border-border/60 lg:block">
+				<aside className="hidden border-r border-border/60 lg:block bg-slate-50 dark:bg-[#0f2a3b]">
 					<div className="px-3 pb-16 pt-28">
 						<div className="mb-2 flex items-center justify-between px-3">
 							<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -109,7 +109,7 @@ export const DocsLayout = ({
 				{/* Right rail — flows with the page (no inner scrollbar). Stacks
             below the content on <lg screens. */}
 				{rightPane && (
-					<aside className="min-w-0 border-border/60 px-3 pb-16 pt-8 lg:border-l lg:pt-32">
+					<aside className="dark min-w-0 border-border/60 bg-[#143a4e] px-3 pb-16 pt-8 text-foreground lg:border-l lg:pt-32">
 						{rightPane}
 					</aside>
 				)}

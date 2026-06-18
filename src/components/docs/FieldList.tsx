@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import type { ApiParam } from "@/lib/data/api-specs-common";
+import { cn } from "@/lib/utils";
 import { InlineCode } from "./InlineCode";
 
 /**
@@ -13,7 +13,7 @@ export const FieldList = ({ params }: { params: ApiParam[] }) => (
 		{params.map((p) => (
 			<div key={`${p.in}-${p.name}`} className="px-4 py-3">
 				<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-					<InlineCode className="text-sm font-medium text-foreground">
+					<InlineCode className="text-sm font-semibold text-foreground">
 						{p.name}
 					</InlineCode>
 					<span className="font-mono text-xs text-muted-foreground">
@@ -34,10 +34,12 @@ export const FieldList = ({ params }: { params: ApiParam[] }) => (
 					)}
 				</div>
 				{p.description && (
-					<p className="mt-1 text-sm text-muted-foreground">{p.description}</p>
+					<p className="mt-2 ml-1 text-xs text-muted-foreground">
+						{p.description}
+					</p>
 				)}
 				{p.example !== undefined && (
-					<p className="mt-1 font-mono text-xs text-foreground/60">
+					<p className="mt-1 ml-1 font-mono text-xs text-foreground/60">
 						example: {String(p.example)}
 					</p>
 				)}

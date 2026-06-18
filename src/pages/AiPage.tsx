@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
-import { SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import {
 	ArrowRight,
@@ -30,7 +30,7 @@ import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { CommandBlock, ConfigBlock, CopyButton } from "./ai/CommandBlock";
 
-const MCP_CMD = "npx -y @ekoindia/eps-context-mcp";
+const MCP_CMD = EPS_MCP_CMD;
 const INSTALL_MATRIX = buildInstallMatrix();
 
 /* ----------------------------- Differentiators ---------------------------- */

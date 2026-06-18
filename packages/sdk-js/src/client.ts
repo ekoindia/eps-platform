@@ -75,18 +75,26 @@ export class EpsClient {
 			"secret-key-timestamp": timestamp,
 			"content-type": "application/json",
 		};
-		// Path params (e.g. {customer_id}) come from params; the rest form the body.
+		// Path params (e.g. {customer_id}) fill the URL; the rest become the
+		// query string on GET, or the JSON body on every other method.
 		let path = endpoint.path;
-		const body: Record<string, unknown> = {};
+		const rest: Record<string, unknown> = {};
 		for (const [k, v] of Object.entries(params)) {
 			const token = `{${k}}`;
 			if (path.includes(token))
 				path = path.replace(token, encodeURIComponent(String(v)));
-			else body[k] = v;
+			else rest[k] = v;
 		}
-		const url = `${this.baseUrl}${path}`;
+		let url = `${this.baseUrl}${path}`;
 		const init: RequestInit = { method: endpoint.method, headers };
-		if (endpoint.method !== "GET") init.body = JSON.stringify(body);
+		if (endpoint.method === "GET") {
+			const query = new URLSearchParams(
+				Object.entries(rest).map(([k, v]) => [k, String(v)]),
+			).toString();
+			if (query) url += (url.includes("?") ? "&" : "?") + query;
+		} else {
+			init.body = JSON.stringify(rest);
+		}
 		const res = await this.fetchFn(url, init);
 		return (await res.json()) as T;
 	}
