@@ -101,6 +101,17 @@ export const HARNESSES: HarnessInstall[] = [
 		packPlacement: "./AGENTS.md",
 	},
 	{
+		id: "antigravity",
+		name: "Antigravity",
+		mcp: {
+			configFile: "~/.gemini/config/mcp_config.json",
+			configSnippet: jsonServer("mcpServers"),
+			note: "Global file shown; use `.agents/mcp_config.json` in the repo root to scope it to one project.",
+		},
+		packFile: "AGENTS.md",
+		packPlacement: "./GEMINI.md",
+	},
+	{
 		id: "copilot",
 		name: "GitHub Copilot",
 		mcp: {
@@ -116,7 +127,7 @@ export const HARNESSES: HarnessInstall[] = [
 	},
 	{
 		id: "opencode",
-		name: "opencode",
+		name: "OpenCode",
 		mcp: {
 			configFile: "opencode.json",
 			// opencode's root key is `mcp`, `command` is a single array, type `local`.
@@ -140,16 +151,29 @@ export const HARNESSES: HarnessInstall[] = [
 		packPlacement: "./AGENTS.md",
 	},
 	{
-		id: "gemini-cli",
-		name: "Gemini CLI",
+		id: "kiro",
+		name: "Kiro",
 		mcp: {
-			configFile: "~/.gemini/settings.json",
+			configFile: ".kiro/settings/mcp.json",
+			// Standard `mcpServers` shape; same file under `~/.kiro/settings/mcp.json`
+			// scopes it to every project.
 			configSnippet: jsonServer("mcpServers"),
-			note: "Global file shown; use `.gemini/settings.json` in the repo root to scope it to one project.",
+			note: "No CLI — create the file, or open it via the command palette (`Kiro: Open workspace MCP config (JSON)`). Use `~/.kiro/settings/mcp.json` for every project. Enable MCP under Settings (`cmd-,` → search “MCP”).",
 		},
 		packFile: "AGENTS.md",
-		packPlacement: "./GEMINI.md",
+		packPlacement: ".kiro/steering/eps.md",
 	},
+	// {
+	// 	id: "gemini-cli",
+	// 	name: "Gemini CLI",
+	// 	mcp: {
+	// 		configFile: "~/.gemini/settings.json",
+	// 		configSnippet: jsonServer("mcpServers"),
+	// 		note: "Global file shown; use `.gemini/settings.json` in the repo root to scope it to one project.",
+	// 	},
+	// 	packFile: "AGENTS.md",
+	// 	packPlacement: "./GEMINI.md",
+	// },
 	// { id: "continue", name: "Continue", mcp: MCP_CMD },	// Acquired by Cursor. No public docs or API, so omitting for now.
 	// {
 	// 	id: "windsurf",
@@ -171,7 +195,7 @@ export const HARNESSES: HarnessInstall[] = [
 	},
 	{
 		id: "aider",
-		name: "aider",
+		name: "Aider",
 		// aider has no native MCP client — context pack only.
 		packFile: "AGENTS.md",
 		packPlacement: "CONVENTIONS.md",

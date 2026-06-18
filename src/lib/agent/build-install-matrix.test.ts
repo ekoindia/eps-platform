@@ -11,14 +11,7 @@ describe("buildInstallMatrix", () => {
 	it("covers every listed harness", () => {
 		expect(matrix.length).toBe(HARNESSES.length);
 		const ids = matrix.map((m) => m.id);
-		for (const h of [
-			"claude-code",
-			"cursor",
-			"codex",
-			"gemini-cli",
-			"copilot",
-			"opencode",
-		])
+		for (const h of ["claude-code", "cursor", "codex", "copilot", "opencode"])
 			expect(ids).toContain(h);
 	});
 

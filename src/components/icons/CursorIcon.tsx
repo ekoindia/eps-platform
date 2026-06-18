@@ -1,10 +1,14 @@
 /**
- * Cursor (cursor.com) brand icon as an inline SVG component.
- * Path sourced from Simple Icons (slug: cursor); not yet shipped in the
- * installed react-icons/si set, so kept inline alongside the XIcon pattern.
+ * Cursor (cursor.com) brand mark. Inlined from @lobehub/icons-static-svg
+ * (slug: cursor) as a currentColor SVG so it adapts to surrounding text color.
  */
 export const CursorIcon = ({ className }: { className?: string }) => (
-	<svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-		<path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23" />
+	<svg
+		viewBox="0 0 24 24"
+		fill="currentColor"
+		fillRule="evenodd"
+		className={className}
+	>
+		<path d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z" />
 	</svg>
 );
