@@ -106,10 +106,11 @@ export const DocsLayout = ({
 					<div className="mx-auto max-w-3xl">{children}</div>
 				</main>
 
-				{/* Right rail — flows with the page (no inner scrollbar). Stacks
-            below the content on <lg screens. */}
+				{/* Right rail — flows with the page (no inner scrollbar). Stacks below the content on <lg screens.
+					MARK: Right Pane
+				*/}
 				{rightPane && (
-					<aside className="dark min-w-0 border-border/60 bg-[#143a4e] px-3 pb-16 pt-8 text-foreground lg:border-l lg:pt-32">
+					<aside className="dark min-w-0 border-border/60 bg-[#143a4e] px-3 pb-16 pt-8 text-foreground lg:border-l lg:pt-24">
 						{rightPane}
 					</aside>
 				)}

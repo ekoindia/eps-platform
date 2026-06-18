@@ -1,7 +1,3 @@
-import { useState } from "react";
-import { ArrowRight, Check, Copy, Play } from "lucide-react";
-import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { EPS_MCP_CMD } from "@/lib/config/site";
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
@@ -16,6 +12,10 @@ import {
 } from "@/lib/docs/code-samples";
 import { type DocsMode, useDocsMode } from "@/lib/docs/use-docs-mode";
 import { usePreferredLang } from "@/lib/docs/use-preferred-lang";
+import { cn } from "@/lib/utils";
+import { ArrowRight, Check, Copy, Play } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { HttpMethodTag } from "./HttpMethodTag";
 
 const MODES: { id: DocsMode; label: string }[] = [
@@ -120,15 +120,13 @@ export const CodeSamples = ({
 	return (
 		<div className="space-y-6">
 			{/* UAT base URL — the environment every sample/try-it call targets */}
-			{mode !== "ai" && (
-				<div className="code-block flex flex-wrap items-center gap-2 px-4 py-2.5 font-mono text-xs text-white/70">
-					<span className="rounded bg-eko-gold/15 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-eko-gold">
-						UAT
-					</span>
-					<span className="text-white/50">Base URL</span>
-					<span className="break-all">{DEFAULT_BASE_URL}</span>
-				</div>
-			)}
+			<div className="code-block flex flex-wrap items-center gap-2 px-4 py-2.5 font-mono text-xs text-white/70">
+				<span className="rounded bg-eko-gold/15 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-eko-gold">
+					UAT
+				</span>
+				<span className="text-white/50">Base URL</span>
+				<span className="break-all">{DEFAULT_BASE_URL}</span>
+			</div>
 
 			{/* Mode selector — its own box, separate from the request card */}
 			<div className="code-block flex gap-1 px-3 py-2">
