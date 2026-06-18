@@ -13,6 +13,7 @@ import { markdownTable } from "@/lib/markdown/shared";
 import type { AgentBundle } from "@/lib/agent/agent-bundle-types";
 
 const MCP_PACKAGE = "@ekoindia/eps-context-mcp";
+const MOCK_PACKAGE = "@ekoindia/eps-mock-server";
 
 /** The canonical, format-neutral pack body (GitHub-flavored markdown). */
 export const buildContextPackBody = (bundle: AgentBundle): string => {
@@ -112,6 +113,30 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 		}
 		lines.push("");
 	}
+
+	// Offline mock server — local dev/testing without the live API
+	lines.push("## Local development & testing (offline mock server)");
+	lines.push("");
+	lines.push(
+		"Test EPS integrations without touching the live API. The mock server " +
+			"replays golden sample responses over plain HTTP on " +
+			"`http://localhost:4010`:\n\n" +
+			"```bash\n" +
+			`npx -y ${MOCK_PACKAGE}\n` +
+			"```",
+	);
+	lines.push("");
+	lines.push(
+		"It mirrors the real EPS paths, so point your EPS base URL at " +
+			"`http://localhost:4010` — no other code change needed. It does not " +
+			"require valid EPS credentials, but keep the same request shape and " +
+			"headers your integration sends. To exercise a documented error branch, " +
+			"append `?eps_scenario=<response_status_id>` to the request for " +
+			"endpoints whose fixture includes that code — e.g. calling the DMT " +
+			"sender lookup (`dmt-get-sender`) with `?eps_scenario=463` returns its " +
+			'"sender not found" branch from the DMT — Send Money recipe.',
+	);
+	lines.push("");
 
 	// MCP pointer
 	lines.push("## Live context via MCP");

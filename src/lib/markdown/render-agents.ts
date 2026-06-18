@@ -41,14 +41,20 @@ export function renderAgentsMarkdown(): string {
 	lines.push("## Offline mock server");
 	lines.push("");
 	lines.push(
-		"Develop and test EPS integrations offline — the mock server replays golden " +
-			"sample responses (with recipe-aware error branching) so agents never touch " +
-			"the live API:",
+		"Pairs with the MCP for offline testing — the mock server replays golden " +
+			"sample responses (with recipe-aware error branching) so agents develop and " +
+			"test without ever touching the live API:",
 	);
 	lines.push("");
 	lines.push("```bash");
 	lines.push("npx -y @ekoindia/eps-mock-server");
 	lines.push("```");
+	lines.push("");
+	lines.push(
+		"It mirrors the real EPS paths — point your EPS base URL at " +
+			"`http://localhost:4010`, then append `?eps_scenario=<response_status_id>` " +
+			"to force a documented error branch.",
+	);
 	lines.push("");
 
 	lines.push("## Claude Code plugin");

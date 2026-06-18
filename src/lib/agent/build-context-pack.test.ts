@@ -26,6 +26,12 @@ describe("buildContextPackBody", () => {
 		expect(body).toContain("/agent/eps.json");
 	});
 
+	it("documents the offline mock server for local testing", () => {
+		expect(body).toContain("@ekoindia/eps-mock-server");
+		expect(body).toContain("http://localhost:4010");
+		expect(body).toContain("eps_scenario");
+	});
+
 	it("includes the exemplar recipes", () => {
 		expect(body).toContain("DMT — Send Money");
 		expect(body).toContain("AePS — Cash Withdrawal");
