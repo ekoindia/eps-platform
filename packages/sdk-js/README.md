@@ -52,7 +52,3 @@ console.log(result);
 `await client.call(slug, params)` signs the request, substitutes any `{token}` path params from `params` (remaining keys become the JSON body), and returns the parsed JSON response.
 
 A standalone `signSecretKey(accessKey, timestamp)` helper is also exported if you need to sign requests yourself.
-
-## Endpoint catalog
-
-The embedded endpoint catalog (slugs, methods, paths, required params) is generated from the EPS bundle at `/agent/sdk-surface.json` and shipped as `data/sdk-surface.json`. It is read at runtime — no network call is needed to resolve a slug.
