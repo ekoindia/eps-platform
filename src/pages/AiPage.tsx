@@ -3,6 +3,8 @@ import { InlineCode } from "@/components/docs/InlineCode";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { HarnessIcon } from "@/components/icons/HarnessIcon";
+import { McpIcon } from "@/components/icons/McpIcon";
+import type { IconComponent } from "@/components/icons/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,21 +15,18 @@ import { SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import {
 	ArrowRight,
-	Boxes,
 	Download,
-	FileJson,
 	FileTerminal,
 	GitBranch,
 	KeyRound,
-	Layers,
 	Package,
 	PlugZap,
 	ServerCog,
 	ShieldCheck,
 	Terminal,
-	type LucideIcon,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { CommandBlock, ConfigBlock, CopyButton } from "./ai/CommandBlock";
 
@@ -37,7 +36,7 @@ const INSTALL_MATRIX = buildInstallMatrix();
 /* ----------------------------- Differentiators ---------------------------- */
 
 interface Differentiator {
-	icon: LucideIcon;
+	icon: IconComponent;
 	title: string;
 	body: string;
 }
@@ -49,7 +48,7 @@ const DIFFERENTIATORS: Differentiator[] = [
 		body: "EPS requests are HMAC-signed with your secret-key — the exact step generic OpenAPI tooling gets wrong. Our context teaches your agent the signing scheme, so it works on the first call instead of the fifth.",
 	},
 	{
-		icon: Layers,
+		icon: McpIcon,
 		title: "Token-efficient context",
 		body: "A lazy, tiered MCP: your agent lists endpoints, then drills into just the one it needs. It never dumps the whole spec into the context window, so you keep tokens for the actual task.",
 	},
@@ -69,7 +68,7 @@ interface ArtifactLink {
 }
 
 interface Artifact {
-	icon: LucideIcon;
+	icon: IconComponent;
 	title: string;
 	body: string;
 	/** A copyable command shown inline. */
@@ -94,7 +93,7 @@ const ARTIFACTS: Artifact[] = [
 		],
 	},
 	{
-		icon: PlugZap,
+		icon: McpIcon,
 		title: "Local MCP server",
 		body: "Zero hosting, zero secrets. The tiered context server your agent talks to.",
 		command: MCP_CMD,
@@ -115,11 +114,21 @@ const ARTIFACTS: Artifact[] = [
 	{
 		icon: ServerCog,
 		title: "Offline mock server",
-		body: "Replays golden sample responses with recipe-aware error branching — never touches the live API.",
+		body: "Pairs with the MCP for offline testing — replays golden sample responses with recipe-aware error branching, so your agent develops and tests without ever touching the live API.",
 		command: "npx -y @ekoindia/eps-mock-server",
 	},
 	{
-		icon: Boxes,
+		icon: SiOpenapiinitiative,
+		title: "OpenAPI Specification",
+		body: "Canonical OpenAPi 3.1 specification of all EPS APIs in JSON format — useful for API clients, code generators, validation tools, and other OpenAPI-compatible workflows.",
+		links: [
+			// { label: "eps.json", href: "/agent/eps.json" },
+			// { label: "index.json", href: "/agent/index.json" },
+			{ label: "openapi.json", href: "/openapi.json" },
+		],
+	},
+	{
+		icon: SiPostman,
 		title: "Postman collection",
 		body: "Every EPS endpoint, ready to import and run against the sandbox.",
 		links: [
@@ -127,16 +136,6 @@ const ARTIFACTS: Artifact[] = [
 				label: "eps.postman_collection.json",
 				href: "/agent/eps.postman_collection.json",
 			},
-		],
-	},
-	{
-		icon: FileJson,
-		title: "Machine bundle + OpenAPI",
-		body: "Canonical JSON of every endpoint, topic, and recipe — plus the compact index and an OpenAPI 3.1 document.",
-		links: [
-			{ label: "eps.json", href: "/agent/eps.json" },
-			{ label: "index.json", href: "/agent/index.json" },
-			{ label: "openapi.json", href: "/openapi.json" },
 		],
 	},
 ];

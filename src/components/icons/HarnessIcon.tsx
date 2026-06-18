@@ -5,7 +5,6 @@
  * code icon for any harness without a mapping. Icons render in `currentColor`
  * so they adapt to the pill's active/inactive text color.
  */
-import type { ComponentType } from "react";
 import { Boxes, Code2 } from "lucide-react";
 import {
 	SiGithubcopilot,
@@ -20,8 +19,7 @@ import { CodexIcon } from "./CodexIcon";
 import { CursorIcon } from "./CursorIcon";
 import { KiroIcon } from "./KiroIcon";
 import { OpencodeIcon } from "./OpencodeIcon";
-
-type IconComponent = ComponentType<{ className?: string }>;
+import type { IconComponent } from "./types";
 
 const ICON_MAP: Record<string, IconComponent> = {
 	"claude-code": ClaudeCodeIcon,
