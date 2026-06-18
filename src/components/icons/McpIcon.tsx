@@ -2,11 +2,7 @@
  * Model Context Protocol mark. Inlined from @lobehub/icons-static-svg (slug:
  * mcp) as a currentColor SVG so it adapts to surrounding text color.
  */
-export const ModelContextProtocolIcon = ({
-	className,
-}: {
-	className?: string;
-}) => (
+export const McpIcon = ({ className }: { className?: string }) => (
 	<svg
 		viewBox="0 0 24 24"
 		fill="currentColor"
