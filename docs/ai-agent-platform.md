@@ -153,7 +153,7 @@ It is listed in the repo-root `.claude-plugin/marketplace.json` under the
 `ekoindia` marketplace.
 
 ```text
-/plugin marketplace add ekoindia/eko-eps-platform
+/plugin marketplace add ekoindia/eps-platform
 /plugin install eps@ekoindia
 ```
 

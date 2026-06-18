@@ -136,7 +136,7 @@ Per project convention (core feature → maintain a detailed doc in `docs/`), it
 ## 8. Execution plan — progress
 
 **Done in this session (authorable work — all committed on the branch, all gates green):**
-1. ✅ **Route rename `/agents` → `/ai`** (App.tsx, AppServer.tsx, ssg/routes.ts, nav, search-index, markdown gen → `/ai.md`); hub shows the real `/plugin marketplace add ekoindia/eko-eps-platform` + `/plugin install eps@ekoindia` commands.
+1. ✅ **Route rename `/agents` → `/ai`** (App.tsx, AppServer.tsx, ssg/routes.ts, nav, search-index, markdown gen → `/ai.md`); hub shows the real `/plugin marketplace add ekoindia/eps-platform` + `/plugin install eps@ekoindia` commands.
 2. ✅ **Redesigned `/ai`** as a world-class marketing page (dedicated page, not `LegalPageLayout`): navy/gold hero + agent-terminal, differentiator cards, tabbed copy-to-clipboard installs (from `install-matrix.json`), artifact grid, recipe step-flows, CTA band. Verified rendered in-browser.
 3. ✅ **Publishing pipeline:** `publishConfig.access: public` + `repository` on the 3 npm packages; `.claude-plugin/marketplace.json` (`ekoindia`); `.github/workflows/ci.yml` (lint/build/vitest across workspaces + PHP phpunit) and `release.yml` (tag `v*.*.*` → `npm publish` ×3 + PHP subtree-split scaffold).
 4. ✅ **Docs:** `docs/ai-agent-platform.md` (feature doc) + `docs/releasing-agent-packages.md` (runbook); cross-linked from `markdown-generation.md`/`api-specs.md`.

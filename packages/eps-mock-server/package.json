@@ -6,7 +6,7 @@
 	"type": "module",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ekoindia/eko-eps-platform.git",
+		"url": "https://github.com/ekoindia/eps-platform.git",
 		"directory": "packages/eps-mock-server"
 	},
 	"publishConfig": {
