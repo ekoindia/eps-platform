@@ -63,8 +63,6 @@ jobs:
           npm run bake
           npm run build
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @ekoindia/eps-sdk
         working-directory: packages/sdk-js
@@ -72,8 +70,6 @@ jobs:
           npm run bake
           npm run build
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @ekoindia/eps-mock-server
         working-directory: packages/eps-mock-server
@@ -81,8 +77,6 @@ jobs:
           npm run bake
           npm run build
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   php-split:
     name: Split + publish PHP SDK
