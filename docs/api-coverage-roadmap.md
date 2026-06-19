@@ -138,15 +138,15 @@ The "offline variant" in the original report is not a distinct endpoint in the l
 
 ---
 
-## Phase 5 — Transaction lifecycle & refunds ⬜ (product `transactions`)
+## Phase 5 — Transaction lifecycle & refunds ✅ (product `transactions`)
 
-| Capability | Target slug | Method | Status |
-| :-- | :-- | :-- | :-- |
-| Transaction Inquiry (status by TID / client_ref_id) | `transaction-inquiry` | GET | ⬜ |
-| Get Refund OTP | `get-refund-otp` | POST | ⬜ |
-| Initiate Refund | `initiate-refund` | POST | ⬜ |
-| Saved / scheduled transactions | `scheduled-transactions` | _?_ | ⬜ |
-| Transaction Status Callback (webhooks) | _doc page, not a request spec_ | — | ⬜ — decide page-vs-spec representation |
+| Capability | Target slug | Method | Path | Status |
+| :-- | :-- | :-- | :-- | :-- |
+| Transaction Inquiry (status by TID / client_ref_id) | `transaction-inquiry` | GET | `/tools/reference/transaction/{transaction-reference}` | ✅ |
+| Get Refund OTP | `get-refund-otp` | POST | `/customer/payment/refund/{tid}/otp` | ✅ |
+| Initiate Refund (financial) | `initiate-refund` | POST | `/customer/payment/refund/{tid}` | ✅ |
+| Transaction Status Callback (webhook) | — | — | `transaction-status-callback` | ⬜ doc/guide, not an `ApiSpec` (you receive it) — defer to a guide page |
+| Saved / scheduled transactions | — | — | — | ⬜ not a distinct endpoint in the live reference — dropped |
 
 ---
 

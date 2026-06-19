@@ -73,6 +73,13 @@ const API_PRODUCTS_DATA = [
 
 	// Payment APIs
 	{
+		id: "transactions",
+		name: "Transactions & Refunds",
+		slug: "transactions-api",
+		category: "payment",
+		shortDesc: "Transaction status inquiry and OTP-based refunds",
+	},
+	{
 		id: "bbps",
 		name: "Bharat Bill Payment System (BBPS)",
 		shortName: "BBPS",
