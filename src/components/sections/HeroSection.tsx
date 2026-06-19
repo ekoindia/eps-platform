@@ -214,7 +214,7 @@ export const HeroSection = () => {
 							/>
 
 							{/* Floating Badge */}
-							<div className="absolute -bottom-4 -right-4 bg-card rounded-xl p-4 shadow-xl flex items-center gap-3">
+							<div className="absolute -bottom-10 opacity-80 -right-4 bg-card rounded-xl p-4 shadow-xl flex items-center gap-3">
 								<div className="w-10 h-10 rounded-full bg-eko-gold-light flex items-center justify-center">
 									<svg
 										className="w-5 h-5 text-eko-gold"
