@@ -38,8 +38,8 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 			<HttpMethodTag
 				method={ep.method}
 				short
-				className="mt-0.5 shrink-0 text-[0.45rem] rounded font-bold"
-				variant="solid"
+				className="shrink-0 px-1.5 py-0.5 rounded-[3px] text-[0.5rem]"
+				variant={isActive(ep.slug) ? "solid" : "soft"}
 			/>
 		</Link>
 	);
