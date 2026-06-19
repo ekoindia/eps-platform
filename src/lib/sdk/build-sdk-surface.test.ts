@@ -14,13 +14,22 @@ describe("buildSdkSurface", () => {
 		expect(ids).toContain("production");
 	});
 
-	it("emits one endpoint per api with method + path + required params", () => {
+	it("emits one endpoint per api with method + path + typed params", () => {
 		expect(surface.endpoints.length).toBe(bundle.apis.length);
 		const e = surface.endpoints[0];
 		expect(e).toHaveProperty("slug");
 		expect(e).toHaveProperty("method");
 		expect(e).toHaveProperty("path");
-		expect(Array.isArray(e.requiredParams)).toBe(true);
+		expect(Array.isArray(e.params)).toBe(true);
+		for (const p of e.params) {
+			expect(typeof p.name).toBe("string");
+			expect(typeof p.type).toBe("string");
+			expect(typeof p.required).toBe("boolean");
+		}
+		// requiredParams stays in sync with params (back-compat).
+		expect(e.requiredParams).toEqual(
+			e.params.filter((p) => p.required).map((p) => p.name),
+		);
 	});
 
 	it("includes the error-code table", () => {

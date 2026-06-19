@@ -26,7 +26,11 @@ describe("EpsClient.call", () => {
 			fetch: fetchMock as unknown as typeof fetch,
 			now: () => 1700000000000,
 		});
-		await client.call("dmt-get-sender", { initiator_id: "9876543210" });
+		await client.call("dmt-get-sender", {
+			customer_id: "9123456789",
+			initiator_id: "9876543210",
+			user_code: "20810200",
+		});
 		const [url, init] = fetchMock.mock.calls[0];
 		expect(String(url)).toContain("/customer/profile");
 		const headers = init!.headers as Record<string, string>;
@@ -59,6 +63,84 @@ describe("EpsClient.call", () => {
 		expect(String(url)).toContain("user_code=20810200");
 		expect(String(url)).not.toContain("{customer_id}");
 		expect(init!.body).toBeUndefined();
+	});
+
+	it("throws when a required param is missing or null", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		// dmt-get-sender requires initiator_id, user_code, customer_id.
+		await expect(
+			client.call("dmt-get-sender", { initiator_id: "9876543210" }),
+		).rejects.toThrow(/missing required params.*user_code.*customer_id/i);
+		await expect(
+			client.call("dmt-get-sender", {
+				customer_id: "9123456789",
+				initiator_id: "9876543210",
+				user_code: null,
+			}),
+		).rejects.toThrow(/missing required params.*user_code/i);
+		// nothing is signed or sent when validation fails
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("accepts a numeric string for a number-typed param (lenient)", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		// bbps-get-operators: category is an optional `number` param.
+		await client.call("bbps-get-operators", {
+			initiator_id: "9876543210",
+			user_code: "20810200",
+			category: "5",
+		});
+		const [url] = fetchMock.mock.calls[0];
+		expect(String(url)).toContain("category=5");
+	});
+
+	it("throws on a type mismatch and signs/sends nothing", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await expect(
+			client.call("bbps-get-operators", {
+				initiator_id: "9876543210",
+				user_code: "20810200",
+				category: "abc",
+			}),
+		).rejects.toThrow(/invalid param types.*category \(expected number\)/i);
+		await expect(
+			client.call("bbps-get-operators", {
+				initiator_id: "9876543210",
+				user_code: "20810200",
+				category: {},
+			}),
+		).rejects.toThrow(/invalid param types.*category/i);
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("throws when constructed in a browser-like environment", () => {

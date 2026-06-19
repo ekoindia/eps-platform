@@ -3,12 +3,47 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export interface SdkParam {
+	name: string;
+	type: string;
+	required: boolean;
+}
 export interface SdkEndpoint {
 	slug: string;
 	method: string;
 	path: string;
+	params: SdkParam[];
 	requiredParams: string[];
 }
+
+/**
+ * Lenient, coercion-aware type check against a spec type. Only present values
+ * are checked (presence is enforced separately). Unknown types pass. The wire
+ * sends everything as strings, so numeric/boolean strings are accepted.
+ */
+const matchesType = (type: string, value: unknown): boolean => {
+	switch (type) {
+		case "string":
+			// Strings and numbers (which coerce cleanly); not booleans/objects.
+			return typeof value === "string" || typeof value === "number";
+		case "number":
+			return (
+				(typeof value === "number" && Number.isFinite(value)) ||
+				(typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value))
+			);
+		case "integer":
+			return (
+				(typeof value === "number" && Number.isInteger(value)) ||
+				(typeof value === "string" && /^-?\d+$/.test(value))
+			);
+		case "boolean":
+			return (
+				typeof value === "boolean" || value === "true" || value === "false"
+			);
+		default:
+			return true; // unknown/unsupported spec type → not enforced
+	}
+};
 interface Surface {
 	environments: { id: string; baseUrl: string }[];
 	endpoints: SdkEndpoint[];
@@ -68,6 +103,29 @@ export class EpsClient {
 		params: Record<string, unknown> = {},
 	): Promise<T> {
 		const endpoint = this.endpoint(slug);
+		// Spec-driven guard: every requiredParam (from the API spec, baked into the
+		// surface) must be present and non-null before we sign and send.
+		const missing = endpoint.requiredParams.filter(
+			(p) => params[p] === undefined || params[p] === null,
+		);
+		if (missing.length)
+			throw new Error(
+				`Missing required params for "${slug}": ${missing.join(", ")}.`,
+			);
+		// Type guard: every provided param known to the spec must match its type.
+		// Unknown params (not in the surface) pass through untouched.
+		const badTypes = endpoint.params
+			.filter(
+				(p) =>
+					params[p.name] !== undefined &&
+					params[p.name] !== null &&
+					!matchesType(p.type, params[p.name]),
+			)
+			.map((p) => `${p.name} (expected ${p.type})`);
+		if (badTypes.length)
+			throw new Error(
+				`Invalid param types for "${slug}": ${badTypes.join(", ")}.`,
+			);
 		const timestamp = String(this.now());
 		const headers: Record<string, string> = {
 			developer_key: this.opts.developerKey,
