@@ -80,6 +80,13 @@ const API_PRODUCTS_DATA = [
 		shortDesc: "Transaction status inquiry and OTP-based refunds",
 	},
 	{
+		id: "utilities",
+		name: "Utility & Helper APIs",
+		slug: "utilities-api",
+		category: "payment",
+		shortDesc: "Bank/IFSC lookup and generic mobile OTP helpers",
+	},
+	{
 		id: "bbps",
 		name: "Bharat Bill Payment System (BBPS)",
 		shortName: "BBPS",

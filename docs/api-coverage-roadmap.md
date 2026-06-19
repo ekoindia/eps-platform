@@ -150,21 +150,33 @@ The "offline variant" in the original report is not a distinct endpoint in the l
 
 ---
 
-## Phase 6 — Helpers, verification extras, BBPS extras ⬜
+## Phase 6 — Helpers, verification extras, BBPS extras (partial)
 
-| Capability | Target slug | Product | Status |
-| :-- | :-- | :-- | :-- |
-| Get Banks / Bank Details / IFSC Details | `get-banks`, `get-ifsc-details` | `utilities` | ⬜ |
-| Mobile OTP — Send / Verify (generic) | `mobile-otp-send`, `mobile-otp-verify` | `utilities` | ⬜ |
-| Bulk PAN — Status poll | `pan-bulk-status` | `pan` | ⬜ |
-| PAN Comprehensive | `pan-comprehensive` | `pan` | ⬜ |
-| Bulk Bank — Status poll | `bank-bulk-status` | `bank` | ⬜ |
-| Bank Verification — Pennyless | `bank-pennyless` | `bank` | ⬜ |
-| Bank Verification — Pennydrop | `bank-pennydrop` | `bank` | ⬜ |
-| DigiLocker — Status poll | `digilocker-status` | `digilocker` | ⬜ |
-| Advance GST | `advance-gst` | `gst` | ⬜ |
-| BBPS — Get Operator Code & Circle | `bbps-operator-code-circle` | `bbps` | ⬜ |
-| BBPS — Get Recharge Plans | `bbps-recharge-plans` | `bbps` | ⬜ |
+Utilities product added. Some "extras" already existed pre-Phase-6 (`pan-bulk-status`,
+`digilocker-verification-status`, `pan-advanced` → done). Existing `bank-account-verification` is the
+`/bank-account/sync` penny-drop; pennydrop/pennyless `/touras/…` are distinct new endpoints.
+
+| Capability | Target slug | Method | Path | Product | Status |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| Get Bank Details | `get-bank-details` | GET | `/tools/reference/bank/{bank_code}` | `utilities` | ✅ |
+| Get IFSC Details | `get-ifsc-details` | GET | `/tools/reference/banks/ifsc/{ifsc}` | `utilities` | ✅ |
+| Get Operator Code & Circle | `bbps-operator-code-circle` | GET | `…/bbps/recharge/{customer_mobile}/operator` | `bbps` | ✅ |
+| Bulk Bank Verification — Status | `bank-bulk-status` | GET | `/tools/kyc/bank-account/bulk/status` | `bank` | ✅ |
+| Send OTP (generic) | `mobile-otp-send` | POST | `/tools/kyc/mobile/otp` | `utilities` | ⛔ response pending |
+| Verify OTP (generic) | `mobile-otp-verify` | PUT | `/tools/kyc/mobile/otp/verify` | `utilities` | ⛔ response pending |
+| Get Banks | `get-banks` | GET | `/tools/reference/banks` | `utilities` | ⛔ response pending |
+| Get Recharge Plans | `bbps-recharge-plans` | GET | `…/operator/plans` | `bbps` | ⛔ response pending |
+| PAN Comprehensive | `pan-comprehensive` | POST | `/tools/kyc/touras/pan-verification` | `pan` | ⛔ response pending |
+| Bank Verification — Pennydrop | `bank-pennydrop` | POST | `/tools/kyc/touras/bank-acc-verify-pennydrop` | `bank` | ⛔ response pending |
+| Bank Verification — Pennyless | `bank-pennyless` | POST | `/tools/kyc/touras/bank-acc-verify-pennyless` | `bank` | ⛔ response pending |
+| Advance GST | `advance-gst` | POST | `/tools/kyc/touras/advance-gst` | `gst` | ⛔ response pending |
+
+All ⛔ rows have **request side captured**; awaiting user-pasted responses to author without fabrication.
+
+## Outstanding (blocked on user-pasted responses; request side captured)
+- **Phase 3:** Activate / Deactivate Service for User; Get Agent Network (GET — confirm it exists).
+- **Phase 5:** Transaction Status Callback (webhook → guide page, not an `ApiSpec`).
+- **Phase 6:** Send/Verify OTP, Get Banks, Get Recharge Plans, PAN Comprehensive, Bank Pennydrop/Pennyless, Advance GST.
 
 ---
 
