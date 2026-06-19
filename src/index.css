@@ -84,6 +84,7 @@
 	--animate-slide-left: slide-left 0.6s ease-out both;
 	--animate-slide-right: slide-right 0.6s ease-out both;
 	--animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+	--animate-float-bob: float-bob 4s ease-in-out infinite;
 	--animate-scroll-x: scroll-x 20s linear infinite;
 	--animate-menu-slide-down-in: menu-slide-down-in 0.3s ease-out forwards;
 	--animate-scale-in: scale-in 0.2s ease-out forwards;
@@ -151,6 +152,15 @@
 		}
 		50% {
 			opacity: 0.7;
+		}
+	}
+	@keyframes float-bob {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-8px);
 		}
 	}
 	@keyframes scroll-x {
@@ -687,5 +697,13 @@ body {
 		right: auto;
 		translate: none;
 		justify-self: anchor-center;
+	}
+}
+
+/* Hero mascot float-bob — disabled for reduced-motion. Unlayered so it
+   out-ranks Tailwind's layered `animate-float-bob` utility. */
+@media (prefers-reduced-motion: reduce) {
+	.hero-bot {
+		animation: none;
 	}
 }

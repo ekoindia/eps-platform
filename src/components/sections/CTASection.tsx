@@ -1,10 +1,10 @@
+import { FadeIn } from "@/components/FadeIn";
 import { SectionContainer } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Phone } from "lucide-react";
 import { SALES_MOBILE } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
-import { FadeIn } from "@/components/FadeIn";
+import { MessageCircle, Phone } from "lucide-react";
 
 export const CTASection = () => {
 	const handleChat = () => {

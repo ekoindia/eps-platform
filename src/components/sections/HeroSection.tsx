@@ -1,5 +1,7 @@
+import pingoBot from "@/assets/pingo/pingo-3d.png?w=192;384&format=avif;webp&as=picture";
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
 import { FadeIn } from "@/components/FadeIn";
+import { Picture } from "@/components/Picture";
 import { TrustStrip } from "@/components/sections/TrustStrip";
 import { Button } from "@/components/ui/button";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -196,6 +198,13 @@ export const HeroSection = () => {
 						<div className="relative">
 							{/* Glow Effect */}
 							<div className="absolute -inset-4 bg-eko-gold/10 rounded-2xl blur-2xl" />
+
+							{/* Floating mascot — decorative */}
+							<Picture
+								src={pingoBot}
+								alt=""
+								className="hero-bot pointer-events-none absolute -top-12 -right-6 w-42 h-42 z-10 drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)] animate-float-bob select-none"
+							/>
 
 							<CodeBlock
 								code={exampleApiCode}

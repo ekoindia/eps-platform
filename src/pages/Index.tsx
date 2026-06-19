@@ -9,7 +9,6 @@ import { SITE_URL } from "@/lib/config/site";
 import { Helmet } from "react-helmet-async";
 
 import { CTASection } from "@/components/sections/CTASection";
-import { LeadCaptureSection } from "@/components/sections/LeadCaptureSection";
 
 const Index = () => {
 	return (
@@ -25,7 +24,7 @@ const Index = () => {
 				<DeveloperSection />
 				<UseCasesSection />
 				<ComplianceSection />
-				<LeadCaptureSection />
+				{/* <LeadCaptureSection /> */}
 				<CTASection />
 			</main>
 
