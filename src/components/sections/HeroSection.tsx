@@ -200,6 +200,7 @@ export const HeroSection = () => {
 							<CodeBlock
 								code={exampleApiCode}
 								fileName="verify.js"
+								variant="glass"
 								className="relative"
 							/>
 
