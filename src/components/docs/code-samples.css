@@ -1,0 +1,96 @@
+/**
+ * Colour-token system for the docs right-pane ("3rd pane") code panel.
+ *
+ * One set of `--rp-*` variables drives every surface, text, accent and syntax
+ * colour in `CodeSamples.tsx`. The LIGHT palette is the warm "Parchment" theme;
+ * the DARK palette is a polished navy set. They flip with the docs-local `.dark`
+ * toggle (applied to an ancestor in `DocsLayout.tsx`), so the pane follows the
+ * theme instead of being permanently dark.
+ *
+ * Imported by `CodeSamples.tsx`. Docs routes are lazy-loaded, so Vite keeps this
+ * out of the main CSS bundle / marketing pages.
+ */
+
+.docs-rightpane {
+	/* ── surfaces ── */
+	--rp-bg: #f4efe6; /* pane background (warm cream)        */
+	--rp-edge: rgba(0, 0, 0, 0.08); /* left border of the pane             */
+	--rp-card: #faf6ee; /* Base-URL card + tabs container bg   */
+	--rp-line: rgba(0, 0, 0, 0.09); /* card / code / tab borders + divider */
+	--rp-code: #fbf8f1; /* code block + terminal background    */
+	--rp-codehdr: #f1ebdf; /* code block header bar background     */
+	--rp-btn: #ffffff; /* copy-button background              */
+	--rp-btnline: rgba(0, 0, 0, 0.12); /* copy-button border                  */
+
+	/* ── text ── */
+	--rp-fg: #3a3026; /* primary text (URL, terminal cmd)    */
+	--rp-fg2: #6b5f4e; /* secondary text (filename, code base)*/
+	--rp-fg3: #8a7d6a; /* muted text ("Base URL" label, icons)*/
+	--rp-ln: #b8a98f; /* code line numbers                   */
+	--rp-dot: #c9b896; /* dot in the code header              */
+
+	/* ── accent (amber/ochre) ── */
+	--rp-acc: #b5701a; /* UAT pill text, "Build with AI" link */
+	--rp-accbg: rgba(181, 112, 26, 0.12); /* UAT pill background               */
+	--rp-accline: rgba(181, 112, 26, 0.3); /* UAT pill border                  */
+	--rp-ok: #5a8c3a; /* terminal "$" + copied ✓ (green)     */
+	--rp-tabact: #ffffff; /* active tab background               */
+
+	/* ── code syntax ── */
+	--rp-kw: #1f7a8c; /* keywords  (curl, import, const…)    */
+	--rp-str: #9a6a1a; /* strings   ("…", Slug value)         */
+	--rp-fn: #5a4fcf; /* function / type names               */
+	--rp-cm: #a89578; /* punctuation / comments              */
+	--rp-txt: #4a3f30; /* plain prose (AI Coding tab)         */
+	--rp-url: #5a8c3a; /* URLs in code                        */
+
+	background: var(--rp-bg);
+}
+
+/* Dark palette — robust to `.dark` being an ancestor OR on the node itself. */
+.dark .docs-rightpane,
+.docs-rightpane.dark {
+	/* ── surfaces ── */
+	--rp-bg: #143a4e;
+	--rp-edge: rgba(255, 255, 255, 0.08);
+	--rp-card: #0f2e3f;
+	--rp-line: rgba(255, 255, 255, 0.1);
+	--rp-code: #0d2837;
+	--rp-codehdr: #102f41;
+	--rp-btn: rgba(255, 255, 255, 0.06);
+	--rp-btnline: rgba(255, 255, 255, 0.14);
+
+	/* ── text ── */
+	--rp-fg: #e2e8f0;
+	--rp-fg2: rgba(226, 232, 240, 0.75);
+	--rp-fg3: rgba(226, 232, 240, 0.5);
+	--rp-ln: rgba(255, 255, 255, 0.25);
+	--rp-dot: #c9b896;
+
+	/* ── accent (eko-gold) ── */
+	--rp-acc: #f4b740;
+	--rp-accbg: rgba(244, 183, 64, 0.15);
+	--rp-accline: rgba(244, 183, 64, 0.3);
+	--rp-ok: #34d399;
+	--rp-tabact: rgba(255, 255, 255, 0.1);
+
+	/* ── code syntax ── */
+	--rp-kw: #56b6c2;
+	--rp-str: #e5c07b;
+	--rp-fn: #c678dd;
+	--rp-cm: #7f8c98;
+	--rp-txt: #e2e8f0;
+	--rp-url: #98c379;
+}
+
+/* Pane-scoped scrollbar — adapts to the palette. The global `.docs-scroll`
+   (left nav / mobile Sheet) is left untouched. */
+.docs-rightpane .docs-scroll {
+	scrollbar-color: var(--rp-ln) transparent;
+}
+.docs-rightpane .docs-scroll::-webkit-scrollbar-thumb {
+	background-color: var(--rp-ln);
+}
+.docs-rightpane .docs-scroll::-webkit-scrollbar-thumb:hover {
+	background-color: var(--rp-fg3);
+}

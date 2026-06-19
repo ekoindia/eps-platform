@@ -110,7 +110,7 @@ export const DocsLayout = ({
 					MARK: Right Pane
 				*/}
 				{rightPane && (
-					<aside className="dark min-w-0 border-border/60 bg-[#143a4e] px-3 pb-16 pt-8 text-foreground lg:border-l lg:pt-24">
+					<aside className="docs-rightpane min-w-0 border-[var(--rp-edge)] px-3 pb-16 pt-8 text-[var(--rp-fg)] lg:border-l lg:pt-24">
 						{rightPane}
 					</aside>
 				)}
