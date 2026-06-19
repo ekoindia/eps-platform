@@ -90,13 +90,19 @@ export function generateMarkdownPlugin(): Plugin {
 
 				// -- Products -------------------------------------------------------
 				const activeProducts = bundle.API_PRODUCTS.filter((p) => !p.disabled);
-				for (const product of activeProducts) {
+				// Docs-only products (specs but no marketing page) are excluded from
+				// every product-link surface below so we never emit a /products/<slug>
+				// link that resolves to a 404.
+				const marketedProducts = activeProducts.filter((p) =>
+					Boolean(bundle.API_PRODUCT_PAGES[p.id]),
+				);
+				for (const product of marketedProducts) {
 					const page = bundle.API_PRODUCT_PAGES[product.id];
 					if (!page) {
 						this.warn(`No page data for product id="${product.id}" — skipping`);
 						continue;
 					}
-					const related = activeProducts
+					const related = marketedProducts
 						.filter(
 							(p) => p.category === product.category && p.id !== product.id,
 						)
@@ -133,7 +139,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "products.md"),
 					bundle.renderProductsIndexMarkdown(
-						activeProducts,
+						marketedProducts,
 						bundle.API_PRODUCT_PAGES,
 						bundle.COMMON_API_FAQS,
 					),
@@ -142,7 +148,7 @@ export function generateMarkdownPlugin(): Plugin {
 
 				// Plain-text twin of products.md, split into self-contained parts small
 				// enough to train Zoho SalesIQ's AnswerBot without timing out.
-				const productById = new Map(activeProducts.map((p) => [p.id, p]));
+				const productById = new Map(marketedProducts.map((p) => [p.id, p]));
 				for (const part of bundle.PRODUCTS_TXT_PARTS) {
 					const partProducts = part.productIds
 						.map((id) => productById.get(id))
@@ -203,7 +209,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "index.md"),
 					bundle.renderSiteIndexMarkdown(
-						activeProducts,
+						marketedProducts,
 						bundle.INDUSTRIES_LIST,
 						bundle.SOLUTIONS_LIST,
 					),
@@ -221,7 +227,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "llms.txt"),
 					bundle.renderLlmsTxt(
-						activeProducts,
+						marketedProducts,
 						bundle.INDUSTRIES_LIST,
 						bundle.SOLUTIONS_LIST,
 					),
@@ -232,7 +238,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "llms-full.txt"),
 					bundle.renderSiteIndexMarkdown(
-						activeProducts,
+						marketedProducts,
 						bundle.INDUSTRIES_LIST,
 						bundle.SOLUTIONS_LIST,
 					),
@@ -372,16 +378,20 @@ async function loadRenderBundle(
 
 function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	const activeProducts = bundle.API_PRODUCTS.filter((p) => !p.disabled);
+	// Docs-only products (no marketing page) are excluded from product-link surfaces.
+	const marketedProducts = activeProducts.filter((p) =>
+		Boolean(bundle.API_PRODUCT_PAGES[p.id]),
+	);
 	if (url === "/llms.txt") {
 		return bundle.renderLlmsTxt(
-			activeProducts,
+			marketedProducts,
 			bundle.INDUSTRIES_LIST,
 			bundle.SOLUTIONS_LIST,
 		);
 	}
 	if (url === "/llms-full.txt" || url === "/index.md") {
 		return bundle.renderSiteIndexMarkdown(
-			activeProducts,
+			marketedProducts,
 			bundle.INDUSTRIES_LIST,
 			bundle.SOLUTIONS_LIST,
 		);
@@ -394,7 +404,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/products.md") {
 		return bundle.renderProductsIndexMarkdown(
-			activeProducts,
+			marketedProducts,
 			bundle.API_PRODUCT_PAGES,
 			bundle.COMMON_API_FAQS,
 		);
@@ -403,7 +413,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	if (partMatch) {
 		const part = bundle.PRODUCTS_TXT_PARTS.find((p) => p.slug === partMatch[1]);
 		if (part) {
-			const productById = new Map(activeProducts.map((p) => [p.id, p]));
+			const productById = new Map(marketedProducts.map((p) => [p.id, p]));
 			const partProducts = part.productIds
 				.map((id) => productById.get(id))
 				.filter((p): p is NonNullable<typeof p> => Boolean(p));
@@ -436,7 +446,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 		if (!product) return null;
 		const page = bundle.API_PRODUCT_PAGES[product.id];
 		if (!page) return null;
-		const related = activeProducts
+		const related = marketedProducts
 			.filter((p) => p.category === product.category && p.id !== product.id)
 			.slice(0, 5);
 		return bundle.renderProductMarkdown(product, page, related);

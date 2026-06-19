@@ -15,7 +15,10 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 
-import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import {
+	API_PRODUCT_PAGES,
+	hasProductPage,
+} from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
@@ -60,20 +63,22 @@ const splitSeoKeywords = (keywords: string | undefined, cap = 12): string[] =>
 
 /** Builds API product search items from api-products + per-page SEO keywords */
 const buildApiItems = (): SearchItem[] =>
-	getActiveProducts().map((p) => ({
-		id: `api:${p.slug}`,
-		label: p.name,
-		sublabel: p.shortDesc,
-		href: productHref(p.slug),
-		category: "api" as const,
-		keywords: [
-			...(p.shortName ? [p.shortName] : []),
-			p.slug,
-			...splitSeoKeywords(API_PRODUCT_PAGES[p.id]?.seo.keywords),
-		],
-		icon: API_CATEGORY_ICONS[p.category] ?? ShieldCheck,
-		suggested: SUGGESTED_API_IDS.has(p.id),
-	}));
+	getActiveProducts()
+		.filter((p) => hasProductPage(p.id))
+		.map((p) => ({
+			id: `api:${p.slug}`,
+			label: p.name,
+			sublabel: p.shortDesc,
+			href: productHref(p.slug),
+			category: "api" as const,
+			keywords: [
+				...(p.shortName ? [p.shortName] : []),
+				p.slug,
+				...splitSeoKeywords(API_PRODUCT_PAGES[p.id]?.seo.keywords),
+			],
+			icon: API_CATEGORY_ICONS[p.category] ?? ShieldCheck,
+			suggested: SUGGESTED_API_IDS.has(p.id),
+		}));
 
 /** Builds industry search items (priority 3 = hidden/draft, excluded) */
 const buildIndustryItems = (): SearchItem[] =>

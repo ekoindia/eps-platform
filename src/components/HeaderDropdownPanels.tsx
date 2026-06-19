@@ -12,7 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { SOCIAL_LINKS } from "@/lib/config/site";
-import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import {
+	API_PRODUCT_PAGES,
+	hasProductPage,
+} from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
@@ -44,34 +47,31 @@ const TalkToSalesDialog = lazy(() =>
 /*  Module-level data (moved from Header.tsx)                          */
 /* ------------------------------------------------------------------ */
 
-const activeProducts = getActiveProducts();
+// Only products with a marketing product page belong in the mega-menu; docs-only
+// products (specs but no page) are excluded so we never link to a 404 — and never
+// dereference a missing API_PRODUCT_PAGES entry.
+const marketedProducts = getActiveProducts().filter((p) =>
+	hasProductPage(p.id),
+);
 
-const bcApis = activeProducts
+const toApiItem = (p: (typeof marketedProducts)[number]) => ({
+	label: p.name,
+	href: productHref(p.slug),
+	shortDesc: p.shortDesc,
+	icon: API_PRODUCT_PAGES[p.id]?.icon,
+});
+
+const bcApis = marketedProducts
 	.filter((p) => p.category === "bc")
-	.map((p) => ({
-		label: p.name,
-		href: productHref(p.slug),
-		shortDesc: p.shortDesc,
-		icon: API_PRODUCT_PAGES[p.id].icon,
-	}));
+	.map(toApiItem);
 
-const paymentApis = activeProducts
+const paymentApis = marketedProducts
 	.filter((p) => p.category === "payment")
-	.map((p) => ({
-		label: p.name,
-		href: productHref(p.slug),
-		shortDesc: p.shortDesc,
-		icon: API_PRODUCT_PAGES[p.id].icon,
-	}));
+	.map(toApiItem);
 
-const verificationApis = activeProducts
+const verificationApis = marketedProducts
 	.filter((p) => p.category === "verification")
-	.map((p) => ({
-		label: p.name,
-		href: productHref(p.slug),
-		shortDesc: p.shortDesc,
-		icon: API_PRODUCT_PAGES[p.id].icon,
-	}));
+	.map(toApiItem);
 
 const companyLinks = [
 	{ label: "About Eko", href: "/about-us", internal: true },
