@@ -38,3 +38,8 @@ packages/*/data/
 # Playwright MCP debug artifacts
 .playwright-mcp/
 .superpowers/
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/node_modules
+.design-sync/styles-src.css
