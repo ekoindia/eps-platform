@@ -16,6 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enforce npm (no Bun lockfiles)
+        run: |
+          if git ls-files --error-unmatch bun.lock bun.lockb 2>/dev/null; then
+            echo "::error::Bun lockfile committed. This project standardizes on npm — remove bun.lock/bun.lockb."
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
