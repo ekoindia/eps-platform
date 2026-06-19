@@ -52,7 +52,6 @@ export const CodeBlock = ({
 			reduce.removeEventListener("change", update);
 		};
 	}, [isGlass]);
-
 	// Cancel any pending frame on unmount so we never write to a detached node.
 	useEffect(
 		() => () => {
@@ -150,32 +149,49 @@ export const CodeBlock = ({
 	);
 };
 
-export const exampleApiCode = `// Initialize Eko API Client
-const eko = new EkoAPI({
-  apiKey: process.env.EKO_API_KEY
+/**
+ * Sample code - PAN Verification - shown on Homepage > Hero section
+ */
+export const exampleApiCode = `import { EpsClient } from "@ekoindia/eps-sdk";
+
+const eps = new EpsClient({
+  credentials,
+  env: "sandbox",
 });
 
-// Verify PAN Card
-const verification = await eko.verify.pan({
-  panNumber: "ABCDE1234F",
-  fullName: "John Doe"
+// Verify a PAN card — HMAC signing handled by the SDK
+const res = await eps.call("pan-lite", {
+  pan_number: "ABCDE1234F",
+  name: "Rajesh Kumar",
+  dob: "1994-08-29",
 });
 
-console.log(verification.status); // "verified"
-console.log(verification.details);`;
+console.log(res.data.status);     // "VALID"
+console.log(res.data.name_match); // "Y"`;
 
-export const examplePaymentCode = `// Create DMT Transfer
-const transfer = await eko.payments.dmt({
-  beneficiaryAccount: "1234567890",
-  ifscCode: "HDFC0001234",
-  amount: 5000,
-  senderMobile: "9876543210"
+/**
+ * Sample code - DMT - shown on Homepage > developer section
+ */
+export const examplePaymentCode = `import { EpsClient } from "@ekoindia/eps-sdk";
+
+const eps = new EpsClient({
+  credentials,
+  env: "sandbox",
 });
 
-// Check transfer status
-const status = await eko.payments.status(
-  transfer.transactionId
-);`;
+// Send money to a bank account (DMT / IMPS)
+const txn = await eps.call("dmt-initiate-transfer", {
+  customer_id: "9123456789",   // sender's mobile
+  recipient_id: 98765,
+  amount: 500,
+  otp: "251834",               // from dmt-send-otp
+  otp_ref_id: "TXNOTP2026...",
+  latlong: "28.6139,77.2090",
+  state: "1",
+  recipient_id_type: "1",
+});
+
+console.log(txn.data.tx_status); // 0 = success`;
 
 export const exampleIntegrationSteps = [
 	{
