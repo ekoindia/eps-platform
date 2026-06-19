@@ -125,17 +125,16 @@ confirm it exists (vs. being only the POST onboarding path) before authoring.
 
 ---
 
-## Phase 4 — AePS Fund Settlement ⬜ (product `aeps`)
+## Phase 4 — AePS Fund Settlement ✅ (product `aeps`; all v3)
 
-`user_code`-keyed (not `customer_id`).
+| Capability | Target slug | Method | Path | Status |
+| :-- | :-- | :-- | :-- | :-- |
+| Add Settlement Bank Account | `aeps-add-settlement-account` | POST | `/user/payment/aeps/settlement/account` | ✅ |
+| Get Settlement Bank Accounts | `aeps-get-settlement-accounts` | GET | `/user/payment/aeps/settlement/accounts` | ✅ |
+| Initiate Settlement (financial) | `aeps-initiate-settlement` | POST | `/user/payment/aeps/settlement` | ✅ |
 
-| Capability | Target slug | Method | Status |
-| :-- | :-- | :-- | :-- |
-| Initiate Settlement | `aeps-initiate-settlement` | POST | ⬜ |
-| Add Settlement Bank Account | `aeps-add-settlement-bank` | POST | ⬜ |
-| Add Settlement Bank (offline variant) | `aeps-add-settlement-bank-offline` | POST | ⬜ |
-| Get Settlement Bank Accounts | `aeps-get-settlement-banks` | GET | ⬜ |
-| Settlement section overview | _guide page_ | — | ⬜ |
+The "offline variant" in the original report is not a distinct endpoint in the live reference (only the
+3 above). Section overview is a docs guide, not an `ApiSpec`.
 
 ---
 

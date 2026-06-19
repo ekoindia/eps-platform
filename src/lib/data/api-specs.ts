@@ -10190,6 +10190,306 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "aeps-add-settlement-account",
+		productId: "aeps",
+		name: "Add Settlement Bank Account",
+		slug: "aeps-add-settlement-account",
+		summary:
+			"Register a bank account as an AePS fund-settlement recipient for an agent.",
+		description:
+			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch.",
+		relevance: "M",
+		bestFor: "Registering an agent's settlement bank account before payout.",
+		method: "POST",
+		path: "/user/payment/aeps/settlement/account",
+		docsUrl:
+			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
+		extraRequestParams: [
+			{
+				name: "bank_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique identifier for the bank.",
+				example: 12,
+			},
+			{
+				name: "ifsc",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "IFSC code of the bank account.",
+				example: "BKID0006701",
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Service code for AePS fund settlement. Value: 39.",
+				example: 39,
+			},
+			{
+				name: "account",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Account number of the user's bank account.",
+				example: "987867867967969",
+			},
+		],
+		responseData: [
+			{
+				name: "recipient_id",
+				type: "number",
+				imp: true,
+				description:
+					"Settlement recipient identifier — pass to Initiate Settlement.",
+				example: 1893,
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: { recipient_id: 1893 },
+			response_type_id: 1336,
+			message: "Account added",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Account verification failed — name mismatch",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { sender_name: "SANATAN CSP", recipient_name: "R K LAKSHYKAR" },
+					response_type_id: 1335,
+					message: "Account verification fail, Name not matched",
+					status: 1335,
+				},
+			},
+			{
+				scenario: "Account verification failed — name not returned by bank",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 1334,
+					message: "Account verification fail name not returned by bank",
+					status: 1334,
+				},
+			},
+		],
+	},
+	{
+		id: "aeps-get-settlement-accounts",
+		productId: "aeps",
+		name: "Get Settlement Bank Accounts",
+		slug: "aeps-get-settlement-accounts",
+		summary:
+			"List an agent's registered AePS settlement recipients with unsettled funds and remaining limit.",
+		description:
+			"Returns the agent's saved settlement bank accounts (each with a `recipient_id`), the total unsettled fund, and the remaining daily settlement limit.",
+		relevance: "M",
+		bestFor: "Choosing a settlement account and checking unsettled funds.",
+		method: "GET",
+		path: "/user/payment/aeps/settlement/accounts",
+		docsUrl:
+			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
+		extraRequestParams: [],
+		responseData: [
+			{
+				name: "unsettled_fund",
+				type: "string",
+				imp: true,
+				description: "Total unsettled AePS fund available to settle (INR).",
+				example: "6100.0",
+			},
+			{
+				name: "remaining_limit",
+				type: "string",
+				description: "Remaining settlement limit for the day (INR).",
+				example: "190000",
+			},
+			{
+				name: "fund_transfer_list",
+				type: "array",
+				imp: true,
+				description: "Registered settlement recipients.",
+				children: [
+					{
+						name: "recipient_id",
+						type: "string",
+						imp: true,
+						description:
+							"Settlement recipient identifier — pass to Initiate Settlement.",
+						example: "1828",
+					},
+					{
+						name: "name",
+						type: "string",
+						description: "Account holder name.",
+						example: "Gaurav Mallik",
+					},
+					{
+						name: "account",
+						type: "string",
+						description: "Bank account number.",
+						example: "9989834392752938",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Bank branch IFSC.",
+						example: "PUNB0309300",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				unsettled_fund: "6100.0",
+				remaining_limit: "190000",
+				fund_transfer_list: [
+					{
+						name: "Gaurav Mallik",
+						ifsc: "PUNB0309300",
+						account: "9989834392752938",
+						recipient_id: "1828",
+					},
+					{
+						name: "Gaurav Mallik",
+						ifsc: "BKID0006701",
+						account: "987867867967969",
+						recipient_id: "1829",
+					},
+				],
+			},
+			response_type_id: 1321,
+			message: "List of fund transfer recipients",
+			status: 0,
+		},
+	},
+	{
+		id: "aeps-initiate-settlement",
+		productId: "aeps",
+		name: "Initiate Settlement",
+		slug: "aeps-initiate-settlement",
+		summary:
+			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
+		description:
+			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm; max ₹2,00,000 per transaction.",
+		relevance: "H",
+		bestFor: "Settling collected AePS funds to an agent's bank account.",
+		method: "POST",
+		path: "/user/payment/aeps/settlement",
+		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/aeps-fund-settlement-request",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "amount",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"Settlement amount requested (INR). Max 200000 per transaction.",
+				example: 100,
+			},
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"Settlement recipient identifier (from Add / Get Settlement Account).",
+				example: 1829,
+			},
+			{
+				name: "payment_mode",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Transfer method: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
+				example: 5,
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID for the settlement.",
+				example: "12937465",
+			},
+			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description: "Transaction status (2 = initiated).",
+				example: "2",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Initiated",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Settled amount (INR).",
+				example: "100.00",
+			},
+			{
+				name: "totalfee",
+				type: "string",
+				description: "Total fee charged for the settlement (INR).",
+				example: "5.00",
+			},
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Agent balance after the settlement (INR).",
+				example: "2.251010664E7",
+			},
+			{
+				name: "account",
+				type: "string",
+				description: "Destination account number.",
+				example: "987867867967969",
+			},
+			{
+				name: "ifsc",
+				type: "string",
+				description: "Destination branch IFSC.",
+				example: "BKID0006701",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				tx_status: "2",
+				amount: "100.00",
+				balance: "2.251010664E7",
+				txstatus_desc: "Initiated",
+				totalfee: "5.00",
+				ifsc: "BKID0006701",
+				account: "987867867967969",
+				tid: "12937465",
+			},
+			response_type_id: 1329,
+			message: "Transaction initiated successfully",
+			status: 0,
+		},
+	},
+	{
 		id: "digilocker-create-url",
 		productId: "digilocker",
 		name: "Create DigiLocker URL",
