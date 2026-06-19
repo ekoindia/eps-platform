@@ -49,14 +49,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			method: "GET",
-			path: "/customer/profile/9123456789/dmt-fino",
-			queryParams: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "customer_id",
@@ -192,15 +184,6 @@ export const API_SPECS: ApiSpec[] = [
 					'["123 Main Street", "Connaught Place", "New Delhi", "110001"]',
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			name: "Ramesh Kumar",
-			dob: "1990-05-15",
-			residence_address:
-				'["123 Main Street", "Connaught Place", "New Delhi", "110001"]',
-		},
 		responseData: [
 			{
 				name: "customer_id",
@@ -299,14 +282,6 @@ export const API_SPECS: ApiSpec[] = [
 					'<PidData><Resp errCode="0" errInfo="Capture Success" .../></PidData>',
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			aadhar: "234567890123",
-			piddata:
-				'<PidData><Resp errCode="0" errInfo="Capture Success" /></PidData>',
-		},
 		responseData: [
 			{
 				name: "kyc_request_id",
@@ -407,14 +382,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "KYC20240101001",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			otp: "784512",
-			otp_ref_id: "OTPREF20240101001",
-			kyc_request_id: "KYC20240101001",
-		},
 		responseData: [
 			{
 				name: "customer_id",
@@ -499,14 +466,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			method: "GET",
-			path: "/customer/payment/dmt-fino/sender/9123456789/recipients",
-			queryParams: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "count",
@@ -672,17 +631,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "3",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			recipient_name: "Sunil Sharma",
-			account: "012345678901",
-			ifsc: "SBIN0001234",
-			bank_id: 20,
-			recipient_mobile: "9988776655",
-			recipient_type: "3",
-		},
 		responseData: [
 			{
 				name: "recipient_id",
@@ -788,13 +736,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9123456789",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			customer_id: "9123456789",
-			recipient_id: 98765,
-			amount: 500,
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -946,21 +887,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "2024-01-01T10:30:00Z",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REF-20240101-001",
-			customer_id: "9123456789",
-			recipient_id: 98765,
-			amount: 500,
-			otp: "251834",
-			otp_ref_id: "TXNOTP20240101001",
-			latlong: "28.6139,77.2090",
-			state: "1",
-			recipient_id_type: "1",
-			channel: 2,
-			currency: "INR",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -1227,24 +1153,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "DAKYC20240101001",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CW-20240101-001",
-			source: "API",
-			service_type: 2,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 1000,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 1,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-			reference_id: "DAKYC20240101001",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -1481,23 +1389,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "BE-20240101-001",
-			source: "API",
-			service_type: 3,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 0,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 0,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "balance",
@@ -1678,27 +1569,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			modelname: "Morpho 1300E3",
-			devicenumber: "SN1234567890",
-			office_address: {
-				line: "Shop No. 5, Gandhi Market",
-				city: "Patna",
-				state: "Bihar",
-				pincode: "800001",
-			},
-			address_as_per_proof: {
-				line: "Shop No. 5, Gandhi Market",
-				city: "Patna",
-				state: "Bihar",
-				pincode: "800001",
-			},
-			pan_card: "<multipart binary>",
-			aadhar_front: "<multipart binary>",
-			aadhar_back: "<multipart binary>",
-		},
 		responseData: [
 			{
 				name: "activation_status",
@@ -1820,17 +1690,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DAUTH-20240101-001",
-			source: "API",
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			latlong: "25.5941,85.1376",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -2010,23 +1869,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "MS-20240101-001",
-			source: "API",
-			service_type: 4,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 0,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 0,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -2239,23 +2081,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "AP-20240101-001",
-			source: "API",
-			service_type: 5,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 250,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 1,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -2342,13 +2167,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "BASE64_ENCRYPTED_AADHAAR",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "KYCOTP-20240101-001",
-			source: "API",
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -2444,16 +2262,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "OTPREF20240101001",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "KYCBIO-20240101-001",
-			source: "API",
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			otp_ref_id: "OTPREF20240101001",
-		},
 		responseData: [
 			{
 				name: "kyc_status",
@@ -2525,17 +2333,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/bbps-get-categories",
 		extraRequestParams: [],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "categories",
@@ -2654,17 +2451,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/bbps-get-locations",
 		extraRequestParams: [],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "locations",
@@ -2775,19 +2561,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				category: 5,
-				location: 7,
-			},
-		},
 		responseData: [
 			{
 				name: "operators",
@@ -2892,19 +2665,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			path: {
-				operator_id: 83,
-			},
-			query: {
-				initiator_id: "9876543210",
-			},
-		},
 		responseData: [
 			{
 				name: "fetchBill",
@@ -3086,25 +2846,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "mypassword123",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				client_ref_id: "BFETCH-20240601-001",
-				utility_acc_no: "1234567890",
-				confirmation_mobile_no: "9999988888",
-				sender_name: "Ramesh Kumar",
-				operator_id: "83",
-				source_ip: "192.168.1.1",
-				latlong: "28.6139,77.2090",
-				hc_channel: 0,
-			},
-		},
 		responseData: [
 			{
 				name: "bill_amount",
@@ -3291,27 +3032,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 400001,
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-				"content-type": "application/json",
-			},
-			body: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				client_ref_id: "BBPS-20240601-001",
-				utility_acc_no: "1234567890",
-				confirmation_mobile_no: "9999988888",
-				sender_name: "Ramesh Kumar",
-				operator_id: "83",
-				amount: "1350",
-				source_ip: "192.168.1.1",
-				latlong: "28.6139,77.2090",
-				billfetchresponse: "eyJhbGciOiJSUzI1NiJ9...",
-			},
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -3443,20 +3163,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			path: {
-				"transaction-reference": "1734567890",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -3548,20 +3254,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-				"content-type": "application/json",
-			},
-			body: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				service_code: 53,
-				latlong: "28.6139,77.2090",
-			},
-		},
 		responseData: [
 			{
 				name: "service_code",
@@ -3630,11 +3322,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			service_code: "58",
-		},
 		responseData: [
 			{
 				name: "is_service_activated",
@@ -3718,13 +3405,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "en",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CMSTRXN123",
-			latlong: "28.6139,77.2090",
-			locale: "en",
-		},
 		responseData: [
 			{
 				name: "url",
@@ -3979,21 +3659,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 1,
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAY-20240615-001",
-			source: "API",
-			service_code: 45,
-			payment_mode: 5,
-			recipient_name: "Ravi Kumar",
-			account: "50100123456789",
-			ifsc: "HDFC0001234",
-			amount: 25000,
-			sender_name: "Acme Corp",
-			tag: "Salary",
-			beneficiary_account_type: 1,
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -4169,15 +3834,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			path_param: {
-				transaction_ref: "2886601782",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -4302,12 +3958,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/docs/fund-transfer",
 		extraRequestParams: [],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "balance",
@@ -4404,17 +4054,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 3,
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REC-20240615-001",
-			source: "API",
-			recipient_name: "Ravi Kumar",
-			account: "50100123456789",
-			ifsc: "HDFC0001234",
-			mobile: "9876500001",
-			recipient_type: 3,
-		},
 		responseData: [
 			{
 				name: "recipient_id",
@@ -4521,15 +4160,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Ravi Kumar",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PD-20240615-001",
-			source: "API",
-			account: "50100123456789",
-			ifsc: "HDFC0001234",
-			recipient_name: "Ravi Kumar",
-		},
 		responseData: [
 			{
 				name: "account_holder_name",
@@ -4653,13 +4283,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			source: "API",
-			callback_url: "https://your-server.example.com/eko/callback",
-			service_code: 45,
-		},
 		responseData: [
 			{
 				name: "callback_url",
@@ -4748,16 +4371,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "VPA-CHK-20240101-001",
-			source: "API",
-			customer_vpa: "vendor@okicici",
-			recipient_mobile: "9876543210",
-			name: "Rajesh Kumar",
-			latlong: "28.6139,77.2090",
-		},
 		responseData: [
 			{
 				name: "customer_vpa",
@@ -4930,17 +4543,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAY-20240101-001",
-			source: "API",
-			customer_vpa: "vendor@okicici",
-			amount: 5000,
-			recipient_mobile: "9876543210",
-			name: "Rajesh Kumar",
-			latlong: "28.6139,77.2090",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5140,10 +4742,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5292,10 +4890,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5442,13 +5036,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			sender_id: "9876543210",
-			name: "Ravi Kumar Store",
-			email: "ravi@example.com",
-		},
 		responseData: [
 			{
 				name: "qr_string",
@@ -5573,14 +5160,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			sender_id: "9876543210",
-			amount: 499,
-			client_ref_id: "ORD-20240601-9871",
-			name: "Ravi Kumar Store",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5703,10 +5282,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5817,20 +5392,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/transaction-status-callback",
 		extraRequestParams: [],
 		omitCommonParams: ["initiator_id", "user_code", "client_ref_id", "source"],
-		sampleRequest: {
-			tx_status: 0,
-			amount: 499,
-			payment_mode: "5",
-			txstatus_desc: "SUCCESS",
-			fee: 0,
-			gst: 0,
-			tid: 2886601782,
-			client_ref_id: "ORD-20240601-9871",
-			old_tx_status: 2,
-			old_tx_status_desc: "Initiated",
-			bank_ref_num: "313196224563",
-			timestamp: "2024-06-01 14:23:05",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5931,9 +5492,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -6055,15 +5613,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REF-ORD-20240601-9871",
-			otp: 123456,
-			otp_ref_id: "OTP_REF_884321",
-			service_code: 80,
-			state: 1,
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -6209,15 +5758,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1994-08-29",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAN-REQ-20240101-001",
-			source: "API",
-			pan_number: "ABCDE1234F",
-			name: "Rajesh Kumar",
-			dob: "1994-08-29",
-		},
 		responseData: [
 			{
 				name: "pan",
@@ -6386,14 +5926,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAN-ADV-20240101-001",
-			pan: "ABCDE1234F",
-			name: "Rajesh Kumar",
-			dob: "1994-08-29",
-		},
 		responseData: [
 			{
 				name: "pan",
@@ -6628,22 +6160,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "BULK-PAN-20240101-001",
-			entries: [
-				{
-					pan: "ABCPV1234D",
-					name: "John",
-					source: "API",
-				},
-				{
-					pan: "ABCPV1234L",
-					name: "John Doe",
-					source: "API",
-				},
-			],
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -6722,17 +6238,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "BULK-PAN-20240101-001",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				reference_id: "123456",
-			},
-		},
 		responseData: [
 			{
 				name: "count",
@@ -6917,15 +6422,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: '<PidData><Data type="X">...</Data></PidData>',
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-005",
-			aadhar: "123456789012",
-			piddata:
-				'<PidData><Data type="X">BIOMETRIC_BLOCK_BASE64</Data></PidData>',
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -7017,15 +6513,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "KYC-20240101-005",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-006",
-			otp: "456789",
-			otp_ref_id: "58201938",
-			kyc_request_id: "KYC-20240101-005",
-		},
 		responseData: [
 			{
 				name: "kyc_status",
@@ -7160,15 +6647,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1",
 			},
 		],
-		sampleRequest: {
-			customer_id: 9876543210,
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-007",
-			aadhar: "123456789012",
-			otp_ref_id: "73849201",
-			additional_info: "1",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -7268,16 +6746,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-008",
-			otp: 123456,
-			otp_ref_id: 93847201,
-			intent_id: "20",
-			additional_info: "1",
-		},
 		responseData: [
 			{
 				name: "verified",
@@ -7405,15 +6873,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "wlt_0091234",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-009",
-			aadhar: "123456789012",
-			wallet_token: "wtkn_abc123xyz",
-			wallet_id: "wlt_0091234",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -7523,17 +6982,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "wlt_0091234",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-010",
-			otp: 654321,
-			otp_ref_id: 66748392,
-			intent_id: "20",
-			wallet_token: "wtkn_abc123xyz",
-			wallet_id: "wlt_0091234",
-		},
 		responseData: [
 			{
 				name: "verified",
@@ -7637,13 +7085,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "https://yourapp.com/kyc/callback",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-011",
-			document_requested: ["AADHAAR"],
-			redirect_url: "https://yourapp.com/kyc/callback",
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -7748,15 +7189,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "7483920",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-012",
-			source: "API",
-			document_type: ["AADHAAR"],
-			verification_id: "vrf_digilocker_abc123",
-			reference_id: "7483920",
-		},
 		responseData: [
 			{
 				name: "documents",
@@ -7958,11 +7390,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "DGL-STATUS-001",
-			reference_id: 12345,
-		},
 		responseData: [
 			{
 				name: "user_details",
@@ -8115,13 +7542,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "SBIN0001234",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			bank_account: 1234567890,
-			ifsc: "SBIN0001234",
-			client_ref_id: "BANK-VER-20240101-001",
-		},
 		responseData: [
 			{
 				name: "account_exists",
@@ -8310,20 +7730,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "BULK-BANK-20240101-001",
-			entries: [
-				{
-					bank_account: "1234567890",
-					ifsc: "SBIN0001234",
-				},
-				{
-					bank_account: "9876543210",
-					ifsc: "HDFC0005678",
-				},
-			],
-		},
 		responseData: [
 			{
 				name: "bulk_reference_id",
@@ -8412,17 +7818,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "3356655212",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				bulk_reference_id: "3356655212",
-			},
-		},
 		responseData: [
 			{
 				name: "entries",
@@ -8588,13 +7983,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Acme Pvt Ltd",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "GST-VER-20240101-001",
-			gstin: "29ABCDE1234F1Z5",
-			business_name: "Acme Pvt Ltd",
-		},
 		responseData: [
 			{
 				name: "gstin",
@@ -8950,12 +8338,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "ABCDE1234F",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			source: "API",
-			pan: "ABCDE1234F",
-		},
 		responseData: [
 			{
 				name: "pan",
@@ -9118,16 +8500,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "VPA-VAL-20240101-001",
-			source: "API",
-			customer_vpa: "rajesh.kumar@okicici",
-			recipient_mobile: "9876543210",
-			name: "Rajesh Kumar",
-			latlong: "28.6139,77.2090",
-		},
 		responseData: [
 			{
 				name: "vpa",
@@ -9262,14 +8634,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1994-08-29",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DL-VER-20240101-001",
-			source: "API",
-			dl_number: "MH0220190001234",
-			dob: "1994-08-29",
-		},
 		responseData: [
 			{
 				name: "dl_number",
@@ -9653,13 +9017,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "HR26DA8398",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "RC-VER-20240101-001",
-			source: "API",
-			vehicle_number: "HR26DA8398",
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -10326,13 +9683,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9876543210",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "EMP-VER-20240101-001",
-			source: "API",
-			phone: "9876543210",
-		},
 		responseData: [
 			{
 				name: "input",
@@ -10904,14 +10254,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "72.8777",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "GEO-20240101-001",
-			source: "API",
-			latitude: "19.0760",
-			longitude: "72.8777",
-		},
 		responseData: [
 			{
 				name: "latitude",
@@ -11072,14 +10414,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Rajesh Kumar",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "VOTER-20240101-001",
-			source: "API",
-			epic_number: "ABC1234567",
-			name: "Rajesh Kumar",
-		},
 		responseData: [
 			{
 				name: "name",
@@ -11391,15 +10725,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Rajesh Kumar",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PASS-20240101-001",
-			source: "API",
-			file_number: "J8369854",
-			dob: "1994-08-29",
-			name: "Rajesh Kumar",
-		},
 		responseData: [
 			{
 				name: "file_number",
@@ -11522,13 +10847,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "U72900KA2015PTC082988",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CIN-20240101-001",
-			source: "API",
-			cin: "U72900KA2015PTC082988",
-		},
 		responseData: [
 			{
 				name: "cin",
@@ -11735,13 +11053,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.21.58.193",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "IP-20240101-001",
-			source: "API",
-			ip_address: "103.21.58.193",
-		},
 		responseData: [
 			{
 				name: "ip_address",
@@ -11889,14 +11200,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Satish Kumar Mishra",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "NAME-20240101-001",
-			source: "API",
-			name_1: "S K Mishra",
-			name_2: "Satish Kumar Mishra",
-		},
 		responseData: [
 			{
 				name: "name_1",
@@ -12006,13 +11309,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "ABCDE1234F",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "ITR-CHK-20240101-001",
-			source: "API",
-			pan_number: "ABCDE1234F",
-		},
 		responseData: [
 			{
 				name: "pan_number",
@@ -12189,13 +11485,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "06731826",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DIN-20240101-001",
-			source: "API",
-			din_number: "06731826",
-		},
 		responseData: [
 			{
 				name: "din",
@@ -12327,13 +11616,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "MH02AB1234",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CHALLAN-20240101-001",
-			source: "API",
-			registration_number: "MH02AB1234",
-		},
 		responseData: [
 			{
 				name: "vehicle_number",
@@ -12561,13 +11843,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "rajesh.kumar@example.com",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "EMAIL-CHK-20240101-001",
-			source: "API",
-			email: "rajesh.kumar@example.com",
-		},
 		responseData: [
 			{
 				name: "email",
@@ -12735,12 +12010,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "11521998000045",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-001",
-			fssai: "11521998000045",
-		},
 		responseData: [
 			{
 				name: "fssai_number",

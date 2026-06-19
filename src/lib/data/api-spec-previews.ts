@@ -14,6 +14,7 @@ import type {
 } from "@/components/ApiInputOutputPreview";
 import { getSpecsForProduct } from "./api-specs";
 import type { ApiSpec, ResponseField } from "./api-specs-common";
+import { buildSampleRequest } from "./api-specs-common";
 
 /**
  * Helper APIs that poll the status of a bulk/async verification job. Their ids
@@ -45,7 +46,7 @@ const toDisplay = (value: unknown): string =>
 
 /** API-specific request params -> display inputs, valued from sampleRequest. */
 const requestInputs = (spec: ApiSpec): ApiField[] => {
-	const req = (spec.sampleRequest ?? {}) as Record<string, unknown>;
+	const req = buildSampleRequest(spec);
 	return spec.extraRequestParams.map((p) => ({
 		label: p.label || humanizeLabel(p.name),
 		value: toDisplay(req[p.name] ?? p.example ?? ""),
@@ -98,7 +99,7 @@ export const specToPreview = (spec: ApiSpec): ApiPreviewItem => {
 		sampleJson: {
 			method: spec.method,
 			endpoint: spec.path,
-			request: spec.sampleRequest,
+			request: buildSampleRequest(spec),
 			response: spec.sampleSuccessResponse,
 		},
 	};

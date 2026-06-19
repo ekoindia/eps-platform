@@ -10,6 +10,7 @@
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
+	buildSampleRequest,
 	resolveHeaders,
 	resolveRequestParams,
 } from "@/lib/data/api-specs-common";
@@ -34,33 +35,46 @@ const HEADER_PLACEHOLDER: Record<string, string> = {
 const headerValue = (h: ApiParam): string =>
 	HEADER_PLACEHOLDER[h.name] ?? (h.example != null ? String(h.example) : "");
 
+/** Render a param value for a URL (path token or query value). */
+const urlValue = (value: unknown, name: string): string => {
+	if (value == null) return `<${name}>`;
+	if (typeof value === "object") return JSON.stringify(value);
+	return String(value);
+};
+
 /**
- * Substitute `{path_param}` tokens using values from `body` (falling back to
- * the param's example) and return the full base-URL-prefixed endpoint URL.
+ * Resolve the full request URL: substitute `{path_param}` tokens and append a
+ * query string for any `in:"query"` params. Values come from `overrides`
+ * (keyed by param name) when present, else the param's `example`.
  */
 export const resolveEndpointUrl = (
 	spec: ApiSpec,
-	body?: Record<string, unknown>,
+	overrides?: Record<string, unknown>,
 ): string => {
-	const pathParams = resolveRequestParams(spec).filter((p) => p.in === "path");
+	const params = resolveRequestParams(spec);
 	let path = spec.path;
-	for (const p of pathParams) {
-		const fromBody = body?.[p.name];
-		const value =
-			fromBody != null
-				? String(fromBody)
-				: p.example != null
-					? String(p.example)
-					: `<${p.name}>`;
-		path = path.replace(`{${p.name}}`, value);
+	for (const p of params.filter((p) => p.in === "path")) {
+		const value = overrides?.[p.name] ?? p.example;
+		path = path.replace(`{${p.name}}`, urlValue(value, p.name));
 	}
-	return `${DEFAULT_BASE_URL}${path}`;
+	let url = `${DEFAULT_BASE_URL}${path}`;
+	const queryParams = params.filter((p) => p.in === "query");
+	if (queryParams.length) {
+		const qs = queryParams
+			.map((p) => {
+				const value = overrides?.[p.name] ?? p.example;
+				return `${encodeURIComponent(p.name)}=${encodeURIComponent(urlValue(value, p.name))}`;
+			})
+			.join("&");
+		url += `?${qs}`;
+	}
+	return url;
 };
 
 const resolveUrl = (spec: ApiSpec): string => resolveEndpointUrl(spec);
 
 const hasBody = (spec: ApiSpec): boolean =>
-	spec.method !== "GET" && Object.keys(spec.sampleRequest).length > 0;
+	spec.method !== "GET" && Object.keys(buildSampleRequest(spec)).length > 0;
 
 export const toCurl = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
@@ -71,7 +85,9 @@ export const toCurl = (spec: ApiSpec): string => {
 		lines.push(`  --header '${h.name}: ${headerValue(h)}'${last ? "" : " \\"}`);
 	});
 	if (hasBody(spec)) {
-		lines.push(`  --data '${JSON.stringify(spec.sampleRequest, null, 2)}'`);
+		lines.push(
+			`  --data '${JSON.stringify(buildSampleRequest(spec), null, 2)}'`,
+		);
 	}
 	return lines.join("\n");
 };
@@ -91,7 +107,7 @@ export const toJsFetch = (spec: ApiSpec): string => {
 	if (hasBody(spec)) {
 		initStr = initStr.replace(
 			'"__BODY__"',
-			`JSON.stringify(${JSON.stringify(spec.sampleRequest, null, 2)})`,
+			`JSON.stringify(${JSON.stringify(buildSampleRequest(spec), null, 2)})`,
 		);
 	}
 	return `const response = await fetch('${url}', ${initStr});\nconst data = await response.json();`;
@@ -109,7 +125,7 @@ export const toPython = (spec: ApiSpec): string => {
 		`headers = ${pyDict(headers)}`,
 	];
 	if (hasBody(spec)) {
-		lines.push(`payload = ${pyDict(spec.sampleRequest)}`);
+		lines.push(`payload = ${pyDict(buildSampleRequest(spec))}`);
 		lines.push(
 			`response = requests.${spec.method.toLowerCase()}(url, json=payload, headers=headers)`,
 		);
@@ -139,7 +155,9 @@ export const toPhp = (spec: ApiSpec): string => {
 		"curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);",
 	];
 	if (hasBody(spec)) {
-		lines.push(`$payload = json_encode(${phpArray(spec.sampleRequest)});`);
+		lines.push(
+			`$payload = json_encode(${phpArray(buildSampleRequest(spec))});`,
+		);
 		lines.push("curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);");
 	}
 	lines.push("");

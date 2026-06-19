@@ -58,6 +58,14 @@ describe("code samples", () => {
 		expect(curl).not.toContain("--data");
 	});
 
+	it("appends common params as a query string for GET", () => {
+		const curl = toCurl(getSpec);
+		// initiator_id is a common param → query (not body) on a GET.
+		expect(curl).toContain("?initiator_id=");
+		// client_ref_id does not apply to GET requests.
+		expect(curl).not.toContain("client_ref_id");
+	});
+
 	it("SAMPLE_LANGS exposes php and sampleFor handles it", () => {
 		expect(SAMPLE_LANGS.map((l) => l.id)).toContain("php");
 		expect(sampleFor(panLite, "php")).toContain("curl_init");

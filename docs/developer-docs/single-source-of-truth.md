@@ -42,9 +42,11 @@ export interface ApiSpec {
 	docsUrl: string;
 	sourceDoc?: string;
 	financial?: boolean;                     // uses the financial response envelope
-	extraRequestParams: ApiParam[];          // API-specific params ONLY
+	extraRequestParams: ApiParam[];          // API-specific params; a same-named
+	                                         // entry OVERRIDES a common param
 	omitCommonParams?: string[];             // drop a common param when N/A
-	sampleRequest: Record<string, unknown>;  // copy-paste-ready request example
+	sampleRequest?: Record<string, unknown>; // OPTIONAL override; default body is
+	                                         // generated from in:"body" examples
 	responseData: ResponseField[];           // ONLY the `data` subtree
 	sampleSuccessResponse: Record<string, unknown>;  // full envelope + data
 	errorScenarios?: ApiErrorScenario[];
@@ -79,8 +81,13 @@ production: https://api.eko.in/ekoapi/${API_VERSION}
 `DEFAULT_BASE_URL` points at sandbox — code samples and the try-it console use it.
 
 **Common request params** (`api-specs-common.ts`, `COMMON_REQUEST_PARAMS`):
-`initiator_id` (required), `user_code` (required), `client_ref_id`, `source`.
-An endpoint that doesn't need one lists it in `omitCommonParams`.
+`initiator_id` (required), `user_code` (required), `client_ref_id`. Each declares
+an `allowedMethods` list instead of a fixed `in`: it is pulled into an endpoint only
+when the endpoint's HTTP method matches, and its location is then **derived from the
+method** — `GET → query`, otherwise `body`. So `client_ref_id` (write-only) drops off
+GETs. An endpoint can also drop one via `omitCommonParams`, or override one (its
+example / required / description / location) by declaring a same-named entry in
+`extraRequestParams`.
 
 **Response envelope** (`api-specs-common.ts`):
 
@@ -106,12 +113,24 @@ directly for rendering.
 /** Auth headers — identical for every API. */
 export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;
 
-/** Common params (minus omitted) followed by the endpoint's own. */
+/** Applicable common params (location derived from the method, minus omitted /
+ *  overridden) followed by the endpoint's own. */
 export const resolveRequestParams = (spec: ApiSpec): ApiParam[] => {
 	const omit = new Set(spec.omitCommonParams ?? []);
-	const common = COMMON_REQUEST_PARAMS.filter((p) => !omit.has(p.name));
+	const overridden = new Set(spec.extraRequestParams.map((p) => p.name));
+	const location = spec.method === "GET" ? "query" : "body";
+	const common = COMMON_REQUEST_PARAMS.filter(
+		(p) =>
+			p.allowedMethods.includes(spec.method) &&
+			!omit.has(p.name) &&
+			!overridden.has(p.name),
+	).map(({ allowedMethods, ...rest }) => ({ ...rest, in: location }));
 	return [...common, ...spec.extraRequestParams];
 };
+
+/** The request body example: the spec's `sampleRequest` override, else generated
+ *  from the resolved in:"body" param examples. */
+export const buildSampleRequest = (spec: ApiSpec): Record<string, unknown> => { … };
 
 /** Full response tree: envelope with `data` = the endpoint's subtree. */
 export const resolveResponseFields = (spec: ApiSpec): ResponseField[] => {

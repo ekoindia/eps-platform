@@ -34,6 +34,7 @@ import type {
 	ResponseField,
 } from "@/lib/data/api-specs-common";
 import {
+	buildSampleRequest,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
@@ -166,7 +167,9 @@ const buildOperationParams = (
 		parameters,
 		requestBody: {
 			required: true,
-			content: { "application/json": { schema, example: spec.sampleRequest } },
+			content: {
+				"application/json": { schema, example: buildSampleRequest(spec) },
+			},
 		},
 	};
 };

@@ -58,7 +58,8 @@ To reconstruct a full view (for a portal or preview), use the resolvers in
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import {
   resolveHeaders,        // AUTH_HEADERS
-  resolveRequestParams,  // COMMON_REQUEST_PARAMS (− omitted) + extraRequestParams
+  resolveRequestParams,  // method-applicable COMMON_REQUEST_PARAMS (− omitted/overridden) + extraRequestParams
+  buildSampleRequest,    // request body example: override or generated from in:"body" examples
   resolveResponseFields, // envelope with data = responseData
 } from "@/lib/data/api-specs-common";
 
@@ -85,9 +86,9 @@ interface ApiSpec {
   path: string;               // relative; full URL = environment baseUrl + path
   docsUrl: string;            // developer-portal reference link
   financial?: boolean;        // adds the financial response envelope
-  extraRequestParams: ApiParam[];   // API-specific only
+  extraRequestParams: ApiParam[];   // API-specific; same name overrides a common param
   omitCommonParams?: string[];      // rare: drop a common param
-  sampleRequest: Record<string, unknown>;
+  sampleRequest?: Record<string, unknown>;  // optional override; else generated from in:"body" examples
   responseData: ResponseField[];    // the `data` subtree only
   sampleSuccessResponse: Record<string, unknown>;
   errorScenarios?: { scenario: string; statusCode?: number; example: object }[];

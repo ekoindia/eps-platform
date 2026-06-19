@@ -13,6 +13,7 @@ import type {
 	ResponseField,
 } from "@/lib/data/api-specs-common";
 import {
+	buildSampleRequest,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
@@ -72,6 +73,8 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 	const pathParams = requestParams.filter((p) => p.in === "path");
 	const queryParams = requestParams.filter((p) => p.in === "query");
 	const bodyParams = requestParams.filter((p) => p.in === "body");
+	const sampleRequest = buildSampleRequest(spec);
+	const hasSampleRequest = Object.keys(sampleRequest).length > 0;
 
 	return joinBlocks([
 		frontMatter({
@@ -98,8 +101,8 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 			["Field", "Type", "Description"],
 			responseRows(resolveResponseFields(spec)),
 		),
-		h2("Example request"),
-		jsonFence(spec.sampleRequest),
+		hasSampleRequest ? h2("Example request") : undefined,
+		hasSampleRequest ? jsonFence(sampleRequest) : undefined,
 		h2("Example response"),
 		jsonFence(spec.sampleSuccessResponse),
 		spec.errorScenarios?.length ? h2("Error scenarios") : undefined,

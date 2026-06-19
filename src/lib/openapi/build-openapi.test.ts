@@ -51,6 +51,27 @@ describe("buildOpenApiDocument", () => {
 		}
 	});
 
+	it("models common params as query (not a body) on GET operations", () => {
+		// A GET with no API-specific body params — its only body-eligible params
+		// would be the common ones, which must now resolve to the query string.
+		const getSpec = specs.find(
+			(s) =>
+				s.method === "GET" &&
+				!s.extraRequestParams.some((p) => p.in === "body"),
+		);
+		expect(getSpec).toBeDefined();
+		const op = (doc.paths?.[getSpec!.path] as Record<string, unknown>)
+			.get as OpenAPIV3_1.OperationObject;
+		const queryNames = (op.parameters ?? [])
+			.filter(
+				(p): p is OpenAPIV3_1.ParameterObject => "in" in p && p.in === "query",
+			)
+			.map((p) => p.name);
+		expect(queryNames).toContain("initiator_id");
+		// A GET carries no JSON request body.
+		expect(op.requestBody).toBeUndefined();
+	});
+
 	it("records body-discriminated variants under x-eko-variants", () => {
 		const grouped = new Map<string, number>();
 		for (const s of specs)

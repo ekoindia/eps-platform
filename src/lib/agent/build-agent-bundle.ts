@@ -19,6 +19,7 @@ import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
+	buildSampleRequest,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
@@ -76,7 +77,7 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	financial: spec.financial,
 	headers: resolveHeaders(),
 	requestParams: resolveRequestParams(spec),
-	sampleRequest: spec.sampleRequest,
+	sampleRequest: buildSampleRequest(spec),
 	responseFields: resolveResponseFields(spec),
 	sampleSuccessResponse: spec.sampleSuccessResponse,
 	errorScenarios: spec.errorScenarios ?? [],

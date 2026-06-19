@@ -40,6 +40,22 @@ export const buildPostmanCollection = (
 	const baseUrl = bundle.meta.environments[0].baseUrl;
 	const byProduct = new Map<string, PostmanRequest[]>();
 	for (const a of bundle.apis) {
+		// Query params (e.g. initiator_id/user_code on a GET) → Postman url.query,
+		// with the raw URL kept consistent.
+		const query = a.requestParams
+			.filter((p) => p.in === "query")
+			.map((p) => ({
+				key: p.name,
+				value: p.example != null ? String(p.example) : "",
+			}));
+		const raw = query.length
+			? `${baseUrl}${a.path}?${query
+					.map(
+						(q) =>
+							`${encodeURIComponent(q.key)}=${encodeURIComponent(q.value)}`,
+					)
+					.join("&")}`
+			: `${baseUrl}${a.path}`;
 		const item: PostmanRequest = {
 			name: a.name,
 			request: {
@@ -51,9 +67,10 @@ export const buildPostmanCollection = (
 					{ key: "content-type", value: "application/json" },
 				],
 				url: {
-					raw: `${baseUrl}${a.path}`,
+					raw,
 					host: [baseUrl],
 					path: a.path.split("/").filter(Boolean),
+					...(query.length ? { query } : {}),
 				},
 				body:
 					a.method === "GET"

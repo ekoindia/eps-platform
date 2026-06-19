@@ -33,9 +33,11 @@ split by parameter location. It reads via the resolvers, never raw spec fields:
 | Headers | `resolveHeaders()` |
 | Responses | `<ResponseAccordion spec=… />` |
 
-Because params come from `resolveRequestParams`, the four common params appear
-automatically (unless `omitCommonParams` drops them), and the auth headers appear
-on every endpoint without being declared per-spec.
+Because params come from `resolveRequestParams`, the common params appear
+automatically for the methods they apply to (GET shows them as query params, other
+methods as body params) — unless `omitCommonParams` drops one or an `extraRequestParams`
+entry overrides it — and the auth headers appear on every endpoint without being
+declared per-spec.
 
 ## Supporting components
 

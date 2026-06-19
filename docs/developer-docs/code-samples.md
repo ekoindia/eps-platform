@@ -30,26 +30,31 @@ export const sampleFor = (spec: ApiSpec, lang: SampleLang): string => {
 
 ## Inputs — all from the single source of truth
 
-The generators pull every value through the shared resolvers, so the four common
+The generators pull every value through the shared resolvers, so the common
 params and the auth headers appear without being declared per endpoint:
 
 - `resolveHeaders()` → the auth header set.
-- `resolveRequestParams(spec)` → common + endpoint params (used to find path params).
-- `resolveEndpointUrl(spec, body?)` → substitutes `{path_param}` tokens and prefixes `DEFAULT_BASE_URL`.
-- `hasBody(spec)` → `method !== "GET"` and `sampleRequest` non-empty.
-- `spec.sampleRequest` → the request body example.
+- `resolveRequestParams(spec)` → common + endpoint params, each with its resolved
+  `in` (common params are `query` on a GET, `body` otherwise).
+- `resolveEndpointUrl(spec, overrides?)` → substitutes `{path_param}` tokens, appends
+  an `in:"query"` query string (so GET URLs carry `?initiator_id=…`), and prefixes
+  `DEFAULT_BASE_URL`.
+- `hasBody(spec)` → `method !== "GET"` and the generated body is non-empty.
+- `buildSampleRequest(spec)` → the request body example (override or generated).
 
 ```typescript
-export const resolveEndpointUrl = (spec, body?) => {
-	const pathParams = resolveRequestParams(spec).filter((p) => p.in === "path");
+export const resolveEndpointUrl = (spec, overrides?) => {
+	const params = resolveRequestParams(spec);
 	let path = spec.path;
-	for (const p of pathParams) {
-		const fromBody = body?.[p.name];
-		const value = fromBody != null ? String(fromBody)
-			: p.example != null ? String(p.example) : `<${p.name}>`;
-		path = path.replace(`{${p.name}}`, value);
-	}
-	return `${DEFAULT_BASE_URL}${path}`;
+	for (const p of params.filter((p) => p.in === "path"))
+		path = path.replace(`{${p.name}}`, urlValue(overrides?.[p.name] ?? p.example, p.name));
+	let url = `${DEFAULT_BASE_URL}${path}`;
+	const query = params.filter((p) => p.in === "query");
+	if (query.length)
+		url += "?" + query
+			.map((p) => `${encodeURIComponent(p.name)}=${encodeURIComponent(urlValue(overrides?.[p.name] ?? p.example, p.name))}`)
+			.join("&");
+	return url;
 };
 ```
 
