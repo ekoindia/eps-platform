@@ -1,21 +1,7 @@
-import {
-	ArrowRight,
-	Check,
-	Copy,
-	Download,
-	FileJson,
-	FileText,
-	Package,
-	Terminal,
-	type LucideIcon,
-} from "lucide-react";
-import { useState } from "react";
-import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
 import { AiHint } from "@/components/AiHint";
+import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { McpIcon } from "@/components/icons/McpIcon";
-import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { Button } from "@/components/ui/button";
 import { EPS_MCP_CMD, SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
 import { API_ENVIRONMENTS } from "@/lib/data/api-auth";
@@ -33,6 +19,20 @@ import {
 import { type DocsMode, useDocsMode } from "@/lib/docs/use-docs-mode";
 import { usePreferredLang } from "@/lib/docs/use-preferred-lang";
 import { cn } from "@/lib/utils";
+import {
+	type LucideIcon,
+	ArrowRight,
+	Check,
+	Copy,
+	Download,
+	FileJson,
+	FileText,
+	Package,
+	Terminal,
+} from "lucide-react";
+import { useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 
 const MD_PATH = "/docs.md";
 
@@ -256,7 +256,7 @@ const DocsIndexPage = () => {
 						<PathCard
 							icon={Package}
 							title="Use an SDK"
-							description="Signed SDKs for Node.js & PHP — HMAC auth baked in."
+							description="Signed SDKs for Node.js & PHP — HMAC auth & input validations baked in."
 							active={mode === "sdk"}
 							onClick={() => setMode("sdk")}
 							featured

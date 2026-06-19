@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-	AlertTriangle,
 	BadgeCheck,
 	// DMT
 	Banknote,
@@ -8,7 +7,6 @@ import {
 	Briefcase,
 	Building,
 	Building2,
-	Calendar,
 	Car,
 	CheckCircle,
 	Clock,
@@ -22,24 +20,11 @@ import {
 	FolderCheck,
 	Globe,
 	Globe2,
-	// UPI Payout (re-uses Send, Zap, Users, Clock, CheckCircle, FileText, Wallet, Shield — all above)
-	// Bank Verification
-	Hash,
-	IdCard,
 	IndianRupee,
-	Info,
 	Landmark,
-	Leaf,
-	Mail,
 	MailCheck,
 	// Reverse Geocoding
 	MapPin,
-	// GST / DL
-	// (Building, FileText, CreditCard already imported)
-	// Vehicle
-	Palette,
-	// Employee
-	Phone,
 	Plane,
 	// QR
 	QrCode,
@@ -55,8 +40,6 @@ import {
 	Smartphone,
 	TicketCheck,
 	Truck,
-	// Pan Verification
-	User,
 	Users,
 	Utensils,
 	// New verification product icons
