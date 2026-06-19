@@ -155,8 +155,7 @@ export const CodeBlock = ({
 export const exampleApiCode = `import { EpsClient } from "@ekoindia/eps-sdk";
 
 const eps = new EpsClient({
-  credentials,
-  env: "sandbox",
+  credentials, environment: "sandbox",
 });
 
 // Verify a PAN card — HMAC signing handled by the SDK
@@ -175,8 +174,7 @@ console.log(res.data.name_match); // "Y"`;
 export const examplePaymentCode = `import { EpsClient } from "@ekoindia/eps-sdk";
 
 const eps = new EpsClient({
-  credentials,
-  env: "sandbox",
+  credentials, environment: "sandbox",
 });
 
 // Send money to a bank account (DMT / IMPS)
