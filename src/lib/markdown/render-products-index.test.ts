@@ -17,7 +17,6 @@ const makeSpec = (overrides: Partial<ApiSpec>): ApiSpec => ({
 	name: "Spec",
 	slug: "spec",
 	summary: "",
-	category: "verification",
 	method: "POST",
 	path: "/spec",
 	docsUrl: "https://developers.eko.in/docs/x",

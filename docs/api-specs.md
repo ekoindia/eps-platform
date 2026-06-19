@@ -79,7 +79,8 @@ interface ApiSpec {
   slug: string;
   summary: string;
   description?: string;
-  category: "bc" | "payment" | "verification";
+  // category is NOT stored here — it is derived from the product via
+  // categoryForSpec(spec) (productId -> API_PRODUCTS[…].category).
   relevance?: "H" | "M" | "L";
   bestFor?: string;
   method: "GET" | "POST" | "PUT" | "DELETE";

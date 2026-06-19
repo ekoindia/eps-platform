@@ -10,7 +10,12 @@
  * The data here is rich enough to render a developer API reference portal.
  */
 import { AUTH_HEADERS } from "./api-auth";
-import type { ApiProductId, ApiProductRelevance } from "./api-products";
+import { API_PRODUCTS_MAP } from "./api-products";
+import type {
+	ApiProductCategory,
+	ApiProductId,
+	ApiProductRelevance,
+} from "./api-products";
 
 // ---------------------------------------------------------------------------
 // Primitive shapes
@@ -73,7 +78,6 @@ export interface ApiSpec {
 	slug: string;
 	summary: string;
 	description?: string;
-	category: "bc" | "payment" | "verification";
 	relevance?: ApiProductRelevance;
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
@@ -203,6 +207,16 @@ export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
 // ---------------------------------------------------------------------------
 // Resolvers — reassemble full views without storing duplicates
 // ---------------------------------------------------------------------------
+
+/**
+ * The category a spec belongs to, derived from its FK product. This replaces a
+ * per-spec `category` field: a spec's category IS its product's category, with
+ * no separate source to drift. Uses {@link API_PRODUCTS_MAP} (all products,
+ * including disabled) since `productId` is FK-typed against every product; the
+ * `?? "bc"` is unreachable for a valid spec and only satisfies the index type.
+ */
+export const categoryForSpec = (spec: ApiSpec): ApiProductCategory =>
+	API_PRODUCTS_MAP[spec.productId]?.category ?? "bc";
 
 /** Full auth header set for an API — identical on every request. */
 export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;

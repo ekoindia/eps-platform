@@ -52,7 +52,6 @@ const specs: ApiSpec[] = [
 		name: "PAN Lite",
 		slug: "pan-lite",
 		summary: "Quick PAN validation.",
-		category: "verification",
 		method: "POST",
 		path: "/pan/lite",
 		docsUrl: "https://developers.eko.in/docs/pan",

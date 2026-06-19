@@ -1,11 +1,14 @@
 export type ApiProductRelevance = "H" | "M" | "L";
 
+/** The three product categories — the single source of truth for categories. */
+export type ApiProductCategory = "bc" | "payment" | "verification";
+
 export interface ApiProductRef {
 	id: string;
 	name: string;
 	shortName?: string;
 	slug: string;
-	category: "bc" | "payment" | "verification";
+	category: ApiProductCategory;
 	shortDesc: string;
 	/** When true, the product page is completely hidden from the website */
 	disabled?: boolean;

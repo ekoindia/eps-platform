@@ -15,7 +15,9 @@
  * slug.
  */
 import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
+import type { ApiProductCategory } from "./api-products";
 import { API_SPECS, getSpecsForProduct } from "./api-specs";
+import { categoryForSpec } from "./api-specs-common";
 import type { ApiSpec } from "./api-specs-common";
 import { GUIDES, type GuideMeta } from "@/content/docs/docs-guides";
 
@@ -27,7 +29,7 @@ export const docsHref = (slug?: string): string =>
 	slug ? `/${DOCS_SECTION_SLUG}/${slug}` : `/${DOCS_SECTION_SLUG}`;
 
 /** The three product categories, in canonical nav order. */
-export type DocCategory = ApiSpec["category"];
+export type DocCategory = ApiProductCategory;
 
 export const CATEGORY_ORDER: DocCategory[] = ["bc", "payment", "verification"];
 
@@ -93,7 +95,7 @@ const toEndpointNode = (spec: ApiSpec): DocNode => ({
 	summary: spec.summary,
 	spec,
 	method: spec.method,
-	category: spec.category,
+	category: categoryForSpec(spec),
 	productId: spec.productId,
 	productName: ACTIVE_PRODUCTS_MAP[spec.productId]?.name,
 });

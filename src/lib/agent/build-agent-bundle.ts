@@ -20,6 +20,7 @@ import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	buildSampleRequest,
+	categoryForSpec,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
@@ -65,7 +66,7 @@ const indexEntry = (spec: ApiSpec): AgentApiIndexEntry => ({
 	method: spec.method,
 	path: spec.path,
 	summary: spec.summary,
-	category: spec.category,
+	category: categoryForSpec(spec),
 	relevance: spec.relevance,
 });
 

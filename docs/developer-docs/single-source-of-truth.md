@@ -34,7 +34,7 @@ export interface ApiSpec {
 	slug: string;                            // portal route slug (no method prefix)
 	summary: string;
 	description?: string;
-	category: "bc" | "payment" | "verification";
+	// category is derived from the product (categoryForSpec), never stored.
 	relevance?: ApiProductRelevance;         // "H" | "M" | "L" — nav ordering
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";

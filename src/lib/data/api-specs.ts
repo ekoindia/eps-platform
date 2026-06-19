@@ -31,7 +31,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch the DMT-Fino profile of a registered sender by mobile number.",
 		description:
 			"The first step in the DMT flow. Call this to check whether a customer is already registered as a DMT sender. If the sender exists, the response returns their profile and remaining transfer limits so you can skip registration. If not found (response_status_id 463), proceed to Onboard Sender.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Checking sender registration status before starting a DMT transaction.",
@@ -141,7 +140,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Register a new customer as a DMT-Fino sender using basic KYC details.",
 		description:
 			"Registers a new customer in the DMT-Fino system. Provide the customer's name, date of birth, and residence address. On success the sender is created in a pending state; biometric eKYC (via Sender KYC) must follow to activate full monthly limits. An OTP is dispatched to the customer's mobile number for confirmation.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "First-time sender registration in the DMT flow.",
 		method: "POST",
@@ -248,7 +246,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Initiate biometric Aadhaar eKYC to verify and upgrade a DMT sender's account.",
 		description:
 			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible biometric capture device. The biometric PID data (XML payload) is captured at the agent's terminal and submitted along with the Aadhaar number. On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "POST",
@@ -339,7 +336,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Confirm sender eKYC by verifying the OTP sent to the Aadhaar-linked mobile.",
 		description:
 			"Final step of the sender eKYC flow. Submit the OTP received on the Aadhaar-linked mobile number along with the otp_ref_id and kyc_request_id from the Sender eKYC response. On success the sender's account is upgraded to fully KYC-verified status with a ₹25,000 monthly limit.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "Completing sender eKYC after biometric capture.",
 		method: "POST",
@@ -448,7 +444,6 @@ export const API_SPECS: ApiSpec[] = [
 		summary: "Retrieve the list of saved beneficiaries for a DMT sender.",
 		description:
 			"Returns all beneficiaries (recipients) previously registered under the sender's DMT-Fino account. Use this before initiating a transfer — if the desired beneficiary already exists you can use their recipient_id directly to send money, skipping Add Recipient.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Listing a sender's saved beneficiaries before initiating a transfer.",
@@ -565,7 +560,6 @@ export const API_SPECS: ApiSpec[] = [
 		summary: "Register a new beneficiary under a sender's DMT-Fino account.",
 		description:
 			"Adds a new beneficiary to the sender's saved recipients list. Provide the recipient's full name, bank account number, IFSC code, and mobile number. The bank_id identifies the destination bank (fetch from the bank list if needed). On success a recipient_id is returned; use it in Send OTP and Initiate Transfer. The system may validate the account via penny-drop before activating the recipient.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "Adding a new beneficiary before a first-time transfer.",
 		method: "POST",
@@ -702,7 +696,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Request an OTP to the sender's mobile number to authorise an upcoming money transfer.",
 		description:
 			"Sends an OTP to the sender's registered mobile number as a pre-authorisation step before initiating the actual money transfer. Provide the recipient_id, the transfer amount, and the sender's customer_id. The returned otp_ref_id must be passed to Initiate Transfer along with the OTP entered by the customer.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Pre-authorising a DMT transfer by triggering OTP dispatch to the sender.",
@@ -785,7 +778,6 @@ export const API_SPECS: ApiSpec[] = [
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
 			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account. Requires the OTP and otp_ref_id from Send Transaction OTP and the merchant's GPS coordinates (latlong). The response returns a tid (Eko transaction ID) and the banking UTR for the IMPS transaction. Always poll Get Transaction Status if tx_status is 2 (Awaited).",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
@@ -1047,7 +1039,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
 			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day.",
-		category: "bc",
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
@@ -1294,7 +1285,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
 			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the same `aeps-fingpay` endpoint as Cash Withdrawal but with service_type=3 and amount=0. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
-		category: "bc",
 		relevance: "H",
 		bestFor:
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
@@ -1477,7 +1467,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Onboard an agent for AePS Fingpay service by submitting their biometric device details and KYC documents.",
 		description:
 			"This onboarding API registers an agent (identified by their user_code) for the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.",
-		category: "bc",
 		relevance: "H",
 		bestFor:
 			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
@@ -1645,7 +1634,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
 			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
-		category: "bc",
 		relevance: "H",
 		bestFor:
 			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
@@ -1774,7 +1762,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
 		description:
 			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the same `aeps-fingpay` endpoint with service_type=4 and amount=0. No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
@@ -1985,7 +1972,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Accept merchant payments debited directly from a customer's Aadhaar-linked bank account via biometric authentication.",
 		description:
 			"Aadhaar Pay (service_type=5) enables merchants to accept payments from customers whose bank accounts are Aadhaar-linked, authenticated with a fingerprint scan. Unlike Cash Withdrawal (where cash is dispensed), the funds are transferred to the merchant. This is useful for last-mile digital payments at kirana stores and service points where customers have no UPI or debit card. The flow is identical to Cash Withdrawal but with a positive merchant-side credit.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Merchants accepting digital payments from Aadhaar-linked accounts without UPI or card infrastructure",
@@ -2149,7 +2135,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
 			"The first step in the one-time AePS Fingpay eKYC flow. Sends an OTP to the mobile number registered with the agent's Aadhaar. The eKYC flow — Send OTP → Verify OTP → Biometric Capture — must be completed once per agent before they can perform any AePS transactions. This step is a prerequisite; do not confuse it with the daily authentication (2FA) which is required on each calendar day.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
@@ -2225,7 +2210,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Complete one-time AePS Fingpay eKYC by submitting the agent's Aadhaar and live biometric fingerprint capture.",
 		description:
 			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's Aadhaar and biometric PID data to UIDAI for identity verification. On success, the agent's eKYC is marked complete and they can start performing AePS transactions (subject to completing daily 2FA each day). This step uses the same RSA-encrypted Aadhaar and PID XML format as the transaction APIs.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
@@ -2324,7 +2308,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the list of supported BBPS biller categories (electricity, gas, DTH, etc.).",
 		description:
 			"Returns all active biller categories available on the BBPS network. Use the returned category_id to filter the Get Operators call. Categories include electricity, gas, water, DTH, broadband, prepaid recharge, FASTag, insurance, EMI payments, LPG booking, credit card, and more.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Populating a category picker UI before letting the user choose a biller.",
@@ -2442,7 +2425,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the list of supported state/location IDs for filtering BBPS operators.",
 		description:
 			"Returns all supported location (state) identifiers. Pass the returned location_id as the `location` query parameter in the Get Operators call to narrow results to a specific state or circle.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Populating a state filter when displaying biller lists to end users.",
@@ -2534,7 +2516,6 @@ export const API_SPECS: ApiSpec[] = [
 			"List all active BBPS billers, optionally filtered by category and/or state.",
 		description:
 			"Returns every currently active BBPS biller. Use `category` and `location` query parameters to narrow results. The `billFetchResponse` flag on each operator tells you whether the Fetch Bill step is mandatory before payment. Operators that are temporarily disabled are excluded from the response — poll this endpoint periodically to keep your list fresh.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Building a biller selection UI and determining which operators require a bill fetch before payment.",
@@ -2647,7 +2628,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch the custom input fields required by a specific biller before payment.",
 		description:
 			"Returns the operator-specific parameter schema — field names, labels, data types, and validation regex — needed to build a dynamic payment form. Also returns `fetchBill` (1 = mandatory Fetch Bill step) and `BBPS` (1 = show Bharat BillPay branding). Call this once per operator and cache the result.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Rendering a dynamic bill payment form with correct validation for each biller.",
@@ -2752,7 +2732,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve outstanding bill details from a biller before processing payment.",
 		description:
 			"Fetches the live bill for a customer from the biller's system. Required for operators where `billFetchResponse = 1`. The response includes the outstanding amount, due date, and a `billfetchresponse` token that must be forwarded verbatim in the subsequent Pay Bill call. Pass `hc_channel=1` to use the higher-commission delayed channel.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Showing the customer their outstanding bill amount and due date before confirming payment.",
@@ -2938,7 +2917,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
 			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
@@ -3144,7 +3122,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
 		description:
 			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
@@ -3228,7 +3205,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Onboard an agent/retailer for BBPS bill payment services using service code 53.",
 		description:
 			"Before a retailer can process BBPS payments, the BBPS service (service_code = 53) must be activated for their `user_code`. This is a one-time setup call per agent. After activation, verify the status using the User Service Enquiry API. The agent's GPS coordinates (`latlong`) are mandatory for production compliance.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Onboarding new agents onto the BBPS bill payment service before their first transaction.",
@@ -3303,7 +3279,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Activate the CMS (Cash Collection) service for an agent/retailer before they can initiate collections.",
 		description:
 			"Before a retailer or field agent can generate collection URLs or process cash collections, the CMS service (service_code 58) must be activated for their user account. This is a one-time step per agent. On success the agent's account is enabled for CMS transactions.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"NBFCs, insurance companies, microfinance institutions onboarding field collection agents",
@@ -3377,7 +3352,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a session-specific CMS URL that redirects the field agent to the biller selection and payment flow.",
 		description:
 			"Returns a short-lived redirect URL that opens Eko's hosted cash-collection interface for the authenticated agent. The agent selects the biller, enters bill details, collects cash, and the customer account is credited in real time. The response also contains a transaction record with tid, amount, operator name, and commission fields once the collection is completed through the redirect flow.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Field agents collecting loan EMIs, insurance premiums, utility bills, and subscription payments at the customer doorstep",
@@ -3568,7 +3542,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Transfer funds from your e-wallet to any Indian bank account via IMPS, NEFT, or RTGS.",
 		description:
 			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Salary disbursals, vendor settlements, contractor payouts, gig-worker commissions.",
@@ -3815,7 +3788,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch the current status of a payout transaction by Eko TID or your client_ref_id.",
 		description:
 			"Use this API to poll the live status of any fund-transfer transaction. Pass either Eko's `tid` or your own `client_ref_id` as the path parameter. Particularly useful for NEFT transactions where the initial response returns `tx_status=2` (awaited) — keep polling until you get a terminal state (0=Success, 1=Fail, 4=Refunded). You can also rely on the webhook callback instead of polling.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending NEFT payouts, confirming IMPS credit, building retry / refund logic.",
@@ -3949,7 +3921,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the current e-wallet balance of a registered agent or retailer.",
 		description:
 			"Returns the live e-wallet balance for the given `user_code`. Integrate this before initiating transfers to pre-validate sufficient funds without incurring a failed-transaction fee. Balance is in INR.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Pre-transfer balance checks, dashboard balance widgets, auto top-up triggers.",
@@ -4005,7 +3976,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Register a new bank account as a payout recipient (beneficiary) for an agent.",
 		description:
 			"Saves a beneficiary's bank account details under an agent's profile so future fund transfers can reference them by name or ID. The API validates IFSC format; the actual account validity should be confirmed via penny-drop before a live transfer. Once registered, the recipient can be reused across multiple payouts without re-entering account details.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Onboarding salaried employees, saving vendor bank accounts, batch payout setups.",
@@ -4125,7 +4095,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate a bank account by sending a small test credit and confirming the account holder's name.",
 		description:
 			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet because it is a financial transaction.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Validating new vendor or employee bank accounts before live payouts, preventing misdirected fund transfers.",
@@ -4255,7 +4224,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Register a webhook endpoint to receive real-time payout transaction status updates.",
 		description:
 			"Registers a static HTTPS URL on your server that Eko will POST to whenever a payout transaction reaches a terminal state (Success, Fail, Refunded). The callback payload mirrors the Transaction Inquiry response — it includes `tid`, `tx_status`, `bank_ref_num`, `amount`, and party details. Use this instead of polling for NEFT transactions which may take minutes to confirm. Only static URL structures are supported; dynamic path parameters are not allowed.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Async NEFT payout reconciliation, real-time payment confirmation dashboards, automated refund triggers.",
@@ -4325,7 +4293,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate a recipient's UPI Virtual Payment Address and fetch the verified payee name before initiating a payout.",
 		description:
 			"Confirms that a UPI VPA (Virtual Payment Address / UPI ID) is active and returns the NPCI-verified recipient name and registered mobile number. Call this before every payout to eliminate wrong-payee failures, reduce failed transactions, and satisfy RBI beneficiary-confirmation requirements. The response also surfaces a fee quote for the pending transfer.",
-		category: "payment",
 		relevance: "H",
 		bestFor:
 			"Pre-payout beneficiary confirmation, bulk-payout pre-validation runs, and assisted-payment flows where an agent must confirm the payee before sending funds.",
@@ -4488,7 +4455,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Send an instant UPI payout to any VPA (UPI ID) — vendor payments, disbursements, refunds, or salary credits — with real-time settlement.",
 		description:
 			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call.",
-		category: "payment",
 		relevance: "H",
 		bestFor:
 			"Vendor payments, gig-worker payouts, insurance claim disbursements, refunds, salary credits, and any bulk or single instant UPI transfer workflow.",
@@ -4723,7 +4689,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the latest status and settlement details of a UPI payout using Eko's internal transaction ID (TID).",
 		description:
 			"Polls the current state of a UPI payout by Eko's tid. Use this to check the outcome of awaited transactions, confirm settlement, or retrieve the NPCI bank reference number (UTR) for reconciliation. Recommended polling interval: 10–30 seconds for awaited transactions. The transaction-reference path parameter accepts either an Eko TID or a client_ref_id prefixed with 'CR' (use the client_ref_id variant for the latter).",
-		category: "payment",
 		relevance: "H",
 		bestFor:
 			"Polling awaited UPI payouts, reconciling settled transactions, and retrieving UTR numbers for vendor remittance advice.",
@@ -4871,7 +4836,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the status and settlement details of a UPI payout using your own client_ref_id when Eko's TID is unavailable.",
 		description:
 			"Identical to the TID-based status inquiry but accepts your system's client_ref_id as the lookup key — useful when the payout API call timed out before a TID was returned. Prefix the client_ref_id with 'CR' in the path parameter (e.g. CRmy-ref-id-001). This prevents you from sending a duplicate payout before confirming the original transaction outcome.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Recovering transaction state after an API timeout or network drop, and for idempotency checks before retrying a payout.",
@@ -5001,7 +4965,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a permanent UPI QR code for a merchant/agent that can receive any amount.",
 		description:
 			"Creates a static UPI QR code linked to the agent's registered VPA (Virtual Payment Address) or the UPI ID. The same QR code can be reused for multiple transactions; the payer manually enters the amount. Suitable for fixed collection points such as shop counters and printed QR standees.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Retail stores, kiosks, and any merchant needing a reusable printed QR code.",
@@ -5124,7 +5087,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a one-time UPI QR code pre-loaded with a specific amount for a transaction.",
 		description:
 			"Creates a transaction-specific UPI QR code that embeds the exact payable amount. Each scan results in a fixed-amount payment, enabling automatic reconciliation without manual verification. Ideal for e-commerce checkout, restaurant billing, and event ticketing where the amount is known in advance.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"E-commerce checkout, restaurant POS, event ticketing — any flow where amount is fixed per transaction.",
@@ -5263,7 +5225,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Query the current status of a QR payment transaction by Eko TID or your client reference ID.",
 		description:
 			"Polls the real-time status of any transaction — including QR collection payments — using either the Eko transaction ID (tid) or your own client_ref_id. Use this when a webhook has not arrived within your expected window or to implement a status-check polling flow.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Reconciliation polling, fallback status check when webhook delivery is delayed.",
@@ -5383,7 +5344,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Incoming webhook Eko POSTs to your server when a QR payment transaction changes state.",
 		description:
 			"Eko calls this webhook on your registered callback URL whenever a QR collection (or other) transaction status changes — typically from Initiated to Success or Fail. Your endpoint must return HTTP 200 to acknowledge receipt. Supports DMT, Fund Transfer, QR, and CMS transaction types. Configure your callback URL in the Eko developer portal.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Real-time payment confirmation, instant order fulfilment trigger, reconciliation automation.",
@@ -5473,7 +5433,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Request an OTP to the sender's mobile number as the first step of a two-step refund flow.",
 		description:
 			"Initiates the refund OTP flow for a failed or disputed QR payment transaction. Eko sends a one-time password to the original payer's registered mobile number. The OTP and the otp_ref_id returned here are required as inputs to the Initiate Refund API. This two-step mechanism prevents unauthorized refund initiation.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Starting the refund process for a failed QR collection transaction.",
@@ -5559,7 +5518,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Complete a QR payment refund using the OTP received from the Get Refund OTP step.",
 		description:
 			"Second and final step of the QR payment refund flow. Submits the OTP (sent to the payer's mobile) along with the otp_ref_id from the previous step to authorize and execute the refund. On success, funds are returned to the payer's UPI account. The service_code must always be 80 (PayPoint) and state must be 1.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Processing customer refunds for failed or disputed QR collection transactions.",
@@ -5721,7 +5679,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Instant PAN validation with name and DOB match scores plus Aadhaar seeding status.",
 		description:
 			"PAN Lite performs a lightweight synchronous PAN verification. Supply the PAN number, holder name, and date of birth; the API returns match flags for name and DOB, the PAN activation status code, and whether the PAN is seeded (linked) with Aadhaar. Note: the name field in the response reflects the name you submitted, not the registered name on the PAN record — use PAN Advanced for the registered name.",
-		category: "verification",
 		relevance: "H",
 		bestFor: "Basic PAN status checks and quick KYC pre-screening",
 		method: "POST",
@@ -5887,7 +5844,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Rich PAN verification returning registered name, PAN type, gender, DOB, masked Aadhaar, address, email, and mobile.",
 		description:
 			"PAN Advanced performs a deeper KYC lookup against the PAN database. In addition to the match flags returned by PAN Lite, it surfaces the registered name, name on the PAN card, PAN type (Individual / Company / etc.), gender, date of birth, masked Aadhaar number, Aadhaar link status, and structured address. Email and mobile fields are populated at a ~5–10% fill rate due to data-source availability. Use this API when downstream workflows need authoritative identity attributes beyond a pass/fail match.",
-		category: "verification",
 		relevance: "H",
 		bestFor:
 			"KYC workflows needing richer identity attributes and verified registered name",
@@ -6128,7 +6084,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Async batch PAN verification — submit multiple PANs in one call and poll for results via the Bulk PAN Status API.",
 		description:
 			"Bulk PAN Verification accepts an array of PAN entries (each with a PAN number and optional name) in a single POST request and returns a reference_id for tracking. Because verification runs asynchronously, callers must subsequently poll the Bulk PAN Verification Status API with the returned reference_id to retrieve individual results. Suited for high-volume operations such as employee on-boarding, merchant KYC batches, or overnight reconciliation runs.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"High-volume PAN verification with async processing (employee on-boarding, batch KYC)",
@@ -6209,7 +6164,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Poll the result of a Bulk PAN Verification batch using the reference_id returned when the batch was submitted.",
 		description:
 			"Retrieves the per-PAN results for a batch previously submitted via the Bulk PAN Verification API. Because bulk verification runs asynchronously, callers poll this endpoint with the reference_id from the submit response until the batch finishes processing. The response returns a count and an array of entries, one per PAN, each carrying the validity, registered name, name-match score/result, Aadhaar-seeding status, and PAN status.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fetching individual PAN results after submitting a batch to the Bulk PAN Verification API.",
@@ -6388,7 +6342,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Initiate biometric-based Aadhaar eKYC for a DMT Fino sender using fingerprint data.",
 		description:
 			"Sends an OTP to the Aadhaar-linked mobile number of the sender using biometric (fingerprint) data captured via an approved device. Used in the Fino DMT onboarding flow for customers who authenticate via biometric rather than OTP. Requires integration with a UIDAI-certified biometric capture device.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"DMT Fino agent networks that use biometric devices to onboard senders and verify Aadhaar identity at the point of service.",
@@ -6471,7 +6424,6 @@ export const API_SPECS: ApiSpec[] = [
 		summary: "Verify the OTP to complete Aadhaar eKYC for a DMT Fino sender.",
 		description:
 			"Validates the OTP dispatched during DMT Fino eKYC initiation. On success, the sender's Aadhaar identity is confirmed and their DMT wallet profile is updated with verified KYC data. Must be called with the `otp_ref_id` and `kyc_request_id` from the eKYC initiation response.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Completing Aadhaar biometric eKYC verification in the DMT Fino sender onboarding flow.",
@@ -6605,12 +6557,11 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate a sender's Aadhaar number and trigger an OTP to the linked mobile for DMT Levin onboarding.",
 		description:
 			"Submits the sender's Aadhaar number via the DMT Levin channel to initiate OTP-based Aadhaar validation. The `otp_ref_id` from the sender's existing profile plus the Aadhaar number are required. Returns a new `otp_ref_id` for the validation session. Part of the Levin DMT sender onboarding flow.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"DMT Levin sender onboarding flows that require Aadhaar number validation as a step before completing identity verification.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-levin/aadhaar",
+		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp",
 		docsUrl: "https://developers.eko.in/reference/validate-aadhar-levin",
 		extraRequestParams: [
 			{
@@ -6695,12 +6646,11 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify the Aadhaar OTP for a DMT Levin sender to complete identity validation.",
 		description:
 			"Validates the OTP received on the sender's Aadhaar-linked mobile number in the DMT Levin flow. Use `intent_id: 20` for Aadhaar validation (as opposed to `intent_id: 19` for sender onboarding). On success, the sender's identity is confirmed and their DMT Levin wallet profile is updated.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Completing OTP-based Aadhaar validation in the DMT Levin sender onboarding flow.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-levin/otp/verify",
+		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/validate-otp-levin",
 		extraRequestParams: [
 			{
@@ -6830,7 +6780,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Submit sender's Aadhaar number for OTP-based validation in the PPI Levin wallet onboarding flow.",
 		description:
 			"Triggers Aadhaar OTP dispatch for a PPI Levin wallet sender. Requires a `wallet_token` and `wallet_id` from the preceding Verify Sender OTP step. Returns an `otp_ref_id` to be used in the PPI Levin Validate OTP call.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"PPI Levin wallet onboarding flows where sender Aadhaar must be validated as part of the KYC chain.",
@@ -6922,7 +6871,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify the Aadhaar OTP to complete identity validation in the PPI Levin wallet onboarding flow.",
 		description:
 			"Validates the OTP dispatched during the PPI Levin Aadhaar validation step. On success, the sender's Aadhaar identity is confirmed and their PPI Levin wallet profile is updated with verified KYC data. Wallet-level parameters `wallet_token` and `wallet_id` may be required.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Completing Aadhaar OTP verification in the PPI Levin wallet sender onboarding flow.",
@@ -7055,7 +7003,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a DigiLocker redirect URL to initiate consent-based Aadhaar document retrieval.",
 		description:
 			"Creates a one-time DigiLocker URL that redirects the customer to the DigiLocker portal for consent-based retrieval of Aadhaar (and other) documents. After the customer authorises access on DigiLocker, they are redirected back to the provided `redirect_url`. The `reference_id` returned is then used to fetch the verified document data via the Get DigiLocker Document API.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"KYC flows that use DigiLocker for government-issued document verification, avoiding manual document uploads.",
@@ -7152,7 +7099,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve verified Aadhaar details from DigiLocker after the customer completes the consent journey.",
 		description:
 			"Fetches the verified Aadhaar (or other government document) data from DigiLocker using the `reference_id` obtained from Create DigiLocker URL. Must be called after the customer has completed authorisation on DigiLocker and been redirected back. Returns structured identity data extracted from the verified document.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fetching verified identity details from DigiLocker after Aadhaar consent, for use in KYC records and onboarding.",
@@ -7368,7 +7314,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check whether a user has completed the DigiLocker consent and verification flow.",
 		description:
 			"Poll this endpoint after redirecting the user to the DigiLocker URL. Returns the user's consent status and basic identity details (name, DOB, gender, mobile) once the consent flow is complete. Use reference_id from the Create DigiLocker URL response.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Polling for consent completion before fetching the full document data.",
@@ -7513,7 +7458,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify a bank account by transferring ₹1 (penny drop) and retrieve the account holder name, account status, and branch details in real time.",
 		description:
 			"Performs a live penny-drop transaction of ₹1 to the specified bank account and returns the account holder name as registered with the bank, account status, IFSC details, and the UTR of the debit. Use this before payouts to prevent failures and fraud. The ₹1 is credited to the beneficiary — no refund occurs. Supports all IMPS-enabled banks in India.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Businesses that disburse funds and need to confirm both account existence and the registered account holder name before transferring money.",
@@ -7674,7 +7618,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Submit multiple bank accounts for penny-drop verification in a single API call; poll a status API for per-account results.",
 		description:
 			"Accepts an array of bank account + IFSC pairs and enqueues them for asynchronous penny-drop verification. Returns a bulk_reference_id immediately; use the Bulk Bank Account Verification Status API to retrieve per-account results once processing completes. Ideal for batch onboarding, payroll runs, and large-scale disbursement pipelines where sequential single-account calls would be too slow.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Platforms processing hundreds to thousands of bank account verifications in one go, where results can be retrieved asynchronously.",
@@ -7797,7 +7740,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Poll for per-account results of a Bulk Bank Account Verification batch using the bulk_reference_id returned at submit time.",
 		description:
 			"Companion to the Bulk Bank Account Verification API. Because the batch runs asynchronously, callers poll this endpoint with the bulk_reference_id from the submit response to retrieve per-account penny-drop results as they complete. The response returns an entries array, one object per submitted account, each carrying the account-holder name at bank, bank/branch/MICR details, UTR, name-match score/result, and account status.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fetching individual account results after submitting a batch to the Bulk Bank Account Verification API.",
@@ -7954,7 +7896,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify GSTIN details instantly — legal name, trade name, status, address, and filing metadata — for vendor onboarding and compliance checks.",
 		description:
 			"The GST Verification API validates a GSTIN against official government records and returns the full registration profile: legal and trade names, taxpayer type, constitution of business, nature of activities, registration and last-update dates, state and centre jurisdiction, and the principal place of address (both as a flat string and as structured address components). Designed for KYB, vendor/merchant onboarding, compliance due diligence, and high-volume B2B verification pipelines.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Vendor and merchant onboarding flows, KYB pipelines, B2B compliance checks, and any workflow that needs to confirm a business's GST registration status before issuing payouts or onboarding a counterparty.",
@@ -8318,7 +8259,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve all GSTINs linked to a given PAN — with their state and status — in a single API call.",
 		description:
 			"The GSTIN with PAN API accepts a PAN (Permanent Account Number) and returns a list of all GSTIN registrations associated with that PAN across every Indian state and union territory. Each entry in the list includes the GSTIN, its active/inactive status, and the state of registration. Ideal for identifying all GST registrations of a counterparty, detecting multi-state business presence, and de-duplicating vendor or merchant records during onboarding.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"KYB and compliance workflows that need to discover all GST registrations of a business from a single PAN — particularly useful for multi-state vendors, pan-India merchant networks, and supplier due diligence.",
@@ -8454,7 +8394,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate a UPI Virtual Payment Address (VPA) and retrieve the registered payee name and mobile number in real time.",
 		description:
 			"Confirms whether a UPI ID (VPA) is active and returns the verified recipient name and registered mobile number. Use this before initiating any UPI transfer to reduce wrong-payee failures and payment fraud.",
-		category: "verification",
 		relevance: "H",
 		bestFor:
 			"Pre-payment UPI ID validation, bulk payout verification, and assisted-payment flows where the agent must confirm the payee before sending funds.",
@@ -8606,7 +8545,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify driving license details in real time — holder name, DOB, address, validity, COV/badge class, and status.",
 		description:
 			"The Driving License Verification API validates a DL number against government records and returns structured identity and entitlement data including the holder's name, father/husband name, date of birth, address, license validity windows (transport and non-transport), class of vehicle (COV) details, and badge information. Ideal for KYC, driver onboarding, and compliance workflows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Businesses that onboard drivers, delivery agents, or any user whose identity needs to be confirmed against a government-issued driving license.",
@@ -8998,7 +8936,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify a vehicle's registration certificate (RC) in real time — owner details, chassis/engine numbers, insurance validity, blacklist status, permits, fitness, and financier info via the VAHAN national database.",
 		description:
 			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",
@@ -9663,7 +9600,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify employment history and employee identity by phone number via EPFO/UAN data.",
 		description:
 			"Returns a rich, nested profile linked to the employee's Universal Account Number (UAN): basic identity details (name, gender, DOB, Aadhaar link), full employment history per UAN (member ID, establishment, joining/exit dates, leave reason), additional PII (PAN, bank account, email), and a structured recent-employment block that includes EPFO filing health, employer setup date, ownership type, and monthly PF contribution records. Designed for pre-employment checks, lending underwriting, and HR compliance workflows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Organizations that need to confirm employment history, tenure, and PF filing status digitally — without manual document collection.",
@@ -10225,7 +10161,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Convert latitude and longitude coordinates into structured Indian address data including locality, city, state, PIN code, and country.",
 		description:
 			"The Reverse Geocoding API translates GPS coordinates into a human-readable, structured address. It is designed for address validation during onboarding, geo-compliance checks, field-agent location verification, and location-based fraud detection workflows. Pass a latitude/longitude pair and receive a normalised address broken down by locality, city, district, state, PIN code, and country — along with a confidence score.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Cross-checking customer-provided addresses against GPS-derived data for onboarding, KYC, and fraud prevention.",
@@ -10385,7 +10320,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate EPIC (Voter ID) card details in real time against government records — returns name, age, address, constituency, and polling station information.",
 		description:
 			"The Voter ID Verification API lets you verify an Electoral Photo Identity Card (EPIC) number against government electoral rolls. A single POST call returns the cardholder's full identity profile — name (English and regional language), date of birth, gender, guardian details, structured address, assembly and parliamentary constituency, and polling station — making it suitable for KYC, onboarding, and compliance workflows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Businesses that need to verify Indian voter identity documents (EPIC) as part of KYC, onboarding, or fraud-prevention pipelines.",
@@ -10687,7 +10621,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify Indian passport application details using passport file number and date of birth.",
 		description:
 			"The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth. Returns holder name, DOB, application type, and application received date — suitable for KYC, employee background verification, travel compliance, and fintech onboarding workflows. Supports Indian passports only; not an OCR or MRZ scan API.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Employee BGV, travel-platform KYC, fintech onboarding, and immigration-assistance workflows that need structured passport data from the government source.",
@@ -10827,7 +10760,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify Company Identification Numbers (CIN) against MCA records — returns company name, incorporation details, directors, and CIN status.",
 		description:
 			"The CIN Verification API lets you validate a Company Identification Number (CIN) against Ministry of Corporate Affairs records in real time. It returns the registered company name, registration number, incorporation date, CIN status (active / struck-off / dormant / under liquidation), company email, country of incorporation, and a full list of directors with their DIN, designation, address, and date of birth. Use it for KYB onboarding, vendor due diligence, lending workflows, and corporate compliance checks.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"KYB and corporate due-diligence workflows that need authoritative MCA data on a company before onboarding or credit decisioning.",
@@ -11033,7 +10965,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Geo-locate and risk-score an IP address in real time — detect proxies, VPNs, and assess fraud risk.",
 		description:
 			"Submit any IPv4 address to receive its geolocation (country, region, city), proxy/VPN classification, and dual risk scores (city-level and proxy-type). Use inline during transactions for fraud prevention and geo-compliance enforcement.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fintech, lending, e-commerce, and SaaS platforms that need real-time IP intelligence for fraud prevention and geo-compliance.",
@@ -11171,7 +11102,6 @@ export const API_SPECS: ApiSpec[] = [
 			"AI-powered name comparison trained on 100M+ Indian name records — returns a match score (0–1) and match category for automated KYC decisions.",
 		description:
 			"Name Match is an AI-powered name comparison API built for India's complex naming conventions. Trained on over 100 million Indian name records, it handles initials, abbreviations, phonetic and regional spelling variants, salutation patterns (S/O, D/O), subset matching, and name ordering variations — returning a numeric score and match category that let you set rule-based pass/fail thresholds.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Cross-document name validation — PAN vs Aadhaar, bank account holder vs GST trade name, and any KYC or KYB workflow that needs to tolerate Indian naming variations without manual review.",
@@ -11289,7 +11219,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check income tax return filing and compliance status for a PAN holder in real time — ideal for lending, credit assessment, and financial due-diligence workflows.",
 		description:
 			"The ITR Compliance Check API verifies whether a given PAN holder has filed income tax returns and returns their compliance status, ITR filing flag, and the relevant assessment year. Built on the Eko TOURAS network, it gives lenders, NBFCs, and compliance teams an instant signal of a borrower's or vendor's tax-filing behaviour without requiring manual document collection. A single PAN input is all that is needed — no document uploads or consent flows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Lending platforms, NBFCs, and compliance teams that need an instant, automated ITR filing signal for a PAN holder during credit assessment or onboarding.",
@@ -11466,7 +11395,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify Director Identification Numbers (DIN) against MCA records — returns director name, DIN status, designation, and associated company information.",
 		description:
 			"The DIN Verification API lets you validate a Director Identification Number (DIN) against Ministry of Corporate Affairs (MCA) records in real time. It returns the director's full name, current DIN status (Active / Deactivated / Surrendered), designation, and the associated company name. Use it for corporate KYB onboarding, director background checks, vendor due diligence, lending to corporate borrowers, and compliance workflows that require authoritative director-identity validation.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Corporate KYB and director due-diligence workflows that need real-time validation of a Director Identification Number against authoritative MCA records before onboarding or credit decisioning.",
@@ -11596,7 +11524,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch pending traffic challans for any vehicle using its registration number — challan number, offence, fine amount, date, status, and issuing authority returned in a single API call.",
 		description:
 			"Send a vehicle registration number to the E-Challan Verification API and receive a complete list of pending traffic violations from the national e-challan system (Parivahan). The response includes each challan's unique number, offence description, fine amount, date of violation, payment status, and issuing state/authority. Use it to automate fleet compliance checks, assess driver risk during onboarding, support motor insurance underwriting, or surface challan data in used-vehicle platforms.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fleet operators, logistics and delivery platforms, motor insurers, gig-worker onboarding platforms, and used-vehicle marketplaces that need automated, real-time challan status checks.",
@@ -11823,7 +11750,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify an email address in real time — confirm the domain has live mail infrastructure, detect disposable addresses, and retrieve domain age as a trust signal.",
 		description:
 			"Validates whether an email address is genuine and deliverable by checking MX (mail exchange) records for the domain. Returns domain age in days, the resolved MX record list, and flags for validity and disposability — giving you the signals needed to block fake signups, catch typos, and assess account trust during onboarding.",
-		category: "verification",
 		relevance: "H",
 		bestFor:
 			"User onboarding flows, registration fraud prevention, contact-database cleaning, and any scenario where an invalid or dummy email address would cause downstream failures or fraud.",
@@ -11991,7 +11917,6 @@ export const API_SPECS: ApiSpec[] = [
 		summary: "Verify FSSAI food license details and status in real time.",
 		description:
 			"Validates a Food Safety and Standards Authority of India (FSSAI) license number and returns the registered food business operator (FBO) details — name, address, license category, status, and expiry date. Use for food marketplace onboarding, delivery platform compliance, and food safety regulatory audits.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Food delivery and aggregator platforms, e-commerce marketplaces, and compliance teams that need to confirm a vendor or restaurant holds a valid, active FSSAI license before onboarding or order fulfilment.",
