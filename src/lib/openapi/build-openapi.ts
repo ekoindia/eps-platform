@@ -388,10 +388,18 @@ const buildTagging = (
 
 	for (const spec of specs) {
 		const productName = productNameFor(spec);
-		const list = byCategory.get(spec.category) ?? [];
+		// Group by the product's canonical category, not the per-spec category. A
+		// product maps to a single tag, and a tag must live in exactly one tag group;
+		// using spec.category would push one product (e.g. DMT, whose Aadhaar-eKYC
+		// specs are `verification` while the rest are `bc`) into two groups, rendering
+		// it twice in the Scalar sidebar. Fall back to spec.category for unknown
+		// products.
+		const category =
+			ACTIVE_PRODUCTS_MAP[spec.productId]?.category ?? spec.category;
+		const list = byCategory.get(category) ?? [];
 		if (!list.includes(productName)) {
 			list.push(productName);
-			byCategory.set(spec.category, list);
+			byCategory.set(category, list);
 		}
 		if (!tagDescription.has(productName)) {
 			tagDescription.set(

@@ -10,12 +10,13 @@
  * dynamically imported in the browser only — never from code that runs during
  * SSR/prerender. See `useTryIt`.
  */
-import "@scalar/api-client/style.css";
 import {
 	type ApiClientModal,
 	createApiClientModal,
 	type RoutePayload,
 } from "@scalar/api-client/modal";
+import "@scalar/api-client/style.css";
+import "./tryit-overrides.css";
 import { createWorkspaceStore } from "@scalar/workspace-store/client";
 import { createWorkspaceEventBus } from "@scalar/workspace-store/events";
 
@@ -47,6 +48,38 @@ const devAuthentication = () => {
 	};
 };
 
+/**
+ * Request sections to hide in the Try-it panel. Scalar gives these no config flag
+ * or stable attribute hook — they are identifiable only by their `<h2>` heading
+ * text — so we mark matching section blocks with `data-eko-hidden` and let
+ * `tryit-overrides.css` hide them. Robust to section order (some sections are
+ * conditional per operation) and to re-renders when switching operations.
+ */
+const HIDDEN_SECTION_LABELS = ["Cookies", "Headers"];
+
+const markHiddenSections = (root: HTMLElement): void => {
+	for (const block of root.querySelectorAll<HTMLElement>(".group\\/collapse")) {
+		const heading = block.querySelector("h2")?.textContent?.trim() ?? "";
+		if (HIDDEN_SECTION_LABELS.some((label) => heading.startsWith(label)))
+			block.dataset.ekoHidden = "";
+	}
+};
+
+/** Re-mark hidden sections on every modal DOM change (rAF-throttled). */
+const observeHiddenSections = (root: HTMLElement): void => {
+	let scheduled = false;
+	const observer = new MutationObserver(() => {
+		if (scheduled) return;
+		scheduled = true;
+		requestAnimationFrame(() => {
+			scheduled = false;
+			markHiddenSections(root);
+		});
+	});
+	observer.observe(root, { childList: true, subtree: true });
+	markHiddenSections(root);
+};
+
 let modalPromise: Promise<ApiClientModal> | undefined;
 
 const createModal = async (): Promise<ApiClientModal> => {
@@ -54,8 +87,9 @@ const createModal = async (): Promise<ApiClientModal> => {
 	// `scalar-app` is the client's style root; `dark-mode` activates Scalar's
 	// theme CSS variables (defined under `.light-mode` / `.dark-mode`). Without a
 	// mode class the variables are unset and every panel renders transparent.
-	el.className = "scalar-app dark-mode";
+	el.className = "scalar-app light-mode";
 	document.body.appendChild(el);
+	observeHiddenSections(el);
 
 	const workspaceStore = createWorkspaceStore();
 	const eventBus = createWorkspaceEventBus();
