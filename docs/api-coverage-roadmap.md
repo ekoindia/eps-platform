@@ -103,18 +103,25 @@ need the live path until the backend finishes migrating.
 
 New products: `user-management`, `customer-management` (confirm whether customer folds into user-management).
 
+Products `user-management` + `customer-management` added. Responses user-pasted.
+
 | Capability | Target slug | Method | Path | Product | Status |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| Get Agent Network | `get-agent-network` | GET | `/user/network/eps-agent` | `user-management` | ⬜ |
-| Onboard User (agent/merchant) | `onboard-user` | POST | _per reference_ | `user-management` | ⬜ |
-| Get User's Services | `get-user-services` | GET | _per reference_ | `user-management` | ⬜ |
-| Get All Services (codes) | `get-all-services` | GET | _per reference_ | `user-management` | ⬜ |
-| Deactivate Service for User | `deactivate-user-service` | PUT | _per reference_ | `user-management` | ⬜ |
-| Activate Service (generic) | `activate-user-service` | PUT | `/user/service/activate` | `user-management` | ⬜ — generic; reconcile vs existing AePS/BBPS activation specs (don't fabricate a common contract) |
-| Get Settlement Account / Wallet Balance | `get-wallet-balance` | GET | _per reference_ | `user-management` | ⬜ |
-| Onboard Customer (generic) | `onboard-customer` | POST | _per reference_ | `customer-management` | ⬜ |
-| Get Customer Information | `get-customer-info` | GET | _per reference_ | `customer-management` | ⬜ |
-| Verify Customer OTP | `verify-customer-otp` | POST | _per reference_ | `customer-management` | ⬜ |
+| Onboard User (agent/merchant) | `onboard-user` | POST | `/user/network/eps-agent` | `user-management` | ✅ |
+| Get User's Services | `get-user-services` | GET | `/user/account/services` | `user-management` | ✅ |
+| Get All Services (codes) | `get-all-services` | GET | `/tools/catalog/service-codes` | `user-management` | ✅ |
+| Get Settlement Account Balance | `get-wallet-balance` | GET | `/user/account/balance` | `user-management` | ✅ |
+| Activate Service for User | `activate-user-service` | PUT | `/admin/network/agent/{user_code}/service/{service_code}/activate` | `user-management` | ⛔ response pending |
+| Deactivate Service for User | `deactivate-user-service` | PUT | `/admin/network/agent/{user_code}/service/{service_code}/deactivate` | `user-management` | ⛔ response pending |
+| Onboard Customer | `onboard-customer` | POST | `/customer/account/{customer_id}` | `customer-management` | ✅ |
+| Get Customer Information | `get-customer-info` | GET | `/customer/profile/{customer_id}` | `customer-management` | ✅ |
+| Verify Customer OTP | `verify-customer-otp` | POST | `/customer/account/{customer_id}/otp/verify` | `customer-management` | ✅ |
+| Get Agent Network (list) | `get-agent-network` | GET | `/user/network/eps-agent` | `user-management` | ⛔ deferred — no distinct reference page (path documents only the POST Onboard User) |
+
+Open Phase-3 items: **Activate / Deactivate Service** await response samples (generic
+`/service/{service_code}/` paths captured; distinct from the AePS/BBPS service-specific activation
+specs, so no contract is fabricated). **Get Agent Network (GET)** has no separate reference page —
+confirm it exists (vs. being only the POST onboarding path) before authoring.
 
 ---
 

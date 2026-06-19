@@ -54,6 +54,22 @@ const API_PRODUCTS_DATA = [
 		shortDesc:
 			"DigiKhata prepaid wallet — sender onboarding, Aadhaar KYC, wallet load & transfers",
 	},
+	{
+		id: "user-management",
+		name: "User & Agent Management",
+		slug: "user-management-api",
+		category: "bc",
+		shortDesc:
+			"Onboard agents/retailers, manage their services, and check settlement balance",
+	},
+	{
+		id: "customer-management",
+		name: "Customer Management",
+		slug: "customer-management-api",
+		category: "bc",
+		shortDesc:
+			"Rail-agnostic customer onboarding, lookup, and OTP verification",
+	},
 
 	// Payment APIs
 	{
