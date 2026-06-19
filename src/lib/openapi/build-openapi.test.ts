@@ -73,19 +73,40 @@ describe("buildOpenApiDocument", () => {
 	});
 
 	it("records body-discriminated variants under x-eko-variants", () => {
-		const grouped = new Map<string, number>();
-		for (const s of specs)
-			grouped.set(
-				`${s.method} ${s.path}`,
-				(grouped.get(`${s.method} ${s.path}`) ?? 0) + 1,
-			);
-		const collided = [...grouped.entries()].filter(([, n]) => n > 1);
-		expect(collided.length).toBeGreaterThan(0); // fixture guard
+		// OpenAPI permits one operation per path+method, so specs sharing a
+		// path+method collapse onto a primary operation with the rest listed
+		// under x-eko-variants. Production specs now use distinct master
+		// nomenclature paths (one endpoint per operation), so we construct a
+		// deliberate collision here to exercise the grouping branch.
+		const base = specs[0];
+		const variantPath = "/internal/variant-collision-test";
+		const a: ApiSpec = {
+			...base,
+			id: "variant-a",
+			slug: "variant-a",
+			path: variantPath,
+		};
+		const b: ApiSpec = {
+			...base,
+			id: "variant-b",
+			slug: "variant-b",
+			name: "Variant B",
+			path: variantPath,
+		};
+		const variantDoc = buildOpenApiDocument([a, b]);
+		const op = (variantDoc.paths?.[variantPath] as Record<string, unknown>)[
+			base.method.toLowerCase()
+		] as Record<string, unknown>;
+		const variants = op["x-eko-variants"] as unknown[] | undefined;
+		expect(variants).toBeDefined();
+		expect(variants).toHaveLength(2);
+
+		// No production operation should carry a malformed single-entry list.
 		for (const { op } of allOperations()) {
-			const variants = (op as Record<string, unknown>)["x-eko-variants"] as
+			const prod = (op as Record<string, unknown>)["x-eko-variants"] as
 				| unknown[]
 				| undefined;
-			if (variants) expect(variants.length).toBeGreaterThan(1);
+			if (prod) expect(prod.length).toBeGreaterThan(1);
 		}
 	});
 
