@@ -264,26 +264,55 @@ export const SDK_INSTALL: Partial<Record<SampleLang, SdkInstall>> = {
 export const toSdkLang = (lang: SampleLang): SampleLang =>
 	lang === "php" ? "php" : "javascript";
 
+/** Wire param → constructor option for params set once on the client (see
+ * EpsClientOptions in packages/sdk-js, EpsClient ctor in packages/sdk-php).
+ * These are near-constant per developer, so the SDK snippets show them in the
+ * constructor and omit them from `call(...)`. */
+const CLIENT_LEVEL_PARAMS: Record<string, string> = {
+	initiator_id: "initiatorId",
+	user_code: "userCode",
+};
+
+const valueFor = (name: string, p?: ApiParam): unknown =>
+	p?.example != null ? p.example : `<${name}>`;
+
+/**
+ * Client-level defaults to render in the SDK constructor for this endpoint:
+ * any common param (initiator_id / user_code) that actually applies here as a
+ * query/body param (a `{path}` token is endpoint-specific, so it stays a call
+ * param). Returns `[wireName, optionName, exampleValue]` triples.
+ */
+const clientLevelDefaults = (
+	spec: ApiSpec,
+): { wire: string; option: string; value: unknown }[] =>
+	resolveRequestParams(spec)
+		.filter((p) => CLIENT_LEVEL_PARAMS[p.name] && p.in !== "path")
+		.map((p) => ({
+			wire: p.name,
+			option: CLIENT_LEVEL_PARAMS[p.name],
+			value: valueFor(p.name, p),
+		}));
+
 /**
  * The params object a developer passes to `client.call(slug, {...})`: every
  * `{path}` token plus the required query/body params, with example values
  * (falling back to a `<name>` placeholder). Header/auth params are excluded —
- * the SDK supplies those.
+ * the SDK supplies those — and client-level params (initiator_id / user_code)
+ * are excluded as query/body args since they're set once in the constructor.
  */
 const sdkCallParams = (spec: ApiSpec): Record<string, unknown> => {
 	const declared = resolveRequestParams(spec);
 	const byName = new Map(declared.map((p) => [p.name, p]));
 	const out: Record<string, unknown> = {};
-	const valueFor = (name: string, p?: ApiParam): unknown =>
-		p?.example != null ? p.example : `<${name}>`;
 	// Path tokens first (guaranteed present even if not separately declared).
 	for (const m of spec.path.matchAll(/\{(\w+)\}/g)) {
 		const name = m[1];
 		out[name] = valueFor(name, byName.get(name));
 	}
-	// Then required query/body params.
+	// Then required query/body params, minus the client-level ones (constructor).
 	for (const p of declared) {
 		if (p.in === "header" || out[p.name] !== undefined) continue;
+		if (CLIENT_LEVEL_PARAMS[p.name] && p.in !== "path") continue;
 		if (p.required || p.in === "path") out[p.name] = valueFor(p.name, p);
 	}
 	return out;
@@ -294,12 +323,18 @@ export const toNodeSdk = (spec: ApiSpec): string => {
 	const args = Object.keys(params).length
 		? `, ${JSON.stringify(params, null, 2)}`
 		: "";
+	// initiator_id / user_code are set once on the client and auto-injected into
+	// every call (override per call by passing them in the params object).
+	const defaults = clientLevelDefaults(spec).map(
+		(d) => `  ${d.option}: ${JSON.stringify(d.value)},`,
+	);
 	return [
 		'import { EpsClient } from "@ekoindia/eps-sdk";',
 		"",
 		"const client = new EpsClient({",
 		"  developerKey: process.env.EPS_DEVELOPER_KEY,",
 		"  accessKey: process.env.EPS_ACCESS_KEY,",
+		...defaults,
 		'  environment: "sandbox",',
 		"});",
 		"",
@@ -311,6 +346,10 @@ export const toNodeSdk = (spec: ApiSpec): string => {
 export const toPhpSdk = (spec: ApiSpec): string => {
 	const params = sdkCallParams(spec);
 	const args = Object.keys(params).length ? `, ${phpArray(params)}` : "";
+	// initiator_id / user_code are set once on the client and auto-injected.
+	const defaults = clientLevelDefaults(spec).map(
+		(d) => `    ${d.option}: ${phpArray(d.value)},`,
+	);
 	return [
 		"<?php",
 		"use Eko\\Eps\\EpsClient;",
@@ -318,6 +357,7 @@ export const toPhpSdk = (spec: ApiSpec): string => {
 		"$client = new EpsClient(",
 		"    developerKey: getenv('EPS_DEVELOPER_KEY'),",
 		"    accessKey: getenv('EPS_ACCESS_KEY'),",
+		...defaults,
 		"    environment: 'sandbox'",
 		");",
 		"",

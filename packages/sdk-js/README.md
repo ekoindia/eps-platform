@@ -28,12 +28,14 @@ import { EpsClient } from "@ekoindia/eps-sdk";
 const client = new EpsClient({
 	developerKey: process.env.EPS_DEVELOPER_KEY,
 	accessKey: process.env.EPS_ACCESS_KEY, // server-side secret
+	initiatorId: "9962981729", // your registered mobile; injected into every call
 	environment: "sandbox", // or "production"
 });
 
 // Call an endpoint by its slug; params fill path tokens and the request body.
+// initiator_id / user_code are supplied from the client config above.
 const result = await client.call("dmt-get-sender", {
-	mobile: "9999999999",
+	customer_id: "9123456789",
 });
 
 console.log(result);
@@ -41,14 +43,18 @@ console.log(result);
 
 `new EpsClient(options)` accepts:
 
-| Option         | Type                          | Notes                                       |
-| -------------- | ----------------------------- | ------------------------------------------- |
-| `developerKey` | `string`                      | Your EPS developer key.                     |
-| `accessKey`    | `string`                      | Server-side secret used for signing.        |
-| `environment`  | `"sandbox" \| "production"`   | Selects the base URL.                       |
-| `fetch`        | `typeof fetch` (optional)     | Inject a custom fetch implementation.       |
-| `now`          | `() => number` (optional)     | Inject a clock (returns timestamp in ms).   |
+| Option         | Type                          | Notes                                                          |
+| -------------- | ----------------------------- | -------------------------------------------------------------- |
+| `developerKey` | `string`                      | Your EPS developer key.                                        |
+| `accessKey`    | `string`                      | Server-side secret used for signing.                           |
+| `initiatorId`  | `string` (optional)           | Default `initiator_id` injected into every call.               |
+| `userCode`     | `string` (optional)           | Default `user_code` injected into every call.                  |
+| `environment`  | `"sandbox" \| "production"`   | Selects the base URL.                                          |
+| `fetch`        | `typeof fetch` (optional)     | Inject a custom fetch implementation.                          |
+| `now`          | `() => number` (optional)     | Inject a clock (returns timestamp in ms).                      |
 
 `await client.call(slug, params)` signs the request, substitutes any `{token}` path params from `params` (remaining keys become the JSON body), and returns the parsed JSON response.
+
+`initiatorId` / `userCode` are near-constant per developer, so set them once on the client. They are injected into every call as the wire params `initiator_id` / `user_code` (note the snake_case wire names) — override either for a single call by passing it in `params`.
 
 A standalone `signSecretKey(accessKey, timestamp)` helper is also exported if you need to sign requests yourself.

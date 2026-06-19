@@ -17,7 +17,7 @@ final class EpsClientTest extends TestCase
 
     public function testBuildsSignedHeaders(): void
     {
-        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $headers = $client->buildHeaders();
         $this->assertSame('dev123', $headers['developer_key']);
         $this->assertSame(self::GOLDEN, $headers['secret-key']);
@@ -26,7 +26,7 @@ final class EpsClientTest extends TestCase
 
     public function testGetPutsNonPathParamsInQueryStringNoBody(): void
     {
-        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $target = $client->resolveTarget('dmt-get-sender', [
             'customer_id' => '9123456789',
             'initiator_id' => '9962981729',
@@ -41,7 +41,7 @@ final class EpsClientTest extends TestCase
 
     public function testThrowsWhenRequiredParamMissing(): void
     {
-        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $this->expectException(\InvalidArgumentException::class);
         // dmt-get-sender requires initiator_id, user_code, customer_id.
         $this->expectExceptionMessageMatches('/Missing required params.*user_code.*customer_id/');
@@ -50,7 +50,7 @@ final class EpsClientTest extends TestCase
 
     public function testThrowsWhenRequiredParamNull(): void
     {
-        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/Missing required params.*user_code/');
         $client->resolveTarget('dmt-get-sender', [
@@ -62,7 +62,7 @@ final class EpsClientTest extends TestCase
 
     public function testAcceptsNumericStringForNumberParam(): void
     {
-        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         // bbps-get-operators: category is an optional `number` param.
         $target = $client->resolveTarget('bbps-get-operators', [
             'initiator_id' => '9962981729',
@@ -74,13 +74,57 @@ final class EpsClientTest extends TestCase
 
     public function testThrowsOnTypeMismatch(): void
     {
-        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/Invalid param types.*category \(expected number\)/');
         $client->resolveTarget('bbps-get-operators', [
             'initiator_id' => '9962981729',
             'user_code' => '20810200',
             'category' => 'abc',
+        ]);
+    }
+
+    public function testInjectsClientLevelInitiatorIdAndUserCode(): void
+    {
+        $client = new EpsClient(
+            'dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox',
+            initiatorId: '9962981729', userCode: '20810200',
+            now: fn () => 1700000000000
+        );
+        // No initiator_id / user_code passed per call — the client supplies them.
+        $target = $client->resolveTarget('dmt-get-sender', ['customer_id' => '9123456789']);
+        $this->assertStringContainsString('initiator_id=9962981729', $target['url']);
+        $this->assertStringContainsString('user_code=20810200', $target['url']);
+    }
+
+    public function testPerCallParamOverridesClientLevelDefault(): void
+    {
+        $client = new EpsClient(
+            'dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox',
+            initiatorId: '9962981729', userCode: '20810200',
+            now: fn () => 1700000000000
+        );
+        $target = $client->resolveTarget('dmt-get-sender', [
+            'customer_id' => '9123456789',
+            'initiator_id' => '1111111111',
+        ]);
+        $this->assertStringContainsString('initiator_id=1111111111', $target['url']);
+        $this->assertStringNotContainsString('initiator_id=9962981729', $target['url']);
+        $this->assertStringContainsString('user_code=20810200', $target['url']); // default still used
+    }
+
+    public function testExplicitNullPerCallClearsTheDefault(): void
+    {
+        $client = new EpsClient(
+            'dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox',
+            initiatorId: '9962981729', userCode: '20810200',
+            now: fn () => 1700000000000
+        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/Missing required params.*initiator_id/');
+        $client->resolveTarget('dmt-get-sender', [
+            'customer_id' => '9123456789',
+            'initiator_id' => null,
         ]);
     }
 }

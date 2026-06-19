@@ -29,19 +29,27 @@ use Eko\Eps\EpsClient;
 $client = new EpsClient(
     developerKey: getenv('EPS_DEVELOPER_KEY'),
     accessKey: getenv('EPS_ACCESS_KEY'), // server-side secret
+    initiatorId: '9962981729',           // your registered mobile; injected into every call
     environment: 'sandbox'               // or 'production'
 );
 
 // Call an endpoint by its slug; params fill path tokens and the request body.
+// initiator_id / user_code are supplied from the client config above.
 $result = $client->call('dmt-get-sender', [
-    'mobile' => '9999999999',
+    'customer_id' => '9123456789',
 ]);
 
 print_r($result);
 ```
 
-`new EpsClient($developerKey, $accessKey, $environment)` selects the base URL from the
-embedded catalog based on `$environment` (`'sandbox'` or `'production'`).
+`new EpsClient($developerKey, $accessKey, $environment, $initiatorId, $userCode)` selects
+the base URL from the embedded catalog based on `$environment` (`'sandbox'` or
+`'production'`). Use named arguments as shown above.
+
+`$initiatorId` / `$userCode` are near-constant per developer, so set them once on the
+client. They are injected into every call as the wire params `initiator_id` / `user_code`
+(note the snake_case wire names) — override either for a single call by passing it in
+`$params`.
 
 `$client->call($slug, $params)` signs the request, substitutes any `{token}` path params
 from `$params` (remaining keys become the JSON body), and returns the decoded JSON response

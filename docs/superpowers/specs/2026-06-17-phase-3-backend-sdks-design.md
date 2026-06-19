@@ -54,6 +54,13 @@ response envelope + error codes.
 
 - **Frontend guard:** where detectable (e.g. JS checks for a browser/`window`
   global), throw with a clear backend-only message; README states it plainly.
+- **Client-level common params:** `initiator_id` and `user_code` are
+  near-constant per developer, so the client constructor accepts optional
+  `initiatorId` / `userCode` (camelCase opts; snake_case on the wire). They are
+  merged into every `call()` *before* the spec-driven required-param check, so
+  validation still passes; a per-call `params` value overrides the default, and
+  an explicit `null` clears it (then fails required validation as expected). The
+  generated surface is unchanged — both stay `required` in the endpoint catalog.
 
 ### Generated surface (per language, from `eps.json`)
 

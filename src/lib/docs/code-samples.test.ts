@@ -137,13 +137,15 @@ describe("SDK snippets", () => {
 		expect(php).toContain("print_r($result)");
 	});
 
-	it("includes path tokens AND required query params for a GET endpoint", () => {
-		// The whole point of the SDK GET fix: query params must appear in the call.
+	it("includes path tokens in the call and client-level params in the ctor for a GET endpoint", () => {
 		const node = toNodeSdk(getSpec);
 		expect(node).toContain('await client.call("dmt-get-sender"');
-		expect(node).toContain('"customer_id"'); // path token
-		expect(node).toContain('"initiator_id"'); // required query/body param
-		expect(node).toContain('"user_code"');
+		expect(node).toContain('"customer_id"'); // path token → call param
+		// initiator_id / user_code are set once on the client, not per call.
+		expect(node).toContain('initiatorId: "9962981729"');
+		expect(node).toContain('userCode: "20810200"');
+		expect(node).not.toContain('"initiator_id"'); // not a call param anymore
+		expect(node).not.toContain('"user_code"');
 	});
 
 	it("sdkSampleFor dispatches php vs node", () => {

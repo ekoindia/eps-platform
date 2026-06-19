@@ -32,7 +32,7 @@ describe("EpsClient.call", () => {
 			user_code: "20810200",
 		});
 		const [url, init] = fetchMock.mock.calls[0];
-		expect(String(url)).toContain("/customer/profile");
+		expect(String(url)).toContain("/customer/payment/dmt-fino/sender");
 		const headers = init!.headers as Record<string, string>;
 		expect(headers["developer_key"]).toBe("dev123");
 		expect(headers["secret-key"]).toBe(GOLDEN);
@@ -58,7 +58,9 @@ describe("EpsClient.call", () => {
 		});
 		const [url, init] = fetchMock.mock.calls[0];
 		// path token filled, query params appended, no body sent
-		expect(String(url)).toContain("/customer/profile/9123456789");
+		expect(String(url)).toContain(
+			"/customer/payment/dmt-fino/sender/9123456789",
+		);
 		expect(String(url)).toContain("initiator_id=9962981729");
 		expect(String(url)).toContain("user_code=20810200");
 		expect(String(url)).not.toContain("{customer_id}");
@@ -89,6 +91,75 @@ describe("EpsClient.call", () => {
 			}),
 		).rejects.toThrow(/missing required params.*user_code/i);
 		// nothing is signed or sent when validation fails
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("injects client-level initiatorId/userCode into every call", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			initiatorId: "9962981729",
+			userCode: "20810200",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		// No initiator_id / user_code passed per call — the client supplies them.
+		await client.call("dmt-get-sender", { customer_id: "9123456789" });
+		const [url] = fetchMock.mock.calls[0];
+		expect(String(url)).toContain("initiator_id=9962981729");
+		expect(String(url)).toContain("user_code=20810200");
+	});
+
+	it("lets a per-call param override the client-level default", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			initiatorId: "9962981729",
+			userCode: "20810200",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await client.call("dmt-get-sender", {
+			customer_id: "9123456789",
+			initiator_id: "1111111111",
+		});
+		const [url] = fetchMock.mock.calls[0];
+		expect(String(url)).toContain("initiator_id=1111111111");
+		expect(String(url)).not.toContain("initiator_id=9962981729");
+		expect(String(url)).toContain("user_code=20810200"); // default still used
+	});
+
+	it("treats an explicit null per-call value as clearing the default", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			initiatorId: "9962981729",
+			userCode: "20810200",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		// Explicit null overrides the default → required-param validation fails.
+		await expect(
+			client.call("dmt-get-sender", {
+				customer_id: "9123456789",
+				initiator_id: null,
+			}),
+		).rejects.toThrow(/missing required params.*initiator_id/i);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 

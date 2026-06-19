@@ -11,6 +11,11 @@ final class EpsClient
         private string $developerKey,
         private string $accessKey,
         string $environment,
+        // Client-level defaults for the near-constant common params; injected
+        // into every call and overridable per call via the `params` array.
+        private ?string $initiatorId = null,
+        private ?string $userCode = null,
+        // Test-only clock injection (not part of the public surface).
         private $now = null
     ) {
         $this->now = $this->now ?? fn () => (int) round(microtime(true) * 1000);
@@ -74,6 +79,14 @@ final class EpsClient
         $endpoint = null;
         foreach ($this->surface['endpoints'] as $e) if ($e['slug'] === $slug) { $endpoint = $e; break; }
         if ($endpoint === null) throw new \InvalidArgumentException("Unknown endpoint slug: $slug");
+
+        // Client-level defaults (initiator_id, user_code) are injected first; an
+        // explicit per-call value overrides because $params wins the merge.
+        $defaults = array_filter([
+            'initiator_id' => $this->initiatorId,
+            'user_code' => $this->userCode,
+        ], fn ($v) => $v !== null);
+        $params = array_merge($defaults, $params);
 
         // Spec-driven guard: every requiredParam (from the API spec, baked into the
         // surface) must be present and non-null before we sign and send.

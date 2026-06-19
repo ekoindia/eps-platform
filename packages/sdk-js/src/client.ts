@@ -60,6 +60,13 @@ export interface EpsClientOptions {
 	developerKey: string;
 	accessKey: string;
 	environment: "sandbox" | "production";
+	/** Default `initiator_id` (registered mobile of the API user) injected into
+	 * every call. Near-constant per developer; override per call by passing
+	 * `initiator_id` in `params`. */
+	initiatorId?: string;
+	/** Default `user_code` (retailer/agent code) injected into every call.
+	 * Override per call by passing `user_code` in `params`. */
+	userCode?: string;
 	fetch?: typeof fetch;
 	now?: () => number;
 }
@@ -103,10 +110,22 @@ export class EpsClient {
 		params: Record<string, unknown> = {},
 	): Promise<T> {
 		const endpoint = this.endpoint(slug);
+		// Client-level defaults (initiator_id, user_code) are injected first; an
+		// explicit per-call value — including an explicit null to clear one —
+		// overrides because `...params` comes last.
+		const merged: Record<string, unknown> = {
+			...(this.opts.initiatorId !== undefined && {
+				initiator_id: this.opts.initiatorId,
+			}),
+			...(this.opts.userCode !== undefined && {
+				user_code: this.opts.userCode,
+			}),
+			...params,
+		};
 		// Spec-driven guard: every requiredParam (from the API spec, baked into the
 		// surface) must be present and non-null before we sign and send.
 		const missing = endpoint.requiredParams.filter(
-			(p) => params[p] === undefined || params[p] === null,
+			(p) => merged[p] === undefined || merged[p] === null,
 		);
 		if (missing.length)
 			throw new Error(
@@ -117,9 +136,9 @@ export class EpsClient {
 		const badTypes = endpoint.params
 			.filter(
 				(p) =>
-					params[p.name] !== undefined &&
-					params[p.name] !== null &&
-					!matchesType(p.type, params[p.name]),
+					merged[p.name] !== undefined &&
+					merged[p.name] !== null &&
+					!matchesType(p.type, merged[p.name]),
 			)
 			.map((p) => `${p.name} (expected ${p.type})`);
 		if (badTypes.length)
@@ -137,7 +156,7 @@ export class EpsClient {
 		// query string on GET, or the JSON body on every other method.
 		let path = endpoint.path;
 		const rest: Record<string, unknown> = {};
-		for (const [k, v] of Object.entries(params)) {
+		for (const [k, v] of Object.entries(merged)) {
 			const token = `{${k}}`;
 			if (path.includes(token))
 				path = path.replace(token, encodeURIComponent(String(v)));
