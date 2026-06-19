@@ -28,7 +28,7 @@ describe("EpsClient.call", () => {
 		});
 		await client.call("dmt-get-sender", {
 			customer_id: "9123456789",
-			initiator_id: "9876543210",
+			initiator_id: "9962981729",
 			user_code: "20810200",
 		});
 		const [url, init] = fetchMock.mock.calls[0];
@@ -53,13 +53,13 @@ describe("EpsClient.call", () => {
 		});
 		await client.call("dmt-get-sender", {
 			customer_id: "9123456789",
-			initiator_id: "9876543210",
+			initiator_id: "9962981729",
 			user_code: "20810200",
 		});
 		const [url, init] = fetchMock.mock.calls[0];
 		// path token filled, query params appended, no body sent
 		expect(String(url)).toContain("/customer/profile/9123456789");
-		expect(String(url)).toContain("initiator_id=9876543210");
+		expect(String(url)).toContain("initiator_id=9962981729");
 		expect(String(url)).toContain("user_code=20810200");
 		expect(String(url)).not.toContain("{customer_id}");
 		expect(init!.body).toBeUndefined();
@@ -79,12 +79,12 @@ describe("EpsClient.call", () => {
 		});
 		// dmt-get-sender requires initiator_id, user_code, customer_id.
 		await expect(
-			client.call("dmt-get-sender", { initiator_id: "9876543210" }),
+			client.call("dmt-get-sender", { initiator_id: "9962981729" }),
 		).rejects.toThrow(/missing required params.*user_code.*customer_id/i);
 		await expect(
 			client.call("dmt-get-sender", {
 				customer_id: "9123456789",
-				initiator_id: "9876543210",
+				initiator_id: "9962981729",
 				user_code: null,
 			}),
 		).rejects.toThrow(/missing required params.*user_code/i);
@@ -106,7 +106,7 @@ describe("EpsClient.call", () => {
 		});
 		// bbps-get-operators: category is an optional `number` param.
 		await client.call("bbps-get-operators", {
-			initiator_id: "9876543210",
+			initiator_id: "9962981729",
 			user_code: "20810200",
 			category: "5",
 		});
@@ -128,14 +128,14 @@ describe("EpsClient.call", () => {
 		});
 		await expect(
 			client.call("bbps-get-operators", {
-				initiator_id: "9876543210",
+				initiator_id: "9962981729",
 				user_code: "20810200",
 				category: "abc",
 			}),
 		).rejects.toThrow(/invalid param types.*category \(expected number\)/i);
 		await expect(
 			client.call("bbps-get-operators", {
-				initiator_id: "9876543210",
+				initiator_id: "9962981729",
 				user_code: "20810200",
 				category: {},
 			}),

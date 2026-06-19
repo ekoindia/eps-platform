@@ -29,11 +29,11 @@ final class EpsClientTest extends TestCase
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
         $target = $client->resolveTarget('dmt-get-sender', [
             'customer_id' => '9123456789',
-            'initiator_id' => '9876543210',
+            'initiator_id' => '9962981729',
             'user_code' => '20810200',
         ]);
         $this->assertStringContainsString('/customer/profile/9123456789', $target['url']);
-        $this->assertStringContainsString('initiator_id=9876543210', $target['url']);
+        $this->assertStringContainsString('initiator_id=9962981729', $target['url']);
         $this->assertStringContainsString('user_code=20810200', $target['url']);
         $this->assertStringNotContainsString('{customer_id}', $target['url']);
         $this->assertNull($target['body']);
@@ -45,7 +45,7 @@ final class EpsClientTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         // dmt-get-sender requires initiator_id, user_code, customer_id.
         $this->expectExceptionMessageMatches('/Missing required params.*user_code.*customer_id/');
-        $client->resolveTarget('dmt-get-sender', ['initiator_id' => '9876543210']);
+        $client->resolveTarget('dmt-get-sender', ['initiator_id' => '9962981729']);
     }
 
     public function testThrowsWhenRequiredParamNull(): void
@@ -55,7 +55,7 @@ final class EpsClientTest extends TestCase
         $this->expectExceptionMessageMatches('/Missing required params.*user_code/');
         $client->resolveTarget('dmt-get-sender', [
             'customer_id' => '9123456789',
-            'initiator_id' => '9876543210',
+            'initiator_id' => '9962981729',
             'user_code' => null,
         ]);
     }
@@ -65,7 +65,7 @@ final class EpsClientTest extends TestCase
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', fn () => 1700000000000);
         // bbps-get-operators: category is an optional `number` param.
         $target = $client->resolveTarget('bbps-get-operators', [
-            'initiator_id' => '9876543210',
+            'initiator_id' => '9962981729',
             'user_code' => '20810200',
             'category' => '5',
         ]);
@@ -78,7 +78,7 @@ final class EpsClientTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/Invalid param types.*category \(expected number\)/');
         $client->resolveTarget('bbps-get-operators', [
-            'initiator_id' => '9876543210',
+            'initiator_id' => '9962981729',
             'user_code' => '20810200',
             'category' => 'abc',
         ]);

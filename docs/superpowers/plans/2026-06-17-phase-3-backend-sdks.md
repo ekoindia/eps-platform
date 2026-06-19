@@ -256,7 +256,7 @@ describe("EpsClient.call", () => {
 			fetch: fetchMock as unknown as typeof fetch,
 			now: () => 1700000000000,
 		});
-		await client.call("dmt-get-sender", { initiator_id: "9876543210" });
+		await client.call("dmt-get-sender", { initiator_id: "9962981729" });
 		const [url, init] = fetchMock.mock.calls[0];
 		expect(String(url)).toContain("/customer/profile");
 		const headers = init.headers as Record<string, string>;

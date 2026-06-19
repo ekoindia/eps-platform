@@ -7698,7 +7698,7 @@ export const API_SPECS: ApiSpec[] = [
 						ifsc: "SBIN0001234",
 					},
 					{
-						bank_account: "9876543210",
+						bank_account: "9876543210123",
 						ifsc: "HDFC0005678",
 					},
 				],
