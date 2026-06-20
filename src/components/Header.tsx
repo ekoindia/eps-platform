@@ -1,7 +1,7 @@
 import { EkoLogo } from "@/components/EkoLogo";
 import { Button } from "@/components/ui/button";
-import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
@@ -400,7 +400,7 @@ export const Header = () => {
 								className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/15 hover:text-white cursor-pointer"
 							>
 								<Search className="w-4 h-4" />
-								<span>Search</span>
+								<span className="max-[1060px]:hidden">Search</span>
 								<span className="ml-1 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white/60">
 									<span className="kbd-os-mac">⌘K</span>
 									<span className="kbd-os-other">Ctrl K</span>

@@ -203,7 +203,7 @@ export const HeroSection = () => {
 							<Picture
 								src={pingoBot}
 								alt=""
-								className="hero-bot pointer-events-none absolute -top-12 -right-6 w-42 h-42 z-10 drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)] animate-float-bob select-none"
+								className="hero-bot pointer-events-none absolute -top-32 -right-6 w-42 h-42 z-10 drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)] animate-float-bob select-none"
 							/>
 
 							<CodeBlock

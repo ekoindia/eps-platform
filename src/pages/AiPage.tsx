@@ -3,11 +3,11 @@ import { AiHint } from "@/components/AiHint";
 import { CodeBlock } from "@/components/CodeBlock";
 import { InlineCode } from "@/components/docs/InlineCode";
 import { FadeIn } from "@/components/FadeIn";
-import { Picture } from "@/components/Picture";
 import { Footer } from "@/components/Footer";
 import { HarnessIcon } from "@/components/icons/HarnessIcon";
 import { McpIcon } from "@/components/icons/McpIcon";
 import type { IconComponent } from "@/components/icons/types";
+import { Picture } from "@/components/Picture";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -238,11 +238,11 @@ const AiPage = () => {
 		<div className="min-h-screen bg-background">
 			<Helmet>
 				<title>
-					AI-native fintech APIs — integrate EPS from any coding agent | Eko
+					AI-ready fintech APIs — integrate EPS from any coding agent | Eko
 				</title>
 				<meta
 					name="description"
-					content="EPS is AI-native: a local MCP server, drop-in context packs, signed SDKs and a machine-readable bundle so any AI coding agent can integrate Eko Platform Services — with correct HMAC auth, first try."
+					content="EPS is AI-ready: MCP server, drop-in context packs, signed SDKs and a machine-readable bundle so any AI coding agent can integrate Eko Platform Services — with correct HMAC auth, first try."
 				/>
 				<link rel="canonical" href={`${SITE_URL}/ai`} />
 				<link rel="alternate" type="text/markdown" href={`${SITE_URL}/ai.md`} />
@@ -285,7 +285,7 @@ const AiPage = () => {
 									style={{ animationDelay: "0ms" }}
 								>
 									<span className="h-1.5 w-1.5 rounded-full bg-eko-gold" />
-									AI-native platform
+									AI-ready platform
 								</span>
 
 								<h1

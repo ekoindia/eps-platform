@@ -44,7 +44,7 @@ export const GUIDES: GuideMeta[] = [
 	},
 	{
 		slug: "error-codes",
-		title: "Error Codes",
+		title: "Status & Error Codes",
 		order: 3,
 		summary:
 			"HTTP status codes, transaction status ids, and the response envelope.",
