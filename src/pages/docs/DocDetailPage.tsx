@@ -5,6 +5,7 @@ import { CodeSamples } from "@/components/docs/CodeSamples";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { EndpointDetail } from "@/components/docs/EndpointDetail";
 import { MdxGuide } from "@/components/docs/MdxGuide";
+import { PageActions } from "@/components/docs/PageActions";
 import { useTryIt } from "@/components/docs/useTryIt";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { SITE_URL } from "@/lib/config/site";
@@ -53,6 +54,12 @@ const DocDetailPage = () => {
 				<AiHint mdPath={mdPath} />
 
 				<DocsLayout>
+					<PageActions
+						mdPath={mdPath}
+						title={node.title}
+						kind="guide"
+						className="mb-6"
+					/>
 					<MdxGuide slug={node.slug} />
 				</DocsLayout>
 			</>
@@ -82,7 +89,25 @@ const DocDetailPage = () => {
 			</Helmet>
 			<AiHint mdPath={mdPath} />
 
-			<DocsLayout rightPane={<CodeSamples spec={spec} onTest={onTest} />}>
+			<DocsLayout
+				rightPane={
+					<>
+						<PageActions
+							mdPath={mdPath}
+							title={spec.name}
+							kind="endpoint"
+							className="mb-6 hidden lg:flex"
+						/>
+						<CodeSamples spec={spec} onTest={onTest} />
+					</>
+				}
+			>
+				<PageActions
+					mdPath={mdPath}
+					title={spec.name}
+					kind="endpoint"
+					className="mb-6 lg:hidden"
+				/>
 				<EndpointDetail spec={spec} />
 			</DocsLayout>
 		</>
