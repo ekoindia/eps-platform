@@ -308,6 +308,22 @@ const buildProductChildren = (
 	);
 };
 
+/**
+ * Provider›group›api nav nodes for a single product, built from `specs`
+ * (defaulting to the product's documented specs). `-status` pollers are
+ * dropped; leaves whose slug has no docs page degrade to plain text when the
+ * caller resolves links via `docHrefForSlug`. Used by the product markdown
+ * twin to enumerate every endpoint in the product's real hierarchy.
+ */
+export const productNavNodes = (
+	productId: string,
+	specs: ApiSpec[] = documentedSpecsForProduct(productId),
+): NavNode[] =>
+	buildProductChildren(
+		productId,
+		specs.filter((s) => s.productId === productId && !isStatusSpec(s)),
+	);
+
 /** Build the left-nav tree: Guides first, then API categories → products →
  * (optional providers → optional purpose-groups) → endpoints. */
 export const buildNavTree = (): DocsNav => {

@@ -7,6 +7,7 @@
  */
 import { SITE_URL } from "@/lib/config/site";
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
+import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import type {
 	ApiParam,
 	ApiSpec,
@@ -81,6 +82,7 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 	const bodyParams = requestParams.filter((p) => p.in === "body");
 	const sampleRequest = buildSampleRequest(spec);
 	const hasSampleRequest = Object.keys(sampleRequest).length > 0;
+	const product = ACTIVE_PRODUCTS_MAP[spec.productId];
 
 	return joinBlocks([
 		frontMatter({
@@ -93,6 +95,8 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 		`\`${spec.method} ${DEFAULT_BASE_URL}${spec.path}\``,
 		spec.summary,
 		spec.description,
+		product &&
+			`> View product & pricing details: ${link(product.name, `${SITE_URL}${productHref(product.slug)}.md`, "md")}`,
 		pathParams.length ? h2("Path parameters") : undefined,
 		pathParams.length ? paramTable(pathParams) : undefined,
 		queryParams.length ? h2("Query parameters") : undefined,

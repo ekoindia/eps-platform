@@ -117,6 +117,13 @@ describe("renderProductMarkdown", () => {
 		expect(md).toContain("https://eps.eko.in/docs/pan-lite");
 	});
 
+	it("lists the product's endpoints, linking the markdown twins", () => {
+		expect(md).toContain("## API Endpoints");
+		expect(md).toContain(
+			"- [PAN Lite](https://eps.eko.in/docs/pan-lite.md) (POST)",
+		);
+	});
+
 	it("renders the 'What Can You Verify' section from imp fields", () => {
 		expect(md).toContain("## What Can You Verify With PAN Verification API?");
 		expect(md).toContain("- **Pan Status** — PAN validity status");
@@ -135,5 +142,61 @@ describe("renderProductMarkdown", () => {
 		expect(md).toContain(
 			"(https://eps.eko.in/products/aadhaar-verification-api.md)",
 		);
+	});
+});
+
+describe("renderProductMarkdown — nested API endpoint list", () => {
+	const base = {
+		productId: "pan" as const,
+		summary: "x",
+		path: "/x",
+		docsUrl: "",
+		extraRequestParams: [],
+		responseData: [],
+		sampleSuccessResponse: {},
+	};
+	const nestedSpecs: ApiSpec[] = [
+		{
+			...base,
+			id: "fino-sender",
+			name: "Get Sender",
+			slug: "fino-sender",
+			provider: "Fino",
+			group: "Sender",
+			method: "GET",
+		},
+		{
+			...base,
+			id: "fino-onboard",
+			name: "Onboard Sender",
+			slug: "fino-onboard",
+			provider: "Fino",
+			group: "Sender",
+			method: "POST",
+		},
+		{
+			...base,
+			id: "fino-status",
+			name: "Status Poller",
+			slug: "fino-status",
+			provider: "Fino",
+			group: "Sender",
+			method: "GET",
+		},
+	];
+	const md = renderProductMarkdown(product, page, [], nestedSpecs);
+
+	it("nests provider › group › endpoint with indentation", () => {
+		expect(md).toContain("## API Endpoints");
+		expect(md).toContain("- **Fino**");
+		expect(md).toContain("  - **Sender**");
+		// leaves indented two levels under the group; unknown slugs are plain text
+		expect(md).toContain("    - Get Sender (GET)");
+		expect(md).toContain("    - Onboard Sender (POST)");
+	});
+
+	it("drops -status poller specs from the endpoint list", () => {
+		// (still shown as an API Preview, but never as an endpoint-list leaf)
+		expect(md).not.toContain("Status Poller (GET)");
 	});
 });
