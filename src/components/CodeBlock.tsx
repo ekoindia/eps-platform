@@ -1,10 +1,11 @@
 import { codeBlockTheme } from "@/lib/code-block-theme";
 import { cn } from "@/lib/utils";
 import { Highlight } from "prism-react-renderer";
-import { useCallback, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
 interface CodeBlockProps {
-	code: string;
+	/** Source to syntax-highlight. Ignored when `children` is provided. */
+	code?: string;
 	language?: string;
 	fileName?: string;
 	className?: string;
@@ -14,6 +15,14 @@ interface CodeBlockProps {
 	 * tilt; safe over any background.
 	 */
 	variant?: "glass" | "solid";
+	/** Hide the line-number gutter (prism path only). */
+	hideLineNumbers?: boolean;
+	/**
+	 * Custom body content. When provided, it replaces the prism highlighter +
+	 * gutter entirely — use for non-code terminal UIs (e.g. a TUI session). The
+	 * glass/solid shell, header, glare, and tilt are unchanged.
+	 */
+	children?: ReactNode;
 }
 
 /** Max degrees the card rotates toward the cursor on either axis. */
@@ -25,10 +34,13 @@ export const CodeBlock = ({
 	fileName,
 	className,
 	variant = "solid",
+	hideLineNumbers = false,
+	children,
 }: CodeBlockProps) => {
-	const src = code.replace(/\n$/, "");
+	const src = (code ?? "").replace(/\n$/, "");
 	const lines = src.split("\n");
 	const isGlass = variant === "glass";
+	const hasCustomBody = children != null;
 
 	const cardRef = useRef<HTMLDivElement>(null);
 	const rafRef = useRef<number | null>(null);
@@ -122,29 +134,37 @@ export const CodeBlock = ({
 			{/* Specular glare — glass only; sits above glass, below code text. */}
 			{isGlass && <div className="code-glare" aria-hidden />}
 
-			<div className="code-body docs-scroll relative flex overflow-x-auto text-[0.8rem] lg:text-[0.85rem]">
-				<div
-					aria-hidden
-					className="code-gutter sticky left-0 z-10 select-none py-4 pl-3 pr-3 text-right font-mono text-[0.7rem] leading-[1.5rem] text-white/30"
-				>
-					{lines.map((_, i) => (
-						<div key={i}>{i + 1}</div>
-					))}
+			{hasCustomBody ? (
+				<div className="code-body docs-scroll relative overflow-x-auto py-4 pl-4 pr-4 lg:pr-6 font-mono text-[0.8rem] leading-[1.5rem] lg:text-[0.85rem]">
+					{children}
 				</div>
-				<Highlight theme={codeBlockTheme} code={src} language={language}>
-					{({ tokens, getLineProps, getTokenProps }) => (
-						<pre className="min-w-0 flex-1 py-4 pl-4 pr-4 lg:pr-6 font-mono leading-[1.5rem] whitespace-pre">
-							{tokens.map((line, i) => (
-								<div key={i} {...getLineProps({ line })}>
-									{line.map((token, key) => (
-										<span key={key} {...getTokenProps({ token })} />
-									))}
-								</div>
+			) : (
+				<div className="code-body docs-scroll relative flex overflow-x-auto text-[0.8rem] lg:text-[0.85rem]">
+					{!hideLineNumbers && (
+						<div
+							aria-hidden
+							className="code-gutter sticky left-0 z-10 select-none py-4 pl-3 pr-3 text-right font-mono text-[0.7rem] leading-[1.5rem] text-white/30"
+						>
+							{lines.map((_, i) => (
+								<div key={i}>{i + 1}</div>
 							))}
-						</pre>
+						</div>
 					)}
-				</Highlight>
-			</div>
+					<Highlight theme={codeBlockTheme} code={src} language={language}>
+						{({ tokens, getLineProps, getTokenProps }) => (
+							<pre className="min-w-0 flex-1 py-4 pl-4 pr-4 lg:pr-6 font-mono leading-[1.5rem] whitespace-pre">
+								{tokens.map((line, i) => (
+									<div key={i} {...getLineProps({ line })}>
+										{line.map((token, key) => (
+											<span key={key} {...getTokenProps({ token })} />
+										))}
+									</div>
+								))}
+							</pre>
+						)}
+					</Highlight>
+				</div>
+			)}
 		</div>
 	);
 };

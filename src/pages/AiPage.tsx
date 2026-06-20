@@ -1,6 +1,9 @@
+import typingRobot from "@/assets/pingo/8bit/robot_10_typing.png";
 import { AiHint } from "@/components/AiHint";
+import { CodeBlock } from "@/components/CodeBlock";
 import { InlineCode } from "@/components/docs/InlineCode";
 import { FadeIn } from "@/components/FadeIn";
+import { Picture } from "@/components/Picture";
 import { Footer } from "@/components/Footer";
 import { HarnessIcon } from "@/components/icons/HarnessIcon";
 import { McpIcon } from "@/components/icons/McpIcon";
@@ -23,7 +26,6 @@ import {
 	PlugZap,
 	ServerCog,
 	ShieldCheck,
-	Terminal,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
@@ -32,6 +34,90 @@ import { CommandBlock, ConfigBlock, CopyButton } from "./ai/CommandBlock";
 
 const MCP_CMD = EPS_MCP_CMD;
 const INSTALL_MATRIX = buildInstallMatrix();
+
+/**
+ * Anthropic "clay" — the official Claude brand mark color. Deliberate raw-hex
+ * exception (not in the EPS palette): this paints the Claude Code logo glyph and
+ * tool-call markers in {@link AiCodeSession} so the harness reads as authentic.
+ */
+const CLAUDE_CLAY = "#D97757";
+
+/**
+ * Decorative hero visual: a simplified Claude Code ("AI Code") TUI session that
+ * drives the EPS MCP to write KYC code automatically. Rendered inside the glass
+ * {@link CodeBlock} shell. Purely illustrative, so the whole block is aria-hidden.
+ */
+const AiCodeSession = () => (
+	<div aria-hidden className="leading-[1.5rem] text-white/70">
+		{/* Banner: brand-clay glyph + model label */}
+		<div className="flex items-start gap-3">
+			<pre
+				className="leading-[1.15] whitespace-pre"
+				style={{ color: CLAUDE_CLAY }}
+			>
+				{" ▐▛███▜▌\n▝▜█████▛▘\n  ▘▘ ▝▝  "}
+			</pre>
+			<div className="pt-0.5">
+				<div className="font-semibold text-white">AI Code</div>
+				<div className="text-white/40">Opus 4.8 with high effort</div>
+			</div>
+		</div>
+
+		{/* Prompt */}
+		<div className="my-4 border-y border-white/10 py-2">
+			<span className="text-eko-gold">❯</span>{" "}
+			<span className="text-white/80">
+				Add PAN verification to my onboarding form
+			</span>
+		</div>
+
+		{/* Session transcript */}
+		<div className="space-y-2.5">
+			<p>
+				<span style={{ color: CLAUDE_CLAY }}>●</span> I'll wire this up with the
+				EPS MCP.
+			</p>
+
+			<p className="pt-1">
+				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
+				<span className="text-white/40">eps · search(</span>
+				<span className="text-amber-200">"verify PAN"</span>
+				<span className="text-white/40">)</span>
+			</p>
+			<p className="pl-4 text-emerald-300/80">
+				<span className="text-white/40">⎿</span> pan-lite, pan-plus,
+				aadhaar-pan-link
+			</p>
+
+			<p className="pt-1">
+				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
+				<span className="text-white/40">eps · get_signing_snippet(</span>
+				<span className="text-amber-200">"node"</span>
+				<span className="text-white/40">)</span>
+			</p>
+			<p className="pl-4 text-emerald-300/80">
+				<span className="text-white/40">⎿</span> HMAC-SHA256 signing ready
+			</p>
+
+			<p className="pt-1">
+				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
+				<span className="text-white/40">Writing</span>{" "}
+				<span className="text-white/80">src/kyc/verify-pan.ts</span>{" "}
+				<span className="text-white/40">…</span>
+			</p>
+			<p className="pl-4 text-white/40">
+				<span className="text-white/40">⎿</span> Updated 1 file{" "}
+				<span className="text-emerald-300/80">(+34 -0)</span>
+			</p>
+
+			<p className="pt-2 text-emerald-300/90">
+				<span className="text-white/40">✓</span> PAN verification wired — signed
+				EPS call, name-match on
+				<span className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse-soft bg-eko-gold" />
+			</p>
+		</div>
+	</div>
+);
 
 /* ----------------------------- Differentiators ---------------------------- */
 
@@ -245,52 +331,25 @@ const AiPage = () => {
 								</div>
 							</div>
 
-							{/* Right: stylized terminal / agent card (decorative) */}
+							{/* Right: stylized Claude Code session driving the EPS MCP (decorative) */}
 							<FadeIn delay={200} className="relative animate-scale-in">
 								<div className="absolute -inset-4 rounded-3xl bg-eko-gold/10 blur-3xl" />
-								<div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#06222e] shadow-2xl">
-									<div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-										<span className="h-3 w-3 rounded-full bg-red-400/80" />
-										<span className="h-3 w-3 rounded-full bg-amber-400/80" />
-										<span className="h-3 w-3 rounded-full bg-green-400/80" />
-										<span className="ml-3 inline-flex items-center gap-1.5 text-xs font-medium text-white/40">
-											<Terminal className="h-3.5 w-3.5" />
-											agent · eps-context-mcp
-										</span>
-									</div>
-									<div className="space-y-2.5 p-5 font-mono text-[13px] leading-relaxed">
-										<p className="text-white/40">
-											<span className="text-eko-gold">→</span> connect{" "}
-											<span className="text-white/80">eps-context-mcp</span>
-										</p>
-										<p className="text-emerald-300/80">
-											<span className="text-white/40">←</span> 87 tools ·
-											signing scheme loaded
-										</p>
-										<p className="pt-1 text-white/40">
-											<span className="text-eko-gold">→</span> search(
-											<span className="text-amber-200">"send money"</span>)
-										</p>
-										<p className="text-white/70">
-											<span className="text-white/40">←</span> dmt-send-money,
-											dmt-add-recipient, dmt-get-sender …
-										</p>
-										<p className="pt-1 text-white/40">
-											<span className="text-eko-gold">→</span>{" "}
-											get_signing_snippet(
-											<span className="text-amber-200">"php"</span>)
-										</p>
-										<p className="text-white/70">
-											<span className="text-white/40">←</span> hash_hmac(
-											<span className="text-amber-200">'sha256'</span>, …,
-											$secretKey)
-										</p>
-										<p className="pt-1 text-emerald-300/90">
-											<span className="text-white/40">✓</span> integration ready
-											<span className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse-soft bg-eko-gold" />
-										</p>
-									</div>
-								</div>
+
+								{/* Floating 8-bit mascot perched on the terminal corner — decorative */}
+								<Picture
+									src={typingRobot}
+									alt=""
+									className="pointer-events-none absolute -right-5 -top-16 z-20 w-28 animate-float-bob select-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] [image-rendering:pixelated] sm:w-32"
+								/>
+
+								<CodeBlock
+									variant="glass"
+									hideLineNumbers
+									fileName="claude"
+									className="relative"
+								>
+									<AiCodeSession />
+								</CodeBlock>
 							</FadeIn>
 						</div>
 					</div>
