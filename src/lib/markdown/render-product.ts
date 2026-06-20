@@ -2,12 +2,13 @@ import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import {
-	primaryDocsUrl,
+	primaryDocSlug,
 	specsToPreviews,
 	specsToVerifiableFields,
 	verifyHeading,
 } from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
+import { docsHref } from "@/lib/data/docs-registry";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	bulletList,
@@ -49,7 +50,7 @@ export function renderProductMarkdown(
 	specs: ApiSpec[] = getSpecsForProduct(product.id),
 ): string {
 	const canonical = `${SITE_URL}${productHref(product.slug)}`;
-	const docsUrl = primaryDocsUrl(specs);
+	const docSlug = primaryDocSlug(specs);
 
 	const blocks: (string | false | undefined)[] = [
 		frontMatter({
@@ -172,8 +173,11 @@ export function renderProductMarkdown(
 		}
 	}
 
-	if (docsUrl) {
-		blocks.push(h2("API Documentation"), `- [Full developer docs](${docsUrl})`);
+	if (docSlug) {
+		blocks.push(
+			h2("API Documentation"),
+			`- [Full developer docs](${SITE_URL}${docsHref(docSlug)})`,
+		);
 	}
 
 	if (relatedProducts.length > 0) {

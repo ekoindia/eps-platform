@@ -91,7 +91,12 @@ export interface ApiSpec {
 	method: "GET" | "POST" | "PUT" | "DELETE";
 	/** Relative path; full URL = environment baseUrl + path. */
 	path: string;
-	/** Developer-portal reference link. */
+	/**
+	 * @deprecated External legacy developer-portal reference link. No longer
+	 * used by product pages, markdown or the agent bundle — these now link to the
+	 * internal `/docs/<slug>` page derived from `slug`. Kept temporarily for
+	 * old-vs-new comparison; slated for removal (see docs-migration follow-up).
+	 */
 	docsUrl: string;
 	/** API reference URL from the source website (actual provider of the API) */
 	sourceDoc?: string;

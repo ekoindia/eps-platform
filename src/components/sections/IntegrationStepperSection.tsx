@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { FadeIn } from "@/components/FadeIn";
 import type { IntegrationStep } from "@/components/ProductPageLayout";
@@ -7,7 +8,8 @@ import { Button } from "@/components/ui/button";
 
 interface IntegrationStepperSectionProps {
 	integrationSteps: IntegrationStep[];
-	docsUrl?: string;
+	/** Internal `/docs/<slug>` href for the product's primary API. */
+	docHref?: string;
 }
 
 /**
@@ -20,7 +22,7 @@ interface IntegrationStepperSectionProps {
  */
 export const IntegrationStepperSection = ({
 	integrationSteps,
-	docsUrl,
+	docHref,
 }: IntegrationStepperSectionProps) => {
 	return (
 		<SectionContainer className="bg-eko-navy">
@@ -72,13 +74,13 @@ export const IntegrationStepperSection = ({
 				})}
 			</ol>
 
-			{docsUrl && (
+			{docHref && (
 				<div className="text-center mt-10">
 					<Button variant="gold" size="lg" asChild>
-						<a href={docsUrl} target="_blank" rel="noopener noreferrer">
+						<Link to={docHref}>
 							View Documentation
 							<ArrowRight className="w-4 h-4" />
-						</a>
+						</Link>
 					</Button>
 				</div>
 			)}

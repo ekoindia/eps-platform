@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_DEFAULT_VERSION } from "@/lib/config/site";
 import { ApiProductRelevance } from "@/lib/data/api-products";
+import { docHrefForSlug } from "@/lib/data/docs-registry";
 import { cn, normalizeApiLabel } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CheckCircle, Clock, Download, Send } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export interface ApiField {
 	label: string;
@@ -32,7 +34,8 @@ export interface ApiPreviewItem {
 	inputs?: ApiField[];
 	outputs?: ApiField[];
 	comingSoon?: boolean;
-	docsUrl?: string;
+	/** Endpoint slug → internal `/docs/<slug>` for this API's CTA buttons. */
+	slug?: string;
 	relevance?: ApiProductRelevance;
 	bestFor?: string;
 	sampleJson?: ApiSampleJson;
@@ -44,7 +47,8 @@ interface ApiInputOutputPreviewProps {
 	inputs?: ApiField[];
 	outputs?: ApiField[];
 	comingSoon?: boolean;
-	docsUrl?: string;
+	/** Fallback internal `/docs` href when a preview item has no own page. */
+	fallbackDocHref?: string;
 	previews?: ApiPreviewItem[];
 	activeApiName?: string;
 	sampleJson?: ApiSampleJson;
@@ -225,7 +229,7 @@ export const ApiInputOutputPreview = ({
 	inputs,
 	outputs,
 	comingSoon = false,
-	docsUrl,
+	fallbackDocHref,
 	previews,
 	activeApiName,
 	sampleJson,
@@ -242,7 +246,7 @@ export const ApiInputOutputPreview = ({
 					inputs={p.inputs}
 					outputs={p.outputs}
 					comingSoon={p.comingSoon}
-					docsUrl={p.docsUrl || docsUrl}
+					docHref={docHrefForSlug(p.slug) ?? fallbackDocHref}
 					sectionTitle={apiName}
 					sampleJson={p.sampleJson}
 				/>
@@ -253,7 +257,7 @@ export const ApiInputOutputPreview = ({
 			<MultiApiPreview
 				previews={previews}
 				sectionTitle={apiName}
-				fallbackDocsUrl={docsUrl}
+				fallbackDocHref={fallbackDocHref}
 				activeApiName={activeApiName}
 			/>
 		);
@@ -266,7 +270,7 @@ export const ApiInputOutputPreview = ({
 			inputs={inputs}
 			outputs={outputs}
 			comingSoon={comingSoon}
-			docsUrl={docsUrl}
+			docHref={fallbackDocHref}
 			sectionTitle={apiName}
 			sampleJson={sampleJson}
 		/>
@@ -278,18 +282,18 @@ export const ApiInputOutputPreview = ({
  * MARK: Multi-APIs
  * @param {Array} previews - List of API preview items to display, each with its own name, description, inputs, outputs, and docs URL.
  * @param {string} sectionTitle - The main title for the section, e.g. "KYC Verification". Individual APIs will be listed under this umbrella.
- * @param {string} fallbackDocsUrl - Optional URL to use for "View Sample Response" and "Try in Demo" buttons if an individual API doesn't provide its own docsUrl.
+ * @param {string} fallbackDocHref - Optional internal `/docs` href for the "View Sample Response" and "Try in Demo" buttons if an individual API has no own docs page.
  * @returns {JSX.Element} The rendered component.
  */
 const MultiApiPreview = ({
 	previews,
 	sectionTitle,
-	fallbackDocsUrl,
+	fallbackDocHref,
 	activeApiName,
 }: {
 	previews: ApiPreviewItem[];
 	sectionTitle: string;
-	fallbackDocsUrl?: string;
+	fallbackDocHref?: string;
 	activeApiName?: string;
 }) => {
 	const [activeApi, setActiveApi] = useState(previews[0].apiName);
@@ -345,7 +349,7 @@ const MultiApiPreview = ({
 					key={activePreview.apiName}
 					inputs={activePreview.inputs}
 					outputs={activePreview.outputs}
-					docsUrl={activePreview.docsUrl || fallbackDocsUrl}
+					docHref={docHrefForSlug(activePreview.slug) ?? fallbackDocHref}
 					endpoint={activePreview.endpoint}
 					sampleJson={activePreview.sampleJson}
 				/>
@@ -362,7 +366,7 @@ const MultiApiPreview = ({
  * @param {Array} inputs - List of input fields to display in the request preview, each with a label, value, and optional icon.
  * @param {Array} outputs - List of output fields to display in the response preview, each with a label, value, and optional icon.
  * @param {boolean} comingSoon - If true, shows a "Coming Soon" placeholder instead of the preview content.
- * @param {string} docsUrl - Optional URL for the "View Sample Response" and "Try in Demo" buttons. If not provided, buttons won't be shown.
+ * @param {string} docHref - Optional internal `/docs` href for the "View Sample Response" and "Try in Demo" buttons. If not provided, buttons won't be shown.
  * @param {string} sectionTitle - The main title for the section, e.g. "GST Verification". Displayed above the preview content.
  * @returns {JSX.Element} The rendered component.
  */
@@ -372,7 +376,7 @@ const SingleApiPreview = ({
 	inputs,
 	outputs,
 	comingSoon = false,
-	docsUrl,
+	docHref,
 	sectionTitle,
 	sampleJson,
 }: {
@@ -381,7 +385,7 @@ const SingleApiPreview = ({
 	inputs?: ApiField[];
 	outputs?: ApiField[];
 	comingSoon?: boolean;
-	docsUrl?: string;
+	docHref?: string;
 	sectionTitle: string;
 	sampleJson?: ApiSampleJson;
 }) => {
@@ -402,7 +406,7 @@ const SingleApiPreview = ({
 			<PreviewContent
 				inputs={inputs}
 				outputs={outputs}
-				docsUrl={docsUrl}
+				docHref={docHref}
 				sampleJson={sampleJson}
 			/>
 		</SectionContainer>
@@ -414,20 +418,20 @@ const SingleApiPreview = ({
  * MARK: Content
  * @param {Array} inputs - List of input fields to display in the request preview, each with a label, value, and optional icon.
  * @param {Array} outputs - List of output fields to display in the response preview, each with a label, value, and optional icon.
- * @param {string} docsUrl - Optional URL for the "View Sample Response" and "Try in Demo" buttons. If not provided, buttons won't be shown.
+ * @param {string} docHref - Optional internal `/docs` href for the "View Sample Response" and "Try in Demo" buttons. If not provided, buttons won't be shown.
  * @param {string} endpoint - Optional API endpoint to display in the request card header. E.g. "/verify". If not provided, the endpoint is not shown.
  * @returns {JSX.Element} The rendered component.
  */
 const PreviewContent = ({
 	inputs,
 	outputs,
-	docsUrl,
+	docHref,
 	endpoint,
 	sampleJson,
 }: {
 	inputs?: ApiField[];
 	outputs?: ApiField[];
-	docsUrl?: string;
+	docHref?: string;
 	endpoint?: string;
 	sampleJson?: ApiSampleJson;
 }) => {
@@ -561,19 +565,19 @@ const PreviewContent = ({
 			</Tabs>
 
 			{/* CTA Row */}
-			{docsUrl && (
+			{docHref && (
 				<div className="flex flex-wrap justify-center gap-4 mt-8">
 					<Button variant="outline" asChild>
-						<a href={docsUrl} target="_blank" rel="noopener noreferrer">
+						<Link to={docHref}>
 							View Sample Response
 							<ArrowRight className="w-4 h-4" />
-						</a>
+						</Link>
 					</Button>
 					<Button variant="gold" asChild>
-						<a href={docsUrl} target="_blank" rel="noopener noreferrer">
+						<Link to={docHref}>
 							Try in Demo
 							<ArrowRight className="w-4 h-4" />
-						</a>
+						</Link>
 					</Button>
 				</div>
 			)}

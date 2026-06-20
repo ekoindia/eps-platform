@@ -158,6 +158,15 @@ export const getAllDocNodes = (): DocNode[] => DOC_NODES;
 export const getDocBySlug = (slug: string): DocNode | undefined =>
 	DOC_NODE_MAP.get(slug);
 
+/**
+ * Site-relative `/docs/<slug>` href, but only when a docs page actually exists
+ * for that slug. Returns `undefined` otherwise (e.g. `-status` or inactive-
+ * product specs that are excluded from the docs tree) so callers never link to
+ * a page that would 404.
+ */
+export const docHrefForSlug = (slug?: string): string | undefined =>
+	slug && getDocBySlug(slug) ? docsHref(slug) : undefined;
+
 // ---------------------------------------------------------------------------
 // Nav tree — Guides group, then category → product → endpoints
 // ---------------------------------------------------------------------------

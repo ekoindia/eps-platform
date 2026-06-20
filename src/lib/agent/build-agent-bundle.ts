@@ -6,17 +6,11 @@
  * unit-tests cleanly and produces byte-stable output for a given spec set.
  */
 import { API_DEFAULT_VERSION, SITE_URL } from "@/lib/config/site";
-import {
-	API_AUTH_DOCS_URL,
-	API_AUTH_INFO,
-	API_ENVIRONMENTS,
-} from "@/lib/data/api-auth";
-import {
-	ALL_ERROR_CODES,
-	API_ERROR_CODES_DOCS_URL,
-} from "@/lib/data/api-error-codes";
+import { API_AUTH_INFO, API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
+import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	buildSampleRequest,
@@ -74,7 +68,7 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	...indexEntry(spec),
 	description: spec.description,
 	bestFor: spec.bestFor,
-	docsUrl: spec.docsUrl,
+	docsUrl: `${SITE_URL}${docHrefForSlug(spec.slug) ?? docsHref()}`,
 	financial: spec.financial,
 	headers: resolveHeaders(),
 	requestParams: resolveRequestParams(spec),
@@ -89,14 +83,14 @@ const buildTopics = (): AgentTopics => ({
 		id: "auth",
 		backendOnly: true,
 		warning: BACKEND_ONLY_WARNING,
-		docsUrl: API_AUTH_DOCS_URL,
+		docsUrl: `${SITE_URL}${docsHref("how-auth-works")}`,
 		keys: API_AUTH_INFO.keys,
 		headers: resolveHeaders(),
 		secretKeyGeneration: [...API_AUTH_INFO.secretKeyGeneration],
 	},
 	errors: {
 		id: "errors",
-		docsUrl: API_ERROR_CODES_DOCS_URL,
+		docsUrl: `${SITE_URL}${docsHref("error-codes")}`,
 		codes: ALL_ERROR_CODES,
 	},
 	pricing: {

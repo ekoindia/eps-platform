@@ -73,7 +73,8 @@ export interface ProductPageLayoutProps {
 	keyBenefits?: string[];
 	integrationSteps: IntegrationStep[];
 	faqs: FAQ[];
-	docsUrl?: string;
+	/** Internal `/docs/<slug>` href for the product's primary API. */
+	docHref?: string;
 	category: "payment" | "verification" | "platform";
 	useCases?: string[];
 	whoShouldUse?: string[];
@@ -98,12 +99,12 @@ export interface ProductPageLayoutProps {
 
 /**
  * Marketing/content fields authored in `api-product-pages.ts`. Technical API
- * data (`docsUrl`, `inputOutputPreview(s)`) is intentionally excluded — it now
+ * data (`docHref`, `inputOutputPreview(s)`) is intentionally excluded — it now
  * lives in `api-specs.ts` and is injected by the route via spec resolvers.
  */
 export type ProductPageContent = Omit<
 	ProductPageLayoutProps,
-	| "docsUrl"
+	| "docHref"
 	| "inputOutputPreview"
 	| "inputOutputPreviews"
 	| "verifiableFields"
@@ -142,7 +143,7 @@ export const ProductPageLayout = ({
 	keyBenefits,
 	integrationSteps,
 	faqs,
-	docsUrl,
+	docHref,
 	category,
 	useCases,
 	whoShouldUse,
@@ -246,15 +247,13 @@ export const ProductPageLayout = ({
 											Get Sandbox Access <ArrowRight className="w-4 h-4" />
 										</span>
 									</Button>
-									{docsUrl && (
-										<a
-											href={docsUrl}
-											target="_blank"
-											rel="noopener noreferrer"
+									{docHref && (
+										<Link
+											to={docHref}
 											className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium transition-colors"
 										>
 											View Documentation
-										</a>
+										</Link>
 									)}
 								</div>
 								{hasPricing && startingRate !== undefined && (
@@ -456,7 +455,7 @@ export const ProductPageLayout = ({
 								<ApiInputOutputPreview
 									apiName={title}
 									previews={inputOutputPreviews}
-									docsUrl={docsUrl}
+									fallbackDocHref={docHref}
 									activeApiName={selectedApiName ?? undefined}
 								/>
 							) : (
@@ -466,7 +465,7 @@ export const ProductPageLayout = ({
 										inputs={inputOutputPreview.inputs}
 										outputs={inputOutputPreview.outputs}
 										comingSoon={inputOutputPreview.comingSoon}
-										docsUrl={docsUrl}
+										fallbackDocHref={docHref}
 										sampleJson={inputOutputPreview.sampleJson}
 									/>
 								)
@@ -724,7 +723,7 @@ export const ProductPageLayout = ({
 				{/* Interactive Integration Stepper */}
 				<IntegrationStepperSection
 					integrationSteps={integrationSteps}
-					docsUrl={docsUrl}
+					docHref={docHref}
 				/>
 
 				{/* FAQ Section */}

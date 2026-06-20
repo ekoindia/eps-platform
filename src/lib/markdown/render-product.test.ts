@@ -114,7 +114,7 @@ describe("renderProductMarkdown", () => {
 		expect(md).toContain("## FAQs");
 		expect(md).toContain("### Is it real-time?");
 		expect(md).toContain("## API Documentation");
-		expect(md).toContain("https://developers.eko.in/docs/pan");
+		expect(md).toContain("https://eps.eko.in/docs/pan-lite");
 	});
 
 	it("renders the 'What Can You Verify' section from imp fields", () => {

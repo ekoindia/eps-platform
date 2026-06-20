@@ -13,7 +13,8 @@ import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP, resolvePackApi } from "@/lib/data/solutions";
 import { openZohoChat } from "@/lib/zoho-chat";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { docsHref } from "@/lib/data/docs-registry";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FadeIn } from "@/components/FadeIn";
@@ -83,13 +84,9 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
 									</span>
 								</Button>
 								<Button variant="hero-outline" size="lg" asChild>
-									<a
-										href="https://developers.eko.in"
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										View Documentation <ExternalLink className="w-4 h-4" />
-									</a>
+									<Link to={docsHref()}>
+										View Documentation <ArrowRight className="w-4 h-4" />
+									</Link>
 								</Button>
 							</div>
 						</FadeIn>
