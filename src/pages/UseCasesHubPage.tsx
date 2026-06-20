@@ -234,11 +234,7 @@ const UseCasesHubPage = () => {
 									Talk to Our Solutions Team
 								</Button>
 								<Button variant="outline" size="lg" asChild>
-									<a
-										href="https://developers.eko.in"
-										target="_blank"
-										rel="noopener noreferrer"
-									>
+									<a href="/docs">
 										Explore APIs <ArrowRight className="w-4 h-4" />
 									</a>
 								</Button>

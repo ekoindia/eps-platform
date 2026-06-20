@@ -5,13 +5,13 @@
  * defined ONCE here and referenced by every {@link ApiSpec} (via the resolvers
  * in `api-specs-common.ts`) instead of being duplicated per endpoint.
  *
- * Source: https://developers.eko.in/docs/auth
+ * Source: https://eps.eko.in/docs/how-auth-works
  */
 import { API_DEFAULT_VERSION } from "@/lib/config/site";
 import type { ApiParam } from "./api-specs-common";
 
 /** Portal docs page describing the auth flow in full. */
-export const API_AUTH_DOCS_URL = "https://developers.eko.in/docs/auth";
+export const API_AUTH_DOCS_URL = "/docs/how-auth-works";
 
 /** API path version (cf. the `/ekoapi/<version>` URL segment). */
 export const API_VERSION = API_DEFAULT_VERSION;

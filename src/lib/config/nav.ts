@@ -24,6 +24,6 @@ export const navLinks: NavLink[] = [
 	{ label: "Use Cases", href: "/use-cases", dropdownKey: "useCases" },
 	{ label: "Pricing", href: "/pricing" },
 	{ label: "AI Agents", href: "/ai" },
-	{ label: "Developers", href: "https://developers.eko.in", external: true },
+	{ label: "Developers", href: "/docs" },
 	{ label: "Company", dropdownKey: "company" },
 ];
