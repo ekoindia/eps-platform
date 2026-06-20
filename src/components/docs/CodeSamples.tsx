@@ -1,3 +1,4 @@
+import { LangIcon } from "@/components/icons/LangIcon";
 import { EPS_MCP_CMD } from "@/lib/config/site";
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
@@ -67,7 +68,7 @@ const TabButton = ({
 		type="button"
 		onClick={onClick}
 		className={cn(
-			"cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+			"inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
 			active
 				? "bg-[var(--rp-tabact)] text-[var(--rp-fg)]"
 				: "text-[var(--rp-fg3)] hover:text-[var(--rp-fg)]",
@@ -213,6 +214,7 @@ export const CodeSamples = ({
 									active={lang === l.id}
 									onClick={() => setLang(l.id)}
 								>
+									<LangIcon id={l.id} className="h-3.5 w-3.5 shrink-0" />
 									{l.label}
 								</TabButton>
 							))}
@@ -242,6 +244,7 @@ export const CodeSamples = ({
 									active={sdkLang === l.id}
 									onClick={() => setLang(l.id)}
 								>
+									<LangIcon id={l.id} className="h-3.5 w-3.5 shrink-0" />
 									{l.label}
 								</TabButton>
 							))}

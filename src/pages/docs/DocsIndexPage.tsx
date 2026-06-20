@@ -1,6 +1,7 @@
 import { AiHint } from "@/components/AiHint";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { DocsLayout } from "@/components/docs/DocsLayout";
+import { LangIcon } from "@/components/icons/LangIcon";
 import { McpIcon } from "@/components/icons/McpIcon";
 import { Button } from "@/components/ui/button";
 import { EPS_MCP_CMD, SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
@@ -117,7 +118,7 @@ const Pill = ({
 		onClick={onClick}
 		aria-pressed={active}
 		className={cn(
-			"cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+			"inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
 			active
 				? "bg-eko-gold/15 text-foreground"
 				: "text-muted-foreground hover:text-foreground",
@@ -141,12 +142,12 @@ const PathCard = ({
 	active: boolean;
 	onClick: () => void;
 }) => (
-	<a
-		href="#start"
+	<button
+		type="button"
 		onClick={onClick}
-		aria-current={active ? "true" : undefined}
+		aria-pressed={active}
 		className={cn(
-			"group flex cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
+			"group flex w-full cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
 			active
 				? "border-eko-gold bg-eko-gold/5"
 				: "border-border/60 hover:border-eko-gold hover:bg-muted/40",
@@ -159,7 +160,7 @@ const PathCard = ({
 			{active ? "Selected" : "Choose"}
 			<ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
 		</span>
-	</a>
+	</button>
 );
 
 /**
@@ -285,6 +286,7 @@ const DocsIndexPage = () => {
 										active={(mode === "sdk" ? sdkLang : lang) === l.id}
 										onClick={() => setLang(l.id)}
 									>
+										<LangIcon id={l.id} className="h-4 w-4 shrink-0" />
 										{l.label}
 									</Pill>
 								))}
