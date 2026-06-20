@@ -5,13 +5,13 @@
  * defined ONCE here and referenced by every {@link ApiSpec} (via the resolvers
  * in `api-specs-common.ts`) instead of being duplicated per endpoint.
  *
- * Source: https://developers.eko.in/docs/auth
+ * Source: https://eps.eko.in/docs/how-auth-works
  */
 import { API_DEFAULT_VERSION } from "@/lib/config/site";
 import type { ApiParam } from "./api-specs-common";
 
 /** Portal docs page describing the auth flow in full. */
-export const API_AUTH_DOCS_URL = "https://developers.eko.in/docs/auth";
+export const API_AUTH_DOCS_URL = "/docs/how-auth-works";
 
 /** API path version (cf. the `/ekoapi/<version>` URL segment). */
 export const API_VERSION = API_DEFAULT_VERSION;
@@ -33,12 +33,12 @@ export const API_ENVIRONMENTS: Record<
 > = {
 	sandbox: {
 		label: "UAT / Sandbox",
-		baseUrl: `https://staging.eko.in:25004/ekoapi/${API_VERSION}`,
+		baseUrl: `https://staging.eko.in/ekoapi/${API_VERSION}`,
 		note: "Self-serve credentials available immediately on signup.",
 	},
 	production: {
 		label: "Production",
-		baseUrl: `https://api.eko.in/ekoapi/${API_VERSION}`,
+		baseUrl: `https://api.eko.in/ekoicici/${API_VERSION}`,
 		note: "Credentials issued after organizational KYC at https://connect.eko.in.",
 	},
 };
@@ -84,19 +84,6 @@ export const AUTH_HEADERS: ApiParam[] = [
 	},
 ];
 
-/** Financial (money-debit) APIs additionally require a request hash. */
-export const FINANCIAL_AUTH_HEADERS: ApiParam[] = [
-	...AUTH_HEADERS,
-	{
-		name: "request_hash",
-		in: "header",
-		type: "string",
-		required: true,
-		description:
-			"base64(HMAC-SHA256(concatenated-params, base64(access_key))). Required only for money-debit transactions; parameter order varies per API — see API docs.",
-	},
-];
-
 // ---------------------------------------------------------------------------
 // Structured auth notes — enough to render a portal "Authentication" page
 // ---------------------------------------------------------------------------
@@ -112,7 +99,7 @@ export const API_AUTH_INFO = {
 		{
 			name: "Access Key",
 			description:
-				"Core secret shared via email and kept server-side only. Never exposed in requests; used to compute secret-key and request_hash.",
+				"Core secret shared via email and kept server-side only. Never exposed in requests; used to compute the secret-key.",
 		},
 		{
 			name: "Developer Key",
@@ -126,14 +113,4 @@ export const API_AUTH_INFO = {
 		"Compute HMAC-SHA256 of the timestamp using the base64-encoded key.",
 		"Base64-encode the resulting signature — this is the secret-key.",
 	],
-	requestHash: {
-		whenRequired: "Only for financial (money-debit) transactions.",
-		steps: [
-			"Concatenate the API-specific parameters in the documented order.",
-			"Base64-encode the access_key.",
-			"Compute HMAC-SHA256 of the concatenated string with the encoded key.",
-			"Base64-encode the result — this is the request_hash.",
-		],
-		note: "The parameter sequence varies per API; refer to each endpoint's docs.",
-	},
 } as const;

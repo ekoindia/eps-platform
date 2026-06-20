@@ -2,12 +2,18 @@ import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import {
-	primaryDocsUrl,
+	primaryDocSlug,
 	specsToPreviews,
 	specsToVerifiableFields,
 	verifyHeading,
 } from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
+import {
+	docHrefForSlug,
+	docsHref,
+	type NavNode,
+	productNavNodes,
+} from "@/lib/data/docs-registry";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	bulletList,
@@ -19,9 +25,30 @@ import {
 	h3,
 	indexPageNotice,
 	joinBlocks,
+	link,
 	markdownTable,
 	renderSteps,
 } from "./shared";
+
+/** Render a product's documented endpoints as an indented bullet list that
+ * mirrors the docs nav hierarchy: provider › group › endpoint. Branches are
+ * bold labels; leaves link to the endpoint markdown twin (plain text when the
+ * slug has no docs page). */
+const renderApiTree = (nodes: NavNode[], depth = 0): string[] =>
+	nodes.flatMap((node) => {
+		const indent = "  ".repeat(depth);
+		if (node.type === "leaf") {
+			const href = docHrefForSlug(node.slug);
+			const label = href
+				? link(node.title, `${SITE_URL}${href}.md`, "md")
+				: node.title;
+			return [`${indent}- ${label} (${node.method})`];
+		}
+		return [
+			`${indent}- **${node.label}**`,
+			...renderApiTree(node.children, depth + 1),
+		];
+	});
 
 export interface ProductPageSeoShape {
 	title: string;
@@ -49,7 +76,7 @@ export function renderProductMarkdown(
 	specs: ApiSpec[] = getSpecsForProduct(product.id),
 ): string {
 	const canonical = `${SITE_URL}${productHref(product.slug)}`;
-	const docsUrl = primaryDocsUrl(specs);
+	const docSlug = primaryDocSlug(specs);
 
 	const blocks: (string | false | undefined)[] = [
 		frontMatter({
@@ -172,8 +199,16 @@ export function renderProductMarkdown(
 		}
 	}
 
-	if (docsUrl) {
-		blocks.push(h2("API Documentation"), `- [Full developer docs](${docsUrl})`);
+	const apiTree = renderApiTree(productNavNodes(product.id, specs));
+	if (apiTree.length > 0) {
+		blocks.push(h2("API Endpoints"), apiTree.join("\n"));
+	}
+
+	if (docSlug) {
+		blocks.push(
+			h2("API Documentation"),
+			`- [Full developer docs](${SITE_URL}${docsHref(docSlug)})`,
+		);
 	}
 
 	if (relatedProducts.length > 0) {

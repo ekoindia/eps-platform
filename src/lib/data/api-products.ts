@@ -1,11 +1,14 @@
 export type ApiProductRelevance = "H" | "M" | "L";
 
+/** The three product categories — the single source of truth for categories. */
+export type ApiProductCategory = "bc" | "payment" | "verification";
+
 export interface ApiProductRef {
 	id: string;
 	name: string;
 	shortName?: string;
 	slug: string;
-	category: "bc" | "payment" | "verification";
+	category: ApiProductCategory;
 	shortDesc: string;
 	/** When true, the product page is completely hidden from the website */
 	disabled?: boolean;
@@ -37,16 +40,46 @@ const API_PRODUCTS_DATA = [
 		shortDesc: "Aadhaar-enabled biometric cash withdrawal & transfer",
 	},
 	{
-		// TODO: FIX
-		id: "ppi-levin",
-		name: "PPI Transactions (Levin)",
-		slug: "ppi-levin-api",
+		id: "ppi",
+		name: "PPI Wallet",
+		shortName: "PPI",
+		slug: "ppi-api",
 		category: "bc",
-		shortDesc: "Prepaid Instrument (PPI) wallet management and transactions",
-		disabled: true,
+		shortDesc:
+			"Prepaid (PPI) wallets — sender onboarding, Aadhaar KYC, wallet load & bank transfers (Levin & DigiKhata)",
+	},
+	{
+		id: "user-management",
+		name: "User & Agent Management",
+		slug: "user-management-api",
+		category: "bc",
+		shortDesc:
+			"Onboard agents/retailers, manage their services, and check settlement balance",
+	},
+	{
+		id: "customer-management",
+		name: "Customer Management",
+		slug: "customer-management-api",
+		category: "bc",
+		shortDesc:
+			"Rail-agnostic customer onboarding, lookup, and OTP verification",
 	},
 
 	// Payment APIs
+	{
+		id: "transactions",
+		name: "Transactions & Refunds",
+		slug: "transactions-api",
+		category: "payment",
+		shortDesc: "Transaction status inquiry and OTP-based refunds",
+	},
+	{
+		id: "utilities",
+		name: "Utility & Helper APIs",
+		slug: "utilities-api",
+		category: "payment",
+		shortDesc: "Bank/IFSC lookup and generic mobile OTP helpers",
+	},
 	{
 		id: "bbps",
 		name: "Bharat Bill Payment System (BBPS)",

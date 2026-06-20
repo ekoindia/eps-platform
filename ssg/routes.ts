@@ -4,7 +4,9 @@
  * This is the single source of truth for which routes get pre-rendered
  * at build time. Adding or removing a route here is all that's needed.
  */
+import { hasProductPage } from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
+import { docsHref, getAllDocSlugs } from "@/lib/data/docs-registry";
 import { INDUSTRIES_LIST } from "@/lib/data/industries";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 
@@ -35,8 +37,12 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 		src: "src/pages/SolutionDetailPage.tsx",
 	},
 	{ pattern: /^\/solutions$/, src: "src/pages/SolutionsPage.tsx" },
+	// Developer docs (detail before the index)
+	{ pattern: /^\/docs\/.+/, src: "src/pages/docs/DocDetailPage.tsx" },
+	{ pattern: /^\/docs\/?$/, src: "src/pages/docs/DocsIndexPage.tsx" },
 	// Other pages
 	{ pattern: /^\/pricing$/, src: "src/pages/PricingPage.tsx" },
+	{ pattern: /^\/ai$/, src: "src/pages/AiPage.tsx" },
 	{ pattern: /^\/use-cases$/, src: "src/pages/UseCasesHubPage.tsx" },
 	{ pattern: /^\/about-us$/, src: "src/pages/AboutPage.tsx" },
 	{ pattern: /^\/blogs-media$/, src: "src/pages/BlogsMediaPage.tsx" },
@@ -55,7 +61,9 @@ export const PRERENDER_ROUTES: string[] = [
 
 	// Products listing + dynamic slugs
 	"/products",
-	...getActiveProducts().map((p) => productHref(p.slug)),
+	...getActiveProducts()
+		.filter((p) => hasProductPage(p.id))
+		.map((p) => productHref(p.slug)),
 
 	// Products — static routes (before :slug wildcard in the router)
 	// "/products/eko-shield",
@@ -71,6 +79,13 @@ export const PRERENDER_ROUTES: string[] = [
 
 	// Pricing
 	"/pricing",
+
+	// AI Agents
+	"/ai",
+
+	// Developer docs (overview + every guide & endpoint slug)
+	"/docs",
+	...getAllDocSlugs().map((slug) => docsHref(slug)),
 
 	// Use-cases hub
 	"/use-cases",

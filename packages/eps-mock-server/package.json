@@ -1,0 +1,36 @@
+{
+	"name": "@ekoindia/eps-mock-server",
+	"version": "0.1.0",
+	"description": "Offline mock server replaying EPS sample responses for local agent development and tests.",
+	"license": "MIT",
+	"type": "module",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ekoindia/eps-platform.git",
+		"directory": "packages/eps-mock-server"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"bin": {
+		"eps-mock-server": "dist/index.js"
+	},
+	"files": [
+		"dist",
+		"data"
+	],
+	"scripts": {
+		"bake": "node scripts/bake-fixtures.mjs",
+		"build": "tsup",
+		"test": "vitest run",
+		"prepublishOnly": "npm run bake && npm run build"
+	},
+	"devDependencies": {
+		"tsup": "^8.0.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

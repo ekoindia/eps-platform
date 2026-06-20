@@ -17,7 +17,6 @@ const makeSpec = (overrides: Partial<ApiSpec>): ApiSpec => ({
 	name: "Spec",
 	slug: "spec",
 	summary: "",
-	category: "verification",
 	method: "POST",
 	path: "/spec",
 	docsUrl: "https://developers.eko.in/docs/x",
@@ -282,7 +281,7 @@ describe("renderProductsIndexMarkdown", () => {
 
 	it("renders per-product links including docs", () => {
 		expect(md).toContain(
-			"[Page](https://eps.eko.in/products/pan-verification-api) · [Markdown](https://eps.eko.in/products/pan-verification-api.md) · [API docs](https://developers.eko.in/docs/x)",
+			"[Page](https://eps.eko.in/products/pan-verification-api) · [Markdown](https://eps.eko.in/products/pan-verification-api.md) · [API docs](https://eps.eko.in/docs/spec)",
 		);
 	});
 
@@ -400,7 +399,7 @@ describe("renderProductsIndexText", () => {
 
 	it("drops the markdown link and comma-joins the links line", () => {
 		expect(txt).toContain(
-			"Links: Page (https://eps.eko.in/products/pan-verification-api), API docs (https://developers.eko.in/docs/x)",
+			"Links: Page (https://eps.eko.in/products/pan-verification-api), API docs (https://eps.eko.in/docs/spec)",
 		);
 		expect(txt).not.toContain("[Page](");
 		expect(txt).not.toContain("Markdown (");

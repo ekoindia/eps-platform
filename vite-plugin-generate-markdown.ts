@@ -25,7 +25,19 @@ export function generateMarkdownPlugin(): Plugin {
 				try {
 					const url = req.url?.split("?")[0] ?? "";
 					const bundle = await loadRenderBundle(server);
-					const body = renderDevRoute(url, bundle);
+					let body = renderDevRoute(url, bundle);
+					// Guide twins need an async file read, so they're not handled by
+					// the sync renderDevRoute.
+					if (body === null) {
+						const guideMd = url.match(/^\/docs\/([^/]+)\.md$/);
+						const guide = guideMd
+							? bundle.GUIDES.find((g) => g.slug === guideMd[1])
+							: undefined;
+						if (guide) {
+							const raw = await readGuideSource(server.config.root, guide.slug);
+							body = bundle.renderGuideMarkdown(guide, raw);
+						}
+					}
 					if (body === null) {
 						next();
 						return;
@@ -78,13 +90,19 @@ export function generateMarkdownPlugin(): Plugin {
 
 				// -- Products -------------------------------------------------------
 				const activeProducts = bundle.API_PRODUCTS.filter((p) => !p.disabled);
-				for (const product of activeProducts) {
+				// Docs-only products (specs but no marketing page) are excluded from
+				// every product-link surface below so we never emit a /products/<slug>
+				// link that resolves to a 404.
+				const marketedProducts = activeProducts.filter((p) =>
+					Boolean(bundle.API_PRODUCT_PAGES[p.id]),
+				);
+				for (const product of marketedProducts) {
 					const page = bundle.API_PRODUCT_PAGES[product.id];
 					if (!page) {
 						this.warn(`No page data for product id="${product.id}" — skipping`);
 						continue;
 					}
-					const related = activeProducts
+					const related = marketedProducts
 						.filter(
 							(p) => p.category === product.category && p.id !== product.id,
 						)
@@ -121,7 +139,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "products.md"),
 					bundle.renderProductsIndexMarkdown(
-						activeProducts,
+						marketedProducts,
 						bundle.API_PRODUCT_PAGES,
 						bundle.COMMON_API_FAQS,
 					),
@@ -130,7 +148,7 @@ export function generateMarkdownPlugin(): Plugin {
 
 				// Plain-text twin of products.md, split into self-contained parts small
 				// enough to train Zoho SalesIQ's AnswerBot without timing out.
-				const productById = new Map(activeProducts.map((p) => [p.id, p]));
+				const productById = new Map(marketedProducts.map((p) => [p.id, p]));
 				for (const part of bundle.PRODUCTS_TXT_PARTS) {
 					const partProducts = part.productIds
 						.map((id) => productById.get(id))
@@ -164,14 +182,44 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- Developer docs -------------------------------------------------
+				for (const spec of bundle.DOCUMENTED_SPECS) {
+					await writeFile(
+						path.join(outDir, "docs", `${spec.slug}.md`),
+						bundle.renderEndpointMarkdown(spec),
+					);
+					written++;
+				}
+				await writeFile(
+					path.join(outDir, "docs.md"),
+					bundle.renderDocsIndexMarkdown(),
+				);
+				written++;
+
+				for (const guide of bundle.GUIDES) {
+					const raw = await readGuideSource(resolvedConfig.root, guide.slug);
+					await writeFile(
+						path.join(outDir, "docs", `${guide.slug}.md`),
+						bundle.renderGuideMarkdown(guide, raw),
+					);
+					written++;
+				}
+
 				// -- Site index -----------------------------------------------------
 				await writeFile(
 					path.join(outDir, "index.md"),
 					bundle.renderSiteIndexMarkdown(
-						activeProducts,
+						marketedProducts,
 						bundle.INDUSTRIES_LIST,
 						bundle.SOLUTIONS_LIST,
 					),
+				);
+				written++;
+
+				// -- AI hub ---------------------------------------------------------
+				await writeFile(
+					path.join(outDir, "ai.md"),
+					bundle.renderAgentsMarkdown(),
 				);
 				written++;
 
@@ -179,7 +227,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "llms.txt"),
 					bundle.renderLlmsTxt(
-						activeProducts,
+						marketedProducts,
 						bundle.INDUSTRIES_LIST,
 						bundle.SOLUTIONS_LIST,
 					),
@@ -190,7 +238,7 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "llms-full.txt"),
 					bundle.renderSiteIndexMarkdown(
-						activeProducts,
+						marketedProducts,
 						bundle.INDUSTRIES_LIST,
 						bundle.SOLUTIONS_LIST,
 					),
@@ -247,6 +295,23 @@ interface MarkdownBundle {
 		commonFaqs: Array<{ q: string; a: string }>,
 	) => string;
 	renderPricingMarkdown: () => string;
+	DOCUMENTED_SPECS: Array<{ slug: string }>;
+	renderEndpointMarkdown: (spec: unknown) => string;
+	renderDocsIndexMarkdown: () => string;
+	GUIDES: Array<{ slug: string; title: string; summary?: string }>;
+	renderGuideMarkdown: (
+		meta: { slug: string; title: string; summary?: string },
+		rawBody: string,
+	) => string;
+	renderAgentsMarkdown: () => string;
+}
+
+/** Read a guide's raw `.mdx` source (pure markdown) from the content dir. */
+async function readGuideSource(root: string, slug: string): Promise<string> {
+	return fs.readFile(
+		path.join(root, "src/content/docs", `${slug}.mdx`),
+		"utf8",
+	);
 }
 
 async function loadRenderBundle(
@@ -263,6 +328,10 @@ async function loadRenderBundle(
 		renderIndexMod,
 		renderProductsIndexMod,
 		renderPricingMod,
+		docsRegistryMod,
+		renderDocMod,
+		docsGuidesMod,
+		renderAgentsMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -274,6 +343,10 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-products-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-pricing.ts"),
+		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
+		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-agents.ts"),
 	]);
 
 	return {
@@ -294,21 +367,31 @@ async function loadRenderBundle(
 		renderProductsIndexTextPart:
 			renderProductsIndexMod.renderProductsIndexTextPart,
 		renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
+		DOCUMENTED_SPECS: docsRegistryMod.getDocumentedSpecs(),
+		renderEndpointMarkdown: renderDocMod.renderEndpointMarkdown,
+		renderDocsIndexMarkdown: renderDocMod.renderDocsIndexMarkdown,
+		GUIDES: docsGuidesMod.GUIDES,
+		renderGuideMarkdown: renderDocMod.renderGuideMarkdown,
+		renderAgentsMarkdown: renderAgentsMod.renderAgentsMarkdown,
 	};
 }
 
 function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	const activeProducts = bundle.API_PRODUCTS.filter((p) => !p.disabled);
+	// Docs-only products (no marketing page) are excluded from product-link surfaces.
+	const marketedProducts = activeProducts.filter((p) =>
+		Boolean(bundle.API_PRODUCT_PAGES[p.id]),
+	);
 	if (url === "/llms.txt") {
 		return bundle.renderLlmsTxt(
-			activeProducts,
+			marketedProducts,
 			bundle.INDUSTRIES_LIST,
 			bundle.SOLUTIONS_LIST,
 		);
 	}
 	if (url === "/llms-full.txt" || url === "/index.md") {
 		return bundle.renderSiteIndexMarkdown(
-			activeProducts,
+			marketedProducts,
 			bundle.INDUSTRIES_LIST,
 			bundle.SOLUTIONS_LIST,
 		);
@@ -321,7 +404,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/products.md") {
 		return bundle.renderProductsIndexMarkdown(
-			activeProducts,
+			marketedProducts,
 			bundle.API_PRODUCT_PAGES,
 			bundle.COMMON_API_FAQS,
 		);
@@ -330,7 +413,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	if (partMatch) {
 		const part = bundle.PRODUCTS_TXT_PARTS.find((p) => p.slug === partMatch[1]);
 		if (part) {
-			const productById = new Map(activeProducts.map((p) => [p.id, p]));
+			const productById = new Map(marketedProducts.map((p) => [p.id, p]));
 			const partProducts = part.productIds
 				.map((id) => productById.get(id))
 				.filter((p): p is NonNullable<typeof p> => Boolean(p));
@@ -345,6 +428,17 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	if (url === "/pricing.md") {
 		return bundle.renderPricingMarkdown();
 	}
+	if (url === "/docs.md") {
+		return bundle.renderDocsIndexMarkdown();
+	}
+	if (url === "/ai.md") {
+		return bundle.renderAgentsMarkdown();
+	}
+	const docMatch = url.match(/^\/docs\/([^/]+)\.md$/);
+	if (docMatch) {
+		const spec = bundle.DOCUMENTED_SPECS.find((s) => s.slug === docMatch[1]);
+		return spec ? bundle.renderEndpointMarkdown(spec) : null;
+	}
 
 	const productMatch = url.match(/^\/products\/([^/]+)\.md$/);
 	if (productMatch) {
@@ -352,7 +446,7 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 		if (!product) return null;
 		const page = bundle.API_PRODUCT_PAGES[product.id];
 		if (!page) return null;
-		const related = activeProducts
+		const related = marketedProducts
 			.filter((p) => p.category === product.category && p.id !== product.id)
 			.slice(0, 5);
 		return bundle.renderProductMarkdown(product, page, related);

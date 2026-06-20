@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { Link } from "react-router-dom";
+import { docsHref } from "@/lib/data/docs-registry";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/Cards";
@@ -165,14 +166,10 @@ const ProductTabContent = ({ products }: { products: typeof bcProducts }) => (
 		</div>
 		<div className="flex flex-wrap justify-center gap-4 mt-10">
 			<Button variant="gold" size="lg" asChild>
-				<a
-					href="https://developers.eko.in"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
+				<Link to={docsHref()}>
 					View Documentation
 					<ArrowRight className="w-4 h-4" />
-				</a>
+				</Link>
 			</Button>
 			<Button
 				id="btn-chat-section-products"

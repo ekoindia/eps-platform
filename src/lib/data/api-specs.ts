@@ -25,18 +25,19 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-get-sender",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Get Sender Profile",
 		slug: "dmt-get-sender",
 		summary:
 			"Fetch the DMT-Fino profile of a registered sender by mobile number.",
 		description:
 			"The first step in the DMT flow. Call this to check whether a customer is already registered as a DMT sender. If the sender exists, the response returns their profile and remaining transfer limits so you can skip registration. If not found (response_status_id 463), proceed to Onboard Sender.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Checking sender registration status before starting a DMT transaction.",
 		method: "GET",
-		path: "/customer/profile/{customer_id}/dmt-fino",
+		path: "/customer/payment/dmt-fino/sender/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/fino-get-sender",
 		extraRequestParams: [
 			{
@@ -49,14 +50,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			method: "GET",
-			path: "/customer/profile/9123456789/dmt-fino",
-			queryParams: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "customer_id",
@@ -143,17 +136,18 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-onboard-sender",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Onboard Sender",
 		slug: "dmt-onboard-sender",
 		summary:
 			"Register a new customer as a DMT-Fino sender using basic KYC details.",
 		description:
 			"Registers a new customer in the DMT-Fino system. Provide the customer's name, date of birth, and residence address. On success the sender is created in a pending state; biometric eKYC (via Sender KYC) must follow to activate full monthly limits. An OTP is dispatched to the customer's mobile number for confirmation.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "First-time sender registration in the DMT flow.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-fino",
+		path: "/customer/payment/dmt-fino/sender/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/create-customer",
 		extraRequestParams: [
 			{
@@ -192,15 +186,6 @@ export const API_SPECS: ApiSpec[] = [
 					'["123 Main Street", "Connaught Place", "New Delhi", "110001"]',
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			name: "Ramesh Kumar",
-			dob: "1990-05-15",
-			residence_address:
-				'["123 Main Street", "Connaught Place", "New Delhi", "110001"]',
-		},
 		responseData: [
 			{
 				name: "customer_id",
@@ -257,19 +242,20 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "dmt-sender-ekyc",
+		id: "dmt-fino-sender-ekyc",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Sender eKYC (Biometric)",
-		slug: "dmt-sender-ekyc",
+		slug: "dmt-fino-sender-ekyc",
 		summary:
 			"Initiate biometric Aadhaar eKYC to verify and upgrade a DMT sender's account.",
 		description:
 			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible biometric capture device. The biometric PID data (XML payload) is captured at the agent's terminal and submitted along with the Aadhaar number. On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
-		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-fino/ekyc",
+		method: "PUT",
+		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp",
 		docsUrl: "https://developers.eko.in/reference/fino-dmt-customer-kyc",
 		extraRequestParams: [
 			{
@@ -299,14 +285,6 @@ export const API_SPECS: ApiSpec[] = [
 					'<PidData><Resp errCode="0" errInfo="Capture Success" .../></PidData>',
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			aadhar: "234567890123",
-			piddata:
-				'<PidData><Resp errCode="0" errInfo="Capture Success" /></PidData>',
-		},
 		responseData: [
 			{
 				name: "kyc_request_id",
@@ -356,19 +334,20 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "dmt-validate-ekyc-otp",
+		id: "dmt-fino-validate-ekyc-otp",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Validate eKYC OTP",
-		slug: "dmt-validate-ekyc-otp",
+		slug: "dmt-fino-validate-ekyc-otp",
 		summary:
 			"Confirm sender eKYC by verifying the OTP sent to the Aadhaar-linked mobile.",
 		description:
 			"Final step of the sender eKYC flow. Submit the OTP received on the Aadhaar-linked mobile number along with the otp_ref_id and kyc_request_id from the Sender eKYC response. On success the sender's account is upgraded to fully KYC-verified status with a ₹25,000 monthly limit.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "Completing sender eKYC after biometric capture.",
-		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-fino/otp/verify",
+		method: "PUT",
+		path: "/customer/payment/dmt-fino/sender/{customer_id}/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/fino-validate-aadhar",
 		extraRequestParams: [
 			{
@@ -407,14 +386,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "KYC20240101001",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			otp: "784512",
-			otp_ref_id: "OTPREF20240101001",
-			kyc_request_id: "KYC20240101001",
-		},
 		responseData: [
 			{
 				name: "customer_id",
@@ -476,12 +447,13 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-get-recipients",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Recipients",
 		name: "Get Recipients",
 		slug: "dmt-get-recipients",
 		summary: "Retrieve the list of saved beneficiaries for a DMT sender.",
 		description:
 			"Returns all beneficiaries (recipients) previously registered under the sender's DMT-Fino account. Use this before initiating a transfer — if the desired beneficiary already exists you can use their recipient_id directly to send money, skipping Add Recipient.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Listing a sender's saved beneficiaries before initiating a transfer.",
@@ -499,14 +471,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			method: "GET",
-			path: "/customer/payment/dmt-fino/sender/9123456789/recipients",
-			queryParams: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "count",
@@ -601,12 +565,13 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-add-recipient",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Recipients",
 		name: "Add Recipient",
 		slug: "dmt-add-recipient",
 		summary: "Register a new beneficiary under a sender's DMT-Fino account.",
 		description:
 			"Adds a new beneficiary to the sender's saved recipients list. Provide the recipient's full name, bank account number, IFSC code, and mobile number. The bank_id identifies the destination bank (fetch from the bank list if needed). On success a recipient_id is returned; use it in Send OTP and Initiate Transfer. The system may validate the account via penny-drop before activating the recipient.",
-		category: "bc",
 		relevance: "M",
 		bestFor: "Adding a new beneficiary before a first-time transfer.",
 		method: "POST",
@@ -672,17 +637,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "3",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9123456789",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			recipient_name: "Sunil Sharma",
-			account: "012345678901",
-			ifsc: "SBIN0001234",
-			bank_id: 20,
-			recipient_mobile: "9988776655",
-			recipient_type: "3",
-		},
 		responseData: [
 			{
 				name: "recipient_id",
@@ -748,13 +702,14 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-send-otp",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "dmt-send-otp",
 		summary:
 			"Request an OTP to the sender's mobile number to authorise an upcoming money transfer.",
 		description:
 			"Sends an OTP to the sender's registered mobile number as a pre-authorisation step before initiating the actual money transfer. Provide the recipient_id, the transfer amount, and the sender's customer_id. The returned otp_ref_id must be passed to Initiate Transfer along with the OTP entered by the customer.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Pre-authorising a DMT transfer by triggering OTP dispatch to the sender.",
@@ -788,13 +743,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9123456789",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			customer_id: "9123456789",
-			recipient_id: 98765,
-			amount: 500,
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -839,12 +787,13 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-initiate-transfer",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Transaction",
 		name: "Initiate Transfer",
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
-			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account. Requires the OTP and otp_ref_id from Send Transaction OTP, the merchant's GPS coordinates (latlong), and a request_hash for financial security. The response returns a tid (Eko transaction ID) and the banking UTR for the IMPS transaction. Always poll Get Transaction Status if tx_status is 2 (Awaited).",
-		category: "bc",
+			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account. Requires the OTP and otp_ref_id from Send Transaction OTP and the merchant's GPS coordinates (latlong). The response returns a tid (Eko transaction ID) and the banking UTR for the IMPS transaction. Always poll Get Transaction Status if tx_status is 2 (Awaited).",
 		relevance: "M",
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
@@ -946,21 +895,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "2024-01-01T10:30:00Z",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REF-20240101-001",
-			customer_id: "9123456789",
-			recipient_id: 98765,
-			amount: 500,
-			otp: "251834",
-			otp_ref_id: "TXNOTP20240101001",
-			latlong: "28.6139,77.2090",
-			state: "1",
-			recipient_id_type: "1",
-			channel: 2,
-			currency: "INR",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -1120,27 +1054,18 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day. Cash Withdrawal (service_type=2) mandates the request_hash financial header. The request_hash is computed as HMAC-SHA256 of: secret_key_timestamp + aadhaar_encrypted + amount + user_code.",
-		category: "bc",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day.",
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
 		method: "POST",
-		path: "/customer/collection/aeps-fingpay",
+		path: "/customer/collection/aeps-fingpay/cash-withdrawal/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
 			{
-				name: "service_type",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transaction type. Use 2 for Cash Withdrawal.",
-				example: 2,
-			},
-			{
 				name: "customer_id",
-				in: "body",
+				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1227,24 +1152,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "DAKYC20240101001",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CW-20240101-001",
-			source: "API",
-			service_type: 2,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 1000,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 1,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-			reference_id: "DAKYC20240101001",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -1385,27 +1292,18 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
-			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the same `aeps-fingpay` endpoint as Cash Withdrawal but with service_type=3 and amount=0. No money movement occurs, so the request_hash financial header is still required (AePS endpoint always requires it) but no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
-		category: "bc",
+			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint with amount=0. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
 		relevance: "H",
 		bestFor:
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
 		method: "POST",
-		path: "/customer/collection/aeps-fingpay",
+		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
 			{
-				name: "service_type",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transaction type. Use 3 for Balance Enquiry.",
-				example: 3,
-			},
-			{
 				name: "customer_id",
-				in: "body",
+				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1481,23 +1379,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "BE-20240101-001",
-			source: "API",
-			service_type: 3,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 0,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 0,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "balance",
@@ -1586,7 +1467,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Onboard an agent for AePS Fingpay service by submitting their biometric device details and KYC documents.",
 		description:
 			"This onboarding API registers an agent (identified by their user_code) for the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.",
-		category: "bc",
 		relevance: "H",
 		bestFor:
 			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
@@ -1678,27 +1558,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			modelname: "Morpho 1300E3",
-			devicenumber: "SN1234567890",
-			office_address: {
-				line: "Shop No. 5, Gandhi Market",
-				city: "Patna",
-				state: "Bihar",
-				pincode: "800001",
-			},
-			address_as_per_proof: {
-				line: "Shop No. 5, Gandhi Market",
-				city: "Patna",
-				state: "Bihar",
-				pincode: "800001",
-			},
-			pan_card: "<multipart binary>",
-			aadhar_front: "<multipart binary>",
-			aadhar_back: "<multipart binary>",
-		},
 		responseData: [
 			{
 				name: "activation_status",
@@ -1775,7 +1634,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
 			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
-		category: "bc",
 		relevance: "H",
 		bestFor:
 			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
@@ -1820,17 +1678,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DAUTH-20240101-001",
-			source: "API",
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			latlong: "25.5941,85.1376",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -1914,27 +1761,18 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
 		description:
-			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the same `aeps-fingpay` endpoint with service_type=4 and amount=0. No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
-		category: "bc",
+			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint with amount=0. No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
 		relevance: "M",
 		bestFor:
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
 		method: "POST",
-		path: "/customer/collection/aeps-fingpay",
+		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
 			{
-				name: "service_type",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transaction type. Use 4 for Mini Statement.",
-				example: 4,
-			},
-			{
 				name: "customer_id",
-				in: "body",
+				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -2010,23 +1848,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "MS-20240101-001",
-			source: "API",
-			service_type: 4,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 0,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 0,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -2143,7 +1964,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Accept merchant payments debited directly from a customer's Aadhaar-linked bank account via biometric authentication.",
 		description:
 			"Aadhaar Pay (service_type=5) enables merchants to accept payments from customers whose bank accounts are Aadhaar-linked, authenticated with a fingerprint scan. Unlike Cash Withdrawal (where cash is dispensed), the funds are transferred to the merchant. This is useful for last-mile digital payments at kirana stores and service points where customers have no UPI or debit card. The flow is identical to Cash Withdrawal but with a positive merchant-side credit.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Merchants accepting digital payments from Aadhaar-linked accounts without UPI or card infrastructure",
@@ -2239,23 +2059,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.56.78.90",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "AP-20240101-001",
-			source: "API",
-			service_type: 5,
-			customer_id: "9876543210",
-			bank_code: "607153",
-			amount: 250,
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			pipe: 0,
-			notify_customer: 1,
-			latlong: "28.6139,77.2090",
-			source_ip: "103.56.78.90",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -2324,7 +2127,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
 			"The first step in the one-time AePS Fingpay eKYC flow. Sends an OTP to the mobile number registered with the agent's Aadhaar. The eKYC flow — Send OTP → Verify OTP → Biometric Capture — must be completed once per agent before they can perform any AePS transactions. This step is a prerequisite; do not confuse it with the daily authentication (2FA) which is required on each calendar day.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
@@ -2342,13 +2144,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "BASE64_ENCRYPTED_AADHAAR",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "KYCOTP-20240101-001",
-			source: "API",
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -2407,7 +2202,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Complete one-time AePS Fingpay eKYC by submitting the agent's Aadhaar and live biometric fingerprint capture.",
 		description:
 			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's Aadhaar and biometric PID data to UIDAI for identity verification. On success, the agent's eKYC is marked complete and they can start performing AePS transactions (subject to completing daily 2FA each day). This step uses the same RSA-encrypted Aadhaar and PID XML format as the transaction APIs.",
-		category: "bc",
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
@@ -2444,16 +2238,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "OTPREF20240101001",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "KYCBIO-20240101-001",
-			source: "API",
-			aadhaar: "BASE64_ENCRYPTED_AADHAAR",
-			piddata:
-				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			otp_ref_id: "OTPREF20240101001",
-		},
 		responseData: [
 			{
 				name: "kyc_status",
@@ -2516,7 +2300,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the list of supported BBPS biller categories (electricity, gas, DTH, etc.).",
 		description:
 			"Returns all active biller categories available on the BBPS network. Use the returned category_id to filter the Get Operators call. Categories include electricity, gas, water, DTH, broadband, prepaid recharge, FASTag, insurance, EMI payments, LPG booking, credit card, and more.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Populating a category picker UI before letting the user choose a biller.",
@@ -2525,17 +2308,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/bbps-get-categories",
 		extraRequestParams: [],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "categories",
@@ -2645,7 +2417,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the list of supported state/location IDs for filtering BBPS operators.",
 		description:
 			"Returns all supported location (state) identifiers. Pass the returned location_id as the `location` query parameter in the Get Operators call to narrow results to a specific state or circle.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Populating a state filter when displaying biller lists to end users.",
@@ -2654,17 +2425,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/bbps-get-locations",
 		extraRequestParams: [],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "locations",
@@ -2748,7 +2508,6 @@ export const API_SPECS: ApiSpec[] = [
 			"List all active BBPS billers, optionally filtered by category and/or state.",
 		description:
 			"Returns every currently active BBPS biller. Use `category` and `location` query parameters to narrow results. The `billFetchResponse` flag on each operator tells you whether the Fetch Bill step is mandatory before payment. Operators that are temporarily disabled are excluded from the response — poll this endpoint periodically to keep your list fresh.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Building a biller selection UI and determining which operators require a bill fetch before payment.",
@@ -2775,19 +2534,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				category: 5,
-				location: 7,
-			},
-		},
 		responseData: [
 			{
 				name: "operators",
@@ -2874,7 +2620,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch the custom input fields required by a specific biller before payment.",
 		description:
 			"Returns the operator-specific parameter schema — field names, labels, data types, and validation regex — needed to build a dynamic payment form. Also returns `fetchBill` (1 = mandatory Fetch Bill step) and `BBPS` (1 = show Bharat BillPay branding). Call this once per operator and cache the result.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Rendering a dynamic bill payment form with correct validation for each biller.",
@@ -2892,19 +2637,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			path: {
-				operator_id: 83,
-			},
-			query: {
-				initiator_id: "9876543210",
-			},
-		},
 		responseData: [
 			{
 				name: "fetchBill",
@@ -2992,7 +2724,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve outstanding bill details from a biller before processing payment.",
 		description:
 			"Fetches the live bill for a customer from the biller's system. Required for operators where `billFetchResponse = 1`. The response includes the outstanding amount, due date, and a `billfetchresponse` token that must be forwarded verbatim in the subsequent Pay Bill call. Pass `hc_channel=1` to use the higher-commission delayed channel.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Showing the customer their outstanding bill amount and due date before confirming payment.",
@@ -3086,25 +2817,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "mypassword123",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				client_ref_id: "BFETCH-20240601-001",
-				utility_acc_no: "1234567890",
-				confirmation_mobile_no: "9999988888",
-				sender_name: "Ramesh Kumar",
-				operator_id: "83",
-				source_ip: "192.168.1.1",
-				latlong: "28.6139,77.2090",
-				hc_channel: 0,
-			},
-		},
 		responseData: [
 			{
 				name: "bill_amount",
@@ -3196,8 +2908,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
-			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included. A `request_hash` is mandatory and is computed from: `secret_key_timestamp + utility_acc_no + amount + user_code`.",
-		category: "payment",
+			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included.",
 		relevance: "M",
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
@@ -3291,29 +3002,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 400001,
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-				request_hash:
-					"<computed: HMAC-SHA256(timestamp+utility_acc_no+amount+user_code)>",
-				"content-type": "application/json",
-			},
-			body: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				client_ref_id: "BBPS-20240601-001",
-				utility_acc_no: "1234567890",
-				confirmation_mobile_no: "9999988888",
-				sender_name: "Ramesh Kumar",
-				operator_id: "83",
-				amount: "1350",
-				source_ip: "192.168.1.1",
-				latlong: "28.6139,77.2090",
-				billfetchresponse: "eyJhbGciOiJSUzI1NiJ9...",
-			},
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -3426,7 +3114,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
 		description:
 			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
@@ -3445,20 +3132,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			path: {
-				"transaction-reference": "1734567890",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -3524,7 +3197,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Onboard an agent/retailer for BBPS bill payment services using service code 53.",
 		description:
 			"Before a retailer can process BBPS payments, the BBPS service (service_code = 53) must be activated for their `user_code`. This is a one-time setup call per agent. After activation, verify the status using the User Service Enquiry API. The agent's GPS coordinates (`latlong`) are mandatory for production compliance.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Onboarding new agents onto the BBPS bill payment service before their first transaction.",
@@ -3550,20 +3222,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-				"content-type": "application/json",
-			},
-			body: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-				service_code: 53,
-				latlong: "28.6139,77.2090",
-			},
-		},
 		responseData: [
 			{
 				name: "service_code",
@@ -3613,7 +3271,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Activate the CMS (Cash Collection) service for an agent/retailer before they can initiate collections.",
 		description:
 			"Before a retailer or field agent can generate collection URLs or process cash collections, the CMS service (service_code 58) must be activated for their user account. This is a one-time step per agent. On success the agent's account is enabled for CMS transactions.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"NBFCs, insurance companies, microfinance institutions onboarding field collection agents",
@@ -3632,11 +3289,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			service_code: "58",
-		},
 		responseData: [
 			{
 				name: "is_service_activated",
@@ -3692,7 +3344,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a session-specific CMS URL that redirects the field agent to the biller selection and payment flow.",
 		description:
 			"Returns a short-lived redirect URL that opens Eko's hosted cash-collection interface for the authenticated agent. The agent selects the biller, enters bill details, collects cash, and the customer account is credited in real time. The response also contains a transaction record with tid, amount, operator name, and commission fields once the collection is completed through the redirect flow.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Field agents collecting loan EMIs, insurance premiums, utility bills, and subscription payments at the customer doorstep",
@@ -3720,13 +3371,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "en",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CMSTRXN123",
-			latlong: "28.6139,77.2090",
-			locale: "en",
-		},
 		responseData: [
 			{
 				name: "url",
@@ -3889,8 +3533,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Transfer funds from your e-wallet to any Indian bank account via IMPS, NEFT, or RTGS.",
 		description:
-			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). Requires `request_hash` for fraud prevention. On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
-		category: "payment",
+			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
 		relevance: "M",
 		bestFor:
 			"Salary disbursals, vendor settlements, contractor payouts, gig-worker commissions.",
@@ -3981,21 +3624,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 1,
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAY-20240615-001",
-			source: "API",
-			service_code: 45,
-			payment_mode: 5,
-			recipient_name: "Ravi Kumar",
-			account: "50100123456789",
-			ifsc: "HDFC0001234",
-			amount: 25000,
-			sender_name: "Acme Corp",
-			tag: "Salary",
-			beneficiary_account_type: 1,
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -4152,7 +3780,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch the current status of a payout transaction by Eko TID or your client_ref_id.",
 		description:
 			"Use this API to poll the live status of any fund-transfer transaction. Pass either Eko's `tid` or your own `client_ref_id` as the path parameter. Particularly useful for NEFT transactions where the initial response returns `tx_status=2` (awaited) — keep polling until you get a terminal state (0=Success, 1=Fail, 4=Refunded). You can also rely on the webhook callback instead of polling.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending NEFT payouts, confirming IMPS credit, building retry / refund logic.",
@@ -4171,15 +3798,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			path_param: {
-				transaction_ref: "2886601782",
-			},
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -4295,7 +3913,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the current e-wallet balance of a registered agent or retailer.",
 		description:
 			"Returns the live e-wallet balance for the given `user_code`. Integrate this before initiating transfers to pre-validate sufficient funds without incurring a failed-transaction fee. Balance is in INR.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Pre-transfer balance checks, dashboard balance widgets, auto top-up triggers.",
@@ -4304,12 +3921,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/docs/fund-transfer",
 		extraRequestParams: [],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			query: {
-				initiator_id: "9876543210",
-				user_code: "20810200",
-			},
-		},
 		responseData: [
 			{
 				name: "balance",
@@ -4357,7 +3968,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Register a new bank account as a payout recipient (beneficiary) for an agent.",
 		description:
 			"Saves a beneficiary's bank account details under an agent's profile so future fund transfers can reference them by name or ID. The API validates IFSC format; the actual account validity should be confirmed via penny-drop before a live transfer. Once registered, the recipient can be reused across multiple payouts without re-entering account details.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Onboarding salaried employees, saving vendor bank accounts, batch payout setups.",
@@ -4406,17 +4016,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 3,
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REC-20240615-001",
-			source: "API",
-			recipient_name: "Ravi Kumar",
-			account: "50100123456789",
-			ifsc: "HDFC0001234",
-			mobile: "9876500001",
-			recipient_type: 3,
-		},
 		responseData: [
 			{
 				name: "recipient_id",
@@ -4487,8 +4086,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Validate a bank account by sending a small test credit and confirming the account holder's name.",
 		description:
-			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet and `request_hash` is required because it is a financial transaction.",
-		category: "payment",
+			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet because it is a financial transaction.",
 		relevance: "M",
 		bestFor:
 			"Validating new vendor or employee bank accounts before live payouts, preventing misdirected fund transfers.",
@@ -4523,15 +4121,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Ravi Kumar",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PD-20240615-001",
-			source: "API",
-			account: "50100123456789",
-			ifsc: "HDFC0001234",
-			recipient_name: "Ravi Kumar",
-		},
 		responseData: [
 			{
 				name: "account_holder_name",
@@ -4627,7 +4216,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Register a webhook endpoint to receive real-time payout transaction status updates.",
 		description:
 			"Registers a static HTTPS URL on your server that Eko will POST to whenever a payout transaction reaches a terminal state (Success, Fail, Refunded). The callback payload mirrors the Transaction Inquiry response — it includes `tid`, `tx_status`, `bank_ref_num`, `amount`, and party details. Use this instead of polling for NEFT transactions which may take minutes to confirm. Only static URL structures are supported; dynamic path parameters are not allowed.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Async NEFT payout reconciliation, real-time payment confirmation dashboards, automated refund triggers.",
@@ -4655,13 +4243,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			source: "API",
-			callback_url: "https://your-server.example.com/eko/callback",
-			service_code: 45,
-		},
 		responseData: [
 			{
 				name: "callback_url",
@@ -4704,7 +4285,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate a recipient's UPI Virtual Payment Address and fetch the verified payee name before initiating a payout.",
 		description:
 			"Confirms that a UPI VPA (Virtual Payment Address / UPI ID) is active and returns the NPCI-verified recipient name and registered mobile number. Call this before every payout to eliminate wrong-payee failures, reduce failed transactions, and satisfy RBI beneficiary-confirmation requirements. The response also surfaces a fee quote for the pending transfer.",
-		category: "payment",
 		relevance: "H",
 		bestFor:
 			"Pre-payout beneficiary confirmation, bulk-payout pre-validation runs, and assisted-payment flows where an agent must confirm the payee before sending funds.",
@@ -4750,16 +4330,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "VPA-CHK-20240101-001",
-			source: "API",
-			customer_vpa: "vendor@okicici",
-			recipient_mobile: "9876543210",
-			name: "Rajesh Kumar",
-			latlong: "28.6139,77.2090",
-		},
 		responseData: [
 			{
 				name: "customer_vpa",
@@ -4876,8 +4446,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Send an instant UPI payout to any VPA (UPI ID) — vendor payments, disbursements, refunds, or salary credits — with real-time settlement.",
 		description:
-			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call: you must include the request_hash header computed from initiator_id + amount + customer_vpa (concatenated in that order) to prevent replay attacks.",
-		category: "payment",
+			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call.",
 		relevance: "H",
 		bestFor:
 			"Vendor payments, gig-worker payouts, insurance claim disbursements, refunds, salary credits, and any bulk or single instant UPI transfer workflow.",
@@ -4932,17 +4501,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAY-20240101-001",
-			source: "API",
-			customer_vpa: "vendor@okicici",
-			amount: 5000,
-			recipient_mobile: "9876543210",
-			name: "Rajesh Kumar",
-			latlong: "28.6139,77.2090",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5112,16 +4670,6 @@ export const API_SPECS: ApiSpec[] = [
 					},
 				},
 			},
-			{
-				scenario: "Missing or invalid request_hash",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid or missing request_hash header.",
-					data: {},
-				},
-			},
 		],
 	},
 	{
@@ -5133,7 +4681,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the latest status and settlement details of a UPI payout using Eko's internal transaction ID (TID).",
 		description:
 			"Polls the current state of a UPI payout by Eko's tid. Use this to check the outcome of awaited transactions, confirm settlement, or retrieve the NPCI bank reference number (UTR) for reconciliation. Recommended polling interval: 10–30 seconds for awaited transactions. The transaction-reference path parameter accepts either an Eko TID or a client_ref_id prefixed with 'CR' (use the client_ref_id variant for the latter).",
-		category: "payment",
 		relevance: "H",
 		bestFor:
 			"Polling awaited UPI payouts, reconciling settled transactions, and retrieving UTR numbers for vendor remittance advice.",
@@ -5152,10 +4699,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5285,7 +4828,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve the status and settlement details of a UPI payout using your own client_ref_id when Eko's TID is unavailable.",
 		description:
 			"Identical to the TID-based status inquiry but accepts your system's client_ref_id as the lookup key — useful when the payout API call timed out before a TID was returned. Prefix the client_ref_id with 'CR' in the path parameter (e.g. CRmy-ref-id-001). This prevents you from sending a duplicate payout before confirming the original transaction outcome.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Recovering transaction state after an API timeout or network drop, and for idempotency checks before retrying a payout.",
@@ -5304,10 +4846,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5419,7 +4957,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a permanent UPI QR code for a merchant/agent that can receive any amount.",
 		description:
 			"Creates a static UPI QR code linked to the agent's registered VPA (Virtual Payment Address) or the UPI ID. The same QR code can be reused for multiple transactions; the payer manually enters the amount. Suitable for fixed collection points such as shop counters and printed QR standees.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Retail stores, kiosks, and any merchant needing a reusable printed QR code.",
@@ -5454,13 +4991,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			sender_id: "9876543210",
-			name: "Ravi Kumar Store",
-			email: "ravi@example.com",
-		},
 		responseData: [
 			{
 				name: "qr_string",
@@ -5549,7 +5079,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a one-time UPI QR code pre-loaded with a specific amount for a transaction.",
 		description:
 			"Creates a transaction-specific UPI QR code that embeds the exact payable amount. Each scan results in a fixed-amount payment, enabling automatic reconciliation without manual verification. Ideal for e-commerce checkout, restaurant billing, and event ticketing where the amount is known in advance.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"E-commerce checkout, restaurant POS, event ticketing — any flow where amount is fixed per transaction.",
@@ -5585,14 +5114,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			sender_id: "9876543210",
-			amount: 499,
-			client_ref_id: "ORD-20240601-9871",
-			name: "Ravi Kumar Store",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5696,7 +5217,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Query the current status of a QR payment transaction by Eko TID or your client reference ID.",
 		description:
 			"Polls the real-time status of any transaction — including QR collection payments — using either the Eko transaction ID (tid) or your own client_ref_id. Use this when a webhook has not arrived within your expected window or to implement a status-check polling flow.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Reconciliation polling, fallback status check when webhook delivery is delayed.",
@@ -5715,10 +5235,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5820,7 +5336,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Incoming webhook Eko POSTs to your server when a QR payment transaction changes state.",
 		description:
 			"Eko calls this webhook on your registered callback URL whenever a QR collection (or other) transaction status changes — typically from Initiated to Success or Fail. Your endpoint must return HTTP 200 to acknowledge receipt. Supports DMT, Fund Transfer, QR, and CMS transaction types. Configure your callback URL in the Eko developer portal.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Real-time payment confirmation, instant order fulfilment trigger, reconciliation automation.",
@@ -5829,20 +5344,6 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/transaction-status-callback",
 		extraRequestParams: [],
 		omitCommonParams: ["initiator_id", "user_code", "client_ref_id", "source"],
-		sampleRequest: {
-			tx_status: 0,
-			amount: 499,
-			payment_mode: "5",
-			txstatus_desc: "SUCCESS",
-			fee: 0,
-			gst: 0,
-			tid: 2886601782,
-			client_ref_id: "ORD-20240601-9871",
-			old_tx_status: 2,
-			old_tx_status_desc: "Initiated",
-			bank_ref_num: "313196224563",
-			timestamp: "2024-06-01 14:23:05",
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -5924,7 +5425,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Request an OTP to the sender's mobile number as the first step of a two-step refund flow.",
 		description:
 			"Initiates the refund OTP flow for a failed or disputed QR payment transaction. Eko sends a one-time password to the original payer's registered mobile number. The OTP and the otp_ref_id returned here are required as inputs to the Initiate Refund API. This two-step mechanism prevents unauthorized refund initiation.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Starting the refund process for a failed QR collection transaction.",
@@ -5943,9 +5443,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "client_ref_id", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -6013,7 +5510,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Complete a QR payment refund using the OTP received from the Get Refund OTP step.",
 		description:
 			"Second and final step of the QR payment refund flow. Submits the OTP (sent to the payer's mobile) along with the otp_ref_id from the previous step to authorize and execute the refund. On success, funds are returned to the payer's UPI account. The service_code must always be 80 (PayPoint) and state must be 1.",
-		category: "payment",
 		relevance: "M",
 		bestFor:
 			"Processing customer refunds for failed or disputed QR collection transactions.",
@@ -6067,15 +5563,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REF-ORD-20240601-9871",
-			otp: 123456,
-			otp_ref_id: "OTP_REF_884321",
-			service_code: 80,
-			state: 1,
-		},
 		responseData: [
 			{
 				name: "tid",
@@ -6184,7 +5671,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Instant PAN validation with name and DOB match scores plus Aadhaar seeding status.",
 		description:
 			"PAN Lite performs a lightweight synchronous PAN verification. Supply the PAN number, holder name, and date of birth; the API returns match flags for name and DOB, the PAN activation status code, and whether the PAN is seeded (linked) with Aadhaar. Note: the name field in the response reflects the name you submitted, not the registered name on the PAN record — use PAN Advanced for the registered name.",
-		category: "verification",
 		relevance: "H",
 		bestFor: "Basic PAN status checks and quick KYC pre-screening",
 		method: "POST",
@@ -6221,15 +5707,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1994-08-29",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAN-REQ-20240101-001",
-			source: "API",
-			pan_number: "ABCDE1234F",
-			name: "Rajesh Kumar",
-			dob: "1994-08-29",
-		},
 		responseData: [
 			{
 				name: "pan",
@@ -6359,7 +5836,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Rich PAN verification returning registered name, PAN type, gender, DOB, masked Aadhaar, address, email, and mobile.",
 		description:
 			"PAN Advanced performs a deeper KYC lookup against the PAN database. In addition to the match flags returned by PAN Lite, it surfaces the registered name, name on the PAN card, PAN type (Individual / Company / etc.), gender, date of birth, masked Aadhaar number, Aadhaar link status, and structured address. Email and mobile fields are populated at a ~5–10% fill rate due to data-source availability. Use this API when downstream workflows need authoritative identity attributes beyond a pass/fail match.",
-		category: "verification",
 		relevance: "H",
 		bestFor:
 			"KYC workflows needing richer identity attributes and verified registered name",
@@ -6398,14 +5874,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PAN-ADV-20240101-001",
-			pan: "ABCDE1234F",
-			name: "Rajesh Kumar",
-			dob: "1994-08-29",
-		},
 		responseData: [
 			{
 				name: "pan",
@@ -6608,7 +6076,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Async batch PAN verification — submit multiple PANs in one call and poll for results via the Bulk PAN Status API.",
 		description:
 			"Bulk PAN Verification accepts an array of PAN entries (each with a PAN number and optional name) in a single POST request and returns a reference_id for tracking. Because verification runs asynchronously, callers must subsequently poll the Bulk PAN Verification Status API with the returned reference_id to retrieve individual results. Suited for high-volume operations such as employee on-boarding, merchant KYC batches, or overnight reconciliation runs.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"High-volume PAN verification with async processing (employee on-boarding, batch KYC)",
@@ -6640,22 +6107,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "BULK-PAN-20240101-001",
-			entries: [
-				{
-					pan: "ABCPV1234D",
-					name: "John",
-					source: "API",
-				},
-				{
-					pan: "ABCPV1234L",
-					name: "John Doe",
-					source: "API",
-				},
-			],
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -6705,7 +6156,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Poll the result of a Bulk PAN Verification batch using the reference_id returned when the batch was submitted.",
 		description:
 			"Retrieves the per-PAN results for a batch previously submitted via the Bulk PAN Verification API. Because bulk verification runs asynchronously, callers poll this endpoint with the reference_id from the submit response until the batch finishes processing. The response returns a count and an array of entries, one per PAN, each carrying the validity, registered name, name-match score/result, Aadhaar-seeding status, and PAN status.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fetching individual PAN results after submitting a batch to the Bulk PAN Verification API.",
@@ -6734,17 +6184,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "BULK-PAN-20240101-001",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				reference_id: "123456",
-			},
-		},
 		responseData: [
 			{
 				name: "count",
@@ -6887,255 +6326,21 @@ export const API_SPECS: ApiSpec[] = [
 	},
 
 	{
-		id: "aadhaar-dmt-fino-ekyc",
-		productId: "dmt",
-		name: "DMT Fino Sender eKYC (Biometric)",
-		slug: "aadhaar-dmt-fino-ekyc",
-		summary:
-			"Initiate biometric-based Aadhaar eKYC for a DMT Fino sender using fingerprint data.",
-		description:
-			"Sends an OTP to the Aadhaar-linked mobile number of the sender using biometric (fingerprint) data captured via an approved device. Used in the Fino DMT onboarding flow for customers who authenticate via biometric rather than OTP. Requires integration with a UIDAI-certified biometric capture device.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"DMT Fino agent networks that use biometric devices to onboard senders and verify Aadhaar identity at the point of service.",
-		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-fino/ekyc",
-		docsUrl: "https://developers.eko.in/reference/fino-dmt-customer-kyc",
-		extraRequestParams: [
-			{
-				name: "customer_id",
-				in: "path",
-				type: "string",
-				required: true,
-				description: "Sender's mobile number.",
-				example: "9876543210",
-			},
-			{
-				name: "aadhar",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "12-digit Aadhaar number of the sender.",
-				example: "123456789012",
-			},
-			{
-				name: "piddata",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"XML-encoded biometric PID block captured from a UIDAI-certified fingerprint device (using wadh value `18f4CEiXeXcfGXvgWA/blxD+w2pw7hfQPY45JMytkPw=`).",
-				example: '<PidData><Data type="X">...</Data></PidData>',
-			},
-		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-005",
-			aadhar: "123456789012",
-			piddata:
-				'<PidData><Data type="X">BIOMETRIC_BLOCK_BASE64</Data></PidData>',
-		},
-		responseData: [
-			{
-				name: "otp_ref_id",
-				type: "string",
-				description:
-					"Reference ID for the eKYC session — pass to Validate Sender eKYC OTP.",
-				example: "58201938",
-			},
-			{
-				name: "kyc_request_id",
-				type: "string",
-				description:
-					"Unique KYC request identifier for tracking this eKYC transaction.",
-				example: "KYC-20240101-005",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "eKYC OTP dispatched successfully",
-			response_type_id: 1388,
-			data: {
-				otp_ref_id: "58201938",
-				kyc_request_id: "KYC-20240101-005",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Biometric authentication failure",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 301,
-					message:
-						"Biometric authentication failed. Please re-capture fingerprint.",
-					response_type_id: 1388,
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "aadhaar-dmt-fino-verify-otp",
-		productId: "dmt",
-		name: "Validate Sender eKYC OTP (DMT Fino)",
-		slug: "aadhaar-dmt-fino-verify-otp",
-		summary: "Verify the OTP to complete Aadhaar eKYC for a DMT Fino sender.",
-		description:
-			"Validates the OTP dispatched during DMT Fino eKYC initiation. On success, the sender's Aadhaar identity is confirmed and their DMT wallet profile is updated with verified KYC data. Must be called with the `otp_ref_id` and `kyc_request_id` from the eKYC initiation response.",
-		category: "verification",
-		relevance: "M",
-		bestFor:
-			"Completing Aadhaar biometric eKYC verification in the DMT Fino sender onboarding flow.",
-		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-fino/otp/verify",
-		docsUrl: "https://developers.eko.in/reference/fino-validate-aadhar",
-		extraRequestParams: [
-			{
-				name: "customer_id",
-				in: "path",
-				type: "string",
-				required: true,
-				description: "Sender's mobile number.",
-				example: "9876543210",
-			},
-			{
-				name: "otp",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "OTP received on the Aadhaar-linked mobile number.",
-				example: "456789",
-			},
-			{
-				name: "otp_ref_id",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Reference ID from the DMT Fino eKYC initiation response.",
-				example: "58201938",
-			},
-			{
-				name: "kyc_request_id",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"KYC request identifier from the eKYC initiation response.",
-				example: "KYC-20240101-005",
-			},
-		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-006",
-			otp: "456789",
-			otp_ref_id: "58201938",
-			kyc_request_id: "KYC-20240101-005",
-		},
-		responseData: [
-			{
-				name: "kyc_status",
-				type: "string",
-				description: "KYC verification status: SUCCESS or FAILURE.",
-				imp: true,
-				example: "SUCCESS",
-			},
-			{
-				name: "name",
-				type: "string",
-				description: "Verified full name of the sender from Aadhaar.",
-				imp: true,
-				example: "Priya Sharma",
-			},
-			{
-				name: "dob",
-				type: "string",
-				description: "Date of birth from Aadhaar record.",
-				imp: true,
-				example: "20-03-1985",
-			},
-			{
-				name: "gender",
-				type: "string",
-				description: "Gender as per Aadhaar: M, F, or T.",
-				imp: true,
-				example: "F",
-			},
-			{
-				name: "masked_aadhaar",
-				type: "string",
-				description: "Aadhaar number with first 8 digits masked.",
-				imp: true,
-				example: "XXXX-XXXX-5678",
-			},
-			{
-				name: "kyc_request_id",
-				type: "string",
-				description:
-					"The KYC request ID for this transaction, for audit reference.",
-				example: "KYC-20240101-005",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "eKYC verified successfully",
-			response_type_id: 1388,
-			data: {
-				kyc_status: "SUCCESS",
-				name: "Priya Sharma",
-				dob: "20-03-1985",
-				gender: "F",
-				masked_aadhaar: "XXXX-XXXX-5678",
-				kyc_request_id: "KYC-20240101-005",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Wrong OTP entered",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 302,
-					message: "Wrong OTP. Please check and retry.",
-					response_type_id: 1388,
-					data: {},
-				},
-			},
-			{
-				scenario: "OTP has expired",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 303,
-					message: "OTP expired. Please regenerate.",
-					response_type_id: 1388,
-					data: {},
-				},
-			},
-		],
-	},
-	{
 		id: "aadhaar-dmt-levin-validate",
 		productId: "dmt",
-		name: "Validate Aadhaar & Generate OTP (DMT Levin)",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Aadhaar & Generate OTP",
 		slug: "aadhaar-dmt-levin-validate",
 		summary:
 			"Validate a sender's Aadhaar number and trigger an OTP to the linked mobile for DMT Levin onboarding.",
 		description:
 			"Submits the sender's Aadhaar number via the DMT Levin channel to initiate OTP-based Aadhaar validation. The `otp_ref_id` from the sender's existing profile plus the Aadhaar number are required. Returns a new `otp_ref_id` for the validation session. Part of the Levin DMT sender onboarding flow.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"DMT Levin sender onboarding flows that require Aadhaar number validation as a step before completing identity verification.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-levin/aadhaar",
+		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp",
 		docsUrl: "https://developers.eko.in/reference/validate-aadhar-levin",
 		extraRequestParams: [
 			{
@@ -7172,15 +6377,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1",
 			},
 		],
-		sampleRequest: {
-			customer_id: 9876543210,
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-007",
-			aadhar: "123456789012",
-			otp_ref_id: "73849201",
-			additional_info: "1",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -7223,18 +6419,19 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-dmt-levin-verify-otp",
 		productId: "dmt",
-		name: "Validate Sender Aadhaar OTP (DMT Levin)",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Sender Aadhaar OTP",
 		slug: "aadhaar-dmt-levin-verify-otp",
 		summary:
 			"Verify the Aadhaar OTP for a DMT Levin sender to complete identity validation.",
 		description:
 			"Validates the OTP received on the sender's Aadhaar-linked mobile number in the DMT Levin flow. Use `intent_id: 20` for Aadhaar validation (as opposed to `intent_id: 19` for sender onboarding). On success, the sender's identity is confirmed and their DMT Levin wallet profile is updated.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Completing OTP-based Aadhaar validation in the DMT Levin sender onboarding flow.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-levin/otp/verify",
+		path: "/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/validate-otp-levin",
 		extraRequestParams: [
 			{
@@ -7280,16 +6477,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-008",
-			otp: 123456,
-			otp_ref_id: 93847201,
-			intent_id: "20",
-			additional_info: "1",
-		},
 		responseData: [
 			{
 				name: "verified",
@@ -7367,19 +6554,20 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-ppi-levin-validate",
-		productId: "ppi-levin",
-		name: "Validate Aadhaar (PPI Levin)",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Aadhaar",
 		slug: "aadhaar-ppi-levin-validate",
 		summary:
 			"Submit sender's Aadhaar number for OTP-based validation in the PPI Levin wallet onboarding flow.",
 		description:
 			"Triggers Aadhaar OTP dispatch for a PPI Levin wallet sender. Requires a `wallet_token` and `wallet_id` from the preceding Verify Sender OTP step. Returns an `otp_ref_id` to be used in the PPI Levin Validate OTP call.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"PPI Levin wallet onboarding flows where sender Aadhaar must be validated as part of the KYC chain.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/ppi-levin/aadhaar",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/aadhaar/otp",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-validate-aadhar",
 		extraRequestParams: [
 			{
@@ -7417,15 +6605,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "wlt_0091234",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-009",
-			aadhar: "123456789012",
-			wallet_token: "wtkn_abc123xyz",
-			wallet_id: "wlt_0091234",
-		},
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -7468,19 +6647,20 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-ppi-levin-verify-otp",
-		productId: "ppi-levin",
-		name: "Validate Aadhaar OTP (PPI Levin)",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Aadhaar OTP",
 		slug: "aadhaar-ppi-levin-verify-otp",
 		summary:
 			"Verify the Aadhaar OTP to complete identity validation in the PPI Levin wallet onboarding flow.",
 		description:
 			"Validates the OTP dispatched during the PPI Levin Aadhaar validation step. On success, the sender's Aadhaar identity is confirmed and their PPI Levin wallet profile is updated with verified KYC data. Wallet-level parameters `wallet_token` and `wallet_id` may be required.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Completing Aadhaar OTP verification in the PPI Levin wallet sender onboarding flow.",
 		method: "POST",
-		path: "/customer/account/{customer_id}/dmt-levin/otp/verify",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/aadhaar/otp/verify",
 		docsUrl:
 			"https://developers.eko.in/reference/ppi-levin-validate-sender-aadhaar-otp",
 		extraRequestParams: [
@@ -7535,17 +6715,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "wlt_0091234",
 			},
 		],
-		sampleRequest: {
-			customer_id: "9876543210",
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-010",
-			otp: 654321,
-			otp_ref_id: 66748392,
-			intent_id: "20",
-			wallet_token: "wtkn_abc123xyz",
-			wallet_id: "wlt_0091234",
-		},
 		responseData: [
 			{
 				name: "verified",
@@ -7611,6 +6780,4409 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "ppi-levin-get-sender",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Get Sender Information",
+		slug: "ppi-levin-get-sender",
+		summary:
+			"Fetch a PPI Levin sender's wallet profile and onboarding/OTP state by mobile number.",
+		description:
+			"First step of the PPI Levin flow. For an enrolled sender the response returns an `otp_ref_id` and asks you to validate the OTP (call Verify Sender OTP). If the customer is not enrolled (response_type_id 308), proceed to Onboard Sender.",
+		relevance: "M",
+		bestFor:
+			"Checking PPI Levin sender enrolment before starting a wallet transaction.",
+		method: "GET",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/ppi-levin-get-sender-profile",
+		sourceDoc:
+			"https://developers.eko.in/reference/ppi-levin-get-sender-profile",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description:
+					"Intent flag for the next onboarding/validation step (19 = sender onboarding).",
+				example: 19,
+			},
+			{
+				name: "kyc_request_id",
+				type: "string",
+				description: "KYC request reference, when a KYC step is pending.",
+				example: "",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Sender OTP.",
+				example:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94Yii3g+9fOBmbMsVTuaEQpDOEateP4tSTkQw==",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94Yii3g+9fOBmbMsVTuaEQpDOEateP4tSTkQw==",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 2129,
+		},
+		errorScenarios: [
+			{
+				scenario: "Customer not enrolled — proceed to Onboard Sender",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { sender_name: "", ekyc_enabled: "" },
+					response_type_id: 308,
+					message: "Failure!Customer Not Enrolled",
+					status: 308,
+				},
+			},
+		],
+	},
+	{
+		id: "ppi-levin-onboard-sender",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Onboard Sender",
+		slug: "ppi-levin-onboard-sender",
+		summary:
+			"Register a new customer as a PPI Levin wallet sender using basic KYC details.",
+		description:
+			"Registers a new PPI Levin sender. Provide name, date of birth, and residence address. On success an OTP is dispatched and an `otp_ref_id` returned — call Verify Sender OTP next.",
+		relevance: "M",
+		bestFor: "First-time PPI Levin sender registration.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/ppi-levin-onboard-sender",
+		sourceDoc: "https://developers.eko.in/reference/ppi-levin-onboard-sender",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Name of the sender as per ID.",
+				example: "Shobhit",
+			},
+			{
+				name: "dob",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Date of birth of the sender in YYYY-MM-DD format.",
+				example: "1990-05-15",
+			},
+			{
+				name: "residence_address",
+				in: "body",
+				type: "array",
+				required: true,
+				description: "Sender's address as an array of strings.",
+				example: ["123 MG Road", "Bangalore", "Karnataka", "560001"],
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "Fixed service code. Send 80.",
+				example: 80,
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description: "Intent flag for the next step (19 = sender onboarding).",
+				example: 19,
+			},
+			{
+				name: "kyc_request_id",
+				type: "string",
+				description: "KYC request reference, when a KYC step is pending.",
+				example: "",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Sender OTP.",
+				example:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94YigSXr5Qr+aS8OTg/e0YrVEoPAbap746K5g==",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94YigSXr5Qr+aS8OTg/e0YrVEoPAbap746K5g==",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 2129,
+		},
+	},
+	{
+		id: "ppi-levin-verify-otp",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Verify Sender OTP",
+		slug: "ppi-levin-verify-otp",
+		summary:
+			"Verify the sender OTP to authenticate the PPI Levin wallet and return the sender's profile and balance.",
+		description:
+			"Validates the OTP issued by Get Sender Information / Onboard Sender. For an existing sender the response returns the full wallet `customer_profile` (limits, balance, KYC state) and a `wallet_token` used by downstream calls. For a new customer the flow continues to Aadhaar validation (Aadhar Validation Pending) and then PAN (Pan Number Required).",
+		relevance: "M",
+		bestFor:
+			"Authenticating a PPI Levin sender and retrieving wallet balance and monthly limits.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/ppi-levin-verify-sender-otp",
+		sourceDoc:
+			"https://developers.eko.in/reference/ppi-levin-verify-sender-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"OTP received from Get Sender Information, Onboard Sender, or Validate Aadhaar.",
+				example: 123456,
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"otp_ref_id received from Get Sender Information, Onboard Sender, or Validate Aadhaar.",
+				example: 66748392,
+			},
+			{
+				name: "intent_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					'Intent flag: "19" for sender onboarding, "20" for Aadhaar validation.',
+				example: "19",
+			},
+		],
+		responseData: [
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description:
+					"Sender's wallet profile — limits, balance, KYC state, and usage chart.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						imp: true,
+						description: "Registered name of the sender.",
+						example: "Shobhit",
+					},
+					{
+						name: "mobile",
+						type: "string",
+						description: "Sender's mobile number.",
+						example: "9444444444",
+					},
+					{
+						name: "total_monthly_limit",
+						type: "string",
+						description: "Total monthly transfer limit (INR).",
+						example: "50000",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						imp: true,
+						description: "Remaining transfer limit for the period (INR).",
+						example: "50000.0",
+					},
+					{
+						name: "balance",
+						type: "string",
+						imp: true,
+						description: "Current wallet balance (INR).",
+						example: "0.00",
+					},
+					{
+						name: "ekyc_enabled",
+						type: "number",
+						description: "Whether biometric eKYC is enabled (1) or not (0).",
+						example: 0,
+					},
+					{
+						name: "kyc_state",
+						type: "number",
+						description: "KYC completion state.",
+						example: 0,
+					},
+					{
+						name: "chart",
+						type: "array",
+						description: "Usage breakdown (used / remaining / unavailable).",
+						children: [
+							{
+								name: "data_type_id",
+								type: "number",
+								description: "Chart data type identifier.",
+								example: 10,
+							},
+							{
+								name: "data",
+								type: "object",
+								description: "Used / remaining / unavailable amounts.",
+								children: [
+									{
+										name: "used",
+										type: "number",
+										description: "Amount used in the period (INR).",
+										example: 0,
+									},
+									{
+										name: "remaining",
+										type: "number",
+										description: "Amount remaining in the period (INR).",
+										example: 50000,
+									},
+									{
+										name: "unavailable",
+										type: "number",
+										description: "Amount blocked/unavailable (INR).",
+										example: 0,
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+			{
+				name: "wallet_token",
+				type: "string",
+				imp: true,
+				description:
+					"Wallet authentication token (JWT) required by downstream PPI Levin calls.",
+				example:
+					"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZGVudGlmaWNhdGlvbkNvZGUiOiJQaFY2Wkc1QjMzRDE2NzZWZGhKTStBPT0iLCJCQ0FnZW50SWQiOiJxYkxIdm1LMDBYU1NTcS9rL0tSN0pBPT0iLCJleHAiOjE3NDg0MTg0OTIsImlzcyI6IlBheVBvaW50IiwiYXVkIjoiUGFydG5lcnMifQ.ylDVDuNjIymfjBE9jB0ZU0Lqhvj67AWRQ_dC76HOHbA",
+			},
+			{
+				name: "is_registered",
+				type: "number",
+				description: "Whether the sender is already fully registered.",
+				example: 0,
+			},
+			{
+				name: "next_allowed_limit",
+				type: "number",
+				description: "Remaining transfer limit at the top level (INR).",
+				example: 50000,
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				customer_profile: {
+					total_monthly_limit: "50000",
+					mobile: "9444444444",
+					kyc_id: "",
+					ekyc_enabled: 0,
+					kyc_validity: "",
+					kyc_remark: "",
+					kyc_type: "",
+					balance: "0.00",
+					next_allowed_limit: "50000.0",
+					name: "Shobhit",
+					digital_ekyc: 0,
+					chart: [
+						{
+							data_type_id: 10,
+							data: { unavailable: 0, used: 0, remaining: 50000 },
+							label: "",
+						},
+					],
+					email: "",
+					kyc_state: 0,
+				},
+				wallet_token:
+					"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZGVudGlmaWNhdGlvbkNvZGUiOiJQaFY2Wkc1QjMzRDE2NzZWZGhKTStBPT0iLCJCQ0FnZW50SWQiOiJxYkxIdm1LMDBYU1NTcS9rL0tSN0pBPT0iLCJleHAiOjE3NDg0MTg0OTIsImlzcyI6IlBheVBvaW50IiwiYXVkIjoiUGFydG5lcnMifQ.ylDVDuNjIymfjBE9jB0ZU0Lqhvj67AWRQ_dC76HOHbA",
+				id_proof_type_id: "",
+				is_registered: 0,
+				id_proof: "",
+				otpOptionalSum: "",
+				sender_name: "",
+				otpNotRequiredSum: "",
+				ekyc_enabled: "",
+				wallet_id: "",
+				otpNotRequiredSumNeft: "",
+				next_allowed_limit: 50000,
+				kyc_state: 0,
+				otpOptionalSumNeft: "",
+			},
+			response_type_id: 309,
+			message: "Success!",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "New customer — Aadhaar validation pending",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 2136,
+					message: "Aadhar Validation Pending",
+					status: 2136,
+				},
+			},
+			{
+				scenario: "Aadhaar validated — PAN required next",
+				statusCode: 200,
+				example: {
+					response_status_id: 0,
+					data: { application_id: "" },
+					response_type_id: 2147,
+					message: "Pan Number Required",
+					status: 0,
+				},
+			},
+		],
+	},
+	{
+		id: "ppi-levin-validate-pan",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate PAN",
+		slug: "ppi-levin-validate-pan",
+		summary:
+			"Validate the sender's PAN to complete PPI Levin KYC and return the updated wallet profile.",
+		description:
+			"Submits the sender's PAN to finish PPI Levin onboarding KYC. On success the response returns the updated `customer_profile` (with the verified sender name and recalculated limits).",
+		relevance: "M",
+		bestFor: "Completing PPI Levin sender KYC with PAN verification.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/pan",
+		docsUrl: "https://developers.eko.in/reference/ppi-levin-validate-pan",
+		sourceDoc: "https://developers.eko.in/reference/ppi-levin-validate-pan",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "pan_number",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "The PAN number of the sender.",
+				example: "ABCDE1234F",
+			},
+			{
+				name: "wallet_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Wallet identifier, when applicable.",
+				example: "",
+			},
+			{
+				name: "wallet_token",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Wallet authentication token, when applicable.",
+				example: "",
+			},
+		],
+		responseData: [
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description:
+					"Updated wallet profile with verified sender name and recalculated limits.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						imp: true,
+						description: "Verified registered name of the sender.",
+						example: "Karan Garg",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						imp: true,
+						description: "Remaining transfer limit for the period (INR).",
+						example: "5287.0",
+					},
+					{
+						name: "balance",
+						type: "string",
+						description: "Current wallet balance (INR).",
+						example: "0.00",
+					},
+				],
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				imp: true,
+				description: "Verified name of the sender.",
+				example: "Karan Garg",
+			},
+			{
+				name: "next_allowed_limit",
+				type: "number",
+				description: "Remaining transfer limit at the top level (INR).",
+				example: 5287,
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				customer_profile: {
+					total_monthly_limit: "50000.0",
+					mobile: "9444444444",
+					kyc_id: "",
+					ekyc_enabled: 0,
+					kyc_validity: "",
+					kyc_remark: "",
+					kyc_type: "",
+					balance: "0.00",
+					next_allowed_limit: "5287.0",
+					name: "Karan Garg",
+					digital_ekyc: 0,
+					chart: [
+						{
+							data_type_id: 10,
+							data: { unavailable: 0, used: 44713, remaining: 5287 },
+							label: "",
+						},
+					],
+					email: "",
+					kyc_state: 0,
+				},
+				id_proof_type_id: "",
+				is_registered: 0,
+				id_proof: "",
+				otpOptionalSum: "",
+				sender_name: "Karan Garg",
+				otpNotRequiredSum: "",
+				ekyc_enabled: "",
+				otpNotRequiredSumNeft: "",
+				next_allowed_limit: 5287,
+				account: "",
+				kyc_state: 0,
+				otpOptionalSumNeft: "",
+			},
+			response_type_id: 309,
+			message: "Success!",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-levin-get-recipients",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Recipients",
+		name: "Get List of Recipients",
+		slug: "ppi-levin-get-recipients",
+		summary: "Retrieve the list of saved beneficiaries for a PPI Levin sender.",
+		description:
+			"Returns every recipient saved under a PPI Levin sender, with bank/account details, verification status, available channels (IMPS/NEFT), and the sender's remaining limit before PAN becomes mandatory.",
+		relevance: "M",
+		bestFor: "Listing a PPI Levin sender's beneficiaries before a transfer.",
+		method: "GET",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/recipients",
+		docsUrl:
+			"https://developers.eko.in/reference/ppi-levin-get-list-of-recipients",
+		sourceDoc:
+			"https://developers.eko.in/reference/ppi-levin-get-list-of-recipients",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "wallet_token",
+				in: "query",
+				type: "string",
+				required: false,
+				description: "Wallet authentication token, when applicable.",
+				example: "",
+			},
+		],
+		responseData: [
+			{
+				name: "pan_required",
+				type: "number",
+				description:
+					"Whether PAN is required to continue transacting (2 = not yet required).",
+				example: 2,
+			},
+			{
+				name: "remaining_limit_before_pan_required",
+				type: "number",
+				description:
+					"Amount the sender can still transfer before PAN is required (INR).",
+				example: 50000,
+			},
+			{
+				name: "recipient_list",
+				type: "array",
+				imp: true,
+				description: "Saved beneficiaries for this sender.",
+				children: [
+					{
+						name: "recipient_id",
+						type: "number",
+						imp: true,
+						description: "Unique recipient identifier — use to transact.",
+						example: 10018839,
+					},
+					{
+						name: "recipient_name",
+						type: "string",
+						imp: true,
+						description: "Beneficiary's name.",
+						example: "Aditya",
+					},
+					{
+						name: "recipient_mobile",
+						type: "string",
+						description: "Beneficiary's mobile number.",
+						example: "9999999990",
+					},
+					{
+						name: "bank",
+						type: "string",
+						description: "Beneficiary's bank name.",
+						example: "Kotak Mahindra Bank",
+					},
+					{
+						name: "account",
+						type: "string",
+						description: "Masked beneficiary account number.",
+						example: "1XXXXXX90657",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Beneficiary branch IFSC.",
+						example: "KKBK0000878",
+					},
+					{
+						name: "beneficiary_id",
+						type: "number",
+						description: "Beneficiary identifier, when bank-registered.",
+						example: 40378,
+					},
+					{
+						name: "channel",
+						type: "number",
+						description: "Allowed transfer channel (0 = IMPS, 2 = NEFT).",
+						example: 0,
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				pan_required: 2,
+				recipient_list: [
+					{
+						channel_absolute: 0,
+						available_channel: 0,
+						account_type: "Bank Account",
+						ifsc_status: 1,
+						is_self_account: "0",
+						channel: 0,
+						is_imps_scheduled: 0,
+						recipient_id_type: "acc_ifsc",
+						imps_inactive_reason: "",
+						allowed_channel: 0,
+						is_verified: 0,
+						beneficiary_id: 40378,
+						bank: "Kotak Mahindra Bank",
+						is_otp_required: "0",
+						recipient_mobile: "9999999990",
+						recipient_name: "Aditya",
+						ifsc: "KKBK0000878",
+						account: "1XXXXXX90657",
+						pipes: { "3": { pipe: 3, status: 1 } },
+						recipient_id: 10018839,
+						is_rblbc_recipient: 1,
+					},
+					{
+						channel_absolute: 2,
+						available_channel: 2,
+						account_type: "Bank Account",
+						ifsc_status: 1,
+						is_self_account: "0",
+						channel: 2,
+						is_imps_scheduled: 0,
+						recipient_id_type: "acc_ifsc",
+						imps_inactive_reason: "",
+						allowed_channel: 2,
+						is_verified: 0,
+						beneficiary_id: null,
+						bank: "State Bank of India",
+						is_otp_required: "0",
+						recipient_mobile: "6888888886",
+						recipient_name: "Madness",
+						ifsc: "SBIN00005656",
+						account: "43XXXXXXXXX45",
+						pipes: { "3": { pipe: 3, status: 1 } },
+						recipient_id: 10065177,
+						is_rblbc_recipient: 1,
+					},
+				],
+				remaining_limit_before_pan_required: 50000,
+				is_insured: "",
+			},
+			response_type_id: 23,
+			message: "Success",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-levin-add-recipient",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Recipients",
+		name: "Add Recipient",
+		slug: "ppi-levin-add-recipient",
+		summary: "Register a new beneficiary under a PPI Levin sender's account.",
+		description:
+			"Adds a beneficiary (bank account) to a PPI Levin sender. On success a `recipient_id` is returned — use it to send transaction OTP and initiate the transfer. Maximum 5 recipients per day.",
+		relevance: "M",
+		bestFor: "Adding a bank beneficiary before a PPI Levin transfer.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/recipient",
+		docsUrl: "https://developers.eko.in/reference/ppi-levin-add-recipient",
+		sourceDoc: "https://developers.eko.in/reference/ppi-levin-add-recipient",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "bank_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique ID assigned to the beneficiary's bank.",
+				example: 12,
+			},
+			{
+				name: "recipient_name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Full name of the recipient.",
+				example: "Aditya",
+			},
+			{
+				name: "recipient_mobile",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Recipient's 10-digit mobile number.",
+				example: "9775597777",
+			},
+			{
+				name: "recipient_type",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Recipient type. Value will be 3.",
+				example: "3",
+			},
+			{
+				name: "account",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Recipient's bank account number.",
+				example: "1234567890657",
+			},
+			{
+				name: "ifsc",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "IFSC code of the recipient's bank branch.",
+				example: "KKBK0000878",
+			},
+			{
+				name: "type",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Recipient identifier type. Defaults to `ifsc`.",
+				example: "ifsc",
+			},
+			{
+				name: "account_type",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Account type. Defaults to 1.",
+				example: "1",
+			},
+		],
+		responseData: [
+			{
+				name: "recipient_id",
+				type: "number",
+				imp: true,
+				description: "Unique recipient identifier — use to transact.",
+				example: 10017740,
+			},
+			{
+				name: "recipient_mobile",
+				type: "string",
+				description: "Recipient's mobile number (echoed back).",
+				example: "9775597777",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				description: "Sender's mobile number (echoed back).",
+				example: "9444444444",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				initiator_id: "6000000094",
+				recipient_mobile: "9775597777",
+				recipient_id_type: "",
+				customer_id: "9444444444",
+				pipes: {},
+				recipient_id: 10017740,
+			},
+			response_type_id: 43,
+			message: "Success!Please transact using Recipientid",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-levin-add-recipient-bank",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Recipients",
+		name: "Add Recipient Bank",
+		slug: "ppi-levin-add-recipient-bank",
+		summary: "Register a bank beneficiary for an existing PPI Levin recipient.",
+		description:
+			"Adds bank details for a recipient, returning a `beneficiary_id` used when initiating NEFT/IMPS transfers to that recipient.",
+		relevance: "L",
+		bestFor: "Attaching bank details to a PPI Levin recipient.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin/sender/{customer_id}/bank/recipient",
+		docsUrl: "https://developers.eko.in/reference/ppi-levin-add-recipient-bank",
+		sourceDoc:
+			"https://developers.eko.in/reference/ppi-levin-add-recipient-bank",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Recipient ID of the recipient.",
+				example: "10017740",
+			},
+			{
+				name: "wallet_token",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Wallet authentication token, when applicable.",
+				example: "",
+			},
+		],
+		responseData: [
+			{
+				name: "beneficiary_id",
+				type: "string",
+				imp: true,
+				description:
+					"Beneficiary identifier — pass when initiating a transfer.",
+				example: "40367",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				beneficiary_id: "40367",
+				recipient_name: "",
+				ifsc: "",
+				account: "",
+				recipient_id: "",
+			},
+			response_type_id: 1741,
+			message: "Beneficiary added",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-levin-send-transaction-otp",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Transaction",
+		name: "Send Transaction OTP",
+		slug: "ppi-levin-send-transaction-otp",
+		summary:
+			"Request an OTP to the sender's mobile to authorise a PPI Levin transfer.",
+		description:
+			"Dispatches an OTP to the sender for an upcoming transfer to a given recipient and amount. Returns an `otp_ref_id` to pass, with the OTP, into Initiate Transaction.",
+		relevance: "M",
+		bestFor: "Authorising a PPI Levin transfer with an OTP.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin/otp",
+		docsUrl:
+			"https://developers.eko.in/reference/ppi-levin-send-transaction-otp",
+		sourceDoc:
+			"https://developers.eko.in/reference/ppi-levin-send-transaction-otp",
+		extraRequestParams: [
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique ID generated while adding the recipient.",
+				example: 10017740,
+			},
+			{
+				name: "amount",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Amount to be transferred (INR).",
+				example: 110,
+			},
+			{
+				name: "customer_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "Fixed service code. Send 80.",
+				example: 80,
+			},
+			{
+				name: "beneficiary_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description:
+					"Beneficiary ID generated when adding the recipient's bank.",
+				example: "40367",
+			},
+		],
+		responseData: [
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Initiate Transaction.",
+				example:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				otp_ref_id:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+			response_type_id: 2133,
+			message: "Send OTP",
+			status: 2133,
+		},
+	},
+	{
+		id: "ppi-levin-initiate-transaction",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Transaction",
+		name: "Initiate Transaction",
+		slug: "ppi-levin-initiate-transaction",
+		summary:
+			"Execute a PPI Levin wallet transfer to a recipient after OTP verification.",
+		description:
+			"Initiates the money transfer from the sender's PPI Levin wallet to the recipient. Returns the financial response envelope with `tx_status`, transaction id (`tid`), bank reference number, fee, and updated balance.",
+		relevance: "H",
+		bestFor: "Completing a PPI Levin wallet-to-bank transfer.",
+		method: "POST",
+		path: "/customer/payment/ppi-levin",
+		docsUrl:
+			"https://developers.eko.in/reference/ppi-levin-initiate-transaction",
+		sourceDoc:
+			"https://developers.eko.in/reference/ppi-levin-initiate-transaction",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique ID generated while adding the recipient.",
+				example: 10017680,
+			},
+			{
+				name: "amount",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Amount to be transferred (INR).",
+				example: 110,
+			},
+			{
+				name: "timestamp",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Request timestamp (ISO 8601).",
+				example: "2025-01-21T07:07:20.562Z",
+			},
+			{
+				name: "currency",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Currency. Must be INR.",
+				example: "INR",
+			},
+			{
+				name: "customer_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8999999992",
+			},
+			{
+				name: "channel",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Transfer channel. Defaults to 2 (NEFT); 0 for IMPS.",
+				example: 2,
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "OTP received from Send Transaction OTP.",
+				example: "123456",
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "otp_ref_id received from Send Transaction OTP.",
+				example:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+			{
+				name: "beneficiary_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description:
+					"Beneficiary ID generated while getting the recipient details.",
+				example: "40367",
+			},
+			{
+				name: "latlong",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Geographic coordinates of the user's location.",
+				example: "28.63,77.22",
+			},
+			{
+				name: "state",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "State parameter.",
+				example: "1",
+			},
+			{
+				name: "recipient_id_type",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Recipient ID type. Defaults to 1.",
+				example: "1",
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID.",
+				example: "2886522975",
+			},
+			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description: "Transaction status (0 = success).",
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				imp: true,
+				description: "Bank/UTR reference number for the transfer.",
+				example: "250121123714472002",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Transferred amount (INR).",
+				example: "110.00",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for the transfer (INR).",
+				example: "4.0",
+			},
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Sender's wallet balance after the transfer (INR).",
+				example: "814.0",
+			},
+			{
+				name: "bank",
+				type: "string",
+				description: "Recipient's bank name.",
+				example: "UCO Bank",
+			},
+			{
+				name: "channel_desc",
+				type: "string",
+				description: "Channel used (IMPS/NEFT).",
+				example: "IMPS",
+			},
+			{
+				name: "recipient_name",
+				type: "string",
+				description: "Recipient's name.",
+				example: "Krishna",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				tx_status: "0",
+				debit_user_id: "6000000094",
+				tds: "0.0",
+				txstatus_desc: "Success",
+				fee: "4.0",
+				total_sent: "",
+				channel: "2",
+				collectable_amount: "114.0",
+				txn_wallet: "0",
+				utility_acc_no: "8999999992",
+				sender_name: "8999999992",
+				ekyc_enabled: "0",
+				remaining_limit_before_pan_required: 49678,
+				tid: "2886522975",
+				bank: "UCO Bank",
+				utrnumber: "",
+				insurance_acquired: "",
+				balance: "814.0",
+				totalfee: "",
+				next_allowed_limit: "",
+				is_otp_required: "0",
+				aadhar: "",
+				currency: "INR",
+				commission: "0.0",
+				pipe: 13,
+				state: "1",
+				bank_ref_num: "250121123714472002",
+				recipient_id: 10017680,
+				timestamp: "2025-01-21T07:07:20.562Z",
+				amount: "110.00",
+				pan_required: 2,
+				pinNo: "",
+				gst_benefit: "0",
+				payment_mode_desc: "",
+				channel_desc: "IMPS",
+				last_used_okekey: "0",
+				npr: "",
+				insurance_amount: "",
+				service_tax: "0.61",
+				paymentid: "",
+				mdr: "",
+				recipient_name: "Krishna",
+				customer_id: "8999999992",
+				account: "67544100008454",
+				kyc_state: "",
+			},
+			response_type_id: 325,
+			message: "Transaction successful",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-get-sender",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Get Sender Information",
+		slug: "ppi-digikhata-get-sender",
+		summary:
+			"Fetch a DigiKhata wallet sender's profile and onboarding/OTP state by mobile number.",
+		description:
+			"First step of the PPI DigiKhata flow. For an enrolled sender the response returns an `otp_ref_id` and asks you to validate the OTP (call Verify Sender OTP). If the customer is not enrolled (response_type_id 308), proceed to Onboard Sender.",
+		relevance: "M",
+		bestFor: "Checking DigiKhata sender enrolment before a wallet operation.",
+		method: "GET",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/get-sender-information",
+		sourceDoc: "https://developers.eko.in/reference/get-sender-information",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description:
+					"Intent flag for the next onboarding/validation step (19 = sender onboarding).",
+				example: 19,
+			},
+			{
+				name: "kyc_request_id",
+				type: "string",
+				description: "KYC request reference, when a KYC step is pending.",
+				example: "",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Sender OTP.",
+				example:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94Yii3g+9fOBmbMsVTuaEQpDOEateP4tSTkQw==",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94Yii3g+9fOBmbMsVTuaEQpDOEateP4tSTkQw==",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 2129,
+		},
+		errorScenarios: [
+			{
+				scenario: "Customer not enrolled — proceed to Onboard Sender",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { sender_name: "", ekyc_enabled: "" },
+					response_type_id: 308,
+					message: "Failure!Customer Not Enrolled",
+					status: 308,
+				},
+			},
+		],
+	},
+	{
+		id: "ppi-digikhata-onboard-sender",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Onboard Sender",
+		slug: "ppi-digikhata-onboard-sender",
+		summary:
+			"Register a new customer as a PPI DigiKhata wallet sender using basic KYC details.",
+		description:
+			"Registers a new DigiKhata sender. Provide name, date of birth, and residence address. For a new sender an OTP is dispatched and an `otp_ref_id` returned — call Verify Sender OTP next. If the wallet already exists the response confirms `Wallet opened successfully`.",
+		relevance: "M",
+		bestFor: "First-time DigiKhata wallet sender registration.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/onboard-sender",
+		sourceDoc: "https://developers.eko.in/reference/onboard-sender",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Name of the sender as per ID.",
+				example: "Yashwant Basnett",
+			},
+			{
+				name: "dob",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Date of birth of the sender in YYYY-MM-DD format.",
+				example: "1990-05-15",
+			},
+			{
+				name: "residence_address",
+				in: "body",
+				type: "array",
+				required: true,
+				description: "Sender's address as an array of strings.",
+				example: ["123 MG Road", "Bangalore", "Karnataka", "560001"],
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description: "Intent flag for the next step (19 = sender onboarding).",
+				example: 19,
+			},
+			{
+				name: "kyc_request_id",
+				type: "string",
+				description: "KYC request reference, when a KYC step is pending.",
+				example: "",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Sender OTP.",
+				example:
+					"leSLbMTFJpWWyG+NIDZW1IM6D+1tVJ6hgzp33AcOnMOJNPmRic8dJQazrKttIV3oIOpXKP8OdkARMo2DvP8bWEKK2P3h2dAK",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"leSLbMTFJpWWyG+NIDZW1IM6D+1tVJ6hgzp33AcOnMOJNPmRic8dJQazrKttIV3oIOpXKP8OdkARMo2DvP8bWEKK2P3h2dAK",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Wallet already exists for this sender",
+				statusCode: 200,
+				example: {
+					response_status_id: 0,
+					data: {
+						customer_id_type: "mobile_number",
+						state_desc: "Non-Kyc",
+						state: "2",
+						customer_id: "8617567988",
+					},
+					response_type_id: 300,
+					message: "Wallet opened successfully.",
+					status: 0,
+				},
+			},
+		],
+	},
+	{
+		id: "ppi-digikhata-generate-sender-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Generate Sender Verification OTP",
+		slug: "ppi-digikhata-generate-sender-otp",
+		summary:
+			"Send a verification OTP to a DigiKhata sender's registered mobile number.",
+		description:
+			"Generates and dispatches a verification OTP to the sender. Returns an `otp_ref_id` to pass, with the OTP, into Verify Sender OTP.",
+		relevance: "M",
+		bestFor: "Re-issuing the DigiKhata sender verification OTP.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/otp",
+		docsUrl: "https://developers.eko.in/reference/generate-sender-otp",
+		sourceDoc: "https://developers.eko.in/reference/generate-sender-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description: "Intent flag for the next step (19 = sender onboarding).",
+				example: 19,
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Sender OTP.",
+				example:
+					"leSLbMTFJpWWyG+NIDZW1IM6D+1tVJ6haUuWCwcbJVCWUgeMOoj5vNqXAGuOK+Cro+AqdfLdmm5z5AQ+PGkPdHUQJ9nuLPKS",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"leSLbMTFJpWWyG+NIDZW1IM6D+1tVJ6haUuWCwcbJVCWUgeMOoj5vNqXAGuOK+Cro+AqdfLdmm5z5AQ+PGkPdHUQJ9nuLPKS",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-verify-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Verify Sender OTP",
+		slug: "ppi-digikhata-verify-otp",
+		summary:
+			"Verify the sender OTP to authenticate the DigiKhata wallet and return the sender's profile and balance.",
+		description:
+			"Validates the OTP issued by Get Sender Information / Onboard Sender / Generate Sender OTP. For an existing sender the response returns the full wallet `customer_profile` (limits, balance, KYC state). For a new sender the flow continues to Aadhaar validation (Aadhar Validation Pending).",
+		relevance: "M",
+		bestFor:
+			"Authenticating a DigiKhata sender and retrieving wallet balance and limits.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/verify-sender-otp",
+		sourceDoc: "https://developers.eko.in/reference/verify-sender-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"OTP received from Get Sender Information, Onboard Sender, or Generate Sender OTP.",
+				example: 123456,
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"otp_ref_id received from Get Sender Information, Onboard Sender, or Generate Sender OTP.",
+				example: 66748392,
+			},
+		],
+		responseData: [
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description:
+					"Sender's wallet profile — limits, balance, KYC state, and usage chart.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						imp: true,
+						description: "Registered name of the sender.",
+						example: "Yashwant Basnett",
+					},
+					{
+						name: "mobile",
+						type: "string",
+						description: "Sender's mobile number.",
+						example: "8617567988",
+					},
+					{
+						name: "total_monthly_limit",
+						type: "string",
+						description: "Total monthly transfer limit (INR).",
+						example: "50000.0",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						imp: true,
+						description: "Remaining transfer limit for the period (INR).",
+						example: "50000.0",
+					},
+					{
+						name: "balance",
+						type: "string",
+						imp: true,
+						description: "Current wallet balance (INR).",
+						example: "0.00",
+					},
+					{
+						name: "kyc_state",
+						type: "number",
+						description: "KYC completion state.",
+						example: 1,
+					},
+				],
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				imp: true,
+				description: "Registered name of the sender.",
+				example: "Yashwant Basnett",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				customer_profile: {
+					total_monthly_limit: "50000.0",
+					mobile: "8617567988",
+					kyc_id: "",
+					ekyc_enabled: 0,
+					kyc_validity: "",
+					kyc_remark: "",
+					kyc_type: "",
+					balance: "0.00",
+					next_allowed_limit: "50000.0",
+					name: "Yashwant Basnett",
+					digital_ekyc: 0,
+					chart: [
+						{
+							data_type_id: 10,
+							data: { unavailable: 0, used: 0, remaining: 50000 },
+							label: "",
+						},
+					],
+					email: "",
+					kyc_state: 1,
+				},
+				wallet_token: "",
+				id_proof_type_id: "",
+				is_registered: 0,
+				id_proof: "",
+				otpOptionalSum: "",
+				sender_name: "Yashwant Basnett",
+				otpNotRequiredSum: "",
+				ekyc_enabled: "",
+				wallet_id: "",
+				otpNotRequiredSumNeft: "",
+				next_allowed_limit: 50000.0,
+				account: "",
+				kyc_state: 0,
+				otpOptionalSumNeft: "",
+			},
+			response_type_id: 309,
+			message: "Success!",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "New sender — Aadhaar validation pending",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { otp_ref_id: "" },
+					response_type_id: 2136,
+					message: "Aadhar Validation Pending",
+					status: 2136,
+				},
+			},
+		],
+	},
+	{
+		id: "ppi-digikhata-consent-languages",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Get Aadhaar KYC Consent Languages",
+		slug: "ppi-digikhata-consent-languages",
+		summary:
+			"List the languages available for the DigiKhata Aadhaar e-KYC consent.",
+		description:
+			"Returns the supported consent languages (with their `pkid`) for DigiKhata Aadhaar e-KYC. Pass the chosen `pkid` as `consent_language` to Get Aadhaar KYC Consent Details.",
+		relevance: "L",
+		bestFor: "Presenting Aadhaar e-KYC consent in the customer's language.",
+		method: "GET",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/languages",
+		docsUrl:
+			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-languages",
+		sourceDoc:
+			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-languages",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "org_id",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "Organisation identifier. Defaults to 1.",
+				example: "1",
+			},
+			{
+				name: "client_ref_id",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "Unique reference identifier for the request.",
+				example: "ref_20250121_001",
+			},
+		],
+		responseData: [
+			{
+				name: "consent_language_list",
+				type: "array",
+				imp: true,
+				description: "Supported consent languages.",
+				children: [
+					{
+						name: "pkid",
+						type: "string",
+						imp: true,
+						description:
+							"Language identifier — pass as consent_language to Get Consent Details.",
+						example: "1",
+					},
+					{
+						name: "consentLanguage",
+						type: "string",
+						description: "Display name of the language.",
+						example: "English",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				consent_language_list: [
+					{ pkid: "1", consentLanguage: "English" },
+					{ pkid: "2", consentLanguage: "Bengali" },
+					{ pkid: "3", consentLanguage: "Gujarati" },
+					{ pkid: "4", consentLanguage: "Hindi" },
+					{ pkid: "5", consentLanguage: "Kannada" },
+					{ pkid: "6", consentLanguage: "Malayalam" },
+					{ pkid: "7", consentLanguage: "Marathi" },
+					{ pkid: "8", consentLanguage: "Odia" },
+					{ pkid: "9", consentLanguage: "Tamil" },
+					{ pkid: "10", consentLanguage: "Telugu" },
+					{ pkid: "11", consentLanguage: "Urdu" },
+					{ pkid: "12", consentLanguage: "Assamese" },
+					{ pkid: "13", consentLanguage: "Punjabi" },
+				],
+			},
+			response_type_id: 2444,
+			message: "Consent Language Successfully Retrieved",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-consent-details",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Get Aadhaar KYC Consent Details",
+		slug: "ppi-digikhata-consent-details",
+		summary:
+			"Fetch the DigiKhata Aadhaar e-KYC consent text and audio for a chosen language.",
+		description:
+			"Returns the full Aadhaar e-KYC consent content, short consent statement, and an audio URL for the language selected (via `consent_language` = the `pkid` from Get Aadhaar KYC Consent Languages). Display/play this consent before collecting Aadhaar OTP.",
+		relevance: "L",
+		bestFor: "Showing the mandatory Aadhaar e-KYC consent before OTP capture.",
+		method: "GET",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/details",
+		docsUrl:
+			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-details",
+		sourceDoc:
+			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-details",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "org_id",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "Organisation identifier. Defaults to 1.",
+				example: "1",
+			},
+			{
+				name: "client_ref_id",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "Unique reference identifier for the request.",
+				example: "ref_20250121_001",
+			},
+			{
+				name: "consent_language",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "The pkid from Get Aadhaar KYC Consent Languages.",
+				example: "1",
+			},
+		],
+		responseData: [
+			{
+				name: "consent_detail",
+				type: "object",
+				imp: true,
+				description: "Consent content, short statement, and audio URL.",
+				children: [
+					{
+						name: "consentContent",
+						type: "string",
+						description: "Full Aadhaar e-KYC consent text.",
+						example: "Use my Aadhaar / Virtual ID details …",
+					},
+					{
+						name: "consent",
+						type: "string",
+						imp: true,
+						description: "Short consent statement to display.",
+						example:
+							"Consent for Authentication: I, the holder of Aadhaar number, hereby give my consent …",
+					},
+					{
+						name: "audioUrl",
+						type: "string",
+						description:
+							"Audio rendition of the consent in the chosen language.",
+						example: "https://paypointindia.co.in/audio/Consent_English.mp3",
+					},
+					{
+						name: "consentId",
+						type: "number",
+						description: "Consent identifier.",
+						example: 1,
+					},
+					{
+						name: "consentLanguage",
+						type: "string",
+						description: "Language of the returned consent.",
+						example: "English",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				consent_detail: {
+					consentContent:
+						"Use my Aadhaar / Virtual ID details (as applicable) for the purpose of e-KYC for/with PayPoint India to authenticate my identity through the Aadhaar Authentication system (Aadhaar based e-KYC services of UIDAI) in accordance with the provisions of the Aadhaar (Targeted Delivery of Financial and other Subsidies, Benefits and Services) Act, 2016 and the allied rules and regulations notified thereunder and for no other purpose.\r\n Authenticate my Aadhaar/Virtual ID through OTP or Biometric for authenticating my identity through the Aadhaar Authentication system for obtaining my e-KYC through Aadhaar based e-KYC services of UIDAI and use my Photo and Demographic details (Name, Gender, Date of Birth and Address) for the purpose of e-KYC for/with PayPoint India.\r\n I understand that Security and confidentiality of personal identity data provided, for the purpose of Aadhaar based authentication is ensured by PayPoint and the data will be stored by PayPoint till such time as mentioned in guidelines from UIDAI from time to time.",
+					audioUrl: "https://paypointindia.co.in/audio/Consent_English.mp3",
+					consentId: 1,
+					consent:
+						"Consent for Authentication: I, the holder of Aadhaar number, hereby give my consent to Paypoint India Network Private Limited to perform authentication and obtain my e-KYC with UIDAI for the purpose of creating my wallet.",
+					consentLanguage: "English",
+				},
+			},
+			response_type_id: 2446,
+			message: "Consent Language Successfully Retrieved",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-generate-aadhaar-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Generate Sender Aadhaar OTP",
+		slug: "ppi-digikhata-generate-aadhaar-otp",
+		summary:
+			"Validate a DigiKhata sender's Aadhaar number and trigger an OTP to the linked mobile.",
+		description:
+			"Submits the sender's Aadhaar number and dispatches an OTP to the Aadhaar-linked mobile for e-KYC. Returns an `otp_ref_id` to pass into Validate Sender Aadhaar OTP.",
+		relevance: "M",
+		bestFor: "Starting DigiKhata Aadhaar e-KYC for a sender.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp",
+		docsUrl: "https://developers.eko.in/reference/generate-sender-aadhaar-otp",
+		sourceDoc:
+			"https://developers.eko.in/reference/generate-sender-aadhaar-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "aadhar",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "12-digit Aadhaar number of the sender.",
+				example: "123456789012",
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description: "Intent flag (20 = Aadhaar validation).",
+				example: 20,
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description:
+					"OTP session reference — pass to Validate Sender Aadhaar OTP.",
+				example:
+					"leSLbMTFJpWWyG+NIDZW1IM6D+1tVJ6haUuWCwcbJVCWUgeMOoj5vNqXAGuOK+Cro+AqdfLdmm5z5AQ+PGkPdHUQJ9nuLPKS",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				intent_id: 20,
+				kyc_request_id: "",
+				otp_ref_id:
+					"leSLbMTFJpWWyG+NIDZW1IM6D+1tVJ6haUuWCwcbJVCWUgeMOoj5vNqXAGuOK+Cro+AqdfLdmm5z5AQ+PGkPdHUQJ9nuLPKS",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-verify-aadhaar-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Validate Sender Aadhaar OTP",
+		slug: "ppi-digikhata-verify-aadhaar-otp",
+		summary:
+			"Verify the Aadhaar OTP to complete DigiKhata sender Aadhaar e-KYC.",
+		description:
+			"Validates the OTP dispatched during Generate Sender Aadhaar OTP. On success the Aadhaar identity is confirmed and the flow proceeds to PAN validation (Pan Number Required).",
+		relevance: "M",
+		bestFor: "Completing DigiKhata sender Aadhaar e-KYC.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/verify-aadhaar-otp",
+		sourceDoc: "https://developers.eko.in/reference/verify-aadhaar-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "OTP received from Generate Sender Aadhaar OTP.",
+				example: 654321,
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "otp_ref_id received from Generate Sender Aadhaar OTP.",
+				example: 66748392,
+			},
+		],
+		responseData: [
+			{
+				name: "application_id",
+				type: "string",
+				description: "KYC application identifier, when issued.",
+				example: "",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: { application_id: "" },
+			response_type_id: 2147,
+			message: "Pan Number Required",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-validate-pan",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Validate Sender PAN",
+		slug: "ppi-digikhata-validate-pan",
+		summary:
+			"Validate the sender's PAN to complete DigiKhata KYC and return the updated wallet profile.",
+		description:
+			"Submits the sender's PAN to finish DigiKhata onboarding KYC. On success the response returns the updated `customer_profile` (verified sender name and recalculated limits).",
+		relevance: "M",
+		bestFor: "Completing DigiKhata sender KYC with PAN verification.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/pan",
+		docsUrl: "https://developers.eko.in/reference/verify-pan",
+		sourceDoc: "https://developers.eko.in/reference/verify-pan",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "pan_number",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "The PAN number of the sender.",
+				example: "ABCDE1234F",
+			},
+		],
+		responseData: [
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description:
+					"Updated wallet profile with verified sender name and recalculated limits.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						imp: true,
+						description: "Verified registered name of the sender.",
+						example: "Karan Garg",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						imp: true,
+						description: "Remaining transfer limit for the period (INR).",
+						example: "5287.0",
+					},
+				],
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				imp: true,
+				description: "Verified name of the sender.",
+				example: "Karan Garg",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				customer_profile: {
+					total_monthly_limit: "50000.0",
+					mobile: "9444444444",
+					kyc_id: "",
+					ekyc_enabled: 0,
+					kyc_validity: "",
+					kyc_remark: "",
+					kyc_type: "",
+					balance: "0.00",
+					next_allowed_limit: "5287.0",
+					name: "Karan Garg",
+					digital_ekyc: 0,
+					chart: [
+						{
+							data_type_id: 10,
+							data: { unavailable: 0, used: 44713, remaining: 5287 },
+							label: "",
+						},
+					],
+					email: "",
+					kyc_state: 0,
+				},
+				id_proof_type_id: "",
+				is_registered: 0,
+				id_proof: "",
+				otpOptionalSum: "",
+				sender_name: "Karan Garg",
+				otpNotRequiredSum: "",
+				ekyc_enabled: "",
+				otpNotRequiredSumNeft: "",
+				next_allowed_limit: 5287,
+				account: "",
+				kyc_state: 0,
+				otpOptionalSumNeft: "",
+			},
+			response_type_id: 309,
+			message: "Success!",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-load-wallet",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
+		name: "Load Sender DigiKhata Wallet",
+		slug: "ppi-digikhata-load-wallet",
+		summary: "Load funds into a DigiKhata sender's prepaid wallet.",
+		description:
+			"Credits the sender's DigiKhata wallet with the given amount. Returns a transaction id (`tid`) and the fee charged for the load.",
+		relevance: "M",
+		bestFor: "Topping up a DigiKhata sender's wallet before transfers.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/wallet/loadwallet",
+		docsUrl: "https://developers.eko.in/reference/load-digikhata-wallet",
+		sourceDoc: "https://developers.eko.in/reference/load-digikhata-wallet",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "amount",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Amount to load into the wallet (INR).",
+				example: "500",
+			},
+			{
+				name: "org_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Organisation identifier. Defaults to 1.",
+				example: "1",
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID for the wallet load.",
+				example: "355419717321",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for the wallet load (INR).",
+				example: "5.0",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				fee: "5.0",
+				description: "",
+				customer_id: "",
+				bank_ref_num: "",
+				tid: "355419717321",
+			},
+			response_type_id: 2447,
+			message: "The Digi Khata wallet has been loaded successfully.",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-get-recipients",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
+		name: "Get List of Recipients",
+		slug: "ppi-digikhata-get-recipients",
+		summary: "Retrieve the list of saved beneficiaries for a DigiKhata sender.",
+		description:
+			"Returns every recipient saved under a DigiKhata sender, with bank/account details, verification status, available channels (IMPS/NEFT), and the sender's remaining limit before PAN becomes mandatory.",
+		relevance: "M",
+		bestFor: "Listing a DigiKhata sender's beneficiaries before a transfer.",
+		method: "GET",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipients",
+		docsUrl: "https://developers.eko.in/reference/get-all-recipients",
+		sourceDoc: "https://developers.eko.in/reference/get-all-recipients",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+		],
+		responseData: [
+			{
+				name: "pan_required",
+				type: "number",
+				description:
+					"Whether PAN is required to continue transacting (2 = not yet required).",
+				example: 2,
+			},
+			{
+				name: "remaining_limit_before_pan_required",
+				type: "number",
+				description:
+					"Amount the sender can still transfer before PAN is required (INR).",
+				example: 50000,
+			},
+			{
+				name: "recipient_list",
+				type: "array",
+				imp: true,
+				description: "Saved beneficiaries for this sender.",
+				children: [
+					{
+						name: "recipient_id",
+						type: "number",
+						imp: true,
+						description: "Unique recipient identifier — use to transact.",
+						example: 10018839,
+					},
+					{
+						name: "recipient_name",
+						type: "string",
+						imp: true,
+						description: "Beneficiary's name.",
+						example: "Aditya",
+					},
+					{
+						name: "bank",
+						type: "string",
+						description: "Beneficiary's bank name.",
+						example: "Kotak Mahindra Bank",
+					},
+					{
+						name: "account",
+						type: "string",
+						description: "Masked beneficiary account number.",
+						example: "1XXXXXX90657",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Beneficiary branch IFSC.",
+						example: "KKBK0000878",
+					},
+					{
+						name: "beneficiary_id",
+						type: "number",
+						description: "Beneficiary identifier, when bank-registered.",
+						example: 40378,
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				pan_required: 2,
+				recipient_list: [
+					{
+						channel_absolute: 0,
+						available_channel: 0,
+						account_type: "Bank Account",
+						ifsc_status: 1,
+						is_self_account: "0",
+						channel: 0,
+						is_imps_scheduled: 0,
+						recipient_id_type: "acc_ifsc",
+						imps_inactive_reason: "",
+						allowed_channel: 0,
+						is_verified: 0,
+						beneficiary_id: 40378,
+						bank: "Kotak Mahindra Bank",
+						is_otp_required: "0",
+						recipient_mobile: "9999999990",
+						recipient_name: "Aditya",
+						ifsc: "KKBK0000878",
+						account: "1XXXXXX90657",
+						pipes: { "3": { pipe: 3, status: 1 } },
+						recipient_id: 10018839,
+						is_rblbc_recipient: 1,
+					},
+					{
+						channel_absolute: 2,
+						available_channel: 2,
+						account_type: "Bank Account",
+						ifsc_status: 1,
+						is_self_account: "0",
+						channel: 2,
+						is_imps_scheduled: 0,
+						recipient_id_type: "acc_ifsc",
+						imps_inactive_reason: "",
+						allowed_channel: 2,
+						is_verified: 0,
+						beneficiary_id: null,
+						bank: "State Bank of India",
+						is_otp_required: "0",
+						recipient_mobile: "6888888886",
+						recipient_name: "Madness",
+						ifsc: "SBIN00005656",
+						account: "43XXXXXXXXX45",
+						pipes: { "3": { pipe: 3, status: 1 } },
+						recipient_id: 10065177,
+						is_rblbc_recipient: 1,
+					},
+				],
+				remaining_limit_before_pan_required: 50000,
+				is_insured: "",
+			},
+			response_type_id: 23,
+			message: "Success",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-add-recipient",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
+		name: "Add Recipient",
+		slug: "ppi-digikhata-add-recipient",
+		summary: "Register a new beneficiary under a DigiKhata sender's account.",
+		description:
+			"Adds a beneficiary (bank account) to a DigiKhata sender. On success a `recipient_id` is returned — use it to send transaction OTP and initiate the transfer. Maximum 5 recipients per day.",
+		relevance: "M",
+		bestFor: "Adding a bank beneficiary before a DigiKhata transfer.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipient",
+		docsUrl: "https://developers.eko.in/reference/paypoint-add-recipient",
+		sourceDoc: "https://developers.eko.in/reference/paypoint-add-recipient",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "bank_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique ID assigned to the beneficiary's bank.",
+				example: 12,
+			},
+			{
+				name: "recipient_name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Full name of the recipient.",
+				example: "Aditya",
+			},
+			{
+				name: "recipient_mobile",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Recipient's 10-digit mobile number.",
+				example: "9775597777",
+			},
+			{
+				name: "account",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Recipient's bank account number.",
+				example: "1234567890657",
+			},
+			{
+				name: "bank_code",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "IFSC code of the recipient's bank branch.",
+				example: "KKBK0000878",
+			},
+		],
+		responseData: [
+			{
+				name: "recipient_id",
+				type: "number",
+				imp: true,
+				description: "Unique recipient identifier — use to transact.",
+				example: 10017740,
+			},
+			{
+				name: "recipient_mobile",
+				type: "string",
+				description: "Recipient's mobile number (echoed back).",
+				example: "9775597777",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				initiator_id: "6000000094",
+				recipient_mobile: "9775597777",
+				recipient_id_type: "",
+				customer_id: "9444444444",
+				pipes: {},
+				recipient_id: 10017740,
+			},
+			response_type_id: 43,
+			message: "Success!Please transact using Recipientid",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-recipient-bank-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
+		name: "Generate Add Recipient Bank OTP",
+		slug: "ppi-digikhata-recipient-bank-otp",
+		summary:
+			"Generate an OTP to register a recipient's bank for a DigiKhata sender.",
+		description:
+			"Initiates bank registration for a recipient and dispatches an OTP. Returns a `beneficiary_id` and `otp_ref_id` to pass into Validate OTP to Add Recipient.",
+		relevance: "L",
+		bestFor: "Starting recipient bank registration on DigiKhata.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipient/bank/otp",
+		docsUrl: "https://developers.eko.in/reference/recipient-bank-registration",
+		sourceDoc:
+			"https://developers.eko.in/reference/recipient-bank-registration",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Recipient ID of the recipient to register a bank for.",
+				example: "10017740",
+			},
+		],
+		responseData: [
+			{
+				name: "beneficiary_id",
+				type: "string",
+				imp: true,
+				description: "Beneficiary identifier created for the recipient bank.",
+				example: "4202888",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description:
+					"OTP session reference — pass to Validate OTP to Add Recipient.",
+				example: "8617567988~8617567988~Channel4~4202888~4202888",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				beneficiary_id: "4202888",
+				recipient_name: "",
+				ifsc: "",
+				account: "",
+				otp_ref_id: "8617567988~8617567988~Channel4~4202888~4202888",
+				recipient_id: "",
+			},
+			response_type_id: 1741,
+			message: "Beneficiary added",
+			status: 0,
+		},
+	},
+	{
+		id: "ppi-digikhata-validate-recipient-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
+		name: "Validate OTP to Add Recipient",
+		slug: "ppi-digikhata-validate-recipient-otp",
+		summary:
+			"Verify the OTP to complete recipient bank registration for a DigiKhata sender.",
+		description:
+			"Validates the OTP issued by Generate Add Recipient Bank OTP to confirm the recipient's bank registration.",
+		relevance: "L",
+		bestFor: "Confirming recipient bank registration on DigiKhata.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipient/bank/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/validate-otp",
+		sourceDoc: "https://developers.eko.in/reference/validate-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "OTP received from Generate Add Recipient Bank OTP.",
+				example: 654321,
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"otp_ref_id received from Generate Add Recipient Bank OTP.",
+				example: 66748392,
+			},
+		],
+		responseData: [
+			{
+				name: "application_id",
+				type: "string",
+				description: "Application identifier, when issued.",
+				example: "",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: { application_id: "" },
+			response_type_id: 2131,
+			message: "Validate OTP",
+			status: 2131,
+		},
+	},
+	{
+		id: "ppi-digikhata-send-transaction-otp",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Transaction",
+		name: "Send Transaction OTP",
+		slug: "ppi-digikhata-send-transaction-otp",
+		summary:
+			"Request an OTP to the sender's mobile to authorise a DigiKhata transfer.",
+		description:
+			"Dispatches an OTP to the sender for an upcoming transfer to a given recipient and amount. Returns an `otp_ref_id` to pass, with the OTP, into Initiate Transaction.",
+		relevance: "M",
+		bestFor: "Authorising a DigiKhata transfer with an OTP.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata/otp",
+		docsUrl: "https://developers.eko.in/reference/send-transaction-otp",
+		sourceDoc: "https://developers.eko.in/reference/send-transaction-otp",
+		extraRequestParams: [
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique ID generated while adding the recipient.",
+				example: 10017740,
+			},
+			{
+				name: "amount",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Amount to be transferred (INR).",
+				example: 110,
+			},
+			{
+				name: "customer_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8617567988",
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "Fixed service code. Send 80.",
+				example: 80,
+			},
+			{
+				name: "beneficiary_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description:
+					"Beneficiary ID generated when adding the recipient's bank.",
+				example: "4202888",
+			},
+		],
+		responseData: [
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Initiate Transaction.",
+				example:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				otp_ref_id:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+			response_type_id: 2133,
+			message: "Send OTP",
+			status: 2133,
+		},
+	},
+	{
+		id: "ppi-digikhata-initiate-transaction",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Transaction",
+		name: "Initiate Transaction",
+		slug: "ppi-digikhata-initiate-transaction",
+		summary:
+			"Execute a DigiKhata wallet transfer to a recipient after OTP verification.",
+		description:
+			"Initiates the money transfer from the sender's DigiKhata wallet to the recipient. Returns the financial response envelope with `tx_status`, transaction id (`tid`), bank reference number, fee, and updated balance.",
+		relevance: "H",
+		bestFor: "Completing a DigiKhata wallet-to-bank transfer.",
+		method: "POST",
+		path: "/customer/payment/ppi-digikhata",
+		docsUrl: "https://developers.eko.in/reference/initiate-ppi-transaction",
+		sourceDoc: "https://developers.eko.in/reference/initiate-ppi-transaction",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique ID generated while adding the recipient.",
+				example: 10017680,
+			},
+			{
+				name: "amount",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Amount to be transferred (INR).",
+				example: 110,
+			},
+			{
+				name: "timestamp",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Request timestamp (ISO 8601).",
+				example: "2025-01-21T07:07:20.562Z",
+			},
+			{
+				name: "currency",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Currency. Must be INR.",
+				example: "INR",
+			},
+			{
+				name: "customer_id",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Sender's 10-digit mobile number.",
+				example: "8999999992",
+			},
+			{
+				name: "channel",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Transfer channel. Defaults to 2 (NEFT); 0 for IMPS.",
+				example: 2,
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "OTP received from Send Transaction OTP.",
+				example: "123456",
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "otp_ref_id received from Send Transaction OTP.",
+				example:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+			{
+				name: "beneficiary_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description:
+					"Beneficiary ID generated while getting the recipient details.",
+				example: "4202888",
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "Fixed service code. Defaults to 80.",
+				example: 80,
+			},
+			{
+				name: "latlong",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "Geographic coordinates of the user's location.",
+				example: "28.63,77.22",
+			},
+			{
+				name: "state",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "State parameter. Defaults to 1.",
+				example: "1",
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID.",
+				example: "2886522975",
+			},
+			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description: "Transaction status (0 = success).",
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				imp: true,
+				description: "Bank/UTR reference number for the transfer.",
+				example: "250121123714472002",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Transferred amount (INR).",
+				example: "110.00",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for the transfer (INR).",
+				example: "4.0",
+			},
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Sender's wallet balance after the transfer (INR).",
+				example: "814.0",
+			},
+			{
+				name: "channel_desc",
+				type: "string",
+				description: "Channel used (IMPS/NEFT).",
+				example: "IMPS",
+			},
+			{
+				name: "recipient_name",
+				type: "string",
+				description: "Recipient's name.",
+				example: "Krishna",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				tx_status: "0",
+				debit_user_id: "6000000094",
+				tds: "0.0",
+				txstatus_desc: "Success",
+				fee: "4.0",
+				total_sent: "",
+				channel: "2",
+				collectable_amount: "114.0",
+				txn_wallet: "0",
+				utility_acc_no: "8999999992",
+				sender_name: "8999999992",
+				ekyc_enabled: "0",
+				remaining_limit_before_pan_required: 49678,
+				tid: "2886522975",
+				bank: "UCO Bank",
+				utrnumber: "",
+				insurance_acquired: "",
+				balance: "814.0",
+				totalfee: "",
+				next_allowed_limit: "",
+				is_otp_required: "0",
+				aadhar: "",
+				currency: "INR",
+				commission: "0.0",
+				pipe: 13,
+				state: "1",
+				bank_ref_num: "250121123714472002",
+				recipient_id: 10017680,
+				timestamp: "2025-01-21T07:07:20.562Z",
+				amount: "110.00",
+				pan_required: 2,
+				pinNo: "",
+				gst_benefit: "0",
+				payment_mode_desc: "",
+				channel_desc: "IMPS",
+				last_used_okekey: "0",
+				npr: "",
+				insurance_amount: "",
+				service_tax: "0.61",
+				paymentid: "",
+				mdr: "",
+				recipient_name: "Krishna",
+				customer_id: "8999999992",
+				account: "67544100008454",
+				kyc_state: "",
+			},
+			response_type_id: 325,
+			message: "Transaction successful",
+			status: 0,
+		},
+	},
+	{
+		id: "onboard-user",
+		productId: "user-management",
+		name: "Onboard User",
+		slug: "onboard-user",
+		summary:
+			"Register a new agent/retailer (merchant) on the EPS platform and receive their user_code.",
+		description:
+			"Onboards a merchant or retailer as a user on the platform. On success a unique `user_code` is returned — save it; every downstream request for that agent passes this `user_code`.",
+		relevance: "H",
+		bestFor: "Adding a new agent/retailer to your EPS network.",
+		method: "POST",
+		path: "/user/network/eps-agent",
+		docsUrl: "https://developers.eko.in/reference/onboard-user-new",
+		sourceDoc: "https://developers.eko.in/reference/onboard-user-new",
+		extraRequestParams: [
+			{
+				name: "pan_number",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "PAN card number of the agent.",
+				example: "ABCDE1234F",
+			},
+			{
+				name: "mobile",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Verified mobile number of the agent.",
+				example: "9876543210",
+			},
+			{
+				name: "first_name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "First name of the agent.",
+				example: "Ramesh",
+			},
+			{
+				name: "last_name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Last name of the agent.",
+				example: "Kumar",
+			},
+			{
+				name: "email",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Email ID of the agent.",
+				example: "ramesh@example.com",
+			},
+			{
+				name: "residence_address",
+				in: "body",
+				type: "array",
+				required: true,
+				description: "Residence address of the agent as an array of strings.",
+				example: ["123 MG Road", "Bangalore", "Karnataka", "560001"],
+			},
+			{
+				name: "dob",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Date of birth of the agent in YYYY-MM-DD format.",
+				example: "1990-05-15",
+			},
+			{
+				name: "shop_name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Shop name of the agent (required for AePS onboarding).",
+				example: "Ramesh Mobile Store",
+			},
+		],
+		responseData: [
+			{
+				name: "user_code",
+				type: "string",
+				imp: true,
+				description:
+					"Unique code for the onboarded agent — save it and pass on every downstream request.",
+				example: "20110002",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description: "Your registered initiator id (echoed back).",
+				example: "9962981729",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: { user_code: "20110002", initiator_id: "9962981729" },
+			response_type_id: 1290,
+			message: "User onboarding successfull",
+			status: 0,
+		},
+	},
+	{
+		id: "get-user-services",
+		productId: "user-management",
+		name: "Get User's Services",
+		slug: "get-user-services",
+		summary:
+			"Check the activation status of every service for one of your agents.",
+		description:
+			"Returns the list of services for the given `user_code` with each service's status (ACTIVATED / PENDING), verification status, and timestamps.",
+		relevance: "M",
+		bestFor: "Auditing which services are active for an agent.",
+		method: "GET",
+		path: "/user/account/services",
+		docsUrl: "https://developers.eko.in/reference/user-services",
+		sourceDoc: "https://developers.eko.in/reference/user-services",
+		extraRequestParams: [],
+		responseData: [
+			{
+				name: "service_status_list",
+				type: "array",
+				imp: true,
+				description: "Per-service status for the user.",
+				children: [
+					{
+						name: "service_code",
+						type: "string",
+						imp: true,
+						description: "Service code.",
+						example: "43",
+					},
+					{
+						name: "status_desc",
+						type: "string",
+						imp: true,
+						description: "Human-readable status (ACTIVATED / PENDING).",
+						example: "ACTIVATED",
+					},
+					{
+						name: "status",
+						type: "number",
+						description: "Numeric status (1 = active, 2 = pending).",
+						example: 1,
+					},
+					{
+						name: "verification_status",
+						type: "number",
+						description: "Verification state of the service.",
+						example: 3,
+					},
+					{
+						name: "createdAt",
+						type: "string",
+						description: "When the service was created.",
+						example: "2019-11-11 13:21:25.0",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				user_code: "20110341",
+				initiator_id: "9962981729",
+				service_status_list: [
+					{
+						comments: null,
+						status_desc: "ACTIVATED",
+						city: null,
+						user_name: null,
+						mobile: null,
+						service_provider: null,
+						verification_status: 3,
+						createdAt: "2019-11-11 13:21:25.0",
+						user_code: null,
+						service_code: "43",
+						state: null,
+						status: 1,
+						updatedAt: "2019-11-11 13:21:25.0",
+					},
+					{
+						comments: null,
+						status_desc: "PENDING",
+						city: null,
+						user_name: null,
+						mobile: null,
+						service_provider: null,
+						verification_status: 0,
+						createdAt: "2019-11-11 13:22:44.0",
+						user_code: null,
+						service_code: "1",
+						state: null,
+						status: 2,
+						updatedAt: "",
+					},
+				],
+			},
+			response_type_id: 1299,
+			message: "Status of services for this user",
+			status: 0,
+		},
+	},
+	{
+		id: "get-all-services",
+		productId: "user-management",
+		name: "Get All Services",
+		slug: "get-all-services",
+		summary:
+			"List every service available on the platform with its service code and provider.",
+		description:
+			"Returns the catalogue of services you can activate for your users — each with its `service_code` and provider name. Use the code with Activate Service for User.",
+		relevance: "M",
+		bestFor: "Discovering service codes before activating a service.",
+		method: "GET",
+		path: "/tools/catalog/service-codes",
+		docsUrl: "https://developers.eko.in/reference/service-codes",
+		sourceDoc: "https://developers.eko.in/reference/service-codes",
+		omitCommonParams: ["user_code"],
+		extraRequestParams: [],
+		responseData: [
+			{
+				name: "service_list",
+				type: "array",
+				imp: true,
+				description: "Available services.",
+				children: [
+					{
+						name: "service_name",
+						type: "string",
+						imp: true,
+						description: "Display name of the service.",
+						example: "AEPS",
+					},
+					{
+						name: "service_code",
+						type: "string",
+						imp: true,
+						description: "Service code — pass to Activate Service for User.",
+						example: "43",
+					},
+					{
+						name: "provider_name",
+						type: "string",
+						description: "Service provider.",
+						example: "Fingpay",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				service_list: [
+					{
+						service_name: "Pan Verification",
+						service_code: "4",
+						provider_name: "NSDL",
+					},
+					{
+						service_name: "AePS Fund Settlement",
+						service_code: "39",
+						provider_name: "Yes Bank",
+					},
+					{
+						service_name: "AEPS",
+						service_code: "43",
+						provider_name: "Fingpay",
+					},
+					{ service_name: "BBPS", service_code: "53", provider_name: "" },
+				],
+			},
+			response_type_id: 1280,
+			message: "List of active services",
+			status: 0,
+		},
+	},
+	{
+		id: "get-wallet-balance",
+		productId: "user-management",
+		name: "Get Settlement Account Balance",
+		slug: "get-wallet-balance",
+		summary: "Fetch the settlement-account (wallet) balance for a user.",
+		description:
+			"Returns the current settlement-account balance for the given registered mobile number.",
+		relevance: "M",
+		bestFor: "Checking an agent's wallet/settlement balance.",
+		method: "GET",
+		path: "/user/account/balance",
+		docsUrl: "https://developers.eko.in/reference/wallet-balance",
+		sourceDoc: "https://developers.eko.in/reference/wallet-balance",
+		omitCommonParams: ["user_code"],
+		extraRequestParams: [
+			{
+				name: "customer_id_type",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "Identifier type. Fixed value: mobile_number.",
+				example: "mobile_number",
+			},
+			{
+				name: "customer_id",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "Registered mobile number for the wallet.",
+				example: "9910028267",
+			},
+		],
+		responseData: [
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Settlement-account balance (INR).",
+				example: "2.20834002375E9",
+			},
+			{
+				name: "currency",
+				type: "string",
+				description: "Currency.",
+				example: "INR",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				description: "Registered mobile number (echoed back).",
+				example: "9910028267",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				last_used_okekey: "0",
+				balance: "2.20834002375E9",
+				currency: "INR",
+				customer_id: "9910028267",
+			},
+			response_type_id: 1,
+			message: "SUCCESS",
+			status: 0,
+		},
+	},
+	{
+		id: "onboard-customer",
+		productId: "customer-management",
+		name: "Onboard Customer",
+		slug: "onboard-customer",
+		summary:
+			"Register a new customer on the platform; triggers an OTP to verify them.",
+		description:
+			"Creates a rail-agnostic customer record. An OTP is dispatched and an `otp_ref_id` returned — call Verify Customer OTP next to complete onboarding.",
+		relevance: "M",
+		bestFor: "Rail-agnostic customer onboarding before a transaction.",
+		method: "POST",
+		path: "/customer/account/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/onboard-customer",
+		sourceDoc: "https://developers.eko.in/reference/onboard-customer",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Customer's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "name",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Name of the customer as per ID.",
+				example: "Karan Garg",
+			},
+			{
+				name: "dob",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Date of birth of the customer in YYYY-MM-DD format.",
+				example: "1990-05-15",
+			},
+			{
+				name: "residence_address",
+				in: "body",
+				type: "array",
+				required: true,
+				description: "Customer's address as an array of strings.",
+				example: ["123 MG Road", "Bangalore", "Karnataka", "560001"],
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description: "Intent flag for the next step (19 = onboarding).",
+				example: 19,
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Customer OTP.",
+				example:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94YigSXr5Qr+aS8OTg/e0YrVEoPAbap746K5g==",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94YigSXr5Qr+aS8OTg/e0YrVEoPAbap746K5g==",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 2129,
+		},
+	},
+	{
+		id: "get-customer-info",
+		productId: "customer-management",
+		name: "Get Customer Information",
+		slug: "get-customer-info",
+		summary:
+			"Check whether a customer is already enrolled on the platform by mobile number.",
+		description:
+			"Looks up a customer. For an enrolled customer the response returns an `otp_ref_id` to validate; if not enrolled (response_type_id 308) proceed to Onboard Customer.",
+		relevance: "M",
+		bestFor: "Checking customer enrolment before a transaction.",
+		method: "GET",
+		path: "/customer/profile/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/get-customer-info",
+		sourceDoc: "https://developers.eko.in/reference/get-customer-info",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Customer's 10-digit mobile number.",
+				example: "9444444444",
+			},
+		],
+		responseData: [
+			{
+				name: "intent_id",
+				type: "number",
+				description: "Intent flag for the next step (19 = onboarding).",
+				example: 19,
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Verify Customer OTP.",
+				example:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94Yii3g+9fOBmbMsVTuaEQpDOEateP4tSTkQw==",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				intent_id: 19,
+				kyc_request_id: "",
+				otp_ref_id:
+					"IXrygqm0vTNbN35Lp5AfcbP69ifPhQ1Ee3u74AHY5fA9aMp2d94Yii3g+9fOBmbMsVTuaEQpDOEateP4tSTkQw==",
+			},
+			response_type_id: 2129,
+			message: "Validate the OTP",
+			status: 2129,
+		},
+		errorScenarios: [
+			{
+				scenario: "Customer not enrolled — proceed to Onboard Customer",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { sender_name: "", ekyc_enabled: "" },
+					response_type_id: 308,
+					message: "Failure!Customer Not Enrolled",
+					status: 308,
+				},
+			},
+		],
+	},
+	{
+		id: "verify-customer-otp",
+		productId: "customer-management",
+		name: "Verify Customer OTP",
+		slug: "verify-customer-otp",
+		summary:
+			"Verify the customer OTP to complete onboarding and return the customer profile.",
+		description:
+			"Validates the OTP issued by Onboard Customer / Get Customer Information. For an existing customer the response returns the full `customer_profile` (limits, balance, KYC state). For a new customer the flow continues to Aadhaar validation and PAN.",
+		relevance: "M",
+		bestFor: "Completing customer verification after onboarding.",
+		method: "POST",
+		path: "/customer/account/{customer_id}/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/verify-customer-otp",
+		sourceDoc: "https://developers.eko.in/reference/verify-customer-otp",
+		extraRequestParams: [
+			{
+				name: "customer_id",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Customer's 10-digit mobile number.",
+				example: "9444444444",
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "integer",
+				required: false,
+				description:
+					"OTP received from Onboard Customer, Get Customer Information, or Validate Aadhaar.",
+				example: 123456,
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"otp_ref_id received from Onboard Customer, Get Customer Information, or Validate Aadhaar.",
+				example: 66748392,
+			},
+		],
+		responseData: [
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description:
+					"Customer's profile — limits, balance, KYC state, and usage chart.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						imp: true,
+						description: "Registered name of the customer.",
+						example: "Karan Garg",
+					},
+					{
+						name: "mobile",
+						type: "string",
+						description: "Customer's mobile number.",
+						example: "9444444444",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						imp: true,
+						description: "Remaining transfer limit for the period (INR).",
+						example: "5287.0",
+					},
+					{
+						name: "balance",
+						type: "string",
+						imp: true,
+						description: "Current balance (INR).",
+						example: "0.00",
+					},
+					{
+						name: "kyc_state",
+						type: "number",
+						description: "KYC completion state.",
+						example: 0,
+					},
+				],
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				imp: true,
+				description: "Registered name of the customer.",
+				example: "Karan Garg",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				customer_profile: {
+					total_monthly_limit: "50000.0",
+					mobile: "9444444444",
+					kyc_id: "",
+					ekyc_enabled: 0,
+					kyc_validity: "",
+					kyc_remark: "",
+					kyc_type: "",
+					balance: "0.00",
+					next_allowed_limit: "5287.0",
+					name: "Karan Garg",
+					digital_ekyc: 0,
+					chart: [
+						{
+							data_type_id: 10,
+							data: { unavailable: 0, used: 44713, remaining: 5287 },
+							label: "",
+						},
+					],
+					email: "",
+					kyc_state: 0,
+				},
+				id_proof_type_id: "",
+				is_registered: 0,
+				id_proof: "",
+				otpOptionalSum: "",
+				sender_name: "Karan Garg",
+				otpNotRequiredSum: "",
+				ekyc_enabled: "",
+				otpNotRequiredSumNeft: "",
+				next_allowed_limit: 5287,
+				account: "",
+				kyc_state: 0,
+				otpOptionalSumNeft: "",
+			},
+			response_type_id: 309,
+			message: "Success!",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "New customer — Aadhaar validation pending",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 2136,
+					message: "Aadhar Validation Pending",
+					status: 2136,
+				},
+			},
+			{
+				scenario: "Aadhaar validated — PAN required next",
+				statusCode: 200,
+				example: {
+					response_status_id: 0,
+					data: { application_id: "" },
+					response_type_id: 2147,
+					message: "Pan Number Required",
+					status: 0,
+				},
+			},
+		],
+	},
+	{
+		id: "aeps-add-settlement-account",
+		productId: "aeps",
+		name: "Add Settlement Bank Account",
+		slug: "aeps-add-settlement-account",
+		summary:
+			"Register a bank account as an AePS fund-settlement recipient for an agent.",
+		description:
+			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch.",
+		relevance: "M",
+		bestFor: "Registering an agent's settlement bank account before payout.",
+		method: "POST",
+		path: "/user/payment/aeps/settlement/account",
+		docsUrl:
+			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
+		extraRequestParams: [
+			{
+				name: "bank_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Unique identifier for the bank.",
+				example: 12,
+			},
+			{
+				name: "ifsc",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "IFSC code of the bank account.",
+				example: "BKID0006701",
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Service code for AePS fund settlement. Value: 39.",
+				example: 39,
+			},
+			{
+				name: "account",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "Account number of the user's bank account.",
+				example: "987867867967969",
+			},
+		],
+		responseData: [
+			{
+				name: "recipient_id",
+				type: "number",
+				imp: true,
+				description:
+					"Settlement recipient identifier — pass to Initiate Settlement.",
+				example: 1893,
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: { recipient_id: 1893 },
+			response_type_id: 1336,
+			message: "Account added",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Account verification failed — name mismatch",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { sender_name: "SANATAN CSP", recipient_name: "R K LAKSHYKAR" },
+					response_type_id: 1335,
+					message: "Account verification fail, Name not matched",
+					status: 1335,
+				},
+			},
+			{
+				scenario: "Account verification failed — name not returned by bank",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 1334,
+					message: "Account verification fail name not returned by bank",
+					status: 1334,
+				},
+			},
+		],
+	},
+	{
+		id: "aeps-get-settlement-accounts",
+		productId: "aeps",
+		name: "Get Settlement Bank Accounts",
+		slug: "aeps-get-settlement-accounts",
+		summary:
+			"List an agent's registered AePS settlement recipients with unsettled funds and remaining limit.",
+		description:
+			"Returns the agent's saved settlement bank accounts (each with a `recipient_id`), the total unsettled fund, and the remaining daily settlement limit.",
+		relevance: "M",
+		bestFor: "Choosing a settlement account and checking unsettled funds.",
+		method: "GET",
+		path: "/user/payment/aeps/settlement/accounts",
+		docsUrl:
+			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
+		extraRequestParams: [],
+		responseData: [
+			{
+				name: "unsettled_fund",
+				type: "string",
+				imp: true,
+				description: "Total unsettled AePS fund available to settle (INR).",
+				example: "6100.0",
+			},
+			{
+				name: "remaining_limit",
+				type: "string",
+				description: "Remaining settlement limit for the day (INR).",
+				example: "190000",
+			},
+			{
+				name: "fund_transfer_list",
+				type: "array",
+				imp: true,
+				description: "Registered settlement recipients.",
+				children: [
+					{
+						name: "recipient_id",
+						type: "string",
+						imp: true,
+						description:
+							"Settlement recipient identifier — pass to Initiate Settlement.",
+						example: "1828",
+					},
+					{
+						name: "name",
+						type: "string",
+						description: "Account holder name.",
+						example: "Gaurav Mallik",
+					},
+					{
+						name: "account",
+						type: "string",
+						description: "Bank account number.",
+						example: "9989834392752938",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Bank branch IFSC.",
+						example: "PUNB0309300",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				unsettled_fund: "6100.0",
+				remaining_limit: "190000",
+				fund_transfer_list: [
+					{
+						name: "Gaurav Mallik",
+						ifsc: "PUNB0309300",
+						account: "9989834392752938",
+						recipient_id: "1828",
+					},
+					{
+						name: "Gaurav Mallik",
+						ifsc: "BKID0006701",
+						account: "987867867967969",
+						recipient_id: "1829",
+					},
+				],
+			},
+			response_type_id: 1321,
+			message: "List of fund transfer recipients",
+			status: 0,
+		},
+	},
+	{
+		id: "aeps-initiate-settlement",
+		productId: "aeps",
+		name: "Initiate Settlement",
+		slug: "aeps-initiate-settlement",
+		summary:
+			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
+		description:
+			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm; max ₹2,00,000 per transaction.",
+		relevance: "H",
+		bestFor: "Settling collected AePS funds to an agent's bank account.",
+		method: "POST",
+		path: "/user/payment/aeps/settlement",
+		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/aeps-fund-settlement-request",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "amount",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"Settlement amount requested (INR). Max 200000 per transaction.",
+				example: 100,
+			},
+			{
+				name: "recipient_id",
+				in: "body",
+				type: "integer",
+				required: true,
+				description:
+					"Settlement recipient identifier (from Add / Get Settlement Account).",
+				example: 1829,
+			},
+			{
+				name: "payment_mode",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "Transfer method: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
+				example: 5,
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID for the settlement.",
+				example: "12937465",
+			},
+			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description: "Transaction status (2 = initiated).",
+				example: "2",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Initiated",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Settled amount (INR).",
+				example: "100.00",
+			},
+			{
+				name: "totalfee",
+				type: "string",
+				description: "Total fee charged for the settlement (INR).",
+				example: "5.00",
+			},
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Agent balance after the settlement (INR).",
+				example: "2.251010664E7",
+			},
+			{
+				name: "account",
+				type: "string",
+				description: "Destination account number.",
+				example: "987867867967969",
+			},
+			{
+				name: "ifsc",
+				type: "string",
+				description: "Destination branch IFSC.",
+				example: "BKID0006701",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				tx_status: "2",
+				amount: "100.00",
+				balance: "2.251010664E7",
+				txstatus_desc: "Initiated",
+				totalfee: "5.00",
+				ifsc: "BKID0006701",
+				account: "987867867967969",
+				tid: "12937465",
+			},
+			response_type_id: 1329,
+			message: "Transaction initiated successfully",
+			status: 0,
+		},
+	},
+	{
+		id: "transaction-inquiry",
+		productId: "transactions",
+		name: "Transaction Inquiry",
+		slug: "transaction-inquiry",
+		summary:
+			"Get the status of any transaction by Eko TID or your client_ref_id.",
+		description:
+			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: 0 = Success, 1 = Fail, 2 = Awaited/Initiated (NEFT), 3 = Refund Pending, 4 = Refunded, 5 = Hold. A timeout should never be treated as an automatic failure — always inquire.",
+		relevance: "H",
+		bestFor: "Reconciling a transaction whose response timed out.",
+		method: "GET",
+		path: "/tools/reference/transaction/{transaction-reference}",
+		docsUrl: "https://developers.eko.in/reference/transaction-inquiry",
+		sourceDoc: "https://developers.eko.in/reference/transaction-inquiry",
+		extraRequestParams: [
+			{
+				name: "transaction-reference",
+				in: "path",
+				type: "string",
+				required: true,
+				description:
+					"Eko TID or your client_ref_id identifying the transaction.",
+				example: "12971397",
+			},
+		],
+		responseData: [
+			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description:
+					"Transaction status (0 Success, 1 Fail, 2 Awaited, 3 Refund Pending, 4 Refunded, 5 Hold).",
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID.",
+				example: "12971397",
+			},
+			{
+				name: "client_ref_id",
+				type: "string",
+				imp: true,
+				description: "Your reference id for the transaction.",
+				example: "Settlemet7206123420",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Transaction amount (INR).",
+				example: "1045.0",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				description: "Bank/UTR reference number.",
+				example: "8761099407",
+			},
+			{
+				name: "recipient_name",
+				type: "string",
+				description: "Recipient's name.",
+				example: "Virender Singh",
+			},
+			{
+				name: "timestamp",
+				type: "string",
+				description: "Transaction timestamp.",
+				example: "2019-11-01 17:50:44",
+			},
+		],
+		sampleSuccessResponse: {
+			response_type_id: 1472,
+			data: {
+				bank_ref_num: "8761099407",
+				account: "234243534",
+				fee: "5.0",
+				client_ref_id: "Settlemet7206123420",
+				gst: "0.76",
+				sender_name: "Flipkart",
+				timestamp: "2019-11-01 17:50:44",
+				ifsc: "SBIN0000001",
+				beneficiary_account_type: 1,
+				txstatus_desc: "Success",
+				tx_status: "0",
+				tid: "12971397",
+				amount: "1045.0",
+				payment_mode: 5,
+				recipient_name: "Virender Singh",
+			},
+			message: "Sucess! Enquiry success.",
+			status: 0,
+			response_status_id: 0,
+		},
+	},
+	{
+		id: "get-refund-otp",
+		productId: "transactions",
+		name: "Get Refund OTP",
+		slug: "get-refund-otp",
+		summary:
+			"Request the refund OTP for a failed transaction (sent to the customer's mobile).",
+		description:
+			"For a failed transaction (tx_status 3), an OTP is sent to the customer's mobile. Call this to (re)send it and obtain the `otp_ref_id`; pass both into Initiate Refund. The OTP cannot be bypassed.",
+		relevance: "M",
+		bestFor: "Obtaining the refund OTP before initiating a refund.",
+		method: "POST",
+		path: "/customer/payment/refund/{tid}/otp",
+		docsUrl: "https://developers.eko.in/reference/refund-otp",
+		sourceDoc: "https://developers.eko.in/reference/refund-otp",
+		omitCommonParams: ["user_code", "client_ref_id"],
+		extraRequestParams: [
+			{
+				name: "tid",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Transaction ID from the Initiate Transaction call.",
+				example: "13192443",
+			},
+		],
+		responseData: [
+			{
+				name: "otp_ref_id",
+				type: "string",
+				imp: true,
+				description: "OTP session reference — pass to Initiate Refund.",
+				example:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 1,
+			data: {
+				otp_ref_id:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+			response_type_id: 2133,
+			message: "Send OTP",
+			status: 2133,
+		},
+	},
+	{
+		id: "initiate-refund",
+		productId: "transactions",
+		name: "Initiate Refund",
+		slug: "initiate-refund",
+		summary: "Refund a failed transaction to the customer after OTP consent.",
+		description:
+			"Refunds the e-value for a failed transaction back to your account, acting as consent that you have returned the cash to the customer. Requires the OTP (and otp_ref_id) from Get Refund OTP. Returns the financial response envelope with the refund transaction id and reversed amounts.",
+		relevance: "M",
+		bestFor: "Completing the refund of a failed cash-out transaction.",
+		method: "POST",
+		path: "/customer/payment/refund/{tid}",
+		docsUrl: "https://developers.eko.in/reference/refund",
+		sourceDoc: "https://developers.eko.in/reference/refund",
+		financial: true,
+		omitCommonParams: ["client_ref_id"],
+		extraRequestParams: [
+			{
+				name: "tid",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Transaction ID from the Initiate Transaction call.",
+				example: "13192443",
+			},
+			{
+				name: "otp",
+				in: "body",
+				type: "integer",
+				required: true,
+				description: "OTP sent to the customer's mobile number.",
+				example: 123456,
+			},
+			{
+				name: "otp_ref_id",
+				in: "body",
+				type: "string",
+				required: false,
+				description: "otp_ref_id received from Get Refund OTP.",
+				example:
+					"zCISyglexo0Pjqp4YrS2ssweuD9v1c3aLKGxjTW8wU7An8Wem1UyNws5830yh7q/sf5J4R3BY=",
+			},
+			{
+				name: "service_code",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "Fixed service code. For PayPoint send 80.",
+				example: 80,
+			},
+			{
+				name: "state",
+				in: "body",
+				type: "integer",
+				required: false,
+				description: "Fixed value. Send 1.",
+				example: 1,
+			},
+		],
+		responseData: [
+			{
+				name: "refund_tid",
+				type: "string",
+				imp: true,
+				description: "Transaction ID of the refund.",
+				example: "2147591637",
+			},
+			{
+				name: "refunded_amount",
+				type: "string",
+				imp: true,
+				description: "Total amount refunded (INR).",
+				example: "5050.00",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Original transaction amount (INR).",
+				example: "5000.00",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee reversed (INR).",
+				example: "50.0",
+			},
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Account balance after the refund (INR).",
+				example: "2.22263731286E9",
+			},
+			{
+				name: "tid",
+				type: "string",
+				description: "Original transaction ID.",
+				example: "13192443",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				refund_tid: "2147591637",
+				amount: "5000.00",
+				tds: "7.1",
+				balance: "2.22263731286E9",
+				fee: "50.0",
+				currency: "INR",
+				commission_reverse: "28.38",
+				tid: "13192443",
+				timestamp: "2018-10-30T12:00:14.058Z",
+				refunded_amount: "5050.00",
+			},
+			response_type_id: 74,
+			message: "Refund done",
+			status: 0,
+		},
+	},
+	{
+		id: "get-bank-details",
+		productId: "utilities",
+		name: "Get Bank Details",
+		slug: "get-bank-details",
+		summary:
+			"Fetch a bank's details (id, name, channels) by its Eko bank code.",
+		description:
+			"Returns metadata for a bank — Eko `bank_id`, display name, supported channels, and whether account verification is available. Optionally pass an IFSC to narrow the lookup.",
+		relevance: "L",
+		bestFor: "Resolving an Eko bank_id before adding a recipient.",
+		method: "GET",
+		path: "/tools/reference/bank/{bank_code}",
+		docsUrl: "https://developers.eko.in/reference/bank-details",
+		sourceDoc: "https://developers.eko.in/reference/bank-details",
+		extraRequestParams: [
+			{
+				name: "bank_code",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Eko bank code (see the bank list).",
+				example: "IDFB",
+			},
+			{
+				name: "ifsc",
+				in: "query",
+				type: "string",
+				required: false,
+				description: "IFSC code to narrow the lookup.",
+				example: "IDFB0080202",
+			},
+		],
+		responseData: [
+			{
+				name: "name",
+				type: "string",
+				imp: true,
+				description: "Bank display name.",
+				example: "IDFC Bank",
+			},
+			{
+				name: "bank_id",
+				type: "number",
+				imp: true,
+				description: "Eko bank identifier — use when adding a recipient.",
+				example: 262,
+			},
+			{
+				name: "code",
+				type: "string",
+				description: "Eko bank code.",
+				example: "IDFB",
+			},
+			{
+				name: "ifsc_status",
+				type: "number",
+				description: "IFSC verification status code.",
+				example: 4,
+			},
+			{
+				name: "isverificationavailable",
+				type: "string",
+				description:
+					"Whether account verification is available (1) or not (0).",
+				example: "0",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				isverificationavailable: "0",
+				code: "IDFB",
+				ifsc_status: 4,
+				user_code: "20810200",
+				bank_id: 262,
+				name: "IDFC Bank",
+				available_channels: 0,
+			},
+			response_type_id: 466,
+			message: "Bank Detials Found",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Invalid bank details",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 467,
+					message: "Please provide valid bank details",
+					status: 467,
+				},
+			},
+		],
+	},
+	{
+		id: "get-ifsc-details",
+		productId: "utilities",
+		name: "Get IFSC Details",
+		slug: "get-ifsc-details",
+		summary: "Resolve a bank and branch from an IFSC code.",
+		description:
+			"Returns the bank name, branch, Eko `bank_id`, and verification availability for a given IFSC code.",
+		relevance: "L",
+		bestFor: "Validating an IFSC and resolving its bank/branch.",
+		method: "GET",
+		path: "/tools/reference/banks/ifsc/{ifsc}",
+		docsUrl: "https://developers.eko.in/reference/get-ifsc-details",
+		sourceDoc: "https://developers.eko.in/reference/get-ifsc-details",
+		extraRequestParams: [
+			{
+				name: "ifsc",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "IFSC code of the bank branch.",
+				example: "IOBA0002248",
+			},
+		],
+		responseData: [
+			{
+				name: "bank",
+				type: "string",
+				imp: true,
+				description: "Bank name for the IFSC.",
+				example: "INDIAN OVERSEAS BANK",
+			},
+			{
+				name: "branch",
+				type: "string",
+				imp: true,
+				description: "Branch for the IFSC.",
+				example: "SANGLI",
+			},
+			{
+				name: "ifsc",
+				type: "string",
+				description: "IFSC code (echoed back).",
+				example: "IOBA0002248",
+			},
+			{
+				name: "bank_id",
+				type: "number",
+				description: "Eko bank identifier.",
+				example: 10,
+			},
+			{
+				name: "isverificationavailable",
+				type: "string",
+				description:
+					"Whether account verification is available (1) or not (0).",
+				example: "1",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				bank: "INDIAN OVERSEAS BANK",
+				isverificationavailable: "1",
+				ifsc_status: 3,
+				user_code: "20810200",
+				bank_id: 10,
+				available_channels: 0,
+				ifsc: "IOBA0002248",
+				branch: "SANGLI",
+			},
+			response_type_id: 414,
+			message: "Success ! Found bank Details for given Ifsc",
+			status: 0,
+		},
+	},
+	{
+		id: "bbps-operator-code-circle",
+		productId: "bbps",
+		name: "Get Operator Code and Circle",
+		slug: "bbps-operator-code-circle",
+		summary:
+			"Auto-detect a mobile number's recharge operator code and telecom circle.",
+		description:
+			"Returns the `phone_operator_code` and `circle_area` for a customer mobile number — returned under `dependent_params`. Pass these into Get Recharge Plans.",
+		relevance: "M",
+		bestFor: "Resolving operator and circle before fetching recharge plans.",
+		method: "GET",
+		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator",
+		docsUrl: "https://developers.eko.in/reference/operator-and-circle-area",
+		sourceDoc: "https://developers.eko.in/reference/operator-and-circle-area",
+		extraRequestParams: [
+			{
+				name: "customer_mobile",
+				in: "path",
+				type: "string",
+				required: true,
+				description: "Customer's mobile number.",
+				example: "9876543210",
+			},
+		],
+		responseData: [
+			{
+				name: "dependent_params",
+				type: "array",
+				imp: true,
+				description:
+					"Resolved operator/circle as name-value pairs (phone_operator_code, circle_area) — returned at the top level, not under data.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						description: "Parameter name (phone_operator_code or circle_area).",
+						example: "phone_operator_code",
+					},
+					{
+						name: "value",
+						type: "string",
+						description: "Parameter value.",
+						example: "400",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			dependent_params: [
+				{ name: "phone_operator_code", value: 400 },
+				{ name: "circle_area", value: "5" },
+			],
+			data: { updates: "" },
+			response_type_id: 1804,
+			message: "success",
+			status: 0,
+		},
+	},
+	{
+		id: "bank-bulk-status",
+		productId: "bank",
+		name: "Bulk Bank Account Verification — Status",
+		slug: "bank-bulk-status",
+		summary:
+			"Poll the result of an async bulk bank-account verification batch.",
+		description:
+			"Returns the per-account verification results for a bulk bank-account verification batch, keyed by the `bulk_reference_id` you received when submitting the batch. Each entry includes the account status and the bank-registered name.",
+		relevance: "L",
+		bestFor: "Fetching results of a submitted bulk bank-verification batch.",
+		method: "GET",
+		path: "/tools/kyc/bank-account/bulk/status",
+		docsUrl:
+			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
+		sourceDoc:
+			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
+		extraRequestParams: [
+			{
+				name: "bulk_reference_id",
+				in: "query",
+				type: "integer",
+				required: true,
+				description:
+					"The unique ID returned by the Bulk Bank Account Verification submit call.",
+				example: 172432,
+			},
+			{
+				name: "client_ref_id",
+				in: "query",
+				type: "string",
+				required: false,
+				description: "A unique ID for the API call generated at your end.",
+				example: "ref_20250121_001",
+			},
+		],
+		responseData: [
+			{
+				name: "bulk_reference_id",
+				type: "number",
+				imp: true,
+				description: "Identifier of the bulk batch.",
+				example: 172432,
+			},
+			{
+				name: "entries",
+				type: "array",
+				imp: true,
+				description: "Per-account verification results.",
+				children: [
+					{
+						name: "name_at_bank",
+						type: "string",
+						imp: true,
+						description: "Account-holder name as registered at the bank.",
+						example: "Mr Himanshu  MULLICK",
+					},
+					{
+						name: "account_status",
+						type: "string",
+						imp: true,
+						description: "Verification result (VALID / INVALID).",
+						example: "VALID",
+					},
+					{
+						name: "account_status_code",
+						type: "string",
+						description: "Machine-readable status code.",
+						example: "ACCOUNT_IS_VALID",
+					},
+					{
+						name: "bank_account",
+						type: "string",
+						description: "Bank account number verified.",
+						example: "76662187222",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Branch IFSC.",
+						example: "SBIN0004221",
+					},
+					{
+						name: "reference_id",
+						type: "number",
+						description: "Per-entry reference id.",
+						example: 1292919294,
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				entries: [
+					{
+						utr: null,
+						reference_id: 1292919294,
+						name_match_result: null,
+						phone: "9911991199",
+						name: "Himanshu Mullick",
+						account_status_code: "ACCOUNT_IS_VALID",
+						account_status: "VALID",
+						name_match_score: null,
+						ifsc: "SBIN0004221",
+						name_at_bank: "Mr Himanshu  MULLICK",
+						bank_account: "76662187222",
+					},
+				],
+				bulk_reference_id: 172432,
+				bulk_verification_id: "3356655212",
+			},
+			response_type_id: 0,
+			status: 0,
+		},
+	},
+	{
 		id: "digilocker-create-url",
 		productId: "digilocker",
 		name: "Create DigiLocker URL",
@@ -7619,7 +11191,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Generate a DigiLocker redirect URL to initiate consent-based Aadhaar document retrieval.",
 		description:
 			"Creates a one-time DigiLocker URL that redirects the customer to the DigiLocker portal for consent-based retrieval of Aadhaar (and other) documents. After the customer authorises access on DigiLocker, they are redirected back to the provided `redirect_url`. The `reference_id` returned is then used to fetch the verified document data via the Get DigiLocker Document API.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"KYC flows that use DigiLocker for government-issued document verification, avoiding manual document uploads.",
@@ -7649,13 +11220,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "https://yourapp.com/kyc/callback",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-011",
-			document_requested: ["AADHAAR"],
-			redirect_url: "https://yourapp.com/kyc/callback",
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -7723,7 +11287,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve verified Aadhaar details from DigiLocker after the customer completes the consent journey.",
 		description:
 			"Fetches the verified Aadhaar (or other government document) data from DigiLocker using the `reference_id` obtained from Create DigiLocker URL. Must be called after the customer has completed authorisation on DigiLocker and been redirected back. Returns structured identity data extracted from the verified document.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fetching verified identity details from DigiLocker after Aadhaar consent, for use in KYC records and onboarding.",
@@ -7760,15 +11323,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "7483920",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-012",
-			source: "API",
-			document_type: ["AADHAAR"],
-			verification_id: "vrf_digilocker_abc123",
-			reference_id: "7483920",
-		},
 		responseData: [
 			{
 				name: "documents",
@@ -7948,7 +11502,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check whether a user has completed the DigiLocker consent and verification flow.",
 		description:
 			"Poll this endpoint after redirecting the user to the DigiLocker URL. Returns the user's consent status and basic identity details (name, DOB, gender, mobile) once the consent flow is complete. Use reference_id from the Create DigiLocker URL response.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Polling for consent completion before fetching the full document data.",
@@ -7970,11 +11523,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code", "source"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "DGL-STATUS-001",
-			reference_id: 12345,
-		},
 		responseData: [
 			{
 				name: "user_details",
@@ -8098,7 +11646,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify a bank account by transferring ₹1 (penny drop) and retrieve the account holder name, account status, and branch details in real time.",
 		description:
 			"Performs a live penny-drop transaction of ₹1 to the specified bank account and returns the account holder name as registered with the bank, account status, IFSC details, and the UTR of the debit. Use this before payouts to prevent failures and fraud. The ₹1 is credited to the beneficiary — no refund occurs. Supports all IMPS-enabled banks in India.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Businesses that disburse funds and need to confirm both account existence and the registered account holder name before transferring money.",
@@ -8127,13 +11674,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "SBIN0001234",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			bank_account: 1234567890,
-			ifsc: "SBIN0001234",
-			client_ref_id: "BANK-VER-20240101-001",
-		},
 		responseData: [
 			{
 				name: "account_exists",
@@ -8266,7 +11806,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Submit multiple bank accounts for penny-drop verification in a single API call; poll a status API for per-account results.",
 		description:
 			"Accepts an array of bank account + IFSC pairs and enqueues them for asynchronous penny-drop verification. Returns a bulk_reference_id immediately; use the Bulk Bank Account Verification Status API to retrieve per-account results once processing completes. Ideal for batch onboarding, payroll runs, and large-scale disbursement pipelines where sequential single-account calls would be too slow.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Platforms processing hundreds to thousands of bank account verifications in one go, where results can be retrieved asynchronously.",
@@ -8290,7 +11829,7 @@ export const API_SPECS: ApiSpec[] = [
 						ifsc: "SBIN0001234",
 					},
 					{
-						bank_account: "9876543210",
+						bank_account: "9876543210123",
 						ifsc: "HDFC0005678",
 					},
 				],
@@ -8322,20 +11861,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 		omitCommonParams: ["user_code"],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			client_ref_id: "BULK-BANK-20240101-001",
-			entries: [
-				{
-					bank_account: "1234567890",
-					ifsc: "SBIN0001234",
-				},
-				{
-					bank_account: "9876543210",
-					ifsc: "HDFC0005678",
-				},
-			],
-		},
 		responseData: [
 			{
 				name: "bulk_reference_id",
@@ -8403,7 +11928,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Poll for per-account results of a Bulk Bank Account Verification batch using the bulk_reference_id returned at submit time.",
 		description:
 			"Companion to the Bulk Bank Account Verification API. Because the batch runs asynchronously, callers poll this endpoint with the bulk_reference_id from the submit response to retrieve per-account penny-drop results as they complete. The response returns an entries array, one object per submitted account, each carrying the account-holder name at bank, bank/branch/MICR details, UTR, name-match score/result, and account status.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fetching individual account results after submitting a batch to the Bulk Bank Account Verification API.",
@@ -8424,17 +11948,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "3356655212",
 			},
 		],
-		sampleRequest: {
-			headers: {
-				developer_key: "becbbce45f79c6f5109f848acd540567",
-				"secret-key": "<computed>",
-				"secret-key-timestamp": "1718000000000",
-			},
-			query: {
-				initiator_id: "9876543210",
-				bulk_reference_id: "3356655212",
-			},
-		},
 		responseData: [
 			{
 				name: "entries",
@@ -8571,7 +12084,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify GSTIN details instantly — legal name, trade name, status, address, and filing metadata — for vendor onboarding and compliance checks.",
 		description:
 			"The GST Verification API validates a GSTIN against official government records and returns the full registration profile: legal and trade names, taxpayer type, constitution of business, nature of activities, registration and last-update dates, state and centre jurisdiction, and the principal place of address (both as a flat string and as structured address components). Designed for KYB, vendor/merchant onboarding, compliance due diligence, and high-volume B2B verification pipelines.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Vendor and merchant onboarding flows, KYB pipelines, B2B compliance checks, and any workflow that needs to confirm a business's GST registration status before issuing payouts or onboarding a counterparty.",
@@ -8600,13 +12112,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Acme Pvt Ltd",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "GST-VER-20240101-001",
-			gstin: "29ABCDE1234F1Z5",
-			business_name: "Acme Pvt Ltd",
-		},
 		responseData: [
 			{
 				name: "gstin",
@@ -8942,7 +12447,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve all GSTINs linked to a given PAN — with their state and status — in a single API call.",
 		description:
 			"The GSTIN with PAN API accepts a PAN (Permanent Account Number) and returns a list of all GSTIN registrations associated with that PAN across every Indian state and union territory. Each entry in the list includes the GSTIN, its active/inactive status, and the state of registration. Ideal for identifying all GST registrations of a counterparty, detecting multi-state business presence, and de-duplicating vendor or merchant records during onboarding.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"KYB and compliance workflows that need to discover all GST registrations of a business from a single PAN — particularly useful for multi-state vendors, pan-India merchant networks, and supplier due diligence.",
@@ -8962,12 +12466,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "ABCDE1234F",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			source: "API",
-			pan: "ABCDE1234F",
-		},
 		responseData: [
 			{
 				name: "pan",
@@ -9084,7 +12582,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate a UPI Virtual Payment Address (VPA) and retrieve the registered payee name and mobile number in real time.",
 		description:
 			"Confirms whether a UPI ID (VPA) is active and returns the verified recipient name and registered mobile number. Use this before initiating any UPI transfer to reduce wrong-payee failures and payment fraud.",
-		category: "verification",
 		relevance: "H",
 		bestFor:
 			"Pre-payment UPI ID validation, bulk payout verification, and assisted-payment flows where the agent must confirm the payee before sending funds.",
@@ -9130,16 +12627,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "VPA-VAL-20240101-001",
-			source: "API",
-			customer_vpa: "rajesh.kumar@okicici",
-			recipient_mobile: "9876543210",
-			name: "Rajesh Kumar",
-			latlong: "28.6139,77.2090",
-		},
 		responseData: [
 			{
 				name: "vpa",
@@ -9246,7 +12733,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify driving license details in real time — holder name, DOB, address, validity, COV/badge class, and status.",
 		description:
 			"The Driving License Verification API validates a DL number against government records and returns structured identity and entitlement data including the holder's name, father/husband name, date of birth, address, license validity windows (transport and non-transport), class of vehicle (COV) details, and badge information. Ideal for KYC, driver onboarding, and compliance workflows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Businesses that onboard drivers, delivery agents, or any user whose identity needs to be confirmed against a government-issued driving license.",
@@ -9274,14 +12760,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1994-08-29",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DL-VER-20240101-001",
-			source: "API",
-			dl_number: "MH0220190001234",
-			dob: "1994-08-29",
-		},
 		responseData: [
 			{
 				name: "dl_number",
@@ -9646,7 +13124,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify a vehicle's registration certificate (RC) in real time — owner details, chassis/engine numbers, insurance validity, blacklist status, permits, fitness, and financier info via the VAHAN national database.",
 		description:
 			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",
@@ -9665,13 +13142,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "HR26DA8398",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "RC-VER-20240101-001",
-			source: "API",
-			vehicle_number: "HR26DA8398",
-		},
 		responseData: [
 			{
 				name: "reference_id",
@@ -10318,7 +13788,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify employment history and employee identity by phone number via EPFO/UAN data.",
 		description:
 			"Returns a rich, nested profile linked to the employee's Universal Account Number (UAN): basic identity details (name, gender, DOB, Aadhaar link), full employment history per UAN (member ID, establishment, joining/exit dates, leave reason), additional PII (PAN, bank account, email), and a structured recent-employment block that includes EPFO filing health, employer setup date, ownership type, and monthly PF contribution records. Designed for pre-employment checks, lending underwriting, and HR compliance workflows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Organizations that need to confirm employment history, tenure, and PF filing status digitally — without manual document collection.",
@@ -10338,13 +13807,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9876543210",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "EMP-VER-20240101-001",
-			source: "API",
-			phone: "9876543210",
-		},
 		responseData: [
 			{
 				name: "input",
@@ -10887,7 +14349,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Convert latitude and longitude coordinates into structured Indian address data including locality, city, state, PIN code, and country.",
 		description:
 			"The Reverse Geocoding API translates GPS coordinates into a human-readable, structured address. It is designed for address validation during onboarding, geo-compliance checks, field-agent location verification, and location-based fraud detection workflows. Pass a latitude/longitude pair and receive a normalised address broken down by locality, city, district, state, PIN code, and country — along with a confidence score.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Cross-checking customer-provided addresses against GPS-derived data for onboarding, KYC, and fraud prevention.",
@@ -10916,14 +14377,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "72.8777",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "GEO-20240101-001",
-			source: "API",
-			latitude: "19.0760",
-			longitude: "72.8777",
-		},
 		responseData: [
 			{
 				name: "latitude",
@@ -11055,7 +14508,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Validate EPIC (Voter ID) card details in real time against government records — returns name, age, address, constituency, and polling station information.",
 		description:
 			"The Voter ID Verification API lets you verify an Electoral Photo Identity Card (EPIC) number against government electoral rolls. A single POST call returns the cardholder's full identity profile — name (English and regional language), date of birth, gender, guardian details, structured address, assembly and parliamentary constituency, and polling station — making it suitable for KYC, onboarding, and compliance workflows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Businesses that need to verify Indian voter identity documents (EPIC) as part of KYC, onboarding, or fraud-prevention pipelines.",
@@ -11084,14 +14536,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Rajesh Kumar",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "VOTER-20240101-001",
-			source: "API",
-			epic_number: "ABC1234567",
-			name: "Rajesh Kumar",
-		},
 		responseData: [
 			{
 				name: "name",
@@ -11365,7 +14809,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify Indian passport application details using passport file number and date of birth.",
 		description:
 			"The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth. Returns holder name, DOB, application type, and application received date — suitable for KYC, employee background verification, travel compliance, and fintech onboarding workflows. Supports Indian passports only; not an OCR or MRZ scan API.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Employee BGV, travel-platform KYC, fintech onboarding, and immigration-assistance workflows that need structured passport data from the government source.",
@@ -11403,15 +14846,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Rajesh Kumar",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "PASS-20240101-001",
-			source: "API",
-			file_number: "J8369854",
-			dob: "1994-08-29",
-			name: "Rajesh Kumar",
-		},
 		responseData: [
 			{
 				name: "file_number",
@@ -11514,7 +14948,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify Company Identification Numbers (CIN) against MCA records — returns company name, incorporation details, directors, and CIN status.",
 		description:
 			"The CIN Verification API lets you validate a Company Identification Number (CIN) against Ministry of Corporate Affairs records in real time. It returns the registered company name, registration number, incorporation date, CIN status (active / struck-off / dormant / under liquidation), company email, country of incorporation, and a full list of directors with their DIN, designation, address, and date of birth. Use it for KYB onboarding, vendor due diligence, lending workflows, and corporate compliance checks.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"KYB and corporate due-diligence workflows that need authoritative MCA data on a company before onboarding or credit decisioning.",
@@ -11534,13 +14967,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "U72900KA2015PTC082988",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CIN-20240101-001",
-			source: "API",
-			cin: "U72900KA2015PTC082988",
-		},
 		responseData: [
 			{
 				name: "cin",
@@ -11727,7 +15153,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Geo-locate and risk-score an IP address in real time — detect proxies, VPNs, and assess fraud risk.",
 		description:
 			"Submit any IPv4 address to receive its geolocation (country, region, city), proxy/VPN classification, and dual risk scores (city-level and proxy-type). Use inline during transactions for fraud prevention and geo-compliance enforcement.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fintech, lending, e-commerce, and SaaS platforms that need real-time IP intelligence for fraud prevention and geo-compliance.",
@@ -11747,13 +15172,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "103.21.58.193",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "IP-20240101-001",
-			source: "API",
-			ip_address: "103.21.58.193",
-		},
 		responseData: [
 			{
 				name: "ip_address",
@@ -11872,7 +15290,6 @@ export const API_SPECS: ApiSpec[] = [
 			"AI-powered name comparison trained on 100M+ Indian name records — returns a match score (0–1) and match category for automated KYC decisions.",
 		description:
 			"Name Match is an AI-powered name comparison API built for India's complex naming conventions. Trained on over 100 million Indian name records, it handles initials, abbreviations, phonetic and regional spelling variants, salutation patterns (S/O, D/O), subset matching, and name ordering variations — returning a numeric score and match category that let you set rule-based pass/fail thresholds.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Cross-document name validation — PAN vs Aadhaar, bank account holder vs GST trade name, and any KYC or KYB workflow that needs to tolerate Indian naming variations without manual review.",
@@ -11901,14 +15318,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Satish Kumar Mishra",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "NAME-20240101-001",
-			source: "API",
-			name_1: "S K Mishra",
-			name_2: "Satish Kumar Mishra",
-		},
 		responseData: [
 			{
 				name: "name_1",
@@ -11998,7 +15407,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Check income tax return filing and compliance status for a PAN holder in real time — ideal for lending, credit assessment, and financial due-diligence workflows.",
 		description:
 			"The ITR Compliance Check API verifies whether a given PAN holder has filed income tax returns and returns their compliance status, ITR filing flag, and the relevant assessment year. Built on the Eko TOURAS network, it gives lenders, NBFCs, and compliance teams an instant signal of a borrower's or vendor's tax-filing behaviour without requiring manual document collection. A single PAN input is all that is needed — no document uploads or consent flows.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Lending platforms, NBFCs, and compliance teams that need an instant, automated ITR filing signal for a PAN holder during credit assessment or onboarding.",
@@ -12018,13 +15426,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "ABCDE1234F",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "ITR-CHK-20240101-001",
-			source: "API",
-			pan_number: "ABCDE1234F",
-		},
 		responseData: [
 			{
 				name: "pan_number",
@@ -12182,7 +15583,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify Director Identification Numbers (DIN) against MCA records — returns director name, DIN status, designation, and associated company information.",
 		description:
 			"The DIN Verification API lets you validate a Director Identification Number (DIN) against Ministry of Corporate Affairs (MCA) records in real time. It returns the director's full name, current DIN status (Active / Deactivated / Surrendered), designation, and the associated company name. Use it for corporate KYB onboarding, director background checks, vendor due diligence, lending to corporate borrowers, and compliance workflows that require authoritative director-identity validation.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Corporate KYB and director due-diligence workflows that need real-time validation of a Director Identification Number against authoritative MCA records before onboarding or credit decisioning.",
@@ -12201,13 +15601,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "06731826",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "DIN-20240101-001",
-			source: "API",
-			din_number: "06731826",
-		},
 		responseData: [
 			{
 				name: "din",
@@ -12319,7 +15712,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Fetch pending traffic challans for any vehicle using its registration number — challan number, offence, fine amount, date, status, and issuing authority returned in a single API call.",
 		description:
 			"Send a vehicle registration number to the E-Challan Verification API and receive a complete list of pending traffic violations from the national e-challan system (Parivahan). The response includes each challan's unique number, offence description, fine amount, date of violation, payment status, and issuing state/authority. Use it to automate fleet compliance checks, assess driver risk during onboarding, support motor insurance underwriting, or surface challan data in used-vehicle platforms.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Fleet operators, logistics and delivery platforms, motor insurers, gig-worker onboarding platforms, and used-vehicle marketplaces that need automated, real-time challan status checks.",
@@ -12339,13 +15731,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "MH02AB1234",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "CHALLAN-20240101-001",
-			source: "API",
-			registration_number: "MH02AB1234",
-		},
 		responseData: [
 			{
 				name: "vehicle_number",
@@ -12553,7 +15938,6 @@ export const API_SPECS: ApiSpec[] = [
 			"Verify an email address in real time — confirm the domain has live mail infrastructure, detect disposable addresses, and retrieve domain age as a trust signal.",
 		description:
 			"Validates whether an email address is genuine and deliverable by checking MX (mail exchange) records for the domain. Returns domain age in days, the resolved MX record list, and flags for validity and disposability — giving you the signals needed to block fake signups, catch typos, and assess account trust during onboarding.",
-		category: "verification",
 		relevance: "H",
 		bestFor:
 			"User onboarding flows, registration fraud prevention, contact-database cleaning, and any scenario where an invalid or dummy email address would cause downstream failures or fraud.",
@@ -12573,13 +15957,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "rajesh.kumar@example.com",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "EMAIL-CHK-20240101-001",
-			source: "API",
-			email: "rajesh.kumar@example.com",
-		},
 		responseData: [
 			{
 				name: "email",
@@ -12728,7 +16105,6 @@ export const API_SPECS: ApiSpec[] = [
 		summary: "Verify FSSAI food license details and status in real time.",
 		description:
 			"Validates a Food Safety and Standards Authority of India (FSSAI) license number and returns the registered food business operator (FBO) details — name, address, license category, status, and expiry date. Use for food marketplace onboarding, delivery platform compliance, and food safety regulatory audits.",
-		category: "verification",
 		relevance: "M",
 		bestFor:
 			"Food delivery and aggregator platforms, e-commerce marketplaces, and compliance teams that need to confirm a vendor or restaurant holds a valid, active FSSAI license before onboarding or order fulfilment.",
@@ -12747,12 +16123,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "11521998000045",
 			},
 		],
-		sampleRequest: {
-			initiator_id: "9876543210",
-			user_code: "20810200",
-			client_ref_id: "REQ-20240101-001",
-			fssai: "11521998000045",
-		},
 		responseData: [
 			{
 				name: "fssai_number",

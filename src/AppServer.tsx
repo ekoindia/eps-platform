@@ -46,6 +46,13 @@ import UseCasesHubPage from "./pages/UseCasesHubPage";
 // Pricing
 import PricingPage from "./pages/PricingPage";
 
+// AI Agents
+import AiPage from "./pages/AiPage";
+
+// Developer Docs
+import DocsIndexPage from "./pages/docs/DocsIndexPage";
+import DocDetailPage from "./pages/docs/DocDetailPage";
+
 function TrackingParamCapture() {
 	useCaptureTrackingParams();
 	return null;
@@ -92,6 +99,13 @@ const AppServer = ({
 
 							{/* Pricing */}
 							<Route path="/pricing" element={<PricingPage />} />
+
+							{/* AI Agents */}
+							<Route path="/ai" element={<AiPage />} />
+
+							{/* Developer Docs */}
+							<Route path="/docs" element={<DocsIndexPage />} />
+							<Route path="/docs/:slug" element={<DocDetailPage />} />
 
 							{/* Company & Legal Pages */}
 							<Route path="/about-us" element={<AboutPage />} />

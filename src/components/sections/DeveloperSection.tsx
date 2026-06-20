@@ -1,12 +1,12 @@
-import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
-import { Button } from "@/components/ui/button";
 import {
 	CodeBlock,
-	examplePaymentCode,
 	exampleIntegrationSteps,
+	examplePaymentCode,
 } from "@/components/CodeBlock";
-import { ArrowRight, Code, Key, Zap } from "lucide-react";
 import { FadeIn } from "@/components/FadeIn";
+import { SectionContainer } from "@/components/SectionContainer";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Code, Key, Zap } from "lucide-react";
 
 const stepIcons = [Code, Key, Zap];
 
@@ -59,11 +59,7 @@ export const DeveloperSection = () => {
 					</div>
 
 					<Button variant="gold" size="lg" asChild>
-						<a
-							href="https://developers.eko.in"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
+						<a href="/docs">
 							Go to Developer Docs
 							<ArrowRight className="w-4 h-4" />
 						</a>

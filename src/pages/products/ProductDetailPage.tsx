@@ -5,7 +5,7 @@ import { API_PRODUCTS } from "@/lib/data/api-products";
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import {
 	getApiPreviewsForProduct,
-	getProductDocsUrl,
+	getProductDocHref,
 	getVerifiableFieldsForProduct,
 } from "@/lib/data/api-spec-previews";
 import { AiHint } from "@/components/AiHint";
@@ -31,7 +31,7 @@ const ProductDetailPage = () => {
 	// not the marketing page data. Cap on-page previews to keep the page focused;
 	// the full set powers the developer reference.
 	const inputOutputPreviews = getApiPreviewsForProduct(product.id, 6);
-	const docsUrl = getProductDocsUrl(product.id);
+	const docHref = getProductDocHref(product.id);
 	const verifiableFields = getVerifiableFieldsForProduct(product.id);
 
 	return (
@@ -66,7 +66,7 @@ const ProductDetailPage = () => {
 			<ProductPageLayout
 				{...layoutProps}
 				productId={product.id}
-				docsUrl={docsUrl}
+				docHref={docHref}
 				inputOutputPreviews={
 					inputOutputPreviews.length > 0 ? inputOutputPreviews : undefined
 				}

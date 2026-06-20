@@ -7,7 +7,11 @@
 /* Eko Design System - Enterprise Fintech Aesthetic */
 /* Fonts loaded asynchronously via index.html */
 
-@theme {
+@theme inline {
+	/* `inline` keeps the semantic `--color-*: var(--token)` bindings LIVE so
+	   utilities resolve the runtime CSS vars at use-site — required for the
+	   docs-local `.dark` subtree (and any future dark mode) to actually switch.
+	   Without it, Tailwind resolves these to the :root value at build time. */
 	/* Brand colors — exposed as utilities (bg-eko-gold etc.) */
 	--color-eko-gold: hsl(42 96% 54%);
 	--color-eko-gold-hover: hsl(42 96% 48%);
@@ -56,7 +60,9 @@
 
 	/* Fonts */
 	--font-sans: "Inter", system-ui, sans-serif;
-	--font-mono: "JetBrains Mono", monospace;
+	--font-mono:
+		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+		"Courier New", monospace;
 
 	/* Radius */
 	--radius-lg: var(--radius);
@@ -78,6 +84,7 @@
 	--animate-slide-left: slide-left 0.6s ease-out both;
 	--animate-slide-right: slide-right 0.6s ease-out both;
 	--animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+	--animate-float-bob: float-bob 4s ease-in-out infinite;
 	--animate-scroll-x: scroll-x 20s linear infinite;
 	--animate-menu-slide-down-in: menu-slide-down-in 0.3s ease-out forwards;
 	--animate-scale-in: scale-in 0.2s ease-out forwards;
@@ -145,6 +152,15 @@
 		}
 		50% {
 			opacity: 0.7;
+		}
+	}
+	@keyframes float-bob {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-8px);
 		}
 	}
 	@keyframes scroll-x {
@@ -328,6 +344,13 @@
 		scroll-behavior: smooth;
 	}
 
+	/* Docs-local dark mode (see DocsLayout) tints only its own subtree, so the
+	   page root stays light and the over-scroll bounce flashes white. Match the
+	   root to the `.dark` --background token while docs dark mode is active. */
+	html.docs-dark {
+		background-color: hsl(195 91% 10%);
+	}
+
 	body {
 		@apply bg-background text-foreground font-sans antialiased;
 		font-family: "Inter", system-ui, sans-serif;
@@ -344,7 +367,7 @@
 
 	code,
 	pre {
-		font-family: "JetBrains Mono", monospace;
+		font-family: var(--font-mono);
 	}
 }
 
@@ -384,14 +407,106 @@
 			var(--gradient-hero);
 	}
 
-	/* Code Block Styling */
+	/* Code Block Styling — shared shell for both variants */
 	.code-block {
-		@apply rounded-xl overflow-hidden shadow-xl;
+		@apply relative rounded-xl overflow-hidden;
+		color: #e2e8f0;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	/* Solid variant (default) — opaque dark card, readable over ANY backdrop. */
+	.code-block--solid {
 		background: #0d2837;
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.05),
+			0 18px 40px -16px rgba(0, 0, 0, 0.45);
+	}
+
+	/* Glass variant — frosted/translucent + pointer-follow 3D tilt. Only for a
+	   dark backdrop (e.g. the hero), where translucency reads well. */
+	.code-block--glass {
+		/* Translucent dark-navy tint = liquid glass */
+		background: rgba(13, 40, 55, 0.72);
+		/* Layered shadow + top inset highlight = physical 3D thickness */
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.08),
+			0 30px 60px -12px rgba(0, 0, 0, 0.55),
+			0 10px 20px -8px rgba(0, 0, 0, 0.4);
+		transform-style: preserve-3d;
+		transform: perspective(1200px) rotateX(var(--cb-rx, 0deg))
+			rotateY(var(--cb-ry, 0deg));
+		transition:
+			transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+			box-shadow 0.4s ease;
+	}
+	.code-block--glass:hover {
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.1),
+			0 40px 80px -16px rgba(0, 0, 0, 0.6),
+			0 16px 32px -10px rgba(0, 0, 0, 0.45);
+	}
+	@supports (
+		(backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+	) {
+		.code-block--glass {
+			background: rgba(13, 40, 55, 0.7);
+			-webkit-backdrop-filter: blur(20px) saturate(160%);
+			backdrop-filter: blur(20px) saturate(160%);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.code-block--glass {
+			transition: none;
+			transform: none;
+		}
+	}
+
+	/* Moving specular highlight — above glass, below code text (z-0 vs gutter z-10) */
+	.code-glare {
+		@apply pointer-events-none absolute inset-0 z-0;
+		opacity: var(--cb-glare, 0);
+		background: radial-gradient(
+			circle at var(--cb-mx, 50%) var(--cb-my, 50%),
+			rgba(255, 255, 255, 0.1),
+			transparent 45%
+		);
+		transition: opacity 0.4s ease;
+	}
+
+	.code-body {
+		position: relative;
+		z-index: 1;
+	}
+
+	/* Sticky line-number gutter — stays put while code scrolls horizontally */
+	.code-gutter {
+		background: rgba(13, 40, 55, 0.85);
+		border-right: 1px solid rgba(255, 255, 255, 0.06);
+	}
+
+	/* Thin, theme-matched scrollbars for docs code panes */
+	.docs-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+	}
+	.docs-scroll::-webkit-scrollbar {
+		height: 8px;
+		width: 8px;
+	}
+	.docs-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.docs-scroll::-webkit-scrollbar-thumb {
+		background-color: rgb(255 255 255 / 0.18);
+		border-radius: 9999px;
+	}
+	.docs-scroll::-webkit-scrollbar-thumb:hover {
+		background-color: rgb(255 255 255 / 0.3);
 	}
 
 	.code-header {
-		@apply flex items-center gap-2 px-4 py-3 border-b border-white/10;
+		@apply relative z-10 flex items-center gap-2 px-4 py-3 border-b border-white/10;
+		background: rgba(255, 255, 255, 0.04);
 	}
 
 	.code-dot {
@@ -423,6 +538,17 @@
 	.text-gradient-gold {
 		@apply bg-clip-text text-transparent;
 		background-image: var(--gradient-gold);
+	}
+
+	/* Inline code pill — shared by MdxGuide prose and EndpointDetail ReactMarkdown.
+	   Must live in utilities layer so it out-ranks @tailwindcss/typography's
+	   prose code::before backtick rule (same layer, higher specificity wins). */
+	.docs-inline-code-prose :not(pre) > code {
+		@apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.875em] font-normal;
+	}
+	.docs-inline-code-prose :not(pre) > code::before,
+	.docs-inline-code-prose :not(pre) > code::after {
+		content: "";
 	}
 }
 
@@ -545,4 +671,39 @@ html:not([data-os="mac"]) .kbd-os-mac {
 }
 body {
 	top: 0 !important;
+}
+
+/* ── Desktop Company dropdown: anchor under its nav trigger ──────────────
+   The panel is narrow (360px) while the "Company" nav item sits far right,
+   so the default centred positioning (Tailwind `left-1/2 -translate-x-1/2`)
+   looks detached. Where CSS anchor positioning is supported (Chromium 125+),
+   pin the panel to the trigger's bottom-centre — the browser re-tracks it on
+   scroll/resize/scale with no JS. Unsupported browsers (Firefox/Safari) keep
+   the centred Tailwind fallback. These rules are unlayered, so they out-rank
+   Tailwind's layered top/left/translate utilities.
+   Gated on `top: anchor(...)` (the function actually used), not merely
+   `anchor-name`, so partial implementations don't half-apply. */
+.company-nav-trigger {
+	anchor-name: --company-trigger;
+}
+
+@supports (top: anchor(bottom)) {
+	.company-dropdown {
+		position-anchor: --company-trigger;
+		top: calc(anchor(bottom) + 0.5rem);
+		bottom: auto;
+		/* override the centred fallback (left-1/2 + -translate-x-1/2) */
+		left: auto;
+		right: auto;
+		translate: none;
+		justify-self: anchor-center;
+	}
+}
+
+/* Hero mascot float-bob — disabled for reduced-motion. Unlayered so it
+   out-ranks Tailwind's layered `animate-float-bob` utility. */
+@media (prefers-reduced-motion: reduce) {
+	.hero-bot {
+		animation: none;
+	}
 }

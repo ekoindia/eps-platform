@@ -9,13 +9,14 @@ import {
 } from "@/lib/data/api-pricing";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import {
-	primaryDocsUrl,
+	primaryDocSlug,
 	specsToPreviews,
 	specsToVerifiableFields,
 	verifyHeading,
 } from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
+import { docsHref } from "@/lib/data/docs-registry";
 import { BBPS_OPERATORS } from "@/lib/data/bbps-operators";
 import {
 	AEPS_CASHOUT_SLABS,
@@ -357,12 +358,12 @@ const productSection = (
 	const faqs = (page.faqs ?? []).filter((faq) => !commonQuestions.has(faq.q));
 	if (faqs.length > 0) blocks.push(`**FAQs:**\n${faqBullets(faqs)}`);
 
-	const docsUrl = primaryDocsUrl(specs);
+	const docSlug = primaryDocSlug(specs);
 	blocks.push(
 		linksLine(
 			pageLink,
 			mdLink,
-			docsUrl ? link("API docs", docsUrl, fmt) : null,
+			docSlug ? link("API docs", `${SITE_URL}${docsHref(docSlug)}`, fmt) : null,
 		),
 	);
 

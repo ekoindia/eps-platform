@@ -3,31 +3,39 @@
  * Kept separate from the header shell so this larger chunk (react-icons, data
  * arrays, DropdownGrid, Sheet) is deferred until after hydration.
  */
-import { lazy, Suspense, type ReactNode, type HTMLAttributes } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Briefcase } from "lucide-react";
-import { Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { formatMobile } from "@/lib/utils";
-import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
-import {
-	FaFacebookF,
-	FaLinkedinIn,
-	FaInstagram,
-	FaYoutube,
-} from "react-icons/fa";
-import { XIcon } from "@/components/icons/XIcon";
-import { openZohoChat } from "@/lib/zoho-chat";
+import { DropdownColumnHeader, DropdownGrid } from "@/components/DropdownGrid";
 import { EkoLogo } from "@/components/EkoLogo";
-import { DropdownGrid, DropdownColumnHeader } from "@/components/DropdownGrid";
-import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { XIcon } from "@/components/icons/XIcon";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { navLinks, type DropdownKey } from "@/lib/config/nav";
+import { SOCIAL_LINKS } from "@/lib/config/site";
+import {
+	API_PRODUCT_PAGES,
+	hasProductPage,
+} from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
-import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import { cn } from "@/lib/utils";
+import { openZohoChat } from "@/lib/zoho-chat";
+import { ArrowRight, Briefcase } from "lucide-react";
+import {
+	Fragment,
+	lazy,
+	Suspense,
+	type HTMLAttributes,
+	type ReactNode,
+} from "react";
+import {
+	FaFacebookF,
+	FaInstagram,
+	FaLinkedinIn,
+	FaYoutube,
+} from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const TalkToSalesDialog = lazy(() =>
 	import("@/components/TalkToSalesDialog").then((m) => ({
@@ -39,34 +47,31 @@ const TalkToSalesDialog = lazy(() =>
 /*  Module-level data (moved from Header.tsx)                          */
 /* ------------------------------------------------------------------ */
 
-const activeProducts = getActiveProducts();
+// Only products with a marketing product page belong in the mega-menu; docs-only
+// products (specs but no page) are excluded so we never link to a 404 — and never
+// dereference a missing API_PRODUCT_PAGES entry.
+const marketedProducts = getActiveProducts().filter((p) =>
+	hasProductPage(p.id),
+);
 
-const bcApis = activeProducts
+const toApiItem = (p: (typeof marketedProducts)[number]) => ({
+	label: p.name,
+	href: productHref(p.slug),
+	shortDesc: p.shortDesc,
+	icon: API_PRODUCT_PAGES[p.id]?.icon,
+});
+
+const bcApis = marketedProducts
 	.filter((p) => p.category === "bc")
-	.map((p) => ({
-		label: p.name,
-		href: productHref(p.slug),
-		shortDesc: p.shortDesc,
-		icon: API_PRODUCT_PAGES[p.id].icon,
-	}));
+	.map(toApiItem);
 
-const paymentApis = activeProducts
+const paymentApis = marketedProducts
 	.filter((p) => p.category === "payment")
-	.map((p) => ({
-		label: p.name,
-		href: productHref(p.slug),
-		shortDesc: p.shortDesc,
-		icon: API_PRODUCT_PAGES[p.id].icon,
-	}));
+	.map(toApiItem);
 
-const verificationApis = activeProducts
+const verificationApis = marketedProducts
 	.filter((p) => p.category === "verification")
-	.map((p) => ({
-		label: p.name,
-		href: productHref(p.slug),
-		shortDesc: p.shortDesc,
-		icon: API_PRODUCT_PAGES[p.id].icon,
-	}));
+	.map(toApiItem);
 
 const companyLinks = [
 	{ label: "About Eko", href: "/about-us", internal: true },
@@ -140,7 +145,6 @@ const apiColumns: Array<{
 /* ------------------------------------------------------------------ */
 
 type HoverHandlers = { onMouseEnter: () => void; onMouseLeave: () => void };
-export type DropdownKey = "products" | "useCases" | "company";
 
 /**
  * Full-width dropdown panel pinned below the fixed header.
@@ -263,6 +267,122 @@ export const HeaderDropdownPanels = ({
 	setTalkToSalesOpen,
 	panelHoverHandlers,
 }: HeaderDropdownPanelsProps) => {
+	/**
+	 * Renders one mobile accordion: toggle button + (when open) its body wrapped
+	 * in the shared indent container. Collapses the repeated button/toggle/open
+	 * boilerplate; each section still supplies its own heterogeneous `body`.
+	 */
+	const renderMobileAccordion = (
+		accordionKey: DropdownKey,
+		label: string,
+		body: ReactNode,
+	) => (
+		<>
+			<MobileAccordionButton
+				label={label}
+				isOpen={activeMobileAccordion === accordionKey}
+				onClick={() =>
+					setActiveMobileAccordion(
+						activeMobileAccordion === accordionKey ? null : accordionKey,
+					)
+				}
+			/>
+			{activeMobileAccordion === accordionKey && (
+				<div className="pl-4 flex flex-col gap-1">{body}</div>
+			)}
+		</>
+	);
+
+	/**
+	 * Mobile accordion bodies keyed by dropdown. Heterogeneous per section, so
+	 * they can't be data-driven like the link list — but keying them by
+	 * `DropdownKey` lets the `navLinks` loop below stay generic, and the
+	 * `Record` type forces every dropdown to have a body.
+	 */
+	const accordionBodies: Record<DropdownKey, ReactNode> = {
+		products: apiColumns.map((col) => (
+			<div key={col.title}>
+				<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
+					{col.title}
+				</p>
+				{col.items.map((item) => (
+					<Link
+						key={item.href}
+						to={item.href}
+						onClick={() => setMobileMenuOpen(false)}
+						className="block text-sm py-1.5 text-eko-slate cursor-pointer"
+					>
+						{item.label}
+					</Link>
+				))}
+				{col.seeAllLink && (
+					<Link
+						to={col.seeAllLink.href}
+						onClick={() => setMobileMenuOpen(false)}
+						className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
+					>
+						{col.seeAllLink.label}
+					</Link>
+				)}
+			</div>
+		)),
+		useCases: (
+			<>
+				<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">
+					Industries
+				</p>
+				{navIndustries.map((item) => (
+					<Link
+						key={item.slug}
+						to={`/industries/${item.slug}`}
+						onClick={() => setMobileMenuOpen(false)}
+						className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
+					>
+						<item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
+						{item.name}
+					</Link>
+				))}
+				<Link
+					to="/industries"
+					onClick={() => setMobileMenuOpen(false)}
+					className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
+				>
+					See all industries →
+				</Link>
+
+				<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
+					Solution Packs
+				</p>
+				{navSolutions.map((item) => (
+					<Link
+						key={item.slug}
+						to={`/solutions/${item.slug}`}
+						onClick={() => setMobileMenuOpen(false)}
+						className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
+					>
+						<item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
+						{item.name}
+					</Link>
+				))}
+				<Link
+					to="/solutions"
+					onClick={() => setMobileMenuOpen(false)}
+					className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
+				>
+					See all solutions →
+				</Link>
+			</>
+		),
+		company: companyLinks.map((item) => (
+			<CompanyLinkItem
+				key={item.label}
+				item={item}
+				onClick={() => setMobileMenuOpen(false)}
+				className="block text-sm py-1.5 text-eko-slate cursor-pointer"
+			/>
+		)),
+	};
+
 	return (
 		<>
 			{/* ── Desktop: Products dropdown ─────────────────────────────── */}
@@ -345,7 +465,7 @@ export const HeaderDropdownPanels = ({
 			{/* ── Desktop: Company dropdown ──────────────────────────────── */}
 			{activeDesktopDropdown === "company" && (
 				<div
-					className="fixed top-24 left-1/2 -translate-x-1/2 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
+					className="company-dropdown fixed top-24 left-1/2 -translate-x-1/2 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
 					data-dropdown="company"
 					{...panelHoverHandlers}
 				>
@@ -402,7 +522,10 @@ export const HeaderDropdownPanels = ({
 				/>
 			)}
 
-			{/* ── Mobile side drawer ─────────────────────────────────────── */}
+			{/*
+				── Mobile side drawer ───────────────────────────────────────
+				MARK: Mobile Menu
+			*/}
 			<Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
 				<SheetContent
 					side="right"
@@ -419,161 +542,60 @@ export const HeaderDropdownPanels = ({
 					</div>
 
 					<nav className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
-						{/* Products Accordion */}
-						<MobileAccordionButton
-							label="Products"
-							isOpen={activeMobileAccordion === "products"}
-							onClick={() =>
-								setActiveMobileAccordion(
-									activeMobileAccordion === "products" ? null : "products",
-								)
-							}
-						/>
-						{activeMobileAccordion === "products" && (
-							<div className="pl-4 flex flex-col gap-1">
-								{apiColumns.map((col) => (
-									<div key={col.title}>
-										<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
-											{col.title}
-										</p>
-										{col.items.map((item) => (
-											<Link
-												key={item.href}
-												to={item.href}
-												onClick={() => setMobileMenuOpen(false)}
-												className="block text-sm py-1.5 text-eko-slate cursor-pointer"
-											>
-												{item.label}
-											</Link>
-										))}
-										{col.seeAllLink && (
-											<Link
-												to={col.seeAllLink.href}
-												onClick={() => setMobileMenuOpen(false)}
-												className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
-											>
-												{col.seeAllLink.label}
-											</Link>
+						{/* Mirrors the desktop nav: same source, same order. */}
+						{navLinks.map((link) => {
+							const key = link.dropdownKey ?? link.href ?? link.label;
+							if (link.dropdownKey) {
+								return (
+									<Fragment key={key}>
+										{renderMobileAccordion(
+											link.dropdownKey,
+											link.label,
+											accordionBodies[link.dropdownKey],
 										)}
-									</div>
-								))}
-							</div>
-						)}
-
-						{/* Company Accordion */}
-						<MobileAccordionButton
-							label="Company"
-							isOpen={activeMobileAccordion === "company"}
-							onClick={() =>
-								setActiveMobileAccordion(
-									activeMobileAccordion === "company" ? null : "company",
-								)
+									</Fragment>
+								);
 							}
-						/>
-						{activeMobileAccordion === "company" && (
-							<div className="pl-4 flex flex-col gap-1">
-								{companyLinks.map((item) => (
-									<CompanyLinkItem
-										key={item.label}
-										item={item}
-										onClick={() => setMobileMenuOpen(false)}
-										className="block text-sm py-1.5 text-eko-slate cursor-pointer"
-									/>
-								))}
-							</div>
-						)}
-
-						{/* Use Cases Accordion */}
-						<MobileAccordionButton
-							label="Use Cases"
-							isOpen={activeMobileAccordion === "useCases"}
-							onClick={() =>
-								setActiveMobileAccordion(
-									activeMobileAccordion === "useCases" ? null : "useCases",
-								)
-							}
-						/>
-						{activeMobileAccordion === "useCases" && (
-							<div className="pl-4 flex flex-col gap-1">
-								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1">
-									Industries
-								</p>
-								{navIndustries.map((item) => (
-									<Link
-										key={item.slug}
-										to={`/industries/${item.slug}`}
-										onClick={() => setMobileMenuOpen(false)}
-										className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
-									>
-										<item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
-										{item.name}
-									</Link>
-								))}
-								<Link
-									to="/industries"
+							return link.external ? (
+								<a
+									key={key}
+									href={link.href}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
 									onClick={() => setMobileMenuOpen(false)}
-									className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
 								>
-									See all industries →
-								</Link>
-
-								<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
-									Solution Packs
-								</p>
-								{navSolutions.map((item) => (
-									<Link
-										key={item.slug}
-										to={`/solutions/${item.slug}`}
-										onClick={() => setMobileMenuOpen(false)}
-										className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
-									>
-										<item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
-										{item.name}
-									</Link>
-								))}
+									{link.label}
+								</a>
+							) : (
 								<Link
-									to="/solutions"
+									key={key}
+									to={link.href ?? "#"}
 									onClick={() => setMobileMenuOpen(false)}
-									className="block text-sm py-1.5 text-eko-navy/80 hover:text-eko-navy hover:underline font-medium cursor-pointer"
+									className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
 								>
-									See all solutions →
+									{link.label}
 								</Link>
-							</div>
-						)}
-
-						{/* Pricing link */}
-						<Link
-							to="/pricing"
-							onClick={() => setMobileMenuOpen(false)}
-							className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
-						>
-							Pricing
-						</Link>
-
-						{/* Developers link */}
-						<a
-							href="https://developers.eko.in"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-sm font-medium py-2 text-eko-slate cursor-pointer"
-							onClick={() => setMobileMenuOpen(false)}
-						>
-							Developers
-						</a>
+							);
+						})}
 					</nav>
 
 					<div className="flex flex-col gap-3 px-5 py-4 border-t border-eko-navy/10 shrink-0">
 						<div className="-ml-2">
-							<LanguageSelector isLight={false} showLabel />
+							<LanguageSelector
+								isLight={false}
+								showLabel
+								placement="top-left"
+							/>
 						</div>
-						<a
+						{/* <a
 							id="lnk-sales-phone-header-mobile"
 							href={`tel:+91${SALES_MOBILE}`}
 							className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
 						>
 							<Phone className="w-4 h-4" />
 							{formatMobile(SALES_MOBILE)}
-						</a>
+						</a> */}
 						<Button
 							id="btn-get-started-header-mobile"
 							variant="gold"

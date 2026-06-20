@@ -50,12 +50,11 @@ const complianceItems = [
 
 export const ComplianceSection = () => {
 	return (
-		<SectionContainer variant="navy" id="compliance">
+		<SectionContainer variant="muted" id="compliance">
 			<FadeIn>
 				<SectionHeader
 					title="Security & Compliance First"
 					subtitle="Enterprise-grade security with complete regulatory compliance. Your data and transactions are always protected."
-					light
 				/>
 			</FadeIn>
 
@@ -64,15 +63,15 @@ export const ComplianceSection = () => {
 					<FadeIn
 						key={item.title}
 						delay={i * 100}
-						className="p-6 rounded-2xl bg-white/5 backdrop-blur-xs border border-white/10 hover:bg-white/10 transition-colors duration-300"
+						className="p-6 rounded-2xl bg-card border border-border/50 card-hover"
 					>
 						<div className="w-12 h-12 rounded-xl bg-eko-gold/20 flex items-center justify-center mb-5">
 							<item.icon className="w-6 h-6 text-eko-gold" />
 						</div>
-						<h3 className="text-lg font-semibold text-white mb-2">
+						<h3 className="text-lg font-semibold text-foreground mb-2">
 							{item.title}
 						</h3>
-						<p className="text-white/70 text-sm leading-relaxed">
+						<p className="text-muted-foreground text-sm leading-relaxed">
 							{item.description}
 						</p>
 						{"details" in item && item.details && (
@@ -80,9 +79,9 @@ export const ComplianceSection = () => {
 								{(item.details as string[]).map((detail: string, i: number) => (
 									<li
 										key={i}
-										className="text-white/60 text-xs flex items-start gap-1.5"
+										className="text-muted-foreground text-xs flex items-start gap-1.5"
 									>
-										<span className="mt-1 w-1 h-1 rounded-full bg-white/40 shrink-0" />
+										<span className="mt-1 w-1 h-1 rounded-full bg-muted-foreground/50 shrink-0" />
 										{detail}
 									</li>
 								))}
@@ -93,8 +92,8 @@ export const ComplianceSection = () => {
 			</div>
 
 			{/* Partner Logos */}
-			<FadeIn className="mt-16 pt-12 border-t border-white/10">
-				<h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-white text-center mb-8">
+			<FadeIn className="mt-16 pt-12 border-t border-border/50">
+				<h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground text-center mb-8">
 					Our Partners
 				</h2>
 				<div className="relative overflow-hidden h-20">

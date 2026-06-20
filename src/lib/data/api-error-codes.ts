@@ -6,11 +6,10 @@
  * `errorScenarios`) and do not re-list this table. Rich enough to power a
  * developer portal "Error codes" page.
  *
- * Source: https://developers.eko.in/docs/error-codes
+ * Source: https://eps.eko.in/docs/error-codes
  */
 
-export const API_ERROR_CODES_DOCS_URL =
-	"https://developers.eko.in/docs/error-codes";
+export const API_ERROR_CODES_DOCS_URL = "/docs/error-codes";
 
 export interface ApiErrorCode {
 	code: string | number;

@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-	AlertTriangle,
 	BadgeCheck,
 	// DMT
 	Banknote,
@@ -8,7 +7,6 @@ import {
 	Briefcase,
 	Building,
 	Building2,
-	Calendar,
 	Car,
 	CheckCircle,
 	Clock,
@@ -22,24 +20,11 @@ import {
 	FolderCheck,
 	Globe,
 	Globe2,
-	// UPI Payout (re-uses Send, Zap, Users, Clock, CheckCircle, FileText, Wallet, Shield — all above)
-	// Bank Verification
-	Hash,
-	IdCard,
 	IndianRupee,
-	Info,
 	Landmark,
-	Leaf,
-	Mail,
 	MailCheck,
 	// Reverse Geocoding
 	MapPin,
-	// GST / DL
-	// (Building, FileText, CreditCard already imported)
-	// Vehicle
-	Palette,
-	// Employee
-	Phone,
 	Plane,
 	// QR
 	QrCode,
@@ -55,8 +40,6 @@ import {
 	Smartphone,
 	TicketCheck,
 	Truck,
-	// Pan Verification
-	User,
 	Users,
 	Utensils,
 	// New verification product icons
@@ -306,6 +289,99 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "Is there a settlement delay?",
 				a: "Settlement timelines depend on your agreement. Most partners receive T+1 settlements, with options for same-day settlements for high-volume partners.",
+			},
+		],
+	},
+
+	// -------------------------------------------------------------------------
+	// MARK: PPI Wallet (Levin + DigiKhata rails)
+	// -------------------------------------------------------------------------
+	ppi: {
+		seo: {
+			title:
+				"PPI Wallet API India | Prepaid Payment Instrument (Levin & DigiKhata)",
+			description:
+				"Open and operate PPI prepaid wallets with Eko's PPI Wallet API — Levin and DigiKhata rails. Sender onboarding, Aadhaar e-KYC consent, PAN KYC, wallet load, and wallet-to-bank IMPS/NEFT transfers — integrate in minutes.",
+			keywords:
+				"PPI API, prepaid wallet API, PPI Levin, DigiKhata API, Aadhaar eKYC wallet, wallet load API, prepaid payment instrument API, wallet to bank transfer API, Eko API",
+			ogTitle: "PPI Wallet API (Levin & DigiKhata)",
+			ogDescription:
+				"Open prepaid wallets, complete Aadhaar/PAN KYC, load funds, and move money to any bank account via IMPS/NEFT.",
+		},
+		title: "PPI Wallet API",
+		desc: "Open and operate prepaid (PPI) wallets with assisted KYC and bank transfers — Levin & DigiKhata rails",
+		heroTitle: "Prepaid Payment Instrument (PPI) Wallet API",
+		heroSubtitle:
+			"Let retailers and agents open prepaid wallets for customers, complete Aadhaar (incl. multilingual e-KYC consent) and PAN KYC, load funds, and transfer money from the wallet to any bank account using IMPS and NEFT — with real-time status and receipts.",
+		category: "payment",
+		icon: Wallet,
+		heroImage: moneyTransferImg,
+		features: [
+			{
+				title: "Assisted Wallet Onboarding",
+				desc: "Open a customer's PPI wallet in seconds with OTP-based sender onboarding.",
+				icon: Smartphone,
+			},
+			{
+				title: "Aadhaar & PAN KYC",
+				desc: "Upgrade wallet limits with Aadhaar OTP and PAN validation, fully API-driven.",
+				icon: BadgeCheck,
+			},
+			{
+				title: "Wallet-to-Bank Transfers",
+				desc: "Move funds from the wallet to any bank account via IMPS and NEFT.",
+				icon: Banknote,
+			},
+			{
+				title: "Recipient Management",
+				desc: "Add and reuse beneficiaries with bank-account verification.",
+				icon: Users,
+			},
+			{
+				title: "Real-time Status",
+				desc: "Transaction inquiry and OTP-secured flows with audit trails.",
+				icon: RefreshCw,
+			},
+		],
+		benefits: [
+			{
+				title: "Higher Wallet Limits",
+				desc: "Tiered monthly limits unlocked through Aadhaar and PAN KYC.",
+				icon: Zap,
+			},
+			{
+				title: "Earn Commission",
+				desc: "Earn on every successful wallet transfer processed through your network.",
+				icon: Banknote,
+			},
+			{
+				title: "Regulatory Compliant",
+				desc: "Built for RBI PPI workflows with KYC, consent, and transaction controls.",
+				icon: Shield,
+			},
+		],
+		integrationSteps: [
+			...VERIFICATION_STEPS_BASE,
+			{
+				title: "Go Live",
+				desc: "Get production credentials and start opening wallets and processing transfers.",
+			},
+		],
+		useCases: [
+			"Assisted Banking Networks",
+			"Kirana Stores",
+			"Agent Banking",
+			"CSP/BC networks",
+			"Retail Wallet Apps",
+		],
+		faqs: [
+			{
+				q: "What KYC is needed to raise wallet limits?",
+				a: "Sender onboarding uses OTP; limits are upgraded with Aadhaar OTP validation and PAN verification, all via API.",
+			},
+			{
+				q: "How does money leave the wallet?",
+				a: "Add a recipient bank account, send a transaction OTP, then initiate the transfer — funds move via IMPS (instant) or NEFT.",
 			},
 		],
 	},
@@ -2986,6 +3062,15 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		],
 	},
 };
+
+/**
+ * Whether a product has a marketing product page (`ProductPageData`). Products
+ * without one are "docs-only" — their API specs render under /docs, but they are
+ * excluded from marketing surfaces (header dropdown, /products index, prerendered
+ * product routes, generated markdown) to avoid linking to a 404.
+ */
+export const hasProductPage = (id: string): boolean =>
+	Object.prototype.hasOwnProperty.call(API_PRODUCT_PAGES, id);
 
 for (const page of Object.values(API_PRODUCT_PAGES)) {
 	page.faqs = [...page.faqs, ...COMMON_API_FAQS];

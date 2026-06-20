@@ -1,15 +1,15 @@
-import { Link } from "react-router-dom";
-import { Mail, MapPin, Phone } from "lucide-react";
 import { EkoLogo } from "@/components/EkoLogo";
+import { XIcon } from "@/components/icons/XIcon";
 import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
+import { Mail, MapPin, Phone } from "lucide-react";
 import {
 	FaFacebookF,
-	FaLinkedinIn,
 	FaInstagram,
+	FaLinkedinIn,
 	FaYoutube,
 } from "react-icons/fa";
-import { XIcon } from "@/components/icons/XIcon";
+import { Link } from "react-router-dom";
 
 /**
  * MARK: Links Data
@@ -25,22 +25,23 @@ const footerLinks = {
 		// { label: "Collection APIs", href: "/products" },
 		{ label: "BC APIs", href: "/products#bc", internal: true },
 		// { label: "Eko Shield", href: "/products/eko-shield", internal: true },
-		{ label: "All APIs", href: "/products", internal: true },
+		// { label: "All APIs", href: "/products", internal: true },
 		{ label: "API Pricing", href: "/pricing", internal: true },
 	],
 	developers: [
+		// {
+		// 	label: "Documentation",
+		// 	href: "https://developers.eko.in",
+		// 	external: true,
+		// },
+		// { label: "Guides", href: "https://developers.eko.in/docs", external: true },
 		{
-			label: "Documentation",
-			href: "https://developers.eko.in",
-			external: true,
+			label: "API Reference & Guides",
+			href: "/docs",
+			// external: true,
 		},
-		{ label: "Guides", href: "https://developers.eko.in/docs", external: true },
-		{
-			label: "API Reference",
-			href: "https://developers.eko.in/reference",
-			external: true,
-		},
-		// { label: "SDKs & Libraries", href: "https://developers.eko.in", external: true },
+		{ label: "SDKs & Libraries", href: "/docs" },
+		{ label: "Integrate with AI", href: "/ai" },
 		// { label: "Sandbox", href: "https://developers.eko.in", external: true },
 	],
 	company: [

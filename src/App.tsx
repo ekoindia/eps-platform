@@ -32,6 +32,9 @@ const IndustriesPage = lazy(() => import("./pages/IndustriesPage"));
 const SolutionsPage = lazy(() => import("./pages/SolutionsPage"));
 const UseCasesHubPage = lazy(() => import("./pages/UseCasesHubPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
+const AiPage = lazy(() => import("./pages/AiPage"));
+const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
+const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
 
 function TrackingParamCapture() {
 	useCaptureTrackingParams();
@@ -76,6 +79,13 @@ const App = ({
 
 							{/* Pricing */}
 							<Route path="/pricing" element={<PricingPage />} />
+
+							{/* AI Agents */}
+							<Route path="/ai" element={<AiPage />} />
+
+							{/* Developer Docs */}
+							<Route path="/docs" element={<DocsIndexPage />} />
+							<Route path="/docs/:slug" element={<DocDetailPage />} />
 
 							{/* Company & Legal Pages */}
 							<Route path="/about-us" element={<AboutPage />} />

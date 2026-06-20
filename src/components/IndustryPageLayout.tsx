@@ -17,6 +17,7 @@ import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
+import { docsHref } from "@/lib/data/docs-registry";
 
 interface IndustryPageLayoutProps {
 	data: IndustryData;
@@ -328,13 +329,9 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
 					</TooltipProvider>
 					<div className="text-center mt-10">
 						<Button variant="gold" size="lg" asChild>
-							<a
-								href="https://developers.eko.in"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link to={docsHref()}>
 								View Documentation <ArrowRight className="w-4 h-4" />
-							</a>
+							</Link>
 						</Button>
 					</div>
 				</SectionContainer>

@@ -1,3 +1,5 @@
+> See also: [docs/ai-agent-platform.md](./ai-agent-platform.md) for the AI-agent artifact layer (`/agent/*`).
+
 ## AI Agent Content Delivery
 
 This project also publishes AI-agent-friendly versions of key marketing pages.

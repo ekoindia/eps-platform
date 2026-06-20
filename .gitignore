@@ -1,3 +1,7 @@
+# Bun lockfiles — project standardizes on npm (package-lock.json). Block re-adds.
+bun.lock
+bun.lockb
+
 # Logs
 logs
 *.log
@@ -11,6 +15,15 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Baked agent/SDK artifacts — generated from src/ at build time (npm run bake:all).
+# Never committed; created fresh on every root build and on package prepublish.
+packages/*/data/
+
+# Env files (never commit secrets); keep .env.example tracked
+.env
+.env.*
+!.env.example
 
 # Ignore TypeScript incremental compilation cache
 *.tsbuildinfo
@@ -29,3 +42,8 @@ dist-ssr
 # Playwright MCP debug artifacts
 .playwright-mcp/
 .superpowers/
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/node_modules
+.design-sync/styles-src.css

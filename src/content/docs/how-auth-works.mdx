@@ -1,0 +1,46 @@
+# How Auth Works
+
+Every Eko API request is authenticated with a static key plus a per-request
+HMAC signature. Nothing secret ever travels on the wire in plain form.
+
+## The two keys
+
+| Key               | Where it comes from                                   | How it's used                                             |
+| ----------------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| **Access Key**    | Shared once, kept server-side only                    | Never sent in a request; used to compute the `secret-key` |
+| **Developer Key** | UAT key from your dashboard; production key after KYC | Sent as the `developer_key` header                        |
+
+## Request headers
+
+| Header                 | Required | Description                                            |
+| ---------------------- | -------- | ------------------------------------------------------ |
+| `developer_key`        | yes      | Your static developer key.                             |
+| `secret-key`           | yes      | Per-request HMAC signature (see below).                |
+| `secret-key-timestamp` | yes      | Current time in **milliseconds** since the UNIX epoch. |
+| `content-type`         | yes      | `application/json`                                     |
+
+## Computing the `secret-key`
+
+The signature binds the request to a timestamp, so it must be generated fresh
+for every call:
+
+1. Base64-encode the `access_key`.
+2. Take the current timestamp in milliseconds, as a string.
+3. Compute `HMAC-SHA256(timestamp, base64(access_key))`.
+4. Base64-encode the result — that's the `secret-key`.
+
+Send the same timestamp in `secret-key-timestamp`. A stale or mismatched
+timestamp returns `403 Forbidden`.
+
+```
+secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
+```
+
+## Why sign client-side
+
+Because the `access_key` never leaves your server, a leaked request can't be
+replayed or forged — the timestamp-bound signature is only valid for a short
+window. When using the in-page **Test Request** modal, signing happens locally
+in your browser with the UAT credentials you supply: your `access_key` is used
+only to compute the signature and is stripped before the request is sent — it is
+never transmitted.

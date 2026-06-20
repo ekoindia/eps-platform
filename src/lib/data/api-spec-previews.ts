@@ -14,6 +14,8 @@ import type {
 } from "@/components/ApiInputOutputPreview";
 import { getSpecsForProduct } from "./api-specs";
 import type { ApiSpec, ResponseField } from "./api-specs-common";
+import { buildSampleRequest } from "./api-specs-common";
+import { docHrefForSlug } from "./docs-registry";
 
 /**
  * Helper APIs that poll the status of a bulk/async verification job. Their ids
@@ -45,7 +47,7 @@ const toDisplay = (value: unknown): string =>
 
 /** API-specific request params -> display inputs, valued from sampleRequest. */
 const requestInputs = (spec: ApiSpec): ApiField[] => {
-	const req = (spec.sampleRequest ?? {}) as Record<string, unknown>;
+	const req = buildSampleRequest(spec);
 	return spec.extraRequestParams.map((p) => ({
 		label: p.label || humanizeLabel(p.name),
 		value: toDisplay(req[p.name] ?? p.example ?? ""),
@@ -90,7 +92,7 @@ export const specToPreview = (spec: ApiSpec): ApiPreviewItem => {
 		endpoint: spec.path,
 		relevance: spec.relevance,
 		bestFor: spec.bestFor,
-		docsUrl: spec.docsUrl,
+		slug: spec.slug,
 		inputs: requestInputs(spec),
 		outputs: impOutputs.length
 			? impOutputs
@@ -98,7 +100,7 @@ export const specToPreview = (spec: ApiSpec): ApiPreviewItem => {
 		sampleJson: {
 			method: spec.method,
 			endpoint: spec.path,
-			request: spec.sampleRequest,
+			request: buildSampleRequest(spec),
 			response: spec.sampleSuccessResponse,
 		},
 	};
@@ -111,9 +113,27 @@ export const specsToPreviews = (
 ): ApiPreviewItem[] =>
 	(limit ? specs.slice(0, limit) : specs).map(specToPreview);
 
-/** Primary developer-docs link for a set of specs (most-relevant first). */
-export const primaryDocsUrl = (specs: ApiSpec[]): string | undefined =>
-	specs[0]?.docsUrl;
+/**
+ * Primary internal `/docs/<slug>` href for a set of specs — the first spec that
+ * actually has a docs page (scans rather than assuming `specs[0]`, since the
+ * most-relevant spec may be a `-status`/inactive one without a page). Validated
+ * against the global docs registry; use for runtime UI links.
+ */
+export const primaryDocHref = (specs: ApiSpec[]): string | undefined => {
+	for (const spec of specs) {
+		const href = docHrefForSlug(spec.slug);
+		if (href) return href;
+	}
+	return undefined;
+};
+
+/**
+ * Slug of the primary documented spec (first non-`-status`) for a set of specs.
+ * Pure — derived from the given specs only, with no global-registry lookup — so
+ * the markdown/agent generators stay deterministic when specs are injected.
+ */
+export const primaryDocSlug = (specs: ApiSpec[]): string | undefined =>
+	specs.find((spec) => !isStatusSpec(spec))?.slug;
 
 /** Convenience: previews for a product id via the global registry. */
 export const getApiPreviewsForProduct = (
@@ -122,9 +142,9 @@ export const getApiPreviewsForProduct = (
 ): ApiPreviewItem[] =>
 	specsToPreviews(getDisplaySpecsForProduct(productId), limit);
 
-/** Convenience: primary docs url for a product id via the global registry. */
-export const getProductDocsUrl = (productId: string): string | undefined =>
-	primaryDocsUrl(getDisplaySpecsForProduct(productId));
+/** Convenience: internal `/docs/<slug>` href for a product id. */
+export const getProductDocHref = (productId: string): string | undefined =>
+	primaryDocHref(getDisplaySpecsForProduct(productId));
 
 // ---------------------------------------------------------------------------
 // "What can you verify" — important (imp) response fields, deduped per product

@@ -10,7 +10,10 @@ import {
 	productHref,
 	type ApiProductRef,
 } from "@/lib/data/api-products";
-import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import {
+	API_PRODUCT_PAGES,
+	hasProductPage,
+} from "@/lib/data/api-product-pages";
 import {
 	getStartingRate,
 	getStartingUnitLabel,
@@ -173,7 +176,11 @@ const ApiProductCard = ({
 };
 
 const ProductsPage = () => {
-	const activeProducts = getActiveProducts();
+	// Docs-only products (specs but no marketing page) are excluded so no card
+	// links to a 404 product page.
+	const activeProducts = getActiveProducts().filter((p) =>
+		hasProductPage(p.id),
+	);
 	const grouped = groupProductsByCategory(activeProducts);
 
 	const jsonLd = {

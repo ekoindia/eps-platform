@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+      - main
+      - "feature/**"
+
+jobs:
+  web-and-packages:
+    name: Web + JS/TS packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enforce npm (no Bun lockfiles)
+        run: |
+          if git ls-files --error-unmatch bun.lock bun.lockb 2>/dev/null; then
+            echo "::error::Bun lockfile committed. This project standardizes on npm — remove bun.lock/bun.lockb."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (website + agent bundles)
+        run: npm run build
+
+      - name: Test website
+        run: npx vitest run
+
+      - name: Test eps-context-mcp
+        run: npm test -w @ekoindia/eps-context-mcp
+
+      - name: Test eps-sdk (Node.js)
+        run: npm test -w @ekoindia/eps-sdk
+
+      - name: Test eps-mock-server
+        run: npm test -w @ekoindia/eps-mock-server
+
+  php-sdk:
+    name: PHP SDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sdk-php
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      # The baked data/sdk-surface.json is committed, so tests run without the
+      # repo-root build step. No phpunit.xml is present, so point phpunit at the
+      # tests directory and bootstrap Composer's autoloader explicitly.
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --bootstrap vendor/autoload.php tests

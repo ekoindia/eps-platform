@@ -1,96 +1,145 @@
-# EPS (Eko Platform Services) Website Project
+# EPS Platform
 
+**The AI-ready developer platform for [Eko Platform Services](https://eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
 
-## What technologies are used for this project?
+A single source-of-truth **data layer** describes every EPS API once. From it, the build generates everything a developer — or their AI coding agent — needs to integrate: backend SDKs, an MCP server, drop-in AI context packs, an offline mock server, OpenAPI + Postman, LLM-readable docs, and the marketing + developer-docs website itself. Edit the data, and every artifact regenerates in sync.
 
-This project is built with:
+## Why this exists
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **One source of truth, zero drift.** Specs, SDKs, MCP, docs, OpenAPI and code samples all derive from the same data layer (`src/lib/data/`). No hand-maintained copies that fall out of date.
+- **AI-ready by design.** Ships an MCP server plus drop-in context packs (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md`) so agents integrate EPS correctly — including the tricky parts: per-request HMAC-SHA256 signing and multi-step recipes (e.g. the DMT `463 → onboard sender` branch).
+- **Backend-safe SDKs.** JS and PHP SDKs are generated from an SDK surface with signing built in and cross-language golden-vector conformance tests. Coverage is a growing subset — see the [API coverage roadmap](docs/api-coverage-roadmap.md).
+- **Open & offline.** The MCP runs locally with a baked-in bundle (no hosted service, no secrets); an offline mock server replays recorded fixtures for tests.
 
+## Use EPS
 
-## Main Project Structure
-- `src/` - Main source code for the React application
-  - `App.tsx` - Client-side App with `React.lazy` route imports for code splitting
-  - `AppServer.tsx` - Server-side App with eager imports for SSG pre-rendering
-  - `entry-server.tsx` - SSR entry point used by the SSG build pipeline
-  - `main.tsx` - Client entry point with hydration / SPA-fallback detection
-  - `components/` - Reusable React components
-  - `hooks/` - Custom React hooks
-  - `pages/` - React components for each page/route
-  - `lib/` - Utility functions, data sources, and Markdown generation logic
-	- **`config/`** - Site-wide configuration constants (e.g. site URL, API endpoints)
-	- **`data/`** - Static data for products, industries, solutions, etc.
-	- `markdown/` - Logic for generating Markdown content from data
-  - `assets/` - Static assets like images and icons, to be imported in React components
-- `public/` - Publicly accessible static files (e.g. robots.txt, _redirects)
-- `ssg/` - Custom Vite plugin for static page generation and pre-rendering
+```bash
+# AI agent context (any MCP-capable harness)
+npx -y @ekoindia/eps-context-mcp
 
+# Backend SDKs (server-side only — signing key must stay secret)
+npm install @ekoindia/eps-sdk          # Node.js
+composer require ekoindia/eps-sdk      # PHP 8.1+
 
-## Product Data Files (in `src/lib/data/`):
-- [`api-products.ts`](src/lib/data/api-products.ts) - List of API products with metadata
-- [`api-product-pages.ts`](src/lib/data/api-product-pages.ts) - Product-page **marketing/content** (hero, features, FAQs, SEO). No technical API data.
-- [`api-specs.ts`](src/lib/data/api-specs.ts) - **Technical REST API specs** (one entry per API), with the shared `api-auth.ts` / `api-error-codes.ts` / `api-specs-common.ts` layer. See [docs/api-specs.md](docs/api-specs.md).
-- [`industries.ts`](src/lib/data/industries.ts) - List of industries and their associated data
-- [`solutions.ts`](src/lib/data/solutions.ts) - List of solutions and their associated data
+# Offline mock server for local dev & tests
+npx -y @ekoindia/eps-mock-server
+```
 
-> A full index of **every** configuration file in the project lives in [docs/configuration.md](docs/configuration.md).
+For Claude Code, install the bundled plugin (wires the MCP + skills + `/eps` command). Point any agent at the site's `/llms.txt` and `/ai` hub for the full machine-readable index.
 
+## Project structure
 
-## How to Add/Remove an API Product?
-1. Add data in `src/lib/data/api-products.ts` and `src/lib/data/api-product-pages.ts` for the new product, following the existing structures.
-2. Add the product's REST API(s) to `src/lib/data/api-specs.ts` (each `ApiSpec.productId` references the product id) — this drives the on-page API preview and developer-docs link. See [docs/api-specs.md](docs/api-specs.md).
-3. Also update `src/components/sections/ProductsSection.tsx` to add/remove the product from the product tabs widget.
+```
+src/
+  lib/
+    data/        # ← source-of-truth data layer (specs, products, recipes, industries, solutions, pricing)
+    agent/       # generators: agent bundle, fixtures, install matrix, context packs
+    sdk/         # generators: SDK surface, Postman collection
+    openapi/     # generator: OpenAPI 3.1 document
+    markdown/    # generators: /llms.txt, /index.md, /products.md, per-page markdown
+    config/      # site-wide config constants (site URL, API endpoints)
+  components/ hooks/ pages/ assets/   # the React website
+  App.tsx / AppServer.tsx / entry-server.tsx / main.tsx   # SPA + SSG entry points
+ssg/             # custom Vite plugin for static pre-rendering
+public/          # static files served as-is (robots.txt, _redirects)
+docs/            # detailed documentation (index below)
+vite-plugin-generate-*.ts   # build-time emitters (openapi, agent bundle, markdown, xlsx)
 
+packages/        # published artifacts (each baked from the build output):
+  eps-context-mcp/   # @ekoindia/eps-context-mcp — local MCP server (npm)
+  sdk-js/            # @ekoindia/eps-sdk — Node.js backend SDK (npm)
+  eps-mock-server/   # @ekoindia/eps-mock-server — offline mock server (npm)
+  sdk-php/           # ekoindia/eps-sdk — PHP backend SDK (Composer/Packagist)
+  claude-plugin-eps/ # Claude Code plugin bundle (manifest + skills + /eps command; not an npm package)
 
-## How can I deploy this project?
+dist/                  # build output (generated, gitignored)
+packages/*/data/       # baked artifacts copied here at build time (generated, gitignored — never hand-edit)
+```
 
-This project builds to **static pre-rendered HTML** (SSG) for every known route, which React hydrates into an SPA in the browser (see [Static Page Generation](docs/static-page-generation.md)). Unknown routes fall back to the SPA shell (`__spa-fallback.html`) via each platform's catch-all rewrite. It's configured to work seamlessly with multiple deployment platforms.
+That's **3 npm packages, 1 Composer package, and 1 Claude Code plugin bundle**. The `packages/*/data/` files are generated outputs — they may be present in your working tree but are gitignored and must never be hand-edited or committed.
 
-#### Supported Platforms
+## Data & configuration
 
-**Vercel**
-- Uses `vercel.json` for URL rewrites
-- Deploy via Vercel CLI or GitHub integration
-- Recommended: Connect your GitHub repo for automatic deployments
+**Source-of-truth data** (`src/lib/data/`):
 
-**Netlify**
-- Uses `netlify.toml` or `public/_redirects` for URL rewrites
-- Deploy via Netlify CLI or GitHub integration
-- Simple drag-and-drop deployment available
+| File | Role |
+|------|------|
+| [`api-specs.ts`](src/lib/data/api-specs.ts) | Technical REST specs, one entry per API (deltas only) |
+| `api-auth.ts` / `api-error-codes.ts` / `api-specs-common.ts` | Shared auth headers, error catalog, common params/envelopes + resolvers |
+| [`api-products.ts`](src/lib/data/api-products.ts) | API product registry + metadata |
+| [`api-product-pages.ts`](src/lib/data/api-product-pages.ts) | Product-page marketing content (hero, features, FAQs, SEO) — no technical data |
+| `api-recipes.ts` | Multi-step integration recipes (e.g. DMT onboard-then-transfer) |
+| [`industries.ts`](src/lib/data/industries.ts) / [`solutions.ts`](src/lib/data/solutions.ts) | Industry pages + solution/pack definitions |
+| `api-pricing.ts` / `payments-pricing.ts` | Pricing data (drives pricing page + xlsx calculator) |
+| `docs-registry.ts` | Merges MDX guides + API endpoints into the docs nav |
 
-**Apache (Shared Hosting/cPanel)**
-- Uses `.htaccess` for URL rewrites
-- Build locally: `npm run build`
-- Upload the `dist/` folder to your Apache server
+**Config files** (root): `package.json` (npm workspaces), `vite.config.ts`, `vitest.config.ts`, `tsconfig*.json`, `eslint.config.js`, `components.json`, the `vite-plugin-generate-*.ts` emitters, and per-platform deploy rewrites (`vercel.json`, `netlify.toml`, `nginx.conf`, `.htaccess`).
 
-**Nginx (VPS/Docker/Kubernetes)**
-- Uses `nginx.conf` for URL rewrites
-- Build locally: `npm run build`
-- Copy `dist/` contents to your Nginx web root
-- Update your nginx configuration with the provided `nginx.conf`
+> A full index of **every** configuration file lives in [docs/configuration.md](docs/configuration.md).
 
-#### Why Multiple Configuration Files?
+## How it works
 
-This project includes platform-specific redirect configurations because each deployment platform has its own configuration format. Pre-rendered routes (e.g. `/products/aeps-api`) are served as static `index.html` files from their route directories; only URLs **not** in the pre-render manifest fall through to the catch-all, which serves `/__spa-fallback.html` so React Router can handle the route client-side.
+```
+src/lib/data/ ──▶ npm run build
+                   ├─ vite build   → dist/ (website, openapi.json, /agent/*.json + per-API & per-topic slices,
+                   │                  context packs, /llms.txt, /index.md, /products.md, pricing xlsx)
+                   └─ bake:all     → copies the relevant artifacts into each packages/*/data/
+                                     (then each package builds & publishes from there)
+```
 
-- **vercel.json** → Vercel deployments
-- **netlify.toml** / **_redirects** → Netlify deployments
-- **.htaccess** → Apache servers
-- **nginx.conf** → Nginx servers
+`npm run build` runs the Vite build and then invokes `bake:all` automatically — you don't run them separately.
 
-These files don't conflict - each platform only reads its own configuration and ignores the others. This makes the project deployment-agnostic and portable across platforms.
+## Develop this repo
 
+**Setup** (Node `>=20`):
 
-## Detailed documentations:
-- [Configuration Guide — every config file in one place](docs/configuration.md)
-- [API Technical Specifications (developer-reference data)](docs/api-specs.md)
-- [Static Page Generation (SSG) and SPA Fallback](docs/static-page-generation.md)
-- [SSG Pre-rendering & React Hydration Rules](docs/ssg-hydration.md)
-- [AI-Agent-Friendly Content Delivery and Markdown Generation](docs/markdown-generation.md)
-- [Pricing Page & API Pricing Calculator](docs/pricing-calculator.md)
-- [Command Palette Search (⌘K)](docs/command-palette-search.md)
-- [Stale-Chunk Auto-Reload After Redeploys](docs/chunk-error-auto-reload.md)
+```bash
+npm install
+npm run dev          # local dev server
+npm run build        # full build + bake (generates all artifacts)
+npm test             # vitest run
+npm run lint         # eslint
+```
+
+**How to add things:**
+
+| Add a… | Edit | Guide |
+|--------|------|-------|
+| API product | `api-products.ts` + `api-product-pages.ts`, then add it to `ProductsSection.tsx` tabs | [docs/configuration.md](docs/configuration.md) |
+| API spec | `api-specs.ts` (set `productId`) | [docs/api-specs.md](docs/api-specs.md) |
+| Dev-docs API reference | (auto from `api-specs.ts`) | [docs/developer-docs/api-documentation.md](docs/developer-docs/api-documentation.md) |
+| Dev-docs guide (MDX prose) | add MDX guide | [docs/developer-docs/mdx-guides.md](docs/developer-docs/mdx-guides.md) |
+| Industry / Solution pack | `industries.ts` / `solutions.ts` | [docs/industry-and-packs-plan.md](docs/industry-and-packs-plan.md) |
+| AI artifact / context pack | `src/lib/agent/` generators | [docs/ai-agent-platform.md](docs/ai-agent-platform.md) |
+
+**Gotchas:**
+- `packages/*/data/` and `dist/` are **generated** by the build/`bake:all` — never hand-edit, never commit (gitignored). If a preview shows changes there, that's build output, not source.
+- The site builds to **static pre-rendered HTML** (SSG) for every known route; unknown routes fall back to the SPA shell (`__spa-fallback.html`) via each platform's catch-all rewrite. See [docs/static-page-generation.md](docs/static-page-generation.md) and [docs/ssg-hydration.md](docs/ssg-hydration.md).
+- After a redeploy, stale JS chunks auto-reload — see [docs/chunk-error-auto-reload.md](docs/chunk-error-auto-reload.md).
+- **Deploy:** build locally, then deploy `dist/` to any of Vercel / Netlify / Apache / Nginx — each reads only its own rewrite file (`vercel.json` / `netlify.toml` / `.htaccess` / `nginx.conf`), so they don't conflict.
+
+## Documentation
+
+**Platform & AI**
+- [AI agent platform](docs/ai-agent-platform.md) · [status report](docs/ai-agent-platform-status.md)
+- [API coverage roadmap](docs/api-coverage-roadmap.md)
+- [Design specs & execution plans](docs/superpowers/)
+
+**API & data model**
+- [API technical specifications](docs/api-specs.md)
+- [Markdown / LLM content generation](docs/markdown-generation.md)
+- [Developer-docs portal architecture](docs/developer-docs/)
+- [Industries & solution packs plan](docs/industry-and-packs-plan.md)
+
+**SDKs & release**
+- [SDK golden-vector conformance](docs/sdk-golden-vector.md)
+- [Releasing the agent packages](docs/releasing-agent-packages.md)
+
+**Site build & ops**
+- [Configuration — every config file](docs/configuration.md)
+- [Static page generation (SSG)](docs/static-page-generation.md) · [hydration rules](docs/ssg-hydration.md)
+- [Pricing calculator](docs/pricing-calculator.md) · [Command palette (⌘K)](docs/command-palette-search.md) · [Stale-chunk auto-reload](docs/chunk-error-auto-reload.md)
+
+## Tech stack
+
+Vite · React · TypeScript · Tailwind CSS · shadcn-ui · npm workspaces.

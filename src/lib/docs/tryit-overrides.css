@@ -1,0 +1,35 @@
+/**
+ * Cosmetic overrides for the docs "Try it" Scalar modal.
+ *
+ * Scalar (@scalar/api-client 3.10.3) exposes no configuration to pad the panels,
+ * hide request sections, or change the auth-panel layout, so we override its
+ * internal DOM directly. All rules are scoped under `.scalar-app` (the client's
+ * style root) and target Scalar-internal markup — revisit these selectors on any
+ * Scalar upgrade. Imported from `tryit-client.ts`; section hiding is driven by the
+ * `data-eko-hidden` marker set there (heading text is not CSS-addressable).
+ */
+
+/* 1. Inset the modal box from the viewport edges (Scalar renders it edge-to-edge).
+   `.scalar-container` is the fixed, full-viewport overlay; padding it horizontally
+   floats the white panel inside with a left/right gap. clamp() keeps the gap small
+   on narrow viewports so the dense panels aren't squeezed. */
+.scalar-app .scalar-container {
+	padding-inline: clamp(12px, 4vw, 24px);
+}
+
+/* 2 + 3. Hide the Cookies and Headers request sections (marked in tryit-client). */
+.scalar-app [data-eko-hidden] {
+	display: none;
+}
+
+/* 4. Declutter the Authentication panel. Each apiKey scheme renders three rows:
+   a heading row (cell aria-label ends ": header", e.g. "DeveloperKey: header")
+   carrying the sub-heading + description, then a read-only Name row, then the
+   Value row. Drop the redundant sub-heading label and the fixed Name row; keep
+   the description and the editable Value field. */
+.scalar-app td[aria-label$=": header"] p {
+	display: none;
+}
+.scalar-app tr:has(> td[aria-label$=": header"]) + tr {
+	display: none;
+}

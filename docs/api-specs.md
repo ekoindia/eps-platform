@@ -1,5 +1,7 @@
 # API Technical Specifications
 
+> See also: [docs/ai-agent-platform.md](./ai-agent-platform.md) for the AI-agent artifact layer (`/agent/*`) generated from these specs.
+
 The single source of truth for **endpoint-level REST details** of every Eko API
 — method, path, headers, request params, request/response examples, nested
 response field trees (with verification `imp` flags), and error scenarios. Rich
@@ -32,7 +34,7 @@ one product (api-products.ts)  ──<  many APIs (api-specs.ts)
 |------|---------------|
 | `src/lib/data/api-specs.ts` | `API_SPECS: ApiSpec[]` (registry), `API_SPECS_MAP`, `getSpecsForProduct(productId)` |
 | `src/lib/data/api-specs-common.ts` | Types (`ApiSpec`, `ResponseField`, `ApiParam`), `COMMON_REQUEST_PARAMS`, `COMMON_RESPONSE_ENVELOPE`, `FINANCIAL_RESPONSE_ENVELOPE`, and resolvers |
-| `src/lib/data/api-auth.ts` | `AUTH_HEADERS`, `FINANCIAL_AUTH_HEADERS`, `API_ENVIRONMENTS` (sandbox/production base URLs), `API_AUTH_INFO` (token-gen notes) |
+| `src/lib/data/api-auth.ts` | `AUTH_HEADERS`, `API_ENVIRONMENTS` (sandbox/production base URLs), `API_AUTH_INFO` (token-gen notes) |
 | `src/lib/data/api-error-codes.ts` | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES`, `getErrorCodeMeaning()` |
 | `src/lib/data/api-spec-previews.ts` | Adapters that turn specs into product-page previews + docs links |
 
@@ -46,8 +48,8 @@ An `ApiSpec` stores **only what is unique** to that endpoint:
 - `responseData` — only the `data` subtree. The response envelope
   (`status`, `response_status_id`, `message`, `response_type_id`, plus
   `tx_status`/`txstatus_desc` for financial APIs) is **not** repeated here.
-- `financial: true` opts an endpoint into the `request_hash` header and the
-  financial response envelope.
+- `financial: true` opts an endpoint into the financial response envelope
+  (`tx_status`/`txstatus_desc`).
 
 To reconstruct a full view (for a portal or preview), use the resolvers in
 `api-specs-common.ts` — they merge the shared layer back in:
@@ -55,8 +57,9 @@ To reconstruct a full view (for a portal or preview), use the resolvers in
 ```ts
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import {
-  resolveHeaders,        // AUTH_HEADERS (+ request_hash if financial)
-  resolveRequestParams,  // COMMON_REQUEST_PARAMS (− omitted) + extraRequestParams
+  resolveHeaders,        // AUTH_HEADERS
+  resolveRequestParams,  // method-applicable COMMON_REQUEST_PARAMS (− omitted/overridden) + extraRequestParams
+  buildSampleRequest,    // request body example: override or generated from in:"body" examples
   resolveResponseFields, // envelope with data = responseData
 } from "@/lib/data/api-specs-common";
 
@@ -76,16 +79,17 @@ interface ApiSpec {
   slug: string;
   summary: string;
   description?: string;
-  category: "bc" | "payment" | "verification";
+  // category is NOT stored here — it is derived from the product via
+  // categoryForSpec(spec) (productId -> API_PRODUCTS[…].category).
   relevance?: "H" | "M" | "L";
   bestFor?: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
   path: string;               // relative; full URL = environment baseUrl + path
   docsUrl: string;            // developer-portal reference link
-  financial?: boolean;        // adds request_hash header + financial envelope
-  extraRequestParams: ApiParam[];   // API-specific only
+  financial?: boolean;        // adds the financial response envelope
+  extraRequestParams: ApiParam[];   // API-specific; same name overrides a common param
   omitCommonParams?: string[];      // rare: drop a common param
-  sampleRequest: Record<string, unknown>;
+  sampleRequest?: Record<string, unknown>;  // optional override; else generated from in:"body" examples
   responseData: ResponseField[];    // the `data` subtree only
   sampleSuccessResponse: Record<string, unknown>;
   errorScenarios?: { scenario: string; statusCode?: number; example: object }[];
@@ -102,9 +106,8 @@ verifiable field. Verification product pages surface these as the highlighted
 ## Authentication
 
 Every call sends the same auth headers (`developer_key`, `secret-key`,
-`secret-key-timestamp`, `content-type`); financial (money-debit) APIs add
-`request_hash`. The `secret-key` is `base64(HMAC-SHA256(timestamp,
-base64(access_key)))`. Full details + key types + environments are in
+`secret-key-timestamp`, `content-type`). The `secret-key` is
+`base64(HMAC-SHA256(timestamp, base64(access_key)))`. Full details + key types + environments are in
 `api-auth.ts` (`API_AUTH_INFO`), sourced from
 <https://developers.eko.in/docs/auth>. **Never** hard-code an `access_key` in
 source.
@@ -125,7 +128,7 @@ source.
    existing `API_PRODUCTS` id; declare **deltas only** (skip common params, auth
    headers, and the response envelope — the resolvers add them).
 2. For verification APIs, mark the verifiable response fields with `imp: true`.
-3. Set `financial: true` for money-debit endpoints (adds `request_hash`).
+3. Set `financial: true` for money-debit endpoints (adds the financial response envelope).
 4. Verify: `npx tsc --noEmit`, `npm run test`, then `npm run build` and check the
    product's `.md` twin (e.g. `dist/products/<slug>.md`) renders the new preview.
 
