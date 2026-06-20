@@ -16,7 +16,7 @@ import {
 	toAiPrompt,
 	toSdkLang,
 } from "@/lib/docs/code-samples";
-import { type DocsMode, useDocsMode } from "@/lib/docs/use-docs-mode";
+import { useDocsMode } from "@/lib/docs/use-docs-mode";
 import { usePreferredLang } from "@/lib/docs/use-preferred-lang";
 import { cn } from "@/lib/utils";
 import {
@@ -45,13 +45,6 @@ const API_LANGS: { id: SampleLang; label: string }[] = [
 	{ id: "php", label: "PHP" },
 	{ id: "python", label: "Python" },
 	{ id: "curl", label: "cURL" },
-];
-
-/** The integration-mode tab bar (mirrors the endpoint code pane). */
-const MODES: { id: DocsMode; label: string }[] = [
-	{ id: "api", label: "API" },
-	{ id: "sdk", label: "SDK" },
-	{ id: "ai", label: "AI Coding" },
 ];
 
 interface DownloadLink {
@@ -109,7 +102,7 @@ const CopyButton = ({ text, dark }: { text: string; dark?: boolean }) => {
 	);
 };
 
-/** A light pill toggle (mode tabs + language selector). */
+/** A light pill toggle (language selector). */
 const Pill = ({
 	active,
 	onClick,
@@ -141,25 +134,22 @@ const PathCard = ({
 	description,
 	active,
 	onClick,
-	featured,
 }: {
 	icon: LucideIcon | typeof McpIcon;
 	title: string;
 	description: string;
 	active: boolean;
 	onClick: () => void;
-	featured?: boolean;
 }) => (
 	<a
 		href="#start"
 		onClick={onClick}
+		aria-current={active ? "true" : undefined}
 		className={cn(
 			"group flex cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
 			active
 				? "border-eko-gold bg-eko-gold/5"
-				: featured
-					? "border-eko-gold/60 bg-eko-gold/5 hover:border-eko-gold"
-					: "border-border/60 hover:border-eko-gold hover:bg-muted/40",
+				: "border-border/60 hover:border-eko-gold hover:bg-muted/40",
 		)}
 	>
 		<Icon className="h-6 w-6 text-eko-gold" />
@@ -254,14 +244,6 @@ const DocsIndexPage = () => {
 					{/* Path chooser — sets the persisted integration mode */}
 					<div className="mt-12 grid gap-4 sm:grid-cols-3">
 						<PathCard
-							icon={Package}
-							title="Use an SDK"
-							description="Signed SDKs for Node.js & PHP — HMAC auth & input validations baked in."
-							active={mode === "sdk"}
-							onClick={() => setMode("sdk")}
-							featured
-						/>
-						<PathCard
 							icon={Terminal}
 							title="Call the API directly"
 							description="Plain REST with cURL, plus Postman & OpenAPI."
@@ -272,8 +254,15 @@ const DocsIndexPage = () => {
 							}}
 						/>
 						<PathCard
+							icon={Package}
+							title="Use an SDK"
+							description="Signed SDKs for Node.js & PHP — HMAC auth & input validations baked in."
+							active={mode === "sdk"}
+							onClick={() => setMode("sdk")}
+						/>
+						<PathCard
 							icon={McpIcon}
-							title="Build with AI agents"
+							title="Build with AI"
 							description="MCP server & context packs for Claude, Cursor, Copilot."
 							active={mode === "ai"}
 							onClick={() => setMode("ai")}
@@ -282,20 +271,7 @@ const DocsIndexPage = () => {
 
 					{/* Mode-aware showcase */}
 					<section id="start" className="mt-16 scroll-mt-28">
-						{/* Mode tab bar (mirrors the endpoint code pane) */}
-						<div className="inline-flex flex-wrap gap-1 rounded-lg border border-border/60 p-1">
-							{MODES.map((m) => (
-								<Pill
-									key={m.id}
-									active={mode === m.id}
-									onClick={() => setMode(m.id)}
-								>
-									{m.label}
-								</Pill>
-							))}
-						</div>
-
-						<h2 className="mt-6 text-xl font-semibold tracking-tight text-foreground">
+						<h2 className="text-xl font-semibold tracking-tight text-foreground">
 							{heading}
 						</h2>
 						<p className="mt-2 text-sm text-muted-foreground">{subtext}</p>
@@ -343,7 +319,7 @@ const DocsIndexPage = () => {
 						)}
 
 						{/* Code / prompt block */}
-						<div className="code-block mt-4 overflow-hidden rounded-xl">
+						<div className="code-block code-block--solid mt-4 overflow-hidden rounded-xl">
 							<div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
 								<span className="truncate font-mono text-xs text-white/60">
 									{mode === "ai"
