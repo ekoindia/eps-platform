@@ -20,12 +20,15 @@ import {
 	ArrowRight,
 	Download,
 	FileTerminal,
+	FileWarning,
 	GitBranch,
 	KeyRound,
 	Package,
 	PlugZap,
 	ServerCog,
+	ShieldAlert,
 	ShieldCheck,
+	Workflow,
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
@@ -73,48 +76,48 @@ const AiCodeSession = () => (
 
 		{/* Session transcript */}
 		<div className="space-y-2.5">
-			<p>
+			<div>
 				<span style={{ color: CLAUDE_CLAY }}>●</span> I'll wire this up with the
 				EPS MCP.
-			</p>
+			</div>
 
-			<p className="pt-1">
+			<div className="pt-1 mb-0">
 				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
 				<span className="text-white/40">eps · search(</span>
 				<span className="text-amber-200">"verify PAN"</span>
 				<span className="text-white/40">)</span>
-			</p>
-			<p className="pl-4 text-emerald-300/80">
-				<span className="text-white/40">⎿</span> pan-lite, pan-plus,
-				aadhaar-pan-link
-			</p>
+			</div>
+			<div className="pl-4 text-emerald-300/80">
+				<span className="text-white/40">⎿</span> pan-lite, pan-advanced,
+				bulk-pan-verify
+			</div>
 
-			<p className="pt-1">
+			<div className="pt-1 mb-0">
 				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
 				<span className="text-white/40">eps · get_signing_snippet(</span>
 				<span className="text-amber-200">"node"</span>
 				<span className="text-white/40">)</span>
-			</p>
-			<p className="pl-4 text-emerald-300/80">
+			</div>
+			<div className="pl-4 text-emerald-300/80">
 				<span className="text-white/40">⎿</span> HMAC-SHA256 signing ready
-			</p>
+			</div>
 
-			<p className="pt-1">
+			<div className="pt-1 mb-0">
 				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
 				<span className="text-white/40">Writing</span>{" "}
 				<span className="text-white/80">src/kyc/verify-pan.ts</span>{" "}
 				<span className="text-white/40">…</span>
-			</p>
-			<p className="pl-4 text-white/40">
+			</div>
+			<div className="pl-4 text-white/40">
 				<span className="text-white/40">⎿</span> Updated 1 file{" "}
 				<span className="text-emerald-300/80">(+34 -0)</span>
-			</p>
+			</div>
 
-			<p className="pt-2 text-emerald-300/90">
+			<div className="pt-2 text-emerald-300/90">
 				<span className="text-white/40">✓</span> PAN verification wired — signed
 				EPS call, name-match on
 				<span className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse-soft bg-eko-gold" />
-			</p>
+			</div>
 		</div>
 	</div>
 );
@@ -142,6 +145,26 @@ const DIFFERENTIATORS: Differentiator[] = [
 		icon: ShieldCheck,
 		title: "Works in every harness",
 		body: "Built on open standards — Model Context Protocol and AGENTS.md-style context packs — so the same capability lights up in Claude Code, Cursor, Codex, Copilot, and a dozen more.",
+	},
+];
+
+/* ---------------------------------- Pains --------------------------------- */
+
+const PAINS: Differentiator[] = [
+	{
+		icon: ShieldAlert,
+		title: "Auth mistakes",
+		body: "HMAC signatures, timestamps, and secret-key handling are easy to get wrong.",
+	},
+	{
+		icon: Workflow,
+		title: "Broken flows",
+		body: "Payment and banking APIs often require multiple dependent calls, not one endpoint.",
+	},
+	{
+		icon: FileWarning,
+		title: "Context overload",
+		body: "Dumping full API docs into an LLM wastes tokens and still misses the right flow.",
 	},
 ];
 
@@ -238,11 +261,12 @@ const AiPage = () => {
 		<div className="min-h-screen bg-background">
 			<Helmet>
 				<title>
-					AI-ready fintech APIs — integrate EPS from any coding agent | Eko
+					AI-ready fintech APIs — integrate Indian Fintech APIs using AI coding
+					agents | Eko Platform Services
 				</title>
 				<meta
 					name="description"
-					content="EPS is AI-ready: MCP server, drop-in context packs, signed SDKs and a machine-readable bundle so any AI coding agent can integrate Eko Platform Services — with correct HMAC auth, first try."
+					content="EPS is AI-ready: MCP server, drop-in context packs, signed SDKs and a machine-readable bundle so any AI coding agent can integrate our Fintech APIs — with correct HMAC auth, first try."
 				/>
 				<link rel="canonical" href={`${SITE_URL}/ai`} />
 				<link rel="alternate" type="text/markdown" href={`${SITE_URL}/ai.md`} />
@@ -285,34 +309,35 @@ const AiPage = () => {
 									style={{ animationDelay: "0ms" }}
 								>
 									<span className="h-1.5 w-1.5 rounded-full bg-eko-gold" />
-									AI-ready platform
+									AI-ready Fintech API Platform
 								</span>
 
 								<h1
 									className="mt-6 animate-fade-up text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl"
 									style={{ animationDelay: "80ms" }}
 								>
-									Integrate EPS APIs from any{" "}
-									<span className="text-gradient-gold">AI coding agent</span>
+									Integrate Indian fintech APIs faster with{" "}
+									<span className="text-gradient-gold">AI coding agents</span>
 								</h1>
 
 								<p
 									className="mt-6 max-w-xl animate-fade-up text-lg leading-relaxed text-white/70"
 									style={{ animationDelay: "160ms" }}
 								>
-									Point your agent at our MCP server and it learns Eko Platform
-									Services from the inside — correct HMAC auth, the right
-									endpoints, and the multi-step recipes that make a real
-									integration work. No spec spelunking. No broken signing.
+									Connect Claude Code, Cursor, Codex, Copilot, or any
+									MCP-compatible agent to Eko Platform Services. Your agent gets
+									the right API context, HMAC signing logic, sandbox flows, and
+									multi-step payment and verification recipes — without digging
+									through docs.
 								</p>
 
 								{/* Primary CTA: copy the MCP command */}
-								<div
+								{/* <div
 									className="mt-8 max-w-xl animate-fade-up"
 									style={{ animationDelay: "240ms" }}
 								>
 									<CommandBlock text={MCP_CMD} tone="dark" caption="Run it" />
-								</div>
+								</div> */}
 
 								{/* Secondary CTA */}
 								<div
@@ -321,12 +346,12 @@ const AiPage = () => {
 								>
 									<Button variant="gold" size="lg" asChild>
 										<a href="#install">
-											Install by harness
+											Install MCP Server
 											<ArrowRight className="h-4 w-4" />
 										</a>
 									</Button>
 									<Button variant="hero-outline" size="lg" asChild>
-										<a href="#artifacts">Browse context packs</a>
+										<a href="#artifacts">Browse Toolkit</a>
 									</Button>
 								</div>
 							</div>
@@ -351,6 +376,46 @@ const AiPage = () => {
 									<AiCodeSession />
 								</CodeBlock>
 							</FadeIn>
+						</div>
+					</div>
+				</section>
+
+				{/* ============================ PROBLEM ============================ */}
+				<section className="bg-muted/30 py-20 lg:py-28">
+					<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+						<FadeIn className="mx-auto mb-14 max-w-2xl text-center">
+							<span className="inline-block rounded-full bg-destructive/10 px-4 py-1.5 text-sm font-medium text-destructive">
+								The problem
+							</span>
+							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
+								API integrations break when agents don&rsquo;t understand the
+								real workflow
+							</h2>
+							<p className="mt-4 text-lg text-muted-foreground">
+								Generic API specs help with endpoints. Real fintech integrations
+								need more: HMAC signing, access-key handling, sandbox headers,
+								multi-step flows, OTP steps, sender/recipient state, and
+								error-specific next actions.
+							</p>
+						</FadeIn>
+
+						<div className="grid gap-6 md:grid-cols-3">
+							{PAINS.map((p, i) => {
+								const Icon = p.icon;
+								return (
+									<FadeIn key={p.title} delay={i * 100}>
+										<Card className="card-hover h-full p-7">
+											<div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
+												<Icon className="h-6 w-6 text-destructive" />
+											</div>
+											<h3 className="text-xl font-semibold text-foreground">
+												{p.title}
+											</h3>
+											<p className="mt-3 text-muted-foreground">{p.body}</p>
+										</Card>
+									</FadeIn>
+								);
+							})}
 						</div>
 					</div>
 				</section>
