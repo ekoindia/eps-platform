@@ -72,9 +72,10 @@
 
 ## Slide 11 — Where we are today (honest status)
 
-- **Key message:** Built and working, not yet launched.
-- **Content:** Packages at `0.1.x`, validated locally, **not yet published** to npm / Packagist / public marketplace. API coverage is a strong but growing subset (phases 0–6 done; more rails to add). Publishing needs final credentials + sign-off (see docs/releasing-agent-packages.md).
-- **Visual:** Progress bar per workstream (Specs / SDKs / MCP / Plugin / Publish) — most green, "Publish" amber.
+- **Key message:** Today we're **agent-ready**; "AI-native" is the earned next rung — and we know exactly what clears it.
+- **Content:** Be precise on the label. **Now = agent-ready / AI-friendly:** machine-readable context, SDKs, packs, mock, OpenAPI — all generated from one source. Strong, differentiated, real. **AI-native = the target rung:** agents don't just *read* EPS, they *act* (run calls in sandbox), *verify* (pass/fail conformance), and we *prove* success (evals) — on published, adopted packages. Status: packages at `0.1.x`, validated locally, **not yet published**; API coverage a growing subset (phases 0–6 done). Four things flip the label — actions, verification, evals, publish (full gap analysis: docs/ai-native-gap-analysis.md).
+- **Visual:** Two-rung ladder — "Agent-ready (✅ today)" → "AI-native (4 steps: act · verify · prove · publish)". Below it, per-workstream progress bars (Specs / SDKs / MCP / Plugin / Publish) — most green, "Publish" amber.
+- **Speaker note:** Pre-empt the obvious challenge ("can we *call* it AI-native?"). Owning the honest label builds credibility and turns slide 12's ask into "fund the 4 steps that earn it."
 
 ## Slide 12 — The ask
 
@@ -82,7 +83,7 @@
 - **Content:** Endorse the repositioning as official direction. Approve moving from 0.1.x → GA (publish packages, expand API coverage, GTM to developers). Name an exec sponsor. (Detailed budget/headcount in a follow-up.) Be explicit: today we want *direction approval*, money next.
 - **Visual:** Three checkboxes: ☐ Endorse direction · ☐ Approve path to GA · ☐ Assign sponsor.
 
-## Slide 13 — Roadmap if greenlit
+## Slide 13 — Roadmap
 
 - **Key message:** Clear path from here to launch.
 - **Content:** Near-term: publish packages, complete remaining API rails, public launch of /ai hub. Mid-term: usage analytics, more SDK languages, deeper recipes/skills, partner pilots. Long-term: EPS as the default fintech integration layer for AI builders in India.

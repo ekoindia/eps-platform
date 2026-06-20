@@ -1,13 +1,13 @@
 # EPS Platform
 
-**The AI-native developer platform for [Eko Platform Services](https://eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
+**The AI-ready developer platform for [Eko Platform Services](https://eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
 
 A single source-of-truth **data layer** describes every EPS API once. From it, the build generates everything a developer — or their AI coding agent — needs to integrate: backend SDKs, an MCP server, drop-in AI context packs, an offline mock server, OpenAPI + Postman, LLM-readable docs, and the marketing + developer-docs website itself. Edit the data, and every artifact regenerates in sync.
 
 ## Why this exists
 
 - **One source of truth, zero drift.** Specs, SDKs, MCP, docs, OpenAPI and code samples all derive from the same data layer (`src/lib/data/`). No hand-maintained copies that fall out of date.
-- **AI-native by design.** Ships an MCP server plus drop-in context packs (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md`) so agents integrate EPS correctly — including the tricky parts: per-request HMAC-SHA256 signing and multi-step recipes (e.g. the DMT `463 → onboard sender` branch).
+- **AI-ready by design.** Ships an MCP server plus drop-in context packs (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md`) so agents integrate EPS correctly — including the tricky parts: per-request HMAC-SHA256 signing and multi-step recipes (e.g. the DMT `463 → onboard sender` branch).
 - **Backend-safe SDKs.** JS and PHP SDKs are generated from an SDK surface with signing built in and cross-language golden-vector conformance tests. Coverage is a growing subset — see the [API coverage roadmap](docs/api-coverage-roadmap.md).
 - **Open & offline.** The MCP runs locally with a baked-in bundle (no hosted service, no secrets); an offline mock server replays recorded fixtures for tests.
 
