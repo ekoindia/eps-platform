@@ -133,18 +133,18 @@ interface Differentiator {
 const DIFFERENTIATORS: Differentiator[] = [
 	{
 		icon: KeyRound,
-		title: "Correct auth, first try",
+		title: "Generate signed requests correctly",
 		body: "EPS requests are HMAC-signed with your secret-key — the exact step generic OpenAPI tooling gets wrong. Our context teaches your agent the signing scheme, so it works on the first call instead of the fifth.",
 	},
 	{
 		icon: McpIcon,
-		title: "Token-efficient context",
+		title: "Smaller context, better answers",
 		body: "A lazy, tiered MCP: your agent lists endpoints, then drills into just the one it needs. It never dumps the whole spec into the context window, so you keep tokens for the actual task.",
 	},
 	{
 		icon: ShieldCheck,
-		title: "Works in every harness",
-		body: "Built on open standards — Model Context Protocol and AGENTS.md-style context packs — so the same capability lights up in Claude Code, Cursor, Codex, Copilot, and a dozen more.",
+		title: "Works with your coding agent",
+		body: "Use EPS with Claude Code, Cursor, Codex, GitHub Copilot, OpenCode, Aider, Zed, JetBrains AI, and other MCP-compatible tools.",
 	},
 ];
 
@@ -189,7 +189,7 @@ interface Artifact {
 const ARTIFACTS: Artifact[] = [
 	{
 		icon: FileTerminal,
-		title: "Context packs",
+		title: "Agent instruction files",
 		body: "Drop-in instructions for any agent — auth, endpoints, and recipes in one file.",
 		links: [
 			{ label: "AGENTS.md", href: "/agent/AGENTS.md" },
@@ -203,13 +203,13 @@ const ARTIFACTS: Artifact[] = [
 	},
 	{
 		icon: McpIcon,
-		title: "Local MCP server",
+		title: "Local EPS MCP server",
 		body: "Zero hosting, zero secrets. The tiered context server your agent talks to.",
 		command: MCP_CMD,
 	},
 	{
 		icon: Package,
-		title: "Signed SDKs",
+		title: "HMAC-signed SDKs",
 		body: "Backend-only SDKs with HMAC signing baked in. Keep your access_key server-side.",
 		command: "npm i @ekoindia/eps-sdk",
 		links: [
@@ -222,14 +222,14 @@ const ARTIFACTS: Artifact[] = [
 	},
 	{
 		icon: ServerCog,
-		title: "Offline mock server",
+		title: "Offline fintech API mock server",
 		body: "Pairs with the MCP for offline testing — replays golden sample responses with recipe-aware error branching, so your agent develops and tests without ever touching the live API.",
 		command: "npx -y @ekoindia/eps-mock-server",
 	},
 	{
 		icon: SiOpenapiinitiative,
-		title: "OpenAPI Specification",
-		body: "Canonical OpenAPi 3.1 specification of all EPS APIs in JSON format — useful for API clients, code generators, validation tools, and other OpenAPI-compatible workflows.",
+		title: "OpenAPI 3.1 spec",
+		body: "Canonical OpenAPI v3.1 specification of all EPS APIs in JSON format — useful for API clients, code generators, validation tools, and other OpenAPI-compatible workflows.",
 		links: [
 			// { label: "eps.json", href: "/agent/eps.json" },
 			// { label: "index.json", href: "/agent/index.json" },
@@ -238,7 +238,7 @@ const ARTIFACTS: Artifact[] = [
 	},
 	{
 		icon: SiPostman,
-		title: "Postman collection",
+		title: "Postman sandbox collection",
 		body: "Every EPS endpoint, ready to import and run against the sandbox.",
 		links: [
 			{
@@ -261,12 +261,11 @@ const AiPage = () => {
 		<div className="min-h-screen bg-background">
 			<Helmet>
 				<title>
-					AI-ready fintech APIs — integrate Indian Fintech APIs using AI coding
-					agents | Eko Platform Services
+					AI Coding Agent Integration for Fintech APIs | EPS MCP Server
 				</title>
 				<meta
 					name="description"
-					content="EPS is AI-ready: MCP server, drop-in context packs, signed SDKs and a machine-readable bundle so any AI coding agent can integrate our Fintech APIs — with correct HMAC auth, first try."
+					content="Connect Claude Code, Cursor, Codex, Copilot, and other MCP-compatible agents to EPS fintech APIs. Get HMAC signing, OpenAPI specs, SDKs, mock server, Postman collection, and real payment and verification recipes."
 				/>
 				<link rel="canonical" href={`${SITE_URL}/ai`} />
 				<link rel="alternate" type="text/markdown" href={`${SITE_URL}/ai.md`} />
@@ -428,11 +427,13 @@ const AiPage = () => {
 								Why agents get it right
 							</span>
 							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
-								Built for machines that write code
+								EPS gives your agent integration-grade context
 							</h2>
 							<p className="mt-4 text-lg text-muted-foreground">
-								Generic OpenAPI is a reference. This is an integration partner
-								your agent can actually use.
+								The EPS MCP server exposes only the context your agent needs at
+								each step: endpoint discovery, request schemas, signing
+								snippets, SDK examples, sandbox flows, and recipe-aware error
+								handling.
 							</p>
 						</FadeIn>
 
@@ -465,11 +466,11 @@ const AiPage = () => {
 								Install by harness
 							</span>
 							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
-								Wire EPS into your AI agent
+								Connect EPS to your coding agent in one command
 							</h2>
 							<p className="mt-4 text-lg text-muted-foreground">
-								Pick your <strong>development tool</strong>. Get a ready-to-copy
-								MCP install command and download the AI-context file.
+								Choose your tool. Copy the install command. Then ask your agent
+								to build an EPS API flow.
 							</p>
 						</FadeIn>
 
@@ -777,24 +778,28 @@ const AiPage = () => {
 					<div className="container relative mx-auto px-4 text-center sm:px-6 lg:px-8">
 						<FadeIn className="mx-auto max-w-2xl">
 							<h2 className="text-3xl font-bold tracking-tight text-white lg:text-4xl">
-								Start building
+								Start building with EPS in your AI coding agent
 							</h2>
 							<p className="mt-4 text-lg text-white/70">
 								Drop the MCP into your agent and ship your first signed EPS call
 								today.
 							</p>
 							<div className="mx-auto mt-8 max-w-lg">
-								<CommandBlock text={MCP_CMD} tone="dark" caption="Run it" />
+								<CommandBlock
+									text={MCP_CMD}
+									tone="dark"
+									caption="Install MCP Server"
+								/>
 							</div>
 							<div className="mt-6 flex flex-wrap justify-center gap-4">
 								<Button variant="gold" size="lg" asChild>
 									<Link to="/docs">
-										Read the docs
+										Open API Docs
 										<ArrowRight className="h-4 w-4" />
 									</Link>
 								</Button>
 								<Button variant="hero-outline" size="lg" asChild>
-									<a href="#install">Install by harness</a>
+									<a href="#install">Install by Harness</a>
 								</Button>
 							</div>
 						</FadeIn>
