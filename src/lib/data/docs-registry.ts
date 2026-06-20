@@ -16,7 +16,7 @@
  */
 import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
 import type { ApiProductCategory } from "./api-products";
-import { API_SPECS, getSpecsForProduct } from "./api-specs";
+import { API_SPECS } from "./api-specs";
 import { categoryForSpec } from "./api-specs-common";
 import type { ApiSpec } from "./api-specs-common";
 import { GUIDES, type GuideMeta } from "@/content/docs/docs-guides";
@@ -162,22 +162,33 @@ export const getDocBySlug = (slug: string): DocNode | undefined =>
 // Nav tree — Guides group, then category → product → endpoints
 // ---------------------------------------------------------------------------
 
-export interface NavEndpoint {
+/** A leaf nav node: a single addressable `/docs/<slug>` endpoint page. */
+export interface NavLeaf {
+	type: "leaf";
 	slug: string;
 	title: string;
 	method: ApiSpec["method"];
 }
 
-export interface NavProductGroup {
-	productId: string;
-	name: string;
-	endpoints: NavEndpoint[];
+/** A collapsible branch nav node — a product, provider, or purpose-group. */
+export interface NavBranch {
+	type: "branch";
+	/** Globally-unique, path-derived key for expand-state + React keys, built
+	 * from the product id and sluggified ancestor labels, e.g.
+	 * `product:dmt/provider:fino/group:recipients`. */
+	id: string;
+	label: string;
+	/** Depth role — drives indentation/border styling only, not behaviour. */
+	kind: "product" | "provider" | "group";
+	children: NavNode[];
 }
+
+export type NavNode = NavBranch | NavLeaf;
 
 export interface NavCategoryGroup {
 	category: DocCategory;
 	title: string;
-	products: NavProductGroup[];
+	nodes: NavNode[];
 }
 
 export interface NavGuideLink {
@@ -190,30 +201,132 @@ export interface DocsNav {
 	categories: NavCategoryGroup[];
 }
 
-/** Build the left-nav tree: Guides first, then API categories → products. */
+/** Stable, collision-safe id segment from a display label (e.g. "PPI Wallet"). */
+const slugifyLabel = (label: string): string =>
+	label
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+
+const RELEVANCE_RANK: Record<string, number> = { H: 0, M: 1, L: 2 };
+/** Relevance ordering (H>M>L); ties keep input (file) order via stable sort. */
+const byRelevance = (a: ApiSpec, b: ApiSpec): number =>
+	(RELEVANCE_RANK[a.relevance ?? "M"] ?? 1) -
+	(RELEVANCE_RANK[b.relevance ?? "M"] ?? 1);
+
+const toLeaf = (spec: ApiSpec): NavLeaf => ({
+	type: "leaf",
+	slug: endpointSlug(spec),
+	title: spec.name,
+	method: spec.method,
+});
+
+/** Documented (non-status, active-product) specs for one product, in FILE
+ * order — the source of first-appearance provider/group ordering. */
+const documentedSpecsForProduct = (productId: string): ApiSpec[] =>
+	getDocumentedSpecs().filter((spec) => spec.productId === productId);
+
+/** Distinct values of `pick` over file-ordered specs, first-appearance order;
+ * `undefined` (untagged) is preserved as a bucket so it can be hoisted inline. */
+const distinctInOrder = (
+	specs: ApiSpec[],
+	pick: (s: ApiSpec) => string | undefined,
+): (string | undefined)[] => {
+	const seen = new Set<string>();
+	const out: (string | undefined)[] = [];
+	for (const spec of specs) {
+		const value = pick(spec);
+		const key = value ?? "\0none";
+		if (!seen.has(key)) {
+			seen.add(key);
+			out.push(value);
+		}
+	}
+	return out;
+};
+
+/** Group level under a product/provider: `kind:"group"` branches where `group`
+ * is set, flat relevance-sorted leaves otherwise. Untagged specs hoist inline. */
+const buildGroupLevel = (parentId: string, specs: ApiSpec[]): NavNode[] => {
+	if (!specs.some((s) => s.group)) {
+		return [...specs].sort(byRelevance).map(toLeaf);
+	}
+	return distinctInOrder(specs, (s) => s.group).flatMap((group): NavNode[] => {
+		const leaves = specs
+			.filter((s) => s.group === group)
+			.sort(byRelevance)
+			.map(toLeaf);
+		if (group === undefined) return leaves; // untagged → inline leaves
+		return [
+			{
+				type: "branch" as const,
+				kind: "group" as const,
+				id: `${parentId}/group:${slugifyLabel(group)}`,
+				label: group,
+				children: leaves,
+			},
+		];
+	});
+};
+
+/** Provider level under a product: `kind:"provider"` branches where `provider`
+ * is set, otherwise delegates to the group level. Untagged specs hoist inline. */
+const buildProductChildren = (
+	productId: string,
+	specs: ApiSpec[],
+): NavNode[] => {
+	const parentId = `product:${productId}`;
+	if (!specs.some((s) => s.provider)) {
+		return buildGroupLevel(parentId, specs);
+	}
+	return distinctInOrder(specs, (s) => s.provider).flatMap(
+		(provider): NavNode[] => {
+			const subset = specs.filter((s) => s.provider === provider);
+			if (provider === undefined) {
+				return buildGroupLevel(parentId, subset); // untagged → hoist to product
+			}
+			const providerId = `${parentId}/provider:${slugifyLabel(provider)}`;
+			return [
+				{
+					type: "branch" as const,
+					kind: "provider" as const,
+					id: providerId,
+					label: provider,
+					children: buildGroupLevel(providerId, subset),
+				},
+			];
+		},
+	);
+};
+
+/** Build the left-nav tree: Guides first, then API categories → products →
+ * (optional providers → optional purpose-groups) → endpoints. */
 export const buildNavTree = (): DocsNav => {
 	const guides: NavGuideLink[] = [...GUIDES]
 		.sort((a, b) => a.order - b.order)
 		.map((g) => ({ slug: g.slug, title: g.title }));
 
 	const categories: NavCategoryGroup[] = CATEGORY_ORDER.map((category) => {
-		const products: NavProductGroup[] = API_PRODUCTS.filter(
+		const nodes: NavNode[] = API_PRODUCTS.filter(
 			(p) => p.category === category && Boolean(ACTIVE_PRODUCTS_MAP[p.id]),
-		)
-			.map((product) => {
-				const endpoints = getSpecsForProduct(product.id)
-					.filter((spec) => !isStatusSpec(spec))
-					.map((spec) => ({
-						slug: endpointSlug(spec),
-						title: spec.name,
-						method: spec.method,
-					}));
-				return { productId: product.id, name: product.name, endpoints };
-			})
-			.filter((group) => group.endpoints.length > 0);
+		).flatMap((product): NavNode[] => {
+			const specs = documentedSpecsForProduct(product.id);
+			if (specs.length === 0) return [];
+			// Single-endpoint product — flatten: no redundant subheading.
+			if (specs.length === 1) return [toLeaf(specs[0])];
+			return [
+				{
+					type: "branch" as const,
+					kind: "product" as const,
+					id: `product:${product.id}`,
+					label: product.name,
+					children: buildProductChildren(product.id, specs),
+				},
+			];
+		});
 
-		return { category, title: CATEGORY_TITLES[category], products };
-	}).filter((group) => group.products.length > 0);
+		return { category, title: CATEGORY_TITLES[category], nodes };
+	}).filter((group) => group.nodes.length > 0);
 
 	return { guides, categories };
 };

@@ -1,24 +1,76 @@
 import {
 	buildNavTree,
 	docsHref,
-	type NavEndpoint,
+	type NavBranch,
+	type NavLeaf,
+	type NavNode,
 } from "@/lib/data/docs-registry";
 import { cn } from "@/lib/utils";
+import { ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { HttpMethodTag } from "./HttpMethodTag";
 
 /**
- * Left-rail navigation. Hierarchy: CATEGORY (uppercase, divider) › Product
- * (subheading, only when it owns >1 endpoint) › endpoint links. Single-endpoint
- * products are flattened — the endpoint sits directly under the category to cut
- * the redundant "Passport Verification › Passport Verification" noise. Titles
- * wrap to at most two lines; each endpoint carries its HTTP-method tag.
+ * Left-rail navigation. Hierarchy: CATEGORY (uppercase, divider) › collapsible
+ * branches (product › optional provider › optional purpose-group) › endpoint
+ * links. Branch rows render at normal weight with a right-edge chevron (the slot
+ * leaves use for the HTTP-method tag); children indent under a left rail. Single
+ * endpoint products are flattened to cut the redundant subheading. Only the
+ * active endpoint's ancestor branches are expanded by default.
  */
+
+/** Strip a trailing slash (except the root) so `/docs/x/` matches `/docs/x`. */
+const normalizePath = (path: string): string =>
+	path.length > 1 ? path.replace(/\/+$/, "") : path;
+
+/** Collect the ids of every branch on the path to the active leaf. */
+const collectActiveBranchIds = (
+	nodes: NavNode[],
+	isActiveSlug: (slug: string) => boolean,
+	acc: Set<string>,
+): boolean => {
+	let onPath = false;
+	for (const node of nodes) {
+		if (node.type === "leaf") {
+			if (isActiveSlug(node.slug)) onPath = true;
+		} else if (collectActiveBranchIds(node.children, isActiveSlug, acc)) {
+			acc.add(node.id);
+			onPath = true;
+		}
+	}
+	return onPath;
+};
+
 export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 	const { pathname } = useLocation();
-	const nav = buildNavTree();
+	const current = normalizePath(pathname);
+	const nav = useMemo(() => buildNavTree(), []);
 
-	const isActive = (slug: string) => pathname === docsHref(slug);
+	const isActive = (slug: string) => current === docsHref(slug);
+
+	const activeBranchIds = useMemo(() => {
+		const acc = new Set<string>();
+		const matches = (slug: string) => current === docsHref(slug);
+		nav.categories.forEach((c) =>
+			collectActiveBranchIds(c.nodes, matches, acc),
+		);
+		return acc;
+	}, [nav, current]);
+
+	const [open, setOpen] = useState<Set<string>>(() => new Set(activeBranchIds));
+	// Re-open the active path on navigation, preserving branches the user opened.
+	useEffect(() => {
+		setOpen((prev) => new Set([...prev, ...activeBranchIds]));
+	}, [activeBranchIds]);
+
+	const toggle = (id: string) =>
+		setOpen((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
 
 	const itemClass = (active: boolean) =>
 		cn(
@@ -28,7 +80,7 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 				: "text-muted-foreground hover:bg-muted hover:text-foreground",
 		);
 
-	const EndpointLink = ({ ep }: { ep: NavEndpoint }) => (
+	const EndpointLink = ({ ep }: { ep: NavLeaf }) => (
 		<Link
 			to={docsHref(ep.slug)}
 			onClick={onNavigate}
@@ -44,12 +96,46 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 		</Link>
 	);
 
+	const renderNode = (node: NavNode) =>
+		node.type === "branch" ? (
+			<BranchRow key={node.id} branch={node} />
+		) : (
+			<EndpointLink key={node.slug} ep={node} />
+		);
+
+	const BranchRow = ({ branch }: { branch: NavBranch }) => {
+		const isOpen = open.has(branch.id);
+		return (
+			<div>
+				<button
+					type="button"
+					onClick={() => toggle(branch.id)}
+					aria-expanded={isOpen}
+					className={cn(itemClass(false), "w-full text-left")}
+				>
+					<span className="line-clamp-2">{branch.label}</span>
+					<ChevronRight
+						className={cn(
+							"mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+							isOpen && "rotate-90",
+						)}
+					/>
+				</button>
+				{isOpen && (
+					<div className="ml-3 space-y-0.5 border-l border-border/60 pl-2">
+						{branch.children.map(renderNode)}
+					</div>
+				)}
+			</div>
+		);
+	};
+
 	return (
 		<nav className="text-sm">
 			<Link
 				to={docsHref()}
 				onClick={onNavigate}
-				className={itemClass(pathname === docsHref())}
+				className={itemClass(current === docsHref())}
 			>
 				Overview
 			</Link>
@@ -82,25 +168,7 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 					<p className="mb-1 px-3 text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground">
 						{category.title}
 					</p>
-					{category.products.map((product) =>
-						product.endpoints.length === 1 ? (
-							// Single-endpoint product — flatten: no redundant subheading.
-							<div key={product.productId} className="space-y-0.5">
-								<EndpointLink ep={product.endpoints[0]} />
-							</div>
-						) : (
-							<div key={product.productId} className="mt-3 first:mt-1">
-								<p className="px-3 py-1 text-[0.8125rem] font-semibold text-foreground/90">
-									{product.name}
-								</p>
-								<div className="space-y-0.5">
-									{product.endpoints.map((ep) => (
-										<EndpointLink key={ep.slug} ep={ep} />
-									))}
-								</div>
-							</div>
-						),
-					)}
+					<div className="space-y-0.5">{category.nodes.map(renderNode)}</div>
 				</div>
 			))}
 		</nav>

@@ -1,6 +1,16 @@
 {
 	"redirects": [
 		{
+			"source": "/products/ppi-levin-api",
+			"destination": "/products/ppi-api",
+			"permanent": true
+		},
+		{
+			"source": "/products/ppi-digikhata-api",
+			"destination": "/products/ppi-api",
+			"permanent": true
+		},
+		{
 			"source": "/docs/dmt-sender-ekyc",
 			"destination": "/docs/dmt-fino-sender-ekyc",
 			"permanent": true

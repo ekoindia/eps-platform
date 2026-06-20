@@ -294,24 +294,25 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 	},
 
 	// -------------------------------------------------------------------------
-	// MARK: PPI Levin
+	// MARK: PPI Wallet (Levin + DigiKhata rails)
 	// -------------------------------------------------------------------------
-	"ppi-levin": {
+	ppi: {
 		seo: {
-			title: "PPI Wallet API India | Prepaid Payment Instrument (Levin)",
+			title:
+				"PPI Wallet API India | Prepaid Payment Instrument (Levin & DigiKhata)",
 			description:
-				"Open and operate PPI prepaid wallets with Eko's PPI Levin API. Sender onboarding, Aadhaar & PAN KYC, and wallet-to-bank IMPS/NEFT transfers — integrate in minutes.",
+				"Open and operate PPI prepaid wallets with Eko's PPI Wallet API — Levin and DigiKhata rails. Sender onboarding, Aadhaar e-KYC consent, PAN KYC, wallet load, and wallet-to-bank IMPS/NEFT transfers — integrate in minutes.",
 			keywords:
-				"PPI API, prepaid wallet API, PPI Levin, prepaid payment instrument API, wallet to bank transfer API, Eko API",
-			ogTitle: "PPI Wallet API (Levin)",
+				"PPI API, prepaid wallet API, PPI Levin, DigiKhata API, Aadhaar eKYC wallet, wallet load API, prepaid payment instrument API, wallet to bank transfer API, Eko API",
+			ogTitle: "PPI Wallet API (Levin & DigiKhata)",
 			ogDescription:
-				"Open prepaid wallets, complete Aadhaar/PAN KYC, and move money to any bank account via IMPS/NEFT.",
+				"Open prepaid wallets, complete Aadhaar/PAN KYC, load funds, and move money to any bank account via IMPS/NEFT.",
 		},
-		title: "PPI Wallet API (Levin)",
-		desc: "Open and operate prepaid (PPI) wallets with assisted KYC and bank transfers",
-		heroTitle: "Prepaid Payment Instrument (PPI) Wallet API — Levin",
+		title: "PPI Wallet API",
+		desc: "Open and operate prepaid (PPI) wallets with assisted KYC and bank transfers — Levin & DigiKhata rails",
+		heroTitle: "Prepaid Payment Instrument (PPI) Wallet API",
 		heroSubtitle:
-			"Let retailers and agents open prepaid wallets for customers, complete Aadhaar and PAN KYC, and transfer money from the wallet to any bank account using IMPS and NEFT — with real-time status and receipts.",
+			"Let retailers and agents open prepaid wallets for customers, complete Aadhaar (incl. multilingual e-KYC consent) and PAN KYC, load funds, and transfer money from the wallet to any bank account using IMPS and NEFT — with real-time status and receipts.",
 		category: "payment",
 		icon: Wallet,
 		heroImage: moneyTransferImg,
@@ -381,98 +382,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "How does money leave the wallet?",
 				a: "Add a recipient bank account, send a transaction OTP, then initiate the transfer — funds move via IMPS (instant) or NEFT.",
-			},
-		],
-	},
-
-	// -------------------------------------------------------------------------
-	// MARK: PPI DigiKhata
-	// -------------------------------------------------------------------------
-	"ppi-digikhata": {
-		seo: {
-			title: "DigiKhata Prepaid Wallet API | PPI Wallet with Aadhaar e-KYC",
-			description:
-				"Build prepaid DigiKhata wallets with Eko's PPI DigiKhata API. Sender onboarding, Aadhaar e-KYC consent, wallet load, and IMPS/NEFT transfers — integrate fast.",
-			keywords:
-				"DigiKhata API, PPI wallet API, prepaid wallet, Aadhaar eKYC wallet, wallet load API, wallet to bank transfer, Eko API",
-			ogTitle: "DigiKhata Prepaid Wallet API",
-			ogDescription:
-				"Open DigiKhata prepaid wallets with Aadhaar e-KYC consent, load funds, and transfer to any bank account.",
-		},
-		title: "DigiKhata Wallet API",
-		desc: "Open prepaid DigiKhata wallets with Aadhaar e-KYC, wallet load, and bank transfers",
-		heroTitle: "DigiKhata Prepaid Wallet API",
-		heroSubtitle:
-			"Open DigiKhata prepaid wallets for customers with multilingual Aadhaar e-KYC consent, load funds into the wallet, manage recipients, and transfer money to any bank account via IMPS and NEFT.",
-		category: "payment",
-		icon: Wallet,
-		heroImage: moneyTransferImg,
-		features: [
-			{
-				title: "Wallet Onboarding",
-				desc: "Open a DigiKhata wallet with OTP-based sender onboarding.",
-				icon: Smartphone,
-			},
-			{
-				title: "Aadhaar e-KYC with Consent",
-				desc: "Multilingual consent capture plus Aadhaar OTP and PAN validation.",
-				icon: BadgeCheck,
-			},
-			{
-				title: "Load Wallet",
-				desc: "Top up the customer's prepaid wallet before transfers.",
-				icon: Wallet,
-			},
-			{
-				title: "Bank Transfers",
-				desc: "Send money from the wallet to any bank account via IMPS and NEFT.",
-				icon: Banknote,
-			},
-			{
-				title: "Recipient Management",
-				desc: "Add beneficiaries with OTP-secured bank registration.",
-				icon: Users,
-			},
-		],
-		benefits: [
-			{
-				title: "Multilingual Consent",
-				desc: "Aadhaar e-KYC consent in 13 languages with audio for last-mile customers.",
-				icon: Globe,
-			},
-			{
-				title: "Earn Commission",
-				desc: "Earn on every successful wallet load and transfer.",
-				icon: Banknote,
-			},
-			{
-				title: "Regulatory Compliant",
-				desc: "Built for RBI PPI workflows with consent, KYC, and audit trails.",
-				icon: Shield,
-			},
-		],
-		integrationSteps: [
-			...VERIFICATION_STEPS_BASE,
-			{
-				title: "Go Live",
-				desc: "Get production credentials and start opening DigiKhata wallets.",
-			},
-		],
-		useCases: [
-			"Assisted Banking Networks",
-			"Kirana Stores",
-			"Agent Banking",
-			"CSP/BC networks",
-			"Prepaid Wallet Apps",
-		],
-		faqs: [
-			{
-				q: "What is DigiKhata?",
-				a: "DigiKhata is a prepaid (PPI) wallet product: open a wallet for a customer, complete Aadhaar e-KYC with consent, load funds, and transfer to bank accounts.",
-			},
-			{
-				q: "Is Aadhaar consent mandatory?",
-				a: "Yes — fetch the consent text/audio in the customer's language and capture consent before Aadhaar OTP e-KYC.",
 			},
 		],
 	},

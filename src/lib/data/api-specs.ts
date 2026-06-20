@@ -25,6 +25,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-get-sender",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Get Sender Profile",
 		slug: "dmt-get-sender",
 		summary:
@@ -134,6 +136,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-onboard-sender",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Onboard Sender",
 		slug: "dmt-onboard-sender",
 		summary:
@@ -240,6 +244,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-fino-sender-ekyc",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Sender eKYC (Biometric)",
 		slug: "dmt-fino-sender-ekyc",
 		summary:
@@ -330,6 +336,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-fino-validate-ekyc-otp",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Sender",
 		name: "Validate eKYC OTP",
 		slug: "dmt-fino-validate-ekyc-otp",
 		summary:
@@ -439,6 +447,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-get-recipients",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Recipients",
 		name: "Get Recipients",
 		slug: "dmt-get-recipients",
 		summary: "Retrieve the list of saved beneficiaries for a DMT sender.",
@@ -555,6 +565,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-add-recipient",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Recipients",
 		name: "Add Recipient",
 		slug: "dmt-add-recipient",
 		summary: "Register a new beneficiary under a sender's DMT-Fino account.",
@@ -690,6 +702,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-send-otp",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "dmt-send-otp",
 		summary:
@@ -773,6 +787,8 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-initiate-transfer",
 		productId: "dmt",
+		provider: "Fino",
+		group: "Transaction",
 		name: "Initiate Transfer",
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
@@ -6312,7 +6328,9 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-dmt-levin-validate",
 		productId: "dmt",
-		name: "Validate Aadhaar & Generate OTP (DMT Levin)",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Aadhaar & Generate OTP",
 		slug: "aadhaar-dmt-levin-validate",
 		summary:
 			"Validate a sender's Aadhaar number and trigger an OTP to the linked mobile for DMT Levin onboarding.",
@@ -6401,7 +6419,9 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-dmt-levin-verify-otp",
 		productId: "dmt",
-		name: "Validate Sender Aadhaar OTP (DMT Levin)",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Sender Aadhaar OTP",
 		slug: "aadhaar-dmt-levin-verify-otp",
 		summary:
 			"Verify the Aadhaar OTP for a DMT Levin sender to complete identity validation.",
@@ -6534,8 +6554,10 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-ppi-levin-validate",
-		productId: "ppi-levin",
-		name: "Validate Aadhaar (PPI Levin)",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Aadhaar",
 		slug: "aadhaar-ppi-levin-validate",
 		summary:
 			"Submit sender's Aadhaar number for OTP-based validation in the PPI Levin wallet onboarding flow.",
@@ -6625,8 +6647,10 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "aadhaar-ppi-levin-verify-otp",
-		productId: "ppi-levin",
-		name: "Validate Aadhaar OTP (PPI Levin)",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
+		name: "Validate Aadhaar OTP",
 		slug: "aadhaar-ppi-levin-verify-otp",
 		summary:
 			"Verify the Aadhaar OTP to complete identity validation in the PPI Levin wallet onboarding flow.",
@@ -6757,7 +6781,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-get-sender",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
 		name: "Get Sender Information",
 		slug: "ppi-levin-get-sender",
 		summary:
@@ -6833,7 +6859,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-onboard-sender",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
 		name: "Onboard Sender",
 		slug: "ppi-levin-onboard-sender",
 		summary:
@@ -6925,7 +6953,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-verify-otp",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
 		name: "Verify Sender OTP",
 		slug: "ppi-levin-verify-otp",
 		summary:
@@ -7162,7 +7192,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-validate-pan",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Sender",
 		name: "Validate PAN",
 		slug: "ppi-levin-validate-pan",
 		summary:
@@ -7298,7 +7330,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-get-recipients",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Recipients",
 		name: "Get List of Recipients",
 		slug: "ppi-levin-get-recipients",
 		summary: "Retrieve the list of saved beneficiaries for a PPI Levin sender.",
@@ -7466,7 +7500,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-add-recipient",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Recipients",
 		name: "Add Recipient",
 		slug: "ppi-levin-add-recipient",
 		summary: "Register a new beneficiary under a PPI Levin sender's account.",
@@ -7590,7 +7626,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-add-recipient-bank",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Recipients",
 		name: "Add Recipient Bank",
 		slug: "ppi-levin-add-recipient-bank",
 		summary: "Register a bank beneficiary for an existing PPI Levin recipient.",
@@ -7655,7 +7693,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-send-transaction-otp",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "ppi-levin-send-transaction-otp",
 		summary:
@@ -7736,7 +7776,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-levin-initiate-transaction",
-		productId: "ppi-levin",
+		productId: "ppi",
+		provider: "Levin",
+		group: "Transaction",
 		name: "Initiate Transaction",
 		slug: "ppi-levin-initiate-transaction",
 		summary:
@@ -7975,7 +8017,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-get-sender",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Get Sender Information",
 		slug: "ppi-digikhata-get-sender",
 		summary:
@@ -8049,7 +8093,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-onboard-sender",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Onboard Sender",
 		slug: "ppi-digikhata-onboard-sender",
 		summary:
@@ -8151,7 +8197,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-generate-sender-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Generate Sender Verification OTP",
 		slug: "ppi-digikhata-generate-sender-otp",
 		summary:
@@ -8205,7 +8253,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-verify-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Verify Sender OTP",
 		slug: "ppi-digikhata-verify-otp",
 		summary:
@@ -8364,7 +8414,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-consent-languages",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Get Aadhaar KYC Consent Languages",
 		slug: "ppi-digikhata-consent-languages",
 		summary:
@@ -8455,7 +8507,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-consent-details",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Get Aadhaar KYC Consent Details",
 		slug: "ppi-digikhata-consent-details",
 		summary:
@@ -8567,7 +8621,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-generate-aadhaar-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Generate Sender Aadhaar OTP",
 		slug: "ppi-digikhata-generate-aadhaar-otp",
 		summary:
@@ -8631,7 +8687,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-verify-aadhaar-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Validate Sender Aadhaar OTP",
 		slug: "ppi-digikhata-verify-aadhaar-otp",
 		summary:
@@ -8688,7 +8746,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-validate-pan",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Validate Sender PAN",
 		slug: "ppi-digikhata-validate-pan",
 		summary:
@@ -8796,7 +8856,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-load-wallet",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Sender",
 		name: "Load Sender DigiKhata Wallet",
 		slug: "ppi-digikhata-load-wallet",
 		summary: "Load funds into a DigiKhata sender's prepaid wallet.",
@@ -8865,7 +8927,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-get-recipients",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
 		name: "Get List of Recipients",
 		slug: "ppi-digikhata-get-recipients",
 		summary: "Retrieve the list of saved beneficiaries for a DigiKhata sender.",
@@ -9011,7 +9075,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-add-recipient",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
 		name: "Add Recipient",
 		slug: "ppi-digikhata-add-recipient",
 		summary: "Register a new beneficiary under a DigiKhata sender's account.",
@@ -9105,7 +9171,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-recipient-bank-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
 		name: "Generate Add Recipient Bank OTP",
 		slug: "ppi-digikhata-recipient-bank-otp",
 		summary:
@@ -9171,7 +9239,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-validate-recipient-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Recipients",
 		name: "Validate OTP to Add Recipient",
 		slug: "ppi-digikhata-validate-recipient-otp",
 		summary:
@@ -9229,7 +9299,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-send-transaction-otp",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "ppi-digikhata-send-transaction-otp",
 		summary:
@@ -9308,7 +9380,9 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "ppi-digikhata-initiate-transaction",
-		productId: "ppi-digikhata",
+		productId: "ppi",
+		provider: "DigiKhata",
+		group: "Transaction",
 		name: "Initiate Transaction",
 		slug: "ppi-digikhata-initiate-transaction",
 		summary:

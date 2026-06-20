@@ -40,19 +40,13 @@ const API_PRODUCTS_DATA = [
 		shortDesc: "Aadhaar-enabled biometric cash withdrawal & transfer",
 	},
 	{
-		id: "ppi-levin",
-		name: "PPI Transactions (Levin)",
-		slug: "ppi-levin-api",
-		category: "bc",
-		shortDesc: "Prepaid Instrument (PPI) wallet management and transactions",
-	},
-	{
-		id: "ppi-digikhata",
-		name: "PPI DigiKhata (Prepaid Wallet)",
-		slug: "ppi-digikhata-api",
+		id: "ppi",
+		name: "PPI Wallet",
+		shortName: "PPI",
+		slug: "ppi-api",
 		category: "bc",
 		shortDesc:
-			"DigiKhata prepaid wallet — sender onboarding, Aadhaar KYC, wallet load & transfers",
+			"Prepaid (PPI) wallets — sender onboarding, Aadhaar KYC, wallet load & bank transfers (Levin & DigiKhata)",
 	},
 	{
 		id: "user-management",

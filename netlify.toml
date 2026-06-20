@@ -1,3 +1,16 @@
+# PPI product merge: Levin + DigiKhata collapsed into one PPI Wallet product.
+[[redirects]]
+  from = "/products/ppi-levin-api"
+  to = "/products/ppi-api"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/products/ppi-digikhata-api"
+  to = "/products/ppi-api"
+  status = 301
+  force = true
+
 # Endpoint docs slug migrations (master-nomenclature alignment).
 # Renamed DMT-Fino eKYC/OTP specs + removed duplicate aadhaar-dmt-fino-* pages
 # redirect to their canonical /docs slugs so external links keep resolving.

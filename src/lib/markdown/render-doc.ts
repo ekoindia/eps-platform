@@ -18,7 +18,13 @@ import {
 	resolveRequestParams,
 	resolveResponseFields,
 } from "@/lib/data/api-specs-common";
-import { buildNavTree, docsHref, endpointSlug } from "@/lib/data/docs-registry";
+import {
+	buildNavTree,
+	docsHref,
+	endpointSlug,
+	type NavLeaf,
+	type NavNode,
+} from "@/lib/data/docs-registry";
 import {
 	bulletList,
 	canonicalNotice,
@@ -139,6 +145,18 @@ export function renderGuideMarkdown(
 	]);
 }
 
+/** Flatten the recursive nav tree to leaves, each with its branch-label trail
+ * (Product › Provider › Group) for context in the flat overview list. */
+const collectLeaves = (
+	nodes: NavNode[],
+	trail: string[] = [],
+): { leaf: NavLeaf; trail: string[] }[] =>
+	nodes.flatMap((node) =>
+		node.type === "leaf"
+			? [{ leaf: node, trail }]
+			: collectLeaves(node.children, [...trail, node.label]),
+	);
+
 /** Render the `/docs.md` overview: every documented endpoint, grouped. */
 export function renderDocsIndexMarkdown(): string {
 	const nav = buildNavTree();
@@ -148,12 +166,10 @@ export function renderDocsIndexMarkdown(): string {
 		joinBlocks([
 			h2(category.title),
 			bulletList(
-				category.products.flatMap((product) =>
-					product.endpoints.map(
-						(ep) =>
-							`${link(ep.title, `${SITE_URL}${docsHref(ep.slug)}`, "md")} (${ep.method}) — ${product.name}`,
-					),
-				),
+				collectLeaves(category.nodes).map(({ leaf, trail }) => {
+					const context = trail.length ? ` — ${trail.join(" › ")}` : "";
+					return `${link(leaf.title, `${SITE_URL}${docsHref(leaf.slug)}`, "md")} (${leaf.method})${context}`;
+				}),
 			),
 		]),
 	);

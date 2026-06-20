@@ -9,6 +9,9 @@ import {
 	getAllDocSlugs,
 	getDocBySlug,
 	getDocumentedSpecs,
+	type NavBranch,
+	type NavLeaf,
+	type NavNode,
 	RESERVED_SLUGS,
 } from "@/lib/data/docs-registry";
 import { API_SPECS } from "@/lib/data/api-specs";
@@ -80,8 +83,31 @@ describe("assertNoSlugCollisions guard", () => {
 	});
 });
 
+/** All leaf nodes under a nav subtree, in order. */
+const leaves = (nodes: NavNode[]): NavLeaf[] =>
+	nodes.flatMap((n) => (n.type === "leaf" ? [n] : leaves(n.children)));
+
+/** Direct child branches of a given `kind`. */
+const childBranches = (
+	nodes: NavNode[],
+	kind: NavBranch["kind"],
+): NavBranch[] =>
+	nodes.filter((n): n is NavBranch => n.type === "branch" && n.kind === kind);
+
+/** Find a branch anywhere in the tree by its label. */
+const findBranch = (nodes: NavNode[], label: string): NavBranch | undefined => {
+	for (const n of nodes) {
+		if (n.type === "branch") {
+			if (n.label === label) return n;
+			const hit = findBranch(n.children, label);
+			if (hit) return hit;
+		}
+	}
+	return undefined;
+};
+
 describe("buildNavTree", () => {
-	it("orders categories bc → payment → verification and nests products", () => {
+	it("orders categories bc → payment → verification and nests endpoints", () => {
 		const { categories } = buildNavTree();
 		expect(categories.map((c) => c.category)).toEqual(
 			["bc", "payment", "verification"].filter((cat) =>
@@ -89,15 +115,59 @@ describe("buildNavTree", () => {
 			),
 		);
 		for (const cat of categories) {
-			expect(cat.products.length).toBeGreaterThan(0);
-			for (const product of cat.products) {
-				expect(product.endpoints.length).toBeGreaterThan(0);
-				for (const ep of product.endpoints) {
-					expect(ep.method).toBeTruthy();
-					expect(getDocBySlug(ep.slug)?.kind).toBe("endpoint");
-				}
+			expect(cat.nodes.length).toBeGreaterThan(0);
+			const catLeaves = leaves(cat.nodes);
+			expect(catLeaves.length).toBeGreaterThan(0);
+			for (const ep of catLeaves) {
+				expect(ep.method).toBeTruthy();
+				expect(getDocBySlug(ep.slug)?.kind).toBe("endpoint");
 			}
 		}
+	});
+
+	it("every branch id is unique and every leaf appears exactly once", () => {
+		const { categories } = buildNavTree();
+		const allNodes = categories.flatMap((c) => c.nodes);
+		const branchIds: string[] = [];
+		const walk = (nodes: NavNode[]) => {
+			for (const n of nodes) {
+				if (n.type === "branch") {
+					branchIds.push(n.id);
+					walk(n.children);
+				}
+			}
+		};
+		walk(allNodes);
+		expect(new Set(branchIds).size).toBe(branchIds.length);
+		const leafSlugs = leaves(allNodes).map((l) => l.slug);
+		expect(new Set(leafSlugs).size).toBe(leafSlugs.length);
+	});
+
+	it("nests DMT into Fino/Levin providers with purpose-groups", () => {
+		const { categories } = buildNavTree();
+		const bc = categories.find((c) => c.category === "bc")!;
+		const dmt = findBranch(bc.nodes, "Domestic Money Transfer (DMT)");
+		expect(dmt).toBeTruthy();
+		const providers = childBranches(dmt!.children, "provider").map(
+			(b) => b.label,
+		);
+		expect(providers).toEqual(["Fino", "Levin"]); // first-appearance order
+		const fino = findBranch(dmt!.children, "Fino")!;
+		const finoGroups = childBranches(fino.children, "group").map(
+			(b) => b.label,
+		);
+		expect(finoGroups).toEqual(["Sender", "Recipients", "Transaction"]);
+	});
+
+	it("merges PPI providers (DigiKhata/Levin) under one product", () => {
+		const { categories } = buildNavTree();
+		const bc = categories.find((c) => c.category === "bc")!;
+		const ppi = findBranch(bc.nodes, "PPI Wallet");
+		expect(ppi).toBeTruthy();
+		const providers = childBranches(ppi!.children, "provider").map(
+			(b) => b.label,
+		);
+		expect(new Set(providers)).toEqual(new Set(["Levin", "DigiKhata"]));
 	});
 });
 
@@ -115,14 +185,13 @@ describe("route parity", () => {
 		const nav = buildNavTree();
 		for (const g of nav.guides) expect(slugs.has(g.slug)).toBe(true);
 		for (const c of nav.categories)
-			for (const p of c.products)
-				for (const ep of p.endpoints) expect(slugs.has(ep.slug)).toBe(true);
+			for (const ep of leaves(c.nodes)) expect(slugs.has(ep.slug)).toBe(true);
 	});
 
 	it("no nav endpoint is a -status helper", () => {
 		const nav = buildNavTree();
 		const navSlugs = nav.categories.flatMap((c) =>
-			c.products.flatMap((p) => p.endpoints.map((e) => e.slug)),
+			leaves(c.nodes).map((e) => e.slug),
 		);
 		for (const spec of getDocumentedSpecs())
 			expect(spec.id.endsWith("-status")).toBe(false);

@@ -79,6 +79,14 @@ export interface ApiSpec {
 	summary: string;
 	description?: string;
 	relevance?: ApiProductRelevance;
+	/** OPTIONAL sub-product grouping for products with multiple integration
+	 * providers (e.g. DMT → "Fino" / "Levin"). Unset ⇒ the spec sits directly
+	 * under its product in the docs nav. Nav + data only — never part of the URL. */
+	provider?: string;
+	/** OPTIONAL purpose-group within a provider (or product) — e.g. "Sender",
+	 * "Recipients", "Transaction". Unset ⇒ the spec sits directly under its
+	 * provider (or product). Nav + data only — never part of the URL. */
+	group?: string;
 	bestFor?: string;
 	method: "GET" | "POST" | "PUT" | "DELETE";
 	/** Relative path; full URL = environment baseUrl + path. */
