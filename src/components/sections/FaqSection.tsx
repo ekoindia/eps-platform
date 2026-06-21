@@ -24,7 +24,8 @@ export interface FaqItem {
 
 interface FaqSectionProps {
 	faqs: FaqItem[];
-	title?: string;
+	/** Section heading. Pass `null` to hide it (e.g. when the page hero already shows it). */
+	title?: string | null;
 	variant?: "default" | "navy" | "muted";
 	className?: string;
 }
@@ -52,7 +53,7 @@ export const FaqSection = ({
 
 	return (
 		<SectionContainer variant={variant} className={className}>
-			<SectionHeader title={title} />
+			{title && <SectionHeader title={title} />}
 			<div className="max-w-3xl mx-auto flex flex-col gap-4">
 				{items.map((faq, i) => (
 					<FadeIn key={i} delay={i * 50}>

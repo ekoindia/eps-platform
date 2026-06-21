@@ -69,7 +69,7 @@ const FaqPage = () => {
 						</FadeIn>
 					</PageHero>
 
-					<FaqSection faqs={GLOBAL_FAQS} variant="default" />
+					<FaqSection faqs={GLOBAL_FAQS} variant="default" title={null} />
 
 					<LeadFormCTASection
 						heading="Still have questions?"
