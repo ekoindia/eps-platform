@@ -327,7 +327,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				aria-describedby={undefined}
-				className="top-[12%] translate-y-0 data-[state=closed]:slide-out-to-top-[10%] data-[state=open]:slide-in-from-top-[10%] sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden"
+				className="top-[12%] translate-y-0 sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden [--tw-enter-translate-x:0]! [--tw-enter-translate-y:0]! [--tw-exit-translate-x:0]! [--tw-exit-translate-y:0]!"
 			>
 				<DialogTitle className="sr-only">Search</DialogTitle>
 				<Command loop filter={rankedFilter}>
