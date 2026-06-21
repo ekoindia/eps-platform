@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 
 import type { FAQ, ProductPageContent } from "@/components/ProductPageLayout";
+import { API_ENVIRONMENTS } from "./api-auth";
 
 // ---------------------------------------------------------------------------
 // Hero image assets
@@ -119,45 +120,103 @@ const VERIFICATION_STEPS_BASE = [
 // const comingSoonPreview = (apiName: string) =>
 //   ({ apiName, inputs: [], outputs: [], comingSoon: true });
 
-/** FAQs appended to every API product page after product-specific FAQs */
+/**
+ * Platform-agnostic FAQs that appear on EVERY product page (appended after each
+ * product's own FAQs) and on the global `/faq` page. Buying-intent / pre-
+ * integration questions live here.
+ */
 export const COMMON_API_FAQS: FAQ[] = [
+	{
+		q: "How do I get started?",
+		a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
+		links: [
+			{ label: "Developer docs", href: "/docs" },
+			{ label: "Sign up", href: "/signup" },
+		],
+	},
+	{
+		q: "What are the different ways to integrate with Eko?",
+		a: "Integrate in whichever way suits your stack: call the REST APIs directly, use our official SDKs (JavaScript and PHP) to skip request-signing boilerplate, or let an AI coding agent build the integration using our MCP server and skills. See the Developers and AI sections for each path.",
+		links: [
+			{ label: "SDKs & developer docs", href: "/docs" },
+			{ label: "Integrate with AI", href: "/ai" },
+		],
+	},
+	{
+		q: "How does API authentication work?",
+		a: "Each request carries your static `developer_key` header plus a per-request `secret-key` header — an HMAC-SHA256 signature of the current timestamp, keyed by your access key. The access key itself is never sent over the wire. You receive UAT keys on signup and production keys after KYC.",
+		links: [{ label: "How auth works", href: "/docs/how-auth-works" }],
+	},
+	{
+		q: "Is there a sandbox environment for testing?",
+		a: "Yes. A full sandbox environment is available immediately on signup. You can test your integration end-to-end before going live — no commitment required.",
+		links: [{ label: "Quickstart", href: "/docs/quickstart" }],
+	},
+	{
+		q: "What are the sandbox and production base URLs?",
+		// Base URLs come from the shared environment config — never hard-code them.
+		a: `Sandbox and production share the same paths and differ only by base URL: use ${API_ENVIRONMENTS.sandbox.baseUrl} for ${API_ENVIRONMENTS.sandbox.label}, and ${API_ENVIRONMENTS.production.baseUrl} for ${API_ENVIRONMENTS.production.label}. A common cause of failures is calling the sandbox/staging URL with live credentials (or vice-versa) — make sure the base URL matches the keys you are using.`,
+		links: [
+			{ label: "Quickstart", href: "/docs/quickstart" },
+			{ label: "How auth works", href: "/docs/how-auth-works" },
+		],
+	},
+	{
+		q: "Do I need to whitelist my server IP?",
+		a: "Production API access may require your static public (server) IP to be whitelisted. If your calls work from Postman but fail or time out from your own server, share your static public IP with us so we can whitelist it.",
+		links: [{ label: "Developer docs", href: "/docs" }],
+	},
+	{
+		q: "What response times can I expect?",
+		a: "Most verification APIs return in real time with sub-second responses, and 99th-percentile latency stays under two seconds across verification endpoints. Transaction APIs (DMT, AePS, BBPS) respond within seconds.",
+	},
 	{
 		q: "Can the API handle high volumes?",
 		a: "Yes. The API is designed to handle large-scale volumes reliably without performance degradation.",
 	},
 	{
-		q: "How does API authentication work?",
-		a: "Every API call is secured with one-time-use tokens generated using asymmetric cryptography. After signing up, you will receive your developer-key and secret-key for both UAT and production environments, which you can use to generate tokens for authenticating your API requests.",
+		q: "How is API usage billed?",
+		a: "Usage is billed per successful API call with no minimum commitment. Volume-based pricing tiers are available — contact our team for detailed rates.",
+		links: [{ label: "Pricing & calculator", href: "/pricing" }],
 	},
+];
+
+/**
+ * Reference FAQs shown ONLY on the global `/faq` page — deeper / long-tail
+ * questions that would bloat every product page. NOT appended to product pages.
+ */
+export const GLOBAL_REFERENCE_FAQS: FAQ[] = [
 	{
 		q: "How are errors and failures reported?",
 		a: "Every response includes a status code and a human-readable message. Failed requests return specific error codes indicating the reason, so you can handle each case programmatically.",
+		links: [{ label: "Error codes reference", href: "/docs/error-codes" }],
 	},
 	{
-		q: "Is there a sandbox environment for testing?",
-		a: "Yes. A full sandbox environment is available immediately on signup. You can test your integration end-to-end before going live — no commitment required.",
+		q: "How does API versioning work?",
+		a: "Eko APIs are versioned in the base path (currently v3). Sandbox and production share the same paths and differ only by base URL.",
+		links: [{ label: "Developer docs", href: "/docs" }],
 	},
 	{
-		q: "How is API usage billed?",
-		a: "Usage is billed per successful API call with no minimum commitment. Volume-based pricing tiers are available — contact our team for detailed rates.",
+		q: "What data privacy and compliance standards does Eko follow?",
+		a: "Eko follows applicable RBI and data-protection guidelines for its regulated banking and KYC services. Aadhaar-based KYC is performed only with explicit customer consent.",
 	},
-	// TODO: Confirm, cleanup and re-enable these FAQs if relevant across multiple products
-	// {
-	//   q: "How long does integration take?",
-	//   a: "With our well-documented APIs and sandbox environment, most partners complete integration within 2-4 weeks including testing and certification.",
-	// },
-	// {
-	//   q: "How fast is DL verification?",
-	//   a: "Verification is real-time with instant structured responses for driving license details.",
-	// },
-	// {
-	//   q: "What is the rate limit?",
-	//   a: "Rate limits depend on your plan. Contact us for higher throughput requirements.",
-	// },
 	{
-		q: "How do I get started?",
-		a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
+		q: "How do I report an integration issue?",
+		a: "Share the complete request and response so we can debug quickly: the full curl (including headers), the response body, the timestamp, and your initiator_id, user_code and client_ref_id. Issues raised with these details are resolved much faster.",
 	},
+	{
+		q: "Are there any common integration gotchas to know?",
+		a: "Two frequent ones: client_ref_id must be at most 20 characters, and the JSESSIONID cookie that Postman adds automatically is harmless — it has no effect on the API and can be safely ignored.",
+	},
+];
+
+/**
+ * The full set shown on the global `/faq` page: product-scoped commons first,
+ * then global-only reference FAQs.
+ */
+export const GLOBAL_FAQS: FAQ[] = [
+	...COMMON_API_FAQS,
+	...GLOBAL_REFERENCE_FAQS,
 ];
 
 // ---------------------------------------------------------------------------

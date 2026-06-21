@@ -687,9 +687,24 @@ body {
 	anchor-name: --company-trigger;
 }
 
+.developers-nav-trigger {
+	anchor-name: --developers-trigger;
+}
+
 @supports (top: anchor(bottom)) {
 	.company-dropdown {
 		position-anchor: --company-trigger;
+		top: calc(anchor(bottom) + 0.5rem);
+		bottom: auto;
+		/* override the centred fallback (left-1/2 + -translate-x-1/2) */
+		left: auto;
+		right: auto;
+		translate: none;
+		justify-self: anchor-center;
+	}
+
+	.developers-dropdown {
+		position-anchor: --developers-trigger;
 		top: calc(anchor(bottom) + 0.5rem);
 		bottom: auto;
 		/* override the centred fallback (left-1/2 + -translate-x-1/2) */

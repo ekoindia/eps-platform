@@ -20,10 +20,17 @@ import {
 	hasProductPage,
 } from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
+import { docsHref, getAllDocNodes } from "@/lib/data/docs-registry";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 
-export type SearchCategory = "api" | "industry" | "solution" | "page";
+export type SearchCategory =
+	| "api"
+	| "endpoint"
+	| "guide"
+	| "industry"
+	| "solution"
+	| "page";
 
 export interface SearchItem {
 	/** Unique across the whole index — `${category}:${slug}` */
@@ -41,7 +48,31 @@ export interface SearchItem {
 	icon: LucideIcon;
 	/** Shown in the empty-query (default) view */
 	suggested?: boolean;
+	/** Endpoint-only: HTTP method, rendered as a coloured pill */
+	method?: "GET" | "POST" | "PUT" | "DELETE";
+	/** Endpoint-only: request path, shown as the secondary line */
+	path?: string;
+	/** Bare slug for match-field scoring (where the term hit) */
+	slug?: string;
+	/** Asset-type rank multiplier — drives priority ordering (see TYPE_WEIGHT) */
+	typeWeight: number;
 }
+
+/**
+ * Asset-type priority weights. Higher = surfaced first on equal text relevance.
+ * Order: Product > API Endpoint > Guide > Solution Pack > Industry > Page.
+ */
+const TYPE_WEIGHT: Record<SearchCategory, number> = {
+	api: 6,
+	endpoint: 5,
+	guide: 4,
+	solution: 3,
+	industry: 2,
+	page: 1,
+};
+
+/** Highest type weight — normaliser for the ranking multiplier. */
+export const MAX_TYPE_WEIGHT = TYPE_WEIGHT.api;
 
 /** Icons per API product category */
 const API_CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -67,6 +98,7 @@ const buildApiItems = (): SearchItem[] =>
 		.filter((p) => hasProductPage(p.id))
 		.map((p) => ({
 			id: `api:${p.slug}`,
+			slug: p.slug,
 			label: p.name,
 			sublabel: p.shortDesc,
 			href: productHref(p.slug),
@@ -78,12 +110,58 @@ const buildApiItems = (): SearchItem[] =>
 			],
 			icon: API_CATEGORY_ICONS[p.category] ?? ShieldCheck,
 			suggested: SUGGESTED_API_IDS.has(p.id),
+			typeWeight: TYPE_WEIGHT.api,
+		}));
+
+/** Builds API-endpoint search items from the docs registry (dynamic — future
+ * endpoints auto-appear, removed/`-status`/inactive ones auto-drop). */
+const buildEndpointItems = (): SearchItem[] =>
+	getAllDocNodes()
+		.filter((n) => n.kind === "endpoint")
+		.map((n) => ({
+			id: `endpoint:${n.slug}`,
+			slug: n.slug,
+			label: n.title,
+			sublabel: n.summary,
+			href: docsHref(n.slug),
+			category: "endpoint" as const,
+			method: n.method,
+			path: n.spec?.path,
+			keywords: [
+				n.slug,
+				n.method ?? "",
+				n.spec?.path ?? "",
+				n.productName ?? "",
+				n.spec?.provider ?? "",
+				n.spec?.group ?? "",
+			].filter(Boolean),
+			icon: API_CATEGORY_ICONS[n.category ?? ""] ?? ShieldCheck,
+			typeWeight: TYPE_WEIGHT.endpoint,
+		}));
+
+/** Builds dev-docs guide search items from the docs registry (dynamic). */
+const buildGuideItems = (): SearchItem[] =>
+	getAllDocNodes()
+		.filter((n) => n.kind === "guide")
+		.map((n) => ({
+			id: `guide:${n.slug}`,
+			slug: n.slug,
+			label: n.title,
+			sublabel: n.summary,
+			href: docsHref(n.slug),
+			category: "guide" as const,
+			keywords: [n.slug, "guide", "docs"],
+			icon: BookOpen,
+			typeWeight: TYPE_WEIGHT.guide,
+			// Only the Quickstart guide surfaces in the empty-query view.
+			suggested: n.slug === "quickstart",
 		}));
 
 /** Builds industry search items (priority 3 = hidden/draft, excluded) */
 const buildIndustryItems = (): SearchItem[] =>
 	ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority !== 3).map((i) => ({
 		id: `industry:${i.slug}`,
+		slug: i.slug,
 		label: i.name,
 		sublabel: i.tagline,
 		href: `/industries/${i.slug}`,
@@ -91,12 +169,14 @@ const buildIndustryItems = (): SearchItem[] =>
 		keywords: [i.slug, i.category, ...splitSeoKeywords(i.seo.keywords)],
 		icon: i.icon,
 		suggested: i.priority === 1,
+		typeWeight: TYPE_WEIGHT.industry,
 	}));
 
 /** Builds solution-pack search items (priority 3 = hidden/draft, excluded) */
 const buildSolutionItems = (): SearchItem[] =>
 	ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority !== 3).map((s) => ({
 		id: `solution:${s.slug}`,
+		slug: s.slug,
 		label: s.name,
 		sublabel: s.tagline,
 		href: `/solutions/${s.slug}`,
@@ -104,10 +184,11 @@ const buildSolutionItems = (): SearchItem[] =>
 		keywords: [s.slug, s.category, ...splitSeoKeywords(s.seo.keywords)],
 		icon: s.icon,
 		suggested: s.priority === 1,
+		typeWeight: TYPE_WEIGHT.solution,
 	}));
 
 /** Static site pages + external docs + quick actions */
-const buildPageItems = (): SearchItem[] => [
+const PAGE_ITEMS: Omit<SearchItem, "typeWeight">[] = [
 	{
 		id: "page:home",
 		label: "Home",
@@ -262,11 +343,17 @@ const buildPageItems = (): SearchItem[] => [
 	},
 ];
 
+/** Static-page items, stamped with the page type weight. */
+const buildPageItems = (): SearchItem[] =>
+	PAGE_ITEMS.map((p) => ({ ...p, typeWeight: TYPE_WEIGHT.page }));
+
 /** Builds the complete search index. Runs once at module scope inside the lazy palette chunk. */
 const buildSearchIndex = (): SearchItem[] => [
 	...buildApiItems(),
-	...buildIndustryItems(),
+	...buildEndpointItems(),
+	...buildGuideItems(),
 	...buildSolutionItems(),
+	...buildIndustryItems(),
 	...buildPageItems(),
 ];
 

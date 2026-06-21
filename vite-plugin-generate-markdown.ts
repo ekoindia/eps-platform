@@ -172,6 +172,13 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- FAQ --------------------------------------------------------------
+				await writeFile(
+					path.join(outDir, "faq.md"),
+					bundle.renderFaqMarkdown(bundle.GLOBAL_FAQS),
+				);
+				written++;
+
 				// -- Use-cases hub --------------------------------------------------
 				await writeFile(
 					path.join(outDir, "use-cases.md"),
@@ -268,6 +275,11 @@ interface MarkdownBundle {
 	}>;
 	API_PRODUCT_PAGES: Record<string, unknown>;
 	COMMON_API_FAQS: Array<{ q: string; a: string }>;
+	GLOBAL_FAQS: Array<{
+		q: string;
+		a: string;
+		links?: Array<{ label: string; href: string }>;
+	}>;
 	INDUSTRIES_LIST: Array<{ slug: string; name: string; category: string }>;
 	SOLUTIONS_LIST: Array<{ slug: string; name: string }>;
 	renderProductMarkdown: (p: unknown, d: unknown, r: unknown[]) => string;
@@ -295,6 +307,7 @@ interface MarkdownBundle {
 		commonFaqs: Array<{ q: string; a: string }>,
 	) => string;
 	renderPricingMarkdown: () => string;
+	renderFaqMarkdown: (faqs: unknown[]) => string;
 	DOCUMENTED_SPECS: Array<{ slug: string }>;
 	renderEndpointMarkdown: (spec: unknown) => string;
 	renderDocsIndexMarkdown: () => string;
@@ -328,6 +341,7 @@ async function loadRenderBundle(
 		renderIndexMod,
 		renderProductsIndexMod,
 		renderPricingMod,
+		renderFaqMod,
 		docsRegistryMod,
 		renderDocMod,
 		docsGuidesMod,
@@ -343,6 +357,7 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-products-index.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-pricing.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-faq.ts"),
 		server.ssrLoadModule("/src/lib/data/docs-registry.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
 		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
@@ -353,6 +368,7 @@ async function loadRenderBundle(
 		API_PRODUCTS: productsMod.API_PRODUCTS,
 		API_PRODUCT_PAGES: productPagesMod.API_PRODUCT_PAGES,
 		COMMON_API_FAQS: productPagesMod.COMMON_API_FAQS,
+		GLOBAL_FAQS: productPagesMod.GLOBAL_FAQS,
 		INDUSTRIES_LIST: industriesMod.ACTIVE_INDUSTRIES_LIST,
 		SOLUTIONS_LIST: solutionsMod.ACTIVE_SOLUTIONS_LIST,
 		renderProductMarkdown: renderProductMod.renderProductMarkdown,
@@ -367,6 +383,7 @@ async function loadRenderBundle(
 		renderProductsIndexTextPart:
 			renderProductsIndexMod.renderProductsIndexTextPart,
 		renderPricingMarkdown: renderPricingMod.renderPricingMarkdown,
+		renderFaqMarkdown: renderFaqMod.renderFaqMarkdown,
 		DOCUMENTED_SPECS: docsRegistryMod.getDocumentedSpecs(),
 		renderEndpointMarkdown: renderDocMod.renderEndpointMarkdown,
 		renderDocsIndexMarkdown: renderDocMod.renderDocsIndexMarkdown,
@@ -427,6 +444,9 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/pricing.md") {
 		return bundle.renderPricingMarkdown();
+	}
+	if (url === "/faq.md") {
+		return bundle.renderFaqMarkdown(bundle.GLOBAL_FAQS);
 	}
 	if (url === "/docs.md") {
 		return bundle.renderDocsIndexMarkdown();

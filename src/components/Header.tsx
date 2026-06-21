@@ -102,6 +102,7 @@ export const Header = () => {
 	const productsDropdownRef = useRef<HTMLDivElement>(null);
 	const companyDropdownRef = useRef<HTMLDivElement>(null);
 	const useCasesDropdownRef = useRef<HTMLDivElement>(null);
+	const developersDropdownRef = useRef<HTMLDivElement>(null);
 	/** Shared close timer — fires only when mouse leaves the entire header or a panel. */
 	const closeTimerRef = useRef<number | undefined>(undefined);
 	/** Per-trigger open timers (80ms open delay). */
@@ -164,6 +165,10 @@ export const Header = () => {
 				);
 			case "Pricing":
 				return path === "/pricing";
+			case "AI Agents":
+				return path === "/ai";
+			case "Developers":
+				return path === "/docs" || path.startsWith("/docs/") || path === "/faq";
 			case "Company":
 				return path === "/about-us" || path.startsWith("/about-us/");
 			default:
@@ -198,6 +203,11 @@ export const Header = () => {
 					!useCasesDropdownRef.current.contains(target)) &&
 				!document
 					.querySelector('[data-dropdown="usecases"]')
+					?.contains(target) &&
+				(!developersDropdownRef.current ||
+					!developersDropdownRef.current.contains(target)) &&
+				!document
+					.querySelector('[data-dropdown="developers"]')
 					?.contains(target) &&
 				(!companyDropdownRef.current ||
 					!companyDropdownRef.current.contains(target)) &&
@@ -283,6 +293,7 @@ export const Header = () => {
 	// anywhere within the header bar.
 	const productsEnterHandler = getTriggerEnterHandler("products");
 	const useCasesEnterHandler = getTriggerEnterHandler("useCases");
+	const developersEnterHandler = getTriggerEnterHandler("developers");
 	const companyEnterHandler = getTriggerEnterHandler("company");
 
 	/**
@@ -296,6 +307,7 @@ export const Header = () => {
 	> = {
 		products: { ref: productsDropdownRef, enter: productsEnterHandler },
 		useCases: { ref: useCasesDropdownRef, enter: useCasesEnterHandler },
+		developers: { ref: developersDropdownRef, enter: developersEnterHandler },
 		company: { ref: companyDropdownRef, enter: companyEnterHandler },
 	};
 
@@ -338,6 +350,7 @@ export const Header = () => {
 											className={cn(
 												"relative",
 												key === "company" && "company-nav-trigger",
+												key === "developers" && "developers-nav-trigger",
 											)}
 											ref={ref}
 											onMouseEnter={enter}

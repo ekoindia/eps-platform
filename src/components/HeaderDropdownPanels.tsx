@@ -21,7 +21,14 @@ import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
-import { ArrowRight, Briefcase } from "lucide-react";
+import {
+	ArrowRight,
+	BookOpen,
+	Briefcase,
+	HelpCircle,
+	Package,
+	Sparkles,
+} from "lucide-react";
 import {
 	Fragment,
 	lazy,
@@ -77,6 +84,15 @@ const companyLinks = [
 	{ label: "About Eko", href: "/about-us", internal: true },
 	// { label: "Grievance", href: "/grievance", internal: true },
 	// { label: "Blogs & Media", href: "/blogs-media", internal: true },
+];
+
+// Developer-hub links for the "Developers" dropdown. "SDKs & Libraries" deep-links
+// to /docs#sdk so DocsIndexPage preselects the "Use an SDK" integration mode.
+const developerLinks = [
+	{ label: "API Documentation", href: "/docs", icon: BookOpen },
+	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
+	{ label: "Build with AI", href: "/ai", icon: Sparkles },
+	{ label: "FAQs", href: "/faq", icon: HelpCircle },
 ];
 
 const companySocialLinks = [
@@ -373,6 +389,17 @@ export const HeaderDropdownPanels = ({
 				</Link>
 			</>
 		),
+		developers: developerLinks.map((item) => (
+			<Link
+				key={item.href}
+				to={item.href}
+				onClick={() => setMobileMenuOpen(false)}
+				className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
+			>
+				<item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
+				{item.label}
+			</Link>
+		)),
 		company: companyLinks.map((item) => (
 			<CompanyLinkItem
 				key={item.label}
@@ -506,6 +533,30 @@ export const HeaderDropdownPanels = ({
 								</a>
 							))}
 						</div>
+					</div>
+				</div>
+			)}
+
+			{/* ── Desktop: Developers dropdown ───────────────────────────── */}
+			{activeDesktopDropdown === "developers" && (
+				<div
+					className="developers-dropdown fixed top-24 left-1/2 -translate-x-1/2 w-[300px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
+					data-dropdown="developers"
+					{...panelHoverHandlers}
+				>
+					<div className="p-4 flex flex-col gap-1">
+						<DropdownColumnHeader title="Developers" />
+						{developerLinks.map((item) => (
+							<Link
+								key={item.href}
+								to={item.href}
+								onClick={() => setActiveDesktopDropdown(null)}
+								className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+							>
+								<item.icon className="w-4 h-4 text-eko-navy/50 shrink-0" />
+								{item.label}
+							</Link>
+						))}
 					</div>
 				</div>
 			)}

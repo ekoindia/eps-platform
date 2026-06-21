@@ -268,3 +268,30 @@ export function generatePricingJsonLd(faqs: FaqItem[]): object[] {
 
 	return result;
 }
+
+/**
+ * Generates a FAQPage JSON-LD object for the global `/faq` page. Only the
+ * question/answer text is serialised; any "Also See" `links` are presentational
+ * and intentionally omitted from the structured data.
+ *
+ * @param faqs - The FAQ entries rendered on the global FAQ page.
+ */
+export function generateFaqJsonLd(faqs: FaqItem[]): object[] {
+	const faqUrl = `${SITE_URL}/faq`;
+	if (!faqs.length) return [];
+	return [
+		{
+			"@context": "https://schema.org",
+			"@type": "FAQPage",
+			"@id": `${faqUrl}#faq`,
+			mainEntity: faqs.map((faq) => ({
+				"@type": "Question",
+				name: faq.q ?? faq.question,
+				acceptedAnswer: {
+					"@type": "Answer",
+					text: faq.a ?? faq.answer,
+				},
+			})),
+		},
+	];
+}

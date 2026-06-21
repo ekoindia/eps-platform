@@ -26,7 +26,7 @@
 					},
 					{
 						"type": "command",
-						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; npx tsc -p tsconfig.app.json --noEmit || exit 2",
+						"command": "f=$(jq -r '.tool_input.file_path // empty'); [[ \"$f\" =~ \\.(ts|tsx)$ ]] || exit 0; dir=$(git -C \"$(dirname \"$f\")\" rev-parse --show-toplevel) || exit 2; cd \"$dir\" && npx tsc -p tsconfig.app.json --noEmit || exit 2",
 						"asyncRewake": true,
 						"timeout": 30,
 						"statusMessage": "🔍 Type-checking..."

@@ -32,6 +32,7 @@ const IndustriesPage = lazy(() => import("./pages/IndustriesPage"));
 const SolutionsPage = lazy(() => import("./pages/SolutionsPage"));
 const UseCasesHubPage = lazy(() => import("./pages/UseCasesHubPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
+const FaqPage = lazy(() => import("./pages/FaqPage"));
 const AiPage = lazy(() => import("./pages/AiPage"));
 const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
 const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
@@ -79,6 +80,9 @@ const App = ({
 
 							{/* Pricing */}
 							<Route path="/pricing" element={<PricingPage />} />
+
+							{/* FAQ */}
+							<Route path="/faq" element={<FaqPage />} />
 
 							{/* AI Agents */}
 							<Route path="/ai" element={<AiPage />} />
