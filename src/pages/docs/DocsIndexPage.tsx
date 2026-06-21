@@ -31,9 +31,9 @@ import {
 	Package,
 	Terminal,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const MD_PATH = "/docs.md";
 
@@ -174,7 +174,15 @@ const PathCard = ({
 const DocsIndexPage = () => {
 	const [mode, setMode] = useDocsMode();
 	const [lang, setLang] = usePreferredLang();
+	const { hash } = useLocation();
 	const canonical = `${SITE_URL}/docs`;
+
+	// Deep-link from the header "Developers → SDKs & Libraries" entry: /docs#sdk
+	// preselects the "Use an SDK" integration mode. Runs after the localStorage
+	// reconcile in useDocsMode, so the hash wins for this visit.
+	useEffect(() => {
+		if (hash === "#sdk") setMode("sdk");
+	}, [hash, setMode]);
 
 	const sdkLang = toSdkLang(lang);
 	const install = SDK_INSTALL[sdkLang];

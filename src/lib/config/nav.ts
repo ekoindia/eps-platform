@@ -7,7 +7,7 @@
  */
 
 /** Identifies a nav item that opens a dropdown (desktop) / accordion (mobile). */
-export type DropdownKey = "products" | "useCases" | "company";
+export type DropdownKey = "products" | "useCases" | "developers" | "company";
 
 export interface NavLink {
 	label: string;
@@ -24,6 +24,6 @@ export const navLinks: NavLink[] = [
 	{ label: "Use Cases", href: "/use-cases", dropdownKey: "useCases" },
 	{ label: "Pricing", href: "/pricing" },
 	{ label: "AI Agents", href: "/ai" },
-	{ label: "Developers", href: "/docs" },
+	{ label: "Developers", dropdownKey: "developers" },
 	{ label: "Company", dropdownKey: "company" },
 ];
