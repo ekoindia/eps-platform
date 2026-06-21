@@ -145,6 +145,9 @@ export function renderLlmsTxt(
 	lines.push(
 		`- [Pricing](${SITE_URL}/pricing.md): Full per-transaction rate card for all verification APIs`,
 	);
+	lines.push(
+		`- [FAQ](${SITE_URL}/faq.md): Common questions on integration, auth, testing, billing, versioning and compliance`,
+	);
 	// lines.push(`- [Use cases hub](${SITE_URL}/use-cases.md): Industries and solution packs`);
 	lines.push("");
 

@@ -56,9 +56,17 @@ export interface IntegrationStep {
 	tip?: string;
 }
 
+/** Optional "Also See" cross-link rendered beneath an FAQ answer. */
+export interface FaqLink {
+	label: string;
+	href: string;
+}
+
 export interface FAQ {
 	q: string;
 	a: string;
+	/** Optional "Also See" links shown beneath the answer. */
+	links?: FaqLink[];
 }
 
 export interface ProductPageLayoutProps {

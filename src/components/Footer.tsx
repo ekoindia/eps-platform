@@ -42,6 +42,7 @@ const footerLinks = {
 		},
 		{ label: "SDKs & Libraries", href: "/docs" },
 		{ label: "Integrate with AI", href: "/ai" },
+		{ label: "FAQs", href: "/faq", internal: true },
 		// { label: "Sandbox", href: "https://developers.eko.in", external: true },
 	],
 	company: [
