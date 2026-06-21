@@ -160,16 +160,10 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				why: "Lets agents onboard customers into a digital wallet, opening up gift cards, loyalty, and recurring payments.",
 			},
 			{
-				apiId: "otp",
-				nameOverride: "Mobile OTP",
-				what: "Send and verify OTPs across telecom networks.",
-				why: "Required for daily agent authentication, customer verification, and transaction confirmation.",
-			},
-			{
-				apiId: "sms",
-				nameOverride: "Send SMS",
-				what: "Transactional SMS delivery for receipts, alerts, and notifications.",
-				why: "Every transaction generates a customer receipt — critical for trust and dispute resolution in cash-handling environments.",
+				apiId: "bank",
+				nameOverride: "Bank Account Verification (Penny Drop)",
+				what: "Penny-drop verify the agent's settlement account before payouts and commission credits.",
+				why: "Ensures agent earnings and customer payouts route to a live, name-matched account — no failed settlements. (Mobile OTP & SMS receipts ship as built-in platform capabilities of the AePS, DMT, and PPI flows above.)",
 			},
 		],
 		howItWorksSteps: [
@@ -343,6 +337,16 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				apiId: "name-match",
 				what: "Fuzzy name matching across PAN, Aadhaar, bank, and GST records.",
 				why: "Catches synthetic identity fraud by detecting name discrepancies across documents — replaces custom ML models.",
+			},
+			{
+				apiId: "itr",
+				what: "Check the borrower's income-tax return filing status and compliance via PAN.",
+				why: "A fast income signal for thin-file borrowers — confirms returns are filed before pulling full ITR documents.",
+			},
+			{
+				apiId: "din",
+				what: "Verify each director's DIN against the MCA register for incorporated borrowers.",
+				why: "Confirms the directors behind a company loan are real and active — catches shell-entity fraud that PAN alone misses.",
 			},
 		],
 		howItWorksSteps: [
@@ -518,6 +522,22 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				what: "Cross-check merchant name across PAN, GST trade name, and bank account holder.",
 				why: "Catches mismatches that indicate fraudulent merchant registrations — the GST trade name often differs from the PAN legal name.",
 			},
+			{
+				apiId: "din",
+				what: "Verify the directors' DIN against the MCA register for incorporated merchants.",
+				why: "Pairs with CIN to confirm the company's directors are genuine — standard due diligence before high-value seller payouts.",
+			},
+			{
+				apiId: "fssai",
+				what: "Validate the FSSAI licence for food and grocery sellers.",
+				why: "Mandatory for onboarding food merchants — confirms the licence is active and matches the registered business.",
+			},
+			{
+				apiId: "upi",
+				nameOverride: "UPI ID (VPA) Verification",
+				what: "Resolve the merchant's UPI VPA to a valid account holder name.",
+				why: "Confirms the collection/payout handle is live and name-matched before activating settlements.",
+			},
 		],
 		howItWorksSteps: [
 			{ step: 1, label: "Merchant enters mobile number — OTP authentication" },
@@ -656,6 +676,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				what: "Validate Company Identification Number for incorporated MSMEs.",
 				why: "For Pvt Ltd and LLP borrowers, CIN check confirms the entity is active and not struck off — a basic corporate due diligence step.",
 			},
+			{
+				apiId: "din",
+				what: "Verify the directors' DIN for Pvt Ltd / LLP MSMEs via MCA.",
+				why: "Confirms the borrowing entity's directors are active and not disqualified — corporate due diligence alongside CIN.",
+			},
 		],
 		howItWorksSteps: [
 			{
@@ -774,6 +799,16 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				apiId: "digilocker",
 				what: "Fetch Aadhaar, ration card, and other KYC documents paperlessly.",
 				why: "MFI field officers can complete full KYC from a mobile without physical document collection or storage.",
+			},
+			{
+				apiId: "geocoding",
+				what: "Convert the field officer's GPS coordinates to a verifiable address at each visit.",
+				why: "Proves collections and KYC happened at the borrower's actual location — a tamper-proof field audit trail.",
+			},
+			{
+				apiId: "voter-id",
+				what: "Verify Voter ID (EPIC) as an alternate identity for rural members.",
+				why: "Many JLG members lack PAN — Voter ID provides a government-issued identity fallback for KYC.",
 			},
 		],
 		howItWorksSteps: [
@@ -942,6 +977,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				what: "Verify employee email address deliverability.",
 				why: "Confirms the contact email is valid and reachable — important for offer letters, payroll communications, and DPDP consent.",
 			},
+			{
+				apiId: "din",
+				what: "Check whether the candidate holds a Director Identification Number and active directorships.",
+				why: "Surfaces undisclosed directorships and conflicts of interest — key for senior, finance, and compliance hires.",
+			},
 		],
 		howItWorksSteps: [
 			{ step: 1, label: "Employee submits mobile number" }, //Employee submits mobile number + Aadhaar — OTP authentication
@@ -1062,6 +1102,18 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				what: "Pull Aadhaar, driving licence, and ITR documents paperlessly via DIPP integration.",
 				why: "Eliminates document upload friction — borrower consents once and all docs are fetched automatically.",
 			},
+			{
+				apiId: "bbps",
+				nameOverride: "Bill Payment (BBPS / Bharat Connect)",
+				what: "Let rural customers pay electricity, gas, DTH, and insurance bills at the agent point.",
+				why: "Adds recurring footfall — bills are paid monthly, bringing customers back to the agent regularly.",
+			},
+			{
+				apiId: "ppi",
+				nameOverride: "PPI Wallet (Prepaid)",
+				what: "Issue RBI-compliant prepaid wallets to rural customers.",
+				why: "Gives the unbanked a digital store of value for subsidies and wages without a full bank account.",
+			},
 		],
 		howItWorksSteps: [
 			{ step: 1, label: "Rural customer visits local agent (kirana / CSP)" },
@@ -1171,6 +1223,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				apiId: "bank",
 				what: "Confirm seeding of Aadhaar to the DBT recipient bank account.",
 				why: "Validates that the correct bank account is linked to the Aadhaar before routing the cashout.",
+			},
+			{
+				apiId: "name-match",
+				what: "Match the beneficiary's name across Aadhaar, the scheme record, and the bank account.",
+				why: "Prevents misdirected DBT payouts caused by name mismatches between the scheme list and the bank account.",
 			},
 			{
 				apiId: "digilocker",
@@ -1287,6 +1344,17 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				apiId: "aadhaar",
 				what: "KYC verification for sender and beneficiary registration.",
 				why: "RBI BC guidelines require sender KYC for money remittance.",
+			},
+			{
+				apiId: "name-match",
+				what: "Match the beneficiary name against the destination bank account holder.",
+				why: "Catches name mismatches before transfer — critical when sending to a family member's account for the first time.",
+			},
+			{
+				apiId: "ppi",
+				nameOverride: "PPI Wallet (Prepaid)",
+				what: "Issue prepaid wallets so frequent remitters can top up once and send repeatedly.",
+				why: "Reduces per-transaction cash handling for regular senders — faster repeat remittances.",
 			},
 			{
 				apiId: "digilocker",
@@ -1407,6 +1475,17 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				what: "Check pending traffic challans for the rider's vehicle.",
 				why: "Identifies riders with unresolved traffic violations before onboarding — reduces platform liability for reckless drivers.",
 			},
+			{
+				apiId: "upi",
+				nameOverride: "UPI ID (VPA) Verification",
+				what: "Resolve the worker's UPI ID to a valid account holder before the first payout.",
+				why: "Gig workers prefer instant UPI earnings — verifying the handle upfront prevents failed disbursals.",
+			},
+			{
+				apiId: "name-match",
+				what: "Match the worker's name across Aadhaar, PAN, DL, and bank/UPI records.",
+				why: "Flags identity mismatches at onboarding — reduces fraudulent or shared rider accounts.",
+			},
 		],
 		howItWorksSteps: [
 			{ step: 1, label: "Worker opens app — enters mobile number" },
@@ -1516,6 +1595,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				what: "Check pending traffic challans across all fleet vehicles.",
 				why: "Identifies vehicles with unresolved challans — unpaid challans can lead to impounding during compliance checks.",
 			},
+			{
+				apiId: "name-match",
+				what: "Match the driver's name across DL, RC owner, and onboarding records.",
+				why: "Confirms the driver operating a vehicle matches the registered owner/licence — flags borrowed or swapped identities.",
+			},
 		],
 		howItWorksSteps: [
 			{ step: 1, label: "Vehicle onboarded — RC number fetched & verified" },
@@ -1624,6 +1708,17 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				apiId: "e-challan",
 				what: "Fetch pending traffic challans and violation history for the vehicle.",
 				why: "Challan history indicates driving behavior risk — affects premium calculation and underwriting decisions.",
+			},
+			{
+				apiId: "name-match",
+				what: "Match the proposer's name across PAN, RC ownership, and the claims bank account.",
+				why: "Confirms the policyholder, vehicle owner, and payout account align — reduces claim fraud and KYC mismatches.",
+			},
+			{
+				apiId: "bank",
+				nameOverride: "Bank Account Verification (Penny Drop)",
+				what: "Penny-drop verify the policyholder's account for claim and refund payouts.",
+				why: "Ensures claim settlements reach a live, name-matched account — fewer failed or misrouted payouts.",
 			},
 		],
 		howItWorksSteps: [

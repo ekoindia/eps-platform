@@ -179,7 +179,6 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 					"DigiLocker",
 					"Aadhaar Verification",
 					"GST Verification",
-					"Fund Transfer",
 				],
 				featured: true,
 			},
@@ -284,6 +283,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Detect proxy/VPN usage during loan applications for fraud prevention",
 				href: "/products/ip-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Verify directors of incorporated borrowers against the MCA register",
+				href: "/products/din-verification-api",
 				relevance: "M",
 			},
 		],
@@ -441,14 +448,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				slug: "mfi-field-operations-pack",
 				name: "MFI Field Operations Pack",
 				description: "Digitize field collection and disbursal with AePS + DMT.",
-				apis: ["AePS", "DMT", "Bank Verification", "Mobile OTP"],
+				apis: ["AePS", "DMT", "Bank Verification", "Reverse Geocoding"],
 				featured: true,
 			},
 			{
 				slug: "lending-kyc-pack",
 				name: "Lending KYC Pack",
 				description: "Full borrower KYC for group and individual loans.",
-				apis: ["PAN Advanced", "Bank Verification", "DigiLocker", "Aadhaar"],
+				apis: ["PAN Advanced", "Bank Verification", "DigiLocker", "ITR"],
 			},
 			{
 				slug: "rural-financial-services-pack",
@@ -498,6 +505,36 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				name: "BBPS",
 				description: "Digital EMI collection via Bharat Connect",
 				href: "/products/bbps-api",
+				relevance: "M",
+			},
+			{
+				apiId: "geocoding",
+				name: "Reverse Geocoding",
+				description:
+					"Verify the field officer's GPS location at each collection visit",
+				href: "/products/reverse-geocoding-api",
+				relevance: "M",
+			},
+			{
+				apiId: "voter-id",
+				name: "Voter ID Verification",
+				description: "Alternate government ID for rural members without PAN",
+				href: "/products/voter-id-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "ppi",
+				name: "PPI Wallet",
+				description: "Prepaid wallet for unbanked members' subsidies and wages",
+				href: "/products/ppi-api",
+				relevance: "M",
+			},
+			{
+				apiId: "name-match",
+				name: "Name Match",
+				description:
+					"Match member name across Aadhaar, bank, and scheme records",
+				href: "/products/name-match-api",
 				relevance: "M",
 			},
 		],
@@ -789,7 +826,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				slug: "assisted-banking-agent-pack",
 				name: "Assisted Banking Agent Pack",
 				description: "AePS + DMT + BBPS for complete agent banking.",
-				apis: ["AePS", "DMT", "BBPS", "PPI DigiKhata", "Mobile OTP", "SMS"],
+				apis: ["AePS", "DMT", "BBPS", "PPI DigiKhata", "Bank Verification"],
 				featured: true,
 			},
 			{
@@ -803,7 +840,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				slug: "migrant-remittance-hub-pack",
 				name: "Migrant Remittance Hub Pack",
 				description: "Optimized for urban migrant remittance corridors.",
-				apis: ["DMT", "AePS", "Mobile OTP"],
+				apis: ["DMT", "AePS", "Name Match"],
 			},
 		],
 		apiGrid: [
@@ -840,6 +877,20 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				name: "Bank Verification",
 				description: "Validate beneficiary accounts",
 				href: "/products/bank-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "ppi",
+				name: "PPI Wallet",
+				description: "Issue prepaid wallets to walk-in customers",
+				href: "/products/ppi-api",
+				relevance: "M",
+			},
+			{
+				apiId: "name-match",
+				name: "Name Match",
+				description: "Match beneficiary name to bank account before transfer",
+				href: "/products/name-match-api",
 				relevance: "M",
 			},
 		],
@@ -958,14 +1009,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				slug: "assisted-banking-agent-pack",
 				name: "Assisted Banking Agent Pack",
 				description: "Complete banking suite — AePS + DMT + BBPS.",
-				apis: ["AePS", "DMT", "BBPS", "PPI DigiKhata", "OTP", "SMS"],
+				apis: ["AePS", "DMT", "BBPS", "PPI DigiKhata", "Bank Verification"],
 				featured: true,
 			},
 			{
 				slug: "migrant-remittance-hub-pack",
 				name: "Migrant Remittance Hub Pack",
 				description: "Optimized for shops near factories and industrial zones.",
-				apis: ["DMT", "AePS", "Mobile OTP"],
+				apis: ["DMT", "AePS", "Name Match"],
 			},
 		],
 		apiGrid: [
@@ -989,6 +1040,20 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description: "Bill payments that bring customers daily",
 				href: "/products/bbps-api",
 				relevance: "H",
+			},
+			{
+				apiId: "bank",
+				name: "Bank Verification",
+				description: "Verify beneficiary accounts before money transfer",
+				href: "/products/bank-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "ppi",
+				name: "PPI Wallet",
+				description: "Offer prepaid wallets to regular customers",
+				href: "/products/ppi-api",
+				relevance: "M",
 			},
 		],
 		useCaseVignettes: [
@@ -1090,7 +1155,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				slug: "merchant-onboarding-pack",
 				name: "Merchant Onboarding Pack",
 				description: "Complete seller KYB in under 10 minutes.",
-				apis: ["PAN", "GST", "Bank Verification", "Aadhaar"],
+				apis: ["PAN", "GST", "Bank Verification", "DIN"],
 				featured: true,
 			},
 		],
@@ -1145,6 +1210,22 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Verify food seller FSSAI license for food marketplace compliance",
 				href: "/products/fssai-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Verify directors of incorporated sellers against the MCA register",
+				href: "/products/din-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "upi",
+				name: "UPI ID Verification",
+				description:
+					"Resolve the seller's UPI VPA before activating settlements",
+				href: "/products/upi-verification-api",
 				relevance: "M",
 			},
 		],
@@ -1361,6 +1442,22 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Validate employee contact email for offer letters and payroll communications",
 				href: "/products/email-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Surface undisclosed directorships for senior, finance, and compliance hires",
+				href: "/products/din-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "upi",
+				name: "UPI ID Verification",
+				description:
+					"Verify the worker's UPI payout handle before first payout",
+				href: "/products/upi-verification-api",
 				relevance: "M",
 			},
 		],
@@ -1591,6 +1688,22 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				href: "/products/e-challan-verification-api",
 				relevance: "H",
 			},
+			{
+				apiId: "name-match",
+				name: "Name Match",
+				description:
+					"Match driver name across DL, RC owner, and onboarding records",
+				href: "/products/name-match-api",
+				relevance: "M",
+			},
+			{
+				apiId: "upi",
+				name: "UPI ID Verification",
+				description:
+					"Verify the driver's UPI payout handle before earnings cycles",
+				href: "/products/upi-verification-api",
+				relevance: "M",
+			},
 		],
 		useCaseVignettes: [
 			{
@@ -1725,12 +1838,10 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Embed a complete borrower verification flow — OTP, PAN, bank, DigiLocker, GST — into your lending or credit SaaS.",
 				apis: [
-					"Mobile OTP",
 					"PAN Advanced",
 					"Bank Verification",
 					"DigiLocker",
 					"GST Verification",
-					"Fund Transfer",
 				],
 				featured: true,
 			},
@@ -1838,6 +1949,30 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Validate user and tenant email addresses during signup and onboarding",
 				href: "/products/email-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "itr",
+				name: "ITR Compliance Check",
+				description:
+					"Embed income-tax filing checks for credit, lending, or KYB features",
+				href: "/products/itr-compliance-api",
+				relevance: "M",
+			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Verify directors of incorporated customers or vendors via MCA",
+				href: "/products/din-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "upi",
+				name: "UPI ID Verification",
+				description:
+					"Validate payout VPAs before disbursing to users or vendors",
+				href: "/products/upi-verification-api",
 				relevance: "M",
 			},
 		],
@@ -2088,6 +2223,22 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				href: "/products/name-match-api",
 				relevance: "M",
 			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Verify directors of incorporated sellers against the MCA register",
+				href: "/products/din-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "upi",
+				name: "UPI ID Verification",
+				description:
+					"Resolve seller and rider UPI handles before disbursing payouts",
+				href: "/products/upi-verification-api",
+				relevance: "M",
+			},
 		],
 		useCaseVignettes: [
 			{
@@ -2221,12 +2372,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				name: "Rural Financial Services Pack",
 				description:
 					"AePS cashout, Aadhaar KYC, and money transfer for rural platforms — works without a smartphone.",
-				apis: [
-					"AePS Cashout",
-					"Aadhaar Verification",
-					"Bank Verification",
-					"Fund Transfer",
-				],
+				apis: ["AePS Cashout", "Aadhaar Verification", "Bank Verification"],
 				featured: true,
 			},
 			{
@@ -2290,6 +2436,37 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Collect loan EMIs and cooperative dues digitally from rural borrowers",
 				href: "/products/bbps-api",
+				relevance: "M",
+			},
+			{
+				apiId: "geocoding",
+				name: "Reverse Geocoding",
+				description:
+					"Verify field officer location during FPO member visits and collections",
+				href: "/products/reverse-geocoding-api",
+				relevance: "M",
+			},
+			{
+				apiId: "voter-id",
+				name: "Voter ID Verification",
+				description: "Alternate government ID for farmers without PAN",
+				href: "/products/voter-id-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "ppi",
+				name: "PPI Wallet",
+				description:
+					"Prepaid wallet for subsidy and wage disbursals to farmers",
+				href: "/products/ppi-api",
+				relevance: "M",
+			},
+			{
+				apiId: "name-match",
+				name: "Name Match",
+				description:
+					"Match farmer name across Aadhaar, scheme, and bank records",
+				href: "/products/name-match-api",
 				relevance: "M",
 			},
 		],
@@ -2465,6 +2642,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				href: "/products/e-challan-verification-api",
 				relevance: "H",
 			},
+			{
+				apiId: "name-match",
+				name: "Name Match",
+				description:
+					"Match proposer name across PAN, RC ownership, and claims account",
+				href: "/products/name-match-api",
+				relevance: "M",
+			},
 		],
 		useCaseVignettes: [
 			{
@@ -2604,13 +2789,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				name: "Lending KYC Pack",
 				description:
 					"Extend travel credit or BNPL to customers — full KYC and bank verification in one flow.",
-				apis: [
-					"Mobile OTP",
-					"PAN Advanced",
-					"Bank Verification",
-					"DigiLocker",
-					"Fund Transfer",
-				],
+				apis: ["PAN Advanced", "Bank Verification", "DigiLocker", "ITR"],
 			},
 		],
 		apiGrid: [
@@ -2783,12 +2962,10 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Onboard student loan applicants in under 90 seconds — OTP, PAN, Aadhaar, DigiLocker, bank, instant disbursal.",
 				apis: [
-					"Mobile OTP",
 					"PAN Advanced",
 					"DigiLocker",
 					"Aadhaar Verification",
 					"Bank Verification",
-					"Fund Transfer",
 				],
 				featured: true,
 			},
@@ -3001,13 +3178,7 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				name: "Lending KYC Pack",
 				description:
 					"Medical credit and healthcare BNPL — patient KYC, bank verification, and instant disbursal in one flow.",
-				apis: [
-					"Mobile OTP",
-					"PAN Advanced",
-					"Bank Verification",
-					"DigiLocker",
-					"Fund Transfer",
-				],
+				apis: ["PAN Advanced", "Bank Verification", "DigiLocker", "ITR"],
 			},
 		],
 		apiGrid: [
@@ -3065,6 +3236,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Validate doctor, staff, and patient contact emails for communications and DPDP consent",
 				href: "/products/email-verification-api",
+				relevance: "M",
+			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Check directorships for senior medical-administration and finance hires",
+				href: "/products/din-verification-api",
 				relevance: "M",
 			},
 		],
@@ -3188,12 +3367,10 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Full home loan applicant KYC — OTP, PAN, Aadhaar, DigiLocker for ITR, bank penny-drop, instant disbursal.",
 				apis: [
-					"Mobile OTP",
 					"PAN Advanced",
 					"DigiLocker",
 					"Aadhaar Verification",
 					"Bank Verification",
-					"Fund Transfer",
 				],
 				featured: true,
 			},
@@ -3287,6 +3464,14 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				description:
 					"Cross-check property buyer name across PAN, Aadhaar, and bank records",
 				href: "/products/name-match-api",
+				relevance: "M",
+			},
+			{
+				apiId: "din",
+				name: "DIN Verification",
+				description:
+					"Verify directors of developer and broker entities against the MCA register",
+				href: "/products/din-verification-api",
 				relevance: "M",
 			},
 		],
@@ -3447,7 +3632,6 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 					"DigiLocker",
 					"GST Verification",
 					"Bank Verification",
-					"Fund Transfer",
 				],
 			},
 		],
