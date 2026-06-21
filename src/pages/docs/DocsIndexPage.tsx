@@ -120,8 +120,8 @@ const Pill = ({
 		className={cn(
 			"inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
 			active
-				? "bg-eko-gold/15 text-foreground"
-				: "text-muted-foreground hover:text-foreground",
+				? "bg-eko-gold/25 text-foreground font-semibold shadow-sm ring-1 ring-eko-gold/40"
+				: "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
 		)}
 	>
 		{children}
