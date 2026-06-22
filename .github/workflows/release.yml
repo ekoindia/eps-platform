@@ -1,22 +1,24 @@
-# Release workflow — publishes packages on a version tag push (vX.Y.Z).
+# Release workflow.
 #
-# npm auth is two-phase (see docs/releasing-agent-packages.md §2):
-#   Phase A (bootstrap): NPM_TOKEN is required for the very FIRST publish of each
-#     @ekoindia/* package, because a package's npm Trusted Publisher config can
-#     only be created after the package exists. Bootstrap publishes do NOT get
-#     OIDC provenance. Prefer local/manual first publishes (see runbook) so a
-#     mid-run failure doesn't half-publish the tag.
-#   Phase B (steady-state): once a Trusted Publisher is configured per package on
-#     npmjs.com, OIDC (id-token: write, granted job-level below) authenticates
-#     publishes — provenance is then automatic. At that point delete the
-#     NPM_TOKEN secret and remove the NODE_AUTH_TOKEN lines from the publish
-#     steps below. Adding id-token alone does NOT switch auth; the token is the
-#     fallback until each package's Trusted Publisher exists.
+# npm packages: AUTO-released on every push to `main`. scripts/auto-release.mjs
+#   builds each package, fingerprints the exact files npm would publish, and
+#   publishes a patch bump ONLY when that content differs from what's already on
+#   npm — so unaffected packages are skipped. To force a minor/major, bump the
+#   package's package.json `version` above the npm latest before merging; the
+#   script honors it. Releases are tag-traceable via `<name>@<version>` git tags
+#   (no commit is pushed back to the protected branch — the registry is the
+#   source of truth). See docs/releasing-agent-packages.md.
+#
+# PHP SDK: released MANUALLY by pushing a `vX.Y.Z` tag (the php-split job below).
+#   Full automation is deferred until the mirror repo + deploy key exist.
+#
+# npm auth: OIDC Trusted Publishing (see docs/releasing-agent-packages.md §2).
+#   Each @ekoindia/* package has a Trusted Publisher configured on npmjs.com for
+#   this repo + workflow, so the `npm-release` job's `id-token: write` (granted
+#   job-level below) authenticates publishes with no token — provenance is
+#   automatic. The bootstrap NPM_TOKEN secret has been removed.
 #
 # Required repository secrets:
-#   NPM_TOKEN          BOOTSTRAP-ONLY. npm automation token with publish rights on
-#                      the @ekoindia scope. Used as NODE_AUTH_TOKEN for
-#                      `npm publish`. Delete after Trusted Publishers are set up.
 #   SDK_PHP_DEPLOY_KEY SSH deploy key (write access) for the PHP mirror repo
 #                      ekoindia/eps-sdk-php. Used by the php-split job to push the
 #                      subtree-split history + tag to Packagist's source repo.
@@ -26,20 +28,29 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches: [main] # npm-release (content-gated)
+    tags: ["v*.*.*"] # php-split (manual PHP release)
+  workflow_dispatch: {} # manual npm-release override
+
+# Serialize releases so two pushes can't publish/tag concurrently.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  npm-publish:
-    name: Publish npm packages
+  npm-release:
+    name: Release npm packages
+    # Branch push or manual dispatch only — never on the vX.Y.Z tag (that's PHP).
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # Job-level so OIDC is scoped to publishing only — php-split must NOT get it.
     permissions:
-      contents: read
-      id-token: write
+      contents: write # push <name>@<version> git tags
+      id-token: write # OIDC Trusted Publishing (scoped to this job, not php-split)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags so the script can check existing tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,7 +58,6 @@ jobs:
           # OIDC Trusted Publishing requires Node >=22.14.0 (ships npm >=11.5.1).
           node-version: "22.14.0"
           registry-url: https://registry.npmjs.org
-          # npm recommends disabling the package cache on publish jobs.
           package-manager-cache: false
 
       - name: Install dependencies
@@ -57,63 +67,75 @@ jobs:
       - name: Build agent bundles
         run: npm run build
 
-      - name: Publish @ekoindia/eps-context-mcp
-        working-directory: packages/eps-context-mcp
+      # Test gate — never publish a broken build. Mirrors the CI package tests.
+      - name: Test packages
         run: |
-          npm run bake
-          npm run build
-          npm publish --access public
+          npm test -w @ekoindia/eps-context-mcp
+          npm test -w @ekoindia/eps-sdk
+          npm test -w @ekoindia/eps-mock-server
 
-      - name: Publish @ekoindia/eps-sdk
-        working-directory: packages/sdk-js
+      - name: Configure git (for release tags)
         run: |
-          npm run bake
-          npm run build
-          npm publish --access public
+          git config user.name  "eko-ci"
+          git config user.email "ci@eko.in"
 
-      - name: Publish @ekoindia/eps-mock-server
-        working-directory: packages/eps-mock-server
+      # Authenticated via each package's npm Trusted Publisher (OIDC) — no token.
+      - name: Auto-release changed packages
         run: |
-          npm run bake
-          npm run build
-          npm publish --access public
+          node scripts/auto-release.mjs \
+            packages/eps-context-mcp \
+            packages/sdk-js \
+            packages/eps-mock-server
 
   php-split:
     name: Split + publish PHP SDK
+    # Manual PHP release: only on a vX.Y.Z tag push.
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     # TODO: requires SDK_PHP_DEPLOY_KEY secret + ekoindia/eps-sdk-php mirror repo.
     # Until both exist, this job is a documented scaffold. Packagist watches the
     # mirror repo (ekoindia/eps-sdk-php); pushing the subtree + tag there
     # triggers a new package release. Composer cannot install a package living
     # in a monorepo subdirectory, hence the read-only split mirror.
-    #
-    # The symplify/monorepo-split-github-action pushes packages/sdk-php to the
-    # mirror with rewritten history and propagates the current tag.
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The PHP runtime asset data/sdk-surface.json is generated + gitignored.
+      # The subtree split only carries COMMITTED files, so bake it and commit it
+      # into this ephemeral checkout before splitting — otherwise the Packagist
+      # mirror ships without the surface and EpsClient fails at runtime.
+      - name: Bake + commit PHP SDK surface
+        run: |
+          npm run build
+          git config user.name  "eko-ci"
+          git config user.email "ci@eko.in"
+          git add -f packages/sdk-php/data/sdk-surface.json
+          git commit -m "chore(sdk-php): bake surface for split [skip ci]"
+
       # TODO: enable once SDK_PHP_DEPLOY_KEY + ekoindia/eps-sdk-php exist.
+      #   - uses: webfactory/ssh-agent@v0.9.0
+      #     with:
+      #       ssh-private-key: ${{ secrets.SDK_PHP_DEPLOY_KEY }}
       - name: Split packages/sdk-php to ekoindia/eps-sdk-php
         uses: symplify/monorepo-split-github-action@v2.3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # The subdirectory in this monorepo to split out.
           package_directory: packages/sdk-php
-          # Target mirror repository (read-only, watched by Packagist).
           repository_organization: ekoindia
           repository_name: eps-sdk-php
-          # SSH deploy key with write access on the mirror repo.
           user_name: "eko-ci"
           user_email: "ci@eko.in"
           # The tag that triggered this workflow is propagated to the mirror.
           tag: ${{ github.ref_name }}
-          # TODO: provide the deploy key for push access.
-          # The action reads it from the SSH agent / known_hosts; configure via
-          # webfactory/ssh-agent before this step, e.g.:
-          #   - uses: webfactory/ssh-agent@v0.9.0
-          #     with:
-          #       ssh-private-key: ${{ secrets.SDK_PHP_DEPLOY_KEY }}
