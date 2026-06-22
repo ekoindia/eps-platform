@@ -57,8 +57,8 @@ export const FaqSection = ({
 			<div className="max-w-3xl mx-auto flex flex-col gap-4">
 				{items.map((faq, i) => (
 					<FadeIn key={i} delay={i * 50}>
-						<details className="group p-6 bg-card border border-border/90 rounded-2xl">
-							<summary className="flex items-center justify-between font-semibold text-foreground list-none cursor-pointer">
+						<details className="group bg-card border border-border/90 rounded-2xl">
+							<summary className="flex items-center justify-between font-semibold text-foreground list-none cursor-pointer p-6">
 								<span className="flex items-center gap-3">
 									<HelpCircle className="w-5 h-5 text-eko-gold shrink-0" />
 									{faq.question}
@@ -67,11 +67,11 @@ export const FaqSection = ({
 									+
 								</span>
 							</summary>
-							<p className="mt-4 text-muted-foreground leading-relaxed pl-8">
+							<p className="text-muted-foreground leading-relaxed pr-6 pl-14 pb-6">
 								{faq.answer}
 							</p>
 							{faq.links && faq.links.length > 0 && (
-								<div className="mt-4 pl-8 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+								<div className="pr-6 pl-14 pb-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
 									<span className="font-medium text-foreground">Also see:</span>
 									{faq.links.map((link) =>
 										link.href.startsWith("/") ? (

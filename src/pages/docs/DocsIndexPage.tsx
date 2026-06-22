@@ -1,11 +1,12 @@
 import { AiHint } from "@/components/AiHint";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { DocsLayout } from "@/components/docs/DocsLayout";
+import { InlineCode } from "@/components/docs/InlineCode";
 import { LangIcon } from "@/components/icons/LangIcon";
 import { McpIcon } from "@/components/icons/McpIcon";
 import { Button } from "@/components/ui/button";
-import { EPS_MCP_CMD, SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
-import { API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
+import { API_ENVIRONMENTS, AUTH_HEADERS } from "@/lib/data/api-auth";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import { docsHref } from "@/lib/data/docs-registry";
 import {
@@ -14,12 +15,12 @@ import {
 	SDK_LANGS,
 	sampleFor,
 	sdkSampleFor,
-	toAiPrompt,
 	toSdkLang,
 } from "@/lib/docs/code-samples";
 import { useDocsMode } from "@/lib/docs/use-docs-mode";
 import { usePreferredLang } from "@/lib/docs/use-preferred-lang";
 import { cn } from "@/lib/utils";
+import { openZohoChat } from "@/lib/zoho-chat";
 import {
 	type LucideIcon,
 	ArrowRight,
@@ -164,6 +165,39 @@ const PathCard = ({
 );
 
 /**
+ * A numbered step in the quickstart flow. Presentational only — a semantic
+ * `<section>` with an `<h2>` (PathCard already uses `<h3>`), a gold number badge,
+ * an optional subtitle, then its content. The wrapper is intentionally NOT
+ * card-styled so any cards inside it don't nest card-in-card.
+ */
+const Step = ({
+	n,
+	title,
+	subtitle,
+	children,
+}: {
+	n: number;
+	title: string;
+	subtitle?: string;
+	children: React.ReactNode;
+}) => (
+	<section className="mt-20 scroll-mt-28">
+		<div className="flex items-center gap-3">
+			<span className="inline-flex shrink-0 items-center justify-center rounded-full bg-eko-navy px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+				Step {n}
+			</span>
+			<h2 className="text-xl font-semibold tracking-tight text-foreground">
+				{title}
+			</h2>
+		</div>
+		{subtitle && (
+			<p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
+		)}
+		<div className="mt-4">{children}</div>
+	</section>
+);
+
+/**
  * `/docs` — the documentation landing page. Instead of re-listing every endpoint
  * (already in the left nav), it answers "how do I start building on EPS?": pick a
  * mode (API / SDK / AI Coding), see a real example for the demo endpoint in your
@@ -184,27 +218,52 @@ const DocsIndexPage = () => {
 		if (hash === "#sdk") setMode("sdk");
 	}, [hash, setMode]);
 
+	const isAi = mode === "ai";
 	const sdkLang = toSdkLang(lang);
 	const install = SDK_INSTALL[sdkLang];
+	// API/SDK only — the AI path delegates everything to the agent, so no sample.
 	const code =
 		mode === "sdk"
 			? sdkSampleFor(SHOWCASE_SPEC, sdkLang)
-			: mode === "ai"
-				? toAiPrompt(SHOWCASE_SPEC)
-				: sampleFor(SHOWCASE_SPEC, lang);
+			: sampleFor(SHOWCASE_SPEC, lang);
 
-	const heading =
+	const firstCallTitle =
 		mode === "sdk"
 			? "Install the SDK & make your first call"
-			: mode === "ai"
-				? "Build it with an AI agent"
-				: "Your first request";
-	const subtext =
+			: "Your first request";
+	const firstCallSubtext =
 		mode === "sdk"
 			? "Install, construct the client, and call any endpoint by slug. We'll remember your language across the docs."
-			: mode === "ai"
-				? "Paste this into your AI coding agent — it uses our MCP server to look up params, auth and signing, then writes the integration."
-				: "Copy a ready-to-run request. We'll remember your language across the docs.";
+			: "Copy a ready-to-run request. We'll remember your language across the docs.";
+
+	/**
+	 * AI cross-sell banner — rendered inline as the AI path's "step 2 result",
+	 * and again near the page foot (hidden there in AI mode to avoid a duplicate).
+	 * Always present in the default (sdk) prerender so the static HTML keeps an
+	 * internal link to /ai.
+	 */
+	const aiBanner = (
+		<div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-eko-navy p-6 text-white sm:flex-row sm:items-center sm:p-8">
+			<div className="flex items-start gap-4">
+				<McpIcon className="mt-0.5 h-8 w-8 shrink-0 text-eko-gold" />
+				<div>
+					<h3 className="text-lg font-semibold">
+						Skip the integration work — build with AI agents
+					</h3>
+					<p className="mt-1 text-sm text-white/70">
+						Point Claude, Cursor or Copilot at our MCP server and context packs.
+						Correct signing on the first try, no SDK wiring.
+					</p>
+				</div>
+			</div>
+			<Button variant="gold" asChild className="shrink-0">
+				<Link to="/ai">
+					Explore AI agents
+					<ArrowRight className="ml-1 h-4 w-4" />
+				</Link>
+			</Button>
+		</div>
+	);
 
 	return (
 		<>
@@ -239,114 +298,63 @@ const DocsIndexPage = () => {
 					<p className="mt-3 text-lg text-muted-foreground">
 						Integrate Eko's KYC, verification, payment and banking platform your
 						way — drop in a signed SDK, call the REST API directly, or let an AI
-						agent build the integration for you.
+						agent build the integration for you. Follow the steps below to go
+						from zero to your first verified call.
 					</p>
-					<div className="mt-6 flex flex-wrap gap-3">
-						<Button variant="gold" asChild>
-							<Link to={docsHref("quickstart")}>Start the quickstart</Link>
-						</Button>
-						<Button variant="gold-outline" asChild>
-							<Link to={SIGNUP_PAGE}>Get your API keys</Link>
-						</Button>
-					</div>
 
-					{/* Path chooser — sets the persisted integration mode */}
-					<div className="mt-12 grid gap-4 sm:grid-cols-3">
-						<PathCard
-							icon={Terminal}
-							title="Call the API directly"
-							description="Plain REST with cURL, plus Postman & OpenAPI."
-							active={mode === "api"}
-							onClick={() => {
-								setMode("api");
-								setLang("curl");
-							}}
-						/>
-						<PathCard
-							icon={Package}
-							title="Use an SDK"
-							description="Signed SDKs for Node.js & PHP — HMAC auth & input validations baked in."
-							active={mode === "sdk"}
-							onClick={() => setMode("sdk")}
-						/>
-						<PathCard
-							icon={McpIcon}
-							title="Build with AI"
-							description="MCP server & context packs for Claude, Cursor, Copilot."
-							active={mode === "ai"}
-							onClick={() => setMode("ai")}
-						/>
-					</div>
-
-					{/* Mode-aware showcase */}
-					<section id="start" className="mt-16 scroll-mt-28">
-						<h2 className="text-xl font-semibold tracking-tight text-foreground">
-							{heading}
-						</h2>
-						<p className="mt-2 text-sm text-muted-foreground">{subtext}</p>
-
-						{/* Language selector — API and SDK modes only */}
-						{mode !== "ai" && (
-							<div className="mt-4 inline-flex flex-wrap gap-1 rounded-lg border border-border/60 p-1">
-								{(mode === "sdk" ? SDK_LANGS : API_LANGS).map((l) => (
-									<Pill
-										key={l.id}
-										active={(mode === "sdk" ? sdkLang : lang) === l.id}
-										onClick={() => setLang(l.id)}
-									>
-										<LangIcon id={l.id} className="h-4 w-4 shrink-0" />
-										{l.label}
-									</Pill>
-								))}
+					{/* Step 1 — credentials */}
+					<Step
+						n={1}
+						title="Get your credentials"
+						subtitle="Eko's UAT / sandbox is self-serve — sign up to receive your developer key and access key. No KYC required to start testing."
+					>
+						<div className="flex flex-wrap items-center gap-4">
+							<Button variant="gold" onClick={() => openZohoChat()}>
+								Get your API keys
+							</Button>
+							<div className="flex-1 self-center text-xs text-muted-foreground">
+								{API_ENVIRONMENTS.production.note}
 							</div>
-						)}
+						</div>
+					</Step>
 
-						{/* SDK install line */}
-						{mode === "sdk" && install && (
-							<div className="mt-4 space-y-2">
-								<div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-3 font-mono text-sm">
-									<span
-										aria-hidden
-										className="select-none text-muted-foreground"
-									>
-										$
-									</span>
-									<code className="min-w-0 flex-1 break-all text-foreground">
-										{install.command}
-									</code>
-									<CopyButton text={install.command} />
-								</div>
-								<a
-									href={install.registryUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold hover:underline"
-								>
-									View on {install.registry}
-									<ArrowRight className="h-3.5 w-3.5" />
-								</a>
-							</div>
-						)}
-
-						{/* Code / prompt block */}
-						<div className="code-block code-block--solid mt-4 overflow-hidden rounded-xl">
-							<div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
-								<span className="truncate font-mono text-xs text-white/60">
-									{mode === "ai"
-										? `Prompt · ${SHOWCASE_SPEC.name}`
-										: `${SHOWCASE_SPEC.name} · ${SHOWCASE_SPEC.method} ${SHOWCASE_SPEC.path}`}
-								</span>
-								<CopyButton text={code} dark />
-							</div>
-							<pre className="docs-scroll overflow-x-auto p-4 font-mono text-xs leading-relaxed text-slate-100">
-								<code>{code}</code>
-							</pre>
+					{/* Step 2 — choose how to build (sets the persisted integration mode) */}
+					<Step
+						n={2}
+						title="Choose how you'll build"
+						subtitle="Pick a path — we'll remember it across the docs."
+					>
+						<div className="grid gap-4 sm:grid-cols-3">
+							<PathCard
+								icon={Terminal}
+								title="Call the API directly"
+								description="Plain REST with cURL, plus Postman & OpenAPI."
+								active={mode === "api"}
+								onClick={() => {
+									setMode("api");
+									setLang("curl");
+								}}
+							/>
+							<PathCard
+								icon={Package}
+								title="Use an SDK"
+								description="Signed SDKs for Node.js & PHP — HMAC auth & input validations baked in."
+								active={mode === "sdk"}
+								onClick={() => setMode("sdk")}
+							/>
+							<PathCard
+								icon={McpIcon}
+								title="Build with AI"
+								description="MCP server & context packs for Claude, Cursor, Copilot."
+								active={mode === "ai"}
+								onClick={() => setMode("ai")}
+							/>
 						</div>
 
-						{/* Footer line per mode */}
-						{mode === "ai" ? (
-							<div className="mt-3 space-y-2">
-								<div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-3 font-mono text-sm">
+						{/* AI path resolves here — banner to the AI hub, no further steps. */}
+						{isAi && (
+							<div className="mt-6">
+								<div className="mb-3 flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-3 font-mono text-sm">
 									<span
 										aria-hidden
 										className="select-none text-muted-foreground"
@@ -358,32 +366,134 @@ const DocsIndexPage = () => {
 									</code>
 									<CopyButton text={EPS_MCP_CMD} />
 								</div>
-								<Link
-									to="/ai"
-									className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold hover:underline"
-								>
-									Explore AI agents
-									<ArrowRight className="h-3.5 w-3.5" />
-								</Link>
+								{aiBanner}
 							</div>
-						) : (
-							<p className="mt-3 text-sm text-muted-foreground">
-								Browse every endpoint in the left sidebar, or open the{" "}
-								<Link
-									to={docsHref(SHOWCASE_SPEC.slug)}
-									className="font-medium text-eko-gold hover:underline"
-								>
-									{SHOWCASE_SPEC.name}
-								</Link>{" "}
-								reference for parameters, responses and a live console.
-							</p>
 						)}
-					</section>
+					</Step>
+
+					{/* Steps 3–5 — API & SDK paths only */}
+					{!isAi && (
+						<>
+							{/* Step 3 — language */}
+							<Step
+								n={3}
+								title="Pick your language"
+								subtitle="Your first request and SDK snippets will use this language."
+							>
+								<div className="inline-flex flex-wrap gap-1 rounded-lg border border-border/60 p-1">
+									{(mode === "sdk" ? SDK_LANGS : API_LANGS).map((l) => (
+										<Pill
+											key={l.id}
+											active={(mode === "sdk" ? sdkLang : lang) === l.id}
+											onClick={() => setLang(l.id)}
+										>
+											<LangIcon id={l.id} className="h-4 w-4 shrink-0" />
+											{l.label}
+										</Pill>
+									))}
+								</div>
+							</Step>
+
+							{/* Step 4 — first request (SDK adds the install line) */}
+							<Step n={4} title={firstCallTitle} subtitle={firstCallSubtext}>
+								{mode === "sdk" && install && (
+									<div className="mb-4 space-y-2">
+										<div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-3 font-mono text-sm">
+											<span
+												aria-hidden
+												className="select-none text-muted-foreground"
+											>
+												$
+											</span>
+											<code className="min-w-0 flex-1 break-all text-foreground">
+												{install.command}
+											</code>
+											<CopyButton text={install.command} />
+										</div>
+										<a
+											href={install.registryUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold hover:underline"
+										>
+											View on {install.registry}
+											<ArrowRight className="h-3.5 w-3.5" />
+										</a>
+									</div>
+								)}
+
+								<div className="code-block code-block--solid overflow-hidden rounded-xl">
+									<div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
+										<span className="truncate font-mono text-xs text-white/60">
+											{`${SHOWCASE_SPEC.name} · ${SHOWCASE_SPEC.method} ${SHOWCASE_SPEC.path}`}
+										</span>
+										<CopyButton text={code} dark />
+									</div>
+									<pre className="docs-scroll overflow-x-auto p-4 font-mono text-xs leading-relaxed text-slate-100">
+										<code>{code}</code>
+									</pre>
+								</div>
+
+								<p className="mt-3 text-sm text-muted-foreground">
+									Browse every endpoint in the left sidebar, or open the{" "}
+									<Link
+										to={docsHref(SHOWCASE_SPEC.slug)}
+										className="font-medium text-eko-gold hover:underline"
+									>
+										{SHOWCASE_SPEC.name}
+									</Link>{" "}
+									reference for parameters, responses and a live console.
+								</p>
+							</Step>
+
+							{/* Step 5 — response envelope */}
+							<Step
+								n={5}
+								title="Handle the response"
+								subtitle="EPS APIs share a common response envelope."
+							>
+								<div className="rounded-xl border border-border/60 px-4 py-3 text-sm text-muted-foreground">
+									<ul className="space-y-1.5">
+										<li>
+											<code className="font-mono text-foreground">status</code>{" "}
+											— <code className="font-mono">0</code> means success.
+										</li>
+										<li>
+											<code className="font-mono text-foreground">
+												response_status_id
+											</code>{" "}
+											— transaction status id (see status &amp; error codes).
+										</li>
+										<li>
+											<code className="font-mono text-foreground">message</code>{" "}
+											— a human-readable description.
+										</li>
+										<li>
+											<code className="font-mono text-foreground">data</code> —
+											the API-specific payload.
+										</li>
+									</ul>
+									<p className="mt-3">
+										<Link
+											to={docsHref("error-codes")}
+											className="font-medium text-eko-gold hover:underline"
+										>
+											See status &amp; error codes
+										</Link>{" "}
+										for the full list.
+									</p>
+								</div>
+							</Step>
+						</>
+					)}
+
+					{/* AI cross-sell banner — hidden in AI mode (the inline banner shows there) */}
+					{!isAi && <div className="mt-16">{aiBanner}</div>}
 
 					{/* Base URL + auth callout */}
 					<section className="mt-16">
 						<h2 className="text-xl font-semibold tracking-tight text-foreground">
-							Environments & auth
+							Environments &amp; auth
 						</h2>
 						<div className="mt-4 grid gap-3 sm:grid-cols-2">
 							{(["sandbox", "production"] as const).map((key) => {
@@ -409,7 +519,35 @@ const DocsIndexPage = () => {
 							})}
 						</div>
 						<p className="mt-3 text-sm text-muted-foreground">
-							Every request is HMAC-signed with your secret key.{" "}
+							The full endpoint URL is always{" "}
+							<code className="font-mono text-foreground">baseUrl + path</code>{" "}
+							— e.g. <code className="font-mono">{SHOWCASE_SPEC.path}</code> on
+							the sandbox base URL above.
+						</p>
+
+						{/* Required request headers — sent on every call */}
+						<div className="mt-4 rounded-xl border border-border/60 px-4 py-3">
+							<div className="text-sm font-semibold text-foreground">
+								Required request headers
+							</div>
+							<ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+								{AUTH_HEADERS.map((h) => (
+									<li key={h.name}>
+										<code className="font-mono text-foreground">{h.name}</code>
+										{h.description ? ` — ${h.description}` : ""}
+									</li>
+								))}
+							</ul>
+							<p className="mt-2 text-xs text-muted-foreground">
+								Requests accept both <InlineCode>application/json</InlineCode>{" "}
+								and <InlineCode>application/x-www-form-urlencoded</InlineCode>{" "}
+								bodies. Use <InlineCode>multipart/form-data</InlineCode> for
+								file uploads.
+							</p>
+						</div>
+						<p className="mt-3 text-sm text-muted-foreground">
+							The <code className="font-mono">secret-key</code> is an HMAC
+							signature computed per request.{" "}
 							<Link
 								to={docsHref("how-auth-works")}
 								className="font-medium text-eko-gold hover:underline"
@@ -419,28 +557,6 @@ const DocsIndexPage = () => {
 							.
 						</p>
 					</section>
-
-					{/* AI cross-sell banner */}
-					<div className="mt-16 flex flex-col items-start justify-between gap-4 rounded-2xl bg-eko-navy p-6 text-white sm:flex-row sm:items-center sm:p-8">
-						<div className="flex items-start gap-4">
-							<McpIcon className="mt-0.5 h-8 w-8 shrink-0 text-eko-gold" />
-							<div>
-								<h3 className="text-lg font-semibold">
-									Skip the integration work — build with AI agents
-								</h3>
-								<p className="mt-1 text-sm text-white/70">
-									Point Claude, Cursor or Copilot at our MCP server and context
-									packs. Correct signing on the first try, no SDK wiring.
-								</p>
-							</div>
-						</div>
-						<Button variant="gold" asChild className="shrink-0">
-							<Link to="/ai">
-								Explore AI agents
-								<ArrowRight className="ml-1 h-4 w-4" />
-							</Link>
-						</Button>
-					</div>
 
 					{/* Downloads */}
 					<section className="mt-16">

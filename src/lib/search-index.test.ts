@@ -19,9 +19,22 @@ describe("search index integrity", () => {
 		expect(new Set(ids).size).toBe(ids.length);
 	});
 
-	it("gives every item a positive type weight", () => {
+	it("gives every non-FAQ item a positive type weight (FAQs are 0 — lowest priority)", () => {
 		for (const item of SEARCH_INDEX) {
-			expect(item.typeWeight).toBeGreaterThan(0);
+			if (item.category === "faq") {
+				expect(item.typeWeight, item.id).toBe(0);
+			} else {
+				expect(item.typeWeight, item.id).toBeGreaterThan(0);
+			}
+		}
+	});
+
+	it("indexes FAQs, all linking to /faq and never suggested", () => {
+		const faqs = byCategory("faq");
+		expect(faqs.length).toBeGreaterThan(0);
+		for (const item of faqs) {
+			expect(item.href, item.id).toBe("/faq");
+			expect(item.suggested, item.id).toBeFalsy();
 		}
 	});
 

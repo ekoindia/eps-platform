@@ -58,6 +58,7 @@ const CATEGORY_BADGE: Record<
 		className: "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",
 	},
 	page: { label: "Page", className: "bg-muted text-muted-foreground" },
+	faq: { label: "FAQ", className: "bg-muted text-muted-foreground" },
 };
 
 /** Subtle per-type tint on the icon box, so type reads before the badge. */
@@ -70,6 +71,7 @@ const ICON_TINT: Record<SearchCategory, string> = {
 		"bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400",
 	industry: "bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400",
 	page: "bg-muted text-muted-foreground",
+	faq: "bg-muted text-muted-foreground",
 };
 
 /** Scope tabs — narrow the result set by asset type. */
@@ -82,6 +84,7 @@ const SCOPES: { id: Scope; label: string }[] = [
 	{ id: "solution", label: "Solutions" },
 	{ id: "industry", label: "Industries" },
 	{ id: "page", label: "Pages" },
+	{ id: "faq", label: "FAQs" },
 ];
 
 /** Leading prefix tokens that jump straight to a scope (e.g. `e: upi`). Tokens
@@ -102,6 +105,7 @@ const TOKEN_SCOPE: Record<string, Scope> = {
 	"ind:": "industry",
 	"industry:": "industry",
 	"page:": "page",
+	"faq:": "faq",
 };
 
 /** Curated items for the empty-query view */

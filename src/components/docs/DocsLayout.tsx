@@ -94,8 +94,9 @@ export const DocsLayout = ({
 					<aside className="hidden border-r border-border/60 lg:block bg-slate-50 dark:bg-[#0f2a3b]">
 						<div className="px-3 pb-16 pt-28">
 							<div className="mb-2 flex items-center justify-between px-3">
+								{/* <BookOpen /> */}
 								<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-									Docs
+									API Docs
 								</span>
 								<DocsThemeToggle theme={theme} onToggle={toggleTheme} />
 							</div>

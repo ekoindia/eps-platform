@@ -5,8 +5,12 @@
  * `EndpointDetail` so the AI/markdown view stays in lock-step with the HTML.
  * Dependency-free (runs in the Vite build SSR context and unit tests).
  */
-import { SITE_URL } from "@/lib/config/site";
-import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
+import { SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
+import {
+	API_ENVIRONMENTS,
+	AUTH_HEADERS,
+	DEFAULT_BASE_URL,
+} from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import type {
 	ApiParam,
@@ -188,6 +192,14 @@ export function renderDocsIndexMarkdown(): string {
 		canonicalNotice(canonical),
 		h1("Developer Documentation"),
 		"Integrate Eko's KYC, verification, payment and banking APIs. Each endpoint is documented with parameters, responses, code samples and a live request console.",
+		h2("Getting started"),
+		bulletList([
+			`**Get credentials** — Eko's UAT / sandbox is self-serve. Sign up at ${SITE_URL}${SIGNUP_PAGE} for your developer key and access key (no KYC to start testing). ${API_ENVIRONMENTS.production.note}`,
+			`**Know your environments** — ${API_ENVIRONMENTS.sandbox.label}: \`${API_ENVIRONMENTS.sandbox.baseUrl}\`, ${API_ENVIRONMENTS.production.label}: \`${API_ENVIRONMENTS.production.baseUrl}\`. The full endpoint URL is always \`baseUrl + path\`.`,
+			`**Sign every request** — send these headers on every call: ${AUTH_HEADERS.map((h) => `\`${h.name}\``).join(", ")}. The \`secret-key\` is a per-request HMAC signature — see ${link("How Auth Works", `${SITE_URL}${docsHref("how-auth-works")}`, "md")}.`,
+			"**Make your first call** — pick an endpoint below (start with PAN Lite), drop in your credentials, and send it.",
+			`**Handle the response** — EPS APIs share a common envelope: \`status\` (\`0\` = success), \`response_status_id\`, \`message\`, and the payload under \`data\`. See ${link("Status & Error Codes", `${SITE_URL}${docsHref("error-codes")}`, "md")}.`,
+		]),
 		...sections,
 	]);
 }

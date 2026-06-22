@@ -1,7 +1,6 @@
 import type { ComponentType } from "react";
 import ErrorCodes from "./error-codes.mdx";
 import HowAuthWorks from "./how-auth-works.mdx";
-import Quickstart from "./quickstart.mdx";
 
 /**
  * Eager map of guide slug → compiled MDX component. Imports live here (NOT in
@@ -15,7 +14,6 @@ export const GUIDE_COMPONENTS: Record<
 	string,
 	ComponentType<{ components?: Record<string, unknown> }>
 > = {
-	quickstart: Quickstart,
 	"how-auth-works": HowAuthWorks,
 	"error-codes": ErrorCodes,
 };
