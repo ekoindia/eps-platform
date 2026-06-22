@@ -181,10 +181,10 @@ const Step = ({
 	subtitle?: string;
 	children: React.ReactNode;
 }) => (
-	<section className="mt-12 scroll-mt-28">
+	<section className="mt-20 scroll-mt-28">
 		<div className="flex items-center gap-3">
-			<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-eko-navy text-sm font-bold text-white">
-				{n}
+			<span className="inline-flex shrink-0 items-center justify-center rounded-full bg-eko-navy px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+				Step {n}
 			</span>
 			<h2 className="text-xl font-semibold tracking-tight text-foreground">
 				{title}
