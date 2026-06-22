@@ -5,6 +5,7 @@ import {
 	Calculator,
 	CreditCard,
 	FileText,
+	HelpCircle,
 	Home,
 	Landmark,
 	Layers,
@@ -17,6 +18,7 @@ import {
 
 import {
 	API_PRODUCT_PAGES,
+	GLOBAL_FAQS,
 	hasProductPage,
 } from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
@@ -30,7 +32,8 @@ export type SearchCategory =
 	| "guide"
 	| "industry"
 	| "solution"
-	| "page";
+	| "page"
+	| "faq";
 
 export interface SearchItem {
 	/** Unique across the whole index — `${category}:${slug}` */
@@ -60,7 +63,8 @@ export interface SearchItem {
 
 /**
  * Asset-type priority weights. Higher = surfaced first on equal text relevance.
- * Order: Product > API Endpoint > Guide > Solution Pack > Industry > Page.
+ * Order: Product > API Endpoint > Guide > Solution Pack > Industry > Page > FAQ.
+ * FAQ sits last (weight 0) so questions surface only when nothing more relevant matches.
  */
 const TYPE_WEIGHT: Record<SearchCategory, number> = {
 	api: 6,
@@ -69,6 +73,7 @@ const TYPE_WEIGHT: Record<SearchCategory, number> = {
 	solution: 3,
 	industry: 2,
 	page: 1,
+	faq: 0,
 };
 
 /** Highest type weight — normaliser for the ranking multiplier. */
@@ -347,6 +352,41 @@ const PAGE_ITEMS: Omit<SearchItem, "typeWeight">[] = [
 const buildPageItems = (): SearchItem[] =>
 	PAGE_ITEMS.map((p) => ({ ...p, typeWeight: TYPE_WEIGHT.page }));
 
+/** Slugifies an FAQ question into a stable id fragment. */
+const slugifyQuestion = (q: string): string =>
+	q
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/(^-|-$)/g, "");
+
+/**
+ * Global FAQ items, indexed at the lowest priority (typeWeight 0). Matched by the
+ * question text (the label is part of cmdk's search haystack). All link to `/faq`;
+ * there are no per-question anchors today. Slugs are de-duplicated with an index
+ * suffix so two questions that normalise alike still get unique ids.
+ */
+const buildFaqItems = (): SearchItem[] => {
+	const seen = new Map<string, number>();
+	return GLOBAL_FAQS.map((faq) => {
+		const base = slugifyQuestion(faq.q) || "faq";
+		const count = seen.get(base) ?? 0;
+		seen.set(base, count + 1);
+		const slug = count === 0 ? base : `${base}-${count + 1}`;
+		const answer = faq.a.replace(/`/g, "").trim();
+		return {
+			id: `faq:${slug}`,
+			slug,
+			label: faq.q,
+			sublabel: answer.length > 90 ? `${answer.slice(0, 90)}…` : answer,
+			href: "/faq",
+			category: "faq" as const,
+			keywords: ["faq", "help", "question"],
+			icon: HelpCircle,
+			typeWeight: TYPE_WEIGHT.faq,
+		};
+	});
+};
+
 /** Builds the complete search index. Runs once at module scope inside the lazy palette chunk. */
 const buildSearchIndex = (): SearchItem[] => [
 	...buildApiItems(),
@@ -355,6 +395,7 @@ const buildSearchIndex = (): SearchItem[] => [
 	...buildSolutionItems(),
 	...buildIndustryItems(),
 	...buildPageItems(),
+	...buildFaqItems(),
 ];
 
 export const SEARCH_INDEX: SearchItem[] = buildSearchIndex();
