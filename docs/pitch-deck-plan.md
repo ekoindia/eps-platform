@@ -1,19 +1,19 @@
 # EPS Platform — Strategic Buy-In Deck (Plan)
 
-**Purpose:** Secure internal Eko leadership alignment that EPS has become an **AI-native fintech developer platform**, not a marketing website. This is a vision + direction greenlight; funding follows.
+**Purpose:** Secure internal Eko leadership alignment that EPS has become an **AI-native fintech developer platform**, not a marketing website. This is a vision + direction greenlight.
 
-**Audience:** Eko founders / execs / product + eng heads. They know fintech and EPS — do **not** re-explain the product. Spend the time on the *strategic shift*, *why now*, the *proof we already shipped*, and *what a greenlight unlocks*.
+**Audience:** Eko founders / execs / product + eng heads. They know fintech and EPS — do **not** re-explain the product. Spend the time on the *strategic shift*, *why now*, the *proof we already shipped*.
 
 **Format:** ~16 slides, ~20 min + Q&A. Each slide below = title · key message · content · suggested visual.
 
-**Grounding (real, shipped in ~2 weeks, June 6–20 2026):** repositioned site → platform; 5 packages (MCP server, JS SDK, PHP SDK, mock server, Claude Code plugin); 6 API spec phases shipped (nomenclature + PPI rails, user/agent + customer mgmt, AePS fund settlement, txn inquiry + refunds, bank/IFSC + BBPS helpers); single-source-of-truth build → OpenAPI, Postman, agent bundle, context packs, fixtures, install matrix, LLM markdown; `/ai` hub with 12-harness install matrix; CI + release workflows (npm OIDC trusted publishing); golden-vector cross-language signing conformance.
+**Grounding (real, shipped in ~1 week, June 13–21 2026):** repositioned site → platform; 5 packages (MCP server, JS SDK, PHP SDK, mock server, Claude Code plugin); 6 API spec phases shipped (nomenclature + PPI rails, user/agent + customer mgmt, AePS fund settlement, txn inquiry + refunds, bank/IFSC + BBPS helpers); single-source-of-truth build → OpenAPI, Postman, agent bundle, context packs, fixtures, install matrix, LLM markdown; `/ai` hub with 12-harness install matrix; CI + release workflows (npm OIDC trusted publishing); golden-vector cross-language signing conformance.
 
 ---
 
 ## Slide 1 — Title
 
 - **Key message:** EPS is now a platform.
-- **Content:** "EPS Platform — the AI-native way to build on Eko's fintech rails." Subtitle: Strategic review for leadership · June 2026. Presenter + date.
+- **Content:** "EPS Platform — the AI-ready way to build on Eko's fintech rails." Subtitle: Strategic review for leadership · June 2026. Presenter + date.
 - **Visual:** Clean EPS Platform wordmark on dark (Obsidian Terminal palette already in brand). One-line tagline beneath.
 
 ## Slide 2 — The shift, in one line
@@ -34,11 +34,11 @@
 - **Content:** We describe each API once in a data layer. The build emits SDKs, MCP server, OpenAPI, Postman, AI context packs, mock fixtures, and docs — all from that single source. Edit once, every artifact updates. Zero drift, zero duplicated maintenance.
 - **Visual:** Hub-and-spoke: center "api-specs (source of truth)" → spokes to SDK / MCP / OpenAPI / Postman / context packs / mock / docs.
 
-## Slide 5 — Proof: what we shipped in 2 weeks
+## Slide 5 — Proof: what we shipped in 1 weeks
 
 - **Key message:** This isn't a proposal — it's already built.
-- **Content:** Timeline of June 6–20: 5 packages, 6 API phases, CI/release pipeline, /ai hub, full repositioning. Emphasize velocity — small team, two weeks, working artifacts.
-- **Visual:** 2-week timeline / commit-density graphic. Callout numbers: **5 packages · 6 API phases · 12 agent harnesses supported.**
+- **Content:** Timeline of June 13–21: 5 packages, 6 API phases, CI/release pipeline, /ai hub, full repositioning. Emphasize velocity — small team, two weeks, working artifacts.
+- **Visual:** 1-week timeline / commit-density graphic. Callout numbers: **5 packages · 6 API phases · 12 agent harnesses supported.**
 
 ## Slide 6 — The platform surfaces
 
@@ -77,28 +77,23 @@
 - **Visual:** Two-rung ladder — "Agent-ready (✅ today)" → "AI-native (4 steps: act · verify · prove · publish)". Below it, per-workstream progress bars (Specs / SDKs / MCP / Plugin / Publish) — most green, "Publish" amber.
 - **Speaker note:** Pre-empt the obvious challenge ("can we *call* it AI-native?"). Owning the honest label builds credibility and turns slide 12's ask into "fund the 4 steps that earn it."
 
-## Slide 12 — The ask
 
-- **Key message:** Greenlight EPS as a platform.
-- **Content:** Endorse the repositioning as official direction. Approve moving from 0.1.x → GA (publish packages, expand API coverage, GTM to developers). Name an exec sponsor. (Detailed budget/headcount in a follow-up.) Be explicit: today we want *direction approval*, money next.
-- **Visual:** Three checkboxes: ☐ Endorse direction · ☐ Approve path to GA · ☐ Assign sponsor.
-
-## Slide 13 — Roadmap
+## Slide 12 — Roadmap
 
 - **Key message:** Clear path from here to launch.
 - **Content:** Near-term: publish packages, complete remaining API rails, public launch of /ai hub. Mid-term: usage analytics, more SDK languages, deeper recipes/skills, partner pilots. Long-term: EPS as the default fintech integration layer for AI builders in India.
 - **Visual:** 3-horizon timeline (Now / Next / Later) with 2–3 items each.
 
-## Slide 14 — Risks & mitigations
+## Slide 13 — Risks & mitigations
 
 - **Key message:** We've thought about what could go wrong.
 - **Content:** (1) Adoption uncertainty → start with partner pilots + measure. (2) Maintenance load → mitigated by single-source-of-truth (the whole point). (3) Security/compliance of published SDKs → backend-only design, no secrets shipped, conformance tests. (4) Window closes if we're slow → bias to publish.
 - **Visual:** 2-column risk → mitigation table.
 
-## Slide 15 — Close
+## Slide 14 — Close
 
 - **Key message:** Same rails. New leverage.
-- **Content:** Restate the one-liner: "EPS Platform — the AI-native way to build on Eko's fintech rails." We already proved we can build it fast. Ask for the greenlight to finish and launch.
+- **Content:** Restate the one-liner: "EPS Platform — the AI-native way to build on Eko's fintech rails."
 - **Visual:** Wordmark + tagline, single CTA line.
 
 ## Slide 16 — Appendix (optional, for Q&A)
