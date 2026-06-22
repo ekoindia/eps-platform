@@ -19,7 +19,19 @@ final class EpsClient
         private $now = null
     ) {
         $this->now = $this->now ?? fn () => (int) round(microtime(true) * 1000);
-        $this->surface = json_decode(file_get_contents(__DIR__ . '/../data/sdk-surface.json'), true);
+        // data/sdk-surface.json is a baked, shipped asset. A missing or invalid
+        // file means the package was built/published incorrectly — fail with a
+        // clear message instead of a downstream typed-property TypeError.
+        $surfacePath = __DIR__ . '/../data/sdk-surface.json';
+        $raw = @file_get_contents($surfacePath);
+        if ($raw === false) {
+            throw new \RuntimeException("EPS SDK surface not found at $surfacePath. The package is built incorrectly (run `npm run build` to bake it).");
+        }
+        $surface = json_decode($raw, true);
+        if (!is_array($surface) || !isset($surface['environments'])) {
+            throw new \RuntimeException("EPS SDK surface at $surfacePath is invalid or corrupt.");
+        }
+        $this->surface = $surface;
         foreach ($this->surface['environments'] as $env) {
             if ($env['id'] === $environment) { $this->baseUrl = $env['baseUrl']; break; }
         }
