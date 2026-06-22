@@ -158,8 +158,8 @@ const buildGuideItems = (): SearchItem[] =>
 			keywords: [n.slug, "guide", "docs"],
 			icon: BookOpen,
 			typeWeight: TYPE_WEIGHT.guide,
-			// Only the Quickstart guide surfaces in the empty-query view.
-			suggested: n.slug === "quickstart",
+			// Only the first guide (How Auth Works) surfaces in the empty-query view.
+			suggested: n.slug === "how-auth-works",
 		}));
 
 /** Builds industry search items (priority 3 = hidden/draft, excluded) */

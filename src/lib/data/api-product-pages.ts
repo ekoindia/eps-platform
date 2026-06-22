@@ -150,14 +150,14 @@ export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "Is there a sandbox environment for testing?",
 		a: "Yes. A full sandbox environment is available immediately on signup. You can test your integration end-to-end before going live — no commitment required.",
-		links: [{ label: "Quickstart", href: "/docs/quickstart" }],
+		links: [{ label: "Get started", href: "/docs" }],
 	},
 	{
 		q: "What are the sandbox and production base URLs?",
 		// Base URLs come from the shared environment config — never hard-code them.
 		a: `Sandbox and production share the same paths and differ only by base URL: use ${API_ENVIRONMENTS.sandbox.baseUrl} for ${API_ENVIRONMENTS.sandbox.label}, and ${API_ENVIRONMENTS.production.baseUrl} for ${API_ENVIRONMENTS.production.label}. A common cause of failures is calling the sandbox/staging URL with live credentials (or vice-versa) — make sure the base URL matches the keys you are using.`,
 		links: [
-			{ label: "Quickstart", href: "/docs/quickstart" },
+			{ label: "Get started", href: "/docs" },
 			{ label: "How auth works", href: "/docs/how-auth-works" },
 		],
 	},

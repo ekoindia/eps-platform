@@ -29,6 +29,11 @@
 			"source": "/docs/aadhaar-dmt-fino-verify-otp",
 			"destination": "/docs/dmt-fino-validate-ekyc-otp",
 			"permanent": true
+		},
+		{
+			"source": "/docs/quickstart",
+			"destination": "/docs",
+			"permanent": true
 		}
 	],
 	"rewrites": [

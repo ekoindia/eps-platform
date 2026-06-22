@@ -31,21 +31,15 @@ export interface GuideMeta {
  */
 export const GUIDES: GuideMeta[] = [
 	{
-		slug: "quickstart",
-		title: "Quickstart",
-		order: 1,
-		summary: "From zero to your first verified API call in minutes.",
-	},
-	{
 		slug: "how-auth-works",
 		title: "How Auth Works",
-		order: 2,
+		order: 1,
 		summary: "Keys, request signing, and the per-request HMAC secret-key.",
 	},
 	{
 		slug: "error-codes",
 		title: "Status & Error Codes",
-		order: 3,
+		order: 2,
 		summary:
 			"HTTP status codes, transaction status ids, and the response envelope.",
 	},
