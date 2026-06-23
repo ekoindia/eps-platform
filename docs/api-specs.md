@@ -78,7 +78,8 @@ interface ApiSpec {
   name: string;               // "PAN Lite"
   slug: string;
   summary: string;
-  description?: string;
+  description?: string;       // short text (used by .md twin / OpenAPI / agent bundle)
+  descriptionFile?: string;   // rich .md file basename (used by the docs page). Both may be set.
   // category is NOT stored here — it is derived from the product via
   // categoryForSpec(spec) (productId -> API_PRODUCTS[…].category).
   relevance?: "H" | "M" | "L";
@@ -102,6 +103,55 @@ interface ApiSpec {
 — including deeply nested ones — can set `imp: true` to mark it as an important
 verifiable field. Verification product pages surface these as the highlighted
 "What can you verify?" outputs.
+
+## Rich descriptions (markdown)
+
+Description content is **GFM markdown**. It supports callouts, section headings
+(`h2`–`h4`), ordered/unordered lists, tables, inline code, and
+syntax-highlighted fenced code blocks. Two resolvers in `endpoint-descriptions.ts`
+pick the right variant per sink:
+
+| Resolver | Precedence | Used by |
+|----------|-----------|---------|
+| `resolveDescription` | **file** → inline (rich wins) | Docs HTML page only |
+| `resolveShortDescription` | **inline** → file (short wins) | `.md` twin, OpenAPI/Scalar, agent/MCP bundle |
+
+So a spec can carry BOTH: a long, rich `descriptionFile` for the docs page and a
+short inline `description` for the text sinks. With only one set, both resolvers
+fall back to it.
+
+| Sink | Resolver | How it renders |
+|------|----------|----------------|
+| Docs page (middle pane) | `resolveDescription` | `MarkdownProse.tsx` — `react-markdown` + `remark-gfm` + `remarkCallout`; code via `MarkdownCodeBlock.tsx` (prism, own `--mdc-*` theme), callouts via `Callout.tsx`. `h1` is stripped (the endpoint title owns it). |
+| `.md` twin (`render-doc.ts`) | `resolveShortDescription` | inserted raw — any callouts stay native GitHub-alert blockquotes |
+| OpenAPI → Scalar (`build-openapi.ts`) | `resolveShortDescription` | CommonMark in the operation `description` (primary spec only for grouped path+method variants) |
+| Agent bundle / MCP (`build-agent-bundle.ts`) | `resolveShortDescription` | raw string |
+
+**Callouts** use GitHub-alert syntax (no dependency — `remark-callout.ts` is a
+hand-rolled mdast transform):
+
+```md
+> [!WARNING]
+> You need to **encrypt the Aadhaar number** before passing it.
+```
+
+Supported types: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, `DANGER`.
+
+**Fenced code blocks** are highlighted (prism); register any extra grammar in
+`src/lib/docs/prism-setup.ts` (e.g. `java` is registered there). Unknown
+languages fall back to plain text — they never throw.
+
+### Inline vs external (`descriptionFile`)
+
+For short descriptions use the inline `description` string. For long/rich ones
+(callouts + code), author a markdown file under
+`src/content/docs/endpoints/<name>.md` and set `descriptionFile: "<name>.md"`.
+This keeps `api-specs.ts` lean and gives real markdown editing. Set **both** when
+the docs page should show the rich file but the `.md` twin / OpenAPI / agent
+bundle should stay concise.
+
+> Note: MDX is excluded from `content/docs/endpoints/**` (`ssg/mdx-options.ts`)
+> so these files load as raw text, not compiled components.
 
 ## Authentication
 
@@ -129,7 +179,11 @@ source.
    headers, and the response envelope — the resolvers add them).
 2. For verification APIs, mark the verifiable response fields with `imp: true`.
 3. Set `financial: true` for money-debit endpoints (adds the financial response envelope).
-4. Verify: `npx tsc --noEmit`, `npm run test`, then `npm run build` and check the
+4. For a rich description (callouts, code, headings), author
+   `src/content/docs/endpoints/<name>.md` and set `descriptionFile: "<name>.md"`
+   — optionally alongside a short inline `description` for the `.md` twin /
+   OpenAPI / agent bundle. See [Rich descriptions](#rich-descriptions-markdown).
+5. Verify: `npx tsc --noEmit`, `npm run test`, then `npm run build` and check the
    product's `.md` twin (e.g. `dist/products/<slug>.md`) renders the new preview.
 
 ## Data provenance & caveat

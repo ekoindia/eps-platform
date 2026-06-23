@@ -38,6 +38,17 @@ jobs:
       - name: Build (website + agent bundles)
         run: npm run build
 
+      # The SDK surface is baked here (gitignored, not committed). Hand it to the
+      # separate php-sdk job as an artifact so PHP tests get the runtime asset
+      # without rebuilding the website. Generic name — future SDK jobs reuse it.
+      - name: Upload baked SDK surface
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-surface
+          path: packages/sdk-php/data/sdk-surface.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Test website
         run: npx vitest run
 
@@ -53,12 +64,26 @@ jobs:
   php-sdk:
     name: PHP SDK
     runs-on: ubuntu-latest
+    # Depends on the JS job only to receive its baked sdk-surface artifact (the
+    # PHP runner never runs the website build). PHP failing leaves this job's
+    # status independent of the JS check; the JS check is the release gate.
+    needs: web-and-packages
     defaults:
       run:
         working-directory: packages/sdk-php
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # data/sdk-surface.json is generated (gitignored), not committed. The
+      # web-and-packages job bakes it via `npm run build` and uploads it as the
+      # `sdk-surface` artifact; pull it into data/ before tests run. The path is
+      # repo-root-relative — defaults.run.working-directory does not apply here.
+      - name: Download baked SDK surface
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-surface
+          path: packages/sdk-php/data
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -69,8 +94,7 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
-      # The baked data/sdk-surface.json is committed, so tests run without the
-      # repo-root build step. No phpunit.xml is present, so point phpunit at the
-      # tests directory and bootstrap Composer's autoloader explicitly.
+      # No phpunit.xml is present, so point phpunit at the tests directory and
+      # bootstrap Composer's autoloader explicitly.
       - name: Run PHPUnit
         run: vendor/bin/phpunit --bootstrap vendor/autoload.php tests

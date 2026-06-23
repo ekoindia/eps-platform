@@ -28,6 +28,7 @@ import {
 } from "@/lib/config/site";
 import { API_AUTH_DOCS_URL, API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import type {
 	ApiParam,
 	ApiSpec,
@@ -315,7 +316,12 @@ export const buildOpenApiDocument = (
 		const operation: Json = {
 			operationId: operationIdFor(primary),
 			summary: primary.name,
-			description: primary.description ?? primary.summary,
+			// NOTE: for grouped path+method variants only the PRIMARY spec's
+			// description appears in the OpenAPI/Scalar operation (variants are
+			// summary-only under `x-eko-variants`). A rich description on a
+			// non-primary variant won't reach Scalar — its `/docs/<slug>` page
+			// still renders it. Keep rich descriptions on the primary spec.
+			description: resolveShortDescription(primary) ?? primary.summary,
 			tags: [productNameFor(primary)],
 			[X_DOCS_SLUG]: endpointSlug(primary),
 			parameters,

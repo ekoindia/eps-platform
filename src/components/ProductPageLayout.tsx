@@ -434,7 +434,7 @@ export const ProductPageLayout = ({
 									<FadeIn
 										key={field.label + i}
 										delay={i * 60}
-										className="flex items-start gap-3 p-4 bg-card border border-border/50 rounded-xl"
+										className="flex items-start gap-3 p-4 bg-card border border-border rounded-xl"
 									>
 										<CheckCircle className="w-5 h-5 text-eko-gold shrink-0 mt-0.5" />
 										<div>

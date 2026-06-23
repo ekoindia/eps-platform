@@ -79,17 +79,16 @@ describe("EpsClient.call", () => {
 			fetch: fetchMock as unknown as typeof fetch,
 			now: () => 1700000000000,
 		});
-		// dmt-get-sender requires initiator_id, user_code, customer_id.
+		// dmt-get-sender requires initiator_id and customer_id (user_code is optional).
 		await expect(
-			client.call("dmt-get-sender", { initiator_id: "9962981729" }),
-		).rejects.toThrow(/missing required params.*user_code.*customer_id/i);
+			client.call("dmt-get-sender", { user_code: "20810200" }),
+		).rejects.toThrow(/missing required params.*initiator_id.*customer_id/i);
 		await expect(
 			client.call("dmt-get-sender", {
-				customer_id: "9123456789",
 				initiator_id: "9962981729",
-				user_code: null,
+				customer_id: null,
 			}),
-		).rejects.toThrow(/missing required params.*user_code/i);
+		).rejects.toThrow(/missing required params.*customer_id/i);
 		// nothing is signed or sent when validation fails
 		expect(fetchMock).not.toHaveBeenCalled();
 	});

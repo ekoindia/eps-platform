@@ -25,7 +25,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-get-sender",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Sender",
 		name: "Get Sender Profile",
 		slug: "dmt-get-sender",
@@ -136,7 +136,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-onboard-sender",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Sender",
 		name: "Onboard Sender",
 		slug: "dmt-onboard-sender",
@@ -244,7 +244,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-fino-sender-ekyc",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Sender",
 		name: "Sender eKYC (Biometric)",
 		slug: "dmt-fino-sender-ekyc",
@@ -336,7 +336,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-fino-validate-ekyc-otp",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Sender",
 		name: "Validate eKYC OTP",
 		slug: "dmt-fino-validate-ekyc-otp",
@@ -447,7 +447,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-get-recipients",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Recipients",
 		name: "Get Recipients",
 		slug: "dmt-get-recipients",
@@ -565,7 +565,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-add-recipient",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Recipients",
 		name: "Add Recipient",
 		slug: "dmt-add-recipient",
@@ -702,7 +702,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-send-otp",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "dmt-send-otp",
@@ -787,7 +787,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "dmt-initiate-transfer",
 		productId: "dmt",
-		provider: "Fino",
+		provider: "DMT – Fino",
 		group: "Transaction",
 		name: "Initiate Transfer",
 		slug: "dmt-initiate-transfer",
@@ -1047,10 +1047,179 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "aeps-activate-fingpay",
+		productId: "aeps",
+		name: "Activate AePS Fingpay for Agent",
+		slug: "aeps-activate-fingpay",
+		provider: "AePS – Fingpay",
+		summary:
+			"Onboard an agent for AePS Fingpay service by submitting their biometric device details and KYC documents.",
+		description:
+			"This onboarding API registers an agent (identified by their user_code) for the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.",
+		relevance: "H",
+		bestFor:
+			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
+		method: "PUT",
+		path: "/admin/network/agent/{user_code}/aeps-fingpay/activate",
+		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				in: "path",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of the agent for whom AePS Fingpay service is being activated.",
+				example: "20810200",
+			},
+			{
+				name: "modelname",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"Model name/designation of the UIDAI-certified biometric device (e.g., Morpho 1300E3, Mantra MFS100).",
+				example: "Morpho 1300E3",
+			},
+			{
+				name: "devicenumber",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"Serial number of the biometric device as printed on the device or its packaging.",
+				example: "SN1234567890",
+			},
+			{
+				name: "office_address",
+				in: "body",
+				type: "object",
+				required: true,
+				description:
+					"Agent's current office/operating address as a JSON object with keys: line, city, state, pincode.",
+				example: {
+					line: "Shop No. 5, Gandhi Market",
+					city: "Patna",
+					state: "Bihar",
+					pincode: "800001",
+				},
+			},
+			{
+				name: "address_as_per_proof",
+				in: "body",
+				type: "object",
+				required: true,
+				description:
+					"Agent's address exactly as it appears on the submitted address proof document. JSON object with keys: line, city, state, pincode.",
+				example: {
+					line: "Shop No. 5, Gandhi Market",
+					city: "Patna",
+					state: "Bihar",
+					pincode: "800001",
+				},
+			},
+			{
+				name: "pan_card",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"PAN card document upload (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB. PNG not accepted.",
+				example: "<binary file>",
+			},
+			{
+				name: "aadhar_front",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"Front side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
+				example: "<binary file>",
+			},
+			{
+				name: "aadhar_back",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"Back side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
+				example: "<binary file>",
+			},
+		],
+		omitCommonParams: ["client_ref_id", "source"],
+		responseData: [
+			{
+				name: "activation_status",
+				type: "string",
+				description:
+					"Current state of the AePS Fingpay activation request. 'pending' means documents are submitted and under review.",
+				imp: true,
+				example: "pending",
+			},
+			{
+				name: "activation_id",
+				type: "string",
+				description:
+					"Unique identifier for this activation request, for tracking and support.",
+				imp: true,
+				example: "ACT20240101001",
+			},
+			{
+				name: "message",
+				type: "string",
+				description: "Human-readable message about the activation status.",
+				example:
+					"Activation request submitted. Approval expected within 2-3 business days.",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message:
+				"AePS Fingpay activation request submitted successfully. Approval expected within 2-3 business days.",
+			response_type_id: 1388,
+			data: {
+				activation_status: "pending",
+				activation_id: "ACT20240101001",
+				message:
+					"Activation request submitted. Approval expected within 2-3 business days.",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "File format not accepted (PNG uploaded)",
+				statusCode: 400,
+				example: {
+					status: 1,
+					message: "Invalid file format. Only JPEG, JPG, and PDF are accepted.",
+				},
+			},
+			{
+				scenario: "File size exceeds 1 MB",
+				statusCode: 400,
+				example: {
+					status: 1,
+					message: "File size exceeds the maximum allowed limit of 1 MB.",
+				},
+			},
+			{
+				scenario: "Agent user_code not found",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 463,
+					message: "Agent not found. Please verify the user_code.",
+					data: {},
+				},
+			},
+		],
+	},
+	{
 		id: "aeps-cash-withdrawal",
 		productId: "aeps",
 		name: "AePS Cash Withdrawal",
 		slug: "aeps-cash-withdrawal",
+		provider: "AePS – Fingpay",
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
@@ -1289,6 +1458,7 @@ export const API_SPECS: ApiSpec[] = [
 		productId: "aeps",
 		name: "AePS Balance Enquiry",
 		slug: "aeps-balance-enquiry",
+		provider: "AePS – Fingpay",
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
@@ -1459,177 +1629,12 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-activate-fingpay",
-		productId: "aeps",
-		name: "Activate AePS Fingpay for Agent",
-		slug: "aeps-activate-fingpay",
-		summary:
-			"Onboard an agent for AePS Fingpay service by submitting their biometric device details and KYC documents.",
-		description:
-			"This onboarding API registers an agent (identified by their user_code) for the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.",
-		relevance: "H",
-		bestFor:
-			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
-		method: "PUT",
-		path: "/admin/network/agent/{user_code}/aeps-fingpay/activate",
-		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
-		extraRequestParams: [
-			{
-				name: "user_code",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of the agent for whom AePS Fingpay service is being activated.",
-				example: "20810200",
-			},
-			{
-				name: "modelname",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Model name/designation of the UIDAI-certified biometric device (e.g., Morpho 1300E3, Mantra MFS100).",
-				example: "Morpho 1300E3",
-			},
-			{
-				name: "devicenumber",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Serial number of the biometric device as printed on the device or its packaging.",
-				example: "SN1234567890",
-			},
-			{
-				name: "office_address",
-				in: "body",
-				type: "object",
-				required: true,
-				description:
-					"Agent's current office/operating address as a JSON object with keys: line, city, state, pincode.",
-				example: {
-					line: "Shop No. 5, Gandhi Market",
-					city: "Patna",
-					state: "Bihar",
-					pincode: "800001",
-				},
-			},
-			{
-				name: "address_as_per_proof",
-				in: "body",
-				type: "object",
-				required: true,
-				description:
-					"Agent's address exactly as it appears on the submitted address proof document. JSON object with keys: line, city, state, pincode.",
-				example: {
-					line: "Shop No. 5, Gandhi Market",
-					city: "Patna",
-					state: "Bihar",
-					pincode: "800001",
-				},
-			},
-			{
-				name: "pan_card",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"PAN card document upload (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB. PNG not accepted.",
-				example: "<binary file>",
-			},
-			{
-				name: "aadhar_front",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Front side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
-				example: "<binary file>",
-			},
-			{
-				name: "aadhar_back",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Back side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
-				example: "<binary file>",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "activation_status",
-				type: "string",
-				description:
-					"Current state of the AePS Fingpay activation request. 'pending' means documents are submitted and under review.",
-				imp: true,
-				example: "pending",
-			},
-			{
-				name: "activation_id",
-				type: "string",
-				description:
-					"Unique identifier for this activation request, for tracking and support.",
-				imp: true,
-				example: "ACT20240101001",
-			},
-			{
-				name: "message",
-				type: "string",
-				description: "Human-readable message about the activation status.",
-				example:
-					"Activation request submitted. Approval expected within 2-3 business days.",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message:
-				"AePS Fingpay activation request submitted successfully. Approval expected within 2-3 business days.",
-			response_type_id: 1388,
-			data: {
-				activation_status: "pending",
-				activation_id: "ACT20240101001",
-				message:
-					"Activation request submitted. Approval expected within 2-3 business days.",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "File format not accepted (PNG uploaded)",
-				statusCode: 400,
-				example: {
-					status: 1,
-					message: "Invalid file format. Only JPEG, JPG, and PDF are accepted.",
-				},
-			},
-			{
-				scenario: "File size exceeds 1 MB",
-				statusCode: 400,
-				example: {
-					status: 1,
-					message: "File size exceeds the maximum allowed limit of 1 MB.",
-				},
-			},
-			{
-				scenario: "Agent user_code not found",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "Agent not found. Please verify the user_code.",
-					data: {},
-				},
-			},
-		],
-	},
-	{
 		id: "aeps-daily-auth",
 		productId: "aeps",
 		name: "AePS Fingpay — Daily Authentication (2FA)",
 		slug: "aeps-daily-auth",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC",
 		summary:
 			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
@@ -1758,6 +1763,7 @@ export const API_SPECS: ApiSpec[] = [
 		productId: "aeps",
 		name: "AePS Mini Statement",
 		slug: "aeps-mini-statement",
+		provider: "AePS – Fingpay",
 		summary:
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
 		description:
@@ -1955,174 +1961,176 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 	},
-	{
-		id: "aeps-aadhaar-pay",
-		productId: "aeps",
-		name: "AePS Aadhaar Pay",
-		slug: "aeps-aadhaar-pay",
-		summary:
-			"Accept merchant payments debited directly from a customer's Aadhaar-linked bank account via biometric authentication.",
-		description:
-			"Aadhaar Pay (service_type=5) enables merchants to accept payments from customers whose bank accounts are Aadhaar-linked, authenticated with a fingerprint scan. Unlike Cash Withdrawal (where cash is dispensed), the funds are transferred to the merchant. This is useful for last-mile digital payments at kirana stores and service points where customers have no UPI or debit card. The flow is identical to Cash Withdrawal but with a positive merchant-side credit.",
-		relevance: "M",
-		bestFor:
-			"Merchants accepting digital payments from Aadhaar-linked accounts without UPI or card infrastructure",
-		method: "POST",
-		path: "/customer/collection/aeps-fingpay",
-		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "service_type",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transaction type. Use 5 for Aadhaar Pay.",
-				example: 5,
-			},
-			{
-				name: "customer_id",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Customer's registered mobile number.",
-				example: "9876543210",
-			},
-			{
-				name: "bank_code",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Bank IIN/IFS code identifying the customer's bank.",
-				example: "607153",
-			},
-			{
-				name: "amount",
-				in: "body",
-				type: "number",
-				required: true,
-				description:
-					"Payment amount in INR (integer). This amount is debited from the customer and credited to the merchant.",
-				example: 250,
-			},
-			{
-				name: "aadhaar",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the paying customer.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
-			{
-				name: "piddata",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"PID XML string from UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo).",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			},
-			{
-				name: "pipe",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Routing pipe selector. Use 0 (default).",
-				example: 0,
-			},
-			{
-				name: "notify_customer",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
-				example: 1,
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "source_ip",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"IP address of the merchant system initiating the transaction.",
-				example: "103.56.78.90",
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko's internal transaction ID.",
-				imp: true,
-				example: "EKO20240101012345",
-			},
-			{
-				name: "amount",
-				type: "number",
-				description: "Payment amount processed (INR).",
-				imp: true,
-				example: 250,
-			},
-			{
-				name: "bank_name",
-				type: "string",
-				description: "Name of the customer's debited bank.",
-				imp: true,
-				example: "Bank of Baroda",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "NPCI/bank reference number.",
-				imp: true,
-				example: "NPCI20240101MNOP",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Aadhaar Pay successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				tid: "EKO20240101012345",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: 250,
-				bank_name: "Bank of Baroda",
-				bank_ref_num: "NPCI20240101MNOP",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Biometric authentication failed",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 108,
-					message: "Fingerprint authentication failed. Please re-scan.",
-					tx_status: "1",
-					data: {},
-				},
-			},
-		],
-	},
+	// {
+	// 	id: "aeps-aadhaar-pay",
+	// 	productId: "aeps",
+	// 	name: "AePS Aadhaar Pay",
+	// 	slug: "aeps-aadhaar-pay",
+	// 	summary:
+	// 		"Accept merchant payments debited directly from a customer's Aadhaar-linked bank account via biometric authentication.",
+	// 	description:
+	// 		"Aadhaar Pay (service_type=5) enables merchants to accept payments from customers whose bank accounts are Aadhaar-linked, authenticated with a fingerprint scan. Unlike Cash Withdrawal (where cash is dispensed), the funds are transferred to the merchant. This is useful for last-mile digital payments at kirana stores and service points where customers have no UPI or debit card. The flow is identical to Cash Withdrawal but with a positive merchant-side credit.",
+	// 	relevance: "M",
+	// 	bestFor:
+	// 		"Merchants accepting digital payments from Aadhaar-linked accounts without UPI or card infrastructure",
+	// 	method: "POST",
+	// 	path: "/customer/collection/aeps-fingpay",
+	// 	docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+	// 	financial: true,
+	// 	extraRequestParams: [
+	// 		{
+	// 			name: "service_type",
+	// 			in: "body",
+	// 			type: "number",
+	// 			required: true,
+	// 			description: "Transaction type. Use 5 for Aadhaar Pay.",
+	// 			example: 5,
+	// 		},
+	// 		{
+	// 			name: "customer_id",
+	// 			in: "body",
+	// 			type: "string",
+	// 			required: true,
+	// 			description: "Customer's registered mobile number.",
+	// 			example: "9876543210",
+	// 		},
+	// 		{
+	// 			name: "bank_code",
+	// 			in: "body",
+	// 			type: "string",
+	// 			required: true,
+	// 			description: "Bank IIN/IFS code identifying the customer's bank.",
+	// 			example: "607153",
+	// 		},
+	// 		{
+	// 			name: "amount",
+	// 			in: "body",
+	// 			type: "number",
+	// 			required: true,
+	// 			description:
+	// 				"Payment amount in INR (integer). This amount is debited from the customer and credited to the merchant.",
+	// 			example: 250,
+	// 		},
+	// 		{
+	// 			name: "aadhaar",
+	// 			in: "body",
+	// 			type: "string",
+	// 			required: true,
+	// 			description:
+	// 				"RSA-encrypted, Base64-encoded Aadhaar number of the paying customer.",
+	// 			example: "BASE64_ENCRYPTED_AADHAAR",
+	// 		},
+	// 		{
+	// 			name: "piddata",
+	// 			in: "body",
+	// 			type: "string",
+	// 			required: true,
+	// 			description:
+	// 				"PID XML string from UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo).",
+	// 			example:
+	// 				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+	// 		},
+	// 		{
+	// 			name: "pipe",
+	// 			in: "body",
+	// 			type: "number",
+	// 			required: true,
+	// 			description: "Routing pipe selector. Use 0 (default).",
+	// 			example: 0,
+	// 		},
+	// 		{
+	// 			name: "notify_customer",
+	// 			in: "body",
+	// 			type: "number",
+	// 			required: true,
+	// 			description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
+	// 			example: 1,
+	// 		},
+	// 		{
+	// 			name: "latlong",
+	// 			in: "body",
+	// 			type: "string",
+	// 			required: true,
+	// 			description:
+	// 				"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
+	// 			example: "28.6139,77.2090",
+	// 		},
+	// 		{
+	// 			name: "source_ip",
+	// 			in: "body",
+	// 			type: "string",
+	// 			required: true,
+	// 			description:
+	// 				"IP address of the merchant system initiating the transaction.",
+	// 			example: "103.56.78.90",
+	// 		},
+	// 	],
+	// 	responseData: [
+	// 		{
+	// 			name: "tid",
+	// 			type: "string",
+	// 			description: "Eko's internal transaction ID.",
+	// 			imp: true,
+	// 			example: "EKO20240101012345",
+	// 		},
+	// 		{
+	// 			name: "amount",
+	// 			type: "number",
+	// 			description: "Payment amount processed (INR).",
+	// 			imp: true,
+	// 			example: 250,
+	// 		},
+	// 		{
+	// 			name: "bank_name",
+	// 			type: "string",
+	// 			description: "Name of the customer's debited bank.",
+	// 			imp: true,
+	// 			example: "Bank of Baroda",
+	// 		},
+	// 		{
+	// 			name: "bank_ref_num",
+	// 			type: "string",
+	// 			description: "NPCI/bank reference number.",
+	// 			imp: true,
+	// 			example: "NPCI20240101MNOP",
+	// 		},
+	// 	],
+	// 	sampleSuccessResponse: {
+	// 		status: 0,
+	// 		response_status_id: 0,
+	// 		message: "Aadhaar Pay successful",
+	// 		tx_status: "0",
+	// 		txstatus_desc: "Success",
+	// 		data: {
+	// 			tid: "EKO20240101012345",
+	// 			tx_status: "0",
+	// 			txstatus_desc: "Success",
+	// 			amount: 250,
+	// 			bank_name: "Bank of Baroda",
+	// 			bank_ref_num: "NPCI20240101MNOP",
+	// 		},
+	// 	},
+	// 	errorScenarios: [
+	// 		{
+	// 			scenario: "Biometric authentication failed",
+	// 			statusCode: 200,
+	// 			example: {
+	// 				status: 1,
+	// 				response_status_id: 108,
+	// 				message: "Fingerprint authentication failed. Please re-scan.",
+	// 				tx_status: "1",
+	// 				data: {},
+	// 			},
+	// 		},
+	// 	],
+	// },
 	{
 		id: "aeps-send-otp-kyc",
 		productId: "aeps",
 		name: "AePS Fingpay — Send OTP (eKYC)",
 		slug: "aeps-send-otp-kyc",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC",
 		summary:
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
@@ -2198,10 +2206,15 @@ export const API_SPECS: ApiSpec[] = [
 		productId: "aeps",
 		name: "AePS Fingpay — Biometric eKYC",
 		slug: "aeps-biometric-ekyc",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC",
 		summary:
 			"Complete one-time AePS Fingpay eKYC by submitting the agent's Aadhaar and live biometric fingerprint capture.",
+		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
+		// renders the richer `descriptionFile` (callouts, Aadhaar-encryption code).
 		description:
-			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's Aadhaar and biometric PID data to UIDAI for identity verification. On success, the agent's eKYC is marked complete and they can start performing AePS transactions (subject to completing daily 2FA each day). This step uses the same RSA-encrypted Aadhaar and PID XML format as the transaction APIs.",
+			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.",
+		descriptionFile: "aeps-biometric-ekyc.md",
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
@@ -6328,7 +6341,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-dmt-levin-validate",
 		productId: "dmt",
-		provider: "Levin",
+		provider: "DMT – Levin",
 		group: "Sender",
 		name: "Validate Aadhaar & Generate OTP",
 		slug: "aadhaar-dmt-levin-validate",
@@ -6419,7 +6432,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-dmt-levin-verify-otp",
 		productId: "dmt",
-		provider: "Levin",
+		provider: "DMT – Levin",
 		group: "Sender",
 		name: "Validate Sender Aadhaar OTP",
 		slug: "aadhaar-dmt-levin-verify-otp",
@@ -6555,7 +6568,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-ppi-levin-validate",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Sender",
 		name: "Validate Aadhaar",
 		slug: "aadhaar-ppi-levin-validate",
@@ -6648,7 +6661,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aadhaar-ppi-levin-verify-otp",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Sender",
 		name: "Validate Aadhaar OTP",
 		slug: "aadhaar-ppi-levin-verify-otp",
@@ -6782,7 +6795,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-get-sender",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Sender",
 		name: "Get Sender Information",
 		slug: "ppi-levin-get-sender",
@@ -6860,7 +6873,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-onboard-sender",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Sender",
 		name: "Onboard Sender",
 		slug: "ppi-levin-onboard-sender",
@@ -6954,7 +6967,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-verify-otp",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Sender",
 		name: "Verify Sender OTP",
 		slug: "ppi-levin-verify-otp",
@@ -7193,7 +7206,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-validate-pan",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Sender",
 		name: "Validate PAN",
 		slug: "ppi-levin-validate-pan",
@@ -7331,7 +7344,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-get-recipients",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Recipients",
 		name: "Get List of Recipients",
 		slug: "ppi-levin-get-recipients",
@@ -7501,7 +7514,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-add-recipient",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Recipients",
 		name: "Add Recipient",
 		slug: "ppi-levin-add-recipient",
@@ -7627,7 +7640,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-add-recipient-bank",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Recipients",
 		name: "Add Recipient Bank",
 		slug: "ppi-levin-add-recipient-bank",
@@ -7694,7 +7707,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-send-transaction-otp",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "ppi-levin-send-transaction-otp",
@@ -7777,7 +7790,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-levin-initiate-transaction",
 		productId: "ppi",
-		provider: "Levin",
+		provider: "PPI – Levin",
 		group: "Transaction",
 		name: "Initiate Transaction",
 		slug: "ppi-levin-initiate-transaction",
@@ -8018,7 +8031,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-get-sender",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Get Sender Information",
 		slug: "ppi-digikhata-get-sender",
@@ -8094,7 +8107,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-onboard-sender",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Onboard Sender",
 		slug: "ppi-digikhata-onboard-sender",
@@ -8198,7 +8211,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-generate-sender-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Generate Sender Verification OTP",
 		slug: "ppi-digikhata-generate-sender-otp",
@@ -8254,7 +8267,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-verify-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Verify Sender OTP",
 		slug: "ppi-digikhata-verify-otp",
@@ -8415,7 +8428,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-consent-languages",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Get Aadhaar KYC Consent Languages",
 		slug: "ppi-digikhata-consent-languages",
@@ -8508,7 +8521,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-consent-details",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Get Aadhaar KYC Consent Details",
 		slug: "ppi-digikhata-consent-details",
@@ -8622,7 +8635,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-generate-aadhaar-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Generate Sender Aadhaar OTP",
 		slug: "ppi-digikhata-generate-aadhaar-otp",
@@ -8688,7 +8701,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-verify-aadhaar-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Validate Sender Aadhaar OTP",
 		slug: "ppi-digikhata-verify-aadhaar-otp",
@@ -8747,7 +8760,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-validate-pan",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Validate Sender PAN",
 		slug: "ppi-digikhata-validate-pan",
@@ -8857,7 +8870,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-load-wallet",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Sender",
 		name: "Load Sender DigiKhata Wallet",
 		slug: "ppi-digikhata-load-wallet",
@@ -8928,7 +8941,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-get-recipients",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Recipients",
 		name: "Get List of Recipients",
 		slug: "ppi-digikhata-get-recipients",
@@ -9076,7 +9089,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-add-recipient",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Recipients",
 		name: "Add Recipient",
 		slug: "ppi-digikhata-add-recipient",
@@ -9172,7 +9185,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-recipient-bank-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Recipients",
 		name: "Generate Add Recipient Bank OTP",
 		slug: "ppi-digikhata-recipient-bank-otp",
@@ -9240,7 +9253,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-validate-recipient-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Recipients",
 		name: "Validate OTP to Add Recipient",
 		slug: "ppi-digikhata-validate-recipient-otp",
@@ -9300,7 +9313,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-send-transaction-otp",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Transaction",
 		name: "Send Transaction OTP",
 		slug: "ppi-digikhata-send-transaction-otp",
@@ -9381,7 +9394,7 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "ppi-digikhata-initiate-transaction",
 		productId: "ppi",
-		provider: "DigiKhata",
+		provider: "PPI – DigiKhata",
 		group: "Transaction",
 		name: "Initiate Transaction",
 		slug: "ppi-digikhata-initiate-transaction",
@@ -10268,6 +10281,8 @@ export const API_SPECS: ApiSpec[] = [
 		productId: "aeps",
 		name: "Add Settlement Bank Account",
 		slug: "aeps-add-settlement-account",
+		provider: "AePS – Fingpay",
+		group: "AePS Fund Settlement",
 		summary:
 			"Register a bank account as an AePS fund-settlement recipient for an agent.",
 		description:
@@ -10360,6 +10375,8 @@ export const API_SPECS: ApiSpec[] = [
 		productId: "aeps",
 		name: "Get Settlement Bank Accounts",
 		slug: "aeps-get-settlement-accounts",
+		provider: "AePS – Fingpay",
+		group: "AePS Fund Settlement",
 		summary:
 			"List an agent's registered AePS settlement recipients with unsettled funds and remaining limit.",
 		description:
@@ -10452,6 +10469,8 @@ export const API_SPECS: ApiSpec[] = [
 		productId: "aeps",
 		name: "Initiate Settlement",
 		slug: "aeps-initiate-settlement",
+		provider: "AePS – Fingpay",
+		group: "AePS Fund Settlement",
 		summary:
 			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
 		description:

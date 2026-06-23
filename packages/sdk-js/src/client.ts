@@ -54,7 +54,29 @@ interface Surface {
 // across Node/tsup/vitest versions; a plain fs read works everywhere.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SURFACE_PATH = path.resolve(here, "../data/sdk-surface.json");
-const SURFACE = JSON.parse(readFileSync(SURFACE_PATH, "utf8")) as Surface;
+
+/**
+ * Load the baked surface asset, failing with a clear message if it is missing
+ * or malformed (a build/packaging error) rather than a downstream undefined.
+ */
+const loadSurface = (): Surface => {
+	let raw: string;
+	try {
+		raw = readFileSync(SURFACE_PATH, "utf8");
+	} catch {
+		throw new Error(
+			`EPS SDK surface not found at ${SURFACE_PATH}. The package is built incorrectly (run \`npm run build\` to bake it).`,
+		);
+	}
+	const parsed = JSON.parse(raw) as Surface;
+	if (!parsed?.environments || !parsed?.endpoints) {
+		throw new Error(
+			`EPS SDK surface at ${SURFACE_PATH} is invalid or corrupt.`,
+		);
+	}
+	return parsed;
+};
+const SURFACE = loadSurface();
 
 export interface EpsClientOptions {
 	developerKey: string;

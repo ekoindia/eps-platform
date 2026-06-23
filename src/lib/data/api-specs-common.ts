@@ -10,12 +10,12 @@
  * The data here is rich enough to render a developer API reference portal.
  */
 import { AUTH_HEADERS } from "./api-auth";
-import { API_PRODUCTS_MAP } from "./api-products";
 import type {
 	ApiProductCategory,
 	ApiProductId,
 	ApiProductRelevance,
 } from "./api-products";
+import { API_PRODUCTS_MAP } from "./api-products";
 
 // ---------------------------------------------------------------------------
 // Primitive shapes
@@ -76,12 +76,25 @@ export interface ApiSpec {
 	name: string;
 	/** Portal route slug. */
 	slug: string;
+	/** Short one-line summary of the API */
 	summary: string;
+	/** Short description (plain GFM markdown). Used by the `.md` twin,
+	 * OpenAPI/Scalar and the agent bundle. If {@link descriptionFile} is also set,
+	 * the docs page shows the richer file while these text sinks use this string. */
 	description?: string;
+	/** OPTIONAL: basename of a markdown file under
+	 * `src/content/docs/endpoints/` holding this endpoint's RICH description
+	 * (callouts, headings, code blocks) — e.g. "aeps-biometric-ekyc.md". Rendered
+	 * on the docs page; may be combined with a short inline {@link description}.
+	 * Resolved via `resolveDescription` / `resolveShortDescription` in
+	 * `endpoint-descriptions.ts`. */
+	descriptionFile?: string;
 	relevance?: ApiProductRelevance;
 	/** OPTIONAL sub-product grouping for products with multiple integration
-	 * providers (e.g. DMT → "Fino" / "Levin"). Unset ⇒ the spec sits directly
-	 * under its product in the docs nav. Nav + data only — never part of the URL. */
+	 * providers (e.g. Fino & Levin" for DMT).
+	 * Format: "<product short name> – <provider>" (Eg: "DMT – Fino")
+	 * Unset ⇒ the spec sits directly under its product in the docs nav.
+	 * Nav + data only — never part of the URL. */
 	provider?: string;
 	/** OPTIONAL purpose-group within a provider (or product) — e.g. "Sender",
 	 * "Recipients", "Transaction". Unset ⇒ the spec sits directly under its
@@ -152,8 +165,9 @@ export const COMMON_REQUEST_PARAMS: CommonRequestParam[] = [
 		name: "user_code",
 		allowedMethods: ALL_METHODS,
 		type: "string",
-		required: true,
-		description: "User code of the retailer/agent the service is run for.",
+		required: false,
+		description:
+			"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
 		example: "20810200",
 	},
 	{
