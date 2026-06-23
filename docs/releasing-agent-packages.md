@@ -2,9 +2,7 @@
 
 Operational runbook for publishing the EPS AI-agent packages. For the
 architecture of what is being shipped, see
-[`docs/ai-agent-platform.md`](./ai-agent-platform.md); for the resolved
-distribution decisions and their rationale, see
-[`docs/ai-agent-platform-status.md`](./ai-agent-platform-status.md).
+[`docs/ai-agent-platform.md`](./ai-agent-platform.md).
 
 ---
 

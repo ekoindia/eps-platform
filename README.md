@@ -101,6 +101,14 @@ npm test             # vitest run
 npm run lint         # eslint
 ```
 
+`npm install`, `npm run build`, `npm run lint`, and `npm test` all run **without any
+credentials** — no API keys are needed to build the site or run the suite. Sandbox
+credentials are only required to exercise the `/docs` **"Try it"** console live: copy
+[`.env.example`](.env.example) → `.env.local` and fill in your own Eko UAT/sandbox keys.
+Those values are read only during `vite dev` (gated by `import.meta.env.DEV`), are never
+bundled into production, and the access key is used purely for in-browser HMAC signing.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow.
+
 **How to add things:**
 
 | Add a… | Edit | Guide |
@@ -121,9 +129,8 @@ npm run lint         # eslint
 ## Documentation
 
 **Platform & AI**
-- [AI agent platform](docs/ai-agent-platform.md) · [status report](docs/ai-agent-platform-status.md)
+- [AI agent platform](docs/ai-agent-platform.md)
 - [API coverage roadmap](docs/api-coverage-roadmap.md)
-- [Design specs & execution plans](docs/superpowers/)
 
 **API & data model**
 - [API technical specifications](docs/api-specs.md)
@@ -143,3 +150,18 @@ npm run lint         # eslint
 ## Tech stack
 
 Vite · React · TypeScript · Tailwind CSS · shadcn-ui · npm workspaces.
+
+## Contributing & security
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, branch/commit conventions, PR workflow.
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability (please do **not** open a
+  public issue for security reports).
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community standards.
+
+## License
+
+Source code is released under the [MIT License](LICENSE). The MIT grant
+covers the **code** only. The **"Eko" name, logos, and brand assets** are trademarks of
+their owner and are **not** licensed for reuse. Marketing copy, page content, and design
+assets under `src/` and `public/` may be subject to separate terms — see `LICENSE` for the
+exact scope before reusing non-code material.

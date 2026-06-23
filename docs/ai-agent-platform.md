@@ -6,13 +6,9 @@ AI coding agent (Claude Code, Cursor, Codex, Copilot, …) integrate Eko Platfor
 Services (EPS) APIs correctly — getting the tricky parts (backend-only HMAC
 signing, the error model, multi-step recipes) right the first time.
 
-> **See also:** [`docs/ai-agent-platform-status.md`](./ai-agent-platform-status.md)
-> (session status, deviations, and the resolved distribution decisions);
-> [`docs/releasing-agent-packages.md`](./releasing-agent-packages.md) (release
-> runbook); the specs in `docs/superpowers/specs/2026-06-17-*` and plans in
-> `docs/superpowers/plans/2026-06-17-*`; and
-> [`docs/sdk-golden-vector.md`](./sdk-golden-vector.md) (the signing conformance
-> vector).
+> **See also:** [`docs/releasing-agent-packages.md`](./releasing-agent-packages.md)
+> (release runbook); and [`docs/sdk-golden-vector.md`](./sdk-golden-vector.md) (the
+> signing conformance vector).
 
 ---
 

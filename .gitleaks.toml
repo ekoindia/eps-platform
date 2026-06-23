@@ -1,0 +1,33 @@
+# gitleaks configuration for EPS Platform
+#
+# Extends the default ruleset and adds an allowlist for KNOWN-SAFE matches:
+#   - generated/baked artifacts and local env files (not source of truth), and
+#   - illustrative, non-secret EXAMPLE values inside the API specs (documentation
+#     request/response samples — placeholders or expired sandbox example tokens).
+#
+# Anything NOT listed here still trips the scan, so real secrets are still caught.
+# Do NOT add real production credentials to this allowlist — scrub them from the
+# code (and from history) instead.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "EPS known-safe paths and documentation example tokens"
+
+paths = [
+  # Generated / baked outputs — regenerated from src/lib/data, never hand-edited.
+  '''^dist/''',
+  '''^ds-bundle/''',
+  '''^packages/[^/]+/data/''',
+  # Local-only dev env (gitignored; contains the developer's own sandbox creds).
+  '''(^|/)\.env\.local$''',
+]
+
+regexes = [
+  # Obvious fake placeholder used throughout the API spec examples.
+  '''wtkn_abc123xyz''',
+  # Expired/illustrative example JWTs shown as `example:` values in api-specs.ts
+  # (documentation only; the signing key is server-side and never shipped).
+  '''eyJhbGciOiJIUzI1Ni[A-Za-z0-9_.\-]+''',
+]

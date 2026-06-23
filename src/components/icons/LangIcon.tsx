@@ -13,7 +13,7 @@ import {
  * Languages we render an icon for. Today's code samples cover {@link SampleLang}
  * (curl/javascript/python/php); the rest are the planned SDK targets — Java,
  * C#/.NET and Go — wired up ahead of time so a tab "just works" the moment its
- * sample/SDK ships. See docs/ai-agent-platform-status.md.
+ * sample/SDK ships.
  */
 export type LangId = SampleLang | "java" | "csharp" | "go";
 
