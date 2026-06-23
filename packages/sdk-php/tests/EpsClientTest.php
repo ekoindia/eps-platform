@@ -32,7 +32,7 @@ final class EpsClientTest extends TestCase
             'initiator_id' => '9962981729',
             'user_code' => '20810200',
         ]);
-        $this->assertStringContainsString('/customer/profile/9123456789', $target['url']);
+        $this->assertStringContainsString('/customer/payment/dmt-fino/sender/9123456789', $target['url']);
         $this->assertStringContainsString('initiator_id=9962981729', $target['url']);
         $this->assertStringContainsString('user_code=20810200', $target['url']);
         $this->assertStringNotContainsString('{customer_id}', $target['url']);
@@ -43,20 +43,19 @@ final class EpsClientTest extends TestCase
     {
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $this->expectException(\InvalidArgumentException::class);
-        // dmt-get-sender requires initiator_id, user_code, customer_id.
-        $this->expectExceptionMessageMatches('/Missing required params.*user_code.*customer_id/');
-        $client->resolveTarget('dmt-get-sender', ['initiator_id' => '9962981729']);
+        // dmt-get-sender requires initiator_id and customer_id (user_code is optional).
+        $this->expectExceptionMessageMatches('/Missing required params.*initiator_id.*customer_id/');
+        $client->resolveTarget('dmt-get-sender', ['user_code' => '20810200']);
     }
 
     public function testThrowsWhenRequiredParamNull(): void
     {
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/Missing required params.*user_code/');
+        $this->expectExceptionMessageMatches('/Missing required params.*customer_id/');
         $client->resolveTarget('dmt-get-sender', [
-            'customer_id' => '9123456789',
             'initiator_id' => '9962981729',
-            'user_code' => null,
+            'customer_id' => null,
         ]);
     }
 
