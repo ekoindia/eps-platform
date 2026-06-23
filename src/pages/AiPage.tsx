@@ -33,94 +33,11 @@ import {
 import { Helmet } from "react-helmet-async";
 import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
 import { Link } from "react-router-dom";
+import { AiVibeCodingSession } from "./ai/AiVibeCodingSession";
 import { CommandBlock, ConfigBlock, CopyButton } from "./ai/CommandBlock";
 
 const MCP_CMD = EPS_MCP_CMD;
 const INSTALL_MATRIX = buildInstallMatrix();
-
-/**
- * Anthropic "clay" — the official Claude brand mark color. Deliberate raw-hex
- * exception (not in the EPS palette): this paints the Claude Code logo glyph and
- * tool-call markers in {@link AiCodeSession} so the harness reads as authentic.
- */
-const CLAUDE_CLAY = "#D97757";
-
-/**
- * Decorative hero visual: a simplified Claude Code ("AI Code") TUI session that
- * drives the EPS MCP to write KYC code automatically. Rendered inside the glass
- * {@link CodeBlock} shell. Purely illustrative, so the whole block is aria-hidden.
- */
-const AiCodeSession = () => (
-	<div aria-hidden className="leading-[1.5rem] text-white/70">
-		{/* Banner: brand-clay glyph + model label */}
-		<div className="flex items-start gap-3">
-			<pre
-				className="leading-[1.15] whitespace-pre"
-				style={{ color: CLAUDE_CLAY }}
-			>
-				{" ▐▛███▜▌\n▝▜█████▛▘\n  ▘▘ ▝▝  "}
-			</pre>
-			<div className="pt-0.5">
-				<div className="font-semibold text-white">AI Code</div>
-				<div className="text-white/40">Opus 4.8 with high effort</div>
-			</div>
-		</div>
-
-		{/* Prompt */}
-		<div className="my-4 border-y border-white/10 py-2">
-			<span className="text-eko-gold">❯</span>{" "}
-			<span className="text-white/80">
-				Add PAN verification to my onboarding form
-			</span>
-		</div>
-
-		{/* Session transcript */}
-		<div className="space-y-2.5">
-			<div>
-				<span style={{ color: CLAUDE_CLAY }}>●</span> I'll wire this up with the
-				EPS MCP.
-			</div>
-
-			<div className="pt-1 mb-0">
-				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
-				<span className="text-white/40">eps · search(</span>
-				<span className="text-amber-200">"verify PAN"</span>
-				<span className="text-white/40">)</span>
-			</div>
-			<div className="pl-4 text-emerald-300/80">
-				<span className="text-white/40">⎿</span> pan-lite, pan-advanced,
-				bulk-pan-verify
-			</div>
-
-			<div className="pt-1 mb-0">
-				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
-				<span className="text-white/40">eps · get_signing_snippet(</span>
-				<span className="text-amber-200">"node"</span>
-				<span className="text-white/40">)</span>
-			</div>
-			<div className="pl-4 text-emerald-300/80">
-				<span className="text-white/40">⎿</span> HMAC-SHA256 signing ready
-			</div>
-
-			<div className="pt-1 mb-0">
-				<span style={{ color: CLAUDE_CLAY }}>●</span>{" "}
-				<span className="text-white/40">Writing</span>{" "}
-				<span className="text-white/80">src/kyc/verify-pan.ts</span>{" "}
-				<span className="text-white/40">…</span>
-			</div>
-			<div className="pl-4 text-white/40">
-				<span className="text-white/40">⎿</span> Updated 1 file{" "}
-				<span className="text-emerald-300/80">(+34 -0)</span>
-			</div>
-
-			<div className="pt-2 text-emerald-300/90">
-				<span className="text-white/40">✓</span> PAN verification wired — signed
-				EPS call, name-match on
-				<span className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse-soft bg-eko-gold" />
-			</div>
-		</div>
-	</div>
-);
 
 /* ----------------------------- Differentiators ---------------------------- */
 
@@ -369,10 +286,10 @@ const AiPage = () => {
 								<CodeBlock
 									variant="glass"
 									hideLineNumbers
-									fileName="claude"
+									fileName="AI Vibe Coding"
 									className="relative"
 								>
-									<AiCodeSession />
+									<AiVibeCodingSession />
 								</CodeBlock>
 							</FadeIn>
 						</div>

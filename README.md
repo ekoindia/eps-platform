@@ -1,14 +1,9 @@
-```text
-███████╗██████╗ ███████╗
-██╔════╝██╔══██╗██╔════╝
-█████╗  ██████╔╝███████╗
-██╔══╝  ██╔═══╝ ╚════██║
-███████╗██║     ███████║
-╚══════╝╚═╝     ╚══════╝
- Eko Platform Services
-```
-
-# EPS Platform
+<table width="100%">
+  <tr>
+    <td align="left"><h1>Eko Platform Services</h1></td>
+    <td align="right"><img src="public/eps-logo-color.svg" alt="Eko Platform Services" width="128"></td>
+  </tr>
+</table>
 
 <!-- Build & meta -->
 [![CI](https://github.com/ekoindia/eps-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ekoindia/eps-platform/actions/workflows/ci.yml)
