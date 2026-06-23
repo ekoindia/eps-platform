@@ -36,11 +36,13 @@ These cannot be done in-repo and must be done once before the first release.
 
 npm auth runs in two phases. A package's **Trusted Publisher** (OIDC) config can
 only be created *after* the package exists on npm, so the very first publish of
-each package needs a token; OIDC takes over afterward. Node ≥22.14.0 / npm
-≥11.5.1 are required for OIDC (the workflow pins Node `22.14.0`); under OIDC,
-provenance attestations are generated automatically — no `--provenance` flag and
-no token. Package records auto-create on first `npm publish --access public`, so
-nothing needs to be pre-created on npm besides the org.
+each package needs a token; OIDC takes over afterward. OIDC requires **npm
+≥11.5.1** — and Node `22.14.0` (pinned in the workflow) bundles only npm
+`10.9.2`, so the `npm-release` job explicitly runs `npm install -g npm@^11.5.1`
+before publishing (without it, publish runs unauthenticated and fails with
+`E404`). Under OIDC, provenance attestations are generated automatically — no
+`--provenance` flag and no token. Package records auto-create on first
+`npm publish --access public`, so nothing needs to be pre-created besides the org.
 
 **Phase A — Bootstrap (one-time per package; done for the current three):**
 
