@@ -1,24 +1,23 @@
-<table width="100%">
-  <tr>
-    <td align="left"><h1>Eko Platform Services</h1></td>
-    <td align="right"><img src="public/eps-logo-color.svg" alt="Eko Platform Services" width="128"></td>
-  </tr>
-</table>
+<div align="center">
+
+<img src="public/eps-logo-color.svg" alt="Eko Platform Services" width="96">
+
+# Eko Platform Services
 
 <!-- Build & meta -->
 [![CI](https://github.com/ekoindia/eps-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ekoindia/eps-platform/actions/workflows/ci.yml)
 [![Release](https://github.com/ekoindia/eps-platform/actions/workflows/release.yml/badge.svg)](https://github.com/ekoindia/eps-platform/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![API Docs](https://img.shields.io/badge/API%20Docs-1A5366)](https://eps.eko.in/docs)
 
 <!-- Published packages: version · monthly downloads -->
 [![eps-sdk](https://img.shields.io/npm/v/%40ekoindia%2Feps-sdk?label=%40ekoindia%2Feps-sdk)](https://www.npmjs.com/package/@ekoindia/eps-sdk)
 [![eps-context-mcp](https://img.shields.io/npm/v/%40ekoindia%2Feps-context-mcp?label=%40ekoindia%2Feps-context-mcp)](https://www.npmjs.com/package/@ekoindia/eps-context-mcp)
 [![eps-mock-server](https://img.shields.io/npm/v/%40ekoindia%2Feps-mock-server?label=%40ekoindia%2Feps-mock-server)](https://www.npmjs.com/package/@ekoindia/eps-mock-server)
 
-[![eps-sdk downloads](https://img.shields.io/npm/dm/%40ekoindia%2Feps-sdk?label=eps-sdk%20%E2%86%93)](https://www.npmjs.com/package/@ekoindia/eps-sdk)
-[![eps-context-mcp downloads](https://img.shields.io/npm/dm/%40ekoindia%2Feps-context-mcp?label=eps-context-mcp%20%E2%86%93)](https://www.npmjs.com/package/@ekoindia/eps-context-mcp)
-[![eps-mock-server downloads](https://img.shields.io/npm/dm/%40ekoindia%2Feps-mock-server?label=eps-mock-server%20%E2%86%93)](https://www.npmjs.com/package/@ekoindia/eps-mock-server)
+
+</div>
 
 **The AI-ready developer platform for [Eko Platform Services](https://eps.eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
 
