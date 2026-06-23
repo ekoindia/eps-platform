@@ -29,6 +29,9 @@ export const SITE_OG_TITLE =
 	"Fintech APIs for KYC, Verification & Transactions in India | Eko Platform Services";
 export const SITE_OG_IMAGE = `${SITE_URL}/eps-website-social-preview.png`;
 
+/** Eko organization GitHub (promoted in the Developers menu + footer). */
+export const GITHUB_ORG_URL = "https://github.com/ekoindia";
+
 /** Social media profile links and handles. */
 export const SOCIAL_TWITTER_HANDLE = "@ekospeaks";
 export const SOCIAL_LINKS = {

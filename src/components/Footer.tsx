@@ -1,6 +1,6 @@
 import { EkoLogo } from "@/components/EkoLogo";
 import { XIcon } from "@/components/icons/XIcon";
-import { SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
+import { GITHUB_ORG_URL, SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
 import { Mail, MapPin, Phone } from "lucide-react";
 import {
@@ -44,6 +44,7 @@ const footerLinks = {
 		{ label: "Sandbox", href: "/docs" },
 		{ label: "Integrate with AI", href: "/ai" },
 		{ label: "FAQs", href: "/faq", internal: true },
+		{ label: "Open Source", href: GITHUB_ORG_URL, external: true },
 		// { label: "Sandbox", href: "https://developers.eko.in", external: true },
 	],
 	company: [

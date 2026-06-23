@@ -38,8 +38,9 @@ each package needs a token; OIDC takes over afterward. OIDC requires **npm
 ≥11.5.1** — and Node `22.14.0` (pinned in the workflow) bundles only npm
 `10.9.2`, so the `npm-release` job explicitly runs `npm install -g npm@^11.5.1`
 before publishing (without it, publish runs unauthenticated and fails with
-`E404`). Under OIDC, provenance attestations are generated automatically — no
-`--provenance` flag and no token. Package records auto-create on first
+`E404`). The publish passes `--provenance`, which generates a signed SLSA build
+attestation — this needs `id-token: write` (granted) **and a public source repo**
+(`ekoindia/eps-platform` is public). Package records auto-create on first
 `npm publish --access public`, so nothing needs to be pre-created besides the org.
 
 **Phase A — Bootstrap (one-time per package; done for the current three):**
@@ -102,8 +103,8 @@ push to **`main`** (and `workflow_dispatch`); the **PHP** side runs on a
    currently on npm. **Unchanged → skipped. Changed → published** with the next
    version, then tagged `<name>@<version>`. Publish uses `--ignore-scripts`
    (we already baked/built, so the published bytes equal the fingerprinted
-   bytes). Auth: each package's npm Trusted Publisher (OIDC) — tokenless, with
-   automatic provenance.
+   bytes), plus `--provenance` for a signed SLSA attestation. Auth: each
+   package's npm Trusted Publisher (OIDC) — tokenless.
 
 The release is **stateless**: the npm registry is the source of truth, so no
 version-bump commit is pushed back to the protected branch — only the

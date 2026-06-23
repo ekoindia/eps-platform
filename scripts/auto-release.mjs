@@ -225,10 +225,13 @@ const publish = (pkgDir, name, version) => {
 	);
 	try {
 		// We already baked+built; skip lifecycle scripts so published bytes match.
-		run("npm", ["publish", "--access", "public", "--ignore-scripts"], {
-			cwd: pkgDir,
-			stdio: "inherit",
-		});
+		// --provenance generates a signed SLSA build attestation (needs id-token:
+		// write, which the npm-release job grants, and a PUBLIC source repo).
+		run(
+			"npm",
+			["publish", "--access", "public", "--provenance", "--ignore-scripts"],
+			{ cwd: pkgDir, stdio: "inherit" },
+		);
 		console.log(`  published ${name}@${version}`);
 	} catch (err) {
 		const msg = String(err.stderr || err.message || "");
