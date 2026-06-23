@@ -25,6 +25,11 @@ packages/*/data/
 .env.*
 !.env.example
 
+# Internal planning/strategy docs — kept locally, never committed (not for the
+# public repo). Removed from tracking before open-sourcing.
+docs/local-roadmap/
+docs/superpowers/
+
 # Ignore TypeScript incremental compilation cache
 *.tsbuildinfo
 
