@@ -1,6 +1,31 @@
+```text
+███████╗██████╗ ███████╗
+██╔════╝██╔══██╗██╔════╝
+█████╗  ██████╔╝███████╗
+██╔══╝  ██╔═══╝ ╚════██║
+███████╗██║     ███████║
+╚══════╝╚═╝     ╚══════╝
+ Eko Platform Services
+```
+
 # EPS Platform
 
-**The AI-ready developer platform for [Eko Platform Services](https://eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
+<!-- Build & meta -->
+[![CI](https://github.com/ekoindia/eps-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ekoindia/eps-platform/actions/workflows/ci.yml)
+[![Release](https://github.com/ekoindia/eps-platform/actions/workflows/release.yml/badge.svg)](https://github.com/ekoindia/eps-platform/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+
+<!-- Published packages: version · monthly downloads -->
+[![eps-sdk](https://img.shields.io/npm/v/%40ekoindia%2Feps-sdk?label=%40ekoindia%2Feps-sdk)](https://www.npmjs.com/package/@ekoindia/eps-sdk)
+[![eps-context-mcp](https://img.shields.io/npm/v/%40ekoindia%2Feps-context-mcp?label=%40ekoindia%2Feps-context-mcp)](https://www.npmjs.com/package/@ekoindia/eps-context-mcp)
+[![eps-mock-server](https://img.shields.io/npm/v/%40ekoindia%2Feps-mock-server?label=%40ekoindia%2Feps-mock-server)](https://www.npmjs.com/package/@ekoindia/eps-mock-server)
+
+[![eps-sdk downloads](https://img.shields.io/npm/dm/%40ekoindia%2Feps-sdk?label=eps-sdk%20%E2%86%93)](https://www.npmjs.com/package/@ekoindia/eps-sdk)
+[![eps-context-mcp downloads](https://img.shields.io/npm/dm/%40ekoindia%2Feps-context-mcp?label=eps-context-mcp%20%E2%86%93)](https://www.npmjs.com/package/@ekoindia/eps-context-mcp)
+[![eps-mock-server downloads](https://img.shields.io/npm/dm/%40ekoindia%2Feps-mock-server?label=eps-mock-server%20%E2%86%93)](https://www.npmjs.com/package/@ekoindia/eps-mock-server)
+
+**The AI-ready developer platform for [Eko Platform Services](https://eps.eko.in) — India's fintech APIs** (AePS, DMT, BBPS, PPI wallets, KYC & verification, agent banking).
 
 A single source-of-truth **data layer** describes every EPS API once. From it, the build generates everything a developer — or their AI coding agent — needs to integrate: backend SDKs, an MCP server, drop-in AI context packs, an offline mock server, OpenAPI + Postman, LLM-readable docs, and the marketing + developer-docs website itself. Edit the data, and every artifact regenerates in sync.
 
@@ -56,7 +81,10 @@ dist/                  # build output (generated, gitignored)
 packages/*/data/       # baked artifacts copied here at build time (generated, gitignored — never hand-edit)
 ```
 
-That's **3 npm packages, 1 Composer package, and 1 Claude Code plugin bundle**. The `packages/*/data/` files are generated outputs — they may be present in your working tree but are gitignored and must never be hand-edited or committed.
+That's **3 npm packages, 1 Composer package, and 1 Claude Code plugin bundle**.
+
+> [!CAUTION]
+> The `packages/*/data/` files are generated outputs — they may be present in your working tree but are gitignored and **must never be hand-edited or committed**.
 
 ## Data & configuration
 
@@ -75,6 +103,7 @@ That's **3 npm packages, 1 Composer package, and 1 Claude Code plugin bundle**. 
 
 **Config files** (root): `package.json` (npm workspaces), `vite.config.ts`, `vitest.config.ts`, `tsconfig*.json`, `eslint.config.js`, `components.json`, the `vite-plugin-generate-*.ts` emitters, and per-platform deploy rewrites (`vercel.json`, `netlify.toml`, `nginx.conf`, `.htaccess`).
 
+> [!TIP]
 > A full index of **every** configuration file lives in [docs/configuration.md](docs/configuration.md).
 
 ## How it works
