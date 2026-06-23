@@ -1,8 +1,6 @@
 # AI-Native: Gap Analysis
 
-**Question this answers:** Can we honestly call EPS an "AI-native" platform yet? If not, what does it still take?
-
-**Short answer:** Today EPS is **agent-ready / AI-friendly** — it ships machine-readable artifacts (context, SDKs, packs, mock, OpenAPI) generated from one source of truth. That is real and strong. But "AI-native" implies agents are first-class **actors** with a closed loop and **proof** they succeed. That bar is not met yet. This doc defines the bar and the work to clear it.
+Today EPS is **agent-ready / AI-friendly** — it ships machine-readable artifacts (context, SDKs, packs, mock, OpenAPI) generated from one source of truth. That is real and strong. But "AI-native" implies agents are first-class **actors** with a closed loop and **proof** they succeed. That bar is not met yet. This doc defines the bar and the work to clear it.
 
 ## The distinction
 

@@ -55,10 +55,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # OIDC Trusted Publishing requires Node >=22.14.0 (ships npm >=11.5.1).
           node-version: "22.14.0"
           registry-url: https://registry.npmjs.org
-          package-manager-cache: false
+
+      # Node 22.14.0 bundles npm 10.9.2, which CANNOT do OIDC Trusted Publishing
+      # (npm exchanges the GitHub id-token for a registry token only on >=11.5.1).
+      # Without this, `npm publish` runs unauthenticated and fails with E404.
+      - name: Upgrade npm for OIDC Trusted Publishing (needs >= 11.5.1)
+        run: npm install -g npm@^11.5.1
 
       - name: Install dependencies
         run: npm ci
