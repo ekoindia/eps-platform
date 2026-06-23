@@ -1,0 +1,35 @@
+/**
+ * Self-contained colour tokens for fenced code blocks inside endpoint
+ * descriptions (middle docs pane). Deliberately NOT the `--rp-*` right-pane
+ * palette — those vars are scoped to `.docs-rightpane` and would render the
+ * parchment/navy look in the wrong column. One token set, GitHub-ish, flips on
+ * the docs-local `.dark` toggle so a single prism theme works light + dark.
+ */
+.docs-md-code {
+	--mdc-bg: #f6f8fa;
+	--mdc-hdr: #eaeef2;
+	--mdc-border: rgba(0, 0, 0, 0.1);
+	--mdc-fg: #24292e;
+	--mdc-muted: #57606a;
+	--mdc-ln: #afb8c1;
+	--mdc-kw: #cf222e;
+	--mdc-str: #0a3069;
+	--mdc-fn: #8250df;
+	--mdc-cm: #6e7781;
+	--mdc-num: #0550ae;
+}
+
+.dark .docs-md-code,
+.docs-md-code.dark {
+	--mdc-bg: #0d1117;
+	--mdc-hdr: #161b22;
+	--mdc-border: rgba(255, 255, 255, 0.1);
+	--mdc-fg: #c9d1d9;
+	--mdc-muted: #8b949e;
+	--mdc-ln: #484f58;
+	--mdc-kw: #ff7b72;
+	--mdc-str: #a5d6ff;
+	--mdc-fn: #d2a8ff;
+	--mdc-cm: #8b949e;
+	--mdc-num: #79c0ff;
+}

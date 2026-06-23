@@ -17,6 +17,7 @@ import type {
 	ApiSpec,
 	ResponseField,
 } from "@/lib/data/api-specs-common";
+import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import {
 	buildSampleRequest,
 	resolveHeaders,
@@ -98,7 +99,7 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 		h1(`${spec.name} API Reference`),
 		`\`${spec.method} ${DEFAULT_BASE_URL}${spec.path}\``,
 		spec.summary,
-		spec.description,
+		resolveShortDescription(spec),
 		product &&
 			`> View product & pricing details: ${link(product.name, `${SITE_URL}${productHref(product.slug)}.md`, "md")}`,
 		pathParams.length ? h2("Path parameters") : undefined,

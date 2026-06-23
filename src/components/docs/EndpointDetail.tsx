@@ -1,11 +1,11 @@
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	resolveHeaders,
 	resolveRequestParams,
 } from "@/lib/data/api-specs-common";
+import { resolveDescription } from "@/lib/data/endpoint-descriptions";
 import { HttpMethodTag } from "./HttpMethodTag";
+import { MarkdownProse } from "./MarkdownProse";
 import { Params } from "./Params";
 import { ResponseAccordion } from "./ResponseAccordion";
 
@@ -33,6 +33,7 @@ const DocsSection = ({
 export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 	const headers = resolveHeaders();
 	const requestParams = resolveRequestParams(spec);
+	const description = resolveDescription(spec);
 
 	const pathParams = requestParams.filter((p) => p.in === "path");
 	const queryParams = requestParams.filter((p) => p.in === "query");
@@ -56,17 +57,7 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 				</div>
 			</header>
 
-			{spec.description && (
-				<div className="docs-inline-code-prose mt-6 text-[0.9375rem] leading-relaxed text-foreground/80 [&_a]:font-medium [&_a]:text-eko-navy [&_a]:underline dark:[&_a]:text-eko-gold [&_strong]:font-semibold [&_strong]:text-foreground [&_p]:my-0 [&_p+p]:mt-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1">
-					<ReactMarkdown
-						remarkPlugins={[remarkGfm]}
-						disallowedElements={["h1", "h2", "h3", "h4", "h5", "h6"]}
-						unwrapDisallowed
-					>
-						{spec.description}
-					</ReactMarkdown>
-				</div>
-			)}
+			{description && <MarkdownProse content={description} className="mt-6" />}
 
 			{pathParams.length > 0 && (
 				<DocsSection title="Path parameters">

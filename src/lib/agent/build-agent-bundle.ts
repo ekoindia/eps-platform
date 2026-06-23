@@ -11,6 +11,7 @@ import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
 import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
+import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	buildSampleRequest,
@@ -66,7 +67,7 @@ const indexEntry = (spec: ApiSpec): AgentApiIndexEntry => ({
 
 const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	...indexEntry(spec),
-	description: spec.description,
+	description: resolveShortDescription(spec),
 	bestFor: spec.bestFor,
 	docsUrl: `${SITE_URL}${docHrefForSlug(spec.slug) ?? docsHref()}`,
 	financial: spec.financial,

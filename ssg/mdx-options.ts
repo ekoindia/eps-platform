@@ -7,8 +7,15 @@ import remarkGfm from "remark-gfm";
  * and the prerender inner SSR server (ssg/plugin) so MDX compiles identically
  * in every context. GFM for tables/strikethrough; slugged + self-linking
  * headings for deep-linkable guides.
+ *
+ * `exclude`: @mdx-js/rollup processes BOTH `.md` and `.mdx` by default, which
+ * would compile the raw endpoint-description files under
+ * `content/docs/endpoints/` into components and break their `?raw` import (see
+ * `endpoint-descriptions.ts`). Those files are pure markdown loaded as strings,
+ * never as MDX, so we keep MDX away from that directory.
  */
 export const mdxOptions = {
+	exclude: ["**/content/docs/endpoints/**"],
 	// Always compile against the stable automatic JSX runtime (`jsx`/`jsxs`),
 	// never the dev runtime (`jsxDEV`). The prerender's inner SSR server runs in
 	// Vite "dev" mode but has no `react/jsx-dev-runtime` wired, so dev-runtime
