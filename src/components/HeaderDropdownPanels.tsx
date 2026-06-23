@@ -11,7 +11,7 @@ import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
-import { SOCIAL_LINKS } from "@/lib/config/site";
+import { GITHUB_ORG_URL, SOCIAL_LINKS } from "@/lib/config/site";
 import {
 	API_PRODUCT_PAGES,
 	hasProductPage,
@@ -30,6 +30,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import {
+	type ComponentType,
 	Fragment,
 	lazy,
 	Suspense,
@@ -38,6 +39,7 @@ import {
 } from "react";
 import {
 	FaFacebookF,
+	FaGithub,
 	FaInstagram,
 	FaLinkedinIn,
 	FaYoutube,
@@ -88,12 +90,66 @@ const companyLinks = [
 
 // Developer-hub links for the "Developers" dropdown. "SDKs & Libraries" deep-links
 // to /docs#sdk so DocsIndexPage preselects the "Use an SDK" integration mode.
-const developerLinks = [
+type DeveloperLinkItem = {
+	label: string;
+	href: string;
+	icon: ComponentType<{ className?: string }>;
+	/** When true, render as a new-tab anchor instead of a router Link. */
+	external?: boolean;
+};
+
+const developerLinks: DeveloperLinkItem[] = [
 	{ label: "API Documentation", href: "/docs", icon: BookOpen },
 	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
 	{ label: "Build with AI", href: "/ai", icon: Sparkles },
 	{ label: "FAQs", href: "/faq", icon: HelpCircle },
+	{
+		label: "Open Source",
+		href: GITHUB_ORG_URL,
+		icon: FaGithub,
+		external: true,
+	},
 ];
+
+/**
+ * Renders a single Developers-menu entry as a new-tab `<a>` (external) or a
+ * router `<Link>` (internal). Shared by the desktop dropdown and mobile accordion
+ * so their markup can't drift apart.
+ */
+const DeveloperLink = ({
+	item,
+	onClick,
+	className,
+	iconClassName,
+}: {
+	item: DeveloperLinkItem;
+	onClick: () => void;
+	className: string;
+	iconClassName: string;
+}) => {
+	const content = (
+		<>
+			<item.icon className={iconClassName} />
+			{item.label}
+		</>
+	);
+
+	return item.external ? (
+		<a
+			href={item.href}
+			target="_blank"
+			rel="noopener noreferrer"
+			onClick={onClick}
+			className={className}
+		>
+			{content}
+		</a>
+	) : (
+		<Link to={item.href} onClick={onClick} className={className}>
+			{content}
+		</Link>
+	);
+};
 
 const companySocialLinks = [
 	{
@@ -390,15 +446,13 @@ export const HeaderDropdownPanels = ({
 			</>
 		),
 		developers: developerLinks.map((item) => (
-			<Link
+			<DeveloperLink
 				key={item.href}
-				to={item.href}
+				item={item}
 				onClick={() => setMobileMenuOpen(false)}
 				className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
-			>
-				<item.icon className="w-3.5 h-3.5 text-eko-navy/50" />
-				{item.label}
-			</Link>
+				iconClassName="w-3.5 h-3.5 text-eko-navy/50"
+			/>
 		)),
 		company: companyLinks.map((item) => (
 			<CompanyLinkItem
@@ -547,15 +601,13 @@ export const HeaderDropdownPanels = ({
 					<div className="p-4 flex flex-col gap-1">
 						<DropdownColumnHeader title="Developers" />
 						{developerLinks.map((item) => (
-							<Link
+							<DeveloperLink
 								key={item.href}
-								to={item.href}
+								item={item}
 								onClick={() => setActiveDesktopDropdown(null)}
 								className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-							>
-								<item.icon className="w-4 h-4 text-eko-navy/50 shrink-0" />
-								{item.label}
-							</Link>
+								iconClassName="w-4 h-4 text-eko-navy/50 shrink-0"
+							/>
 						))}
 					</div>
 				</div>
