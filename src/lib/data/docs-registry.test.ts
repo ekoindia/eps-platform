@@ -151,8 +151,9 @@ describe("buildNavTree", () => {
 		const providers = childBranches(dmt!.children, "provider").map(
 			(b) => b.label,
 		);
-		expect(providers).toEqual(["Fino", "Levin"]); // first-appearance order
-		const fino = findBranch(dmt!.children, "Fino")!;
+		// Provider labels carry a "<product> – <provider>" prefix (see api-specs-common.ts).
+		expect(providers).toEqual(["DMT – Fino", "DMT – Levin"]); // first-appearance order
+		const fino = findBranch(dmt!.children, "DMT – Fino")!;
 		const finoGroups = childBranches(fino.children, "group").map(
 			(b) => b.label,
 		);
@@ -167,7 +168,9 @@ describe("buildNavTree", () => {
 		const providers = childBranches(ppi!.children, "provider").map(
 			(b) => b.label,
 		);
-		expect(new Set(providers)).toEqual(new Set(["Levin", "DigiKhata"]));
+		expect(new Set(providers)).toEqual(
+			new Set(["PPI – Levin", "PPI – DigiKhata"]),
+		);
 	});
 });
 
