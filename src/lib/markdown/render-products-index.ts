@@ -401,6 +401,7 @@ export const PRODUCTS_TXT_PARTS: ProductsIndexPart[] = [
 		lede: "Production-ready identity & KYC verification APIs from Eko EPS — validate individuals and their bank/UPI accounts in real time, built for India's digital economy. This document contains the full details of every identity & KYC verification API so it can be used standalone; per-product pages are linked in each section.",
 		productIds: [
 			"pan",
+			"mobile-otp",
 			"aadhaar",
 			"bank",
 			"upi",

@@ -97,6 +97,7 @@ export const PRICING_GROUP_ORDER = [
 	"Vehicle",
 	"Employment",
 	"Data & Utility",
+	"Mobile OTP",
 ] as const;
 
 export const PRICED_APIS: PricedApi[] = [
@@ -352,6 +353,18 @@ export const PRICED_APIS: PricedApi[] = [
 		group: "Data & Utility",
 		tiers: [{ upTo: null, rate: 3.6 }],
 		unitLabel: "per lookup",
+	},
+
+	// Mobile OTP
+	{
+		id: "mobile-otp-send",
+		name: "Mobile OTP (Send)",
+		shortName: "Send OTP",
+		productId: "mobile-otp",
+		group: "Mobile OTP",
+		tiers: [{ upTo: null, rate: 0.15 }],
+		unitLabel: "per OTP sent",
+		notes: "Verify OTP and Validate Token are free follow-up calls.",
 	},
 ];
 

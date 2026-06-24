@@ -122,7 +122,15 @@ const API_PRODUCTS_DATA = [
 		disabled: true,
 	},
 
-	// Verification APIs
+	// MARK: Verification APIs
+	{
+		id: "mobile-otp",
+		name: "Mobile/OTP Verification",
+		shortName: "Mobile OTP",
+		slug: "mobile-otp-verification-api",
+		category: "verification",
+		shortDesc: "Send, verify & validate mobile OTPs with a signed proof token",
+	},
 	{
 		id: "pan",
 		name: "PAN Verification",

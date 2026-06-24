@@ -16152,6 +16152,293 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 	},
+
+	// MARK: Mobile / OTP Verification
+	{
+		id: "mobile-otp-send",
+		productId: "mobile-otp",
+		name: "Send OTP",
+		slug: "mobile-otp-send",
+		summary:
+			"Send a one-time password (OTP) to a customer's primary mobile number to start mobile verification.",
+		description:
+			"Triggers an OTP SMS to the supplied mobile number and returns a transaction id plus the OTP expiry timestamp. The customer enters the OTP, which you confirm with the Verify OTP API. By default the SMS is sent with the **Eko India** sender signature; to use your own Sender ID and template, complete telecom DLT registration (see below).",
+		descriptionFile: "mobile-otp-send.md",
+		relevance: "H",
+		bestFor:
+			"Confirming a customer owns a mobile number before onboarding, payouts, or any OTP-gated transaction.",
+		method: "POST",
+		path: "/tools/kyc/mobile/otp",
+		docsUrl: "https://developers.eko.in/reference/mobile-otp-send",
+		extraRequestParams: [
+			{
+				name: "csp_id",
+				label: "CSP ID",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"Customer Service Point id of the agent/retailer the OTP is being sent on behalf of.",
+				example: "9002336768",
+			},
+			{
+				name: "mobile",
+				label: "Mobile Number",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"Customer's 10-digit primary mobile number to send the OTP to.",
+				example: "9002336768",
+			},
+		],
+		responseData: [
+			{
+				name: "client_ref_id",
+				type: "string",
+				description: "Unique reference id for this OTP request, echoed back.",
+				example: "211101129871",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description:
+					"Registered mobile number of the API user that initiated the call.",
+				example: "1234567891",
+			},
+			{
+				name: "otp_expiry_timestamp",
+				label: "OTP Expiry",
+				type: "string",
+				description:
+					"Timestamp until which the OTP stays valid. Verify before this time.",
+				imp: true,
+				example: "Fri May 22 16:04:04 IST 2026",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "string",
+				description:
+					"Unique transaction id for this OTP send, for tracking and support.",
+				example: "2886978474",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			response_type_id: 1623,
+			message: "OTP has been sent",
+			data: {
+				client_ref_id: "211101129871",
+				initiator_id: "1234567891",
+				otp_expiry_timestamp: "Fri May 22 16:04:04 IST 2026",
+				tid: "2886978474",
+			},
+		},
+	},
+	{
+		id: "mobile-otp-verify",
+		productId: "mobile-otp",
+		name: "Verify OTP",
+		slug: "mobile-otp-verify",
+		summary:
+			"Verify the OTP entered by the customer and receive a signed verification token for downstream use.",
+		description:
+			"Validates the OTP sent by the Send OTP API. On success (`status` = 0) it returns a signed JWT `otp_verification_token` containing the verified `mobile` and a unique token id. The token is valid for **5 minutes** and acts as proof that OTP verification was performed — pass it to any transaction that depends on a verified mobile, and use the Validate OTP-Verification-Token API to confirm its authenticity.",
+		relevance: "H",
+		bestFor:
+			"Confirming a customer-entered OTP and obtaining a short-lived proof token for OTP-gated transactions.",
+		method: "PUT",
+		path: "/tools/kyc/mobile/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/mobile-otp-verify",
+		extraRequestParams: [
+			{
+				name: "otp",
+				label: "OTP",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"The OTP value the customer received via SMS from the Send OTP API.",
+				example: "3643",
+			},
+			{
+				name: "mobile",
+				label: "Mobile Number",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "The same 10-digit mobile number the OTP was sent to.",
+				example: "9002336768",
+			},
+		],
+		responseData: [
+			{
+				name: "client_ref_id",
+				type: "string",
+				description: "Unique reference id for this OTP flow, echoed back.",
+				example: "211101129871",
+			},
+			{
+				name: "otp_verification_token",
+				label: "OTP Verification Token",
+				type: "string",
+				description:
+					"Signed JWT proving the OTP was verified. Contains the verified mobile and a unique token id; valid for 5 minutes. Validate it with the Validate OTP-Verification-Token API.",
+				imp: true,
+				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description:
+					"Registered mobile number of the API user that initiated the call.",
+				example: "1234567891",
+			},
+			{
+				name: "mobile",
+				label: "Verified Mobile",
+				type: "string",
+				description: "The mobile number that was verified.",
+				imp: true,
+				example: "9002336768",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "string",
+				description: "Unique transaction id for this verification.",
+				example: "2886978475",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			response_type_id: 1632,
+			message: "OTP verification successful.",
+			data: {
+				client_ref_id: "211101129871",
+				otp_verification_token: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+				initiator_id: "1234567891",
+				mobile: "9002336768",
+				tid: "2886978475",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Incorrect or expired OTP",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 1,
+					response_type_id: 1632,
+					message: "OTP verification failed.",
+					data: {},
+				},
+			},
+		],
+	},
+	{
+		id: "mobile-otp-validate-token",
+		productId: "mobile-otp",
+		name: "Validate OTP-Verification-Token",
+		slug: "mobile-otp-validate-token",
+		summary:
+			"Validate an otp_verification_token as proof that OTP verification happened within the 5-minute time limit.",
+		description:
+			"Validates the authenticity of an `otp_verification_token` issued by the Verify OTP API, proving the OTP verification was actually performed within its 5-minute validity window. Returns `status` = 0 when the token is valid; a timed-out or tampered/invalid token returns `status` = 1 with a descriptive message.",
+		relevance: "M",
+		bestFor:
+			"Server-to-server proof that a mobile OTP was verified recently, before honouring an OTP-gated action.",
+		method: "GET",
+		path: "/tools/kyc/mobile/otp/validate-token",
+		docsUrl: "https://developers.eko.in/reference/mobile-otp-validate-token",
+		extraRequestParams: [
+			{
+				name: "otp_verification_token",
+				label: "OTP Verification Token",
+				in: "query",
+				type: "string",
+				required: true,
+				description: "The signed JWT received from the Verify OTP API.",
+				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+			},
+		],
+		responseData: [
+			{
+				name: "client_ref_id",
+				type: "string",
+				description:
+					"Unique reference id for the original OTP flow, echoed back.",
+				example: "211101129871",
+			},
+			{
+				name: "otp_verification_token",
+				label: "OTP Verification Token",
+				type: "string",
+				description: "The token that was validated, echoed back.",
+				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description:
+					"Registered mobile number of the API user that initiated the call.",
+				example: "1234567891",
+			},
+			{
+				name: "mobile",
+				label: "Verified Mobile",
+				type: "string",
+				description: "The mobile number the token certifies as verified.",
+				imp: true,
+				example: "9002336768",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "string",
+				description: "Unique transaction id for this validation.",
+				example: "2886978475",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			response_type_id: 1633,
+			message: "OTP verification token is valid.",
+			data: {
+				client_ref_id: "211101129871",
+				otp_verification_token: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+				initiator_id: "1234567891",
+				mobile: "9002336768",
+				tid: "2886978475",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Token timed out (older than 5 minutes)",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 1,
+					response_type_id: 1634,
+					message: "The OTP verification token has timed out.",
+				},
+			},
+			{
+				scenario: "Invalid or tampered token",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 1,
+					response_type_id: 1634,
+					message: "The OTP verification token is invalid.",
+				},
+			},
+		],
+	},
 ];
 
 /** Lookup a spec by its unique id. */
