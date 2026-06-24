@@ -14,12 +14,12 @@
  * runs at module load and fails the build/tests on any duplicate or reserved
  * slug.
  */
-import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
-import type { ApiProductCategory } from "./api-products";
-import { API_SPECS } from "./api-specs";
-import { categoryForSpec } from "./api-specs-common";
-import type { ApiSpec } from "./api-specs-common";
 import { GUIDES, type GuideMeta } from "@/content/docs/docs-guides";
+import type { ApiProductCategory } from "./api-products";
+import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
+import { API_SPECS } from "./api-specs";
+import type { ApiSpec } from "./api-specs-common";
+import { categoryForSpec } from "./api-specs-common";
 
 /** URL section segment under which all docs pages live. */
 export const DOCS_SECTION_SLUG = "docs";
@@ -31,12 +31,18 @@ export const docsHref = (slug?: string): string =>
 /** The three product categories, in canonical nav order. */
 export type DocCategory = ApiProductCategory;
 
-export const CATEGORY_ORDER: DocCategory[] = ["bc", "payment", "verification"];
+export const CATEGORY_ORDER: DocCategory[] = [
+	"bc",
+	"payment",
+	"verification",
+	"util",
+];
 
 export const CATEGORY_TITLES: Record<DocCategory, string> = {
 	bc: "Banking & Cash",
 	payment: "Payments",
 	verification: "Verification",
+	util: "Utility & Helper APIs",
 };
 
 /**

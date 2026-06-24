@@ -1,7 +1,7 @@
 export type ApiProductRelevance = "H" | "M" | "L";
 
 /** The three product categories — the single source of truth for categories. */
-export type ApiProductCategory = "bc" | "payment" | "verification";
+export type ApiProductCategory = "bc" | "payment" | "verification" | "util";
 
 export interface ApiProductRef {
 	id: string;
@@ -22,7 +22,7 @@ export const productHref = (slug: string): string =>
 	`/${PRODUCTS_SECTION_SLUG}/${slug}`;
 
 const API_PRODUCTS_DATA = [
-	// BC APIs
+	// MARK: BC APIs
 	{
 		id: "dmt",
 		name: "Domestic Money Transfer (DMT)",
@@ -48,38 +48,8 @@ const API_PRODUCTS_DATA = [
 		shortDesc:
 			"Prepaid (PPI) wallets — sender onboarding, Aadhaar KYC, wallet load & bank transfers (Levin & DigiKhata)",
 	},
-	{
-		id: "user-management",
-		name: "User & Agent Management",
-		slug: "user-management-api",
-		category: "bc",
-		shortDesc:
-			"Onboard agents/retailers, manage their services, and check settlement balance",
-	},
-	{
-		id: "customer-management",
-		name: "Customer Management",
-		slug: "customer-management-api",
-		category: "bc",
-		shortDesc:
-			"Rail-agnostic customer onboarding, lookup, and OTP verification",
-	},
 
-	// Payment APIs
-	{
-		id: "transactions",
-		name: "Transactions & Refunds",
-		slug: "transactions-api",
-		category: "payment",
-		shortDesc: "Transaction status inquiry and OTP-based refunds",
-	},
-	{
-		id: "utilities",
-		name: "Utility & Helper APIs",
-		slug: "utilities-api",
-		category: "payment",
-		shortDesc: "Bank/IFSC lookup and generic mobile OTP helpers",
-	},
+	// MARK: Payment APIs
 	{
 		id: "bbps",
 		name: "Bharat Bill Payment System (BBPS)",
@@ -280,6 +250,39 @@ const API_PRODUCTS_DATA = [
 		slug: "fssai-verification-api",
 		category: "verification",
 		shortDesc: "Verify FSSAI food license details and status",
+	},
+
+	// MARK: Utility APIs
+	{
+		id: "transactions",
+		name: "Transactions & Refunds",
+		slug: "transactions-api",
+		category: "util",
+		shortDesc: "Transaction status inquiry and OTP-based refunds",
+	},
+	{
+		id: "user-management",
+		name: "User & Agent Management",
+		slug: "user-management-api",
+		category: "util",
+		shortDesc:
+			"Onboard agents/retailers, manage their services, and check settlement balance",
+	},
+	{
+		id: "customer-management",
+		name: "Customer Management",
+		slug: "customer-management-api",
+		category: "util",
+		shortDesc:
+			"Rail-agnostic customer onboarding, lookup, and OTP verification",
+		disabled: true,
+	},
+	{
+		id: "bank-info",
+		name: "Bank & IFSC",
+		slug: "bank-info",
+		category: "util",
+		shortDesc: "Bank/IFSC lookup",
 	},
 ] as const;
 

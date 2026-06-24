@@ -483,12 +483,17 @@ function renderProductsIndex(
 			label: "BC Agent APIs",
 			list: products.filter((p) => p.category === "bc"),
 		},
+		{
+			label: "Utility APIs",
+			list: products.filter((p) => p.category === "util"),
+		},
 	];
 
 	const categoryLabels: Record<ApiProductRef["category"], string> = {
 		verification: "Verification",
 		payment: "Payments",
 		bc: "BC Agent",
+		util: "Utility",
 	};
 
 	const blocks: (string | undefined)[] = [];

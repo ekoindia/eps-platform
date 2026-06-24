@@ -49,7 +49,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9123456789",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "customer_id",
@@ -471,7 +470,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9123456789",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "count",
@@ -1147,7 +1145,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "<binary file>",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "activation_status",
@@ -2322,7 +2319,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/bbps/categories",
 		docsUrl: "https://developers.eko.in/reference/bbps-get-categories",
 		extraRequestParams: [],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "categories",
@@ -2439,7 +2435,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/bbps/locations",
 		docsUrl: "https://developers.eko.in/reference/bbps-get-locations",
 		extraRequestParams: [],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "locations",
@@ -2548,7 +2543,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 7,
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "operators",
@@ -2651,7 +2645,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 83,
 			},
 		],
-		omitCommonParams: ["user_code", "client_ref_id", "source"],
 		responseData: [
 			{
 				name: "fetchBill",
@@ -3146,7 +3139,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1734567890",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "tid",
@@ -3303,7 +3295,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "58",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "is_service_activated",
@@ -3541,1429 +3532,6 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "initiate-fund-transfer",
-		productId: "payment",
-		name: "Initiate Fund Transfer",
-		slug: "initiate-fund-transfer",
-		summary:
-			"Transfer funds from your e-wallet to any Indian bank account via IMPS, NEFT, or RTGS.",
-		description:
-			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback. Setting up a callback (webhook) URL via the Transaction Status Callback API is mandatory, and each `client_ref_id` must be unique (max 20 characters).",
-		relevance: "M",
-		bestFor:
-			"Salary disbursals, vendor settlements, contractor payouts, gig-worker commissions.",
-		method: "POST",
-		path: "/user/payment/fund-transfer",
-		docsUrl: "https://developers.eko.in/reference/initiate-fund-transfer",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "service_code",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Fixed value 45 for the Payout / Fund Transfer service.",
-				example: 45,
-			},
-			{
-				name: "payment_mode",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transfer rail: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
-				example: 5,
-			},
-			{
-				name: "recipient_name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Beneficiary's full name as per bank records.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Beneficiary bank account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IFSC code of the beneficiary's bank branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "amount",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transfer amount in INR (integer, paise not supported).",
-				example: 25000,
-			},
-			{
-				name: "sender_name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Name of the payer / initiating entity.",
-				example: "Acme Corp",
-			},
-			{
-				name: "tag",
-				in: "body",
-				type: "string",
-				required: false,
-				description:
-					"Free-text purpose label (e.g. 'Salary', 'Vendor Payment').",
-				example: "Salary",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: false,
-				description: "Sender's GPS co-ordinates for audit/compliance.",
-				example: "28.78123,72.808912",
-			},
-			{
-				name: "beneficiary_account_type",
-				in: "body",
-				type: "number",
-				required: false,
-				description: "Account type of beneficiary: 1 = Savings, 2 = Current.",
-				example: 1,
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's unique transaction identifier. Use this for status inquiries.",
-				imp: true,
-				example: "2886601782",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"Bank-side UTR / reference number assigned after successful credit.",
-				imp: true,
-				example: "412345678901",
-			},
-			{
-				name: "amount",
-				type: "number",
-				description: "Amount transferred in INR.",
-				imp: true,
-				example: 25000,
-			},
-			{
-				name: "fee",
-				type: "number",
-				description: "Transaction fee charged to the wallet.",
-				example: 5,
-			},
-			{
-				name: "gst",
-				type: "number",
-				description: "GST component of the fee.",
-				example: 0.9,
-			},
-			{
-				name: "sender_name",
-				type: "string",
-				description: "Name of the initiating entity as echoed back.",
-				example: "Acme Corp",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Beneficiary name as submitted.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Beneficiary account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "Beneficiary bank IFSC.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Rail used: 4=NEFT, 5=IMPS, 13=RTGS.",
-				example: 5,
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description: "Your reference ID echoed back for reconciliation.",
-				example: "PAY-20240615-001",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Server-side transaction timestamp.",
-				example: "2024-06-15 10:30:45",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Fund transfer successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				tid: "2886601782",
-				bank_ref_num: "412345678901",
-				tx_status: "0",
-				amount: 25000,
-				fee: 5,
-				gst: 0.9,
-				sender_name: "Acme Corp",
-				recipient_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				payment_mode: 5,
-				client_ref_id: "PAY-20240615-001",
-				timestamp: "2024-06-15 10:30:45",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Insufficient wallet balance",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-			{
-				scenario: "Monthly limit exhausted for sender/beneficiary",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 945,
-					message: "Sender/beneficiary monthly limit exhausted",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-			{
-				scenario: "Transaction pending bank confirmation (NEFT)",
-				statusCode: 200,
-				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Transaction initiated",
-					tx_status: "2",
-					txstatus_desc: "Response Awaited",
-					data: {
-						tid: "2886601783",
-						bank_ref_num: "",
-						tx_status: "2",
-						amount: 25000,
-						payment_mode: 4,
-						client_ref_id: "PAY-20240615-002",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "fund-transfer-inquiry",
-		productId: "payment",
-		name: "Transaction Inquiry",
-		slug: "fund-transfer-inquiry",
-		summary:
-			"Fetch the current status of a payout transaction by Eko TID or your client_ref_id.",
-		description:
-			"Use this API to poll the live status of any fund-transfer transaction. Pass either Eko's `tid` or your own `client_ref_id` as the path parameter. Particularly useful for NEFT transactions where the initial response returns `tx_status=2` (awaited) — keep polling until you get a terminal state (0=Success, 1=Fail, 4=Refunded). You can also rely on the webhook callback instead of polling.",
-		relevance: "M",
-		bestFor:
-			"Reconciling pending NEFT payouts, confirming IMPS credit, building retry / refund logic.",
-		method: "GET",
-		path: "/tools/reference/transaction/{transaction_ref}",
-		docsUrl: "https://developers.eko.in/reference/fund-transfer-inquiry",
-		extraRequestParams: [
-			{
-				name: "transaction_ref",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Eko TID (e.g. 2886601782) or your client_ref_id for the transaction to look up.",
-				example: "2886601782",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko's unique transaction identifier.",
-				imp: true,
-				example: "2886601782",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"Bank UTR assigned after successful credit. Empty while awaited.",
-				imp: true,
-				example: "412345678901",
-			},
-			{
-				name: "amount",
-				type: "number",
-				description: "Amount in INR that was transferred.",
-				imp: true,
-				example: 25000,
-			},
-			{
-				name: "fee",
-				type: "number",
-				description: "Transaction fee charged.",
-				example: 5,
-			},
-			{
-				name: "gst",
-				type: "number",
-				description: "GST on the fee.",
-				example: 0.9,
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Beneficiary name.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Beneficiary account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "Beneficiary bank IFSC.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Rail: 4=NEFT, 5=IMPS, 13=RTGS.",
-				example: 5,
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description: "Your reference ID as submitted.",
-				example: "PAY-20240615-001",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Timestamp of the original transaction.",
-				example: "2024-06-15 10:30:45",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				tid: "2886601782",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				bank_ref_num: "412345678901",
-				amount: 25000,
-				fee: 5,
-				gst: 0.9,
-				recipient_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				payment_mode: 5,
-				client_ref_id: "PAY-20240615-001",
-				timestamp: "2024-06-15 10:30:45",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Transaction not found (unknown TID or client_ref_id)",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Transaction not found",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "get-user-balance",
-		productId: "payment",
-		name: "Get User Balance",
-		slug: "get-user-balance",
-		summary:
-			"Retrieve the current e-wallet balance of a registered agent or retailer.",
-		description:
-			"Returns the live e-wallet balance for the given `user_code`. Integrate this before initiating transfers to pre-validate sufficient funds without incurring a failed-transaction fee. Balance is in INR.",
-		relevance: "M",
-		bestFor:
-			"Pre-transfer balance checks, dashboard balance widgets, auto top-up triggers.",
-		method: "GET",
-		path: "/user/balance",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		extraRequestParams: [],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "balance",
-				type: "number",
-				description: "Current e-wallet balance in INR.",
-				imp: true,
-				example: 125000.5,
-			},
-			{
-				name: "wallet_id",
-				type: "string",
-				description: "Eko's internal wallet identifier for this user.",
-				example: "EKO-W-20810200",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				balance: 125000.5,
-				wallet_id: "EKO-W-20810200",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "User not found (invalid user_code)",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "User not found",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "add-recipient",
-		productId: "payment",
-		name: "Add Recipient",
-		slug: "add-recipient",
-		summary:
-			"Register a new bank account as a payout recipient (beneficiary) for an agent.",
-		description:
-			"Saves a beneficiary's bank account details under an agent's profile so future fund transfers can reference them by name or ID. The API validates IFSC format; the actual account validity should be confirmed via penny-drop before a live transfer. Once registered, the recipient can be reused across multiple payouts without re-entering account details.",
-		relevance: "M",
-		bestFor:
-			"Onboarding salaried employees, saving vendor bank accounts, batch payout setups.",
-		method: "POST",
-		path: "/user/recipient/register",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		extraRequestParams: [
-			{
-				name: "recipient_name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Full name of the recipient as per bank records.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Recipient's bank account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IFSC code of the recipient's bank branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "mobile",
-				in: "body",
-				type: "string",
-				required: false,
-				description: "Recipient's mobile number for SMS credit alerts.",
-				example: "9876500001",
-			},
-			{
-				name: "recipient_type",
-				in: "body",
-				type: "number",
-				required: false,
-				description: "Recipient category: 3 = bank account.",
-				example: 3,
-			},
-		],
-		responseData: [
-			{
-				name: "recipient_id",
-				type: "string",
-				description:
-					"Eko-assigned unique identifier for this recipient. Reference in future transfers.",
-				imp: true,
-				example: "R-10293847",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Name as registered.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Account number as registered.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "IFSC as registered.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "is_verified",
-				type: "boolean",
-				description: "Whether the account has been verified via penny drop.",
-				example: false,
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Recipient registered successfully",
-			response_type_id: 1388,
-			data: {
-				recipient_id: "R-10293847",
-				recipient_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				is_verified: false,
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Recipient already registered with same account+IFSC",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 342,
-					message: "Recipient already registered",
-					data: {
-						recipient_id: "R-10293847",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "verify-bank-account",
-		productId: "payment",
-		name: "Verify Bank Account (Penny Drop)",
-		slug: "verify-bank-account",
-		summary:
-			"Validate a bank account by sending a small test credit and confirming the account holder's name.",
-		description:
-			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet because it is a financial transaction.",
-		relevance: "M",
-		bestFor:
-			"Validating new vendor or employee bank accounts before live payouts, preventing misdirected fund transfers.",
-		method: "POST",
-		path: "/user/payment/penny-drop",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "account",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Bank account number to verify.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IFSC code of the account's bank branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "recipient_name",
-				in: "body",
-				type: "string",
-				required: false,
-				description:
-					"Expected name of the account holder, used for cross-check.",
-				example: "Ravi Kumar",
-			},
-		],
-		responseData: [
-			{
-				name: "account_holder_name",
-				type: "string",
-				description:
-					"Name registered with the bank for this account — use to confirm identity.",
-				imp: true,
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Bank account number that was verified.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "IFSC of the verified branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "is_valid",
-				type: "boolean",
-				description: "True if the penny-drop credit was accepted by the bank.",
-				imp: true,
-				example: true,
-			},
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko transaction ID for the penny-drop credit.",
-				example: "2886601800",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "Bank UTR for the penny-drop debit.",
-				example: "412345678910",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Bank account verified",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				account_holder_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				is_valid: true,
-				tid: "2886601800",
-				bank_ref_num: "412345678910",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario:
-					"Invalid account number — bank rejected the penny-drop credit",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 1,
-					message: "Invalid bank account",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {
-						is_valid: false,
-					},
-				},
-			},
-			{
-				scenario: "Insufficient balance for penny drop",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "setup-callback-url",
-		productId: "payment",
-		name: "Setup Callback URL",
-		slug: "setup-callback-url",
-		summary:
-			"Register a webhook endpoint to receive real-time payout transaction status updates.",
-		description:
-			"Registers a static HTTPS URL on your server that Eko will POST to whenever a payout transaction reaches a terminal state (Success, Fail, Refunded). The callback payload mirrors the Transaction Inquiry response — it includes `tid`, `tx_status`, `bank_ref_num`, `amount`, and party details. Use this instead of polling for NEFT transactions which may take minutes to confirm. Only static URL structures are supported; dynamic path parameters are not allowed.",
-		relevance: "M",
-		bestFor:
-			"Async NEFT payout reconciliation, real-time payment confirmation dashboards, automated refund triggers.",
-		method: "PUT",
-		path: "/user/settings/callback",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		extraRequestParams: [
-			{
-				name: "callback_url",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Your publicly accessible HTTPS endpoint to receive POST callbacks. Must be a static URL (no dynamic segments).",
-				example: "https://your-server.example.com/eko/callback",
-			},
-			{
-				name: "service_code",
-				in: "body",
-				type: "number",
-				required: true,
-				description:
-					"Service to attach callback to — use 45 for Fund Transfer / Payout.",
-				example: 45,
-			},
-		],
-		omitCommonParams: ["client_ref_id"],
-		responseData: [
-			{
-				name: "callback_url",
-				type: "string",
-				description: "The webhook URL as registered.",
-				imp: true,
-				example: "https://your-server.example.com/eko/callback",
-			},
-			{
-				name: "service_code",
-				type: "number",
-				description: "Service the callback is bound to.",
-				example: 45,
-			},
-			{
-				name: "is_active",
-				type: "boolean",
-				description: "Whether the callback is active and will receive events.",
-				example: true,
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Callback URL set successfully",
-			response_type_id: 1388,
-			data: {
-				callback_url: "https://your-server.example.com/eko/callback",
-				service_code: 45,
-				is_active: true,
-			},
-		},
-	},
-	{
-		id: "upi-payout-vpa-verify",
-		productId: "upi-payout",
-		name: "Verify UPI VPA (Pre-Payout)",
-		slug: "upi-payout-vpa-verify",
-		summary:
-			"Validate a recipient's UPI Virtual Payment Address and fetch the verified payee name before initiating a payout.",
-		description:
-			"Confirms that a UPI VPA (Virtual Payment Address / UPI ID) is active and returns the NPCI-verified recipient name and registered mobile number. Call this before every payout to eliminate wrong-payee failures, reduce failed transactions, and satisfy RBI beneficiary-confirmation requirements. The response also surfaces a fee quote for the pending transfer.",
-		relevance: "H",
-		bestFor:
-			"Pre-payout beneficiary confirmation, bulk-payout pre-validation runs, and assisted-payment flows where an agent must confirm the payee before sending funds.",
-		method: "POST",
-		path: "/customer/payment/upi/validate-vpa",
-		docsUrl: "https://developers.eko.in/reference/upi-vpa-verification",
-		extraRequestParams: [
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"The UPI Virtual Payment Address (VPA / UPI ID) to validate before sending the payout, e.g. vendor@okicici.",
-				example: "vendor@okicici",
-			},
-			{
-				name: "recipient_mobile",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Mobile number of the intended payout recipient, used for supplementary identity verification.",
-				example: "9876543210",
-			},
-			{
-				name: "name",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Expected name of the recipient — returned alongside the bank-verified payee name for comparison.",
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Geo-coordinates of the request origin (latitude,longitude) for regulatory audit trails.",
-				example: "28.6139,77.2090",
-			},
-		],
-		responseData: [
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				type: "string",
-				description: "The VPA (UPI ID) submitted in the request.",
-				imp: true,
-				example: "vendor@okicici",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description:
-					"NPCI-verified payee name registered against the VPA — compare with your expected name before sending funds.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "recipient_mobile",
-				type: "string",
-				description:
-					"Mobile number linked to the VPA as confirmed by the UPI network.",
-				example: "9876543210",
-			},
-			{
-				name: "recipient_id",
-				type: "number",
-				description:
-					"Eko's internal identifier for this recipient, useful for subsequent payout or audit API calls.",
-				example: 116642147,
-			},
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko transaction ID for this validation request — retain for support reference.",
-				example: "3467859394",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description:
-					"Indicative fee (in INR) applicable when a payout is sent to this VPA.",
-				example: "8.26",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Server-side timestamp of the validation request.",
-				example: "Tue Sep 09 11:37:56 IST 2025",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Transaction Success",
-			response_type_id: 1983,
-			data: {
-				customer_vpa: "vendor@okicici",
-				recipient_name: "Rajesh Kumar",
-				recipient_mobile: "9876543210",
-				recipient_id: 116642147,
-				tid: "3467859394",
-				tx_status: "0",
-				fee: "8.26",
-				timestamp: "Tue Sep 09 11:37:56 IST 2025",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "VPA does not exist or is inactive",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 1,
-					message: "VPA is invalid or does not exist",
-					response_type_id: 1983,
-					data: {
-						customer_vpa: "nobody@okicici",
-						recipient_name: null,
-						tx_status: "1",
-					},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid secret-key or secret-key-timestamp.",
-					data: {},
-				},
-			},
-			{
-				scenario: "Retailer/agent not found",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "User not found",
-					response_type_id: 1983,
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "upi-payout-transfer",
-		productId: "upi-payout",
-		name: "Initiate UPI Payout",
-		slug: "upi-payout-transfer",
-		summary:
-			"Send an instant UPI payout to any VPA (UPI ID) — vendor payments, disbursements, refunds, or salary credits — with real-time settlement.",
-		description:
-			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call.",
-		relevance: "H",
-		bestFor:
-			"Vendor payments, gig-worker payouts, insurance claim disbursements, refunds, salary credits, and any bulk or single instant UPI transfer workflow.",
-		method: "POST",
-		path: "/customer/payment/upi",
-		docsUrl: "https://developers.eko.in/reference/upi-vpa-payment",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Recipient's UPI Virtual Payment Address (VPA / UPI ID), e.g. vendor@okicici. Validate with the Verify VPA API first.",
-				example: "vendor@okicici",
-			},
-			{
-				name: "amount",
-				in: "body",
-				type: "number",
-				required: true,
-				description:
-					"Payout amount in Indian Rupees (INR). Minimum ₹1; maximum ₹1,00,000 per transaction (higher limits available for verified business accounts).",
-				example: 5000,
-			},
-			{
-				name: "recipient_mobile",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Mobile number of the payout recipient for cross-verification and audit.",
-				example: "9876543210",
-			},
-			{
-				name: "name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Name of the payout recipient for audit and reporting.",
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Geo-coordinates of the originating device (latitude,longitude) required for RBI compliance.",
-				example: "28.6139,77.2090",
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's unique transaction identifier — use this for status checks and support escalations.",
-				imp: true,
-				example: "3560508954",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description:
-					"Payout amount (INR) credited to the beneficiary's UPI-linked account.",
-				imp: true,
-				example: "5000.0",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"NPCI/bank UTR (Unique Transaction Reference) for the UPI transfer — share with beneficiary for dispute resolution.",
-				imp: true,
-				example: "317234500123",
-			},
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				type: "string",
-				description: "Recipient VPA (UPI ID) to which the payout was sent.",
-				example: "vendor@okicici",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description:
-					"Verified payee name as confirmed by the UPI network at the time of transfer.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "recipient_mobile",
-				type: "string",
-				description: "Mobile number of the payout recipient.",
-				example: "9876543210",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description: "Transaction fee (in INR) charged for this payout.",
-				example: "8.26",
-			},
-			{
-				name: "commission",
-				type: "string",
-				description:
-					"Commission earned (in INR) on this payout, if applicable under your partner plan.",
-				example: "2.00",
-			},
-			{
-				name: "tds",
-				type: "string",
-				description:
-					"TDS deducted (in INR) on the commission, where applicable.",
-				example: "0.20",
-			},
-			{
-				name: "balance",
-				type: "string",
-				description:
-					"Remaining payout wallet balance (in INR) after this transaction.",
-				example: "94991.54",
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description:
-					"The client_ref_id submitted in the request, echoed for cross-reference.",
-				example: "PAY-20240101-001",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Server-side timestamp of the payout transaction.",
-				example: "Mon Jan 01 10:30:00 IST 2024",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Transaction Successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			response_type_id: 1983,
-			data: {
-				tid: "3560508954",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: "5000.0",
-				bank_ref_num: "317234500123",
-				customer_vpa: "vendor@okicici",
-				recipient_name: "Rajesh Kumar",
-				recipient_mobile: "9876543210",
-				fee: "8.26",
-				commission: "2.00",
-				tds: "0.20",
-				balance: "94991.54",
-				client_ref_id: "PAY-20240101-001",
-				timestamp: "Mon Jan 01 10:30:00 IST 2024",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Insufficient wallet balance",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					response_type_id: 1983,
-					data: {
-						tx_status: "1",
-						txstatus_desc: "Failed",
-					},
-				},
-			},
-			{
-				scenario: "Payout pending — status awaited (NPCI timeout)",
-				statusCode: 200,
-				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Transaction Awaited",
-					tx_status: "2",
-					txstatus_desc: "Awaited",
-					response_type_id: 1983,
-					data: {
-						tid: "3560508960",
-						tx_status: "2",
-						txstatus_desc: "Awaited",
-						amount: "5000.0",
-						bank_ref_num: "",
-						customer_vpa: "vendor@okicici",
-						client_ref_id: "PAY-20240101-002",
-					},
-				},
-			},
-			{
-				scenario: "Invalid or inactive VPA",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 1,
-					message: "Beneficiary VPA is invalid or inactive",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					response_type_id: 1983,
-					data: {
-						tid: "3560508961",
-						tx_status: "1",
-						txstatus_desc: "Failed",
-						amount: "5000.0",
-						bank_ref_num: "",
-						customer_vpa: "invalid@okicici",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "upi-payout-status-tid",
-		productId: "upi-payout",
-		name: "UPI Payout Status (by TID)",
-		slug: "upi-payout-status-tid",
-		summary:
-			"Retrieve the latest status and settlement details of a UPI payout using Eko's internal transaction ID (TID).",
-		description:
-			"Polls the current state of a UPI payout by Eko's tid. Use this to check the outcome of awaited transactions, confirm settlement, or retrieve the NPCI bank reference number (UTR) for reconciliation. Recommended polling interval: 10–30 seconds for awaited transactions. The transaction-reference path parameter accepts either an Eko TID or a client_ref_id prefixed with 'CR' (use the client_ref_id variant for the latter).",
-		relevance: "H",
-		bestFor:
-			"Polling awaited UPI payouts, reconciling settled transactions, and retrieving UTR numbers for vendor remittance advice.",
-		method: "GET",
-		path: "/tools/reference/transaction/{transaction-reference}",
-		docsUrl: "https://developers.eko.in/reference/get-transaction-status",
-		extraRequestParams: [
-			{
-				name: "transaction-reference",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Eko's internal transaction ID (tid) returned by the Initiate UPI Payout API. Prefix with 'CR' to look up by client_ref_id instead.",
-				example: "3560508954",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko's unique transaction ID for this payout.",
-				imp: true,
-				example: "3560508954",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description: "Payout amount (in INR) as recorded at transaction time.",
-				imp: true,
-				example: "5000.0",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"NPCI UTR (Unique Transaction Reference) assigned after successful settlement — share with beneficiary for bank reconciliation.",
-				imp: true,
-				example: "317234500123",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description:
-					"Verified name of the payout recipient as confirmed by the UPI network.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description:
-					"Your system's client reference ID submitted at payout initiation.",
-				example: "PAY-20240101-001",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description: "Transaction fee (in INR) charged for this payout.",
-				example: "8.26",
-			},
-			{
-				name: "gst",
-				type: "string",
-				description: "GST component (in INR) included in the fee.",
-				example: "1.25",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Payment mode code. 5 = UPI.",
-				example: 5,
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Timestamp when the transaction was processed.",
-				example: "2024-01-01 10:30:44",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Enquiry success.",
-			response_type_id: 1472,
-			data: {
-				tid: "3560508954",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: "5000.0",
-				bank_ref_num: "317234500123",
-				recipient_name: "Rajesh Kumar",
-				client_ref_id: "PAY-20240101-001",
-				fee: "8.26",
-				gst: "1.25",
-				payment_mode: 5,
-				timestamp: "2024-01-01 10:30:44",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Transaction not found — invalid or non-existent TID",
-				statusCode: 400,
-				example: {
-					status: 69,
-					response_status_id: 1,
-					response_type_id: -1,
-					message: "failed!inquired.tx.not.found",
-					invalid_params: {
-						tid: "Please provide a valid TID to know the status of the transaction.",
-					},
-					data: {
-						tx_status: "1",
-						txstatus_desc: "Failed",
-					},
-				},
-			},
-			{
-				scenario: "Transaction still awaited / pending settlement",
-				statusCode: 200,
-				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Enquiry success.",
-					response_type_id: 1472,
-					data: {
-						tid: "3560508960",
-						tx_status: "2",
-						txstatus_desc: "Awaited",
-						amount: "5000.0",
-						bank_ref_num: "",
-						client_ref_id: "PAY-20240101-002",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "upi-payout-status-client-ref",
-		productId: "upi-payout",
-		name: "UPI Payout Status (by Client Ref ID)",
-		slug: "upi-payout-status-client-ref",
-		summary:
-			"Retrieve the status and settlement details of a UPI payout using your own client_ref_id when Eko's TID is unavailable.",
-		description:
-			"Identical to the TID-based status inquiry but accepts your system's client_ref_id as the lookup key — useful when the payout API call timed out before a TID was returned. Prefix the client_ref_id with 'CR' in the path parameter (e.g. CRmy-ref-id-001). This prevents you from sending a duplicate payout before confirming the original transaction outcome.",
-		relevance: "M",
-		bestFor:
-			"Recovering transaction state after an API timeout or network drop, and for idempotency checks before retrying a payout.",
-		method: "GET",
-		path: "/tools/reference/transaction/{transaction-reference}",
-		docsUrl: "https://developers.eko.in/reference/get-transaction-status",
-		extraRequestParams: [
-			{
-				name: "transaction-reference",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Your client_ref_id prefixed with 'CR', e.g. CRPAY-20240101-001. The 'CR' prefix tells the API to look up by client reference rather than by Eko TID.",
-				example: "CRPAY-20240101-001",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's unique transaction ID — retain this for future TID-based status checks.",
-				imp: true,
-				example: "3560508954",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description: "Payout amount (in INR) as recorded at transaction time.",
-				imp: true,
-				example: "5000.0",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "NPCI UTR assigned after successful settlement.",
-				imp: true,
-				example: "317234500123",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Verified name of the payout recipient.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description:
-					"The client_ref_id used for the lookup (without the CR prefix).",
-				example: "PAY-20240101-001",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description: "Transaction fee (in INR) charged for this payout.",
-				example: "8.26",
-			},
-			{
-				name: "gst",
-				type: "string",
-				description: "GST component (in INR) included in the fee.",
-				example: "1.25",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Payment mode code. 5 = UPI.",
-				example: 5,
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Timestamp when the transaction was processed.",
-				example: "2024-01-01 10:30:44",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Enquiry success.",
-			response_type_id: 1472,
-			data: {
-				tid: "3560508954",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: "5000.0",
-				bank_ref_num: "317234500123",
-				recipient_name: "Rajesh Kumar",
-				client_ref_id: "PAY-20240101-001",
-				fee: "8.26",
-				gst: "1.25",
-				payment_mode: 5,
-				timestamp: "2024-01-01 10:30:44",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario:
-					"client_ref_id not found — transaction never reached Eko's system",
-				statusCode: 400,
-				example: {
-					status: 69,
-					response_status_id: 1,
-					response_type_id: -1,
-					message: "failed!inquired.tx.not.found",
-					invalid_params: {
-						tid: "Please provide a valid TID to know the status of the transaction.",
-					},
-					data: {
-						tx_status: "1",
-						txstatus_desc: "Failed",
-					},
-				},
-			},
-		],
-	},
-	{
 		id: "qr-generate-static",
 		productId: "qr-payment",
 		name: "Generate Static QR",
@@ -4978,6 +3546,7 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/users/collection/upi-razorpay/generate-static-qr",
 		docsUrl: "https://developers.eko.in/reference/upi-generate-static-qr",
+		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
 			{
 				name: "sender_id",
@@ -5005,7 +3574,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "ravi@example.com",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "qr_string",
@@ -5128,7 +3696,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "Ravi Kumar Store",
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "tid",
@@ -5249,7 +3816,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "2886601782",
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "tid",
@@ -5358,7 +3924,7 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/your-callback-url",
 		docsUrl: "https://developers.eko.in/reference/transaction-status-callback",
 		extraRequestParams: [],
-		omitCommonParams: ["initiator_id", "user_code", "client_ref_id", "source"],
+		omitCommonParams: ["initiator_id"],
 		responseData: [
 			{
 				name: "tid",
@@ -5457,7 +4023,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "2886601782",
 			},
 		],
-		omitCommonParams: ["user_code", "client_ref_id", "source"],
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -5577,7 +4142,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 1,
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "tid",
@@ -5888,7 +4452,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1994-08-29",
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "pan",
@@ -6121,7 +4684,6 @@ export const API_SPECS: ApiSpec[] = [
 				],
 			},
 		],
-		omitCommonParams: ["user_code", "source"],
 		responseData: [
 			{
 				name: "reference_id",
@@ -9848,7 +8410,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/tools/catalog/service-codes",
 		docsUrl: "https://developers.eko.in/reference/service-codes",
 		sourceDoc: "https://developers.eko.in/reference/service-codes",
-		omitCommonParams: ["user_code"],
 		extraRequestParams: [],
 		responseData: [
 			{
@@ -9921,7 +8482,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/user/account/balance",
 		docsUrl: "https://developers.eko.in/reference/wallet-balance",
 		sourceDoc: "https://developers.eko.in/reference/wallet-balance",
-		omitCommonParams: ["user_code"],
 		extraRequestParams: [
 			{
 				name: "customer_id_type",
@@ -10707,7 +9267,7 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/refund/{tid}/otp",
 		docsUrl: "https://developers.eko.in/reference/refund-otp",
 		sourceDoc: "https://developers.eko.in/reference/refund-otp",
-		omitCommonParams: ["user_code", "client_ref_id"],
+		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
 			{
 				name: "tid",
@@ -10859,8 +9419,24 @@ export const API_SPECS: ApiSpec[] = [
 		},
 	},
 	{
+		id: "get-banks",
+		productId: "bank-info",
+		name: "Get List of Banks",
+		slug: "get-banks",
+		summary: "Fetch a list of all banks.",
+		description:
+			"Returns a list of all banks. Use the [Get Bank Details API](./get-bank-details) to get additional information about a bank.",
+		relevance: "L",
+		method: "GET",
+		path: "/tools/reference/banks",
+		docsUrl: "https://developers.eko.in/reference/get-bank-list",
+		extraRequestParams: [],
+		responseData: [],
+		sampleSuccessResponse: {},
+	},
+	{
 		id: "get-bank-details",
-		productId: "utilities",
+		productId: "bank-info",
 		name: "Get Bank Details",
 		slug: "get-bank-details",
 		summary:
@@ -10956,7 +9532,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "get-ifsc-details",
-		productId: "utilities",
+		productId: "bank-info",
 		name: "Get IFSC Details",
 		slug: "get-ifsc-details",
 		summary: "Resolve a bank and branch from an IFSC code.",
@@ -11430,7 +10006,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 12345,
 			},
 		],
-		omitCommonParams: ["user_code", "source"],
 		responseData: [
 			{
 				name: "user_details",
@@ -11768,7 +10343,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "20810200",
 			},
 		],
-		omitCommonParams: ["user_code"],
 		responseData: [
 			{
 				name: "bulk_reference_id",
