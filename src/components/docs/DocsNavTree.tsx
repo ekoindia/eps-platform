@@ -74,7 +74,7 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 	const itemClass = (active: boolean) =>
 		cn(
-			"flex items-start justify-between gap-2 rounded-md py-1.5 pl-3 pr-2 text-xs transition-colors",
+			"flex cursor-pointer items-start justify-between gap-2 rounded-md py-1.5 pl-3 pr-2 text-xs transition-colors",
 			active
 				? "bg-slate-300 font-medium text-eko-navy dark:bg-eko-gold/15 dark:text-foreground"
 				: "text-muted-foreground hover:bg-muted hover:text-foreground",
