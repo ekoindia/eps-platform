@@ -72,6 +72,24 @@ describe("buildOpenApiDocument", () => {
 		expect(op.requestBody).toBeUndefined();
 	});
 
+	it("keeps the generic endpoint as primary over a shared-path -status poller", () => {
+		// bbps-transaction-status shares GET /tools/reference/transaction/... with
+		// the canonical transaction-inquiry. The grouping must keep the non-status
+		// spec as the operation primary and list the status one as a variant.
+		const txPath = "/tools/reference/transaction/{transaction-reference}";
+		const op = (doc.paths?.[txPath] as Record<string, unknown>).get as Record<
+			string,
+			unknown
+		>;
+		expect(op).toBeTruthy();
+		expect(op["x-docs-slug"]).toBe("transaction-inquiry");
+		const variantSlugs = (
+			(op["x-eko-variants"] as { slug: string }[] | undefined) ?? []
+		).map((v) => v.slug);
+		expect(variantSlugs).toContain("bbps-transaction-status");
+		expect(variantSlugs).toContain("transaction-inquiry");
+	});
+
 	it("records body-discriminated variants under x-eko-variants", () => {
 		// OpenAPI permits one operation per path+method, so specs sharing a
 		// path+method collapse onto a primary operation with the rest listed

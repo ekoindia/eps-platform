@@ -116,7 +116,7 @@ export const specsToPreviews = (
 /**
  * Primary internal `/docs/<slug>` href for a set of specs — the first spec that
  * actually has a docs page (scans rather than assuming `specs[0]`, since the
- * most-relevant spec may be a `-status`/inactive one without a page). Validated
+ * most-relevant spec may be an inactive-product one without a page). Validated
  * against the global docs registry; use for runtime UI links.
  */
 export const primaryDocHref = (specs: ApiSpec[]): string | undefined => {

@@ -34,20 +34,19 @@ Routes are registered in `src/App.tsx`:
 ## Doc nodes & the slug-collision guard
 
 `buildDocNodes()` produces a flat `DocNode[]`: guides first (sorted by `order`),
-then endpoints. `getDocumentedSpecs()` decides which specs get a page —
-**non-`-status`** specs belonging to an **active (non-disabled) product**:
+then endpoints. `getDocumentedSpecs()` decides which specs get a page — any spec
+belonging to an **active (non-disabled) product**, including `-status` pollers:
 
 ```typescript
-const isStatusSpec = (spec: ApiSpec): boolean => spec.id.endsWith("-status");
-
 export const getDocumentedSpecs = (): ApiSpec[] =>
-	API_SPECS.filter(
-		(spec) => !isStatusSpec(spec) && Boolean(ACTIVE_PRODUCTS_MAP[spec.productId]),
-	);
+	API_SPECS.filter((spec) => Boolean(ACTIVE_PRODUCTS_MAP[spec.productId]));
 ```
 
-> `-status` specs are async-job pollers — real endpoints, but hidden from the docs
-> so the nav stays focused on the primary calls.
+> `-status` specs are async-job pollers — real endpoints, shown in the docs. They
+> are hidden **only** on the marketing surface: the product detail pages
+> (`getDisplaySpecsForProduct` in api-spec-previews) and the product `.md` twin
+> tree (`productNavNodes`), so marketing isn't cluttered with the obvious status
+> companion of each bulk/async API.
 
 Because the namespace is flat, a guide slug and an endpoint slug could in theory
 collide. `assertNoSlugCollisions()` runs **at module load** and throws on any
@@ -140,6 +139,7 @@ drift:
 
 - `getAllDocSlugs()` equals guides + documented endpoints — no dupes, no extras.
 - every nav link resolves to a routable slug;
-- no `-status` spec ever appears in the nav;
+- `-status` specs of active products appear in the nav (hidden only on the
+  marketing product surface);
 - round-trip (`slug → getDocBySlug → slug`) holds for every documented endpoint.
 </content>

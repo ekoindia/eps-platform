@@ -45,3 +45,11 @@ For Fingpay AePS, it is mandatory to use **e-KYC OTP request**, **e-KYC OTP veri
 
 > [!NOTE]
 > eKYC is a **one-time** setup per agent. It is distinct from the daily authentication (2FA) required once per calendar day before transacting.
+
+## Fingerprint capture (`fType`)
+
+> [!WARNING]
+> Per NPCI's FIR-FMR single-PID-block guidance, capture fingerprints with
+> **`fType = 2`** (not `0`). A subset of banks that have not yet completed
+> FMR+FIR compliance still require `fType = 0` — check the current bank list
+> before going live. The same PID format applies to all AePS transaction APIs.

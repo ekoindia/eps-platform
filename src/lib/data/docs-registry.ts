@@ -75,18 +75,18 @@ export interface DocNode {
 /** Canonical `/docs/<slug>` slug for an API endpoint (no method prefix). */
 export const endpointSlug = (spec: ApiSpec): string => spec.slug;
 
-/** `-status` specs are async-job pollers — hidden from the docs entirely. */
+/** `-status` specs are async-job pollers — real endpoints shown in the docs, but
+ * hidden on the marketing product surface (via `productNavNodes` here and
+ * `getDisplaySpecsForProduct` in api-spec-previews) to avoid clutter. */
 const isStatusSpec = (spec: ApiSpec): boolean => spec.id.endsWith("-status");
 
 /**
- * Specs that get a docs page: non-`-status`, belonging to an active (non
- * disabled) product. Other consumers should derive from this, not `API_SPECS`.
+ * Specs that get a docs page: any spec belonging to an active (non-disabled)
+ * product — including `-status` pollers. Other consumers should derive from
+ * this, not `API_SPECS`.
  */
 export const getDocumentedSpecs = (): ApiSpec[] =>
-	API_SPECS.filter(
-		(spec) =>
-			!isStatusSpec(spec) && Boolean(ACTIVE_PRODUCTS_MAP[spec.productId]),
-	);
+	API_SPECS.filter((spec) => Boolean(ACTIVE_PRODUCTS_MAP[spec.productId]));
 
 const toEndpointNode = (spec: ApiSpec): DocNode => ({
 	slug: endpointSlug(spec),
@@ -160,7 +160,7 @@ export const getDocBySlug = (slug: string): DocNode | undefined =>
 
 /**
  * Site-relative `/docs/<slug>` href, but only when a docs page actually exists
- * for that slug. Returns `undefined` otherwise (e.g. `-status` or inactive-
+ * for that slug. Returns `undefined` otherwise (e.g. inactive-
  * product specs that are excluded from the docs tree) so callers never link to
  * a page that would 404.
  */
@@ -230,7 +230,7 @@ const toLeaf = (spec: ApiSpec): NavLeaf => ({
 	method: spec.method,
 });
 
-/** Documented (non-status, active-product) specs for one product, in FILE
+/** Documented (active-product) specs for one product, in FILE
  * order — the source of first-appearance provider/group ordering. */
 const documentedSpecsForProduct = (productId: string): ApiSpec[] =>
 	getDocumentedSpecs().filter((spec) => spec.productId === productId);

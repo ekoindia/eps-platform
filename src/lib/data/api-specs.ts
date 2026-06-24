@@ -251,7 +251,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Initiate biometric Aadhaar eKYC to verify and upgrade a DMT sender's account.",
 		description:
-			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible biometric capture device. The biometric PID data (XML payload) is captured at the agent's terminal and submitted along with the Aadhaar number. On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
+			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible RD-service device; the PID XML is captured at the agent's terminal and submitted with the RSA-encrypted Aadhaar number (include the `wadh` value when generating the PID). On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
+		descriptionFile: "dmt-fino-sender-ekyc.md",
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "PUT",
@@ -1223,7 +1224,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day.",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan (`service_type = 2`). The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication (whose `reference_id` must be sent with every withdrawal).",
+		descriptionFile: "aeps-cash-withdrawal.md",
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
@@ -2921,7 +2923,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
-			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included.",
+			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included. Parameter names sent here must exactly match the `param_name` values from Get Operator Parameters. Pass `hc_channel=1` to route through the high-commission channel, which can take up to 6 hours to settle on the biller side.",
 		relevance: "M",
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
@@ -3126,7 +3128,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
 		description:
-			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill.",
+			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill. A timeout or slow bank response is not a failure — re-query with your `client_ref_id` to get the real status instead of retrying the payment.",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
@@ -3209,7 +3211,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Onboard an agent/retailer for BBPS bill payment services using service code 53.",
 		description:
-			"Before a retailer can process BBPS payments, the BBPS service (service_code = 53) must be activated for their `user_code`. This is a one-time setup call per agent. After activation, verify the status using the User Service Enquiry API. The agent's GPS coordinates (`latlong`) are mandatory for production compliance.",
+			"Before a retailer can process BBPS payments, the BBPS service (service_code = 53) must be activated for their `user_code`. This is a one-time setup call per agent. After activation, verify the status using the User Service Enquiry API. The agent's GPS coordinates (`latlong`) are mandatory for production compliance. On production, only IPs located in India are whitelisted; requests from outside India are blocked per compliance.",
 		relevance: "M",
 		bestFor:
 			"Onboarding new agents onto the BBPS bill payment service before their first transaction.",
@@ -3546,7 +3548,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Transfer funds from your e-wallet to any Indian bank account via IMPS, NEFT, or RTGS.",
 		description:
-			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
+			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback. Setting up a callback (webhook) URL via the Transaction Status Callback API is mandatory, and each `client_ref_id` must be unique (max 20 characters).",
 		relevance: "M",
 		bestFor:
 			"Salary disbursals, vendor settlements, contractor payouts, gig-worker commissions.",
@@ -4969,7 +4971,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Generate a permanent UPI QR code for a merchant/agent that can receive any amount.",
 		description:
-			"Creates a static UPI QR code linked to the agent's registered VPA (Virtual Payment Address) or the UPI ID. The same QR code can be reused for multiple transactions; the payer manually enters the amount. Suitable for fixed collection points such as shop counters and printed QR standees.",
+			"Creates a static UPI QR code linked to the agent's registered VPA (Virtual Payment Address) or the UPI ID. The same QR code can be reused for multiple transactions; the payer manually enters the amount. Suitable for fixed collection points such as shop counters and printed QR standees. Only one static QR string can be generated per `sender_id`.",
 		relevance: "M",
 		bestFor:
 			"Retail stores, kiosks, and any merchant needing a reusable printed QR code.",
@@ -9192,7 +9194,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Generate an OTP to register a recipient's bank for a DigiKhata sender.",
 		description:
-			"Initiates bank registration for a recipient and dispatches an OTP. Returns a `beneficiary_id` and `otp_ref_id` to pass into Validate OTP to Add Recipient.",
+			"Initiates bank registration for a recipient and dispatches an OTP. Returns a `beneficiary_id` and `otp_ref_id` to pass into Validate OTP to Add Recipient. The bank enforces a one-hour cooling period per recipient before another bank account can be registered.",
 		relevance: "L",
 		bestFor: "Starting recipient bank registration on DigiKhata.",
 		method: "POST",
@@ -9401,7 +9403,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Execute a DigiKhata wallet transfer to a recipient after OTP verification.",
 		description:
-			"Initiates the money transfer from the sender's DigiKhata wallet to the recipient. Returns the financial response envelope with `tx_status`, transaction id (`tid`), bank reference number, fee, and updated balance.",
+			"Initiates the money transfer from the sender's DigiKhata wallet to the recipient (keep `channel` fixed at 2). Returns the financial response envelope with `tx_status`, transaction id (`tid`), bank reference number, fee, and updated balance. Treat a timeout as initiated, not failed — re-query via Transaction Inquiry with your `client_ref_id`.",
+		descriptionFile: "ppi-digikhata-initiate-transaction.md",
 		relevance: "H",
 		bestFor: "Completing a DigiKhata wallet-to-bank transfer.",
 		method: "POST",
@@ -10057,7 +10060,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check whether a customer is already enrolled on the platform by mobile number.",
 		description:
-			"Looks up a customer. For an enrolled customer the response returns an `otp_ref_id` to validate; if not enrolled (response_type_id 308) proceed to Onboard Customer.",
+			"Looks up a customer by mobile number. For an enrolled customer the response returns an `otp_ref_id` to validate; if not enrolled (response_type_id 308) proceed to Onboard Customer. It also reports KYC state, remaining monthly limits (₹74,500 full-KYC vs ₹25,000 non-KYC), and per-pipe registration (`is_registered`).",
+		descriptionFile: "get-customer-info.md",
 		relevance: "M",
 		bestFor: "Checking customer enrolment before a transaction.",
 		method: "GET",
@@ -10286,7 +10290,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Register a bank account as an AePS fund-settlement recipient for an agent.",
 		description:
-			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch.",
+			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch. An agent can register up to 3 settlement accounts, and only banks that offer account verification are accepted.",
 		relevance: "M",
 		bestFor: "Registering an agent's settlement bank account before payout.",
 		method: "POST",
@@ -10474,7 +10478,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
 		description:
-			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm; max ₹2,00,000 per transaction.",
+			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm (excl. RBI holidays); max ₹2,00,000 per transaction; requests after 5pm settle the next working day.",
+		descriptionFile: "aeps-initiate-settlement.md",
 		relevance: "H",
 		bestFor: "Settling collected AePS funds to an agent's bank account.",
 		method: "POST",
@@ -11082,122 +11087,6 @@ export const API_SPECS: ApiSpec[] = [
 			data: { updates: "" },
 			response_type_id: 1804,
 			message: "success",
-			status: 0,
-		},
-	},
-	{
-		id: "bank-bulk-status",
-		productId: "bank",
-		name: "Bulk Bank Account Verification — Status",
-		slug: "bank-bulk-status",
-		summary:
-			"Poll the result of an async bulk bank-account verification batch.",
-		description:
-			"Returns the per-account verification results for a bulk bank-account verification batch, keyed by the `bulk_reference_id` you received when submitting the batch. Each entry includes the account status and the bank-registered name.",
-		relevance: "L",
-		bestFor: "Fetching results of a submitted bulk bank-verification batch.",
-		method: "GET",
-		path: "/tools/kyc/bank-account/bulk/status",
-		docsUrl:
-			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
-		sourceDoc:
-			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
-		extraRequestParams: [
-			{
-				name: "bulk_reference_id",
-				in: "query",
-				type: "integer",
-				required: true,
-				description:
-					"The unique ID returned by the Bulk Bank Account Verification submit call.",
-				example: 172432,
-			},
-			{
-				name: "client_ref_id",
-				in: "query",
-				type: "string",
-				required: false,
-				description: "A unique ID for the API call generated at your end.",
-				example: "ref_20250121_001",
-			},
-		],
-		responseData: [
-			{
-				name: "bulk_reference_id",
-				type: "number",
-				imp: true,
-				description: "Identifier of the bulk batch.",
-				example: 172432,
-			},
-			{
-				name: "entries",
-				type: "array",
-				imp: true,
-				description: "Per-account verification results.",
-				children: [
-					{
-						name: "name_at_bank",
-						type: "string",
-						imp: true,
-						description: "Account-holder name as registered at the bank.",
-						example: "Mr Himanshu  MULLICK",
-					},
-					{
-						name: "account_status",
-						type: "string",
-						imp: true,
-						description: "Verification result (VALID / INVALID).",
-						example: "VALID",
-					},
-					{
-						name: "account_status_code",
-						type: "string",
-						description: "Machine-readable status code.",
-						example: "ACCOUNT_IS_VALID",
-					},
-					{
-						name: "bank_account",
-						type: "string",
-						description: "Bank account number verified.",
-						example: "76662187222",
-					},
-					{
-						name: "ifsc",
-						type: "string",
-						description: "Branch IFSC.",
-						example: "SBIN0004221",
-					},
-					{
-						name: "reference_id",
-						type: "number",
-						description: "Per-entry reference id.",
-						example: 1292919294,
-					},
-				],
-			},
-		],
-		sampleSuccessResponse: {
-			response_status_id: 0,
-			data: {
-				entries: [
-					{
-						utr: null,
-						reference_id: 1292919294,
-						name_match_result: null,
-						phone: "9911991199",
-						name: "Himanshu Mullick",
-						account_status_code: "ACCOUNT_IS_VALID",
-						account_status: "VALID",
-						name_match_score: null,
-						ifsc: "SBIN0004221",
-						name_at_bank: "Mr Himanshu  MULLICK",
-						bank_account: "76662187222",
-					},
-				],
-				bulk_reference_id: 172432,
-				bulk_verification_id: "3356655212",
-			},
-			response_type_id: 0,
 			status: 0,
 		},
 	},
@@ -13142,7 +13031,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Verify a vehicle's registration certificate (RC) in real time — owner details, chassis/engine numbers, insurance validity, blacklist status, permits, fitness, and financier info via the VAHAN national database.",
 		description:
-			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms.",
+			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms. Source (VAHAN) data typically reflects real-world changes within 15–30 days.",
 		relevance: "M",
 		bestFor:
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",
