@@ -69,9 +69,10 @@ export const HARNESSES: HarnessInstall[] = [
 		id: "claude-code",
 		name: "Claude Code",
 		mcp: {
-			// `--` so Claude doesn't swallow the package's `-y` flag.
-			command: `claude mcp add ${SERVER} -- ${MCP_CMD}`,
-			note: "Adds to the local scope. Append `--scope project` to share via `.mcp.json`, or `--scope user` for every project.",
+			// `--scope project` before `--` so it's parsed as a flag, not passed
+			// to npx; the `--` then stops Claude swallowing the package's `-y`.
+			command: `claude mcp add ${SERVER} --scope project -- ${MCP_CMD}`,
+			note: "`--scope project` writes a shared `.mcp.json` committed with the repo. Use `--scope user` for every project on this machine, or drop the flag for local scope (private to this checkout, not shared).",
 		},
 		packFile: "CLAUDE.md",
 		packPlacement: "./CLAUDE.md",

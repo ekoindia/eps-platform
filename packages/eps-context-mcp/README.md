@@ -50,10 +50,14 @@ All tools are read-only and **secret-free** — none of them accept an
 ### Claude Code
 
 ```bash
-claude mcp add eps -- npx -y @ekoindia/eps-context-mcp
+claude mcp add eps --scope project -- npx -y @ekoindia/eps-context-mcp
 ```
 
-Or add to your MCP config (`~/.claude.json` / project `.mcp.json`):
+`--scope project` writes a shared `.mcp.json` committed with the repo. Use
+`--scope user` for every project on this machine, or drop the flag for local
+scope (private to this checkout, not shared).
+
+Or add to your MCP config (project `.mcp.json`, or `~/.claude.json` for user scope):
 
 ```json
 {

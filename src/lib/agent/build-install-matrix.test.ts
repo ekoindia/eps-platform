@@ -34,6 +34,16 @@ describe("buildInstallMatrix", () => {
 			expect(Boolean(m.mcp) || Boolean(m.packFile)).toBe(true);
 	});
 
+	it("Claude Code install defaults to project scope", () => {
+		const claude = matrix.find((m) => m.id === "claude-code");
+		expect(claude?.mcp?.command).toBe(
+			"claude mcp add eps --scope project -- npx -y @ekoindia/eps-context-mcp",
+		);
+		// scope flag must sit before `--`, else npx receives it
+		const cmd = claude?.mcp?.command ?? "";
+		expect(cmd.indexOf("--scope project")).toBeLessThan(cmd.indexOf(" -- "));
+	});
+
 	it("GitHub Copilot supports MCP", () => {
 		const copilot = matrix.find((m) => m.id === "copilot");
 		expect(copilot?.mcp).toBeTruthy();
