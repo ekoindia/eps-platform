@@ -45,8 +45,7 @@ const API_PRODUCTS_DATA = [
 		shortName: "PPI",
 		slug: "ppi-api",
 		category: "bc",
-		shortDesc:
-			"Prepaid (PPI) wallets — sender onboarding, Aadhaar KYC, wallet load & bank transfers (Levin & DigiKhata)",
+		shortDesc: "Prepaid (PPI) wallet & bank transfers (Levin & DigiKhata)",
 	},
 
 	// MARK: Payment APIs
