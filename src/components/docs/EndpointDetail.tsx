@@ -6,6 +6,7 @@ import {
 import { resolveDescription } from "@/lib/data/endpoint-descriptions";
 import { HttpMethodTag } from "./HttpMethodTag";
 import { MarkdownProse } from "./MarkdownProse";
+import { NextSteps } from "./NextSteps";
 import { Params } from "./Params";
 import { ResponseAccordion } from "./ResponseAccordion";
 
@@ -84,6 +85,8 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 			<DocsSection title="Responses">
 				<ResponseAccordion spec={spec} />
 			</DocsSection>
+
+			<NextSteps spec={spec} />
 		</article>
 	);
 };

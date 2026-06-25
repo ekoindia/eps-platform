@@ -69,6 +69,24 @@ export interface ApiErrorScenario {
 	example: Record<string, unknown>;
 }
 
+/**
+ * An optional curated "see also" link shown in the endpoint page's Next Steps
+ * block. Prefer {@link slug} for internal docs pages — it is resolved through
+ * `docHrefForSlug`, which drops the link if no such page exists (never a 404).
+ * Use {@link url} for anything else: an absolute external URL, or a site-relative
+ * path beginning with `/` (rendered as an in-app link).
+ */
+export interface RelatedLink {
+	/** Display text. */
+	label: string;
+	/** Internal `/docs/<slug>` target; 404-guarded via `docHrefForSlug`. */
+	slug?: string;
+	/** Absolute external URL, or a site-relative `/path`, used when `slug` is unset. */
+	url?: string;
+	/** Optional one-line subtitle. */
+	description?: string;
+}
+
 // ---------------------------------------------------------------------------
 // The core API specification — DELTAS ONLY
 // ---------------------------------------------------------------------------
@@ -141,6 +159,9 @@ export interface ApiSpec {
 	/** Full success response example (envelope + data). */
 	sampleSuccessResponse: Record<string, unknown>;
 	errorScenarios?: ApiErrorScenario[];
+	/** OPTIONAL hand-picked "see also" links shown in the endpoint's Next Steps
+	 * block, alongside the auto-computed product / AI / SDK / next-in-group links. */
+	relatedLinks?: RelatedLink[];
 }
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import {
 	docHrefForSlug,
 	getDocBySlug,
 	getDocumentedSpecs,
+	nextEndpointInGroup,
 	productNavNodes,
 	type NavBranch,
 	type NavLeaf,
@@ -231,5 +232,88 @@ describe("route parity", () => {
 			expect(statusSlugs.length).toBeGreaterThan(0);
 			for (const slug of statusSlugs) expect(treeSlugs.has(slug)).toBe(false);
 		}
+	});
+});
+
+describe("nextEndpointInGroup", () => {
+	/** Specs (in nav order) of a named group branch within a product. */
+	const groupSpecs = (productId: string, groupLabel: string) => {
+		const branch = findBranch(productNavNodes(productId), groupLabel);
+		expect(branch, `group "${groupLabel}" not found`).toBeTruthy();
+		return leaves(branch!.children).map((l) => {
+			const spec = getDocBySlug(l.slug)?.spec;
+			expect(spec).toBeTruthy();
+			return spec!;
+		});
+	};
+
+	it("walks consecutive siblings and stops at the last in a group", () => {
+		const specs = groupSpecs("dmt", "Sender");
+		expect(specs.length).toBeGreaterThan(1);
+		for (let i = 0; i < specs.length - 1; i++) {
+			expect(nextEndpointInGroup(specs[i])?.id).toBe(specs[i + 1].id);
+		}
+		expect(nextEndpointInGroup(specs[specs.length - 1])).toBeUndefined();
+	});
+
+	it("matches the nav-group order (relevance-sorted) for every group", () => {
+		// For each product's documented specs, the next-in-group sequence must
+		// reproduce the sidebar leaf order exactly.
+		const productIds = [
+			...new Set(getDocumentedSpecs().map((s) => s.productId)),
+		];
+		for (const productId of productIds) {
+			const navLeaves = leaves(productNavNodes(productId));
+			// Group leaves by (provider, group) the same way the resolver does.
+			const seen = new Set<string>();
+			for (const leaf of navLeaves) {
+				const spec = getDocBySlug(leaf.slug)!.spec!;
+				const key = `${spec.provider ?? ""}|${spec.group ?? ""}`;
+				if (seen.has(key)) continue;
+				seen.add(key);
+				const siblings = navLeaves
+					.map((l) => getDocBySlug(l.slug)!.spec!)
+					.filter((s) => (s.provider ?? "") + "|" + (s.group ?? "") === key);
+				for (let i = 0; i < siblings.length - 1; i++) {
+					expect(nextEndpointInGroup(siblings[i])?.id).toBe(siblings[i + 1].id);
+				}
+				expect(
+					nextEndpointInGroup(siblings[siblings.length - 1]),
+				).toBeUndefined();
+			}
+		}
+	});
+
+	it("excludes -status pollers from the sibling chain", () => {
+		const statusSpec = getDocumentedSpecs().find((s) =>
+			s.id.endsWith("-status"),
+		);
+		expect(statusSpec).toBeTruthy();
+		// A -status spec is not in the nav, so its own "next" is undefined and no
+		// documented sibling ever resolves to it.
+		expect(nextEndpointInGroup(statusSpec!)).toBeUndefined();
+		const sameGroup = getDocumentedSpecs().filter(
+			(s) =>
+				s.productId === statusSpec!.productId &&
+				s.provider === statusSpec!.provider &&
+				s.group === statusSpec!.group,
+		);
+		for (const s of sameGroup) {
+			expect(nextEndpointInGroup(s)?.id).not.toBe(statusSpec!.id);
+		}
+	});
+
+	it("returns undefined for a single-endpoint group", () => {
+		// pan-lite is the canonical single/standalone reference spec used elsewhere.
+		const solo = getDocumentedSpecs().filter(
+			(s) => s.productId === "bank" && !s.id.endsWith("-status"),
+		);
+		// Find any spec that is alone in its (provider, group) bucket.
+		const lonely = solo.find(
+			(s) =>
+				solo.filter((o) => o.provider === s.provider && o.group === s.group)
+					.length === 1,
+		);
+		if (lonely) expect(nextEndpointInGroup(lonely)).toBeUndefined();
 	});
 });
