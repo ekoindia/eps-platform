@@ -1953,7 +1953,7 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Send OTP (eKYC)",
 		slug: "aeps-send-otp-kyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC (1-Time)",
+		group: "Agent eKYC (1-Time)",
 		summary:
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
@@ -2037,7 +2037,7 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Verify OTP (eKYC)",
 		slug: "aeps-verify-otp-kyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC (1-Time)",
+		group: "Agent eKYC (1-Time)",
 		summary:
 			"Verify the eKYC OTP sent to the agent's Aadhaar-linked mobile number to advance the one-time AePS Fingpay eKYC.",
 		description:
@@ -2157,7 +2157,7 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Biometric eKYC",
 		slug: "aeps-biometric-ekyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC (1-Time)",
+		group: "Agent eKYC (1-Time)",
 		summary:
 			"Complete one-time AePS Fingpay eKYC by submitting the agent's Aadhaar and live biometric fingerprint capture.",
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
@@ -2265,7 +2265,7 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Daily Authentication (2FA)",
 		slug: "aeps-daily-auth",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC (Daily)",
+		group: "Agent eKYC (Daily)",
 		summary:
 			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
@@ -3126,7 +3126,7 @@ export const API_SPECS: ApiSpec[] = [
 			status: 0,
 			response_status_id: 0,
 			message: "Bill payment successful",
-			response_type_id: 2,
+			response_type_id: 333,
 			tx_status: "0",
 			txstatus_desc: "Success",
 			data: {
@@ -6963,11 +6963,11 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Get Aadhaar KYC Consent Languages",
 		slug: "ppi-digikhata-consent-languages",
 		summary:
-			"List the languages available for the DigiKhata Aadhaar e-KYC consent.",
+			"List the languages available for the DigiKhata Aadhaar eKYC consent.",
 		description:
-			"Returns the supported consent languages (with their `pkid`) for DigiKhata Aadhaar e-KYC. Pass the chosen `pkid` as `consent_language` to Get Aadhaar KYC Consent Details.",
+			"Returns the supported consent languages (with their `pkid`) for DigiKhata Aadhaar eKYC. Pass the chosen `pkid` as `consent_language` to Get Aadhaar KYC Consent Details.",
 		relevance: "L",
-		bestFor: "Presenting Aadhaar e-KYC consent in the customer's language.",
+		bestFor: "Presenting Aadhaar eKYC consent in the customer's language.",
 		method: "GET",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/languages",
 		docsUrl:
@@ -7053,11 +7053,11 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Get Aadhaar KYC Consent Details",
 		slug: "ppi-digikhata-consent-details",
 		summary:
-			"Fetch the DigiKhata Aadhaar e-KYC consent text and audio for a chosen language.",
+			"Fetch the DigiKhata Aadhaar eKYC consent text and audio for a chosen language.",
 		description:
-			"Returns the full Aadhaar e-KYC consent content, short consent statement, and an audio URL for the language selected (via `consent_language` = the `pkid` from Get Aadhaar KYC Consent Languages). Display/play this consent before collecting Aadhaar OTP.",
+			"Returns the full Aadhaar eKYC consent content, short consent statement, and an audio URL for the language selected (via `consent_language` = the `pkid` from Get Aadhaar KYC Consent Languages). Display/play this consent before collecting Aadhaar OTP.",
 		relevance: "L",
-		bestFor: "Showing the mandatory Aadhaar e-KYC consent before OTP capture.",
+		bestFor: "Showing the mandatory Aadhaar eKYC consent before OTP capture.",
 		method: "GET",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/details",
 		docsUrl:
@@ -7104,7 +7104,7 @@ export const API_SPECS: ApiSpec[] = [
 					{
 						name: "consentContent",
 						type: "string",
-						description: "Full Aadhaar e-KYC consent text.",
+						description: "Full Aadhaar eKYC consent text.",
 						example: "Use my Aadhaar / Virtual ID details …",
 					},
 					{
@@ -7142,11 +7142,11 @@ export const API_SPECS: ApiSpec[] = [
 			data: {
 				consent_detail: {
 					consentContent:
-						"Use my Aadhaar / Virtual ID details (as applicable) for the purpose of e-KYC for/with PayPoint India to authenticate my identity through the Aadhaar Authentication system (Aadhaar based e-KYC services of UIDAI) in accordance with the provisions of the Aadhaar (Targeted Delivery of Financial and other Subsidies, Benefits and Services) Act, 2016 and the allied rules and regulations notified thereunder and for no other purpose.\r\n Authenticate my Aadhaar/Virtual ID through OTP or Biometric for authenticating my identity through the Aadhaar Authentication system for obtaining my e-KYC through Aadhaar based e-KYC services of UIDAI and use my Photo and Demographic details (Name, Gender, Date of Birth and Address) for the purpose of e-KYC for/with PayPoint India.\r\n I understand that Security and confidentiality of personal identity data provided, for the purpose of Aadhaar based authentication is ensured by PayPoint and the data will be stored by PayPoint till such time as mentioned in guidelines from UIDAI from time to time.",
+						"Use my Aadhaar / Virtual ID details (as applicable) for the purpose of eKYC for/with PayPoint India to authenticate my identity through the Aadhaar Authentication system (Aadhaar based eKYC services of UIDAI) in accordance with the provisions of the Aadhaar (Targeted Delivery of Financial and other Subsidies, Benefits and Services) Act, 2016 and the allied rules and regulations notified thereunder and for no other purpose.\r\n Authenticate my Aadhaar/Virtual ID through OTP or Biometric for authenticating my identity through the Aadhaar Authentication system for obtaining my eKYC through Aadhaar based eKYC services of UIDAI and use my Photo and Demographic details (Name, Gender, Date of Birth and Address) for the purpose of eKYC for/with PayPoint India.\r\n I understand that Security and confidentiality of personal identity data provided, for the purpose of Aadhaar based authentication is ensured by PayPoint and the data will be stored by PayPoint till such time as mentioned in guidelines from UIDAI from time to time.",
 					audioUrl: "https://paypointindia.co.in/audio/Consent_English.mp3",
 					consentId: 1,
 					consent:
-						"Consent for Authentication: I, the holder of Aadhaar number, hereby give my consent to Paypoint India Network Private Limited to perform authentication and obtain my e-KYC with UIDAI for the purpose of creating my wallet.",
+						"Consent for Authentication: I, the holder of Aadhaar number, hereby give my consent to Paypoint India Network Private Limited to perform authentication and obtain my eKYC with UIDAI for the purpose of creating my wallet.",
 					consentLanguage: "English",
 				},
 			},
@@ -7165,9 +7165,9 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Validate a DigiKhata sender's Aadhaar number and trigger an OTP to the linked mobile.",
 		description:
-			"Submits the sender's Aadhaar number and dispatches an OTP to the Aadhaar-linked mobile for e-KYC. Returns an `otp_ref_id` to pass into Validate Sender Aadhaar OTP.",
+			"Submits the sender's Aadhaar number and dispatches an OTP to the Aadhaar-linked mobile for eKYC. Returns an `otp_ref_id` to pass into Validate Sender Aadhaar OTP.",
 		relevance: "M",
-		bestFor: "Starting DigiKhata Aadhaar e-KYC for a sender.",
+		bestFor: "Starting DigiKhata Aadhaar eKYC for a sender.",
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp",
 		docsUrl: "https://developers.eko.in/reference/generate-sender-aadhaar-otp",
@@ -7227,11 +7227,11 @@ export const API_SPECS: ApiSpec[] = [
 		name: "Validate Sender Aadhaar OTP",
 		slug: "ppi-digikhata-verify-aadhaar-otp",
 		summary:
-			"Verify the Aadhaar OTP to complete DigiKhata sender Aadhaar e-KYC.",
+			"Verify the Aadhaar OTP to complete DigiKhata sender Aadhaar eKYC.",
 		description:
 			"Validates the OTP dispatched during Generate Sender Aadhaar OTP. On success the Aadhaar identity is confirmed and the flow proceeds to PAN validation (Pan Number Required).",
 		relevance: "M",
-		bestFor: "Completing DigiKhata sender Aadhaar e-KYC.",
+		bestFor: "Completing DigiKhata sender Aadhaar eKYC.",
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/verify-aadhaar-otp",
@@ -9645,9 +9645,9 @@ export const API_SPECS: ApiSpec[] = [
 					},
 					{
 						name: "value",
-						type: "string",
+						type: "number",
 						description: "Parameter value.",
-						example: "400",
+						example: 400,
 					},
 				],
 			},
