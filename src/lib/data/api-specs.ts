@@ -1232,6 +1232,14 @@ export const API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "customer_id",
 				in: "path",
 				type: "string",
@@ -1471,6 +1479,14 @@ export const API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "customer_id",
 				in: "path",
 				type: "string",
@@ -1628,136 +1644,6 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-daily-auth",
-		productId: "aeps",
-		name: "AePS Fingpay — Daily Authentication (2FA)",
-		slug: "aeps-daily-auth",
-		provider: "AePS – Fingpay",
-		group: "Agent E-KYC",
-		summary:
-			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
-		description:
-			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
-		relevance: "H",
-		bestFor:
-			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
-		method: "POST",
-		path: "/customer/aeps/fingpay/kyc/daily",
-		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		extraRequestParams: [
-			{
-				name: "aadhaar",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily authentication.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
-			{
-				name: "piddata",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's.",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"GPS coordinates of the agent's location at the time of daily authentication.",
-				example: "25.5941,85.1376",
-			},
-			{
-				name: "source_ip",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IP address of the agent's terminal/system.",
-				example: "103.56.78.90",
-			},
-		],
-		responseData: [
-			{
-				name: "reference_id",
-				type: "string",
-				description:
-					"Daily authentication reference ID. Pass this as the 'reference_id' parameter in every Cash Withdrawal request made during the current day. Valid for the current calendar day only.",
-				imp: true,
-				example: "DAKYC20240101001",
-			},
-			{
-				name: "auth_status",
-				type: "string",
-				description:
-					"Result of the daily biometric authentication. 'success' means the agent is cleared to perform Cash Withdrawal transactions for the day.",
-				imp: true,
-				example: "success",
-			},
-			{
-				name: "valid_till",
-				type: "string",
-				description:
-					"Expiry timestamp of this daily auth token (end of the current calendar day, IST).",
-				example: "2024-01-01T23:59:59+05:30",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message:
-				"Daily authentication successful. You can now process Cash Withdrawal transactions.",
-			response_type_id: 1388,
-			data: {
-				reference_id: "DAKYC20240101001",
-				auth_status: "success",
-				valid_till: "2024-01-01T23:59:59+05:30",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Biometric authentication failed",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 108,
-					message:
-						"Daily biometric authentication failed. Please re-scan fingerprint.",
-					data: {},
-				},
-			},
-			{
-				scenario: "eKYC not completed — daily auth not yet eligible",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 327,
-					message:
-						"eKYC not completed or daily auth not eligible yet (minimum 3 days after eKYC required).",
-					data: {},
-				},
-			},
-			{
-				scenario: "Daily auth already completed for today",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 17,
-					message:
-						"Daily authentication already completed for today. Use the existing reference_id for transactions.",
-					data: {
-						reference_id: "DAKYC20240101001",
-					},
-				},
-			},
-		],
-	},
-	{
 		id: "aeps-mini-statement",
 		productId: "aeps",
 		name: "AePS Mini Statement",
@@ -1775,6 +1661,14 @@ export const API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		financial: true,
 		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
 			{
 				name: "customer_id",
 				in: "path",
@@ -2126,10 +2020,10 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aeps-send-otp-kyc",
 		productId: "aeps",
-		name: "AePS Fingpay — Send OTP (eKYC)",
+		name: "Send OTP (eKYC)",
 		slug: "aeps-send-otp-kyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC",
+		group: "Agent E-KYC (1-Time)",
 		summary:
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
@@ -2138,9 +2032,17 @@ export const API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
 		method: "POST",
-		path: "/customer/aeps/fingpay/kyc/otp",
+		path: "/user/collection/aeps-fingpay/kyc/otp",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
 			{
 				name: "aadhaar",
 				in: "body",
@@ -2201,12 +2103,132 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "aeps-verify-otp-kyc",
+		productId: "aeps",
+		name: "Verify OTP (eKYC)",
+		slug: "aeps-verify-otp-kyc",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC (1-Time)",
+		summary:
+			"Verify the eKYC OTP sent to the agent's Aadhaar-linked mobile number to advance the one-time AePS Fingpay eKYC.",
+		description:
+			"The second step of the one-time AePS Fingpay eKYC flow (Send OTP → Verify OTP → Biometric Capture). Submits the OTP the agent received, together with the `otp_ref_id` and `reference_tid` returned by the Send OTP API, to validate the agent's identity before biometric capture. Aadhaar must be RSA-encrypted and Base64-encoded.",
+		relevance: "M",
+		bestFor: "Completing OTP validation during initial one-time agent eKYC",
+		method: "PUT",
+		path: "/user/collection/aeps-fingpay/kyc/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-kyc-verify-otp",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description:
+					"Registered mobile number of the agent/merchant undergoing eKYC.",
+				example: "9123456789",
+			},
+			{
+				name: "aadhaar",
+				type: "string",
+				required: true,
+				description:
+					"RSA-encrypted, Base64-encoded Aadhaar number of the agent undergoing eKYC.",
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "otp",
+				type: "string",
+				required: true,
+				description:
+					"OTP received on the agent's Aadhaar-registered mobile number.",
+				example: "123456",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				required: true,
+				description: "Reference ID returned by the Send OTP (eKYC) API.",
+				example: "2465238",
+			},
+			{
+				name: "reference_tid",
+				type: "string",
+				required: true,
+				description:
+					"Transaction reference ID returned by the Send OTP (eKYC) API.",
+				example: "EKYKF4719702240123152147525I",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
+				example: "28.6139,77.2090",
+			},
+		],
+		responseData: [
+			{
+				name: "user_code",
+				type: "string",
+				description: "User code of the agent whose eKYC was verified.",
+				imp: true,
+				example: "20810200",
+			},
+			{
+				name: "reference_tid",
+				type: "string",
+				description: "Transaction reference ID for this eKYC verification.",
+				example: "EKYKF4719702240123152147525I",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				description:
+					"Reference ID of the OTP session. Carry forward to the Biometric eKYC step.",
+				imp: true,
+				example: "2465238",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				user_code: "20810200",
+				reference_tid: "EKYKF4719702240123152147525I",
+				otp_ref_id: "2465238",
+			},
+			response_type_id: 1604,
+			message: "Validation successful",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Invalid or expired OTP",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 109,
+					message: "Invalid OTP. Please request a new OTP and try again.",
+					data: {},
+				},
+			},
+		],
+	},
+	{
 		id: "aeps-biometric-ekyc",
 		productId: "aeps",
-		name: "AePS Fingpay — Biometric eKYC",
+		name: "Biometric eKYC",
 		slug: "aeps-biometric-ekyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC",
+		group: "Agent E-KYC (1-Time)",
 		summary:
 			"Complete one-time AePS Fingpay eKYC by submitting the agent's Aadhaar and live biometric fingerprint capture.",
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
@@ -2218,9 +2240,17 @@ export const API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
 		method: "POST",
-		path: "/customer/aeps/fingpay/kyc/biometric",
+		path: "/user/collection/aeps-fingpay/kyc/biometric",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
 			{
 				name: "aadhaar",
 				in: "body",
@@ -2299,6 +2329,144 @@ export const API_SPECS: ApiSpec[] = [
 					message:
 						"OTP reference expired. Please restart the eKYC flow from Send OTP.",
 					data: {},
+				},
+			},
+		],
+	},
+	{
+		id: "aeps-daily-auth",
+		productId: "aeps",
+		name: "Daily Authentication (2FA)",
+		slug: "aeps-daily-auth",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC (Daily)",
+		summary:
+			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
+		description:
+			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
+		relevance: "H",
+		bestFor:
+			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
+		method: "POST",
+		path: "/user/collection/aeps-fingpay/kyc/biometric/daily",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "aadhaar",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily authentication.",
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "piddata",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's.",
+				example:
+					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+			},
+			{
+				name: "latlong",
+				in: "body",
+				type: "string",
+				required: true,
+				description:
+					"GPS coordinates of the agent's location at the time of daily authentication.",
+				example: "25.5941,85.1376",
+			},
+			{
+				name: "source_ip",
+				in: "body",
+				type: "string",
+				required: true,
+				description: "IP address of the agent's terminal/system.",
+				example: "103.56.78.90",
+			},
+		],
+		responseData: [
+			{
+				name: "reference_id",
+				type: "string",
+				description:
+					"Daily authentication reference ID. Pass this as the 'reference_id' parameter in every Cash Withdrawal request made during the current day. Valid for the current calendar day only.",
+				imp: true,
+				example: "DAKYC20240101001",
+			},
+			{
+				name: "auth_status",
+				type: "string",
+				description:
+					"Result of the daily biometric authentication. 'success' means the agent is cleared to perform Cash Withdrawal transactions for the day.",
+				imp: true,
+				example: "success",
+			},
+			{
+				name: "valid_till",
+				type: "string",
+				description:
+					"Expiry timestamp of this daily auth token (end of the current calendar day, IST).",
+				example: "2024-01-01T23:59:59+05:30",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message:
+				"Daily authentication successful. You can now process Cash Withdrawal transactions.",
+			response_type_id: 1388,
+			data: {
+				reference_id: "DAKYC20240101001",
+				auth_status: "success",
+				valid_till: "2024-01-01T23:59:59+05:30",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Biometric authentication failed",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 108,
+					message:
+						"Daily biometric authentication failed. Please re-scan fingerprint.",
+					data: {},
+				},
+			},
+			{
+				scenario: "eKYC not completed — daily auth not yet eligible",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 327,
+					message:
+						"eKYC not completed or daily auth not eligible yet (minimum 3 days after eKYC required).",
+					data: {},
+				},
+			},
+			{
+				scenario: "Daily auth already completed for today",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 17,
+					message:
+						"Daily authentication already completed for today. Use the existing reference_id for transactions.",
+					data: {
+						reference_id: "DAKYC20240101001",
+					},
 				},
 			},
 		],
@@ -8295,6 +8463,95 @@ export const API_SPECS: ApiSpec[] = [
 		},
 	},
 	{
+		id: "activate-user-service",
+		productId: "user-management",
+		name: "Activate Service for User",
+		slug: "activate-user-service",
+		summary:
+			"Activate a specific service (by service code) for one of your agents/retailers.",
+		description:
+			"Enables a service for the given agent so they can begin transacting on it. The agent is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. After activation, confirm the status with the Get User's Services API.",
+		relevance: "M",
+		bestFor:
+			"Enabling a new service on an existing agent before their first transaction on it",
+		method: "PUT",
+		path: "/admin/network/agent/{user_code}/service/{service_code}/activate",
+		docsUrl: "https://developers.eko.in/reference/activate-user-service",
+		sourceDoc: "https://developers.eko.in/reference/activate-user-service",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "service_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of the service to activate for the user. See the service codes reference.",
+				example: "53",
+			},
+		],
+		// TODO: confirm real response payload with Eko (response pending) — placeholder envelope.
+		responseData: [],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message: "Service activated successfully.",
+			response_type_id: 0,
+			data: {},
+		},
+	},
+	{
+		id: "deactivate-user-service",
+		productId: "user-management",
+		name: "Deactivate Service for User",
+		slug: "deactivate-user-service",
+		summary:
+			"Deactivate a specific service (by service code) for one of your agents/retailers.",
+		description:
+			"Disables a previously activated service for the given agent. The agent is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. After deactivation, confirm the status with the Get User's Services API.",
+		relevance: "M",
+		bestFor:
+			"Suspending a service on an agent without removing them from your network",
+		method: "PUT",
+		path: "/admin/network/agent/{user_code}/service/{service_code}/deactivate",
+		docsUrl: "https://developers.eko.in/reference/deactivate-service-for-user",
+		sourceDoc:
+			"https://developers.eko.in/reference/deactivate-service-for-user",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "service_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of the service to deactivate for the user. See the service codes reference.",
+				example: "53",
+			},
+		],
+		// TODO: confirm real response payload with Eko (response pending) — placeholder envelope.
+		responseData: [],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message: "Service deactivated successfully.",
+			response_type_id: 0,
+			data: {},
+		},
+	},
+	{
 		id: "get-user-services",
 		productId: "user-management",
 		name: "Get User's Services",
@@ -8861,6 +9118,14 @@ export const API_SPECS: ApiSpec[] = [
 			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "bank_id",
 				in: "body",
 				type: "integer",
@@ -8953,7 +9218,16 @@ export const API_SPECS: ApiSpec[] = [
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
 		sourceDoc:
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
-		extraRequestParams: [],
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+		],
 		responseData: [
 			{
 				name: "unsettled_fund",
@@ -9049,6 +9323,14 @@ export const API_SPECS: ApiSpec[] = [
 			"https://developers.eko.in/reference/aeps-fund-settlement-request",
 		financial: true,
 		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
 			{
 				name: "amount",
 				in: "body",

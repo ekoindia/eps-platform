@@ -21,16 +21,28 @@ import { API_PRODUCTS_MAP } from "./api-products";
 // Primitive shapes
 // ---------------------------------------------------------------------------
 
-/** A single request parameter (header / path / query / body field). */
+/** Where a request parameter travels. */
+export type ParamLocation = "path" | "query" | "header" | "body";
+
+/** A single request parameter (header / path / query / body field).
+ *
+ * `in` is an OPTIONAL override: by default the location is derived from the
+ * spec (a name matching a `{token}` in the path → `path`; otherwise GET →
+ * `query`, else → `body`). Set `in` explicitly only to override that — e.g.
+ * for headers, which can't be derived from the path/method. */
 export interface ApiParam {
 	name: string;
 	label?: string;
-	in: "path" | "query" | "header" | "body";
+	in?: ParamLocation;
 	type: string;
 	required: boolean;
 	description?: string;
 	example?: unknown;
 }
+
+/** An {@link ApiParam} after resolution — its `in` is always concrete, so
+ * downstream consumers (OpenAPI, Postman, SDK surface) can rely on it. */
+export type ResolvedApiParam = ApiParam & { in: ParamLocation };
 
 /**
  * A node in a (possibly nested) response field tree.
@@ -162,15 +174,6 @@ export const COMMON_REQUEST_PARAMS: CommonRequestParam[] = [
 		example: "9962981729",
 	},
 	{
-		name: "user_code",
-		allowedMethods: ALL_METHODS,
-		type: "string",
-		required: false,
-		description:
-			"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-		example: "20810200",
-	},
-	{
 		name: "client_ref_id",
 		// Write methods only — a GET has no state to reference idempotently.
 		allowedMethods: ["POST"],
@@ -248,29 +251,45 @@ export const categoryForSpec = (spec: ApiSpec): ApiProductCategory =>
 /** Full auth header set for an API — identical on every request. */
 export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;
 
-/** Location of a common param for a given method: GET → query, else → body. */
-const commonLocationFor = (method: HttpMethod): ApiParam["in"] =>
-	method === "GET" ? "query" : "body";
+/** Names of the `{token}` path variables in a spec's `path`. */
+const pathTokens = (path: string | undefined): Set<string> =>
+	new Set([...(path ?? "").matchAll(/\{(\w+)\}/g)].map((m) => m[1]));
 
 /**
- * Full request param list for an API: applicable common params (location
- * derived from the method) followed by the API-specific ones.
+ * Derive a param's location when it isn't explicitly set: a name matching a
+ * `{token}` in the path is a path param; otherwise GET → query, else → body.
+ * An explicit `in` always wins (e.g. headers).
+ */
+const deriveLocation = (
+	param: ApiParam,
+	spec: ApiSpec,
+	tokens: Set<string>,
+): ParamLocation =>
+	param.in ??
+	(tokens.has(param.name) ? "path" : spec.method === "GET" ? "query" : "body");
+
+/**
+ * Full request param list for an API: applicable common params followed by the
+ * API-specific ones, each with a concrete `in` (derived when not set).
  *
  * A common param is included only when the spec's method is in its
  * `allowedMethods`, it is not listed in `omitCommonParams`, and it is not
  * OVERRIDDEN by a same-named entry in `extraRequestParams` (which then wins).
  */
-export const resolveRequestParams = (spec: ApiSpec): ApiParam[] => {
+export const resolveRequestParams = (spec: ApiSpec): ResolvedApiParam[] => {
 	const omit = new Set(spec.omitCommonParams ?? []);
 	const overridden = new Set(spec.extraRequestParams.map((p) => p.name));
-	const location = commonLocationFor(spec.method);
+	const tokens = pathTokens(spec.path);
 	const common: ApiParam[] = COMMON_REQUEST_PARAMS.filter(
 		(p) =>
 			p.allowedMethods.includes(spec.method) &&
 			!omit.has(p.name) &&
 			!overridden.has(p.name),
-	).map(({ allowedMethods, ...rest }) => ({ ...rest, in: location }));
-	return [...common, ...spec.extraRequestParams];
+	).map(({ allowedMethods, ...rest }) => rest);
+	return [...common, ...spec.extraRequestParams].map((p) => ({
+		...p,
+		in: deriveLocation(p, spec, tokens),
+	}));
 };
 
 /**

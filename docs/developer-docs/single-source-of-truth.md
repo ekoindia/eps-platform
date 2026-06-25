@@ -81,7 +81,8 @@ production: https://api.eko.in/ekoapi/${API_VERSION}
 `DEFAULT_BASE_URL` points at sandbox — code samples and the try-it console use it.
 
 **Common request params** (`api-specs-common.ts`, `COMMON_REQUEST_PARAMS`):
-`initiator_id` (required), `user_code` (required), `client_ref_id`. Each declares
+`initiator_id` (required), `client_ref_id`. (`user_code` is not common — endpoints
+that need it declare it explicitly in `extraRequestParams`.) Each declares
 an `allowedMethods` list instead of a fixed `in`: it is pulled into an endpoint only
 when the endpoint's HTTP method matches, and its location is then **derived from the
 method** — `GET → query`, otherwise `body`. So `client_ref_id` (write-only) drops off

@@ -10,6 +10,7 @@ import {
 const spec = (over: Partial<ApiSpec>): ApiSpec =>
 	({
 		method: "POST",
+		path: "/some/endpoint",
 		extraRequestParams: [],
 		...over,
 	}) as ApiSpec;
@@ -22,7 +23,6 @@ describe("resolveRequestParams", () => {
 	it("places common params in the body for non-GET methods", () => {
 		const params = resolveRequestParams(spec({ method: "POST" }));
 		expect(byName(params, "initiator_id")?.in).toBe("body");
-		expect(byName(params, "user_code")?.in).toBe("body");
 		// client_ref_id applies to write methods.
 		expect(byName(params, "client_ref_id")?.in).toBe("body");
 	});
@@ -30,21 +30,71 @@ describe("resolveRequestParams", () => {
 	it("places common params in the query and drops client_ref_id for GET", () => {
 		const params = resolveRequestParams(spec({ method: "GET" }));
 		expect(byName(params, "initiator_id")?.in).toBe("query");
-		expect(byName(params, "user_code")?.in).toBe("query");
 		expect(byName(params, "client_ref_id")).toBeUndefined();
+	});
+
+	it("derives in:path for an extra param matching a {token} in the path", () => {
+		const userCode: ApiParam = {
+			name: "user_code",
+			type: "string",
+			required: true,
+			example: "20810200",
+		};
+		const params = resolveRequestParams(
+			spec({
+				method: "PUT",
+				path: "/admin/network/agent/{user_code}/service/{service_code}/activate",
+				extraRequestParams: [userCode],
+			}),
+		);
+		// No explicit `in`, but the name matches a path token → path.
+		expect(byName(params, "user_code")?.in).toBe("path");
+	});
+
+	it("derives in by method for a non-path extra param (body on POST, query on GET)", () => {
+		const flag: ApiParam = { name: "flag", type: "string", required: true };
+		expect(
+			byName(
+				resolveRequestParams(
+					spec({ method: "POST", extraRequestParams: [flag] }),
+				),
+				"flag",
+			)?.in,
+		).toBe("body");
+		expect(
+			byName(
+				resolveRequestParams(
+					spec({ method: "GET", extraRequestParams: [flag] }),
+				),
+				"flag",
+			)?.in,
+		).toBe("query");
+	});
+
+	it("an explicit in on an extra param overrides derivation", () => {
+		const header: ApiParam = {
+			name: "x-trace",
+			in: "header",
+			type: "string",
+			required: false,
+		};
+		const params = resolveRequestParams(
+			spec({ method: "POST", extraRequestParams: [header] }),
+		);
+		expect(byName(params, "x-trace")?.in).toBe("header");
 	});
 
 	it("omitCommonParams still drops a matching common param", () => {
 		const params = resolveRequestParams(
-			spec({ method: "POST", omitCommonParams: ["user_code"] }),
+			spec({ method: "POST", omitCommonParams: ["client_ref_id"] }),
 		);
-		expect(byName(params, "user_code")).toBeUndefined();
+		expect(byName(params, "client_ref_id")).toBeUndefined();
 		expect(byName(params, "initiator_id")).toBeDefined();
 	});
 
 	it("a same-named extraRequestParam overrides the common param", () => {
 		const override: ApiParam = {
-			name: "user_code",
+			name: "client_ref_id",
 			in: "body",
 			type: "string",
 			required: false,
@@ -54,9 +104,9 @@ describe("resolveRequestParams", () => {
 		const params = resolveRequestParams(
 			spec({ method: "POST", extraRequestParams: [override] }),
 		);
-		// Only one user_code, and it is the override (not the common default).
-		expect(names(params).filter((n) => n === "user_code")).toHaveLength(1);
-		const resolved = byName(params, "user_code");
+		// Only one client_ref_id, and it is the override (not the common default).
+		expect(names(params).filter((n) => n === "client_ref_id")).toHaveLength(1);
+		const resolved = byName(params, "client_ref_id");
 		expect(resolved?.required).toBe(false);
 		expect(resolved?.example).toBe("OVERRIDDEN");
 	});
@@ -97,7 +147,7 @@ describe("buildSampleRequest", () => {
 		);
 		expect(body).toMatchObject({
 			initiator_id: COMMON_REQUEST_PARAMS[0].example,
-			user_code: COMMON_REQUEST_PARAMS[1].example,
+			client_ref_id: COMMON_REQUEST_PARAMS[1].example,
 			pan_number: "ABCDE1234F",
 		});
 	});
