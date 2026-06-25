@@ -141,11 +141,9 @@ describe("SDK snippets", () => {
 		const node = toNodeSdk(getSpec);
 		expect(node).toContain('await client.call("dmt-get-sender"');
 		expect(node).toContain('"customer_id"'); // path token → call param
-		// initiator_id / user_code are set once on the client, not per call.
+		// initiator_id is set once on the client, not per call.
 		expect(node).toContain('initiatorId: "9962981729"');
-		expect(node).toContain('userCode: "20810200"');
 		expect(node).not.toContain('"initiator_id"'); // not a call param anymore
-		expect(node).not.toContain('"user_code"');
 	});
 
 	it("sdkSampleFor dispatches php vs node", () => {

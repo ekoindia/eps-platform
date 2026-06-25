@@ -1,33 +1,46 @@
 # gitleaks configuration for EPS Platform
 #
-# Extends the default ruleset and adds an allowlist for KNOWN-SAFE matches:
+# Extends the default ruleset and adds allowlists for KNOWN-SAFE matches:
 #   - generated/baked artifacts and local env files (not source of truth), and
-#   - illustrative, non-secret EXAMPLE values inside the API specs (documentation
-#     request/response samples — placeholders or expired sandbox example tokens).
+#   - illustrative, non-secret EXAMPLE JWTs inside the API spec docs
+#     (request/response samples — placeholders or expired sandbox example tokens).
 #
 # Anything NOT listed here still trips the scan, so real secrets are still caught.
-# Do NOT add real production credentials to this allowlist — scrub them from the
+# Do NOT add real production credentials to these allowlists — scrub them from the
 # code (and from history) instead.
 
 [extend]
 useDefault = true
 
-[allowlist]
-description = "EPS known-safe paths and documentation example tokens"
-
+# Generated / baked outputs (regenerated from src/lib/data, never hand-edited) and
+# local-only dev env (gitignored; contains the developer's own sandbox creds).
+[[allowlists]]
+description = "EPS generated/baked artifacts and local env files"
 paths = [
-  # Generated / baked outputs — regenerated from src/lib/data, never hand-edited.
   '''^dist/''',
   '''^ds-bundle/''',
   '''^packages/[^/]+/data/''',
-  # Local-only dev env (gitignored; contains the developer's own sandbox creds).
   '''(^|/)\.env\.local$''',
 ]
 
+# Obvious fake placeholder used throughout the API spec examples (any file).
+[[allowlists]]
+description = "Obvious fake placeholder token"
 regexes = [
-  # Obvious fake placeholder used throughout the API spec examples.
   '''wtkn_abc123xyz''',
-  # Expired/illustrative example JWTs shown as `example:` values in api-specs.ts
-  # (documentation only; the signing key is server-side and never shipped).
-  '''eyJhbGciOiJIUzI1Ni[A-Za-z0-9_.\-]+''',
+]
+
+# Illustrative / expired example JWTs shown as `example:` values in the API spec
+# docs (any header alg — HS256, RS256 — or `typ`-first tokens like the OTP
+# verification token). condition = "AND" scopes this narrowly: a JWT-shaped value
+# is allowlisted ONLY inside api-specs.ts. A real JWT leaked in any other file is
+# still caught. Documentation only; signing keys are server-side, never shipped.
+[[allowlists]]
+description = "Documentation example JWTs in api-specs.ts"
+condition = "AND"
+paths = [
+  '''(^|/)src/lib/data/api-specs\.ts$''',
+]
+regexes = [
+  '''eyJ[A-Za-z0-9_.\-]{10,}''',
 ]

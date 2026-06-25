@@ -74,7 +74,7 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 	const itemClass = (active: boolean) =>
 		cn(
-			"flex items-start justify-between gap-2 rounded-md py-1.5 pl-3 pr-2 text-xs transition-colors",
+			"flex cursor-pointer items-start justify-between gap-2 rounded-md py-1.5 pl-3 pr-2 text-[0.6875rem] transition-colors",
 			active
 				? "bg-slate-300 font-medium text-eko-navy dark:bg-eko-gold/15 dark:text-foreground"
 				: "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -85,8 +85,9 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 			to={docsHref(ep.slug)}
 			onClick={onNavigate}
 			className={itemClass(isActive(ep.slug))}
+			title={ep.title}
 		>
-			<span className="line-clamp-2">{ep.title}</span>
+			<span className="line-clamp-3 min-w-0 flex-1">{ep.title}</span>
 			<HttpMethodTag
 				method={ep.method}
 				short
@@ -105,15 +106,21 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 
 	const BranchRow = ({ branch }: { branch: NavBranch }) => {
 		const isOpen = open.has(branch.id);
+		const onActivePath = activeBranchIds.has(branch.id);
 		return (
 			<div>
 				<button
 					type="button"
 					onClick={() => toggle(branch.id)}
 					aria-expanded={isOpen}
-					className={cn(itemClass(false), "w-full text-left")}
+					title={branch.label}
+					className={cn(
+						itemClass(false),
+						"w-full text-left",
+						onActivePath && "font-medium text-foreground",
+					)}
 				>
-					<span className="line-clamp-2">{branch.label}</span>
+					<span className="line-clamp-3 min-w-0 flex-1">{branch.label}</span>
 					<ChevronRight
 						className={cn(
 							"mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
@@ -122,7 +129,12 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 					/>
 				</button>
 				{isOpen && (
-					<div className="ml-3 space-y-0.5 border-l border-border/60 pl-2">
+					<div
+						className={cn(
+							"ml-2 space-y-0.5 border-l pl-2",
+							onActivePath ? "border-eko-gold/70" : "border-border",
+						)}
+					>
 						{branch.children.map(renderNode)}
 					</div>
 				)}
@@ -152,8 +164,9 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 								to={docsHref(g.slug)}
 								onClick={onNavigate}
 								className={itemClass(isActive(g.slug))}
+								title={g.title}
 							>
-								<span className="line-clamp-2">{g.title}</span>
+								<span className="line-clamp-3 min-w-0 flex-1">{g.title}</span>
 							</Link>
 						))}
 					</div>

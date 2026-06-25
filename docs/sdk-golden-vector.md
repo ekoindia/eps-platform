@@ -17,13 +17,13 @@ Every SDK core MUST validate inputs against `requiredParams` (baked into
 nothing.
 
 Conformance fixture — endpoint slug `dmt-get-sender`
-(`requiredParams = [initiator_id, user_code, customer_id]`):
+(`requiredParams = [initiator_id, customer_id]`):
 
-| Input params                                           | Expected                                      |
-| ------------------------------------------------------ | --------------------------------------------- |
-| `{initiator_id}`                                       | throw, message lists `user_code, customer_id` |
-| `{customer_id, initiator_id, user_code: null}`         | throw, message lists `user_code`              |
-| `{customer_id, initiator_id, user_code}` (all present) | no throw; request is signed and sent          |
+| Input params                                | Expected                                |
+| ------------------------------------------- | --------------------------------------- |
+| `{initiator_id}`                            | throw, message lists `customer_id`      |
+| `{customer_id, initiator_id: null}`         | throw, message lists `initiator_id`     |
+| `{customer_id, initiator_id}` (all present) | no throw; request is signed and sent    |
 
 Error message format: `Missing required params for "<slug>": <names>.`
 Reference implementations: `packages/sdk-js/src/client.ts` (`call`),
@@ -52,7 +52,7 @@ notation. JS and PHP MUST use identical regexes. On a miss, fail fast (sign and
 send nothing) with: `Invalid param types for "<slug>": <name> (expected <type>), ...`
 
 Conformance fixture — slug `bbps-get-operators` (`category` is an optional
-`number`; `initiator_id`, `user_code` required strings):
+`number`; `initiator_id` is a required string):
 
 | Input `category` (with required strings present) | Expected                                  |
 | ------------------------------------------------ | ----------------------------------------- |

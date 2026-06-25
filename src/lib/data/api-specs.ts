@@ -42,14 +42,12 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
 				example: "9123456789",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "customer_id",
@@ -152,7 +150,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -161,7 +158,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Full name of the sender as per their ID proof.",
@@ -169,7 +165,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
@@ -177,7 +172,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -251,7 +245,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Initiate biometric Aadhaar eKYC to verify and upgrade a DMT sender's account.",
 		description:
-			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible biometric capture device. The biometric PID data (XML payload) is captured at the agent's terminal and submitted along with the Aadhaar number. On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
+			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible RD-service device; the PID XML is captured at the agent's terminal and submitted with the RSA-encrypted Aadhaar number (include the `wadh` value when generating the PID). On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
+		descriptionFile: "dmt-fino-sender-ekyc.md",
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "PUT",
@@ -260,7 +255,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -268,7 +262,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -276,7 +269,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -352,7 +344,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -360,7 +351,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -369,7 +359,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -378,7 +367,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "kyc_request_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -463,14 +451,12 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
 				example: "9123456789",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "count",
@@ -580,7 +566,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -588,7 +573,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -597,7 +581,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Beneficiary's bank account number.",
@@ -605,7 +588,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the beneficiary's bank branch.",
@@ -613,7 +595,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Unique bank identifier from Eko's bank list API.",
@@ -621,7 +602,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "10-digit mobile number of the recipient.",
@@ -629,7 +609,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_type",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -719,7 +698,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -728,7 +706,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Transfer amount in INR (integer, no decimals).",
@@ -736,7 +713,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -804,7 +780,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -813,7 +788,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -822,7 +796,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -830,7 +803,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -839,7 +811,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "OTP reference ID from the Send Transaction OTP response.",
@@ -847,7 +818,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -856,7 +826,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "string",
 				required: true,
 				description: 'Fixed value: "1".',
@@ -864,7 +833,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id_type",
-				in: "body",
 				type: "string",
 				required: true,
 				description: 'Fixed value: "1" for bank account recipients.',
@@ -872,7 +840,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "channel",
-				in: "body",
 				type: "number",
 				required: false,
 				description: "Transfer channel. Fixed value: 2 (IMPS). Defaults to 2.",
@@ -880,7 +847,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "currency",
-				in: "body",
 				type: "string",
 				required: false,
 				description: 'Currency code. Defaults to "INR".',
@@ -888,7 +854,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "timestamp",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "ISO 8601 request timestamp.",
@@ -1065,7 +1030,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "user_code",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -1074,7 +1038,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "modelname",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1083,7 +1046,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "devicenumber",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1092,7 +1054,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "office_address",
-				in: "body",
 				type: "object",
 				required: true,
 				description:
@@ -1106,7 +1067,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "address_as_per_proof",
-				in: "body",
 				type: "object",
 				required: true,
 				description:
@@ -1120,7 +1080,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_card",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1129,7 +1088,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_front",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1138,7 +1096,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_back",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1146,7 +1103,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "<binary file>",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "activation_status",
@@ -1223,7 +1179,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication for the current day.",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan (`service_type = 2`). The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication (whose `reference_id` must be sent with every withdrawal).",
+		descriptionFile: "aeps-cash-withdrawal.md",
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
@@ -1233,8 +1190,15 @@ export const API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1242,7 +1206,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1251,7 +1214,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -1260,7 +1222,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1269,7 +1230,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1279,7 +1239,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pipe",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Routing pipe selector. Use 0 (default).",
@@ -1287,7 +1246,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "notify_customer",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
@@ -1295,7 +1253,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1304,7 +1261,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1313,7 +1269,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reference_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1472,8 +1427,15 @@ export const API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1481,7 +1443,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Bank IIN/IFS code identifying the customer's bank.",
@@ -1489,7 +1450,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Must be 0 for Balance Enquiry. No debit is performed.",
@@ -1497,7 +1457,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1506,7 +1465,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1516,7 +1474,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pipe",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Routing pipe selector. Use 0 (default).",
@@ -1524,7 +1481,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "notify_customer",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
@@ -1532,7 +1488,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1541,7 +1496,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1629,136 +1583,6 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-daily-auth",
-		productId: "aeps",
-		name: "AePS Fingpay — Daily Authentication (2FA)",
-		slug: "aeps-daily-auth",
-		provider: "AePS – Fingpay",
-		group: "Agent E-KYC",
-		summary:
-			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
-		description:
-			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
-		relevance: "H",
-		bestFor:
-			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
-		method: "POST",
-		path: "/customer/aeps/fingpay/kyc/daily",
-		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		extraRequestParams: [
-			{
-				name: "aadhaar",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily authentication.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
-			{
-				name: "piddata",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's.",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"GPS coordinates of the agent's location at the time of daily authentication.",
-				example: "25.5941,85.1376",
-			},
-			{
-				name: "source_ip",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IP address of the agent's terminal/system.",
-				example: "103.56.78.90",
-			},
-		],
-		responseData: [
-			{
-				name: "reference_id",
-				type: "string",
-				description:
-					"Daily authentication reference ID. Pass this as the 'reference_id' parameter in every Cash Withdrawal request made during the current day. Valid for the current calendar day only.",
-				imp: true,
-				example: "DAKYC20240101001",
-			},
-			{
-				name: "auth_status",
-				type: "string",
-				description:
-					"Result of the daily biometric authentication. 'success' means the agent is cleared to perform Cash Withdrawal transactions for the day.",
-				imp: true,
-				example: "success",
-			},
-			{
-				name: "valid_till",
-				type: "string",
-				description:
-					"Expiry timestamp of this daily auth token (end of the current calendar day, IST).",
-				example: "2024-01-01T23:59:59+05:30",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message:
-				"Daily authentication successful. You can now process Cash Withdrawal transactions.",
-			response_type_id: 1388,
-			data: {
-				reference_id: "DAKYC20240101001",
-				auth_status: "success",
-				valid_till: "2024-01-01T23:59:59+05:30",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Biometric authentication failed",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 108,
-					message:
-						"Daily biometric authentication failed. Please re-scan fingerprint.",
-					data: {},
-				},
-			},
-			{
-				scenario: "eKYC not completed — daily auth not yet eligible",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 327,
-					message:
-						"eKYC not completed or daily auth not eligible yet (minimum 3 days after eKYC required).",
-					data: {},
-				},
-			},
-			{
-				scenario: "Daily auth already completed for today",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 17,
-					message:
-						"Daily authentication already completed for today. Use the existing reference_id for transactions.",
-					data: {
-						reference_id: "DAKYC20240101001",
-					},
-				},
-			},
-		],
-	},
-	{
 		id: "aeps-mini-statement",
 		productId: "aeps",
 		name: "AePS Mini Statement",
@@ -1777,8 +1601,15 @@ export const API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1786,7 +1617,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Bank IIN/IFS code identifying the customer's bank.",
@@ -1794,7 +1624,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Must be 0 for Mini Statement. No debit is performed.",
@@ -1802,7 +1631,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1811,7 +1639,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1821,7 +1648,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pipe",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Routing pipe selector. Use 0 (default).",
@@ -1829,7 +1655,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "notify_customer",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
@@ -1837,7 +1662,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1846,7 +1670,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2127,10 +1950,10 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aeps-send-otp-kyc",
 		productId: "aeps",
-		name: "AePS Fingpay — Send OTP (eKYC)",
+		name: "Send OTP (eKYC)",
 		slug: "aeps-send-otp-kyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC",
+		group: "Agent E-KYC (1-Time)",
 		summary:
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
@@ -2139,12 +1962,19 @@ export const API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
 		method: "POST",
-		path: "/customer/aeps/fingpay/kyc/otp",
+		path: "/user/collection/aeps-fingpay/kyc/otp",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2202,12 +2032,132 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "aeps-verify-otp-kyc",
+		productId: "aeps",
+		name: "Verify OTP (eKYC)",
+		slug: "aeps-verify-otp-kyc",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC (1-Time)",
+		summary:
+			"Verify the eKYC OTP sent to the agent's Aadhaar-linked mobile number to advance the one-time AePS Fingpay eKYC.",
+		description:
+			"The second step of the one-time AePS Fingpay eKYC flow (Send OTP → Verify OTP → Biometric Capture). Submits the OTP the agent received, together with the `otp_ref_id` and `reference_tid` returned by the Send OTP API, to validate the agent's identity before biometric capture. Aadhaar must be RSA-encrypted and Base64-encoded.",
+		relevance: "M",
+		bestFor: "Completing OTP validation during initial one-time agent eKYC",
+		method: "PUT",
+		path: "/user/collection/aeps-fingpay/kyc/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-kyc-verify-otp",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description:
+					"Registered mobile number of the agent/merchant undergoing eKYC.",
+				example: "9123456789",
+			},
+			{
+				name: "aadhaar",
+				type: "string",
+				required: true,
+				description:
+					"RSA-encrypted, Base64-encoded Aadhaar number of the agent undergoing eKYC.",
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "otp",
+				type: "string",
+				required: true,
+				description:
+					"OTP received on the agent's Aadhaar-registered mobile number.",
+				example: "123456",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				required: true,
+				description: "Reference ID returned by the Send OTP (eKYC) API.",
+				example: "2465238",
+			},
+			{
+				name: "reference_tid",
+				type: "string",
+				required: true,
+				description:
+					"Transaction reference ID returned by the Send OTP (eKYC) API.",
+				example: "EKYKF4719702240123152147525I",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
+				example: "28.6139,77.2090",
+			},
+		],
+		responseData: [
+			{
+				name: "user_code",
+				type: "string",
+				description: "User code of the agent whose eKYC was verified.",
+				imp: true,
+				example: "20810200",
+			},
+			{
+				name: "reference_tid",
+				type: "string",
+				description: "Transaction reference ID for this eKYC verification.",
+				example: "EKYKF4719702240123152147525I",
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				description:
+					"Reference ID of the OTP session. Carry forward to the Biometric eKYC step.",
+				imp: true,
+				example: "2465238",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				user_code: "20810200",
+				reference_tid: "EKYKF4719702240123152147525I",
+				otp_ref_id: "2465238",
+			},
+			response_type_id: 1604,
+			message: "Validation successful",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Invalid or expired OTP",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 109,
+					message: "Invalid OTP. Please request a new OTP and try again.",
+					data: {},
+				},
+			},
+		],
+	},
+	{
 		id: "aeps-biometric-ekyc",
 		productId: "aeps",
-		name: "AePS Fingpay — Biometric eKYC",
+		name: "Biometric eKYC",
 		slug: "aeps-biometric-ekyc",
 		provider: "AePS – Fingpay",
-		group: "Agent E-KYC",
+		group: "Agent E-KYC (1-Time)",
 		summary:
 			"Complete one-time AePS Fingpay eKYC by submitting the agent's Aadhaar and live biometric fingerprint capture.",
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
@@ -2219,12 +2169,19 @@ export const API_SPECS: ApiSpec[] = [
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
 		method: "POST",
-		path: "/customer/aeps/fingpay/kyc/biometric",
+		path: "/user/collection/aeps-fingpay/kyc/biometric",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2233,7 +2190,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2243,7 +2199,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2305,6 +2260,140 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "aeps-daily-auth",
+		productId: "aeps",
+		name: "Daily Authentication (2FA)",
+		slug: "aeps-daily-auth",
+		provider: "AePS – Fingpay",
+		group: "Agent E-KYC (Daily)",
+		summary:
+			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
+		description:
+			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
+		relevance: "H",
+		bestFor:
+			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
+		method: "POST",
+		path: "/user/collection/aeps-fingpay/kyc/biometric/daily",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "aadhaar",
+				type: "string",
+				required: true,
+				description:
+					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily authentication.",
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "piddata",
+				type: "string",
+				required: true,
+				description:
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's.",
+				example:
+					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"GPS coordinates of the agent's location at the time of daily authentication.",
+				example: "25.5941,85.1376",
+			},
+			{
+				name: "source_ip",
+				type: "string",
+				required: true,
+				description: "IP address of the agent's terminal/system.",
+				example: "103.56.78.90",
+			},
+		],
+		responseData: [
+			{
+				name: "reference_id",
+				type: "string",
+				description:
+					"Daily authentication reference ID. Pass this as the 'reference_id' parameter in every Cash Withdrawal request made during the current day. Valid for the current calendar day only.",
+				imp: true,
+				example: "DAKYC20240101001",
+			},
+			{
+				name: "auth_status",
+				type: "string",
+				description:
+					"Result of the daily biometric authentication. 'success' means the agent is cleared to perform Cash Withdrawal transactions for the day.",
+				imp: true,
+				example: "success",
+			},
+			{
+				name: "valid_till",
+				type: "string",
+				description:
+					"Expiry timestamp of this daily auth token (end of the current calendar day, IST).",
+				example: "2024-01-01T23:59:59+05:30",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message:
+				"Daily authentication successful. You can now process Cash Withdrawal transactions.",
+			response_type_id: 1388,
+			data: {
+				reference_id: "DAKYC20240101001",
+				auth_status: "success",
+				valid_till: "2024-01-01T23:59:59+05:30",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Biometric authentication failed",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 108,
+					message:
+						"Daily biometric authentication failed. Please re-scan fingerprint.",
+					data: {},
+				},
+			},
+			{
+				scenario: "eKYC not completed — daily auth not yet eligible",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 327,
+					message:
+						"eKYC not completed or daily auth not eligible yet (minimum 3 days after eKYC required).",
+					data: {},
+				},
+			},
+			{
+				scenario: "Daily auth already completed for today",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 17,
+					message:
+						"Daily authentication already completed for today. Use the existing reference_id for transactions.",
+					data: {
+						reference_id: "DAKYC20240101001",
+					},
+				},
+			},
+		],
+	},
+	{
 		id: "bbps-get-categories",
 		productId: "bbps",
 		name: "Get BBPS Categories",
@@ -2320,7 +2409,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/bbps/categories",
 		docsUrl: "https://developers.eko.in/reference/bbps-get-categories",
 		extraRequestParams: [],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "categories",
@@ -2437,7 +2525,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/bbps/locations",
 		docsUrl: "https://developers.eko.in/reference/bbps-get-locations",
 		extraRequestParams: [],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "locations",
@@ -2530,7 +2617,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "category",
-				in: "query",
 				type: "number",
 				required: false,
 				description: "Filter by category — use the `id` from Get Categories.",
@@ -2538,7 +2624,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "location",
-				in: "query",
 				type: "number",
 				required: false,
 				description:
@@ -2546,7 +2631,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 7,
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "operators",
@@ -2642,14 +2726,12 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "operator_id",
-				in: "path",
 				type: "number",
 				required: true,
 				description: "The operator/biller ID from the Get Operators response.",
 				example: 83,
 			},
 		],
-		omitCommonParams: ["user_code", "client_ref_id", "source"],
 		responseData: [
 			{
 				name: "fetchBill",
@@ -2746,7 +2828,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "utility_acc_no",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Customer's account / consumer number with the biller.",
@@ -2754,7 +2835,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "confirmation_mobile_no",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Customer's mobile number for transaction confirmation.",
@@ -2762,7 +2842,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "sender_name",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Customer's full name.",
@@ -2770,7 +2849,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "operator_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Biller identifier from the Get Operators response.",
@@ -2778,7 +2856,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "IP address of the agent or retailer making this request.",
@@ -2786,7 +2863,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "query",
 				type: "string",
 				required: true,
 				description:
@@ -2795,7 +2871,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "hc_channel",
-				in: "query",
 				type: "number",
 				required: false,
 				description:
@@ -2804,7 +2879,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -2813,7 +2887,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "cycle_number",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -2822,7 +2895,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "authenticator",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -2921,7 +2993,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
-			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included.",
+			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included. Parameter names sent here must exactly match the `param_name` values from Get Operator Parameters. Pass `hc_channel=1` to route through the high-commission channel, which can take up to 6 hours to settle on the biller side.",
 		relevance: "M",
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
@@ -2932,7 +3004,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "utility_acc_no",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Customer's account or consumer number with the biller.",
@@ -2940,7 +3011,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "confirmation_mobile_no",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Customer's mobile number for payment confirmation.",
@@ -2948,7 +3018,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "sender_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Customer's full name.",
@@ -2956,7 +3025,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "operator_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Biller identifier from the Get Operators response.",
@@ -2964,7 +3032,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Payment amount in rupees (e.g. '1350' for ₹1,350).",
@@ -2972,7 +3039,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IP address of the agent or retailer making this request.",
@@ -2980,7 +3046,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2989,7 +3054,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "billfetchresponse",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -2998,7 +3062,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -3007,7 +3070,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "postalcode",
-				in: "body",
 				type: "number",
 				required: false,
 				description:
@@ -3126,7 +3188,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
 		description:
-			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill.",
+			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill. A timeout or slow bank response is not a failure — re-query with your `client_ref_id` to get the real status instead of retrying the payment.",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
@@ -3136,7 +3198,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -3144,7 +3205,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "1734567890",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "tid",
@@ -3209,7 +3269,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Onboard an agent/retailer for BBPS bill payment services using service code 53.",
 		description:
-			"Before a retailer can process BBPS payments, the BBPS service (service_code = 53) must be activated for their `user_code`. This is a one-time setup call per agent. After activation, verify the status using the User Service Enquiry API. The agent's GPS coordinates (`latlong`) are mandatory for production compliance.",
+			"Before a retailer can process BBPS payments, the BBPS service (service_code = 53) must be activated for their `user_code`. This is a one-time setup call per agent. After activation, verify the status using the User Service Enquiry API. The agent's GPS coordinates (`latlong`) are mandatory for production compliance. On production, only IPs located in India are whitelisted; requests from outside India are blocked per compliance.",
 		relevance: "M",
 		bestFor:
 			"Onboarding new agents onto the BBPS bill payment service before their first transaction.",
@@ -3219,7 +3279,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "service_code",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Service identifier for BBPS. Always 53.",
@@ -3227,7 +3286,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3293,7 +3351,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "service_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3301,7 +3358,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "58",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "is_service_activated",
@@ -3367,7 +3423,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3376,7 +3431,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "locale",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -3539,1429 +3593,6 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "initiate-fund-transfer",
-		productId: "payment",
-		name: "Initiate Fund Transfer",
-		slug: "initiate-fund-transfer",
-		summary:
-			"Transfer funds from your e-wallet to any Indian bank account via IMPS, NEFT, or RTGS.",
-		description:
-			"Debits your Eko e-wallet and credits the specified beneficiary bank account. Supports IMPS (instant, 24×7), NEFT (batch, near-instant off-peak), and RTGS (high-value). On success the response carries the Eko transaction ID (`tid`) and UTR (`bank_ref_num`); on async modes (NEFT) poll via the Transaction Inquiry API or await the webhook callback.",
-		relevance: "M",
-		bestFor:
-			"Salary disbursals, vendor settlements, contractor payouts, gig-worker commissions.",
-		method: "POST",
-		path: "/user/payment/fund-transfer",
-		docsUrl: "https://developers.eko.in/reference/initiate-fund-transfer",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "service_code",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Fixed value 45 for the Payout / Fund Transfer service.",
-				example: 45,
-			},
-			{
-				name: "payment_mode",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transfer rail: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
-				example: 5,
-			},
-			{
-				name: "recipient_name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Beneficiary's full name as per bank records.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Beneficiary bank account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IFSC code of the beneficiary's bank branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "amount",
-				in: "body",
-				type: "number",
-				required: true,
-				description: "Transfer amount in INR (integer, paise not supported).",
-				example: 25000,
-			},
-			{
-				name: "sender_name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Name of the payer / initiating entity.",
-				example: "Acme Corp",
-			},
-			{
-				name: "tag",
-				in: "body",
-				type: "string",
-				required: false,
-				description:
-					"Free-text purpose label (e.g. 'Salary', 'Vendor Payment').",
-				example: "Salary",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: false,
-				description: "Sender's GPS co-ordinates for audit/compliance.",
-				example: "28.78123,72.808912",
-			},
-			{
-				name: "beneficiary_account_type",
-				in: "body",
-				type: "number",
-				required: false,
-				description: "Account type of beneficiary: 1 = Savings, 2 = Current.",
-				example: 1,
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's unique transaction identifier. Use this for status inquiries.",
-				imp: true,
-				example: "2886601782",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"Bank-side UTR / reference number assigned after successful credit.",
-				imp: true,
-				example: "412345678901",
-			},
-			{
-				name: "amount",
-				type: "number",
-				description: "Amount transferred in INR.",
-				imp: true,
-				example: 25000,
-			},
-			{
-				name: "fee",
-				type: "number",
-				description: "Transaction fee charged to the wallet.",
-				example: 5,
-			},
-			{
-				name: "gst",
-				type: "number",
-				description: "GST component of the fee.",
-				example: 0.9,
-			},
-			{
-				name: "sender_name",
-				type: "string",
-				description: "Name of the initiating entity as echoed back.",
-				example: "Acme Corp",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Beneficiary name as submitted.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Beneficiary account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "Beneficiary bank IFSC.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Rail used: 4=NEFT, 5=IMPS, 13=RTGS.",
-				example: 5,
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description: "Your reference ID echoed back for reconciliation.",
-				example: "PAY-20240615-001",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Server-side transaction timestamp.",
-				example: "2024-06-15 10:30:45",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Fund transfer successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				tid: "2886601782",
-				bank_ref_num: "412345678901",
-				tx_status: "0",
-				amount: 25000,
-				fee: 5,
-				gst: 0.9,
-				sender_name: "Acme Corp",
-				recipient_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				payment_mode: 5,
-				client_ref_id: "PAY-20240615-001",
-				timestamp: "2024-06-15 10:30:45",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Insufficient wallet balance",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-			{
-				scenario: "Monthly limit exhausted for sender/beneficiary",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 945,
-					message: "Sender/beneficiary monthly limit exhausted",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-			{
-				scenario: "Transaction pending bank confirmation (NEFT)",
-				statusCode: 200,
-				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Transaction initiated",
-					tx_status: "2",
-					txstatus_desc: "Response Awaited",
-					data: {
-						tid: "2886601783",
-						bank_ref_num: "",
-						tx_status: "2",
-						amount: 25000,
-						payment_mode: 4,
-						client_ref_id: "PAY-20240615-002",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "fund-transfer-inquiry",
-		productId: "payment",
-		name: "Transaction Inquiry",
-		slug: "fund-transfer-inquiry",
-		summary:
-			"Fetch the current status of a payout transaction by Eko TID or your client_ref_id.",
-		description:
-			"Use this API to poll the live status of any fund-transfer transaction. Pass either Eko's `tid` or your own `client_ref_id` as the path parameter. Particularly useful for NEFT transactions where the initial response returns `tx_status=2` (awaited) — keep polling until you get a terminal state (0=Success, 1=Fail, 4=Refunded). You can also rely on the webhook callback instead of polling.",
-		relevance: "M",
-		bestFor:
-			"Reconciling pending NEFT payouts, confirming IMPS credit, building retry / refund logic.",
-		method: "GET",
-		path: "/tools/reference/transaction/{transaction_ref}",
-		docsUrl: "https://developers.eko.in/reference/fund-transfer-inquiry",
-		extraRequestParams: [
-			{
-				name: "transaction_ref",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Eko TID (e.g. 2886601782) or your client_ref_id for the transaction to look up.",
-				example: "2886601782",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko's unique transaction identifier.",
-				imp: true,
-				example: "2886601782",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"Bank UTR assigned after successful credit. Empty while awaited.",
-				imp: true,
-				example: "412345678901",
-			},
-			{
-				name: "amount",
-				type: "number",
-				description: "Amount in INR that was transferred.",
-				imp: true,
-				example: 25000,
-			},
-			{
-				name: "fee",
-				type: "number",
-				description: "Transaction fee charged.",
-				example: 5,
-			},
-			{
-				name: "gst",
-				type: "number",
-				description: "GST on the fee.",
-				example: 0.9,
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Beneficiary name.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Beneficiary account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "Beneficiary bank IFSC.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Rail: 4=NEFT, 5=IMPS, 13=RTGS.",
-				example: 5,
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description: "Your reference ID as submitted.",
-				example: "PAY-20240615-001",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Timestamp of the original transaction.",
-				example: "2024-06-15 10:30:45",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				tid: "2886601782",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				bank_ref_num: "412345678901",
-				amount: 25000,
-				fee: 5,
-				gst: 0.9,
-				recipient_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				payment_mode: 5,
-				client_ref_id: "PAY-20240615-001",
-				timestamp: "2024-06-15 10:30:45",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Transaction not found (unknown TID or client_ref_id)",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Transaction not found",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "get-user-balance",
-		productId: "payment",
-		name: "Get User Balance",
-		slug: "get-user-balance",
-		summary:
-			"Retrieve the current e-wallet balance of a registered agent or retailer.",
-		description:
-			"Returns the live e-wallet balance for the given `user_code`. Integrate this before initiating transfers to pre-validate sufficient funds without incurring a failed-transaction fee. Balance is in INR.",
-		relevance: "M",
-		bestFor:
-			"Pre-transfer balance checks, dashboard balance widgets, auto top-up triggers.",
-		method: "GET",
-		path: "/user/balance",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		extraRequestParams: [],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "balance",
-				type: "number",
-				description: "Current e-wallet balance in INR.",
-				imp: true,
-				example: 125000.5,
-			},
-			{
-				name: "wallet_id",
-				type: "string",
-				description: "Eko's internal wallet identifier for this user.",
-				example: "EKO-W-20810200",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				balance: 125000.5,
-				wallet_id: "EKO-W-20810200",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "User not found (invalid user_code)",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "User not found",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "add-recipient",
-		productId: "payment",
-		name: "Add Recipient",
-		slug: "add-recipient",
-		summary:
-			"Register a new bank account as a payout recipient (beneficiary) for an agent.",
-		description:
-			"Saves a beneficiary's bank account details under an agent's profile so future fund transfers can reference them by name or ID. The API validates IFSC format; the actual account validity should be confirmed via penny-drop before a live transfer. Once registered, the recipient can be reused across multiple payouts without re-entering account details.",
-		relevance: "M",
-		bestFor:
-			"Onboarding salaried employees, saving vendor bank accounts, batch payout setups.",
-		method: "POST",
-		path: "/user/recipient/register",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		extraRequestParams: [
-			{
-				name: "recipient_name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Full name of the recipient as per bank records.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Recipient's bank account number.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IFSC code of the recipient's bank branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "mobile",
-				in: "body",
-				type: "string",
-				required: false,
-				description: "Recipient's mobile number for SMS credit alerts.",
-				example: "9876500001",
-			},
-			{
-				name: "recipient_type",
-				in: "body",
-				type: "number",
-				required: false,
-				description: "Recipient category: 3 = bank account.",
-				example: 3,
-			},
-		],
-		responseData: [
-			{
-				name: "recipient_id",
-				type: "string",
-				description:
-					"Eko-assigned unique identifier for this recipient. Reference in future transfers.",
-				imp: true,
-				example: "R-10293847",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Name as registered.",
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Account number as registered.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "IFSC as registered.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "is_verified",
-				type: "boolean",
-				description: "Whether the account has been verified via penny drop.",
-				example: false,
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Recipient registered successfully",
-			response_type_id: 1388,
-			data: {
-				recipient_id: "R-10293847",
-				recipient_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				is_verified: false,
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Recipient already registered with same account+IFSC",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 342,
-					message: "Recipient already registered",
-					data: {
-						recipient_id: "R-10293847",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "verify-bank-account",
-		productId: "payment",
-		name: "Verify Bank Account (Penny Drop)",
-		slug: "verify-bank-account",
-		summary:
-			"Validate a bank account by sending a small test credit and confirming the account holder's name.",
-		description:
-			"Performs a real penny-drop verification: Eko credits ₹1 (or a configured test amount) to the specified account and returns the registered account holder name from the bank. Use this before adding a recipient to your payout roster to prevent failed transfers or misdirected payments. The debit hits your e-wallet because it is a financial transaction.",
-		relevance: "M",
-		bestFor:
-			"Validating new vendor or employee bank accounts before live payouts, preventing misdirected fund transfers.",
-		method: "POST",
-		path: "/user/payment/penny-drop",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "account",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Bank account number to verify.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "IFSC code of the account's bank branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "recipient_name",
-				in: "body",
-				type: "string",
-				required: false,
-				description:
-					"Expected name of the account holder, used for cross-check.",
-				example: "Ravi Kumar",
-			},
-		],
-		responseData: [
-			{
-				name: "account_holder_name",
-				type: "string",
-				description:
-					"Name registered with the bank for this account — use to confirm identity.",
-				imp: true,
-				example: "Ravi Kumar",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Bank account number that was verified.",
-				example: "50100123456789",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "IFSC of the verified branch.",
-				example: "HDFC0001234",
-			},
-			{
-				name: "is_valid",
-				type: "boolean",
-				description: "True if the penny-drop credit was accepted by the bank.",
-				imp: true,
-				example: true,
-			},
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko transaction ID for the penny-drop credit.",
-				example: "2886601800",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "Bank UTR for the penny-drop debit.",
-				example: "412345678910",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Bank account verified",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				account_holder_name: "Ravi Kumar",
-				account: "50100123456789",
-				ifsc: "HDFC0001234",
-				is_valid: true,
-				tid: "2886601800",
-				bank_ref_num: "412345678910",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario:
-					"Invalid account number — bank rejected the penny-drop credit",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 1,
-					message: "Invalid bank account",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {
-						is_valid: false,
-					},
-				},
-			},
-			{
-				scenario: "Insufficient balance for penny drop",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "setup-callback-url",
-		productId: "payment",
-		name: "Setup Callback URL",
-		slug: "setup-callback-url",
-		summary:
-			"Register a webhook endpoint to receive real-time payout transaction status updates.",
-		description:
-			"Registers a static HTTPS URL on your server that Eko will POST to whenever a payout transaction reaches a terminal state (Success, Fail, Refunded). The callback payload mirrors the Transaction Inquiry response — it includes `tid`, `tx_status`, `bank_ref_num`, `amount`, and party details. Use this instead of polling for NEFT transactions which may take minutes to confirm. Only static URL structures are supported; dynamic path parameters are not allowed.",
-		relevance: "M",
-		bestFor:
-			"Async NEFT payout reconciliation, real-time payment confirmation dashboards, automated refund triggers.",
-		method: "PUT",
-		path: "/user/settings/callback",
-		docsUrl: "https://developers.eko.in/docs/fund-transfer",
-		extraRequestParams: [
-			{
-				name: "callback_url",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Your publicly accessible HTTPS endpoint to receive POST callbacks. Must be a static URL (no dynamic segments).",
-				example: "https://your-server.example.com/eko/callback",
-			},
-			{
-				name: "service_code",
-				in: "body",
-				type: "number",
-				required: true,
-				description:
-					"Service to attach callback to — use 45 for Fund Transfer / Payout.",
-				example: 45,
-			},
-		],
-		omitCommonParams: ["client_ref_id"],
-		responseData: [
-			{
-				name: "callback_url",
-				type: "string",
-				description: "The webhook URL as registered.",
-				imp: true,
-				example: "https://your-server.example.com/eko/callback",
-			},
-			{
-				name: "service_code",
-				type: "number",
-				description: "Service the callback is bound to.",
-				example: 45,
-			},
-			{
-				name: "is_active",
-				type: "boolean",
-				description: "Whether the callback is active and will receive events.",
-				example: true,
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Callback URL set successfully",
-			response_type_id: 1388,
-			data: {
-				callback_url: "https://your-server.example.com/eko/callback",
-				service_code: 45,
-				is_active: true,
-			},
-		},
-	},
-	{
-		id: "upi-payout-vpa-verify",
-		productId: "upi-payout",
-		name: "Verify UPI VPA (Pre-Payout)",
-		slug: "upi-payout-vpa-verify",
-		summary:
-			"Validate a recipient's UPI Virtual Payment Address and fetch the verified payee name before initiating a payout.",
-		description:
-			"Confirms that a UPI VPA (Virtual Payment Address / UPI ID) is active and returns the NPCI-verified recipient name and registered mobile number. Call this before every payout to eliminate wrong-payee failures, reduce failed transactions, and satisfy RBI beneficiary-confirmation requirements. The response also surfaces a fee quote for the pending transfer.",
-		relevance: "H",
-		bestFor:
-			"Pre-payout beneficiary confirmation, bulk-payout pre-validation runs, and assisted-payment flows where an agent must confirm the payee before sending funds.",
-		method: "POST",
-		path: "/customer/payment/upi/validate-vpa",
-		docsUrl: "https://developers.eko.in/reference/upi-vpa-verification",
-		extraRequestParams: [
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"The UPI Virtual Payment Address (VPA / UPI ID) to validate before sending the payout, e.g. vendor@okicici.",
-				example: "vendor@okicici",
-			},
-			{
-				name: "recipient_mobile",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Mobile number of the intended payout recipient, used for supplementary identity verification.",
-				example: "9876543210",
-			},
-			{
-				name: "name",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Expected name of the recipient — returned alongside the bank-verified payee name for comparison.",
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Geo-coordinates of the request origin (latitude,longitude) for regulatory audit trails.",
-				example: "28.6139,77.2090",
-			},
-		],
-		responseData: [
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				type: "string",
-				description: "The VPA (UPI ID) submitted in the request.",
-				imp: true,
-				example: "vendor@okicici",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description:
-					"NPCI-verified payee name registered against the VPA — compare with your expected name before sending funds.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "recipient_mobile",
-				type: "string",
-				description:
-					"Mobile number linked to the VPA as confirmed by the UPI network.",
-				example: "9876543210",
-			},
-			{
-				name: "recipient_id",
-				type: "number",
-				description:
-					"Eko's internal identifier for this recipient, useful for subsequent payout or audit API calls.",
-				example: 116642147,
-			},
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko transaction ID for this validation request — retain for support reference.",
-				example: "3467859394",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description:
-					"Indicative fee (in INR) applicable when a payout is sent to this VPA.",
-				example: "8.26",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Server-side timestamp of the validation request.",
-				example: "Tue Sep 09 11:37:56 IST 2025",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Transaction Success",
-			response_type_id: 1983,
-			data: {
-				customer_vpa: "vendor@okicici",
-				recipient_name: "Rajesh Kumar",
-				recipient_mobile: "9876543210",
-				recipient_id: 116642147,
-				tid: "3467859394",
-				tx_status: "0",
-				fee: "8.26",
-				timestamp: "Tue Sep 09 11:37:56 IST 2025",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "VPA does not exist or is inactive",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 1,
-					message: "VPA is invalid or does not exist",
-					response_type_id: 1983,
-					data: {
-						customer_vpa: "nobody@okicici",
-						recipient_name: null,
-						tx_status: "1",
-					},
-				},
-			},
-			{
-				scenario:
-					"Authentication failure — wrong secret-key or stale timestamp",
-				statusCode: 403,
-				example: {
-					status: 1,
-					response_status_id: -1,
-					message: "Unauthorized — invalid secret-key or secret-key-timestamp.",
-					data: {},
-				},
-			},
-			{
-				scenario: "Retailer/agent not found",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "User not found",
-					response_type_id: 1983,
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "upi-payout-transfer",
-		productId: "upi-payout",
-		name: "Initiate UPI Payout",
-		slug: "upi-payout-transfer",
-		summary:
-			"Send an instant UPI payout to any VPA (UPI ID) — vendor payments, disbursements, refunds, or salary credits — with real-time settlement.",
-		description:
-			"Initiates a UPI money transfer from your Eko payout wallet to the specified Virtual Payment Address. Settlement is instant (NPCI UPI rails), available 24x7x365 including holidays. The API returns a transaction ID (tid) and UTR for reconciliation. This is a financial (money-debit) call.",
-		relevance: "H",
-		bestFor:
-			"Vendor payments, gig-worker payouts, insurance claim disbursements, refunds, salary credits, and any bulk or single instant UPI transfer workflow.",
-		method: "POST",
-		path: "/customer/payment/upi",
-		docsUrl: "https://developers.eko.in/reference/upi-vpa-payment",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Recipient's UPI Virtual Payment Address (VPA / UPI ID), e.g. vendor@okicici. Validate with the Verify VPA API first.",
-				example: "vendor@okicici",
-			},
-			{
-				name: "amount",
-				in: "body",
-				type: "number",
-				required: true,
-				description:
-					"Payout amount in Indian Rupees (INR). Minimum ₹1; maximum ₹1,00,000 per transaction (higher limits available for verified business accounts).",
-				example: 5000,
-			},
-			{
-				name: "recipient_mobile",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Mobile number of the payout recipient for cross-verification and audit.",
-				example: "9876543210",
-			},
-			{
-				name: "name",
-				in: "body",
-				type: "string",
-				required: true,
-				description: "Name of the payout recipient for audit and reporting.",
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "latlong",
-				in: "body",
-				type: "string",
-				required: true,
-				description:
-					"Geo-coordinates of the originating device (latitude,longitude) required for RBI compliance.",
-				example: "28.6139,77.2090",
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's unique transaction identifier — use this for status checks and support escalations.",
-				imp: true,
-				example: "3560508954",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description:
-					"Payout amount (INR) credited to the beneficiary's UPI-linked account.",
-				imp: true,
-				example: "5000.0",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"NPCI/bank UTR (Unique Transaction Reference) for the UPI transfer — share with beneficiary for dispute resolution.",
-				imp: true,
-				example: "317234500123",
-			},
-			{
-				name: "customer_vpa",
-				label: "Customer VPA (UPI ID)",
-				type: "string",
-				description: "Recipient VPA (UPI ID) to which the payout was sent.",
-				example: "vendor@okicici",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description:
-					"Verified payee name as confirmed by the UPI network at the time of transfer.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "recipient_mobile",
-				type: "string",
-				description: "Mobile number of the payout recipient.",
-				example: "9876543210",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description: "Transaction fee (in INR) charged for this payout.",
-				example: "8.26",
-			},
-			{
-				name: "commission",
-				type: "string",
-				description:
-					"Commission earned (in INR) on this payout, if applicable under your partner plan.",
-				example: "2.00",
-			},
-			{
-				name: "tds",
-				type: "string",
-				description:
-					"TDS deducted (in INR) on the commission, where applicable.",
-				example: "0.20",
-			},
-			{
-				name: "balance",
-				type: "string",
-				description:
-					"Remaining payout wallet balance (in INR) after this transaction.",
-				example: "94991.54",
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description:
-					"The client_ref_id submitted in the request, echoed for cross-reference.",
-				example: "PAY-20240101-001",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Server-side timestamp of the payout transaction.",
-				example: "Mon Jan 01 10:30:00 IST 2024",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Transaction Successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			response_type_id: 1983,
-			data: {
-				tid: "3560508954",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: "5000.0",
-				bank_ref_num: "317234500123",
-				customer_vpa: "vendor@okicici",
-				recipient_name: "Rajesh Kumar",
-				recipient_mobile: "9876543210",
-				fee: "8.26",
-				commission: "2.00",
-				tds: "0.20",
-				balance: "94991.54",
-				client_ref_id: "PAY-20240101-001",
-				timestamp: "Mon Jan 01 10:30:00 IST 2024",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Insufficient wallet balance",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					response_type_id: 1983,
-					data: {
-						tx_status: "1",
-						txstatus_desc: "Failed",
-					},
-				},
-			},
-			{
-				scenario: "Payout pending — status awaited (NPCI timeout)",
-				statusCode: 200,
-				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Transaction Awaited",
-					tx_status: "2",
-					txstatus_desc: "Awaited",
-					response_type_id: 1983,
-					data: {
-						tid: "3560508960",
-						tx_status: "2",
-						txstatus_desc: "Awaited",
-						amount: "5000.0",
-						bank_ref_num: "",
-						customer_vpa: "vendor@okicici",
-						client_ref_id: "PAY-20240101-002",
-					},
-				},
-			},
-			{
-				scenario: "Invalid or inactive VPA",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 1,
-					message: "Beneficiary VPA is invalid or inactive",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					response_type_id: 1983,
-					data: {
-						tid: "3560508961",
-						tx_status: "1",
-						txstatus_desc: "Failed",
-						amount: "5000.0",
-						bank_ref_num: "",
-						customer_vpa: "invalid@okicici",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "upi-payout-status-tid",
-		productId: "upi-payout",
-		name: "UPI Payout Status (by TID)",
-		slug: "upi-payout-status-tid",
-		summary:
-			"Retrieve the latest status and settlement details of a UPI payout using Eko's internal transaction ID (TID).",
-		description:
-			"Polls the current state of a UPI payout by Eko's tid. Use this to check the outcome of awaited transactions, confirm settlement, or retrieve the NPCI bank reference number (UTR) for reconciliation. Recommended polling interval: 10–30 seconds for awaited transactions. The transaction-reference path parameter accepts either an Eko TID or a client_ref_id prefixed with 'CR' (use the client_ref_id variant for the latter).",
-		relevance: "H",
-		bestFor:
-			"Polling awaited UPI payouts, reconciling settled transactions, and retrieving UTR numbers for vendor remittance advice.",
-		method: "GET",
-		path: "/tools/reference/transaction/{transaction-reference}",
-		docsUrl: "https://developers.eko.in/reference/get-transaction-status",
-		extraRequestParams: [
-			{
-				name: "transaction-reference",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Eko's internal transaction ID (tid) returned by the Initiate UPI Payout API. Prefix with 'CR' to look up by client_ref_id instead.",
-				example: "3560508954",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko's unique transaction ID for this payout.",
-				imp: true,
-				example: "3560508954",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description: "Payout amount (in INR) as recorded at transaction time.",
-				imp: true,
-				example: "5000.0",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description:
-					"NPCI UTR (Unique Transaction Reference) assigned after successful settlement — share with beneficiary for bank reconciliation.",
-				imp: true,
-				example: "317234500123",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description:
-					"Verified name of the payout recipient as confirmed by the UPI network.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description:
-					"Your system's client reference ID submitted at payout initiation.",
-				example: "PAY-20240101-001",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description: "Transaction fee (in INR) charged for this payout.",
-				example: "8.26",
-			},
-			{
-				name: "gst",
-				type: "string",
-				description: "GST component (in INR) included in the fee.",
-				example: "1.25",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Payment mode code. 5 = UPI.",
-				example: 5,
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Timestamp when the transaction was processed.",
-				example: "2024-01-01 10:30:44",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Enquiry success.",
-			response_type_id: 1472,
-			data: {
-				tid: "3560508954",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: "5000.0",
-				bank_ref_num: "317234500123",
-				recipient_name: "Rajesh Kumar",
-				client_ref_id: "PAY-20240101-001",
-				fee: "8.26",
-				gst: "1.25",
-				payment_mode: 5,
-				timestamp: "2024-01-01 10:30:44",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Transaction not found — invalid or non-existent TID",
-				statusCode: 400,
-				example: {
-					status: 69,
-					response_status_id: 1,
-					response_type_id: -1,
-					message: "failed!inquired.tx.not.found",
-					invalid_params: {
-						tid: "Please provide a valid TID to know the status of the transaction.",
-					},
-					data: {
-						tx_status: "1",
-						txstatus_desc: "Failed",
-					},
-				},
-			},
-			{
-				scenario: "Transaction still awaited / pending settlement",
-				statusCode: 200,
-				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Enquiry success.",
-					response_type_id: 1472,
-					data: {
-						tid: "3560508960",
-						tx_status: "2",
-						txstatus_desc: "Awaited",
-						amount: "5000.0",
-						bank_ref_num: "",
-						client_ref_id: "PAY-20240101-002",
-					},
-				},
-			},
-		],
-	},
-	{
-		id: "upi-payout-status-client-ref",
-		productId: "upi-payout",
-		name: "UPI Payout Status (by Client Ref ID)",
-		slug: "upi-payout-status-client-ref",
-		summary:
-			"Retrieve the status and settlement details of a UPI payout using your own client_ref_id when Eko's TID is unavailable.",
-		description:
-			"Identical to the TID-based status inquiry but accepts your system's client_ref_id as the lookup key — useful when the payout API call timed out before a TID was returned. Prefix the client_ref_id with 'CR' in the path parameter (e.g. CRmy-ref-id-001). This prevents you from sending a duplicate payout before confirming the original transaction outcome.",
-		relevance: "M",
-		bestFor:
-			"Recovering transaction state after an API timeout or network drop, and for idempotency checks before retrying a payout.",
-		method: "GET",
-		path: "/tools/reference/transaction/{transaction-reference}",
-		docsUrl: "https://developers.eko.in/reference/get-transaction-status",
-		extraRequestParams: [
-			{
-				name: "transaction-reference",
-				in: "path",
-				type: "string",
-				required: true,
-				description:
-					"Your client_ref_id prefixed with 'CR', e.g. CRPAY-20240101-001. The 'CR' prefix tells the API to look up by client reference rather than by Eko TID.",
-				example: "CRPAY-20240101-001",
-			},
-		],
-		omitCommonParams: ["client_ref_id", "source"],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's unique transaction ID — retain this for future TID-based status checks.",
-				imp: true,
-				example: "3560508954",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description: "Payout amount (in INR) as recorded at transaction time.",
-				imp: true,
-				example: "5000.0",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "NPCI UTR assigned after successful settlement.",
-				imp: true,
-				example: "317234500123",
-			},
-			{
-				name: "recipient_name",
-				type: "string",
-				description: "Verified name of the payout recipient.",
-				imp: true,
-				example: "Rajesh Kumar",
-			},
-			{
-				name: "client_ref_id",
-				type: "string",
-				description:
-					"The client_ref_id used for the lookup (without the CR prefix).",
-				example: "PAY-20240101-001",
-			},
-			{
-				name: "fee",
-				type: "string",
-				description: "Transaction fee (in INR) charged for this payout.",
-				example: "8.26",
-			},
-			{
-				name: "gst",
-				type: "string",
-				description: "GST component (in INR) included in the fee.",
-				example: "1.25",
-			},
-			{
-				name: "payment_mode",
-				type: "number",
-				description: "Payment mode code. 5 = UPI.",
-				example: 5,
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				description: "Timestamp when the transaction was processed.",
-				example: "2024-01-01 10:30:44",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Enquiry success.",
-			response_type_id: 1472,
-			data: {
-				tid: "3560508954",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: "5000.0",
-				bank_ref_num: "317234500123",
-				recipient_name: "Rajesh Kumar",
-				client_ref_id: "PAY-20240101-001",
-				fee: "8.26",
-				gst: "1.25",
-				payment_mode: 5,
-				timestamp: "2024-01-01 10:30:44",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario:
-					"client_ref_id not found — transaction never reached Eko's system",
-				statusCode: 400,
-				example: {
-					status: 69,
-					response_status_id: 1,
-					response_type_id: -1,
-					message: "failed!inquired.tx.not.found",
-					invalid_params: {
-						tid: "Please provide a valid TID to know the status of the transaction.",
-					},
-					data: {
-						tx_status: "1",
-						txstatus_desc: "Failed",
-					},
-				},
-			},
-		],
-	},
-	{
 		id: "qr-generate-static",
 		productId: "qr-payment",
 		name: "Generate Static QR",
@@ -4969,17 +3600,17 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Generate a permanent UPI QR code for a merchant/agent that can receive any amount.",
 		description:
-			"Creates a static UPI QR code linked to the agent's registered VPA (Virtual Payment Address) or the UPI ID. The same QR code can be reused for multiple transactions; the payer manually enters the amount. Suitable for fixed collection points such as shop counters and printed QR standees.",
+			"Creates a static UPI QR code linked to the agent's registered VPA (Virtual Payment Address) or the UPI ID. The same QR code can be reused for multiple transactions; the payer manually enters the amount. Suitable for fixed collection points such as shop counters and printed QR standees. Only one static QR string can be generated per `sender_id`.",
 		relevance: "M",
 		bestFor:
 			"Retail stores, kiosks, and any merchant needing a reusable printed QR code.",
 		method: "POST",
 		path: "/users/collection/upi-razorpay/generate-static-qr",
 		docsUrl: "https://developers.eko.in/reference/upi-generate-static-qr",
+		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
 			{
 				name: "sender_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -4988,7 +3619,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Display name of the agent/merchant shown on the QR code.",
@@ -4996,14 +3626,12 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "email",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Email address of the agent/merchant.",
 				example: "ravi@example.com",
 			},
 		],
-		omitCommonParams: ["client_ref_id", "source"],
 		responseData: [
 			{
 				name: "qr_string",
@@ -5101,7 +3729,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "sender_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5110,7 +3737,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -5119,14 +3745,12 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Display name of the merchant shown to the payer.",
 				example: "Ravi Kumar Store",
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "tid",
@@ -5239,7 +3863,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -5247,7 +3870,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "2886601782",
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "tid",
@@ -5356,7 +3978,7 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/your-callback-url",
 		docsUrl: "https://developers.eko.in/reference/transaction-status-callback",
 		extraRequestParams: [],
-		omitCommonParams: ["initiator_id", "user_code", "client_ref_id", "source"],
+		omitCommonParams: ["initiator_id"],
 		responseData: [
 			{
 				name: "tid",
@@ -5447,7 +4069,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -5455,7 +4076,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "2886601782",
 			},
 		],
-		omitCommonParams: ["user_code", "client_ref_id", "source"],
 		responseData: [
 			{
 				name: "otp_ref_id",
@@ -5533,7 +4153,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -5542,7 +4161,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -5551,7 +4169,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5560,7 +4177,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Fixed value: 80 (PayPoint service code for refunds).",
@@ -5568,14 +4184,12 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Fixed value: 1.",
 				example: 1,
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "tid",
@@ -5695,7 +4309,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "pan_number",
 				label: "PAN Number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5704,7 +4317,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Individual's name to match against PAN records.",
@@ -5713,7 +4325,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				label: "Date of Birth",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
@@ -5860,7 +4471,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "pan",
 				label: "PAN Number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5869,7 +4479,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5879,14 +4488,12 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				label: "Date of Birth",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
 				example: "1994-08-29",
 			},
 		],
-		omitCommonParams: ["source"],
 		responseData: [
 			{
 				name: "pan",
@@ -6100,7 +4707,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "entries",
-				in: "body",
 				type: "array",
 				required: true,
 				description:
@@ -6119,7 +4725,6 @@ export const API_SPECS: ApiSpec[] = [
 				],
 			},
 		],
-		omitCommonParams: ["user_code", "source"],
 		responseData: [
 			{
 				name: "reference_id",
@@ -6180,7 +4785,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "reference_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description:
@@ -6189,7 +4793,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bulk_reference_id",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -6358,7 +4961,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "integer",
 				required: true,
 				description: "Sender's mobile number.",
@@ -6366,7 +4968,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -6374,7 +4975,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -6383,7 +4983,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "additional_info",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Additional info flag. Defaults to 1.",
@@ -6449,7 +5048,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's mobile number.",
@@ -6457,7 +5055,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received on the Aadhaar-linked mobile number.",
@@ -6465,7 +5062,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -6474,7 +5070,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "intent_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -6483,7 +5078,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "additional_info",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Additional info flag. Defaults to 1.",
@@ -6585,7 +5179,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's mobile number.",
@@ -6593,7 +5186,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -6601,7 +5193,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -6610,7 +5201,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -6679,7 +5269,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's mobile number.",
@@ -6687,7 +5276,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received on the Aadhaar-linked mobile number.",
@@ -6695,7 +5283,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -6704,7 +5291,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "intent_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -6713,7 +5299,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet token for authenticated context.",
@@ -6721,7 +5306,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet identifier for the sender.",
@@ -6814,7 +5398,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6890,7 +5473,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6898,7 +5480,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Name of the sender as per ID.",
@@ -6906,7 +5487,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the sender in YYYY-MM-DD format.",
@@ -6914,7 +5494,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Sender's address as an array of strings.",
@@ -6922,7 +5501,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Send 80.",
@@ -6986,7 +5564,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6994,7 +5571,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -7003,7 +5579,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -7012,7 +5587,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "intent_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -7223,7 +5797,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7231,7 +5804,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "The PAN number of the sender.",
@@ -7239,7 +5811,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet identifier, when applicable.",
@@ -7247,7 +5818,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet authentication token, when applicable.",
@@ -7362,7 +5932,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7370,7 +5939,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "query",
 				type: "string",
 				required: false,
 				description: "Wallet authentication token, when applicable.",
@@ -7530,7 +6098,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7538,7 +6105,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID assigned to the beneficiary's bank.",
@@ -7546,7 +6112,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Full name of the recipient.",
@@ -7554,7 +6119,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's 10-digit mobile number.",
@@ -7562,7 +6126,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_type",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient type. Value will be 3.",
@@ -7570,7 +6133,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's bank account number.",
@@ -7578,7 +6140,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the recipient's bank branch.",
@@ -7586,7 +6147,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "type",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Recipient identifier type. Defaults to `ifsc`.",
@@ -7594,7 +6154,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account_type",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Account type. Defaults to 1.",
@@ -7657,7 +6216,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7665,7 +6223,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Recipient ID of the recipient.",
@@ -7673,7 +6230,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet authentication token, when applicable.",
@@ -7726,7 +6282,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -7734,7 +6289,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -7742,7 +6296,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7750,7 +6303,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Send 80.",
@@ -7758,7 +6310,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -7810,7 +6361,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -7818,7 +6368,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -7826,7 +6375,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "timestamp",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Request timestamp (ISO 8601).",
@@ -7834,7 +6382,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "currency",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Currency. Must be INR.",
@@ -7842,7 +6389,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7850,7 +6396,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "channel",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Transfer channel. Defaults to 2 (NEFT); 0 for IMPS.",
@@ -7858,7 +6403,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "OTP received from Send Transaction OTP.",
@@ -7866,7 +6410,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "otp_ref_id received from Send Transaction OTP.",
@@ -7875,7 +6418,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -7884,7 +6426,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Geographic coordinates of the user's location.",
@@ -7892,7 +6433,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "State parameter.",
@@ -7900,7 +6440,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id_type",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Recipient ID type. Defaults to 1.",
@@ -8048,7 +6587,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8124,7 +6662,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8132,7 +6669,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Name of the sender as per ID.",
@@ -8140,7 +6676,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the sender in YYYY-MM-DD format.",
@@ -8148,7 +6683,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Sender's address as an array of strings.",
@@ -8228,7 +6762,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8285,7 +6818,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8293,7 +6825,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -8302,7 +6833,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -8447,7 +6977,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8455,7 +6984,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "org_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Organisation identifier. Defaults to 1.",
@@ -8463,7 +6991,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "client_ref_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Unique reference identifier for the request.",
@@ -8540,7 +7067,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8548,7 +7074,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "org_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Organisation identifier. Defaults to 1.",
@@ -8556,7 +7081,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "client_ref_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Unique reference identifier for the request.",
@@ -8564,7 +7088,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "consent_language",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "The pkid from Get Aadhaar KYC Consent Languages.",
@@ -8653,7 +7176,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8661,7 +7183,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -8718,7 +7239,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8726,7 +7246,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received from Generate Sender Aadhaar OTP.",
@@ -8734,7 +7253,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "otp_ref_id received from Generate Sender Aadhaar OTP.",
@@ -8777,7 +7295,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8785,7 +7302,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "The PAN number of the sender.",
@@ -8886,7 +7402,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8894,7 +7409,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Amount to load into the wallet (INR).",
@@ -8902,7 +7416,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "org_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Organisation identifier. Defaults to 1.",
@@ -8957,7 +7470,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -9105,7 +7617,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -9113,7 +7624,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID assigned to the beneficiary's bank.",
@@ -9121,7 +7631,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Full name of the recipient.",
@@ -9129,7 +7638,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's 10-digit mobile number.",
@@ -9137,7 +7645,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's bank account number.",
@@ -9145,7 +7652,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the recipient's bank branch.",
@@ -9192,7 +7698,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Generate an OTP to register a recipient's bank for a DigiKhata sender.",
 		description:
-			"Initiates bank registration for a recipient and dispatches an OTP. Returns a `beneficiary_id` and `otp_ref_id` to pass into Validate OTP to Add Recipient.",
+			"Initiates bank registration for a recipient and dispatches an OTP. Returns a `beneficiary_id` and `otp_ref_id` to pass into Validate OTP to Add Recipient. The bank enforces a one-hour cooling period per recipient before another bank account can be registered.",
 		relevance: "L",
 		bestFor: "Starting recipient bank registration on DigiKhata.",
 		method: "POST",
@@ -9203,7 +7709,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -9211,7 +7716,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient ID of the recipient to register a bank for.",
@@ -9270,7 +7774,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -9278,7 +7781,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received from Generate Add Recipient Bank OTP.",
@@ -9286,7 +7788,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -9330,7 +7831,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -9338,7 +7838,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -9346,7 +7845,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -9354,7 +7852,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Send 80.",
@@ -9362,7 +7859,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -9401,7 +7897,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Execute a DigiKhata wallet transfer to a recipient after OTP verification.",
 		description:
-			"Initiates the money transfer from the sender's DigiKhata wallet to the recipient. Returns the financial response envelope with `tx_status`, transaction id (`tid`), bank reference number, fee, and updated balance.",
+			"Initiates the money transfer from the sender's DigiKhata wallet to the recipient (keep `channel` fixed at 2). Returns the financial response envelope with `tx_status`, transaction id (`tid`), bank reference number, fee, and updated balance. Treat a timeout as initiated, not failed — re-query via Transaction Inquiry with your `client_ref_id`.",
+		descriptionFile: "ppi-digikhata-initiate-transaction.md",
 		relevance: "H",
 		bestFor: "Completing a DigiKhata wallet-to-bank transfer.",
 		method: "POST",
@@ -9412,7 +7909,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -9420,7 +7916,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -9428,7 +7923,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "timestamp",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Request timestamp (ISO 8601).",
@@ -9436,7 +7930,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "currency",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Currency. Must be INR.",
@@ -9444,7 +7937,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -9452,7 +7944,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "channel",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Transfer channel. Defaults to 2 (NEFT); 0 for IMPS.",
@@ -9460,7 +7951,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "OTP received from Send Transaction OTP.",
@@ -9468,7 +7958,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "otp_ref_id received from Send Transaction OTP.",
@@ -9477,7 +7966,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -9486,7 +7974,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Defaults to 80.",
@@ -9494,7 +7981,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Geographic coordinates of the user's location.",
@@ -9502,7 +7988,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "State parameter. Defaults to 1.",
@@ -9642,7 +8127,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "PAN card number of the agent.",
@@ -9650,7 +8134,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Verified mobile number of the agent.",
@@ -9658,7 +8141,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "first_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "First name of the agent.",
@@ -9666,7 +8148,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "last_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Last name of the agent.",
@@ -9674,7 +8155,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "email",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Email ID of the agent.",
@@ -9682,7 +8162,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Residence address of the agent as an array of strings.",
@@ -9690,7 +8169,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the agent in YYYY-MM-DD format.",
@@ -9698,7 +8176,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "shop_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Shop name of the agent (required for AePS onboarding).",
@@ -9727,6 +8204,95 @@ export const API_SPECS: ApiSpec[] = [
 			response_type_id: 1290,
 			message: "User onboarding successfull",
 			status: 0,
+		},
+	},
+	{
+		id: "activate-user-service",
+		productId: "user-management",
+		name: "Activate Service for User",
+		slug: "activate-user-service",
+		summary:
+			"Activate a specific service (by service code) for one of your agents/retailers.",
+		description:
+			"Enables a service for the given agent so they can begin transacting on it. The agent is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. After activation, confirm the status with the Get User's Services API.",
+		relevance: "M",
+		bestFor:
+			"Enabling a new service on an existing agent before their first transaction on it",
+		method: "PUT",
+		path: "/admin/network/agent/{user_code}/service/{service_code}/activate",
+		docsUrl: "https://developers.eko.in/reference/activate-user-service",
+		sourceDoc: "https://developers.eko.in/reference/activate-user-service",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "service_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of the service to activate for the user. See the service codes reference.",
+				example: "53",
+			},
+		],
+		// TODO: confirm real response payload with Eko (response pending) — placeholder envelope.
+		responseData: [],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message: "Service activated successfully.",
+			response_type_id: 0,
+			data: {},
+		},
+	},
+	{
+		id: "deactivate-user-service",
+		productId: "user-management",
+		name: "Deactivate Service for User",
+		slug: "deactivate-user-service",
+		summary:
+			"Deactivate a specific service (by service code) for one of your agents/retailers.",
+		description:
+			"Disables a previously activated service for the given agent. The agent is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. After deactivation, confirm the status with the Get User's Services API.",
+		relevance: "M",
+		bestFor:
+			"Suspending a service on an agent without removing them from your network",
+		method: "PUT",
+		path: "/admin/network/agent/{user_code}/service/{service_code}/deactivate",
+		docsUrl: "https://developers.eko.in/reference/deactivate-service-for-user",
+		sourceDoc:
+			"https://developers.eko.in/reference/deactivate-service-for-user",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "service_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of the service to deactivate for the user. See the service codes reference.",
+				example: "53",
+			},
+		],
+		// TODO: confirm real response payload with Eko (response pending) — placeholder envelope.
+		responseData: [],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			message: "Service deactivated successfully.",
+			response_type_id: 0,
+			data: {},
 		},
 	},
 	{
@@ -9845,7 +8411,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/tools/catalog/service-codes",
 		docsUrl: "https://developers.eko.in/reference/service-codes",
 		sourceDoc: "https://developers.eko.in/reference/service-codes",
-		omitCommonParams: ["user_code"],
 		extraRequestParams: [],
 		responseData: [
 			{
@@ -9918,11 +8483,9 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/user/account/balance",
 		docsUrl: "https://developers.eko.in/reference/wallet-balance",
 		sourceDoc: "https://developers.eko.in/reference/wallet-balance",
-		omitCommonParams: ["user_code"],
 		extraRequestParams: [
 			{
 				name: "customer_id_type",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Identifier type. Fixed value: mobile_number.",
@@ -9930,7 +8493,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Registered mobile number for the wallet.",
@@ -9989,7 +8551,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's 10-digit mobile number.",
@@ -9997,7 +8558,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Name of the customer as per ID.",
@@ -10005,7 +8565,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the customer in YYYY-MM-DD format.",
@@ -10013,7 +8572,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Customer's address as an array of strings.",
@@ -10057,7 +8615,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check whether a customer is already enrolled on the platform by mobile number.",
 		description:
-			"Looks up a customer. For an enrolled customer the response returns an `otp_ref_id` to validate; if not enrolled (response_type_id 308) proceed to Onboard Customer.",
+			"Looks up a customer by mobile number. For an enrolled customer the response returns an `otp_ref_id` to validate; if not enrolled (response_type_id 308) proceed to Onboard Customer. It also reports KYC state, remaining monthly limits (₹74,500 full-KYC vs ₹25,000 non-KYC), and per-pipe registration (`is_registered`).",
+		descriptionFile: "get-customer-info.md",
 		relevance: "M",
 		bestFor: "Checking customer enrolment before a transaction.",
 		method: "GET",
@@ -10067,7 +8626,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's 10-digit mobile number.",
@@ -10134,7 +8692,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's 10-digit mobile number.",
@@ -10142,7 +8699,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description:
@@ -10151,7 +8707,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -10286,7 +8841,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Register a bank account as an AePS fund-settlement recipient for an agent.",
 		description:
-			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch.",
+			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch. An agent can register up to 3 settlement accounts, and only banks that offer account verification are accepted.",
 		relevance: "M",
 		bestFor: "Registering an agent's settlement bank account before payout.",
 		method: "POST",
@@ -10297,8 +8852,15 @@ export const API_SPECS: ApiSpec[] = [
 			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "bank_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique identifier for the bank.",
@@ -10306,7 +8868,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the bank account.",
@@ -10314,7 +8875,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Service code for AePS fund settlement. Value: 39.",
@@ -10322,7 +8882,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Account number of the user's bank account.",
@@ -10389,7 +8948,16 @@ export const API_SPECS: ApiSpec[] = [
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
 		sourceDoc:
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
-		extraRequestParams: [],
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+		],
 		responseData: [
 			{
 				name: "unsettled_fund",
@@ -10474,7 +9042,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
 		description:
-			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm; max ₹2,00,000 per transaction.",
+			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm (excl. RBI holidays); max ₹2,00,000 per transaction; requests after 5pm settle the next working day.",
+		descriptionFile: "aeps-initiate-settlement.md",
 		relevance: "H",
 		bestFor: "Settling collected AePS funds to an agent's bank account.",
 		method: "POST",
@@ -10485,8 +9054,15 @@ export const API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -10495,7 +9071,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -10504,7 +9079,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "payment_mode",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Transfer method: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
@@ -10600,7 +9174,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -10702,11 +9275,10 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/refund/{tid}/otp",
 		docsUrl: "https://developers.eko.in/reference/refund-otp",
 		sourceDoc: "https://developers.eko.in/reference/refund-otp",
-		omitCommonParams: ["user_code", "client_ref_id"],
+		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Transaction ID from the Initiate Transaction call.",
@@ -10753,7 +9325,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Transaction ID from the Initiate Transaction call.",
@@ -10761,7 +9332,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "OTP sent to the customer's mobile number.",
@@ -10769,7 +9339,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "otp_ref_id received from Get Refund OTP.",
@@ -10778,7 +9347,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. For PayPoint send 80.",
@@ -10786,7 +9354,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed value. Send 1.",
@@ -10854,8 +9421,24 @@ export const API_SPECS: ApiSpec[] = [
 		},
 	},
 	{
+		id: "get-banks",
+		productId: "bank-info",
+		name: "Get List of Banks",
+		slug: "get-banks",
+		summary: "Fetch a list of all banks.",
+		description:
+			"Returns a list of all banks. Use the [Get Bank Details API](./get-bank-details) to get additional information about a bank.",
+		relevance: "L",
+		method: "GET",
+		path: "/tools/reference/banks",
+		docsUrl: "https://developers.eko.in/reference/get-bank-list",
+		extraRequestParams: [],
+		responseData: [],
+		sampleSuccessResponse: {},
+	},
+	{
 		id: "get-bank-details",
-		productId: "utilities",
+		productId: "bank-info",
 		name: "Get Bank Details",
 		slug: "get-bank-details",
 		summary:
@@ -10871,7 +9454,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bank_code",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Eko bank code (see the bank list).",
@@ -10879,7 +9461,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "query",
 				type: "string",
 				required: false,
 				description: "IFSC code to narrow the lookup.",
@@ -10951,7 +9532,7 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	{
 		id: "get-ifsc-details",
-		productId: "utilities",
+		productId: "bank-info",
 		name: "Get IFSC Details",
 		slug: "get-ifsc-details",
 		summary: "Resolve a bank and branch from an IFSC code.",
@@ -10966,7 +9547,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "ifsc",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "IFSC code of the bank branch.",
@@ -11043,7 +9623,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_mobile",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's mobile number.",
@@ -11086,122 +9665,6 @@ export const API_SPECS: ApiSpec[] = [
 		},
 	},
 	{
-		id: "bank-bulk-status",
-		productId: "bank",
-		name: "Bulk Bank Account Verification — Status",
-		slug: "bank-bulk-status",
-		summary:
-			"Poll the result of an async bulk bank-account verification batch.",
-		description:
-			"Returns the per-account verification results for a bulk bank-account verification batch, keyed by the `bulk_reference_id` you received when submitting the batch. Each entry includes the account status and the bank-registered name.",
-		relevance: "L",
-		bestFor: "Fetching results of a submitted bulk bank-verification batch.",
-		method: "GET",
-		path: "/tools/kyc/bank-account/bulk/status",
-		docsUrl:
-			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
-		sourceDoc:
-			"https://developers.eko.in/reference/bulk-bank-account-verification-status",
-		extraRequestParams: [
-			{
-				name: "bulk_reference_id",
-				in: "query",
-				type: "integer",
-				required: true,
-				description:
-					"The unique ID returned by the Bulk Bank Account Verification submit call.",
-				example: 172432,
-			},
-			{
-				name: "client_ref_id",
-				in: "query",
-				type: "string",
-				required: false,
-				description: "A unique ID for the API call generated at your end.",
-				example: "ref_20250121_001",
-			},
-		],
-		responseData: [
-			{
-				name: "bulk_reference_id",
-				type: "number",
-				imp: true,
-				description: "Identifier of the bulk batch.",
-				example: 172432,
-			},
-			{
-				name: "entries",
-				type: "array",
-				imp: true,
-				description: "Per-account verification results.",
-				children: [
-					{
-						name: "name_at_bank",
-						type: "string",
-						imp: true,
-						description: "Account-holder name as registered at the bank.",
-						example: "Mr Himanshu  MULLICK",
-					},
-					{
-						name: "account_status",
-						type: "string",
-						imp: true,
-						description: "Verification result (VALID / INVALID).",
-						example: "VALID",
-					},
-					{
-						name: "account_status_code",
-						type: "string",
-						description: "Machine-readable status code.",
-						example: "ACCOUNT_IS_VALID",
-					},
-					{
-						name: "bank_account",
-						type: "string",
-						description: "Bank account number verified.",
-						example: "76662187222",
-					},
-					{
-						name: "ifsc",
-						type: "string",
-						description: "Branch IFSC.",
-						example: "SBIN0004221",
-					},
-					{
-						name: "reference_id",
-						type: "number",
-						description: "Per-entry reference id.",
-						example: 1292919294,
-					},
-				],
-			},
-		],
-		sampleSuccessResponse: {
-			response_status_id: 0,
-			data: {
-				entries: [
-					{
-						utr: null,
-						reference_id: 1292919294,
-						name_match_result: null,
-						phone: "9911991199",
-						name: "Himanshu Mullick",
-						account_status_code: "ACCOUNT_IS_VALID",
-						account_status: "VALID",
-						name_match_score: null,
-						ifsc: "SBIN0004221",
-						name_at_bank: "Mr Himanshu  MULLICK",
-						bank_account: "76662187222",
-					},
-				],
-				bulk_reference_id: 172432,
-				bulk_verification_id: "3356655212",
-			},
-			response_type_id: 0,
-			status: 0,
-		},
-	},
-	{
 		id: "digilocker-create-url",
 		productId: "digilocker",
 		name: "Create DigiLocker URL",
@@ -11221,7 +9684,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "document_requested",
-				in: "body",
 				type: "array",
 				required: true,
 				description:
@@ -11231,7 +9693,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "redirect_url",
 				label: "Redirection URL",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11317,7 +9778,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "document_type",
-				in: "body",
 				type: "array",
 				required: true,
 				description: 'List of document types to retrieve (e.g. ["AADHAAR"]).',
@@ -11325,7 +9785,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "verification_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11334,7 +9793,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reference_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11533,7 +9991,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "reference_id",
-				in: "query",
 				type: "number",
 				required: true,
 				description:
@@ -11541,7 +9998,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: 12345,
 			},
 		],
-		omitCommonParams: ["user_code", "source"],
 		responseData: [
 			{
 				name: "user_details",
@@ -11676,7 +10132,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bank_account",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Complete bank account number to be verified.",
@@ -11685,7 +10140,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				label: "IFSC Code",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11837,7 +10291,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "entries",
-				in: "body",
 				type: "array",
 				required: true,
 				description:
@@ -11855,7 +10308,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "entries[].bank_account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Bank account number for this entry.",
@@ -11863,7 +10315,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "entries[].ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code for this entry's bank account.",
@@ -11871,7 +10322,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "entries[].user_code",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -11879,7 +10329,6 @@ export const API_SPECS: ApiSpec[] = [
 				example: "20810200",
 			},
 		],
-		omitCommonParams: ["user_code"],
 		responseData: [
 			{
 				name: "bulk_reference_id",
@@ -11959,7 +10408,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bulk_reference_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description:
@@ -12114,7 +10562,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "gstin",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12123,7 +10570,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "business_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12477,7 +10923,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "pan",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12611,7 +11056,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "customer_vpa",
 				label: "Customer VPA",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12620,7 +11064,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12629,7 +11072,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12638,7 +11080,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -12763,7 +11204,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "dl_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Driving license number to verify (e.g. MH0220190001234).",
@@ -12771,7 +11211,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13142,7 +11581,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Verify a vehicle's registration certificate (RC) in real time — owner details, chassis/engine numbers, insurance validity, blacklist status, permits, fitness, and financier info via the VAHAN national database.",
 		description:
-			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms.",
+			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms. Source (VAHAN) data typically reflects real-world changes within 15–30 days.",
 		relevance: "M",
 		bestFor:
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",
@@ -13154,7 +11593,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "vehicle_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Vehicle registration number to verify (e.g. HR26DA8398).",
@@ -13818,7 +12256,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "phone",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14379,7 +12816,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "latitude",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14388,7 +12824,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "longitude",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14538,7 +12973,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "epic_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14547,7 +12981,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -14839,7 +13272,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "file_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14848,7 +13280,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14857,7 +13288,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -14978,7 +13408,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "cin",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15183,7 +13612,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "ip_address",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15320,7 +13748,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "name_1",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15329,7 +13756,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name_2",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15437,7 +13863,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15612,7 +14037,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "din_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15742,7 +14166,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "registration_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15968,7 +14391,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "email",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -16134,7 +14556,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "fssai",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -16259,6 +14680,288 @@ export const API_SPECS: ApiSpec[] = [
 						pincode: "110001",
 						expiry_date: "2023-08-31",
 					},
+				},
+			},
+		],
+	},
+
+	// MARK: Mobile / OTP Verification
+	{
+		id: "mobile-otp-send",
+		productId: "mobile-otp",
+		name: "Send OTP",
+		slug: "mobile-otp-send",
+		summary:
+			"Send a one-time password (OTP) to a customer's primary mobile number to start mobile verification.",
+		description:
+			"Triggers an OTP SMS to the supplied mobile number and returns a transaction id plus the OTP expiry timestamp. The customer enters the OTP, which you confirm with the Verify OTP API. By default the SMS is sent with the **Eko India** sender signature; to use your own Sender ID and template, complete telecom DLT registration (see below).",
+		descriptionFile: "mobile-otp-send.md",
+		relevance: "H",
+		bestFor:
+			"Confirming a customer owns a mobile number before onboarding, payouts, or any OTP-gated transaction.",
+		method: "POST",
+		path: "/tools/kyc/mobile/otp",
+		docsUrl: "https://developers.eko.in/reference/mobile-otp-send",
+		extraRequestParams: [
+			{
+				name: "csp_id",
+				label: "CSP ID",
+				type: "string",
+				required: true,
+				description:
+					"Customer Service Point id of the agent/retailer the OTP is being sent on behalf of.",
+				example: "9002336768",
+			},
+			{
+				name: "mobile",
+				label: "Mobile Number",
+				type: "string",
+				required: true,
+				description:
+					"Customer's 10-digit primary mobile number to send the OTP to.",
+				example: "9002336768",
+			},
+		],
+		responseData: [
+			{
+				name: "client_ref_id",
+				type: "string",
+				description: "Unique reference id for this OTP request, echoed back.",
+				example: "211101129871",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description:
+					"Registered mobile number of the API user that initiated the call.",
+				example: "1234567891",
+			},
+			{
+				name: "otp_expiry_timestamp",
+				label: "OTP Expiry",
+				type: "string",
+				description:
+					"Timestamp until which the OTP stays valid. Verify before this time.",
+				imp: true,
+				example: "Fri May 22 16:04:04 IST 2026",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "string",
+				description:
+					"Unique transaction id for this OTP send, for tracking and support.",
+				example: "2886978474",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			response_type_id: 1623,
+			message: "OTP has been sent",
+			data: {
+				client_ref_id: "211101129871",
+				initiator_id: "1234567891",
+				otp_expiry_timestamp: "Fri May 22 16:04:04 IST 2026",
+				tid: "2886978474",
+			},
+		},
+	},
+	{
+		id: "mobile-otp-verify",
+		productId: "mobile-otp",
+		name: "Verify OTP",
+		slug: "mobile-otp-verify",
+		summary:
+			"Verify the OTP entered by the customer and receive a signed verification token for downstream use.",
+		description:
+			"Validates the OTP sent by the Send OTP API. On success (`status` = 0) it returns a signed JWT `otp_verification_token` containing the verified `mobile` and a unique token id. The token is valid for **5 minutes** and acts as proof that OTP verification was performed — pass it to any transaction that depends on a verified mobile, and use the Validate OTP-Verification-Token API to confirm its authenticity.",
+		relevance: "H",
+		bestFor:
+			"Confirming a customer-entered OTP and obtaining a short-lived proof token for OTP-gated transactions.",
+		method: "PUT",
+		path: "/tools/kyc/mobile/otp/verify",
+		docsUrl: "https://developers.eko.in/reference/mobile-otp-verify",
+		extraRequestParams: [
+			{
+				name: "otp",
+				label: "OTP",
+				type: "string",
+				required: true,
+				description:
+					"The OTP value the customer received via SMS from the Send OTP API.",
+				example: "3643",
+			},
+			{
+				name: "mobile",
+				label: "Mobile Number",
+				type: "string",
+				required: true,
+				description: "The same 10-digit mobile number the OTP was sent to.",
+				example: "9002336768",
+			},
+		],
+		responseData: [
+			{
+				name: "client_ref_id",
+				type: "string",
+				description: "Unique reference id for this OTP flow, echoed back.",
+				example: "211101129871",
+			},
+			{
+				name: "otp_verification_token",
+				label: "OTP Verification Token",
+				type: "string",
+				description:
+					"Signed JWT proving the OTP was verified. Contains the verified mobile and a unique token id; valid for 5 minutes. Validate it with the Validate OTP-Verification-Token API.",
+				imp: true,
+				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description:
+					"Registered mobile number of the API user that initiated the call.",
+				example: "1234567891",
+			},
+			{
+				name: "mobile",
+				label: "Verified Mobile",
+				type: "string",
+				description: "The mobile number that was verified.",
+				imp: true,
+				example: "9002336768",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "string",
+				description: "Unique transaction id for this verification.",
+				example: "2886978475",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			response_type_id: 1632,
+			message: "OTP verification successful.",
+			data: {
+				client_ref_id: "211101129871",
+				otp_verification_token: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+				initiator_id: "1234567891",
+				mobile: "9002336768",
+				tid: "2886978475",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Incorrect or expired OTP",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 1,
+					response_type_id: 1632,
+					message: "OTP verification failed.",
+					data: {},
+				},
+			},
+		],
+	},
+	{
+		id: "mobile-otp-validate-token",
+		productId: "mobile-otp",
+		name: "Validate OTP-Verification-Token",
+		slug: "mobile-otp-validate-token",
+		summary:
+			"Validate an otp_verification_token as proof that OTP verification happened within the 5-minute time limit.",
+		description:
+			"Validates the authenticity of an `otp_verification_token` issued by the Verify OTP API, proving the OTP verification was actually performed within its 5-minute validity window. Returns `status` = 0 when the token is valid; a timed-out or tampered/invalid token returns `status` = 1 with a descriptive message.",
+		relevance: "M",
+		bestFor:
+			"Server-to-server proof that a mobile OTP was verified recently, before honouring an OTP-gated action.",
+		method: "GET",
+		path: "/tools/kyc/mobile/otp/validate-token",
+		docsUrl: "https://developers.eko.in/reference/mobile-otp-validate-token",
+		extraRequestParams: [
+			{
+				name: "otp_verification_token",
+				label: "OTP Verification Token",
+				type: "string",
+				required: true,
+				description: "The signed JWT received from the Verify OTP API.",
+				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+			},
+		],
+		responseData: [
+			{
+				name: "client_ref_id",
+				type: "string",
+				description:
+					"Unique reference id for the original OTP flow, echoed back.",
+				example: "211101129871",
+			},
+			{
+				name: "otp_verification_token",
+				label: "OTP Verification Token",
+				type: "string",
+				description: "The token that was validated, echoed back.",
+				example: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+			},
+			{
+				name: "initiator_id",
+				type: "string",
+				description:
+					"Registered mobile number of the API user that initiated the call.",
+				example: "1234567891",
+			},
+			{
+				name: "mobile",
+				label: "Verified Mobile",
+				type: "string",
+				description: "The mobile number the token certifies as verified.",
+				imp: true,
+				example: "9002336768",
+			},
+			{
+				name: "tid",
+				label: "Transaction ID",
+				type: "string",
+				description: "Unique transaction id for this validation.",
+				example: "2886978475",
+			},
+		],
+		sampleSuccessResponse: {
+			status: 0,
+			response_status_id: 0,
+			response_type_id: 1633,
+			message: "OTP verification token is valid.",
+			data: {
+				client_ref_id: "211101129871",
+				otp_verification_token: "eyJ0eXAiOiJKV1QiLCJ...5aXdrqrNcEbhfYfDsI",
+				initiator_id: "1234567891",
+				mobile: "9002336768",
+				tid: "2886978475",
+			},
+		},
+		errorScenarios: [
+			{
+				scenario: "Token timed out (older than 5 minutes)",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 1,
+					response_type_id: 1634,
+					message: "The OTP verification token has timed out.",
+				},
+			},
+			{
+				scenario: "Invalid or tampered token",
+				statusCode: 200,
+				example: {
+					status: 1,
+					response_status_id: 1,
+					response_type_id: 1634,
+					message: "The OTP verification token is invalid.",
 				},
 			},
 		],

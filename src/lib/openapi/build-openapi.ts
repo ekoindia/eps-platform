@@ -271,8 +271,7 @@ const INTERACTIVE_OPERATION_SECURITY: Json[] = [
 
 /**
  * Build a complete OpenAPI 3.1 document from the given specs. Callers should
- * pass the documented set (`getDocumentedSpecs()` — active product, non
- * `-status`).
+ * pass the documented set (`getDocumentedSpecs()` — active product).
  */
 export const buildOpenApiDocument = (
 	specs: ApiSpec[],
@@ -294,8 +293,9 @@ export const buildOpenApiDocument = (
 	// Some endpoints back several logical operations on the SAME path+method,
 	// discriminated by a request-body field (e.g. the four AePS operations on
 	// POST /customer/collection/aeps-fingpay). OpenAPI permits only one operation
-	// per path+method, so we group them: the first spec defines the operation and
-	// the rest are listed under `x-eko-variants`. Per-variant docs pages still
+	// per path+method, so we group them: the primary spec (non-`-status`
+	// preferred) defines the operation and all grouped specs are listed under
+	// `x-eko-variants`. Per-variant docs pages still
 	// render from `api-specs.ts` directly.
 	const groups = new Map<string, ApiSpec[]>();
 	for (const spec of specs) {
@@ -308,7 +308,13 @@ export const buildOpenApiDocument = (
 	const interactive = options.interactive ?? false;
 	const paths: Json = {};
 	for (const group of groups.values()) {
-		const [primary] = group;
+		// Stable-sort non-`-status` specs first so a generic endpoint stays the
+		// OpenAPI primary over a status poller that shares its path+method.
+		const ordered = [...group].sort(
+			(a, b) =>
+				Number(a.id.endsWith("-status")) - Number(b.id.endsWith("-status")),
+		);
+		const [primary] = ordered;
 		const { parameters, requestBody } = buildOperationParams(
 			primary,
 			interactive,
@@ -329,11 +335,11 @@ export const buildOpenApiDocument = (
 		};
 		if (requestBody) operation.requestBody = requestBody;
 		if (interactive) operation.security = INTERACTIVE_OPERATION_SECURITY;
-		if (group.length > 1) {
-			operation.description = `${operation.description as string}\n\nThis endpoint backs multiple operations selected by request parameters: ${group
+		if (ordered.length > 1) {
+			operation.description = `${operation.description as string}\n\nThis endpoint backs multiple operations selected by request parameters: ${ordered
 				.map((s) => s.name)
 				.join(", ")}.`;
-			operation["x-eko-variants"] = group.map((s) => ({
+			operation["x-eko-variants"] = ordered.map((s) => ({
 				operationId: operationIdFor(s),
 				name: s.name,
 				slug: endpointSlug(s),

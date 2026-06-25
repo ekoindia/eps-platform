@@ -119,7 +119,7 @@ const buildApiItems = (): SearchItem[] =>
 		}));
 
 /** Builds API-endpoint search items from the docs registry (dynamic — future
- * endpoints auto-appear, removed/`-status`/inactive ones auto-drop). */
+ * endpoints auto-appear, removed/inactive-product ones auto-drop). */
 const buildEndpointItems = (): SearchItem[] =>
 	getAllDocNodes()
 		.filter((n) => n.kind === "endpoint")

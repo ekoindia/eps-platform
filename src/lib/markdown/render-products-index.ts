@@ -401,6 +401,7 @@ export const PRODUCTS_TXT_PARTS: ProductsIndexPart[] = [
 		lede: "Production-ready identity & KYC verification APIs from Eko EPS — validate individuals and their bank/UPI accounts in real time, built for India's digital economy. This document contains the full details of every identity & KYC verification API so it can be used standalone; per-product pages are linked in each section.",
 		productIds: [
 			"pan",
+			"mobile-otp",
 			"aadhaar",
 			"bank",
 			"upi",
@@ -482,12 +483,17 @@ function renderProductsIndex(
 			label: "BC Agent APIs",
 			list: products.filter((p) => p.category === "bc"),
 		},
+		{
+			label: "Utility APIs",
+			list: products.filter((p) => p.category === "util"),
+		},
 	];
 
 	const categoryLabels: Record<ApiProductRef["category"], string> = {
 		verification: "Verification",
 		payment: "Payments",
 		bc: "BC Agent",
+		util: "Utility",
 	};
 
 	const blocks: (string | undefined)[] = [];

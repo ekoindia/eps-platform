@@ -3029,6 +3029,99 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 	},
 
 	// -------------------------------------------------------------------------
+	// MARK: Mobile / OTP Verification
+	// -------------------------------------------------------------------------
+	"mobile-otp": {
+		seo: {
+			title: "Mobile OTP Verification API India | Send, Verify & Validate OTP",
+			description:
+				"Send OTPs to mobile numbers, verify the code entered by the customer, and validate a signed proof token — for onboarding, payouts, and any OTP-gated transaction. Bring your own DLT-registered Sender ID.",
+			keywords:
+				"Mobile OTP API, OTP Verification API, Send OTP API, Verify OTP API, SMS OTP API India, Phone Verification API",
+		},
+		title: "Mobile OTP Verification API",
+		desc: "Send, verify & validate mobile OTPs",
+		heroTitle: "Mobile OTP Verification API for Secure Customer Onboarding",
+		heroSubtitle:
+			"Send a one-time password to any mobile number, verify the code the customer enters, and get a signed 5-minute proof token to gate sensitive transactions. Use the Eko India sender by default, or your own DLT-registered Sender ID.",
+		category: "verification",
+		icon: Smartphone,
+		overview:
+			"The Mobile OTP Verification API lets you confirm that a customer controls a mobile number before onboarding them or authorising a transaction. Send an OTP, verify the entered code, and receive a signed JWT proof token that downstream APIs can validate — so OTP verification can be proven server-to-server within a strict time window.",
+		keyBenefits: [
+			"Confirm mobile ownership in real time",
+			"Signed JWT proof token for OTP-gated transactions",
+			"5-minute token validity prevents replay",
+			"Bring your own DLT-registered Sender ID",
+			"Simple three-call flow: send → verify → validate",
+		],
+		features: [
+			{
+				title: "Send OTP",
+				desc: "Trigger an OTP SMS to the customer's primary mobile number and get a transaction id plus expiry timestamp.",
+			},
+			{
+				title: "Verify OTP",
+				desc: "Validate the code the customer entered and receive a signed otp_verification_token as proof.",
+			},
+			{
+				title: "Validate Token",
+				desc: "Confirm the proof token is authentic and was issued within the last 5 minutes — ideal for server-to-server checks.",
+			},
+			{
+				title: "Custom Sender ID",
+				desc: "Send OTPs under your own brand by registering a Sender ID and content template on a telecom DLT platform.",
+			},
+		],
+		whoShouldUse: [
+			"Fintechs and NBFCs onboarding customers",
+			"Agent-banking and assisted-commerce platforms",
+			"Marketplaces verifying buyers and sellers",
+			"Any product gating actions behind mobile verification",
+		],
+		useCases: [
+			"Verify a mobile number during customer onboarding",
+			"Two-factor confirmation before payouts or high-value transactions",
+			"Prove OTP verification to a downstream API via the token",
+			"Reduce fake signups with real mobile-ownership checks",
+		],
+		trustAndCompliance: [
+			"Signed, time-bound JWT proof tokens",
+			"DLT-compliant SMS delivery",
+			"Secure API authentication",
+			"Audit-ready verification logs",
+		],
+		integrationSteps: [
+			...VERIFICATION_STEPS_BASE,
+			{
+				title: "Go Live",
+				desc: "Start sending and verifying OTPs in production.",
+			},
+		],
+		leadForm: {
+			title: "Get Mobile OTP Verification API Access",
+		},
+		faqs: [
+			{
+				q: "What is the OTP verification token?",
+				a: "On successful Verify OTP, the API returns a signed JWT (otp_verification_token) containing the verified mobile and a unique token id. It is valid for 5 minutes and acts as proof that OTP verification happened — pass it to downstream transactions and confirm it with the Validate Token API.",
+			},
+			{
+				q: "How long is the OTP and the token valid?",
+				a: "The OTP stays valid until the otp_expiry_timestamp returned by Send OTP. The verification token issued by Verify OTP is valid for 5 minutes from generation.",
+			},
+			{
+				q: "Can I send OTPs with my own company name?",
+				a: "Yes. By default OTPs are sent with the Eko India signature. To use your own Sender ID and template, register as a Principal Entity on a telecom DLT platform, register a Sender ID and the OTP content template, and share the approved details during onboarding.",
+			},
+			{
+				q: "How is the API billed?",
+				a: "You are billed per OTP sent. Verify OTP and Validate Token are free follow-up calls.",
+			},
+		],
+	},
+
+	// -------------------------------------------------------------------------
 	// MARK: FSSAI
 	// -------------------------------------------------------------------------
 	fssai: {

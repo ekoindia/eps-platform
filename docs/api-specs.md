@@ -42,9 +42,10 @@ one product (api-products.ts)  ──<  many APIs (api-specs.ts)
 
 An `ApiSpec` stores **only what is unique** to that endpoint:
 
-- `extraRequestParams` — API-specific params only. The four common body params
-  (`initiator_id`, `user_code`, `client_ref_id`, `source`) and all auth headers
-  are **not** repeated here.
+- `extraRequestParams` — API-specific params only. The common body params
+  (`initiator_id`, `client_ref_id`) and all auth headers are **not** repeated
+  here. (`user_code` is no longer a common param — endpoints that need it, e.g.
+  AePS, declare it explicitly in `extraRequestParams`.)
 - `responseData` — only the `data` subtree. The response envelope
   (`status`, `response_status_id`, `message`, `response_type_id`, plus
   `tx_status`/`txstatus_desc` for financial APIs) is **not** repeated here.

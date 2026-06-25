@@ -7,8 +7,10 @@ import {
 	endpointSlug,
 	getAllDocNodes,
 	getAllDocSlugs,
+	docHrefForSlug,
 	getDocBySlug,
 	getDocumentedSpecs,
+	productNavNodes,
 	type NavBranch,
 	type NavLeaf,
 	type NavNode,
@@ -27,10 +29,14 @@ describe("endpointSlug", () => {
 });
 
 describe("documented specs", () => {
-	it("excludes -status helper specs", () => {
-		const ids = getDocumentedSpecs().map((s) => s.id);
-		expect(API_SPECS.some((s) => s.id.endsWith("-status"))).toBe(true);
-		expect(ids.some((id) => id.endsWith("-status"))).toBe(false);
+	it("includes every active-product -status spec (hidden only on marketing)", () => {
+		const ids = new Set(getDocumentedSpecs().map((s) => s.id));
+		const activeStatusSpecs = API_SPECS.filter(
+			(s) =>
+				s.id.endsWith("-status") && Boolean(ACTIVE_PRODUCTS_MAP[s.productId]),
+		);
+		expect(activeStatusSpecs.length).toBeGreaterThan(0);
+		for (const s of activeStatusSpecs) expect(ids.has(s.id)).toBe(true);
 	});
 
 	it("only includes specs whose product is active (non-disabled)", () => {
@@ -107,13 +113,14 @@ const findBranch = (nodes: NavNode[], label: string): NavBranch | undefined => {
 };
 
 describe("buildNavTree", () => {
-	it("orders categories bc → payment → verification and nests endpoints", () => {
+	it("orders categories bc → payment → verification → util and nests endpoints", () => {
 		const { categories } = buildNavTree();
-		expect(categories.map((c) => c.category)).toEqual(
-			["bc", "payment", "verification"].filter((cat) =>
-				categories.some((c) => c.category === cat),
-			),
-		);
+		expect(categories.map((c) => c.category)).toEqual([
+			"bc",
+			"payment",
+			"verification",
+			"util",
+		]);
 		for (const cat of categories) {
 			expect(cat.nodes.length).toBeGreaterThan(0);
 			const catLeaves = leaves(cat.nodes);
@@ -191,15 +198,38 @@ describe("route parity", () => {
 			for (const ep of leaves(c.nodes)) expect(slugs.has(ep.slug)).toBe(true);
 	});
 
-	it("no nav endpoint is a -status helper", () => {
+	it("every nav endpoint resolves to an endpoint doc node", () => {
 		const nav = buildNavTree();
 		const navSlugs = nav.categories.flatMap((c) =>
 			leaves(c.nodes).map((e) => e.slug),
 		);
-		for (const spec of getDocumentedSpecs())
-			expect(spec.id.endsWith("-status")).toBe(false);
 		expect(navSlugs.every((s) => getDocBySlug(s)?.kind === "endpoint")).toBe(
 			true,
 		);
+	});
+
+	it("surfaces active -status endpoints as routable docs pages + nav leaves", () => {
+		// pan-bulk-status is an active-product status poller.
+		expect(getDocBySlug("pan-bulk-status")?.kind).toBe("endpoint");
+		expect(docHrefForSlug("pan-bulk-status")).toBe("/docs/pan-bulk-status");
+		const navSlugs = new Set(
+			buildNavTree().categories.flatMap((c) =>
+				leaves(c.nodes).map((e) => e.slug),
+			),
+		);
+		expect(navSlugs.has("pan-bulk-status")).toBe(true);
+	});
+
+	it("keeps -status specs out of the marketing product .md tree (productNavNodes)", () => {
+		for (const productId of ["pan", "bank"]) {
+			const treeSlugs = new Set(
+				leaves(productNavNodes(productId)).map((l) => l.slug),
+			);
+			const statusSlugs = getDocumentedSpecs()
+				.filter((s) => s.productId === productId && s.id.endsWith("-status"))
+				.map((s) => s.slug);
+			expect(statusSlugs.length).toBeGreaterThan(0);
+			for (const slug of statusSlugs) expect(treeSlugs.has(slug)).toBe(false);
+		}
 	});
 });

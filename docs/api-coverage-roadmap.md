@@ -161,7 +161,7 @@ Utilities product added. Some "extras" already existed pre-Phase-6 (`pan-bulk-st
 | Get Bank Details | `get-bank-details` | GET | `/tools/reference/bank/{bank_code}` | `utilities` | ✅ |
 | Get IFSC Details | `get-ifsc-details` | GET | `/tools/reference/banks/ifsc/{ifsc}` | `utilities` | ✅ |
 | Get Operator Code & Circle | `bbps-operator-code-circle` | GET | `…/bbps/recharge/{customer_mobile}/operator` | `bbps` | ✅ |
-| Bulk Bank Verification — Status | `bank-bulk-status` | GET | `/tools/kyc/bank-account/bulk/status` | `bank` | ✅ |
+| Bulk Bank Verification — Status | `bulk-bank-account-verification-status` | GET | `/tools/kyc/bank-account/bulk/status` | `bank` | ✅ |
 | Send OTP (generic) | `mobile-otp-send` | POST | `/tools/kyc/mobile/otp` | `utilities` | ⛔ response pending |
 | Verify OTP (generic) | `mobile-otp-verify` | PUT | `/tools/kyc/mobile/otp/verify` | `utilities` | ⛔ response pending |
 | Get Banks | `get-banks` | GET | `/tools/reference/banks` | `utilities` | ⛔ response pending |

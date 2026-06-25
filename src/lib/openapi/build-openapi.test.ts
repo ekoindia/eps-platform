@@ -7,7 +7,10 @@ import {
 	buildOpenApiDocument,
 	operationIdFor,
 } from "@/lib/openapi/build-openapi";
-import type { ApiSpec } from "@/lib/data/api-specs-common";
+import {
+	type ApiSpec,
+	resolveRequestParams,
+} from "@/lib/data/api-specs-common";
 
 const specs = getDocumentedSpecs();
 const doc = buildOpenApiDocument(specs);
@@ -57,7 +60,7 @@ describe("buildOpenApiDocument", () => {
 		const getSpec = specs.find(
 			(s) =>
 				s.method === "GET" &&
-				!s.extraRequestParams.some((p) => p.in === "body"),
+				!resolveRequestParams(s).some((p) => p.in === "body"),
 		);
 		expect(getSpec).toBeDefined();
 		const op = (doc.paths?.[getSpec!.path] as Record<string, unknown>)
@@ -70,6 +73,24 @@ describe("buildOpenApiDocument", () => {
 		expect(queryNames).toContain("initiator_id");
 		// A GET carries no JSON request body.
 		expect(op.requestBody).toBeUndefined();
+	});
+
+	it("keeps the generic endpoint as primary over a shared-path -status poller", () => {
+		// bbps-transaction-status shares GET /tools/reference/transaction/... with
+		// the canonical transaction-inquiry. The grouping must keep the non-status
+		// spec as the operation primary and list the status one as a variant.
+		const txPath = "/tools/reference/transaction/{transaction-reference}";
+		const op = (doc.paths?.[txPath] as Record<string, unknown>).get as Record<
+			string,
+			unknown
+		>;
+		expect(op).toBeTruthy();
+		expect(op["x-docs-slug"]).toBe("transaction-inquiry");
+		const variantSlugs = (
+			(op["x-eko-variants"] as { slug: string }[] | undefined) ?? []
+		).map((v) => v.slug);
+		expect(variantSlugs).toContain("bbps-transaction-status");
+		expect(variantSlugs).toContain("transaction-inquiry");
 	});
 
 	it("records body-discriminated variants under x-eko-variants", () => {
