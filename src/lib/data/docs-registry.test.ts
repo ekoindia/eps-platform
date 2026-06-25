@@ -113,13 +113,14 @@ const findBranch = (nodes: NavNode[], label: string): NavBranch | undefined => {
 };
 
 describe("buildNavTree", () => {
-	it("orders categories bc → payment → verification and nests endpoints", () => {
+	it("orders categories bc → payment → verification → util and nests endpoints", () => {
 		const { categories } = buildNavTree();
-		expect(categories.map((c) => c.category)).toEqual(
-			["bc", "payment", "verification"].filter((cat) =>
-				categories.some((c) => c.category === cat),
-			),
-		);
+		expect(categories.map((c) => c.category)).toEqual([
+			"bc",
+			"payment",
+			"verification",
+			"util",
+		]);
 		for (const cat of categories) {
 			expect(cat.nodes.length).toBeGreaterThan(0);
 			const catLeaves = leaves(cat.nodes);
