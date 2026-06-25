@@ -7,7 +7,10 @@ import {
 	buildOpenApiDocument,
 	operationIdFor,
 } from "@/lib/openapi/build-openapi";
-import type { ApiSpec } from "@/lib/data/api-specs-common";
+import {
+	type ApiSpec,
+	resolveRequestParams,
+} from "@/lib/data/api-specs-common";
 
 const specs = getDocumentedSpecs();
 const doc = buildOpenApiDocument(specs);
@@ -57,7 +60,7 @@ describe("buildOpenApiDocument", () => {
 		const getSpec = specs.find(
 			(s) =>
 				s.method === "GET" &&
-				!s.extraRequestParams.some((p) => p.in === "body"),
+				!resolveRequestParams(s).some((p) => p.in === "body"),
 		);
 		expect(getSpec).toBeDefined();
 		const op = (doc.paths?.[getSpec!.path] as Record<string, unknown>)

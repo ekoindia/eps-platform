@@ -251,9 +251,14 @@ export const categoryForSpec = (spec: ApiSpec): ApiProductCategory =>
 /** Full auth header set for an API — identical on every request. */
 export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;
 
-/** Names of the `{token}` path variables in a spec's `path`. */
-const pathTokens = (path: string | undefined): Set<string> =>
-	new Set([...(path ?? "").matchAll(/\{(\w+)\}/g)].map((m) => m[1]));
+/**
+ * Names of the `{token}` path variables in a `path`. Token grammar is
+ * intentionally limited to the chars EPS uses in path params — alphanumerics,
+ * `-` and `_` (e.g. `{customer_id}`, `{transaction-reference}`). Exported so
+ * other generators share one definition instead of re-declaring the regex.
+ */
+export const pathTokens = (path: string | undefined): Set<string> =>
+	new Set([...(path ?? "").matchAll(/\{([-_a-zA-Z0-9]+)\}/g)].map((m) => m[1]));
 
 /**
  * Derive a param's location when it isn't explicitly set: a name matching a

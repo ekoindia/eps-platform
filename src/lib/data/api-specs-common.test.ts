@@ -51,6 +51,23 @@ describe("resolveRequestParams", () => {
 		expect(byName(params, "user_code")?.in).toBe("path");
 	});
 
+	it("derives in:path for a hyphenated {token} (e.g. transaction-reference)", () => {
+		const ref: ApiParam = {
+			name: "transaction-reference",
+			type: "string",
+			required: true,
+		};
+		const params = resolveRequestParams(
+			spec({
+				method: "GET",
+				path: "/tools/reference/transaction/{transaction-reference}",
+				extraRequestParams: [ref],
+			}),
+		);
+		// Hyphenated token still resolves to path (not query) despite the GET method.
+		expect(byName(params, "transaction-reference")?.in).toBe("path");
+	});
+
 	it("derives in by method for a non-path extra param (body on POST, query on GET)", () => {
 		const flag: ApiParam = { name: "flag", type: "string", required: true };
 		expect(

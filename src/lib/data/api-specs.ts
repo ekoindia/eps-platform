@@ -42,7 +42,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -151,7 +150,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -160,7 +158,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Full name of the sender as per their ID proof.",
@@ -168,7 +165,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
@@ -176,7 +172,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -260,7 +255,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -268,7 +262,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -276,7 +269,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -352,7 +344,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -360,7 +351,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -369,7 +359,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -378,7 +367,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "kyc_request_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -463,7 +451,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -579,7 +566,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -587,7 +573,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -596,7 +581,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Beneficiary's bank account number.",
@@ -604,7 +588,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the beneficiary's bank branch.",
@@ -612,7 +595,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Unique bank identifier from Eko's bank list API.",
@@ -620,7 +602,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "10-digit mobile number of the recipient.",
@@ -628,7 +609,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_type",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -718,7 +698,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -727,7 +706,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Transfer amount in INR (integer, no decimals).",
@@ -735,7 +713,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -803,7 +780,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -812,7 +788,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -821,7 +796,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -829,7 +803,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -838,7 +811,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "OTP reference ID from the Send Transaction OTP response.",
@@ -846,7 +818,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -855,7 +826,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "string",
 				required: true,
 				description: 'Fixed value: "1".',
@@ -863,7 +833,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id_type",
-				in: "body",
 				type: "string",
 				required: true,
 				description: 'Fixed value: "1" for bank account recipients.',
@@ -871,7 +840,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "channel",
-				in: "body",
 				type: "number",
 				required: false,
 				description: "Transfer channel. Fixed value: 2 (IMPS). Defaults to 2.",
@@ -879,7 +847,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "currency",
-				in: "body",
 				type: "string",
 				required: false,
 				description: 'Currency code. Defaults to "INR".',
@@ -887,7 +854,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "timestamp",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "ISO 8601 request timestamp.",
@@ -1064,7 +1030,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "user_code",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -1073,7 +1038,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "modelname",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1082,7 +1046,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "devicenumber",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1091,7 +1054,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "office_address",
-				in: "body",
 				type: "object",
 				required: true,
 				description:
@@ -1105,7 +1067,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "address_as_per_proof",
-				in: "body",
 				type: "object",
 				required: true,
 				description:
@@ -1119,7 +1080,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_card",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1128,7 +1088,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_front",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1137,7 +1096,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_back",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1241,7 +1199,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1249,7 +1206,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1258,7 +1214,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -1267,7 +1222,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1276,7 +1230,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1286,7 +1239,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pipe",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Routing pipe selector. Use 0 (default).",
@@ -1294,7 +1246,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "notify_customer",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
@@ -1302,7 +1253,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1311,7 +1261,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1320,7 +1269,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reference_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1488,7 +1436,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1496,7 +1443,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Bank IIN/IFS code identifying the customer's bank.",
@@ -1504,7 +1450,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Must be 0 for Balance Enquiry. No debit is performed.",
@@ -1512,7 +1457,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1521,7 +1465,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1531,7 +1474,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pipe",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Routing pipe selector. Use 0 (default).",
@@ -1539,7 +1481,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "notify_customer",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
@@ -1547,7 +1488,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1556,7 +1496,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1671,7 +1610,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's registered mobile number.",
@@ -1679,7 +1617,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Bank IIN/IFS code identifying the customer's bank.",
@@ -1687,7 +1624,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Must be 0 for Mini Statement. No debit is performed.",
@@ -1695,7 +1631,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1704,7 +1639,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1714,7 +1648,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pipe",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Routing pipe selector. Use 0 (default).",
@@ -1722,7 +1655,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "notify_customer",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
@@ -1730,7 +1662,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -1739,7 +1670,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2045,7 +1975,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2253,7 +2182,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2262,7 +2190,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2272,7 +2199,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2361,7 +2287,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhaar",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2370,7 +2295,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "piddata",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2380,7 +2304,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -2389,7 +2312,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IP address of the agent's terminal/system.",
@@ -2695,7 +2617,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "category",
-				in: "query",
 				type: "number",
 				required: false,
 				description: "Filter by category — use the `id` from Get Categories.",
@@ -2703,7 +2624,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "location",
-				in: "query",
 				type: "number",
 				required: false,
 				description:
@@ -2806,7 +2726,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "operator_id",
-				in: "path",
 				type: "number",
 				required: true,
 				description: "The operator/biller ID from the Get Operators response.",
@@ -2909,7 +2828,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "utility_acc_no",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Customer's account / consumer number with the biller.",
@@ -2917,7 +2835,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "confirmation_mobile_no",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Customer's mobile number for transaction confirmation.",
@@ -2925,7 +2842,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "sender_name",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Customer's full name.",
@@ -2933,7 +2849,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "operator_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Biller identifier from the Get Operators response.",
@@ -2941,7 +2856,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "IP address of the agent or retailer making this request.",
@@ -2949,7 +2863,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "query",
 				type: "string",
 				required: true,
 				description:
@@ -2958,7 +2871,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "hc_channel",
-				in: "query",
 				type: "number",
 				required: false,
 				description:
@@ -2967,7 +2879,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -2976,7 +2887,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "cycle_number",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -2985,7 +2895,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "authenticator",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -3095,7 +3004,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "utility_acc_no",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Customer's account or consumer number with the biller.",
@@ -3103,7 +3011,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "confirmation_mobile_no",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Customer's mobile number for payment confirmation.",
@@ -3111,7 +3018,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "sender_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Customer's full name.",
@@ -3119,7 +3025,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "operator_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Biller identifier from the Get Operators response.",
@@ -3127,7 +3032,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Payment amount in rupees (e.g. '1350' for ₹1,350).",
@@ -3135,7 +3039,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "source_ip",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IP address of the agent or retailer making this request.",
@@ -3143,7 +3046,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3152,7 +3054,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "billfetchresponse",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -3161,7 +3062,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -3170,7 +3070,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "postalcode",
-				in: "body",
 				type: "number",
 				required: false,
 				description:
@@ -3299,7 +3198,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -3381,7 +3279,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "service_code",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Service identifier for BBPS. Always 53.",
@@ -3389,7 +3286,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3455,7 +3351,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "service_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3528,7 +3423,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3537,7 +3431,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "locale",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -3718,7 +3611,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "sender_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3727,7 +3619,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Display name of the agent/merchant shown on the QR code.",
@@ -3735,7 +3626,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "email",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Email address of the agent/merchant.",
@@ -3839,7 +3729,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "sender_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -3848,7 +3737,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -3857,7 +3745,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Display name of the merchant shown to the payer.",
@@ -3976,7 +3863,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -4183,7 +4069,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -4268,7 +4153,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -4277,7 +4161,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "number",
 				required: true,
 				description:
@@ -4286,7 +4169,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -4295,7 +4177,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Fixed value: 80 (PayPoint service code for refunds).",
@@ -4303,7 +4184,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Fixed value: 1.",
@@ -4429,7 +4309,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "pan_number",
 				label: "PAN Number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -4438,7 +4317,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Individual's name to match against PAN records.",
@@ -4447,7 +4325,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				label: "Date of Birth",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
@@ -4594,7 +4471,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "pan",
 				label: "PAN Number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -4603,7 +4479,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -4613,7 +4488,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				label: "Date of Birth",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
@@ -4833,7 +4707,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "entries",
-				in: "body",
 				type: "array",
 				required: true,
 				description:
@@ -4912,7 +4785,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "reference_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description:
@@ -4921,7 +4793,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bulk_reference_id",
-				in: "query",
 				type: "string",
 				required: false,
 				description:
@@ -5090,7 +4961,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "integer",
 				required: true,
 				description: "Sender's mobile number.",
@@ -5098,7 +4968,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -5106,7 +4975,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5115,7 +4983,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "additional_info",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Additional info flag. Defaults to 1.",
@@ -5181,7 +5048,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's mobile number.",
@@ -5189,7 +5055,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received on the Aadhaar-linked mobile number.",
@@ -5197,7 +5062,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -5206,7 +5070,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "intent_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -5215,7 +5078,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "additional_info",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Additional info flag. Defaults to 1.",
@@ -5317,7 +5179,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's mobile number.",
@@ -5325,7 +5186,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -5333,7 +5193,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5342,7 +5201,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5411,7 +5269,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's mobile number.",
@@ -5419,7 +5276,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received on the Aadhaar-linked mobile number.",
@@ -5427,7 +5283,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -5436,7 +5291,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "intent_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -5445,7 +5299,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet token for authenticated context.",
@@ -5453,7 +5306,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet identifier for the sender.",
@@ -5546,7 +5398,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -5622,7 +5473,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -5630,7 +5480,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Name of the sender as per ID.",
@@ -5638,7 +5487,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the sender in YYYY-MM-DD format.",
@@ -5646,7 +5494,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Sender's address as an array of strings.",
@@ -5654,7 +5501,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Send 80.",
@@ -5718,7 +5564,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -5726,7 +5571,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -5735,7 +5579,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -5744,7 +5587,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "intent_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -5955,7 +5797,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -5963,7 +5804,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "The PAN number of the sender.",
@@ -5971,7 +5811,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet identifier, when applicable.",
@@ -5979,7 +5818,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet authentication token, when applicable.",
@@ -6094,7 +5932,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6102,7 +5939,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "query",
 				type: "string",
 				required: false,
 				description: "Wallet authentication token, when applicable.",
@@ -6262,7 +6098,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6270,7 +6105,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID assigned to the beneficiary's bank.",
@@ -6278,7 +6112,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Full name of the recipient.",
@@ -6286,7 +6119,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's 10-digit mobile number.",
@@ -6294,7 +6126,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_type",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient type. Value will be 3.",
@@ -6302,7 +6133,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's bank account number.",
@@ -6310,7 +6140,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the recipient's bank branch.",
@@ -6318,7 +6147,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "type",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Recipient identifier type. Defaults to `ifsc`.",
@@ -6326,7 +6154,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account_type",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Account type. Defaults to 1.",
@@ -6389,7 +6216,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6397,7 +6223,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Recipient ID of the recipient.",
@@ -6405,7 +6230,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "wallet_token",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Wallet authentication token, when applicable.",
@@ -6458,7 +6282,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -6466,7 +6289,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -6474,7 +6296,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6482,7 +6303,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Send 80.",
@@ -6490,7 +6310,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -6542,7 +6361,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -6550,7 +6368,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -6558,7 +6375,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "timestamp",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Request timestamp (ISO 8601).",
@@ -6566,7 +6382,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "currency",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Currency. Must be INR.",
@@ -6574,7 +6389,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6582,7 +6396,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "channel",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Transfer channel. Defaults to 2 (NEFT); 0 for IMPS.",
@@ -6590,7 +6403,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "OTP received from Send Transaction OTP.",
@@ -6598,7 +6410,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "otp_ref_id received from Send Transaction OTP.",
@@ -6607,7 +6418,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -6616,7 +6426,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Geographic coordinates of the user's location.",
@@ -6624,7 +6433,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "State parameter.",
@@ -6632,7 +6440,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id_type",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Recipient ID type. Defaults to 1.",
@@ -6780,7 +6587,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6856,7 +6662,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -6864,7 +6669,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Name of the sender as per ID.",
@@ -6872,7 +6676,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the sender in YYYY-MM-DD format.",
@@ -6880,7 +6683,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Sender's address as an array of strings.",
@@ -6960,7 +6762,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7017,7 +6818,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7025,7 +6825,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -7034,7 +6833,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -7179,7 +6977,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7187,7 +6984,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "org_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Organisation identifier. Defaults to 1.",
@@ -7195,7 +6991,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "client_ref_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Unique reference identifier for the request.",
@@ -7272,7 +7067,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7280,7 +7074,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "org_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Organisation identifier. Defaults to 1.",
@@ -7288,7 +7081,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "client_ref_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Unique reference identifier for the request.",
@@ -7296,7 +7088,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "consent_language",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "The pkid from Get Aadhaar KYC Consent Languages.",
@@ -7385,7 +7176,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7393,7 +7183,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
@@ -7450,7 +7239,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7458,7 +7246,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received from Generate Sender Aadhaar OTP.",
@@ -7466,7 +7253,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "otp_ref_id received from Generate Sender Aadhaar OTP.",
@@ -7509,7 +7295,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7517,7 +7302,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "The PAN number of the sender.",
@@ -7618,7 +7402,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7626,7 +7409,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Amount to load into the wallet (INR).",
@@ -7634,7 +7416,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "org_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Organisation identifier. Defaults to 1.",
@@ -7689,7 +7470,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7837,7 +7617,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7845,7 +7624,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID assigned to the beneficiary's bank.",
@@ -7853,7 +7631,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Full name of the recipient.",
@@ -7861,7 +7638,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's 10-digit mobile number.",
@@ -7869,7 +7645,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient's bank account number.",
@@ -7877,7 +7652,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_code",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the recipient's bank branch.",
@@ -7935,7 +7709,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -7943,7 +7716,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Recipient ID of the recipient to register a bank for.",
@@ -8002,7 +7774,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8010,7 +7781,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "OTP received from Generate Add Recipient Bank OTP.",
@@ -8018,7 +7788,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -8062,7 +7831,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -8070,7 +7838,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -8078,7 +7845,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8086,7 +7852,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Send 80.",
@@ -8094,7 +7859,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -8145,7 +7909,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique ID generated while adding the recipient.",
@@ -8153,7 +7916,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Amount to be transferred (INR).",
@@ -8161,7 +7923,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "timestamp",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Request timestamp (ISO 8601).",
@@ -8169,7 +7930,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "currency",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Currency. Must be INR.",
@@ -8177,7 +7937,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
@@ -8185,7 +7944,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "channel",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Transfer channel. Defaults to 2 (NEFT); 0 for IMPS.",
@@ -8193,7 +7951,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "OTP received from Send Transaction OTP.",
@@ -8201,7 +7958,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "otp_ref_id received from Send Transaction OTP.",
@@ -8210,7 +7966,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "beneficiary_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -8219,7 +7974,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. Defaults to 80.",
@@ -8227,7 +7981,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "Geographic coordinates of the user's location.",
@@ -8235,7 +7988,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "State parameter. Defaults to 1.",
@@ -8375,7 +8127,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "PAN card number of the agent.",
@@ -8383,7 +8134,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Verified mobile number of the agent.",
@@ -8391,7 +8141,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "first_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "First name of the agent.",
@@ -8399,7 +8148,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "last_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Last name of the agent.",
@@ -8407,7 +8155,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "email",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Email ID of the agent.",
@@ -8415,7 +8162,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Residence address of the agent as an array of strings.",
@@ -8423,7 +8169,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the agent in YYYY-MM-DD format.",
@@ -8431,7 +8176,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "shop_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Shop name of the agent (required for AePS onboarding).",
@@ -8742,7 +8486,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id_type",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Identifier type. Fixed value: mobile_number.",
@@ -8750,7 +8493,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "customer_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "Registered mobile number for the wallet.",
@@ -8809,7 +8551,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's 10-digit mobile number.",
@@ -8817,7 +8558,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Name of the customer as per ID.",
@@ -8825,7 +8565,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Date of birth of the customer in YYYY-MM-DD format.",
@@ -8833,7 +8572,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				in: "body",
 				type: "array",
 				required: true,
 				description: "Customer's address as an array of strings.",
@@ -8888,7 +8626,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's 10-digit mobile number.",
@@ -8955,7 +8692,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_id",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's 10-digit mobile number.",
@@ -8963,7 +8699,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: false,
 				description:
@@ -8972,7 +8707,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -9127,7 +8861,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "bank_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Unique identifier for the bank.",
@@ -9135,7 +8868,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code of the bank account.",
@@ -9143,7 +8875,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Service code for AePS fund settlement. Value: 39.",
@@ -9151,7 +8882,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Account number of the user's bank account.",
@@ -9333,7 +9063,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "amount",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -9342,7 +9071,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_id",
-				in: "body",
 				type: "integer",
 				required: true,
 				description:
@@ -9351,7 +9079,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "payment_mode",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "Transfer method: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
@@ -9447,7 +9174,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
-				in: "path",
 				type: "string",
 				required: true,
 				description:
@@ -9553,7 +9279,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Transaction ID from the Initiate Transaction call.",
@@ -9600,7 +9325,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "tid",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Transaction ID from the Initiate Transaction call.",
@@ -9608,7 +9332,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp",
-				in: "body",
 				type: "integer",
 				required: true,
 				description: "OTP sent to the customer's mobile number.",
@@ -9616,7 +9339,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "otp_ref_id",
-				in: "body",
 				type: "string",
 				required: false,
 				description: "otp_ref_id received from Get Refund OTP.",
@@ -9625,7 +9347,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "service_code",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed service code. For PayPoint send 80.",
@@ -9633,7 +9354,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "state",
-				in: "body",
 				type: "integer",
 				required: false,
 				description: "Fixed value. Send 1.",
@@ -9734,7 +9454,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bank_code",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Eko bank code (see the bank list).",
@@ -9742,7 +9461,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "ifsc",
-				in: "query",
 				type: "string",
 				required: false,
 				description: "IFSC code to narrow the lookup.",
@@ -9829,7 +9547,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "ifsc",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "IFSC code of the bank branch.",
@@ -9906,7 +9623,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "customer_mobile",
-				in: "path",
 				type: "string",
 				required: true,
 				description: "Customer's mobile number.",
@@ -9968,7 +9684,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "document_requested",
-				in: "body",
 				type: "array",
 				required: true,
 				description:
@@ -9978,7 +9693,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "redirect_url",
 				label: "Redirection URL",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -10064,7 +9778,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "document_type",
-				in: "body",
 				type: "array",
 				required: true,
 				description: 'List of document types to retrieve (e.g. ["AADHAAR"]).',
@@ -10072,7 +9785,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "verification_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -10081,7 +9793,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "reference_id",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -10280,7 +9991,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "reference_id",
-				in: "query",
 				type: "number",
 				required: true,
 				description:
@@ -10422,7 +10132,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bank_account",
-				in: "body",
 				type: "number",
 				required: true,
 				description: "Complete bank account number to be verified.",
@@ -10431,7 +10140,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				label: "IFSC Code",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -10583,7 +10291,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "entries",
-				in: "body",
 				type: "array",
 				required: true,
 				description:
@@ -10601,7 +10308,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "entries[].bank_account",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Bank account number for this entry.",
@@ -10609,7 +10315,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "entries[].ifsc",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "IFSC code for this entry's bank account.",
@@ -10617,7 +10322,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "entries[].user_code",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -10704,7 +10408,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "bulk_reference_id",
-				in: "query",
 				type: "string",
 				required: true,
 				description:
@@ -10859,7 +10562,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "gstin",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -10868,7 +10570,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "business_name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11222,7 +10923,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "pan",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11356,7 +11056,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "customer_vpa",
 				label: "Customer VPA",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11365,7 +11064,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "recipient_mobile",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11374,7 +11072,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11383,7 +11080,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "latlong",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11508,7 +11204,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "dl_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Driving license number to verify (e.g. MH0220190001234).",
@@ -11516,7 +11211,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -11899,7 +11593,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "vehicle_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "Vehicle registration number to verify (e.g. HR26DA8398).",
@@ -12563,7 +12256,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "phone",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13124,7 +12816,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "latitude",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13133,7 +12824,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "longitude",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13283,7 +12973,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "epic_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13292,7 +12981,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -13584,7 +13272,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "file_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13593,7 +13280,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "dob",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13602,7 +13288,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name",
-				in: "body",
 				type: "string",
 				required: false,
 				description:
@@ -13723,7 +13408,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "cin",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -13928,7 +13612,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "ip_address",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14065,7 +13748,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "name_1",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14074,7 +13756,6 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "name_2",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14182,7 +13863,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "pan_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14357,7 +14037,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "din_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14487,7 +14166,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "registration_number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14713,7 +14391,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "email",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -14879,7 +14556,6 @@ export const API_SPECS: ApiSpec[] = [
 		extraRequestParams: [
 			{
 				name: "fssai",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15030,7 +14706,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "csp_id",
 				label: "CSP ID",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15040,7 +14715,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "mobile",
 				label: "Mobile Number",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15112,7 +14786,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "otp",
 				label: "OTP",
-				in: "body",
 				type: "string",
 				required: true,
 				description:
@@ -15122,7 +14795,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "mobile",
 				label: "Mobile Number",
-				in: "body",
 				type: "string",
 				required: true,
 				description: "The same 10-digit mobile number the OTP was sent to.",
@@ -15214,7 +14886,6 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				name: "otp_verification_token",
 				label: "OTP Verification Token",
-				in: "query",
 				type: "string",
 				required: true,
 				description: "The signed JWT received from the Verify OTP API.",

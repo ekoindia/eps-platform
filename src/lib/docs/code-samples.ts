@@ -11,6 +11,7 @@ import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	buildSampleRequest,
+	pathTokens,
 	resolveHeaders,
 	resolveRequestParams,
 } from "@/lib/data/api-specs-common";
@@ -305,8 +306,7 @@ const sdkCallParams = (spec: ApiSpec): Record<string, unknown> => {
 	const byName = new Map(declared.map((p) => [p.name, p]));
 	const out: Record<string, unknown> = {};
 	// Path tokens first (guaranteed present even if not separately declared).
-	for (const m of spec.path.matchAll(/\{(\w+)\}/g)) {
-		const name = m[1];
+	for (const name of pathTokens(spec.path)) {
 		out[name] = valueFor(name, byName.get(name));
 	}
 	// Then required query/body params, minus the client-level ones (constructor).
