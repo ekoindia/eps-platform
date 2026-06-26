@@ -44,6 +44,10 @@ export default defineConfig(({ mode }) => ({
 	build: {
 		cssMinify: "lightningcss",
 		manifest: true,
+		// Pin the JS output target to match tsconfig.app (ES2020) so bundle output
+		// is predictable rather than dependent on Rolldown's evolving default. Bump
+		// only alongside a documented browser-support decision.
+		target: "es2020",
 		rollupOptions: {
 			output: {
 				// Rolldown (Vite 8) requires manualChunks to be a function, not an object
