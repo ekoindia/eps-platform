@@ -4,7 +4,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Header } from "@/components/Header";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import { lazy, Suspense } from "react";
@@ -50,7 +49,6 @@ const App = ({
 	<HelmetProvider context={helmetContext}>
 		<DefaultMeta />
 		<TooltipProvider>
-			<Toaster />
 			<Sonner />
 			<TrackingParamCapture />
 			<ScrollToTop />
