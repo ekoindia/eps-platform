@@ -75,7 +75,7 @@ export const PaymentsCalculator = () => {
 	const [selection, setSelection] = useState<EarningsSelection[]>(() =>
 		parseSelectionFromParams(searchParams),
 	);
-	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>();
+	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	const quote = useMemo(() => calcEarningsQuote(selection), [selection]);
 

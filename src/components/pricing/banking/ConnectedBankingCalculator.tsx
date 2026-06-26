@@ -81,7 +81,7 @@ export const ConnectedBankingCalculator = () => {
 		() => parseInputFromParams(searchParams) ?? DEFAULT_INPUT,
 	);
 	const [touched, setTouched] = useState(() => searchParams.get("cb") !== null);
-	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>();
+	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const { toast } = useToast();
 
 	const quote = useMemo(() => calcCbQuote(input), [input]);

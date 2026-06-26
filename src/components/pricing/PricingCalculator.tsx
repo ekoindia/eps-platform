@@ -83,7 +83,7 @@ export const PricingCalculator = () => {
 	const [includeGst, setIncludeGst] = useState(
 		() => searchParams.get("gst") === "1",
 	);
-	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>();
+	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	const quote = useMemo(() => calcQuote(selection), [selection]);
 
