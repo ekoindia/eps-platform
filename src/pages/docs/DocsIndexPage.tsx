@@ -147,13 +147,28 @@ const PathCard = ({
 		type="button"
 		onClick={onClick}
 		aria-pressed={active}
+		role="radio"
+		aria-checked={active}
 		className={cn(
-			"group flex w-full cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
+			"group relative flex w-full cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
 			active
 				? "border-eko-gold bg-eko-gold/5"
 				: "border-border/60 hover:border-eko-gold hover:bg-muted/40",
 		)}
 	>
+		{/* Radio indicator — empty circle when unselected, filled gold disc with a
+		    thick tick when selected. */}
+		<span
+			aria-hidden="true"
+			className={cn(
+				"absolute right-4 top-4 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
+				active
+					? "border-eko-gold bg-eko-gold text-white"
+					: "border-muted-foreground/40 group-hover:border-eko-gold",
+			)}
+		>
+			{active && <Check className="h-3.5 w-3.5" strokeWidth={3.5} />}
+		</span>
 		<Icon className="h-6 w-6 text-eko-gold" />
 		<h3 className="mt-3 text-base font-semibold text-foreground">{title}</h3>
 		<p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -324,7 +339,11 @@ const DocsIndexPage = () => {
 						title="Choose how you'll build"
 						subtitle="Pick a path — we'll remember it across the docs."
 					>
-						<div className="grid gap-4 sm:grid-cols-3">
+						<div
+							role="radiogroup"
+							aria-label="Choose how you'll build"
+							className="grid gap-4 sm:grid-cols-3"
+						>
 							<PathCard
 								icon={Terminal}
 								title="Call the API directly"
