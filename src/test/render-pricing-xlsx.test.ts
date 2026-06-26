@@ -95,7 +95,8 @@ describe("renderPricingXlsx", () => {
 			},
 		});
 		workbook = new Workbook();
-		await workbook.xlsx.load(buffer);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		await workbook.xlsx.load(buffer as any);
 		index = workbook.getWorksheet("Index")!;
 		calculator = workbook.getWorksheet("Verification Calculator")!;
 		earnings = workbook.getWorksheet("Payments Earnings")!;

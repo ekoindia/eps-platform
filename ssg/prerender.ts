@@ -343,15 +343,38 @@ async function replaceImagetoolsUrls(
 	);
 }
 
+const IMAGETOOLS_CACHE_DIR = "node_modules/.cache/imagetools";
+
 /**
- * Drives the imagetools connect middleware with a mock request/response to
- * capture the bytes for a `/@imagetools/<id>` URL (the module has already
- * been loaded during SSR render, so the image is in imagetools' cache).
+ * Fetches the bytes for a `/@imagetools/<id>` URL.
+ *
+ * In Vite 8 (Rolldown build pipeline), imagetools uses a filtered load hook
+ * that Rolldown calls during builds but that ssrLoadModule does NOT call.
+ * This means generatedImages is empty when the SSG prerender server starts,
+ * so the imagetools middleware throws for every image request.
+ *
+ * Strategy: try the imagetools disk cache first (populated by the preceding
+ * `vite build` step, keyed by the same id — bytes are identical to the
+ * emitted dist asset). Only fall back to the middleware for dev-server runs
+ * where the cache may be cold but the middleware has in-memory entries.
  */
-function fetchImagetoolsBuffer(
+async function fetchImagetoolsBuffer(
 	ssrServer: ViteDevServer,
 	url: string,
 ): Promise<Buffer | null> {
+	const id = url.split("/@imagetools/")[1];
+	if (!id) return null;
+
+	// Try disk cache first — in Vite 8+, this is the reliable path.
+	try {
+		const cached = await fs.readFile(path.join(IMAGETOOLS_CACHE_DIR, id));
+		if (cached.length > 0) return cached;
+	} catch {
+		// Cache miss — fall through to middleware.
+	}
+
+	// Fallback: drive the imagetools connect middleware (works in Vite ≤7 /
+	// dev-server contexts where generatedImages is populated by ssrLoadModule).
 	return new Promise((resolve, reject) => {
 		const chunks: Buffer[] = [];
 		const res = new Writable({
@@ -371,11 +394,13 @@ function fetchImagetoolsBuffer(
 		res.removeHeader = () => {};
 		res.writeHead = () => res;
 		res.statusCode = 200;
-		res.on("finish", () => resolve(Buffer.concat(chunks)));
+		res.on("finish", () => {
+			const buf = Buffer.concat(chunks);
+			resolve(buf.length > 0 ? buf : null);
+		});
 		res.on("error", reject);
 
 		const req = { url, method: "GET", headers: {} };
-		// If no middleware handles the URL, `next` is called → no image.
 		ssrServer.middlewares(req as never, res as never, () => resolve(null));
 	});
 }
