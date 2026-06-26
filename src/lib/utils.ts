@@ -1,5 +1,41 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * tailwind-merge instance taught about this project's custom theme utilities.
+ * tailwind-merge only knows Tailwind's built-in scales, so custom `shadow-*`
+ * and `animate-*` names defined in `src/index.css` (@theme) would otherwise be
+ * treated as unknown and NOT de-duplicated — e.g. `cn("shadow-gold", caller's
+ * "shadow-card")` would keep both, letting CSS source order decide. Registering
+ * them in their groups restores correct conflict resolution. Keep these lists in
+ * sync with the `--shadow-*` / `--animate-*` tokens in `src/index.css`.
+ */
+const twMerge = extendTailwindMerge({
+	extend: {
+		classGroups: {
+			shadow: [{ shadow: ["gold", "navy", "card", "card-hover"] }],
+			animate: [
+				{
+					animate: [
+						"accordion-down",
+						"accordion-up",
+						"fade-up",
+						"fade-in",
+						"slide-left",
+						"slide-right",
+						"pulse-soft",
+						"float-bob",
+						"scroll-x",
+						"menu-slide-down-in",
+						"scale-in",
+						"menu-fullwidth-reveal",
+						"chevron-scroll",
+					],
+				},
+			],
+		},
+	},
+});
 
 /**
  * Utility function to conditionally join class names together. It uses the `clsx` library to handle conditional logic and the `twMerge` library to merge Tailwind CSS class names without conflicts.
