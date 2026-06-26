@@ -17,6 +17,7 @@
 		"build:dev": "vite build --mode development && npm run bake:all",
 		"bake:all": "node packages/eps-context-mcp/scripts/bake-bundle.mjs && node packages/sdk-js/scripts/bake-surface.mjs && node packages/sdk-php/scripts/bake-surface.mjs && node packages/eps-mock-server/scripts/bake-fixtures.mjs",
 		"lint": "eslint .",
+		"typecheck": "tsc -p tsconfig.app.json --noEmit",
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",

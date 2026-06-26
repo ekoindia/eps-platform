@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_DEFAULT_VERSION } from "@/lib/config/site";
-import { ApiProductRelevance } from "@/lib/data/api-products";
+import type { ApiProductRelevance } from "@/lib/data/api-products";
 import { docHrefForSlug } from "@/lib/data/docs-registry";
 import { cn, normalizeApiLabel } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";

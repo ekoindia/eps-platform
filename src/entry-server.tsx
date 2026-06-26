@@ -10,7 +10,7 @@
  */
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router";
-import { HelmetServerState } from "react-helmet-async";
+import type { HelmetServerState } from "react-helmet-async";
 import App from "./AppServer";
 
 interface RenderResult {
