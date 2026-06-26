@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 import {
 	GST_RATE,
 	HAS_VOLUME_DISCOUNTS,
@@ -45,7 +45,6 @@ export const QuoteSummary = ({
 	onIncludeGstChange,
 	onQuickAdd,
 }: QuoteSummaryProps) => {
-	const { toast } = useToast();
 	const headlineTotal = includeGst ? quote.total : quote.subtotal;
 	const isEmpty = quote.lines.length === 0;
 	const { setupFee } = quote;
@@ -53,9 +52,9 @@ export const QuoteSummary = ({
 	const copyShareLink = async () => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
-			toast({ description: "Estimate link copied to clipboard" });
+			toast.success("Estimate link copied to clipboard");
 		} catch {
-			toast({ description: "Could not copy link", variant: "destructive" });
+			toast.error("Could not copy link");
 		}
 	};
 

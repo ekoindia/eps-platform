@@ -44,24 +44,24 @@ export default defineConfig(({ mode }) => ({
 	build: {
 		cssMinify: "lightningcss",
 		manifest: true,
+		// Pin the JS output target to match tsconfig.app (ES2020) so bundle output
+		// is predictable rather than dependent on Rolldown's evolving default. Bump
+		// only alongside a documented browser-support decision.
+		target: "es2020",
 		rollupOptions: {
 			output: {
-				manualChunks: {
-					"vendor-react": ["react", "react-dom", "react-router-dom"],
-					"vendor-radix": [
-						"@radix-ui/react-accordion",
-						"@radix-ui/react-dialog",
-						"@radix-ui/react-dropdown-menu",
-						"@radix-ui/react-tabs",
-						"@radix-ui/react-tooltip",
-						"@radix-ui/react-toast",
-						"@radix-ui/react-popover",
-						"@radix-ui/react-select",
-						"@radix-ui/react-navigation-menu",
-						"@radix-ui/react-slot",
-						"@radix-ui/react-label",
-						"@radix-ui/react-collapsible",
-					],
+				// Rolldown (Vite 8) requires manualChunks to be a function, not an object
+				manualChunks(id) {
+					if (
+						id.includes("/react/") ||
+						id.includes("/react-dom/") ||
+						id.includes("/react-router-dom/")
+					) {
+						return "vendor-react";
+					}
+					if (id.includes("/@radix-ui/")) {
+						return "vendor-radix";
+					}
 				},
 			},
 		},

@@ -10,7 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { GST_RATE } from "@/lib/data/api-pricing";
 import {
 	CB_BANKS,
@@ -81,8 +81,7 @@ export const ConnectedBankingCalculator = () => {
 		() => parseInputFromParams(searchParams) ?? DEFAULT_INPUT,
 	);
 	const [touched, setTouched] = useState(() => searchParams.get("cb") !== null);
-	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>();
-	const { toast } = useToast();
+	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	const quote = useMemo(() => calcCbQuote(input), [input]);
 
@@ -119,9 +118,9 @@ export const ConnectedBankingCalculator = () => {
 	const copyShareLink = async () => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
-			toast({ description: "Estimate link copied to clipboard" });
+			toast.success("Estimate link copied to clipboard");
 		} catch {
-			toast({ description: "Could not copy link", variant: "destructive" });
+			toast.error("Could not copy link");
 		}
 	};
 
