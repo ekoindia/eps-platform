@@ -45,4 +45,12 @@ describe("GitHubClient", () => {
 		const gh = createGitHubClient(cfg, f);
 		expect(await gh.hasRepoWrite("ght", "octocat")).toBe(false);
 	});
+
+	it("exchangeCode returns null on non-JSON 2xx body", async () => {
+		const f = vi.fn(
+			async () => new Response("<html>not json</html>", { status: 200 }),
+		) as unknown as typeof fetch;
+		const gh = createGitHubClient(cfg, f);
+		await expect(gh.exchangeCode("code123")).resolves.toBeNull();
+	});
 });

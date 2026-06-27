@@ -33,6 +33,7 @@ export function createGitHubClient(
 					headers: {
 						"Content-Type": "application/json",
 						Accept: "application/json",
+						"User-Agent": "eps-backend",
 					},
 					body: JSON.stringify({
 						client_id: cfg.clientId,
@@ -43,8 +44,12 @@ export function createGitHubClient(
 				},
 			);
 			if (!res.ok) return null;
-			const json = (await res.json()) as { access_token?: string };
-			return json.access_token ?? null;
+			try {
+				const json = (await res.json()) as { access_token?: string };
+				return json.access_token ?? null;
+			} catch {
+				return null;
+			}
 		},
 		async getUser(accessToken) {
 			const res = await fetchImpl("https://api.github.com/user", {
@@ -55,8 +60,12 @@ export function createGitHubClient(
 				},
 			});
 			if (!res.ok) return null;
-			const u = (await res.json()) as { login?: string; id?: number };
-			return u.login && u.id ? { login: u.login, id: u.id } : null;
+			try {
+				const u = (await res.json()) as { login?: string; id?: number };
+				return u.login && u.id ? { login: u.login, id: u.id } : null;
+			} catch {
+				return null;
+			}
 		},
 		async hasRepoWrite(accessToken, login) {
 			const res = await fetchImpl(
@@ -70,8 +79,12 @@ export function createGitHubClient(
 				},
 			);
 			if (!res.ok) return false;
-			const json = (await res.json()) as { permission?: string };
-			return json.permission === "write" || json.permission === "admin";
+			try {
+				const json = (await res.json()) as { permission?: string };
+				return json.permission === "write" || json.permission === "admin";
+			} catch {
+				return false;
+			}
 		},
 	};
 }
