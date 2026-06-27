@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getCookie } from "hono/cookie";
+import { getCookie, setCookie } from "hono/cookie";
 import type { Config } from "../config";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
@@ -8,6 +8,7 @@ import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
 import { buildMeView } from "../identity/me";
 import { AppError, errorBody } from "./errors";
+import type { GitHubClient } from "../clients/github";
 
 export interface Deps {
 	cfg: Config;
@@ -15,6 +16,7 @@ export interface Deps {
 	zoho: ZohoClient;
 	sessions: Sessions;
 	kv: KV;
+	github?: GitHubClient;
 }
 
 const OTP_START_LIMIT = 5;
@@ -22,12 +24,15 @@ const OTP_VERIFY_LIMIT = 5;
 const OTP_IP_LIMIT = 20;
 const OTP_WINDOW_SEC = 600;
 
+const STATE_COOKIE = "eps_oauth_state";
+const STATE_TTL_SEC = 600;
+
 function normalizeMobile(raw: string): string {
 	return raw.replace(/\D/g, "");
 }
 
 export function createApp(deps: Deps): Hono {
-	const { cfg, eko, zoho, sessions, kv } = deps;
+	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const app = new Hono();
 
 	app.onError((err, c) => {
@@ -130,6 +135,55 @@ export function createApp(deps: Deps): Hono {
 		const view = await buildMeView(claim.sub, profile, (m) => zoho.findLead(m));
 		return c.json(view);
 	});
+
+	if (github) {
+		app.get("/auth/admin/github", async (c) => {
+			const state = crypto.randomUUID();
+			await kv.set(`ghstate:${state}`, "1", STATE_TTL_SEC);
+			setCookie(c, STATE_COOKIE, state, {
+				httpOnly: true,
+				path: "/",
+				sameSite: "Lax",
+				secure: cfg.cookieSecure,
+				maxAge: STATE_TTL_SEC,
+			});
+			return c.redirect(github.authorizeUrl(state), 302);
+		});
+
+		app.get("/auth/admin/github/callback", async (c) => {
+			const code = c.req.query("code");
+			const state = c.req.query("state");
+			const cookieState = getCookie(c, STATE_COOKIE);
+			if (!code || !state || state !== cookieState) {
+				throw new AppError(400, "BAD_STATE", "Invalid OAuth state");
+			}
+			const stored = await kv.get(`ghstate:${state}`);
+			if (!stored) throw new AppError(400, "BAD_STATE", "Expired OAuth state");
+			await kv.del(`ghstate:${state}`);
+
+			const token = await github.exchangeCode(code);
+			if (!token)
+				throw new AppError(401, "OAUTH_FAILED", "Code exchange failed");
+			const user = await github.getUser(token);
+			if (!user)
+				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
+			const allowed = await github.hasRepoWrite(token, user.login);
+			if (!allowed) {
+				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
+			}
+			const claim = {
+				sub: `gh:${user.login}`,
+				role: "admin" as const,
+				orgId: cfg.eko.defaultOrgId,
+				ghLogin: user.login,
+			};
+			const access = await sessions.mintAccess(claim);
+			const refresh = await sessions.issueRefresh(claim);
+			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
+			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			return c.json({ ok: true, login: user.login, role: "admin" });
+		});
+	}
 
 	return app;
 }

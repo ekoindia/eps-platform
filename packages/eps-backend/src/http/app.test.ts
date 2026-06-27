@@ -5,6 +5,7 @@ import { createInMemoryKV } from "../store/kv";
 import { createSessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
+import type { GitHubClient } from "../clients/github";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -249,5 +250,79 @@ describe("logout", () => {
 		expect(res.status).toBe(200);
 		const set = res.headers.getSetCookie?.() ?? [];
 		expect(set.join(";")).toContain("eps_at=");
+	});
+});
+
+function ghDeps(gh: Partial<GitHubClient>) {
+	const base = deps();
+	const github: GitHubClient = {
+		authorizeUrl: (state) =>
+			`https://github.com/login/oauth/authorize?state=${state}`,
+		exchangeCode: vi.fn(async () => "ght"),
+		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
+		hasRepoWrite: vi.fn(async () => true),
+		...gh,
+	};
+	// rebuild app with github included
+	const kv = createInMemoryKV();
+	const sessions = createSessions(cfg, kv);
+	const app = createApp({
+		cfg,
+		eko: base.eko,
+		zoho: base.zoho,
+		sessions,
+		kv,
+		github,
+	});
+	return { app, github, kv };
+}
+
+describe("admin github", () => {
+	it("start redirects to GitHub and stores state", async () => {
+		const { app } = ghDeps({});
+		const res = await app.request("/auth/admin/github");
+		expect(res.status).toBe(302);
+		expect(res.headers.get("location")).toContain("github.com/login/oauth");
+	});
+
+	it("callback with valid state + repo write → admin session", async () => {
+		const { app } = ghDeps({});
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(200);
+		const set = res.headers.getSetCookie?.() ?? [];
+		expect(set.join(";")).toContain("eps_at=");
+	});
+
+	it("callback without repo write → 403", async () => {
+		const { app } = ghDeps({ hasRepoWrite: vi.fn(async () => false) });
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(403);
+	});
+
+	it("callback with bad state → 400", async () => {
+		const { app } = ghDeps({});
+		const res = await app.request(
+			"/auth/admin/github/callback?code=abc&state=forged",
+		);
+		expect(res.status).toBe(400);
 	});
 });
