@@ -63,6 +63,14 @@ describe("EkoClient.verifyOtp", () => {
 	});
 });
 
+describe("EkoClient upstream errors", () => {
+	it("throws on non-2xx HTTP status", async () => {
+		const f = mockFetch(500, { whatever: true });
+		const eko = createEkoClient(ekoCfg, f);
+		await expect(eko.sendOtp({ mobile: "x" })).rejects.toThrow();
+	});
+});
+
 describe("EkoClient.getProfile", () => {
 	it("maps 369 success to found with mapped fields", async () => {
 		const f = mockFetch(200, {

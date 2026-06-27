@@ -40,6 +40,9 @@ export function createEkoClient(
 			},
 			body,
 		});
+		if (!res.ok) {
+			throw new Error(`Eko upstream HTTP ${res.status}`);
+		}
 		const text = await res.text();
 		try {
 			return JSON.parse(text);
