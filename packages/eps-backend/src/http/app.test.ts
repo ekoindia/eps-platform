@@ -196,6 +196,52 @@ describe("otp/verify + me", () => {
 	});
 });
 
+describe("refresh", () => {
+	async function login(app: ReturnType<typeof deps>["app"]): Promise<string> {
+		const verify = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(verify.status).toBe(200);
+		return cookieFrom(verify);
+	}
+
+	it("rotates cookies and is single-use", async () => {
+		const { app } = deps();
+		const original = await login(app);
+		expect(original).toContain("eps_rt=");
+
+		const refreshed = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: original },
+		});
+		expect(refreshed.status).toBe(200);
+		const set = refreshed.headers.getSetCookie?.() ?? [];
+		expect(set.join(";")).toContain("eps_at=");
+		expect(set.join(";")).toContain("eps_rt=");
+
+		// Reusing the original (now-rotated) refresh cookie must fail.
+		const replay = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: original },
+		});
+		expect(replay.status).toBe(401);
+		expect((await body<{ error: { code: string } }>(replay)).error.code).toBe(
+			"SESSION_EXPIRED",
+		);
+	});
+
+	it("401 NO_SESSION without a refresh cookie", async () => {
+		const { app } = deps();
+		const res = await app.request("/auth/refresh", { method: "POST" });
+		expect(res.status).toBe(401);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NO_SESSION",
+		);
+	});
+});
+
 describe("logout", () => {
 	it("clears cookies", async () => {
 		const { app } = deps();
