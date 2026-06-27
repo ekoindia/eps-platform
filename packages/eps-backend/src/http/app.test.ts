@@ -45,7 +45,13 @@ function deps(over: Partial<EkoClient> = {}) {
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
 	const sessions = createSessions(cfg, kv);
-	return { app: createApp({ cfg, eko, zoho, sessions, kv }), eko, zoho };
+	return {
+		app: createApp({ cfg, eko, zoho, sessions, kv }),
+		eko,
+		zoho,
+		sessions,
+		kv,
+	};
 }
 
 function cookieFrom(res: Response): string {
@@ -285,7 +291,7 @@ describe("admin github", () => {
 		expect(res.headers.get("location")).toContain("github.com/login/oauth");
 	});
 
-	it("callback with valid state + repo write → admin session", async () => {
+	it("callback with valid state + repo write → 302 redirect + admin session cookie", async () => {
 		const { app } = ghDeps({});
 		const start = await app.request("/auth/admin/github");
 		const loc = new URL(start.headers.get("location")!);
@@ -298,7 +304,9 @@ describe("admin github", () => {
 			`/auth/admin/github/callback?code=abc&state=${state}`,
 			{ headers: { cookie: stateCookie } },
 		);
-		expect(res.status).toBe(200);
+		expect(res.status).toBe(302);
+		// Default POST_LOGIN_REDIRECT is "/"
+		expect(res.headers.get("location")).toBe("/");
 		const set = res.headers.getSetCookie?.() ?? [];
 		expect(set.join(";")).toContain("eps_at=");
 	});
@@ -324,5 +332,75 @@ describe("admin github", () => {
 			"/auth/admin/github/callback?code=abc&state=forged",
 		);
 		expect(res.status).toBe(400);
+	});
+});
+
+describe("CORS", () => {
+	it("responds with Access-Control-Allow-Origin for a known origin", async () => {
+		const { app } = deps();
+		const res = await app.request("/healthz", {
+			headers: { Origin: "https://eps.eko.in" },
+		});
+		expect(res.status).toBe(200);
+		expect(res.headers.get("access-control-allow-origin")).toBe(
+			"https://eps.eko.in",
+		);
+	});
+});
+
+describe("/me for admin sessions", () => {
+	it("returns admin view without calling eko.getProfile", async () => {
+		const { app, eko, sessions } = deps();
+		const token = await sessions.mintAccess({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+		});
+		const res = await app.request("/me", {
+			headers: { cookie: `eps_at=${token}` },
+		});
+		expect(res.status).toBe(200);
+		const b = await body<{ role: string; login: string | null; sub: string }>(
+			res,
+		);
+		expect(b.role).toBe("admin");
+		expect(b.login).toBe("octocat");
+		expect(eko.getProfile).not.toHaveBeenCalled();
+	});
+});
+
+describe("otp/verify per-IP cap", () => {
+	it("429 after too many failed verifies from one IP across different mobiles", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: false, raw: {} })),
+		});
+		// 50 failures from the same IP on 50 distinct mobiles exhaust the IP cap.
+		let last = new Response();
+		for (let i = 0; i < 51; i++) {
+			const mobile = `9990${String(i).padStart(6, "0")}`;
+			last = await app.request("/auth/otp/verify", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"x-real-ip": "1.2.3.4",
+				},
+				body: JSON.stringify({ mobile, otp: "000000" }),
+			});
+		}
+		expect(last.status).toBe(429);
+		expect((await body<{ error: { code: string } }>(last)).error.code).toBe(
+			"RATE_LIMITED",
+		);
+	});
+});
+
+describe("not found", () => {
+	it("unknown route returns 404 with error envelope", async () => {
+		const { app } = deps();
+		const res = await app.request("/does/not/exist");
+		expect(res.status).toBe(404);
+		const b = await body<{ error: { code: string } }>(res);
+		expect(b.error.code).toBe("NOT_FOUND");
 	});
 });

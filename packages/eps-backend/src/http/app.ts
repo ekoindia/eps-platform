@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { getCookie, setCookie } from "hono/cookie";
 import type { Config } from "../config";
 import type { EkoClient } from "../clients/eko";
@@ -22,6 +23,7 @@ export interface Deps {
 const OTP_START_LIMIT = 5;
 const OTP_VERIFY_LIMIT = 5;
 const OTP_IP_LIMIT = 20;
+const OTP_VERIFY_IP_LIMIT = 50;
 const OTP_WINDOW_SEC = 600;
 
 const STATE_COOKIE = "eps_oauth_state";
@@ -34,6 +36,8 @@ function normalizeMobile(raw: string): string {
 export function createApp(deps: Deps): Hono {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const app = new Hono();
+
+	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
 
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
@@ -54,6 +58,8 @@ export function createApp(deps: Deps): Hono {
 		if (m.length < 6) {
 			throw new AppError(400, "INVALID_INPUT", "mobile is invalid");
 		}
+		// SECURITY: x-real-ip must be set/overwritten by a trusted reverse proxy.
+		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipKey = `otp:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
 		const mobKey = `otp:mob:${m}`;
 		const count = await kv.incr(mobKey, OTP_WINDOW_SEC);
@@ -83,9 +89,17 @@ export function createApp(deps: Deps): Hono {
 		if (fails >= OTP_VERIFY_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
+		// SECURITY: x-real-ip must be set/overwritten by a trusted reverse proxy.
+		// Clients can otherwise spoof this header to evade per-IP rate limits.
+		const ipFailKey = `otp:verify:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
+		const ipFails = Number((await kv.get(ipFailKey)) ?? 0);
+		if (ipFails >= OTP_VERIFY_IP_LIMIT) {
+			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
+		}
 		const verified = await eko.verifyOtp({ mobile: m, otp });
 		if (!verified.ok) {
 			await kv.incr(failKey, OTP_WINDOW_SEC);
+			await kv.incr(ipFailKey, OTP_WINDOW_SEC);
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
 		await kv.del(failKey);
@@ -131,6 +145,15 @@ export function createApp(deps: Deps): Hono {
 		const token = getCookie(c, ACCESS_COOKIE);
 		const claim = token ? await sessions.verifyAccess(token) : null;
 		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+		// Admin sessions use a GitHub-derived sub (gh:<login>), not a mobile number.
+		// Return a lightweight admin view without hitting the Eko/Zoho APIs.
+		if (claim.role === "admin") {
+			return c.json({
+				role: "admin",
+				login: claim.ghLogin ?? null,
+				sub: claim.sub,
+			});
+		}
 		const profile = await eko.getProfile({ mobile: claim.sub });
 		const view = await buildMeView(claim.sub, profile, (m) => zoho.findLead(m));
 		return c.json(view);
@@ -181,9 +204,11 @@ export function createApp(deps: Deps): Hono {
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
 			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
-			return c.json({ ok: true, login: user.login, role: "admin" });
+			return c.redirect(cfg.postLoginRedirect, 302);
 		});
 	}
+
+	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
 
 	return app;
 }

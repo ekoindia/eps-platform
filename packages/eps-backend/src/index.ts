@@ -18,6 +18,14 @@ const app = createApp({
 	sessions: createSessions(cfg, kv),
 });
 
-serve({ fetch: app.fetch, port: cfg.port }, (info) => {
+const server = serve({ fetch: app.fetch, port: cfg.port }, (info) => {
 	console.log(`[eps-backend] listening on :${info.port}`);
 });
+
+function shutdown() {
+	console.log("[eps-backend] shutting down");
+	server.close(() => process.exit(0));
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
