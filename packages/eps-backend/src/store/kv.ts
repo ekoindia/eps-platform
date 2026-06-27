@@ -11,6 +11,17 @@ interface Entry {
 	expiresAt: number;
 }
 
+/**
+ * Creates a process-local, in-memory KV store.
+ *
+ * WARNING: This implementation is NOT safe for multi-instance deployments.
+ * Refresh tokens, OAuth state entries, and rate-limit windows are stored in
+ * process memory only. Running more than one server instance will cause these
+ * values to desync — resulting in rejected valid refresh tokens, broken OAuth
+ * flows, and ineffective rate limits. For production multi-instance setups,
+ * replace this with a shared store (e.g. Redis) that implements the same `KV`
+ * interface.
+ */
 export function createInMemoryKV(now: () => number = () => Date.now()): KV {
 	const map = new Map<string, Entry>();
 

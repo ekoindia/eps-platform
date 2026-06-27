@@ -3,7 +3,10 @@ export interface Config {
 	jwtSecret: string;
 	accessTtlSec: number;
 	refreshTtlSec: number;
+	adminRefreshTtlSec: number;
 	cookieSecure: boolean;
+	cookieSameSite: string;
+	postLoginRedirect: string;
 	corsOrigins: string[];
 	eko: {
 		scheme: string;
@@ -54,7 +57,10 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		jwtSecret: env.JWT_SECRET!,
 		accessTtlSec: Number(env.ACCESS_TTL_SEC ?? 900),
 		refreshTtlSec: Number(env.REFRESH_TTL_SEC ?? 60 * 60 * 24 * 30),
+		adminRefreshTtlSec: Number(env.ADMIN_REFRESH_TTL_SEC ?? 28800),
 		cookieSecure: env.COOKIE_SECURE !== "false",
+		cookieSameSite: env.COOKIE_SAMESITE ?? "Lax",
+		postLoginRedirect: env.POST_LOGIN_REDIRECT ?? "/",
 		corsOrigins: (env.CORS_ORIGINS ?? "https://eps.eko.in")
 			.split(",")
 			.map((s) => s.trim())

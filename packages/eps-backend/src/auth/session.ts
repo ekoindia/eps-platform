@@ -45,7 +45,7 @@ export function createSessions(
 			`${name}=${value}`,
 			"HttpOnly",
 			"Path=/",
-			"SameSite=Lax",
+			`SameSite=${cfg.cookieSameSite}`,
 			`Max-Age=${ttlSec}`,
 		];
 		if (cfg.cookieSecure) parts.push("Secure");
@@ -83,7 +83,9 @@ export function createSessions(
 
 		async issueRefresh(claim) {
 			const token = randomId();
-			await kv.set(refreshKey(token), JSON.stringify(claim), cfg.refreshTtlSec);
+			const ttl =
+				claim.role === "admin" ? cfg.adminRefreshTtlSec : cfg.refreshTtlSec;
+			await kv.set(refreshKey(token), JSON.stringify(claim), ttl);
 			return token;
 		},
 
@@ -92,7 +94,9 @@ export function createSessions(
 			if (!stored) return null;
 			const claim = JSON.parse(stored) as SessionClaim;
 			const next = randomId();
-			await kv.set(refreshKey(next), JSON.stringify(claim), cfg.refreshTtlSec);
+			const ttl =
+				claim.role === "admin" ? cfg.adminRefreshTtlSec : cfg.refreshTtlSec;
+			await kv.set(refreshKey(next), JSON.stringify(claim), ttl);
 			return { claim, refresh: next };
 		},
 

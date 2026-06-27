@@ -105,3 +105,40 @@ describe("cookies", () => {
 		expect(s.clearCookies().length).toBe(2);
 	});
 });
+
+describe("admin shorter refresh TTL", () => {
+	it("admin refresh expires before developer refresh", async () => {
+		// Use a short adminRefreshTtlSec so the test advances time cheaply.
+		const adminRefreshTtlSec = 3600; // 1 h
+		const testCfg = loadConfig({
+			...baseEnv,
+			ADMIN_REFRESH_TTL_SEC: String(adminRefreshTtlSec),
+		});
+
+		let t = Date.now();
+		const kv = createInMemoryKV(() => t);
+		let n = 0;
+		const sessions = createSessions(testCfg, kv, { randomId: () => `r${++n}` });
+
+		const adminClaim = {
+			sub: "gh:octocat",
+			role: "admin" as const,
+			orgId: 1,
+			ghLogin: "octocat",
+		};
+		const devClaim = {
+			sub: "9990000001",
+			role: "developer" as const,
+			orgId: 1,
+		};
+
+		const adminToken = await sessions.issueRefresh(adminClaim);
+		const devToken = await sessions.issueRefresh(devClaim);
+
+		// Advance past adminRefreshTtlSec but well before the default refreshTtlSec.
+		t += (adminRefreshTtlSec + 1) * 1000;
+
+		expect(await sessions.rotateRefresh(adminToken)).toBeNull();
+		expect(await sessions.rotateRefresh(devToken)).not.toBeNull();
+	});
+});
