@@ -67,6 +67,7 @@ export function createSessions(
 			try {
 				const { payload } = await jwtVerify(token, secret, {
 					issuer: "eps-backend",
+					algorithms: ["HS256"],
 				});
 				return {
 					sub: String(payload.sub),
@@ -87,9 +88,8 @@ export function createSessions(
 		},
 
 		async rotateRefresh(token) {
-			const stored = await kv.get(refreshKey(token));
+			const stored = await kv.getdel(refreshKey(token));
 			if (!stored) return null;
-			await kv.del(refreshKey(token));
 			const claim = JSON.parse(stored) as SessionClaim;
 			const next = randomId();
 			await kv.set(refreshKey(next), JSON.stringify(claim), cfg.refreshTtlSec);

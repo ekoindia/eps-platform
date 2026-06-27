@@ -18,6 +18,13 @@ describe("InMemoryKV", () => {
 		expect(await kv.get("a")).toBeNull();
 	});
 
+	it("getdel returns the value once then deletes the key", async () => {
+		const kv = createInMemoryKV();
+		await kv.set("a", "1", 60);
+		expect(await kv.getdel("a")).toBe("1");
+		expect(await kv.getdel("a")).toBeNull();
+	});
+
 	it("incr counts within a window then resets after ttl", async () => {
 		let t = 0;
 		const kv = createInMemoryKV(() => t);

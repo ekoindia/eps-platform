@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { SignJWT } from "jose";
 import { createSessions } from "./session";
 import { createInMemoryKV } from "../store/kv";
 import { loadConfig } from "../config";
 
-const cfg = loadConfig({
+const baseEnv = {
 	JWT_SECRET: "x".repeat(32),
 	SIMPLIBANK_API_HOST: "h",
 	SIMPLIBANK_API_PORT: "1",
@@ -14,7 +15,9 @@ const cfg = loadConfig({
 	GITHUB_CALLBACK_URL: "https://x/cb",
 	GITHUB_REPO: "o/r",
 	ACCESS_TTL_SEC: "900",
-});
+};
+
+const cfg = loadConfig(baseEnv);
 
 function mk() {
 	let n = 0;
@@ -35,6 +38,40 @@ describe("Sessions access token", () => {
 	it("rejects garbage tokens", async () => {
 		const s = mk();
 		expect(await s.verifyAccess("not.a.jwt")).toBeNull();
+	});
+
+	it("rejects a token signed with a different algorithm", async () => {
+		const s = mk();
+		const secret = new TextEncoder().encode(cfg.jwtSecret);
+		const hs384 = await new SignJWT({ role: "developer", orgId: 1 })
+			.setProtectedHeader({ alg: "HS384" })
+			.setIssuer("eps-backend")
+			.setSubject("999")
+			.setIssuedAt()
+			.setExpirationTime("900s")
+			.sign(secret);
+		expect(await s.verifyAccess(hs384)).toBeNull();
+	});
+
+	it("rejects an expired token", async () => {
+		const s = mk();
+		const secret = new TextEncoder().encode(cfg.jwtSecret);
+		const expired = await new SignJWT({ role: "developer", orgId: 1 })
+			.setProtectedHeader({ alg: "HS256" })
+			.setIssuer("eps-backend")
+			.setSubject("999")
+			.setIssuedAt(0)
+			.setExpirationTime(1)
+			.sign(secret);
+		expect(await s.verifyAccess(expired)).toBeNull();
+	});
+});
+
+describe("Sessions cookie security", () => {
+	it("includes Secure when cookieSecure is true", () => {
+		const secureCfg = loadConfig({ ...baseEnv, COOKIE_SECURE: "true" });
+		const s = createSessions(secureCfg, createInMemoryKV());
+		expect(s.accessCookie("tok")).toMatch(/Secure/);
 	});
 });
 
