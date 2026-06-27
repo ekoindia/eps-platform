@@ -6,6 +6,7 @@ export interface Config {
 	cookieSecure: boolean;
 	corsOrigins: string[];
 	eko: {
+		scheme: string;
 		host: string;
 		port: number;
 		path: string;
@@ -40,6 +41,14 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 	if (missing.length > 0) {
 		throw new Error(`Missing required env vars: ${missing.join(", ")}`);
 	}
+	const ekoScheme = env.SIMPLIBANK_API_SCHEME ?? "https";
+	const ekoHost = env.SIMPLIBANK_API_HOST!;
+	const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+	if (ekoScheme === "http" && !LOOPBACK_HOSTS.has(ekoHost)) {
+		throw new Error(
+			`SIMPLIBANK_API_SCHEME=http is only allowed for loopback hosts; refusing plaintext to "${ekoHost}"`,
+		);
+	}
 	return {
 		port: Number(env.PORT ?? 8787),
 		jwtSecret: env.JWT_SECRET!,
@@ -51,7 +60,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			.map((s) => s.trim())
 			.filter(Boolean),
 		eko: {
-			host: env.SIMPLIBANK_API_HOST!,
+			scheme: ekoScheme,
+			host: ekoHost,
 			port: Number(env.SIMPLIBANK_API_PORT!),
 			path: env.SIMPLIBANK_API_PATH!,
 			developerKey: env.EKO_DEVELOPER_KEY!,

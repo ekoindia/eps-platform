@@ -3,6 +3,7 @@ import type { Mock } from "vitest";
 import { createEkoClient } from "./eko";
 
 const ekoCfg = {
+	scheme: "https",
 	host: "sb.local",
 	port: 8080,
 	path: "/v1",
@@ -26,7 +27,7 @@ describe("EkoClient.sendOtp", () => {
 		expect(res.ok).toBe(true);
 
 		const [url, init] = (f as unknown as Mock).mock.calls[0];
-		expect(url).toBe("http://sb.local:8080/v1");
+		expect(url).toBe("https://sb.local:8080/v1");
 		expect(init.method).toBe("POST");
 		expect(init.headers["developer_key"]).toBe("devkey");
 		expect(init.headers["Content-Type"]).toBe(

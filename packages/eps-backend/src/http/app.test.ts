@@ -146,6 +146,27 @@ describe("otp/verify + me", () => {
 		const res = await app.request("/me");
 		expect(res.status).toBe(401);
 	});
+
+	it("429 after too many failed otp attempts", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: false, raw: {} })),
+		});
+		const attempt = () =>
+			app.request("/auth/otp/verify", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ mobile: "9990000003", otp: "000000" }),
+			});
+		for (let i = 0; i < 5; i++) {
+			const r = await attempt();
+			expect(r.status).toBe(401);
+		}
+		const blocked = await attempt();
+		expect(blocked.status).toBe(429);
+		expect((await body<{ error: { code: string } }>(blocked)).error.code).toBe(
+			"RATE_LIMITED",
+		);
+	});
 });
 
 describe("logout", () => {

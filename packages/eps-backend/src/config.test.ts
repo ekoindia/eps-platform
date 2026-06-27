@@ -28,4 +28,24 @@ describe("loadConfig", () => {
 		expect(() => loadConfig({})).toThrowError(/JWT_SECRET/);
 		expect(() => loadConfig({})).toThrowError(/EKO_DEVELOPER_KEY/);
 	});
+
+	it("defaults the upstream scheme to https", () => {
+		expect(loadConfig(base).eko.scheme).toBe("https");
+	});
+
+	it("allows http only for loopback hosts", () => {
+		expect(
+			loadConfig({
+				...base,
+				SIMPLIBANK_API_SCHEME: "http",
+				SIMPLIBANK_API_HOST: "localhost",
+			}).eko.scheme,
+		).toBe("http");
+	});
+
+	it("rejects http for non-loopback hosts", () => {
+		expect(() =>
+			loadConfig({ ...base, SIMPLIBANK_API_SCHEME: "http" }),
+		).toThrowError(/SIMPLIBANK_API_SCHEME/);
+	});
 });

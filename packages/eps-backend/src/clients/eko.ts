@@ -28,7 +28,7 @@ export function createEkoClient(
 	cfg: Config["eko"],
 	fetchImpl: typeof fetch = fetch,
 ): EkoClient {
-	const url = `http://${cfg.host}:${cfg.port}${cfg.path}`;
+	const url = `${cfg.scheme}://${cfg.host}:${cfg.port}${cfg.path}`;
 
 	async function post(fields: Record<string, string>): Promise<unknown> {
 		const body = new URLSearchParams(fields).toString();

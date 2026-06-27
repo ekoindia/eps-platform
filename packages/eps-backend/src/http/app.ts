@@ -18,6 +18,7 @@ export interface Deps {
 }
 
 const OTP_START_LIMIT = 5;
+const OTP_VERIFY_LIMIT = 5;
 const OTP_WINDOW_SEC = 600;
 
 export function createApp(deps: Deps): Hono {
@@ -56,10 +57,17 @@ export function createApp(deps: Deps): Hono {
 		if (!mobile || !otp) {
 			throw new AppError(400, "INVALID_INPUT", "mobile and otp are required");
 		}
+		const failKey = `otp:fail:${mobile}`;
+		const fails = Number((await kv.get(failKey)) ?? 0);
+		if (fails >= OTP_VERIFY_LIMIT) {
+			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
+		}
 		const verified = await eko.verifyOtp({ mobile, otp });
 		if (!verified.ok) {
+			await kv.incr(failKey, OTP_WINDOW_SEC);
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
+		await kv.del(failKey);
 		const profile = await eko.getProfile({ mobile });
 		const view = await buildMeView(mobile, profile, (m) => zoho.findLead(m));
 		const claim = {
