@@ -23,6 +23,20 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET  | /auth/admin/github/callback | none | Complete admin OAuth |
 | GET  | /healthz | none | Liveness |
 
+## Scaling (single-instance only)
+
+The default `createInMemoryKV` store is **process-local**. Refresh tokens,
+OAuth state, and rate-limit windows are not shared across processes. Running
+more than one instance will cause token validation failures and ineffective
+rate limits. For multi-instance deployments, replace it with a shared store
+(e.g. Redis) that implements the same `KV` interface.
+
+## Reverse proxy requirement
+
+Per-IP rate limiting relies on the `x-real-ip` header. A trusted reverse proxy
+(e.g. nginx, Caddy) **must** set or overwrite this header before requests reach
+the server. Clients can otherwise spoof it to evade IP-scoped limits.
+
 ## Deferred
 
 `/credentials` (UAT/live key view/generate) — pending the Eko credential
