@@ -52,6 +52,10 @@ function cookieFrom(res: Response): string {
 	return set.map((c) => c.split(";")[0]).join("; ");
 }
 
+async function body<T>(res: Response): Promise<T> {
+	return (await res.json()) as T;
+}
+
 describe("healthz", () => {
 	it("returns ok", async () => {
 		const { app } = deps();
@@ -81,7 +85,9 @@ describe("otp/start", () => {
 			body: JSON.stringify({}),
 		});
 		expect(res.status).toBe(400);
-		expect(((await res.json()) as any).error.code).toBe("INVALID_INPUT");
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"INVALID_INPUT",
+		);
 	});
 
 	it("429 after exceeding the per-mobile window", async () => {
@@ -107,7 +113,7 @@ describe("otp/verify + me", () => {
 			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
 		});
 		expect(verify.status).toBe(200);
-		const vbody = (await verify.json()) as any;
+		const vbody = await body<{ state: string; zohoId: string | null }>(verify);
 		expect(vbody.state).toBe("active");
 		expect(vbody.zohoId).toBe("ZCRM_9");
 
@@ -116,7 +122,8 @@ describe("otp/verify + me", () => {
 
 		const me = await app.request("/me", { headers: { cookie } });
 		expect(me.status).toBe(200);
-		expect(((await me.json()) as any).profile.ekoUserId).toBe("EKO1");
+		const meBody = await body<{ profile: { ekoUserId: string } | null }>(me);
+		expect(meBody.profile?.ekoUserId).toBe("EKO1");
 	});
 
 	it("401 on bad otp", async () => {
@@ -129,7 +136,9 @@ describe("otp/verify + me", () => {
 			body: JSON.stringify({ mobile: "9990000001", otp: "000000" }),
 		});
 		expect(res.status).toBe(401);
-		expect(((await res.json()) as any).error.code).toBe("OTP_INVALID");
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"OTP_INVALID",
+		);
 	});
 
 	it("/me 401 without a session", async () => {
