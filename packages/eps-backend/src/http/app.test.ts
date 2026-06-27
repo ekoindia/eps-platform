@@ -102,6 +102,33 @@ describe("otp/start", () => {
 		}
 		expect(last.status).toBe(429);
 	});
+
+	it("buckets formatting variants of the same mobile together", async () => {
+		const { app } = deps();
+		const formats = ["99900 00004", "9990000004", "999-000-0004"];
+		let last = new Response();
+		for (let i = 0; i < 6; i++) {
+			last = await app.request("/auth/otp/start", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ mobile: formats[i % formats.length] }),
+			});
+		}
+		expect(last.status).toBe(429);
+	});
+
+	it("400 INVALID_INPUT for a non-numeric mobile", async () => {
+		const { app } = deps();
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "abc" }),
+		});
+		expect(res.status).toBe(400);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"INVALID_INPUT",
+		);
+	});
 });
 
 describe("otp/verify + me", () => {

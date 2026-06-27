@@ -19,7 +19,12 @@ export interface Deps {
 
 const OTP_START_LIMIT = 5;
 const OTP_VERIFY_LIMIT = 5;
+const OTP_IP_LIMIT = 20;
 const OTP_WINDOW_SEC = 600;
+
+function normalizeMobile(raw: string): string {
+	return raw.replace(/\D/g, "");
+}
 
 export function createApp(deps: Deps): Hono {
 	const { cfg, eko, zoho, sessions, kv } = deps;
@@ -40,14 +45,21 @@ export function createApp(deps: Deps): Hono {
 		if (!mobile || typeof mobile !== "string") {
 			throw new AppError(400, "INVALID_INPUT", "mobile is required");
 		}
+		const m = normalizeMobile(mobile);
+		if (m.length < 6) {
+			throw new AppError(400, "INVALID_INPUT", "mobile is invalid");
+		}
 		const ipKey = `otp:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
-		const mobKey = `otp:mob:${mobile}`;
+		const mobKey = `otp:mob:${m}`;
 		const count = await kv.incr(mobKey, OTP_WINDOW_SEC);
-		await kv.incr(ipKey, OTP_WINDOW_SEC);
+		const ipCount = await kv.incr(ipKey, OTP_WINDOW_SEC);
 		if (count > OTP_START_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
 		}
-		await eko.sendOtp({ mobile });
+		if (ipCount > OTP_IP_LIMIT) {
+			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
+		}
+		await eko.sendOtp({ mobile: m });
 		// generic response — no account enumeration
 		return c.json({ ok: true });
 	});
@@ -57,21 +69,25 @@ export function createApp(deps: Deps): Hono {
 		if (!mobile || !otp) {
 			throw new AppError(400, "INVALID_INPUT", "mobile and otp are required");
 		}
-		const failKey = `otp:fail:${mobile}`;
+		const m = normalizeMobile(mobile);
+		if (m.length < 6) {
+			throw new AppError(400, "INVALID_INPUT", "mobile is invalid");
+		}
+		const failKey = `otp:fail:${m}`;
 		const fails = Number((await kv.get(failKey)) ?? 0);
 		if (fails >= OTP_VERIFY_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
-		const verified = await eko.verifyOtp({ mobile, otp });
+		const verified = await eko.verifyOtp({ mobile: m, otp });
 		if (!verified.ok) {
 			await kv.incr(failKey, OTP_WINDOW_SEC);
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
 		await kv.del(failKey);
-		const profile = await eko.getProfile({ mobile });
-		const view = await buildMeView(mobile, profile, (m) => zoho.findLead(m));
+		const profile = await eko.getProfile({ mobile: m });
+		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
-			sub: mobile,
+			sub: m,
 			role: "developer" as const,
 			orgId: view.profile?.orgId ?? cfg.eko.defaultOrgId,
 			zohoId: view.zohoId ?? undefined,
