@@ -23,6 +23,8 @@ export interface Config {
 		clientSecret: string;
 		callbackUrl: string;
 		repo: string;
+		editBase: string;
+		prodBase: string;
 	};
 	zoho: { enabled: boolean; baseUrl?: string; accessToken?: string };
 }
@@ -85,6 +87,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			clientSecret: env.GITHUB_CLIENT_SECRET!,
 			callbackUrl: env.GITHUB_CALLBACK_URL!,
 			repo: env.GITHUB_REPO!,
+			editBase: env.GITHUB_EDIT_BASE ?? "dev",
+			prodBase: env.GITHUB_PROD_BASE ?? "main",
 		},
 		zoho: {
 			enabled: env.ZOHO_ENABLED === "true",

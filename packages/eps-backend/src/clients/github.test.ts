@@ -6,6 +6,8 @@ const cfg = {
 	clientSecret: "gsecret",
 	callbackUrl: "https://eps.eko.in/api/auth/admin/github/callback",
 	repo: "ekoindia/eps-platform",
+	editBase: "dev",
+	prodBase: "main",
 };
 
 describe("GitHubClient", () => {
