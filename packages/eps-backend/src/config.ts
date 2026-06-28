@@ -47,9 +47,14 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 	const ekoScheme = env.SIMPLIBANK_API_SCHEME ?? "https";
 	const ekoHost = env.SIMPLIBANK_API_HOST!;
 	const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
-	if (ekoScheme === "http" && !LOOPBACK_HOSTS.has(ekoHost)) {
+	const allowInsecureHttp = env.SIMPLIBANK_ALLOW_INSECURE_HTTP === "true";
+	if (
+		ekoScheme === "http" &&
+		!LOOPBACK_HOSTS.has(ekoHost) &&
+		!allowInsecureHttp
+	) {
 		throw new Error(
-			`SIMPLIBANK_API_SCHEME=http is only allowed for loopback hosts; refusing plaintext to "${ekoHost}"`,
+			`SIMPLIBANK_API_SCHEME=http is only allowed for loopback hosts; refusing plaintext to "${ekoHost}". Set SIMPLIBANK_ALLOW_INSECURE_HTTP=true to opt in for a trusted private-network upstream.`,
 		);
 	}
 	return {

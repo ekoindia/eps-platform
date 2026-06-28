@@ -48,4 +48,14 @@ describe("loadConfig", () => {
 			loadConfig({ ...base, SIMPLIBANK_API_SCHEME: "http" }),
 		).toThrowError(/SIMPLIBANK_API_SCHEME/);
 	});
+
+	it("allows http for non-loopback hosts when explicitly opted in", () => {
+		expect(
+			loadConfig({
+				...base,
+				SIMPLIBANK_API_SCHEME: "http",
+				SIMPLIBANK_ALLOW_INSECURE_HTTP: "true",
+			}).eko.scheme,
+		).toBe("http");
+	});
 });
