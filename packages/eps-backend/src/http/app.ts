@@ -138,7 +138,7 @@ export function createApp(deps: Deps): Hono {
 		// Best-effort: drop the stored GitHub token for admin sessions.
 		const at = getCookie(c, ACCESS_COOKIE);
 		const claim = at ? await sessions.verifyAccess(at) : null;
-		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`);
+		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
 		for (const ck of sessions.clearCookies()) {
 			c.header("Set-Cookie", ck, { append: true });
 		}
