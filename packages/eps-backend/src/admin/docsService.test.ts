@@ -149,6 +149,23 @@ describe("docsService.propose", () => {
 			}),
 		).rejects.toMatchObject({ code: "STALE_CONTENT", status: 409 });
 	});
+	it("maps a createPR 422 (no changes) to NO_CHANGES", async () => {
+		const github = ghMock({
+			createPullRequest: vi.fn(async () => {
+				throw new GitHubApiError(422, "no diff");
+			}),
+		});
+		const svc = createDocsService(github, cfg);
+		await expect(
+			svc.propose("t", {
+				path: "src/content/docs/x.mdx",
+				content: "c",
+				baseSha: "s",
+				summary: "",
+				login: "o",
+			}),
+		).rejects.toMatchObject({ code: "NO_CHANGES", status: 409 });
+	});
 	it("rejects a non-editable path with BAD_PATH", async () => {
 		const svc = createDocsService(ghMock(), cfg);
 		await expect(
