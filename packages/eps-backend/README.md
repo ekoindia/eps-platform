@@ -37,6 +37,48 @@ Per-IP rate limiting relies on the `x-real-ip` header. A trusted reverse proxy
 (e.g. nginx, Caddy) **must** set or overwrite this header before requests reach
 the server. Clients can otherwise spoof it to evade IP-scoped limits.
 
+## Local dev (GitHub OAuth)
+
+Admin login uses GitHub OAuth. Three things must agree, or you get `BAD_STATE`:
+the GitHub OAuth App's registered callback URL, the backend `GITHUB_CALLBACK_URL`
+env (sent verbatim as `redirect_uri` — GitHub requires an exact match), and the
+browser origin (the `eps_oauth_state` cookie is set on `/auth/admin/github` and
+re-read on the callback, so both must hit the **same origin**).
+
+In dev the frontend runs on `:8080` and proxies `/api/*` to this backend on
+`:8787`. Keep the whole flow on the `:8080/api/...` origin — do **not** point the
+callback straight at `:8787`, or the state cookie set on `:8080` won't be sent to
+`:8787` and the callback fails with `BAD_STATE`.
+
+### 1. Create a dev GitHub OAuth App
+
+Use a **dedicated dev app** (separate credentials from production):
+
+1. https://github.com/settings/developers → **OAuth Apps** → **New OAuth App**
+   (for an org-owned app: Org → Settings → Developer settings → OAuth Apps).
+2. **Homepage URL:** `http://localhost:8080`
+3. **Authorization callback URL:**
+   `http://localhost:8080/api/auth/admin/github/callback`
+4. Register → copy the **Client ID** → **Generate a new client secret** → copy it
+   (shown once).
+
+### 2. Backend env (`.env`)
+
+	GITHUB_CLIENT_ID=<dev app client id>
+	GITHUB_CLIENT_SECRET=<dev app client secret>
+	GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/admin/github/callback
+	GITHUB_REPO=ekoindia/eps-platform   # admin must have write access to this repo
+	COOKIE_SECURE=false                 # dev is http; Secure cookies won't set
+	POST_LOGIN_REDIRECT=/console        # optional: land on the console after login
+
+### 3. Run both
+
+	npm run backend:dev   # backend on :8787 (watch mode)
+	npm run dev           # frontend on :8080 (proxies /api -> :8787)
+
+Visit `http://localhost:8080/admin` → "Sign in with GitHub". Admin access is
+gated on **write** permission to `GITHUB_REPO`.
+
 ## Deferred
 
 `/credentials` (UAT/live key view/generate) — pending the Eko credential
