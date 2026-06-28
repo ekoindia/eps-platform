@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import { lazy, Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
@@ -35,6 +36,8 @@ const FaqPage = lazy(() => import("./pages/FaqPage"));
 const AiPage = lazy(() => import("./pages/AiPage"));
 const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
 const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
+const Console = lazy(() => import("./pages/Console"));
+const Admin = lazy(() => import("./pages/Admin"));
 
 function TrackingParamCapture() {
 	useCaptureTrackingParams();
@@ -52,67 +55,76 @@ const App = ({
 			<Sonner />
 			<TrackingParamCapture />
 			<ScrollToTop />
-			<Header />
-			<ErrorBoundary>
-				<AnimatedRoutes>
-					<Suspense fallback={null}>
-						<Routes>
-							<Route path="/" element={<Index />} />
+			<AuthProvider>
+				<Header />
+				<ErrorBoundary>
+					<AnimatedRoutes>
+						<Suspense fallback={null}>
+							<Routes>
+								<Route path="/" element={<Index />} />
 
-							{/* Eko Shield (specific routes before :slug wildcard) */}
-							{/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
+								{/* Eko Shield (specific routes before :slug wildcard) */}
+								{/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
 
-							{/* Product API Pages */}
-							<Route path="/products" element={<ProductsPage />} />
-							<Route path="/products/:slug" element={<ProductDetailPage />} />
+								{/* Product API Pages */}
+								<Route path="/products" element={<ProductsPage />} />
+								<Route path="/products/:slug" element={<ProductDetailPage />} />
 
-							{/* Industry & Solution Pages */}
-							<Route path="/use-cases" element={<UseCasesHubPage />} />
-							<Route path="/industries" element={<IndustriesPage />} />
-							<Route
-								path="/industries/:slug"
-								element={<IndustryDetailPage />}
-							/>
-							<Route path="/solutions" element={<SolutionsPage />} />
-							<Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+								{/* Industry & Solution Pages */}
+								<Route path="/use-cases" element={<UseCasesHubPage />} />
+								<Route path="/industries" element={<IndustriesPage />} />
+								<Route
+									path="/industries/:slug"
+									element={<IndustryDetailPage />}
+								/>
+								<Route path="/solutions" element={<SolutionsPage />} />
+								<Route
+									path="/solutions/:slug"
+									element={<SolutionDetailPage />}
+								/>
 
-							{/* Pricing */}
-							<Route path="/pricing" element={<PricingPage />} />
+								{/* Pricing */}
+								<Route path="/pricing" element={<PricingPage />} />
 
-							{/* FAQ */}
-							<Route path="/faq" element={<FaqPage />} />
+								{/* FAQ */}
+								<Route path="/faq" element={<FaqPage />} />
 
-							{/* AI Agents */}
-							<Route path="/ai" element={<AiPage />} />
+								{/* AI Agents */}
+								<Route path="/ai" element={<AiPage />} />
 
-							{/* Developer Docs */}
-							<Route path="/docs" element={<DocsIndexPage />} />
-							<Route path="/docs/:slug" element={<DocDetailPage />} />
+								{/* Developer Docs */}
+								<Route path="/docs" element={<DocsIndexPage />} />
+								<Route path="/docs/:slug" element={<DocDetailPage />} />
 
-							{/* Company & Legal Pages */}
-							<Route path="/about-us" element={<AboutPage />} />
-							<Route path="/blogs-media" element={<BlogsMediaPage />} />
-							{/* Redirects for old routes */}
-							<Route
-								path="/blog"
-								element={<Navigate to="/blogs-media" replace />}
-							/>
-							<Route
-								path="/press"
-								element={<Navigate to="/blogs-media" replace />}
-							/>
-							<Route path="/tnc" element={<TermsPage />} />
-							<Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-							<Route path="/refund-policy" element={<RefundPolicyPage />} />
-							<Route path="/grievance" element={<GrievancePage />} />
-							<Route path="/signup" element={<SignupPage />} />
+								{/* Company & Legal Pages */}
+								<Route path="/about-us" element={<AboutPage />} />
+								<Route path="/blogs-media" element={<BlogsMediaPage />} />
+								{/* Redirects for old routes */}
+								<Route
+									path="/blog"
+									element={<Navigate to="/blogs-media" replace />}
+								/>
+								<Route
+									path="/press"
+									element={<Navigate to="/blogs-media" replace />}
+								/>
+								<Route path="/tnc" element={<TermsPage />} />
+								<Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+								<Route path="/refund-policy" element={<RefundPolicyPage />} />
+								<Route path="/grievance" element={<GrievancePage />} />
+								<Route path="/signup" element={<SignupPage />} />
 
-							{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-							<Route path="*" element={<NotFound />} />
-						</Routes>
-					</Suspense>
-				</AnimatedRoutes>
-			</ErrorBoundary>
+								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
+								<Route path="/console" element={<Console />} />
+								<Route path="/admin" element={<Admin />} />
+
+								{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+								<Route path="*" element={<NotFound />} />
+							</Routes>
+						</Suspense>
+					</AnimatedRoutes>
+				</ErrorBoundary>
+			</AuthProvider>
 		</TooltipProvider>
 	</HelmetProvider>
 );
