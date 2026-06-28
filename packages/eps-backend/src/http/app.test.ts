@@ -280,7 +280,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		kv,
 		github,
 	});
-	return { app, github, kv };
+	return { app, github, kv, sessions };
 }
 
 describe("admin github", () => {
@@ -332,6 +332,34 @@ describe("admin github", () => {
 			"/auth/admin/github/callback?code=abc&state=forged",
 		);
 		expect(res.status).toBe(400);
+	});
+
+	it("callback issues an admin session cookie whose sid resolves a stored token", async () => {
+		const { app, kv, sessions } = ghDeps({
+			exchangeCode: vi.fn(async () => "gh-secret-token"),
+		});
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{
+				headers: { cookie: stateCookie },
+			},
+		);
+		const cookies = res.headers.getSetCookie?.() ?? [];
+		expect(cookies.join(";")).toContain("eps_at=");
+		// Decode the access JWT to read its sid, then confirm the token was stored.
+		const at = cookies
+			.find((c) => c.startsWith("eps_at="))!
+			.split(";")[0]
+			.slice("eps_at=".length);
+		const claim = await sessions.verifyAccess(at);
+		expect(claim?.sid).toBeTruthy();
+		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
 	});
 });
 

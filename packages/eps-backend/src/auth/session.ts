@@ -9,6 +9,7 @@ export interface SessionClaim {
 	orgId: number;
 	zohoId?: string;
 	ghLogin?: string;
+	sid?: string;
 }
 
 export interface Sessions {
@@ -75,6 +76,7 @@ export function createSessions(
 					orgId: Number(payload["orgId"]),
 					zohoId: payload["zohoId"] as string | undefined,
 					ghLogin: payload["ghLogin"] as string | undefined,
+					sid: payload["sid"] as string | undefined,
 				};
 			} catch {
 				return null;

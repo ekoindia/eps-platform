@@ -35,6 +35,20 @@ describe("Sessions access token", () => {
 		expect(claim?.role).toBe("developer");
 	});
 
+	it("preserves sid through mint/verify", async () => {
+		const kv = createInMemoryKV();
+		const sessions = createSessions(cfg, kv);
+		const token = await sessions.mintAccess({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid: "sid-123",
+		});
+		const claim = await sessions.verifyAccess(token);
+		expect(claim?.sid).toBe("sid-123");
+	});
+
 	it("rejects garbage tokens", async () => {
 		const s = mk();
 		expect(await s.verifyAccess("not.a.jwt")).toBeNull();

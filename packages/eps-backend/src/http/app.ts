@@ -135,6 +135,10 @@ export function createApp(deps: Deps): Hono {
 	app.post("/auth/logout", async (c) => {
 		const token = getCookie(c, REFRESH_COOKIE);
 		if (token) await sessions.revokeRefresh(token);
+		// Best-effort: drop the stored GitHub token for admin sessions.
+		const at = getCookie(c, ACCESS_COOKIE);
+		const claim = at ? await sessions.verifyAccess(at) : null;
+		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`);
 		for (const ck of sessions.clearCookies()) {
 			c.header("Set-Cookie", ck, { append: true });
 		}
@@ -194,12 +198,17 @@ export function createApp(deps: Deps): Hono {
 			if (!allowed) {
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
+			const sid = crypto.randomUUID();
 			const claim = {
 				sub: `gh:${user.login}`,
 				role: "admin" as const,
 				orgId: cfg.eko.defaultOrgId,
 				ghLogin: user.login,
+				sid,
 			};
+			// Persist the admin's OAuth token server-side, keyed by the stable
+			// session id, so the GitOps console can author commits as this admin.
+			await kv.set(`ghtoken:${sid}`, token, cfg.adminRefreshTtlSec);
 			const access = await sessions.mintAccess(claim);
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
