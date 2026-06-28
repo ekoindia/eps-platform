@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AdminDocsList } from "./AdminDocsList";
+import { AdminDocEditor } from "./AdminDocEditor";
 
 /** Admin GitOps console shell: docs list (left) + editor panel (right). */
 export function AdminConsole() {
@@ -12,9 +13,7 @@ export function AdminConsole() {
 			</aside>
 			<section>
 				{selectedPath ? (
-					<p className="text-sm text-muted-foreground">
-						Editing {selectedPath} (editor loads in the next step).
-					</p>
+					<AdminDocEditor key={selectedPath} path={selectedPath} />
 				) : (
 					<p className="text-sm text-muted-foreground">Select a doc to edit.</p>
 				)}
