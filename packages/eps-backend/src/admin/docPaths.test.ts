@@ -18,6 +18,17 @@ describe("isEditableDocPath", () => {
 			false,
 		);
 	});
+	it("rejects trailing newline / control characters (JS $ anchor bypass)", () => {
+		expect(isEditableDocPath("src/content/docs/how-auth-works.mdx\n")).toBe(
+			false,
+		);
+		expect(isEditableDocPath("src/content/docs/endpoints/aeps-cw.md\r")).toBe(
+			false,
+		);
+		expect(isEditableDocPath("src/content/docs/how-auth\x00works.mdx")).toBe(
+			false,
+		);
+	});
 });
 
 describe("docTypeFromPath / slugFromPath", () => {
