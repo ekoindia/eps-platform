@@ -65,7 +65,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		adminRefreshTtlSec: Number(env.ADMIN_REFRESH_TTL_SEC ?? 28800),
 		cookieSecure: env.COOKIE_SECURE !== "false",
 		cookieSameSite: env.COOKIE_SAMESITE ?? "Lax",
-		postLoginRedirect: env.POST_LOGIN_REDIRECT ?? "/",
+		postLoginRedirect: env.POST_LOGIN_REDIRECT ?? "/console",
 		corsOrigins: (env.CORS_ORIGINS ?? "https://eps.eko.in")
 			.split(",")
 			.map((s) => s.trim())

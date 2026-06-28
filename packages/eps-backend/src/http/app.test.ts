@@ -305,8 +305,8 @@ describe("admin github", () => {
 			{ headers: { cookie: stateCookie } },
 		);
 		expect(res.status).toBe(302);
-		// Default POST_LOGIN_REDIRECT is "/"
-		expect(res.headers.get("location")).toBe("/");
+		// Default POST_LOGIN_REDIRECT is "/console"
+		expect(res.headers.get("location")).toBe("/console");
 		const set = res.headers.getSetCookie?.() ?? [];
 		expect(set.join(";")).toContain("eps_at=");
 	});
