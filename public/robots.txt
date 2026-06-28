@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /console
+Disallow: /admin
 
 Sitemap: https://eps.eko.in/sitemap.xml

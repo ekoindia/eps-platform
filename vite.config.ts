@@ -20,6 +20,14 @@ export default defineConfig(({ mode }) => ({
 		hmr: {
 			overlay: false,
 		},
+		// Dev-only: proxy /api → eps-backend so cookies are same-origin in dev.
+		proxy: {
+			"/api": {
+				target: process.env.VITE_DEV_BACKEND_ORIGIN ?? "http://localhost:8787",
+				changeOrigin: true,
+				rewrite: (p) => p.replace(/^\/api/, ""),
+			},
+		},
 	},
 	plugins: [
 		// MDX must transform `.mdx` → JS before the React plugin runs.
