@@ -5,10 +5,12 @@ import { ApiError, authClient } from "@/lib/auth/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useState } from "react";
 
+/** Extracts a human-readable error string from an ApiError or unknown thrown value. */
 function message(e: unknown): string {
 	return e instanceof ApiError ? e.message : "Network error. Please try again.";
 }
 
+/** Two-step OTP login form: collect mobile → send OTP → verify OTP → call onSuccess. */
 export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 	const { refresh } = useAuth();
 	const [step, setStep] = useState<"mobile" | "otp">("mobile");
@@ -72,13 +74,17 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 						onChange={(e) => setOtp(e.target.value)}
 						placeholder="OTP sent to your mobile"
 					/>
-					<Button onClick={verify} disabled={busy || otp.length === 0}>
+					<Button onClick={verify} disabled={busy || otp.length < 4}>
 						{busy ? "Verifying…" : "Verify & sign in"}
 					</Button>
 					<button
 						type="button"
 						className="text-sm text-muted-foreground hover:underline self-start"
-						onClick={sendOtp}
+						onClick={() => {
+							setOtp("");
+							setError(null);
+							void sendOtp();
+						}}
 						disabled={busy}
 					>
 						Resend OTP

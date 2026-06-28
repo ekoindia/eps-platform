@@ -34,6 +34,7 @@ export interface AdminView {
 	sub: string;
 }
 
+/** Error thrown when the API returns a non-2xx response, carrying the envelope code and HTTP status. */
 export class ApiError extends Error {
 	public code: string;
 	public httpStatus: number;
@@ -46,6 +47,7 @@ export class ApiError extends Error {
 	}
 }
 
+/** Reads and parses a Response body, throwing ApiError on non-2xx. */
 async function parse(res: Response): Promise<unknown> {
 	const text = await res.text();
 	let json: unknown = {};
@@ -67,6 +69,7 @@ async function parse(res: Response): Promise<unknown> {
 	return json;
 }
 
+/** Fetches a backend endpoint, auto-refreshing once on 401 (except for /auth/refresh and /auth/otp/* paths). */
 async function request(
 	path: string,
 	init: RequestInit,
@@ -77,16 +80,23 @@ async function request(
 		credentials: "include",
 		headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
 	});
-	if (res.status === 401 && retry && path !== "/auth/refresh") {
+	if (
+		res.status === 401 &&
+		retry &&
+		path !== "/auth/refresh" &&
+		!path.startsWith("/auth/otp/")
+	) {
 		const refreshed = await fetch(`${BASE}/auth/refresh`, {
 			method: "POST",
 			credentials: "include",
 		});
 		if (refreshed.ok) return request(path, init, false);
+		await refreshed.text().catch(() => undefined);
 	}
 	return parse(res);
 }
 
+/** Pre-built API client with typed methods for OTP auth, session management, and user profile. */
 export const authClient = {
 	startOtp: (mobile: string): Promise<{ ok: true }> =>
 		request("/auth/otp/start", {

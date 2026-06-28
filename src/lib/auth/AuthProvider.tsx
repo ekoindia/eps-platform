@@ -22,6 +22,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Maps a /me response to the typed AuthState union. */
 function classify(me: MeView | AdminView): AuthState {
 	if ("role" in me && me.role === "admin") {
 		return { status: "authed", role: "admin", me };
@@ -29,6 +30,7 @@ function classify(me: MeView | AdminView): AuthState {
 	return { status: "authed", role: "developer", me: me as MeView };
 }
 
+/** Context provider that boots auth state from /me and exposes refresh/logout actions. */
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [state, setState] = useState<AuthState>({ status: "loading" });
 
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	);
 }
 
+/** Hook to consume AuthContext; must be used inside an AuthProvider tree. */
 export function useAuth(): AuthContextValue {
 	const ctx = useContext(AuthContext);
 	if (!ctx) throw new Error("useAuth must be used within AuthProvider");

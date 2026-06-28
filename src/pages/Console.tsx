@@ -56,6 +56,7 @@ const STATE_COPY: Record<
 	},
 };
 
+/** Renders the authenticated developer dashboard card based on lifecycle state. */
 function DeveloperConsole({ me }: { me: MeView }) {
 	const copy = STATE_COPY[me.state];
 	return (
@@ -83,13 +84,14 @@ function DeveloperConsole({ me }: { me: MeView }) {
 					</Button>
 				) : null}
 				<p className="text-xs text-muted-foreground">
-					API credentials (UAT &amp; live) are coming soon.
+					API credentials (UAT & live) are coming soon.
 				</p>
 			</CardContent>
 		</Card>
 	);
 }
 
+/** Top-level Console page: routes to login, loading skeleton, or role-appropriate dashboard. */
 export default function Console() {
 	const { state } = useAuth();
 	return (

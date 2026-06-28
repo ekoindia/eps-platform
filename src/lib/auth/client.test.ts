@@ -27,10 +27,10 @@ describe("authClient", () => {
 		expect(JSON.parse(init.body)).toEqual({ mobile: "9990000001" });
 	});
 
-	it("throws ApiError carrying the envelope code/message on non-2xx", async () => {
-		mockFetch([
+	it("throws ApiError on a 401 OTP error without attempting refresh", async () => {
+		const fetchFn = mockFetch([
 			{
-				status: 422,
+				status: 401,
 				body: {
 					error: { code: "OTP_INVALID", message: "Invalid or expired OTP" },
 				},
@@ -40,8 +40,9 @@ describe("authClient", () => {
 			authClient.verifyOtp("9990000001", "0000"),
 		).rejects.toMatchObject({
 			code: "OTP_INVALID",
-			httpStatus: 422,
+			httpStatus: 401,
 		});
+		expect(fetchFn).toHaveBeenCalledTimes(1);
 	});
 
 	it("auto-refreshes once on 401 then retries the original request", async () => {
