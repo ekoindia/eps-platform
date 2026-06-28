@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createGitHubClient } from "./github";
+import { createGitHubClient, GitHubApiError } from "./github";
 
 const cfg = {
 	clientId: "gid",
@@ -54,5 +54,96 @@ describe("GitHubClient", () => {
 		) as unknown as typeof fetch;
 		const gh = createGitHubClient(cfg, f);
 		await expect(gh.exchangeCode("code123")).resolves.toBeNull();
+	});
+});
+
+function jsonRes(status: number, body: unknown): Response {
+	return new Response(JSON.stringify(body), {
+		status,
+		headers: { "Content-Type": "application/json" },
+	});
+}
+
+describe("github write methods", () => {
+	const cfg = {
+		clientId: "c",
+		clientSecret: "s",
+		callbackUrl: "u",
+		repo: "o/r",
+		editBase: "dev",
+		prodBase: "main",
+	};
+
+	it("getContent decodes base64 + returns sha; 404 → null", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonRes(200, {
+					content: Buffer.from("hello", "utf8").toString("base64"),
+					sha: "abc",
+				}),
+			)
+			.mockResolvedValueOnce(new Response("", { status: 404 }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		expect(await gh.getContent("t", "src/content/docs/x.mdx", "dev")).toEqual({
+			content: "hello",
+			sha: "abc",
+		});
+		expect(await gh.getContent("t", "missing.mdx", "dev")).toBeNull();
+	});
+
+	it("getBranchHead returns object.sha; 404 → null", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(jsonRes(200, { object: { sha: "deadbeef" } }))
+			.mockResolvedValueOnce(new Response("", { status: 404 }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		expect(await gh.getBranchHead("t", "dev")).toBe("deadbeef");
+		expect(await gh.getBranchHead("t", "nope")).toBeNull();
+	});
+
+	it("putFile sends base64 content + sha; throws GitHubApiError on 409", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(new Response("", { status: 409 }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		await expect(
+			gh.putFile("t", {
+				branch: "b",
+				path: "p.mdx",
+				content: "x",
+				baseSha: "s",
+				message: "m",
+			}),
+		).rejects.toMatchObject({ status: 409 });
+	});
+
+	it("createPullRequest returns url + number; throws on 422", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonRes(201, { html_url: "https://gh/pr/1", number: 1 }),
+			)
+			.mockResolvedValueOnce(new Response("", { status: 422 }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		expect(
+			await gh.createPullRequest("t", {
+				head: "h",
+				base: "dev",
+				title: "x",
+				body: "y",
+			}),
+		).toEqual({
+			url: "https://gh/pr/1",
+			number: 1,
+		});
+		await expect(
+			gh.createPullRequest("t", {
+				head: "dev",
+				base: "main",
+				title: "x",
+				body: "y",
+			}),
+		).rejects.toBeInstanceOf(GitHubApiError);
 	});
 });

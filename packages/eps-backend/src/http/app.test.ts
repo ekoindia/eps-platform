@@ -267,6 +267,15 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		exchangeCode: vi.fn(async () => "ght"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
 		hasRepoWrite: vi.fn(async () => true),
+		getContent: vi.fn(async () => null),
+		listDir: vi.fn(async () => []),
+		getBranchHead: vi.fn(async () => "headsha"),
+		createBranch: vi.fn(async () => undefined),
+		putFile: vi.fn(async () => undefined),
+		createPullRequest: vi.fn(async () => ({
+			url: "https://gh/pr/1",
+			number: 1,
+		})),
 		...gh,
 	};
 	// rebuild app with github included
