@@ -10,6 +10,7 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
 import { buildMeView } from "../identity/me";
 import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
+import { mountAdmin } from "./admin";
 
 export interface Deps {
 	cfg: Config;
@@ -215,6 +216,8 @@ export function createApp(deps: Deps): Hono {
 			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
+
+		mountAdmin(app, { cfg, sessions, kv, github });
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
