@@ -69,7 +69,7 @@ Use a **dedicated dev app** (separate credentials from production):
 	GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/admin/github/callback
 	GITHUB_REPO=ekoindia/eps-platform   # admin must have write access to this repo
 	COOKIE_SECURE=false                 # dev is http; Secure cookies won't set
-	POST_LOGIN_REDIRECT=/console        # optional: land on the console after login
+	ADMIN_POST_LOGIN_REDIRECT=/admin    # optional: where admin lands after GitHub login
 
 ### 3. Run both
 

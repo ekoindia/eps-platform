@@ -204,7 +204,7 @@ export function createApp(deps: Deps): Hono {
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
 			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
-			return c.redirect(cfg.postLoginRedirect, 302);
+			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 	}
 

@@ -6,7 +6,7 @@ export interface Config {
 	adminRefreshTtlSec: number;
 	cookieSecure: boolean;
 	cookieSameSite: string;
-	postLoginRedirect: string;
+	adminPostLoginRedirect: string;
 	corsOrigins: string[];
 	eko: {
 		scheme: string;
@@ -65,7 +65,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		adminRefreshTtlSec: Number(env.ADMIN_REFRESH_TTL_SEC ?? 28800),
 		cookieSecure: env.COOKIE_SECURE !== "false",
 		cookieSameSite: env.COOKIE_SAMESITE ?? "Lax",
-		postLoginRedirect: env.POST_LOGIN_REDIRECT ?? "/console",
+		adminPostLoginRedirect: env.ADMIN_POST_LOGIN_REDIRECT ?? "/admin",
 		corsOrigins: (env.CORS_ORIGINS ?? "https://eps.eko.in")
 			.split(",")
 			.map((s) => s.trim())
