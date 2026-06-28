@@ -180,7 +180,7 @@ export function createGitHubClient(
 		/** Returns the head commit sha of a branch; null if the branch is absent. */
 		async getBranchHead(token, branch) {
 			const res = await fetchImpl(
-				`https://api.github.com/repos/${cfg.repo}/git/ref/heads/${encodeURIComponent(branch)}`,
+				`https://api.github.com/repos/${cfg.repo}/git/ref/heads/${encPath(branch)}`,
 				{ headers: ghHeaders(token) },
 			);
 			if (res.status === 404) return null;

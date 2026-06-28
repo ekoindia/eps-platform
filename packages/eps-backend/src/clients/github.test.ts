@@ -102,6 +102,18 @@ describe("github write methods", () => {
 		expect(await gh.getBranchHead("t", "nope")).toBeNull();
 	});
 
+	it("getBranchHead preserves slashes in multi-segment branch names", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(jsonRes(200, { object: { sha: "abc" } }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		await gh.getBranchHead("t", "feature/my-branch");
+		expect(fetchImpl).toHaveBeenCalledWith(
+			"https://api.github.com/repos/o/r/git/ref/heads/feature/my-branch",
+			expect.anything(),
+		);
+	});
+
 	it("putFile sends base64 content + sha; throws GitHubApiError on 409", async () => {
 		const fetchImpl = vi
 			.fn()
