@@ -10,6 +10,8 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { GITHUB_ORG_URL, SOCIAL_LINKS } from "@/lib/config/site";
 import {
@@ -26,6 +28,8 @@ import {
 	BookOpen,
 	Briefcase,
 	HelpCircle,
+	LayoutDashboard,
+	LogIn,
 	Package,
 	Sparkles,
 } from "lucide-react";
@@ -339,6 +343,18 @@ export const HeaderDropdownPanels = ({
 	setTalkToSalesOpen,
 	panelHoverHandlers,
 }: HeaderDropdownPanelsProps) => {
+	const { state } = useAuth();
+	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
+		? [
+				...developerLinks,
+				{
+					label: state.status === "authed" ? "Console" : "Log in",
+					href: "/console",
+					icon: state.status === "authed" ? LayoutDashboard : LogIn,
+				},
+			]
+		: developerLinks;
+
 	/**
 	 * Renders one mobile accordion: toggle button + (when open) its body wrapped
 	 * in the shared indent container. Collapses the repeated button/toggle/open
@@ -445,7 +461,7 @@ export const HeaderDropdownPanels = ({
 				</Link>
 			</>
 		),
-		developers: developerLinks.map((item) => (
+		developers: devLinks.map((item) => (
 			<DeveloperLink
 				key={item.href}
 				item={item}
@@ -600,7 +616,7 @@ export const HeaderDropdownPanels = ({
 				>
 					<div className="p-4 flex flex-col gap-1">
 						<DropdownColumnHeader title="Developers" />
-						{developerLinks.map((item) => (
+						{devLinks.map((item) => (
 							<DeveloperLink
 								key={item.href}
 								item={item}
