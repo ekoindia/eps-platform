@@ -12,6 +12,7 @@ export function DeployToProduction() {
 	async function deploy() {
 		setBusy(true);
 		setMessage(null);
+		setResult(null);
 		try {
 			setResult(await authClient.adminDeploy.production());
 		} catch (e) {
