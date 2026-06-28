@@ -24,7 +24,7 @@ describe("DeployToProduction", () => {
 		fireEvent.click(
 			screen.getByRole("button", { name: /deploy to production/i }),
 		);
-		fireEvent.click(screen.getByRole("button", { name: /confirm/i }));
+		fireEvent.click(screen.getByRole("button", { name: /open release pr/i }));
 		await waitFor(() => expect(production).toHaveBeenCalled());
 		expect(
 			await screen.findByRole("link", { name: /release pr #12|view release/i }),
@@ -43,7 +43,7 @@ describe("DeployToProduction", () => {
 		fireEvent.click(
 			screen.getByRole("button", { name: /deploy to production/i }),
 		);
-		fireEvent.click(screen.getByRole("button", { name: /confirm/i }));
+		fireEvent.click(screen.getByRole("button", { name: /open release pr/i }));
 		expect(await screen.findByText(/in sync/i)).toBeInTheDocument();
 	});
 });

@@ -83,9 +83,13 @@ function DeveloperConsole({ me }: { me: MeView }) {
 						<Link to={copy.cta.href}>{copy.cta.label}</Link>
 					</Button>
 				) : null}
-				<p className="text-xs text-muted-foreground">
-					API credentials (UAT & live) are coming soon.
-				</p>
+				<div className="flex flex-col gap-1 rounded-md border border-dashed p-4">
+					<p className="text-sm font-medium">API credentials</p>
+					<p className="text-sm text-muted-foreground">
+						Your UAT and production API keys will appear here once issued.
+						Contact your account manager to expedite access.
+					</p>
+				</div>
 			</CardContent>
 		</Card>
 	);
@@ -103,12 +107,16 @@ export default function Console() {
 			<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh]">
 				<h1 className="text-2xl font-bold text-eko-navy mb-8">Console</h1>
 				{state.status === "loading" ? (
-					<div
-						data-testid="console-loading"
-						className="flex flex-col gap-4 max-w-md"
-					>
-						<Skeleton className="h-8 w-48" />
-						<Skeleton className="h-24 w-full" />
+					<div data-testid="console-loading" className="max-w-2xl">
+						<Card>
+							<CardHeader>
+								<Skeleton className="h-5 w-40" />
+								<Skeleton className="mt-2 h-4 w-64" />
+							</CardHeader>
+							<CardContent>
+								<Skeleton className="h-9 w-28" />
+							</CardContent>
+						</Card>
 					</div>
 				) : null}
 				{state.status === "anon" ? (
@@ -137,6 +145,11 @@ export default function Console() {
 								Signed in as {state.me.login ?? state.me.sub}.
 							</CardDescription>
 						</CardHeader>
+						<CardContent>
+							<Button asChild className="self-start">
+								<Link to="/admin">Open Admin Console</Link>
+							</Button>
+						</CardContent>
 					</Card>
 				) : null}
 			</main>

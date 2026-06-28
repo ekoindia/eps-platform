@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { authClient, ApiError, type ProposeResult } from "@/lib/auth/client";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const STALE_HINT = "This doc changed upstream — reload before saving.";
 
 /** Loads one doc, edits it in CodeMirror, and proposes the change as a PR into dev. */
 export function AdminDocEditor({ path }: { path: string }) {
@@ -15,8 +19,12 @@ export function AdminDocEditor({ path }: { path: string }) {
 	const [busy, setBusy] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const [result, setResult] = useState<ProposeResult | null>(null);
+	// The last content known to match upstream; drives the unsaved-changes badge.
+	const originalRef = useRef<string>("");
+	const isDirty = content !== originalRef.current;
 
-	useEffect(() => {
+	/** Fetches the doc and resets editor state; reused by initial load and reload. */
+	const load = useCallback(() => {
 		let active = true;
 		setLoading(true);
 		setError(null);
@@ -26,6 +34,7 @@ export function AdminDocEditor({ path }: { path: string }) {
 			.then((doc) => {
 				if (!active) return;
 				setContent(doc.content);
+				originalRef.current = doc.content;
 				setBaseSha(doc.sha);
 			})
 			.catch(() => active && setError("Could not load this doc."))
@@ -34,6 +43,8 @@ export function AdminDocEditor({ path }: { path: string }) {
 			active = false;
 		};
 	}, [path]);
+
+	useEffect(() => load(), [load]);
 
 	async function propose() {
 		if (baseSha === null) return;
@@ -47,11 +58,12 @@ export function AdminDocEditor({ path }: { path: string }) {
 				summary,
 			});
 			setResult(r);
+			originalRef.current = content;
 		} catch (e) {
 			const code = e instanceof ApiError ? e.code : "";
 			setError(
 				code === "STALE_CONTENT"
-					? "This doc changed upstream — reload before saving."
+					? STALE_HINT
 					: e instanceof ApiError
 						? e.message
 						: "Could not propose the change.",
@@ -62,11 +74,24 @@ export function AdminDocEditor({ path }: { path: string }) {
 	}
 
 	if (loading)
-		return <p className="text-sm text-muted-foreground">Loading {path}…</p>;
+		return (
+			<div className="flex flex-col gap-3" aria-busy="true">
+				<Skeleton className="h-4 w-64" />
+				<Skeleton className="h-[60vh] w-full" />
+				<Skeleton className="h-9 w-full" />
+			</div>
+		);
 
 	return (
 		<div className="flex flex-col gap-3">
-			<p className="text-xs text-muted-foreground">{path}</p>
+			<div className="flex items-center gap-2">
+				<p className="truncate text-xs text-muted-foreground">{path}</p>
+				{isDirty && (
+					<Badge variant="outline" className="border-amber-300 text-amber-600">
+						Unsaved changes
+					</Badge>
+				)}
+			</div>
 			<CodeMirror
 				value={content}
 				height="60vh"
@@ -81,23 +106,36 @@ export function AdminDocEditor({ path }: { path: string }) {
 					onChange={(e) => setSummary(e.target.value)}
 					placeholder="What changed and why"
 				/>
+				<p className="text-xs text-muted-foreground">
+					Becomes the pull request title. Be concise and specific.
+				</p>
 			</div>
-			<div className="flex items-center gap-3">
+			<div>
 				<Button onClick={propose} disabled={busy || baseSha === null}>
 					{busy ? "Proposing…" : "Propose changes"}
 				</Button>
-				{result && (
-					<a
-						className="text-sm underline"
-						href={result.prUrl}
-						target="_blank"
-						rel="noreferrer"
-					>
-						View PR #{result.prNumber}
-					</a>
-				)}
 			</div>
-			{error && <p className="text-sm text-destructive">{error}</p>}
+			{result && (
+				<div className="flex items-center gap-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+					<span aria-hidden>✓</span>
+					<span>Pull request #{result.prNumber} opened.</span>
+					<Button variant="outline" size="sm" asChild>
+						<a href={result.prUrl} target="_blank" rel="noreferrer">
+							View PR #{result.prNumber}
+						</a>
+					</Button>
+				</div>
+			)}
+			{error && (
+				<div className="flex items-center gap-3">
+					<p className="text-sm text-destructive">{error}</p>
+					{error === STALE_HINT && (
+						<Button variant="outline" size="sm" onClick={load}>
+							Reload doc
+						</Button>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
