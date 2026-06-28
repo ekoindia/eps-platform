@@ -48,7 +48,14 @@ export class ApiError extends Error {
 
 async function parse(res: Response): Promise<unknown> {
 	const text = await res.text();
-	const json: unknown = text ? JSON.parse(text) : {};
+	let json: unknown = {};
+	if (text) {
+		try {
+			json = JSON.parse(text);
+		} catch {
+			json = { error: { code: "PARSE_ERROR", message: text.slice(0, 200) } };
+		}
+	}
 	if (!res.ok) {
 		const body = json as { error?: { code?: string; message?: string } };
 		throw new ApiError(

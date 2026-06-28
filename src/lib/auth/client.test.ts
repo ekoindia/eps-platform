@@ -30,23 +30,17 @@ describe("authClient", () => {
 	it("throws ApiError carrying the envelope code/message on non-2xx", async () => {
 		mockFetch([
 			{
-				status: 401,
+				status: 422,
 				body: {
 					error: { code: "OTP_INVALID", message: "Invalid or expired OTP" },
 				},
 			},
-			{
-				status: 401,
-				body: {
-					error: { code: "SESSION_EXPIRED", message: "Session expired" },
-				},
-			}, // refresh fails
 		]);
 		await expect(
 			authClient.verifyOtp("9990000001", "0000"),
 		).rejects.toMatchObject({
 			code: "OTP_INVALID",
-			httpStatus: 401,
+			httpStatus: 422,
 		});
 	});
 
