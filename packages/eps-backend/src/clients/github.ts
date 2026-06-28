@@ -169,13 +169,14 @@ export function createGitHubClient(
 				path?: string;
 				type?: string;
 			}>;
-			return Array.isArray(arr)
-				? arr.map((x) => ({
-						name: x.name ?? "",
-						path: x.path ?? "",
-						type: x.type ?? "",
-					}))
-				: [];
+			if (!Array.isArray(arr)) {
+				throw new GitHubApiError(502, "Malformed directory response");
+			}
+			return arr.map((x) => ({
+				name: x.name ?? "",
+				path: x.path ?? "",
+				type: x.type ?? "",
+			}));
 		},
 		/** Returns the head commit sha of a branch; null if the branch is absent. */
 		async getBranchHead(token, branch) {
@@ -238,7 +239,15 @@ export function createGitHubClient(
 			if (!res.ok)
 				throw new GitHubApiError(res.status, `createPullRequest ${res.status}`);
 			const j = (await res.json()) as { html_url?: string; number?: number };
-			return { url: j.html_url ?? "", number: j.number ?? 0 };
+			if (
+				typeof j.html_url !== "string" ||
+				j.html_url === "" ||
+				typeof j.number !== "number" ||
+				j.number <= 0
+			) {
+				throw new GitHubApiError(502, "Malformed pull response");
+			}
+			return { url: j.html_url, number: j.number };
 		},
 	};
 }

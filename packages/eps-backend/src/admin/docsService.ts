@@ -72,7 +72,8 @@ export function createDocsService(github: GitHubClient, cfg: Config) {
 			if (!head)
 				throw new AppError(502, "UPSTREAM_ERROR", `Cannot read ${editBase}`);
 			const slug = slugFromPath(path);
-			const branch = `edit/docs-${slug}-${randomUUID().slice(0, 8)}`;
+			const branchSlug = slug.slice(0, 60);
+			const branch = `edit/docs-${branchSlug}-${randomUUID().slice(0, 8)}`;
 			const message = summary
 				? `docs: update ${slug}\n\n${summary}`
 				: `docs: update ${slug}`;

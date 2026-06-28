@@ -158,4 +158,56 @@ describe("github write methods", () => {
 			}),
 		).rejects.toBeInstanceOf(GitHubApiError);
 	});
+
+	// C4: malformed 2xx (missing html_url / number) must throw 502
+	it("createPullRequest throws GitHubApiError 502 on 2xx missing html_url", async () => {
+		const fetchImpl = vi.fn().mockResolvedValueOnce(jsonRes(201, {}));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		await expect(
+			gh.createPullRequest("t", {
+				head: "h",
+				base: "dev",
+				title: "x",
+				body: "y",
+			}),
+		).rejects.toMatchObject({ status: 502 });
+	});
+
+	it("createPullRequest throws GitHubApiError 502 on 2xx with number=0", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonRes(201, { html_url: "https://gh/pr/1", number: 0 }),
+			);
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		await expect(
+			gh.createPullRequest("t", {
+				head: "h",
+				base: "dev",
+				title: "x",
+				body: "y",
+			}),
+		).rejects.toMatchObject({ status: 502 });
+	});
+
+	// C5: listDir must throw 502 on non-array payload; 404 still returns []
+	it("listDir throws GitHubApiError 502 when response body is not an array", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(jsonRes(200, { name: "not-an-array" }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		await expect(
+			gh.listDir("t", "src/content/docs", "dev"),
+		).rejects.toMatchObject({
+			status: 502,
+		});
+	});
+
+	it("listDir returns [] on 404", async () => {
+		const fetchImpl = vi
+			.fn()
+			.mockResolvedValueOnce(new Response("", { status: 404 }));
+		const gh = createGitHubClient(cfg, fetchImpl as unknown as typeof fetch);
+		expect(await gh.listDir("t", "missing", "dev")).toEqual([]);
+	});
 });

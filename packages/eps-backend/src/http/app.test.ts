@@ -372,6 +372,47 @@ describe("admin github", () => {
 	});
 });
 
+// C1: ghtoken TTL is re-extended on admin refresh rotation
+describe("admin refresh re-extends ghtoken", () => {
+	it("ghtoken:<sid> is still present after /auth/refresh for admin session", async () => {
+		const { app, kv, sessions } = ghDeps({
+			exchangeCode: vi.fn(async () => "gh-secret-token"),
+		});
+		// Complete OAuth flow to get admin session cookies
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const callbackRes = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		const callbackCookies = callbackRes.headers.getSetCookie?.() ?? [];
+		const sessionCookies = callbackCookies
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		// Retrieve the admin sid from the access token
+		const at = callbackCookies
+			.find((c) => c.startsWith("eps_at="))!
+			.split(";")[0]
+			.slice("eps_at=".length);
+		const claim = await sessions.verifyAccess(at);
+		expect(claim?.sid).toBeTruthy();
+		// Confirm the token is present before refresh
+		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+		// Call /auth/refresh
+		const refreshRes = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: sessionCookies },
+		});
+		expect(refreshRes.status).toBe(200);
+		// Token must still be present after refresh rotation
+		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+	});
+});
+
 describe("CORS", () => {
 	it("responds with Access-Control-Allow-Origin for a known origin", async () => {
 		const { app } = deps();

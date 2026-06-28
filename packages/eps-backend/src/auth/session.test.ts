@@ -118,6 +118,19 @@ describe("cookies", () => {
 		expect(c).toMatch(/SameSite=Lax/);
 		expect(s.clearCookies().length).toBe(2);
 	});
+
+	// C2: refreshCookie must accept an explicit ttlSec and reflect it in Max-Age
+	it("refreshCookie with explicit ttl produces correct Max-Age", () => {
+		const s = mk();
+		const c = s.refreshCookie("tok", 28800);
+		expect(c).toMatch(/Max-Age=28800/);
+	});
+
+	it("refreshCookie without explicit ttl uses cfg.refreshTtlSec", () => {
+		const s = mk();
+		const c = s.refreshCookie("tok");
+		expect(c).toMatch(new RegExp(`Max-Age=${cfg.refreshTtlSec}`));
+	});
 });
 
 describe("admin shorter refresh TTL", () => {

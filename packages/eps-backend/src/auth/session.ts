@@ -21,7 +21,7 @@ export interface Sessions {
 	): Promise<{ claim: SessionClaim; refresh: string } | null>;
 	revokeRefresh(token: string): Promise<void>;
 	accessCookie(token: string): string;
-	refreshCookie(token: string): string;
+	refreshCookie(token: string, ttlSec?: number): string;
 	clearCookies(): string[];
 }
 
@@ -110,8 +110,9 @@ export function createSessions(
 			return cookie(ACCESS_COOKIE, token, cfg.accessTtlSec);
 		},
 
-		refreshCookie(token) {
-			return cookie(REFRESH_COOKIE, token, cfg.refreshTtlSec);
+		/** Builds a Set-Cookie string for the refresh token. Defaults to cfg.refreshTtlSec; pass an explicit ttlSec for role-specific lifetimes (e.g. cfg.adminRefreshTtlSec). */
+		refreshCookie(token, ttlSec = cfg.refreshTtlSec) {
+			return cookie(REFRESH_COOKIE, token, ttlSec);
 		},
 
 		clearCookies() {

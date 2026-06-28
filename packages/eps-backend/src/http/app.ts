@@ -125,11 +125,31 @@ export function createApp(deps: Deps): Hono {
 		const rotated = await sessions.rotateRefresh(token);
 		if (!rotated)
 			throw new AppError(401, "SESSION_EXPIRED", "Please log in again");
+		// C1: re-extend the stored GitHub token TTL so a long-lived admin session
+		// does not lose write access when its refresh token is rotated.
+		if (rotated.claim.role === "admin" && rotated.claim.sid) {
+			const tok = await kv.get(`ghtoken:${rotated.claim.sid}`);
+			if (tok)
+				await kv.set(
+					`ghtoken:${rotated.claim.sid}`,
+					tok,
+					cfg.adminRefreshTtlSec,
+				);
+		}
 		const access = await sessions.mintAccess(rotated.claim);
+		// C2: use role-aware TTL for the refresh cookie max-age.
+		const refreshTtl =
+			rotated.claim.role === "admin"
+				? cfg.adminRefreshTtlSec
+				: cfg.refreshTtlSec;
 		c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-		c.header("Set-Cookie", sessions.refreshCookie(rotated.refresh), {
-			append: true,
-		});
+		c.header(
+			"Set-Cookie",
+			sessions.refreshCookie(rotated.refresh, refreshTtl),
+			{
+				append: true,
+			},
+		);
 		return c.json({ ok: true });
 	});
 
@@ -213,7 +233,11 @@ export function createApp(deps: Deps): Hono {
 			const access = await sessions.mintAccess(claim);
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			c.header(
+				"Set-Cookie",
+				sessions.refreshCookie(refresh, cfg.adminRefreshTtlSec),
+				{ append: true },
+			);
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 

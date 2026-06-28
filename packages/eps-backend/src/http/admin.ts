@@ -20,6 +20,18 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	const { cfg, sessions, kv, github } = deps;
 	const docs = createDocsService(github, cfg);
 
+	/**
+	 * Rejects a cross-origin browser POST: if an Origin header is present,
+	 * it must be in the CORS allowlist. Missing Origin (non-browser / same-origin
+	 * tooling) passes through to the cookie+role+token gate.
+	 */
+	function assertAllowedOrigin(c: Context): void {
+		const origin = c.req.header("origin");
+		if (origin && !cfg.corsOrigins.includes(origin)) {
+			throw new AppError(403, "BAD_ORIGIN", "Cross-origin request rejected");
+		}
+	}
+
 	/** Resolves the acting admin's GitHub token + login, or throws 403/401. */
 	async function adminToken(
 		c: Context,
@@ -53,6 +65,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	});
 
 	app.post("/admin/docs/propose", async (c) => {
+		assertAllowedOrigin(c);
 		const { token, login } = await adminToken(c);
 		const b = (await c.req.json().catch(() => ({}))) as {
 			path?: unknown;
@@ -84,6 +97,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	});
 
 	app.post("/admin/deploy/production", async (c) => {
+		assertAllowedOrigin(c);
 		const { token } = await adminToken(c);
 		return c.json(await docs.deployProduction(token));
 	});

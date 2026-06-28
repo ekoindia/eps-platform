@@ -156,3 +156,78 @@ describe("admin docs routes", () => {
 		expect(await res.json()).toEqual({ prUrl: "https://gh/pr/7", prNumber: 7 });
 	});
 });
+
+// C3: CSRF Origin-allowlist on admin POSTs
+describe("admin CSRF origin check", () => {
+	it("POST /admin/docs/propose rejects a cross-origin request with 403 BAD_ORIGIN", async () => {
+		const { app, adminCookie } = await harness();
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: {
+				cookie: adminCookie,
+				"Content-Type": "application/json",
+				origin: "https://evil.example",
+			},
+			body: JSON.stringify({
+				path: "src/content/docs/g.mdx",
+				content: "new",
+				baseSha: "sha1",
+			}),
+		});
+		expect(res.status).toBe(403);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"BAD_ORIGIN",
+		);
+	});
+
+	it("POST /admin/docs/propose allows a request from a corsOrigins origin", async () => {
+		const { app, adminCookie } = await harness();
+		// cfg.corsOrigins defaults to ["https://eps.eko.in"]
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: {
+				cookie: adminCookie,
+				"Content-Type": "application/json",
+				origin: "https://eps.eko.in",
+			},
+			body: JSON.stringify({
+				path: "src/content/docs/g.mdx",
+				content: "new",
+				baseSha: "sha1",
+			}),
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("POST /admin/docs/propose with no origin header still succeeds", async () => {
+		const { app, adminCookie } = await harness();
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: {
+				cookie: adminCookie,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				path: "src/content/docs/g.mdx",
+				content: "new",
+				baseSha: "sha1",
+			}),
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("POST /admin/deploy/production rejects a cross-origin request with 403 BAD_ORIGIN", async () => {
+		const { app, adminCookie } = await harness();
+		const res = await app.request("/admin/deploy/production", {
+			method: "POST",
+			headers: {
+				cookie: adminCookie,
+				origin: "https://evil.example",
+			},
+		});
+		expect(res.status).toBe(403);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"BAD_ORIGIN",
+		);
+	});
+});

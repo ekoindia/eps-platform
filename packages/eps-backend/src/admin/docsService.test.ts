@@ -178,6 +178,26 @@ describe("docsService.propose", () => {
 			}),
 		).rejects.toMatchObject({ code: "BAD_PATH" });
 	});
+
+	// C6: branch-name slug must be capped at 60 chars
+	it("caps the branch-name slug at 60 chars for very long filenames", async () => {
+		const longName = "a".repeat(80);
+		const path = `src/content/docs/${longName}.mdx`;
+		const github = ghMock();
+		const svc = createDocsService(github, cfg);
+		const out = await svc.propose("t", {
+			path,
+			content: "c",
+			baseSha: "s",
+			summary: "",
+			login: "o",
+		});
+		// branch is `edit/docs-<branchSlug>-<8-char-uuid>`
+		// total max = "edit/docs-".length (10) + 60 + 1 ("-") + 8 = 79
+		expect(out.branch.length).toBeLessThanOrEqual(
+			"edit/docs-".length + 60 + 1 + 8,
+		);
+	});
 });
 
 describe("docsService.deployProduction", () => {
