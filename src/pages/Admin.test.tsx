@@ -5,6 +5,14 @@ import { describe, expect, it, vi } from "vitest";
 import Admin from "@/pages/Admin";
 import type { AuthState } from "@/lib/auth/AuthProvider";
 
+vi.mock("@/lib/auth/client", () => ({
+	authClient: {
+		adminDocs: {
+			list: vi.fn(async () => ({ docs: [] })),
+		},
+	},
+}));
+
 let mockState: AuthState = { status: "anon" };
 vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({ state: mockState, refresh: vi.fn(), logout: vi.fn() }),
@@ -29,7 +37,7 @@ describe("Admin", () => {
 		).toHaveAttribute("href", "/api/auth/admin/github");
 	});
 
-	it("shows a console link (not the sign-in button) when signed in as admin", () => {
+	it("shows the admin console (not the sign-in button) when signed in as admin", () => {
 		renderAdmin({
 			status: "authed",
 			role: "admin",
@@ -38,9 +46,7 @@ describe("Admin", () => {
 		expect(
 			screen.queryByRole("link", { name: /sign in with github/i }),
 		).toBeNull();
-		expect(
-			screen.getByRole("link", { name: /go to console/i }),
-		).toHaveAttribute("href", "/console");
 		expect(screen.getByText(/octo/i)).toBeInTheDocument();
+		expect(screen.getByText(/select a doc to edit/i)).toBeInTheDocument();
 	});
 });

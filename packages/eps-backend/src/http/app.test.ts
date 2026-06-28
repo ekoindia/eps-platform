@@ -267,6 +267,15 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		exchangeCode: vi.fn(async () => "ght"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
 		hasRepoWrite: vi.fn(async () => true),
+		getContent: vi.fn(async () => null),
+		listDir: vi.fn(async () => []),
+		getBranchHead: vi.fn(async () => "headsha"),
+		createBranch: vi.fn(async () => undefined),
+		putFile: vi.fn(async () => undefined),
+		createPullRequest: vi.fn(async () => ({
+			url: "https://gh/pr/1",
+			number: 1,
+		})),
 		...gh,
 	};
 	// rebuild app with github included
@@ -280,7 +289,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		kv,
 		github,
 	});
-	return { app, github, kv };
+	return { app, github, kv, sessions };
 }
 
 describe("admin github", () => {
@@ -332,6 +341,75 @@ describe("admin github", () => {
 			"/auth/admin/github/callback?code=abc&state=forged",
 		);
 		expect(res.status).toBe(400);
+	});
+
+	it("callback issues an admin session cookie whose sid resolves a stored token", async () => {
+		const { app, kv, sessions } = ghDeps({
+			exchangeCode: vi.fn(async () => "gh-secret-token"),
+		});
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{
+				headers: { cookie: stateCookie },
+			},
+		);
+		const cookies = res.headers.getSetCookie?.() ?? [];
+		expect(cookies.join(";")).toContain("eps_at=");
+		// Decode the access JWT to read its sid, then confirm the token was stored.
+		const at = cookies
+			.find((c) => c.startsWith("eps_at="))!
+			.split(";")[0]
+			.slice("eps_at=".length);
+		const claim = await sessions.verifyAccess(at);
+		expect(claim?.sid).toBeTruthy();
+		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+	});
+});
+
+// C1: ghtoken TTL is re-extended on admin refresh rotation
+describe("admin refresh re-extends ghtoken", () => {
+	it("ghtoken:<sid> is still present after /auth/refresh for admin session", async () => {
+		const { app, kv, sessions } = ghDeps({
+			exchangeCode: vi.fn(async () => "gh-secret-token"),
+		});
+		// Complete OAuth flow to get admin session cookies
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const callbackRes = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		const callbackCookies = callbackRes.headers.getSetCookie?.() ?? [];
+		const sessionCookies = callbackCookies
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		// Retrieve the admin sid from the access token
+		const at = callbackCookies
+			.find((c) => c.startsWith("eps_at="))!
+			.split(";")[0]
+			.slice("eps_at=".length);
+		const claim = await sessions.verifyAccess(at);
+		expect(claim?.sid).toBeTruthy();
+		// Confirm the token is present before refresh
+		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+		// Call /auth/refresh
+		const refreshRes = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: sessionCookies },
+		});
+		expect(refreshRes.status).toBe(200);
+		// Token must still be present after refresh rotation
+		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
 	});
 });
 

@@ -58,4 +58,28 @@ describe("loadConfig", () => {
 			}).eko.scheme,
 		).toBe("http");
 	});
+
+	it("defaults edit/prod base branches and allows override", () => {
+		const base = {
+			JWT_SECRET: "x".repeat(32),
+			SIMPLIBANK_API_HOST: "h",
+			SIMPLIBANK_API_PORT: "1",
+			SIMPLIBANK_API_PATH: "/p",
+			EKO_DEVELOPER_KEY: "k",
+			GITHUB_CLIENT_ID: "g",
+			GITHUB_CLIENT_SECRET: "s",
+			GITHUB_CALLBACK_URL: "https://x/cb",
+			GITHUB_REPO: "o/r",
+		};
+		const def = loadConfig(base);
+		expect(def.github.editBase).toBe("dev");
+		expect(def.github.prodBase).toBe("main");
+		const over = loadConfig({
+			...base,
+			GITHUB_EDIT_BASE: "staging",
+			GITHUB_PROD_BASE: "release",
+		});
+		expect(over.github.editBase).toBe("staging");
+		expect(over.github.prodBase).toBe("release");
+	});
 });

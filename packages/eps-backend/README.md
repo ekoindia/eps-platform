@@ -79,6 +79,19 @@ Use a **dedicated dev app** (separate credentials from production):
 Visit `http://localhost:8080/admin` → "Sign in with GitHub". Admin access is
 gated on **write** permission to `GITHUB_REPO`.
 
+## Admin GitOps console
+
+Admins can edit documentation and endpoint notes directly from the `/admin` page,
+with changes automatically committed as pull requests. See [`docs/admin-console.md`](../../docs/admin-console.md)
+for the complete feature guide.
+
+Two additional environment variables control the GitOps flow:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GITHUB_EDIT_BASE` | `dev` | Base branch for edit PRs. |
+| `GITHUB_PROD_BASE` | `main` | Target branch for deploy PRs. |
+
 ## Deferred
 
 `/credentials` (UAT/live key view/generate) — pending the Eko credential

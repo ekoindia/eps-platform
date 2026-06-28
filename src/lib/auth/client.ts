@@ -34,6 +34,30 @@ export interface AdminView {
 	sub: string;
 }
 
+export interface DocItem {
+	slug: string;
+	path: string;
+	title: string;
+	type: "guide" | "endpoint";
+}
+
+export interface DocContent {
+	content: string;
+	sha: string;
+	branch: string;
+}
+
+export interface ProposeResult {
+	prUrl: string;
+	branch: string;
+	prNumber: number;
+}
+
+export interface DeployResult {
+	prUrl: string;
+	prNumber: number;
+}
+
 /** Error thrown when the API returns a non-2xx response, carrying the envelope code and HTTP status. */
 export class ApiError extends Error {
 	public code: string;
@@ -114,4 +138,32 @@ export const authClient = {
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>
 		request("/auth/logout", { method: "POST" }) as Promise<{ ok: true }>,
+
+	/** Admin doc management — list, read, and propose PR edits for docs content. */
+	adminDocs: {
+		list: (): Promise<{ docs: DocItem[] }> =>
+			request("/admin/docs", { method: "GET" }) as Promise<{ docs: DocItem[] }>,
+		getContent: (path: string): Promise<DocContent> =>
+			request(`/admin/docs/content?path=${encodeURIComponent(path)}`, {
+				method: "GET",
+			}) as Promise<DocContent>,
+		propose: (input: {
+			path: string;
+			content: string;
+			baseSha: string;
+			summary: string;
+		}): Promise<ProposeResult> =>
+			request("/admin/docs/propose", {
+				method: "POST",
+				body: JSON.stringify(input),
+			}) as Promise<ProposeResult>,
+	},
+
+	/** Admin deploy operations — trigger production promotion PRs. */
+	adminDeploy: {
+		production: (): Promise<DeployResult> =>
+			request("/admin/deploy/production", {
+				method: "POST",
+			}) as Promise<DeployResult>,
+	},
 };

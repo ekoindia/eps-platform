@@ -10,6 +10,7 @@ import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
 import { buildMeView } from "../identity/me";
 import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
+import { mountAdmin } from "./admin";
 
 export interface Deps {
 	cfg: Config;
@@ -124,17 +125,41 @@ export function createApp(deps: Deps): Hono {
 		const rotated = await sessions.rotateRefresh(token);
 		if (!rotated)
 			throw new AppError(401, "SESSION_EXPIRED", "Please log in again");
+		// C1: re-extend the stored GitHub token TTL so a long-lived admin session
+		// does not lose write access when its refresh token is rotated.
+		if (rotated.claim.role === "admin" && rotated.claim.sid) {
+			const tok = await kv.get(`ghtoken:${rotated.claim.sid}`);
+			if (tok)
+				await kv.set(
+					`ghtoken:${rotated.claim.sid}`,
+					tok,
+					cfg.adminRefreshTtlSec,
+				);
+		}
 		const access = await sessions.mintAccess(rotated.claim);
+		// C2: use role-aware TTL for the refresh cookie max-age.
+		const refreshTtl =
+			rotated.claim.role === "admin"
+				? cfg.adminRefreshTtlSec
+				: cfg.refreshTtlSec;
 		c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-		c.header("Set-Cookie", sessions.refreshCookie(rotated.refresh), {
-			append: true,
-		});
+		c.header(
+			"Set-Cookie",
+			sessions.refreshCookie(rotated.refresh, refreshTtl),
+			{
+				append: true,
+			},
+		);
 		return c.json({ ok: true });
 	});
 
 	app.post("/auth/logout", async (c) => {
 		const token = getCookie(c, REFRESH_COOKIE);
 		if (token) await sessions.revokeRefresh(token);
+		// Best-effort: drop the stored GitHub token for admin sessions.
+		const at = getCookie(c, ACCESS_COOKIE);
+		const claim = at ? await sessions.verifyAccess(at) : null;
+		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
 		for (const ck of sessions.clearCookies()) {
 			c.header("Set-Cookie", ck, { append: true });
 		}
@@ -194,18 +219,29 @@ export function createApp(deps: Deps): Hono {
 			if (!allowed) {
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
+			const sid = crypto.randomUUID();
 			const claim = {
 				sub: `gh:${user.login}`,
 				role: "admin" as const,
 				orgId: cfg.eko.defaultOrgId,
 				ghLogin: user.login,
+				sid,
 			};
+			// Persist the admin's OAuth token server-side, keyed by the stable
+			// session id, so the GitOps console can author commits as this admin.
+			await kv.set(`ghtoken:${sid}`, token, cfg.adminRefreshTtlSec);
 			const access = await sessions.mintAccess(claim);
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			c.header(
+				"Set-Cookie",
+				sessions.refreshCookie(refresh, cfg.adminRefreshTtlSec),
+				{ append: true },
+			);
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
+
+		mountAdmin(app, { cfg, sessions, kv, github });
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
