@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/_pop.sh"
+__record "curl $*"
+case "$*" in
+	*"/readyz"*) v=$(__pop curl_readyz "${SHIM_READYZ_DEFAULT:-OK}"); [ "$v" = OK ] && exit 0 || exit 22 ;;
+	*) exit 0 ;;  # webhook POST and anything else: succeed
+esac

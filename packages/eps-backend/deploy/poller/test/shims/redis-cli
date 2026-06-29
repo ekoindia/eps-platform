@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/_pop.sh"
+__record "redis-cli $*"
+v=$(__pop redis_ping "${SHIM_REDIS_DEFAULT:-PONG}")
+[ "$v" = "PONG" ] || [ "$v" = "UP" ] && { echo PONG; exit 0; }
+exit 1

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/_pop.sh"
+__record "docker $*"
+# Route by the docker sub-command shape poll.sh uses.
+if [ "$1" = "compose" ]; then
+	case "$*" in
+		*"ps -q eps-backend"*) printf '%s' "$(cat "$SHIM_STATE/ps" 2>/dev/null)"; exit 0 ;;
+		*"pull"*) [ "${SHIM_PULL_FAIL:-0}" = "1" ] && exit 1; exit 0 ;;
+		*"up -d --no-deps eps-backend"*)
+			[ "${SHIM_UP_FAIL:-0}" = "1" ] && exit 1
+			printf '%s' "${SHIM_NEW_CID:-cidNEW}" >"$SHIM_STATE/ps"; exit 0 ;;
+		*) echo "shim docker compose: unexpected '$*'" >&2; exit 1 ;;
+	esac
+fi
+if [ "$1" = "inspect" ]; then
+	case "$*" in
+		*"{{.Image}}"*) echo "${SHIM_IMGID:-imgABC}"; exit 0 ;;
+		*"State.Status"*) printf '%s' "$(__pop_line ctr_state "${SHIM_CTR_DEFAULT:-running false 0}")"; exit 0 ;;
+		*) echo "shim docker inspect: unexpected '$*'" >&2; exit 1 ;;
+	esac
+fi
+if [ "$1" = "image" ] && [ "$2" = "inspect" ]; then
+	printf '%s\n' "${SHIM_REPODIGESTS:-ghcr.io/ekoindia/eps-backend@sha256:remote}"
+	exit 0
+fi
+echo "shim docker: unexpected '$*'" >&2
+exit 1
