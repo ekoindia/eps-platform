@@ -307,6 +307,44 @@ describe("logout", () => {
 			cookies.some((c) => c.startsWith("eps_rt=") && c.includes("Max-Age=0")),
 		).toBe(true);
 	});
+
+	it("clears both cookies for an admin session even when the store del fails", async () => {
+		const base = deps();
+		// Both refresh revoke and ghtoken del hit the store; del rejects (outage).
+		const failingKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		// `deps()` does not return `cfg`; pass the module-level `cfg` explicitly.
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		// Admin-style session: access token carrying a sid drives the ghtoken-del
+		// best-effort branch; refresh token drives the revoke branch.
+		const adminClaim = {
+			sub: "gh:octocat",
+			role: "admin" as const,
+			orgId: 1,
+			ghLogin: "octocat",
+			sid: crypto.randomUUID(),
+		};
+		const at = await sessions.mintAccess(adminClaim);
+		const rt = await sessions.issueRefresh(adminClaim);
+		const res = await app.request("/auth/logout", {
+			method: "POST",
+			headers: { cookie: `eps_at=${at}; eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+		const cookies = res.headers.getSetCookie?.() ?? [];
+		// Both cookies cleared despite the ghtoken-del store failure.
+		expect(
+			cookies.some((c) => c.startsWith("eps_at=") && c.includes("Max-Age=0")),
+		).toBe(true);
+		expect(
+			cookies.some((c) => c.startsWith("eps_rt=") && c.includes("Max-Age=0")),
+		).toBe(true);
+	});
 });
 
 function ghDeps(gh: Partial<GitHubClient>) {

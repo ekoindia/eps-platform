@@ -179,7 +179,7 @@ export function createApp(deps: Deps): Hono {
 		const token = getCookie(c, REFRESH_COOKIE);
 		if (token) await sessions.revokeRefresh(token).catch(() => {});
 		const at = getCookie(c, ACCESS_COOKIE);
-		const claim = at ? await sessions.verifyAccess(at) : null;
+		const claim = at ? await sessions.verifyAccess(at).catch(() => null) : null;
 		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
 		return c.json({ ok: true });
 	});
