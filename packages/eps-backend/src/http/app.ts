@@ -30,8 +30,15 @@ const OTP_WINDOW_SEC = 600;
 const STATE_COOKIE = "eps_oauth_state";
 const STATE_TTL_SEC = 600;
 
+/**
+ * Canonicalizes a mobile number to its last 10 digits so the same physical
+ * number maps to one key regardless of country-code / leading-zero prefix
+ * (`9990000001`, `919990000001`, `09990000001` → `9990000001`). Without this,
+ * a caller could evade per-mobile OTP rate limits by re-prefixing the number.
+ */
 function normalizeMobile(raw: string): string {
-	return raw.replace(/\D/g, "");
+	const digits = raw.replace(/\D/g, "");
+	return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
 export function createApp(deps: Deps): Hono {

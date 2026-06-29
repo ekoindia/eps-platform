@@ -124,6 +124,21 @@ describe("otp/start", () => {
 		expect(last.status).toBe(429);
 	});
 
+	it("buckets country-code / leading-zero prefixes of the same number together", async () => {
+		const { app } = deps();
+		// Same physical number, re-prefixed each call — must not reset the window.
+		const variants = ["9990000005", "919990000005", "09990000005"];
+		let last = new Response();
+		for (let i = 0; i < 6; i++) {
+			last = await app.request("/auth/otp/start", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ mobile: variants[i % variants.length] }),
+			});
+		}
+		expect(last.status).toBe(429);
+	});
+
 	it("400 INVALID_INPUT for a non-numeric mobile", async () => {
 		const { app } = deps();
 		const res = await app.request("/auth/otp/start", {
