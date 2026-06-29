@@ -11,6 +11,7 @@ import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { accountIdentity } from "@/lib/auth/identity";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { GITHUB_ORG_URL, SOCIAL_LINKS } from "@/lib/config/site";
@@ -30,6 +31,7 @@ import {
 	HelpCircle,
 	LayoutDashboard,
 	LogIn,
+	LogOut,
 	Package,
 	Sparkles,
 } from "lucide-react";
@@ -343,7 +345,8 @@ export const HeaderDropdownPanels = ({
 	setTalkToSalesOpen,
 	panelHoverHandlers,
 }: HeaderDropdownPanelsProps) => {
-	const { state } = useAuth();
+	const { state, logout } = useAuth();
+	const identity = SHOW_USER_LOGIN ? accountIdentity(state) : null;
 	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
 		? [
 				...developerLinks,
@@ -715,18 +718,46 @@ export const HeaderDropdownPanels = ({
 							<Phone className="w-4 h-4" />
 							{formatMobile(SALES_MOBILE)}
 						</a> */}
-						<Button
-							id="btn-get-started-header-mobile"
-							variant="gold"
-							size="sm"
-							onClick={() => {
-								setMobileMenuOpen(false);
-								openZohoChat();
-							}}
-							className="cursor-pointer self-start min-w-[140px]"
-						>
-							Get Started
-						</Button>
+						{identity ? (
+							<div className="flex flex-col gap-3">
+								<div className="flex items-center gap-3">
+									<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-eko-navy/10 text-sm font-semibold text-eko-navy">
+										{identity.initials}
+									</span>
+									<div className="min-w-0">
+										<p className="truncate text-sm font-medium text-eko-navy">
+											{identity.name}
+										</p>
+										<p className="text-xs text-eko-slate">{identity.detail}</p>
+									</div>
+								</div>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => {
+										setMobileMenuOpen(false);
+										void logout();
+									}}
+									className="cursor-pointer self-start justify-start gap-2 px-2 text-eko-slate hover:text-eko-navy"
+								>
+									<LogOut className="w-4 h-4" />
+									Log out
+								</Button>
+							</div>
+						) : (
+							<Button
+								id="btn-get-started-header-mobile"
+								variant="gold"
+								size="sm"
+								onClick={() => {
+									setMobileMenuOpen(false);
+									openZohoChat();
+								}}
+								className="cursor-pointer self-start min-w-[140px]"
+							>
+								Get Started
+							</Button>
+						)}
 					</div>
 				</SheetContent>
 			</Sheet>

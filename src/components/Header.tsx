@@ -1,6 +1,8 @@
 import { EkoLogo } from "@/components/EkoLogo";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -444,6 +446,11 @@ export const Header = () => {
                 <Phone className="w-4 h-4" />
                 {formatMobile(SALES_MOBILE)}
               </a> */}
+
+							{/*
+                MARK: Account menu (authed users only)
+              */}
+							{SHOW_USER_LOGIN && <UserMenu />}
 
 							{/*
                 MARK: Desktop CTA
