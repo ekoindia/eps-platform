@@ -4,10 +4,16 @@
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
 		"resolveJsonModule": true,
+		"types": ["node"],
 		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"noEmit": true
+		"noEmit": true,
+		// tsup's dts pass (rollup-plugin-dts) injects a `baseUrl`, which TS 6.0
+		// flags as a deprecation error (TS5101). Acknowledge it so the .d.ts
+		// build keeps working through the 6.x line. Remove once tsup/the dts
+		// plugin stops emitting baseUrl. See aka.ms/ts6.
+		"ignoreDeprecations": "6.0"
 	},
 	"include": ["src", "scripts"]
 }
