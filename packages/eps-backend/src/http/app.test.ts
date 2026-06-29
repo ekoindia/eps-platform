@@ -153,6 +153,27 @@ describe("otp/start", () => {
 			"INVALID_INPUT",
 		);
 	});
+
+	it("503 RATE_LIMIT_UNAVAILABLE when the KV incr fails", async () => {
+		const base = deps();
+		const failingKv = {
+			...base.kv,
+			incr: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000009" }),
+		});
+		expect(res.status).toBe(503);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
 });
 
 describe("otp/verify + me", () => {
@@ -354,7 +375,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 			`https://github.com/login/oauth/authorize?state=${state}`,
 		exchangeCode: vi.fn(async () => "ght"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
-		hasRepoWrite: vi.fn(async () => true),
+		checkRepoWrite: vi.fn(async () => "write" as const),
 		getContent: vi.fn(async () => null),
 		listDir: vi.fn(async () => []),
 		getBranchHead: vi.fn(async () => "headsha"),
@@ -409,7 +430,9 @@ describe("admin github", () => {
 	});
 
 	it("callback without repo write → 403", async () => {
-		const { app } = ghDeps({ hasRepoWrite: vi.fn(async () => false) });
+		const { app } = ghDeps({
+			checkRepoWrite: vi.fn(async () => "no-write" as const),
+		});
 		const start = await app.request("/auth/admin/github");
 		const loc = new URL(start.headers.get("location")!);
 		const state = loc.searchParams.get("state")!;
@@ -457,6 +480,80 @@ describe("admin github", () => {
 		const claim = await sessions.verifyAccess(at);
 		expect(claim?.sid).toBeTruthy();
 		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+	});
+
+	it("callback with unknown repo-write status → 403 (no session)", async () => {
+		const { app } = ghDeps({
+			checkRepoWrite: vi.fn(async () => "unknown" as const),
+		});
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(403);
+		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
+	});
+
+	it("login-init throttles per IP at ADMIN_LOGIN_IP_LIMIT+1 → 429, no state written", async () => {
+		const { app, kv } = ghDeps({});
+		const setSpy = vi.spyOn(kv, "set");
+		let last = new Response();
+		for (let i = 0; i < 16; i++) {
+			last = await app.request("/auth/admin/github", {
+				headers: { "x-real-ip": "9.9.9.9" },
+			});
+		}
+		expect(last.status).toBe(429);
+		// 15 allowed inits each wrote a ghstate; the throttled 16th did not.
+		const stateWrites = setSpy.mock.calls.filter(([k]) =>
+			String(k).startsWith("ghstate:"),
+		);
+		expect(stateWrites.length).toBe(15);
+	});
+
+	it("callback budget is not burned by bad-state requests", async () => {
+		const { app } = ghDeps({});
+		let last = new Response();
+		for (let i = 0; i < 16; i++) {
+			last = await app.request(
+				"/auth/admin/github/callback?code=abc&state=forged",
+			);
+		}
+		// All bad-state hits → 400 BAD_STATE, never 429 (limiter sits after state validation).
+		expect(last.status).toBe(400);
+		expect((await body<{ error: { code: string } }>(last)).error.code).toBe(
+			"BAD_STATE",
+		);
+	});
+
+	it("a valid state cannot be replayed to burn the callback budget", async () => {
+		const { app } = ghDeps({});
+		const start = await app.request("/auth/admin/github");
+		const state = new URL(start.headers.get("location")!).searchParams.get(
+			"state",
+		)!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const first = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(first.status).toBe(302); // consumed the single-use state
+		const replay = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(replay.status).toBe(400); // state already consumed — never reaches limiter
+		expect((await body<{ error: { code: string } }>(replay)).error.code).toBe(
+			"BAD_STATE",
+		);
 	});
 });
 
@@ -608,7 +705,7 @@ it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 		authorizeUrl: (state) => `https://x/authorize?state=${state}`,
 		exchangeCode: vi.fn(async () => "gh-secret"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
-		hasRepoWrite: vi.fn(async () => true),
+		checkRepoWrite: vi.fn(async () => "write" as const),
 		getContent: vi.fn(async () => null),
 		listDir: vi.fn(async () => []),
 		getBranchHead: vi.fn(async () => "headsha"),

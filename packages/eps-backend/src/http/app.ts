@@ -12,6 +12,12 @@ import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import {
+	enforceRateLimit,
+	ADMIN_LOGIN_IP_LIMIT,
+	ADMIN_CALLBACK_IP_LIMIT,
+	RL_WINDOW_SEC,
+} from "./rateLimit";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -91,14 +97,8 @@ export function createApp(deps: Deps): Hono {
 		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipKey = `otp:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
 		const mobKey = `otp:mob:${m}`;
-		const count = await kv.incr(mobKey, OTP_WINDOW_SEC);
-		const ipCount = await kv.incr(ipKey, OTP_WINDOW_SEC);
-		if (count > OTP_START_LIMIT) {
-			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
-		}
-		if (ipCount > OTP_IP_LIMIT) {
-			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
-		}
+		await enforceRateLimit(kv, mobKey, OTP_START_LIMIT, OTP_WINDOW_SEC);
+		await enforceRateLimit(kv, ipKey, OTP_IP_LIMIT, OTP_WINDOW_SEC);
 		await eko.sendOtp({ mobile: m });
 		// generic response — no account enumeration
 		return c.json({ ok: true });
@@ -216,6 +216,13 @@ export function createApp(deps: Deps): Hono {
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {
+			const ip = c.req.header("x-real-ip") ?? "unknown";
+			await enforceRateLimit(
+				kv,
+				`rl:adminlogin:ip:${ip}`,
+				ADMIN_LOGIN_IP_LIMIT,
+				RL_WINDOW_SEC,
+			);
 			const state = crypto.randomUUID();
 			await kv.set(`ghstate:${state}`, "1", STATE_TTL_SEC);
 			setCookie(c, STATE_COOKIE, state, {
@@ -238,6 +245,16 @@ export function createApp(deps: Deps): Hono {
 			const stored = await kv.get(`ghstate:${state}`);
 			if (!stored) throw new AppError(400, "BAD_STATE", "Expired OAuth state");
 			await kv.del(`ghstate:${state}`);
+			// Rate-limit AFTER state validation + single-use consumption: a forged or
+			// replayed state fails the checks above and never reaches here, so it
+			// cannot burn a shared IP's callback budget.
+			const ip = c.req.header("x-real-ip") ?? "unknown";
+			await enforceRateLimit(
+				kv,
+				`rl:admincb:ip:${ip}`,
+				ADMIN_CALLBACK_IP_LIMIT,
+				RL_WINDOW_SEC,
+			);
 
 			const token = await github.exchangeCode(code);
 			if (!token)
@@ -245,8 +262,10 @@ export function createApp(deps: Deps): Hono {
 			const user = await github.getUser(token);
 			if (!user)
 				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
-			const allowed = await github.hasRepoWrite(token, user.login);
-			if (!allowed) {
+			const status = await github.checkRepoWrite(token, user.login);
+			if (status !== "write") {
+				// Grant a session ONLY on confirmed write. no-write and unknown both
+				// block — a non-write GitHub user never receives any session.
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
 			const sid = crypto.randomUUID();

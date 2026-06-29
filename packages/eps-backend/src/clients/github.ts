@@ -11,6 +11,9 @@ export class GitHubApiError extends Error {
 	}
 }
 
+/** Result of a repo-write check: confirmed write, confirmed no write, or could not determine. */
+export type RepoWriteStatus = "write" | "no-write" | "unknown";
+
 /** Builds the standard GitHub API headers for an authenticated request. */
 function ghHeaders(token: string): Record<string, string> {
 	return {
@@ -35,7 +38,7 @@ export interface GitHubClient {
 	authorizeUrl(state: string): string;
 	exchangeCode(code: string): Promise<string | null>;
 	getUser(accessToken: string): Promise<GitHubUser | null>;
-	hasRepoWrite(accessToken: string, login: string): Promise<boolean>;
+	checkRepoWrite(accessToken: string, login: string): Promise<RepoWriteStatus>;
 	getContent(
 		token: string,
 		path: string,
@@ -79,23 +82,20 @@ export function createGitHubClient(
 			return u.toString();
 		},
 		async exchangeCode(code) {
-			const res = await doFetch(
-				"https://github.com/login/oauth/access_token",
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Accept: "application/json",
-						"User-Agent": "eps-backend",
-					},
-					body: JSON.stringify({
-						client_id: cfg.clientId,
-						client_secret: cfg.clientSecret,
-						code,
-						redirect_uri: cfg.callbackUrl,
-					}),
+			const res = await doFetch("https://github.com/login/oauth/access_token", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					"User-Agent": "eps-backend",
 				},
-			);
+				body: JSON.stringify({
+					client_id: cfg.clientId,
+					client_secret: cfg.clientSecret,
+					code,
+					redirect_uri: cfg.callbackUrl,
+				}),
+			});
 			if (!res.ok) return null;
 			try {
 				const json = (await res.json()) as { access_token?: string };
@@ -120,24 +120,37 @@ export function createGitHubClient(
 				return null;
 			}
 		},
-		async hasRepoWrite(accessToken, login) {
-			const res = await doFetch(
-				`https://api.github.com/repos/${cfg.repo}/collaborators/${login}/permission`,
-				{
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-						Accept: "application/vnd.github+json",
-						"User-Agent": "eps-backend",
-					},
-				},
-			);
-			if (!res.ok) return false;
+		async checkRepoWrite(accessToken, login) {
+			let res: Response;
 			try {
-				const json = (await res.json()) as { permission?: string };
-				return json.permission === "write" || json.permission === "admin";
+				res = await doFetch(
+					`https://api.github.com/repos/${cfg.repo}/collaborators/${login}/permission`,
+					{
+						headers: {
+							Authorization: `Bearer ${accessToken}`,
+							Accept: "application/vnd.github+json",
+							"User-Agent": "eps-backend",
+						},
+					},
+				);
 			} catch {
-				return false;
+				return "unknown"; // network error / timeout
 			}
+			if (res.ok) {
+				try {
+					const json = (await res.json()) as { permission?: unknown };
+					if (typeof json.permission !== "string") return "unknown";
+					return json.permission === "write" || json.permission === "admin"
+						? "write"
+						: "no-write";
+				} catch {
+					return "unknown"; // unparseable body
+				}
+			}
+			// non-2xx: 401 (token rejected) and 404 (not a collaborator) are genuine
+			// no-access; 403/429 are GitHub rate-limit/abuse and all else is transient.
+			if (res.status === 401 || res.status === 404) return "no-write";
+			return "unknown";
 		},
 		/** Reads a file's UTF-8 content and blob sha at a ref; null if absent. */
 		async getContent(token, path, ref) {
