@@ -1,4 +1,5 @@
 import type { Config } from "../config";
+import { withTimeout } from "./http";
 
 /** Error thrown by GitHub write methods when the API returns a non-2xx status. */
 export class GitHubApiError extends Error {
@@ -67,6 +68,7 @@ export function createGitHubClient(
 	cfg: Config["github"],
 	fetchImpl: typeof fetch = fetch,
 ): GitHubClient {
+	const doFetch = withTimeout(fetchImpl);
 	return {
 		authorizeUrl(state) {
 			const u = new URL("https://github.com/login/oauth/authorize");
@@ -77,7 +79,7 @@ export function createGitHubClient(
 			return u.toString();
 		},
 		async exchangeCode(code) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				"https://github.com/login/oauth/access_token",
 				{
 					method: "POST",
@@ -103,7 +105,7 @@ export function createGitHubClient(
 			}
 		},
 		async getUser(accessToken) {
-			const res = await fetchImpl("https://api.github.com/user", {
+			const res = await doFetch("https://api.github.com/user", {
 				headers: {
 					Authorization: `Bearer ${accessToken}`,
 					Accept: "application/vnd.github+json",
@@ -119,7 +121,7 @@ export function createGitHubClient(
 			}
 		},
 		async hasRepoWrite(accessToken, login) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/collaborators/${login}/permission`,
 				{
 					headers: {
@@ -139,7 +141,7 @@ export function createGitHubClient(
 		},
 		/** Reads a file's UTF-8 content and blob sha at a ref; null if absent. */
 		async getContent(token, path, ref) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(ref)}`,
 				{ headers: ghHeaders(token) },
 			);
@@ -157,7 +159,7 @@ export function createGitHubClient(
 		},
 		/** Lists a directory at a ref; empty array if the directory is absent. */
 		async listDir(token, path, ref) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/contents/${encPath(path)}?ref=${encodeURIComponent(ref)}`,
 				{ headers: ghHeaders(token) },
 			);
@@ -180,7 +182,7 @@ export function createGitHubClient(
 		},
 		/** Returns the head commit sha of a branch; null if the branch is absent. */
 		async getBranchHead(token, branch) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/git/ref/heads/${encPath(branch)}`,
 				{ headers: ghHeaders(token) },
 			);
@@ -192,7 +194,7 @@ export function createGitHubClient(
 		},
 		/** Creates a new branch ref pointing at fromSha. */
 		async createBranch(token, name, fromSha) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/git/refs`,
 				{
 					method: "POST",
@@ -205,7 +207,7 @@ export function createGitHubClient(
 		},
 		/** Creates or updates a file on a branch (baseSha = the blob sha being replaced). */
 		async putFile(token, args) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/contents/${encPath(args.path)}`,
 				{
 					method: "PUT",
@@ -223,7 +225,7 @@ export function createGitHubClient(
 		},
 		/** Opens a pull request; returns the PR's html_url and number. */
 		async createPullRequest(token, args) {
-			const res = await fetchImpl(
+			const res = await doFetch(
 				`https://api.github.com/repos/${cfg.repo}/pulls`,
 				{
 					method: "POST",

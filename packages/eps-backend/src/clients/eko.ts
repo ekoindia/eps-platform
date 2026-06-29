@@ -1,5 +1,6 @@
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
+import { withTimeout } from "./http";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -29,10 +30,11 @@ export function createEkoClient(
 	fetchImpl: typeof fetch = fetch,
 ): EkoClient {
 	const url = `${cfg.scheme}://${cfg.host}:${cfg.port}${cfg.path}`;
+	const doFetch = withTimeout(fetchImpl);
 
 	async function post(fields: Record<string, string>): Promise<unknown> {
 		const body = new URLSearchParams(fields).toString();
-		const res = await fetchImpl(url, {
+		const res = await doFetch(url, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/x-www-form-urlencoded",
