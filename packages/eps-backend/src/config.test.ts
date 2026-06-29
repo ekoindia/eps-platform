@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { loadConfig } from "./config";
 
@@ -82,4 +83,49 @@ describe("loadConfig", () => {
 		expect(over.github.editBase).toBe("staging");
 		expect(over.github.prodBase).toBe("release");
 	});
+});
+
+const baseEnv = {
+	JWT_SECRET: "x".repeat(32),
+	SIMPLIBANK_API_HOST: "h",
+	SIMPLIBANK_API_PORT: "1",
+	SIMPLIBANK_API_PATH: "/p",
+	EKO_DEVELOPER_KEY: "k",
+	GITHUB_CLIENT_ID: "g",
+	GITHUB_CLIENT_SECRET: "s",
+	GITHUB_CALLBACK_URL: "https://x/cb",
+	GITHUB_REPO: "o/r",
+};
+
+it("defaults to no redis and reject-unauthorized true", () => {
+	const cfg = loadConfig({ ...baseEnv });
+	expect(cfg.redisUrl).toBeUndefined();
+	expect(cfg.redisTlsRejectUnauthorized).toBe(true);
+});
+
+it("requires KV_ENCRYPTION_KEY when REDIS_URL is set", () => {
+	expect(() => loadConfig({ ...baseEnv, REDIS_URL: "redis://r:6379" })).toThrow(
+		/KV_ENCRYPTION_KEY/,
+	);
+});
+
+it("rejects a KV_ENCRYPTION_KEY that is not 32 bytes", () => {
+	expect(() =>
+		loadConfig({
+			...baseEnv,
+			REDIS_URL: "redis://r:6379",
+			KV_ENCRYPTION_KEY: randomBytes(16).toString("base64"),
+		}),
+	).toThrow(/32 bytes/);
+});
+
+it("accepts a valid REDIS_URL + 32-byte key and TLS opt-out", () => {
+	const cfg = loadConfig({
+		...baseEnv,
+		REDIS_URL: "rediss://r:6379",
+		KV_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
+		REDIS_TLS_REJECT_UNAUTHORIZED: "false",
+	});
+	expect(cfg.redisUrl).toBe("rediss://r:6379");
+	expect(cfg.redisTlsRejectUnauthorized).toBe(false);
 });
