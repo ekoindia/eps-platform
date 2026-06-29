@@ -22,6 +22,19 @@ describe("docker-compose.prod.yml", () => {
 		const c = compose();
 		expect(c).toMatch(/eps-internal:\s*\n\s*internal:\s*true/);
 		expect(c).toContain("eps-egress");
+		// redis must be reachable ONLY on the internal network, never egress
+		const redisBlock = c.slice(
+			c.indexOf("  redis:"),
+			c.indexOf("  eps-backend:"),
+		);
+		expect(redisBlock).toContain("eps-internal");
+		expect(redisBlock).not.toContain("eps-egress");
+	});
+	it("does not interpolate POLLER_ALERT_WEBHOOK in compose (it comes from .env)", () => {
+		expect(compose()).not.toContain("${POLLER_ALERT_WEBHOOK");
+	});
+	it("caps rotated log files", () => {
+		expect(compose()).toContain('max-file: "5"');
 	});
 	it("rotates logs and restarts services", () => {
 		const c = compose();
