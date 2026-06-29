@@ -138,6 +138,38 @@ Two additional environment variables control the GitOps flow:
 | `GITHUB_EDIT_BASE` | `dev` | Base branch for edit PRs. |
 | `GITHUB_PROD_BASE` | `main` | Target branch for deploy PRs. |
 
+### Security: authorization freshness & rate limiting
+
+**Live repo-write re-check.** Admin write endpoints (`POST /admin/docs/propose`,
+`POST /admin/deploy/production`) re-verify the acting admin's GitHub repo-write
+access **on every call**, immediately before the mutation — not just at login.
+A revoked collaborator is blocked on their next attempt. Outcomes:
+
+- write access confirmed → proceeds.
+- write access revoked → `403 WRITE_ACCESS_REVOKED` ("sign in again").
+- GitHub unreachable / rate-limited / 5xx → `503 UPSTREAM_UNAVAILABLE` (the
+  check fails closed; a GitHub secondary-rate-limit is reported as transient,
+  never as a revocation).
+
+Admin login itself grants a session **only** on confirmed write access; a
+GitHub user without repo write receives `403 NOT_AUTHORIZED` and no session.
+
+**Rate limits** (fixed 10-minute window):
+
+| Endpoint                              | Scope                            | Limit / 10 min |
+| ------------------------------------- | -------------------------------- | -------------- |
+| `GET /auth/admin/github` (login init) | per client IP                    | 15             |
+| `GET /auth/admin/github/callback`     | per client IP (valid-state only) | 15             |
+| `POST /admin/docs/propose`            | per admin login                  | 30             |
+| `POST /admin/deploy/production`       | per admin login                  | 10             |
+| `POST /auth/otp/start`                | per mobile / per IP              | 5 / 20         |
+
+Exceeding a limit returns `429 RATE_LIMITED`. If the rate-limit store (Redis)
+is unreachable the request fails closed with `503 RATE_LIMIT_UNAVAILABLE`.
+Per-IP limits trust the `x-real-ip` header, which the reverse proxy must
+set/overwrite. The callback limiter runs after single-use OAuth-state
+consumption, so a forged or replayed state cannot exhaust a shared IP's budget.
+
 ## Production deploy (pull-based, private VM)
 
 The production stack runs on a single private VM under `docker-compose.prod.yml`.
