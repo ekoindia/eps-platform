@@ -50,7 +50,7 @@ describe("docker-compose.prod.yml", () => {
 	it("gives the poller GHCR credentials for skopeo (private package)", () => {
 		const c = compose();
 		expect(c).toContain("REGISTRY_AUTH_FILE: /root/.docker/config.json");
-		expect(c).toContain("/root/.docker/config.json:ro");
+		expect(c).toContain("./.ghcr-auth.json:/root/.docker/config.json:ro");
 	});
 });
 

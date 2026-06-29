@@ -127,6 +127,14 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 	[ -f "$SHIM_STATE/last_good" ] && ok "main oneshot performs one reconcile" || no "main oneshot" "no reconcile"
 )
 
+# --- Task 4 case: consecutive remote_digest failure alerting ---
+( setup; seed_deploy; export SHIM_SKOPEO_FAIL=1 REMOTE_FAIL_ALERT_THRESHOLD=2 POLLER_ALERT_WEBHOOK=http://hook; load
+	reconcile_once   # fail 1 — counter=1, below threshold
+	grep -q "http://hook" "$SHIM_STATE/calls.log" && no "no alert before threshold" "alerted early" || ok "no alert before threshold"
+	reconcile_once   # fail 2 — counter=2 = threshold → alert fires
+	grep -q "http://hook" "$SHIM_STATE/calls.log" && ok "alert at consecutive-fail threshold" || no "alert at consecutive-fail threshold" "no webhook"
+)
+
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---
 PASS="$(grep -c '^ok' "$RESULTS" || true)"
 FAIL="$(grep -c '^no' "$RESULTS" || true)"

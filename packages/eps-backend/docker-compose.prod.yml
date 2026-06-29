@@ -67,7 +67,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./:/deploy
       - eps-poller-state:/state
-      - ${HOME}/.docker/config.json:/root/.docker/config.json:ro
+      - ./.ghcr-auth.json:/root/.docker/config.json:ro
     networks:
       - eps-internal
       - eps-egress

@@ -15,6 +15,7 @@ set -euo pipefail
 : "${DEPLOY_ENV_FILE:=/deploy/deploy.env}"
 : "${STATE_DIR:=/state}"
 : "${POLLER_ALERT_WEBHOOK:=}"
+: "${REMOTE_FAIL_ALERT_THRESHOLD:=5}"
 
 # The ONE invariant compose invocation (see Global Constraints).
 dc() {
@@ -123,8 +124,17 @@ deploy_image() {
 # One full decide-and-act pass. Always rc 0; outcomes via side effects.
 reconcile_once() {
 	if is_hold; then log "HOLD set ($(cat "$(hold_path)" 2>/dev/null)); skipping"; return 0; fi
-	local remote running prev cid rcid
-	remote="$(remote_digest)" || { log "skopeo failed; skip tick"; return 0; }
+	local remote running prev cid rcid n
+	if ! remote="$(remote_digest)"; then
+		n=$(( $(cat "$STATE_DIR/remote_fail_count" 2>/dev/null || printf '0') + 1 ))
+		printf '%s\n' "$n" >"$STATE_DIR/remote_fail_count"
+		if [ "$n" -eq "$REMOTE_FAIL_ALERT_THRESHOLD" ]; then
+			alert WARN "remote_digest failing $n consecutive ticks — registry auth/connectivity?"
+		fi
+		log "skopeo failed; skip tick"
+		return 0
+	fi
+	: >"$STATE_DIR/remote_fail_count"
 	[ -n "$remote" ] || { log "empty remote digest; skip"; return 0; }
 	running="$(running_repo_digest)" || { log "running_repo_digest failed; skip tick"; return 0; }
 	[ "$remote" = "$running" ] && return 0

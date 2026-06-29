@@ -54,7 +54,7 @@ invariant compose command can find the file:
 Ownership and permissions: the files need to be readable by the user running
 Docker. On most setups `root` or a `docker` group member is fine.
 
-### Step 4 — Log in to GHCR
+### Step 4 — Log in to GHCR and create the authfile
 
 The `ghcr.io/ekoindia/eps-backend` image is private. The user running Docker
 must authenticate before the poller can pull:
@@ -62,21 +62,27 @@ must authenticate before the poller can pull:
 	docker login ghcr.io
 
 Use a GitHub Personal Access Token (PAT) with `read:packages` scope as the
-password, or a machine account token. The credentials are written to
-`~/.docker/config.json`.
+password, or a machine account token.
 
-The poller container authenticates to the private registry for skopeo digest
-checks by mounting the host's `~/.docker/config.json` read-only into the
-container at `/root/.docker/config.json` and setting `REGISTRY_AUTH_FILE`
-to that path. The `docker compose pull` path goes through the Docker socket
-and already uses the host daemon's auth context.
+After logging in, create a deterministic authfile at `/deploy/.ghcr-auth.json`.
+The poller mounts this path rather than `~/.docker/config.json`, which is empty
+under `sudo` without `-H` or in systemd units where `$HOME` is unset:
 
-**Important:** `docker login` must store a plain base64 token directly in
-`config.json`. If a credential helper (`credStore` or `credHelpers`) is
-configured, `config.json` contains no `auth` entry and the mounted file is
-useless to skopeo. Run `docker login ghcr.io` on the VM and confirm that
-`~/.docker/config.json` contains an `"auths"` entry with an `"auth"` field
-for `ghcr.io`.
+	cp ~/.docker/config.json /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
+
+**credStore caveat:** if `docker login` used a credential helper, `config.json`
+contains a `credStore` key but no inline `auth` token — the copy above will not
+contain any credentials and skopeo will get a 401. In that case, create the
+authfile explicitly with an inline base64 token:
+
+	printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' \
+	  "$(printf '%s:%s' "$GHCR_USER" "$GHCR_PAT" | base64 -w0)" \
+	  > /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
+
+The poller mounts `/deploy/.ghcr-auth.json` read-only at
+`/root/.docker/config.json` inside the container and sets `REGISTRY_AUTH_FILE`
+to that path. The `docker compose pull` path goes through the Docker socket and
+already uses the host daemon's auth context.
 
 ### Step 5 — Create `/deploy/.env` with production secrets
 
@@ -108,7 +114,21 @@ Verify it looks like:
 
 	EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<64 hex chars>
 
-### Step 7 — Bring up the stack
+### Step 7 — Smoke-test in-container auth
+
+Before starting the full stack, confirm that the authfile works for skopeo
+inside the poller container. This catches credStore/empty-token problems before
+they cause silent failures in the live pipeline:
+
+	docker compose -p eps-backend --project-directory /deploy \
+	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
+	  run --rm poller skopeo inspect docker://ghcr.io/ekoindia/eps-backend:prod
+
+This must print a manifest (containing a `Digest:` field). A `401` /
+"authentication required" error means the authfile has no valid token — fix it
+(see the credStore caveat in Step 4) before proceeding.
+
+### Step 8 — Bring up the stack
 
 	docker compose -p eps-backend --project-directory /deploy \
 	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d
@@ -153,9 +173,19 @@ will show `(healthy)` once the healthcheck passes). The backend is reachable at
 ## Manual rollback
 
 Use this procedure to pin the stack to any previously published digest,
-bypassing the poller's automatic selection.
+bypassing the poller's automatic selection. Follow the steps in order — HOLD
+must come FIRST. Manual rollback is used when a bad image passed `/readyz` but
+is functionally broken: `:prod` still points at the bad digest, so within one
+poll interval the poller would re-detect the remote tag and redeploy the bad
+image, clobbering the rollback.
 
-**1. Find the target digest.**
+**1. Set HOLD to pause the poller.**
+
+	docker run --rm \
+	  -v eps-backend_eps-poller-state:/state \
+	  busybox sh -c 'echo "manual rollback" > /state/HOLD'
+
+**2. Find the target digest.**
 
 The last automatically verified digest is in the poller state volume:
 
@@ -166,7 +196,7 @@ The last automatically verified digest is in the poller state volume:
 For an older digest, check the GHCR package history or your deploy logs for a
 `sha256:` string.
 
-**2. Overwrite `deploy.env` with the target image reference.**
+**3. Write the known-good digest to `/deploy/deploy.env`.**
 
 	printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' \
 	  "sha256:<64-hex-digest>" > /deploy/deploy.env
@@ -176,7 +206,7 @@ prefix — e.g. `sha256:abc123…` (64 hex characters after the colon). The
 `@sha256:` separator is mandatory; the complete image reference must be of the
 form `ghcr.io/ekoindia/eps-backend@sha256:<64 hex>`.
 
-**3. Apply with the invariant compose command.**
+**4. Recreate the backend with the invariant compose command.**
 
 	docker compose -p eps-backend --project-directory /deploy \
 	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
@@ -184,24 +214,21 @@ form `ghcr.io/ekoindia/eps-backend@sha256:<64 hex>`.
 
 Only `eps-backend` is recreated; `redis` and `poller` are left running.
 
-**4. Verify.**
+**5. Verify.**
 
 	curl -f http://127.0.0.1:8787/healthz && echo OK
+	curl -f http://127.0.0.1:8787/readyz  && echo READY
 
 `/healthz` is a liveness check. `/readyz` additionally checks Redis and is
 what the poller gates on before recording a deploy as successful.
 
-**5. Block future auto-deploys while investigating (optional).**
+**6. Leave HOLD in place until a corrected image is published to `:prod`.**
 
-The poller will detect the next `:prod` update and attempt to deploy it (which
-may re-introduce the bad image). If you need to hold the rollback in place
-while investigating, set HOLD manually:
-
-	docker run --rm \
-	  -v eps-backend_eps-poller-state:/state \
-	  busybox sh -c 'echo "manual hold" > /state/HOLD'
-
-See [Clearing HOLD](#clearing-hold) when ready to resume normal operation.
+Do **not** clear HOLD while `:prod` still points at the bad digest — doing so
+will let the poller re-detect the unchanged remote tag and redeploy the bad
+image. Only remove HOLD after a fix has been merged to `main` and CI has moved
+`:prod` to a good digest. See [Clearing HOLD](#clearing-hold) for the removal
+command and its safety note.
 
 ---
 
@@ -221,6 +248,10 @@ takes no action.
   Inspect the container logs, fix the image or configuration, then clear HOLD.
 - **Failed rollback:** The rollback image also failed the health gate. Both the
   new and old images are suspect. Investigate both before clearing HOLD.
+- **Manual rollback:** HOLD was set manually during a [manual rollback](#manual-rollback).
+  Do **not** clear HOLD while `:prod` still points at the bad image — doing so will
+  let the poller redeploy it. Only clear HOLD after a fix has been merged to `main`
+  and CI has moved `:prod` to a good digest.
 
 **To clear HOLD and resume automatic deploys:**
 
