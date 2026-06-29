@@ -11,8 +11,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Header } from "@/components/Header";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
 import { Suspense } from "react";
 import { HelmetProvider } from "react-helmet-async";
@@ -55,6 +55,8 @@ import AiPage from "./pages/AiPage";
 // Developer Docs
 import DocsIndexPage from "./pages/docs/DocsIndexPage";
 import DocDetailPage from "./pages/docs/DocDetailPage";
+import Console from "./pages/Console";
+import Admin from "./pages/Admin";
 
 function TrackingParamCapture() {
 	useCaptureTrackingParams();
@@ -69,74 +71,82 @@ const AppServer = ({
 	<HelmetProvider context={helmetContext}>
 		<DefaultMeta />
 		<TooltipProvider>
-			<Toaster />
 			<Sonner />
 			<TrackingParamCapture />
 			<ScrollToTop />
-			<Header />
-			<ErrorBoundary>
-				<AnimatedRoutes>
-					{/* Mirrors the <Suspense> in App.tsx so server and client trees
+			<AuthProvider>
+				<Header />
+				<ErrorBoundary>
+					<AnimatedRoutes>
+						{/* Mirrors the <Suspense> in App.tsx so server and client trees
               match during hydration. Pages are eager here, so this boundary
               never actually suspends during renderToString. */}
-					<Suspense fallback={null}>
-						<Routes>
-							<Route path="/" element={<Index />} />
+						<Suspense fallback={null}>
+							<Routes>
+								<Route path="/" element={<Index />} />
 
-							{/* Eko Shield (specific routes before :slug wildcard) */}
-							{/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
+								{/* Eko Shield (specific routes before :slug wildcard) */}
+								{/* <Route path="/products/eko-shield" element={<EkoShieldPage />} /> */}
 
-							{/* Product API Pages */}
-							<Route path="/products" element={<ProductsPage />} />
-							<Route path="/products/:slug" element={<ProductDetailPage />} />
+								{/* Product API Pages */}
+								<Route path="/products" element={<ProductsPage />} />
+								<Route path="/products/:slug" element={<ProductDetailPage />} />
 
-							{/* Industry & Solution Pages */}
-							<Route path="/use-cases" element={<UseCasesHubPage />} />
-							<Route path="/industries" element={<IndustriesPage />} />
-							<Route
-								path="/industries/:slug"
-								element={<IndustryDetailPage />}
-							/>
-							<Route path="/solutions" element={<SolutionsPage />} />
-							<Route path="/solutions/:slug" element={<SolutionDetailPage />} />
+								{/* Industry & Solution Pages */}
+								<Route path="/use-cases" element={<UseCasesHubPage />} />
+								<Route path="/industries" element={<IndustriesPage />} />
+								<Route
+									path="/industries/:slug"
+									element={<IndustryDetailPage />}
+								/>
+								<Route path="/solutions" element={<SolutionsPage />} />
+								<Route
+									path="/solutions/:slug"
+									element={<SolutionDetailPage />}
+								/>
 
-							{/* Pricing */}
-							<Route path="/pricing" element={<PricingPage />} />
+								{/* Pricing */}
+								<Route path="/pricing" element={<PricingPage />} />
 
-							{/* FAQ */}
-							<Route path="/faq" element={<FaqPage />} />
+								{/* FAQ */}
+								<Route path="/faq" element={<FaqPage />} />
 
-							{/* AI Agents */}
-							<Route path="/ai" element={<AiPage />} />
+								{/* AI Agents */}
+								<Route path="/ai" element={<AiPage />} />
 
-							{/* Developer Docs */}
-							<Route path="/docs" element={<DocsIndexPage />} />
-							<Route path="/docs/:slug" element={<DocDetailPage />} />
+								{/* Developer Docs */}
+								<Route path="/docs" element={<DocsIndexPage />} />
+								<Route path="/docs/:slug" element={<DocDetailPage />} />
 
-							{/* Company & Legal Pages */}
-							<Route path="/about-us" element={<AboutPage />} />
-							<Route path="/blogs-media" element={<BlogsMediaPage />} />
-							{/* Redirects for old routes */}
-							<Route
-								path="/blog"
-								element={<Navigate to="/blogs-media" replace />}
-							/>
-							<Route
-								path="/press"
-								element={<Navigate to="/blogs-media" replace />}
-							/>
-							<Route path="/tnc" element={<TermsPage />} />
-							<Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-							<Route path="/refund-policy" element={<RefundPolicyPage />} />
-							<Route path="/grievance" element={<GrievancePage />} />
-							<Route path="/signup" element={<SignupPage />} />
+								{/* Company & Legal Pages */}
+								<Route path="/about-us" element={<AboutPage />} />
+								<Route path="/blogs-media" element={<BlogsMediaPage />} />
+								{/* Redirects for old routes */}
+								<Route
+									path="/blog"
+									element={<Navigate to="/blogs-media" replace />}
+								/>
+								<Route
+									path="/press"
+									element={<Navigate to="/blogs-media" replace />}
+								/>
+								<Route path="/tnc" element={<TermsPage />} />
+								<Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+								<Route path="/refund-policy" element={<RefundPolicyPage />} />
+								<Route path="/grievance" element={<GrievancePage />} />
+								<Route path="/signup" element={<SignupPage />} />
 
-							{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-							<Route path="*" element={<NotFound />} />
-						</Routes>
-					</Suspense>
-				</AnimatedRoutes>
-			</ErrorBoundary>
+								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
+								<Route path="/console" element={<Console />} />
+								<Route path="/admin" element={<Admin />} />
+
+								{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+								<Route path="*" element={<NotFound />} />
+							</Routes>
+						</Suspense>
+					</AnimatedRoutes>
+				</ErrorBoundary>
+			</AuthProvider>
 		</TooltipProvider>
 	</HelmetProvider>
 );

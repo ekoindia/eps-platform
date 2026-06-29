@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { TDS_RATE, type EarningsQuote } from "@/lib/data/payments-pricing";
 import { formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -29,15 +29,14 @@ export const EarningsSummary = ({
 	quote,
 	onQuickAdd,
 }: EarningsSummaryProps) => {
-	const { toast } = useToast();
 	const isEmpty = quote.lines.length === 0;
 
 	const copyShareLink = async () => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
-			toast({ description: "Estimate link copied to clipboard" });
+			toast.success("Estimate link copied to clipboard");
 		} catch {
-			toast({ description: "Could not copy link", variant: "destructive" });
+			toast.error("Could not copy link");
 		}
 	};
 

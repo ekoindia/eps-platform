@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { API_DEFAULT_VERSION } from "@/lib/config/site";
-import { ApiProductRelevance } from "@/lib/data/api-products";
+import type { ApiProductRelevance } from "@/lib/data/api-products";
 import { docHrefForSlug } from "@/lib/data/docs-registry";
 import { cn, normalizeApiLabel } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CheckCircle, Clock, Download, Send } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ReactElement, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export interface ApiField {
@@ -58,7 +58,7 @@ interface ApiInputOutputPreviewProps {
 const JsonHighlight = ({ json }: { json: Record<string, unknown> }) => {
 	const indent = (depth: number) => "  ".repeat(depth);
 
-	const renderValue = (value: unknown, depth: number): JSX.Element => {
+	const renderValue = (value: unknown, depth: number): ReactElement => {
 		if (value === null) return <span className="text-sky-400">null</span>;
 		if (typeof value === "string")
 			return <span className="text-emerald-400">"{value}"</span>;

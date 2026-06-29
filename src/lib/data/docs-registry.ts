@@ -315,6 +315,29 @@ const buildProductChildren = (
 };
 
 /**
+ * The next documented endpoint within the same product + provider + group as
+ * `spec`, in nav order (relevance-sorted, file-order ties) — i.e. the spec that
+ * follows it in the sidebar's group. Returns `undefined` when `spec` is the last
+ * in its group (or isn't documented). `-status` pollers are excluded so the
+ * "Next" pager matches what the reader sees in the nav.
+ *
+ * Sibling set = identical `(productId, provider, group)` tuple, so untagged
+ * specs (no provider/group) form one flat group under their product.
+ */
+export const nextEndpointInGroup = (spec: ApiSpec): ApiSpec | undefined => {
+	const siblings = documentedSpecsForProduct(spec.productId)
+		.filter(
+			(s) =>
+				!isStatusSpec(s) &&
+				s.provider === spec.provider &&
+				s.group === spec.group,
+		)
+		.sort(byRelevance);
+	const idx = siblings.findIndex((s) => s.id === spec.id);
+	return idx === -1 ? undefined : siblings[idx + 1];
+};
+
+/**
  * Provider›group›api nav nodes for a single product, built from `specs`
  * (defaulting to the product's documented specs). `-status` pollers are
  * dropped; leaves whose slug has no docs page degrade to plain text when the

@@ -45,9 +45,12 @@ export function prerenderPlugin(): Plugin {
 				appType: "custom",
 				optimizeDeps: { noDiscovery: true, include: [] },
 				resolve: { alias: resolvedConfig.resolve.alias },
-				// Force CJS packages through Vite's transform so named imports work
+				// react-helmet-async still needs Vite's SSR transform for named
+				// imports. react-router v7 ships CJS for Node.js — leave it to
+				// Node's native loader so the module.exports wrapper isn't
+				// evaluated as ESM.
 				ssr: {
-					noExternal: ["react-helmet-async", "react-router-dom"],
+					noExternal: ["react-helmet-async"],
 				},
 			});
 

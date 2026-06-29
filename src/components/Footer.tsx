@@ -1,5 +1,7 @@
 import { EkoLogo } from "@/components/EkoLogo";
 import { XIcon } from "@/components/icons/XIcon";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { GITHUB_ORG_URL, SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
 import { Mail, MapPin, Phone } from "lucide-react";
@@ -167,6 +169,17 @@ const socialLinks = [
 ];
 
 export const Footer = () => {
+	const { state } = useAuth();
+	const developersLinks: FooterLinkItem[] = SHOW_USER_LOGIN
+		? [
+				...footerLinks.developers,
+				{
+					label: state.status === "authed" ? "Console" : "Log in",
+					href: "/console",
+					internal: true,
+				},
+			]
+		: footerLinks.developers;
 	return (
 		<footer className="bg-eko-navy text-white">
 			{/* Main Footer */}
@@ -246,7 +259,7 @@ export const Footer = () => {
 
 					<FooterColumn title="Industries" links={footerLinks.industries} />
 
-					<FooterColumn title="Developers" links={footerLinks.developers} />
+					<FooterColumn title="Developers" links={developersLinks} />
 
 					<FooterColumn title="Legal" links={footerLinks.legal} />
 

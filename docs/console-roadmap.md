@@ -1,0 +1,109 @@
+# Developer Console — Feature Roadmap
+
+Future features for the logged-in developer `/console`. Derived from Mobbin
+research (Stripe, Vercel, Cohere, OpenAI, WorkOS, Klaviyo, ElevenLabs, Exa,
+PandaDoc, Clerk, Coinbase) benchmarked against the current console.
+
+Status today: `/console` is a thin lifecycle gate (login → state-aware card).
+The UX polish landed (skeletons, empty states, success cards). The features
+below turn it into a real developer platform.
+
+Complexity: **S** ≈ frontend-only / static · **M** ≈ needs a backend endpoint ·
+**L** ≈ needs a new backend subsystem (telemetry, billing, etc.).
+
+---
+
+## P0 — Table stakes
+
+### API keys management — **M**
+View, one-time reveal, copy, and revoke UAT + production keys. Table:
+Name / masked key / created / last used / actions. Blocked on the Eko
+credential-issuance API contract (see the eps-backend roadmap). UI is a
+`Table` + `Dialog` (both present). The core reason a developer logs in.
+_Pattern: Cohere, OpenAI, WorkOS API keys._
+
+### Environment toggle (UAT / Production) — **S**
+Persistent `Tabs` at the console top level that scopes all credentials and
+logs to the selected environment; defaults to UAT. Without it, developers
+can't tell which key/data they're viewing. Frontend-only state.
+_Pattern: WorkOS Staging/Production tab._
+
+---
+
+## P1 — Core value after first login
+
+### Onboarding / setup checklist — **S**
+Numbered, checkable steps: generate UAT key → first API call → test a
+settlement → request production access. Persist to localStorage (later
+backend). Gives every new developer a path from login to first call.
+_Pattern: Vercel production checklist, PandaDoc quick start._
+
+### Integration docs quick-links — **S**
+Card grid linking into EPS docs: auth guide, Connect API reference, test your
+integration, go-live checklist. Keeps developers in flow (no context switch).
+_Pattern: ElevenLabs quick links, Exa get-started strip._
+
+### Webhook configuration — **M**
+Register HTTPS endpoints for settlement events; "send test event" button.
+EPS is a payments API — event-driven integration is the primary pattern for
+partners. `Table` + `Dialog` form; needs a backend registration endpoint.
+_Pattern: PandaDoc webhooks, Klaviyo webhook events._
+
+### API usage / request metrics — **L**
+Calls, error rate, per-endpoint counts over 7/30 days; sparkline or CSS bar.
+First signal an integration works or is broken. Needs a telemetry pipeline.
+_Pattern: Klaviyo developer tools, Exa usage strip._
+
+---
+
+## P2 — Account maturity & enterprise
+
+### Profile & account settings — **S**
+Name, contact email, linked mobile, "sign out all sessions". Basic hygiene;
+there is no in-console way to manage the account today.
+_Pattern: Vercel account settings._
+
+### Team / members management — **M**
+Invite colleagues by mobile/email, assign roles (viewer / developer), remove
+members. EPS partners (banks, fintechs) have multiple developers needing
+access. Needs a backend invite/role model.
+_Pattern: Cohere team, WorkOS users._
+
+### Support / escalation shortcut — **S**
+In-console "Contact support" that pre-fills `/grievance` with session context
+(account id, lifecycle state). Today `/grievance` carries no context.
+_Pattern: Vercel feedback link._
+
+### Audit log — **M**
+Timestamped key issuances, revocations, propose/deploy events, logins. For
+compliance + incident debugging. Date-sorted `Table`; needs backend events.
+Aligns with the eps-backend Production-Hardening audit-log work.
+_Pattern: WorkOS audit logs._
+
+### Billing / plan overview — **L**
+Plan, quota, quota consumed, billing contact, upgrade link. Partners track
+consumption against contract. Needs billing-system integration.
+_Pattern: Cohere billing & usage, WorkOS billing._
+
+### Sandbox / API playground — **L**
+Interactive endpoint explorer pre-authenticated with the UAT key. Reduces
+time-to-first-call. Could start as an embedded Scalar instance scoped to the
+developer's UAT key (small dep surface). Today this lives only in `/docs`
+behind a CORS proxy — the console should own it.
+_Pattern: Exa playground, OpenAI platform playground._
+
+---
+
+## Login polish backlog (LoginForm)
+
+- **Segmented OTP boxes — M.** Six auto-advancing single-digit inputs with
+  auto-submit at 6 digits (~35 lines, no new dep). _Pattern: Coinbase, Clerk,
+  Upwork._ Current form uses a single OTP input (masked-number echo, resend
+  cooldown, change-number, maxLength + autofocus already shipped).
+
+## Admin console polish backlog
+
+- **Cross-doc unsaved-changes guard.** Editor remounts per doc via `key=`, so
+  switching docs silently discards edits. A true guard needs dirty state lifted
+  to `AdminConsole` + a confirm before switching. (Intra-doc "Unsaved changes"
+  badge already shipped.)

@@ -13,13 +13,17 @@
 useDefault = true
 
 # Generated / baked outputs (regenerated from src/lib/data, never hand-edited) and
-# local-only dev env (gitignored; contains the developer's own sandbox creds).
+# env templates / local-only dev env. `.env.example` is a committed template with
+# placeholder (often empty) values — the generic-api-key rule trips on key NAMES
+# like `EKO_DEVELOPER_KEY=` even with no value. `.env.local` is gitignored and holds
+# the developer's own sandbox creds. Neither is a source of real production secrets.
 [[allowlists]]
-description = "EPS generated/baked artifacts and local env files"
+description = "EPS generated/baked artifacts and env templates / local env files"
 paths = [
   '''^dist/''',
   '''^ds-bundle/''',
   '''^packages/[^/]+/data/''',
+  '''(^|/)\.env\.example$''',
   '''(^|/)\.env\.local$''',
 ]
 
