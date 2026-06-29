@@ -11,7 +11,13 @@ import { buildMeView } from "../identity/me";
 import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
+import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 
+/**
+ * Top-level dependencies for the EPS BFF application.
+ * All optional fields have safe defaults so test harnesses only need to
+ * supply what they exercise.
+ */
 export interface Deps {
 	cfg: Config;
 	eko: EkoClient;
@@ -19,6 +25,8 @@ export interface Deps {
 	sessions: Sessions;
 	kv: KV;
 	github?: GitHubClient;
+	secretbox?: SecretBox;
+	readiness?: () => Promise<boolean>; // Task 7
 }
 
 const OTP_START_LIMIT = 5;
@@ -43,6 +51,7 @@ function normalizeMobile(raw: string): string {
 
 export function createApp(deps: Deps): Hono {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
+	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const app = new Hono();
 
 	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
@@ -236,7 +245,12 @@ export function createApp(deps: Deps): Hono {
 			};
 			// Persist the admin's OAuth token server-side, keyed by the stable
 			// session id, so the GitOps console can author commits as this admin.
-			await kv.set(`ghtoken:${sid}`, token, cfg.adminRefreshTtlSec);
+			// Encrypted at rest via the injected SecretBox (AES-256-GCM in prod).
+			await kv.set(
+				`ghtoken:${sid}`,
+				secretbox.encrypt(token),
+				cfg.adminRefreshTtlSec,
+			);
 			const access = await sessions.mintAccess(claim);
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
@@ -248,7 +262,7 @@ export function createApp(deps: Deps): Hono {
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		mountAdmin(app, { cfg, sessions, kv, github });
+		mountAdmin(app, { cfg, sessions, kv, github, secretbox });
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));

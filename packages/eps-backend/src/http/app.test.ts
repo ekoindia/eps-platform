@@ -6,6 +6,8 @@ import { createSessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
 import type { GitHubClient } from "../clients/github";
+import { createSecretBox } from "../store/secretbox";
+import { randomBytes } from "node:crypto";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -496,4 +498,57 @@ describe("not found", () => {
 		const b = await body<{ error: { code: string } }>(res);
 		expect(b.error.code).toBe("NOT_FOUND");
 	});
+});
+
+it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
+	const secretbox = createSecretBox(randomBytes(32).toString("base64"));
+	const base = deps();
+	const github: GitHubClient = {
+		authorizeUrl: (state) => `https://x/authorize?state=${state}`,
+		exchangeCode: vi.fn(async () => "gh-secret"),
+		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
+		hasRepoWrite: vi.fn(async () => true),
+		getContent: vi.fn(async () => null),
+		listDir: vi.fn(async () => []),
+		getBranchHead: vi.fn(async () => "headsha"),
+		createBranch: vi.fn(async () => undefined),
+		putFile: vi.fn(async () => undefined),
+		createPullRequest: vi.fn(async () => ({
+			url: "https://gh/pr/1",
+			number: 1,
+		})),
+	};
+	const kv = createInMemoryKV();
+	const setSpy = vi.spyOn(kv, "set");
+	const sessions = createSessions(cfg, kv, { secretbox });
+	const app = createApp({
+		cfg,
+		eko: base.eko,
+		zoho: base.zoho,
+		sessions,
+		kv,
+		github,
+		secretbox,
+	});
+	const start = await app.request("/auth/admin/github");
+	const state = new URL(start.headers.get("location")!).searchParams.get(
+		"state",
+	)!;
+	const stateCookie = (start.headers.getSetCookie?.() ?? [])
+		.map((c) => c.split(";")[0])
+		.join("; ");
+	const cb = await app.request(
+		`/auth/admin/github/callback?code=abc&state=${state}`,
+		{
+			headers: { cookie: stateCookie },
+		},
+	);
+	expect(cb.status).toBe(302);
+	// The ghtoken:* set call stored ciphertext, never the raw token.
+	const ghSet = setSpy.mock.calls.find(([k]) =>
+		String(k).startsWith("ghtoken:"),
+	);
+	expect(ghSet).toBeTruthy();
+	expect(ghSet![1]).not.toBe("gh-secret");
+	expect(secretbox.decrypt(ghSet![1] as string)).toBe("gh-secret");
 });

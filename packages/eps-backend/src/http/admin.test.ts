@@ -6,6 +6,8 @@ import { createInMemoryKV } from "../store/kv";
 import { createSessions } from "../auth/session";
 import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
+import { createSecretBox } from "../store/secretbox";
+import { randomBytes } from "node:crypto";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -230,4 +232,49 @@ describe("admin CSRF origin check", () => {
 			"BAD_ORIGIN",
 		);
 	});
+});
+
+// Builds an app+admin with github + a REAL secretbox, returning the pieces.
+function encHarness(github = ghMock()) {
+	const secretbox = createSecretBox(randomBytes(32).toString("base64"));
+	const kv = createInMemoryKV();
+	const sessions = createSessions(cfg, kv, { secretbox });
+	const app = new Hono();
+	app.onError((err, c) =>
+		err instanceof AppError
+			? c.json(errorBody(err.code, err.message), err.status as 400)
+			: c.json(errorBody("UPSTREAM_ERROR", "x"), 502),
+	);
+	mountAdmin(app, { cfg, sessions, kv, github, secretbox });
+	return { app, kv, sessions, secretbox, github };
+}
+
+it("READ path: adminToken decrypts the stored ghtoken (github mock sees plaintext)", async () => {
+	// listDir asserts the token it receives is the decrypted value.
+	const github = ghMock({
+		listDir: vi.fn(async (token: string) => {
+			expect(token).toBe("gh-secret");
+			return [];
+		}),
+	});
+	const { app, kv, sessions, secretbox } = encHarness(github);
+	const sid = "sid-enc";
+	// Seed as ciphertext (what the write path will produce).
+	await kv.set(
+		`ghtoken:${sid}`,
+		secretbox.encrypt("gh-secret"),
+		cfg.adminRefreshTtlSec,
+	);
+	const at = await sessions.mintAccess({
+		sub: "gh:octocat",
+		role: "admin",
+		orgId: 1,
+		ghLogin: "octocat",
+		sid,
+	});
+	const res = await app.request("/admin/docs", {
+		headers: { cookie: `eps_at=${at}` },
+	});
+	expect(res.status).toBe(200);
+	expect(github.listDir).toHaveBeenCalled(); // ensures the assertion above ran
 });
