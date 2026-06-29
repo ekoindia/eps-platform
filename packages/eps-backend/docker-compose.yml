@@ -1,0 +1,38 @@
+# Self-hosted Redis + eps-backend. Run from the repo ROOT:
+#   docker compose -f packages/eps-backend/docker-compose.yml up --build
+services:
+  redis:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - eps-redis-data:/data
+    networks:
+      - eps-internal
+    restart: unless-stopped
+
+  eps-backend:
+    build:
+      # Dockerfile copies root package.json/lock + packages/eps-backend tree,
+      # so the build context MUST be the repo root.
+      context: ../..
+      dockerfile: packages/eps-backend/Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379
+      # KV_ENCRYPTION_KEY must be provided (32-byte base64). Supply via an
+      # .env file or your orchestrator's secret store; do not commit it.
+      KV_ENCRYPTION_KEY: ${KV_ENCRYPTION_KEY}
+    depends_on:
+      - redis
+    networks:
+      - eps-internal
+    restart: unless-stopped
+    # Publish behind your reverse proxy; example:
+    # ports:
+    #   - "8787:8787"
+
+volumes:
+  eps-redis-data:
+
+networks:
+  eps-internal:
+    internal: true

@@ -6,6 +6,7 @@ import type { GitHubClient } from "../clients/github";
 import type { Config } from "../config";
 import { AppError } from "./errors";
 import { createDocsService } from "../admin/docsService";
+import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 
 /** Dependencies the admin routes need. */
 export interface AdminDeps {
@@ -13,11 +14,13 @@ export interface AdminDeps {
 	sessions: Sessions;
 	kv: KV;
 	github: GitHubClient;
+	secretbox?: SecretBox;
 }
 
 /** Registers admin-gated GitOps docs routes on the given app. */
 export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	const { cfg, sessions, kv, github } = deps;
+	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const docs = createDocsService(github, cfg);
 
 	/**
@@ -41,7 +44,8 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 		if (!claim || claim.role !== "admin") {
 			throw new AppError(403, "NOT_AUTHORIZED", "Admin access required");
 		}
-		const token = claim.sid ? await kv.get(`ghtoken:${claim.sid}`) : null;
+		const stored = claim.sid ? await kv.get(`ghtoken:${claim.sid}`) : null;
+		const token = stored ? secretbox.decrypt(stored) : null;
 		if (!token) {
 			throw new AppError(
 				401,

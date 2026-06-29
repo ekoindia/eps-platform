@@ -6,6 +6,8 @@ import { createSessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
 import type { GitHubClient } from "../clients/github";
+import { createSecretBox } from "../store/secretbox";
+import { randomBytes } from "node:crypto";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -272,6 +274,77 @@ describe("logout", () => {
 		const set = res.headers.getSetCookie?.() ?? [];
 		expect(set.join(";")).toContain("eps_at=");
 	});
+
+	it("clears cookies on logout even when the store revoke fails", async () => {
+		const base = deps();
+		// Refresh store: set works (to mint the token); del rejects (simulate outage).
+		const failingKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		// `deps()` does not return `cfg`; pass the module-level `cfg` explicitly.
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		// Mint a real refresh token so the handler actually attempts revocation.
+		const rt = await sessions.issueRefresh({
+			sub: "9990000001",
+			role: "developer",
+			orgId: 1,
+		});
+		const res = await app.request("/auth/logout", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+		const cookies = res.headers.getSetCookie?.() ?? [];
+		// Both cookies are cleared (Max-Age=0) despite the store failure.
+		expect(
+			cookies.some((c) => c.startsWith("eps_at=") && c.includes("Max-Age=0")),
+		).toBe(true);
+		expect(
+			cookies.some((c) => c.startsWith("eps_rt=") && c.includes("Max-Age=0")),
+		).toBe(true);
+	});
+
+	it("clears both cookies for an admin session even when the store del fails", async () => {
+		const base = deps();
+		// Both refresh revoke and ghtoken del hit the store; del rejects (outage).
+		const failingKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		// `deps()` does not return `cfg`; pass the module-level `cfg` explicitly.
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		// Admin-style session: access token carrying a sid drives the ghtoken-del
+		// best-effort branch; refresh token drives the revoke branch.
+		const adminClaim = {
+			sub: "gh:octocat",
+			role: "admin" as const,
+			orgId: 1,
+			ghLogin: "octocat",
+			sid: crypto.randomUUID(),
+		};
+		const at = await sessions.mintAccess(adminClaim);
+		const rt = await sessions.issueRefresh(adminClaim);
+		const res = await app.request("/auth/logout", {
+			method: "POST",
+			headers: { cookie: `eps_at=${at}; eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+		const cookies = res.headers.getSetCookie?.() ?? [];
+		// Both cookies cleared despite the ghtoken-del store failure.
+		expect(
+			cookies.some((c) => c.startsWith("eps_at=") && c.includes("Max-Age=0")),
+		).toBe(true);
+		expect(
+			cookies.some((c) => c.startsWith("eps_rt=") && c.includes("Max-Age=0")),
+		).toBe(true);
+	});
 });
 
 function ghDeps(gh: Partial<GitHubClient>) {
@@ -496,4 +569,87 @@ describe("not found", () => {
 		const b = await body<{ error: { code: string } }>(res);
 		expect(b.error.code).toBe("NOT_FOUND");
 	});
+});
+
+describe("/readyz", () => {
+	it("/readyz is ready when no readiness probe is configured", async () => {
+		const res = await deps().app.request("/readyz");
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ ready: true });
+	});
+
+	it("/readyz returns 503 when the readiness probe resolves false", async () => {
+		const base = deps();
+		const app = createApp({ ...base, cfg, readiness: async () => false });
+		const res = await app.request("/readyz");
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ ready: false });
+	});
+
+	it("/readyz returns 503 when the readiness probe throws", async () => {
+		const base = deps();
+		const app = createApp({
+			...base,
+			cfg,
+			readiness: async () => {
+				throw new Error("redis down");
+			},
+		});
+		const res = await app.request("/readyz");
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ ready: false });
+	});
+});
+
+it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
+	const secretbox = createSecretBox(randomBytes(32).toString("base64"));
+	const base = deps();
+	const github: GitHubClient = {
+		authorizeUrl: (state) => `https://x/authorize?state=${state}`,
+		exchangeCode: vi.fn(async () => "gh-secret"),
+		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
+		hasRepoWrite: vi.fn(async () => true),
+		getContent: vi.fn(async () => null),
+		listDir: vi.fn(async () => []),
+		getBranchHead: vi.fn(async () => "headsha"),
+		createBranch: vi.fn(async () => undefined),
+		putFile: vi.fn(async () => undefined),
+		createPullRequest: vi.fn(async () => ({
+			url: "https://gh/pr/1",
+			number: 1,
+		})),
+	};
+	const kv = createInMemoryKV();
+	const setSpy = vi.spyOn(kv, "set");
+	const sessions = createSessions(cfg, kv, { secretbox });
+	const app = createApp({
+		cfg,
+		eko: base.eko,
+		zoho: base.zoho,
+		sessions,
+		kv,
+		github,
+		secretbox,
+	});
+	const start = await app.request("/auth/admin/github");
+	const state = new URL(start.headers.get("location")!).searchParams.get(
+		"state",
+	)!;
+	const stateCookie = (start.headers.getSetCookie?.() ?? [])
+		.map((c) => c.split(";")[0])
+		.join("; ");
+	const cb = await app.request(
+		`/auth/admin/github/callback?code=abc&state=${state}`,
+		{
+			headers: { cookie: stateCookie },
+		},
+	);
+	expect(cb.status).toBe(302);
+	// The ghtoken:* set call stored ciphertext, never the raw token.
+	const ghSet = setSpy.mock.calls.find(([k]) =>
+		String(k).startsWith("ghtoken:"),
+	);
+	expect(ghSet).toBeTruthy();
+	expect(ghSet![1]).not.toBe("gh-secret");
+	expect(secretbox.decrypt(ghSet![1] as string)).toBe("gh-secret");
 });

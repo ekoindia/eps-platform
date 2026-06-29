@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import type { Config } from "../config";
 import type { KV } from "../store/kv";
+import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 
 export interface SessionClaim {
 	sub: string;
@@ -31,15 +32,22 @@ export const REFRESH_COOKIE = "eps_rt";
 /**
  * Creates a Sessions instance providing JWT access tokens, rotating opaque
  * refresh tokens backed by the given KV store, and Set-Cookie helpers.
+ *
+ * @param deps.secretbox - Optional SecretBox for encrypting refresh-token claim
+ *   values at rest. Defaults to `passThroughSecretBox` (identity, no encryption)
+ *   so existing callers that omit it continue to work unchanged.
  */
 export function createSessions(
 	cfg: Config,
 	kv: KV,
-	deps: { randomId?: () => string } = {},
+	deps: { randomId?: () => string; secretbox?: SecretBox } = {},
 ): Sessions {
 	const secret = new TextEncoder().encode(cfg.jwtSecret);
 	const randomId = deps.randomId ?? (() => randomUUID());
-	const refreshKey = (t: string) => `rt:${t}`;
+	const secretbox = deps.secretbox ?? passThroughSecretBox;
+	/** Derives a SHA-256–hashed KV key so raw tokens are never stored as keys. */
+	const refreshKey = (t: string) =>
+		`rt:${createHash("sha256").update(t).digest("hex")}`;
 
 	function cookie(name: string, value: string, ttlSec: number): string {
 		const parts = [
@@ -87,18 +95,26 @@ export function createSessions(
 			const token = randomId();
 			const ttl =
 				claim.role === "admin" ? cfg.adminRefreshTtlSec : cfg.refreshTtlSec;
-			await kv.set(refreshKey(token), JSON.stringify(claim), ttl);
+			await kv.set(
+				refreshKey(token),
+				secretbox.encrypt(JSON.stringify(claim)),
+				ttl,
+			);
 			return token;
 		},
 
 		async rotateRefresh(token) {
 			const stored = await kv.getdel(refreshKey(token));
 			if (!stored) return null;
-			const claim = JSON.parse(stored) as SessionClaim;
+			const claim = JSON.parse(secretbox.decrypt(stored)) as SessionClaim;
 			const next = randomId();
 			const ttl =
 				claim.role === "admin" ? cfg.adminRefreshTtlSec : cfg.refreshTtlSec;
-			await kv.set(refreshKey(next), JSON.stringify(claim), ttl);
+			await kv.set(
+				refreshKey(next),
+				secretbox.encrypt(JSON.stringify(claim)),
+				ttl,
+			);
 			return { claim, refresh: next };
 		},
 
