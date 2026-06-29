@@ -153,6 +153,27 @@ describe("otp/start", () => {
 			"INVALID_INPUT",
 		);
 	});
+
+	it("503 RATE_LIMIT_UNAVAILABLE when the KV incr fails", async () => {
+		const base = deps();
+		const failingKv = {
+			...base.kv,
+			incr: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000009" }),
+		});
+		expect(res.status).toBe(503);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
 });
 
 describe("otp/verify + me", () => {

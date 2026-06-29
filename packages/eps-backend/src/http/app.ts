@@ -12,6 +12,7 @@ import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import { enforceRateLimit } from "./rateLimit";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -91,14 +92,8 @@ export function createApp(deps: Deps): Hono {
 		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipKey = `otp:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
 		const mobKey = `otp:mob:${m}`;
-		const count = await kv.incr(mobKey, OTP_WINDOW_SEC);
-		const ipCount = await kv.incr(ipKey, OTP_WINDOW_SEC);
-		if (count > OTP_START_LIMIT) {
-			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
-		}
-		if (ipCount > OTP_IP_LIMIT) {
-			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
-		}
+		await enforceRateLimit(kv, mobKey, OTP_START_LIMIT, OTP_WINDOW_SEC);
+		await enforceRateLimit(kv, ipKey, OTP_IP_LIMIT, OTP_WINDOW_SEC);
 		await eko.sendOtp({ mobile: m });
 		// generic response — no account enumeration
 		return c.json({ ok: true });
