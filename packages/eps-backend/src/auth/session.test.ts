@@ -3,6 +3,8 @@ import { SignJWT } from "jose";
 import { createSessions } from "./session";
 import { createInMemoryKV } from "../store/kv";
 import { loadConfig } from "../config";
+import { createSecretBox } from "../store/secretbox";
+import { randomBytes } from "node:crypto";
 
 const baseEnv = {
 	JWT_SECRET: "x".repeat(32),
@@ -130,6 +132,43 @@ describe("cookies", () => {
 		const s = mk();
 		const c = s.refreshCookie("tok");
 		expect(c).toMatch(new RegExp(`Max-Age=${cfg.refreshTtlSec}`));
+	});
+});
+
+describe("refresh-token KV security", () => {
+	it("hashes the refresh token into the KV key (raw token absent)", async () => {
+		const kv = createInMemoryKV();
+		const sessions = createSessions(cfg, kv);
+		const token = await sessions.issueRefresh({
+			sub: "9990000001",
+			role: "developer",
+			orgId: 1,
+		});
+		// Raw token must not be usable as a KV key.
+		expect(await kv.get(`rt:${token}`)).toBeNull();
+		// Rotation by the raw token still works (server hashes on lookup).
+		const rotated = await sessions.rotateRefresh(token);
+		expect(rotated?.claim.sub).toBe("9990000001");
+	});
+
+	it("encrypts the refresh value at rest when a real secretbox is used", async () => {
+		const kv = createInMemoryKV();
+		const secretbox = createSecretBox(randomBytes(32).toString("base64"));
+		const sessions = createSessions(cfg, kv, { secretbox });
+		const token = await sessions.issueRefresh({
+			sub: "9990000002",
+			role: "admin",
+			orgId: 1,
+		});
+		// Find the single stored entry by re-deriving the hashed key.
+		const { createHash } = await import("node:crypto");
+		const stored = await kv.get(
+			`rt:${createHash("sha256").update(token).digest("hex")}`,
+		);
+		expect(stored).not.toBeNull();
+		expect(stored).not.toContain("9990000002"); // not plaintext JSON
+		const rotated = await sessions.rotateRefresh(token);
+		expect(rotated?.claim.sub).toBe("9990000002");
 	});
 });
 
