@@ -12,7 +12,12 @@ import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
-import { enforceRateLimit } from "./rateLimit";
+import {
+	enforceRateLimit,
+	ADMIN_LOGIN_IP_LIMIT,
+	ADMIN_CALLBACK_IP_LIMIT,
+	RL_WINDOW_SEC,
+} from "./rateLimit";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -211,6 +216,13 @@ export function createApp(deps: Deps): Hono {
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {
+			const ip = c.req.header("x-real-ip") ?? "unknown";
+			await enforceRateLimit(
+				kv,
+				`rl:adminlogin:ip:${ip}`,
+				ADMIN_LOGIN_IP_LIMIT,
+				RL_WINDOW_SEC,
+			);
 			const state = crypto.randomUUID();
 			await kv.set(`ghstate:${state}`, "1", STATE_TTL_SEC);
 			setCookie(c, STATE_COOKIE, state, {
@@ -233,6 +245,16 @@ export function createApp(deps: Deps): Hono {
 			const stored = await kv.get(`ghstate:${state}`);
 			if (!stored) throw new AppError(400, "BAD_STATE", "Expired OAuth state");
 			await kv.del(`ghstate:${state}`);
+			// Rate-limit AFTER state validation + single-use consumption: a forged or
+			// replayed state fails the checks above and never reaches here, so it
+			// cannot burn a shared IP's callback budget.
+			const ip = c.req.header("x-real-ip") ?? "unknown";
+			await enforceRateLimit(
+				kv,
+				`rl:admincb:ip:${ip}`,
+				ADMIN_CALLBACK_IP_LIMIT,
+				RL_WINDOW_SEC,
+			);
 
 			const token = await github.exchangeCode(code);
 			if (!token)

@@ -499,6 +499,62 @@ describe("admin github", () => {
 		expect(res.status).toBe(403);
 		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
 	});
+
+	it("login-init throttles per IP at ADMIN_LOGIN_IP_LIMIT+1 → 429, no state written", async () => {
+		const { app, kv } = ghDeps({});
+		const setSpy = vi.spyOn(kv, "set");
+		let last = new Response();
+		for (let i = 0; i < 16; i++) {
+			last = await app.request("/auth/admin/github", {
+				headers: { "x-real-ip": "9.9.9.9" },
+			});
+		}
+		expect(last.status).toBe(429);
+		// 15 allowed inits each wrote a ghstate; the throttled 16th did not.
+		const stateWrites = setSpy.mock.calls.filter(([k]) =>
+			String(k).startsWith("ghstate:"),
+		);
+		expect(stateWrites.length).toBe(15);
+	});
+
+	it("callback budget is not burned by bad-state requests", async () => {
+		const { app } = ghDeps({});
+		let last = new Response();
+		for (let i = 0; i < 16; i++) {
+			last = await app.request(
+				"/auth/admin/github/callback?code=abc&state=forged",
+			);
+		}
+		// All bad-state hits → 400 BAD_STATE, never 429 (limiter sits after state validation).
+		expect(last.status).toBe(400);
+		expect((await body<{ error: { code: string } }>(last)).error.code).toBe(
+			"BAD_STATE",
+		);
+	});
+
+	it("a valid state cannot be replayed to burn the callback budget", async () => {
+		const { app } = ghDeps({});
+		const start = await app.request("/auth/admin/github");
+		const state = new URL(start.headers.get("location")!).searchParams.get(
+			"state",
+		)!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const first = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(first.status).toBe(302); // consumed the single-use state
+		const replay = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(replay.status).toBe(400); // state already consumed — never reaches limiter
+		expect((await body<{ error: { code: string } }>(replay)).error.code).toBe(
+			"BAD_STATE",
+		);
+	});
 });
 
 // C1: ghtoken TTL is re-extended on admin refresh rotation
