@@ -22,8 +22,25 @@ interface Entry {
  * replace this with a shared store (e.g. Redis) that implements the same `KV`
  * interface.
  */
+/** How often the background sweep evicts expired entries (ms). */
+const SWEEP_INTERVAL_MS = 60_000;
+
 export function createInMemoryKV(now: () => number = () => Date.now()): KV {
 	const map = new Map<string, Entry>();
+
+	// Lazy expiry (in `live`) only evicts on access, so keys that are set but
+	// never read again (aborted OAuth states, abandoned OTP rate-limit windows,
+	// sessions for users who never return) would accumulate forever. This sweep
+	// bounds memory in a long-running single instance. `unref()` keeps it from
+	// holding the process open — so graceful shutdown and the test runner exit
+	// cleanly without an explicit disposer.
+	const sweep = setInterval(() => {
+		const t = now();
+		for (const [key, entry] of map) {
+			if (entry.expiresAt <= t) map.delete(key);
+		}
+	}, SWEEP_INTERVAL_MS);
+	sweep.unref?.();
 
 	const live = (key: string): Entry | null => {
 		const e = map.get(key);
