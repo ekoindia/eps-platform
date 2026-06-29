@@ -86,6 +86,12 @@ jobs:
           # but the Redis adapter (Lua incr, GETDEL, fail-closed) stays unproven.
           REDIS_TEST_URL: redis://localhost:6379
 
+      - name: Shellcheck poller
+        run: shellcheck packages/eps-backend/deploy/poller/poll.sh
+
+      - name: Test eps-backend poller (bash shim harness)
+        run: npm run test:poller -w @ekoindia/eps-backend
+
   php-sdk:
     name: PHP SDK
     runs-on: ubuntu-latest

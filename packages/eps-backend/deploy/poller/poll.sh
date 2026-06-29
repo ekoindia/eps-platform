@@ -167,7 +167,21 @@ reconcile_once() {
 	return 0
 }
 
-# --- guarded entrypoint (main added in Task 3) ---
+# --- entrypoint ---
+main() {
+	mkdir -p "$STATE_DIR"
+	acquire_lock
+	log "poller starting: IMAGE=$IMAGE:$WATCH_TAG interval=${POLL_INTERVAL_SEC}s project=$COMPOSE_PROJECT"
+	if [ "${POLLER_ONESHOT:-0}" = "1" ]; then
+		reconcile_once
+		return 0
+	fi
+	while true; do
+		reconcile_once || log "reconcile error (continuing)"
+		sleep "$POLL_INTERVAL_SEC"
+	done
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 	main "$@"
 fi

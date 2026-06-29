@@ -119,6 +119,14 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 	grep -q "up -d" "$SHIM_STATE/calls.log" && no "registry error → no swap" "swapped" || ok "registry error → no swap"
 )
 
+# --- Task 3 case ---
+( setup; seed_deploy
+	export POLLER_ONESHOT=1
+	bash "$POLL" >/dev/null 2>&1 || true
+	# oneshot main → one deploy attempt recorded
+	[ -f "$SHIM_STATE/last_good" ] && ok "main oneshot performs one reconcile" || no "main oneshot" "no reconcile"
+)
+
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---
 PASS="$(grep -c '^ok' "$RESULTS" || true)"
 FAIL="$(grep -c '^no' "$RESULTS" || true)"
