@@ -47,6 +47,11 @@ describe("docker-compose.prod.yml", () => {
 	it("loads secrets via env_file but NOT for image interpolation", () => {
 		expect(compose()).toMatch(/env_file:\s*\n\s*- \.env/);
 	});
+	it("gives the poller GHCR credentials for skopeo (private package)", () => {
+		const c = compose();
+		expect(c).toContain("REGISTRY_AUTH_FILE: /root/.docker/config.json");
+		expect(c).toContain("/root/.docker/config.json:ro");
+	});
 });
 
 const workflow = () =>

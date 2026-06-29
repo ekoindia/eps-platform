@@ -62,9 +62,21 @@ must authenticate before the poller can pull:
 	docker login ghcr.io
 
 Use a GitHub Personal Access Token (PAT) with `read:packages` scope as the
-password, or a machine account token. The credentials are stored in
-`~/.docker/config.json` and reused by the poller (the poller container mounts
-`/var/run/docker.sock` and inherits the host's Docker auth context).
+password, or a machine account token. The credentials are written to
+`~/.docker/config.json`.
+
+The poller container authenticates to the private registry for skopeo digest
+checks by mounting the host's `~/.docker/config.json` read-only into the
+container at `/root/.docker/config.json` and setting `REGISTRY_AUTH_FILE`
+to that path. The `docker compose pull` path goes through the Docker socket
+and already uses the host daemon's auth context.
+
+**Important:** `docker login` must store a plain base64 token directly in
+`config.json`. If a credential helper (`credStore` or `credHelpers`) is
+configured, `config.json` contains no `auth` entry and the mounted file is
+useless to skopeo. Run `docker login ghcr.io` on the VM and confirm that
+`~/.docker/config.json` contains an `"auths"` entry with an `"auth"` field
+for `ghcr.io`.
 
 ### Step 5 — Create `/deploy/.env` with production secrets
 
@@ -83,13 +95,14 @@ the full list and inline notes. Restrict file permissions:
 ### Step 6 — Seed `/deploy/deploy.env` with the current `:prod` digest
 
 The poller will overwrite this file on every reconciliation, but it must exist
-for the first `up -d`. Use `skopeo` to resolve the current `:prod` digest
-without pulling the image:
+for the first `up -d`. Use `docker buildx imagetools` (part of the Docker
+Buildx plugin already installed in Step 1) to resolve the current `:prod`
+digest without pulling the image. This reuses the GHCR credentials from the
+`docker login` in Step 4:
 
-	DIGEST=$(skopeo inspect --format '{{.Digest}}' \
-	  docker://ghcr.io/ekoindia/eps-backend:prod)
-	printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' "$DIGEST" \
-	  > /deploy/deploy.env
+	EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@$(docker buildx imagetools inspect \
+	  ghcr.io/ekoindia/eps-backend:prod --format '{{.Manifest.Digest}}')
+	printf 'EPS_BACKEND_IMAGE=%s\n' "$EPS_BACKEND_IMAGE" > /deploy/deploy.env
 
 Verify it looks like:
 
@@ -155,11 +168,13 @@ For an older digest, check the GHCR package history or your deploy logs for a
 
 **2. Overwrite `deploy.env` with the target image reference.**
 
-	printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<known-good-digest>\n' \
-	  > /deploy/deploy.env
+	printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' \
+	  "sha256:<64-hex-digest>" > /deploy/deploy.env
 
-Replace `<known-good-digest>` with the full hex digest (no `sha256:` prefix
-needed in the digest portion — include the `sha256:` prefix after the `@`).
+Replace `sha256:<64-hex-digest>` with the full digest including the `sha256:`
+prefix — e.g. `sha256:abc123…` (64 hex characters after the colon). The
+`@sha256:` separator is mandatory; the complete image reference must be of the
+form `ghcr.io/ekoindia/eps-backend@sha256:<64 hex>`.
 
 **3. Apply with the invariant compose command.**
 
@@ -172,6 +187,9 @@ Only `eps-backend` is recreated; `redis` and `poller` are left running.
 **4. Verify.**
 
 	curl -f http://127.0.0.1:8787/healthz && echo OK
+
+`/healthz` is a liveness check. `/readyz` additionally checks Redis and is
+what the poller gates on before recording a deploy as successful.
 
 **5. Block future auto-deploys while investigating (optional).**
 

@@ -62,10 +62,12 @@ services:
       COMPOSE_FILE: /deploy/docker-compose.prod.yml
       DEPLOY_ENV_FILE: /deploy/deploy.env
       STATE_DIR: /state
+      REGISTRY_AUTH_FILE: /root/.docker/config.json
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./:/deploy
       - eps-poller-state:/state
+      - ${HOME}/.docker/config.json:/root/.docker/config.json:ro
     networks:
       - eps-internal
       - eps-egress

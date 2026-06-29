@@ -169,6 +169,10 @@ rewrites atomically on each deploy; the operator seeds it once at bootstrap.
 The poller reads operator secrets (including `POLLER_ALERT_WEBHOOK`) from
 `/deploy/.env` via `env_file`.
 
+The poller authenticates to the private GHCR package for skopeo digest checks
+by mounting the host's `~/.docker/config.json` read-only into the container;
+run `docker login ghcr.io` on the VM before starting the stack.
+
 For the full operator runbook — bootstrap, rollback, HOLD handling, alerts,
 and ongoing ops — see [`docs/eps-backend-vm-deploy.md`](../../docs/eps-backend-vm-deploy.md).
 
