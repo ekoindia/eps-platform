@@ -1,7 +1,21 @@
 import { describe, it, expect } from "vitest";
 import { createInMemoryKV } from "./kv";
+import { runKvContract } from "./kv-contract";
 
-describe("InMemoryKV", () => {
+describe("createInMemoryKV (contract)", () => {
+	let now = 1_000_000;
+	runKvContract(
+		() => {
+			now = 1_000_000;
+			return createInMemoryKV(() => now);
+		},
+		(ms) => {
+			now += ms;
+		},
+	);
+});
+
+describe("InMemoryKV (in-memory-specific)", () => {
 	it("set/get/del roundtrip", async () => {
 		const kv = createInMemoryKV();
 		await kv.set("a", "1", 60);

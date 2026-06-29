@@ -22,14 +22,54 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET  | /auth/admin/github | none | Begin admin OAuth |
 | GET  | /auth/admin/github/callback | none | Complete admin OAuth |
 | GET  | /healthz | none | Liveness |
+| GET  | /readyz  | none | Readiness; PINGs Redis when configured, else always 200 |
 
-## Scaling (single-instance only)
+## Scaling & storage backends
 
-The default `createInMemoryKV` store is **process-local**. Refresh tokens,
-OAuth state, and rate-limit windows are not shared across processes. Running
-more than one instance will cause token validation failures and ineffective
-rate limits. For multi-instance deployments, replace it with a shared store
-(e.g. Redis) that implements the same `KV` interface.
+Two KV backends are available, selected at startup based on whether `REDIS_URL`
+is set:
+
+| Mode | Backend | When to use |
+| --- | --- | --- |
+| In-memory | `createInMemoryKV` (default) | Single instance; no external dependency |
+| Redis | `createRedisKV` | Multi-instance, restarts, rolling deploys |
+
+**In-memory** is process-local. Refresh tokens, OAuth state, and rate-limit
+windows are not shared across processes — running more than one replica will
+cause token-validation failures and ineffective rate limits.
+
+**Redis** makes all of that shared and durable across restarts. Swap between
+self-hosted and managed/serverless Redis by changing `REDIS_URL` only
+(standard RESP-over-URL). Minimum capability floor: **Redis ≥ 6.2** (`GETDEL`)
+with Lua scripting enabled.
+
+**At-rest protection (Redis mode):** the GitHub token value and refresh-token
+claim value are encrypted with AES-256-GCM before writing to Redis; refresh
+keys are hashed. This requires `KV_ENCRYPTION_KEY` (see env section below).
+
+**Failure behaviour:** the backend is fail-closed on Redis outage for all
+KV-dependent auth operations (OTP verify, token refresh, admin callback). A
+`POST /auth/logout` always clears the browser cookies regardless of Redis
+availability.
+
+### Deploy
+
+A `docker-compose.yml` is provided for running the backend with a local Redis
+instance. Use it as a reference for self-hosted deployments:
+
+	docker compose up --build
+
+### Rollback
+
+Rolling back from Redis mode to the previous in-memory binary requires
+flushing the session keys written to Redis, because the key format and value
+encryption differ. Before restarting with the old binary:
+
+	redis-cli --scan --pattern 'rt:*' | xargs redis-cli del
+	redis-cli --scan --pattern 'ghtoken:*' | xargs redis-cli del
+
+On a dedicated instance you can use `FLUSHDB` instead. All affected users will
+need to re-authenticate.
 
 ## Reverse proxy requirement
 
@@ -70,6 +110,12 @@ Use a **dedicated dev app** (separate credentials from production):
 	GITHUB_REPO=ekoindia/eps-platform   # admin must have write access to this repo
 	COOKIE_SECURE=false                 # dev is http; Secure cookies won't set
 	ADMIN_POST_LOGIN_REDIRECT=/admin    # optional: where admin lands after GitHub login
+
+	# Redis KV backend (optional; omit both for in-memory single-instance mode)
+	REDIS_URL=redis://redis:6379           # optional; omit for in-memory (single instance)
+	KV_ENCRYPTION_KEY=<base64 32 bytes>    # REQUIRED when REDIS_URL is set
+	                                       # generate: openssl rand -base64 32
+	REDIS_TLS_REJECT_UNAUTHORIZED=true     # set false only for a self-signed managed cert
 
 ### 3. Run both
 

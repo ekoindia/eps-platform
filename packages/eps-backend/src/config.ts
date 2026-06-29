@@ -8,6 +8,9 @@ export interface Config {
 	cookieSameSite: string;
 	adminPostLoginRedirect: string;
 	corsOrigins: string[];
+	redisUrl?: string;
+	kvEncryptionKey?: string;
+	redisTlsRejectUnauthorized: boolean;
 	eko: {
 		scheme: string;
 		host: string;
@@ -59,6 +62,16 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			`SIMPLIBANK_API_SCHEME=http is only allowed for loopback hosts; refusing plaintext to "${ekoHost}". Set SIMPLIBANK_ALLOW_INSECURE_HTTP=true to opt in for a trusted private-network upstream.`,
 		);
 	}
+	const redisUrl = env.REDIS_URL || undefined;
+	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
+	if (redisUrl) {
+		if (!kvEncryptionKey) {
+			throw new Error("KV_ENCRYPTION_KEY is required when REDIS_URL is set");
+		}
+		if (Buffer.from(kvEncryptionKey, "base64").length !== 32) {
+			throw new Error("KV_ENCRYPTION_KEY must decode to 32 bytes");
+		}
+	}
 	return {
 		port: Number(env.PORT ?? 8787),
 		jwtSecret: env.JWT_SECRET!,
@@ -72,6 +85,9 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			.split(",")
 			.map((s) => s.trim())
 			.filter(Boolean),
+		redisUrl,
+		kvEncryptionKey,
+		redisTlsRejectUnauthorized: env.REDIS_TLS_REJECT_UNAUTHORIZED !== "false",
 		eko: {
 			scheme: ekoScheme,
 			host: ekoHost,

@@ -11,7 +11,13 @@ import { buildMeView } from "../identity/me";
 import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
+import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 
+/**
+ * Top-level dependencies for the EPS BFF application.
+ * All optional fields have safe defaults so test harnesses only need to
+ * supply what they exercise.
+ */
 export interface Deps {
 	cfg: Config;
 	eko: EkoClient;
@@ -19,6 +25,8 @@ export interface Deps {
 	sessions: Sessions;
 	kv: KV;
 	github?: GitHubClient;
+	secretbox?: SecretBox;
+	readiness?: () => Promise<boolean>; // Task 7
 }
 
 const OTP_START_LIMIT = 5;
@@ -43,6 +51,7 @@ function normalizeMobile(raw: string): string {
 
 export function createApp(deps: Deps): Hono {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
+	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const app = new Hono();
 
 	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
@@ -56,6 +65,18 @@ export function createApp(deps: Deps): Hono {
 	});
 
 	app.get("/healthz", (c) => c.json({ status: "ok" }));
+
+	/**
+	 * Readiness probe — returns 200 `{ ready: true }` when the optional
+	 * `readiness` function is absent or resolves `true`; returns 503
+	 * `{ ready: false }` when it resolves `false` or throws.
+	 */
+	app.get("/readyz", async (c) => {
+		const ready = deps.readiness
+			? await deps.readiness().catch(() => false)
+			: true;
+		return c.json({ ready }, ready ? 200 : 503);
+	});
 
 	app.post("/auth/otp/start", async (c) => {
 		const { mobile } = await c.req.json().catch(() => ({}));
@@ -161,15 +182,17 @@ export function createApp(deps: Deps): Hono {
 	});
 
 	app.post("/auth/logout", async (c) => {
-		const token = getCookie(c, REFRESH_COOKIE);
-		if (token) await sessions.revokeRefresh(token);
-		// Best-effort: drop the stored GitHub token for admin sessions.
-		const at = getCookie(c, ACCESS_COOKIE);
-		const claim = at ? await sessions.verifyAccess(at) : null;
-		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
+		// Clear cookies FIRST so logout always succeeds client-side, even if the
+		// shared store is unreachable. Revocation is best-effort; an orphaned
+		// refresh entry expires by its TTL.
 		for (const ck of sessions.clearCookies()) {
 			c.header("Set-Cookie", ck, { append: true });
 		}
+		const token = getCookie(c, REFRESH_COOKIE);
+		if (token) await sessions.revokeRefresh(token).catch(() => {});
+		const at = getCookie(c, ACCESS_COOKIE);
+		const claim = at ? await sessions.verifyAccess(at).catch(() => null) : null;
+		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
 		return c.json({ ok: true });
 	});
 
@@ -236,7 +259,12 @@ export function createApp(deps: Deps): Hono {
 			};
 			// Persist the admin's OAuth token server-side, keyed by the stable
 			// session id, so the GitOps console can author commits as this admin.
-			await kv.set(`ghtoken:${sid}`, token, cfg.adminRefreshTtlSec);
+			// Encrypted at rest via the injected SecretBox (AES-256-GCM in prod).
+			await kv.set(
+				`ghtoken:${sid}`,
+				secretbox.encrypt(token),
+				cfg.adminRefreshTtlSec,
+			);
 			const access = await sessions.mintAccess(claim);
 			const refresh = await sessions.issueRefresh(claim);
 			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
@@ -248,7 +276,7 @@ export function createApp(deps: Deps): Hono {
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		mountAdmin(app, { cfg, sessions, kv, github });
+		mountAdmin(app, { cfg, sessions, kv, github, secretbox });
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
