@@ -92,6 +92,17 @@ jobs:
       - name: Test eps-backend poller (bash shim harness)
         run: npm run test:poller -w @ekoindia/eps-backend
 
+      - name: Validate prod compose
+        working-directory: packages/eps-backend
+        run: |
+          # A well-formed 64-hex digest (sha256:0 fails digest-format validation).
+          d=$(printf '0%.0s' $(seq 64))
+          printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:%s\n' "$d" > deploy.env
+          : > .env
+          docker compose -p eps-backend --project-directory . \
+            --env-file deploy.env -f docker-compose.prod.yml config -q
+          rm -f deploy.env .env
+
   php-sdk:
     name: PHP SDK
     runs-on: ubuntu-latest
