@@ -31,21 +31,76 @@ describe("GitHubClient", () => {
 		expect(await gh.exchangeCode("code123")).toBe("ght");
 	});
 
-	it("hasRepoWrite true when permission push", async () => {
-		const f = vi.fn(
-			async () =>
-				new Response(JSON.stringify({ permission: "write" }), { status: 200 }),
-		) as unknown as typeof fetch;
-		const gh = createGitHubClient(cfg, f);
-		expect(await gh.hasRepoWrite("ght", "octocat")).toBe(true);
+	it("checkRepoWrite: 200 write/admin → 'write'", async () => {
+		for (const p of ["write", "admin"]) {
+			const f = vi.fn(
+				async () =>
+					new Response(JSON.stringify({ permission: p }), { status: 200 }),
+			) as unknown as typeof fetch;
+			expect(
+				await createGitHubClient(cfg, f).checkRepoWrite("t", "octocat"),
+			).toBe("write");
+		}
 	});
 
-	it("hasRepoWrite false on 403", async () => {
-		const f = vi.fn(
-			async () => new Response("{}", { status: 403 }),
+	it("checkRepoWrite: 200 read/none/triage → 'no-write'", async () => {
+		for (const p of ["read", "none", "triage"]) {
+			const f = vi.fn(
+				async () =>
+					new Response(JSON.stringify({ permission: p }), { status: 200 }),
+			) as unknown as typeof fetch;
+			expect(
+				await createGitHubClient(cfg, f).checkRepoWrite("t", "octocat"),
+			).toBe("no-write");
+		}
+	});
+
+	it("checkRepoWrite: 200 missing/non-string permission → 'unknown'", async () => {
+		for (const b of [{}, { permission: 123 }, { permission: null }]) {
+			const f = vi.fn(
+				async () => new Response(JSON.stringify(b), { status: 200 }),
+			) as unknown as typeof fetch;
+			expect(
+				await createGitHubClient(cfg, f).checkRepoWrite("t", "octocat"),
+			).toBe("unknown");
+		}
+	});
+
+	it("checkRepoWrite: 401 and 404 → 'no-write'", async () => {
+		for (const s of [401, 404]) {
+			const f = vi.fn(
+				async () => new Response("", { status: s }),
+			) as unknown as typeof fetch;
+			expect(
+				await createGitHubClient(cfg, f).checkRepoWrite("t", "octocat"),
+			).toBe("no-write");
+		}
+	});
+
+	it("checkRepoWrite: 403/429/422/500 → 'unknown'", async () => {
+		for (const s of [403, 429, 422, 500]) {
+			const f = vi.fn(
+				async () => new Response("", { status: s }),
+			) as unknown as typeof fetch;
+			expect(
+				await createGitHubClient(cfg, f).checkRepoWrite("t", "octocat"),
+			).toBe("unknown");
+		}
+	});
+
+	it("checkRepoWrite: network throw and unparseable 200 → 'unknown'", async () => {
+		const thrower = vi.fn(async () => {
+			throw new Error("net");
+		}) as unknown as typeof fetch;
+		expect(
+			await createGitHubClient(cfg, thrower).checkRepoWrite("t", "octocat"),
+		).toBe("unknown");
+		const badBody = vi.fn(
+			async () => new Response("<html>not json</html>", { status: 200 }),
 		) as unknown as typeof fetch;
-		const gh = createGitHubClient(cfg, f);
-		expect(await gh.hasRepoWrite("ght", "octocat")).toBe(false);
+		expect(
+			await createGitHubClient(cfg, badBody).checkRepoWrite("t", "octocat"),
+		).toBe("unknown");
 	});
 
 	it("exchangeCode returns null on non-JSON 2xx body", async () => {

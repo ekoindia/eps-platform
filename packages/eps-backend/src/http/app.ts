@@ -245,8 +245,10 @@ export function createApp(deps: Deps): Hono {
 			const user = await github.getUser(token);
 			if (!user)
 				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
-			const allowed = await github.hasRepoWrite(token, user.login);
-			if (!allowed) {
+			const status = await github.checkRepoWrite(token, user.login);
+			if (status !== "write") {
+				// Grant a session ONLY on confirmed write. no-write and unknown both
+				// block — a non-write GitHub user never receives any session.
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
 			const sid = crypto.randomUUID();

@@ -354,7 +354,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 			`https://github.com/login/oauth/authorize?state=${state}`,
 		exchangeCode: vi.fn(async () => "ght"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
-		hasRepoWrite: vi.fn(async () => true),
+		checkRepoWrite: vi.fn(async () => "write" as const),
 		getContent: vi.fn(async () => null),
 		listDir: vi.fn(async () => []),
 		getBranchHead: vi.fn(async () => "headsha"),
@@ -409,7 +409,9 @@ describe("admin github", () => {
 	});
 
 	it("callback without repo write → 403", async () => {
-		const { app } = ghDeps({ hasRepoWrite: vi.fn(async () => false) });
+		const { app } = ghDeps({
+			checkRepoWrite: vi.fn(async () => "no-write" as const),
+		});
 		const start = await app.request("/auth/admin/github");
 		const loc = new URL(start.headers.get("location")!);
 		const state = loc.searchParams.get("state")!;
@@ -457,6 +459,24 @@ describe("admin github", () => {
 		const claim = await sessions.verifyAccess(at);
 		expect(claim?.sid).toBeTruthy();
 		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+	});
+
+	it("callback with unknown repo-write status → 403 (no session)", async () => {
+		const { app } = ghDeps({
+			checkRepoWrite: vi.fn(async () => "unknown" as const),
+		});
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(403);
+		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
 	});
 });
 
@@ -608,7 +628,7 @@ it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 		authorizeUrl: (state) => `https://x/authorize?state=${state}`,
 		exchangeCode: vi.fn(async () => "gh-secret"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
-		hasRepoWrite: vi.fn(async () => true),
+		checkRepoWrite: vi.fn(async () => "write" as const),
 		getContent: vi.fn(async () => null),
 		listDir: vi.fn(async () => []),
 		getBranchHead: vi.fn(async () => "headsha"),
