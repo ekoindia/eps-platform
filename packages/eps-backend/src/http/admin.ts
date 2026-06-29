@@ -7,6 +7,12 @@ import type { Config } from "../config";
 import { AppError } from "./errors";
 import { createDocsService } from "../admin/docsService";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import {
+	enforceRateLimit,
+	PROPOSE_LIMIT,
+	DEPLOY_LIMIT,
+	RL_WINDOW_SEC,
+} from "./rateLimit";
 
 /** Dependencies the admin routes need. */
 export interface AdminDeps {
@@ -33,6 +39,26 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 		if (origin && !cfg.corsOrigins.includes(origin)) {
 			throw new AppError(403, "BAD_ORIGIN", "Cross-origin request rejected");
 		}
+	}
+
+	/** Re-checks live repo-write access; fail-closed before a privileged mutation. */
+	async function assertRepoWrite(token: string, login: string): Promise<void> {
+		const status = await github.checkRepoWrite(token, login);
+		if (status === "no-write") {
+			throw new AppError(
+				403,
+				"WRITE_ACCESS_REVOKED",
+				"Repository write access revoked — sign in again",
+			);
+		}
+		if (status === "unknown") {
+			throw new AppError(
+				503,
+				"UPSTREAM_UNAVAILABLE",
+				"Could not verify repository access — try again shortly",
+			);
+		}
+		// "write" → proceed
 	}
 
 	/** Resolves the acting admin's GitHub token + login, or throws 403/401. */
@@ -71,6 +97,13 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	app.post("/admin/docs/propose", async (c) => {
 		assertAllowedOrigin(c);
 		const { token, login } = await adminToken(c);
+		await enforceRateLimit(
+			kv,
+			`rl:propose:login:${login}`,
+			PROPOSE_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		await assertRepoWrite(token, login);
 		const b = (await c.req.json().catch(() => ({}))) as {
 			path?: unknown;
 			content?: unknown;
@@ -102,7 +135,14 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 
 	app.post("/admin/deploy/production", async (c) => {
 		assertAllowedOrigin(c);
-		const { token } = await adminToken(c);
+		const { token, login } = await adminToken(c);
+		await enforceRateLimit(
+			kv,
+			`rl:deploy:login:${login}`,
+			DEPLOY_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		await assertRepoWrite(token, login);
 		return c.json(await docs.deployProduction(token));
 	});
 }
