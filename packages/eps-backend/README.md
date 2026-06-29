@@ -138,6 +138,40 @@ Two additional environment variables control the GitOps flow:
 | `GITHUB_EDIT_BASE` | `dev` | Base branch for edit PRs. |
 | `GITHUB_PROD_BASE` | `main` | Target branch for deploy PRs. |
 
+## Production deploy (pull-based, private VM)
+
+The production stack runs on a single private VM under `docker-compose.prod.yml`.
+A lightweight poller container watches the `ghcr.io/ekoindia/eps-backend:prod`
+tag in GHCR and reconciles the running image on each 30-second tick. No SSH or
+agent access from CI is required.
+
+**Architecture:**
+
+	CI push to main → CI green → deploy-eps-backend workflow →
+	  build :sha, retag :prod (atomic) →
+	  poller detects digest change → pulls + recreates eps-backend →
+	  health gate (/readyz) → marks last_good or rolls back
+
+The deploy gate is the **`main` branch merge** — CI must pass before the
+workflow runs. Branch protection (required reviews + required CI) on `main`
+is therefore a hard operational prerequisite.
+
+**Backend port:** `127.0.0.1:8787`. The backend binds only to the loopback
+interface. Point your reverse proxy (nginx, Caddy, etc.) at that address.
+
+**Invariant compose command** — all operator actions use this exact form:
+
+	docker compose -p eps-backend --project-directory /deploy \
+	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml <cmd>
+
+`deploy.env` holds a single line (`EPS_BACKEND_IMAGE=...`) that the poller
+rewrites atomically on each deploy; the operator seeds it once at bootstrap.
+The poller reads operator secrets (including `POLLER_ALERT_WEBHOOK`) from
+`/deploy/.env` via `env_file`.
+
+For the full operator runbook — bootstrap, rollback, HOLD handling, alerts,
+and ongoing ops — see [`docs/eps-backend-vm-deploy.md`](../../docs/eps-backend-vm-deploy.md).
+
 ## Deferred
 
 `/credentials` (UAT/live key view/generate) — pending the Eko credential
