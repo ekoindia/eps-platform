@@ -274,6 +274,39 @@ describe("logout", () => {
 		const set = res.headers.getSetCookie?.() ?? [];
 		expect(set.join(";")).toContain("eps_at=");
 	});
+
+	it("clears cookies on logout even when the store revoke fails", async () => {
+		const base = deps();
+		// Refresh store: set works (to mint the token); del rejects (simulate outage).
+		const failingKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		// `deps()` does not return `cfg`; pass the module-level `cfg` explicitly.
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		// Mint a real refresh token so the handler actually attempts revocation.
+		const rt = await sessions.issueRefresh({
+			sub: "9990000001",
+			role: "developer",
+			orgId: 1,
+		});
+		const res = await app.request("/auth/logout", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+		const cookies = res.headers.getSetCookie?.() ?? [];
+		// Both cookies are cleared (Max-Age=0) despite the store failure.
+		expect(
+			cookies.some((c) => c.startsWith("eps_at=") && c.includes("Max-Age=0")),
+		).toBe(true);
+		expect(
+			cookies.some((c) => c.startsWith("eps_rt=") && c.includes("Max-Age=0")),
+		).toBe(true);
+	});
 });
 
 function ghDeps(gh: Partial<GitHubClient>) {

@@ -170,15 +170,17 @@ export function createApp(deps: Deps): Hono {
 	});
 
 	app.post("/auth/logout", async (c) => {
-		const token = getCookie(c, REFRESH_COOKIE);
-		if (token) await sessions.revokeRefresh(token);
-		// Best-effort: drop the stored GitHub token for admin sessions.
-		const at = getCookie(c, ACCESS_COOKIE);
-		const claim = at ? await sessions.verifyAccess(at) : null;
-		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
+		// Clear cookies FIRST so logout always succeeds client-side, even if the
+		// shared store is unreachable. Revocation is best-effort; an orphaned
+		// refresh entry expires by its TTL.
 		for (const ck of sessions.clearCookies()) {
 			c.header("Set-Cookie", ck, { append: true });
 		}
+		const token = getCookie(c, REFRESH_COOKIE);
+		if (token) await sessions.revokeRefresh(token).catch(() => {});
+		const at = getCookie(c, ACCESS_COOKIE);
+		const claim = at ? await sessions.verifyAccess(at) : null;
+		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
 		return c.json({ ok: true });
 	});
 
