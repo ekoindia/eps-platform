@@ -66,6 +66,18 @@ export function createApp(deps: Deps): Hono {
 
 	app.get("/healthz", (c) => c.json({ status: "ok" }));
 
+	/**
+	 * Readiness probe — returns 200 `{ ready: true }` when the optional
+	 * `readiness` function is absent or resolves `true`; returns 503
+	 * `{ ready: false }` when it resolves `false` or throws.
+	 */
+	app.get("/readyz", async (c) => {
+		const ready = deps.readiness
+			? await deps.readiness().catch(() => false)
+			: true;
+		return c.json({ ready }, ready ? 200 : 503);
+	});
+
 	app.post("/auth/otp/start", async (c) => {
 		const { mobile } = await c.req.json().catch(() => ({}));
 		if (!mobile || typeof mobile !== "string") {

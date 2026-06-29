@@ -571,6 +571,36 @@ describe("not found", () => {
 	});
 });
 
+describe("/readyz", () => {
+	it("/readyz is ready when no readiness probe is configured", async () => {
+		const res = await deps().app.request("/readyz");
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ ready: true });
+	});
+
+	it("/readyz returns 503 when the readiness probe resolves false", async () => {
+		const base = deps();
+		const app = createApp({ ...base, cfg, readiness: async () => false });
+		const res = await app.request("/readyz");
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ ready: false });
+	});
+
+	it("/readyz returns 503 when the readiness probe throws", async () => {
+		const base = deps();
+		const app = createApp({
+			...base,
+			cfg,
+			readiness: async () => {
+				throw new Error("redis down");
+			},
+		});
+		const res = await app.request("/readyz");
+		expect(res.status).toBe(503);
+		expect(await res.json()).toEqual({ ready: false });
+	});
+});
+
 it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 	const secretbox = createSecretBox(randomBytes(32).toString("base64"));
 	const base = deps();
