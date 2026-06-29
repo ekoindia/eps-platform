@@ -30,9 +30,10 @@ export function UserMenu() {
 					aria-label="Account menu"
 					className={cn(
 						"flex h-9 w-9 items-center justify-center rounded-full",
-						"bg-white/15 text-sm font-semibold text-white",
-						"transition-colors hover:bg-white/25 focus-visible:outline-hidden",
-						"focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer",
+						"bg-white/20 text-sm font-semibold text-white",
+						"ring-1 ring-white/30 transition-all",
+						"hover:bg-white/25 hover:ring-white/50",
+						"cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/70",
 					)}
 				>
 					{identity.initials}

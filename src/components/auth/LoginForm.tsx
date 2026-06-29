@@ -3,7 +3,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, authClient } from "@/lib/auth/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { useEffect, useState } from "react";
+import {
+	type ClipboardEvent,
+	type KeyboardEvent,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+
+const OTP_LENGTH = 6;
 
 /** Extracts a human-readable error string from an ApiError or unknown thrown value. */
 function message(e: unknown): string {
@@ -22,10 +30,55 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 	const { refresh } = useAuth();
 	const [step, setStep] = useState<"mobile" | "otp">("mobile");
 	const [mobile, setMobile] = useState("");
-	const [otp, setOtp] = useState("");
+	const [digits, setDigits] = useState<string[]>(() =>
+		Array(OTP_LENGTH).fill(""),
+	);
+	const otp = digits.join("");
+	const boxesRef = useRef<Array<HTMLInputElement | null>>([]);
+	const lastSubmittedRef = useRef<string>("");
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [cooldown, setCooldown] = useState(0);
+
+	/** Resets all OTP boxes and clears the auto-submit guard. */
+	function resetOtp() {
+		setDigits(Array(OTP_LENGTH).fill(""));
+		lastSubmittedRef.current = "";
+	}
+
+	function focusBox(i: number) {
+		boxesRef.current[i]?.focus();
+	}
+
+	/** Writes a single digit box and advances focus to the next box. */
+	function handleDigit(index: number, raw: string) {
+		const cleaned = raw.replace(/\D/g, "");
+		setDigits((prev) => {
+			const next = [...prev];
+			next[index] = cleaned.slice(-1);
+			return next;
+		});
+		if (cleaned && index < OTP_LENGTH - 1) focusBox(index + 1);
+	}
+
+	/** Backspace on an empty box steps focus to the previous box. */
+	function handleOtpKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
+		if (e.key === "Backspace" && !digits[index] && index > 0) {
+			focusBox(index - 1);
+		}
+	}
+
+	/** Distributes a pasted code across the boxes. */
+	function handleOtpPaste(e: ClipboardEvent<HTMLInputElement>) {
+		const text = e.clipboardData
+			.getData("text")
+			.replace(/\D/g, "")
+			.slice(0, OTP_LENGTH);
+		if (!text) return;
+		e.preventDefault();
+		setDigits(Array.from({ length: OTP_LENGTH }, (_, i) => text[i] ?? ""));
+		focusBox(Math.min(text.length, OTP_LENGTH - 1));
+	}
 
 	// Tick the resend countdown down to zero, one second at a time.
 	useEffect(() => {
@@ -33,6 +86,21 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
 		return () => clearTimeout(t);
 	}, [cooldown]);
+
+	// Auto-submit once all boxes are filled; the ref guard prevents re-submitting
+	// the same code (e.g. after a failed verify leaves the boxes full).
+	useEffect(() => {
+		if (
+			step === "otp" &&
+			otp.length === OTP_LENGTH &&
+			!busy &&
+			lastSubmittedRef.current !== otp
+		) {
+			lastSubmittedRef.current = otp;
+			void verify();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [step, otp, busy]);
 
 	async function sendOtp() {
 		setBusy(true);
@@ -85,17 +153,28 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 					<p className="text-sm text-muted-foreground">
 						Code sent to {maskMobile(mobile)}
 					</p>
-					<Input
-						id="login-otp"
-						inputMode="numeric"
-						autoComplete="one-time-code"
-						maxLength={6}
-						autoFocus
-						value={otp}
-						onChange={(e) => setOtp(e.target.value)}
-						placeholder="6-digit code"
-					/>
-					<Button onClick={verify} disabled={busy || otp.length < 4}>
+					<div className="flex gap-2" role="group" aria-label="One-time code">
+						{digits.map((d, i) => (
+							<Input
+								key={i}
+								id={i === 0 ? "login-otp" : undefined}
+								ref={(el) => {
+									boxesRef.current[i] = el;
+								}}
+								inputMode="numeric"
+								autoComplete={i === 0 ? "one-time-code" : "off"}
+								aria-label={`Digit ${i + 1}`}
+								maxLength={1}
+								autoFocus={i === 0}
+								value={d}
+								onChange={(e) => handleDigit(i, e.target.value)}
+								onKeyDown={(e) => handleOtpKeyDown(i, e)}
+								onPaste={i === 0 ? handleOtpPaste : undefined}
+								className="h-12 w-10 text-center text-lg"
+							/>
+						))}
+					</div>
+					<Button onClick={verify} disabled={busy || otp.length < OTP_LENGTH}>
 						{busy ? "Verifying…" : "Verify & sign in"}
 					</Button>
 					<div className="flex items-center justify-between">
@@ -104,7 +183,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 							className="text-xs text-muted-foreground underline self-start disabled:opacity-50"
 							onClick={() => {
 								setStep("mobile");
-								setOtp("");
+								resetOtp();
 								setError(null);
 								setCooldown(0);
 							}}
@@ -116,7 +195,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 							type="button"
 							className="text-sm text-muted-foreground hover:underline self-start disabled:opacity-50"
 							onClick={() => {
-								setOtp("");
+								resetOtp();
 								setError(null);
 								void sendOtp();
 							}}

@@ -34,10 +34,11 @@ describe("LoginForm", () => {
 			expect(authClient.startOtp).toHaveBeenCalledWith("9990000001"),
 		);
 
-		fireEvent.change(await screen.findByLabelText(/otp/i), {
-			target: { value: "1111" },
-		});
-		fireEvent.click(screen.getByRole("button", { name: /verify/i }));
+		const boxes = await screen.findAllByLabelText(/^Digit \d/);
+		"111111"
+			.split("")
+			.forEach((d, i) => fireEvent.change(boxes[i], { target: { value: d } }));
+		// Filling all six boxes auto-submits — no Verify click needed.
 		await waitFor(() => expect(onSuccess).toHaveBeenCalled());
 		expect(refresh).toHaveBeenCalled();
 	});
@@ -54,10 +55,10 @@ describe("LoginForm", () => {
 			target: { value: "9990000001" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: /send otp/i }));
-		fireEvent.change(await screen.findByLabelText(/otp/i), {
-			target: { value: "0000" },
-		});
-		fireEvent.click(screen.getByRole("button", { name: /verify/i }));
+		const boxes = await screen.findAllByLabelText(/^Digit \d/);
+		"000000"
+			.split("")
+			.forEach((d, i) => fireEvent.change(boxes[i], { target: { value: d } }));
 		expect(
 			await screen.findByText(/invalid or expired otp/i),
 		).toBeInTheDocument();

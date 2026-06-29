@@ -2,6 +2,7 @@ import { EkoLogo } from "@/components/EkoLogo";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { cn } from "@/lib/utils";
@@ -110,6 +111,9 @@ export const Header = () => {
 	/** Per-trigger open timers (80ms open delay). */
 	const openTimersRef = useRef<Record<string, number | undefined>>({});
 	const location = useLocation();
+	const { state: authState } = useAuth();
+	// Once signed in, the avatar menu replaces the sales CTA in the header.
+	const isAuthed = SHOW_USER_LOGIN && authState.status === "authed";
 
 	const HOVER_OPEN_DELAY = 80;
 	const HOVER_CLOSE_DELAY = 150;
@@ -448,22 +452,24 @@ export const Header = () => {
               </a> */}
 
 							{/*
-                MARK: Account menu (authed users only)
+                MARK: Account menu (authed users only) — replaces the CTA
               */}
 							{SHOW_USER_LOGIN && <UserMenu />}
 
 							{/*
-                MARK: Desktop CTA
+                MARK: Desktop CTA — hidden once signed in
               */}
-							<Button
-								id="btn-get-started-header-desktop"
-								variant="gold"
-								size="sm"
-								onClick={() => openZohoChat()}
-								className="cursor-pointer"
-							>
-								Get Started
-							</Button>
+							{!isAuthed && (
+								<Button
+									id="btn-get-started-header-desktop"
+									variant="gold"
+									size="sm"
+									onClick={() => openZohoChat()}
+									className="cursor-pointer"
+								>
+									Get Started
+								</Button>
+							)}
 						</div>
 
 						<div className="lg:hidden flex items-center gap-1">
