@@ -53,6 +53,72 @@ eq() { [ "$2" = "$3" ] && ok "$1" || no "$1" "expected [$3] got [$2]"; }
 	clear_hold; is_hold && no "clear_hold" "still held" || ok "clear_hold"
 )
 
+# --- Task 2 cases (inserted ABOVE the summary block; every case uses `load`) ---
+seed_deploy() {            # common: a change is pending, redis up, container healthy
+	echo "cidOLD" >"$SHIM_STATE/ps"
+	export SHIM_IMGID=imgOLD SHIM_REPODIGESTS="ghcr.io/ekoindia/eps-backend@sha256:LIVE"
+	export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
+}
+lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
+( setup; seed_deploy; load
+	reconcile_once
+	eq "happy path writes last_good=remote" "$(lg)" "sha256:remote"
+	is_hold && no "happy path no HOLD" "held" || ok "happy path no HOLD"
+)
+( setup; seed_deploy; export SHIM_SKOPEO_DIGEST=sha256:LIVE; load  # remote==running → no-op
+	reconcile_once
+	[ -f "$SHIM_STATE/last_good" ] && no "no-op when unchanged" "deployed" || ok "no-op when unchanged"
+)
+( setup; seed_deploy; printf 'DOWN' >"$SHIM_STATE/redis_ping"; load  # redis down at poll
+	reconcile_once
+	grep -q "up -d" "$SHIM_STATE/calls.log" && no "redis down → no swap" "swapped" || ok "redis down → no swap"
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load      # image fault, redis up throughout
+	reconcile_once
+	# rollback target = prev (sha256:LIVE); rollback gate (default OK) → last_good=LIVE
+	eq "image fault rolls back to prev" "$(lg)" "sha256:LIVE"
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'UP DOWN DOWN UP' >"$SHIM_STATE/redis_ping"; load           # redis blipped during gate
+	reconcile_once
+	is_hold && ok "redis blip in gate → HOLD no rollback" || no "redis blip in gate → HOLD" "not held"
+	[ "$(lg)" = "sha256:LIVE" ] && no "blip → no rollback" "rolled back" || ok "blip → no rollback"
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'running false 0\nexited false 0\nexited false 1\nrunning false 1' >"$SHIM_STATE/ctr_state"; load
+	reconcile_once                                                    # container unstable during gate
+	is_hold && ok "container unstable → HOLD no rollback" || no "container unstable → HOLD" "not held"
+)
+( setup
+	: >"$SHIM_STATE/ps"; export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load     # first deploy (prev=""), fails
+	reconcile_once
+	is_hold && ok "first-deploy fail → HOLD (no rollback target)" || no "first-deploy fail → HOLD" "not held"
+)
+( setup; seed_deploy; export SHIM_UP_FAIL=1; load                    # `docker up` errors → deploy failure
+	reconcile_once
+	is_hold && ok "deploy up-failure → HOLD" || no "deploy up-failure → HOLD" "not held"
+	[ -f "$SHIM_STATE/last_good" ] && no "up-failure no last_good" "wrote last_good" || ok "up-failure no last_good"
+)
+( setup; seed_deploy; export DEPLOY_ENV_FILE=/nonexistent/dir/deploy.env; load  # write_deploy_env fails
+	reconcile_once
+	is_hold && ok "deploy-env write failure → HOLD" || no "deploy-env write failure → HOLD" "not held"
+	[ -f "$SHIM_STATE/last_good" ] && no "env-write failure no last_good" "wrote last_good" || ok "env-write failure no last_good"
+)
+( setup; seed_deploy; load                                          # HOLD present → reconcile no-op
+	printf 'held\n' >"$SHIM_STATE/HOLD"                              # STATE_DIR==SHIM_STATE (setup)
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	grep -q "skopeo" "$SHIM_STATE/calls.log" && no "HOLD → no work" "did work" || ok "HOLD → no work"
+)
+( setup; seed_deploy; export SHIM_SKOPEO_FAIL=1; load                # registry unreachable
+	reconcile_once
+	grep -q "up -d" "$SHIM_STATE/calls.log" && no "registry error → no swap" "swapped" || ok "registry error → no swap"
+)
+
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---
 PASS="$(grep -c '^ok' "$RESULTS" || true)"
 FAIL="$(grep -c '^no' "$RESULTS" || true)"
