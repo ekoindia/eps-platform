@@ -362,7 +362,9 @@ async function fetchImagetoolsBuffer(
 	ssrServer: ViteDevServer,
 	url: string,
 ): Promise<Buffer | null> {
-	const id = url.split("/@imagetools/")[1];
+	// Strip any query string (e.g. `?width=300&format=webp`) — the disk cache
+	// filename is the bare id hash, so a query-suffixed id would never match.
+	const id = url.split("/@imagetools/")[1]?.split("?")[0];
 	if (!id) return null;
 
 	// Try disk cache first — in Vite 8+, this is the reliable path.
