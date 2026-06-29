@@ -1,0 +1,88 @@
+# Production stack for a single private VM. Drive with the INVARIANT form:
+#   docker compose -p eps-backend --project-directory /deploy \
+#     --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml <cmd>
+# EPS_BACKEND_IMAGE comes from deploy.env via --env-file (NOT service env_file).
+services:
+  redis:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - eps-redis-data:/data
+    networks:
+      - eps-internal
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  eps-backend:
+    image: ${EPS_BACKEND_IMAGE}
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8787:8787"
+    networks:
+      - eps-internal
+      - eps-egress
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8787/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  poller:
+    build:
+      context: ./deploy/poller
+    # .env (operator secrets) feeds POLLER_ALERT_WEBHOOK into the container env;
+    # the explicit `environment:` literals below override/augment it. (deploy.env
+    # holds only EPS_BACKEND_IMAGE and is NOT an env source for the poller.)
+    env_file:
+      - .env
+    environment:
+      IMAGE: ghcr.io/ekoindia/eps-backend
+      WATCH_TAG: prod
+      COMPOSE_PROJECT: eps-backend
+      PROJECT_DIR: /deploy
+      COMPOSE_FILE: /deploy/docker-compose.prod.yml
+      DEPLOY_ENV_FILE: /deploy/deploy.env
+      STATE_DIR: /state
+      REGISTRY_AUTH_FILE: /root/.docker/config.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/deploy
+      - eps-poller-state:/state
+      - ./.ghcr-auth.json:/root/.docker/config.json:ro
+    networks:
+      - eps-internal
+      - eps-egress
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  eps-redis-data:
+  eps-poller-state:
+
+networks:
+  eps-internal:
+    internal: true
+  eps-egress:
