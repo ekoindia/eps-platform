@@ -8,12 +8,76 @@ running image every 30 seconds, with a health gate and automatic rollback.
 
 ## Contents
 
-1. [Bootstrap](#bootstrap)
-2. [How a deploy happens](#how-a-deploy-happens)
-3. [Manual rollback](#manual-rollback)
-4. [Clearing HOLD](#clearing-hold)
-5. [Alerts](#alerts)
-6. [Ongoing ops](#ongoing-ops)
+1. [Pre-production setup checklist](#pre-production-setup-checklist)
+2. [Bootstrap](#bootstrap)
+3. [How a deploy happens](#how-a-deploy-happens)
+4. [Manual rollback](#manual-rollback)
+5. [Clearing HOLD](#clearing-hold)
+6. [Alerts](#alerts)
+7. [Ongoing ops](#ongoing-ops)
+
+---
+
+## Pre-production setup checklist
+
+One-time human actions, NOT automated. Do these (in order) before the pipeline
+is trusted. The pull-based design has no gate other than the `main` merge, so
+these are load-bearing — skipping them either bypasses the deploy gate or leaves
+the pipeline silently inert.
+
+### 1. Branch protection on `main` (the merge gate IS the deploy gate)
+
+Merging to `main` → green CI → image publish → poller deploys to the prod VM
+(with real secrets). The PR-into-`main` merge is the production deploy button.
+
+GitHub → **Settings → Rules → Rulesets** (or Settings → Branches), target `main`:
+
+- [ ] **Require a pull request before merging** (≥1 approval; dismiss stale
+  approvals on new commits).
+- [ ] **Require status checks to pass** — select the **CI** check (job
+  "Web + JS/TS packages"); tick "require branches up to date before merging".
+- [ ] **Block force pushes** and **block deletions**.
+- [ ] **Enforce for administrators** (no bypass — otherwise the deploy gate has
+  a hole).
+
+### 2. GHCR package private + access (push for CI, read for the VM)
+
+The image is private (locked decision). CI must push; the VM must pull read-only.
+
+- [ ] **Create the package** — it is created on first publish (see step 3). New
+  org packages default to private.
+- [ ] **Verify** at org/user → **Packages → eps-backend → Package settings**:
+  visibility = **Private**; **Manage Actions access** grants the `eps-platform`
+  repo **Write** (this backs `permissions: packages: write` in the workflow).
+- [ ] **Create the VM's read-only credential** — GitHub → Settings → Developer
+  settings → Personal access tokens: fine-grained **Packages: Read** for this
+  package, or classic PAT scope **`read:packages`**; ensure that token's owner
+  has **Read** under the package's **Manage access**.
+- [ ] On the VM, use that token for `docker login ghcr.io` in
+  [Bootstrap Step 4](#step-4--log-in-to-ghcr-and-create-the-authfile). It must
+  store a **plain** token (no credential helper) — else `.ghcr-auth.json` has no
+  usable secret and the poller's skopeo gets 401. Step 4 documents the explicit
+  authfile workaround if your host uses a credStore.
+
+### 3. Arm the pipeline (merge to `main`) + run the first deploy manually
+
+`workflow_run` only fires using the copy of `deploy-eps-backend.yml` on the
+**default branch (`main`)**. It currently lives on `dev`, so the pipeline does
+nothing until merged to `main`. And a fresh VM has nothing to reconcile, so the
+first deploy is hands-on; the poller takes over afterward.
+
+- [ ] **Merge `dev` → `main`** (PR) — puts `deploy-eps-backend.yml` + code on
+  `main`. The green CI run on that merge publishes the **first image**
+  (`:<sha>` + moves `:prod`). If it doesn't fire on the arming merge itself,
+  push one trivial follow-up commit to `main`.
+- [ ] **Confirm the first image exists** at `:prod` in GHCR before bootstrapping
+  — Bootstrap Step 6 seeds `deploy.env` from it (chicken-and-egg: seed needs an
+  image, image needs the workflow on `main`; so **merge first, then bootstrap**).
+- [ ] **Run the [Bootstrap](#bootstrap) steps on the VM** (Docker + NTP,
+  `/deploy` files, `.env` secrets, GHCR login + authfile, seed `deploy.env`,
+  auth smoke-test, `up -d`, reverse proxy → `127.0.0.1:8787`, prune timer).
+- [ ] **Thereafter:** every green `main` push auto-deploys within ~30 s — no
+  manual steps unless a deploy HOLDs (see [Clearing HOLD](#clearing-hold)).
 
 ---
 
@@ -332,13 +396,6 @@ the new key.
 
 ### Pre-merge ops (one-time human actions)
 
-The following are not automated and must be performed manually before the
-pull-based deploy pipeline is fully operational:
-
-- **Enable branch protection on `main`:** required reviews + required CI
-  (the "CI" workflow). The deploy workflow only fires on a successful CI run,
-  so branch protection is what makes the merge gate the deploy gate.
-- **Confirm the GHCR package is private:** `ghcr.io/ekoindia/eps-backend` must
-  be set to private with repository access granted to the Actions workflow.
-  This is configured in the GitHub organisation's package settings on first
-  publish.
+See the [Pre-production setup checklist](#pre-production-setup-checklist) at the
+top of this runbook — branch protection on `main`, GHCR private-package access,
+and arming the pipeline (merge to `main`) + first manual deploy.
