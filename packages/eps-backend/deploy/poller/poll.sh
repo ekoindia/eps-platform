@@ -126,7 +126,7 @@ reconcile_once() {
 	local remote running prev cid rcid
 	remote="$(remote_digest)" || { log "skopeo failed; skip tick"; return 0; }
 	[ -n "$remote" ] || { log "empty remote digest; skip"; return 0; }
-	running="$(running_repo_digest)"
+	running="$(running_repo_digest)" || { log "running_repo_digest failed; skip tick"; return 0; }
 	[ "$remote" = "$running" ] && return 0
 	if ! redis_ping; then alert WARN "redis down — deploy of $remote paused"; return 0; fi
 	prev="$running"
