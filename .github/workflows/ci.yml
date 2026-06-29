@@ -12,6 +12,20 @@ jobs:
   web-and-packages:
     name: Web + JS/TS packages
     runs-on: ubuntu-latest
+    services:
+      # Real Redis for the eps-backend KV contract + fail-closed integration
+      # tests (src/store/redis.test.ts). They self-skip unless REDIS_TEST_URL is
+      # set, so this service is what makes them actually run in CI. redis:7
+      # satisfies the >=6.2 GETDEL/Lua floor the backend requires.
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,6 +77,14 @@ jobs:
 
       - name: Test eps-mock-server
         run: npm test -w @ekoindia/eps-mock-server
+
+      - name: Test eps-backend (incl. Redis integration)
+        run: npm test -w @ekoindia/eps-backend
+        env:
+          # Flips src/store/redis.test.ts from skip -> run against the `redis`
+          # service container above. Without this the backend suite still runs,
+          # but the Redis adapter (Lua incr, GETDEL, fail-closed) stays unproven.
+          REDIS_TEST_URL: redis://localhost:6379
 
   php-sdk:
     name: PHP SDK
