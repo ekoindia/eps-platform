@@ -44,3 +44,25 @@ export async function enforceRateLimit(
 		throw new AppError(429, "RATE_LIMITED", "Rate limit exceeded");
 	}
 }
+
+/**
+ * Awaits a KV operation, mapping any store outage to the same deterministic
+ * 503 the rate limiter uses — so a gate that reads/increments a counter fails
+ * closed with a correct, retryable code instead of a raw 502 via onError.
+ *
+ * Takes a thunk (not a live promise) so a synchronous throw inside the KV
+ * call is mapped too, not just a rejected promise.
+ *
+ * @throws AppError 503 RATE_LIMIT_UNAVAILABLE when the KV operation rejects/throws
+ */
+export async function kvOr503<T>(op: () => Promise<T>): Promise<T> {
+	try {
+		return await op();
+	} catch {
+		throw new AppError(
+			503,
+			"RATE_LIMIT_UNAVAILABLE",
+			"Rate limiter unavailable — try again shortly",
+		);
+	}
+}

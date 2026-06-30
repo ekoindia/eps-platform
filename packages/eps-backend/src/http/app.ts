@@ -14,6 +14,7 @@ import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import {
 	enforceRateLimit,
+	kvOr503,
 	ADMIN_LOGIN_IP_LIMIT,
 	ADMIN_CALLBACK_IP_LIMIT,
 	RL_WINDOW_SEC,
@@ -114,24 +115,29 @@ export function createApp(deps: Deps): Hono {
 			throw new AppError(400, "INVALID_INPUT", "mobile is invalid");
 		}
 		const failKey = `otp:fail:${m}`;
-		const fails = Number((await kv.get(failKey)) ?? 0);
+		// KV outage on the brute-force gate → 503 (fail-closed), never a raw 502.
+		const fails = Number((await kvOr503(() => kv.get(failKey))) ?? 0);
 		if (fails >= OTP_VERIFY_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		// SECURITY: x-real-ip must be set/overwritten by a trusted reverse proxy.
 		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipFailKey = `otp:verify:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
-		const ipFails = Number((await kv.get(ipFailKey)) ?? 0);
+		const ipFails = Number((await kvOr503(() => kv.get(ipFailKey))) ?? 0);
 		if (ipFails >= OTP_VERIFY_IP_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		const verified = await eko.verifyOtp({ mobile: m, otp });
 		if (!verified.ok) {
-			await kv.incr(failKey, OTP_WINDOW_SEC);
-			await kv.incr(ipFailKey, OTP_WINDOW_SEC);
+			// Fail-closed: if the failed attempt cannot be counted, refuse (503)
+			// rather than let unbounded guesses through.
+			await kvOr503(() => kv.incr(failKey, OTP_WINDOW_SEC));
+			await kvOr503(() => kv.incr(ipFailKey, OTP_WINDOW_SEC));
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
-		await kv.del(failKey);
+		// Best-effort cleanup: a valid OTP is already consumed; a stale failKey
+		// expires by its own TTL, so never 502/503 the user over it.
+		await kv.del(failKey).catch(() => {});
 		const profile = await eko.getProfile({ mobile: m });
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {

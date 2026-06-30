@@ -239,6 +239,45 @@ describe("otp/verify + me", () => {
 			"RATE_LIMITED",
 		);
 	});
+
+	it("verify → 503 RATE_LIMIT_UNAVAILABLE when a KV read fails", async () => {
+		const base = deps();
+		const failingKv = {
+			...base.kv,
+			get: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(503);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
+
+	it("verify with a valid OTP still succeeds when only kv.del fails", async () => {
+		const base = deps(); // verifyOtp → ok:true by default
+		const failingDelKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingDelKv);
+		const app = createApp({ ...base, cfg, kv: failingDelKv, sessions });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(200);
+	});
 });
 
 describe("refresh", () => {
