@@ -432,6 +432,7 @@ describe("admin security logging", () => {
 				baseSha: "sha1",
 			}),
 		});
+		expect(records).toHaveLength(1);
 		expect(records[0]).toMatchObject({
 			action: "propose",
 			actor: "@octocat",
