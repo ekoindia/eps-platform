@@ -170,6 +170,51 @@ Per-IP limits trust the `x-real-ip` header, which the reverse proxy must
 set/overwrite. The callback limiter runs after single-use OAuth-state
 consumption, so a forged or replayed state cannot exhaust a shared IP's budget.
 
+### Security: event log
+
+Security-relevant admin events are emitted as single-line JSON to **stdout**,
+tagged `"type":"security_audit"` for downstream log filtering. The log is
+**best-effort** — a logging failure never affects a request — and is the
+system of record only for the _negative space_ GitHub cannot see. Successful
+`propose`/`deploy` mutations are **not** logged (their commit/PR in GitHub is
+the durable record).
+
+Captured events:
+
+| event            | outcome | when                                                                      |
+| ---------------- | ------- | ------------------------------------------------------------------------- |
+| `admin_login`    | granted | admin OAuth sign-in succeeds (records `actor`, `ip`, `sid`)               |
+| `admin_login`    | denied  | non-write GitHub user (`reason` = `no-write`/`unknown`) or `OAUTH_FAILED` |
+| `admin_mutation` | denied  | `propose`/`deploy` rejected at a gate (`reason` = the `AppError` code)    |
+
+Record shape:
+
+```json
+{
+	"type": "security_audit",
+	"ts": "<ISO8601>",
+	"event": "admin_login|admin_mutation",
+	"outcome": "granted|denied",
+	"action": "propose|deploy|null",
+	"actor": "@login|unknown",
+	"reason": "<code>|null",
+	"ip": "<x-real-ip>|unknown",
+	"sid": "<id>|null"
+}
+```
+
+`actor` is the GitHub `@login` once the session is resolved, else `"unknown"`
+(e.g. `BAD_ORIGIN`, `NOT_AUTHORIZED`, `NO_GH_TOKEN`). `ip` comes from the
+`x-real-ip` header set by the trusted reverse proxy. Forged/replayed OAuth
+`BAD_STATE` callbacks are deliberately not logged (unauthenticated, unbounded —
+logging them would be a log-flood vector).
+
+**otp/verify outage contract:** the brute-force-gate KV calls in
+`/auth/otp/verify` (counter reads and the invalid-OTP increments) now return
+**503 `RATE_LIMIT_UNAVAILABLE`** on a KV outage instead of a raw 502; the
+post-success counter cleanup is best-effort. (The post-verify session-issuance
+`kv.set` is a separate layer and may still surface as 502.)
+
 ## Production deploy (pull-based, private VM)
 
 The production stack runs on a single private VM under `docker-compose.prod.yml`.

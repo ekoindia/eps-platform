@@ -8,6 +8,10 @@ import type { ZohoClient } from "../clients/zoho";
 import type { GitHubClient } from "../clients/github";
 import { createSecretBox } from "../store/secretbox";
 import { randomBytes } from "node:crypto";
+import {
+	createSecurityLogger,
+	type SecurityRecord,
+} from "../audit/securityLog";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -59,6 +63,14 @@ function deps(over: Partial<EkoClient> = {}) {
 function cookieFrom(res: Response): string {
 	const set = res.headers.getSetCookie?.() ?? [];
 	return set.map((c) => c.split(";")[0]).join("; ");
+}
+
+function captureLog() {
+	const records: SecurityRecord[] = [];
+	const logger = createSecurityLogger({
+		sink: (line) => records.push(JSON.parse(line) as SecurityRecord),
+	});
+	return { logger, records };
 }
 
 async function body<T>(res: Response): Promise<T> {
@@ -239,6 +251,45 @@ describe("otp/verify + me", () => {
 			"RATE_LIMITED",
 		);
 	});
+
+	it("verify → 503 RATE_LIMIT_UNAVAILABLE when a KV read fails", async () => {
+		const base = deps();
+		const failingKv = {
+			...base.kv,
+			get: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(503);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
+
+	it("verify with a valid OTP still succeeds when only kv.del fails", async () => {
+		const base = deps(); // verifyOtp → ok:true by default
+		const failingDelKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingDelKv);
+		const app = createApp({ ...base, cfg, kv: failingDelKv, sessions });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(200);
+	});
 });
 
 describe("refresh", () => {
@@ -368,7 +419,10 @@ describe("logout", () => {
 	});
 });
 
-function ghDeps(gh: Partial<GitHubClient>) {
+function ghDeps(
+	gh: Partial<GitHubClient>,
+	securityLog?: ReturnType<typeof createSecurityLogger>,
+) {
 	const base = deps();
 	const github: GitHubClient = {
 		authorizeUrl: (state) =>
@@ -387,7 +441,6 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		})),
 		...gh,
 	};
-	// rebuild app with github included
 	const kv = createInMemoryKV();
 	const sessions = createSessions(cfg, kv);
 	const app = createApp({
@@ -397,6 +450,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		sessions,
 		kv,
 		github,
+		securityLog,
 	});
 	return { app, github, kv, sessions };
 }
@@ -749,4 +803,78 @@ it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 	expect(ghSet).toBeTruthy();
 	expect(ghSet![1]).not.toBe("gh-secret");
 	expect(secretbox.decrypt(ghSet![1] as string)).toBe("gh-secret");
+});
+
+describe("admin login security logging", () => {
+	async function callbackWith(
+		gh: Partial<GitHubClient>,
+		logger: ReturnType<typeof createSecurityLogger>,
+	) {
+		const { app, sessions } = ghDeps(gh, logger);
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		return { res, sessions };
+	}
+
+	it("logs loginGranted on a successful admin sign-in (sid matches the session)", async () => {
+		const { logger, records } = captureLog();
+		const { res, sessions } = await callbackWith(
+			{ exchangeCode: vi.fn(async () => "ght") },
+			logger,
+		);
+		expect(res.status).toBe(302);
+		expect(records).toHaveLength(1);
+		expect(records[0]).toMatchObject({
+			event: "admin_login",
+			outcome: "granted",
+			actor: "@octocat",
+			reason: null,
+		});
+		// The logged sid must be the SAME id minted into the session claim —
+		// decode the access cookie and compare, not just assert truthy.
+		const at = (res.headers.getSetCookie?.() ?? [])
+			.find((c) => c.startsWith("eps_at="))!
+			.split(";")[0]
+			.slice("eps_at=".length);
+		const claim = await sessions.verifyAccess(at);
+		expect(records[0].sid).toBe(claim?.sid);
+	});
+
+	it("logs loginDenied with raw status no-write for a non-write user", async () => {
+		const { logger, records } = captureLog();
+		const { res } = await callbackWith(
+			{ checkRepoWrite: vi.fn(async () => "no-write" as const) },
+			logger,
+		);
+		expect(res.status).toBe(403);
+		expect(records[0]).toMatchObject({
+			event: "admin_login",
+			outcome: "denied",
+			actor: "@octocat",
+			reason: "no-write",
+		});
+	});
+
+	it("logs loginDenied actor unknown reason OAUTH_FAILED when code exchange fails", async () => {
+		const { logger, records } = captureLog();
+		const { res } = await callbackWith(
+			{ exchangeCode: vi.fn(async () => null) },
+			logger,
+		);
+		expect(res.status).toBe(401);
+		expect(records[0]).toMatchObject({
+			event: "admin_login",
+			outcome: "denied",
+			actor: "unknown",
+			reason: "OAUTH_FAILED",
+		});
+	});
 });

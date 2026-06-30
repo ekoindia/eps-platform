@@ -12,8 +12,10 @@ import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
 import {
 	enforceRateLimit,
+	kvOr503,
 	ADMIN_LOGIN_IP_LIMIT,
 	ADMIN_CALLBACK_IP_LIMIT,
 	RL_WINDOW_SEC,
@@ -33,6 +35,7 @@ export interface Deps {
 	github?: GitHubClient;
 	secretbox?: SecretBox;
 	readiness?: () => Promise<boolean>; // Task 7
+	securityLog?: SecurityLogger;
 }
 
 const OTP_START_LIMIT = 5;
@@ -58,6 +61,7 @@ function normalizeMobile(raw: string): string {
 export function createApp(deps: Deps): Hono {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
+	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const app = new Hono();
 
 	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
@@ -114,24 +118,29 @@ export function createApp(deps: Deps): Hono {
 			throw new AppError(400, "INVALID_INPUT", "mobile is invalid");
 		}
 		const failKey = `otp:fail:${m}`;
-		const fails = Number((await kv.get(failKey)) ?? 0);
+		// KV outage on the brute-force gate → 503 (fail-closed), never a raw 502.
+		const fails = Number((await kvOr503(() => kv.get(failKey))) ?? 0);
 		if (fails >= OTP_VERIFY_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		// SECURITY: x-real-ip must be set/overwritten by a trusted reverse proxy.
 		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipFailKey = `otp:verify:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
-		const ipFails = Number((await kv.get(ipFailKey)) ?? 0);
+		const ipFails = Number((await kvOr503(() => kv.get(ipFailKey))) ?? 0);
 		if (ipFails >= OTP_VERIFY_IP_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		const verified = await eko.verifyOtp({ mobile: m, otp });
 		if (!verified.ok) {
-			await kv.incr(failKey, OTP_WINDOW_SEC);
-			await kv.incr(ipFailKey, OTP_WINDOW_SEC);
+			// Fail-closed: if the failed attempt cannot be counted, refuse (503)
+			// rather than let unbounded guesses through.
+			await kvOr503(() => kv.incr(failKey, OTP_WINDOW_SEC));
+			await kvOr503(() => kv.incr(ipFailKey, OTP_WINDOW_SEC));
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
-		await kv.del(failKey);
+		// Best-effort cleanup: a valid OTP is already consumed; a stale failKey
+		// expires by its own TTL, so never 502/503 the user over it.
+		await kv.del(failKey).catch(() => {});
 		const profile = await eko.getProfile({ mobile: m });
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
@@ -257,15 +266,32 @@ export function createApp(deps: Deps): Hono {
 			);
 
 			const token = await github.exchangeCode(code);
-			if (!token)
+			if (!token) {
+				securityLog.loginDenied({
+					actor: "unknown",
+					ip,
+					reason: "OAUTH_FAILED",
+				});
 				throw new AppError(401, "OAUTH_FAILED", "Code exchange failed");
+			}
 			const user = await github.getUser(token);
-			if (!user)
+			if (!user) {
+				securityLog.loginDenied({
+					actor: "unknown",
+					ip,
+					reason: "OAUTH_FAILED",
+				});
 				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
+			}
 			const status = await github.checkRepoWrite(token, user.login);
 			if (status !== "write") {
 				// Grant a session ONLY on confirmed write. no-write and unknown both
 				// block — a non-write GitHub user never receives any session.
+				securityLog.loginDenied({
+					actor: `@${user.login}`,
+					ip,
+					reason: status,
+				});
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
 			const sid = crypto.randomUUID();
@@ -292,10 +318,11 @@ export function createApp(deps: Deps): Hono {
 				sessions.refreshCookie(refresh, cfg.adminRefreshTtlSec),
 				{ append: true },
 			);
+			securityLog.loginGranted({ actor: `@${user.login}`, ip, sid });
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		mountAdmin(app, { cfg, sessions, kv, github, secretbox });
+		mountAdmin(app, { cfg, sessions, kv, github, secretbox, securityLog });
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
