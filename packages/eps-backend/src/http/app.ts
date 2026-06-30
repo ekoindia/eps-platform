@@ -364,9 +364,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		// Cast: mountAdmin accepts Hono (BlankEnv); AppEnv is a superset at runtime.
-		// Task 5 will update mountAdmin's signature to Hono<AppEnv>.
-		mountAdmin(app as unknown as Hono, {
+		mountAdmin(app, {
 			cfg,
 			sessions,
 			kv,

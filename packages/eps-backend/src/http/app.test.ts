@@ -852,7 +852,6 @@ describe("correlation ids + access log", () => {
 		const app = new Hono<AppEnv>();
 		app.use("*", requestId());
 		app.use("*", async (c, next) => {
-			const start = performance.now();
 			try {
 				await next();
 			} finally {
@@ -862,6 +861,8 @@ describe("correlation ids + access log", () => {
 		app.get("/boom", () => {
 			throw "string-throw";
 		});
+		// app.request returns Response | Promise<Response>; Promise.resolve
+		// normalizes it so .catch is valid and the thrown non-Error is swallowed.
 		await Promise.resolve(app.request("/boom")).catch(() => {});
 		expect(sink).toHaveBeenCalledTimes(1);
 	});

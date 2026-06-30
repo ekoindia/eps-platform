@@ -14,6 +14,7 @@ import {
 	RL_WINDOW_SEC,
 } from "./rateLimit";
 import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
+import type { AppEnv } from "./requestId";
 
 /** Dependencies the admin routes need. */
 export interface AdminDeps {
@@ -26,7 +27,7 @@ export interface AdminDeps {
 }
 
 /** Registers admin-gated GitOps docs routes on the given app. */
-export function mountAdmin(app: Hono, deps: AdminDeps): void {
+export function mountAdmin(app: Hono<AppEnv>, deps: AdminDeps): void {
 	const { cfg, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const securityLog = deps.securityLog ?? noopSecurityLogger;
@@ -37,7 +38,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	 * it must be in the CORS allowlist. Missing Origin (non-browser / same-origin
 	 * tooling) passes through to the cookie+role+token gate.
 	 */
-	function assertAllowedOrigin(c: Context): void {
+	function assertAllowedOrigin(c: Context<AppEnv>): void {
 		const origin = c.req.header("origin");
 		if (origin && !cfg.corsOrigins.includes(origin)) {
 			throw new AppError(403, "BAD_ORIGIN", "Cross-origin request rejected");
@@ -66,7 +67,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 
 	/** Resolves the acting admin's GitHub token + login, or throws 403/401. */
 	async function adminToken(
-		c: Context,
+		c: Context<AppEnv>,
 	): Promise<{ token: string; login: string }> {
 		const at = getCookie(c, ACCESS_COOKIE);
 		const claim = at ? await sessions.verifyAccess(at) : null;
@@ -94,11 +95,12 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	 * therefore never logged here.
 	 */
 	async function runMutationGate(
-		c: Context,
+		c: Context<AppEnv>,
 		action: "propose" | "deploy",
 		limit: number,
 	): Promise<{ token: string; login: string }> {
 		const ip = c.req.header("x-real-ip") ?? "unknown";
+		const rid = c.get("rid");
 		let actor = "unknown";
 		try {
 			assertAllowedOrigin(c);
@@ -114,7 +116,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 			return { token, login };
 		} catch (e) {
 			if (e instanceof AppError) {
-				securityLog.mutationDenied({ action, actor, ip, reason: e.code });
+				securityLog.mutationDenied({ action, actor, ip, reason: e.code, rid });
 			}
 			throw e;
 		}

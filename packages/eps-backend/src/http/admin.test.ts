@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
 import { mountAdmin } from "./admin";
+import { requestId, type AppEnv } from "./requestId";
 import { loadConfig } from "../config";
 import { createInMemoryKV } from "../store/kv";
 import { createSessions } from "../auth/session";
@@ -59,7 +60,8 @@ async function harness(
 ) {
 	const kv = createInMemoryKV();
 	const sessions = createSessions(cfg, kv);
-	const app = new Hono();
+	const app = new Hono<AppEnv>();
+	app.use("*", requestId());
 	app.onError((err, c) =>
 		err instanceof AppError
 			? c.json(errorBody(err.code, err.message), err.status as 400)
@@ -254,7 +256,8 @@ function encHarness(github = ghMock()) {
 	const secretbox = createSecretBox(randomBytes(32).toString("base64"));
 	const kv = createInMemoryKV();
 	const sessions = createSessions(cfg, kv, { secretbox });
-	const app = new Hono();
+	const app = new Hono<AppEnv>();
+	app.use("*", requestId());
 	app.onError((err, c) =>
 		err instanceof AppError
 			? c.json(errorBody(err.code, err.message), err.status as 400)
@@ -358,7 +361,8 @@ describe("admin authz freshness", () => {
 		const github = ghMock();
 		const kv = createInMemoryKV();
 		const sessions = createSessions(cfg, kv);
-		const app = new Hono();
+		const app = new Hono<AppEnv>();
+		app.use("*", requestId());
 		app.onError((err, c) =>
 			err instanceof AppError
 				? c.json(errorBody(err.code, err.message), err.status as 400)
@@ -543,6 +547,33 @@ describe("admin security logging", () => {
 		});
 		expect(res.status).toBe(409);
 		expect(records).toHaveLength(0);
+	});
+
+	it("records rid on a denied mutation", async () => {
+		const lines: string[] = [];
+		const securityLog = createSecurityLogger({
+			sink: (l) => lines.push(l),
+		});
+		const github = ghMock({
+			checkRepoWrite: vi.fn(async () => "no-write" as const),
+		});
+		const { app, adminCookie } = await harness(github, securityLog);
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: { cookie: adminCookie, "Content-Type": "application/json" },
+			body: JSON.stringify({
+				path: "src/content/docs/g.mdx",
+				content: "x",
+				baseSha: "sha1",
+			}),
+		});
+		expect(res.status).toBe(403);
+		const rid = res.headers.get("x-request-id");
+		expect(rid).toBeTruthy();
+		const rec = lines
+			.map((l) => JSON.parse(l) as { event: string; rid: string })
+			.find((r) => r.event === "admin_mutation");
+		expect(rec?.rid).toBe(rid);
 	});
 });
 
