@@ -17,7 +17,12 @@ function capture() {
 describe("securityLog", () => {
 	it("loginGranted emits a granted admin_login record", () => {
 		const { logger, records } = capture();
-		logger.loginGranted({ actor: "@octocat", ip: "1.2.3.4", sid: "abc" });
+		logger.loginGranted({
+			actor: "@octocat",
+			ip: "1.2.3.4",
+			sid: "abc",
+			rid: "test-rid",
+		});
 		expect(records).toHaveLength(1);
 		expect(records[0]).toEqual({
 			type: "security_audit",
@@ -29,6 +34,7 @@ describe("securityLog", () => {
 			reason: null,
 			ip: "1.2.3.4",
 			sid: "abc",
+			rid: "test-rid",
 		});
 	});
 
@@ -46,6 +52,7 @@ describe("securityLog", () => {
 			actor: "@octocat",
 			ip: "1.2.3.4",
 			reason: "RATE_LIMITED",
+			rid: "test-rid",
 		});
 		expect(Object.keys(JSON.parse(raw))).toEqual([
 			"type",
@@ -57,6 +64,7 @@ describe("securityLog", () => {
 			"reason",
 			"ip",
 			"sid",
+			"rid",
 		]);
 	});
 
@@ -66,6 +74,7 @@ describe("securityLog", () => {
 			actor: "@stranger",
 			ip: "5.6.7.8",
 			reason: "no-write",
+			rid: "test-rid",
 		});
 		expect(records[0]).toMatchObject({
 			event: "admin_login",
@@ -84,6 +93,7 @@ describe("securityLog", () => {
 			actor: "@octocat",
 			ip: "9.9.9.9",
 			reason: "WRITE_ACCESS_REVOKED",
+			rid: "test-rid",
 		});
 		expect(records[0]).toMatchObject({
 			event: "admin_mutation",
@@ -102,7 +112,12 @@ describe("securityLog", () => {
 			},
 		});
 		expect(() =>
-			logger.loginGranted({ actor: "@x", ip: "1.1.1.1", sid: "s" }),
+			logger.loginGranted({
+				actor: "@x",
+				ip: "1.1.1.1",
+				sid: "s",
+				rid: "test-rid",
+			}),
 		).not.toThrow();
 	});
 
@@ -113,6 +128,7 @@ describe("securityLog", () => {
 				actor: "@x",
 				ip: "1.1.1.1",
 				reason: "OAUTH_FAILED",
+				rid: "test-rid",
 			});
 			expect(spy).toHaveBeenCalledTimes(1);
 			const line = spy.mock.calls[0][0] as string;
@@ -129,7 +145,42 @@ describe("securityLog", () => {
 				actor: "@x",
 				ip: "1.1.1.1",
 				reason: "RATE_LIMITED",
+				rid: "test-rid",
 			}),
 		).not.toThrow();
+	});
+
+	it("includes rid on every record", () => {
+		const lines: string[] = [];
+		const log = createSecurityLogger({
+			sink: (l) => lines.push(l),
+			now: () => new Date("2026-06-30T00:00:00Z"),
+		});
+		log.loginGranted({ actor: "@a", ip: "1.1.1.1", sid: "S", rid: "R1" });
+		log.loginDenied({
+			actor: "@a",
+			ip: "1.1.1.1",
+			reason: "no-write",
+			rid: "R2",
+		});
+		log.mutationDenied({
+			action: "propose",
+			actor: "@a",
+			ip: "1.1.1.1",
+			reason: "RATE_LIMITED",
+			rid: "R3",
+		});
+		const rids = lines.map((l) => JSON.parse(l).rid);
+		expect(rids).toEqual(["R1", "R2", "R3"]);
+	});
+
+	it("never throws when the sink rejects asynchronously", async () => {
+		const log = createSecurityLogger({
+			sink: () => Promise.reject(new Error("async")) as unknown as void,
+		});
+		expect(() =>
+			log.loginGranted({ actor: "@a", ip: "1.1.1.1", sid: "S", rid: "R" }),
+		).not.toThrow();
+		await Promise.resolve();
 	});
 });

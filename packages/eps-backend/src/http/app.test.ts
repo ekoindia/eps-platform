@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { Hono } from "hono";
 import { createApp } from "./app";
 import { loadConfig } from "../config";
 import { createInMemoryKV } from "../store/kv";
@@ -12,6 +13,8 @@ import {
 	createSecurityLogger,
 	type SecurityRecord,
 } from "../audit/securityLog";
+import { requestId, type AppEnv } from "./requestId";
+import { createAccessLogger } from "../audit/accessLog";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -26,7 +29,10 @@ const cfg = loadConfig({
 	COOKIE_SECURE: "false",
 });
 
-function deps(over: Partial<EkoClient> = {}) {
+function deps(
+	over: Partial<EkoClient> = {},
+	opts: { accessSink?: (l: string) => void } = {},
+) {
 	const kv = createInMemoryKV();
 	const eko: EkoClient = {
 		sendOtp: vi.fn(async () => ({ ok: true, raw: {} })),
@@ -51,8 +57,11 @@ function deps(over: Partial<EkoClient> = {}) {
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
 	const sessions = createSessions(cfg, kv);
+	const accessLog = opts.accessSink
+		? createAccessLogger({ sink: opts.accessSink })
+		: undefined;
 	return {
-		app: createApp({ cfg, eko, zoho, sessions, kv }),
+		app: createApp({ cfg, eko, zoho, sessions, kv, accessLog }),
 		eko,
 		zoho,
 		sessions,
@@ -803,6 +812,60 @@ it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 	expect(ghSet).toBeTruthy();
 	expect(ghSet![1]).not.toBe("gh-secret");
 	expect(secretbox.decrypt(ghSet![1] as string)).toBe("gh-secret");
+});
+
+describe("correlation ids + access log", () => {
+	it("returns an x-request-id header and exposes it via CORS", async () => {
+		const { app } = deps();
+		const res = await app.request("/healthz", {
+			headers: { Origin: "http://localhost:5173" },
+		});
+		expect(res.headers.get("x-request-id")).toBeTruthy();
+		expect(res.headers.get("access-control-expose-headers")).toContain(
+			"x-request-id",
+		);
+	});
+
+	it("does not emit an access line for /healthz or /readyz", async () => {
+		const sink = vi.fn();
+		const { app } = deps({}, { accessSink: sink });
+		await app.request("/healthz");
+		await app.request("/readyz");
+		expect(sink).not.toHaveBeenCalled();
+	});
+
+	it("emits exactly one access line per normal request with the matching rid", async () => {
+		const sink = vi.fn();
+		const { app } = deps({}, { accessSink: sink });
+		const res = await app.request("/me"); // 401, but still a logged request
+		const rid = res.headers.get("x-request-id");
+		expect(sink).toHaveBeenCalledTimes(1);
+		const rec = JSON.parse(sink.mock.calls[0][0]);
+		expect(rec.type).toBe("access");
+		expect(rec.rid).toBe(rid);
+		expect(rec.path).toBe("/me");
+		expect(rec.status).toBe(401);
+	});
+
+	it("emits an access line even when a handler throws a non-Error value", async () => {
+		const sink = vi.fn();
+		const app = new Hono<AppEnv>();
+		app.use("*", requestId());
+		app.use("*", async (c, next) => {
+			try {
+				await next();
+			} finally {
+				sink({ status: c.res?.status ?? 500 });
+			}
+		});
+		app.get("/boom", () => {
+			throw "string-throw";
+		});
+		// app.request returns Response | Promise<Response>; Promise.resolve
+		// normalizes it so .catch is valid and the thrown non-Error is swallowed.
+		await Promise.resolve(app.request("/boom")).catch(() => {});
+		expect(sink).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe("admin login security logging", () => {

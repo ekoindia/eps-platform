@@ -9,6 +9,7 @@ import { createGitHubClient } from "./clients/github";
 import { createSessions } from "./auth/session";
 import { createApp } from "./http/app";
 import { createSecurityLogger } from "./audit/securityLog";
+import { createAccessLogger } from "./audit/accessLog";
 import type { KV } from "./store/kv";
 
 /**
@@ -48,6 +49,7 @@ async function main() {
 		secretbox,
 		readiness,
 		securityLog: createSecurityLogger(),
+		accessLog: createAccessLogger(),
 		eko: createEkoClient(cfg.eko),
 		zoho: createZohoClient(cfg.zoho),
 		github: createGitHubClient(cfg.github),

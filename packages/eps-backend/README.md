@@ -215,6 +215,47 @@ logging them would be a log-flood vector).
 post-success counter cleanup is best-effort. (The post-verify session-issuance
 `kv.set` is a separate layer and may still surface as 502.)
 
+### Security: correlation id & access log
+
+Every HTTP request is assigned a **correlation id** (`rid`) before any
+application logic runs:
+
+- If the reverse proxy sets an inbound `x-request-id` header the value is
+  sanitized (only `[A-Za-z0-9._-]`, capped at 128 characters) and reused as
+  `rid`. An upstream value that reduces to empty is treated as absent.
+- Otherwise a fresh `randomUUID()` is minted.
+- `rid` is returned to the caller in the **`x-request-id` response header**,
+  which is listed in the CORS `exposeHeaders` list so browser JS can read it.
+
+A structured **access log** line is emitted to **stdout** for every request
+_except_ `/healthz` and `/readyz` (probe noise is excluded). Each line is a
+single JSON object tagged `"type":"access"` for downstream filtering:
+
+```json
+{
+	"type": "access",
+	"ts": "<ISO8601>",
+	"rid": "<correlation-id>",
+	"method": "POST",
+	"path": "/auth/otp/start",
+	"status": 200,
+	"durMs": 42,
+	"ip": "<x-real-ip>|unknown"
+}
+```
+
+`rid` is threaded into the unhandled-error log and into every `security_audit`
+record, so a single id ties together a request's access line, any security
+event it raised, and any unhandled error it produced.
+
+**Log consumers** should filter on the `type` field: `"access"` for traffic
+visibility and `"security_audit"` for admin/auth events (see _Security: event
+log_ above). Both types land on the same stdout stream.
+
+**Trust note:** `rid` is informational only — it keys no authorization or
+rate-limit decision. Reusing the inbound header is therefore safe: a forged
+value affects only the caller's own correlation data.
+
 ## Production deploy (pull-based, private VM)
 
 The production stack runs on a single private VM under `docker-compose.prod.yml`.
