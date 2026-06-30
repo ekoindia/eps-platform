@@ -18,17 +18,29 @@ export interface SecurityRecord {
 	reason: string | null;
 	ip: string;
 	sid: string | null;
+	rid: string;
 }
 
 /** Records security-relevant admin events. All methods are best-effort and never throw. */
 export interface SecurityLogger {
-	loginGranted(input: { actor: string; ip: string; sid: string }): void;
-	loginDenied(input: { actor: string; ip: string; reason: string }): void;
+	loginGranted(input: {
+		actor: string;
+		ip: string;
+		sid: string;
+		rid: string;
+	}): void;
+	loginDenied(input: {
+		actor: string;
+		ip: string;
+		reason: string;
+		rid: string;
+	}): void;
 	mutationDenied(input: {
 		action: "propose" | "deploy";
 		actor: string;
 		ip: string;
 		reason: string;
+		rid: string;
 	}): void;
 }
 
@@ -50,14 +62,14 @@ export function createSecurityLogger(
 	// sink can never escape — the contract is "never throws".
 	function emit(build: () => SecurityRecord): void {
 		try {
-			sink(JSON.stringify(build()));
+			void Promise.resolve(sink(JSON.stringify(build()))).catch(() => {});
 		} catch {
 			// best-effort: a logging failure must never propagate
 		}
 	}
 
 	return {
-		loginGranted({ actor, ip, sid }) {
+		loginGranted({ actor, ip, sid, rid }) {
 			emit(() => ({
 				type: "security_audit",
 				ts: now().toISOString(),
@@ -68,9 +80,10 @@ export function createSecurityLogger(
 				reason: null,
 				ip,
 				sid,
+				rid,
 			}));
 		},
-		loginDenied({ actor, ip, reason }) {
+		loginDenied({ actor, ip, reason, rid }) {
 			emit(() => ({
 				type: "security_audit",
 				ts: now().toISOString(),
@@ -81,9 +94,10 @@ export function createSecurityLogger(
 				reason,
 				ip,
 				sid: null,
+				rid,
 			}));
 		},
-		mutationDenied({ action, actor, ip, reason }) {
+		mutationDenied({ action, actor, ip, reason, rid }) {
 			emit(() => ({
 				type: "security_audit",
 				ts: now().toISOString(),
@@ -94,6 +108,7 @@ export function createSecurityLogger(
 				reason,
 				ip,
 				sid: null,
+				rid,
 			}));
 		},
 	};
