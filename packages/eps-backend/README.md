@@ -215,6 +215,58 @@ logging them would be a log-flood vector).
 post-success counter cleanup is best-effort. (The post-verify session-issuance
 `kv.set` is a separate layer and may still surface as 502.)
 
+### Security: KV fail-open/closed matrix
+
+**Default rule:** an unguarded KV call **fails closed** — `withStoreErrors`
+wraps the store seam so any outage throws `StoreUnavailableError`, which
+`app.onError` maps to **503 `STORE_UNAVAILABLE`**. Fail-open is the deliberate
+exception, marked at the call site with `.catch(() => {})`. This makes the safe
+behavior the default and forces fail-open to be an explicit, reviewable choice.
+
+**`STORE_UNAVAILABLE` 503 contract:** the store is transiently unreachable. The
+client should retry; the outage is not a permanent error and carries no semantic
+about the request payload.
+
+Per-key-class outage policy:
+
+| Key class / call site                                            | Method      | Policy        | Result on KV outage                                       |
+| ---------------------------------------------------------------- | ----------- | ------------- | --------------------------------------------------------- |
+| `rl:*`, `otp:mob:`, `otp:ip:`, `otp:verify:ip:` (gates)         | incr        | fail-closed   | 503 `RATE_LIMIT_UNAVAILABLE` _(unchanged)_                |
+| `otp:fail:` read + incr (brute-force)                            | get/incr    | fail-closed   | 503 `RATE_LIMIT_UNAVAILABLE` _(unchanged, via `kvOr503`)_ |
+| refresh-token `rt:*` set (OTP login, admin login, rotation)      | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| refresh-token `rt:*` consume (rotation single-use)               | getdel      | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghstate:` set / get / del (OAuth state single-use)              | set/get/del | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghtoken:` set (admin token persistence)                         | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghtoken:` get (mutation gate, refresh read)                     | get         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghtoken:` TTL re-extend on `/auth/refresh`                      | set         | **fail-open** | best-effort, refresh still succeeds                       |
+| `otp:fail:` del after success                                    | del         | fail-open     | best-effort _(unchanged)_                                 |
+| refresh `rt:*` del + `ghtoken:` del on logout                    | del         | fail-open     | best-effort, logout still 200 _(unchanged)_               |
+| GitHub API malformed / unreachable                               | —           | —             | 502 `UPSTREAM_ERROR` / `GitHubApiError` _(unchanged)_     |
+
+**Boundaries — what is not `STORE_UNAVAILABLE`:**
+
+- **Rate-limit / brute-force gates** (`enforceRateLimit`, `kvOr503`) catch
+  `StoreUnavailableError` first and re-throw as `AppError(503, RATE_LIMIT_UNAVAILABLE)`,
+  so those paths keep their more specific code.
+- **GitHub / upstream errors** are remapped to `AppError(502, UPSTREAM_ERROR)`
+  inside the GitHub client layer before `app.onError` sees them; they cannot be
+  misrouted to 503.
+- **`/readyz`** is unchanged — the readiness probe calls Redis `ping()` internally
+  and returns `{ ready: false }` on failure. `STORE_UNAVAILABLE` applies only to
+  per-request KV operations.
+- **Encrypt/decrypt failures stay 502.** `secretbox.encrypt(...)` runs before
+  `kv.set(...)` on token-persistence paths; an encryption failure is not a store
+  outage, throws a different error type, and remains the generic 502 path.
+
+**Refresh-rotation half-failure:** `rotateRefresh` (`src/auth/session.ts`) is a
+two-step destructive operation: `getdel(old)` consumes the old refresh token, then
+`set(new)` persists the rotated one. If `getdel` succeeds but the subsequent `set`
+throws, the old token is already gone and the new one is not stored — the user must
+re-authenticate. This surfaces as **503 `STORE_UNAVAILABLE`** and is the accepted
+fail-closed outcome: rotation is intentionally non-atomic to preserve the
+single-use guarantee (making it atomic would briefly allow two valid tokens to
+coexist, widening the replay window).
+
 ### Security: correlation id & access log
 
 Every HTTP request is assigned a **correlation id** (`rid`) before any
