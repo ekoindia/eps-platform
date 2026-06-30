@@ -213,7 +213,7 @@ logging them would be a log-flood vector).
 `/auth/otp/verify` (counter reads and the invalid-OTP increments) now return
 **503 `RATE_LIMIT_UNAVAILABLE`** on a KV outage instead of a raw 502; the
 post-success counter cleanup is best-effort. (The post-verify session-issuance
-`kv.set` is a separate layer and may still surface as 502.)
+`kv.set` now returns **503 `STORE_UNAVAILABLE`** on a KV outage, fail-closed via the store seam.)
 
 ### Security: KV fail-open/closed matrix
 
