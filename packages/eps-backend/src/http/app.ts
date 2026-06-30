@@ -13,6 +13,8 @@ import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
+import { requestId, type AppEnv } from "./requestId";
+import { type AccessLogger, noopAccessLogger } from "../audit/accessLog";
 import {
 	enforceRateLimit,
 	kvOr503,
@@ -36,6 +38,7 @@ export interface Deps {
 	secretbox?: SecretBox;
 	readiness?: () => Promise<boolean>; // Task 7
 	securityLog?: SecurityLogger;
+	accessLog?: AccessLogger;
 }
 
 const OTP_START_LIMIT = 5;
@@ -58,19 +61,50 @@ function normalizeMobile(raw: string): string {
 	return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
-export function createApp(deps: Deps): Hono {
+export function createApp(deps: Deps): Hono<AppEnv> {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const securityLog = deps.securityLog ?? noopSecurityLogger;
-	const app = new Hono();
+	const accessLog = deps.accessLog ?? noopAccessLogger;
+	const app = new Hono<AppEnv>();
 
-	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
+	app.use("*", requestId());
+	app.use("*", async (c, next) => {
+		const start = performance.now();
+		try {
+			await next();
+		} finally {
+			const path = c.req.path;
+			if (path !== "/healthz" && path !== "/readyz") {
+				accessLog.log({
+					rid: c.get("rid"),
+					method: c.req.method,
+					path,
+					status: c.res?.status ?? 500,
+					durMs: Math.round(performance.now() - start),
+					ip: c.req.header("x-real-ip") ?? "unknown",
+				});
+			}
+		}
+	});
+	app.use(
+		"*",
+		cors({
+			origin: cfg.corsOrigins,
+			credentials: true,
+			exposeHeaders: ["x-request-id"],
+		}),
+	);
 
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
 			return c.json(errorBody(err.code, err.message), err.status as 400);
 		}
-		console.error("[eps-backend] unhandled", err);
+		try {
+			console.error("[eps-backend] unhandled", { rid: c.get("rid"), err });
+		} catch {
+			// logging must never escalate the error path
+		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 502);
 	});
 
@@ -271,6 +305,7 @@ export function createApp(deps: Deps): Hono {
 					actor: "unknown",
 					ip,
 					reason: "OAUTH_FAILED",
+					rid: c.get("rid"),
 				});
 				throw new AppError(401, "OAUTH_FAILED", "Code exchange failed");
 			}
@@ -280,6 +315,7 @@ export function createApp(deps: Deps): Hono {
 					actor: "unknown",
 					ip,
 					reason: "OAUTH_FAILED",
+					rid: c.get("rid"),
 				});
 				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
 			}
@@ -291,6 +327,7 @@ export function createApp(deps: Deps): Hono {
 					actor: `@${user.login}`,
 					ip,
 					reason: status,
+					rid: c.get("rid"),
 				});
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
@@ -318,11 +355,25 @@ export function createApp(deps: Deps): Hono {
 				sessions.refreshCookie(refresh, cfg.adminRefreshTtlSec),
 				{ append: true },
 			);
-			securityLog.loginGranted({ actor: `@${user.login}`, ip, sid });
+			securityLog.loginGranted({
+				actor: `@${user.login}`,
+				ip,
+				sid,
+				rid: c.get("rid"),
+			});
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		mountAdmin(app, { cfg, sessions, kv, github, secretbox, securityLog });
+		// Cast: mountAdmin accepts Hono (BlankEnv); AppEnv is a superset at runtime.
+		// Task 5 will update mountAdmin's signature to Hono<AppEnv>.
+		mountAdmin(app as unknown as Hono, {
+			cfg,
+			sessions,
+			kv,
+			github,
+			secretbox,
+			securityLog,
+		});
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
