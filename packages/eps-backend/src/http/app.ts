@@ -12,6 +12,7 @@ import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
 import {
 	enforceRateLimit,
 	kvOr503,
@@ -34,6 +35,7 @@ export interface Deps {
 	github?: GitHubClient;
 	secretbox?: SecretBox;
 	readiness?: () => Promise<boolean>; // Task 7
+	securityLog?: SecurityLogger;
 }
 
 const OTP_START_LIMIT = 5;
@@ -59,6 +61,7 @@ function normalizeMobile(raw: string): string {
 export function createApp(deps: Deps): Hono {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
+	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const app = new Hono();
 
 	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
@@ -263,15 +266,32 @@ export function createApp(deps: Deps): Hono {
 			);
 
 			const token = await github.exchangeCode(code);
-			if (!token)
+			if (!token) {
+				securityLog.loginDenied({
+					actor: "unknown",
+					ip,
+					reason: "OAUTH_FAILED",
+				});
 				throw new AppError(401, "OAUTH_FAILED", "Code exchange failed");
+			}
 			const user = await github.getUser(token);
-			if (!user)
+			if (!user) {
+				securityLog.loginDenied({
+					actor: "unknown",
+					ip,
+					reason: "OAUTH_FAILED",
+				});
 				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
+			}
 			const status = await github.checkRepoWrite(token, user.login);
 			if (status !== "write") {
 				// Grant a session ONLY on confirmed write. no-write and unknown both
 				// block — a non-write GitHub user never receives any session.
+				securityLog.loginDenied({
+					actor: `@${user.login}`,
+					ip,
+					reason: status,
+				});
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
 			const sid = crypto.randomUUID();
@@ -298,10 +318,11 @@ export function createApp(deps: Deps): Hono {
 				sessions.refreshCookie(refresh, cfg.adminRefreshTtlSec),
 				{ append: true },
 			);
+			securityLog.loginGranted({ actor: `@${user.login}`, ip, sid });
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		mountAdmin(app, { cfg, sessions, kv, github, secretbox });
+		mountAdmin(app, { cfg, sessions, kv, github, secretbox, securityLog });
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));

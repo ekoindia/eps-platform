@@ -8,6 +8,7 @@ import { createZohoClient } from "./clients/zoho";
 import { createGitHubClient } from "./clients/github";
 import { createSessions } from "./auth/session";
 import { createApp } from "./http/app";
+import { createSecurityLogger } from "./audit/securityLog";
 import type { KV } from "./store/kv";
 
 /**
@@ -46,6 +47,7 @@ async function main() {
 		kv,
 		secretbox,
 		readiness,
+		securityLog: createSecurityLogger(),
 		eko: createEkoClient(cfg.eko),
 		zoho: createZohoClient(cfg.zoho),
 		github: createGitHubClient(cfg.github),
