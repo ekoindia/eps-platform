@@ -13,6 +13,7 @@ import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
+import { StoreUnavailableError } from "../store/storeError";
 import { requestId, type AppEnv } from "./requestId";
 import { type AccessLogger, noopAccessLogger } from "../audit/accessLog";
 import {
@@ -99,6 +100,15 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
 			return c.json(errorBody(err.code, err.message), err.status as 400);
+		}
+		if (err instanceof StoreUnavailableError) {
+			return c.json(
+				errorBody(
+					"STORE_UNAVAILABLE",
+					"Storage temporarily unavailable — try again shortly",
+				),
+				503,
+			);
 		}
 		try {
 			console.error("[eps-backend] unhandled", { rid: c.get("rid"), err });
