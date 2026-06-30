@@ -13,6 +13,7 @@ import {
 	DEPLOY_LIMIT,
 	RL_WINDOW_SEC,
 } from "./rateLimit";
+import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
 
 /** Dependencies the admin routes need. */
 export interface AdminDeps {
@@ -21,12 +22,14 @@ export interface AdminDeps {
 	kv: KV;
 	github: GitHubClient;
 	secretbox?: SecretBox;
+	securityLog?: SecurityLogger;
 }
 
 /** Registers admin-gated GitOps docs routes on the given app. */
 export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	const { cfg, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
+	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const docs = createDocsService(github, cfg);
 
 	/**
@@ -82,6 +85,41 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 		return { token, login: claim.ghLogin ?? claim.sub };
 	}
 
+	/**
+	 * Runs the privileged-mutation gate sequence (origin → admin token →
+	 * per-login rate limit → live repo-write re-check) and returns the acting
+	 * admin's token + login. Any AppError denial is recorded as a security
+	 * event (actor is the resolved @login once known, else "unknown") and then
+	 * rethrown unchanged. Mid-work GitHub errors occur AFTER this gate and are
+	 * therefore never logged here.
+	 */
+	async function runMutationGate(
+		c: Context,
+		action: "propose" | "deploy",
+		limit: number,
+	): Promise<{ token: string; login: string }> {
+		const ip = c.req.header("x-real-ip") ?? "unknown";
+		let actor = "unknown";
+		try {
+			assertAllowedOrigin(c);
+			const { token, login } = await adminToken(c);
+			actor = `@${login}`;
+			await enforceRateLimit(
+				kv,
+				`rl:${action}:login:${login}`,
+				limit,
+				RL_WINDOW_SEC,
+			);
+			await assertRepoWrite(token, login);
+			return { token, login };
+		} catch (e) {
+			if (e instanceof AppError) {
+				securityLog.mutationDenied({ action, actor, ip, reason: e.code });
+			}
+			throw e;
+		}
+	}
+
 	app.get("/admin/docs", async (c) => {
 		const { token } = await adminToken(c);
 		return c.json({ docs: await docs.list(token) });
@@ -95,15 +133,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	});
 
 	app.post("/admin/docs/propose", async (c) => {
-		assertAllowedOrigin(c);
-		const { token, login } = await adminToken(c);
-		await enforceRateLimit(
-			kv,
-			`rl:propose:login:${login}`,
-			PROPOSE_LIMIT,
-			RL_WINDOW_SEC,
-		);
-		await assertRepoWrite(token, login);
+		const { token, login } = await runMutationGate(c, "propose", PROPOSE_LIMIT);
 		const b = (await c.req.json().catch(() => ({}))) as {
 			path?: unknown;
 			content?: unknown;
@@ -134,15 +164,7 @@ export function mountAdmin(app: Hono, deps: AdminDeps): void {
 	});
 
 	app.post("/admin/deploy/production", async (c) => {
-		assertAllowedOrigin(c);
-		const { token, login } = await adminToken(c);
-		await enforceRateLimit(
-			kv,
-			`rl:deploy:login:${login}`,
-			DEPLOY_LIMIT,
-			RL_WINDOW_SEC,
-		);
-		await assertRepoWrite(token, login);
+		const { token } = await runMutationGate(c, "deploy", DEPLOY_LIMIT);
 		return c.json(await docs.deployProduction(token));
 	});
 }
