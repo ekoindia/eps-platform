@@ -1177,3 +1177,45 @@ describe("KV-outage matrix (Task 3)", () => {
 		);
 	});
 });
+
+// C1 fail-closed cell: admin mutation gate privileged ghtoken read via createApp (Task 4)
+describe("KV-outage matrix (Task 4)", () => {
+	it("admin mutation gate ghtoken read outage → 503 STORE_UNAVAILABLE", async () => {
+		// Fail only kv.get on ghtoken: keys; all other ops (session verify, rate-limit
+		// incr) must reach the store cleanly so only the privileged ghtoken read fires.
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghtoken:"),
+		);
+		const { app, sessions } = ghDeps({}, { kv });
+		// mintAccess is pure JWT signing — no KV access — so it succeeds even with
+		// the failing store. We include a sid so the gate reaches kv.get("ghtoken:<sid>").
+		const sid = crypto.randomUUID();
+		const at = await sessions.mintAccess({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid,
+		});
+		// Send a valid allowed origin (https://eps.eko.in passes assertAllowedOrigin)
+		// and a well-formed body so no earlier check 400-masks the 503.
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: {
+				cookie: `eps_at=${at}`,
+				origin: "https://eps.eko.in",
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				path: "x",
+				content: "y",
+				baseSha: "sha",
+				summary: "z",
+			}),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+});
