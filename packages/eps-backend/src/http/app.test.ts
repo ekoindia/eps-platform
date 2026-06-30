@@ -1119,3 +1119,61 @@ describe("KV-outage matrix (Task 2)", () => {
 		);
 	});
 });
+
+// C1 fail-open / fail-closed matrix for the ghtoken re-extend on /auth/refresh (Task 3)
+describe("KV-outage matrix (Task 3)", () => {
+	/**
+	 * Seeds an admin refresh token and ghtoken into a base KV so tests can wrap
+	 * the base with failingKvByKey and still have data to operate on.
+	 */
+	async function seedAdminRefresh(
+		base: KV,
+	): Promise<{ rt: string; sid: string }> {
+		const sid = crypto.randomUUID();
+		const seedSessions = createSessions(cfg, base);
+		const rt = await seedSessions.issueRefresh({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid,
+		});
+		await base.set(`ghtoken:${sid}`, "gh-token", cfg.adminRefreshTtlSec);
+		return { rt, sid };
+	}
+
+	it("refresh re-extend fail-open: ghtoken set failing still returns 200", async () => {
+		// admin refresh where rotation (getdel + set on rt:*) succeeds but the
+		// ghtoken: TTL re-extend set fails — must NOT 503.
+		const base = createInMemoryKV();
+		const { rt } = await seedAdminRefresh(base);
+		const kv = failingKvByKey(
+			(m, k) => m === "set" && k.startsWith("ghtoken:"),
+			base,
+		);
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("refresh ghtoken read failing → 503 (read stays fail-closed)", async () => {
+		const base = createInMemoryKV();
+		const { rt } = await seedAdminRefresh(base);
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghtoken:"),
+			base,
+		);
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+});

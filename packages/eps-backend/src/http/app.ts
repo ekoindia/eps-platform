@@ -211,11 +211,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		if (rotated.claim.role === "admin" && rotated.claim.sid) {
 			const tok = await kv.get(`ghtoken:${rotated.claim.sid}`);
 			if (tok)
-				await kv.set(
-					`ghtoken:${rotated.claim.sid}`,
-					tok,
-					cfg.adminRefreshTtlSec,
-				);
+				await kv
+					.set(`ghtoken:${rotated.claim.sid}`, tok, cfg.adminRefreshTtlSec)
+					.catch(() => {}); // re-extend: fail-open — a TTL touch must not 503 a refresh
 		}
 		const access = await sessions.mintAccess(rotated.claim);
 		// C2: use role-aware TTL for the refresh cookie max-age.
