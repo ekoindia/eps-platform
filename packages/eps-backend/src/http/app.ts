@@ -13,6 +13,7 @@ import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
+import { StoreUnavailableError } from "../store/storeError";
 import { requestId, type AppEnv } from "./requestId";
 import { type AccessLogger, noopAccessLogger } from "../audit/accessLog";
 import {
@@ -99,6 +100,15 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
 			return c.json(errorBody(err.code, err.message), err.status as 400);
+		}
+		if (err instanceof StoreUnavailableError) {
+			return c.json(
+				errorBody(
+					"STORE_UNAVAILABLE",
+					"Storage temporarily unavailable — try again shortly",
+				),
+				503,
+			);
 		}
 		try {
 			console.error("[eps-backend] unhandled", { rid: c.get("rid"), err });
@@ -201,11 +211,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		if (rotated.claim.role === "admin" && rotated.claim.sid) {
 			const tok = await kv.get(`ghtoken:${rotated.claim.sid}`);
 			if (tok)
-				await kv.set(
-					`ghtoken:${rotated.claim.sid}`,
-					tok,
-					cfg.adminRefreshTtlSec,
-				);
+				await kv
+					.set(`ghtoken:${rotated.claim.sid}`, tok, cfg.adminRefreshTtlSec)
+					.catch(() => {}); // re-extend: fail-open — a TTL touch must not 503 a refresh
 		}
 		const access = await sessions.mintAccess(rotated.claim);
 		// C2: use role-aware TTL for the refresh cookie max-age.

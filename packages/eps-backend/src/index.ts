@@ -10,6 +10,7 @@ import { createSessions } from "./auth/session";
 import { createApp } from "./http/app";
 import { createSecurityLogger } from "./audit/securityLog";
 import { createAccessLogger } from "./audit/accessLog";
+import { withStoreErrors } from "./store/storeError";
 import type { KV } from "./store/kv";
 
 /**
@@ -42,6 +43,11 @@ async function main() {
 		kv = createInMemoryKV();
 		console.log("[eps-backend] KV backend: in-memory (single instance)");
 	}
+
+	// Wrap the store seam so any outage surfaces as a typed StoreUnavailableError
+	// → 503 STORE_UNAVAILABLE (fail-closed by default), uniform across both
+	// createApp and createSessions which share this instance.
+	kv = withStoreErrors(kv);
 
 	const app = createApp({
 		cfg,

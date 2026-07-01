@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
 import { createApp } from "./app";
 import { loadConfig } from "../config";
-import { createInMemoryKV } from "../store/kv";
+import { createInMemoryKV, type KV } from "../store/kv";
 import { createSessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
@@ -15,6 +15,7 @@ import {
 } from "../audit/securityLog";
 import { requestId, type AppEnv } from "./requestId";
 import { createAccessLogger } from "../audit/accessLog";
+import { withStoreErrors } from "../store/storeError";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -31,9 +32,9 @@ const cfg = loadConfig({
 
 function deps(
 	over: Partial<EkoClient> = {},
-	opts: { accessSink?: (l: string) => void } = {},
+	opts: { accessSink?: (l: string) => void; kv?: KV } = {},
 ) {
-	const kv = createInMemoryKV();
+	const kv = opts.kv ?? createInMemoryKV();
 	const eko: EkoClient = {
 		sendOtp: vi.fn(async () => ({ ok: true, raw: {} })),
 		verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
@@ -67,6 +68,48 @@ function deps(
 		sessions,
 		kv,
 	};
+}
+
+/**
+ * Builds a wrapped KV (exactly as production wraps it) where the named methods
+ * reject as if the store were down, while the rest operate on a real in-memory
+ * store. `base` lets a test seed data first (e.g. a refresh token) and then fail
+ * only a later method.
+ */
+function failingKv(
+	failOn: Partial<Record<"get" | "set" | "del" | "getdel" | "incr", true>>,
+	base = createInMemoryKV(),
+): KV {
+	const down = async () => {
+		throw new Error("kv down");
+	};
+	return withStoreErrors({
+		get: failOn.get ? (down as KV["get"]) : base.get,
+		set: failOn.set ? (down as KV["set"]) : base.set,
+		del: failOn.del ? (down as KV["del"]) : base.del,
+		getdel: failOn.getdel ? (down as KV["getdel"]) : base.getdel,
+		incr: failOn.incr ? (down as KV["incr"]) : base.incr,
+	});
+}
+
+/** Like failingKv, but fails only when `shouldFail(method, key)` is true. */
+function failingKvByKey(
+	shouldFail: (method: string, key: string) => boolean,
+	base = createInMemoryKV(),
+): KV {
+	const guard =
+		<A extends unknown[], R>(m: string, fn: (...a: A) => Promise<R>) =>
+		async (...a: A): Promise<R> => {
+			if (shouldFail(m, a[0] as string)) throw new Error("kv down");
+			return fn(...a);
+		};
+	return withStoreErrors({
+		get: guard("get", base.get),
+		set: guard("set", base.set),
+		del: guard("del", base.del),
+		getdel: guard("getdel", base.getdel),
+		incr: guard("incr", base.incr),
+	});
 }
 
 function cookieFrom(res: Response): string {
@@ -430,7 +473,7 @@ describe("logout", () => {
 
 function ghDeps(
 	gh: Partial<GitHubClient>,
-	securityLog?: ReturnType<typeof createSecurityLogger>,
+	opts: { kv?: KV; securityLog?: ReturnType<typeof createSecurityLogger> } = {},
 ) {
 	const base = deps();
 	const github: GitHubClient = {
@@ -450,7 +493,7 @@ function ghDeps(
 		})),
 		...gh,
 	};
-	const kv = createInMemoryKV();
+	const kv = opts.kv ?? createInMemoryKV();
 	const sessions = createSessions(cfg, kv);
 	const app = createApp({
 		cfg,
@@ -459,7 +502,7 @@ function ghDeps(
 		sessions,
 		kv,
 		github,
-		securityLog,
+		securityLog: opts.securityLog,
 	});
 	return { app, github, kv, sessions };
 }
@@ -873,7 +916,7 @@ describe("admin login security logging", () => {
 		gh: Partial<GitHubClient>,
 		logger: ReturnType<typeof createSecurityLogger>,
 	) {
-		const { app, sessions } = ghDeps(gh, logger);
+		const { app, sessions } = ghDeps(gh, { securityLog: logger });
 		const start = await app.request("/auth/admin/github");
 		const loc = new URL(start.headers.get("location")!);
 		const state = loc.searchParams.get("state")!;
@@ -939,5 +982,240 @@ describe("admin login security logging", () => {
 			actor: "unknown",
 			reason: "OAUTH_FAILED",
 		});
+	});
+});
+
+describe("KV-outage matrix (Task 2)", () => {
+	it("otp/verify token persistence outage → 503 STORE_UNAVAILABLE", async () => {
+		// valid OTP, but the refresh-token kv.set fails
+		const kv = failingKv({ set: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("admin OAuth state set outage → 503 STORE_UNAVAILABLE", async () => {
+		// The first kv.set on /auth/admin/github IS the ghstate write
+		const kv = failingKv({ set: true });
+		const { app } = ghDeps({}, { kv });
+		const res = await app.request("/auth/admin/github");
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("OAuth callback: ghstate get outage → 503 STORE_UNAVAILABLE", async () => {
+		// Use a base KV that allows set (for the ghstate write) but fails get on ghstate: keys
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghstate:"),
+		);
+		const { app } = ghDeps({}, { kv });
+		// Start: writes ghstate via set — succeeds
+		const start = await app.request("/auth/admin/github");
+		expect(start.status).toBe(302);
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		// Callback: reads ghstate via get — fails → 503
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("OAuth callback: ghtoken persist outage → 503 STORE_UNAVAILABLE", async () => {
+		// Fail set only on ghtoken: keys so ghstate write and rt: write succeed but
+		// the ghtoken persist (which comes first in the handler) triggers the outage
+		const kv = failingKvByKey(
+			(m, k) => m === "set" && k.startsWith("ghtoken:"),
+		);
+		const { app } = ghDeps({}, { kv });
+		// Start: writes ghstate → key is ghstate:, not ghtoken: → succeeds
+		const start = await app.request("/auth/admin/github");
+		expect(start.status).toBe(302);
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		// Callback: kv.set("ghtoken:...", ...) fails → 503
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("refresh rotation getdel outage → 503 STORE_UNAVAILABLE (not 502)", async () => {
+		const kv = failingKv({ getdel: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: "eps_rt=anything" },
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("rate-limit precedence: incr outage stays RATE_LIMIT_UNAVAILABLE (not STORE_UNAVAILABLE)", async () => {
+		const kv = failingKv({ incr: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001" }),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
+
+	it("logout fail-open: del outage still returns 200", async () => {
+		const kv = failingKv({ del: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/logout", {
+			method: "POST",
+			headers: { cookie: "eps_rt=anything" },
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("genuine non-store throw still yields 502 UPSTREAM_ERROR", async () => {
+		// eko.getProfile throws a plain (non-store) error on the verify success path
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => {
+				throw new Error("eko exploded");
+			}),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(502);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"UPSTREAM_ERROR",
+		);
+	});
+});
+
+// C1 fail-open / fail-closed matrix for the ghtoken re-extend on /auth/refresh (Task 3)
+describe("KV-outage matrix (Task 3)", () => {
+	/**
+	 * Seeds an admin refresh token and ghtoken into a base KV so tests can wrap
+	 * the base with failingKvByKey and still have data to operate on.
+	 */
+	async function seedAdminRefresh(
+		base: KV,
+	): Promise<{ rt: string; sid: string }> {
+		const sid = crypto.randomUUID();
+		const seedSessions = createSessions(cfg, base);
+		const rt = await seedSessions.issueRefresh({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid,
+		});
+		await base.set(`ghtoken:${sid}`, "gh-token", cfg.adminRefreshTtlSec);
+		return { rt, sid };
+	}
+
+	it("refresh re-extend fail-open: ghtoken set failing still returns 200", async () => {
+		// admin refresh where rotation (getdel + set on rt:*) succeeds but the
+		// ghtoken: TTL re-extend set fails — must NOT 503.
+		const base = createInMemoryKV();
+		const { rt } = await seedAdminRefresh(base);
+		const kv = failingKvByKey(
+			(m, k) => m === "set" && k.startsWith("ghtoken:"),
+			base,
+		);
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("refresh ghtoken read failing → 503 (read stays fail-closed)", async () => {
+		const base = createInMemoryKV();
+		const { rt } = await seedAdminRefresh(base);
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghtoken:"),
+			base,
+		);
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+});
+
+// C1 fail-closed cell: admin mutation gate privileged ghtoken read via createApp (Task 4)
+describe("KV-outage matrix (Task 4)", () => {
+	it("admin mutation gate ghtoken read outage → 503 STORE_UNAVAILABLE", async () => {
+		// Fail only kv.get on ghtoken: keys; all other ops (session verify, rate-limit
+		// incr) must reach the store cleanly so only the privileged ghtoken read fires.
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghtoken:"),
+		);
+		const { app, sessions } = ghDeps({}, { kv });
+		// mintAccess is pure JWT signing — no KV access — so it succeeds even with
+		// the failing store. We include a sid so the gate reaches kv.get("ghtoken:<sid>").
+		const sid = crypto.randomUUID();
+		const at = await sessions.mintAccess({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid,
+		});
+		// Send a valid allowed origin (https://eps.eko.in passes assertAllowedOrigin)
+		// and a well-formed body so no earlier check 400-masks the 503.
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: {
+				cookie: `eps_at=${at}`,
+				origin: "https://eps.eko.in",
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				path: "x",
+				content: "y",
+				baseSha: "sha",
+				summary: "z",
+			}),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
 	});
 });
