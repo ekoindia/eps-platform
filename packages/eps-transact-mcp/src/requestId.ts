@@ -1,5 +1,7 @@
 // Copied from packages/eps-backend/src/http/requestId.ts (eps-backend is an
-// app, not a library — copying beats coupling deploys). Keep in sync manually.
+// app, not a library — copying beats coupling deploys; only local delta is
+// `toolName` in AppEnv). Drift-guarded: parity.copied-utils.test.ts pins both
+// sides and fails on any change, forcing a sync review.
 import { randomUUID } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 

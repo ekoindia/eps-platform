@@ -4,7 +4,9 @@
  * notice". Not used by the HTTP server — a remote user can't self-update.
  *
  * (Deliberately mirrors eps-context-mcp's update-check: two separately-published
- * packages can't share a src module, same call as the copied requestId/accessLog.)
+ * packages can't share a src module, same call as the copied requestId/accessLog.
+ * Drift-guarded: parity.copied-utils.test.ts pins both sides and fails on any
+ * change, forcing a sync review.)
  */
 const REGISTRY_URL =
 	"https://registry.npmjs.org/@ekoindia/eps-transact-mcp/latest";

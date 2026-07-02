@@ -1,4 +1,6 @@
 // Copied from packages/eps-backend/src/clients/http.ts (app, not a library).
+// Drift-guarded: parity.copied-utils.test.ts pins both sides + asserts the
+// declarations stay identical.
 /** Default upstream request timeout (ms). Node's fetch has no default timeout. */
 export const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
 

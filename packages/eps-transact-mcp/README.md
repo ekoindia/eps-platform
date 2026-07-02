@@ -86,6 +86,8 @@ npm run transact:dev         # HTTP server on :8788 with tsx watch
 npm run transact:typecheck
 ```
 
+Four utils (`fetchTimeout`, `requestId`, `accessLog`, `update-check`) are hand-copied/adapted from eps-backend / eps-context-mcp; `parity.copied-utils.test.ts` pins a content hash of both sides of each pair, so editing either file fails the suite until you diff the pair, port what applies, and paste the replacement hash printed in the failure.
+
 Tests never call Eko; upstream fetch is injected. The one exception is the env-gated live UAT smoke:
 
 ```sh

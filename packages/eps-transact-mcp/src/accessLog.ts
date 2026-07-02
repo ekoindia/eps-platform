@@ -3,6 +3,8 @@
  * `type: "access"`. Adapted from packages/eps-backend/src/audit/accessLog.ts
  * with one extra field: the MCP tool NAME (never tool arguments, headers, or
  * bodies — verification traffic carries PAN/Aadhaar/bank PII).
+ * Drift-guarded: parity.copied-utils.test.ts pins both sides and fails on any
+ * change, forcing a sync review.
  */
 export interface AccessRecord {
 	type: "access";
