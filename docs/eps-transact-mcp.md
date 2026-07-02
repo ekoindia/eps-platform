@@ -77,7 +77,9 @@ Two independent levers, both already in place:
 
 ## Staying up to date
 
-The stdio bin (`src/update-check.ts`, wired only into `src/stdio.ts`) does a best-effort startup check against the npm `latest` dist-tag and prints a one-line stderr nudge when the running version is behind — silent on any failure, `EPS_NO_UPDATE_CHECK=1` opts out. The HTTP server deliberately skips it (remote users can't self-update; stderr there is operator log noise). Published via the content-gated `release.yml` auto-release; the documented install command pins `@latest` so `npx` re-resolves newest each launch. See the [package README](../packages/eps-transact-mcp/README.md#staying-up-to-date). **User action:** the package needs an npm **Trusted Publisher** (repo + `release.yml`) configured on npmjs.com, like every other `@ekoindia/*` package, before the first OIDC publish succeeds.
+The stdio bin (`src/update-check.ts`, wired only into `src/stdio.ts`) does a best-effort startup check against the npm `latest` dist-tag and prints a one-line stderr nudge when the running version is behind — silent on any failure, `EPS_NO_UPDATE_CHECK=1` opts out. The HTTP server deliberately skips it (remote users can't self-update; stderr there is operator log noise). Published via the content-gated `release.yml` auto-release; the documented install command pins `@latest` so `npx` re-resolves newest each launch. See the [package README](../packages/eps-transact-mcp/README.md#staying-up-to-date).
+
+**User action — one-time bootstrap.** OIDC Trusted Publishing can't create a brand-new scoped package, so the very first release is manual: from the repo after `npm run build`, `npm publish -w @ekoindia/eps-transact-mcp --access public`. Then configure the npm **Trusted Publisher** (repo + `release.yml`) on npmjs.com like every other `@ekoindia/*` package — after which `release.yml` auto-publishes subsequent content-changed versions with no token.
 
 ## Phase 2 candidates (deliberately not built)
 
