@@ -65,7 +65,8 @@ docs/            # detailed documentation (index below)
 vite-plugin-generate-*.ts   # build-time emitters (openapi, agent bundle, markdown, xlsx)
 
 packages/        # published artifacts (each baked from the build output):
-  eps-context-mcp/   # @ekoindia/eps-context-mcp — local MCP server (npm)
+  eps-context-mcp/   # @ekoindia/eps-context-mcp — local docs/context MCP server (npm)
+  eps-transact-mcp/  # @ekoindia/eps-transact-mcp — transactional MCP server: remote HTTP + local stdio (private)
   sdk-js/            # @ekoindia/eps-sdk — Node.js backend SDK (npm)
   eps-mock-server/   # @ekoindia/eps-mock-server — offline mock server (npm)
   sdk-php/           # ekoindia/eps-sdk — PHP backend SDK (Composer/Packagist)
@@ -153,6 +154,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow.
 
 **Platform & AI**
 - [AI agent platform](docs/ai-agent-platform.md)
+- [Transactional MCP server](docs/eps-transact-mcp.md)
 - [API coverage roadmap](docs/api-coverage-roadmap.md)
 
 **API & data model**
