@@ -20,14 +20,14 @@ claude mcp add --transport http eps-transact https://mcp.eko.in/mcp \
 
 ### Headers
 
-| Header | Required | Meaning |
-| --- | --- | --- |
-| `X-Eko-Developer-Key` | yes | Your static EPS developer key. |
-| `X-Eko-Access-Key` | yes | Your EPS access key; used to HMAC-sign each request server-side, never stored. |
-| `X-Eko-Allowed-Apis` | yes | Comma-separated tool names your agents may call, or `*` for all verification tools. Deliberately required — EPS calls are billed. |
-| `X-Eko-Env` | no | `uat` (default) or `production`. Production is explicit opt-in: real bills, real PII. |
-| `X-Eko-Initiator-Id` | no | Default `initiator_id` injected into every call (agents can override per call). |
-| `X-Eko-User-Code` | no | Default `user_code`, same semantics. |
+| Header                | Required | Meaning                                                                                                                           |
+| --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `X-Eko-Developer-Key` | yes      | Your static EPS developer key.                                                                                                    |
+| `X-Eko-Access-Key`    | yes      | Your EPS access key; used to HMAC-sign each request server-side, never stored.                                                    |
+| `X-Eko-Allowed-Apis`  | yes      | Comma-separated tool names your agents may call, or `*` for all verification tools. Deliberately required — EPS calls are billed. |
+| `X-Eko-Env`           | no       | `uat` (default) or `production`. Production is explicit opt-in: real bills, real PII.                                             |
+| `X-Eko-Initiator-Id`  | no       | Default `initiator_id` injected into every call (agents can override per call).                                                   |
+| `X-Eko-User-Code`     | no       | Default `user_code`, same semantics.                                                                                              |
 
 ### Scoping is voluntary, not entitlement
 
@@ -48,10 +48,16 @@ claude mcp add eps-transact \
   -e EKO_DEVELOPER_KEY=YOUR_DEVELOPER_KEY \
   -e EKO_ACCESS_KEY=YOUR_ACCESS_KEY \
   -e EKO_INITIATOR_ID=YOUR_INITIATOR_ID \
-  -- npx -y @ekoindia/eps-transact-mcp
+  -- npx -y @ekoindia/eps-transact-mcp@latest
 ```
 
 Optional env: `EKO_ENV` (`uat` default | `production`), `EKO_ALLOWED_APIS` (defaults to `*` locally), `EKO_USER_CODE`.
+
+## Staying up to date
+
+- **Remote server** — nothing to do. It's hosted; the operator redeploys and every client is instantly current. `GET /healthz` reports the live `bundleVersion`.
+- **Local stdio** — the `@latest` in the install command re-resolves the newest published version on every launch, so `npx` always fetches current. `@latest` does a registry lookup at start; the server runs fully offline after that. Offline/air-gapped? Pin a version: `npx --offline -y @ekoindia/eps-transact-mcp@<version>`.
+- **Update check** — on startup the stdio bin does one best-effort `GET registry.npmjs.org/@ekoindia/eps-transact-mcp/latest` (3s timeout, silent on any failure) and, if your config pinned an older version, prints a one-line stderr nudge. It never blocks startup, sends no data, and touches nothing but stderr. Disable with `EPS_NO_UPDATE_CHECK=1` (corporate/no-egress). The remote server does **not** run this check.
 
 ## Tools
 
@@ -64,7 +70,7 @@ Errors come back sanitized as `{ code, message }`: `VALIDATION` (names the missi
 The remote server is a stateless pass-through signer:
 
 - **No persistence.** No database, no cache, no session store. Credentials exist only for the lifetime of the request that carried them.
-- **No body logging.** The access log records method, path, status, duration, request id, and the tool *name* — never headers, tool arguments, or upstream responses (verification traffic carries PAN/Aadhaar/bank data).
+- **No body logging.** The access log records method, path, status, duration, request id, and the tool _name_ — never headers, tool arguments, or upstream responses (verification traffic carries PAN/Aadhaar/bank data).
 - **TLS only.** The container binds loopback behind a reverse proxy; plaintext ingress is never exposed.
 
 ## Development

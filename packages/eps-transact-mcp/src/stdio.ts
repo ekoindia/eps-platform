@@ -4,6 +4,7 @@
  * partner's own environment, calls go straight from their machine to Eko.
  * Same generated tool core and ctx rules as the remote server.
  */
+import { createRequire } from "node:module";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 import { loadBundle } from "./load-bundle.js";
@@ -11,6 +12,12 @@ import { buildToolDefs } from "./tools.js";
 import { createTransactServer } from "./server.js";
 import { parseAllowed, parseEnvironment, type TransactCtx } from "./ctx.js";
 import { withTimeout } from "./fetchTimeout.js";
+import { notifyIfOutdated } from "./update-check.js";
+
+// Own version, read at runtime from the published layout (dist/stdio.js → ../package.json).
+const { version: OWN_VERSION } = createRequire(import.meta.url)(
+	"../package.json",
+) as { version: string };
 
 const main = async () => {
 	const developerKey = process.env.EKO_DEVELOPER_KEY;
@@ -51,6 +58,9 @@ const main = async () => {
 	console.error(
 		`[eps-transact-mcp] stdio ready (${environment}, bundle ${bundle.meta.bundleVersion})`,
 	);
+	// Fire-and-forget: bounded by its own timeout, swallows failures, prints a
+	// one-line stderr nudge if a newer version is published. Never blocks startup.
+	void notifyIfOutdated(OWN_VERSION);
 };
 
 main().catch((err: unknown) => {
