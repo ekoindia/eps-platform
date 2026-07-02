@@ -97,19 +97,34 @@ jobs:
       - name: Test eps-backend poller (bash shim harness)
         run: npm run test:poller -w @ekoindia/eps-backend
 
-      - name: Validate prod compose
+      # Each stack is now an independent compose project — validate them
+      # separately. A well-formed 64-hex digest (sha256:0 fails digest-format).
+      - name: Validate eps-backend prod compose
         working-directory: packages/eps-backend
         run: |
-          # A well-formed 64-hex digest (sha256:0 fails digest-format validation).
           d=$(printf '0%.0s' $(seq 64))
-          {
-            printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:%s\n' "$d"
-            printf 'EPS_TRANSACT_MCP_IMAGE=ghcr.io/ekoindia/eps-transact-mcp@sha256:%s\n' "$d"
-          } > deploy.env
+          printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:%s\n' "$d" > deploy.env
           : > .env
           docker compose -p eps-backend --project-directory . \
             --env-file deploy.env -f docker-compose.prod.yml config -q
           rm -f deploy.env .env
+
+      # NB: no `.env` written here — the standalone transact compose drops
+      # `env_file: .env`, so a bare bring-up with only the image pin must validate.
+      - name: Validate eps-transact-mcp standalone compose
+        working-directory: packages/eps-transact-mcp/deploy
+        run: |
+          d=$(printf '0%.0s' $(seq 64))
+          printf 'EPS_TRANSACT_MCP_IMAGE=ghcr.io/ekoindia/eps-transact-mcp@sha256:%s\n' "$d" > deploy.env
+          docker compose -p eps-transact-mcp --project-directory . \
+            --env-file deploy.env -f docker-compose.prod.yml config -q
+          rm -f deploy.env
+
+      # The shared poller image (consumed by the transact stack; eps-backend
+      # build:s the same Dockerfile) must build — catch a broken image before
+      # any stack depends on it.
+      - name: Build shared poller image
+        run: docker build -t eps-poller-ci packages/eps-backend/deploy/poller
 
       # Container smoke for the transactional MCP: the build exercises the risky
       # parts (workspace resolution, baked-data copy); then prove /healthz answers.

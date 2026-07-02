@@ -135,6 +135,39 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 	grep -q "http://hook" "$SHIM_STATE/calls.log" && ok "alert at consecutive-fail threshold" || no "alert at consecutive-fail threshold" "no webhook"
 )
 
+# --- Task 5 cases: shared-poller env knobs (SERVICE / DEPLOY_ENV_KEY / REDIS_REQUIRED) ---
+# write_deploy_env writes the overridden key AND preserves unrelated lines.
+( setup; load
+	export DEPLOY_ENV_KEY=EPS_TRANSACT_MCP_IMAGE
+	printf 'UNRELATED=keepme\nEPS_TRANSACT_MCP_IMAGE=old\n' >"$DEPLOY_ENV_FILE"
+	write_deploy_env "ghcr.io/ekoindia/eps-transact-mcp@sha256:new"
+	grep -q '^UNRELATED=keepme$' "$DEPLOY_ENV_FILE" && ok "write_deploy_env preserves unrelated key" \
+		|| no "write_deploy_env preserves unrelated key" "clobbered"
+	eq "write_deploy_env rewrites overridden key" \
+		"$(grep '^EPS_TRANSACT_MCP_IMAGE=' "$DEPLOY_ENV_FILE")" \
+		"EPS_TRANSACT_MCP_IMAGE=ghcr.io/ekoindia/eps-transact-mcp@sha256:new"
+	[ "$(grep -c '^EPS_TRANSACT_MCP_IMAGE=' "$DEPLOY_ENV_FILE")" = "1" ] \
+		&& ok "write_deploy_env leaves no stale pin" || no "write_deploy_env leaves no stale pin" "dup"
+)
+# REDIS_REQUIRED=0: redis is DOWN throughout, yet the deploy proceeds and commits
+# last_good — the redis gate and dependency-fault classification both no-op.
+( setup; seed_deploy; printf 'DOWN DOWN DOWN DOWN' >"$SHIM_STATE/redis_ping"
+	export REDIS_REQUIRED=0; load
+	reconcile_once
+	eq "REDIS_REQUIRED=0 deploys despite redis down" "$(lg)" "sha256:remote"
+	is_hold && no "REDIS_REQUIRED=0 no HOLD" "held" || ok "REDIS_REQUIRED=0 no HOLD"
+)
+# SERVICE knob: the recreate command targets the overridden service, not eps-backend.
+( setup
+	echo "cidOLD" >"$SHIM_STATE/ps"
+	export IMAGE=ghcr.io/ekoindia/eps-transact-mcp SERVICE=eps-transact-mcp REDIS_REQUIRED=0
+	export SHIM_IMGID=imgOLD SHIM_REPODIGESTS="ghcr.io/ekoindia/eps-transact-mcp@sha256:LIVE"
+	export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW; load
+	reconcile_once
+	grep -q 'up -d --no-deps eps-transact-mcp' "$SHIM_STATE/calls.log" \
+		&& ok "SERVICE knob targets overridden service" || no "SERVICE knob targets overridden service" "wrong service"
+)
+
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---
 PASS="$(grep -c '^ok' "$RESULTS" || true)"
 FAIL="$(grep -c '^no' "$RESULTS" || true)"

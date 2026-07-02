@@ -3,6 +3,13 @@ set -euo pipefail
 
 : "${IMAGE:=ghcr.io/ekoindia/eps-backend}"
 : "${WATCH_TAG:=prod}"
+# Service/target knobs — defaults reproduce backend behavior exactly. A second
+# stack (e.g. eps-transact-mcp) overrides these to watch a different service
+# with no redis dependency, without forking this script.
+: "${SERVICE:=eps-backend}"
+: "${DEPLOY_ENV_KEY:=EPS_BACKEND_IMAGE}"
+: "${REDIS_REQUIRED:=1}"
+: "${ALERT_SERVICE:=eps-backend}"
 : "${POLL_INTERVAL_SEC:=30}"
 : "${READYZ_URL:=http://eps-backend:8787/readyz}"
 : "${READYZ_RETRIES:=10}"
@@ -31,7 +38,7 @@ alert() {
 	log "ALERT[$level] $*"
 	[ -n "$POLLER_ALERT_WEBHOOK" ] || return 0
 	curl -fsS -m 10 -X POST -H 'Content-Type: application/json' \
-		-d "{\"level\":\"$level\",\"service\":\"eps-backend\",\"message\":\"$*\"}" \
+		-d "{\"level\":\"$level\",\"service\":\"$ALERT_SERVICE\",\"message\":\"$*\"}" \
 		"$POLLER_ALERT_WEBHOOK" >/dev/null 2>&1 || log "webhook post failed"
 }
 
@@ -48,7 +55,7 @@ remote_digest() {
 # (container .Image is a local config id, NOT the registry digest). Empty if none.
 running_repo_digest() {
 	local cid imgid
-	cid="$(dc ps -q eps-backend 2>/dev/null || true)"
+	cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
 	[ -n "$cid" ] || { printf ''; return 0; }
 	imgid="$(docker inspect "$cid" --format '{{.Image}}' 2>/dev/null || true)"
 	[ -n "$imgid" ] || { printf ''; return 0; }
@@ -56,15 +63,22 @@ running_repo_digest() {
 		| grep -m1 "^${IMAGE}@sha256:" | sed "s#^${IMAGE}@##" || printf ''
 }
 
-# Atomically point deploy.env at an image ref: temp in same dir, sync, rename,
-# sync dir. rc!=0 on ANY write failure (the caller must not proceed to deploy a
-# stale desired state). errexit is unreliable here (function runs inside an
-# `if ! $(…)` / `||` context), so every fallible step is guarded explicitly.
+# Atomically point deploy.env's $DEPLOY_ENV_KEY at an image ref: temp in same
+# dir, sync, rename, sync dir. rc!=0 on ANY write failure (the caller must not
+# proceed to deploy a stale desired state). errexit is unreliable here (function
+# runs inside an `if ! $(…)` / `||` context), so every fallible step is guarded.
+# Unrelated lines in deploy.env are preserved — two stacks may share the file,
+# and only this stack's key is rewritten.
 write_deploy_env() {
 	local ref="$1" dir tmp
 	dir="$(dirname "$DEPLOY_ENV_FILE")"
 	tmp="$(mktemp "$dir/.deploy.env.XXXXXX")" || return 1
-	printf 'EPS_BACKEND_IMAGE=%s\n' "$ref" >"$tmp" || { rm -f "$tmp"; return 1; }
+	# Carry over every line except a prior pin for this key, then append the new
+	# pin. grep rc=1 (no match) is expected on first write / fresh file — guard it.
+	if [ -f "$DEPLOY_ENV_FILE" ]; then
+		grep -v "^${DEPLOY_ENV_KEY}=" "$DEPLOY_ENV_FILE" >"$tmp" 2>/dev/null || :
+	fi
+	printf '%s=%s\n' "$DEPLOY_ENV_KEY" "$ref" >>"$tmp" || { rm -f "$tmp"; return 1; }
 	sync "$tmp" 2>/dev/null || sync || true
 	mv -f "$tmp" "$DEPLOY_ENV_FILE" || { rm -f "$tmp"; return 1; }
 	sync "$dir" 2>/dev/null || sync || true
@@ -96,7 +110,9 @@ gate() {
 	GATE_REDIS_DOWN_SEEN=false
 	GATE_CONTAINER_UNSTABLE=false
 	for ((i = 0; i < READYZ_RETRIES; i++)); do
-		redis_ping || GATE_REDIS_DOWN_SEEN=true
+		# REDIS_REQUIRED=0 (no-redis stacks): skip the probe, leave the flag false.
+		# `if` keeps this statement rc0 under errexit (the old `||` form did too).
+		if [ "$REDIS_REQUIRED" = 1 ] && ! redis_ping; then GATE_REDIS_DOWN_SEEN=true; fi
 		read -r st restarting rc <<<"$(container_state "$cid")"
 		if [ "$st" != "running" ] || [ "$restarting" = "true" ] || [ "${rc:-0}" -gt 0 ]; then
 			GATE_CONTAINER_UNSTABLE=true
@@ -107,16 +123,16 @@ gate() {
 	return 1
 }
 
-# Point deploy.env at $1, pull, recreate ONLY eps-backend, echo the new cid.
+# Point deploy.env at $1, pull, recreate ONLY $SERVICE, echo the new cid.
 # rc 0 only when pull AND up succeed AND a container id results. On any failure
 # rc!=0 and NOTHING is echoed — the caller MUST NOT gate the previous container
 # or write last_good for an image that never came up.
 deploy_image() {
 	local cid
 	write_deploy_env "$1" || return 1
-	dc pull eps-backend >/dev/null 2>&1 || return 1
-	dc up -d --no-deps eps-backend >/dev/null 2>&1 || return 1
-	cid="$(dc ps -q eps-backend 2>/dev/null || true)"
+	dc pull "$SERVICE" >/dev/null 2>&1 || return 1
+	dc up -d --no-deps "$SERVICE" >/dev/null 2>&1 || return 1
+	cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
 	[ -n "$cid" ] || return 1
 	printf '%s' "$cid"
 }
@@ -138,7 +154,7 @@ reconcile_once() {
 	[ -n "$remote" ] || { log "empty remote digest; skip"; return 0; }
 	running="$(running_repo_digest)" || { log "running_repo_digest failed; skip tick"; return 0; }
 	[ "$remote" = "$running" ] && return 0
-	if ! redis_ping; then alert WARN "redis down — deploy of $remote paused"; return 0; fi
+	if [ "$REDIS_REQUIRED" = 1 ] && ! redis_ping; then alert WARN "redis down — deploy of $remote paused"; return 0; fi
 	prev="$running"
 	log "deploying $remote (prev=${prev:-none})"
 	if ! cid="$(deploy_image "$IMAGE@$remote")"; then
@@ -151,7 +167,7 @@ reconcile_once() {
 		alert INFO "deployed $remote"
 		return 0
 	fi
-	if [ "$GATE_REDIS_DOWN_SEEN" = true ] || ! redis_ping || [ "$GATE_CONTAINER_UNSTABLE" = true ]; then
+	if [ "$GATE_REDIS_DOWN_SEEN" = true ] || { [ "$REDIS_REQUIRED" = 1 ] && ! redis_ping; } || [ "$GATE_CONTAINER_UNSTABLE" = true ]; then
 		alert CRIT "dependency fault during deploy of $remote — holding, no rollback"
 		set_hold "dependency fault deploying $remote"
 		return 0

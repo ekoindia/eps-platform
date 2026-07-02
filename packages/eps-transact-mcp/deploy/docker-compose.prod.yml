@@ -1,0 +1,77 @@
+# Standalone production stack for eps-transact-mcp — deployable on ITS OWN host,
+# independent of eps-backend (it may live on Vercel, another VM, anywhere).
+# Drive with the INVARIANT form (mirrors eps-backend's convention):
+#   docker compose -p eps-transact-mcp --project-directory /deploy \
+#     --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml <cmd>
+# EPS_TRANSACT_MCP_IMAGE comes from deploy.env via --env-file (NOT service env_file).
+#
+# Co-locating on the same VM as eps-backend still works: run this as a SEPARATE
+# compose project (different ports 8788 vs 8787, separate networks). It shares
+# nothing with the backend stack.
+services:
+  eps-transact-mcp:
+    image: ${EPS_TRANSACT_MCP_IMAGE}
+    ports:
+      - "127.0.0.1:8788:8788"
+    networks:
+      - transact-egress
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8788/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Auto-pull poller — SAME poll.sh as eps-backend, published as a shared image
+  # (a foreign VM has no repo checkout to `build:` from). Configured via env for
+  # this stack: watches the transact image, targets the transact service, and —
+  # crucially — REDIS_REQUIRED=0 (transact has no Redis; the redis gate no-ops).
+  # No `env_file: .env` on purpose: the only optional secret (alert webhook) is
+  # interpolated from deploy.env, so a bare bring-up with just the image pin and
+  # no `.env` present never fails.
+  poller:
+    image: ghcr.io/ekoindia/eps-poller:prod
+    environment:
+      IMAGE: ghcr.io/ekoindia/eps-transact-mcp
+      WATCH_TAG: prod
+      SERVICE: eps-transact-mcp
+      DEPLOY_ENV_KEY: EPS_TRANSACT_MCP_IMAGE
+      REDIS_REQUIRED: "0"
+      READYZ_URL: http://eps-transact-mcp:8788/healthz
+      ALERT_SERVICE: eps-transact-mcp
+      POLLER_ALERT_WEBHOOK: ${POLLER_ALERT_WEBHOOK:-}
+      COMPOSE_PROJECT: eps-transact-mcp
+      PROJECT_DIR: /deploy
+      COMPOSE_FILE: /deploy/docker-compose.prod.yml
+      DEPLOY_ENV_FILE: /deploy/deploy.env
+      STATE_DIR: /state
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/deploy
+      - transact-poller-state:/state
+      - ./.ghcr-auth.json:/root/.docker/config.json:ro
+    networks:
+      - transact-egress
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  transact-poller-state:
+
+networks:
+  transact-egress:

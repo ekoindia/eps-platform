@@ -25,6 +25,11 @@ packages/*/data/
 .env.*
 !.env.example
 
+# VM-side deploy secrets (poller image pin + GHCR auth); samples are tracked
+deploy.env
+!deploy.env.sample
+.ghcr-auth.json
+
 # Internal planning/strategy docs — kept locally, never committed (not for the
 # public repo). Removed from tracking before open-sourcing.
 docs/local-roadmap/

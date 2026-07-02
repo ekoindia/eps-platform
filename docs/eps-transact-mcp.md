@@ -35,7 +35,7 @@ api-specs.ts ──(vite build)──▶ dist/agent/eps.json ──(bake)──�
 
 `npm run build` (root) → vite emits `dist/agent/eps.json` → `bake:all` copies it into this package's `data/` (plus sdk-surface into sdk-js). Editing `src/lib/data/api-specs.ts` and rebuilding is ALL it takes to add/fix a tool — no code changes here. New verification specs appear automatically; financial specs are excluded automatically.
 
-CI (`.github/workflows/ci.yml`): `transact:test` (builds sdk-js dist first), compose validation with both image vars, and a container build + `/healthz` smoke.
+CI (`.github/workflows/ci.yml`): `transact:test` (builds sdk-js dist first), independent compose validation for each stack, a shared-poller image build, and a container build + `/healthz` smoke.
 
 ## Known risk: environment base URLs (verify before first partner use)
 
@@ -48,21 +48,41 @@ EPS_UAT_DEVELOPER_KEY=… EPS_UAT_ACCESS_KEY=… EPS_UAT_INITIATOR_ID=… \
 
 If it fails with `UPSTREAM_ERROR`, fix `meta.environments` in the SSOT (the api-specs layer) — that corrects docs, Scalar try-it, SDKs, and this server in one edit. Do not patch URLs here.
 
-## Deployment (single VM, beside eps-backend)
+## Deployment (standalone stack — co-locatable but independent)
 
-1. **Image**: `.github/workflows/deploy-eps-transact-mcp.yml` publishes `ghcr.io/ekoindia/eps-transact-mcp:{sha,prod}` on green-CI pushes to `main` (same stale-run guard as eps-backend; extra step: it bakes bundles before `docker build` because `data/` is gitignored).
-2. **Compose**: service `eps-transact-mcp` in `packages/eps-backend/docker-compose.prod.yml` — `127.0.0.1:8788:8788`, `eps-egress` network only (no redis, no internal net, no `.env`). Set `EPS_TRANSACT_MCP_IMAGE` in `deploy.env`, then `docker compose … up -d eps-transact-mcp`.
-3. **Manual deploy (current path)**: after a merge to `main` publishes a fresh `:prod`, pull it on the VM — `docker compose … pull eps-transact-mcp && docker compose … up -d eps-transact-mcp`. The image is always current per merge (CI bakes the bundle + publishes); only this pull is manual.
-4. **Reverse proxy**: expose `mcp.eko.in` (TLS) → `127.0.0.1:8788`. The proxy **must set/overwrite `x-real-ip`** (rate-limit fallback trusts it — same SECURITY note as eps-backend) and must not expose :8788 directly. Avoid response buffering on `/mcp`.
+eps-transact-mcp deploys as **its own compose project** and can run on a different host from eps-backend (e.g. backend on Vercel, transact on a cheap VM). It shares nothing with the backend stack; co-locating on one VM just means running two separate projects.
+
+Artifacts live under `packages/eps-transact-mcp/deploy/`: `docker-compose.prod.yml` (the `eps-transact-mcp` service + its own auto-pull `poller` + `transact-poller-state` volume + `transact-egress` network) and `deploy.env.sample`.
+
+1. **Image**: `.github/workflows/deploy-eps-transact-mcp.yml` publishes `ghcr.io/ekoindia/eps-transact-mcp:{sha,prod}` on green-CI pushes to `main` (stale-run guard; bakes bundles before `docker build` because `data/` is gitignored).
+2. **Poller image**: `.github/workflows/deploy-poller.yml` publishes the **shared** `ghcr.io/ekoindia/eps-poller:{sha,prod}` (amd64) when `deploy/poller/{poll.sh,Dockerfile}` change, plus `workflow_dispatch` for base-image/security rebuilds. The package is **public** — no `docker login` needed to pull it. (eps-backend still `build:`s the same Dockerfile from its on-VM checkout; only transact consumes the published image. Both derive from one `poll.sh`.)
+3. **Compose**: copy `deploy.env.sample` → `deploy.env` (`EPS_TRANSACT_MCP_IMAGE=…`, optional `POLLER_ALERT_WEBHOOK`), drop a `.ghcr-auth.json` for the poller's `skopeo` app-image lookups, then bring the stack up with the invariant form:
+   ```sh
+   docker compose -p eps-transact-mcp --project-directory /deploy \
+     --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d
+   ```
+4. **Reverse proxy**: expose `mcp.eko.in` (TLS) → `127.0.0.1:8788`. The proxy **must set/overwrite `x-real-ip`** (rate-limit fallback trusts it) and must not expose :8788 directly. Avoid response buffering on `/mcp`.
+
+### Migration from the old co-located service
+
+The transact service used to live inside `packages/eps-backend/docker-compose.prod.yml`. Removing it there does **not** stop the running container (the backend poller only touches `eps-backend`). On the existing VM, before standing up the new stack:
+
+```sh
+# stop/remove the orphaned old container
+docker compose -p eps-backend --project-directory /deploy \
+  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d --remove-orphans
+# (or: docker rm -f <old eps-transact-mcp container>)
+```
+
+Ensure port `8788` is free, then bring up the standalone `eps-transact-mcp` project (step 3). **Bootstrap order:** the `eps-poller:prod` image must be published once (merge the poller change, or `workflow_dispatch` `deploy-poller.yml`) before the transact stack can pull it.
 
 ### Keeping the remote server fresh
 
-Two independent levers, both already in place:
+Fully hands-off now — no manual pull:
 
-- **Image is current per merge** — `deploy-eps-transact-mcp.yml` rebuilds with a freshly-baked bundle and retags `:prod` on every green `main`. So "update the tools" = "merge the spec change"; no separate step.
-- **Client always current** — remote users hit a URL, so they get whatever `:prod` is deployed the instant the VM pulls it. Local stdio users get `@latest` + the startup update check (above).
-
-**Auto-pull follow-up (not done — needs a real poller change, NOT compose-only).** The existing `deploy/poller/poll.sh` cannot be reused by env overrides alone: it hardcodes the `eps-backend` service name (`dc ps/pull/up eps-backend`), writes only `EPS_BACKEND_IMAGE` via a whole-file rewrite (a second poller would clobber the backend's pin), **mandates a Redis ping gate** (transact has no Redis → every deploy would be paused), defaults `READYZ_URL` to the backend's `/readyz` (transact exposes `/healthz`), and alerts as `"service":"eps-backend"`. Doing it right means parameterizing the poller — service name, env key, a `REDIS_REQUIRED` toggle, health URL/mode, alert service name — and making `write_deploy_env` preserve unrelated keys, plus a distinct `STATE_DIR` volume (sharing `/state` collides the lock/HOLD/last_good files) and a poller-shim oneshot test for the transact service. Until then, step 3's manual pull is the path.
+- **Image current per merge** — `deploy-eps-transact-mcp.yml` retags `:prod` on every green `main`. "Update the tools" = "merge the spec change".
+- **Auto-pull** — the transact stack's own poller watches `eps-transact-mcp:prod` and recreates the service when the digest changes, exactly like eps-backend's. It runs the **same** `poll.sh`, configured via env for this stack: `SERVICE=eps-transact-mcp`, `DEPLOY_ENV_KEY=EPS_TRANSACT_MCP_IMAGE`, `REDIS_REQUIRED=0` (no Redis gate), `READYZ_URL=…/healthz`, `ALERT_SERVICE=eps-transact-mcp`. A distinct `transact-poller-state` volume keeps its lock/HOLD/last_good separate from the backend's.
+- **Client always current** — remote users hit the URL and get whatever `:prod` the poller has deployed. Local stdio users get `@latest` + the startup update check (above).
 
 ## Test map
 
@@ -87,4 +107,4 @@ The stdio bin (`src/update-check.ts`, wired only into `src/stdio.ts`) does a bes
 - Server-side partner entitlement/allowlist storage — requires the blocked Eko credential-issuance contract (roadmap Phase 5) to be meaningful.
 - Financial (money-movement) tools — only behind explicit human-confirm gates, per roadmap.
 - Shared-KV rate limiting.
-- Poller auto-pull for the remote image (see the deploy section — needs a parameterized `poll.sh`, not compose-only).
+- Multi-arch (`linux/arm64`) poller/app images — build only if a transact host is ever ARM; amd64-only today.

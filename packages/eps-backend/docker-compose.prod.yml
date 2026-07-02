@@ -46,34 +46,9 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  # Transactional MCP server (packages/eps-transact-mcp). Same VM, separate
-  # container/process on purpose: eps-backend holds admin GitHub tokens; public
-  # MCP traffic must not share its blast radius. The security boundary is the
-  # container — co-locating the compose definition here is only an ops choice.
-  # Stateless pass-through (no secrets, no store): no .env, no eps-internal net.
-  eps-transact-mcp:
-    image: ${EPS_TRANSACT_MCP_IMAGE}
-    ports:
-      - "127.0.0.1:8788:8788"
-    networks:
-      - eps-egress
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://localhost:8788/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
+  # eps-transact-mcp now deploys as its own standalone stack — see
+  # packages/eps-transact-mcp/deploy/docker-compose.prod.yml. It can run on a
+  # different host entirely, or beside this one as a separate compose project.
 
   poller:
     build:

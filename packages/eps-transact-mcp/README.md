@@ -55,7 +55,7 @@ Optional env: `EKO_ENV` (`uat` default | `production`), `EKO_ALLOWED_APIS` (defa
 
 ## Staying up to date
 
-- **Remote server** — nothing to do. It's hosted; the operator redeploys and every client is instantly current. `GET /healthz` reports the live `bundleVersion`.
+- **Remote server** — nothing to do. It's hosted and auto-redeploys on every published update (its poller pulls the new `:prod`), so every client is instantly current. `GET /healthz` reports the live `bundleVersion`.
 - **Local stdio** — the `@latest` in the install command re-resolves the newest published version on every launch, so `npx` always fetches current. `@latest` does a registry lookup at start; the server runs fully offline after that. Offline/air-gapped? Pin a version: `npx --offline -y @ekoindia/eps-transact-mcp@<version>`.
 - **Update check** — on startup the stdio bin does one best-effort `GET registry.npmjs.org/@ekoindia/eps-transact-mcp/latest` (3s timeout, silent on any failure) and, if your config pinned an older version, prints a one-line stderr nudge. It never blocks startup, sends no data, and touches nothing but stderr. Disable with `EPS_NO_UPDATE_CHECK=1` (corporate/no-egress). The remote server does **not** run this check.
 
