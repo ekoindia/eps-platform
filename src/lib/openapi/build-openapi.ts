@@ -37,6 +37,7 @@ import type {
 import {
 	buildSampleRequest,
 	categoryForSpec,
+	resolveContentType,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
@@ -56,12 +57,15 @@ const X_DOCS_SLUG = "x-docs-slug";
 
 const SCALAR_TYPES = new Set(["string", "number", "integer", "boolean"]);
 
-/** Map a freeform `ApiParam.type` onto a JSON-Schema scalar type. */
+/** Map a freeform `ApiParam.type` onto a JSON-Schema scalar type.
+ * `"file"` (binary upload) → `type: string, format: binary`. */
 const paramSchema = (param: ApiParam): Json => {
 	const t = param.type.toLowerCase();
 	const schema: Json = { type: SCALAR_TYPES.has(t) ? t : "string" };
+	if (t === "file") schema.format = "binary";
 	if (param.description) schema.description = param.description;
-	if (param.example !== undefined) schema.example = param.example;
+	if (param.example !== undefined && t !== "file")
+		schema.example = param.example;
 	return schema;
 };
 
@@ -144,7 +148,7 @@ const buildOperationParams = (
 	}
 	const hasBody = Object.keys(bodyProps).length > 0;
 
-	for (const header of resolveHeaders()) {
+	for (const header of resolveHeaders(spec)) {
 		if (interactive) {
 			if (INTERACTIVE_SIGNING_HEADERS.has(header.name)) continue;
 			if (header.name === "content-type" && hasBody) continue;
@@ -170,7 +174,11 @@ const buildOperationParams = (
 		requestBody: {
 			required: true,
 			content: {
-				"application/json": { schema, example: buildSampleRequest(spec) },
+				// File-upload endpoints are multipart; file fields carry format:binary.
+				[resolveContentType(spec)]: {
+					schema,
+					example: buildSampleRequest(spec),
+				},
 			},
 		},
 	};

@@ -3,6 +3,9 @@ import type { ApiParam, ApiSpec } from "./api-specs-common";
 import {
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
+	isMultipart,
+	resolveContentType,
+	resolveHeaders,
 	resolveRequestParams,
 } from "./api-specs-common";
 
@@ -184,5 +187,59 @@ describe("buildSampleRequest", () => {
 			spec({ method: "POST", extraRequestParams: [noExample] }),
 		);
 		expect(body).not.toHaveProperty("maybe");
+	});
+});
+
+describe("resolveHeaders / content-type derivation", () => {
+	const fileParam: ApiParam = {
+		name: "pan_card",
+		type: "file",
+		required: true,
+		example: "<binary file>",
+	};
+
+	it("defaults content-type to application/json (no spec / no file params)", () => {
+		for (const headers of [
+			resolveHeaders(),
+			resolveHeaders(spec({ method: "POST" })),
+		]) {
+			expect(byName(headers, "content-type")?.example).toBe("application/json");
+		}
+	});
+
+	it("derives multipart/form-data when a body param is type:file", () => {
+		const s = spec({ method: "PUT", extraRequestParams: [fileParam] });
+		expect(isMultipart(s)).toBe(true);
+		expect(resolveContentType(s)).toBe("multipart/form-data");
+		const contentType = byName(resolveHeaders(s), "content-type");
+		expect(contentType?.example).toBe("multipart/form-data");
+		// The description must warn that the client sets the boundary.
+		expect(contentType?.description).toContain("boundary");
+	});
+
+	it("merges per-spec header overrides by name and appends new ones", () => {
+		const s = spec({
+			method: "POST",
+			headers: [
+				{
+					name: "developer_key",
+					in: "header",
+					type: "string",
+					required: false,
+					description: "overridden",
+				},
+				{
+					name: "x-extra",
+					in: "header",
+					type: "string",
+					required: true,
+				},
+			],
+		});
+		const headers = resolveHeaders(s);
+		expect(byName(headers, "developer_key")?.description).toBe("overridden");
+		expect(byName(headers, "x-extra")).toBeDefined();
+		// Untouched shared headers survive the merge.
+		expect(byName(headers, "secret-key")).toBeDefined();
 	});
 });

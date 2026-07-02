@@ -11,9 +11,11 @@ import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	buildSampleRequest,
+	isMultipart,
 	pathTokens,
 	resolveHeaders,
 	resolveRequestParams,
+	type ResolvedApiParam,
 } from "@/lib/data/api-specs-common";
 
 export type SampleLang = "curl" | "javascript" | "python" | "php";
@@ -25,16 +27,46 @@ export const SAMPLE_LANGS: { id: SampleLang; label: string }[] = [
 	{ id: "php", label: "PHP" },
 ];
 
-/** Placeholder used for header values the caller must supply / sign. */
+/** Placeholder used for header values the caller must supply / sign.
+ * `content-type` is NOT listed — its value comes from the header's example,
+ * which `resolveHeaders(spec)` derives per endpoint (JSON vs multipart). */
 const HEADER_PLACEHOLDER: Record<string, string> = {
 	developer_key: "<your_developer_key>",
 	"secret-key": "<computed_secret_key>",
 	"secret-key-timestamp": "<timestamp_ms>",
-	"content-type": "application/json",
 };
 
 const headerValue = (h: ApiParam): string =>
 	HEADER_PLACEHOLDER[h.name] ?? (h.example != null ? String(h.example) : "");
+
+/** Body params split for multipart rendering: file uploads vs regular fields. */
+const bodyParts = (
+	spec: ApiSpec,
+): { files: ResolvedApiParam[]; fields: ResolvedApiParam[] } => {
+	const body = resolveRequestParams(spec).filter((p) => p.in === "body");
+	return {
+		files: body.filter((p) => p.type === "file"),
+		fields: body.filter((p) => p.type !== "file"),
+	};
+};
+
+/** Render a multipart form-field value: objects as a JSON string, else text. */
+const formValue = (p: ApiParam): string =>
+	p.example == null
+		? `<${p.name}>`
+		: typeof p.example === "object"
+			? JSON.stringify(p.example)
+			: String(p.example);
+
+/** Placeholder local file path for a `type:"file"` upload param. */
+const filePlaceholder = (p: ApiParam): string => `/path/to/${p.name}.jpg`;
+
+/** Headers for a code sample. Multipart drops `content-type`: the HTTP client
+ * must set it itself so the generated boundary is included. */
+const sampleHeaders = (spec: ApiSpec): ApiParam[] =>
+	resolveHeaders(spec).filter(
+		(h) => !(isMultipart(spec) && h.name === "content-type"),
+	);
 
 /** Render a param value for a URL (path token or query value). */
 const urlValue = (value: unknown, name: string): string => {
@@ -80,12 +112,24 @@ const hasBody = (spec: ApiSpec): boolean =>
 export const toCurl = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
 	const lines = [`curl --request ${spec.method} \\`, `  --url '${url}' \\`];
-	const headers = resolveHeaders();
+	const multipart = isMultipart(spec);
+	const headers = sampleHeaders(spec);
 	headers.forEach((h, i) => {
-		const last = i === headers.length - 1 && !hasBody(spec);
+		const last = i === headers.length - 1 && !hasBody(spec) && !multipart;
 		lines.push(`  --header '${h.name}: ${headerValue(h)}'${last ? "" : " \\"}`);
 	});
-	if (hasBody(spec)) {
+	if (multipart) {
+		// curl -F sends multipart/form-data and generates the boundary itself.
+		const { files, fields } = bodyParts(spec);
+		const parts = [
+			...fields.map((p) => `${p.name}=${formValue(p)}`),
+			...files.map((p) => `${p.name}=@${filePlaceholder(p)}`),
+		];
+		parts.forEach((part, i) => {
+			const last = i === parts.length - 1;
+			lines.push(`  --form '${part}'${last ? "" : " \\"}`);
+		});
+	} else if (hasBody(spec)) {
 		lines.push(
 			`  --data '${JSON.stringify(buildSampleRequest(spec), null, 2)}'`,
 		);
@@ -96,12 +140,32 @@ export const toCurl = (spec: ApiSpec): string => {
 export const toJsFetch = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
 	const headers = Object.fromEntries(
-		resolveHeaders().map((h) => [h.name, headerValue(h)]),
+		sampleHeaders(spec).map((h) => [h.name, headerValue(h)]),
 	);
 	const init: Record<string, unknown> = {
 		method: spec.method,
 		headers,
 	};
+	if (isMultipart(spec)) {
+		// fetch sets the multipart content-type (with boundary) from FormData.
+		const { files, fields } = bodyParts(spec);
+		const formLines = [
+			'import { openAsBlob } from "node:fs";',
+			"",
+			"const form = new FormData();",
+			...fields.map(
+				(p) =>
+					`form.append(${JSON.stringify(p.name)}, ${JSON.stringify(formValue(p))});`,
+			),
+			...files.map(
+				(p) =>
+					`form.append(${JSON.stringify(p.name)}, await openAsBlob(${JSON.stringify(filePlaceholder(p))}), ${JSON.stringify(`${p.name}.jpg`)});`,
+			),
+		];
+		init.body = "__BODY__";
+		const initStr = JSON.stringify(init, null, 2).replace('"__BODY__"', "form");
+		return `${formLines.join("\n")}\n\nconst response = await fetch('${url}', ${initStr});\nconst data = await response.json();`;
+	}
 	if (hasBody(spec)) init.body = "__BODY__";
 
 	let initStr = JSON.stringify(init, null, 2);
@@ -117,7 +181,7 @@ export const toJsFetch = (spec: ApiSpec): string => {
 export const toPython = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
 	const headers = Object.fromEntries(
-		resolveHeaders().map((h) => [h.name, headerValue(h)]),
+		sampleHeaders(spec).map((h) => [h.name, headerValue(h)]),
 	);
 	const lines = [
 		"import requests",
@@ -125,7 +189,24 @@ export const toPython = (spec: ApiSpec): string => {
 		`url = "${url}"`,
 		`headers = ${pyDict(headers)}`,
 	];
-	if (hasBody(spec)) {
+	if (isMultipart(spec)) {
+		// `files=` makes requests send multipart/form-data with its own boundary.
+		const { files, fields } = bodyParts(spec);
+		lines.push(
+			`data = ${pyDict(Object.fromEntries(fields.map((p) => [p.name, formValue(p)])))}`,
+		);
+		lines.push(
+			"files = {",
+			...files.map(
+				(p) =>
+					`    ${JSON.stringify(p.name)}: open(${JSON.stringify(filePlaceholder(p))}, "rb"),`,
+			),
+			"}",
+		);
+		lines.push(
+			`response = requests.${spec.method.toLowerCase()}(url, data=data, files=files, headers=headers)`,
+		);
+	} else if (hasBody(spec)) {
 		lines.push(`payload = ${pyDict(buildSampleRequest(spec))}`);
 		lines.push(
 			`response = requests.${spec.method.toLowerCase()}(url, json=payload, headers=headers)`,
@@ -141,7 +222,7 @@ export const toPython = (spec: ApiSpec): string => {
 
 export const toPhp = (spec: ApiSpec): string => {
 	const url = resolveUrl(spec);
-	const headerLines = resolveHeaders().map(
+	const headerLines = sampleHeaders(spec).map(
 		(h) => `    ${phpStr(`${h.name}: ${headerValue(h)}`)},`,
 	);
 	const lines = [
@@ -155,7 +236,20 @@ export const toPhp = (spec: ApiSpec): string => {
 		`curl_setopt($ch, CURLOPT_CUSTOMREQUEST, ${phpStr(spec.method)});`,
 		"curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);",
 	];
-	if (hasBody(spec)) {
+	if (isMultipart(spec)) {
+		// An array payload makes curl send multipart/form-data with its boundary.
+		const { files, fields } = bodyParts(spec);
+		lines.push("$payload = [");
+		lines.push(
+			...fields.map((p) => `    ${phpStr(p.name)} => ${phpStr(formValue(p))},`),
+			...files.map(
+				(p) =>
+					`    ${phpStr(p.name)} => new CURLFile(${phpStr(filePlaceholder(p))}),`,
+			),
+		);
+		lines.push("];");
+		lines.push("curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);");
+	} else if (hasBody(spec)) {
 		lines.push(
 			`$payload = json_encode(${phpArray(buildSampleRequest(spec))});`,
 		);
@@ -275,7 +369,11 @@ const CLIENT_LEVEL_PARAMS: Record<string, string> = {
 };
 
 const valueFor = (name: string, p?: ApiParam): unknown =>
-	p?.example != null ? p.example : `<${name}>`;
+	p?.type === "file"
+		? filePlaceholder(p)
+		: p?.example != null
+			? p.example
+			: `<${name}>`;
 
 /**
  * Client-level defaults to render in the SDK constructor for this endpoint:
@@ -338,6 +436,9 @@ export const toNodeSdk = (spec: ApiSpec): string => {
 		'  environment: "sandbox",',
 		"});",
 		"",
+		...(isMultipart(spec)
+			? ["// File params accept a local file path (Node-only) or a Blob/File."]
+			: []),
 		`const result = await client.call(${JSON.stringify(spec.slug)}${args});`,
 		"console.log(result);",
 	].join("\n");
@@ -361,6 +462,9 @@ export const toPhpSdk = (spec: ApiSpec): string => {
 		"    environment: 'sandbox'",
 		");",
 		"",
+		...(isMultipart(spec)
+			? ["// File params accept a local file path or a CURLFile."]
+			: []),
 		`$result = $client->call(${phpStr(spec.slug)}${args});`,
 		"print_r($result);",
 	].join("\n");

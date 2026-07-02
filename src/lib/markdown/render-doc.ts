@@ -109,7 +109,7 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 		bodyParams.length ? h2("Body parameters") : undefined,
 		bodyParams.length ? paramTable(bodyParams) : undefined,
 		h2("Headers"),
-		paramTable(resolveHeaders()),
+		paramTable(resolveHeaders(spec)),
 		h2("Response"),
 		"⭐ marks fields highlighted as verifiable.",
 		markdownTable(

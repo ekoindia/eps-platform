@@ -1080,7 +1080,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "pan_card",
-				type: "string",
+				type: "file",
 				required: true,
 				description:
 					"PAN card document upload (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB. PNG not accepted.",
@@ -1088,7 +1088,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_front",
-				type: "string",
+				type: "file",
 				required: true,
 				description:
 					"Front side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
@@ -1096,7 +1096,7 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_back",
-				type: "string",
+				type: "file",
 				required: true,
 				description:
 					"Back side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
