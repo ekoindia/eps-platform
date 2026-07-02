@@ -15,8 +15,12 @@ fetch full detail when it needs it.
 No install step required — run it on demand with `npx`:
 
 ```bash
-npx -y @ekoindia/eps-context-mcp
+npx -y @ekoindia/eps-context-mcp@latest
 ```
+
+The `@latest` tag makes `npx` re-resolve the newest published version on each
+launch, so you always run the current server + API bundle without editing your
+config (see [Staying up to date](#staying-up-to-date)).
 
 The server speaks MCP over **stdio**, so it is meant to be launched by an MCP
 client (see per-harness config below) rather than run by hand. It logs its
@@ -29,17 +33,17 @@ Requires **Node.js ≥ 18**.
 All tools are read-only and **secret-free** — none of them accept an
 `access_key` or any other credential.
 
-| Tool | Arguments | Returns |
-| --- | --- | --- |
-| `list_apis` | `category?` | Compact index of EPS endpoints (no request/response bodies). Optional category filter. |
-| `list_topics` | — | Documentation topic ids: `auth`, `errors`, `pricing`, `environments`. |
-| `list_recipes` | — | Multi-step recipe ids + names (e.g. `dmt-send-money`, `aeps-cash-withdrawal`). |
-| `search` | `query` | Ranked endpoint matches for a query (ids only, no bodies). |
-| `get_api` | `slug` | Full detail for one endpoint (params, response fields, errors, examples). |
-| `get_topic` | `topic` (`auth` \| `errors` \| `pricing` \| `environments`) | One documentation topic. |
-| `get_recipe` | `id` | One multi-step recipe (steps + branches). |
-| `get_signing_snippet` | `language` (`php` \| `java` \| `csharp` \| `javascript` \| `python` \| `go`) | Paste-ready **backend** code to compute the request `secret-key`. |
-| `get_meta` | — | Bundle org/version + which data source is in use (`baked` or `remote`). |
+| Tool                  | Arguments                                                                    | Returns                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_apis`           | `category?`                                                                  | Compact index of EPS endpoints (no request/response bodies). Optional category filter.                                                             |
+| `list_topics`         | —                                                                            | Documentation topic ids: `auth`, `errors`, `pricing`, `environments`.                                                                              |
+| `list_recipes`        | —                                                                            | Multi-step recipe ids + names (e.g. `dmt-send-money`, `aeps-cash-withdrawal`).                                                                     |
+| `search`              | `query`                                                                      | Ranked endpoint matches for a query (ids only, no bodies).                                                                                         |
+| `get_api`             | `slug`                                                                       | Full detail for one endpoint (params, response fields, errors, examples).                                                                          |
+| `get_topic`           | `topic` (`auth` \| `errors` \| `pricing` \| `environments`)                  | One documentation topic.                                                                                                                           |
+| `get_recipe`          | `id`                                                                         | One multi-step recipe (steps + branches).                                                                                                          |
+| `get_signing_snippet` | `language` (`php` \| `java` \| `csharp` \| `javascript` \| `python` \| `go`) | Paste-ready **backend** code to compute the request `secret-key`.                                                                                  |
+| `get_meta`            | —                                                                            | Bundle org/version, data source (`baked` or `remote`), this server's `packageVersion`, and `updateAvailable` (whether a newer npm release exists). |
 
 **Tiered usage:** start with `list_apis` / `search` (cheap, compact), then call
 `get_api` only for the endpoint(s) you actually need. Same pattern for
@@ -50,7 +54,7 @@ All tools are read-only and **secret-free** — none of them accept an
 ### Claude Code
 
 ```bash
-claude mcp add eps --scope project -- npx -y @ekoindia/eps-context-mcp
+claude mcp add eps --scope project -- npx -y @ekoindia/eps-context-mcp@latest
 ```
 
 `--scope project` writes a shared `.mcp.json` committed with the repo. Use
@@ -62,7 +66,10 @@ Or add to your MCP config (project `.mcp.json`, or `~/.claude.json` for user sco
 ```json
 {
 	"mcpServers": {
-		"eps": { "command": "npx", "args": ["-y", "@ekoindia/eps-context-mcp"] }
+		"eps": {
+			"command": "npx",
+			"args": ["-y", "@ekoindia/eps-context-mcp@latest"]
+		}
 	}
 }
 ```
@@ -74,7 +81,10 @@ Or add to your MCP config (project `.mcp.json`, or `~/.claude.json` for user sco
 ```json
 {
 	"mcpServers": {
-		"eps": { "command": "npx", "args": ["-y", "@ekoindia/eps-context-mcp"] }
+		"eps": {
+			"command": "npx",
+			"args": ["-y", "@ekoindia/eps-context-mcp@latest"]
+		}
 	}
 }
 ```
@@ -88,7 +98,7 @@ Or add to your MCP config (project `.mcp.json`, or `~/.claude.json` for user sco
 	"mcp": {
 		"eps": {
 			"type": "local",
-			"command": ["npx", "-y", "@ekoindia/eps-context-mcp"],
+			"command": ["npx", "-y", "@ekoindia/eps-context-mcp@latest"],
 			"enabled": true
 		}
 	}
@@ -103,7 +113,7 @@ Or add to your MCP config (project `.mcp.json`, or `~/.claude.json` for user sco
 mcpServers:
   - name: eps
     command: npx
-    args: ["-y", "@ekoindia/eps-context-mcp"]
+    args: ["-y", "@ekoindia/eps-context-mcp@latest"]
 ```
 
 ### Codex CLI
@@ -113,7 +123,7 @@ mcpServers:
 ```toml
 [mcp_servers.eps]
 command = "npx"
-args = ["-y", "@ekoindia/eps-context-mcp"]
+args = ["-y", "@ekoindia/eps-context-mcp@latest"]
 ```
 
 ### Gemini CLI
@@ -123,10 +133,29 @@ args = ["-y", "@ekoindia/eps-context-mcp"]
 ```json
 {
 	"mcpServers": {
-		"eps": { "command": "npx", "args": ["-y", "@ekoindia/eps-context-mcp"] }
+		"eps": {
+			"command": "npx",
+			"args": ["-y", "@ekoindia/eps-context-mcp@latest"]
+		}
 	}
 }
 ```
+
+## Staying up to date
+
+The package is auto-published on every merge to `main`, and each publish carries
+the freshest baked API bundle. To keep users current:
+
+- **Use `@latest` in your config** (all snippets above do). `npx` then
+  re-resolves the newest publish on each launch — no manual updates. Offline
+  launches fall back to the npx cache; pin `@<version>` if you need a frozen
+  build.
+- **Update check.** On startup the server does one best-effort request to the
+  npm registry (3s timeout). If a newer version is published, it logs a nudge to
+  **stderr** and sets `updateAvailable` on `get_meta` — so an agent can tell you
+  to switch to `@latest`. The check is silent on any failure (offline, proxy)
+  and never blocks startup. Set `EPS_NO_UPDATE_CHECK=1` to disable it entirely
+  (no network request).
 
 ## Configuration
 
@@ -140,7 +169,7 @@ bundle at startup (e.g. the latest generated `eps.json`), set `EPS_BUNDLE_URL`:
 	"mcpServers": {
 		"eps": {
 			"command": "npx",
-			"args": ["-y", "@ekoindia/eps-context-mcp"],
+			"args": ["-y", "@ekoindia/eps-context-mcp@latest"],
 			"env": { "EPS_BUNDLE_URL": "https://eps.eko.in/agent/eps.json" }
 		}
 	}

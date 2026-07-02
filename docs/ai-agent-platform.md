@@ -107,8 +107,13 @@ baked bundle: `list_apis`, `list_topics`, `list_recipes`, `search`, `get_api`,
 a fresher bundle at startup. No secrets are ever required or handled.
 
 ```bash
-npx -y @ekoindia/eps-context-mcp
+npx -y @ekoindia/eps-context-mcp@latest
 ```
+
+The `@latest` tag keeps users on the newest publish (code + baked bundle)
+without editing config. The server also does a best-effort npm version check on
+startup and surfaces `updateAvailable` via `get_meta` (silent on failure;
+`EPS_NO_UPDATE_CHECK=1` disables it).
 
 ### `@ekoindia/eps-sdk` (Node.js SDK)
 
@@ -143,7 +148,7 @@ npx -y @ekoindia/eps-mock-server
 ### `packages/claude-plugin-eps` (Claude Code plugin)
 
 A Claude Code plugin that wires the `eps` MCP (via
-`npx -y @ekoindia/eps-context-mcp`), three skills
+`npx -y @ekoindia/eps-context-mcp@latest`), three skills
 (`integrate-eps`, `sign-request`, `run-a-recipe`), and an `/eps` slash command.
 It is listed in the repo-root `.claude-plugin/marketplace.json` under the
 `ekoindia` marketplace.

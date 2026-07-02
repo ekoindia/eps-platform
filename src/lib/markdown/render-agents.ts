@@ -3,7 +3,7 @@
  * agent artifacts (packs, bundle, MCP, recipes) generated from the spec layer.
  */
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
-import { SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
 
@@ -34,7 +34,7 @@ export function renderAgentsMarkdown(): string {
 	lines.push("## Local MCP server");
 	lines.push("");
 	lines.push("```bash");
-	lines.push("npx -y @ekoindia/eps-context-mcp");
+	lines.push(`npx -y ${EPS_MCP_PKG}`);
 	lines.push("```");
 	lines.push("");
 

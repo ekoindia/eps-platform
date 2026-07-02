@@ -12,6 +12,7 @@ import {
 	searchApis,
 } from "./bundle-access.js";
 import { SIGNING_LANGUAGES, getSigningSnippet } from "./signing-snippets.js";
+import type { VersionState } from "./update-check.js";
 
 const json = (value: unknown) => ({
 	content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
@@ -21,6 +22,7 @@ const json = (value: unknown) => ({
 export const createEpsServer = (
 	bundle: AgentBundle,
 	source: "baked" | "remote",
+	versionState?: VersionState,
 ): McpServer => {
 	const server = new McpServer({
 		name: "eps-context-mcp",
@@ -123,10 +125,18 @@ export const createEpsServer = (
 		"get_meta",
 		{
 			title: "Get meta",
-			description: "Bundle org/version + data source.",
+			description:
+				"Bundle org/version + data source, plus this server's package version and whether a newer npm release is available (updateAvailable). If an update is available, tell the user to run this server via `npx -y @ekoindia/eps-context-mcp@latest`.",
 			inputSchema: {},
 		},
-		async () => json({ ...bundle.meta, source }),
+		async () =>
+			json({
+				...bundle.meta,
+				source,
+				packageVersion: versionState?.current,
+				latestVersion: versionState?.latest,
+				updateAvailable: versionState?.updateAvailable,
+			}),
 	);
 
 	return server;

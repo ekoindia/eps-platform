@@ -53,6 +53,24 @@ describe("eps-context-mcp tools", () => {
 		expect(parse(res as never).backendOnly).toBe(true);
 	});
 
+	it("get_meta reports package version + update availability", async () => {
+		const server = createEpsServer(bundle, "baked", {
+			current: "0.1.0",
+			latest: "0.2.0",
+			updateAvailable: true,
+		});
+		const client = new Client({ name: "test", version: "0" });
+		const [a, b] = InMemoryTransport.createLinkedPair();
+		await Promise.all([server.connect(a), client.connect(b)]);
+		const meta = parse(
+			(await client.callTool({ name: "get_meta", arguments: {} })) as never,
+		);
+		expect(meta.packageVersion).toBe("0.1.0");
+		expect(meta.latestVersion).toBe("0.2.0");
+		expect(meta.updateAvailable).toBe(true);
+		expect(meta.source).toBe("baked");
+	});
+
 	it("no tool accepts an access_key parameter (secret-free)", async () => {
 		const client = await connect();
 		for (const t of (await client.listTools()).tools) {

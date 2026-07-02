@@ -8,11 +8,11 @@
  * backend-only warning, environments, error model) plus a COMPACT endpoint
  * index. Per-endpoint detail is linked (bundle/MCP/.md docs), not inlined.
  */
-import { SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
 import { markdownTable } from "@/lib/markdown/shared";
 import type { AgentBundle } from "@/lib/agent/agent-bundle-types";
 
-const MCP_PACKAGE = "@ekoindia/eps-context-mcp";
+const MCP_PACKAGE = EPS_MCP_PKG;
 const MOCK_PACKAGE = "@ekoindia/eps-mock-server";
 
 /** The canonical, format-neutral pack body (GitHub-flavored markdown). */

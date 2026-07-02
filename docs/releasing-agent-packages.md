@@ -183,7 +183,7 @@ Runs on pull requests and on pushes to `dev`, `main`, and `feature/**`.
 
 Run after the first publish:
 
-- [ ] `npx -y @ekoindia/eps-context-mcp` starts the stdio MCP server.
+- [ ] `npx -y @ekoindia/eps-context-mcp@latest` starts the stdio MCP server.
 - [ ] `npx -y @ekoindia/eps-mock-server` serves on `:4010`.
 - [ ] `npm i @ekoindia/eps-sdk` resolves and installs.
 - [ ] `composer require ekoindia/eps-sdk` resolves from Packagist.
