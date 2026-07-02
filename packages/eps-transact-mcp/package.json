@@ -1,0 +1,44 @@
+{
+	"name": "@ekoindia/eps-transact-mcp",
+	"version": "0.1.0",
+	"description": "Transactional MCP server for Eko Platform Services (EPS) verification APIs — remote (streamable HTTP) and local (stdio).",
+	"license": "MIT",
+	"type": "module",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ekoindia/eps-platform.git",
+		"directory": "packages/eps-transact-mcp"
+	},
+	"bin": {
+		"eps-transact-mcp": "dist/stdio.js"
+	},
+	"files": [
+		"dist",
+		"data"
+	],
+	"scripts": {
+		"bake": "node scripts/bake-bundle.mjs",
+		"build": "tsup",
+		"dev": "tsx watch src/index.ts",
+		"start": "node dist/index.js",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@ekoindia/eps-sdk": "*",
+		"@hono/node-server": "^1.0.0",
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"hono": "^4.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.20.0",
+		"tsup": "^8.0.0",
+		"tsx": "^4.22.4",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
+	},
+	"engines": {
+		"node": ">=20"
+	}
+}
