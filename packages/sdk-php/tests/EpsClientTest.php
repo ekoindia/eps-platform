@@ -112,6 +112,74 @@ final class EpsClientTest extends TestCase
         $this->assertStringContainsString('user_code=20810200', $target['url']); // default still used
     }
 
+    public function testMultipartEndpointBuildsArrayBodyWithCurlFiles(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $address = ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'];
+        $target = $client->resolveTarget('aeps-activate-fingpay', [
+            'initiator_id' => '9962981729',
+            'user_code' => '20810200',
+            'modelname' => 'Morpho 1300E3',
+            'devicenumber' => 'SN1234567890',
+            'office_address' => $address,
+            'address_as_per_proof' => $address,
+            // Path string is wrapped in a CURLFile; a CURLFile passes through.
+            'pan_card' => __FILE__,
+            'aadhar_front' => new \CURLFile(__FILE__),
+            'aadhar_back' => __FILE__,
+        ]);
+        $this->assertStringContainsString('/admin/network/agent/20810200/aeps-fingpay/activate', $target['url']);
+        $this->assertTrue($target['multipart']);
+        $this->assertIsArray($target['body']);
+        $this->assertInstanceOf(\CURLFile::class, $target['body']['pan_card']);
+        $this->assertInstanceOf(\CURLFile::class, $target['body']['aadhar_front']);
+        // Array fields become JSON-string form fields.
+        $this->assertSame(json_encode($address), $target['body']['office_address']);
+        $this->assertSame('Morpho 1300E3', $target['body']['modelname']);
+    }
+
+    public function testMultipartHeadersOmitContentType(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $headers = $client->buildHeaders(multipart: true);
+        $this->assertArrayNotHasKey('content-type', $headers);
+        $this->assertSame(self::GOLDEN, $headers['secret-key']); // still signed
+        // Regular endpoints keep the JSON content-type.
+        $this->assertSame('application/json', $client->buildHeaders()['content-type']);
+    }
+
+    public function testRejectsNonFileValueForFileParam(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/Invalid param types.*pan_card \(expected file\)/');
+        $client->resolveTarget('aeps-activate-fingpay', [
+            'initiator_id' => '9962981729',
+            'user_code' => '20810200',
+            'modelname' => 'Morpho 1300E3',
+            'devicenumber' => 'SN1234567890',
+            'office_address' => [],
+            'address_as_per_proof' => [],
+            'pan_card' => '/no/such/file.jpg', // nonexistent path fails early
+            'aadhar_front' => new \CURLFile(__FILE__),
+            'aadhar_back' => new \CURLFile(__FILE__),
+        ]);
+    }
+
+    public function testJsonEndpointStillSendsJsonBody(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $target = $client->resolveTarget('pan-lite', [
+            'initiator_id' => '9962981729',
+            'pan_number' => 'ABCDE1234F',
+            'name' => 'Test Name',
+            'dob' => '1990-01-01',
+        ]);
+        $this->assertFalse($target['multipart']);
+        $this->assertIsString($target['body']);
+        $this->assertStringContainsString('"pan_number":"ABCDE1234F"', $target['body']);
+    }
+
     public function testExplicitNullPerCallClearsTheDefault(): void
     {
         $client = new EpsClient(

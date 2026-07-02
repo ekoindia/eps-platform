@@ -53,7 +53,28 @@ console.log(result);
 | `fetch`        | `typeof fetch` (optional)     | Inject a custom fetch implementation.                          |
 | `now`          | `() => number` (optional)     | Inject a clock (returns timestamp in ms).                      |
 
-`await client.call(slug, params)` signs the request, substitutes any `{token}` path params from `params` (remaining keys become the JSON body), and returns the parsed JSON response.
+`await client.call(slug, params)` signs the request, substitutes any `{token}` path params from `params` (remaining keys become the JSON body — or a `multipart/form-data` body on file-upload endpoints), and returns the parsed JSON response.
+
+### File uploads
+
+Endpoints with file params (e.g. `aeps-activate-fingpay`) are sent as `multipart/form-data` automatically. Pass each file param as a local file path (read from disk, filename = basename) or a `Blob`/`File`:
+
+```js
+import { openAsBlob } from "node:fs"; // only needed for the Blob variant
+
+const result = await client.call("aeps-activate-fingpay", {
+	user_code: "20810200",
+	modelname: "Morpho 1300E3",
+	devicenumber: "SN1234567890",
+	office_address: { line: "Shop 5", city: "Patna", state: "Bihar", pincode: "800001" },
+	address_as_per_proof: { line: "Shop 5", city: "Patna", state: "Bihar", pincode: "800001" },
+	pan_card: "/path/to/pan_card.jpg", // path string…
+	aadhar_front: await openAsBlob("/path/to/aadhar_front.jpg"), // …or a Blob/File
+	aadhar_back: "/path/to/aadhar_back.jpg",
+});
+```
+
+Object params (like `office_address`) are serialized as JSON form fields; the `content-type` header (and multipart boundary) is set by `fetch` itself.
 
 `initiatorId` / `userCode` are near-constant per developer, so set them once on the client. They are injected into every call as the wire params `initiator_id` / `user_code` (note the snake_case wire names) — override either for a single call by passing it in `params`.
 

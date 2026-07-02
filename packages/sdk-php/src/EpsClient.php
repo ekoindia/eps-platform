@@ -63,28 +63,36 @@ final class EpsClient
                     || (is_string($value) && preg_match('/^-?\d+$/', $value) === 1);
             case 'boolean':
                 return is_bool($value) || $value === 'true' || $value === 'false';
+            case 'file':
+                // A CURLFile, or a path to an existing readable file.
+                return $value instanceof \CURLFile || (is_string($value) && is_file($value));
             default:
                 return true; // unknown/unsupported spec type → not enforced
         }
     }
 
-    public function buildHeaders(): array
+    public function buildHeaders(bool $multipart = false): array
     {
         $timestamp = (string) ($this->now)();
-        return [
+        $headers = [
             'developer_key' => $this->developerKey,
             'secret-key' => self::signSecretKey($this->accessKey, $timestamp),
             'secret-key-timestamp' => $timestamp,
-            'content-type' => 'application/json',
         ];
+        // Multipart: no explicit content-type — cURL sets it (with the
+        // generated boundary) when CURLOPT_POSTFIELDS is an array.
+        if (!$multipart) $headers['content-type'] = 'application/json';
+        return $headers;
     }
 
     /**
      * Resolve a slug + params into the wire target: the final URL (path tokens
-     * filled, query string appended for GET) and the JSON body (non-GET only).
-     * Exposed for testing; `call()` builds on it.
+     * filled, query string appended for GET) and the body — a JSON string for
+     * regular non-GET endpoints, or an array (multipart/form-data with CURLFile
+     * values) for file-upload endpoints. Exposed for testing; `call()` builds
+     * on it.
      *
-     * @return array{url: string, body: ?string}
+     * @return array{url: string, body: string|array|null, method: string, multipart: bool}
      */
     public function resolveTarget(string $slug, array $params = []): array
     {
@@ -128,8 +136,16 @@ final class EpsClient
             );
         }
 
+        // A `type:"file"` param flips the whole request to multipart/form-data.
+        $fileParams = [];
+        foreach ($endpoint['params'] as $p) {
+            if ($p['type'] === 'file') $fileParams[$p['name']] = true;
+        }
+        $multipart = !empty($fileParams);
+
         // Path params (e.g. {customer_id}) fill the URL; the rest become the
-        // query string on GET, or the JSON body on every other method.
+        // query string on GET, an array body (multipart) when the endpoint has
+        // file uploads, or the JSON body on every other method.
         $path = $endpoint['path'];
         $rest = [];
         foreach ($params as $k => $v) {
@@ -141,17 +157,29 @@ final class EpsClient
         $body = null;
         if ($endpoint['method'] === 'GET') {
             if (!empty($rest)) $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($rest);
+        } elseif ($multipart) {
+            // Array body → cURL sends multipart/form-data with its own boundary.
+            // File params accept a CURLFile or a path string (wrapped here);
+            // arrays become JSON-string fields; null values are omitted (a form
+            // field has no null encoding).
+            $body = [];
+            foreach ($rest as $k => $v) {
+                if ($v === null) continue;
+                if (isset($fileParams[$k])) $body[$k] = $v instanceof \CURLFile ? $v : new \CURLFile((string) $v);
+                elseif (is_array($v)) $body[$k] = json_encode($v);
+                else $body[$k] = (string) $v;
+            }
         } else {
             $body = json_encode($rest);
         }
-        return ['url' => $url, 'body' => $body, 'method' => $endpoint['method']];
+        return ['url' => $url, 'body' => $body, 'method' => $endpoint['method'], 'multipart' => $multipart];
     }
 
     public function call(string $slug, array $params = []): array
     {
         $target = $this->resolveTarget($slug, $params);
         $ch = curl_init($target['url']);
-        $headers = $this->buildHeaders();
+        $headers = $this->buildHeaders($target['multipart']);
         $headerLines = array_map(fn ($k, $v) => "$k: $v", array_keys($headers), $headers);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
