@@ -6,33 +6,33 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 
 ## Run
 
-	cp .env.example .env   # fill in secrets
-	npm run build -w @ekoindia/eps-backend
-	npm start -w @ekoindia/eps-backend
+    cp .env.example .env   # fill in secrets
+    npm run build -w @ekoindia/eps-backend
+    npm start -w @ekoindia/eps-backend
 
 ## Endpoints
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| POST | /auth/otp/start | none | Send mobile OTP (Eko 515) |
-| POST | /auth/otp/verify | none | Verify OTP (518), fetch profile (151), set session |
-| GET  | /me | cookie | Profile + lifecycle state |
-| POST | /auth/refresh | refresh cookie | Rotate session |
-| POST | /auth/logout | cookie | Revoke session |
-| GET  | /auth/admin/github | none | Begin admin OAuth |
-| GET  | /auth/admin/github/callback | none | Complete admin OAuth |
-| GET  | /healthz | none | Liveness |
-| GET  | /readyz  | none | Readiness; PINGs Redis when configured, else always 200 |
+| Method | Path                        | Auth           | Purpose                                                 |
+| ------ | --------------------------- | -------------- | ------------------------------------------------------- |
+| POST   | /auth/otp/start             | none           | Send mobile OTP (Eko 515)                               |
+| POST   | /auth/otp/verify            | none           | Verify OTP (518), fetch profile (151), set session      |
+| GET    | /me                         | cookie         | Profile + lifecycle state                               |
+| POST   | /auth/refresh               | refresh cookie | Rotate session                                          |
+| POST   | /auth/logout                | cookie         | Revoke session                                          |
+| GET    | /auth/admin/github          | none           | Begin admin OAuth                                       |
+| GET    | /auth/admin/github/callback | none           | Complete admin OAuth                                    |
+| GET    | /healthz                    | none           | Liveness                                                |
+| GET    | /readyz                     | none           | Readiness; PINGs Redis when configured, else always 200 |
 
 ## Scaling & storage backends
 
 Two KV backends are available, selected at startup based on whether `REDIS_URL`
 is set:
 
-| Mode | Backend | When to use |
-| --- | --- | --- |
-| In-memory | `createInMemoryKV` (default) | Single instance; no external dependency |
-| Redis | `createRedisKV` | Multi-instance, restarts, rolling deploys |
+| Mode      | Backend                      | When to use                               |
+| --------- | ---------------------------- | ----------------------------------------- |
+| In-memory | `createInMemoryKV` (default) | Single instance; no external dependency   |
+| Redis     | `createRedisKV`              | Multi-instance, restarts, rolling deploys |
 
 **In-memory** is process-local. Refresh tokens, OAuth state, and rate-limit
 windows are not shared across processes — running more than one replica will
@@ -57,7 +57,10 @@ availability.
 A `docker-compose.yml` is provided for running the backend with a local Redis
 instance. Use it as a reference for self-hosted deployments:
 
-	docker compose up --build
+    docker compose up --build
+
+Deploy targets: pull-based private VM (see [docs/eps-backend-vm-deploy.md](docs/eps-backend-vm-deploy.md))
+or managed Vercel serverless (see [docs/eps-backend-vercel-deploy.md](docs/eps-backend-vercel-deploy.md)).
 
 ### Rollback
 
@@ -65,8 +68,8 @@ Rolling back from Redis mode to the previous in-memory binary requires
 flushing the session keys written to Redis, because the key format and value
 encryption differ. Before restarting with the old binary:
 
-	redis-cli --scan --pattern 'rt:*' | xargs redis-cli del
-	redis-cli --scan --pattern 'ghtoken:*' | xargs redis-cli del
+    redis-cli --scan --pattern 'rt:*' | xargs redis-cli del
+    redis-cli --scan --pattern 'ghtoken:*' | xargs redis-cli del
 
 On a dedicated instance you can use `FLUSHDB` instead. All affected users will
 need to re-authenticate.
@@ -104,23 +107,23 @@ Use a **dedicated dev app** (separate credentials from production):
 
 ### 2. Backend env (`.env`)
 
-	GITHUB_CLIENT_ID=<dev app client id>
-	GITHUB_CLIENT_SECRET=<dev app client secret>
-	GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/admin/github/callback
-	GITHUB_REPO=ekoindia/eps-platform   # admin must have write access to this repo
-	COOKIE_SECURE=false                 # dev is http; Secure cookies won't set
-	ADMIN_POST_LOGIN_REDIRECT=/admin    # optional: where admin lands after GitHub login
+    GITHUB_CLIENT_ID=<dev app client id>
+    GITHUB_CLIENT_SECRET=<dev app client secret>
+    GITHUB_CALLBACK_URL=http://localhost:8080/api/auth/admin/github/callback
+    GITHUB_REPO=ekoindia/eps-platform   # admin must have write access to this repo
+    COOKIE_SECURE=false                 # dev is http; Secure cookies won't set
+    ADMIN_POST_LOGIN_REDIRECT=/admin    # optional: where admin lands after GitHub login
 
-	# Redis KV backend (optional; omit both for in-memory single-instance mode)
-	REDIS_URL=redis://redis:6379           # optional; omit for in-memory (single instance)
-	KV_ENCRYPTION_KEY=<base64 32 bytes>    # REQUIRED when REDIS_URL is set
-	                                       # generate: openssl rand -base64 32
-	REDIS_TLS_REJECT_UNAUTHORIZED=true     # set false only for a self-signed managed cert
+    # Redis KV backend (optional; omit both for in-memory single-instance mode)
+    REDIS_URL=redis://redis:6379           # optional; omit for in-memory (single instance)
+    KV_ENCRYPTION_KEY=<base64 32 bytes>    # REQUIRED when REDIS_URL is set
+                                           # generate: openssl rand -base64 32
+    REDIS_TLS_REJECT_UNAUTHORIZED=true     # set false only for a self-signed managed cert
 
 ### 3. Run both
 
-	npm run backend:dev   # backend on :8787 (watch mode)
-	npm run dev           # frontend on :8080 (proxies /api -> :8787)
+    npm run backend:dev   # backend on :8787 (watch mode)
+    npm run dev           # frontend on :8080 (proxies /api -> :8787)
 
 Visit `http://localhost:8080/admin` → "Sign in with GitHub". Admin access is
 gated on **write** permission to `GITHUB_REPO`.
@@ -133,10 +136,10 @@ for the complete feature guide.
 
 Two additional environment variables control the GitOps flow:
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `GITHUB_EDIT_BASE` | `dev` | Base branch for edit PRs. |
-| `GITHUB_PROD_BASE` | `main` | Target branch for deploy PRs. |
+| Variable           | Default | Purpose                       |
+| ------------------ | ------- | ----------------------------- |
+| `GITHUB_EDIT_BASE` | `dev`   | Base branch for edit PRs.     |
+| `GITHUB_PROD_BASE` | `main`  | Target branch for deploy PRs. |
 
 ### Security: authorization freshness & rate limiting
 
@@ -229,19 +232,19 @@ about the request payload.
 
 Per-key-class outage policy:
 
-| Key class / call site                                            | Method      | Policy        | Result on KV outage                                       |
-| ---------------------------------------------------------------- | ----------- | ------------- | --------------------------------------------------------- |
-| `rl:*`, `otp:mob:`, `otp:ip:`, `otp:verify:ip:` (gates)         | incr        | fail-closed   | 503 `RATE_LIMIT_UNAVAILABLE` _(unchanged)_                |
-| `otp:fail:` read + incr (brute-force)                            | get/incr    | fail-closed   | 503 `RATE_LIMIT_UNAVAILABLE` _(unchanged, via `kvOr503`)_ |
-| refresh-token `rt:*` set (OTP login, admin login, rotation)      | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
-| refresh-token `rt:*` consume (rotation single-use)               | getdel      | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
-| `ghstate:` set / get / del (OAuth state single-use)              | set/get/del | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
-| `ghtoken:` set (admin token persistence)                         | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
-| `ghtoken:` get (mutation gate, refresh read)                     | get         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
-| `ghtoken:` TTL re-extend on `/auth/refresh`                      | set         | **fail-open** | best-effort, refresh still succeeds                       |
-| `otp:fail:` del after success                                    | del         | fail-open     | best-effort _(unchanged)_                                 |
-| refresh `rt:*` del + `ghtoken:` del on logout                    | del         | fail-open     | best-effort, logout still 200 _(unchanged)_               |
-| GitHub API malformed / unreachable                               | —           | —             | 502 `UPSTREAM_ERROR` / `GitHubApiError` _(unchanged)_     |
+| Key class / call site                                       | Method      | Policy        | Result on KV outage                                       |
+| ----------------------------------------------------------- | ----------- | ------------- | --------------------------------------------------------- |
+| `rl:*`, `otp:mob:`, `otp:ip:`, `otp:verify:ip:` (gates)     | incr        | fail-closed   | 503 `RATE_LIMIT_UNAVAILABLE` _(unchanged)_                |
+| `otp:fail:` read + incr (brute-force)                       | get/incr    | fail-closed   | 503 `RATE_LIMIT_UNAVAILABLE` _(unchanged, via `kvOr503`)_ |
+| refresh-token `rt:*` set (OTP login, admin login, rotation) | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| refresh-token `rt:*` consume (rotation single-use)          | getdel      | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghstate:` set / get / del (OAuth state single-use)         | set/get/del | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghtoken:` set (admin token persistence)                    | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghtoken:` get (mutation gate, refresh read)                | get         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
+| `ghtoken:` TTL re-extend on `/auth/refresh`                 | set         | **fail-open** | best-effort, refresh still succeeds                       |
+| `otp:fail:` del after success                               | del         | fail-open     | best-effort _(unchanged)_                                 |
+| refresh `rt:*` del + `ghtoken:` del on logout               | del         | fail-open     | best-effort, logout still 200 _(unchanged)_               |
+| GitHub API malformed / unreachable                          | —           | —             | 502 `UPSTREAM_ERROR` / `GitHubApiError` _(unchanged)_     |
 
 **Boundaries — what is not `STORE_UNAVAILABLE`:**
 
@@ -317,10 +320,10 @@ agent access from CI is required.
 
 **Architecture:**
 
-	CI push to main → CI green → deploy-eps-backend workflow →
-	  build :sha, retag :prod (atomic) →
-	  poller detects digest change → pulls + recreates eps-backend →
-	  health gate (/readyz) → marks last_good or rolls back
+    CI push to main → CI green → deploy-eps-backend workflow →
+      build :sha, retag :prod (atomic) →
+      poller detects digest change → pulls + recreates eps-backend →
+      health gate (/readyz) → marks last_good or rolls back
 
 The deploy gate is the **`main` branch merge** — CI must pass before the
 workflow runs. Branch protection (required reviews + required CI) on `main`
@@ -331,8 +334,8 @@ interface. Point your reverse proxy (nginx, Caddy, etc.) at that address.
 
 **Invariant compose command** — all operator actions use this exact form:
 
-	docker compose -p eps-backend --project-directory /deploy \
-	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml <cmd>
+    docker compose -p eps-backend --project-directory /deploy \
+      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml <cmd>
 
 `deploy.env` holds a single line (`EPS_BACKEND_IMAGE=...`) that the poller
 rewrites atomically on each deploy; the operator seeds it once at bootstrap.
@@ -344,7 +347,7 @@ by mounting the host's `~/.docker/config.json` read-only into the container;
 run `docker login ghcr.io` on the VM before starting the stack.
 
 For the full operator runbook — bootstrap, rollback, HOLD handling, alerts,
-and ongoing ops — see [`docs/eps-backend-vm-deploy.md`](../../docs/eps-backend-vm-deploy.md).
+and ongoing ops — see [`docs/eps-backend-vm-deploy.md`](docs/eps-backend-vm-deploy.md).
 
 ## Deferred
 
