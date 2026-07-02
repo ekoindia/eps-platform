@@ -61,7 +61,9 @@ Optional env: `EKO_ENV` (`uat` default | `production`), `EKO_ALLOWED_APIS` (defa
 
 ## Tools
 
-One tool per verification endpoint, named `eps_<slug with underscores>` — e.g. `eps_pan_lite`, `eps_bank_account_verification`, `eps_verify_gstin`, `eps_driving_license`. Every tool description carries the billing reminder; input schemas (required params, types, examples) are generated from the API specs. Multi-step flows (mobile OTP, DigiLocker) are exposed as their individual steps — the server is stateless; your agent carries intermediate ids between calls.
+One tool per verification endpoint, named `eps_<slug with underscores>` — e.g. `eps_pan_lite`, `eps_bank_account_verification`, `eps_verify_gstin`, `eps_driving_license`. Every tool description carries the billing reminder; input schemas (required params, types, examples — including item shapes for array params like bulk `entries`) are generated from the API specs. Multi-step flows (mobile OTP, DigiLocker, bulk verify) are exposed as their individual steps — the server is stateless; your agent carries intermediate ids between calls, and each step's description says which tool comes next and which field carries over.
+
+Every tool declares MCP annotations: `openWorldHint: true` on all (they call a paid external API), and `readOnlyHint: false` + `idempotentHint: false` on the side-effecting ones — `eps_bank_account_verification` (live, non-refundable ₹1 penny-drop), the two bulk-submit tools (enqueue async batches), `eps_mobile_otp_send`/`eps_mobile_otp_verify` (send/consume an OTP), and `eps_digilocker_create_url` (creates a consent session). Their descriptions state the side effect instead of "Read-only verification". Hosts should gate side-effecting tools accordingly; billing applies to **all** successful calls either way.
 
 Errors come back sanitized as `{ code, message }`: `VALIDATION` (names the missing/invalid params — never their values), `TOOL_NOT_ALLOWED`, `UNKNOWN_TOOL`, `UPSTREAM_TIMEOUT`, `UPSTREAM_ERROR`. Successful upstream envelopes (including business failures like "PAN not found") are returned verbatim — they are your data.
 

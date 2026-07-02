@@ -31,14 +31,16 @@ Requires **Node.js ≥ 18**.
 ## Tools
 
 All tools are read-only and **secret-free** — none of them accept an
-`access_key` or any other credential.
+`access_key` or any other credential. Every tool also declares MCP annotations
+(`readOnlyHint: true`, `idempotentHint: true`, `openWorldHint: false`) so
+clients can see this programmatically.
 
 | Tool                  | Arguments                                                                    | Returns                                                                                                                                            |
 | --------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_apis`           | `category?`                                                                  | Compact index of EPS endpoints (no request/response bodies). Optional category filter.                                                             |
+| `list_apis`           | `category?`, `limit?`                                                        | Compact index of EPS endpoints (no request/response bodies). `category` is validated against the bundle's categories; all entries by default.      |
 | `list_topics`         | —                                                                            | Documentation topic ids: `auth`, `errors`, `pricing`, `environments`.                                                                              |
 | `list_recipes`        | —                                                                            | Multi-step recipe ids + names (e.g. `dmt-send-money`, `aeps-cash-withdrawal`).                                                                     |
-| `search`              | `query`                                                                      | Ranked endpoint matches for a query (ids only, no bodies).                                                                                         |
+| `search`              | `query`, `limit?`                                                            | Ranked endpoint matches for a query (ids only, no bodies). Top 10 by default; raise `limit` for more.                                              |
 | `get_api`             | `slug`                                                                       | Full detail for one endpoint (params, response fields, errors, examples).                                                                          |
 | `get_topic`           | `topic` (`auth` \| `errors` \| `pricing` \| `environments`)                  | One documentation topic.                                                                                                                           |
 | `get_recipe`          | `id`                                                                         | One multi-step recipe (steps + branches).                                                                                                          |
@@ -48,6 +50,11 @@ All tools are read-only and **secret-free** — none of them accept an
 **Tiered usage:** start with `list_apis` / `search` (cheap, compact), then call
 `get_api` only for the endpoint(s) you actually need. Same pattern for
 `list_topics` → `get_topic` and `list_recipes` → `get_recipe`.
+
+**Errors are actionable:** an unknown `slug`/`id` returns an MCP error result
+(`isError: true`) with "did you mean" suggestions and a pointer to
+`search`/`list_apis`; an invalid `category` fails schema validation with the
+valid values listed.
 
 ## Client configuration
 
@@ -176,9 +183,9 @@ bundle at startup (e.g. the latest generated `eps.json`), set `EPS_BUNDLE_URL`:
 }
 ```
 
-If the fetch fails for any reason, the server transparently falls back to the
-baked bundle. `get_meta` reports which source is in effect (`baked` or
-`remote`).
+The remote fetch is capped at **5 seconds**; if it fails or times out for any
+reason, the server transparently falls back to the baked bundle. `get_meta`
+reports which source is in effect (`baked` or `remote`).
 
 ## Security: backend-only signing
 

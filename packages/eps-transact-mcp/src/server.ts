@@ -75,7 +75,9 @@ export const createTransactServer = (
 	server.setRequestHandler(ListToolsRequestSchema, async () => ({
 		tools: visibleTools.map((t) => ({
 			name: t.name,
+			title: t.title,
 			description: t.description,
+			annotations: t.annotations,
 			// Identity params covered by a server-side default are demoted from
 			// `required` so schema-validating hosts don't force the model to
 			// invent them; EpsClient still enforces presence after merging.
@@ -120,11 +122,10 @@ export const createTransactServer = (
 				(req.params.arguments ?? {}) as Record<string, unknown>,
 			);
 			// The upstream response goes back to the authenticated caller — it is
-			// their verification result. It is never logged server-side.
+			// their verification result. It is never logged server-side. Minified:
+			// the consumer is an LLM, indentation is pure token waste.
 			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(result, null, 2) },
-				],
+				content: [{ type: "text" as const, text: JSON.stringify(result) }],
 			};
 		} catch (err) {
 			return errorResult(sanitizeError(err));

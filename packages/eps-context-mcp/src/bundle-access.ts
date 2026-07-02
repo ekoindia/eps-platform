@@ -22,10 +22,18 @@ const toIndexEntry = (a: AgentApiDetail): AgentApiIndexEntry => ({
 export const listApis = (
 	bundle: AgentBundle,
 	category?: string,
-): AgentApiIndexEntry[] =>
-	bundle.apis
+	limit?: number,
+): AgentApiIndexEntry[] => {
+	const entries = bundle.apis
 		.filter((a) => !category || a.category === category)
 		.map(toIndexEntry);
+	return limit !== undefined ? entries.slice(0, limit) : entries;
+};
+
+/** Distinct categories present in the bundle, in first-seen order. */
+export const listCategories = (bundle: AgentBundle): string[] => [
+	...new Set(bundle.apis.map((a) => a.category)),
+];
 
 export const listTopics = (bundle: AgentBundle): AgentTopicId[] =>
 	Object.keys(bundle.topics) as AgentTopicId[];
@@ -39,9 +47,10 @@ export const listRecipes = (
 export const searchApis = (
 	bundle: AgentBundle,
 	query: string,
+	limit?: number,
 ): AgentApiIndexEntry[] => {
 	const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-	if (!terms.length) return listApis(bundle);
+	if (!terms.length) return listApis(bundle, undefined, limit);
 	const scored = bundle.apis.map((a) => {
 		const hay =
 			`${a.name} ${a.summary} ${a.path} ${a.category} ${a.productName}`.toLowerCase();
@@ -49,10 +58,11 @@ export const searchApis = (
 		for (const t of terms) if (hay.includes(t)) score += 1;
 		return { a, score };
 	});
-	return scored
+	const ranked = scored
 		.filter((s) => s.score > 0)
 		.sort((x, y) => y.score - x.score)
 		.map((s) => toIndexEntry(s.a));
+	return limit !== undefined ? ranked.slice(0, limit) : ranked;
 };
 
 export const getApi = (

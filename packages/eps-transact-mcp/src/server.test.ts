@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { signSecretKey } from "@ekoindia/eps-sdk";
 
 import { loadBundle } from "./load-bundle.js";
@@ -175,6 +176,30 @@ describe("transact server", () => {
 		expect(JSON.parse((res.content as { text: string }[])[0].text).code).toBe(
 			"UNKNOWN_TOOL",
 		);
+	});
+
+	it("tools/list parses against the raw protocol schema with title + annotations", async () => {
+		const { client } = await connect();
+		const listed = ListToolsResultSchema.parse(await client.listTools());
+		for (const t of listed.tools) {
+			expect(t.title, t.name).toBeTruthy();
+			expect(t.annotations?.openWorldHint, t.name).toBe(true);
+			expect(typeof t.annotations?.readOnlyHint, t.name).toBe("boolean");
+		}
+		const pennyDrop = listed.tools.find(
+			(t) => t.name === "eps_bank_account_verification",
+		);
+		expect(pennyDrop?.annotations?.readOnlyHint).toBe(false);
+		expect(pennyDrop?.description).toContain("penny-drop");
+	});
+
+	it("call results are minified (no pretty-print indentation)", async () => {
+		const { client } = await connect();
+		const res = await client.callTool({
+			name: "eps_pan_lite",
+			arguments: argsFor(panLite),
+		});
+		expect((res.content as { text: string }[])[0].text).not.toContain("\n");
 	});
 });
 
