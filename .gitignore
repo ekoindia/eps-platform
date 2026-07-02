@@ -33,7 +33,8 @@ deploy.env
 # Internal planning/strategy docs — kept locally, never committed (not for the
 # public repo). Removed from tracking before open-sourcing.
 docs/local-roadmap/
-docs/superpowers/
+# Override the global (~/.config/git/ignore) exclude so this repo tracks SDD docs.
+!docs/superpowers/
 
 # Ignore TypeScript incremental compilation cache
 *.tsbuildinfo
