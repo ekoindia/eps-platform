@@ -75,6 +75,11 @@ jobs:
       - name: Test eps-sdk (Node.js)
         run: npm test -w @ekoindia/eps-sdk
 
+      # transact-mcp imports @ekoindia/eps-sdk via its package main (dist/), so
+      # the SDK must be tsup-built first; its baked data came from `npm run build`.
+      - name: Test eps-transact-mcp
+        run: npm run transact:test
+
       - name: Test eps-mock-server
         run: npm test -w @ekoindia/eps-mock-server
 
@@ -97,11 +102,29 @@ jobs:
         run: |
           # A well-formed 64-hex digest (sha256:0 fails digest-format validation).
           d=$(printf '0%.0s' $(seq 64))
-          printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:%s\n' "$d" > deploy.env
+          {
+            printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:%s\n' "$d"
+            printf 'EPS_TRANSACT_MCP_IMAGE=ghcr.io/ekoindia/eps-transact-mcp@sha256:%s\n' "$d"
+          } > deploy.env
           : > .env
           docker compose -p eps-backend --project-directory . \
             --env-file deploy.env -f docker-compose.prod.yml config -q
           rm -f deploy.env .env
+
+      # Container smoke for the transactional MCP: the build exercises the risky
+      # parts (workspace resolution, baked-data copy); then prove /healthz answers.
+      - name: Build + smoke eps-transact-mcp image
+        run: |
+          docker build -t eps-transact-mcp-ci -f packages/eps-transact-mcp/Dockerfile .
+          cid=$(docker run -d -p 8788:8788 eps-transact-mcp-ci)
+          ok=""
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost:8788/healthz > /dev/null; then ok=1; break; fi
+            sleep 1
+          done
+          docker logs "$cid"
+          docker rm -f "$cid"
+          [ "$ok" = "1" ]
 
   php-sdk:
     name: PHP SDK
