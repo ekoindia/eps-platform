@@ -14,7 +14,9 @@ import { withTimeout } from "./fetchTimeout.js";
  * research repo verified staging WITH port :25004; our bundle is portless),
  * and that HMAC signing + JSON encoding pass end-to-end.
  *
- * Run: EPS_UAT_DEVELOPER_KEY=… EPS_UAT_ACCESS_KEY=… EPS_UAT_INITIATOR_ID=… \
+ * Run: put the EPS_UAT_* vars in this package's .env (see .env.example;
+ *      vitest.config.ts loads it, inline shell vars win), or pass inline:
+ *      EPS_UAT_DEVELOPER_KEY=… EPS_UAT_ACCESS_KEY=… EPS_UAT_INITIATOR_ID=… \
  *      npm test -w @ekoindia/eps-transact-mcp -- uat-smoke
  */
 const developerKey = process.env.EPS_UAT_DEVELOPER_KEY;

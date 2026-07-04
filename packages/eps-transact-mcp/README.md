@@ -88,7 +88,7 @@ npm run transact:typecheck
 
 Four utils (`fetchTimeout`, `requestId`, `accessLog`, `update-check`) are hand-copied/adapted from eps-backend / eps-context-mcp; `parity.copied-utils.test.ts` pins a content hash of both sides of each pair, so editing either file fails the suite until you diff the pair, port what applies, and paste the replacement hash printed in the failure.
 
-Tests never call Eko; upstream fetch is injected. The one exception is the env-gated live UAT smoke:
+Tests never call Eko; upstream fetch is injected. The one exception is the opt-in live UAT smoke (`uat-smoke.test.ts`), which self-skips unless real UAT credentials are set. Copy `.env.example` to `.env` in this package (gitignored; vitest loads `EPS_UAT_*` from it) or pass the vars inline — inline wins:
 
 ```sh
 EPS_UAT_DEVELOPER_KEY=… EPS_UAT_ACCESS_KEY=… EPS_UAT_INITIATOR_ID=… \
