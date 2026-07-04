@@ -53,6 +53,24 @@ describe("eps-context-mcp tools", () => {
 		expect(parse(res as never).backendOnly).toBe(true);
 	});
 
+	it("get_meta reports package version + update availability", async () => {
+		const server = createEpsServer(bundle, "baked", {
+			current: "0.1.0",
+			latest: "0.2.0",
+			updateAvailable: true,
+		});
+		const client = new Client({ name: "test", version: "0" });
+		const [a, b] = InMemoryTransport.createLinkedPair();
+		await Promise.all([server.connect(a), client.connect(b)]);
+		const meta = parse(
+			(await client.callTool({ name: "get_meta", arguments: {} })) as never,
+		);
+		expect(meta.packageVersion).toBe("0.1.0");
+		expect(meta.latestVersion).toBe("0.2.0");
+		expect(meta.updateAvailable).toBe(true);
+		expect(meta.source).toBe("baked");
+	});
+
 	it("no tool accepts an access_key parameter (secret-free)", async () => {
 		const client = await connect();
 		for (const t of (await client.listTools()).tools) {
@@ -61,5 +79,81 @@ describe("eps-context-mcp tools", () => {
 					.properties ?? {};
 			expect(Object.keys(props)).not.toContain("access_key");
 		}
+	});
+
+	it("every tool carries read-only annotations", async () => {
+		const client = await connect();
+		for (const t of (await client.listTools()).tools) {
+			expect(t.annotations, t.name).toMatchObject({
+				readOnlyHint: true,
+				idempotentHint: true,
+				openWorldHint: false,
+			});
+		}
+	});
+
+	it("list_apis and search honor limit; search defaults to 10", async () => {
+		const client = await connect();
+		const limited = parse(
+			(await client.callTool({
+				name: "list_apis",
+				arguments: { limit: 5 },
+			})) as never,
+		);
+		expect(limited).toHaveLength(5);
+		const defaulted = parse(
+			(await client.callTool({
+				name: "search",
+				arguments: { query: "verification" },
+			})) as never,
+		);
+		expect(defaulted.length).toBeLessThanOrEqual(10);
+		const wide = parse(
+			(await client.callTool({
+				name: "search",
+				arguments: { query: "verification", limit: 50 },
+			})) as never,
+		);
+		expect(wide.length).toBeGreaterThanOrEqual(defaulted.length);
+	});
+
+	it("rejects an invalid category, naming the valid values", async () => {
+		const client = await connect();
+		const res = (await client.callTool({
+			name: "list_apis",
+			arguments: { category: "nonsense" },
+		})) as { isError?: boolean; content: { text?: string }[] };
+		expect(res.isError).toBe(true);
+		expect(res.content[0].text).toContain("verification");
+	});
+
+	it("unknown slug returns isError with suggestions", async () => {
+		const client = await connect();
+		const res = (await client.callTool({
+			name: "get_api",
+			arguments: { slug: "pan-lit" },
+		})) as { isError?: boolean; content: { text?: string }[] };
+		expect(res.isError).toBe(true);
+		expect(res.content[0].text).toContain("Unknown slug");
+		expect(res.content[0].text).toMatch(/search or list_apis/);
+	});
+
+	it("unknown recipe returns isError listing valid ids", async () => {
+		const client = await connect();
+		const res = (await client.callTool({
+			name: "get_recipe",
+			arguments: { id: "bogus" },
+		})) as { isError?: boolean; content: { text?: string }[] };
+		expect(res.isError).toBe(true);
+		expect(res.content[0].text).toContain("Valid recipe ids");
+	});
+
+	it("outputs are minified (no pretty-print indentation)", async () => {
+		const client = await connect();
+		const res = (await client.callTool({
+			name: "get_meta",
+			arguments: {},
+		})) as { content: { text?: string }[] };
+		expect(res.content[0].text).not.toContain("\n");
 	});
 });

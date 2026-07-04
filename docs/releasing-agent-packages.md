@@ -9,7 +9,8 @@ architecture of what is being shipped, see
 ## 1. Distribution decision
 
 - **npm packages** (`@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`,
-  `@ekoindia/eps-mock-server`) → **public npm** (`registry.npmjs.org`).
+  `@ekoindia/eps-mock-server`, `@ekoindia/eps-transact-mcp`) → **public npm**
+  (`registry.npmjs.org`).
 - **PHP SDK** (`ekoindia/eps-sdk`) → **Packagist** (Composer).
 - **Claude Code plugin** → the repo-root `.claude-plugin/marketplace.json`
   (marketplace name `ekoindia`).
@@ -43,7 +44,7 @@ attestation — this needs `id-token: write` (granted) **and a public source rep
 (`ekoindia/eps-platform` is public). Package records auto-create on first
 `npm publish --access public`, so nothing needs to be pre-created besides the org.
 
-**Phase A — Bootstrap (one-time per package; done for the current three):**
+**Phase A — Bootstrap (one-time per package; done for all four):**
 
 1. Confirm the **`@ekoindia` npm org** exists (scoped packages require it).
 2. Create a short-lived **automation `NPM_TOKEN`** with publish rights on the
@@ -52,7 +53,7 @@ attestation — this needs `id-token: write` (granted) **and a public source rep
 3. Publish the package **once** (local/manual from a maintainer machine:
    `npm publish --access public`). Local-first avoids a half-published tag.
 
-**Phase B — OIDC steady-state (after the package exists; done for the current three):**
+**Phase B — OIDC steady-state (after the package exists; done for all four):**
 
 4. On npmjs.com, for the package → *Settings → Trusted Publisher* → add a
    GitHub Actions publisher: org `ekoindia`, this repo, workflow filename
@@ -95,9 +96,10 @@ push to **`main`** (and `workflow_dispatch`); the **PHP** side runs on a
    https://registry.npmjs.org` and `id-token: write` (job-scoped, for OIDC).
 2. `npm ci`, then `npm run build` (repo-root build emits `dist/agent/*.json`
    and then runs `bake:all`, copying them into each package's `data/`).
-3. **Test gate** — `npm test` for all three packages; a failure aborts the
-   release before anything publishes.
-4. Runs **`scripts/auto-release.mjs`** for the three npm packages. For each:
+3. **Test gate** — `npm test` for all four packages (transact-mcp via
+   `npm run transact:test`, which builds the `@ekoindia/eps-sdk` dist it imports);
+   a failure aborts the release before anything publishes.
+4. Runs **`scripts/auto-release.mjs`** for the four npm packages. For each:
    bake + build, then fingerprint the exact files `npm pack` would ship
    (normalizing `package.json`'s `version`) and compare against the tarball
    currently on npm. **Unchanged → skipped. Changed → published** with the next
@@ -112,7 +114,7 @@ version-bump commit is pushed back to the protected branch — only the
 **idempotent**: a version-conflict (content already on npm from a prior partial
 run) is treated as done and the tag is reconciled.
 
-All three npm packages declare `"publishConfig": { "access": "public" }` (scoped
+All four npm packages declare `"publishConfig": { "access": "public" }` (scoped
 packages are private by default). `prepublishOnly` (bake + build) still guards
 manual `npm publish`; the workflow bypasses it with `--ignore-scripts` by design.
 
@@ -167,8 +169,9 @@ Runs on pull requests and on pushes to `dev`, `main`, and `feature/**`.
 - **Job `web-and-packages`** (Node 20): `npm ci` → `npm run lint` →
   `npm run build` (website + agent bundles) → uploads the baked
   `sdk-surface.json` as the `sdk-surface` artifact → `npx vitest run` (website
-  tests) → `npm test` for `@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`, and
-  `@ekoindia/eps-mock-server`.
+  tests) → `npm test` for `@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`,
+  `@ekoindia/eps-mock-server`, and `@ekoindia/eps-transact-mcp` (+ its Docker
+  image build/`/healthz` smoke).
 - **Job `php-sdk`** (PHP 8.2 + Composer, in `packages/sdk-php`): `needs`
   `web-and-packages` and **downloads the `sdk-surface` artifact** into `data/`
   (the baked surface is gitignored and never built on the PHP runner) →
@@ -183,7 +186,7 @@ Runs on pull requests and on pushes to `dev`, `main`, and `feature/**`.
 
 Run after the first publish:
 
-- [ ] `npx -y @ekoindia/eps-context-mcp` starts the stdio MCP server.
+- [ ] `npx -y @ekoindia/eps-context-mcp@latest` starts the stdio MCP server.
 - [ ] `npx -y @ekoindia/eps-mock-server` serves on `:4010`.
 - [ ] `npm i @ekoindia/eps-sdk` resolves and installs.
 - [ ] `composer require ekoindia/eps-sdk` resolves from Packagist.

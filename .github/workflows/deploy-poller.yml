@@ -1,0 +1,84 @@
+name: Deploy eps-poller
+
+# Publishes the SHARED auto-pull poller image consumed by the standalone
+# eps-transact-mcp stack (eps-backend still `build:`s the same Dockerfile from
+# its own on-VM checkout, so it needs no published image). Source of truth for
+# both is packages/eps-backend/deploy/poller/{poll.sh,Dockerfile}.
+#
+# Triggers on changes to that dir on main, plus workflow_dispatch for
+# base-image / security rebuilds that don't touch the script.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/eps-backend/deploy/poller/poll.sh"
+      - "packages/eps-backend/deploy/poller/Dockerfile"
+      - ".github/workflows/deploy-poller.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: eps-poller-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build + publish poller image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/ekoindia/eps-poller
+      SHA: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # A newer main may have landed while this run queued. Publishing now would
+      # move :prod backwards — skip if our SHA is no longer the tip of main.
+      # (workflow_dispatch has no push SHA race, but the guard is harmless there.)
+      - name: Stale-run guard
+        id: guard
+        run: |
+          git fetch origin main --depth=1
+          tip="$(git rev-parse FETCH_HEAD)"
+          if [ "$SHA" != "$tip" ]; then
+            echo "Superseded: built $SHA but origin/main is $tip; skipping." >&2
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log in to GHCR
+        if: steps.guard.outputs.skip != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        if: steps.guard.outputs.skip != 'true'
+        uses: docker/setup-buildx-action@v3
+
+      # amd64-only (matches current infra). Bump to a platforms matrix only if a
+      # transact host is ever ARM — see docs/eps-transact-mcp.md deploy section.
+      - name: Build + push :sha
+        if: steps.guard.outputs.skip != 'true'
+        uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: packages/eps-backend/deploy/poller
+          file: packages/eps-backend/deploy/poller/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.SHA }}
+          labels: |
+            org.opencontainers.image.revision=${{ env.SHA }}
+            org.opencontainers.image.source=https://github.com/ekoindia/eps-platform
+
+      # Point :prod at the exact digest just pushed — no rebuild, atomic retag.
+      - name: Retag :prod to the pushed digest
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          docker buildx imagetools create \
+            -t "$IMAGE:prod" \
+            "$IMAGE@${{ steps.build.outputs.digest }}"

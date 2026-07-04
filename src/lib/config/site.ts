@@ -10,8 +10,15 @@ export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
 
 export const API_DEFAULT_VERSION = "v3";
 
+/**
+ * npm spec for the EPS context MCP server. The `@latest` tag makes `npx`
+ * re-resolve the newest publish on each launch, so users track new releases
+ * (code + baked API bundle) without re-editing their MCP config. Offline
+ * launches fall back to the npx cache; pin `@<version>` to freeze.
+ */
+export const EPS_MCP_PKG = "@ekoindia/eps-context-mcp@latest";
 /** Command to run the EPS context MCP server (used on the AI + docs pages). */
-export const EPS_MCP_CMD = "npx -y @ekoindia/eps-context-mcp";
+export const EPS_MCP_CMD = `npx -y ${EPS_MCP_PKG}`;
 
 export const PARENT_SITE_URL = "https://eko.in";
 export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";

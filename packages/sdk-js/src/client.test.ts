@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
 import { EpsClient, signSecretKey } from "./client.js";
@@ -210,6 +211,85 @@ describe("EpsClient.call", () => {
 				category: {},
 			}),
 		).rejects.toThrow(/invalid param types.*category/i);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("sends FormData (no content-type header) for a file-upload endpoint", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		const address = {
+			line: "Shop 5",
+			city: "Patna",
+			state: "Bihar",
+			pincode: "800001",
+		};
+		// aadhar_front exercises the path-string branch (read from disk) using
+		// this test file itself as a real, readable file.
+		const selfPath = fileURLToPath(import.meta.url);
+		await client.call("aeps-activate-fingpay", {
+			initiator_id: "9962981729",
+			user_code: "20810200",
+			modelname: "Morpho 1300E3",
+			devicenumber: "SN1234567890",
+			office_address: address,
+			address_as_per_proof: address,
+			pan_card: new Blob(["pan"], { type: "image/jpeg" }),
+			aadhar_front: selfPath,
+			aadhar_back: new Blob(["back"]),
+		});
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(String(url)).toContain(
+			"/admin/network/agent/20810200/aeps-fingpay/activate",
+		);
+		const headers = init!.headers as Record<string, string>;
+		expect(headers["content-type"]).toBeUndefined();
+		expect(headers["secret-key"]).toBe(GOLDEN); // still signed
+		const body = init!.body as FormData;
+		expect(body).toBeInstanceOf(FormData);
+		expect(body.get("modelname")).toBe("Morpho 1300E3");
+		// Object fields become JSON-string form fields.
+		expect(body.get("office_address")).toBe(JSON.stringify(address));
+		// Blob without a name falls back to the param name; a path string keeps
+		// its basename.
+		expect((body.get("pan_card") as File).name).toBe("pan_card");
+		expect((body.get("aadhar_front") as File).name).toBe("client.test.ts");
+		expect(body.get("aadhar_back") as File).toBeInstanceOf(Blob);
+	});
+
+	it("rejects a non-file value for a file param and sends nothing", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await expect(
+			client.call("aeps-activate-fingpay", {
+				initiator_id: "9962981729",
+				user_code: "20810200",
+				modelname: "Morpho 1300E3",
+				devicenumber: "SN1234567890",
+				office_address: {},
+				address_as_per_proof: {},
+				pan_card: 123,
+				aadhar_front: new Blob(["a"]),
+				aadhar_back: new Blob(["b"]),
+			}),
+		).rejects.toThrow(/invalid param types.*pan_card \(expected file\)/i);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 

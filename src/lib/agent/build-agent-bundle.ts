@@ -71,7 +71,7 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	bestFor: spec.bestFor,
 	docsUrl: `${SITE_URL}${docHrefForSlug(spec.slug) ?? docsHref()}`,
 	financial: spec.financial,
-	headers: resolveHeaders(),
+	headers: resolveHeaders(spec),
 	requestParams: resolveRequestParams(spec),
 	sampleRequest: buildSampleRequest(spec),
 	responseFields: resolveResponseFields(spec),

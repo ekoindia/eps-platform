@@ -29,3 +29,24 @@ describe("buildPostmanCollection", () => {
 		expect(PRE_REQUEST_SIGNING_SCRIPT).toContain("secret-key");
 	});
 });
+
+describe("multipart endpoints", () => {
+	it("uses formdata with file fields and no content-type header", () => {
+		const flat = collection.item.flatMap((f) => f.item);
+		const req = flat.find((i) =>
+			String((i.request.url as { raw: string }).raw).includes(
+				"aeps-fingpay/activate",
+			),
+		);
+		expect(req).toBeDefined();
+		const body = req?.request.body as {
+			mode: string;
+			formdata: { key: string; type: string }[];
+		};
+		expect(body.mode).toBe("formdata");
+		expect(body.formdata.find((f) => f.key === "pan_card")?.type).toBe("file");
+		expect(body.formdata.find((f) => f.key === "modelname")?.type).toBe("text");
+		const headers = req?.request.header as { key: string }[];
+		expect(headers.some((h) => h.key === "content-type")).toBe(false);
+	});
+});

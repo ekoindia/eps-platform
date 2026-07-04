@@ -77,6 +77,9 @@ jobs:
           npm test -w @ekoindia/eps-context-mcp
           npm test -w @ekoindia/eps-sdk
           npm test -w @ekoindia/eps-mock-server
+          # transact:test builds the @ekoindia/eps-sdk dist first — transact-mcp
+          # imports it via package main (dist/), unlike the src-only siblings.
+          npm run transact:test
 
       - name: Configure git (for release tags)
         run: |
@@ -89,7 +92,8 @@ jobs:
           node scripts/auto-release.mjs \
             packages/eps-context-mcp \
             packages/sdk-js \
-            packages/eps-mock-server
+            packages/eps-mock-server \
+            packages/eps-transact-mcp
 
   php-split:
     name: Split + publish PHP SDK

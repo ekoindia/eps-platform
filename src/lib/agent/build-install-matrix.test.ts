@@ -37,7 +37,7 @@ describe("buildInstallMatrix", () => {
 	it("Claude Code install defaults to project scope", () => {
 		const claude = matrix.find((m) => m.id === "claude-code");
 		expect(claude?.mcp?.command).toBe(
-			"claude mcp add eps --scope project -- npx -y @ekoindia/eps-context-mcp",
+			"claude mcp add eps --scope project -- npx -y @ekoindia/eps-context-mcp@latest",
 		);
 		// scope flag must sit before `--`, else npx receives it
 		const cmd = claude?.mcp?.command ?? "";

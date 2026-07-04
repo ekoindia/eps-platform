@@ -45,6 +45,9 @@ export interface ApiSpec {
 	extraRequestParams: ApiParam[];          // API-specific params; a same-named
 	                                         // entry OVERRIDES a common param
 	omitCommonParams?: string[];             // drop a common param when N/A
+	headers?: ApiParam[];                    // RARE: override/extend AUTH_HEADERS
+	                                         // by name (content-type is derived —
+	                                         // prefer type:"file" params instead)
 	sampleRequest?: Record<string, unknown>; // OPTIONAL override; default body is
 	                                         // generated from in:"body" examples
 	responseData: ResponseField[];           // ONLY the `data` subtree
@@ -69,13 +72,17 @@ Supporting primitives (same file, lines ~19–53):
 - `developer_key` — static API key.
 - `secret-key` — per-request HMAC-SHA256 signature (see [try-it-now.md](try-it-now.md)).
 - `secret-key-timestamp` — milliseconds since epoch.
-- `content-type` — always `application/json`.
+- `content-type` — derived per endpoint by `resolveHeaders(spec)`: `multipart/form-data`
+  when the spec has any `type: "file"` body param, else `application/json`. The SDKs
+  (`packages/sdk-js`, `packages/sdk-php`) apply the same rule at runtime: file params
+  (path string, or Blob/File in JS / CURLFile in PHP) trigger a multipart body with the
+  content-type header left to the HTTP client.
 
 **Environments** (`api-auth.ts`, `API_ENVIRONMENTS`):
 
 ```typescript
 sandbox:    https://staging.eko.in/ekoapi/${API_VERSION}   // DEFAULT_BASE_URL
-production: https://api.eko.in/ekoapi/${API_VERSION}
+production: https://api.eko.in/ekoicici/${API_VERSION}
 ```
 
 `DEFAULT_BASE_URL` points at sandbox — code samples and the try-it console use it.
@@ -111,8 +118,9 @@ correct way to read a "full" view of a spec — never read the raw spec fields
 directly for rendering.
 
 ```typescript
-/** Auth headers — identical for every API. */
-export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;
+/** Auth headers; content-type derives from the spec (file uploads →
+ *  multipart/form-data), merged with the rare per-spec `headers` overrides. */
+export const resolveHeaders = (spec?: ApiSpec): ApiParam[] => { /* … */ };
 
 /** Applicable common params (location derived from the method, minus omitted /
  *  overridden) followed by the endpoint's own. */

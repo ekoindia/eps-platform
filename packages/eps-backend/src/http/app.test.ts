@@ -1,13 +1,21 @@
 import { describe, it, expect, vi } from "vitest";
+import { Hono } from "hono";
 import { createApp } from "./app";
 import { loadConfig } from "../config";
-import { createInMemoryKV } from "../store/kv";
+import { createInMemoryKV, type KV } from "../store/kv";
 import { createSessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
 import type { GitHubClient } from "../clients/github";
 import { createSecretBox } from "../store/secretbox";
 import { randomBytes } from "node:crypto";
+import {
+	createSecurityLogger,
+	type SecurityRecord,
+} from "../audit/securityLog";
+import { requestId, type AppEnv } from "./requestId";
+import { createAccessLogger } from "../audit/accessLog";
+import { withStoreErrors } from "../store/storeError";
 
 const cfg = loadConfig({
 	JWT_SECRET: "x".repeat(32),
@@ -22,8 +30,11 @@ const cfg = loadConfig({
 	COOKIE_SECURE: "false",
 });
 
-function deps(over: Partial<EkoClient> = {}) {
-	const kv = createInMemoryKV();
+function deps(
+	over: Partial<EkoClient> = {},
+	opts: { accessSink?: (l: string) => void; kv?: KV } = {},
+) {
+	const kv = opts.kv ?? createInMemoryKV();
 	const eko: EkoClient = {
 		sendOtp: vi.fn(async () => ({ ok: true, raw: {} })),
 		verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
@@ -47,8 +58,11 @@ function deps(over: Partial<EkoClient> = {}) {
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
 	const sessions = createSessions(cfg, kv);
+	const accessLog = opts.accessSink
+		? createAccessLogger({ sink: opts.accessSink })
+		: undefined;
 	return {
-		app: createApp({ cfg, eko, zoho, sessions, kv }),
+		app: createApp({ cfg, eko, zoho, sessions, kv, accessLog }),
 		eko,
 		zoho,
 		sessions,
@@ -56,9 +70,59 @@ function deps(over: Partial<EkoClient> = {}) {
 	};
 }
 
+/**
+ * Builds a wrapped KV (exactly as production wraps it) where the named methods
+ * reject as if the store were down, while the rest operate on a real in-memory
+ * store. `base` lets a test seed data first (e.g. a refresh token) and then fail
+ * only a later method.
+ */
+function failingKv(
+	failOn: Partial<Record<"get" | "set" | "del" | "getdel" | "incr", true>>,
+	base = createInMemoryKV(),
+): KV {
+	const down = async () => {
+		throw new Error("kv down");
+	};
+	return withStoreErrors({
+		get: failOn.get ? (down as KV["get"]) : base.get,
+		set: failOn.set ? (down as KV["set"]) : base.set,
+		del: failOn.del ? (down as KV["del"]) : base.del,
+		getdel: failOn.getdel ? (down as KV["getdel"]) : base.getdel,
+		incr: failOn.incr ? (down as KV["incr"]) : base.incr,
+	});
+}
+
+/** Like failingKv, but fails only when `shouldFail(method, key)` is true. */
+function failingKvByKey(
+	shouldFail: (method: string, key: string) => boolean,
+	base = createInMemoryKV(),
+): KV {
+	const guard =
+		<A extends unknown[], R>(m: string, fn: (...a: A) => Promise<R>) =>
+		async (...a: A): Promise<R> => {
+			if (shouldFail(m, a[0] as string)) throw new Error("kv down");
+			return fn(...a);
+		};
+	return withStoreErrors({
+		get: guard("get", base.get),
+		set: guard("set", base.set),
+		del: guard("del", base.del),
+		getdel: guard("getdel", base.getdel),
+		incr: guard("incr", base.incr),
+	});
+}
+
 function cookieFrom(res: Response): string {
 	const set = res.headers.getSetCookie?.() ?? [];
 	return set.map((c) => c.split(";")[0]).join("; ");
+}
+
+function captureLog() {
+	const records: SecurityRecord[] = [];
+	const logger = createSecurityLogger({
+		sink: (line) => records.push(JSON.parse(line) as SecurityRecord),
+	});
+	return { logger, records };
 }
 
 async function body<T>(res: Response): Promise<T> {
@@ -153,6 +217,27 @@ describe("otp/start", () => {
 			"INVALID_INPUT",
 		);
 	});
+
+	it("503 RATE_LIMIT_UNAVAILABLE when the KV incr fails", async () => {
+		const base = deps();
+		const failingKv = {
+			...base.kv,
+			incr: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000009" }),
+		});
+		expect(res.status).toBe(503);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
 });
 
 describe("otp/verify + me", () => {
@@ -217,6 +302,45 @@ describe("otp/verify + me", () => {
 		expect((await body<{ error: { code: string } }>(blocked)).error.code).toBe(
 			"RATE_LIMITED",
 		);
+	});
+
+	it("verify → 503 RATE_LIMIT_UNAVAILABLE when a KV read fails", async () => {
+		const base = deps();
+		const failingKv = {
+			...base.kv,
+			get: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingKv);
+		const app = createApp({ ...base, cfg, kv: failingKv, sessions });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(503);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
+
+	it("verify with a valid OTP still succeeds when only kv.del fails", async () => {
+		const base = deps(); // verifyOtp → ok:true by default
+		const failingDelKv = {
+			...base.kv,
+			del: vi.fn(async () => {
+				throw new Error("redis down");
+			}),
+		};
+		const sessions = createSessions(cfg, failingDelKv);
+		const app = createApp({ ...base, cfg, kv: failingDelKv, sessions });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(200);
 	});
 });
 
@@ -347,14 +471,17 @@ describe("logout", () => {
 	});
 });
 
-function ghDeps(gh: Partial<GitHubClient>) {
+function ghDeps(
+	gh: Partial<GitHubClient>,
+	opts: { kv?: KV; securityLog?: ReturnType<typeof createSecurityLogger> } = {},
+) {
 	const base = deps();
 	const github: GitHubClient = {
 		authorizeUrl: (state) =>
 			`https://github.com/login/oauth/authorize?state=${state}`,
 		exchangeCode: vi.fn(async () => "ght"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
-		hasRepoWrite: vi.fn(async () => true),
+		checkRepoWrite: vi.fn(async () => "write" as const),
 		getContent: vi.fn(async () => null),
 		listDir: vi.fn(async () => []),
 		getBranchHead: vi.fn(async () => "headsha"),
@@ -366,8 +493,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		})),
 		...gh,
 	};
-	// rebuild app with github included
-	const kv = createInMemoryKV();
+	const kv = opts.kv ?? createInMemoryKV();
 	const sessions = createSessions(cfg, kv);
 	const app = createApp({
 		cfg,
@@ -376,6 +502,7 @@ function ghDeps(gh: Partial<GitHubClient>) {
 		sessions,
 		kv,
 		github,
+		securityLog: opts.securityLog,
 	});
 	return { app, github, kv, sessions };
 }
@@ -409,7 +536,9 @@ describe("admin github", () => {
 	});
 
 	it("callback without repo write → 403", async () => {
-		const { app } = ghDeps({ hasRepoWrite: vi.fn(async () => false) });
+		const { app } = ghDeps({
+			checkRepoWrite: vi.fn(async () => "no-write" as const),
+		});
 		const start = await app.request("/auth/admin/github");
 		const loc = new URL(start.headers.get("location")!);
 		const state = loc.searchParams.get("state")!;
@@ -457,6 +586,80 @@ describe("admin github", () => {
 		const claim = await sessions.verifyAccess(at);
 		expect(claim?.sid).toBeTruthy();
 		expect(await kv.get(`ghtoken:${claim!.sid}`)).toBe("gh-secret-token");
+	});
+
+	it("callback with unknown repo-write status → 403 (no session)", async () => {
+		const { app } = ghDeps({
+			checkRepoWrite: vi.fn(async () => "unknown" as const),
+		});
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(403);
+		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
+	});
+
+	it("login-init throttles per IP at ADMIN_LOGIN_IP_LIMIT+1 → 429, no state written", async () => {
+		const { app, kv } = ghDeps({});
+		const setSpy = vi.spyOn(kv, "set");
+		let last = new Response();
+		for (let i = 0; i < 16; i++) {
+			last = await app.request("/auth/admin/github", {
+				headers: { "x-real-ip": "9.9.9.9" },
+			});
+		}
+		expect(last.status).toBe(429);
+		// 15 allowed inits each wrote a ghstate; the throttled 16th did not.
+		const stateWrites = setSpy.mock.calls.filter(([k]) =>
+			String(k).startsWith("ghstate:"),
+		);
+		expect(stateWrites.length).toBe(15);
+	});
+
+	it("callback budget is not burned by bad-state requests", async () => {
+		const { app } = ghDeps({});
+		let last = new Response();
+		for (let i = 0; i < 16; i++) {
+			last = await app.request(
+				"/auth/admin/github/callback?code=abc&state=forged",
+			);
+		}
+		// All bad-state hits → 400 BAD_STATE, never 429 (limiter sits after state validation).
+		expect(last.status).toBe(400);
+		expect((await body<{ error: { code: string } }>(last)).error.code).toBe(
+			"BAD_STATE",
+		);
+	});
+
+	it("a valid state cannot be replayed to burn the callback budget", async () => {
+		const { app } = ghDeps({});
+		const start = await app.request("/auth/admin/github");
+		const state = new URL(start.headers.get("location")!).searchParams.get(
+			"state",
+		)!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const first = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(first.status).toBe(302); // consumed the single-use state
+		const replay = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(replay.status).toBe(400); // state already consumed — never reaches limiter
+		expect((await body<{ error: { code: string } }>(replay)).error.code).toBe(
+			"BAD_STATE",
+		);
 	});
 });
 
@@ -608,7 +811,7 @@ it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 		authorizeUrl: (state) => `https://x/authorize?state=${state}`,
 		exchangeCode: vi.fn(async () => "gh-secret"),
 		getUser: vi.fn(async () => ({ login: "octocat", id: 1 })),
-		hasRepoWrite: vi.fn(async () => true),
+		checkRepoWrite: vi.fn(async () => "write" as const),
 		getContent: vi.fn(async () => null),
 		listDir: vi.fn(async () => []),
 		getBranchHead: vi.fn(async () => "headsha"),
@@ -652,4 +855,367 @@ it("WRITE path: OAuth callback stores the ghtoken encrypted", async () => {
 	expect(ghSet).toBeTruthy();
 	expect(ghSet![1]).not.toBe("gh-secret");
 	expect(secretbox.decrypt(ghSet![1] as string)).toBe("gh-secret");
+});
+
+describe("correlation ids + access log", () => {
+	it("returns an x-request-id header and exposes it via CORS", async () => {
+		const { app } = deps();
+		const res = await app.request("/healthz", {
+			headers: { Origin: "http://localhost:5173" },
+		});
+		expect(res.headers.get("x-request-id")).toBeTruthy();
+		expect(res.headers.get("access-control-expose-headers")).toContain(
+			"x-request-id",
+		);
+	});
+
+	it("does not emit an access line for /healthz or /readyz", async () => {
+		const sink = vi.fn();
+		const { app } = deps({}, { accessSink: sink });
+		await app.request("/healthz");
+		await app.request("/readyz");
+		expect(sink).not.toHaveBeenCalled();
+	});
+
+	it("emits exactly one access line per normal request with the matching rid", async () => {
+		const sink = vi.fn();
+		const { app } = deps({}, { accessSink: sink });
+		const res = await app.request("/me"); // 401, but still a logged request
+		const rid = res.headers.get("x-request-id");
+		expect(sink).toHaveBeenCalledTimes(1);
+		const rec = JSON.parse(sink.mock.calls[0][0]);
+		expect(rec.type).toBe("access");
+		expect(rec.rid).toBe(rid);
+		expect(rec.path).toBe("/me");
+		expect(rec.status).toBe(401);
+	});
+
+	it("emits an access line even when a handler throws a non-Error value", async () => {
+		const sink = vi.fn();
+		const app = new Hono<AppEnv>();
+		app.use("*", requestId());
+		app.use("*", async (c, next) => {
+			try {
+				await next();
+			} finally {
+				sink({ status: c.res?.status ?? 500 });
+			}
+		});
+		app.get("/boom", () => {
+			throw "string-throw";
+		});
+		// app.request returns Response | Promise<Response>; Promise.resolve
+		// normalizes it so .catch is valid and the thrown non-Error is swallowed.
+		await Promise.resolve(app.request("/boom")).catch(() => {});
+		expect(sink).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("admin login security logging", () => {
+	async function callbackWith(
+		gh: Partial<GitHubClient>,
+		logger: ReturnType<typeof createSecurityLogger>,
+	) {
+		const { app, sessions } = ghDeps(gh, { securityLog: logger });
+		const start = await app.request("/auth/admin/github");
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		return { res, sessions };
+	}
+
+	it("logs loginGranted on a successful admin sign-in (sid matches the session)", async () => {
+		const { logger, records } = captureLog();
+		const { res, sessions } = await callbackWith(
+			{ exchangeCode: vi.fn(async () => "ght") },
+			logger,
+		);
+		expect(res.status).toBe(302);
+		expect(records).toHaveLength(1);
+		expect(records[0]).toMatchObject({
+			event: "admin_login",
+			outcome: "granted",
+			actor: "@octocat",
+			reason: null,
+		});
+		// The logged sid must be the SAME id minted into the session claim —
+		// decode the access cookie and compare, not just assert truthy.
+		const at = (res.headers.getSetCookie?.() ?? [])
+			.find((c) => c.startsWith("eps_at="))!
+			.split(";")[0]
+			.slice("eps_at=".length);
+		const claim = await sessions.verifyAccess(at);
+		expect(records[0].sid).toBe(claim?.sid);
+	});
+
+	it("logs loginDenied with raw status no-write for a non-write user", async () => {
+		const { logger, records } = captureLog();
+		const { res } = await callbackWith(
+			{ checkRepoWrite: vi.fn(async () => "no-write" as const) },
+			logger,
+		);
+		expect(res.status).toBe(403);
+		expect(records[0]).toMatchObject({
+			event: "admin_login",
+			outcome: "denied",
+			actor: "@octocat",
+			reason: "no-write",
+		});
+	});
+
+	it("logs loginDenied actor unknown reason OAUTH_FAILED when code exchange fails", async () => {
+		const { logger, records } = captureLog();
+		const { res } = await callbackWith(
+			{ exchangeCode: vi.fn(async () => null) },
+			logger,
+		);
+		expect(res.status).toBe(401);
+		expect(records[0]).toMatchObject({
+			event: "admin_login",
+			outcome: "denied",
+			actor: "unknown",
+			reason: "OAUTH_FAILED",
+		});
+	});
+});
+
+describe("KV-outage matrix (Task 2)", () => {
+	it("otp/verify token persistence outage → 503 STORE_UNAVAILABLE", async () => {
+		// valid OTP, but the refresh-token kv.set fails
+		const kv = failingKv({ set: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("admin OAuth state set outage → 503 STORE_UNAVAILABLE", async () => {
+		// The first kv.set on /auth/admin/github IS the ghstate write
+		const kv = failingKv({ set: true });
+		const { app } = ghDeps({}, { kv });
+		const res = await app.request("/auth/admin/github");
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("OAuth callback: ghstate get outage → 503 STORE_UNAVAILABLE", async () => {
+		// Use a base KV that allows set (for the ghstate write) but fails get on ghstate: keys
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghstate:"),
+		);
+		const { app } = ghDeps({}, { kv });
+		// Start: writes ghstate via set — succeeds
+		const start = await app.request("/auth/admin/github");
+		expect(start.status).toBe(302);
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		// Callback: reads ghstate via get — fails → 503
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("OAuth callback: ghtoken persist outage → 503 STORE_UNAVAILABLE", async () => {
+		// Fail set only on ghtoken: keys so ghstate write and rt: write succeed but
+		// the ghtoken persist (which comes first in the handler) triggers the outage
+		const kv = failingKvByKey(
+			(m, k) => m === "set" && k.startsWith("ghtoken:"),
+		);
+		const { app } = ghDeps({}, { kv });
+		// Start: writes ghstate → key is ghstate:, not ghtoken: → succeeds
+		const start = await app.request("/auth/admin/github");
+		expect(start.status).toBe(302);
+		const loc = new URL(start.headers.get("location")!);
+		const state = loc.searchParams.get("state")!;
+		const stateCookie = (start.headers.getSetCookie?.() ?? [])
+			.map((c) => c.split(";")[0])
+			.join("; ");
+		// Callback: kv.set("ghtoken:...", ...) fails → 503
+		const res = await app.request(
+			`/auth/admin/github/callback?code=abc&state=${state}`,
+			{ headers: { cookie: stateCookie } },
+		);
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("refresh rotation getdel outage → 503 STORE_UNAVAILABLE (not 502)", async () => {
+		const kv = failingKv({ getdel: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: "eps_rt=anything" },
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+
+	it("rate-limit precedence: incr outage stays RATE_LIMIT_UNAVAILABLE (not STORE_UNAVAILABLE)", async () => {
+		const kv = failingKv({ incr: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001" }),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"RATE_LIMIT_UNAVAILABLE",
+		);
+	});
+
+	it("logout fail-open: del outage still returns 200", async () => {
+		const kv = failingKv({ del: true });
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/logout", {
+			method: "POST",
+			headers: { cookie: "eps_rt=anything" },
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("genuine non-store throw still yields 502 UPSTREAM_ERROR", async () => {
+		// eko.getProfile throws a plain (non-store) error on the verify success path
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => {
+				throw new Error("eko exploded");
+			}),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(502);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"UPSTREAM_ERROR",
+		);
+	});
+});
+
+// C1 fail-open / fail-closed matrix for the ghtoken re-extend on /auth/refresh (Task 3)
+describe("KV-outage matrix (Task 3)", () => {
+	/**
+	 * Seeds an admin refresh token and ghtoken into a base KV so tests can wrap
+	 * the base with failingKvByKey and still have data to operate on.
+	 */
+	async function seedAdminRefresh(
+		base: KV,
+	): Promise<{ rt: string; sid: string }> {
+		const sid = crypto.randomUUID();
+		const seedSessions = createSessions(cfg, base);
+		const rt = await seedSessions.issueRefresh({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid,
+		});
+		await base.set(`ghtoken:${sid}`, "gh-token", cfg.adminRefreshTtlSec);
+		return { rt, sid };
+	}
+
+	it("refresh re-extend fail-open: ghtoken set failing still returns 200", async () => {
+		// admin refresh where rotation (getdel + set on rt:*) succeeds but the
+		// ghtoken: TTL re-extend set fails — must NOT 503.
+		const base = createInMemoryKV();
+		const { rt } = await seedAdminRefresh(base);
+		const kv = failingKvByKey(
+			(m, k) => m === "set" && k.startsWith("ghtoken:"),
+			base,
+		);
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(200);
+	});
+
+	it("refresh ghtoken read failing → 503 (read stays fail-closed)", async () => {
+		const base = createInMemoryKV();
+		const { rt } = await seedAdminRefresh(base);
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghtoken:"),
+			base,
+		);
+		const { app } = deps({}, { kv });
+		const res = await app.request("/auth/refresh", {
+			method: "POST",
+			headers: { cookie: `eps_rt=${rt}` },
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
+});
+
+// C1 fail-closed cell: admin mutation gate privileged ghtoken read via createApp (Task 4)
+describe("KV-outage matrix (Task 4)", () => {
+	it("admin mutation gate ghtoken read outage → 503 STORE_UNAVAILABLE", async () => {
+		// Fail only kv.get on ghtoken: keys; all other ops (session verify, rate-limit
+		// incr) must reach the store cleanly so only the privileged ghtoken read fires.
+		const kv = failingKvByKey(
+			(m, k) => m === "get" && k.startsWith("ghtoken:"),
+		);
+		const { app, sessions } = ghDeps({}, { kv });
+		// mintAccess is pure JWT signing — no KV access — so it succeeds even with
+		// the failing store. We include a sid so the gate reaches kv.get("ghtoken:<sid>").
+		const sid = crypto.randomUUID();
+		const at = await sessions.mintAccess({
+			sub: "gh:octocat",
+			role: "admin",
+			orgId: 1,
+			ghLogin: "octocat",
+			sid,
+		});
+		// Send a valid allowed origin (https://eps.eko.in passes assertAllowedOrigin)
+		// and a well-formed body so no earlier check 400-masks the 503.
+		const res = await app.request("/admin/docs/propose", {
+			method: "POST",
+			headers: {
+				cookie: `eps_at=${at}`,
+				origin: "https://eps.eko.in",
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				path: "x",
+				content: "y",
+				baseSha: "sha",
+				summary: "z",
+			}),
+		});
+		expect(res.status).toBe(503);
+		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
+			"STORE_UNAVAILABLE",
+		);
+	});
 });

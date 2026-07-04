@@ -24,17 +24,29 @@ HMAC signature. Nothing secret ever travels on the wire in plain form.
 The signature binds the request to a timestamp, so it must be generated fresh
 for every call:
 
-1. Base64-encode the `access_key`.
+1. Base64-encode the `access_key` — keep this as a **string**.
 2. Take the current timestamp in milliseconds, as a string.
-3. Compute `HMAC-SHA256(timestamp, base64(access_key))`.
+3. Compute `HMAC-SHA256` with the **timestamp as the message** and that
+   **base64 string as the key**.
 4. Base64-encode the result — that's the `secret-key`.
 
 Send the same timestamp in `secret-key-timestamp`. A stale or mismatched
 timestamp returns `403 Forbidden`.
 
 ```
-secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
+secret-key = base64( HMAC-SHA256( message = timestamp, key = base64(access_key) ) )
 ```
+
+> **Common mistake:** the HMAC key is the base64 **string** `base64(access_key)`,
+> used as-is. Do **not** base64-decode it back to raw bytes before signing — that
+> produces a different signature and a `403`.
+
+## Code examples
+
+Sign on your **backend** — the `access_key` must never reach a browser. The same
+recipe in five languages:
+
+<CodeSnippets id="sign-request" />
 
 ## Why sign client-side
 

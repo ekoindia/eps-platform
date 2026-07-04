@@ -56,6 +56,32 @@ export const buildPostmanCollection = (
 					)
 					.join("&")}`
 			: `${baseUrl}${a.path}`;
+		// File-upload endpoints use Postman formdata (Postman generates the
+		// multipart content-type + boundary itself, so the header is omitted).
+		const bodyParams = a.requestParams.filter((p) => p.in === "body");
+		const multipart = bodyParams.some((p) => p.type === "file");
+		const body =
+			a.method === "GET"
+				? undefined
+				: multipart
+					? {
+							mode: "formdata",
+							formdata: bodyParams.map((p) =>
+								p.type === "file"
+									? { key: p.name, type: "file", src: "" }
+									: {
+											key: p.name,
+											type: "text",
+											value:
+												p.example != null && typeof p.example === "object"
+													? JSON.stringify(p.example)
+													: p.example != null
+														? String(p.example)
+														: "",
+										},
+							),
+						}
+					: { mode: "raw", raw: JSON.stringify(a.sampleRequest, null, 2) };
 		const item: PostmanRequest = {
 			name: a.name,
 			request: {
@@ -64,7 +90,9 @@ export const buildPostmanCollection = (
 					{ key: "developer_key", value: "{{developer_key}}" },
 					{ key: "secret-key", value: "{{secret-key}}" },
 					{ key: "secret-key-timestamp", value: "{{secret-key-timestamp}}" },
-					{ key: "content-type", value: "application/json" },
+					...(multipart
+						? []
+						: [{ key: "content-type", value: "application/json" }]),
 				],
 				url: {
 					raw,
@@ -72,10 +100,7 @@ export const buildPostmanCollection = (
 					path: a.path.split("/").filter(Boolean),
 					...(query.length ? { query } : {}),
 				},
-				body:
-					a.method === "GET"
-						? undefined
-						: { mode: "raw", raw: JSON.stringify(a.sampleRequest, null, 2) },
+				body,
 				description: a.summary,
 			},
 		};

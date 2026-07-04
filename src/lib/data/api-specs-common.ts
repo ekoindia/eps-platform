@@ -29,7 +29,11 @@ export type ParamLocation = "path" | "query" | "header" | "body";
  * `in` is an OPTIONAL override: by default the location is derived from the
  * spec (a name matching a `{token}` in the path → `path`; otherwise GET →
  * `query`, else → `body`). Set `in` explicitly only to override that — e.g.
- * for headers, which can't be derived from the path/method. */
+ * for headers, which can't be derived from the path/method.
+ *
+ * `type` is freeform ("string", "number", "object", …); the special value
+ * `"file"` marks a binary upload field, which flips the whole request to
+ * `multipart/form-data` (see {@link resolveContentType}). */
 export interface ApiParam {
 	name: string;
 	label?: string;
@@ -151,6 +155,10 @@ export interface ApiSpec {
 	extraRequestParams: ApiParam[];
 	/** Rare: drop a common request param that does not apply to this API. */
 	omitCommonParams?: string[];
+	/** Rare: per-spec header overrides/additions, merged by name over the shared
+	 * {@link AUTH_HEADERS} (set `in: "header"` on each). Prefer the derived
+	 * defaults — e.g. `content-type` already derives from `type:"file"` params. */
+	headers?: ApiParam[];
 	/** OPTIONAL override for the request-body example. When unset, the body is
 	 * auto-generated from the `in:"body"` param examples via {@link buildSampleRequest}. */
 	sampleRequest?: Record<string, unknown>;
@@ -269,8 +277,46 @@ export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
 export const categoryForSpec = (spec: ApiSpec): ApiProductCategory =>
 	API_PRODUCTS_MAP[spec.productId]?.category ?? "bc";
 
-/** Full auth header set for an API — identical on every request. */
-export const resolveHeaders = (): ApiParam[] => AUTH_HEADERS;
+/** True when the endpoint takes binary uploads (any `type:"file"` body param). */
+export const isMultipart = (spec: ApiSpec): boolean =>
+	resolveRequestParams(spec).some((p) => p.in === "body" && p.type === "file");
+
+/** Request media type, derived from the spec: file uploads → multipart, else
+ * JSON. No spec (generic auth docs) → JSON. */
+export const resolveContentType = (
+	spec?: ApiSpec,
+): "application/json" | "multipart/form-data" =>
+	spec && isMultipart(spec) ? "multipart/form-data" : "application/json";
+
+/**
+ * Full auth header set for an API. The `content-type` value derives from the
+ * spec via {@link resolveContentType}; for multipart endpoints the description
+ * warns that HTTP clients must set the header themselves (the boundary is
+ * client-generated). A spec's rare {@link ApiSpec.headers} entries are merged
+ * by name (spec wins) and appended when new. Call with no spec for the
+ * generic, endpoint-independent set (auth docs).
+ */
+export const resolveHeaders = (spec?: ApiSpec): ApiParam[] => {
+	const contentType = resolveContentType(spec);
+	const base = AUTH_HEADERS.map((h) =>
+		h.name === "content-type" && contentType === "multipart/form-data"
+			? {
+					...h,
+					description:
+						"multipart/form-data — let your HTTP client set this header itself (it generates the required boundary); do not hardcode the value.",
+					example: contentType,
+				}
+			: h,
+	);
+	const overrides = spec?.headers;
+	if (!overrides?.length) return base;
+	const byName = new Map(overrides.map((h) => [h.name, h]));
+	const baseNames = new Set(base.map((h) => h.name));
+	return [
+		...base.map((h) => byName.get(h.name) ?? h),
+		...overrides.filter((h) => !baseNames.has(h.name)),
+	];
+};
 
 /**
  * Names of the `{token}` path variables in a `path`. Token grammar is

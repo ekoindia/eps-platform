@@ -172,3 +172,67 @@ function phpArrayProbe(body: Record<string, unknown>): string {
 	// panLite is already a POST spec; only swap in the probe body.
 	return toPhp({ ...panLite, sampleRequest: body });
 }
+
+describe("multipart endpoints (file uploads)", () => {
+	const multipart = API_SPECS_MAP["aeps-activate-fingpay"];
+
+	it("curl uses --form (client-generated boundary), never --data or a content-type header", () => {
+		const curl = toCurl(multipart);
+		expect(curl).toContain("--form 'pan_card=@/path/to/pan_card.jpg'");
+		expect(curl).toContain("--form 'modelname=");
+		expect(curl).not.toContain("--data");
+		expect(curl).not.toContain("content-type");
+		expect(curl).toContain("secret-key: <computed_secret_key>");
+	});
+
+	it("JS fetch builds a FormData body without a manual content-type header", () => {
+		const js = toJsFetch(multipart);
+		expect(js).toContain("new FormData()");
+		expect(js).toContain('form.append("pan_card"');
+		expect(js).toContain('"body": form');
+		expect(js).not.toContain("content-type");
+	});
+
+	it("python sends data + files (requests sets the multipart header)", () => {
+		const py = toPython(multipart);
+		expect(py).toContain("files = {");
+		expect(py).toContain('open("/path/to/pan_card.jpg", "rb")');
+		expect(py).toContain("data=data, files=files");
+		expect(py).not.toContain("content-type");
+	});
+
+	it("php posts an array payload with CURLFile (curl sets the multipart header)", () => {
+		const php = toPhp(multipart);
+		expect(php).toContain("new CURLFile('/path/to/pan_card.jpg')");
+		expect(php).not.toContain("json_encode");
+		expect(php).not.toContain("content-type");
+	});
+
+	it("object fields are serialized as JSON strings in form fields", () => {
+		const curl = toCurl(multipart);
+		expect(curl).toContain(`--form 'office_address={"line"`);
+	});
+});
+
+describe("SDK snippets for multipart endpoints", () => {
+	const multipart = API_SPECS_MAP["aeps-activate-fingpay"];
+
+	it("Node snippet passes file path placeholders with a Node-only note", () => {
+		const js = toNodeSdk(multipart);
+		expect(js).toContain('"pan_card": "/path/to/pan_card.jpg"');
+		expect(js).not.toContain("<pan_card>");
+		expect(js).toContain("file path (Node-only) or a Blob/File");
+	});
+
+	it("PHP snippet passes file path placeholders with a CURLFile note", () => {
+		const php = toPhpSdk(multipart);
+		expect(php).toContain("'pan_card' => '/path/to/pan_card.jpg'");
+		expect(php).not.toContain("<pan_card>");
+		expect(php).toContain("file path or a CURLFile");
+	});
+
+	it("JSON endpoints get no file note", () => {
+		expect(toNodeSdk(panLite)).not.toContain("File params");
+		expect(toPhpSdk(panLite)).not.toContain("File params");
+	});
+});

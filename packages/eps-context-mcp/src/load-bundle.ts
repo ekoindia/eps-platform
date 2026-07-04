@@ -15,7 +15,8 @@ export const loadBundle = async (): Promise<{
 	const url = process.env.EPS_BUNDLE_URL;
 	if (url) {
 		try {
-			const res = await fetch(url);
+			// Bounded like update-check: a slow remote must not hang startup.
+			const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
 			if (res.ok)
 				return { bundle: (await res.json()) as AgentBundle, source: "remote" };
 		} catch {

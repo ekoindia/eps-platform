@@ -16,6 +16,10 @@ export interface SdkEndpoint {
 	requiredParams: string[];
 }
 
+/** Cross-realm-safe Blob check (covers File, which extends Blob). */
+const isBlob = (value: unknown): value is Blob =>
+	typeof Blob !== "undefined" && value instanceof Blob;
+
 /**
  * Lenient, coercion-aware type check against a spec type. Only present values
  * are checked (presence is enforced separately). Unknown types pass. The wire
@@ -26,6 +30,9 @@ const matchesType = (type: string, value: unknown): boolean => {
 		case "string":
 			// Strings and numbers (which coerce cleanly); not booleans/objects.
 			return typeof value === "string" || typeof value === "number";
+		case "file":
+			// A local file path (read by the SDK) or a Blob/File.
+			return typeof value === "string" || isBlob(value);
 		case "number":
 			return (
 				(typeof value === "number" && Number.isFinite(value)) ||
@@ -44,6 +51,37 @@ const matchesType = (type: string, value: unknown): boolean => {
 			return true; // unknown/unsupported spec type → not enforced
 	}
 };
+/**
+ * Multipart body for a file-upload endpoint. File params accept a local file
+ * path (read here, filename = basename) or a Blob/File (a File keeps its own
+ * name). Other values become text parts — objects as JSON strings. null /
+ * undefined values are omitted: a form field has no null encoding.
+ */
+const buildFormData = (
+	values: Record<string, unknown>,
+	fileParams: Set<string>,
+): FormData => {
+	const form = new FormData();
+	for (const [name, value] of Object.entries(values)) {
+		if (value == null) continue;
+		if (fileParams.has(name)) {
+			const blob = isBlob(value)
+				? value
+				: new Blob([readFileSync(String(value))]);
+			const filename = isBlob(value)
+				? ((value as File).name ?? name)
+				: path.basename(String(value));
+			form.append(name, blob, filename);
+		} else {
+			form.append(
+				name,
+				typeof value === "object" ? JSON.stringify(value) : String(value),
+			);
+		}
+	}
+	return form;
+};
+
 interface Surface {
 	environments: { id: string; baseUrl: string }[];
 	endpoints: SdkEndpoint[];
@@ -167,15 +205,23 @@ export class EpsClient {
 			throw new Error(
 				`Invalid param types for "${slug}": ${badTypes.join(", ")}.`,
 			);
+		// A `type:"file"` param flips the whole request to multipart/form-data.
+		const fileParams = new Set(
+			endpoint.params.filter((p) => p.type === "file").map((p) => p.name),
+		);
+		const multipart = fileParams.size > 0;
 		const timestamp = String(this.now());
 		const headers: Record<string, string> = {
 			developer_key: this.opts.developerKey,
 			"secret-key": signSecretKey(this.opts.accessKey, timestamp),
 			"secret-key-timestamp": timestamp,
-			"content-type": "application/json",
+			// Multipart: no explicit content-type — fetch derives it (with the
+			// generated boundary) from the FormData body.
+			...(multipart ? {} : { "content-type": "application/json" }),
 		};
 		// Path params (e.g. {customer_id}) fill the URL; the rest become the
-		// query string on GET, or the JSON body on every other method.
+		// query string on GET, a FormData body when the endpoint has file
+		// uploads, or the JSON body on every other method.
 		let path = endpoint.path;
 		const rest: Record<string, unknown> = {};
 		for (const [k, v] of Object.entries(merged)) {
@@ -191,6 +237,8 @@ export class EpsClient {
 				Object.entries(rest).map(([k, v]) => [k, String(v)]),
 			).toString();
 			if (query) url += (url.includes("?") ? "&" : "?") + query;
+		} else if (multipart) {
+			init.body = buildFormData(rest, fileParams);
 		} else {
 			init.body = JSON.stringify(rest);
 		}

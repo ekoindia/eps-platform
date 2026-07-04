@@ -1,7 +1,7 @@
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
-import { SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
 import {
 	canonicalNotice,
 	frontMatter,
@@ -186,7 +186,7 @@ export function renderLlmsTxt(
 		`- [Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for detail`,
 	);
 	lines.push(`- [OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`);
-	lines.push("- Local MCP: `npx -y @ekoindia/eps-context-mcp`");
+	lines.push(`- Local MCP: \`npx -y ${EPS_MCP_PKG}\``);
 	lines.push(
 		`- [AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
 	);

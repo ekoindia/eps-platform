@@ -11,7 +11,10 @@
  * canonical method for each so the page can show the real steps, not a generic
  * `npx` line that no harness actually accepts verbatim.
  */
-const PKG = "@ekoindia/eps-context-mcp";
+import { EPS_MCP_PKG } from "@/lib/config/site";
+
+/** npm spec (`…@latest`) so generated configs auto-track new publishes. */
+const PKG = EPS_MCP_PKG;
 /** Server name every harness registers EPS under. */
 const SERVER = "eps";
 /** Raw stdio launch command (referenced in the hero copy, not an install step). */

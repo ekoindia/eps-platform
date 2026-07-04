@@ -22,7 +22,8 @@
 		"start": "node dist/index.js",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test:poller": "bash deploy/poller/test/run.sh"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.0.0",
@@ -38,6 +39,6 @@
 		"vitest": "^3.2.6"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": "22.x"
 	}
 }

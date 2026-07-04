@@ -12,6 +12,17 @@ import { AppError, errorBody } from "./errors";
 import type { GitHubClient } from "../clients/github";
 import { mountAdmin } from "./admin";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
+import { StoreUnavailableError } from "../store/storeError";
+import { requestId, type AppEnv } from "./requestId";
+import { type AccessLogger, noopAccessLogger } from "../audit/accessLog";
+import {
+	enforceRateLimit,
+	kvOr503,
+	ADMIN_LOGIN_IP_LIMIT,
+	ADMIN_CALLBACK_IP_LIMIT,
+	RL_WINDOW_SEC,
+} from "./rateLimit";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -27,6 +38,8 @@ export interface Deps {
 	github?: GitHubClient;
 	secretbox?: SecretBox;
 	readiness?: () => Promise<boolean>; // Task 7
+	securityLog?: SecurityLogger;
+	accessLog?: AccessLogger;
 }
 
 const OTP_START_LIMIT = 5;
@@ -49,18 +62,59 @@ function normalizeMobile(raw: string): string {
 	return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
-export function createApp(deps: Deps): Hono {
+export function createApp(deps: Deps): Hono<AppEnv> {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
-	const app = new Hono();
+	const securityLog = deps.securityLog ?? noopSecurityLogger;
+	const accessLog = deps.accessLog ?? noopAccessLogger;
+	const app = new Hono<AppEnv>();
 
-	app.use("*", cors({ origin: cfg.corsOrigins, credentials: true }));
+	app.use("*", requestId());
+	app.use("*", async (c, next) => {
+		const start = performance.now();
+		try {
+			await next();
+		} finally {
+			const path = c.req.path;
+			if (path !== "/healthz" && path !== "/readyz") {
+				accessLog.log({
+					rid: c.get("rid"),
+					method: c.req.method,
+					path,
+					status: c.res?.status ?? 500,
+					durMs: Math.round(performance.now() - start),
+					ip: c.req.header("x-real-ip") ?? "unknown",
+				});
+			}
+		}
+	});
+	app.use(
+		"*",
+		cors({
+			origin: cfg.corsOrigins,
+			credentials: true,
+			exposeHeaders: ["x-request-id"],
+		}),
+	);
 
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
 			return c.json(errorBody(err.code, err.message), err.status as 400);
 		}
-		console.error("[eps-backend] unhandled", err);
+		if (err instanceof StoreUnavailableError) {
+			return c.json(
+				errorBody(
+					"STORE_UNAVAILABLE",
+					"Storage temporarily unavailable — try again shortly",
+				),
+				503,
+			);
+		}
+		try {
+			console.error("[eps-backend] unhandled", { rid: c.get("rid"), err });
+		} catch {
+			// logging must never escalate the error path
+		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 502);
 	});
 
@@ -91,14 +145,8 @@ export function createApp(deps: Deps): Hono {
 		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipKey = `otp:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
 		const mobKey = `otp:mob:${m}`;
-		const count = await kv.incr(mobKey, OTP_WINDOW_SEC);
-		const ipCount = await kv.incr(ipKey, OTP_WINDOW_SEC);
-		if (count > OTP_START_LIMIT) {
-			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
-		}
-		if (ipCount > OTP_IP_LIMIT) {
-			throw new AppError(429, "RATE_LIMITED", "Too many OTP requests");
-		}
+		await enforceRateLimit(kv, mobKey, OTP_START_LIMIT, OTP_WINDOW_SEC);
+		await enforceRateLimit(kv, ipKey, OTP_IP_LIMIT, OTP_WINDOW_SEC);
 		await eko.sendOtp({ mobile: m });
 		// generic response — no account enumeration
 		return c.json({ ok: true });
@@ -114,24 +162,29 @@ export function createApp(deps: Deps): Hono {
 			throw new AppError(400, "INVALID_INPUT", "mobile is invalid");
 		}
 		const failKey = `otp:fail:${m}`;
-		const fails = Number((await kv.get(failKey)) ?? 0);
+		// KV outage on the brute-force gate → 503 (fail-closed), never a raw 502.
+		const fails = Number((await kvOr503(() => kv.get(failKey))) ?? 0);
 		if (fails >= OTP_VERIFY_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		// SECURITY: x-real-ip must be set/overwritten by a trusted reverse proxy.
 		// Clients can otherwise spoof this header to evade per-IP rate limits.
 		const ipFailKey = `otp:verify:ip:${c.req.header("x-real-ip") ?? "unknown"}`;
-		const ipFails = Number((await kv.get(ipFailKey)) ?? 0);
+		const ipFails = Number((await kvOr503(() => kv.get(ipFailKey))) ?? 0);
 		if (ipFails >= OTP_VERIFY_IP_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		const verified = await eko.verifyOtp({ mobile: m, otp });
 		if (!verified.ok) {
-			await kv.incr(failKey, OTP_WINDOW_SEC);
-			await kv.incr(ipFailKey, OTP_WINDOW_SEC);
+			// Fail-closed: if the failed attempt cannot be counted, refuse (503)
+			// rather than let unbounded guesses through.
+			await kvOr503(() => kv.incr(failKey, OTP_WINDOW_SEC));
+			await kvOr503(() => kv.incr(ipFailKey, OTP_WINDOW_SEC));
 			throw new AppError(401, "OTP_INVALID", "Invalid or expired OTP");
 		}
-		await kv.del(failKey);
+		// Best-effort cleanup: a valid OTP is already consumed; a stale failKey
+		// expires by its own TTL, so never 502/503 the user over it.
+		await kv.del(failKey).catch(() => {});
 		const profile = await eko.getProfile({ mobile: m });
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
@@ -158,11 +211,9 @@ export function createApp(deps: Deps): Hono {
 		if (rotated.claim.role === "admin" && rotated.claim.sid) {
 			const tok = await kv.get(`ghtoken:${rotated.claim.sid}`);
 			if (tok)
-				await kv.set(
-					`ghtoken:${rotated.claim.sid}`,
-					tok,
-					cfg.adminRefreshTtlSec,
-				);
+				await kv
+					.set(`ghtoken:${rotated.claim.sid}`, tok, cfg.adminRefreshTtlSec)
+					.catch(() => {}); // re-extend: fail-open — a TTL touch must not 503 a refresh
 		}
 		const access = await sessions.mintAccess(rotated.claim);
 		// C2: use role-aware TTL for the refresh cookie max-age.
@@ -216,6 +267,13 @@ export function createApp(deps: Deps): Hono {
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {
+			const ip = c.req.header("x-real-ip") ?? "unknown";
+			await enforceRateLimit(
+				kv,
+				`rl:adminlogin:ip:${ip}`,
+				ADMIN_LOGIN_IP_LIMIT,
+				RL_WINDOW_SEC,
+			);
 			const state = crypto.randomUUID();
 			await kv.set(`ghstate:${state}`, "1", STATE_TTL_SEC);
 			setCookie(c, STATE_COOKIE, state, {
@@ -238,15 +296,47 @@ export function createApp(deps: Deps): Hono {
 			const stored = await kv.get(`ghstate:${state}`);
 			if (!stored) throw new AppError(400, "BAD_STATE", "Expired OAuth state");
 			await kv.del(`ghstate:${state}`);
+			// Rate-limit AFTER state validation + single-use consumption: a forged or
+			// replayed state fails the checks above and never reaches here, so it
+			// cannot burn a shared IP's callback budget.
+			const ip = c.req.header("x-real-ip") ?? "unknown";
+			await enforceRateLimit(
+				kv,
+				`rl:admincb:ip:${ip}`,
+				ADMIN_CALLBACK_IP_LIMIT,
+				RL_WINDOW_SEC,
+			);
 
 			const token = await github.exchangeCode(code);
-			if (!token)
+			if (!token) {
+				securityLog.loginDenied({
+					actor: "unknown",
+					ip,
+					reason: "OAUTH_FAILED",
+					rid: c.get("rid"),
+				});
 				throw new AppError(401, "OAUTH_FAILED", "Code exchange failed");
+			}
 			const user = await github.getUser(token);
-			if (!user)
+			if (!user) {
+				securityLog.loginDenied({
+					actor: "unknown",
+					ip,
+					reason: "OAUTH_FAILED",
+					rid: c.get("rid"),
+				});
 				throw new AppError(401, "OAUTH_FAILED", "Cannot read GitHub user");
-			const allowed = await github.hasRepoWrite(token, user.login);
-			if (!allowed) {
+			}
+			const status = await github.checkRepoWrite(token, user.login);
+			if (status !== "write") {
+				// Grant a session ONLY on confirmed write. no-write and unknown both
+				// block — a non-write GitHub user never receives any session.
+				securityLog.loginDenied({
+					actor: `@${user.login}`,
+					ip,
+					reason: status,
+					rid: c.get("rid"),
+				});
 				throw new AppError(403, "NOT_AUTHORIZED", "Repo write access required");
 			}
 			const sid = crypto.randomUUID();
@@ -273,10 +363,23 @@ export function createApp(deps: Deps): Hono {
 				sessions.refreshCookie(refresh, cfg.adminRefreshTtlSec),
 				{ append: true },
 			);
+			securityLog.loginGranted({
+				actor: `@${user.login}`,
+				ip,
+				sid,
+				rid: c.get("rid"),
+			});
 			return c.redirect(cfg.adminPostLoginRedirect, 302);
 		});
 
-		mountAdmin(app, { cfg, sessions, kv, github, secretbox });
+		mountAdmin(app, {
+			cfg,
+			sessions,
+			kv,
+			github,
+			secretbox,
+			securityLog,
+		});
 	}
 
 	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));

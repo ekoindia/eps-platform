@@ -32,7 +32,7 @@ const DocsSection = ({
  * Pure / SSR-safe, so it prerenders fully.
  */
 export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
-	const headers = resolveHeaders();
+	const headers = resolveHeaders(spec);
 	const requestParams = resolveRequestParams(spec);
 	const description = resolveDescription(spec);
 

@@ -52,8 +52,30 @@ client. They are injected into every call as the wire params `initiator_id` / `u
 `$params`.
 
 `$client->call($slug, $params)` signs the request, substitutes any `{token}` path params
-from `$params` (remaining keys become the JSON body), and returns the decoded JSON response
-as an associative array.
+from `$params` (remaining keys become the JSON body — or a `multipart/form-data` body on
+file-upload endpoints), and returns the decoded JSON response as an associative array.
+
+### File uploads
+
+Endpoints with file params (e.g. `aeps-activate-fingpay`) are sent as `multipart/form-data`
+automatically. Pass each file param as a path to an existing file (wrapped in a `CURLFile`
+for you) or a `CURLFile` directly:
+
+```php
+$result = $client->call('aeps-activate-fingpay', [
+    'user_code' => '20810200',
+    'modelname' => 'Morpho 1300E3',
+    'devicenumber' => 'SN1234567890',
+    'office_address' => ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'],
+    'address_as_per_proof' => ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'],
+    'pan_card' => '/path/to/pan_card.jpg',                  // path string…
+    'aadhar_front' => new \CURLFile('/path/to/front.jpg'),  // …or a CURLFile
+    'aadhar_back' => '/path/to/back.jpg',
+]);
+```
+
+Array params (like `office_address`) are serialized as JSON form fields; cURL sets the
+`content-type` header (and multipart boundary) itself.
 
 A static `EpsClient::signSecretKey($accessKey, $timestamp)` helper is also available if you
 need to sign requests yourself.
