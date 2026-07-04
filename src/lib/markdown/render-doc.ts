@@ -12,6 +12,7 @@ import {
 	DEFAULT_BASE_URL,
 } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
+import { defaultSnippet } from "@/lib/docs/code-snippet-sets";
 import type {
 	ApiParam,
 	ApiSpec,
@@ -133,10 +134,37 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 	]);
 }
 
+/** Matches `<CodeSnippets id="…" />` (self-closing) or its empty paired form. */
+const CODE_SNIPPETS_TAG =
+	/<CodeSnippets\s+id="([^"]+)"\s*(?:\/>|>\s*<\/CodeSnippets>)/g;
+
+/**
+ * Expand every `<CodeSnippets id="…" />` MDX tag into a fenced code block of the
+ * set's DEFAULT-language snippet, so the `.md` twin carries one copy-pasteable
+ * sample while the HTML page shows all languages as tabs. Throws on an unknown
+ * id or any unrecognised `<CodeSnippets …>` form rather than leaking raw JSX
+ * into the markdown twin.
+ */
+function expandCodeSnippets(body: string): string {
+	const out = body.replace(CODE_SNIPPETS_TAG, (_match, id: string) => {
+		const snippet = defaultSnippet(id);
+		if (!snippet)
+			throw new Error(`renderGuideMarkdown: unknown <CodeSnippets id="${id}">`);
+		return ["```" + snippet.language, snippet.code.trim(), "```"].join("\n");
+	});
+	if (/<CodeSnippets\b/.test(out))
+		throw new Error(
+			'renderGuideMarkdown: unrecognised <CodeSnippets> form — expected <CodeSnippets id="…" />',
+		);
+	return out;
+}
+
 /**
  * Render a guide's `/docs/<slug>.md` twin from its raw MDX source. Guides are
- * authored as pure GFM markdown (no JSX/imports), so the raw body is valid
- * markdown — we just prepend front-matter + the canonical notice.
+ * authored as GFM markdown that may embed the `<CodeSnippets id="…" />`
+ * component; that tag is expanded here to a fenced block of its default
+ * (first) language so the twin stays valid, single-language markdown. All other
+ * content is plain GFM, emitted verbatim under front-matter + the canonical notice.
  */
 export function renderGuideMarkdown(
 	meta: { slug: string; title: string; summary?: string },
@@ -150,7 +178,7 @@ export function renderGuideMarkdown(
 			canonical,
 		}),
 		canonicalNotice(canonical),
-		rawBody.trim(),
+		expandCodeSnippets(rawBody.trim()),
 	]);
 }
 

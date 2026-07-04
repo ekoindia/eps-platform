@@ -11,14 +11,13 @@ import {
 	toAiPrompt,
 	toSdkLang,
 } from "@/lib/docs/code-samples";
-import { prismLangFor, rpPrismTheme } from "@/lib/docs/prism-rp-theme";
+import { prismLangFor } from "@/lib/docs/prism-rp-theme";
 import { type DocsMode, useDocsMode } from "@/lib/docs/use-docs-mode";
 import { usePreferredLang } from "@/lib/docs/use-preferred-lang";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Check, Copy, Play } from "lucide-react";
-import { Highlight } from "prism-react-renderer";
-import { useState } from "react";
+import { ArrowRight, Play } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CopyButton, NumberedCode, TabButton } from "./code-ui";
 import "./code-samples.css";
 import { HttpMethodTag } from "./HttpMethodTag";
 
@@ -27,100 +26,6 @@ const MODES: { id: DocsMode; label: string }[] = [
 	{ id: "sdk", label: "SDK" },
 	{ id: "ai", label: "AI Coding" },
 ];
-
-const CopyButton = ({ text }: { text: string }) => {
-	const [copied, setCopied] = useState(false);
-	const copy = () => {
-		if (typeof navigator === "undefined" || !navigator.clipboard) return;
-		navigator.clipboard.writeText(text).then(() => {
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
-		});
-	};
-	return (
-		<button
-			type="button"
-			onClick={copy}
-			aria-label="Copy to clipboard"
-			className={cn(
-				"cursor-pointer rounded-md border border-[var(--rp-btnline)] bg-[var(--rp-btn)] p-1.5 transition-colors",
-				copied
-					? "text-[var(--rp-ok)]"
-					: "text-[var(--rp-fg3)] hover:text-[var(--rp-fg)]",
-			)}
-		>
-			{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-		</button>
-	);
-};
-
-/** A small pill button used for the language sub-tabs (cURL / JS / …). */
-const TabButton = ({
-	active,
-	onClick,
-	children,
-}: {
-	active: boolean;
-	onClick: () => void;
-	children: React.ReactNode;
-}) => (
-	<button
-		type="button"
-		onClick={onClick}
-		className={cn(
-			"inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-			active
-				? "bg-[var(--rp-tabact)] text-[var(--rp-fg)]"
-				: "text-[var(--rp-fg3)] hover:text-[var(--rp-fg)]",
-		)}
-	>
-		{children}
-	</button>
-);
-
-/**
- * Code area with a line-number gutter and horizontal scroll. When `lang` is
- * given, the body is syntax-highlighted via prism-react-renderer using the
- * {@link rpPrismTheme} (whose colours are `--rp-*` CSS variables, so it tracks
- * the light/dark palette); otherwise it renders as plain prose.
- */
-const NumberedCode = ({ code, lang }: { code: string; lang?: string }) => {
-	const src = code.replace(/\n$/, "");
-	const lines = src.split("\n");
-	return (
-		<div className="flex bg-[var(--rp-code)] font-mono text-xs leading-relaxed">
-			<div
-				aria-hidden
-				className="select-none py-3 pl-4 pr-3 text-right text-[var(--rp-ln)]"
-			>
-				{lines.map((_, i) => (
-					<div key={i}>{i + 1}</div>
-				))}
-			</div>
-			<div className="docs-scroll min-w-0 flex-1 overflow-x-auto py-3 pr-4">
-				{lang ? (
-					<Highlight theme={rpPrismTheme} code={src} language={lang}>
-						{({ tokens, getLineProps, getTokenProps }) => (
-							<pre className="whitespace-pre">
-								{tokens.map((line, i) => (
-									<div key={i} {...getLineProps({ line })}>
-										{line.map((token, key) => (
-											<span key={key} {...getTokenProps({ token })} />
-										))}
-									</div>
-								))}
-							</pre>
-						)}
-					</Highlight>
-				) : (
-					<pre className="whitespace-pre text-[var(--rp-txt)]">
-						<code>{src}</code>
-					</pre>
-				)}
-			</div>
-		</div>
-	);
-};
 
 /**
  * Right-rail panel. A mode tab bar (API · SDK · AI Coding) — persisted site-wide
