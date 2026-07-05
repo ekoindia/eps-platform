@@ -115,11 +115,19 @@ export interface AgentEnvironmentsTopic {
 	environments: AgentEnvironment[];
 }
 
+export interface AgentGettingStartedTopic {
+	id: "getting-started";
+	summary: string;
+	steps: { title: string; detail: string; url?: string }[];
+	links: { label: string; url: string }[];
+}
+
 export interface AgentTopics {
 	auth: AgentAuthTopic;
 	errors: AgentErrorsTopic;
 	pricing: AgentPricingTopic;
 	environments: AgentEnvironmentsTopic;
+	"getting-started": AgentGettingStartedTopic;
 }
 
 export type AgentTopicId = keyof AgentTopics;

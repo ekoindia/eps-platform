@@ -54,6 +54,8 @@ export interface IntegrationStep {
 	title: string;
 	desc: string;
 	tip?: string;
+	/** Optional link on the step title. Absolute URL → external tab; path → in-app route. */
+	href?: string;
 }
 
 /** Optional "Also See" cross-link rendered beneath an FAQ answer. */

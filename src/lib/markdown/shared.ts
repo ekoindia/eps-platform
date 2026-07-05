@@ -68,11 +68,12 @@ export function joinBlocks(
 
 /** Render a numbered list of step objects. */
 export function renderSteps(
-	steps: Array<{ title: string; desc: string; tip?: string }>,
+	steps: Array<{ title: string; desc: string; tip?: string; href?: string }>,
 ): string {
 	return steps
 		.map((s, i) => {
-			const base = `${i + 1}. **${s.title}** — ${s.desc.trim()}`;
+			const title = s.href ? `[${s.title}](${s.href})` : s.title;
+			const base = `${i + 1}. **${title}** — ${s.desc.trim()}`;
 			return s.tip ? `${base}\n   > Tip: ${s.tip}` : base;
 		})
 		.join("\n");
