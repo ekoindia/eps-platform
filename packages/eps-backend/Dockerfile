@@ -1,6 +1,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
+# Root package.json's `prepare` runs `node .githooks/setup.mjs` on npm ci
+# (--include-workspace-root below). The script no-ops without a .git dir, but
+# the file must exist or node throws "Cannot find module". Copy just the script.
+COPY .githooks/setup.mjs .githooks/setup.mjs
 COPY packages/eps-backend/package.json packages/eps-backend/package.json
 RUN npm ci --workspace @ekoindia/eps-backend --include-workspace-root
 COPY packages/eps-backend packages/eps-backend

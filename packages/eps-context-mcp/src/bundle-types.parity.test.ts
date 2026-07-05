@@ -21,6 +21,7 @@ const NAMES = [
 	"AgentErrorsTopic",
 	"AgentPricingTopic",
 	"AgentEnvironmentsTopic",
+	"AgentGettingStartedTopic",
 	"AgentTopics",
 	"AgentBundle",
 	"AgentIndex",

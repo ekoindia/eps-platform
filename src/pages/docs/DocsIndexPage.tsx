@@ -321,7 +321,7 @@ const DocsIndexPage = () => {
 					<Step
 						n={1}
 						title="Get your credentials"
-						subtitle="Eko's UAT / sandbox is self-serve — sign up to receive your developer key and access key. No KYC required to start testing."
+						subtitle="Eko's UAT / sandbox is self-serve — sign up with your mobile number, verify with your PAN and bank account."
 					>
 						<div className="flex flex-wrap items-center gap-4">
 							<Button variant="gold" onClick={() => openZohoChat()}>

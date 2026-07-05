@@ -141,9 +141,16 @@ export const createEpsServer = (
 		"get_topic",
 		{
 			title: "Get topic",
-			description: "One topic: auth | errors | pricing | environments.",
+			description:
+				"One topic: getting-started | auth | errors | pricing | environments.",
 			inputSchema: {
-				topic: z.enum(["auth", "errors", "pricing", "environments"]),
+				topic: z.enum([
+					"getting-started",
+					"auth",
+					"errors",
+					"pricing",
+					"environments",
+				]),
 			},
 			annotations: READ_ONLY,
 		},

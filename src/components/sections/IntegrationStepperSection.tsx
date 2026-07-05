@@ -12,6 +12,37 @@ interface IntegrationStepperSectionProps {
 	docHref?: string;
 }
 
+const LINK_CLASS =
+	"inline-flex items-center gap-1 text-eko-gold hover:underline focus-visible:underline focus-visible:outline-none";
+
+/**
+ * Step title. Plain text unless the step carries an `href`, in which case the
+ * title becomes a link — an absolute URL opens in a new tab, a path routes in-app.
+ */
+const StepTitle = ({ step }: { step: IntegrationStep }) => {
+	if (!step.href) return <>{step.title}</>;
+	const label = (
+		<>
+			{step.title}
+			<ArrowRight className="w-3 h-3" />
+		</>
+	);
+	return /^https?:\/\//.test(step.href) ? (
+		<a
+			href={step.href}
+			target="_blank"
+			rel="noopener noreferrer"
+			className={LINK_CLASS}
+		>
+			{label}
+		</a>
+	) : (
+		<Link to={step.href} className={LINK_CLASS}>
+			{label}
+		</Link>
+	);
+};
+
 /**
  * "How to Integrate" stepper. Renders a single, SEO-friendly DOM structure
  * (each step's text appears once) that adapts via CSS: a vertical stepper on
@@ -60,7 +91,7 @@ export const IntegrationStepperSection = ({
 							{/* Content — rendered once */}
 							<div className="pb-6 md:pb-0 md:mt-3 md:max-w-[140px]">
 								<h3 className="text-sm font-semibold text-white">
-									{step.title}
+									<StepTitle step={step} />
 								</h3>
 								<p className="text-white/70 text-xs mt-1">{step.desc}</p>
 								{step.tip && (

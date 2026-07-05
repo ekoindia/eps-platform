@@ -5,21 +5,6 @@
  * Pure + deterministic (no I/O, no Date) like `build-openapi.ts`, so it
  * unit-tests cleanly and produces byte-stable output for a given spec set.
  */
-import { API_DEFAULT_VERSION, SITE_URL } from "@/lib/config/site";
-import { API_AUTH_INFO, API_ENVIRONMENTS } from "@/lib/data/api-auth";
-import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
-import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
-import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
-import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
-import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
-import type { ApiSpec } from "@/lib/data/api-specs-common";
-import {
-	buildSampleRequest,
-	categoryForSpec,
-	resolveHeaders,
-	resolveRequestParams,
-	resolveResponseFields,
-} from "@/lib/data/api-specs-common";
 import type {
 	AgentApiDetail,
 	AgentApiIndexEntry,
@@ -29,6 +14,21 @@ import type {
 	AgentTopicId,
 	AgentTopics,
 } from "@/lib/agent/agent-bundle-types";
+import { API_DEFAULT_VERSION, SIGNUP_URL, SITE_URL } from "@/lib/config/site";
+import { API_AUTH_INFO, API_ENVIRONMENTS } from "@/lib/data/api-auth";
+import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
+import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
+import {
+	buildSampleRequest,
+	categoryForSpec,
+	resolveHeaders,
+	resolveRequestParams,
+	resolveResponseFields,
+} from "@/lib/data/api-specs-common";
+import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
+import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 
 const BACKEND_ONLY_WARNING =
 	"Backend-only. The access_key is a server-side secret used to compute the " +
@@ -108,6 +108,42 @@ const buildTopics = (): AgentTopics => ({
 		],
 	},
 	environments: { id: "environments", environments: ENVIRONMENTS },
+	"getting-started": {
+		id: "getting-started",
+		summary:
+			"Start testing Eko verification APIs in ~10 minutes: sign up, verify " +
+			"identity, load your wallet, and test live before integrating.",
+		steps: [
+			{
+				title: "Sign up",
+				detail: "Sign up with your mobile number (OTP verified).",
+				url: SIGNUP_URL,
+			},
+			{
+				title: "Verify identity",
+				detail: "Submit PAN + bank account to verify your account.",
+			},
+			{
+				title: "Test live",
+				detail:
+					"Load wallet funds; call the verification APIs live to evaluate before integrating.",
+			},
+			{
+				title: "Integrate",
+				detail: "Free AI plugins/tools + MCP & SDKs to integrate faster.",
+				url: `${SITE_URL}/ai`,
+			},
+			{
+				title: "Go live",
+				detail:
+					"Welcome email lists the KYC docs for production; reply with docs to get production keys.",
+			},
+		],
+		links: [
+			{ label: "Sign up", url: SIGNUP_URL },
+			{ label: "AI integration hub", url: `${SITE_URL}/ai` },
+		],
+	},
 });
 
 /**

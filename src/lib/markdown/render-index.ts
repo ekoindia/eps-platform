@@ -1,7 +1,7 @@
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
-import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, SIGNUP_URL, SITE_URL } from "@/lib/config/site";
 import {
 	canonicalNotice,
 	frontMatter,
@@ -173,6 +173,15 @@ export function renderLlmsTxt(
 			`- [${s.name}](${SITE_URL}/solutions/${s.slug}.md): ${s.tagline}`,
 		);
 	}
+	lines.push("");
+
+	lines.push("## Getting started");
+	lines.push(
+		`- Sign up at ${SIGNUP_URL} — verify identity (PAN + bank), load your wallet, and test the verification APIs live before integrating.`,
+	);
+	lines.push(
+		`- Ready to build? Free AI plugins, MCP & SDKs at ${SITE_URL}/ai.`,
+	);
 	lines.push("");
 
 	lines.push("## For AI coding agents");

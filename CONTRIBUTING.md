@@ -58,15 +58,38 @@ npm test
 ```
 
 CI also runs a **secret scan** (gitleaks) — never commit real keys, tokens, or
-`.env*` files (only `.env.example` is tracked). Optionally run the scan locally
-before pushing:
+`.env*` files (only `.env.example` is tracked).
+
+### Pre-commit secret scanning (local)
+
+`npm install` wires a committed pre-commit hook (`.githooks/pre-commit`) via
+`core.hooksPath`, so gitleaks scans your **staged** changes on every commit and
+blocks the commit if a secret is found — no manual setup. (Re-run
+`npm run setup:githooks` if you ever need to re-wire it.)
+
+You must have the `gitleaks` binary installed, or commits are blocked:
 
 ```bash
-gitleaks detect --no-banner
+brew install gitleaks          # macOS
+scoop install gitleaks         # Windows (or: choco install gitleaks)
+# Linux / other: https://github.com/gitleaks/gitleaks#installing
 ```
 
-> Tip: you can wire `gitleaks` as a local pre-commit hook, but it is optional —
-> CI is the enforced gate.
+The hook uses POSIX `sh` — on Windows run commits from Git Bash (bundled with
+Git for Windows). Run the scan manually anytime with:
+
+```bash
+gitleaks git --staged -v
+```
+
+Notes:
+
+- The hook **blocks all commits** when `gitleaks` is missing (a silently-skipped
+  security check is worse than a failed commit). Install it, or bypass a single
+  commit with `git commit --no-verify` for genuine false positives.
+- If you already point `core.hooksPath` elsewhere, setup leaves it untouched and
+  warns — wire it yourself with `git config core.hooksPath .githooks`.
+- CI remains the enforced gate; the local hook is a fast fail-early layer.
 
 ## Reporting security issues
 

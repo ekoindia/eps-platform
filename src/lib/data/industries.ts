@@ -119,22 +119,25 @@ const DEFAULT_INTEGRATION_STEPS = [
 		step: 1,
 		title: "Sign Up",
 		description:
-			"Create an account on Connect App and get your sandbox credentials.",
+			"Sign up in minutes at ekostore.app/eps with your mobile number (OTP verify).",
 	},
 	{
 		step: 2,
-		title: "Submit KYC",
-		description: "Complete your business KYC verification process.",
+		title: "Verify Identity",
+		description:
+			"Provide your PAN and bank account details to verify your account.",
 	},
 	{
 		step: 3,
-		title: "Integrate APIs",
-		description: "Use our comprehensive documentation to integrate the APIs.",
+		title: "Test APIs Live",
+		description:
+			"Load funds into your wallet and test the APIs live before integrating.",
 	},
 	{
 		step: 4,
-		title: "Test in Sandbox",
-		description: "Test your integration thoroughly in our sandbox environment.",
+		title: "Integrate",
+		description:
+			"Send your developers to eps.eko.in/ai for free AI plugins & tools to integrate faster.",
 	},
 	{
 		step: 5,

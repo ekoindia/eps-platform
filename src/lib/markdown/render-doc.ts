@@ -5,20 +5,18 @@
  * `EndpointDetail` so the AI/markdown view stays in lock-step with the HTML.
  * Dependency-free (runs in the Vite build SSR context and unit tests).
  */
-import { SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
+import { SIGNUP_URL, SITE_URL } from "@/lib/config/site";
 import {
 	API_ENVIRONMENTS,
 	AUTH_HEADERS,
 	DEFAULT_BASE_URL,
 } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
-import { defaultSnippet } from "@/lib/docs/code-snippet-sets";
 import type {
 	ApiParam,
 	ApiSpec,
 	ResponseField,
 } from "@/lib/data/api-specs-common";
-import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import {
 	buildSampleRequest,
 	resolveHeaders,
@@ -32,6 +30,8 @@ import {
 	type NavLeaf,
 	type NavNode,
 } from "@/lib/data/docs-registry";
+import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
+import { defaultSnippet } from "@/lib/docs/code-snippet-sets";
 import {
 	bulletList,
 	canonicalNotice,
@@ -223,7 +223,7 @@ export function renderDocsIndexMarkdown(): string {
 		"Integrate Eko's KYC, verification, payment and banking APIs. Each endpoint is documented with parameters, responses, code samples and a live request console.",
 		h2("Getting started"),
 		bulletList([
-			`**Get credentials** — Eko's UAT / sandbox is self-serve. Sign up at ${SITE_URL}${SIGNUP_PAGE} for your developer key and access key (no KYC to start testing). ${API_ENVIRONMENTS.production.note}`,
+			`**Get credentials** — Eko's UAT / sandbox is self-serve. Sign up at ${SIGNUP_URL} with your mobile number, verify with your PAN and bank account, and test our verification APIs live. Once you are satisfied, goto ${SITE_URL}/ai to integrate quickly with our free AI tools (MCP servers, plugins, skills, etc for your coding agent). ${API_ENVIRONMENTS.production.note}`,
 			`**Know your environments** — ${API_ENVIRONMENTS.sandbox.label}: \`${API_ENVIRONMENTS.sandbox.baseUrl}\`, ${API_ENVIRONMENTS.production.label}: \`${API_ENVIRONMENTS.production.baseUrl}\`. The full endpoint URL is always \`baseUrl + path\`.`,
 			`**Sign every request** — send these headers on every call: ${AUTH_HEADERS.map((h) => `\`${h.name}\``).join(", ")}. The \`secret-key\` is a per-request HMAC signature — see ${link("How Auth Works", `${SITE_URL}${docsHref("how-auth-works")}`, "md")}.`,
 			"**Make your first call** — pick an endpoint below (start with PAN Lite), drop in your credentials, and send it.",

@@ -30,6 +30,20 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 	);
 	lines.push("");
 
+	// Getting started — how a user onboards to obtain credentials
+	const gettingStarted = topics["getting-started"];
+	lines.push("## Getting started");
+	lines.push("");
+	lines.push(gettingStarted.summary);
+	lines.push("");
+	for (let i = 0; i < gettingStarted.steps.length; i++) {
+		const s = gettingStarted.steps[i];
+		lines.push(
+			`${i + 1}. **${s.title}** — ${s.detail}${s.url ? ` (${s.url})` : ""}`,
+		);
+	}
+	lines.push("");
+
 	// Environments
 	lines.push("## Environments");
 	lines.push("");

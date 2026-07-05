@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 
 import type { FAQ, ProductPageContent } from "@/components/ProductPageLayout";
+import { SIGNUP_URL } from "@/lib/config/site";
 import { API_ENVIRONMENTS } from "./api-auth";
 
 // ---------------------------------------------------------------------------
@@ -95,25 +96,22 @@ export interface ProductPageData extends ProductPageContent {
 const VERIFICATION_STEPS_BASE = [
 	{
 		title: "Sign Up",
-		desc: "Create an account on Connect App and get your sandbox credentials.", // TODO: Signup with your mobile number (complete OTP verification in future). SHOW "Sign Up Now" CTA that links to Zoho Chat with pre-filled message "Hi, I want to integrate [API_NAME]."
-		// tip: "Takes less than a minute",
+		desc: "Sign up in minutes with your mobile number (OTP verify).",
+		href: SIGNUP_URL,
 	},
 	{
-		title: "Submit KYC",
-		desc: "Complete your KYC verification process by submitting the required documents.", // TODO: Our team will call you and guide you through the simple KYC process (document submission, video call, etc.) How long does it take for our team to verify docs???
+		title: "Verify Identity",
+		desc: "Provide your PAN and bank account details to verify your account.",
 	},
 	{
-		title: "Integrate API",
-		desc: "Use our comprehensive documentation to integrate the APIs.",
+		title: "Test APIs Live",
+		desc: "Load funds into your wallet and test the verification APIs live — evaluate before you integrate.",
 	},
 	{
-		title: "Test in Sandbox",
-		desc: "Test your integration thoroughly in our sandbox environment.",
+		title: "Integrate with AI",
+		desc: "Ready to build? Visit our AI hub for free plugins & tools to integrate faster.",
+		href: "/ai",
 	},
-	// {
-	//   title: "IP Whitelisting",
-	//   desc: "Get your production IPs whitelisted for extra security (India only).",
-	// },
 ] as const;
 
 /** Placeholder for APIs whose I/O preview is not yet available */
@@ -128,10 +126,10 @@ const VERIFICATION_STEPS_BASE = [
 export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "How do I get started?",
-		a: "Sign up on Connect App, submit the required documents, integrate the REST API using our sandbox environment, and go live.",
+		a: "Sign up at ekostore.app/eps, verify your identity (PAN + bank account), load your wallet to test the verification APIs live, then integrate and go live.",
 		links: [
 			{ label: "Developer docs", href: "/docs" },
-			{ label: "Sign up", href: "/signup" },
+			{ label: "Sign up", href: SIGNUP_URL },
 		],
 	},
 	{
@@ -1307,9 +1305,6 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		],
 		integrationSteps: [
 			...VERIFICATION_STEPS_BASE,
-			// { title: "Sign Up", desc: "Create an account on Connect App.", tip: "Takes less than 2 minutes" },
-			// { title: "Submit Documents", desc: "Submit necessary documents for activation.", tip: "KYC docs verified in 24 hours" },
-			// { title: "Integrate API", desc: "Integrate PAN Verification API into your system.", tip: "API keys generated instantly" },
 			{
 				title: "Go Live",
 				desc: "Start validating PAN details in production.",
