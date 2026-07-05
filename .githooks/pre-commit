@@ -1,0 +1,10 @@
+#!/bin/sh
+# Block commits that introduce secrets. Config: .gitleaks.toml (repo root).
+# Wired via core.hooksPath by `npm install` (.githooks/setup.mjs). See CONTRIBUTING.md.
+if ! command -v gitleaks >/dev/null 2>&1; then
+	echo "gitleaks not installed — commit blocked." >&2
+	echo "Install: brew install gitleaks | scoop install gitleaks | see https://github.com/gitleaks/gitleaks#installing" >&2
+	echo "Bypass (use sparingly): git commit --no-verify" >&2
+	exit 1
+fi
+exec gitleaks git --staged --config .gitleaks.toml --redact --no-banner -v

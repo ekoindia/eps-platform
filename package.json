@@ -12,6 +12,8 @@
 		"packages/*"
 	],
 	"scripts": {
+		"prepare": "node .githooks/setup.mjs",
+		"setup:githooks": "node .githooks/setup.mjs",
 		"dev": "vite",
 		"build": "vite build && npm run bake:all",
 		"build:dev": "vite build --mode development && npm run bake:all",
