@@ -3,7 +3,7 @@
  * agent artifacts (packs, bundle, MCP, recipes) generated from the spec layer.
  */
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
-import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, PLUGINS_ADD_CMD, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
 
@@ -17,7 +17,25 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push("");
 
-	lines.push("## Context packs");
+	lines.push("## One-command install (recommended)");
+	lines.push("");
+	lines.push(
+		"Installs the chosen EPS plugins (MCP server + skills + commands) into " +
+			"every detected coding agent — Claude Code, Codex, Cursor, OpenCode. " +
+			"Pick `eps` for dev-time API context; add `eps-transact` to let agents " +
+			"run verifications at runtime with your credentials. Re-run to update:",
+	);
+	lines.push("");
+	lines.push("```bash");
+	lines.push(PLUGINS_ADD_CMD);
+	lines.push("```");
+	lines.push("");
+
+	lines.push("## Context packs (fallback)");
+	lines.push(
+		"Append-able EPS sections for agents without MCP or skills support — " +
+			"add to your existing instruction file, don't replace it:",
+	);
 	lines.push(
 		markdownTable(
 			["Target", "File"],
@@ -57,11 +75,12 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push("");
 
-	lines.push("## Claude Code plugin");
+	lines.push("## Claude Code native plugin manager");
 	lines.push("");
 	lines.push(
-		"One install wires the `eps` MCP, the `integrate-eps`, `sign-request` and " +
-			"`run-a-recipe` skills, and the `/eps` slash command into Claude Code:",
+		"Alternative to the one-command install above — wires the `eps` MCP, the " +
+			"`integrate-eps`, `sign-request` and `run-a-recipe` skills, and the " +
+			"`/eps` slash command into Claude Code:",
 	);
 	lines.push("");
 	lines.push("```bash");
@@ -70,10 +89,11 @@ export function renderAgentsMarkdown(): string {
 	lines.push("```");
 	lines.push("");
 
-	lines.push("## Install matrix");
+	lines.push("## Manual install matrix (other agents)");
 	lines.push(
 		"EPS rides on open standards (MCP + `AGENTS.md`-style context packs), so it " +
-			"works in any modern coding agent. Wire it into each harness:",
+			"works in any modern coding agent, including those the one-command " +
+			"install doesn't cover yet. Wire it into each harness:",
 	);
 	lines.push(
 		markdownTable(

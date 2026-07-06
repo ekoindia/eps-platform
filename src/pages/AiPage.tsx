@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
-import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_CMD, PLUGINS_ADD_CMD, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import {
 	ArrowRight,
@@ -106,8 +106,8 @@ interface Artifact {
 const ARTIFACTS: Artifact[] = [
 	{
 		icon: FileTerminal,
-		title: "Agent instruction files",
-		body: "Drop-in instructions for any agent — auth, endpoints, and recipes in one file.",
+		title: "EPS context pack (fallback)",
+		body: "An EPS section to append to your existing AGENTS.md — for agents without MCP or skills support (Aider, JetBrains AI, …).",
 		links: [
 			{ label: "AGENTS.md", href: "/agent/AGENTS.md" },
 			{ label: "CLAUDE.md", href: "/agent/CLAUDE.md" },
@@ -247,13 +247,17 @@ const AiPage = () => {
 									through docs.
 								</p>
 
-								{/* Primary CTA: copy the MCP command */}
-								{/* <div
+								{/* Primary CTA: copy the one-command plugin install */}
+								<div
 									className="mt-8 max-w-xl animate-fade-up"
 									style={{ animationDelay: "240ms" }}
 								>
-									<CommandBlock text={MCP_CMD} tone="dark" caption="Run it" />
-								</div> */}
+									<CommandBlock
+										text={PLUGINS_ADD_CMD}
+										tone="dark"
+										caption="One command — Claude Code, Codex, Cursor, OpenCode"
+									/>
+								</div>
 
 								{/* Secondary CTA */}
 								<div
@@ -262,7 +266,7 @@ const AiPage = () => {
 								>
 									<Button variant="gold" size="lg" asChild>
 										<a href="#install">
-											Install MCP Server
+											Install in One Command
 											<ArrowRight className="h-4 w-4" />
 										</a>
 									</Button>
@@ -380,142 +384,171 @@ const AiPage = () => {
 					<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 						<FadeIn className="mx-auto mb-12 max-w-2xl text-center">
 							<span className="inline-block rounded-full bg-primary/20 px-4 py-1.5 text-sm font-medium text-amber-700">
-								Install by harness
+								Install
 							</span>
 							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
 								Connect EPS to your coding agent in one command
 							</h2>
 							<p className="mt-4 text-lg text-muted-foreground">
-								Choose your tool. Copy the install command. Then ask your agent
-								to build an EPS API flow.
+								One command installs the EPS plugin — MCP server, skills, and
+								the <InlineCode>/eps</InlineCode> command — into every coding
+								agent on your machine. Other agents: use the manual matrix
+								below.
 							</p>
 						</FadeIn>
 
 						<FadeIn className="mx-auto max-w-4xl">
-							<Tabs defaultValue={INSTALL_MATRIX[0]?.id} className="w-full">
-								<TabsList className="flex h-auto flex-wrap justify-center gap-1 bg-transparent p-0">
-									{INSTALL_MATRIX.map((h) => (
-										<TabsTrigger
-											key={h.id}
-											value={h.id}
-											className="gap-2 rounded-full border border-border bg-background px-4 py-2 data-[state=active]:border-eko-navy data-[state=active]:bg-eko-navy data-[state=active]:text-white"
-										>
-											<HarnessIcon id={h.id} className="h-4 w-4 shrink-0" />
-											{h.name}
-										</TabsTrigger>
-									))}
-								</TabsList>
-
-								{INSTALL_MATRIX.map((h) => (
-									<TabsContent key={h.id} value={h.id} className="mt-6">
-										<Card className="space-y-5 p-6 lg:p-8">
-											<div className="flex items-center justify-between gap-4">
-												<h3 className="flex items-center gap-2.5 text-xl font-semibold text-foreground">
-													<HarnessIcon id={h.id} className="h-5 w-5 shrink-0" />
-													{h.name}
-												</h3>
-												<div className="flex gap-2">
-													{h.mcp && <Badge variant="secondary">MCP</Badge>}
-													{h.packFile && (
-														<Badge variant="outline">Context pack</Badge>
-													)}
-												</div>
-											</div>
-
-											{h.mcp ? (
-												<div className="flex flex-col gap-3">
-													{h.mcp.command && (
-														<CommandBlock
-															text={h.mcp.command}
-															caption="MCP install command"
-														/>
-													)}
-													{h.mcp.configSnippet && (
-														<ConfigBlock
-															text={h.mcp.configSnippet}
-															caption={
-																h.mcp.configFile
-																	? `MCP config · ${h.mcp.configFile}`
-																	: "MCP config"
-															}
-														/>
-													)}
-													{h.mcp.note && (
-														<p className="text-xs text-muted-foreground">
-															{h.mcp.note}
-														</p>
-													)}
-												</div>
-											) : (
-												<p className="text-sm text-muted-foreground">
-													{h.name} has no native MCP client — use the context
-													pack below instead.
-												</p>
-											)}
-
-											{h.packFile && (
-												<div className="flex flex-col gap-1.5">
-													<span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-														Context pack
-													</span>
-													<div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background px-4 py-3">
-														<a
-															href={`/agent/${h.packFile}`}
-															className="font-mono text-sm font-medium text-eko-navy underline-offset-2 hover:underline"
-														>
-															{h.packFile}
-														</a>
-														{h.packPlacement && (
-															<>
-																<ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-																<code className="font-mono text-sm text-muted-foreground">
-																	{h.packPlacement}
-																</code>
-															</>
-														)}
-													</div>
-												</div>
-											)}
-										</Card>
-									</TabsContent>
-								))}
-							</Tabs>
-
-							{/* Claude Code plugin highlight */}
-							<Card className="mt-6 border-eko-gold/30 bg-eko-gold-light/60 p-6 lg:p-8">
-								<div className="mb-8 flex items-center gap-3">
+							{/* One-command install (primary path) */}
+							<Card className="border-eko-gold/30 bg-eko-gold-light/60 p-6 lg:p-8">
+								<div className="mb-6 flex items-center gap-3">
 									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-eko-navy">
 										<PlugZap className="h-5 w-5 text-eko-gold" />
 									</div>
 									<div>
 										<h3 className="text-lg font-semibold text-foreground">
-											Install Claude Code Plugin
+											One command, every agent
 										</h3>
 										<div className="text-xs pt-1 text-muted-foreground">
-											One install wires the <strong>EPS MCP</strong>,{" "}
+											Auto-detects Claude Code, Codex, Cursor, and OpenCode,
+											then wires the <strong>EPS MCP</strong>,{" "}
 											<strong>skills</strong>, and the{" "}
 											<InlineCode className="font-bold">/eps</InlineCode>{" "}
-											command for Claude Code.
+											command into each. Re-run the same command to update.
 										</div>
 									</div>
 								</div>
-								<p className="mb-3 text-sm text-muted-foreground">
-									Enter both commands inside the Claude Code prompt, in this
-									order:
+								<CommandBlock
+									text={PLUGINS_ADD_CMD}
+									caption="Run in a terminal"
+								/>
+								<p className="mt-3 text-xs text-muted-foreground">
+									Pick the <strong>eps</strong> plugin when prompted. Add{" "}
+									<strong>eps-transact</strong> too if your AI agents should run
+									verifications at runtime with your credentials.
 								</p>
-								<div className="flex flex-col gap-3">
-									<CommandBlock
-										caption="Step 1"
-										text="/plugin marketplace add ekoindia/eps-platform"
-										prompt=""
-									/>
-									<CommandBlock
-										caption="Step 2"
-										text="/plugin install eps@ekoindia"
-										prompt=""
-									/>
-								</div>
+								<details className="mt-4">
+									<summary className="cursor-pointer text-sm font-medium text-eko-navy underline-offset-2 hover:underline">
+										Prefer Claude Code&rsquo;s native plugin manager?
+									</summary>
+									<p className="mb-3 mt-3 text-sm text-muted-foreground">
+										Enter both commands inside the Claude Code prompt, in this
+										order:
+									</p>
+									<div className="flex flex-col gap-3">
+										<CommandBlock
+											caption="Step 1"
+											text="/plugin marketplace add ekoindia/eps-platform"
+											prompt=""
+										/>
+										<CommandBlock
+											caption="Step 2"
+											text="/plugin install eps@ekoindia"
+											prompt=""
+										/>
+									</div>
+								</details>
 							</Card>
+
+							{/* Manual fallback: per-harness matrix */}
+							<details className="mt-6">
+								<summary className="cursor-pointer rounded-lg border border-border bg-background px-5 py-4 text-sm font-semibold text-foreground hover:bg-muted/50">
+									Manual install &amp; other agents (Copilot, Antigravity, Zed,
+									Kiro, Aider, JetBrains…)
+								</summary>
+								<div className="mt-6">
+									<Tabs defaultValue={INSTALL_MATRIX[0]?.id} className="w-full">
+										<TabsList className="flex h-auto flex-wrap justify-center gap-1 bg-transparent p-0">
+											{INSTALL_MATRIX.map((h) => (
+												<TabsTrigger
+													key={h.id}
+													value={h.id}
+													className="gap-2 rounded-full border border-border bg-background px-4 py-2 data-[state=active]:border-eko-navy data-[state=active]:bg-eko-navy data-[state=active]:text-white"
+												>
+													<HarnessIcon id={h.id} className="h-4 w-4 shrink-0" />
+													{h.name}
+												</TabsTrigger>
+											))}
+										</TabsList>
+
+										{INSTALL_MATRIX.map((h) => (
+											<TabsContent key={h.id} value={h.id} className="mt-6">
+												<Card className="space-y-5 p-6 lg:p-8">
+													<div className="flex items-center justify-between gap-4">
+														<h3 className="flex items-center gap-2.5 text-xl font-semibold text-foreground">
+															<HarnessIcon
+																id={h.id}
+																className="h-5 w-5 shrink-0"
+															/>
+															{h.name}
+														</h3>
+														<div className="flex gap-2">
+															{h.mcp && <Badge variant="secondary">MCP</Badge>}
+															{h.packFile && (
+																<Badge variant="outline">Context pack</Badge>
+															)}
+														</div>
+													</div>
+
+													{h.mcp ? (
+														<div className="flex flex-col gap-3">
+															{h.mcp.command && (
+																<CommandBlock
+																	text={h.mcp.command}
+																	caption="MCP install command"
+																/>
+															)}
+															{h.mcp.configSnippet && (
+																<ConfigBlock
+																	text={h.mcp.configSnippet}
+																	caption={
+																		h.mcp.configFile
+																			? `MCP config · ${h.mcp.configFile}`
+																			: "MCP config"
+																	}
+																/>
+															)}
+															{h.mcp.note && (
+																<p className="text-xs text-muted-foreground">
+																	{h.mcp.note}
+																</p>
+															)}
+														</div>
+													) : (
+														<p className="text-sm text-muted-foreground">
+															{h.name} has no native MCP client — use the
+															context pack below instead.
+														</p>
+													)}
+
+													{h.packFile && (
+														<div className="flex flex-col gap-1.5">
+															<span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																Context pack
+															</span>
+															<div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background px-4 py-3">
+																<a
+																	href={`/agent/${h.packFile}`}
+																	className="font-mono text-sm font-medium text-eko-navy underline-offset-2 hover:underline"
+																>
+																	{h.packFile}
+																</a>
+																{h.packPlacement && (
+																	<>
+																		<ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+																		<code className="font-mono text-sm text-muted-foreground">
+																			{h.packPlacement}
+																		</code>
+																	</>
+																)}
+															</div>
+														</div>
+													)}
+												</Card>
+											</TabsContent>
+										))}
+									</Tabs>
+								</div>
+							</details>
 						</FadeIn>
 					</div>
 				</section>
@@ -698,14 +731,14 @@ const AiPage = () => {
 								Start building with EPS in your AI coding agent
 							</h2>
 							<p className="mt-4 text-lg text-white/70">
-								Drop the MCP into your agent and ship your first signed EPS call
-								today.
+								One command wires EPS into your agent — ship your first signed
+								EPS call today.
 							</p>
 							<div className="mx-auto mt-8 max-w-lg">
 								<CommandBlock
-									text={MCP_CMD}
+									text={PLUGINS_ADD_CMD}
 									tone="dark"
-									caption="Install MCP Server"
+									caption="Install the EPS plugin"
 								/>
 							</div>
 							<div className="mt-6 flex flex-wrap justify-center gap-4">

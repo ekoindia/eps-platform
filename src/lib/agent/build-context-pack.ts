@@ -8,7 +8,7 @@
  * backend-only warning, environments, error model) plus a COMPACT endpoint
  * index. Per-endpoint detail is linked (bundle/MCP/.md docs), not inlined.
  */
-import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, PLUGINS_ADD_CMD, SITE_URL } from "@/lib/config/site";
 import { markdownTable } from "@/lib/markdown/shared";
 import type { AgentBundle } from "@/lib/agent/agent-bundle-types";
 
@@ -27,6 +27,16 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 			"(AePS, DMT, BBPS) and identity verification (PAN, Aadhaar, bank, GST, " +
 			"etc.) in India. This pack tells an AI coding agent how to call EPS APIs " +
 			"correctly.",
+	);
+	lines.push("");
+	lines.push(
+		"This is a self-contained section — append it to your repo's existing " +
+			"agent instructions (AGENTS.md or equivalent); it does not replace your " +
+			"project instructions. Agents with plugin support get richer, on-demand " +
+			"context instead of this static pack: `" +
+			PLUGINS_ADD_CMD +
+			"` (installs the EPS MCP + skills into Claude Code, Codex, Cursor, " +
+			"OpenCode).",
 	);
 	lines.push("");
 
@@ -177,21 +187,35 @@ const withHeading = (heading: string, bundle: AgentBundle): string =>
 	`${heading}\n\n${buildContextPackBody(bundle)}`;
 
 export const CONTEXT_PACK_FILES: ContextPackFile[] = [
-	{ file: "AGENTS.md", build: (b) => buildContextPackBody(b) },
+	{
+		file: "AGENTS.md",
+		build: (b) =>
+			withHeading(
+				"<!-- Eko EPS — append this section to your existing AGENTS.md -->",
+				b,
+			),
+	},
 	{
 		file: "CLAUDE.md",
 		build: (b) =>
-			withHeading("<!-- Eko EPS — drop this in your repo as CLAUDE.md -->", b),
+			withHeading(
+				"<!-- Eko EPS — append this section to your existing CLAUDE.md -->",
+				b,
+			),
 	},
 	{
 		file: ".cursorrules",
-		build: (b) => withHeading("# Eko EPS integration rules (Cursor)", b),
+		build: (b) =>
+			withHeading(
+				"# Eko EPS integration rules — append to your existing .cursorrules",
+				b,
+			),
 	},
 	{
 		file: "copilot-instructions.md",
 		build: (b) =>
 			withHeading(
-				"<!-- Place at .github/copilot-instructions.md in your repo -->",
+				"<!-- Eko EPS — append to .github/copilot-instructions.md in your repo -->",
 				b,
 			),
 	},

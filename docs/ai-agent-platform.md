@@ -145,18 +145,45 @@ the baked `data/fixtures.json`. Recipe-aware: append
 npx -y @ekoindia/eps-mock-server
 ```
 
-### `packages/claude-plugin-eps` (Claude Code plugin)
+### `packages/claude-plugin-eps` (agent plugin: dev-time context)
 
-A Claude Code plugin that wires the `eps` MCP (via
+An agent plugin that wires the `eps` MCP (via
 `npx -y @ekoindia/eps-context-mcp@latest`), three skills
 (`integrate-eps`, `sign-request`, `run-a-recipe`), and an `/eps` slash command.
-It is listed in the repo-root `.claude-plugin/marketplace.json` under the
-`ekoindia` marketplace.
+
+### `packages/claude-plugin-eps-transact` (agent plugin: runtime transactions)
+
+An agent plugin that wires the `eps-transact` MCP (via
+`npx -y @ekoindia/eps-transact-mcp@latest`, stdio, credentials from shell env)
+and the `eps-verify` skill (credential setup, tool selection, UAT-vs-production
+safety). Not an npm package — like the `eps` plugin, it ships straight from git.
+
+### Plugin distribution
+
+Both plugins are listed in the repo-root `.claude-plugin/marketplace.json`
+(marketplace `ekoindia`). The **primary install path** is the vercel-labs
+`plugins` CLI ([open-plugin spec](https://github.com/vercel-labs/open-plugin-spec)),
+which reads that marketplace from the public GitHub repo, lets the user pick
+plugins, and installs them into every detected agent — Claude Code, Codex,
+Cursor, OpenCode:
+
+```bash
+npx plugins add ekoindia/eps-platform
+```
+
+Claude Code's native plugin manager remains an alternative:
 
 ```text
 /plugin marketplace add ekoindia/eps-platform
-/plugin install eps@ekoindia
+/plugin install eps@ekoindia          # or eps-transact@ekoindia
 ```
+
+Updates: re-run `npx plugins add …` (installs done through Claude Code's
+native `/plugin` flow also get `/plugin update`). The MCP servers themselves
+self-update regardless — `npx -y …@latest` re-resolves at every launch.
+
+A guard test (`src/test/plugin-marketplace.test.ts`) keeps the marketplace,
+plugin manifests, and skill files consistent.
 
 ## 5. The `/ai` hub page (+ `/ai.md` text twin)
 

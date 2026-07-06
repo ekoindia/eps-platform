@@ -8,7 +8,12 @@
 		{
 			"name": "eps",
 			"source": "./packages/claude-plugin-eps",
-			"description": "Eko Platform Services — context MCP, skills, and commands for integrating EPS APIs from any AI coding agent."
+			"description": "For coding agents at dev time — EPS API context MCP, integration skills, and the /eps command. No credentials needed."
+		},
+		{
+			"name": "eps-transact",
+			"source": "./packages/claude-plugin-eps-transact",
+			"description": "For AI agents at runtime — every EPS verification API (PAN, Aadhaar, bank, GSTIN, …) as an MCP tool, executed with your own credentials."
 		}
 	]
 }

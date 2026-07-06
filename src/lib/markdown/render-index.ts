@@ -1,7 +1,12 @@
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
-import { EPS_MCP_PKG, SIGNUP_URL, SITE_URL } from "@/lib/config/site";
+import {
+	EPS_MCP_PKG,
+	PLUGINS_ADD_CMD,
+	SIGNUP_URL,
+	SITE_URL,
+} from "@/lib/config/site";
 import {
 	canonicalNotice,
 	frontMatter,
@@ -186,7 +191,10 @@ export function renderLlmsTxt(
 
 	lines.push("## For AI coding agents");
 	lines.push(
-		`- [Context pack (AGENTS.md)](${SITE_URL}/agent/AGENTS.md): Drop-in instructions for any agent — auth, endpoints, recipes`,
+		`- One-command install: \`${PLUGINS_ADD_CMD}\` — EPS plugins (MCP + skills) for Claude Code, Codex, Cursor, OpenCode`,
+	);
+	lines.push(
+		`- [Context pack (AGENTS.md)](${SITE_URL}/agent/AGENTS.md): Append-able EPS section for agents without MCP/skills support — auth, endpoints, recipes`,
 	);
 	lines.push(
 		`- [Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe`,

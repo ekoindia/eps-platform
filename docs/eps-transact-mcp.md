@@ -95,6 +95,21 @@ Fully hands-off now — no manual pull:
 | `uat-smoke.test.ts`          | env-gated live proof of base URL + auth + encoding                                                                                                                     |
 | `update-check.test.ts`       | strict x.y.z compare (newer/equal/older/prerelease→unknown); silent on offline/404/bad-body; `EPS_NO_UPDATE_CHECK=1` skips the fetch                                   |
 
+## Distribution
+
+Three ways users get the server:
+
+1. **Hosted HTTP** — `https://mcp.eko.in/mcp` (streamable HTTP, credentials as
+   headers; GHCR image deployed on push to `main`).
+2. **npm stdio** — `npx -y @ekoindia/eps-transact-mcp@latest` (credentials from
+   shell env; auto-published by `release.yml`).
+3. **Agent plugin** — `packages/claude-plugin-eps-transact` (plugin
+   `eps-transact` in the repo-root marketplace) wires the stdio server plus the
+   `eps-verify` skill into Claude Code, Codex, Cursor, or OpenCode via
+   `npx plugins add ekoindia/eps-platform`. The plugin ships straight from git
+   `main` — **no publish step**; see
+   [`docs/releasing-agent-packages.md`](./releasing-agent-packages.md).
+
 ## Staying up to date
 
 The stdio bin (`src/update-check.ts`, wired only into `src/stdio.ts`) does a best-effort startup check against the npm `latest` dist-tag and prints a one-line stderr nudge when the running version is behind — silent on any failure, `EPS_NO_UPDATE_CHECK=1` opts out. The HTTP server deliberately skips it (remote users can't self-update; stderr there is operator log noise). Published via the content-gated `release.yml` auto-release; the documented install command pins `@latest` so `npx` re-resolves newest each launch. See the [package README](../packages/eps-transact-mcp/README.md#staying-up-to-date).

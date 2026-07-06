@@ -17,6 +17,14 @@ export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
 export const API_DEFAULT_VERSION = "v3";
 
 /**
+ * One-command cross-agent plugin install (vercel `plugins` CLI, open-plugin
+ * spec). Reads the repo-root `.claude-plugin/marketplace.json` from the public
+ * GitHub repo and installs the chosen plugins into every detected agent
+ * (Claude Code, Codex, Cursor, OpenCode). Re-run the same command to update.
+ */
+export const PLUGINS_ADD_CMD = "npx plugins add ekoindia/eps-platform";
+
+/**
  * npm spec for the EPS context MCP server. The `@latest` tag makes `npx`
  * re-resolve the newest publish on each launch, so users track new releases
  * (code + baked API bundle) without re-editing their MCP config. Offline

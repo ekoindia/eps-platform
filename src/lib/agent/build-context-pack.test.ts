@@ -26,6 +26,11 @@ describe("buildContextPackBody", () => {
 		expect(body).toContain("/agent/eps.json");
 	});
 
+	it("frames the pack as an append-able section and points at the plugin install", () => {
+		expect(body).toContain("append it to your repo's existing");
+		expect(body).toContain("npx plugins add ekoindia/eps-platform");
+	});
+
 	it("documents the offline mock server for local testing", () => {
 		expect(body).toContain("@ekoindia/eps-mock-server");
 		expect(body).toContain("http://localhost:4010");
@@ -50,6 +55,7 @@ describe("CONTEXT_PACK_FILES", () => {
 		for (const f of CONTEXT_PACK_FILES) {
 			const out = f.build(bundle);
 			expect(out).toContain("## Authentication & request signing");
+			expect(out.split("\n")[0].toLowerCase()).toContain("append");
 		}
 	});
 });
