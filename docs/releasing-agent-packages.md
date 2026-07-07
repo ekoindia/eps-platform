@@ -12,8 +12,14 @@ architecture of what is being shipped, see
   `@ekoindia/eps-mock-server`, `@ekoindia/eps-transact-mcp`) → **public npm**
   (`registry.npmjs.org`).
 - **PHP SDK** (`ekoindia/eps-sdk`) → **Packagist** (Composer).
-- **Claude Code plugin** → the repo-root `.claude-plugin/marketplace.json`
-  (marketplace name `ekoindia`).
+- **Agent plugins** (`eps`, `eps-transact`) → the repo-root
+  `.claude-plugin/marketplace.json` (marketplace name `ekoindia`), shipped
+  straight from git `main` — **no npm publish step**. Users install with
+  `npx plugins add ekoindia/eps-platform` (vercel-labs `plugins` CLI; installs
+  into Claude Code, Codex, Cursor, OpenCode) and update by re-running the same
+  command. Installs done through Claude Code's native `/plugin` flow also get
+  `/plugin update`. The wired MCP servers self-update regardless
+  (`npx -y …@latest` re-resolves at launch).
 
 **Why not GitHub Packages?** Installing npm from GitHub Packages requires
 consumer-side auth + a scoped `.npmrc`, which breaks the headline zero-friction
@@ -78,11 +84,12 @@ attestation — this needs `id-token: write` (granted) **and a public source rep
 4. Enable the **Packagist → GitHub webhook** on the mirror (or rely on tags —
    pushing a `vX.Y.Z` tag to the mirror triggers a new Packagist release).
 
-### Claude Code marketplace
+### Agent plugin marketplace
 
 - Nothing beyond merging `.claude-plugin/marketplace.json` (already at the repo
-  root, listing `packages/claude-plugin-eps` as plugin `eps`) to the default
-  branch so users can `/plugin marketplace add ekoindia/eps-platform`.
+  root, listing plugins `eps` and `eps-transact`) to the default branch. Users
+  then install with `npx plugins add ekoindia/eps-platform` (or Claude Code's
+  native `/plugin marketplace add ekoindia/eps-platform`).
 
 ## 3. Release flow
 
@@ -190,14 +197,19 @@ Run after the first publish:
 - [ ] `npx -y @ekoindia/eps-mock-server` serves on `:4010`.
 - [ ] `npm i @ekoindia/eps-sdk` resolves and installs.
 - [ ] `composer require ekoindia/eps-sdk` resolves from Packagist.
+- [ ] `npx plugins discover ekoindia/eps-platform` finds **2 plugins**
+      (`eps`: 3 skills + 1 command; `eps-transact`: 1 skill).
+- [ ] `npx plugins add ekoindia/eps-platform` installs the picked plugins into
+      a detected agent (smoke: run in a scratch project with `--scope project`).
 - [ ] In Claude Code: `/plugin marketplace add ekoindia/eps-platform` then
       `/plugin install eps@ekoindia` works (and the `eps` MCP + skills +
       `/eps` command load).
 
 ## 7. Known follow-ups
 
-- **Live-load the Claude Code plugin** end-to-end in a real session (files are
-  well-formed but not yet verified live).
+- **Live-load the agent plugins** (`eps`, `eps-transact`) end-to-end in real
+  sessions (files are well-formed and `npx plugins discover`/local-add smoke
+  passes, but not yet verified in a live agent session).
 - **Wire the PHP mirror**: create `ekoindia/eps-sdk-php`, add
   `SDK_PHP_DEPLOY_KEY` + the `ssh-agent` step, and submit to Packagist so
   `php-split` runs for real.

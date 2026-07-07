@@ -31,4 +31,7 @@ COPY --from=build /app/packages/eps-transact-mcp/package.json ./package.json
 COPY --from=build /app/packages/eps-transact-mcp/dist ./dist
 COPY --from=build /app/packages/eps-transact-mcp/data ./data
 EXPOSE 8788
+# Drop root: the server only reads baked data + does network I/O (no disk writes),
+# and binds 8788 (>1024, no privilege needed). node:20-alpine ships the `node` user.
+USER node
 CMD ["node", "dist/index.js"]

@@ -17,6 +17,14 @@ export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
 export const API_DEFAULT_VERSION = "v3";
 
 /**
+ * One-command cross-agent plugin install (vercel `plugins` CLI, open-plugin
+ * spec). Reads the repo-root `.claude-plugin/marketplace.json` from the public
+ * GitHub repo and installs the chosen plugins into every detected agent
+ * (Claude Code, Codex, Cursor, OpenCode). Re-run the same command to update.
+ */
+export const PLUGINS_ADD_CMD = "npx plugins add ekoindia/eps-platform";
+
+/**
  * npm spec for the EPS context MCP server. The `@latest` tag makes `npx`
  * re-resolve the newest publish on each launch, so users track new releases
  * (code + baked API bundle) without re-editing their MCP config. Offline
@@ -25,6 +33,21 @@ export const API_DEFAULT_VERSION = "v3";
 export const EPS_MCP_PKG = "@ekoindia/eps-context-mcp@latest";
 /** Command to run the EPS context MCP server (used on the AI + docs pages). */
 export const EPS_MCP_CMD = `npx -y ${EPS_MCP_PKG}`;
+
+/**
+ * EPS *transactional* MCP server (`/agents` page). Distinct from the context
+ * MCP above: its tools **execute** verification APIs with the partner's own
+ * credentials, for use inside their AI agents — not a dev-time coding helper.
+ * `@latest` keeps local stdio users on the newest published tools; the hosted
+ * remote endpoint always serves the current production deploy.
+ */
+export const EPS_TRANSACT_MCP_PKG = "@ekoindia/eps-transact-mcp@latest";
+/** Command to run the transactional MCP server locally over stdio. */
+export const EPS_TRANSACT_MCP_CMD = `npx -y ${EPS_TRANSACT_MCP_PKG}`;
+/** Hosted remote endpoint (streamable HTTP) for the transactional MCP server.
+ * Path-namespaced under /transact/ — mcp.eko.in hosts multiple MCP servers
+ * (/context/ is reserved for the future remote eps-context-mcp). */
+export const EPS_TRANSACT_MCP_URL = "https://mcp.eko.in/transact/mcp";
 
 export const PARENT_SITE_URL = "https://eko.in";
 export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";

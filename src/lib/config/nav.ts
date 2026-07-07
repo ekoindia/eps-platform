@@ -6,8 +6,15 @@
  * stay in sync across breakpoints.
  */
 
+import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
+
 /** Identifies a nav item that opens a dropdown (desktop) / accordion (mobile). */
-export type DropdownKey = "products" | "useCases" | "developers" | "company";
+export type DropdownKey =
+	| "products"
+	| "useCases"
+	| "ai"
+	| "developers"
+	| "company";
 
 export interface NavLink {
 	label: string;
@@ -23,7 +30,12 @@ export const navLinks: NavLink[] = [
 	{ label: "Products", href: "/products", dropdownKey: "products" },
 	{ label: "Use Cases", href: "/use-cases", dropdownKey: "useCases" },
 	{ label: "Pricing", href: "/pricing" },
-	{ label: "AI Agents", href: "/ai" },
+	// Two distinct AI stories once the transactional MCP is live: "Build with AI"
+	// (dev-time, /ai) and "For AI agents" (runtime, /agents). Until then the item
+	// stays a single plain link to /ai so we never surface the ungated page.
+	SHOW_TRANSACT_MCP
+		? { label: "AI Tools", href: "/ai", dropdownKey: "ai" }
+		: { label: "AI Tools", href: "/ai" },
 	{ label: "Developers", dropdownKey: "developers" },
 	{ label: "Company", dropdownKey: "company" },
 ];

@@ -44,7 +44,7 @@ composer require ekoindia/eps-sdk      # PHP 8.1+
 npx -y @ekoindia/eps-mock-server
 ```
 
-For Claude Code, install the bundled plugin (wires the MCP + skills + `/eps` command). Point any agent at the site's `/llms.txt` and `/ai` hub for the full machine-readable index.
+One command installs the EPS plugins (MCP + skills + `/eps` command) into every detected coding agent — Claude Code, Codex, Cursor, OpenCode: `npx plugins add ekoindia/eps-platform`. Point any agent at the site's `/llms.txt` and `/ai` hub for the full machine-readable index.
 
 ## Project structure
 
@@ -70,13 +70,14 @@ packages/        # published artifacts (each baked from the build output):
   sdk-js/            # @ekoindia/eps-sdk — Node.js backend SDK (npm)
   eps-mock-server/   # @ekoindia/eps-mock-server — offline mock server (npm)
   sdk-php/           # ekoindia/eps-sdk — PHP backend SDK (Composer/Packagist)
-  claude-plugin-eps/ # Claude Code plugin bundle (manifest + skills + /eps command; not an npm package)
+  claude-plugin-eps/ # agent plugin: dev-time EPS context (manifest + skills + /eps command; not an npm package)
+  claude-plugin-eps-transact/ # agent plugin: runtime verifications via eps-transact MCP (not an npm package)
 
 dist/                  # build output (generated, gitignored)
 packages/*/data/       # baked artifacts copied here at build time (generated, gitignored — never hand-edit)
 ```
 
-That's **3 npm packages, 1 Composer package, and 1 Claude Code plugin bundle**.
+That's **3 npm packages, 1 Composer package, and 2 agent plugin bundles** (installable across agents via `npx plugins add ekoindia/eps-platform`).
 
 > [!CAUTION]
 > The `packages/*/data/` files are generated outputs — they may be present in your working tree but are gitignored and **must never be hand-edited or committed**.

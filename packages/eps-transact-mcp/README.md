@@ -11,7 +11,7 @@ Transactional MCP server for **Eko Platform Services (EPS) verification APIs**. 
 Point any MCP client at the hosted endpoint and pass your EPS credentials as headers:
 
 ```sh
-claude mcp add --transport http eps-transact https://mcp.eko.in/mcp \
+claude mcp add --transport http eps-transact https://mcp.eko.in/transact/mcp \
   --header "X-Eko-Developer-Key: YOUR_DEVELOPER_KEY" \
   --header "X-Eko-Access-Key: YOUR_ACCESS_KEY" \
   --header "X-Eko-Allowed-Apis: eps_pan_lite,eps_bank_account_verification" \
