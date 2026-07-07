@@ -34,6 +34,7 @@ const UseCasesHubPage = lazy(() => import("./pages/UseCasesHubPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const FaqPage = lazy(() => import("./pages/FaqPage"));
 const AiPage = lazy(() => import("./pages/AiPage"));
+const AgentsPage = lazy(() => import("./pages/AgentsPage"));
 const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
 const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
 const Console = lazy(() => import("./pages/Console"));
@@ -91,6 +92,10 @@ const App = ({
 
 								{/* AI Agents */}
 								<Route path="/ai" element={<AiPage />} />
+								{/* Transactional MCP for AI agents. Route is always registered;
+								    it is nav-linked, prerendered, and indexed only when the
+								    SHOW_TRANSACT_MCP flag is on (see ssg/routes.ts, nav.ts). */}
+								<Route path="/agents" element={<AgentsPage />} />
 
 								{/* Developer Docs */}
 								<Route path="/docs" element={<DocsIndexPage />} />

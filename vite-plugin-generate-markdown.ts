@@ -230,6 +230,15 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- AI agents (transactional MCP) ----------------------------------
+				// Emitted every build; the page is only discoverable (nav/sitemap/
+				// llms.txt) when SHOW_TRANSACT_MCP is on, so an unreferenced twin is safe.
+				await writeFile(
+					path.join(outDir, "agents.md"),
+					bundle.renderTransactAgentsMarkdown(),
+				);
+				written++;
+
 				// -- llms.txt -------------------------------------------------------
 				await writeFile(
 					path.join(outDir, "llms.txt"),
@@ -317,6 +326,7 @@ interface MarkdownBundle {
 		rawBody: string,
 	) => string;
 	renderAgentsMarkdown: () => string;
+	renderTransactAgentsMarkdown: () => string;
 }
 
 /** Read a guide's raw `.mdx` source (pure markdown) from the content dir. */
@@ -346,6 +356,7 @@ async function loadRenderBundle(
 		renderDocMod,
 		docsGuidesMod,
 		renderAgentsMod,
+		renderTransactMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -362,6 +373,7 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-doc.ts"),
 		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-agents.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-transact.ts"),
 	]);
 
 	return {
@@ -390,6 +402,8 @@ async function loadRenderBundle(
 		GUIDES: docsGuidesMod.GUIDES,
 		renderGuideMarkdown: renderDocMod.renderGuideMarkdown,
 		renderAgentsMarkdown: renderAgentsMod.renderAgentsMarkdown,
+		renderTransactAgentsMarkdown:
+			renderTransactMod.renderTransactAgentsMarkdown,
 	};
 }
 
@@ -453,6 +467,9 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/ai.md") {
 		return bundle.renderAgentsMarkdown();
+	}
+	if (url === "/agents.md") {
+		return bundle.renderTransactAgentsMarkdown();
 	}
 	const docMatch = url.match(/^\/docs\/([^/]+)\.md$/);
 	if (docMatch) {

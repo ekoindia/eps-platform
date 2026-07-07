@@ -4,6 +4,7 @@
  * This is the single source of truth for which routes get pre-rendered
  * at build time. Adding or removing a route here is all that's needed.
  */
+import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { hasProductPage } from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { docsHref, getAllDocSlugs } from "@/lib/data/docs-registry";
@@ -44,6 +45,7 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 	{ pattern: /^\/pricing$/, src: "src/pages/PricingPage.tsx" },
 	{ pattern: /^\/faq$/, src: "src/pages/FaqPage.tsx" },
 	{ pattern: /^\/ai$/, src: "src/pages/AiPage.tsx" },
+	{ pattern: /^\/agents$/, src: "src/pages/AgentsPage.tsx" },
 	{ pattern: /^\/use-cases$/, src: "src/pages/UseCasesHubPage.tsx" },
 	{ pattern: /^\/about-us$/, src: "src/pages/AboutPage.tsx" },
 	{ pattern: /^\/blogs-media$/, src: "src/pages/BlogsMediaPage.tsx" },
@@ -86,6 +88,9 @@ export const PRERENDER_ROUTES: string[] = [
 
 	// AI Agents
 	"/ai",
+	// Transactional MCP page — prerendered + sitemap'd only once the server is
+	// live in production (flag off by default keeps it out of search + sitemap).
+	...(SHOW_TRANSACT_MCP ? ["/agents"] : []),
 
 	// Developer docs (overview + every guide & endpoint slug)
 	"/docs",
