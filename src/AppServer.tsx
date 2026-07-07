@@ -51,6 +51,7 @@ import FaqPage from "./pages/FaqPage";
 
 // AI Agents
 import AiPage from "./pages/AiPage";
+import AgentsPage from "./pages/AgentsPage";
 
 // Developer Docs
 import DocsIndexPage from "./pages/docs/DocsIndexPage";
@@ -113,6 +114,8 @@ const AppServer = ({
 
 								{/* AI Agents */}
 								<Route path="/ai" element={<AiPage />} />
+								{/* Transactional MCP for AI agents — see App.tsx note. */}
+								<Route path="/agents" element={<AgentsPage />} />
 
 								{/* Developer Docs */}
 								<Route path="/docs" element={<DocsIndexPage />} />

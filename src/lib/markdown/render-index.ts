@@ -1,6 +1,7 @@
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
+import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { EPS_MCP_PKG, SIGNUP_URL, SITE_URL } from "@/lib/config/site";
 import {
 	canonicalNotice,
@@ -199,6 +200,11 @@ export function renderLlmsTxt(
 	lines.push(
 		`- [AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
 	);
+	if (SHOW_TRANSACT_MCP) {
+		lines.push(
+			`- [For AI agents](${SITE_URL}/agents): Transactional MCP — run EPS verifications as agent tools`,
+		);
+	}
 	lines.push("");
 
 	return lines.join("\n");

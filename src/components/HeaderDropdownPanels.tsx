@@ -27,6 +27,7 @@ import { openZohoChat } from "@/lib/zoho-chat";
 import {
 	ArrowRight,
 	BookOpen,
+	Bot,
 	Briefcase,
 	HelpCircle,
 	LayoutDashboard,
@@ -156,6 +157,50 @@ const DeveloperLink = ({
 		</Link>
 	);
 };
+
+// The two distinct AI stories, shown in the "AI" dropdown (desktop + mobile)
+// when the transactional-MCP flag is on. "Build with AI" (dev-time) is first
+// and stays the primary funnel; "For AI agents" (runtime) is the new product.
+type AiLinkItem = {
+	label: string;
+	href: string;
+	description: string;
+	icon: ComponentType<{ className?: string }>;
+};
+
+const aiLinks: AiLinkItem[] = [
+	{
+		label: "Build with AI",
+		href: "/ai",
+		description: "Ship EPS integrations faster with AI coding agents",
+		icon: Sparkles,
+	},
+	{
+		label: "For AI agents",
+		href: "/agents",
+		description: "Let your AI agents run verifications, via our MCP server",
+		icon: Bot,
+	},
+];
+
+/** One "AI" dropdown entry: icon, label, and a one-line description. */
+const AiLink = ({
+	item,
+	onClick,
+	className,
+}: {
+	item: AiLinkItem;
+	onClick: () => void;
+	className: string;
+}) => (
+	<Link to={item.href} onClick={onClick} className={className}>
+		<item.icon className="mt-0.5 h-4 w-4 shrink-0 text-eko-navy/60" />
+		<span className="flex flex-col">
+			<span className="font-medium text-eko-navy">{item.label}</span>
+			<span className="text-xs text-eko-slate">{item.description}</span>
+		</span>
+	</Link>
+);
 
 const companySocialLinks = [
 	{
@@ -464,6 +509,14 @@ export const HeaderDropdownPanels = ({
 				</Link>
 			</>
 		),
+		ai: aiLinks.map((item) => (
+			<AiLink
+				key={item.href}
+				item={item}
+				onClick={() => setMobileMenuOpen(false)}
+				className="flex items-start gap-2 py-1.5 text-sm text-eko-slate cursor-pointer"
+			/>
+		)),
 		developers: devLinks.map((item) => (
 			<DeveloperLink
 				key={item.href}
@@ -560,6 +613,27 @@ export const HeaderDropdownPanels = ({
 						onItemClick={() => setActiveDesktopDropdown(null)}
 					/>
 				</FullWidthDropdownPanel>
+			)}
+
+			{/* ── Desktop: AI dropdown ───────────────────────────────────── */}
+			{activeDesktopDropdown === "ai" && (
+				<div
+					className="ai-dropdown fixed top-24 left-1/2 -translate-x-1/2 w-[340px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
+					data-dropdown="ai"
+					{...panelHoverHandlers}
+				>
+					<div className="p-4 flex flex-col gap-1">
+						<DropdownColumnHeader title="AI" />
+						{aiLinks.map((item) => (
+							<AiLink
+								key={item.href}
+								item={item}
+								onClick={() => setActiveDesktopDropdown(null)}
+								className="flex items-start gap-2.5 px-3 py-2.5 text-sm hover:bg-muted rounded-lg transition-colors cursor-pointer"
+							/>
+						))}
+					</div>
+				</div>
 			)}
 
 			{/* ── Desktop: Company dropdown ──────────────────────────────── */}

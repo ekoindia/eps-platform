@@ -14,10 +14,12 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
+import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import {
 	ArrowRight,
+	Bot,
 	Download,
 	FileTerminal,
 	FileWarning,
@@ -681,6 +683,39 @@ const AiPage = () => {
 						</div>
 					</div>
 				</section>
+
+				{/* ================= CROSS-LINK: /agents (runtime) ================ */}
+				{SHOW_TRANSACT_MCP && (
+					<section className="bg-background pb-20 lg:pb-28">
+						<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+							<FadeIn className="mx-auto max-w-3xl">
+								<Card className="flex flex-col items-start gap-4 p-7 sm:flex-row sm:items-center sm:justify-between">
+									<div className="flex items-start gap-4">
+										<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-eko-navy">
+											<Bot className="h-5 w-5 text-eko-gold" />
+										</div>
+										<div>
+											<h3 className="text-lg font-semibold text-foreground">
+												Building agentic workflows, not just integrating?
+											</h3>
+											<p className="mt-1 text-sm text-muted-foreground">
+												Your AI agents can run EPS verifications directly — PAN,
+												bank, GST and more as MCP tools, with pass-through
+												credentials.
+											</p>
+										</div>
+									</div>
+									<Button variant="outline" asChild className="shrink-0">
+										<Link to="/agents">
+											For AI agents
+											<ArrowRight className="h-4 w-4" />
+										</Link>
+									</Button>
+								</Card>
+							</FadeIn>
+						</div>
+					</section>
+				)}
 
 				{/* ============================ CTA BAND =========================== */}
 				<section className="relative overflow-hidden bg-eko-navy py-20 lg:py-28">

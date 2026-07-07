@@ -105,6 +105,7 @@ export const Header = () => {
 	const productsDropdownRef = useRef<HTMLDivElement>(null);
 	const companyDropdownRef = useRef<HTMLDivElement>(null);
 	const useCasesDropdownRef = useRef<HTMLDivElement>(null);
+	const aiDropdownRef = useRef<HTMLDivElement>(null);
 	const developersDropdownRef = useRef<HTMLDivElement>(null);
 	/** Shared close timer — fires only when mouse leaves the entire header or a panel. */
 	const closeTimerRef = useRef<number | undefined>(undefined);
@@ -171,8 +172,10 @@ export const Header = () => {
 				);
 			case "Pricing":
 				return path === "/pricing";
+			// "AI Agents" when the transact-MCP flag is off; "AI" (dropdown) when on.
 			case "AI Agents":
-				return path === "/ai";
+			case "AI":
+				return path === "/ai" || path === "/agents";
 			case "Developers":
 				return path === "/docs" || path.startsWith("/docs/") || path === "/faq";
 			case "Company":
@@ -210,6 +213,8 @@ export const Header = () => {
 				!document
 					.querySelector('[data-dropdown="usecases"]')
 					?.contains(target) &&
+				(!aiDropdownRef.current || !aiDropdownRef.current.contains(target)) &&
+				!document.querySelector('[data-dropdown="ai"]')?.contains(target) &&
 				(!developersDropdownRef.current ||
 					!developersDropdownRef.current.contains(target)) &&
 				!document
@@ -299,6 +304,7 @@ export const Header = () => {
 	// anywhere within the header bar.
 	const productsEnterHandler = getTriggerEnterHandler("products");
 	const useCasesEnterHandler = getTriggerEnterHandler("useCases");
+	const aiEnterHandler = getTriggerEnterHandler("ai");
 	const developersEnterHandler = getTriggerEnterHandler("developers");
 	const companyEnterHandler = getTriggerEnterHandler("company");
 
@@ -313,6 +319,7 @@ export const Header = () => {
 	> = {
 		products: { ref: productsDropdownRef, enter: productsEnterHandler },
 		useCases: { ref: useCasesDropdownRef, enter: useCasesEnterHandler },
+		ai: { ref: aiDropdownRef, enter: aiEnterHandler },
 		developers: { ref: developersDropdownRef, enter: developersEnterHandler },
 		company: { ref: companyDropdownRef, enter: companyEnterHandler },
 	};
