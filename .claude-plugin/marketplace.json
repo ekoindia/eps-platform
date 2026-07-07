@@ -1,5 +1,6 @@
 {
 	"name": "ekoindia",
+	"description": "Eko Platform Services (EPS) plugins — dev-time API context + integration skills, and runtime verification APIs (PAN, Aadhaar, bank, GSTIN) as MCP tools.",
 	"owner": {
 		"name": "Eko India",
 		"url": "https://eko.in"
@@ -8,12 +9,18 @@
 		{
 			"name": "eps",
 			"source": "./packages/claude-plugin-eps",
-			"description": "For coding agents at dev time — EPS API context MCP, integration skills, and the /eps command. No credentials needed."
+			"description": "For coding agents at dev time — EPS API context MCP, integration skills, and the /eps command. No credentials needed.",
+			"author": { "name": "Eko Bharat Ventures Pvt Ltd", "url": "https://eko.in" },
+			"homepage": "https://eps.eko.in",
+			"keywords": ["eps", "eko", "fintech", "payments", "mcp", "verification", "api-context"]
 		},
 		{
 			"name": "eps-transact",
 			"source": "./packages/claude-plugin-eps-transact",
-			"description": "For AI agents at runtime — every EPS verification API (PAN, Aadhaar, bank, GSTIN, …) as an MCP tool, executed with your own credentials."
+			"description": "For AI agents at runtime — every EPS verification API (PAN, Aadhaar, bank, GSTIN, …) as an MCP tool, executed with your own credentials.",
+			"author": { "name": "Eko Bharat Ventures Pvt Ltd", "url": "https://eko.in" },
+			"homepage": "https://eps.eko.in",
+			"keywords": ["eps", "eko", "fintech", "verification", "kyc", "pan", "aadhaar", "gstin", "mcp"]
 		}
 	]
 }

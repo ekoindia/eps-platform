@@ -1,5 +1,6 @@
 ---
 description: Search EPS APIs and start an integration
+argument-hint: "[api name or use-case, e.g. send money to a bank account]"
 ---
 
 Use the `eps` MCP to search for the API matching: $ARGUMENTS

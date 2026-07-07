@@ -32,6 +32,9 @@ npx plugins add ekoindia/eps-platform
 To update, re-run the same command. The MCP server itself always tracks the
 newest publish (`npx -y …@latest` re-resolves at launch).
 
+> **Requires Node ≥20.** The `@ekoindia/eps-transact-mcp` server needs Node 20+.
+> On an agent running an older Node, the tools may list but calls fail at launch.
+
 ## Credentials
 
 The stdio server reads credentials from your shell environment — export them
@@ -56,7 +59,8 @@ exact header names.
 ## Layout
 
 ```
-.claude-plugin/plugin.json   # manifest + eps-transact MCP wiring
+.claude-plugin/plugin.json   # manifest (metadata only)
+.mcp.json                    # eps-transact MCP server wiring (read by every agent)
 skills/eps-verify/SKILL.md   # credential setup + verification runbook
 ```
 

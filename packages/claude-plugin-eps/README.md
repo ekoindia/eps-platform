@@ -44,14 +44,20 @@ tracks the newest publish (`@latest` re-resolves at launch).
 - Ask your agent to "sign an EPS request" to trigger the `sign-request` skill.
 - Ask your agent to "run the DMT recipe" to trigger the `run-a-recipe` skill.
 
+> `/eps` is a Claude Code convenience shortcut — the cross-agent installer does
+> not translate slash commands into Codex/Cursor/OpenCode. On those agents the
+> same flow runs via the `integrate-eps` skill (auto-discovered): just ask the
+> agent to integrate an EPS API.
+
 ## Layout
 
 ```
-.claude-plugin/plugin.json   # manifest + eps MCP wiring
+.claude-plugin/plugin.json   # manifest (metadata only)
+.mcp.json                    # eps MCP server wiring (read by every agent)
 skills/integrate-eps/SKILL.md
 skills/sign-request/SKILL.md
 skills/run-a-recipe/SKILL.md
-commands/eps.md              # /eps slash command
+commands/eps.md              # /eps slash command (Claude Code only)
 ```
 
 Not an npm package — it ships straight from this git repo via the marketplace

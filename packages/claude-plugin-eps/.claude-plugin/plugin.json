@@ -2,7 +2,9 @@
 	"name": "eps",
 	"description": "Eko Platform Services — context MCP, skills, and commands for integrating EPS APIs.",
 	"version": "0.1.1",
-	"mcpServers": {
-		"eps": { "command": "npx", "args": ["-y", "@ekoindia/eps-context-mcp@latest"] }
-	}
+	"author": { "name": "Eko Bharat Ventures Pvt Ltd", "url": "https://eko.in" },
+	"homepage": "https://eps.eko.in",
+	"repository": "https://github.com/ekoindia/eps-platform",
+	"license": "MIT",
+	"keywords": ["eps", "eko", "fintech", "payments", "mcp", "verification", "api-context"]
 }

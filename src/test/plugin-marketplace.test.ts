@@ -20,7 +20,10 @@ interface PluginManifest {
 	name: string;
 	description: string;
 	version: string;
-	mcpServers?: Record<string, { command: string; args?: string[] }>;
+}
+
+interface McpConfig {
+	mcpServers: Record<string, { command: string; args?: string[] }>;
 }
 
 const marketplace = JSON.parse(
@@ -55,8 +58,16 @@ describe("plugin marketplace", () => {
 				expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/);
 			});
 
-			it("pins every @ekoindia MCP npm spec to @latest", () => {
-				for (const server of Object.values(manifest.mcpServers ?? {})) {
+			it("wires MCP via a root .mcp.json that pins every @ekoindia spec to @latest", () => {
+				// MCP must live in a plugin-root `.mcp.json` file (not inline in
+				// plugin.json) so the cross-agent `plugins` installer wires it into
+				// Codex/Cursor/OpenCode — those only read the file, never inline config.
+				const mcpPath = join(pluginRoot, ".mcp.json");
+				expect(existsSync(mcpPath)).toBe(true);
+				const mcp = JSON.parse(readFileSync(mcpPath, "utf8")) as McpConfig;
+				const servers = Object.values(mcp.mcpServers ?? {});
+				expect(servers.length).toBeGreaterThan(0);
+				for (const server of servers) {
 					const pkgSpecs = (server.args ?? []).filter((a) =>
 						a.startsWith("@ekoindia/"),
 					);
