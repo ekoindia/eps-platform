@@ -2,10 +2,9 @@
 	"name": "eps-transact",
 	"description": "Eko Platform Services — run EPS verification APIs (PAN, Aadhaar, bank, GSTIN, …) as MCP tools with your own credentials.",
 	"version": "0.1.0",
-	"mcpServers": {
-		"eps-transact": {
-			"command": "npx",
-			"args": ["-y", "@ekoindia/eps-transact-mcp@latest"]
-		}
-	}
+	"author": { "name": "Eko Bharat Ventures Pvt Ltd", "url": "https://eko.in" },
+	"homepage": "https://eps.eko.in",
+	"repository": "https://github.com/ekoindia/eps-platform",
+	"license": "MIT",
+	"keywords": ["eps", "eko", "fintech", "verification", "kyc", "pan", "aadhaar", "gstin", "mcp"]
 }
