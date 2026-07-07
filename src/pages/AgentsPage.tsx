@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import {
 	EPS_TRANSACT_MCP_CMD,
 	EPS_TRANSACT_MCP_URL,
+	PLUGINS_ADD_CMD,
 	SITE_URL,
 } from "@/lib/config/site";
 import {
@@ -269,10 +270,35 @@ const AgentsPage = () => {
 								Two ways to plug in
 							</h2>
 							<p className="mt-4 text-lg text-muted-foreground">
-								Use the hosted remote endpoint, or run it locally over stdio.
-								Either way, your EPS credentials stay in your own config — never
-								in a prompt.
+								Coding agents: one command. Otherwise use the hosted remote
+								endpoint, or run it locally over stdio. Either way, your EPS
+								credentials stay in your own config — never in a prompt.
 							</p>
+						</FadeIn>
+
+						{/* Coding-agent shortcut: one-command plugin install */}
+						<FadeIn className="mx-auto mb-6 max-w-4xl">
+							<Card className="flex flex-col gap-4 border-eko-gold/30 bg-eko-gold-light/60 p-6 lg:p-8">
+								<div className="flex items-center gap-2.5">
+									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-eko-navy">
+										<Bot className="h-5 w-5 text-eko-gold" />
+									</div>
+									<h3 className="text-xl font-semibold text-foreground">
+										Coding-agent shortcut
+									</h3>
+								</div>
+								<p className="text-sm text-muted-foreground">
+									If your agent is Claude Code, Codex, Cursor, or OpenCode,
+									install the <strong>eps-transact</strong> plugin — it wires
+									this MCP plus an <code>eps-verify</code> skill in one command.
+									Export your <code>EKO_*</code> credentials in your shell
+									first.
+								</p>
+								<CommandBlock
+									text={PLUGINS_ADD_CMD}
+									caption="Pick eps-transact"
+								/>
+							</Card>
 						</FadeIn>
 
 						<div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">

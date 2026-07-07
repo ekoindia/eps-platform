@@ -24,15 +24,16 @@ If missing, ask the user to export them (from https://eps.eko.in signup):
 ```bash
 export EKO_DEVELOPER_KEY=…   # required
 export EKO_ACCESS_KEY=…      # required, server-side secret
-export EKO_INITIATOR_ID=…    # required
+export EKO_INITIATOR_ID=…    # needed for most verification calls
 export EKO_ENV=uat           # optional: uat (default) | production
 export EKO_ALLOWED_APIS='*'  # optional: comma-separated tool allowlist
 export EKO_USER_CODE=…       # optional
 ```
 
 GUI-launched harnesses (e.g. Cursor opened from the dock) may not see shell
-exports — use the hosted endpoint `https://mcp.eko.in/mcp` with credential
-headers instead (see the plugin README).
+exports — use the hosted endpoint `https://mcp.eko.in/transact/mcp` instead. It
+is not a no-auth shortcut: the same credentials go in as `X-Eko-*` request
+headers, so the client must support custom MCP headers (see the plugin README).
 
 ## Safety rules
 

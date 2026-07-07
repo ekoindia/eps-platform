@@ -41,15 +41,17 @@ before launching your agent:
 | ------------------- | -------- | ------------------------------------------------ |
 | `EKO_DEVELOPER_KEY` | yes      | From your EPS account                            |
 | `EKO_ACCESS_KEY`    | yes      | Server-side secret — never commit or expose      |
-| `EKO_INITIATOR_ID`  | yes      |                                                  |
+| `EKO_INITIATOR_ID`  | rec.     | Optional to start; needed for most verification calls |
 | `EKO_ENV`           | no       | `uat` (default) or `production` (billed!)        |
 | `EKO_ALLOWED_APIS`  | no       | Comma-separated tool allowlist; `*` locally      |
 | `EKO_USER_CODE`     | no       |                                                  |
 
 GUI-launched harnesses may not inherit shell exports. In that case use the
-hosted endpoint instead — `https://mcp.eko.in/mcp` (streamable HTTP) with
-credentials as headers; see the
-[`@ekoindia/eps-transact-mcp` README](../eps-transact-mcp/README.md).
+hosted endpoint instead — `https://mcp.eko.in/transact/mcp` (streamable HTTP).
+It is not a no-auth shortcut: the same credentials go in as `X-Eko-*` request
+headers, so the client must support custom MCP headers. See the
+[`@ekoindia/eps-transact-mcp` README](../eps-transact-mcp/README.md) for the
+exact header names.
 
 ## Layout
 
