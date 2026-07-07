@@ -34,8 +34,8 @@ export const navLinks: NavLink[] = [
 	// (dev-time, /ai) and "For AI agents" (runtime, /agents). Until then the item
 	// stays a single plain link to /ai so we never surface the ungated page.
 	SHOW_TRANSACT_MCP
-		? { label: "AI", href: "/ai", dropdownKey: "ai" }
-		: { label: "AI Agents", href: "/ai" },
+		? { label: "AI Tools", href: "/ai", dropdownKey: "ai" }
+		: { label: "AI Tools", href: "/ai" },
 	{ label: "Developers", dropdownKey: "developers" },
 	{ label: "Company", dropdownKey: "company" },
 ];

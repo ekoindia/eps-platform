@@ -107,23 +107,9 @@ interface Artifact {
 
 const ARTIFACTS: Artifact[] = [
 	{
-		icon: FileTerminal,
-		title: "EPS context pack (fallback)",
-		body: "An EPS section to append to your existing AGENTS.md — for agents without MCP or skills support (Aider, JetBrains AI, …).",
-		links: [
-			{ label: "AGENTS.md", href: "/agent/AGENTS.md" },
-			{ label: "CLAUDE.md", href: "/agent/CLAUDE.md" },
-			{ label: ".cursorrules", href: "/agent/.cursorrules" },
-			{
-				label: "copilot-instructions.md",
-				href: "/agent/copilot-instructions.md",
-			},
-		],
-	},
-	{
 		icon: McpIcon,
 		title: "Local EPS MCP server",
-		body: "Zero hosting, zero secrets. The tiered context server your agent talks to.",
+		body: "Your coding agent integrates and tests EPS APIs end-to-end on its own — discovering endpoints, wiring correct HMAC auth, and running signed sandbox calls. Zero hosting, zero secrets; the tiered context server it talks to.",
 		command: MCP_CMD,
 	},
 	{
@@ -163,6 +149,20 @@ const ARTIFACTS: Artifact[] = [
 			{
 				label: "eps.postman_collection.json",
 				href: "/agent/eps.postman_collection.json",
+			},
+		],
+	},
+	{
+		icon: FileTerminal,
+		title: "EPS context pack (fallback)",
+		body: "An EPS section to append to your existing AGENTS.md — for agents without MCP or skills support (Aider, JetBrains AI, …).",
+		links: [
+			{ label: "AGENTS.md", href: "/agent/AGENTS.md" },
+			{ label: "CLAUDE.md", href: "/agent/CLAUDE.md" },
+			{ label: ".cursorrules", href: "/agent/.cursorrules" },
+			{
+				label: "copilot-instructions.md",
+				href: "/agent/copilot-instructions.md",
 			},
 		],
 	},
@@ -719,7 +719,7 @@ const AiPage = () => {
 
 				{/* ================= CROSS-LINK: /agents (runtime) ================ */}
 				{SHOW_TRANSACT_MCP && (
-					<section className="bg-background pb-20 lg:pb-28">
+					<section className="bg-background py-12 lg:py-16">
 						<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 							<FadeIn className="mx-auto max-w-3xl">
 								<Card className="flex flex-col items-start gap-4 p-7 sm:flex-row sm:items-center sm:justify-between">

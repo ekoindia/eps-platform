@@ -3,10 +3,10 @@ export const SHOW_USER_LOGIN: boolean =
 	import.meta.env.VITE_SHOW_USER_LOGIN === "true";
 
 /**
- * When true, market EPS-Transact-MCP: the "AI" nav becomes a dropdown
+ * When true, market EPS-Transact-MCP: the "AI Tools" nav becomes a dropdown
  * ("Build with AI" + "For AI agents"), the `/agents` page is prerendered and
  * listed in llms.txt, and the `/ai` page shows a cross-link. When false (the
- * default), the nav stays a single "AI Agents" link to `/ai` and `/agents`
+ * default), "AI Tools" stays a single direct link to `/ai`, and `/agents`
  * exists only as an unlinked, unindexed client route — safe to preview.
  *
  * Flip to `true` (set `VITE_SHOW_TRANSACT_MCP=true`) only once the transactional

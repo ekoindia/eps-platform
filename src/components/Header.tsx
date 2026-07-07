@@ -172,9 +172,9 @@ export const Header = () => {
 				);
 			case "Pricing":
 				return path === "/pricing";
-			// "AI Agents" when the transact-MCP flag is off; "AI" (dropdown) when on.
-			case "AI Agents":
-			case "AI":
+			// "AI Tools" — a direct /ai link when the transact-MCP flag is off, a
+			// dropdown (/ai + /agents) when on.
+			case "AI Tools":
 				return path === "/ai" || path === "/agents";
 			case "Developers":
 				return path === "/docs" || path.startsWith("/docs/") || path === "/faq";

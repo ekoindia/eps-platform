@@ -623,7 +623,7 @@ export const HeaderDropdownPanels = ({
 					{...panelHoverHandlers}
 				>
 					<div className="p-4 flex flex-col gap-1">
-						<DropdownColumnHeader title="AI" />
+						<DropdownColumnHeader title="AI Tools" />
 						{aiLinks.map((item) => (
 							<AiLink
 								key={item.href}
