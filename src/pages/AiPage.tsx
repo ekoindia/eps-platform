@@ -514,7 +514,7 @@ const AiPage = () => {
 														</div>
 													</div>
 
-													{!SHOW_PLUGINS_ADD && h.pluginInstall && (
+													{h.pluginInstall && (
 														<div className="flex flex-col gap-3">
 															<span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
 																Install the plugin

@@ -18,8 +18,30 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push("");
 
+	// Per-agent plugin install (preferred) — always shown, data-driven from the
+	// matrix so it stays in step with the /ai page tabs.
+	lines.push("## Plugin install (Claude Code & Codex)");
+	lines.push("");
+	lines.push(
+		"Two-step native plugin install — add the marketplace, then install the " +
+			"`eps` plugin (skills + `/eps` command; wires the MCP automatically on " +
+			"Claude Code). Other agents: see the manual install matrix below.",
+	);
+	for (const h of buildInstallMatrix()) {
+		if (!h.pluginInstall) continue;
+		lines.push("");
+		lines.push(`**${h.name}**`);
+		lines.push("");
+		lines.push("```bash");
+		for (const step of h.pluginInstall.steps) lines.push(step.text);
+		lines.push("```");
+		if (h.pluginInstall.note) lines.push(`> ${h.pluginInstall.note}`);
+	}
+	lines.push("");
+
 	if (SHOW_PLUGINS_ADD) {
-		lines.push("## One-command install (recommended)");
+		// Optional convenience path: install into every detected agent at once.
+		lines.push("## One-command install (all agents at once)");
 		lines.push("");
 		lines.push(
 			"Installs the chosen EPS plugins (MCP server + skills + commands) into " +
@@ -31,27 +53,6 @@ export function renderAgentsMarkdown(): string {
 		lines.push("```bash");
 		lines.push(PLUGINS_ADD_CMD);
 		lines.push("```");
-		lines.push("");
-	} else {
-		// Per-agent plugin install (the one-command path is disabled). Data-driven
-		// from the matrix so it stays in step with the /ai page tabs.
-		lines.push("## Plugin install (Claude Code & Codex)");
-		lines.push("");
-		lines.push(
-			"Two-step native plugin install — add the marketplace, then install the " +
-				"`eps` plugin (skills + `/eps` command; wires the MCP automatically on " +
-				"Claude Code). Other agents: see the manual install matrix below.",
-		);
-		for (const h of buildInstallMatrix()) {
-			if (!h.pluginInstall) continue;
-			lines.push("");
-			lines.push(`**${h.name}**`);
-			lines.push("");
-			lines.push("```bash");
-			for (const step of h.pluginInstall.steps) lines.push(step.text);
-			lines.push("```");
-			if (h.pluginInstall.note) lines.push(`> ${h.pluginInstall.note}`);
-		}
 		lines.push("");
 	}
 
@@ -98,22 +99,6 @@ export function renderAgentsMarkdown(): string {
 			"to force a documented error branch.",
 	);
 	lines.push("");
-
-	if (SHOW_PLUGINS_ADD) {
-		lines.push("## Claude Code native plugin manager");
-		lines.push("");
-		lines.push(
-			"Alternative to the one-command install above — wires the `eps` MCP, the " +
-				"`integrate-eps`, `sign-request` and `run-a-recipe` skills, and the " +
-				"`/eps` slash command into Claude Code:",
-		);
-		lines.push("");
-		lines.push("```bash");
-		lines.push("/plugin marketplace add ekoindia/eps-platform");
-		lines.push("/plugin install eps@ekoindia");
-		lines.push("```");
-		lines.push("");
-	}
 
 	lines.push("## Manual install matrix (other agents)");
 	lines.push(
