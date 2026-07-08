@@ -10,9 +10,11 @@ import { withTimeout } from "./fetchTimeout.js";
 /**
  * Live UAT smoke — the ONLY test that talks to Eko. Skipped unless real UAT
  * credentials are provided via env. It settles two things no mock can:
- * whether the bundle's sandbox base URL is reachable as written (the eko-eps
- * research repo verified staging WITH port :25004; our bundle is portless),
- * and that HMAC signing + JSON encoding pass end-to-end.
+ * whether the bundle's sandbox base URL is reachable as written, and that HMAC
+ * signing + JSON encoding pass end-to-end. CONFIRMED green 2026-07-08: the
+ * portless `staging.eko.in/ekoapi/v3` is reachable and signing round-trips
+ * (an earlier research repo had used a `:25004` port; the portless form is
+ * correct — this test is the standing guard against a regression).
  *
  * Run: put the EPS_UAT_* vars in this package's .env (see .env.example;
  *      vitest.config.ts loads it, inline shell vars win), or pass inline:

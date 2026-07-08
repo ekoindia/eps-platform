@@ -41,7 +41,7 @@ CI (`.github/workflows/ci.yml`): `transact:test` (builds sdk-js dist first), ind
 
 ## Known risk: environment base URLs (verify before first partner use)
 
-The bundle's environments are portless (`https://staging.eko.in/ekoapi/v3`, `https://api.eko.in/ekoicici/v3`). The eko-eps research repo **live-verified UAT with port** `:25004` (and documented Eko's own docs contradicting themselves). The gated UAT smoke (`src/uat-smoke.test.ts`) settles this:
+The bundle's environments are portless (`https://staging.eko.in/ekoapi/v3`, `https://api.eko.in/ekoicici/v3`). **Confirmed correct 2026-07-08**: the gated UAT smoke (`src/uat-smoke.test.ts`) passed against the portless URL with live UAT creds — signing round-trips end-to-end. (An earlier research repo had used a `:25004` port; the portless form is the right one. The smoke stays as the standing regression guard.)
 
 ```sh
 EPS_UAT_DEVELOPER_KEY=… EPS_UAT_ACCESS_KEY=… EPS_UAT_INITIATOR_ID=… \
