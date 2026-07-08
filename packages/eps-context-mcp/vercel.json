@@ -1,7 +1,7 @@
 {
 	"$schema": "https://openapi.vercel.sh/vercel.json",
 	"regions": ["bom1"],
-	"buildCommand": "mkdir -p public && echo '<!doctype html><title>eps-context-mcp</title>Remote MCP endpoint. POST to <code>/mcp</code>; health at <code>/healthz</code>.' > public/index.html",
+	"buildCommand": "npx tsc -p tsconfig.json --noEmit false && mkdir -p public && echo '<!doctype html><title>eps-context-mcp</title>Remote MCP endpoint. POST to <code>/mcp</code>; health at <code>/healthz</code>.' > public/index.html",
 	"outputDirectory": "public",
 	"functions": {
 		"api/index.ts": {
