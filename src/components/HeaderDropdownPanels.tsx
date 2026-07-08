@@ -5,6 +5,7 @@
  */
 import { DropdownColumnHeader, DropdownGrid } from "@/components/DropdownGrid";
 import { EkoLogo } from "@/components/EkoLogo";
+import { ClaudeCodeIcon } from "@/components/icons/ClaudeCodeIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
@@ -14,7 +15,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { accountIdentity } from "@/lib/auth/identity";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
-import { GITHUB_ORG_URL, SOCIAL_LINKS } from "@/lib/config/site";
+import { GITHUB_ORG_URL, SITE_URL, SOCIAL_LINKS } from "@/lib/config/site";
 import {
 	API_PRODUCT_PAGES,
 	hasProductPage,
@@ -51,6 +52,7 @@ import {
 	FaLinkedinIn,
 	FaYoutube,
 } from "react-icons/fa";
+import { SiGooglegemini, SiOpenai, SiPerplexity } from "react-icons/si";
 import { Link } from "react-router-dom";
 
 const TalkToSalesDialog = lazy(() =>
@@ -114,6 +116,43 @@ const developerLinks: DeveloperLinkItem[] = [
 		label: "Open Source",
 		href: GITHUB_ORG_URL,
 		icon: FaGithub,
+		external: true,
+	},
+];
+
+// "Ask AI" column of the Developers dropdown: opens a hosted AI client in a new
+// tab, pre-filled with a prompt pointing at the site root. The homepage advertises
+// its Markdown twin (<link rel="alternate" type="text/markdown"> + AiHint), so the
+// assistant auto-discovers /index.md from the URL. ChatGPT / Claude / Perplexity
+// honour the `?q=` prefill; Gemini has no official prefill param, so that row just
+// opens Gemini (the prompt may be ignored) — acceptable degradation. Reuses
+// DeveloperLink via `external: true`.
+const AI_ASK_PROMPT = encodeURIComponent(
+	`Read ${SITE_URL} — I want to ask questions about it.`,
+);
+const aiClientLinks: DeveloperLinkItem[] = [
+	{
+		label: "Ask ChatGPT",
+		href: `https://chatgpt.com/?q=${AI_ASK_PROMPT}`,
+		icon: SiOpenai,
+		external: true,
+	},
+	{
+		label: "Ask Claude",
+		href: `https://claude.ai/new?q=${AI_ASK_PROMPT}`,
+		icon: ClaudeCodeIcon,
+		external: true,
+	},
+	{
+		label: "Ask Gemini",
+		href: `https://gemini.google.com/app?q=${AI_ASK_PROMPT}`,
+		icon: SiGooglegemini,
+		external: true,
+	},
+	{
+		label: "Ask Perplexity",
+		href: `https://www.perplexity.ai/search?q=${AI_ASK_PROMPT}`,
+		icon: SiPerplexity,
 		external: true,
 	},
 ];
@@ -517,15 +556,31 @@ export const HeaderDropdownPanels = ({
 				className="flex items-start gap-2 py-1.5 text-sm text-eko-slate cursor-pointer"
 			/>
 		)),
-		developers: devLinks.map((item) => (
-			<DeveloperLink
-				key={item.href}
-				item={item}
-				onClick={() => setMobileMenuOpen(false)}
-				className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
-				iconClassName="w-3.5 h-3.5 text-eko-navy/50"
-			/>
-		)),
+		developers: (
+			<>
+				{devLinks.map((item) => (
+					<DeveloperLink
+						key={item.href}
+						item={item}
+						onClick={() => setMobileMenuOpen(false)}
+						className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
+						iconClassName="w-3.5 h-3.5 text-eko-navy/50"
+					/>
+				))}
+				<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
+					Ask AI
+				</p>
+				{aiClientLinks.map((item) => (
+					<DeveloperLink
+						key={item.href}
+						item={item}
+						onClick={() => setMobileMenuOpen(false)}
+						className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
+						iconClassName="w-3.5 h-3.5 text-eko-navy/50"
+					/>
+				))}
+			</>
+		),
 		company: companyLinks.map((item) => (
 			<CompanyLinkItem
 				key={item.label}
@@ -687,21 +742,38 @@ export const HeaderDropdownPanels = ({
 			{/* ── Desktop: Developers dropdown ───────────────────────────── */}
 			{activeDesktopDropdown === "developers" && (
 				<div
-					className="developers-dropdown fixed top-24 left-1/2 -translate-x-1/2 w-[300px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
+					className="developers-dropdown fixed top-24 left-1/2 -translate-x-1/2 w-[460px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
 					data-dropdown="developers"
 					{...panelHoverHandlers}
 				>
-					<div className="p-4 flex flex-col gap-1">
-						<DropdownColumnHeader title="Developers" />
-						{devLinks.map((item) => (
-							<DeveloperLink
-								key={item.href}
-								item={item}
-								onClick={() => setActiveDesktopDropdown(null)}
-								className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-								iconClassName="w-4 h-4 text-eko-navy/50 shrink-0"
-							/>
-						))}
+					<div className="grid grid-cols-2">
+						{/* Left column: developer links */}
+						<div className="p-4 flex flex-col gap-1">
+							<DropdownColumnHeader title="Developers" />
+							{devLinks.map((item) => (
+								<DeveloperLink
+									key={item.href}
+									item={item}
+									onClick={() => setActiveDesktopDropdown(null)}
+									className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+									iconClassName="w-4 h-4 text-eko-navy/50 shrink-0"
+								/>
+							))}
+						</div>
+
+						{/* Right column: ask a hosted AI about the site */}
+						<div className="p-4 flex flex-col gap-1">
+							<DropdownColumnHeader title="Ask AI" />
+							{aiClientLinks.map((item) => (
+								<DeveloperLink
+									key={item.href}
+									item={item}
+									onClick={() => setActiveDesktopDropdown(null)}
+									className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
+									iconClassName="w-4 h-4 text-eko-navy/50 shrink-0"
+								/>
+							))}
+						</div>
 					</div>
 				</div>
 			)}

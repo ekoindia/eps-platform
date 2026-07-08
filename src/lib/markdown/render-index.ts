@@ -11,6 +11,7 @@ import {
 	h2,
 	joinBlocks,
 	indexPageNotice,
+	mcpInstallNotice,
 } from "./shared";
 
 /**
@@ -91,6 +92,7 @@ export function renderSiteIndexMarkdown(
 		canonicalNotice(canonical),
 		h1("Eko Platform Services — Site Index"),
 		"Eko provides a single API platform for payments, banking correspondent services, and identity verification across India. This is a machine-readable index linking to markdown versions of every page.",
+		mcpInstallNotice(),
 		gettingStartedNotice(),
 		h2("Pricing"),
 		`- [Verification API pricing — full rate card](${SITE_URL}/pricing) ([markdown](${SITE_URL}/pricing.md))`,
@@ -199,7 +201,9 @@ export function renderLlmsTxt(
 		`- [Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for detail`,
 	);
 	lines.push(`- [OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`);
-	lines.push(`- Local MCP: \`npx -y ${EPS_MCP_PKG}\``);
+	lines.push(
+		`- Install the EPS context MCP (\`eps-context-mcp\`) for structured access to the latest API specs, HMAC signing & recipes — integrate without guessing: \`npx -y ${EPS_MCP_PKG}\`, per-agent setup at ${SITE_URL}/ai#install`,
+	);
 	lines.push(
 		`- [AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
 	);

@@ -181,6 +181,18 @@
 			transform: translateX(-50%) translateY(0);
 		}
 	}
+	/* Same reveal, but no translateX — for anchor-positioned panels that are
+	   already centred on their trigger (the -50% here would double-shift them). */
+	@keyframes menu-drop-in {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 	@keyframes scale-in {
 		from {
 			opacity: 0;
@@ -691,27 +703,31 @@ body {
 	anchor-name: --developers-trigger;
 }
 
-@supports (top: anchor(bottom)) {
+@supports (position-area: bottom center) {
+	/* Centre each panel below its trigger. `position-area: bottom center` places
+	   the box in the bottom-centre tile of the trigger's anchor grid — horizontal
+	   centring is handled natively, no inset/margin math. This sidesteps the
+	   `anchor()`/`anchor-center` mis-centring seen under the transformed (fixed)
+	   <header> containing block. Unsupported browsers keep the centred Tailwind
+	   fallback (left-1/2 + -translate-x-1/2). Unlayered, so it out-ranks Tailwind. */
 	.company-dropdown {
 		position-anchor: --company-trigger;
-		top: calc(anchor(bottom) + 0.5rem);
-		bottom: auto;
-		/* override the centred fallback (left-1/2 + -translate-x-1/2) */
-		left: auto;
-		right: auto;
+		position-area: bottom center;
+		inset: auto;
 		translate: none;
-		justify-self: anchor-center;
+		margin-top: 0.5rem;
+		/* drop the fallback's translateX(-50%) — position-area already centres it */
+		animation-name: menu-drop-in;
 	}
 
 	.developers-dropdown {
 		position-anchor: --developers-trigger;
-		top: calc(anchor(bottom) + 0.5rem);
-		bottom: auto;
-		/* override the centred fallback (left-1/2 + -translate-x-1/2) */
-		left: auto;
-		right: auto;
+		position-area: bottom center;
+		inset: auto;
 		translate: none;
-		justify-self: anchor-center;
+		margin-top: 0.5rem;
+		/* drop the fallback's translateX(-50%) — position-area already centres it */
+		animation-name: menu-drop-in;
 	}
 }
 

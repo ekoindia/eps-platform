@@ -1,4 +1,9 @@
-import { SALES_MOBILE, SIGNUP_PAGE, SITE_URL } from "@/lib/config/site";
+import {
+	EPS_MCP_PKG,
+	SALES_MOBILE,
+	SIGNUP_PAGE,
+	SITE_URL,
+} from "@/lib/config/site";
 
 /**
  * Shared helpers for markdown rendering at build time.
@@ -172,6 +177,15 @@ export function canonicalNotice(canonicalUrl: string): string {
 /** Add a shared get-started CTA block. */
 export function gettingStartedNotice(): string {
 	return `To get started, fill the form at ${SITE_URL}${SIGNUP_PAGE} (with your name, mobile number and email) or call us at +91${SALES_MOBILE}`;
+}
+
+/**
+ * One-line nudge telling AI coding agents to self-install the EPS context MCP,
+ * with the reason (structured, authoritative API + auth data beats scraping
+ * these pages) and a pointer to per-agent setup.
+ */
+export function mcpInstallNotice(): string {
+	return `**For AI coding agents:** install the EPS context MCP (\`eps-context-mcp\`) to get structured access to the latest API specs, HMAC request signing, and integration recipes — so you can integrate Eko's APIs end-to-end without guessing from these pages. Run \`npx -y ${EPS_MCP_PKG}\`, or see per-agent setup at ${SITE_URL}/ai#install.`;
 }
 
 /** Get Index Page Link */

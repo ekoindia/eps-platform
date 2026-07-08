@@ -41,6 +41,7 @@ import {
 	joinBlocks,
 	link,
 	markdownTable,
+	mcpInstallNotice,
 } from "./shared";
 
 const paramRows = (params: ApiParam[]): string[][] =>
@@ -221,6 +222,7 @@ export function renderDocsIndexMarkdown(): string {
 		canonicalNotice(canonical),
 		h1("Developer Documentation"),
 		"Integrate Eko's KYC, verification, payment and banking APIs. Each endpoint is documented with parameters, responses, code samples and a live request console.",
+		mcpInstallNotice(),
 		h2("Getting started"),
 		bulletList([
 			`**Get credentials** — Eko's UAT / sandbox is self-serve. Sign up at ${SIGNUP_URL} with your mobile number, verify with your PAN and bank account, and test our verification APIs live. Once you are satisfied, goto ${SITE_URL}/ai to integrate quickly with our free AI tools (MCP servers, plugins, skills, etc for your coding agent). ${API_ENVIRONMENTS.production.note}`,

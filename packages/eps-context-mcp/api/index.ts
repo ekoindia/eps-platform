@@ -1,6 +1,6 @@
 import { handle } from "hono/vercel";
-import { loadBundle } from "../src/load-bundle";
-import { createApp } from "../src/http";
+import { loadBundle } from "../src/load-bundle.js";
+import { createApp } from "../src/http.js";
 
 // Node runtime (default for /api functions). load-bundle.ts uses node:fs to read
 // the baked bundle, so this is Node serverless, not Edge — fine for a stateless
