@@ -27,6 +27,7 @@
 		"prepublishOnly": "npm run bake && npm run build"
 	},
 	"dependencies": {
+		"@hono/node-server": "^1.0.0",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"hono": "^4.0.0",
 		"zod": "^4.0.0"

@@ -1,25 +1,22 @@
-import { handle } from "hono/vercel";
+import { handle } from "@hono/node-server/vercel";
+import { Hono } from "hono";
 import { loadBundle } from "../src/load-bundle.js";
 import { createApp } from "../src/http.js";
 
-// Node runtime (default for /api functions). load-bundle.ts uses node:fs to read
-// the baked bundle, so this is Node serverless, not Edge — fine for a stateless
-// JSON lookup (see remote-design spec).
+// Vercel Node runtime (load-bundle.ts uses node:fs). MUST use the
+// @hono/node-server/vercel handle — hono/vercel is the Edge/Next.js adapter and
+// its returned Web Response is never consumed by the Node runtime (15s hang).
 
 /**
- * Single Hono function for the whole app. The catch-all rewrite in vercel.json
- * routes every path here; Vercel preserves the original request path, so Hono's
- * router still matches /healthz and /mcp. (The VM nginx proxy strips the
- * /context/ prefix before the request reaches Vercel.)
- *
- * The built app (bundle loaded once) is memoized so warm invocations reuse it.
- * A failed load resets the memo so the next invocation retries instead of
- * caching a rejected promise.
+ * The real app needs an awaited bundle load (fetch from EPS_BUNDLE_URL, or baked
+ * fallback). `handle` needs a synchronous app, so an outer Hono app delegates
+ * each request to the memoized real app via app.fetch. A failed load resets the
+ * memo so the next request retries instead of caching a rejected promise.
  */
 type App = ReturnType<typeof createApp>;
 let appPromise: Promise<App> | undefined;
 
-function getApp(): Promise<App> {
+const getApp = (): Promise<App> => {
 	if (!appPromise) {
 		appPromise = loadBundle()
 			.then(({ bundle, source }) => createApp(bundle, source))
@@ -29,9 +26,12 @@ function getApp(): Promise<App> {
 			});
 	}
 	return appPromise;
-}
+};
 
-export default async function handler(req: Request): Promise<Response> {
+const outer = new Hono();
+outer.all("*", async (c) => {
 	const app = await getApp();
-	return handle(app)(req);
-}
+	return app.fetch(c.req.raw);
+});
+
+export default handle(outer);
