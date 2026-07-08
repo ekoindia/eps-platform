@@ -11,24 +11,22 @@ APIs from any coding agent. It bundles:
 - the **`/eps` slash command** — search the EPS API catalogue and scaffold a
   signed call.
 
-Sibling plugin: [`eps-transact`](../claude-plugin-eps-transact/) lets AI agents
-_execute_ EPS verification APIs at runtime with your credentials.
+Runtime sibling: the [`@ekoindia/eps-transact-mcp`](https://eps.eko.in/agents)
+server lets AI agents _execute_ EPS verification APIs at runtime with your
+credentials (hosted endpoint or local stdio) — it is not a coding-agent plugin.
 
 ## Install
 
-One command, any supported agent (Claude Code, Codex, Cursor, OpenCode —
-auto-detected):
-
-```bash
-npx plugins add ekoindia/eps-platform
-```
-
-…and pick **eps**. Claude Code native alternative, from the Claude Code prompt:
+**Claude Code** — from the Claude Code prompt:
 
 ```
 /plugin marketplace add ekoindia/eps-platform
 /plugin install eps@ekoindia
 ```
+
+**Every other agent** — see the per-agent install matrix at
+<https://eps.eko.in/ai> (Codex native plugin install, or direct MCP config for
+Cursor, Copilot, Antigravity, Zed, Kiro, JetBrains, …).
 
 Once installed, your agent launches the `eps` MCP automatically via `npx -y
 @ekoindia/eps-context-mcp@latest` — no manual MCP configuration required. To

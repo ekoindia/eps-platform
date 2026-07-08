@@ -151,39 +151,35 @@ An agent plugin that wires the `eps` MCP (via
 `npx -y @ekoindia/eps-context-mcp@latest`), three skills
 (`integrate-eps`, `sign-request`, `run-a-recipe`), and an `/eps` slash command.
 
-### `packages/claude-plugin-eps-transact` (agent plugin: runtime transactions)
-
-An agent plugin that wires the `eps-transact` MCP (via
-`npx -y @ekoindia/eps-transact-mcp@latest`, stdio, credentials from shell env)
-and the `eps-verify` skill (credential setup, tool selection, UAT-vs-production
-safety). Not an npm package — like the `eps` plugin, it ships straight from git.
+The runtime transactional MCP (`@ekoindia/eps-transact-mcp`) is **not** a
+coding-agent plugin — it executes verification APIs with the partner's own
+credentials for use inside their production AI agents. It ships as its own npm
+package (hosted endpoint + local stdio) and is documented on the `/agents` page
+and in [`docs/eps-transact-mcp.md`](eps-transact-mcp.md). Installing it into a
+developer's coding agent is the wrong audience (no creds → `MISSING_CREDENTIALS`),
+so it is deliberately kept out of the coding marketplace.
 
 ### Plugin distribution
 
-Both plugins are listed in the repo-root `.claude-plugin/marketplace.json`
-(marketplace `ekoindia`). The **primary install path** is the vercel-labs
-`plugins` CLI ([open-plugin spec](https://github.com/vercel-labs/open-plugin-spec)),
-which reads that marketplace from the public GitHub repo, lets the user pick
-plugins, and installs them into every detected agent — Claude Code, Codex,
-Cursor, OpenCode:
+The `eps` plugin is listed in the repo-root `.claude-plugin/marketplace.json`
+(marketplace `ekoindia`). Install paths, per agent:
 
-```bash
-npx plugins add ekoindia/eps-platform
-```
+- **Claude Code** — native plugin manager:
 
-Claude Code's native plugin manager remains an alternative:
+  ```text
+  /plugin marketplace add ekoindia/eps-platform
+  /plugin install eps@ekoindia
+  ```
 
-```text
-/plugin marketplace add ekoindia/eps-platform
-/plugin install eps@ekoindia          # or eps-transact@ekoindia
-```
+- **Codex** — `codex plugin marketplace add …` + `codex plugin add eps@ekoindia`
+  (installs the skills; Codex does not yet launch the bundled MCP, so also run
+  `codex mcp add eps -- npx -y @ekoindia/eps-context-mcp@latest`).
+- **Every other agent** — wire the MCP directly from the per-agent matrix on the
+  `/ai` hub.
 
-Updates: re-run `npx plugins add …` (installs done through Claude Code's
-native `/plugin` flow also get `/plugin update`). The MCP servers themselves
-self-update regardless — `npx -y …@latest` re-resolves at every launch.
-
-A guard test (`src/test/plugin-marketplace.test.ts`) keeps the marketplace,
-plugin manifests, and skill files consistent.
+The MCP server self-updates regardless — `npx -y …@latest` re-resolves at every
+launch. A guard test (`src/test/plugin-marketplace.test.ts`) keeps the
+marketplace, plugin manifest, and skill files consistent.
 
 ## 5. The `/ai` hub page (+ `/ai.md` text twin)
 
