@@ -117,17 +117,6 @@ export const HARNESSES: HarnessInstall[] = [
 		packPlacement: "./CLAUDE.md",
 	},
 	{
-		id: "cursor",
-		name: "Cursor",
-		mcp: {
-			configFile: ".cursor/mcp.json",
-			configSnippet: jsonServer("mcpServers"),
-			note: "No CLI — create the file (use `~/.cursor/mcp.json` to enable it globally).",
-		},
-		packFile: ".cursorrules",
-		packPlacement: "./.cursorrules",
-	},
-	{
 		id: "codex",
 		name: "Codex",
 		pluginInstall: {
@@ -152,6 +141,17 @@ export const HARNESSES: HarnessInstall[] = [
 		},
 		packFile: "AGENTS.md",
 		packPlacement: "./AGENTS.md",
+	},
+	{
+		id: "cursor",
+		name: "Cursor",
+		mcp: {
+			configFile: ".cursor/mcp.json",
+			configSnippet: jsonServer("mcpServers"),
+			note: "No CLI — create the file (use `~/.cursor/mcp.json` to enable it globally).",
+		},
+		packFile: ".cursorrules",
+		packPlacement: "./.cursorrules",
 	},
 	{
 		id: "antigravity",
