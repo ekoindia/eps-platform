@@ -12,7 +12,7 @@ APIs from any coding agent. It bundles:
   signed call.
 
 Sibling plugin: [`eps-transact`](../claude-plugin-eps-transact/) lets AI agents
-*execute* EPS verification APIs at runtime with your credentials.
+_execute_ EPS verification APIs at runtime with your credentials.
 
 ## Install
 
@@ -34,6 +34,18 @@ Once installed, your agent launches the `eps` MCP automatically via `npx -y
 @ekoindia/eps-context-mcp@latest` — no manual MCP configuration required. To
 update the plugin, re-run the install command; the MCP server itself always
 tracks the newest publish (`@latest` re-resolves at launch).
+
+> **Codex note.** Codex (as of 0.142.5) installs the plugin's skills but does not
+> yet launch its bundled stdio MCP server, so the `eps` search/`list_apis`/`get_api`
+> tools won't appear. Until that's fixed upstream, add the server to Codex's native
+> config (no credentials needed for this one):
+>
+> ```bash
+> codex mcp add eps -- npx -y @ekoindia/eps-context-mcp@latest
+> ```
+>
+> Set `startup_timeout_sec = 30` under `[mcp_servers.eps]` in `~/.codex/config.toml`
+> to cover the npx cold-start.
 
 ## Use
 

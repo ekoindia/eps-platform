@@ -12,8 +12,11 @@ tool comes next and which field carries over.
 
 ## Before the first call — check credentials
 
-The server reads credentials from environment variables. Verify they are set
-(check presence only — **never print their values**):
+The server connects and lists its tools even when no credentials are set, so the
+tools appearing does **not** mean you are ready to call them — a call without
+credentials returns a `MISSING_CREDENTIALS` error. The server reads credentials
+from environment variables. Verify they are set (check presence only —
+**never print their values**):
 
 ```bash
 [ -n "$EKO_DEVELOPER_KEY" ] && [ -n "$EKO_ACCESS_KEY" ] && [ -n "$EKO_INITIATOR_ID" ] && echo OK || echo MISSING

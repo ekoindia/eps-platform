@@ -20,20 +20,26 @@ const { version: OWN_VERSION } = createRequire(import.meta.url)(
 ) as { version: string };
 
 const main = async () => {
-	const developerKey = process.env.EKO_DEVELOPER_KEY;
-	const accessKey = process.env.EKO_ACCESS_KEY;
+	// Start even without credentials so the MCP handshake still completes and the
+	// tools list — otherwise the host just shows "failed to connect" and the
+	// eps-verify skill has no server to guide setup against. Calls are guarded in
+	// the server: a tool invoked without credentials returns MISSING_CREDENTIALS,
+	// never a signed/network request.
+	const developerKey = process.env.EKO_DEVELOPER_KEY ?? "";
+	const accessKey = process.env.EKO_ACCESS_KEY ?? "";
 	if (!developerKey || !accessKey) {
 		console.error(
-			"[eps-transact-mcp] EKO_DEVELOPER_KEY and EKO_ACCESS_KEY env vars are required.",
+			"[eps-transact-mcp] EKO_DEVELOPER_KEY / EKO_ACCESS_KEY not set — starting anyway; verification calls return MISSING_CREDENTIALS until you set them.",
 		);
-		process.exit(1);
 	}
-	const environment = parseEnvironment(process.env.EKO_ENV);
+	// An invalid EKO_ENV is a typo, not a reason to drop the connection: warn
+	// (naming the bad value + accepted set) and fall back to uat.
+	let environment = parseEnvironment(process.env.EKO_ENV);
 	if (!environment) {
 		console.error(
-			'[eps-transact-mcp] Invalid EKO_ENV. Use "uat" (default) or "production".',
+			`[eps-transact-mcp] Invalid EKO_ENV "${process.env.EKO_ENV ?? ""}". Use "uat" (default) or "production". Falling back to uat.`,
 		);
-		process.exit(1);
+		environment = "sandbox";
 	}
 	// Local mode defaults to all verification tools: the user configuring env
 	// vars on their own machine owns the keys already.
