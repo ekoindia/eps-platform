@@ -26,9 +26,11 @@ describe("buildContextPackBody", () => {
 		expect(body).toContain("/agent/eps.json");
 	});
 
-	it("frames the pack as an append-able section and points at the plugin install", () => {
+	it("frames the pack as an append-able section and points at richer plugin context", () => {
 		expect(body).toContain("append it to your repo's existing");
-		expect(body).toContain("npx plugins add ekoindia/eps-platform");
+		// Default build (SHOW_PLUGINS_ADD off) points agents at the per-agent
+		// install page rather than the flaky one-command `npx plugins add`.
+		expect(body).toContain("per-agent install at");
 	});
 
 	it("documents the offline mock server for local testing", () => {

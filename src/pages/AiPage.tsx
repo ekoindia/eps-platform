@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
-import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
+import { SHOW_PLUGINS_ADD, SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { EPS_MCP_CMD, PLUGINS_ADD_CMD, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import {
@@ -250,16 +250,18 @@ const AiPage = () => {
 								</p>
 
 								{/* Primary CTA: copy the one-command plugin install */}
-								<div
-									className="mt-8 max-w-xl animate-fade-up"
-									style={{ animationDelay: "240ms" }}
-								>
-									<CommandBlock
-										text={PLUGINS_ADD_CMD}
-										tone="dark"
-										caption="One command — Claude Code, Codex, Cursor, OpenCode"
-									/>
-								</div>
+								{SHOW_PLUGINS_ADD && (
+									<div
+										className="mt-8 max-w-xl animate-fade-up"
+										style={{ animationDelay: "240ms" }}
+									>
+										<CommandBlock
+											text={PLUGINS_ADD_CMD}
+											tone="dark"
+											caption="One command — Claude Code, Codex, Cursor, OpenCode"
+										/>
+									</div>
+								)}
 
 								{/* Secondary CTA */}
 								<div
@@ -268,7 +270,9 @@ const AiPage = () => {
 								>
 									<Button variant="gold" size="lg" asChild>
 										<a href="#install">
-											Install in One Command
+											{SHOW_PLUGINS_ADD
+												? "Install in One Command"
+												: "Install for your agent"}
 											<ArrowRight className="h-4 w-4" />
 										</a>
 									</Button>
@@ -389,73 +393,92 @@ const AiPage = () => {
 								Install
 							</span>
 							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
-								Connect EPS to your coding agent in one command
+								{SHOW_PLUGINS_ADD
+									? "Connect EPS to your coding agent in one command"
+									: "Connect EPS to your coding agent"}
 							</h2>
 							<p className="mt-4 text-lg text-muted-foreground">
-								One command installs the EPS plugin — MCP server, skills, and
-								the <InlineCode>/eps</InlineCode> command — into every coding
-								agent on your machine. Other agents: use the manual matrix
-								below.
+								{SHOW_PLUGINS_ADD ? (
+									<>
+										One command installs the EPS plugin — MCP server, skills,
+										and the <InlineCode>/eps</InlineCode> command — into every
+										coding agent on your machine. Other agents: use the manual
+										matrix below.
+									</>
+								) : (
+									<>
+										Install the EPS <strong>MCP server</strong> and{" "}
+										<strong>skills</strong> into your coding agent. Claude Code
+										and Codex have a two-step native plugin install; every other
+										agent wires the MCP directly. Pick your tool below.
+									</>
+								)}
 							</p>
 						</FadeIn>
 
 						<FadeIn className="mx-auto max-w-4xl">
-							{/* One-command install (primary path) */}
-							<Card className="border-eko-gold/30 bg-eko-gold-light/60 p-6 lg:p-8">
-								<div className="mb-6 flex items-center gap-3">
-									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-eko-navy">
-										<PlugZap className="h-5 w-5 text-eko-gold" />
-									</div>
-									<div>
-										<h3 className="text-lg font-semibold text-foreground">
-											One command, every agent
-										</h3>
-										<div className="text-xs pt-1 text-muted-foreground">
-											Auto-detects Claude Code, Codex, Cursor, and OpenCode,
-											then wires the <strong>EPS MCP</strong>,{" "}
-											<strong>skills</strong>, and the{" "}
-											<InlineCode className="font-bold">/eps</InlineCode>{" "}
-											command into each. Re-run the same command to update.
+							{/* One-command install (primary path) — hidden until the
+							    `npx plugins add` path is re-enabled via SHOW_PLUGINS_ADD */}
+							{SHOW_PLUGINS_ADD && (
+								<Card className="border-eko-gold/30 bg-eko-gold-light/60 p-6 lg:p-8">
+									<div className="mb-6 flex items-center gap-3">
+										<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-eko-navy">
+											<PlugZap className="h-5 w-5 text-eko-gold" />
+										</div>
+										<div>
+											<h3 className="text-lg font-semibold text-foreground">
+												One command, every agent
+											</h3>
+											<div className="text-xs pt-1 text-muted-foreground">
+												Auto-detects Claude Code, Codex, Cursor, and OpenCode,
+												then wires the <strong>EPS MCP</strong>,{" "}
+												<strong>skills</strong>, and the{" "}
+												<InlineCode className="font-bold">/eps</InlineCode>{" "}
+												command into each. Re-run the same command to update.
+											</div>
 										</div>
 									</div>
-								</div>
-								<CommandBlock
-									text={PLUGINS_ADD_CMD}
-									caption="Run in a terminal"
-								/>
-								<p className="mt-3 text-xs text-muted-foreground">
-									Pick the <strong>eps</strong> plugin when prompted. Add{" "}
-									<strong>eps-transact</strong> too if your AI agents should run
-									verifications at runtime with your credentials.
-								</p>
-								<details className="mt-4">
-									<summary className="cursor-pointer text-sm font-medium text-eko-navy underline-offset-2 hover:underline">
-										Prefer Claude Code&rsquo;s native plugin manager?
-									</summary>
-									<p className="mb-3 mt-3 text-sm text-muted-foreground">
-										Enter both commands inside the Claude Code prompt, in this
-										order:
+									<CommandBlock
+										text={PLUGINS_ADD_CMD}
+										caption="Run in a terminal"
+									/>
+									<p className="mt-3 text-xs text-muted-foreground">
+										Pick the <strong>eps</strong> plugin when prompted. Add{" "}
+										<strong>eps-transact</strong> too if your AI agents should
+										run verifications at runtime with your credentials.
 									</p>
-									<div className="flex flex-col gap-3">
-										<CommandBlock
-											caption="Step 1"
-											text="/plugin marketplace add ekoindia/eps-platform"
-											prompt=""
-										/>
-										<CommandBlock
-											caption="Step 2"
-											text="/plugin install eps@ekoindia"
-											prompt=""
-										/>
-									</div>
-								</details>
-							</Card>
+									<details className="mt-4">
+										<summary className="cursor-pointer text-sm font-medium text-eko-navy underline-offset-2 hover:underline">
+											Prefer Claude Code&rsquo;s native plugin manager?
+										</summary>
+										<p className="mb-3 mt-3 text-sm text-muted-foreground">
+											Enter both commands inside the Claude Code prompt, in this
+											order:
+										</p>
+										<div className="flex flex-col gap-3">
+											<CommandBlock
+												caption="Step 1"
+												text="/plugin marketplace add ekoindia/eps-platform"
+												prompt=""
+											/>
+											<CommandBlock
+												caption="Step 2"
+												text="/plugin install eps@ekoindia"
+												prompt=""
+											/>
+										</div>
+									</details>
+								</Card>
+							)}
 
-							{/* Manual fallback: per-harness matrix */}
-							<details className="mt-6">
+							{/* Per-harness matrix. Primary path when SHOW_PLUGINS_ADD is off
+							    (rendered open, no one-command card above it); collapsed
+							    fallback when the one-command install is shown. */}
+							<details className="mt-6" open={!SHOW_PLUGINS_ADD}>
 								<summary className="cursor-pointer rounded-lg border border-border bg-background px-5 py-4 text-sm font-semibold text-foreground hover:bg-muted/50">
-									Manual install &amp; other agents (Copilot, Antigravity, Zed,
-									Kiro, Aider, JetBrains…)
+									{SHOW_PLUGINS_ADD
+										? "Manual install & other agents (Copilot, Antigravity, Zed, Kiro, Aider, JetBrains…)"
+										: "Install for your agent — Claude Code, Codex, Cursor, Copilot, Antigravity, Zed, Kiro, Aider, JetBrains…"}
 								</summary>
 								<div className="mt-6">
 									<Tabs defaultValue={INSTALL_MATRIX[0]?.id} className="w-full">
@@ -490,6 +513,30 @@ const AiPage = () => {
 															)}
 														</div>
 													</div>
+
+													{h.pluginInstall && (
+														<div className="flex flex-col gap-3">
+															<span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																Install the plugin
+																{h.id === "claude-code"
+																	? " · skills + /eps"
+																	: " · skills"}
+															</span>
+															{h.pluginInstall.steps.map((s) => (
+																<CommandBlock
+																	key={s.caption}
+																	caption={s.caption}
+																	text={s.text}
+																	prompt={s.prompt}
+																/>
+															))}
+															{h.pluginInstall.note && (
+																<p className="text-xs text-muted-foreground">
+																	{h.pluginInstall.note}
+																</p>
+															)}
+														</div>
+													)}
 
 													{h.mcp ? (
 														<div className="flex flex-col gap-3">
@@ -766,16 +813,19 @@ const AiPage = () => {
 								Start building with EPS in your AI coding agent
 							</h2>
 							<p className="mt-4 text-lg text-white/70">
-								One command wires EPS into your agent — ship your first signed
-								EPS call today.
+								{SHOW_PLUGINS_ADD
+									? "One command wires EPS into your agent — ship your first signed EPS call today."
+									: "Wire EPS into your coding agent — ship your first signed EPS call today."}
 							</p>
-							<div className="mx-auto mt-8 max-w-lg">
-								<CommandBlock
-									text={PLUGINS_ADD_CMD}
-									tone="dark"
-									caption="Install the EPS plugin"
-								/>
-							</div>
+							{SHOW_PLUGINS_ADD && (
+								<div className="mx-auto mt-8 max-w-lg">
+									<CommandBlock
+										text={PLUGINS_ADD_CMD}
+										tone="dark"
+										caption="Install the EPS plugin"
+									/>
+								</div>
+							)}
 							<div className="mt-6 flex flex-wrap justify-center gap-4">
 								<Button variant="gold" size="lg" asChild>
 									<Link to="/docs">

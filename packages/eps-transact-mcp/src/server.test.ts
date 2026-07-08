@@ -201,6 +201,28 @@ describe("transact server", () => {
 		});
 		expect((res.content as { text: string }[])[0].text).not.toContain("\n");
 	});
+
+	it("connects and lists tools even without credentials (stdio no-creds mode)", async () => {
+		const { client } = await connect({ developerKey: "", accessKey: "" });
+		const names = (await client.listTools()).tools.map((t) => t.name);
+		expect(names.sort()).toEqual(tools.map((t) => t.name).sort());
+	});
+
+	it("returns MISSING_CREDENTIALS and makes no network call when credentials are absent", async () => {
+		const { client, calls } = await connect({
+			developerKey: "",
+			accessKey: "",
+		});
+		const res = await client.callTool({
+			name: "eps_pan_lite",
+			arguments: argsFor(panLite),
+		});
+		expect(res.isError).toBe(true);
+		expect(JSON.parse((res.content as { text: string }[])[0].text).code).toBe(
+			"MISSING_CREDENTIALS",
+		);
+		expect(calls).toHaveLength(0); // guard fires before any signing/network
+	});
 });
 
 describe("sanitizeError", () => {

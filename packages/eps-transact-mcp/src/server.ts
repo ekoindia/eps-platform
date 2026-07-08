@@ -14,7 +14,7 @@ import {
 import { EpsClient } from "@ekoindia/eps-sdk";
 
 import { IDENTITY_PARAMS, type ToolDef } from "./tools.js";
-import { isAllowed, type TransactCtx } from "./ctx.js";
+import { hasCredentials, isAllowed, type TransactCtx } from "./ctx.js";
 
 /** Messages from EpsClient that are safe to relay verbatim: they name params
  * and slugs, never param VALUES (which are PII for verification APIs). */
@@ -101,6 +101,15 @@ export const createTransactServer = (
 			return errorResult({
 				code: "UNKNOWN_TOOL",
 				message: `Unknown tool "${req.params.name}".`,
+			});
+		// Guard BEFORE constructing EpsClient: stdio mode can start without
+		// credentials so tools still list, but a call must never sign or reach the
+		// network without them.
+		if (!hasCredentials(ctx))
+			return errorResult({
+				code: "MISSING_CREDENTIALS",
+				message:
+					"Set EKO_DEVELOPER_KEY and EKO_ACCESS_KEY in your environment and restart the agent to run verifications. See the eps-verify skill.",
 			});
 		if (!isAllowed(ctx, tool.name))
 			return errorResult({

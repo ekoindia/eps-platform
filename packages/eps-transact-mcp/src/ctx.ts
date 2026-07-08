@@ -59,3 +59,13 @@ export const parseAllowed = (
 /** True when the tool name passes the allowlist. */
 export const isAllowed = (ctx: TransactCtx, toolName: string): boolean =>
 	ctx.allowed === "all" || ctx.allowed.has(toolName);
+
+/**
+ * True when both partner credentials are present. Stdio mode may start with
+ * empty credentials so the server still connects and lists tools; the call
+ * handler guards on this before any signing/network call. The HTTP transport
+ * rejects credential-less requests at the header check, so its ctx is always
+ * populated by the time it reaches the shared handler.
+ */
+export const hasCredentials = (ctx: TransactCtx): boolean =>
+	Boolean(ctx.developerKey && ctx.accessKey);
