@@ -10,7 +10,6 @@
 import {
 	EPS_TRANSACT_MCP_CMD,
 	EPS_TRANSACT_MCP_URL,
-	PLUGINS_ADD_CMD,
 	SITE_URL,
 } from "@/lib/config/site";
 
@@ -35,21 +34,6 @@ export function renderTransactAgentsMarkdown(): string {
 			"- UAT is the default environment; production must be selected explicitly\n" +
 			"- Tool list is generated from the EPS API source of truth, so it tracks the platform automatically",
 	);
-	lines.push("");
-
-	lines.push("## Connect — coding-agent plugin (recommended)");
-	lines.push("");
-	lines.push(
-		"If your agent is Claude Code, Codex, Cursor, or OpenCode, install the " +
-			"`eps-transact` plugin — one command wires this MCP plus an `eps-verify` " +
-			"skill. Export your `EKO_*` credentials in your shell first:",
-	);
-	lines.push("");
-	lines.push("```bash");
-	lines.push(PLUGINS_ADD_CMD);
-	lines.push("```");
-	lines.push("");
-	lines.push("Pick **eps-transact** when prompted.");
 	lines.push("");
 
 	lines.push("## Connect — hosted remote");

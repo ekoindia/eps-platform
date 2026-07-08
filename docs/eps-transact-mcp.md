@@ -231,18 +231,19 @@ Fully hands-off now — no manual pull:
 
 ## Distribution
 
-Three ways users get the server:
+Two ways users get the server:
 
-1. **Hosted HTTP** — `https://mcp.eko.in/mcp` (streamable HTTP, credentials as
-   headers; GHCR image deployed on push to `main`).
+1. **Hosted HTTP** — `https://mcp.eko.in/transact/mcp` (streamable HTTP,
+   credentials as headers; GHCR image deployed on push to `main`).
 2. **npm stdio** — `npx -y @ekoindia/eps-transact-mcp@latest` (credentials from
-   shell env; auto-published by `release.yml`).
-3. **Agent plugin** — `packages/claude-plugin-eps-transact` (plugin
-   `eps-transact` in the repo-root marketplace) wires the stdio server plus the
-   `eps-verify` skill into Claude Code, Codex, Cursor, or OpenCode via
-   `npx plugins add ekoindia/eps-platform`. The plugin ships straight from git
-   `main` — **no publish step**; see
-   [`docs/releasing-agent-packages.md`](./releasing-agent-packages.md).
+   shell env; auto-published by `release.yml`). Wire it into any MCP client with
+   `claude mcp add` / `codex mcp add` / the client's MCP config.
+
+This runtime server is **not** distributed as a coding-agent plugin: it needs
+per-user credentials and targets a partner's production agent, not a developer's
+dev-time coding agent. It is intentionally absent from the repo-root
+`.claude-plugin/marketplace.json` (which carries only the dev-time `eps` context
+plugin).
 
 ## Staying up to date
 

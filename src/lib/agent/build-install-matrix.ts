@@ -66,8 +66,8 @@ export interface PluginInstallStep {
 
 /**
  * Two-step native plugin install (add marketplace → install plugin) for
- * harnesses with their own plugin manager. Shown before the raw MCP wiring when
- * the one-command `npx plugins add` path is disabled (see SHOW_PLUGINS_ADD).
+ * harnesses with their own plugin manager. Shown before the raw MCP wiring —
+ * this is the primary install path for Claude Code / Codex.
  */
 export interface HarnessPluginInstall {
 	steps: PluginInstallStep[];

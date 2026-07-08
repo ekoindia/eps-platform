@@ -3,8 +3,7 @@
  * agent artifacts (packs, bundle, MCP, recipes) generated from the spec layer.
  */
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
-import { SHOW_PLUGINS_ADD } from "@/lib/config/features";
-import { EPS_MCP_PKG, PLUGINS_ADD_CMD, SITE_URL } from "@/lib/config/site";
+import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
 
@@ -38,23 +37,6 @@ export function renderAgentsMarkdown(): string {
 		if (h.pluginInstall.note) lines.push(`> ${h.pluginInstall.note}`);
 	}
 	lines.push("");
-
-	if (SHOW_PLUGINS_ADD) {
-		// Optional convenience path: install into every detected agent at once.
-		lines.push("## One-command install (all agents at once)");
-		lines.push("");
-		lines.push(
-			"Installs the chosen EPS plugins (MCP server + skills + commands) into " +
-				"every detected coding agent — Claude Code, Codex, Cursor, OpenCode. " +
-				"Pick `eps` for dev-time API context; add `eps-transact` to let agents " +
-				"run verifications at runtime with your credentials. Re-run to update:",
-		);
-		lines.push("");
-		lines.push("```bash");
-		lines.push(PLUGINS_ADD_CMD);
-		lines.push("```");
-		lines.push("");
-	}
 
 	lines.push("## Context packs (fallback)");
 	lines.push(

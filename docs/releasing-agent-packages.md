@@ -12,14 +12,16 @@ architecture of what is being shipped, see
   `@ekoindia/eps-mock-server`, `@ekoindia/eps-transact-mcp`) → **public npm**
   (`registry.npmjs.org`).
 - **PHP SDK** (`ekoindia/eps-sdk`) → **Packagist** (Composer).
-- **Agent plugins** (`eps`, `eps-transact`) → the repo-root
-  `.claude-plugin/marketplace.json` (marketplace name `ekoindia`), shipped
-  straight from git `main` — **no npm publish step**. Users install with
-  `npx plugins add ekoindia/eps-platform` (vercel-labs `plugins` CLI; installs
-  into Claude Code, Codex, Cursor, OpenCode) and update by re-running the same
-  command. Installs done through Claude Code's native `/plugin` flow also get
-  `/plugin update`. The wired MCP servers self-update regardless
-  (`npx -y …@latest` re-resolves at launch).
+- **Agent plugin** (`eps`) → the repo-root `.claude-plugin/marketplace.json`
+  (marketplace name `ekoindia`), shipped straight from git `main` — **no npm
+  publish step**. Claude Code installs via `/plugin marketplace add
+  ekoindia/eps-platform` + `/plugin install eps@ekoindia`; Codex via `codex
+  plugin marketplace add …` + `codex plugin add eps@ekoindia`; every other agent
+  wires the MCP directly from the per-agent matrix on the `/ai` hub. The wired
+  MCP server self-updates regardless (`npx -y …@latest` re-resolves at launch).
+  (The transactional `@ekoindia/eps-transact-mcp` server is **not** a plugin —
+  it ships only as the npm package above; see
+  [`docs/eps-transact-mcp.md`](./eps-transact-mcp.md).)
 
 **Why not GitHub Packages?** Installing npm from GitHub Packages requires
 consumer-side auth + a scoped `.npmrc`, which breaks the headline zero-friction
@@ -87,9 +89,10 @@ attestation — this needs `id-token: write` (granted) **and a public source rep
 ### Agent plugin marketplace
 
 - Nothing beyond merging `.claude-plugin/marketplace.json` (already at the repo
-  root, listing plugins `eps` and `eps-transact`) to the default branch. Users
-  then install with `npx plugins add ekoindia/eps-platform` (or Claude Code's
-  native `/plugin marketplace add ekoindia/eps-platform`).
+  root, listing the single `eps` plugin) to the default branch. Claude Code
+  users then install with `/plugin marketplace add ekoindia/eps-platform` +
+  `/plugin install eps@ekoindia`; other agents follow the per-agent matrix on
+  `/ai`.
 
 ## 3. Release flow
 
@@ -197,19 +200,20 @@ Run after the first publish:
 - [ ] `npx -y @ekoindia/eps-mock-server` serves on `:4010`.
 - [ ] `npm i @ekoindia/eps-sdk` resolves and installs.
 - [ ] `composer require ekoindia/eps-sdk` resolves from Packagist.
-- [ ] `npx plugins discover ekoindia/eps-platform` finds **2 plugins**
-      (`eps`: 3 skills + 1 command; `eps-transact`: 1 skill).
-- [ ] `npx plugins add ekoindia/eps-platform` installs the picked plugins into
-      a detected agent (smoke: run in a scratch project with `--scope project`).
+- [ ] `npx plugins discover ekoindia/eps-platform` finds **1 plugin**
+      (`eps`: 3 skills + 1 command).
 - [ ] In Claude Code: `/plugin marketplace add ekoindia/eps-platform` then
       `/plugin install eps@ekoindia` works (and the `eps` MCP + skills +
       `/eps` command load).
+- [ ] In Codex: `codex plugin marketplace add ekoindia/eps-platform` +
+      `codex plugin add eps@ekoindia` install the skills; `codex mcp add eps --
+      npx -y @ekoindia/eps-context-mcp@latest` loads the MCP tools.
 
 ## 7. Known follow-ups
 
-- **Live-load the agent plugins** (`eps`, `eps-transact`) end-to-end in real
-  sessions (files are well-formed and `npx plugins discover`/local-add smoke
-  passes, but not yet verified in a live agent session).
+- **Live-load the `eps` agent plugin** end-to-end in real sessions (files are
+  well-formed and `npx plugins discover`/local-add smoke passes, but not yet
+  verified in a live agent session).
 - **Wire the PHP mirror**: create `ekoindia/eps-sdk-php`, add
   `SDK_PHP_DEPLOY_KEY` + the `ssh-agent` step, and submit to Packagist so
   `php-split` runs for real.
