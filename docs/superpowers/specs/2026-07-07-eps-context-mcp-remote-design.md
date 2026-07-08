@@ -1,6 +1,6 @@
 # eps-context-mcp remote server — design decision record
 
-**Date:** 2026-07-07 · **Status:** Phase 0 executed (URL contract); Phase 1 (build) not started
+**Date:** 2026-07-07 · **Status:** Phase 0 executed (URL contract); **Phase 1 build code landed 2026-07-08** (adapter + Vercel handler + tests green) — remaining = Vercel project + nginx wiring + pre-launch validation. Decision on domain wiring: **(b) VM nginx proxy**.
 
 ## Decision
 
@@ -33,14 +33,22 @@ stdio/npm publishing stays first-class for CLI agents (Claude Code, Cursor).
 - **VM co-hosting (port 8789 + poller):** uniform ops, but puts a public unmetered anonymous endpoint on shared prod hardware; in-memory rate limiting is per-process best-effort.
 - **Keyed access:** partner-tool posture, wrong for a marketing surface.
 
-## Phase 1 build sketch (separate plan cycle — NOT scheduled)
+## Phase 1 build — status (code landed 2026-07-08)
 
-- Add `http.ts` to `packages/eps-context-mcp` following `packages/eps-transact-mcp/src/http.ts` (stateless Hono + per-request `WebStandardStreamableHTTPServerTransport`), minus auth/ctx/upstream-fetch. **Extract a shared remote-MCP HTTP adapter** rather than copy-pasting — both packages live in this repo and use the identical transport pattern (Codex review flag).
-- Bundle baked at build (`prepublishOnly` bake exists); Vercel git-integration on `main` = auto-CD.
-- **Runtime honesty:** `load-bundle.ts` uses `node:fs` → this is Vercel *Node serverless*, not true edge runtime. Fine. Only refactor to import-JSON if true edge is ever needed.
-- **Basic protection even on the platform:** cache headers on responses (bundle-versioned, highly cacheable) + platform rate limiting before launch — "abuse absorbed by platform" is not a free pass (Codex review flag).
-- **Domain wiring:** DNS alone cannot path-route; `mcp.eko.in` A-record → VM. Either (a) Cloudflare-proxied DNS with a Worker/origin-rule routing `/context/*` to Vercel — true edge, needs eko.in on Cloudflare; or (b) VM nginx `location /context/` → `proxy_pass` to Vercel — keeps one domain, puts VM back in the availability path (acceptable at current traffic). Decide in Phase 1.
-- **Pre-build checks:** verify Lovable custom-MCP support + claude.ai connector no-auth acceptance; confirm client-side behavior against a path-prefixed endpoint.
+**Done (code, tests green):**
+- `packages/eps-context-mcp/src/http.ts` — stateless Hono app, per-request `WebStandardStreamableHTTPServerTransport`, `GET /healthz`, `POST /mcp`, 405 on GET/DELETE. No auth/ctx/upstream-fetch. Built **directly** (not copy-pasted from transact) to avoid dragging in auth/rate-limit/logging assumptions; the shared-adapter extraction is deferred until both `http.ts` shapes are proven identical (see below).
+- `packages/eps-context-mcp/api/index.ts` + `vercel.json` — Vercel Node-serverless handler via `hono/vercel`, memoized bundle load, catch-all rewrite (`regions:["bom1"]`, `maxDuration:15`).
+- Deps: bumped `@modelcontextprotocol/sdk` `^1.0.0`→`^1.29.0` (needed for `webStandardStreamableHttp`), added `hono ^4.0.0`.
+- `src/http.test.ts` — healthz, 405, anonymous initialize+tools/list, `Cache-Control: no-store` assertion.
+- **Cache correctness (Codex flag):** `POST /mcp` sets `Cache-Control: no-store` — MCP responses vary by JSON-RPC body/method, so caching by `bundleVersion` alone would serve the wrong tool result. Any caching is limited to `GET /healthz` / static assets.
+
+**Remaining (ops / not code):**
+- **Vercel project** — create it pointing at `packages/eps-context-mcp`, git-integration on `main` = auto-CD. Bundle baked at build (`prepublishOnly` bake exists).
+- **nginx on VM** — add `location /context/ { proxy_pass https://<vercel-origin>/; }` mirroring `/transact/`; for a `*.vercel.app` origin also `proxy_ssl_server_name on` + `proxy_set_header Host <vercel-host>` (Codex flag — else SNI-misroute/404), unless a Vercel custom domain is configured.
+- **Rate limiting is the real protection** (Codex flag — cache headers are not protection): add nginx `limit_req` on `location /context/` (or Vercel-side) before launch, or accept the abuse risk in writing.
+- **Shared-adapter extraction** — only after both packages' `http.ts` shapes are proven identical by tests; premature abstraction with one caller was speculative.
+- **Pre-launch validation:** verify Lovable custom-MCP support + claude.ai connector no-auth acceptance; confirm client behavior against the path-prefixed endpoint. **This doubles as the Item-4 OAuth spike** — same claude.ai no-auth question.
+- **Runtime honesty:** `load-bundle.ts` uses `node:fs` → Vercel *Node serverless*, not true edge. Fine; refactor to import-JSON only if true edge is ever needed.
 
 ## Phase 0 changes shipped with this spec
 
