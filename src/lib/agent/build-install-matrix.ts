@@ -56,9 +56,30 @@ export interface HarnessMcp {
 	note?: string;
 }
 
+/** A single copyable step in a native plugin install. */
+export interface PluginInstallStep {
+	caption: string;
+	text: string;
+	/** Leading prompt glyph; "" for in-app slash commands, "$" (default) for shell. */
+	prompt?: string;
+}
+
+/**
+ * Two-step native plugin install (add marketplace → install plugin) for
+ * harnesses with their own plugin manager. Shown before the raw MCP wiring when
+ * the one-command `npx plugins add` path is disabled (see SHOW_PLUGINS_ADD).
+ */
+export interface HarnessPluginInstall {
+	steps: PluginInstallStep[];
+	/** Short qualifier shown under the steps. */
+	note?: string;
+}
+
 export interface HarnessInstall {
 	id: string;
 	name: string;
+	/** Native plugin install (skills + MCP), when the harness has a plugin manager. */
+	pluginInstall?: HarnessPluginInstall;
 	/** MCP wiring, when the harness supports MCP servers. */
 	mcp?: HarnessMcp;
 	/** Context-pack file to drop in (relative to /agent), when applicable. */
@@ -71,6 +92,21 @@ export const HARNESSES: HarnessInstall[] = [
 	{
 		id: "claude-code",
 		name: "Claude Code",
+		pluginInstall: {
+			steps: [
+				{
+					caption: "Step 1 — add the marketplace",
+					text: "/plugin marketplace add ekoindia/eps-platform",
+					prompt: "",
+				},
+				{
+					caption: "Step 2 — install the plugin",
+					text: "/plugin install eps@ekoindia",
+					prompt: "",
+				},
+			],
+			note: "Run both inside the Claude Code prompt. Installs the skills and the /eps command, and wires the eps MCP automatically. The manual MCP command below is only needed if you skip the plugin.",
+		},
 		mcp: {
 			// `--scope project` before `--` so it's parsed as a flag, not passed
 			// to npx; the `--` then stops Claude swallowing the package's `-y`.
@@ -94,6 +130,19 @@ export const HARNESSES: HarnessInstall[] = [
 	{
 		id: "codex",
 		name: "Codex",
+		pluginInstall: {
+			steps: [
+				{
+					caption: "Step 1 — add the marketplace",
+					text: "codex plugin marketplace add ekoindia/eps-platform",
+				},
+				{
+					caption: "Step 2 — install the plugin",
+					text: "codex plugin add eps@ekoindia",
+				},
+			],
+			note: "Installs the eps skills. Codex does not yet auto-launch the plugin's bundled MCP server, so also run the MCP install command below to get the eps tools.",
+		},
 		mcp: {
 			command: `codex mcp add ${SERVER} npx -y ${PKG}`,
 			// Alternative to the CLI: a TOML `mcp_servers` table (not JSON).

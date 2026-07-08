@@ -8,6 +8,7 @@
  * backend-only warning, environments, error model) plus a COMPACT endpoint
  * index. Per-endpoint detail is linked (bundle/MCP/.md docs), not inlined.
  */
+import { SHOW_PLUGINS_ADD } from "@/lib/config/features";
 import { EPS_MCP_PKG, PLUGINS_ADD_CMD, SITE_URL } from "@/lib/config/site";
 import { markdownTable } from "@/lib/markdown/shared";
 import type { AgentBundle } from "@/lib/agent/agent-bundle-types";
@@ -33,10 +34,12 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 		"This is a self-contained section — append it to your repo's existing " +
 			"agent instructions (AGENTS.md or equivalent); it does not replace your " +
 			"project instructions. Agents with plugin support get richer, on-demand " +
-			"context instead of this static pack: `" +
-			PLUGINS_ADD_CMD +
-			"` (installs the EPS MCP + skills into Claude Code, Codex, Cursor, " +
-			"OpenCode).",
+			"context instead of this static pack: " +
+			(SHOW_PLUGINS_ADD
+				? "`" +
+					PLUGINS_ADD_CMD +
+					"` (installs the EPS MCP + skills into Claude Code, Codex, Cursor, OpenCode)."
+				: "see per-agent install at " + SITE_URL + "/ai (EPS MCP + skills)."),
 	);
 	lines.push("");
 

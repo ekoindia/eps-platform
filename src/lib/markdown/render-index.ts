@@ -1,7 +1,7 @@
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
-import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
+import { SHOW_PLUGINS_ADD, SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import {
 	EPS_MCP_PKG,
 	PLUGINS_ADD_CMD,
@@ -191,9 +191,15 @@ export function renderLlmsTxt(
 	lines.push("");
 
 	lines.push("## For AI coding agents");
-	lines.push(
-		`- One-command install: \`${PLUGINS_ADD_CMD}\` — EPS plugins (MCP + skills) for Claude Code, Codex, Cursor, OpenCode`,
-	);
+	if (SHOW_PLUGINS_ADD) {
+		lines.push(
+			`- One-command install: \`${PLUGINS_ADD_CMD}\` — EPS plugins (MCP + skills) for Claude Code, Codex, Cursor, OpenCode`,
+		);
+	} else {
+		lines.push(
+			`- Install per agent at ${SITE_URL}/ai — EPS plugin (MCP + skills). Claude Code & Codex have a native two-step plugin install; other agents wire the MCP directly.`,
+		);
+	}
 	lines.push(
 		`- [Context pack (AGENTS.md)](${SITE_URL}/agent/AGENTS.md): Append-able EPS section for agents without MCP/skills support — auth, endpoints, recipes`,
 	);
