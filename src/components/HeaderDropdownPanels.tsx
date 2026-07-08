@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { accountIdentity } from "@/lib/auth/identity";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
-import { GITHUB_ORG_URL, SOCIAL_LINKS } from "@/lib/config/site";
+import { GITHUB_ORG_URL, SITE_URL, SOCIAL_LINKS } from "@/lib/config/site";
 import {
 	API_PRODUCT_PAGES,
 	hasProductPage,
@@ -121,13 +121,14 @@ const developerLinks: DeveloperLinkItem[] = [
 ];
 
 // "Ask AI" column of the Developers dropdown: opens a hosted AI client in a new
-// tab, pre-filled with a prompt pointing at the site's machine-readable index so
-// the assistant has context. ChatGPT / Claude / Perplexity honour the `?q=`
-// prefill; Gemini has no official prefill param, so that row just opens Gemini
-// (the prompt may be ignored) — acceptable degradation. Reuses DeveloperLink via
-// `external: true`.
+// tab, pre-filled with a prompt pointing at the site root. The homepage advertises
+// its Markdown twin (<link rel="alternate" type="text/markdown"> + AiHint), so the
+// assistant auto-discovers /index.md from the URL. ChatGPT / Claude / Perplexity
+// honour the `?q=` prefill; Gemini has no official prefill param, so that row just
+// opens Gemini (the prompt may be ignored) — acceptable degradation. Reuses
+// DeveloperLink via `external: true`.
 const AI_ASK_PROMPT = encodeURIComponent(
-	"Read https://eps.eko.in/index.md — I want to ask questions about it.",
+	`Read ${SITE_URL} — I want to ask questions about it.`,
 );
 const aiClientLinks: DeveloperLinkItem[] = [
 	{
