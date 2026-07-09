@@ -320,7 +320,7 @@ describe("EpsClient.call", () => {
 			fetch: fetchMock as unknown as typeof fetch,
 			now: () => 1700000000000,
 		});
-		await client.call("dmt-send-money", {
+		await client.call("dmt-send-otp", {
 			initiator_id: "9962981729",
 			user_code: "20810200",
 			customer_id: "9123456789",
@@ -346,7 +346,7 @@ describe("EpsClient.call", () => {
 			fetch: fetchMock as unknown as typeof fetch,
 			now: () => 1700000000000,
 		});
-		await client.call("dmt-send-money", {
+		await client.call("dmt-send-otp", {
 			initiator_id: "9962981729",
 			user_code: "20810200",
 			customer_id: "9123456789",
@@ -401,8 +401,8 @@ describe("EpsClient.call", () => {
 			amount: 100,
 			tid: "1",
 		};
-		await client.call("dmt-send-money", callParams);
-		await client.call("dmt-send-money", callParams);
+		await client.call("dmt-send-otp", callParams);
+		await client.call("dmt-send-otp", callParams);
 		const body1 = JSON.parse(
 			fetchMock.mock.calls[0][1]!.body as string,
 		) as Record<string, unknown>;

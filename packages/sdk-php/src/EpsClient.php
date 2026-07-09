@@ -46,15 +46,6 @@ final class EpsClient
     }
 
     /**
-     * Generate a unique client_ref_id using PHP's random_bytes().
-     * Produces a 32-character lowercase hex string.
-     */
-    private static function generateClientRefId(): string
-    {
-        return bin2hex(random_bytes(16));
-    }
-
-    /**
      * Lenient, coercion-aware type check against a spec type. Only present
      * values are checked. Unknown types pass. The wire sends everything as
      * strings, so numeric/boolean strings are accepted.
@@ -162,14 +153,6 @@ final class EpsClient
             if (str_contains($path, $token)) $path = str_replace($token, rawurlencode((string) $v), $path);
             else $rest[$k] = $v;
         }
-
-        // Auto-inject client_ref_id for non-GET requests when the caller has
-        // not supplied one. This gives every mutating request a unique
-        // idempotency key without requiring the caller to think about it.
-        if ($endpoint['method'] !== 'GET' && !isset($rest['client_ref_id'])) {
-            $rest['client_ref_id'] = self::generateClientRefId();
-        }
-
         $url = $this->baseUrl . $path;
         $body = null;
         if ($endpoint['method'] === 'GET') {

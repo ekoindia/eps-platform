@@ -194,6 +194,13 @@ export class EpsClient {
 			}),
 			...params,
 		};
+		// Auto-inject client_ref_id for non-GET requests when the caller has not
+		// supplied one. Done BEFORE required-param validation so a generated id
+		// satisfies endpoints that require client_ref_id, and every mutating request
+		// gets a unique idempotency key without the caller thinking about it.
+		if (endpoint.method !== "GET" && merged["client_ref_id"] == null) {
+			merged["client_ref_id"] = generateClientRefId();
+		}
 		// Spec-driven guard: every requiredParam (from the API spec, baked into the
 		// surface) must be present and non-null before we sign and send.
 		const missing = endpoint.requiredParams.filter(
@@ -241,12 +248,6 @@ export class EpsClient {
 			if (urlPath.includes(token))
 				urlPath = urlPath.replace(token, encodeURIComponent(String(v)));
 			else rest[k] = v;
-		}
-		// Auto-inject client_ref_id for non-GET requests when the caller has not
-		// supplied one. This gives every mutating request a unique idempotency key
-		// without requiring the caller to think about it.
-		if (endpoint.method !== "GET" && rest["client_ref_id"] == null) {
-			rest["client_ref_id"] = generateClientRefId();
 		}
 		let url = `${this.baseUrl}${urlPath}`;
 		const init: RequestInit = { method: endpoint.method, headers };
