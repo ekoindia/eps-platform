@@ -7,6 +7,13 @@ import { createApp } from "../src/http.js";
 // @hono/node-server/vercel handle — hono/vercel is the Edge/Next.js adapter and
 // its returned Web Response is never consumed by the Node runtime (15s hang).
 
+// Disable Vercel's automatic body parsing. The adapter streams the raw Node
+// request into the MCP transport (Readable.toWeb(req)); if Vercel pre-consumes
+// the body, that stream never emits → POST /mcp hangs to the 15s timeout while
+// GET (healthz, 405) pass. Keeping the raw stream intact is what lets the
+// transport read the JSON-RPC body.
+export const config = { api: { bodyParser: false } };
+
 /**
  * The real app needs an awaited bundle load (fetch from EPS_BUNDLE_URL, or baked
  * fallback). `handle` needs a synchronous app, so an outer Hono app delegates
