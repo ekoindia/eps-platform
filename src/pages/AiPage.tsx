@@ -17,6 +17,7 @@ import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
 import { RECIPES } from "@/lib/data/api-recipes";
 import {
+	ArrowDown,
 	ArrowRight,
 	Bot,
 	Download,
@@ -34,7 +35,12 @@ import { Helmet } from "react-helmet-async";
 import { SiOpenapiinitiative, SiPostman } from "react-icons/si";
 import { Link } from "react-router-dom";
 import { AiVibeCodingSession } from "./ai/AiVibeCodingSession";
-import { CommandBlock, ConfigBlock, CopyButton } from "./ai/CommandBlock";
+import {
+	CommandBlock,
+	ConfigBlock,
+	CopyButton,
+	PromptChip,
+} from "./ai/CommandBlock";
 
 const MCP_CMD = EPS_MCP_CMD;
 const INSTALL_MATRIX = buildInstallMatrix();
@@ -166,6 +172,30 @@ const ARTIFACTS: Artifact[] = [
 	},
 ];
 
+/* ------------------------------ Quick start ------------------------------ */
+
+interface SamplePrompt {
+	/** Tiny label naming the use-case (e.g. "Find the right API"). */
+	label: string;
+	/** The copyable prompt text itself. */
+	text: string;
+}
+
+const SAMPLE_PROMPTS: SamplePrompt[] = [
+	{
+		label: "Find the right API",
+		text: "Which EPS API should I use to verify a customer's bank account?",
+	},
+	{
+		label: "Integrate an API",
+		text: "Integrate EPS PAN verification into my app, end to end, and test it in the sandbox.",
+	},
+	{
+		label: "Fix a bug",
+		text: "My EPS money transfer call fails with error 403. Find the cause and fix it.",
+	},
+];
+
 /* --------------------------------- Helpers -------------------------------- */
 
 /** Maps a recipe step's spec slug to its public docs URL. */
@@ -285,6 +315,130 @@ const AiPage = () => {
 								</CodeBlock>
 							</FadeIn>
 						</div>
+					</div>
+				</section>
+
+				{/* ========================== QUICK START ========================== */}
+				<section
+					id="quick-start"
+					className="scroll-mt-24 bg-background py-20 lg:py-28"
+				>
+					<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+						<FadeIn className="mx-auto mb-12 max-w-2xl text-center">
+							<span className="inline-block rounded-full bg-primary/20 px-4 py-1.5 text-sm font-medium text-amber-700">
+								Quick start
+							</span>
+							<h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
+								How to build with AI?
+							</h2>
+							<p className="mt-4 text-lg text-muted-foreground">
+								Three steps. You describe what you want in plain English — your
+								AI agent finds the right API, writes the code, and tests it.
+							</p>
+						</FadeIn>
+
+						<FadeIn className="mx-auto max-w-3xl">
+							<Card className="p-6 sm:p-8 lg:p-10">
+								<ol className="flex flex-col gap-9">
+									{/* Step 1 — get an agent */}
+									<li className="flex gap-4 sm:gap-5">
+										<div className="flex flex-col items-center">
+											<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-eko-navy text-sm font-bold text-eko-gold">
+												1
+											</span>
+											<span
+												aria-hidden="true"
+												className="mt-1 w-px flex-1 bg-border"
+											/>
+										</div>
+										<div className="min-w-0 flex-1 pb-1">
+											<h3 className="text-lg font-semibold text-foreground">
+												Get an AI coding agent
+											</h3>
+											<p className="mt-1.5 text-muted-foreground">
+												An AI coding agent is a tool that writes and runs code
+												for you when you ask in plain English. Already using
+												one? Skip to step 2. If not, choose one of these first:
+											</p>
+											<div className="mt-3.5 flex flex-wrap gap-2">
+												{/* "others" is an install-matrix catch-all tab, not an agent you can install */}
+												{INSTALL_MATRIX.filter((h) => h.id !== "others").map(
+													(h) => (
+														<span
+															key={h.id}
+															className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground"
+														>
+															<HarnessIcon id={h.id} className="h-3.5 w-3.5" />
+															{h.name}
+														</span>
+													),
+												)}
+											</div>
+										</div>
+									</li>
+
+									{/* Step 2 — install the EPS toolkit */}
+									<li className="flex gap-4 sm:gap-5">
+										<div className="flex flex-col items-center">
+											<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-eko-navy text-sm font-bold text-eko-gold">
+												2
+											</span>
+											<span
+												aria-hidden="true"
+												className="mt-1 w-px flex-1 bg-border"
+											/>
+										</div>
+										<div className="min-w-0 flex-1 pb-1">
+											<h3 className="text-lg font-semibold text-foreground">
+												Add EPS to your agent — one-time setup
+											</h3>
+											<p className="mt-1.5 text-muted-foreground">
+												A one-time install that teaches your agent every EPS
+												API, correct request signing, and safe sandbox testing.
+												The exact steps differ slightly per tool — find yours
+												below.
+											</p>
+											<Button
+												variant="gold"
+												size="sm"
+												asChild
+												className="mt-3.5"
+											>
+												<a href="#install">
+													Install steps for your agent
+													<ArrowDown className="h-4 w-4" />
+												</a>
+											</Button>
+										</div>
+									</li>
+
+									{/* Step 3 — ask in plain English */}
+									<li className="flex gap-4 sm:gap-5">
+										<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-eko-navy text-sm font-bold text-eko-gold">
+											3
+										</span>
+										<div className="min-w-0 flex-1 pb-1">
+											<h3 className="text-lg font-semibold text-foreground">
+												Ask your agent in plain English
+											</h3>
+											<p className="mt-1.5 text-muted-foreground">
+												That&rsquo;s it — describe what you need in your own
+												words, or copy a prompt below to start:
+											</p>
+											<div className="mt-3.5 flex flex-col gap-2.5">
+												{SAMPLE_PROMPTS.map((p) => (
+													<PromptChip
+														key={p.label}
+														label={p.label}
+														text={p.text}
+													/>
+												))}
+											</div>
+										</div>
+									</li>
+								</ol>
+							</Card>
+						</FadeIn>
 					</div>
 				</section>
 

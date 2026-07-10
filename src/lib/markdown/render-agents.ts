@@ -17,6 +17,30 @@ export function renderAgentsMarkdown(): string {
 	);
 	lines.push("");
 
+	// Quick start — mirrors the "How to build with AI?" section on /ai.
+	lines.push("## Quick start — how to build with AI");
+	lines.push("");
+	lines.push(
+		"1. **Get an AI coding agent** — Claude Code, Cursor, Codex, GitHub Copilot, " +
+			"or any MCP-compatible tool.",
+	);
+	lines.push(
+		"2. **Add EPS to your agent (one-time)** — Claude Code and Codex install " +
+			"the EPS plugin; other tools wire the MCP server or a context pack. " +
+			"Exact steps below.",
+	);
+	lines.push("3. **Ask in plain English** — sample prompts:");
+	lines.push(
+		'   - **Find the right API:** "Which EPS API should I use to verify a customer\'s bank account?"',
+	);
+	lines.push(
+		'   - **Integrate an API:** "Integrate EPS PAN verification into my app, end to end, and test it in the sandbox."',
+	);
+	lines.push(
+		'   - **Fix a bug:** "My EPS money transfer call fails with error 403. Find the cause and fix it."',
+	);
+	lines.push("");
+
 	// Per-agent plugin install (preferred) — always shown, data-driven from the
 	// matrix so it stays in step with the /ai page tabs.
 	lines.push("## Plugin install (Claude Code & Codex)");

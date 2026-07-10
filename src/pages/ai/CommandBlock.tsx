@@ -61,6 +61,57 @@ export const CopyButton = ({
 	);
 };
 
+interface PromptChipProps {
+	/** Tiny label naming the use-case (e.g. "Find the right API"). */
+	label: string;
+	/** The prompt text copied on click. */
+	text: string;
+	className?: string;
+}
+
+/**
+ * A copyable sample-prompt chip: the whole surface is one button that copies
+ * the prompt, with a use-case label above the quoted text.
+ */
+export const PromptChip = ({ label, text, className }: PromptChipProps) => {
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = async () => {
+		const ok = await copyText(text);
+		if (!ok) return;
+		setCopied(true);
+		toast.success("Prompt copied — paste it into your agent");
+		window.setTimeout(() => setCopied(false), 1500);
+	};
+
+	return (
+		<button
+			type="button"
+			onClick={handleCopy}
+			aria-label={`Copy prompt: ${label}`}
+			title="Copy prompt"
+			className={cn(
+				"group flex w-full cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3 text-left transition-colors hover:border-eko-gold/60 hover:bg-eko-gold/5",
+				className,
+			)}
+		>
+			<span className="min-w-0">
+				<span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+					{label}
+				</span>
+				<span className="mt-1 block text-sm leading-relaxed text-foreground">
+					&ldquo;{text}&rdquo;
+				</span>
+			</span>
+			{copied ? (
+				<Check className="mt-0.5 h-4 w-4 shrink-0 text-eko-gold" />
+			) : (
+				<Copy className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+			)}
+		</button>
+	);
+};
+
 interface CommandBlockProps {
 	/** Command/text shown and copied. */
 	text: string;

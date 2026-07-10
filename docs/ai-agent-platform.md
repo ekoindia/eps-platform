@@ -183,8 +183,12 @@ marketplace, plugin manifest, and skill files consistent.
 
 ## 5. The `/ai` hub page (+ `/ai.md` text twin)
 
-`src/pages/AiPage.tsx` is the developer-facing hub. It is **data-driven** from
-the same sources as the bundle:
+`src/pages/AiPage.tsx` is the developer-facing hub. It opens with a
+**"How to build with AI?" quick-start** right after the hero — a 3-step
+stepper (get an agent → one-time EPS install, linking to the `#install`
+matrix → copyable sample prompts via `PromptChip` in
+`src/pages/ai/CommandBlock.tsx`) aimed at users new to AI coding agents.
+The rest is **data-driven** from the same sources as the bundle:
 
 - The **install matrix** (per-harness tabs with copy-to-clipboard snippets)
   comes from `buildInstallMatrix()` (`src/lib/agent/build-install-matrix.ts`),
@@ -198,7 +202,8 @@ the same sources as the bundle:
 
 `/ai.md` is the lean Markdown twin, rendered by
 `src/lib/markdown/render-agents.ts` from the **same** `buildInstallMatrix()` +
-`RECIPES`, so the text and HTML surfaces never diverge. The route is registered
+`RECIPES`, so the text and HTML surfaces never diverge (including a mirrored
+"Quick start" section with the same three steps and sample prompts). The route is registered
 in `src/App.tsx`, `src/AppServer.tsx` (SSG render twin), and `ssg/routes.ts`.
 
 ## 6. Auth model
