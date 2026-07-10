@@ -1,6 +1,7 @@
 import typingRobot from "@/assets/pingo/8bit/robot_10_typing.png";
 import { AiHint } from "@/components/AiHint";
 import { CodeBlock } from "@/components/CodeBlock";
+import { Eps } from "@/components/Eps";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { HarnessIcon } from "@/components/icons/HarnessIcon";
@@ -390,7 +391,7 @@ const AiPage = () => {
 										</div>
 										<div className="min-w-0 flex-1 pb-1">
 											<h3 className="text-lg font-semibold text-foreground">
-												Add EPS to your agent — one-time setup
+												Add <Eps /> to your agent — one-time setup
 											</h3>
 											<p className="mt-1.5 text-muted-foreground">
 												A one-time install that teaches your agent every EPS

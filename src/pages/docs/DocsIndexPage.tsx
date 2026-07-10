@@ -1,4 +1,5 @@
 import { AiHint } from "@/components/AiHint";
+import { Eps } from "@/components/Eps";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { InlineCode } from "@/components/docs/InlineCode";
@@ -308,7 +309,7 @@ const DocsIndexPage = () => {
 				<div className="mx-auto max-w-3xl">
 					{/* Hero */}
 					<h1 className="text-4xl font-bold tracking-tight text-foreground">
-						Start building on EPS
+						Start building on <Eps />
 					</h1>
 					<p className="mt-3 text-lg text-muted-foreground">
 						Integrate Eko's KYC, verification, payment and banking platform your
