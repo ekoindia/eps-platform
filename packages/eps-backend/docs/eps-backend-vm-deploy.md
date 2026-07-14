@@ -4,6 +4,10 @@ Pull-based auto-deploy for `ghcr.io/ekoindia/eps-backend` on a single private
 VM. A poller container watches the `:prod` tag in GHCR and reconciles the
 running image every 30 seconds, with a health gate and automatic rollback.
 
+> To onboard a **new** ekoindia project onto the same poller, see the
+> [poller README](../deploy/poller/README.md) — it reuses this same sidecar for
+> any project.
+
 ---
 
 ## Contents
