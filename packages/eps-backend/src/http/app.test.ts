@@ -150,6 +150,24 @@ describe("otp/start", () => {
 		expect(eko.sendOtp).toHaveBeenCalled();
 	});
 
+	it("502 OTP_SEND_FAILED when the upstream did not dispatch the OTP", async () => {
+		const { app } = deps({
+			sendOtp: vi.fn(async () => ({
+				ok: false,
+				raw: { response_status_id: 1 },
+			})),
+		});
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001" }),
+		});
+		expect(res.status).toBe(502);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"OTP_SEND_FAILED",
+		);
+	});
+
 	it("400 when mobile missing", async () => {
 		const { app } = deps();
 		const res = await app.request("/auth/otp/start", {
@@ -260,6 +278,26 @@ describe("otp/verify + me", () => {
 		expect(me.status).toBe(200);
 		const meBody = await body<{ profile: { ekoUserId: string } | null }>(me);
 		expect(meBody.profile?.ekoUserId).toBe("EKO1");
+	});
+
+	it("denies a session for an inactive account (403, no cookies)", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "inactive" as const,
+				responseTypeId: 2123,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"ACCOUNT_INACTIVE",
+		);
+		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
 	});
 
 	it("401 on bad otp", async () => {
