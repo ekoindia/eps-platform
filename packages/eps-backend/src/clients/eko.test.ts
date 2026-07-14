@@ -11,6 +11,7 @@ const ekoCfg = {
 	initiatorId: "1234567891",
 	userCode: "99029899",
 	defaultOrgId: 1,
+	logLevel: "off" as const,
 };
 
 function mockFetch(status: number, body: unknown) {
@@ -39,6 +40,16 @@ describe("EkoClient.sendOtp", () => {
 		expect(body.get("initiator_id")).toBe("1234567891");
 		expect(body.get("user_code")).toBe("99029899");
 		expect(body.get("org_id")).toBe("1");
+		// No X-Real-IP header when the caller did not supply one (omit, not empty).
+		expect("X-Real-IP" in init.headers).toBe(false);
+	});
+
+	it("forwards X-Real-IP when provided", async () => {
+		const f = mockFetch(200, { response_status_id: 0 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.sendOtp({ mobile: "9990000001", xRealIp: "1.2.3.4" });
+		const init = (f as unknown as Mock).mock.calls[0][1];
+		expect(init.headers["X-Real-IP"]).toBe("1.2.3.4");
 	});
 });
 
@@ -54,6 +65,14 @@ describe("EkoClient.verifyOtp", () => {
 		expect(body.get("interaction_type_id")).toBe("518");
 		expect(body.get("otp")).toBe("123456");
 		expect(body.get("verification_type")).toBe("2");
+	});
+
+	it("forwards X-Real-IP when provided", async () => {
+		const f = mockFetch(200, { response_status_id: 0 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.verifyOtp({ mobile: "x", otp: "y", xRealIp: "9.9.9.9" });
+		const init = (f as unknown as Mock).mock.calls[0][1];
+		expect(init.headers["X-Real-IP"]).toBe("9.9.9.9");
 	});
 
 	it("returns not-ok on non-zero status id", async () => {
@@ -116,5 +135,20 @@ describe("EkoClient.getProfile", () => {
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.getProfile({ mobile: "x" });
 		expect(r.kind).toBe("inactive");
+	});
+
+	it("falls back to response_code when response_type_id is absent", async () => {
+		const f = mockFetch(200, { response_code: 2123 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "x" });
+		expect(r.kind).toBe("inactive");
+	});
+
+	it("forwards X-Real-IP when provided", async () => {
+		const f = mockFetch(200, { response_type_id: 319 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.getProfile({ mobile: "x", xRealIp: "5.6.7.8" });
+		const init = (f as unknown as Mock).mock.calls[0][1];
+		expect(init.headers["X-Real-IP"]).toBe("5.6.7.8");
 	});
 });

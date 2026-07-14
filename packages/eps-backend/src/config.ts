@@ -1,3 +1,5 @@
+import { type EkoLogLevel, parseEkoLogLevel } from "./audit/ekoLog";
+
 export interface Config {
 	port: number;
 	jwtSecret: string;
@@ -20,6 +22,7 @@ export interface Config {
 		initiatorId: string;
 		userCode: string;
 		defaultOrgId: number;
+		logLevel: EkoLogLevel;
 	};
 	github: {
 		clientId: string;
@@ -97,6 +100,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			initiatorId: env.EKO_INITIATOR_ID ?? "1234567891",
 			userCode: env.EKO_USER_CODE ?? "99029899",
 			defaultOrgId: Number(env.EKO_DEFAULT_ORG_ID ?? 1),
+			logLevel: parseEkoLogLevel(env.EKO_LOG_LEVEL),
 		},
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,

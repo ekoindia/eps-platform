@@ -311,6 +311,36 @@ log_ above). Both types land on the same stdout stream.
 rate-limit decision. Reusing the inbound header is therefore safe: a forged
 value affects only the caller's own correlation data.
 
+### Observability: upstream (Eko/SimpliBank) log
+
+Every request/response to the Eko/SimpliBank upstream is logged to **stdout** as
+a single JSON object tagged `"type":"eko_upstream"`. Verbosity is set by
+`EKO_LOG_LEVEL` so it can differ between dev and prod:
+
+| level | what it logs |
+| --- | --- |
+| `off` | nothing |
+| `basic` _(default)_ | `interaction_type_id`, **masked** mobile, `org_id`, `http_status`, `durMs`, and a response summary (`response_status_id` / `response_type_id` / `response_code` / `status` / `message`). No OTP, no merchant credentials, no full body — **prod-safe.** |
+| `full` | the complete request form-fields (**including the OTP**) and the full response body. **Dev debugging only.** |
+
+The `developer_key` / `secret-key` auth headers are never part of the logged
+form-fields, so they are never emitted at any level. Logging is best-effort and
+never throws or alters an upstream call. Example (`basic`):
+
+```json
+{
+	"type": "eko_upstream",
+	"ts": "<ISO8601>",
+	"interaction_type_id": "518",
+	"http_status": 200,
+	"durMs": 37,
+	"error": null,
+	"mobile": "••••••0001",
+	"org_id": "1",
+	"response": { "response_status_id": 0, "message": "OK" }
+}
+```
+
 ## Production deploy (pull-based, private VM)
 
 The production stack runs on a single private VM under `docker-compose.prod.yml`.
