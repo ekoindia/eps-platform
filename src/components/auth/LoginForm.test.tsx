@@ -35,10 +35,10 @@ describe("LoginForm", () => {
 		);
 
 		const boxes = await screen.findAllByLabelText(/^Digit \d/);
-		"111111"
+		"1111"
 			.split("")
 			.forEach((d, i) => fireEvent.change(boxes[i], { target: { value: d } }));
-		// Filling all six boxes auto-submits — no Verify click needed.
+		// Filling all boxes auto-submits — no Verify click needed.
 		await waitFor(() => expect(onSuccess).toHaveBeenCalled());
 		expect(refresh).toHaveBeenCalled();
 	});
@@ -56,7 +56,7 @@ describe("LoginForm", () => {
 		});
 		fireEvent.click(screen.getByRole("button", { name: /send otp/i }));
 		const boxes = await screen.findAllByLabelText(/^Digit \d/);
-		"000000"
+		"0000"
 			.split("")
 			.forEach((d, i) => fireEvent.change(boxes[i], { target: { value: d } }));
 		expect(

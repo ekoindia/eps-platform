@@ -11,7 +11,7 @@ import {
 	useState,
 } from "react";
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
 
 /** Extracts a human-readable error string from an ApiError or unknown thrown value. */
 function message(e: unknown): string {
