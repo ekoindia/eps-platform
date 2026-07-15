@@ -7,6 +7,17 @@ export interface MeView {
 	zohoId: string | null;
 }
 
+/**
+ * The `/me` view for a signup session. Deliberately lightweight — no Eko call —
+ * because the wizard fetches its own state from `/signup/state`. It exists so a
+ * page reload mid-onboarding restores the session instead of dropping the user
+ * to anonymous and forcing a fresh OTP.
+ */
+export interface SignupView {
+	role: "signup";
+	mobile: string;
+}
+
 export function deriveStateFromProfile(r: ProfileResult): LifecycleState {
 	if (r.kind === "inactive") return "inactive";
 	if (r.kind === "error" || r.kind === "not_allowed") return "unknown";

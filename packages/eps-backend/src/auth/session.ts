@@ -6,7 +6,12 @@ import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 
 export interface SessionClaim {
 	sub: string;
-	role: "developer" | "admin";
+	/**
+	 * `signup` is a limited session for a user partway through onboarding. It
+	 * authorizes `/signup/*` and a lightweight `/me` only — never `/admin/*`
+	 * and never a developer's `/me` profile view.
+	 */
+	role: "developer" | "admin" | "signup";
 	orgId: number;
 	zohoId?: string;
 	ghLogin?: string;
