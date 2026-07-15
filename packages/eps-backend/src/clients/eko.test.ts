@@ -408,8 +408,10 @@ describe("onboarding interactions", () => {
 		const f = mockFetch(200, {});
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.createPartialAccount({ mobile: "9990000001" });
-		expect(r.ok).toBe(false);
-		expect(r.message).toBe("The request could not be completed.");
-		expect(r.responseTypeId).toBe(-1);
+		expect(r).toEqual({
+			ok: false,
+			message: "The request could not be completed.",
+			responseTypeId: -1,
+		});
 	});
 });
