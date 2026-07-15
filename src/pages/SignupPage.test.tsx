@@ -65,4 +65,15 @@ describe("SignupPage", () => {
 		renderPage();
 		expect(screen.getByTestId("signup-loading")).toBeInTheDocument();
 	});
+
+	it("redirects an admin user to console and shows loading skeleton", () => {
+		mockState = {
+			status: "authed",
+			role: "admin",
+			me: { role: "admin", login: "admin@example.com", sub: "sub123" },
+		};
+		renderPage();
+		expect(mockNavigate).toHaveBeenCalledWith("/console", { replace: true });
+		expect(screen.getByTestId("signup-loading")).toBeInTheDocument();
+	});
 });

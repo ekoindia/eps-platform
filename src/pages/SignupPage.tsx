@@ -45,11 +45,14 @@ const SignupPage = () => {
 									<CardTitle>
 										{state.status === "authed" && state.role === "signup"
 											? "Complete your setup"
-											: "Create your account"}
+											: state.status === "anon"
+											? "Create your account"
+											: ""}
 									</CardTitle>
 								</CardHeader>
 								<CardContent>
-									{state.status === "loading" && (
+									{(state.status !== "anon" &&
+										!(state.status === "authed" && state.role === "signup")) && (
 										<div
 											data-testid="signup-loading"
 											className="flex flex-col gap-3"
