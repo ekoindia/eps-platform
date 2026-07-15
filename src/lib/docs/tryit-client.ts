@@ -29,12 +29,19 @@ import { buildOpenApiDocument } from "@/lib/openapi/build-openapi";
 const DOC_NAME = "eko-eps";
 
 /**
- * DEV-only credential prefill for the Scalar auth panel. `import.meta.env.DEV` is
- * false during the Node prerender and in production builds, so these never reach
- * static output. Returns undefined when no creds are configured.
+ * Prefills the Scalar auth panel with the shared UAT keypair, in production as
+ * well as dev, so a reader can send a test request without hunting for keys.
+ *
+ * This DOES inline the keypair into the production client bundle. That is
+ * deliberate and not a leak: the same keypair is published openly in llms.txt /
+ * index.md (see `aiGettingStartedNotice` in lib/markdown/shared.ts) to give AI
+ * agents a zero-signup trial. It is a public demo credential — scoped, quota'd,
+ * rotatable — NOT a secret. Never prefill anything here that isn't.
+ *
+ * Returns undefined when no creds are configured, leaving the panel empty for
+ * the caller to fill in.
  */
-const devAuthentication = () => {
-	if (!import.meta.env.DEV) return undefined;
+const uatAuthentication = () => {
 	const developerKey = import.meta.env.VITE_EPS_UAT_DEVELOPER_KEY ?? "";
 	const accessKey = import.meta.env.VITE_EPS_UAT_ACCESS_KEY ?? "";
 	if (!developerKey && !accessKey) return undefined;
@@ -101,7 +108,7 @@ const createModal = async (): Promise<ApiClientModal> => {
 		plugins: [ekoSigningPlugin],
 		options: {
 			proxyUrl: resolveTryItProxyUrl(),
-			authentication: devAuthentication(),
+			authentication: uatAuthentication(),
 		},
 	});
 
