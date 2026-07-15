@@ -206,3 +206,61 @@ describe("EkoClient.getProfile", () => {
 		expect(init.headers["X-Real-IP"]).toBe("5.6.7.8");
 	});
 });
+
+describe("getProfile onboarding classification", () => {
+	const baseDetail = {
+		name: "Test User",
+		mobile: "9990000001",
+		code: "20810001",
+		eko_user_id: "55501",
+		org_id: 1,
+		role_list: [13000, 12600],
+	};
+
+	it("returns kind onboarding when onboarding is 1, even with user_type 23", async () => {
+		// user_type becomes 23 right after partial-account creation, so the
+		// onboarding flag must win over the user_type gate.
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "23", onboarding: 1 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("onboarding");
+		if (r.kind === "onboarding") {
+			expect(r.profile.onboarding).toBe(1);
+			expect(r.profile.ekoUserId).toBe("55501");
+			expect(r.profile.code).toBe("20810001");
+		}
+	});
+
+	it("returns kind onboarding when onboarding is 1 and user_type is not yet 23", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "0", onboarding: 1 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("onboarding");
+	});
+
+	it("still returns found for a completed EPS business profile", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "23", onboarding: 0 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("found");
+	});
+
+	it("still returns not_allowed for a completed non-EPS profile", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "2", onboarding: 0 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("not_allowed");
+	});
+});

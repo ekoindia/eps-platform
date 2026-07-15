@@ -21,6 +21,13 @@ export interface EkoProfile {
 
 export type ProfileResult =
 	| { kind: "found"; responseTypeId: number; profile: EkoProfile }
+	/**
+	 * A real profile whose onboarding is incomplete (`onboarding === 1`).
+	 * Checked BEFORE the EPS-business-partner gate: `user_type` becomes "23"
+	 * immediately after partial-account creation, so it cannot distinguish
+	 * in-progress from complete. Callers mint a signup session for this kind.
+	 */
+	| { kind: "onboarding"; responseTypeId: number; profile: EkoProfile }
 	| { kind: "not_found"; responseTypeId: number }
 	| { kind: "inactive"; responseTypeId: number }
 	| { kind: "not_allowed"; responseTypeId: number }

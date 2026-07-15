@@ -169,6 +169,19 @@ export function createEkoClient(
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
 			if (code === SUCCESS_CODE && d) {
+				// Onboarding-in-progress is checked FIRST and deliberately: user_type
+				// flips to "23" as soon as the partial account exists, so it cannot
+				// tell an in-progress user from a finished one. `onboarding === 1` is
+				// the only reliable signal. Gating on user_type first would classify
+				// every mid-onboarding user as not_allowed and lock them out on every
+				// subsequent login.
+				if (Number(d.onboarding ?? 0) === 1) {
+					return {
+						kind: "onboarding",
+						responseTypeId: code,
+						profile: mapProfile(d),
+					};
+				}
 				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
 				if (Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23") {
 					return { kind: "not_allowed", responseTypeId: code };

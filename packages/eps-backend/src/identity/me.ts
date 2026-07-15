@@ -11,6 +11,7 @@ export function deriveStateFromProfile(r: ProfileResult): LifecycleState {
 	if (r.kind === "inactive") return "inactive";
 	if (r.kind === "error" || r.kind === "not_allowed") return "unknown";
 	if (r.kind === "not_found") return "lead";
+	if (r.kind === "onboarding") return "onboarded";
 	return r.profile.onboarding === 0 ? "active" : "onboarded";
 }
 
@@ -22,6 +23,14 @@ export async function buildMeView(
 	if (r.kind === "found") {
 		return {
 			state: deriveStateFromProfile(r),
+			mobile,
+			profile: r.profile,
+			zohoId: r.profile.zohoId || null,
+		};
+	}
+	if (r.kind === "onboarding") {
+		return {
+			state: "onboarded",
 			mobile,
 			profile: r.profile,
 			zohoId: r.profile.zohoId || null,
