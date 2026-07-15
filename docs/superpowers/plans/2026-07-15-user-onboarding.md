@@ -1575,6 +1575,7 @@ import type { Sessions } from "../auth/session";
 import type { SignupService, SignupState } from "../signup/service";
 import { SignupStepError } from "../signup/service";
 import { errorBody } from "./errors";
+import type { AppEnv } from "./requestId";
 import { mountSignup } from "./signup";
 
 const inProgress: SignupState = {
@@ -1589,7 +1590,7 @@ const inProgress: SignupState = {
 
 /** Builds an app with a session double that returns `role` for any cookie. */
 function harness(role: string | null, signup: Partial<SignupService>) {
-	const app = new Hono();
+	const app = new Hono<AppEnv>();
 	app.onError((err, c) => {
 		const { status, body } = errorBody(err);
 		return c.json(body, status as never);
@@ -1599,10 +1600,7 @@ function harness(role: string | null, signup: Partial<SignupService>) {
 			.fn()
 			.mockResolvedValue(role ? { sub: "9990000001", role, orgId: 1 } : null),
 	} as unknown as Sessions;
-	mountSignup(app as never, {
-		sessions,
-		signup: signup as SignupService,
-	});
+	mountSignup(app, { sessions, signup: signup as SignupService });
 	return app;
 }
 
@@ -1726,7 +1724,7 @@ Expected: FAIL — cannot resolve `./signup`.
 Create `packages/eps-backend/src/http/signup.ts`:
 
 ```ts
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
@@ -1752,10 +1750,8 @@ export function mountSignup(
 	const { sessions, signup } = deps;
 
 	/** Resolves the caller's mobile, or throws unless this is a signup session. */
-	async function requireSignupSession(c: {
-		req: { header(name: string): string | undefined };
-	}): Promise<string> {
-		const token = getCookie(c as never, ACCESS_COOKIE);
+	async function requireSignupSession(c: Context<AppEnv>): Promise<string> {
+		const token = getCookie(c, ACCESS_COOKIE);
 		const claim = token ? await sessions.verifyAccess(token) : null;
 		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
 		if (claim.role !== "signup") {
@@ -2493,16 +2489,21 @@ git commit -m "feat(web): add the InputOTP primitive"
 - Produces — consumed by Task 15:
 
 ```ts
+export interface StepProps {
+	onSubmit: (values: string[]) => Promise<void>;
+	busy: boolean;
+	error: string | null;
+}
+export type StepSubmit = (
+	client: typeof signupClient,
+	values: string[],
+) => Promise<SignupState>;
 export interface StepDefinition {
 	role: number;
 	name: string;
 	label: string;
 	Component: ComponentType<StepProps>;
-}
-export interface StepProps {
-	onSubmit(...args: never[]): Promise<void>;
-	busy: boolean;
-	error: string | null;
+	submit: StepSubmit;
 }
 export type StepStatus = "complete" | "current" | "pending";
 export interface ResolvedStep {
@@ -2511,9 +2512,16 @@ export interface ResolvedStep {
 	label: string;
 	status: StepStatus;
 	Component: ComponentType<StepProps>;
+	submit: StepSubmit;
 }
 export function resolveSteps(state: SignupState, registry: readonly StepDefinition[]): ResolvedStep[];
 ```
+
+**Design note:** every step submits `string[]` and each registry entry owns its own
+`submit` function. This is what makes the registry real: the wizard never learns a step's
+name or its argument shape, so a third step is genuinely one entry plus one component. A
+wizard that switched on `name` to pick a call signature would force an edit here for every
+new step — the exact coupling this registry exists to remove.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2525,10 +2533,23 @@ import type { SignupState } from "@/lib/auth/client";
 import { resolveSteps, type StepDefinition } from "./resolveSteps";
 
 const Dummy = () => null;
+const noSubmit = async () => ({}) as never;
 
 const registry: StepDefinition[] = [
-	{ role: 13000, name: "pan", label: "PAN Details", Component: Dummy },
-	{ role: 12600, name: "pin", label: "Set Secret PIN", Component: Dummy },
+	{
+		role: 13000,
+		name: "pan",
+		label: "PAN Details",
+		Component: Dummy,
+		submit: noSubmit,
+	},
+	{
+		role: 12600,
+		name: "pin",
+		label: "Set Secret PIN",
+		Component: Dummy,
+		submit: noSubmit,
+	},
 ];
 
 function state(over: Partial<SignupState> = {}): SignupState {
@@ -2627,24 +2648,37 @@ Create `src/features/signup/resolveSteps.ts`:
 
 ```ts
 import type { ComponentType } from "react";
-import type { SignupState } from "@/lib/auth/client";
+import type { signupClient, SignupState } from "@/lib/auth/client";
 
 /** Props every step component receives from the wizard. */
 export interface StepProps {
-	/** Submits this step. Arguments are step-specific. */
-	onSubmit: (...args: never[]) => Promise<void>;
+	/**
+	 * Submits this step's collected values. Each step decides what its values
+	 * mean; the wizard just forwards them to the step's own `submit`.
+	 */
+	onSubmit: (values: string[]) => Promise<void>;
 	/** True while a submit is in flight; disable inputs and the button. */
 	busy: boolean;
 	/** Server-side error for this step, or null. */
 	error: string | null;
 }
 
+/** Sends one step's values to the backend and returns the refreshed state. */
+export type StepSubmit = (
+	client: typeof signupClient,
+	values: string[],
+) => Promise<SignupState>;
+
 /**
  * A step this app knows how to render.
  *
- * To add a step: append an entry here and write its component. To remove one:
- * delete the entry. Order and labels come from the API at runtime, so neither
- * is authoritative in this file.
+ * To add a step: append an entry with its role code, component, and submit. To
+ * remove one: delete the entry. Order and labels come from the API at runtime,
+ * so neither is authoritative in this file.
+ *
+ * Each entry owns its `submit` so the wizard never needs to know step names or
+ * call signatures — that is what keeps adding a step to one entry plus one
+ * component.
  */
 export interface StepDefinition {
 	/** The backend role code identifying this step. */
@@ -2653,6 +2687,7 @@ export interface StepDefinition {
 	/** Fallback label; the API's label wins when present. */
 	label: string;
 	Component: ComponentType<StepProps>;
+	submit: StepSubmit;
 }
 
 export type StepStatus = "complete" | "current" | "pending";
@@ -2663,6 +2698,7 @@ export interface ResolvedStep {
 	label: string;
 	status: StepStatus;
 	Component: ComponentType<StepProps>;
+	submit: StepSubmit;
 }
 
 /**
@@ -2701,6 +2737,7 @@ export function resolveSteps(
 							? "current"
 							: "pending",
 			Component: def.Component,
+			submit: def.submit,
 		};
 	});
 }
@@ -2720,13 +2757,26 @@ import { PinStep } from "./PinStep";
  *
  * Order here is not authoritative — the API's `onboarding_steps` decides the
  * sequence and the labels at runtime. This registry only answers "can we render
- * role N, and with what?".
+ * role N, with what, and how does it submit?".
  *
- * To add a step: write the component, then add an entry with its role code.
+ * To add a step: write the component, then add an entry with its role code and
+ * its submit. Nothing else in the app needs to change.
  */
 export const SIGNUP_STEPS: readonly StepDefinition[] = [
-	{ role: 13000, name: "pan", label: "PAN Details", Component: PanStep },
-	{ role: 12600, name: "pin", label: "Set Secret PIN", Component: PinStep },
+	{
+		role: 13000,
+		name: "pan",
+		label: "PAN Details",
+		Component: PanStep,
+		submit: (client, [pan]) => client.submitPan(pan),
+	},
+	{
+		role: 12600,
+		name: "pin",
+		label: "Set Secret PIN",
+		Component: PinStep,
+		submit: (client, [pin1, pin2]) => client.submitPin(pin1, pin2),
+	},
 ];
 ```
 
@@ -2759,7 +2809,7 @@ backend can add a step before this app ships its UI."
 
 **Interfaces:**
 - Consumes: `StepProps` (Task 12); `Button`, `Input`, `Label` from `@/components/ui/*`.
-- Produces: `PanStep: (props: StepProps) => JSX.Element`, calling `onSubmit(pan: string)`.
+- Produces: `PanStep: (props: StepProps) => JSX.Element`, calling `onSubmit([pan])`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2805,7 +2855,7 @@ describe("PanStep", () => {
 			target: { value: "ABCDE1234F" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
-		expect(onSubmit).toHaveBeenCalledWith("ABCDE1234F");
+		expect(onSubmit).toHaveBeenCalledWith(["ABCDE1234F"]);
 	});
 
 	it("disables the field and button while busy", () => {
@@ -2857,7 +2907,7 @@ export function PanStep({ onSubmit, busy, error }: StepProps) {
 			className="flex flex-col gap-4"
 			onSubmit={(e) => {
 				e.preventDefault();
-				if (isValid && !busy) void (onSubmit as (p: string) => Promise<void>)(pan);
+				if (isValid && !busy) void onSubmit([pan]);
 			}}
 		>
 			<p className="text-muted-foreground">
@@ -2921,7 +2971,7 @@ git commit -m "feat(web): add the PAN onboarding step"
 
 **Interfaces:**
 - Consumes: `StepProps` (Task 12); `InputOTP`, `InputOTPGroup`, `InputOTPSlot` (Task 11).
-- Produces: `PinStep: (props: StepProps) => JSX.Element`, calling `onSubmit(pin1: string, pin2: string)`. `SIGNUP_STEPS` from `steps.ts`, consumed by Task 15.
+- Produces: `PinStep: (props: StepProps) => JSX.Element`, calling `onSubmit([pin1, pin2])`. `SIGNUP_STEPS` from `steps.ts`, consumed by Task 15.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2967,7 +3017,7 @@ describe("PinStep", () => {
 		await typePin(/^secret pin/i, "1234");
 		await typePin(/confirm/i, "1234");
 		await userEvent.click(screen.getByRole("button", { name: /finish|continue/i }));
-		expect(onSubmit).toHaveBeenCalledWith("1234", "1234");
+		expect(onSubmit).toHaveBeenCalledWith(["1234", "1234"]);
 	});
 
 	it("shows a server error", () => {
@@ -3054,9 +3104,7 @@ export function PinStep({ onSubmit, busy, error }: StepProps) {
 			className="flex flex-col gap-5"
 			onSubmit={(e) => {
 				e.preventDefault();
-				if (canSubmit) {
-					void (onSubmit as (a: string, b: string) => Promise<void>)(pin1, pin2);
-				}
+				if (canSubmit) void onSubmit([pin1, pin2]);
 			}}
 		>
 			<p className="text-muted-foreground">
@@ -3394,14 +3442,9 @@ export function SignupWizard() {
 		);
 	}
 
-	// One submit shape per step; the wizard knows which by role.
-	const onSubmit =
-		current.name === "pan"
-			? ((pan: string) => runStep(() => signupClient.submitPan(pan))) as never
-			: ((pin1: string, pin2: string) =>
-					runStep(() => signupClient.submitPin(pin1, pin2))) as never;
-
-	const { Component } = current;
+	// Each step owns its submit, so the wizard never learns step names or call
+	// signatures — adding a step touches only the registry and its component.
+	const { Component, submit } = current;
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -3409,7 +3452,11 @@ export function SignupWizard() {
 			<div className="flex flex-col gap-1">
 				<h2 className="text-xl font-semibold">{current.label}</h2>
 			</div>
-			<Component onSubmit={onSubmit} busy={busy} error={error} />
+			<Component
+				onSubmit={(values) => runStep(() => submit(signupClient, values))}
+				busy={busy}
+				error={error}
+			/>
 		</div>
 	);
 }
