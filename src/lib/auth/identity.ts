@@ -44,9 +44,13 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 		};
 	}
 
-	const personName = state.me.profile?.name?.trim();
+	// A signup session has no Eko profile yet — it carries only a mobile, same
+	// as a developer session whose profile lookup came back empty. Both fall
+	// back to the same mobile-derived identity below.
+	const profile = state.role === "developer" ? state.me.profile : null;
+	const personName = profile?.name?.trim();
 	const fromName = personName ? nameInitials(personName) : "";
-	const code = state.me.profile?.code;
+	const code = profile?.code;
 	return {
 		name: personName || state.me.mobile,
 		// Mobile-derived fallback (last two digits) when no name exists.

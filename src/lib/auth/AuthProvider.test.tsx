@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	renderHook,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 
@@ -120,5 +126,19 @@ describe("AuthProvider", () => {
 		fireEvent.click(screen.getByRole("button", { name: /log out/i }));
 
 		await waitFor(() => expect(setChatIdentity).toHaveBeenLastCalledWith(null));
+	});
+
+	it("classifies a signup session", async () => {
+		vi.mocked(authClient.me).mockResolvedValue({
+			role: "signup",
+			mobile: "9990000001",
+		});
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+		await waitFor(() => expect(result.current.state.status).toBe("authed"));
+		expect(result.current.state).toEqual({
+			status: "authed",
+			role: "signup",
+			me: { role: "signup", mobile: "9990000001" },
+		});
 	});
 });
