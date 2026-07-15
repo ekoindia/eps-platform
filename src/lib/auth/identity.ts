@@ -41,6 +41,6 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 		name: personName || state.me.mobile,
 		// Mobile-derived fallback (last two digits) when no name exists.
 		initials: fromName || `#${state.me.mobile.slice(-2)}`,
-		detail: "Developer",
+		detail: "EPS Admin",
 	};
 }
