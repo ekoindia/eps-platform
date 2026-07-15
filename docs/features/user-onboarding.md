@@ -26,7 +26,7 @@ flowchart TD
     G -->|"POST /signup/pan"| H["PIN step\n(170 → 10005 ×2 → encode → 5)"]
     H -->|"POST /signup/pin, response_type_id 9"| I["refresh 151: onboarding → 0"]
     I --> J["status: done"]
-    J -.->|"no automatic session upgrade — see Known gaps"| K["/console"]
+    J -->|"respond() upgrades to developer session"| K["developer session\n→ /console"]
 ```
 
 Every step re-fetches the upstream profile (interaction 151) and returns
@@ -170,6 +170,40 @@ hit the Eko profile.
 `AuthProvider.classify()` (`src/lib/auth/AuthProvider.tsx:34-44`) maps this
 onto a typed `AuthState` variant, `{ status: "authed"; role: "signup"; me:
 SignupView }`, which `SignupPage.tsx` switches on directly.
+
+### Signup-to-developer session upgrade
+
+When a signup session reaches `status: "done"` (onboarding completed, PIN
+set successfully), every signup route funnels its response through a `respond()`
+helper (`packages/eps-backend/src/http/signup.ts:81-110`) that upgrades the
+session to a real developer session before returning the response.
+
+The upgrade flow (`signup.ts:86-107`):
+1. Re-fetch the upstream profile via `eko.getProfile()` to confirm
+   `onboarding === 0` (line 88-91).
+2. Build the normal `MeView` from that profile (line 92), mirroring the
+   `POST /auth/otp/verify` "found" branch exactly.
+3. Mint a developer claim with `role: "developer"` (lines 93-98), holding the
+   same `sub` (mobile) and organizational context.
+4. Mint fresh access and refresh tokens and set them as cookies (lines 99-102).
+
+All four routes (`/signup/state`, `/signup/profile`, `/signup/pan`,
+`/signup/pin`) funnel responses through `respond()`. The inclusion of
+`/signup/state` is deliberate: if a user finished onboarding but still holds
+a stale signup cookie (e.g., after a page reload mid-navigation), their next
+`/signup/state` call retries the upgrade rather than requiring only PIN
+completion to trigger it (line 112-119).
+
+If the upgrade's profile re-fetch fails (network, upstream error), the request
+still returns `done` state and succeeds — onboarding succeeded upstream, and
+the upgrade is automatically retried on the next `/signup/state` call (lines
+103-107, ponytail comment). This ensures a failed upgrade never rolls back
+onboarding completion.
+
+Once the cookies are set, the frontend's next `/me` call arrives with a
+developer role, `AuthProvider` re-classifies it to `{ status: "authed";
+role: "developer" }`, and `SignupPage`'s redirect condition
+(`state.role !== "signup"`) fires, routing to `/console`.
 
 ## Interaction reference table
 
@@ -316,23 +350,6 @@ unaffected either way.
 
 ## Known gaps / follow-ups
 
-- **The signup-to-developer session upgrade described in the design spec is
-  not implemented.** The spec states: "On completion the BFF re-fetches 151;
-  if `onboarding === 0` it mints a developer session in place of the signup
-  session." No code does this — `GET /me` for a `signup`-role session always
-  returns the lightweight `SignupView` (`app.ts:347-350`) regardless of the
-  underlying Eko profile's `onboarding` value, and no route in
-  `http/signup.ts` re-mints a cookie. In practice: after `POST /signup/pin`
-  succeeds, `SignupState.status` becomes `"done"` and `SignupWizard` shows a
-  confirmation screen and calls `refresh()` (`SignupWizard.tsx:84-86`), but
-  `/me` returns the same signup view as before, so `AuthProvider`'s role
-  never changes to `developer` and `SignupPage`'s redirect
-  (`state.role !== "signup"`) never fires. The user reaches "You're all set"
-  but is not automatically routed to `/console` — they currently need to log
-  out and back in (a fresh OTP) to receive a developer session. This is a
-  functional gap worth fixing before relying on the "done" screen as a real
-  completion state; flagged here rather than fixed as part of this
-  documentation task.
 - `alternate_user_id` for interaction 10005 sends the mobile number; Eloka
   reads a `temp_user_id` from `sessionStorage` whose origin isn't visible in
   that codebase. Settle which is correct at UAT (see above).
