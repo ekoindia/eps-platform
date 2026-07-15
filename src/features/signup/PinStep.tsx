@@ -1,4 +1,5 @@
 import { Lock } from "lucide-react";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,7 @@ function PinField({
 				id={id}
 				aria-label={label}
 				maxLength={PIN_LENGTH}
+				pattern={REGEXP_ONLY_DIGITS}
 				value={value}
 				disabled={disabled}
 				onChange={onChange}

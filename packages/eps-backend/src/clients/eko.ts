@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
@@ -110,15 +111,20 @@ export function createEkoClient(
 	const url = `${cfg.scheme}://${cfg.host}:${cfg.port}${cfg.path}`;
 	const doFetch = withTimeout(fetchImpl);
 
-	async function post(
+	/**
+	 * Shared send/log/error pipeline for both the urlencoded (`post`) and
+	 * multipart (`postMultipart`) transports: forwards `X-Real-IP`, times the
+	 * call, reads the body BEFORE the status check (a non-2xx often carries a
+	 * diagnostic JSON payload worth capturing), logs one entry via `logger.log`
+	 * keyed by the logical `fields` (never the raw body), and throws on a
+	 * non-2xx or non-JSON response.
+	 */
+	async function sendForm(
+		body: string | FormData,
+		headers: Record<string, string>,
 		fields: Record<string, string>,
 		xRealIp?: string,
 	): Promise<unknown> {
-		const body = new URLSearchParams(fields).toString();
-		const headers: Record<string, string> = {
-			"Content-Type": "application/x-www-form-urlencoded",
-			developer_key: cfg.developerKey,
-		};
 		// Forward the trusted client IP so the upstream's own anti-abuse / rate
 		// checks see the real caller. Omit the header entirely when unknown — an
 		// empty `X-Real-IP` can be treated differently from an absent one upstream.
@@ -163,6 +169,41 @@ export function createEkoClient(
 			throw new Error(`Eko upstream returned non-JSON (status ${res.status})`);
 		}
 		return parsed;
+	}
+
+	async function post(
+		fields: Record<string, string>,
+		xRealIp?: string,
+	): Promise<unknown> {
+		const body = new URLSearchParams(fields).toString();
+		const headers: Record<string, string> = {
+			"Content-Type": "application/x-www-form-urlencoded",
+			developer_key: cfg.developerKey,
+		};
+		return sendForm(body, headers, fields, xRealIp);
+	}
+
+	/**
+	 * POSTs a single `multipart/form-data` part named `form-data`, whose value
+	 * is the given URL-encoded field string. Interaction 523 (PAN verification)
+	 * is the one onboarding call the upstream expects wrapped this way instead
+	 * of plain urlencoded — see the design spec's "PAN (523)" section.
+	 *
+	 * `Content-Type` is deliberately left unset: `fetch` fills in the multipart
+	 * boundary itself once it sees a `FormData` body, and setting it manually
+	 * would omit that boundary and break the upload.
+	 */
+	async function postMultipart(
+		formDataString: string,
+		xRealIp?: string,
+	): Promise<unknown> {
+		const body = new FormData();
+		body.append("form-data", formDataString);
+		const headers: Record<string, string> = { developer_key: cfg.developerKey };
+		// Logged fields must mirror the actual wire values so redaction and the
+		// `basic`-level summary keep working exactly as they do for `post()`.
+		const fields = Object.fromEntries(new URLSearchParams(formDataString));
+		return sendForm(body, headers, fields, xRealIp);
 	}
 
 	function base(orgId?: number): Record<string, string> {
@@ -309,16 +350,23 @@ export function createEkoClient(
 		},
 		async verifyPan(input) {
 			// PAN rides as `doc_id` on the document interaction; no photo is sent.
-			const raw = await post(
-				{
-					...actor(input.identity),
-					interaction_type_id: "523",
-					intent_id: "3",
-					doc_type: "2",
-					doc_id: input.pan,
-					latlong: ONBOARDING_LATLONG,
-					source: "EPS",
-				},
+			// Unlike every other onboarding interaction, 523 (document upload) is
+			// NOT sent as a flat urlencoded body: the reference connect-api
+			// implementation wraps it in one multipart part, literally named
+			// `form-data`, whose value is this same URL-encoded field string. See
+			// the design spec's "PAN (523)" section.
+			const fields = {
+				client_ref_id: randomUUID(),
+				interaction_type_id: "523",
+				intent_id: "3",
+				doc_type: "2",
+				doc_id: input.pan,
+				source: "EPS",
+				latlong: ONBOARDING_LATLONG,
+				...actor(input.identity),
+			};
+			const raw = await postMultipart(
+				new URLSearchParams(fields).toString(),
 				input.xRealIp,
 			);
 			return stepResult(raw, PAN_VERIFICATION_OK);

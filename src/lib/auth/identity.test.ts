@@ -78,6 +78,20 @@ describe("accountIdentity", () => {
 			detail: "Admin",
 		});
 	});
+
+	it("labels a signup session 'Finishing setup', not 'EPS Admin'", () => {
+		const state: AuthState = {
+			status: "authed",
+			role: "signup",
+			me: { role: "signup", mobile: "9990000079" },
+		};
+		expect(accountIdentity(state)).toEqual({
+			name: "9990000079",
+			initials: "#79",
+			detail: "Finishing setup",
+			meta: undefined,
+		});
+	});
 });
 
 /** Builds an authed-developer AuthState with an arbitrary profile shape. */

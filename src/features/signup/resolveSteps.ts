@@ -84,7 +84,17 @@ export function resolveSteps(
 	registry: readonly StepDefinition[],
 ): ResolvedStep[] {
 	const byRole = new Map(registry.map((s) => [s.role, s]));
-	const known = state.steps.filter((s) => byRole.has(s.role));
+	const known = state.steps.filter((s) => {
+		if (byRole.has(s.role)) return true;
+		// The backend can ship a new step before this app has UI for it. Skipping
+		// is intentional (see the module doc), but it must not be silent — warn
+		// so a step nobody can complete shows up in a log, not just as a user
+		// hitting the unsupported-step message with no trace anywhere.
+		console.warn(
+			`resolveSteps: unknown step role ${s.role} ("${s.label}") — skipping`,
+		);
+		return false;
+	});
 	const currentIndex = known.findIndex((s) => s.role === state.currentRole);
 
 	return known.map((apiStep, index) => {

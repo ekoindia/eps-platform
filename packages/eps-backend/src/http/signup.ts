@@ -31,7 +31,11 @@ export function mountSignup(
 		cfg: Config;
 	},
 ): void {
-	const { sessions, signup, eko, zoho, cfg } = deps;
+	// `cfg` is accepted for interface parity with the rest of the BFF's mount
+	// functions but no longer read here: the session upgrade below only mints
+	// on a `found` profile, which always carries its own `orgId` (no
+	// `cfg.eko.defaultOrgId` fallback needed).
+	const { sessions, signup, eko, zoho } = deps;
 
 	/** Resolves the caller's mobile, or throws unless this is a signup session. */
 	async function requireSignupSession(c: Context<AppEnv>): Promise<string> {
@@ -89,11 +93,24 @@ export function mountSignup(
 					mobile,
 					xRealIp: c.req.header("x-real-ip"),
 				});
+				// Only a genuinely `found` profile may mint a developer session.
+				// `buildMeView` never throws — `inactive` resolves to
+				// `{state:"inactive"}` and `not_allowed`/`error` both resolve to
+				// `{state:"unknown", profile:null}` — so gating on its output would
+				// silently mint a session for exactly the profiles
+				// `POST /auth/otp/verify` refuses outright (403 ACCOUNT_INACTIVE /
+				// 403 NOT_ALLOWED / 502). The realistic trigger is a transient
+				// upstream flake (`error`): without this guard it would upgrade an
+				// unverified profile. No upgrade here just means the next
+				// /signup/state call retries it.
+				if (profile.kind !== "found") return c.json(state);
 				const view = await buildMeView(mobile, profile, (m) => zoho.findLead(m));
 				const claim = {
 					sub: mobile,
 					role: "developer" as const,
-					orgId: view.profile?.orgId ?? cfg.eko.defaultOrgId,
+					// A `found` profile always carries a real orgId — no default-org
+					// fallback needed (unlike the `unknown`/`inactive` kinds above).
+					orgId: profile.profile.orgId,
 					zohoId: view.zohoId ?? undefined,
 				};
 				const access = await sessions.mintAccess(claim);

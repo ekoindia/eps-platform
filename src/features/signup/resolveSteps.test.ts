@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SignupState } from "@/lib/auth/client";
 import { resolveSteps, type StepDefinition } from "./resolveSteps";
 
@@ -82,7 +82,8 @@ describe("resolveSteps", () => {
 		expect(resolved[0].label).toBe("PAN Details");
 	});
 
-	it("skips a role the registry does not know, without throwing", () => {
+	it("skips a role the registry does not know, without throwing, and logs it", () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const resolved = resolveSteps(
 			state({
 				steps: [
@@ -94,6 +95,8 @@ describe("resolveSteps", () => {
 			registry,
 		);
 		expect(resolved.map((s) => s.name)).toEqual(["pan"]);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining("99999"));
+		warn.mockRestore();
 	});
 
 	it("marks every step complete when onboarding is done", () => {

@@ -274,6 +274,13 @@ describe("onboarding interactions", () => {
 		return new URLSearchParams(init.body as string);
 	}
 
+	/** Extracts the `form-data` part's URL-decoded fields from a multipart call. */
+	function multipartFieldsOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		const formData = init.body as FormData;
+		return new URLSearchParams(String(formData.get("form-data")));
+	}
+
 	it("createPartialAccount sends 521 with the default initiator and EPS vertical", async () => {
 		const f = mockFetch(200, { response_type_id: 1566 });
 		const eko = createEkoClient(ekoCfg, f);
@@ -306,20 +313,46 @@ describe("onboarding interactions", () => {
 		});
 	});
 
-	it("verifyPan sends 523 with the user's own identity and no file", async () => {
+	it("verifyPan sends 523 as multipart with one 'form-data' part and no file", async () => {
 		const f = mockFetch(200, { response_type_id: 1569 });
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.verifyPan({ pan: "ABCDE1234F", identity });
 		expect(r.ok).toBe(true);
-		const body = bodyOf(f);
-		expect(body.get("interaction_type_id")).toBe("523");
-		expect(body.get("doc_id")).toBe("ABCDE1234F");
-		expect(body.get("doc_type")).toBe("2");
-		expect(body.get("intent_id")).toBe("3");
-		expect(body.get("source")).toBe("EPS");
+
+		const init = (f as unknown as Mock).mock.calls[0][1];
+		const body = init.body as FormData;
+		expect(body).toBeInstanceOf(FormData);
+		// Exactly one part, named "form-data" — no file part.
+		expect(Array.from(body.keys())).toEqual(["form-data"]);
+		expect(body.get("file")).toBeNull();
+		// fetch must set the multipart Content-Type (with boundary) itself.
+		expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+
+		const fields = multipartFieldsOf(f);
+		expect(fields.get("interaction_type_id")).toBe("523");
+		expect(fields.get("doc_id")).toBe("ABCDE1234F");
+		expect(fields.get("doc_type")).toBe("2");
+		expect(fields.get("intent_id")).toBe("3");
+		expect(fields.get("source")).toBe("EPS");
+		expect(fields.get("latlong")).toBe("27.176670,78.008075,7787");
 		// Once the partial account exists, the user acts as their own initiator.
-		expect(body.get("initiator_id")).toBe("55501");
-		expect(body.get("user_code")).toBe("20810001");
+		expect(fields.get("initiator_id")).toBe("55501");
+		expect(fields.get("user_code")).toBe("20810001");
+		expect(fields.get("org_id")).toBe("1");
+		// A client_ref_id is always generated, matching sendOtp/verifyOtp.
+		expect(fields.get("client_ref_id")).toBeTruthy();
+	});
+
+	it("verifyPan generates a distinct client_ref_id per call", async () => {
+		const f = mockFetch(200, { response_type_id: 1569 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.verifyPan({ pan: "ABCDE1234F", identity });
+		await eko.verifyPan({ pan: "ABCDE1234F", identity });
+		const first = multipartFieldsOf(f, 0).get("client_ref_id");
+		const second = multipartFieldsOf(f, 1).get("client_ref_id");
+		expect(first).toBeTruthy();
+		expect(second).toBeTruthy();
+		expect(first).not.toBe(second);
 	});
 
 	it("getBooklet accepts only response_status_id 0 with type 1646", async () => {

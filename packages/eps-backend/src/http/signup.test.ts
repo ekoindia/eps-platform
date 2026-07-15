@@ -259,4 +259,35 @@ describe("session upgrade on completion", () => {
 		expect(await res.json()).toEqual(done);
 		expect(mintAccess).not.toHaveBeenCalled();
 	});
+
+	// buildMeView never throws for these three ProfileResult kinds — it resolves
+	// them to a neutral/inactive MeView instead. Each one must still be refused
+	// here exactly as POST /auth/otp/verify refuses it outright (403/403/502):
+	// the done state comes back, but no developer session is minted.
+	it.each([
+		["inactive", { kind: "inactive", responseTypeId: 2123 }],
+		["not_allowed", { kind: "not_allowed", responseTypeId: 369 }],
+		["error", { kind: "error", responseTypeId: -1 }],
+	])(
+		"does not upgrade when the re-fetched profile is %s",
+		async (_label, profileResult) => {
+			const submitPin = vi.fn().mockResolvedValue(done);
+			const getProfile = vi.fn().mockResolvedValue(profileResult);
+			const mintAccess = vi.fn();
+			const app = harness(
+				"signup",
+				{ submitPin },
+				{ eko: { getProfile }, sessions: { mintAccess } },
+			);
+			const res = await app.request("/signup/pin", {
+				method: "POST",
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+				body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+			});
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual(done);
+			expect(mintAccess).not.toHaveBeenCalled();
+			expect(res.headers.get("set-cookie")).toBeNull();
+		},
+	);
 });

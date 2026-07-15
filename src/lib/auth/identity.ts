@@ -46,7 +46,8 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 
 	// A signup session has no Eko profile yet — it carries only a mobile, same
 	// as a developer session whose profile lookup came back empty. Both fall
-	// back to the same mobile-derived identity below.
+	// back to the same mobile-derived name/initials below; only `detail`
+	// differs, since a signup session is not yet a developer at all.
 	const profile = state.role === "developer" ? state.me.profile : null;
 	const personName = profile?.name?.trim();
 	const fromName = personName ? nameInitials(personName) : "";
@@ -55,7 +56,7 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 		name: personName || state.me.mobile,
 		// Mobile-derived fallback (last two digits) when no name exists.
 		initials: fromName || `#${state.me.mobile.slice(-2)}`,
-		detail: "EPS Admin",
+		detail: state.role === "signup" ? "Finishing setup" : "EPS Admin",
 		// Mobile is skipped when it already serves as the primary name.
 		meta:
 			[personName ? state.me.mobile : "", code ? `Code ${code}` : ""]
