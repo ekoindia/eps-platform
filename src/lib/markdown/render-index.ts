@@ -1,17 +1,17 @@
+import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
+import { SIGNUP_URL, SITE_URL } from "@/lib/config/site";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
-import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
-import { EPS_MCP_PKG, SIGNUP_URL, SITE_URL } from "@/lib/config/site";
 import {
+	aiGettingStartedNotice,
 	canonicalNotice,
 	frontMatter,
 	gettingStartedNotice,
 	h1,
 	h2,
-	joinBlocks,
 	indexPageNotice,
-	mcpInstallNotice,
+	joinBlocks,
 } from "./shared";
 
 /**
@@ -92,10 +92,16 @@ export function renderSiteIndexMarkdown(
 		canonicalNotice(canonical),
 		h1("Eko Platform Services — Site Index"),
 		"Eko provides a single API platform for payments, banking correspondent services, and identity verification across India. This is a machine-readable index linking to markdown versions of every page.",
-		mcpInstallNotice(),
+
+		h2("Getting started for AI Coding Agents"),
+		aiGettingStartedNotice(),
+
+		h2("Getting started for developers"),
 		gettingStartedNotice(),
+
 		h2("Pricing"),
 		`- [Verification API pricing — full rate card](${SITE_URL}/pricing) ([markdown](${SITE_URL}/pricing.md))`,
+
 		h2("Products (APIs)"),
 		`Browse all products: [Products listing](${SITE_URL}/products) ([markdown](${SITE_URL}/products.md))`,
 		renderProductSection("Verification APIs", productsByCategory.verification),
@@ -104,6 +110,7 @@ export function renderSiteIndexMarkdown(
 			"Banking Correspondent (BC) APIs",
 			productsByCategory.bc,
 		),
+
 		h2("Industries"),
 		industries
 			.map(
@@ -111,6 +118,7 @@ export function renderSiteIndexMarkdown(
 					`- [${i.name}](${SITE_URL}/industries/${i.slug}) — ${i.navDescription} ([markdown](${SITE_URL}/industries/${i.slug}.md))`,
 			)
 			.join("\n"),
+
 		h2("Solution Packs"),
 		solutions
 			.map(
@@ -118,6 +126,7 @@ export function renderSiteIndexMarkdown(
 					`- [${s.name}](${SITE_URL}/solutions/${s.slug}) — ${s.tagline} ([markdown](${SITE_URL}/solutions/${s.slug}.md))`,
 			)
 			.join("\n"),
+
 		h2("Use Cases Hub"),
 		`- [Use Cases](${SITE_URL}/use-cases) ([markdown](${SITE_URL}/use-cases.md))`,
 	];
@@ -178,35 +187,28 @@ export function renderLlmsTxt(
 	}
 	lines.push("");
 
-	lines.push("## Getting started");
+	lines.push("## Getting started for developers");
 	lines.push(
-		`- Sign up at ${SIGNUP_URL} — verify identity (PAN + bank), load your wallet, and test the verification APIs live before integrating.`,
+		`- Sign up at ${SIGNUP_URL} — verify identity (with your PAN), load your wallet, and test the verification APIs live before integrating.`,
 	);
 	lines.push(
 		`- Ready to build? Free AI plugins, MCP & SDKs at ${SITE_URL}/ai.`,
 	);
 	lines.push("");
 
-	lines.push("## For AI coding agents");
 	lines.push(
-		`- Install per agent at ${SITE_URL}/ai — EPS plugin (MCP + skills). Claude Code & Codex have a native two-step plugin install; other agents wire the MCP directly.`,
+		h2("Getting started for AI Coding Agents"),
+		"",
+		aiGettingStartedNotice(),
 	);
-	lines.push(
-		`- [Context pack (AGENTS.md)](${SITE_URL}/agent/AGENTS.md): Append-able EPS section for agents without MCP/skills support — auth, endpoints, recipes`,
-	);
-	lines.push(
-		`- [Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe`,
-	);
-	lines.push(
-		`- [Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for detail`,
-	);
-	lines.push(`- [OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`);
-	lines.push(
-		`- Install the EPS context MCP (\`eps-context-mcp\`) for structured access to the latest API specs, HMAC signing & recipes — integrate without guessing: \`npx -y ${EPS_MCP_PKG}\`, per-agent setup at ${SITE_URL}/ai#install`,
-	);
-	lines.push(
-		`- [AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
-	);
+
+	// lines.push("## For AI coding agents");
+	// lines.push(
+	// 	`- Install per agent at ${SITE_URL}/ai — EPS plugin (MCP + skills). Claude Code & Codex have a native two-step plugin install; other agents wire the MCP directly.`,
+	// );
+	// lines.push(
+	// 	`- [Context pack (AGENTS.md)](${SITE_URL}/agent/AGENTS.md): Append-able EPS section for agents without MCP/skills support — auth, endpoints, recipes`,
+	// );
 	if (SHOW_TRANSACT_MCP) {
 		lines.push(
 			`- [For AI agents](${SITE_URL}/agents): Transactional MCP — run EPS verifications as agent tools`,
