@@ -16,4 +16,13 @@ if (typeof window !== "undefined") {
 			dispatchEvent: () => {},
 		}),
 	});
+
+	// input-otp observes its container for resizes; jsdom has no ResizeObserver.
+	window.ResizeObserver =
+		window.ResizeObserver ??
+		class {
+			observe() {}
+			unobserve() {}
+			disconnect() {}
+		};
 }

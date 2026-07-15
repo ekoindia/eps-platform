@@ -135,6 +135,21 @@ describe("cookies", () => {
 	});
 });
 
+describe("Sessions signup role", () => {
+	it("mints and verifies a signup-role access token", async () => {
+		const kv = createInMemoryKV();
+		const sessions = createSessions(cfg, kv);
+		const token = await sessions.mintAccess({
+			sub: "9990000001",
+			role: "signup",
+			orgId: 1,
+		});
+		const claim = await sessions.verifyAccess(token);
+		expect(claim?.role).toBe("signup");
+		expect(claim?.sub).toBe("9990000001");
+	});
+});
+
 describe("refresh-token KV security", () => {
 	it("hashes the refresh token into the KV key (raw token absent)", async () => {
 		const kv = createInMemoryKV();

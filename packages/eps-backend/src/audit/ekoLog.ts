@@ -64,6 +64,45 @@ function responseSummary(response: unknown): Record<string, unknown> {
 }
 
 /**
+ * Fields that must never be logged, at any level.
+ *
+ * The secret PIN is never sent upstream raw — the BFF encodes it — but the
+ * pintwin encoding is a plain digit substitution, so an `okekey` logged
+ * alongside the `pintwin_key` that produced it recovers the PIN exactly.
+ * Redacting either one breaks that; we redact both.
+ */
+const REDACTED_REQUEST_FIELDS = new Set(["first_okekey", "second_okekey"]);
+const REDACTED_RESPONSE_FIELDS = new Set(["pintwin_key"]);
+
+const REDACTION_PLACEHOLDER = "[REDACTED]";
+
+/** Returns a copy of `fields` with sensitive entries replaced. Never mutates the input. */
+function redactFields(fields: Record<string, string>): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const [k, v] of Object.entries(fields)) {
+		out[k] = REDACTED_REQUEST_FIELDS.has(k) ? REDACTION_PLACEHOLDER : v;
+	}
+	return out;
+}
+
+/**
+ * Deep-copies `value`, replacing any property named in REDACTED_RESPONSE_FIELDS.
+ * Upstream nests the pintwin key under `data`, so this must recurse. Never
+ * mutates the input.
+ */
+function redactResponse(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(redactResponse);
+	if (!value || typeof value !== "object") return value;
+	const out: Record<string, unknown> = {};
+	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+		out[k] = REDACTED_RESPONSE_FIELDS.has(k)
+			? REDACTION_PLACEHOLDER
+			: redactResponse(v);
+	}
+	return out;
+}
+
+/**
  * Creates the upstream logger. Serializes each record to one JSON line
  * (`type: "eko_upstream"`) and passes it to `sink` (default `console.log`).
  * Serialization and sink failures are swallowed — logging must never break or
@@ -97,7 +136,12 @@ export function createEkoLogger(opts: {
 				};
 				const record =
 					level === "full"
-						? { ...base, request: f, response: entry.response ?? null }
+						? {
+								...base,
+								request: redactFields(f),
+								response:
+									entry.response == null ? null : redactResponse(entry.response),
+							}
 						: {
 								...base,
 								mobile: maskMobile(f.mobile),

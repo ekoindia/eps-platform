@@ -14,6 +14,12 @@ vi.mock("@/components/auth/LoginForm", () => ({
 }));
 vi.mock("@/components/Footer", () => ({ Footer: () => <footer /> }));
 
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async (orig) => ({
+	...(await orig<typeof import("react-router-dom")>()),
+	useNavigate: () => mockNavigate,
+}));
+
 function renderConsole(state: AuthState) {
 	mockState = state;
 	return render(
@@ -100,5 +106,17 @@ describe("Console", () => {
 			me: { role: "admin", login: "octo", sub: "gh:octo" },
 		});
 		expect(screen.getByText(/octo/i)).toBeInTheDocument();
+	});
+
+	it("redirects a signup session back to /signup instead of rendering an empty console", () => {
+		renderConsole({
+			status: "authed",
+			role: "signup",
+			me: { role: "signup", mobile: "9990000001" },
+		});
+		expect(mockNavigate).toHaveBeenCalledWith("/signup", { replace: true });
+		// Not blank: shows the same loading skeleton the `loading` state shows,
+		// rather than an empty body while the redirect is in flight.
+		expect(screen.getByTestId("console-loading")).toBeInTheDocument();
 	});
 });

@@ -12,10 +12,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { Lifecycle, MeView } from "@/lib/auth/client";
+import { useEffect } from "react";
 import { uatCredentials } from "@/lib/uat-credentials";
 import { CopyButton } from "@/pages/ai/CommandBlock";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const STATE_COPY: Record<
 	Lifecycle,
@@ -142,6 +143,27 @@ function DeveloperConsole({ me }: { me: MeView }) {
 /** Top-level Console page: routes to login, loading skeleton, or role-appropriate dashboard. */
 export default function Console() {
 	const { state } = useAuth();
+	const navigate = useNavigate();
+
+	// A signup session hasn't finished onboarding — it has no console to show.
+	// Send it back to `/signup` to resume the wizard. Mirror of the redirect
+	// SignupPage.tsx already does in the other direction (`role !== "signup"`
+	// → `/console`); the two conditions are disjoint by construction, so
+	// neither page can bounce a session straight back to the other.
+	useEffect(() => {
+		if (state.status === "authed" && state.role === "signup") {
+			navigate("/signup", { replace: true });
+		}
+	}, [state, navigate]);
+
+	// While the redirect above is in flight (or on the loading state that also
+	// has nothing to render yet), show the loading skeleton instead of the
+	// blank body a signup session would otherwise render — none of the
+	// branches below match role: "signup".
+	const showLoading =
+		state.status === "loading" ||
+		(state.status === "authed" && state.role === "signup");
+
 	return (
 		<>
 			<Helmet>
@@ -152,7 +174,7 @@ export default function Console() {
 				<h1 className="text-2xl font-bold text-eko-navy mb-8">
 					Developer Console
 				</h1>
-				{state.status === "loading" ? (
+				{showLoading ? (
 					<div data-testid="console-loading" className="max-w-2xl">
 						<Card>
 							<CardHeader>

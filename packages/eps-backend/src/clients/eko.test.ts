@@ -206,3 +206,274 @@ describe("EkoClient.getProfile", () => {
 		expect(init.headers["X-Real-IP"]).toBe("5.6.7.8");
 	});
 });
+
+describe("mapProfile onboarding_steps", () => {
+	// Trust boundary: onboarding_steps is untrusted upstream data. Array.isArray
+	// guards the array itself but not its elements — a null element must
+	// degrade to a neutral step instead of throwing on `s.role`.
+	it("maps a null element to {role: -1, label: \"\"} instead of throwing", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: {
+				user_detail: {
+					mobile: "9990000001",
+					org_id: 1,
+					user_type: "23",
+					onboarding: 1,
+					onboarding_steps: [null, { role: 13000, label: "PAN Details" }],
+				},
+			},
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("onboarding");
+		if (r.kind === "onboarding") {
+			expect(r.profile.onboardingSteps).toEqual([
+				{ role: -1, label: "" },
+				{ role: 13000, label: "PAN Details" },
+			]);
+		}
+	});
+});
+
+describe("getProfile onboarding classification", () => {
+	const baseDetail = {
+		name: "Test User",
+		mobile: "9990000001",
+		code: "20810001",
+		eko_user_id: "55501",
+		org_id: 1,
+		role_list: [13000, 12600],
+	};
+
+	it("returns kind onboarding when onboarding is 1, even with user_type 23", async () => {
+		// user_type becomes 23 right after partial-account creation, so the
+		// onboarding flag must win over the user_type gate.
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "23", onboarding: 1 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("onboarding");
+		if (r.kind === "onboarding") {
+			expect(r.profile.onboarding).toBe(1);
+			expect(r.profile.ekoUserId).toBe("55501");
+			expect(r.profile.code).toBe("20810001");
+		}
+	});
+
+	it("returns kind onboarding when onboarding is 1 and user_type is not yet 23", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "0", onboarding: 1 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("onboarding");
+	});
+
+	it("still returns found for a completed EPS business profile", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "23", onboarding: 0 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("found");
+	});
+
+	it("still returns not_allowed for a completed non-EPS profile", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...baseDetail, user_type: "2", onboarding: 0 } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("not_allowed");
+	});
+});
+
+describe("onboarding interactions", () => {
+	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+
+	/** Extracts the form-encoded body of a captured mock fetch call. */
+	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		return new URLSearchParams(init.body as string);
+	}
+
+	/** Extracts the `form-data` part's URL-decoded fields from a multipart call. */
+	function multipartFieldsOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		const formData = init.body as FormData;
+		return new URLSearchParams(String(formData.get("form-data")));
+	}
+
+	it("createPartialAccount sends 521 with the default initiator and EPS vertical", async () => {
+		const f = mockFetch(200, { response_type_id: 1566 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.createPartialAccount({ mobile: "9990000001" });
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("521");
+		expect(body.get("applicant_type")).toBe("1");
+		expect(body.get("business_vertical")).toBe("EPS");
+		expect(body.get("user_identity")).toBe("9990000001");
+		expect(body.get("user_identity_type")).toBe("mobile_number");
+		// New users have no account yet: the DEFAULT initiator/user_code pair acts.
+		expect(body.get("initiator_id")).toBe(ekoCfg.initiatorId);
+		expect(body.get("user_code")).toBe(ekoCfg.userCode);
+		// user_id must never be sent upstream.
+		expect(body.get("user_id")).toBeNull();
+	});
+
+	it("createPartialAccount reports the upstream message on failure", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1500,
+			message: "Account already exists",
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.createPartialAccount({ mobile: "9990000001" });
+		expect(r).toEqual({
+			ok: false,
+			message: "Account already exists",
+			responseTypeId: 1500,
+		});
+	});
+
+	it("verifyPan sends 523 as multipart with one 'form-data' part and no file", async () => {
+		const f = mockFetch(200, { response_type_id: 1569 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.verifyPan({ pan: "ABCDE1234F", identity });
+		expect(r.ok).toBe(true);
+
+		const init = (f as unknown as Mock).mock.calls[0][1];
+		const body = init.body as FormData;
+		expect(body).toBeInstanceOf(FormData);
+		// Exactly one part, named "form-data" — no file part.
+		expect(Array.from(body.keys())).toEqual(["form-data"]);
+		expect(body.get("file")).toBeNull();
+		// fetch must set the multipart Content-Type (with boundary) itself.
+		expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+
+		const fields = multipartFieldsOf(f);
+		expect(fields.get("interaction_type_id")).toBe("523");
+		expect(fields.get("doc_id")).toBe("ABCDE1234F");
+		expect(fields.get("doc_type")).toBe("2");
+		expect(fields.get("intent_id")).toBe("3");
+		expect(fields.get("source")).toBe("EPS");
+		expect(fields.get("latlong")).toBe("27.176670,78.008075,7787");
+		// Once the partial account exists, the user acts as their own initiator.
+		expect(fields.get("initiator_id")).toBe("55501");
+		expect(fields.get("user_code")).toBe("20810001");
+		expect(fields.get("org_id")).toBe("1");
+		// A client_ref_id is always generated, matching sendOtp/verifyOtp.
+		expect(fields.get("client_ref_id")).toBeTruthy();
+	});
+
+	it("verifyPan generates a distinct client_ref_id per call", async () => {
+		const f = mockFetch(200, { response_type_id: 1569 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.verifyPan({ pan: "ABCDE1234F", identity });
+		await eko.verifyPan({ pan: "ABCDE1234F", identity });
+		const first = multipartFieldsOf(f, 0).get("client_ref_id");
+		const second = multipartFieldsOf(f, 1).get("client_ref_id");
+		expect(first).toBeTruthy();
+		expect(second).toBeTruthy();
+		expect(first).not.toBe(second);
+	});
+
+	it("getBooklet accepts only response_status_id 0 with type 1646", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 0,
+			response_type_id: 1646,
+			data: { booklet_serial_number: "SN123", is_pintwin_user: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getBooklet({ identity })).toEqual({
+			bookletSerialNumber: "SN123",
+			isPintwinUser: 1,
+		});
+	});
+
+	it("getBooklet returns null on an unexpected response type", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 0,
+			response_type_id: 999,
+			data: { booklet_serial_number: "SN123", is_pintwin_user: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getBooklet({ identity })).toBeNull();
+	});
+
+	it("fetchPintwinKey returns the key and id", async () => {
+		const f = mockFetch(200, {
+			data: { pintwin_key: "1974856302", key_id: 39 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
+		).toEqual({ pintwinKey: "1974856302", keyId: 39 });
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("10005");
+		expect(body.get("alternate_user_id")).toBe("9990000001");
+	});
+
+	it("fetchPintwinKey returns null when the key is missing", async () => {
+		const f = mockFetch(200, { data: {} });
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
+		).toBeNull();
+	});
+
+	it("setSecretPin sends 5 with both okekeys and the booklet fields verbatim", async () => {
+		const f = mockFetch(200, { response_type_id: 9 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.setSecretPin({
+			firstOkekey: "9748|39",
+			secondOkekey: "9748|41",
+			booklet: { bookletSerialNumber: "SN123", isPintwinUser: 1 },
+			identity,
+		});
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("5");
+		expect(body.get("first_okekey")).toBe("9748|39");
+		expect(body.get("second_okekey")).toBe("9748|41");
+		expect(body.get("is_pintwin_user")).toBe("1");
+		expect(body.get("booklet_serial_number")).toBe("SN123");
+	});
+
+	it("getBooklet returns null when response_status_id is not 0, even with a valid type", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 1,
+			response_type_id: 1646,
+			data: { booklet_serial_number: "SN123", is_pintwin_user: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getBooklet({ identity })).toBeNull();
+	});
+
+	it("fetchPintwinKey accepts key_id 0 as valid", async () => {
+		const f = mockFetch(200, {
+			data: { pintwin_key: "1974856302", key_id: 0 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
+		).toEqual({ pintwinKey: "1974856302", keyId: 0 });
+	});
+
+	it("createPartialAccount returns failure when response_type_id is missing", async () => {
+		const f = mockFetch(200, {});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.createPartialAccount({ mobile: "9990000001" });
+		expect(r).toEqual({
+			ok: false,
+			message: "The request could not be completed.",
+			responseTypeId: -1,
+		});
+	});
+});
