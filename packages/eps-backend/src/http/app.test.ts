@@ -326,7 +326,7 @@ describe("otp/verify + me", () => {
 		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
 	});
 
-	it("blocks an unregistered (new) user without a session (403 NOT_REGISTERED)", async () => {
+	it("mints a signup session (not a 403) for an unregistered (new) user", async () => {
 		const { app } = deps({
 			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
 			getProfile: vi.fn(async () => ({
@@ -339,11 +339,9 @@ describe("otp/verify + me", () => {
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
 		});
-		expect(res.status).toBe(403);
-		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
-			"NOT_REGISTERED",
-		);
-		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ role: "signup", mobile: "9990000001" });
+		expect(cookieFrom(res)).toContain("eps_at=");
 	});
 
 	it("blocks a non-EPS-business profile without a session (403 NOT_ALLOWED)", async () => {
@@ -445,6 +443,128 @@ describe("otp/verify + me", () => {
 			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
 		});
 		expect(res.status).toBe(200);
+	});
+});
+
+describe("signup sessions", () => {
+	const onboardingProfileFixture = {
+		name: "",
+		email: "",
+		mobile: "9990000001",
+		code: "20810001",
+		userType: "23",
+		ekoUserId: "55501",
+		roleList: ["13000", "12600"],
+		orgId: 1,
+		onboarding: 1,
+		zohoId: "",
+		onboardingSteps: [
+			{ role: 13000, label: "PAN Details" },
+			{ role: 12600, label: "Set Secret PIN" },
+		],
+	};
+
+	it("mints a signup session for an unregistered mobile", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_found" as const,
+				responseTypeId: 319,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ role: "signup", mobile: "9990000001" });
+		expect(cookieFrom(res)).toContain("eps_at=");
+	});
+
+	it("mints a signup session for a mid-onboarding profile", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "onboarding" as const,
+				responseTypeId: 369,
+				profile: onboardingProfileFixture,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect((await body<{ role: string }>(res)).role).toBe("signup");
+	});
+
+	it("no longer returns NOT_REGISTERED", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_found" as const,
+				responseTypeId: 319,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).not.toBe(403);
+	});
+
+	it("GET /me returns a signup view without hitting Eko", async () => {
+		const { app, eko, sessions } = deps({ getProfile: vi.fn() });
+		const token = await sessions.mintAccess({
+			sub: "9990000001",
+			role: "signup",
+			orgId: 1,
+		});
+		const res = await app.request("/me", {
+			headers: { cookie: `eps_at=${token}` },
+		});
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ role: "signup", mobile: "9990000001" });
+		// A reload mid-onboarding must restore the session cheaply.
+		expect(eko.getProfile).not.toHaveBeenCalled();
+	});
+
+	it("still refuses an inactive account", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "inactive" as const,
+				responseTypeId: 2123,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(403);
+	});
+
+	it("still refuses a completed non-EPS-business profile", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_allowed" as const,
+				responseTypeId: 369,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NOT_ALLOWED",
+		);
 	});
 });
 

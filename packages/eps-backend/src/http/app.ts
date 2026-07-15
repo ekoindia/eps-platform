@@ -10,11 +10,14 @@ import type { GitHubClient } from "../clients/github";
 import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
 import { buildMeView } from "../identity/me";
+import type { SignupView } from "../identity/me";
+import { createSignupService, type SignupService } from "../signup/service";
 import type { KV } from "../store/kv";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
 import { AppError, errorBody } from "./errors";
+import { mountSignup } from "./signup";
 import {
 	ADMIN_CALLBACK_IP_LIMIT,
 	ADMIN_LOGIN_IP_LIMIT,
@@ -40,6 +43,8 @@ export interface Deps {
 	readiness?: () => Promise<boolean>; // Task 7
 	securityLog?: SecurityLogger;
 	accessLog?: AccessLogger;
+	/** Signup orchestration; defaults to one built over the injected Eko client. */
+	signup?: SignupService;
 }
 
 const OTP_START_LIMIT = 5;
@@ -67,6 +72,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const accessLog = deps.accessLog ?? noopAccessLogger;
+	const signup = deps.signup ?? createSignupService({ eko, cfg });
 	const app = new Hono<AppEnv>();
 
 	app.use("*", requestId());
@@ -229,18 +235,25 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"Couldn't load your profile right now. Please try again.",
 			);
 		}
-		// TODO(signup): New users — Eko response 319/1200/1867 → `not_found` — are
-		// not onboarded via /console yet. The reference (simplibankLoginAPI) admits
-		// them with a limited-role signup session (role_list [-5] for mobile,
-		// onboarding=1) and starts the signup flow. When self-serve signup is
-		// enabled, replace this block with that flow. For now, refuse so an
-		// unregistered number cannot obtain a session.
-		if (profile.kind === "not_found") {
-			throw new AppError(
-				403,
-				"NOT_REGISTERED",
-				"This mobile number isn't registered for EPS yet.",
-			);
+		// New users (`not_found`) and users partway through onboarding
+		// (`onboarding`) both get a limited signup session, which authorizes the
+		// /signup/* endpoints and a lightweight /me — nothing else. The wizard
+		// reads its own progress from /signup/state.
+		if (profile.kind === "not_found" || profile.kind === "onboarding") {
+			const claim = {
+				sub: m,
+				role: "signup" as const,
+				orgId:
+					profile.kind === "onboarding"
+						? profile.profile.orgId
+						: cfg.eko.defaultOrgId,
+			};
+			const access = await sessions.mintAccess(claim);
+			const refresh = await sessions.issueRefresh(claim);
+			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
+			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			const view: SignupView = { role: "signup", mobile: m };
+			return c.json(view);
 		}
 		// The OTP authenticated the number, but the profile is not an EPS business
 		// partner (org 1 / user_type 23) — deny before minting any token/cookie.
@@ -251,7 +264,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"This account isn't an EPS business account. Please contact support.",
 			);
 		}
-		// Only a found (existing, active) profile reaches here.
+		// Only a `found` (existing, EPS-business, active-or-onboarded) profile
+		// reaches here — `not_found`/`onboarding` returned a signup session above,
+		// and every other kind threw before this point.
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
 			sub: m,
@@ -326,6 +341,13 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				sub: claim.sub,
 			});
 		}
+		// A signup session has no developer profile yet. Return a lightweight view
+		// without an Eko call, so a reload mid-onboarding restores the session
+		// instead of dropping the user to anonymous and forcing a fresh OTP.
+		if (claim.role === "signup") {
+			const view: SignupView = { role: "signup", mobile: claim.sub };
+			return c.json(view);
+		}
 		const profile = await eko.getProfile({
 			mobile: claim.sub,
 			xRealIp: c.req.header("x-real-ip"),
@@ -333,6 +355,8 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		const view = await buildMeView(claim.sub, profile, (m) => zoho.findLead(m));
 		return c.json(view);
 	});
+
+	mountSignup(app, { sessions, signup });
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {
