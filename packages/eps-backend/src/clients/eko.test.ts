@@ -137,6 +137,35 @@ describe("EkoClient.getProfile", () => {
 		expect(r.kind).toBe("inactive");
 	});
 
+	it("treats 319 as not_found even with response_status_id 1 (its message is misleadingly 'Invalid Sender/Initiator')", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 1,
+			response_type_id: 319,
+			message: "Invalid Sender/Initiator",
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "x" });
+		expect(r.kind).toBe("not_found");
+	});
+
+	it("maps 369 to found even though a found profile carries response_status_id -1", async () => {
+		const f = mockFetch(200, {
+			response_status_id: -1,
+			response_type_id: 369,
+			data: { user_detail: { mobile: "9990000001", role_list: [1] } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("found");
+	});
+
+	it("maps an unrecognized response_type_id to error", async () => {
+		const f = mockFetch(200, { response_status_id: 0, response_type_id: 9999 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "x" });
+		expect(r.kind).toBe("error");
+	});
+
 	it("falls back to response_code when response_type_id is absent", async () => {
 		const f = mockFetch(200, { response_code: 2123 });
 		const eko = createEkoClient(ekoCfg, f);

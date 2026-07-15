@@ -154,12 +154,17 @@ export function createEkoClient(
 				response_code?: number;
 				data?: { user_detail?: Record<string, unknown> };
 			};
-			// Some upstream responses carry `response_code` instead of
-			// `response_type_id` (mirrors authentication.js normalization). Fall
-			// back so those are classified, not misread as "not found".
+			// Classify ONLY by response_type_id (mirrors authentication.js).
+			// The upstream's response_status_id is NOT a success flag here: it is
+			// -1 for a found profile and 1 for a not-found user, so gating on it
+			// would wrongly reject real logins. `response_code` is an alternate
+			// spelling of the type id on some responses.
 			const code = Number(raw?.response_type_id ?? raw?.response_code ?? -1);
 			if (code === INACTIVE_CODE)
 				return { kind: "inactive", responseTypeId: code };
+			// 319 / 1200 / 1867 → user not registered in this org (new user).
+			// NB: 319's upstream message is "Invalid Sender/Initiator", which reads
+			// like an auth error but means MERCHANT_NOT_FOUND.
 			if (NOT_FOUND_CODES.has(code))
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
@@ -170,7 +175,9 @@ export function createEkoClient(
 					profile: mapProfile(d),
 				};
 			}
-			return { kind: "not_found", responseTypeId: code };
+			// Unrecognized response (mirror reference's "else -> 500"): a hard
+			// error, so the caller never mints a session on an unclassified result.
+			return { kind: "error", responseTypeId: code };
 		},
 	};
 }

@@ -211,6 +211,30 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"This account is inactive. Please contact support.",
 			);
 		}
+		// An unrecognized upstream response must NOT be treated as a new user —
+		// refuse the login instead of minting a null-profile session. The OTP was
+		// already consumed; the client can retry.
+		if (profile.kind === "error") {
+			throw new AppError(
+				502,
+				"PROFILE_UNAVAILABLE",
+				"Couldn't load your profile right now. Please try again.",
+			);
+		}
+		// TODO(signup): New users — Eko response 319/1200/1867 → `not_found` — are
+		// not onboarded via /console yet. The reference (simplibankLoginAPI) admits
+		// them with a limited-role signup session (role_list [-5] for mobile,
+		// onboarding=1) and starts the signup flow. When self-serve signup is
+		// enabled, replace this block with that flow. For now, refuse so an
+		// unregistered number cannot obtain a session.
+		if (profile.kind === "not_found") {
+			throw new AppError(
+				403,
+				"NOT_REGISTERED",
+				"This mobile number isn't registered for EPS yet.",
+			);
+		}
+		// Only a found (existing, active) profile reaches here.
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
 			sub: m,

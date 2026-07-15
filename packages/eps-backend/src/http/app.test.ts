@@ -300,6 +300,46 @@ describe("otp/verify + me", () => {
 		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
 	});
 
+	it("does NOT grant a session on an unrecognized profile response (502, no cookies)", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "error" as const,
+				responseTypeId: 9999,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(502);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"PROFILE_UNAVAILABLE",
+		);
+		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
+	});
+
+	it("blocks an unregistered (new) user without a session (403 NOT_REGISTERED)", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_found" as const,
+				responseTypeId: 319,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NOT_REGISTERED",
+		);
+		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
+	});
+
 	it("401 on bad otp", async () => {
 		const { app } = deps({
 			verifyOtp: vi.fn(async () => ({ ok: false, raw: {} })),
