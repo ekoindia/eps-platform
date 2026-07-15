@@ -7,6 +7,8 @@ import {
 	type ReactNode,
 } from "react";
 import { authClient, type AdminView, type MeView } from "@/lib/auth/client";
+import { chatIdentity } from "@/lib/auth/identity";
+import { setChatIdentity } from "@/lib/zoho-chat";
 
 export type AuthState =
 	| { status: "loading" }
@@ -53,6 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		void refresh();
 	}, [refresh]);
+
+	// Keep the support chat's visitor identity in step with the session, so a
+	// logged-in user who opens chat from any page reaches the operator by name
+	// instead of as an anonymous visitor. Logging out clears it.
+	useEffect(() => {
+		setChatIdentity(chatIdentity(state));
+	}, [state]);
 
 	return (
 		<AuthContext.Provider value={{ state, refresh, logout }}>

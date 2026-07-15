@@ -12,6 +12,13 @@ export interface AccountIdentity {
 	meta?: string;
 }
 
+/** Logged-in identity to attach to a support-chat visitor. Absent fields are unknown. */
+export interface ChatIdentity {
+	name?: string;
+	email?: string;
+	contactNumber?: string;
+}
+
 /** Initials from a person's name: first+last word initial, or first letter for one word. */
 function nameInitials(name: string): string {
 	const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -51,4 +58,27 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 				.filter(Boolean)
 				.join(" · ") || undefined,
 	};
+}
+
+/**
+ * Derives the support-chat visitor identity for an authenticated developer, or
+ * `null` for anonymous, loading, and admin sessions (admins are internal staff —
+ * identifying them to a sales operator has no value).
+ *
+ * A developer session always carries `me.mobile`, so it is identifiable even when
+ * the Eko profile lookup came back empty. Blank fields are dropped rather than
+ * sent: the profile mapper defaults missing values to `""`, and pushing those
+ * would overwrite whatever the visitor typed into the chat form themselves.
+ */
+export function chatIdentity(state: AuthState): ChatIdentity | null {
+	if (state.status !== "authed" || state.role !== "developer") return null;
+
+	const identity: ChatIdentity = {};
+	const name = state.me.profile?.name?.trim();
+	const email = state.me.profile?.email?.trim();
+	const contactNumber = state.me.profile?.mobile?.trim() || state.me.mobile;
+	if (name) identity.name = name;
+	if (email) identity.email = email;
+	if (contactNumber) identity.contactNumber = contactNumber;
+	return Object.keys(identity).length > 0 ? identity : null;
 }

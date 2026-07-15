@@ -210,7 +210,12 @@ Implemented in `src/hooks/use-tracking-params.ts`:
   selection; degrades full `sel` → `apis=` ids only → no calculator;
   tracking params are never dropped.
 - **SalesIQ chat**: `openZohoChat` pushes `visitor.info` with tracking
-  params + `apis_interested` before opening (best-effort).
+  params + `apis_interested` before opening (best-effort). For a logged-in
+  user it also pushes `visitor.name/email/contactnumber` so the operator sees
+  a named visitor: `AuthProvider` keeps the identity in a module store via
+  `setChatIdentity(chatIdentity(state))`, and `openZohoChat` applies it at
+  open time (the widget lazy-loads, so it rarely exists when `/me` resolves).
+  Logging out clears it. Requires `VITE_SHOW_USER_LOGIN=true` to be reachable.
 
 ## JSON-LD
 
