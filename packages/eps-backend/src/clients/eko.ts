@@ -26,11 +26,81 @@ export interface EkoClient {
 		orgId?: number;
 		xRealIp?: string;
 	}): Promise<ProfileResult>;
+	createPartialAccount(input: {
+		mobile: string;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	verifyPan(input: {
+		pan: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	getBooklet(input: {
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoBooklet | null>;
+	fetchPintwinKey(input: {
+		mobile: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoPintwinKey | null>;
+	setSecretPin(input: {
+		firstOkekey: string;
+		secondOkekey: string;
+		booklet: EkoBooklet;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
 }
 
 const NOT_FOUND_CODES = new Set([319, 1200, 1867]);
 const INACTIVE_CODE = 2123;
 const SUCCESS_CODE = 369;
+
+/**
+ * Fixed geo-coordinates sent with onboarding interactions.
+ *
+ * This flow does not capture the user's location — the Eloka geolocation step
+ * is deliberately not ported — but upstream expects the field. Eloka itself
+ * falls back to this exact value when its capture step is skipped.
+ */
+const ONBOARDING_LATLONG = "27.176670,78.008075,7787";
+
+/** Upstream `response_type_id` values that mean a step succeeded. */
+const CREATE_PARTIAL_ACCOUNT_OK = 1566;
+const PAN_VERIFICATION_OK = 1569;
+const BOOKLET_OK = 1646;
+const SECRET_PIN_OK = 9;
+
+/**
+ * Identity of the acting user for an onboarding interaction.
+ *
+ * Before the partial account exists, this is the configured DEFAULT pair.
+ * Afterwards it is the user's own `ekoUserId` / `code` from the 151 profile.
+ * `user_id` is never sent upstream.
+ */
+export interface EkoIdentity {
+	initiatorId: string;
+	userCode: string;
+	orgId: number;
+}
+
+/** Booklet details from interaction 170, forwarded verbatim to interaction 5. */
+export interface EkoBooklet {
+	bookletSerialNumber: string;
+	isPintwinUser: number;
+}
+
+/** A single-use substitution key from interaction 10005. */
+export interface EkoPintwinKey {
+	pintwinKey: string;
+	keyId: number | string;
+}
+
+/** Outcome of an onboarding interaction, carrying the upstream message on failure. */
+export type EkoStepResult =
+	| { ok: true }
+	| { ok: false; message: string; responseTypeId: number };
 
 export function createEkoClient(
 	cfg: Config["eko"],
@@ -100,6 +170,27 @@ export function createEkoClient(
 			initiator_id: cfg.initiatorId,
 			user_code: cfg.userCode,
 			org_id: String(orgId ?? cfg.defaultOrgId),
+		};
+	}
+
+	/** Form fields identifying the acting user on an onboarding interaction. */
+	function actor(identity: EkoIdentity): Record<string, string> {
+		return {
+			initiator_id: identity.initiatorId,
+			user_code: identity.userCode,
+			org_id: String(identity.orgId),
+		};
+	}
+
+	/** Classifies a step response against its expected success `response_type_id`. */
+	function stepResult(raw: unknown, successTypeId: number): EkoStepResult {
+		const r = raw as { response_type_id?: number; message?: string };
+		const code = Number(r?.response_type_id ?? -1);
+		if (code === successTypeId) return { ok: true };
+		return {
+			ok: false,
+			message: r?.message ?? "The request could not be completed.",
+			responseTypeId: code,
 		};
 	}
 
@@ -196,6 +287,98 @@ export function createEkoClient(
 			// Unrecognized response (mirror reference's "else -> 500"): a hard
 			// error, so the caller never mints a session on an unclassified result.
 			return { kind: "error", responseTypeId: code };
+		},
+		async createPartialAccount(input) {
+			// The account does not exist yet, so the configured DEFAULT initiator /
+			// user_code pair acts on the new user's behalf, identified by mobile.
+			const raw = await post(
+				{
+					...base(),
+					interaction_type_id: "521",
+					user_identity: input.mobile,
+					user_identity_type: "mobile_number",
+					csp_id: input.mobile,
+					applicant_type: "1",
+					business_vertical: "EPS",
+					latlong: ONBOARDING_LATLONG,
+					source: "EPS",
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, CREATE_PARTIAL_ACCOUNT_OK);
+		},
+		async verifyPan(input) {
+			// PAN rides as `doc_id` on the document interaction; no photo is sent.
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "523",
+					intent_id: "3",
+					doc_type: "2",
+					doc_id: input.pan,
+					latlong: ONBOARDING_LATLONG,
+					source: "EPS",
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, PAN_VERIFICATION_OK);
+		},
+		async getBooklet(input) {
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "170",
+					document_id: "",
+					latlong: ONBOARDING_LATLONG,
+				},
+				input.xRealIp,
+			)) as {
+				response_status_id?: number;
+				response_type_id?: number;
+				data?: { booklet_serial_number?: string; is_pintwin_user?: number };
+			};
+			// This interaction reports success on BOTH ids; accept neither alone.
+			if (
+				Number(raw?.response_status_id ?? -1) !== 0 ||
+				Number(raw?.response_type_id ?? -1) !== BOOKLET_OK
+			) {
+				return null;
+			}
+			return {
+				bookletSerialNumber: String(raw.data?.booklet_serial_number ?? ""),
+				isPintwinUser: Number(raw.data?.is_pintwin_user ?? 0),
+			};
+		},
+		async fetchPintwinKey(input) {
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "10005",
+					alternate_user_id: input.mobile,
+				},
+				input.xRealIp,
+			)) as { data?: { pintwin_key?: string; key_id?: number | string } };
+			const key = raw?.data?.pintwin_key;
+			const keyId = raw?.data?.key_id;
+			if (!key || keyId === undefined || keyId === null) return null;
+			return { pintwinKey: String(key), keyId };
+		},
+		async setSecretPin(input) {
+			// is_pintwin_user and booklet_serial_number are forwarded verbatim from
+			// interaction 170 — they are interpreted upstream, not here.
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "5",
+					first_okekey: input.firstOkekey,
+					second_okekey: input.secondOkekey,
+					is_pintwin_user: String(input.booklet.isPintwinUser),
+					booklet_serial_number: input.booklet.bookletSerialNumber,
+					latlong: ONBOARDING_LATLONG,
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, SECRET_PIN_OK);
 		},
 	};
 }

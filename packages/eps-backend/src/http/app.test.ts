@@ -54,6 +54,11 @@ function deps(
 				zohoId: "ZCRM_9",
 			},
 		})),
+		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
+		verifyPan: vi.fn(async () => ({ ok: true as const })),
+		getBooklet: vi.fn(async () => null),
+		fetchPintwinKey: vi.fn(async () => null),
+		setSecretPin: vi.fn(async () => ({ ok: true as const })),
 		...over,
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };

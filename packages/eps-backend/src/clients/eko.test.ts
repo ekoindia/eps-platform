@@ -264,3 +264,123 @@ describe("getProfile onboarding classification", () => {
 		expect(r.kind).toBe("not_allowed");
 	});
 });
+
+describe("onboarding interactions", () => {
+	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+
+	/** Extracts the form-encoded body of a captured mock fetch call. */
+	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		return new URLSearchParams(init.body as string);
+	}
+
+	it("createPartialAccount sends 521 with the default initiator and EPS vertical", async () => {
+		const f = mockFetch(200, { response_type_id: 1566 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.createPartialAccount({ mobile: "9990000001" });
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("521");
+		expect(body.get("applicant_type")).toBe("1");
+		expect(body.get("business_vertical")).toBe("EPS");
+		expect(body.get("user_identity")).toBe("9990000001");
+		expect(body.get("user_identity_type")).toBe("mobile_number");
+		// New users have no account yet: the DEFAULT initiator/user_code pair acts.
+		expect(body.get("initiator_id")).toBe(ekoCfg.initiatorId);
+		expect(body.get("user_code")).toBe(ekoCfg.userCode);
+		// user_id must never be sent upstream.
+		expect(body.get("user_id")).toBeNull();
+	});
+
+	it("createPartialAccount reports the upstream message on failure", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1500,
+			message: "Account already exists",
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.createPartialAccount({ mobile: "9990000001" });
+		expect(r).toEqual({
+			ok: false,
+			message: "Account already exists",
+			responseTypeId: 1500,
+		});
+	});
+
+	it("verifyPan sends 523 with the user's own identity and no file", async () => {
+		const f = mockFetch(200, { response_type_id: 1569 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.verifyPan({ pan: "ABCDE1234F", identity });
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("523");
+		expect(body.get("doc_id")).toBe("ABCDE1234F");
+		expect(body.get("doc_type")).toBe("2");
+		expect(body.get("intent_id")).toBe("3");
+		expect(body.get("source")).toBe("EPS");
+		// Once the partial account exists, the user acts as their own initiator.
+		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("user_code")).toBe("20810001");
+	});
+
+	it("getBooklet accepts only response_status_id 0 with type 1646", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 0,
+			response_type_id: 1646,
+			data: { booklet_serial_number: "SN123", is_pintwin_user: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getBooklet({ identity })).toEqual({
+			bookletSerialNumber: "SN123",
+			isPintwinUser: 1,
+		});
+	});
+
+	it("getBooklet returns null on an unexpected response type", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 0,
+			response_type_id: 999,
+			data: { booklet_serial_number: "SN123", is_pintwin_user: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getBooklet({ identity })).toBeNull();
+	});
+
+	it("fetchPintwinKey returns the key and id", async () => {
+		const f = mockFetch(200, {
+			data: { pintwin_key: "1974856302", key_id: 39 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
+		).toEqual({ pintwinKey: "1974856302", keyId: 39 });
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("10005");
+		expect(body.get("alternate_user_id")).toBe("9990000001");
+	});
+
+	it("fetchPintwinKey returns null when the key is missing", async () => {
+		const f = mockFetch(200, { data: {} });
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
+		).toBeNull();
+	});
+
+	it("setSecretPin sends 5 with both okekeys and the booklet fields verbatim", async () => {
+		const f = mockFetch(200, { response_type_id: 9 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.setSecretPin({
+			firstOkekey: "9748|39",
+			secondOkekey: "9748|41",
+			booklet: { bookletSerialNumber: "SN123", isPintwinUser: 1 },
+			identity,
+		});
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("5");
+		expect(body.get("first_okekey")).toBe("9748|39");
+		expect(body.get("second_okekey")).toBe("9748|41");
+		expect(body.get("is_pintwin_user")).toBe("1");
+		expect(body.get("booklet_serial_number")).toBe("SN123");
+	});
+});
