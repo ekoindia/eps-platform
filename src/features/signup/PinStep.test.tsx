@@ -45,6 +45,18 @@ describe("PinStep", () => {
 		expect(onSubmit).toHaveBeenCalledWith(["1234", "1234"]);
 	});
 
+	it("submits a PIN of 0000 — a falsy-string check would wrongly reject it", async () => {
+		// Guards against refactoring `pin1.length === PIN_LENGTH` to `!pin1`.
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		render(<PinStep onSubmit={onSubmit} busy={false} error={null} />);
+		await typePin(/^secret pin/i, "0000");
+		await typePin(/confirm/i, "0000");
+		const button = screen.getByRole("button", { name: /finish|continue/i });
+		expect(button).toBeEnabled();
+		fireEvent.click(button);
+		expect(onSubmit).toHaveBeenCalledWith(["0000", "0000"]);
+	});
+
 	it("shows a server error", () => {
 		render(<PinStep onSubmit={noop} busy={false} error="Could not set PIN" />);
 		expect(screen.getByRole("alert")).toHaveTextContent("Could not set PIN");
