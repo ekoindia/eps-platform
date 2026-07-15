@@ -1,5 +1,5 @@
 import { CheckCircle2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
@@ -43,8 +43,19 @@ export function SignupWizard() {
 	const [error, setError] = useState<string | null>(null);
 	const [fatal, setFatal] = useState<string | null>(null);
 
+	// Guards against a second run of the mount effect below (e.g. a future
+	// <StrictMode> double-mount). `cancelled` only stops a stale setState after
+	// unmount — it does nothing to stop the network calls themselves, and
+	// `createProfile()` is a non-idempotent POST that creates a partial account
+	// upstream, so firing it twice would create two accounts. `started` makes
+	// the async body run at most once per mounted component regardless of how
+	// many times the effect fires.
+	const started = useRef(false);
+
 	// Load initial state, creating the partial account if it does not exist yet.
 	useEffect(() => {
+		if (started.current) return;
+		started.current = true;
 		let cancelled = false;
 		void (async () => {
 			try {

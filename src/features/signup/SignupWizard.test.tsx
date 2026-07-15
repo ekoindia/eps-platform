@@ -79,6 +79,23 @@ describe("SignupWizard", () => {
 		expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
 	});
 
+	// Regression guard: resolveSteps marks every step "complete" when
+	// currentRole is null, even mid-flow (empty role_list from the backend).
+	// The wizard must check state.status === "done" before falling back to
+	// "!current", so this in-progress-but-no-current-step case renders the
+	// unsupported-step message, not a false "you're all set" completion screen.
+	it("does not show the completion screen when in progress with no current step", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue({
+			...panPending,
+			currentRole: null,
+		});
+		render(<SignupWizard />);
+		expect(
+			await screen.findByText(/isn't supported here yet/i),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/you're all set/i)).not.toBeInTheDocument();
+	});
+
 	it("advances to the next step on success", async () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		vi.mocked(signupClient.submitPan).mockResolvedValue(pinPending);
