@@ -317,15 +317,22 @@ Every request/response to the Eko/SimpliBank upstream is logged to **stdout** as
 a single JSON object tagged `"type":"eko_upstream"`. Verbosity is set by
 `EKO_LOG_LEVEL` so it can differ between dev and prod:
 
-| level | what it logs |
-| --- | --- |
-| `off` | nothing |
+| level               | what it logs                                                                                                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `off`               | nothing                                                                                                                                                                                                                                                 |
 | `basic` _(default)_ | `interaction_type_id`, **masked** mobile, `org_id`, `http_status`, `durMs`, and a response summary (`response_status_id` / `response_type_id` / `response_code` / `status` / `message`). No OTP, no merchant credentials, no full body — **prod-safe.** |
-| `full` | the complete request form-fields (**including the OTP**) and the full response body. **Dev debugging only.** |
+| `full`              | the complete request form-fields (**including the OTP**) and the full response body. **Dev debugging only.**                                                                                                                                            |
 
 The `developer_key` / `secret-key` auth headers are never part of the logged
 form-fields, so they are never emitted at any level. Logging is best-effort and
-never throws or alters an upstream call. Example (`basic`):
+never throws or alters an upstream call.
+
+**Reading the logs in dev.** The raw JSON lines are hard to scan. Run
+`npm run dev:pretty` instead of `npm run dev` — it pipes stdout through
+`jq -R -r -C --tab 'fromjson? // .'`, which tab-indents and colorizes each JSON
+record in full (non-JSON lines pass through untouched). Set `EKO_LOG_LEVEL=full`
+in `.env` to include the complete request/response bodies. Requires `jq`.
+Example (`basic`) raw line:
 
 ```json
 {

@@ -18,6 +18,7 @@
 	],
 	"scripts": {
 		"dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+		"dev:pretty": "npm run dev | jq -R -r -C --tab 'fromjson? // .'",
 		"build": "tsup",
 		"start": "node dist/index.js",
 		"test": "vitest run",
