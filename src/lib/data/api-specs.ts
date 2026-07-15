@@ -32,7 +32,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Fetch the DMT-Fino profile of a registered sender by mobile number.",
 		description:
-			"The first step in the DMT flow. Call this to check whether a customer is already registered as a DMT sender. If the sender exists, the response returns their profile and remaining transfer limits so you can skip registration. If not found (response_status_id 463), proceed to Onboard Sender.",
+			"The first step in the DMT flow. Call this to check whether a customer is already registered as a DMT sender. If the sender exists, the response returns their profile and remaining transfer limits so you can skip registration.\n\nUse `response_type_id` in the response to decide the next step:\n\n| response_type_id | Meaning | Next step |\n| --- | --- | --- |\n| 308 | Sender not found | [dmt-onboard-sender](/docs/dmt-onboard-sender) |\n| 309 | Sender found | [dmt-get-recipients](/docs/dmt-get-recipients) |\n| 2134 | Sender found, Biometric eKYC pending | [dmt-fino-sender-ekyc](/docs/dmt-fino-sender-ekyc) |\n| 2129 | Sender found, Validate eKYC OTP pending | [dmt-fino-validate-ekyc-otp](/docs/dmt-fino-validate-ekyc-otp) |",
 		relevance: "M",
 		bestFor:
 			"Checking sender registration status before starting a DMT transaction.",
@@ -50,52 +50,21 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
-				name: "customer_id",
-				type: "string",
-				description: "Sender's mobile number (echoed back).",
-				example: "9123456789",
-			},
-			{
-				name: "name",
+				name: "sender_name",
 				type: "string",
 				description: "Registered name of the sender.",
 				imp: true,
 				example: "Ramesh Kumar",
 			},
 			{
-				name: "dob",
-				type: "string",
-				description: "Date of birth in YYYY-MM-DD format.",
-				example: "1990-05-15",
-			},
-			{
-				name: "kyc_verified",
-				type: "boolean",
-				description: "Whether the sender has completed eKYC verification.",
-				example: true,
-			},
-			{
-				name: "available_limit",
+				name: "next_allowed_limit",
 				type: "number",
 				description: "Remaining transfer limit for the current month (in INR).",
 				imp: true,
-				example: 25000,
+				example: 48000,
 			},
 			{
-				name: "used_limit",
-				type: "number",
-				description: "Transfer amount already used this month (in INR).",
-				example: 0,
-			},
-			{
-				name: "monthly_limit",
-				type: "number",
-				description:
-					"Total allowed monthly transfer limit for this sender (in INR).",
-				example: 25000,
-			},
-			{
-				name: "state",
+				name: "kyc_state",
 				type: "number",
 				description: "Sender account state: 0=Active, 10=Pending verification.",
 				example: 0,
@@ -103,18 +72,22 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		sampleSuccessResponse: {
 			status: 0,
-			response_status_id: 0,
-			message: "Customer found",
-			response_type_id: 1388,
+			response_type_id: 309,
+			message: "Success!",
+			response_status_id: -1,
 			data: {
-				customer_id: "9123456789",
-				name: "Ramesh Kumar",
-				dob: "1990-05-15",
-				kyc_verified: true,
-				available_limit: 25000,
-				used_limit: 0,
-				monthly_limit: 25000,
-				state: 0,
+				is_registered: 1,
+				sender_name: "Ramesh Kumar",
+				ekyc_enabled: "1",
+				next_allowed_limit: 48000.0,
+				kyc_state: 0,
+				customer_profile: {
+					name: "Ramesh Kumar",
+					mobile: "9123456789",
+					total_monthly_limit: "50000",
+					next_allowed_limit: "48000",
+					ekyc_enabled: 1,
+				},
 			},
 		},
 		errorScenarios: [

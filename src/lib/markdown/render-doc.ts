@@ -12,6 +12,7 @@ import {
 	DEFAULT_BASE_URL,
 } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
+import { recipeHref } from "@/lib/data/api-recipes";
 import type {
 	ApiParam,
 	ApiSpec,
@@ -33,15 +34,16 @@ import {
 import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import { defaultSnippet } from "@/lib/docs/code-snippet-sets";
 import {
+	aiGettingStartedNotice,
 	bulletList,
 	canonicalNotice,
 	frontMatter,
 	h1,
 	h2,
+	h3,
 	joinBlocks,
 	link,
 	markdownTable,
-	mcpInstallNotice,
 } from "./shared";
 
 const paramRows = (params: ApiParam[]): string[][] =>
@@ -202,7 +204,7 @@ export function renderDocsIndexMarkdown(): string {
 
 	const sections = nav.categories.map((category) =>
 		joinBlocks([
-			h2(category.title),
+			h3(category.title),
 			bulletList(
 				collectLeaves(category.nodes).map(({ leaf, trail }) => {
 					const context = trail.length ? ` — ${trail.join(" › ")}` : "";
@@ -220,10 +222,14 @@ export function renderDocsIndexMarkdown(): string {
 			canonical,
 		}),
 		canonicalNotice(canonical),
+
 		h1("Developer Documentation"),
 		"Integrate Eko's KYC, verification, payment and banking APIs. Each endpoint is documented with parameters, responses, code samples and a live request console.",
-		mcpInstallNotice(),
-		h2("Getting started"),
+
+		h2("Getting Started for AI Coding Agents"),
+		aiGettingStartedNotice(),
+
+		h2("Getting Started for Developers"),
 		bulletList([
 			`**Get credentials** — Eko's UAT / sandbox is self-serve. Sign up at ${SIGNUP_URL} with your mobile number, verify with your PAN, and test our verification APIs live. Once you are satisfied, goto ${SITE_URL}/ai to integrate quickly with our free AI tools (MCP servers, plugins, skills, etc for your coding agent). ${API_ENVIRONMENTS.production.note}`,
 			`**Know your environments** — ${API_ENVIRONMENTS.sandbox.label}: \`${API_ENVIRONMENTS.sandbox.baseUrl}\`, ${API_ENVIRONMENTS.production.label}: \`${API_ENVIRONMENTS.production.baseUrl}\`. The full endpoint URL is always \`baseUrl + path\`.`,
@@ -231,6 +237,11 @@ export function renderDocsIndexMarkdown(): string {
 			"**Make your first call** — pick an endpoint below (start with PAN Lite), drop in your credentials, and send it.",
 			`**Handle the response** — EPS APIs share a common envelope: \`status\` (\`0\` = success), \`response_status_id\`, \`message\`, and the payload under \`data\`. See ${link("Status & Error Codes", `${SITE_URL}${docsHref("error-codes")}`, "md")}.`,
 		]),
+
+		h2("Recipes — multi-step workflows"),
+		`The references below document one endpoint each. Recipes document how to combine several into a complete flow (onboard a sender, then transfer; activate an agent, then withdraw): ${link("All API Recipes", `${SITE_URL}${recipeHref()}.md`, "md")}.`,
+
+		h2("All API Endpoints"),
 		...sections,
 	]);
 }
