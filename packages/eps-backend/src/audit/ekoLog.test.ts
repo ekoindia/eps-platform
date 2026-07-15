@@ -100,3 +100,55 @@ describe("createEkoLogger", () => {
 		).not.toThrow();
 	});
 });
+
+describe("redaction", () => {
+	it("redacts okekeys from request fields at full level", () => {
+		const lines: string[] = [];
+		const logger = createEkoLogger({ level: "full", sink: (l) => lines.push(l) });
+		logger.log({
+			fields: {
+				interaction_type_id: "5",
+				first_okekey: "9748|39",
+				second_okekey: "9748|41",
+				booklet_serial_number: "SN123",
+			},
+			status: 200,
+			response: { response_type_id: 9 },
+			durMs: 12,
+		});
+		const rec = JSON.parse(lines[0]);
+		expect(rec.request.first_okekey).toBe("[REDACTED]");
+		expect(rec.request.second_okekey).toBe("[REDACTED]");
+		// Non-sensitive fields must survive.
+		expect(rec.request.booklet_serial_number).toBe("SN123");
+		expect(lines[0]).not.toContain("9748");
+	});
+
+	it("redacts pintwin_key from the response body at full level", () => {
+		const lines: string[] = [];
+		const logger = createEkoLogger({ level: "full", sink: (l) => lines.push(l) });
+		logger.log({
+			fields: { interaction_type_id: "10005" },
+			status: 200,
+			response: {
+				response_type_id: 0,
+				data: { pintwin_key: "1974856302", key_id: 39 },
+			},
+			durMs: 8,
+		});
+		const rec = JSON.parse(lines[0]);
+		expect(rec.response.data.pintwin_key).toBe("[REDACTED]");
+		// key_id is not secret on its own and aids debugging.
+		expect(rec.response.data.key_id).toBe(39);
+		expect(lines[0]).not.toContain("1974856302");
+	});
+
+	it("does not mutate the caller's objects", () => {
+		const fields = { interaction_type_id: "5", first_okekey: "9748|39" };
+		const response = { data: { pintwin_key: "1974856302" } };
+		const logger = createEkoLogger({ level: "full", sink: () => {} });
+		logger.log({ fields, status: 200, response, durMs: 1 });
+		expect(fields.first_okekey).toBe("9748|39");
+		expect(response.data.pintwin_key).toBe("1974856302");
+	});
+});
