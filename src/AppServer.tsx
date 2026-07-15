@@ -56,6 +56,8 @@ import AgentsPage from "./pages/AgentsPage";
 // Developer Docs
 import DocsIndexPage from "./pages/docs/DocsIndexPage";
 import DocDetailPage from "./pages/docs/DocDetailPage";
+import RecipesIndexPage from "./pages/recipe/RecipesIndexPage";
+import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
 import Console from "./pages/Console";
 import Admin from "./pages/Admin";
 
@@ -120,6 +122,10 @@ const AppServer = ({
 								{/* Developer Docs */}
 								<Route path="/docs" element={<DocsIndexPage />} />
 								<Route path="/docs/:slug" element={<DocDetailPage />} />
+
+								{/* API Recipes — multi-step workflows across endpoints */}
+								<Route path="/recipe" element={<RecipesIndexPage />} />
+								<Route path="/recipe/:slug" element={<RecipeDetailPage />} />
 
 								{/* Company & Legal Pages */}
 								<Route path="/about-us" element={<AboutPage />} />

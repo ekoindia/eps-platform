@@ -19,6 +19,7 @@ import {
 } from "@/lib/data/docs-registry";
 import { API_SPECS } from "@/lib/data/api-specs";
 import { GUIDES } from "@/content/docs/docs-guides";
+import { PRERENDER_ROUTES } from "../../../ssg/routes";
 
 describe("endpointSlug", () => {
 	it("is the spec slug with no method prefix", () => {
@@ -191,12 +192,26 @@ describe("route parity", () => {
 		for (const s of getDocumentedSpecs()) expect(slugs).toContain(s.slug);
 	});
 
-	it("every nav endpoint + guide link resolves to a routable slug", () => {
+	it("every nav endpoint resolves to a routable slug", () => {
 		const slugs = new Set(getAllDocSlugs());
 		const nav = buildNavTree();
-		for (const g of nav.guides) expect(slugs.has(g.slug)).toBe(true);
 		for (const c of nav.categories)
 			for (const ep of leaves(c.nodes)) expect(slugs.has(ep.slug)).toBe(true);
+	});
+
+	// Guide links are addressed by href, not by a docs slug — Recipes points at
+	// its own /recipe section. Pin them against the prerender manifest instead,
+	// so a nav entry can never link to a route that is never rendered.
+	it("every nav guide link is a prerendered route", () => {
+		const prerendered = new Set(PRERENDER_ROUTES);
+		const nav = buildNavTree();
+		expect(nav.guides.length).toBeGreaterThan(0);
+		for (const g of nav.guides) expect(prerendered.has(g.href)).toBe(true);
+	});
+
+	it("surfaces Recipes as a guide link pointing at the recipe section", () => {
+		const recipes = buildNavTree().guides.find((g) => g.title === "Recipes");
+		expect(recipes?.href).toBe("/recipe");
 	});
 
 	it("every nav endpoint resolves to an endpoint doc node", () => {

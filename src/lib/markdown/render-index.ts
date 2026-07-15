@@ -1,6 +1,7 @@
 import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { SIGNUP_URL, SITE_URL } from "@/lib/config/site";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
+import { recipeHref } from "@/lib/data/api-recipes";
 import type { IndustryData } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
 import {
@@ -159,6 +160,9 @@ export function renderLlmsTxt(
 	);
 	lines.push(
 		`- [FAQ](${SITE_URL}/faq.md): Common questions on integration, auth, testing, billing, versioning and compliance`,
+	);
+	lines.push(
+		`- [API Recipes](${SITE_URL}${recipeHref()}.md): Multi-step workflows — the order to call endpoints in, and how to branch on each response`,
 	);
 	// lines.push(`- [Use cases hub](${SITE_URL}/use-cases.md): Industries and solution packs`);
 	lines.push("");

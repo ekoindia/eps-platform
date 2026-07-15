@@ -212,6 +212,20 @@ export function generateMarkdownPlugin(): Plugin {
 					written++;
 				}
 
+				// -- Recipes --------------------------------------------------------
+				for (const recipe of bundle.RECIPES) {
+					await writeFile(
+						path.join(outDir, "recipe", `${recipe.slug}.md`),
+						bundle.renderRecipeMarkdown(recipe),
+					);
+					written++;
+				}
+				await writeFile(
+					path.join(outDir, "recipe.md"),
+					bundle.renderRecipesIndexMarkdown(),
+				);
+				written++;
+
 				// -- Site index -----------------------------------------------------
 				await writeFile(
 					path.join(outDir, "index.md"),
@@ -325,6 +339,9 @@ interface MarkdownBundle {
 		meta: { slug: string; title: string; summary?: string },
 		rawBody: string,
 	) => string;
+	RECIPES: Array<{ slug: string }>;
+	renderRecipeMarkdown: (recipe: unknown) => string;
+	renderRecipesIndexMarkdown: () => string;
 	renderAgentsMarkdown: () => string;
 	renderTransactAgentsMarkdown: () => string;
 }
@@ -357,6 +374,8 @@ async function loadRenderBundle(
 		docsGuidesMod,
 		renderAgentsMod,
 		renderTransactMod,
+		recipesMod,
+		renderRecipeMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -374,6 +393,8 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-agents.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-transact.ts"),
+		server.ssrLoadModule("/src/lib/data/api-recipes.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-recipe.ts"),
 	]);
 
 	return {
@@ -404,6 +425,9 @@ async function loadRenderBundle(
 		renderAgentsMarkdown: renderAgentsMod.renderAgentsMarkdown,
 		renderTransactAgentsMarkdown:
 			renderTransactMod.renderTransactAgentsMarkdown,
+		RECIPES: recipesMod.RECIPES,
+		renderRecipeMarkdown: renderRecipeMod.renderRecipeMarkdown,
+		renderRecipesIndexMarkdown: renderRecipeMod.renderRecipesIndexMarkdown,
 	};
 }
 
@@ -470,6 +494,14 @@ function renderDevRoute(url: string, bundle: MarkdownBundle): string | null {
 	}
 	if (url === "/agents.md") {
 		return bundle.renderTransactAgentsMarkdown();
+	}
+	if (url === "/recipe.md") {
+		return bundle.renderRecipesIndexMarkdown();
+	}
+	const recipeMatch = url.match(/^\/recipe\/([^/]+)\.md$/);
+	if (recipeMatch) {
+		const recipe = bundle.RECIPES.find((r) => r.slug === recipeMatch[1]);
+		return recipe ? bundle.renderRecipeMarkdown(recipe) : null;
 	}
 	const docMatch = url.match(/^\/docs\/([^/]+)\.md$/);
 	if (docMatch) {

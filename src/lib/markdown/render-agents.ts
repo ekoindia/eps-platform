@@ -4,7 +4,7 @@
  */
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
 import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
-import { RECIPES } from "@/lib/data/api-recipes";
+import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
 
 export function renderAgentsMarkdown(): string {
@@ -158,7 +158,10 @@ export function renderAgentsMarkdown(): string {
 	lines.push("");
 
 	lines.push("## Recipes");
-	for (const r of RECIPES) lines.push(`- **${r.name}** — ${r.summary}`);
+	for (const r of RECIPES)
+		lines.push(
+			`- **[${r.name}](${SITE_URL}${recipeHref(r.slug)}.md)** — ${r.summary}`,
+		);
 	lines.push("");
 
 	return lines.join("\n");

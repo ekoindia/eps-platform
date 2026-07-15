@@ -28,6 +28,9 @@ export interface RecipeStep {
 /** A named, multi-step flow across several endpoints. */
 export interface Recipe {
 	id: string;
+	/** Kebab-case slug; the `/recipe/<slug>` route. Distinct from `id`, which is
+	 * the bundle/MCP identifier — see `assertRecipeSlugs` for the guards. */
+	slug: string;
 	name: string;
 	summary: string;
 	/** Optional FK into `API_PRODUCTS.id`. */
@@ -35,9 +38,17 @@ export interface Recipe {
 	steps: RecipeStep[];
 }
 
+/** URL section segment under which all recipe pages live. */
+export const RECIPE_SECTION_SLUG = "recipe";
+
+/** Site-relative path for a recipe page; no slug → the `/recipe` overview. */
+export const recipeHref = (slug?: string): string =>
+	slug ? `/${RECIPE_SECTION_SLUG}/${slug}` : `/${RECIPE_SECTION_SLUG}`;
+
 export const RECIPES: Recipe[] = [
 	{
 		id: "dmt-send-money",
+		slug: "dmt-send-money",
 		name: "DMT — Send Money",
 		summary:
 			"Full domestic money transfer flow: look up the sender, onboard them if new, add the recipient, then send an OTP-verified transfer.",
@@ -76,6 +87,7 @@ export const RECIPES: Recipe[] = [
 	},
 	{
 		id: "aeps-cash-withdrawal",
+		slug: "aeps-cash-withdrawal",
 		name: "AePS — Cash Withdrawal",
 		summary:
 			"Aadhaar-enabled cash withdrawal: one-time agent activation, daily 2FA, then the biometric withdrawal.",
@@ -98,12 +110,44 @@ export const RECIPES: Recipe[] = [
 	},
 ];
 
-/** Throws if any recipe step (or branch target) references an unknown slug. */
+const RECIPES_BY_SLUG: Map<string, Recipe> = new Map(
+	RECIPES.map((recipe) => [recipe.slug, recipe]),
+);
+
+/** Resolve a `/recipe/<slug>` page, or `undefined` for an unknown slug. */
+export const getRecipeBySlug = (slug: string): Recipe | undefined =>
+	RECIPES_BY_SLUG.get(slug);
+
+/** Kebab-case: lowercase alphanumerics separated by single hyphens. */
+const KEBAB_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * Throws if any recipe's own slug is malformed or duplicated, or if any step
+ * (or branch target) references an unknown spec slug. Runs at build time via
+ * `build-agent-bundle.ts`, so a dangling reference fails the build rather than
+ * shipping a `/recipe/<slug>` page that links to a 404.
+ */
 export const assertRecipeSlugs = (
 	recipes: Recipe[],
 	knownSlugs: ReadonlySet<string>,
 ): void => {
+	const seenRecipeSlugs = new Map<string, string>();
 	for (const recipe of recipes) {
+		if (!KEBAB_SLUG.test(recipe.slug)) {
+			throw new Error(
+				`api-recipes: recipe "${recipe.id}" has a non-kebab-case slug "${recipe.slug}".`,
+			);
+		}
+		// URLs are not reliably case-sensitive — compare case-insensitively.
+		const key = recipe.slug.toLowerCase();
+		const prior = seenRecipeSlugs.get(key);
+		if (prior) {
+			throw new Error(
+				`api-recipes: duplicate recipe slug "${recipe.slug}" — "${prior}" vs "${recipe.id}".`,
+			);
+		}
+		seenRecipeSlugs.set(key, recipe.id);
+
 		for (const step of recipe.steps) {
 			if (!knownSlugs.has(step.specSlug)) {
 				throw new Error(

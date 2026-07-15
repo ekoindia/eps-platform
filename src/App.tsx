@@ -37,6 +37,8 @@ const AiPage = lazy(() => import("./pages/AiPage"));
 const AgentsPage = lazy(() => import("./pages/AgentsPage"));
 const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
 const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
+const RecipesIndexPage = lazy(() => import("./pages/recipe/RecipesIndexPage"));
+const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const Console = lazy(() => import("./pages/Console"));
 const Admin = lazy(() => import("./pages/Admin"));
 
@@ -100,6 +102,10 @@ const App = ({
 								{/* Developer Docs */}
 								<Route path="/docs" element={<DocsIndexPage />} />
 								<Route path="/docs/:slug" element={<DocDetailPage />} />
+
+								{/* API Recipes — multi-step workflows across endpoints */}
+								<Route path="/recipe" element={<RecipesIndexPage />} />
+								<Route path="/recipe/:slug" element={<RecipeDetailPage />} />
 
 								{/* Company & Legal Pages */}
 								<Route path="/about-us" element={<AboutPage />} />
