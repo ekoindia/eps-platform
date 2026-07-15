@@ -24,6 +24,7 @@ import { getDocumentedSpecs } from "@/lib/data/docs-registry";
 import { ekoSigningPlugin } from "@/lib/docs/eko-signing-plugin";
 import { resolveTryItProxyUrl } from "@/lib/docs/tryit-proxy";
 import { buildOpenApiDocument } from "@/lib/openapi/build-openapi";
+import { uatCredentials } from "@/lib/uat-credentials";
 
 /** Workspace document slug — also passed to `open()` so routing is unambiguous. */
 const DOC_NAME = "eko-eps";
@@ -33,24 +34,21 @@ const DOC_NAME = "eko-eps";
  * well as dev, so a reader can send a test request without hunting for keys.
  *
  * This DOES inline the keypair into the production client bundle. That is
- * deliberate and not a leak: the same keypair is published openly in llms.txt /
- * index.md (see `aiGettingStartedNotice` in lib/markdown/shared.ts) to give AI
- * agents a zero-signup trial. It is a public demo credential — scoped, quota'd,
- * rotatable — NOT a secret. Never prefill anything here that isn't.
+ * deliberate and not a leak — see the header of lib/uat-credentials.ts. Never
+ * prefill anything here that isn't a public demo credential.
  *
  * Returns undefined when no creds are configured, leaving the panel empty for
  * the caller to fill in.
  */
 const uatAuthentication = () => {
-	const developerKey = import.meta.env.VITE_EPS_UAT_DEVELOPER_KEY ?? "";
-	const accessKey = import.meta.env.VITE_EPS_UAT_ACCESS_KEY ?? "";
-	if (!developerKey && !accessKey) return undefined;
+	const credentials = uatCredentials();
+	if (!credentials) return undefined;
 	return {
 		// AND tuple: keep both auth fields active in the panel.
 		preferredSecurityScheme: [["developerKey", "accessKey"]],
 		securitySchemes: {
-			developerKey: { value: developerKey },
-			accessKey: { value: accessKey },
+			developerKey: { value: credentials.developerKey },
+			accessKey: { value: credentials.accessKey },
 		},
 	};
 };

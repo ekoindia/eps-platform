@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import Console from "@/pages/Console";
 import type { AuthState } from "@/lib/auth/AuthProvider";
 
@@ -26,6 +26,8 @@ function renderConsole(state: AuthState) {
 }
 
 describe("Console", () => {
+	afterEach(() => vi.unstubAllEnvs());
+
 	it("renders the login form when anon", () => {
 		renderConsole({ status: "anon" });
 		expect(screen.getByText("login-form")).toBeInTheDocument();
@@ -57,6 +59,38 @@ describe("Console", () => {
 			},
 		});
 		expect(screen.getByText(/integration overview/i)).toBeInTheDocument();
+	});
+
+	it("shows the UAT keypair to a signed-in developer", () => {
+		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "dev-key-123");
+		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "access-key-456");
+		renderConsole({
+			status: "authed",
+			role: "developer",
+			me: { state: "lead", mobile: "999", profile: null, zohoId: null },
+		});
+		expect(screen.getByText("dev-key-123")).toBeInTheDocument();
+		expect(screen.getByText("access-key-456")).toBeInTheDocument();
+	});
+
+	it("falls back to the placeholder when no UAT keypair is configured", () => {
+		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "");
+		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "");
+		renderConsole({
+			status: "authed",
+			role: "developer",
+			me: { state: "active", mobile: "999", profile: null, zohoId: null },
+		});
+		expect(
+			screen.getByText(/will appear here once issued/i),
+		).toBeInTheDocument();
+	});
+
+	it("never leaks credentials to an anonymous visitor", () => {
+		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "dev-key-123");
+		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "access-key-456");
+		renderConsole({ status: "anon" });
+		expect(screen.queryByText("dev-key-123")).not.toBeInTheDocument();
 	});
 
 	it("greets an admin session", () => {

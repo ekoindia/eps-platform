@@ -4,6 +4,7 @@ import {
 	SIGNUP_PAGE,
 	SITE_URL,
 } from "@/lib/config/site";
+import { uatCredentials } from "@/lib/uat-credentials";
 
 /**
  * Shared helpers for markdown rendering at build time.
@@ -197,28 +198,20 @@ export function mcpInstallNotice(): string {
 export function aiGettingStartedNotice(): string {
 	// DELIBERATE: this publishes the shared UAT keypair to everyone reading
 	// llms.txt / index.md, to give AI agents the zero-signup trial this notice
-	// promises. The docs Try-it panel prefills the same keypair (see
-	// `uatAuthentication` in lib/docs/tryit-client.ts), so it is public in the
-	// client bundle too. Treat it as a public demo credential: scoped, quota'd,
-	// rotatable — never a secret. Do not "fix" this by removing the bullet
-	// without checking that intent.
-	//
-	// Read via import.meta.env, NOT process.env: Vite loads .env files into
-	// import.meta.env only, so process.env.VITE_* is always undefined here and
-	// used to publish the literal string "undefined" as the test credentials.
-	// Omit the bullet entirely when unset (e.g. unconfigured build env) so a
-	// missing value can never be served as if it were a credential.
-	const developerKey = import.meta.env.VITE_EPS_UAT_DEVELOPER_KEY;
-	const accessKey = import.meta.env.VITE_EPS_UAT_ACCESS_KEY;
+	// promises. It is a public demo credential, never a secret — see the header
+	// of lib/uat-credentials.ts before "fixing" this by removing the bullet.
+	// Omitted entirely when unset (e.g. unconfigured build env) so a missing
+	// value can never be served as if it were a credential.
+	const credentials = uatCredentials();
 	return (
 		"AI coding agents can get started immediately to dicsover APIs, auth, and integration recipes without scraping the HTML pages, and without the need for signup.\n\n" +
 		bulletList([
 			`${MCP_INSTALL_INSTRUCTIONS}`,
 			`**Developer docs:** ${SITE_URL}/docs (Markdown: ${SITE_URL}/docs.md)`,
 			`**Authentication:** ${SITE_URL}/auth (Markdown: ${SITE_URL}/auth.md)`,
-			...(developerKey && accessKey
+			...(credentials
 				? [
-						`**Test credentials:** For UAT and testing during development, use developer_key=${developerKey} and access_key=${accessKey}`,
+						`**Test credentials:** For UAT and testing during development, use developer_key=${credentials.developerKey} and access_key=${credentials.accessKey}`,
 					]
 				: []),
 			`[Full Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe (context heavy)`,
