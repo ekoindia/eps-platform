@@ -195,15 +195,34 @@ export function mcpInstallNotice(): string {
  * where to find developer docs, how to authenticate, and which credentials to use for testing.
  */
 export function aiGettingStartedNotice(): string {
+	// DELIBERATE: this publishes the shared UAT keypair to everyone reading
+	// llms.txt / index.md, to give AI agents the zero-signup trial this notice
+	// promises. The docs Try-it panel prefills the same keypair (see
+	// `uatAuthentication` in lib/docs/tryit-client.ts), so it is public in the
+	// client bundle too. Treat it as a public demo credential: scoped, quota'd,
+	// rotatable — never a secret. Do not "fix" this by removing the bullet
+	// without checking that intent.
+	//
+	// Read via import.meta.env, NOT process.env: Vite loads .env files into
+	// import.meta.env only, so process.env.VITE_* is always undefined here and
+	// used to publish the literal string "undefined" as the test credentials.
+	// Omit the bullet entirely when unset (e.g. unconfigured build env) so a
+	// missing value can never be served as if it were a credential.
+	const developerKey = import.meta.env.VITE_EPS_UAT_DEVELOPER_KEY;
+	const accessKey = import.meta.env.VITE_EPS_UAT_ACCESS_KEY;
 	return (
 		"AI coding agents can get started immediately to dicsover APIs, auth, and integration recipes without scraping the HTML pages, and without the need for signup.\n\n" +
 		bulletList([
 			`${MCP_INSTALL_INSTRUCTIONS}`,
 			`**Developer docs:** ${SITE_URL}/docs (Markdown: ${SITE_URL}/docs.md)`,
 			`**Authentication:** ${SITE_URL}/auth (Markdown: ${SITE_URL}/auth.md)`,
-			`**Test credentials:** For UAT and testing during development, use developer_key=${process.env.EPS_UAT_DEVELOPER_KEY} and access_key=${process.env.EPS_UAT_ACCESS_KEY}.`,
-			`[Full Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe`,
-			`[Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for detail`,
+			...(developerKey && accessKey
+				? [
+						`**Test credentials:** For UAT and testing during development, use developer_key=${developerKey} and access_key=${accessKey}`,
+					]
+				: []),
+			`[Full Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe (context heavy)`,
+			`[Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for details`,
 			`[OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`,
 			`[AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
 		])
