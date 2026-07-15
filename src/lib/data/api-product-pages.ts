@@ -101,7 +101,7 @@ const VERIFICATION_STEPS_BASE = [
 	},
 	{
 		title: "Verify Identity",
-		desc: "Provide your PAN and bank account details to verify your account.",
+		desc: "Provide your PAN to verify your identity.",
 	},
 	{
 		title: "Test APIs Live",
@@ -126,14 +126,19 @@ const VERIFICATION_STEPS_BASE = [
 export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "How do I get started?",
-		a: "Sign up at ekostore.app/eps, verify your identity (PAN + bank account), load your wallet to test the verification APIs live, then integrate and go live.",
+		a: "Sign up at ekostore.app/eps, verify your identity with your PAN, load your wallet to test the verification APIs live, then integrate and go live.",
 		links: [
 			{ label: "Developer docs", href: "/docs" },
 			{ label: "Sign up", href: SIGNUP_URL },
 		],
 	},
 	{
-		q: "What are the different ways to integrate with Eko?",
+		q: "What is EPS?",
+		a: "EPS (Eko Platform Services) is the technology arm of Eko, providing the developer tools, AI tools, and APIs that power modern fintech integration.",
+		links: [{ label: "About Eko", href: "/about" }],
+	},
+	{
+		q: "What are the different ways to integrate with Eko EPS?",
 		a: "Integrate in whichever way suits your stack: call the REST APIs directly, use our official SDKs (JavaScript and PHP) to skip request-signing boilerplate, or let an AI coding agent build the integration using our MCP server and skills. See the Developers and AI sections for each path.",
 		links: [
 			{ label: "SDKs & developer docs", href: "/docs" },
@@ -143,7 +148,10 @@ export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "How does API authentication work?",
 		a: "Each request carries your static `developer_key` header plus a per-request `secret-key` header — an HMAC-SHA256 signature of the current timestamp, keyed by your access key. The access key itself is never sent over the wire. You receive UAT keys on signup and production keys after KYC.",
-		links: [{ label: "How auth works", href: "/docs/how-auth-works" }],
+		links: [
+			{ label: "How auth works", href: "/docs/how-auth-works" },
+			{ label: "Setup authentication with AI", href: "/ai" },
+		],
 	},
 	{
 		q: "Is there a sandbox environment for testing?",

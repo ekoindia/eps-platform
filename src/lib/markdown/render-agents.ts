@@ -4,7 +4,7 @@
  */
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
 import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
-import { RECIPES } from "@/lib/data/api-recipes";
+import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
 
 export function renderAgentsMarkdown(): string {
@@ -14,6 +14,30 @@ export function renderAgentsMarkdown(): string {
 	lines.push(
 		"Everything an AI coding agent needs to integrate Eko Platform Services, " +
 			"auto-generated from our API source of truth.",
+	);
+	lines.push("");
+
+	// Quick start — mirrors the "How to build with AI?" section on /ai.
+	lines.push("## Quick start — how to build with AI");
+	lines.push("");
+	lines.push(
+		"1. **Get an AI coding agent** — Claude Code, Cursor, Codex, GitHub Copilot, " +
+			"or any MCP-compatible tool.",
+	);
+	lines.push(
+		"2. **Add EPS to your agent (one-time)** — Claude Code and Codex install " +
+			"the EPS plugin; other tools wire the MCP server or a context pack. " +
+			"Exact steps below.",
+	);
+	lines.push("3. **Ask in plain English** — sample prompts:");
+	lines.push(
+		'   - **Find the right API:** "Which EPS API should I use to verify a customer\'s bank account?"',
+	);
+	lines.push(
+		'   - **Integrate an API:** "Integrate EPS PAN verification into my app, end to end, and test it in the sandbox."',
+	);
+	lines.push(
+		'   - **Fix a bug:** "My EPS money transfer call fails with error 403. Find the cause and fix it."',
 	);
 	lines.push("");
 
@@ -134,7 +158,10 @@ export function renderAgentsMarkdown(): string {
 	lines.push("");
 
 	lines.push("## Recipes");
-	for (const r of RECIPES) lines.push(`- **${r.name}** — ${r.summary}`);
+	for (const r of RECIPES)
+		lines.push(
+			`- **[${r.name}](${SITE_URL}${recipeHref(r.slug)}.md)** — ${r.summary}`,
+		);
 	lines.push("");
 
 	return lines.join("\n");

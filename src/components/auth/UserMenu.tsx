@@ -43,6 +43,11 @@ export function UserMenu() {
 				<div className="px-2 py-1.5">
 					<p className="truncate text-sm font-medium">{identity.name}</p>
 					<p className="text-xs text-muted-foreground">{identity.detail}</p>
+					{identity.meta && (
+						<p className="truncate text-xs text-muted-foreground">
+							{identity.meta}
+						</p>
+					)}
 				</div>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>

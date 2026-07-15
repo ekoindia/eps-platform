@@ -1,17 +1,24 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 
 vi.mock("@/lib/auth/client", () => ({
 	authClient: { me: vi.fn(), logout: vi.fn() },
 }));
+vi.mock("@/lib/zoho-chat", () => ({ setChatIdentity: vi.fn() }));
 import { authClient } from "@/lib/auth/client";
+import { setChatIdentity } from "@/lib/zoho-chat";
 
 function Probe() {
-	const { state } = useAuth();
+	const { state, logout } = useAuth();
 	return (
-		<div data-testid="s">
-			{state.status === "authed" ? `authed:${state.role}` : state.status}
+		<div>
+			<div data-testid="s">
+				{state.status === "authed" ? `authed:${state.role}` : state.status}
+			</div>
+			<button type="button" onClick={() => void logout()}>
+				log out
+			</button>
 		</div>
 	);
 }
@@ -64,5 +71,54 @@ describe("AuthProvider", () => {
 		await waitFor(() =>
 			expect(screen.getByTestId("s").textContent).toBe("anon"),
 		);
+	});
+
+	it("hands the logged-in identity to the support chat", async () => {
+		(authClient.me as ReturnType<typeof vi.fn>).mockResolvedValue({
+			state: "active",
+			mobile: "9990000079",
+			profile: {
+				name: "Rahul Sharma",
+				email: "rahul@example.in",
+				mobile: "9990000079",
+			},
+			zohoId: null,
+		});
+		render(
+			<AuthProvider>
+				<Probe />
+			</AuthProvider>,
+		);
+		await waitFor(() =>
+			expect(setChatIdentity).toHaveBeenCalledWith({
+				name: "Rahul Sharma",
+				email: "rahul@example.in",
+				contactNumber: "9990000079",
+			}),
+		);
+	});
+
+	it("clears the chat identity on logout", async () => {
+		(authClient.me as ReturnType<typeof vi.fn>).mockResolvedValue({
+			state: "active",
+			mobile: "9990000079",
+			profile: { name: "Rahul Sharma", mobile: "9990000079" },
+			zohoId: null,
+		});
+		(authClient.logout as ReturnType<typeof vi.fn>).mockResolvedValue({
+			ok: true,
+		});
+		render(
+			<AuthProvider>
+				<Probe />
+			</AuthProvider>,
+		);
+		await waitFor(() =>
+			expect(screen.getByTestId("s").textContent).toBe("authed:developer"),
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: /log out/i }));
+
+		await waitFor(() => expect(setChatIdentity).toHaveBeenLastCalledWith(null));
 	});
 });

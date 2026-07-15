@@ -6,6 +6,7 @@ import {
 	getCalculatorContext,
 	getStoredTrackingParams,
 } from "@/hooks/use-tracking-params";
+import type { ChatIdentity } from "@/lib/auth/identity";
 
 interface ZohoSalesIQ {
 	chatwindow?: {
@@ -16,7 +17,39 @@ interface ZohoSalesIQ {
 	};
 	visitor?: {
 		info?: (data: Record<string, string>) => void;
+		name?: (value: string) => void;
+		email?: (value: string) => void;
+		contactnumber?: (value: string) => void;
 	};
+}
+
+/**
+ * Last known logged-in identity, or `null` when anonymous. Written by
+ * AuthProvider as auth state settles and read when chat opens.
+ *
+ * It is stored rather than pushed on login because the widget lazy-loads on the
+ * visitor's first interaction, so it usually does not exist yet when `/me`
+ * resolves. Applying at open time makes the two orders equivalent.
+ */
+let identity: ChatIdentity | null = null;
+
+/** Sets (or clears, on logout) the identity attached to subsequent chat opens. */
+export function setChatIdentity(next: ChatIdentity | null): void {
+	identity = next;
+}
+
+/** Identifies the visitor to the operator console. No-op when anonymous. */
+function pushVisitorIdentity(salesiq: ZohoSalesIQ) {
+	if (!identity) return;
+	try {
+		const visitor = salesiq.visitor;
+		if (identity.name) visitor?.name?.(identity.name);
+		if (identity.email) visitor?.email?.(identity.email);
+		if (identity.contactNumber)
+			visitor?.contactnumber?.(identity.contactNumber);
+	} catch {
+		// Widget API shape changed or unavailable — ignore
+	}
 }
 
 interface ZohoGlobal {
@@ -47,6 +80,7 @@ export function openZohoChat() {
 	const zoho = (window as Window & { $zoho?: ZohoGlobal }).$zoho;
 	if (!zoho?.salesiq) return;
 
+	pushVisitorIdentity(zoho.salesiq);
 	pushVisitorInfo(zoho.salesiq);
 
 	// Show the chat window first (works even after close)

@@ -48,6 +48,10 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 	const nav = useMemo(() => buildNavTree(), []);
 
 	const isActive = (slug: string) => current === docsHref(slug);
+	/** Guide links are addressed by href. A section root (e.g. `/recipe`) also
+	 * counts as active while the reader is on one of its pages. */
+	const isActiveHref = (href: string) =>
+		current === href || current.startsWith(`${href}/`);
 
 	const activeBranchIds = useMemo(() => {
 		const acc = new Set<string>();
@@ -160,10 +164,10 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 					<div className="space-y-0.5">
 						{nav.guides.map((g) => (
 							<Link
-								key={g.slug}
-								to={docsHref(g.slug)}
+								key={g.href}
+								to={g.href}
 								onClick={onNavigate}
-								className={itemClass(isActive(g.slug))}
+								className={itemClass(isActiveHref(g.href))}
 								title={g.title}
 							>
 								<span className="line-clamp-3 min-w-0 flex-1">{g.title}</span>

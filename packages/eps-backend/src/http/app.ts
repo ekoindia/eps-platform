@@ -1,28 +1,28 @@
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { getCookie, setCookie } from "hono/cookie";
-import type { Config } from "../config";
-import type { EkoClient } from "../clients/eko";
-import type { ZohoClient } from "../clients/zoho";
-import type { KV } from "../store/kv";
+import { cors } from "hono/cors";
+import { noopAccessLogger, type AccessLogger } from "../audit/accessLog";
+import { noopSecurityLogger, type SecurityLogger } from "../audit/securityLog";
 import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
-import { buildMeView } from "../identity/me";
-import { AppError, errorBody } from "./errors";
+import type { EkoClient } from "../clients/eko";
 import type { GitHubClient } from "../clients/github";
-import { mountAdmin } from "./admin";
+import type { ZohoClient } from "../clients/zoho";
+import type { Config } from "../config";
+import { buildMeView } from "../identity/me";
+import type { KV } from "../store/kv";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
-import { type SecurityLogger, noopSecurityLogger } from "../audit/securityLog";
 import { StoreUnavailableError } from "../store/storeError";
-import { requestId, type AppEnv } from "./requestId";
-import { type AccessLogger, noopAccessLogger } from "../audit/accessLog";
+import { mountAdmin } from "./admin";
+import { AppError, errorBody } from "./errors";
 import {
+	ADMIN_CALLBACK_IP_LIMIT,
+	ADMIN_LOGIN_IP_LIMIT,
 	enforceRateLimit,
 	kvOr503,
-	ADMIN_LOGIN_IP_LIMIT,
-	ADMIN_CALLBACK_IP_LIMIT,
 	RL_WINDOW_SEC,
 } from "./rateLimit";
+import { requestId, type AppEnv } from "./requestId";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -132,6 +132,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json({ ready }, ready ? 200 : 503);
 	});
 
+	/**
+	 * POST /auth/otp/start → { ok: true } (200)
+	 * MARK: /start
+	 */
 	app.post("/auth/otp/start", async (c) => {
 		const { mobile } = await c.req.json().catch(() => ({}));
 		if (!mobile || typeof mobile !== "string") {
@@ -147,11 +151,28 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		const mobKey = `otp:mob:${m}`;
 		await enforceRateLimit(kv, mobKey, OTP_START_LIMIT, OTP_WINDOW_SEC);
 		await enforceRateLimit(kv, ipKey, OTP_IP_LIMIT, OTP_WINDOW_SEC);
-		await eko.sendOtp({ mobile: m });
-		// generic response — no account enumeration
+		const resp = await eko.sendOtp({
+			mobile: m,
+			xRealIp: c.req.header("x-real-ip"),
+		});
+		// A non-zero upstream status means the OTP was NOT dispatched. Surface a
+		// uniform retryable failure (same for every mobile → no enumeration)
+		// instead of a misleading `{ ok: true }` that leaves the user waiting for
+		// an SMS that never arrives.
+		if (!resp.ok) {
+			throw new AppError(
+				502,
+				"OTP_SEND_FAILED",
+				"Couldn't send the OTP right now. Please try again.",
+			);
+		}
 		return c.json({ ok: true });
 	});
 
+	/**
+	 * POST /auth/otp/verify → { ...meView } (200)
+	 * MARK: /verify
+	 */
 	app.post("/auth/otp/verify", async (c) => {
 		const { mobile, otp } = await c.req.json().catch(() => ({}));
 		if (!mobile || !otp) {
@@ -174,7 +195,8 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		if (ipFails >= OTP_VERIFY_IP_LIMIT) {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
-		const verified = await eko.verifyOtp({ mobile: m, otp });
+		const xRealIp = c.req.header("x-real-ip");
+		const verified = await eko.verifyOtp({ mobile: m, otp, xRealIp });
 		if (!verified.ok) {
 			// Fail-closed: if the failed attempt cannot be counted, refuse (503)
 			// rather than let unbounded guesses through.
@@ -185,7 +207,51 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		// Best-effort cleanup: a valid OTP is already consumed; a stale failKey
 		// expires by its own TTL, so never 502/503 the user over it.
 		await kv.del(failKey).catch(() => {});
-		const profile = await eko.getProfile({ mobile: m });
+		const profile = await eko.getProfile({ mobile: m, xRealIp });
+		// An inactive account (upstream 2123) authenticated the OTP but must NOT
+		// receive a session — deny before minting any token/cookie (parity with
+		// the reference login). The OTP already proved control of the number, so a
+		// clear 403 is safe (no enumeration) and surfaces a real message.
+		if (profile.kind === "inactive") {
+			throw new AppError(
+				403,
+				"ACCOUNT_INACTIVE",
+				"This account is inactive. Please contact support.",
+			);
+		}
+		// An unrecognized upstream response must NOT be treated as a new user —
+		// refuse the login instead of minting a null-profile session. The OTP was
+		// already consumed; the client can retry.
+		if (profile.kind === "error") {
+			throw new AppError(
+				502,
+				"PROFILE_UNAVAILABLE",
+				"Couldn't load your profile right now. Please try again.",
+			);
+		}
+		// TODO(signup): New users — Eko response 319/1200/1867 → `not_found` — are
+		// not onboarded via /console yet. The reference (simplibankLoginAPI) admits
+		// them with a limited-role signup session (role_list [-5] for mobile,
+		// onboarding=1) and starts the signup flow. When self-serve signup is
+		// enabled, replace this block with that flow. For now, refuse so an
+		// unregistered number cannot obtain a session.
+		if (profile.kind === "not_found") {
+			throw new AppError(
+				403,
+				"NOT_REGISTERED",
+				"This mobile number isn't registered for EPS yet.",
+			);
+		}
+		// The OTP authenticated the number, but the profile is not an EPS business
+		// partner (org 1 / user_type 23) — deny before minting any token/cookie.
+		if (profile.kind === "not_allowed") {
+			throw new AppError(
+				403,
+				"NOT_ALLOWED",
+				"This account isn't an EPS business account. Please contact support.",
+			);
+		}
+		// Only a found (existing, active) profile reaches here.
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
 			sub: m,
@@ -260,7 +326,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				sub: claim.sub,
 			});
 		}
-		const profile = await eko.getProfile({ mobile: claim.sub });
+		const profile = await eko.getProfile({
+			mobile: claim.sub,
+			xRealIp: c.req.header("x-real-ip"),
+		});
 		const view = await buildMeView(claim.sub, profile, (m) => zoho.findLead(m));
 		return c.json(view);
 	});

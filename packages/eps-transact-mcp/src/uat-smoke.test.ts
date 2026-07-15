@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { describe, expect, it } from "vitest";
 
-import { loadBundle } from "./load-bundle.js";
-import { buildToolDefs } from "./tools.js";
-import { createTransactServer } from "./server.js";
 import { withTimeout } from "./fetchTimeout.js";
+import { loadBundle } from "./load-bundle.js";
+import { createTransactServer } from "./server.js";
+import { buildToolDefs } from "./tools.js";
 
 /**
  * Live UAT smoke — the ONLY test that talks to Eko. Skipped unless real UAT

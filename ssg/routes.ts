@@ -7,6 +7,7 @@
 import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { hasProductPage } from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
+import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
 import { docsHref, getAllDocSlugs } from "@/lib/data/docs-registry";
 import { INDUSTRIES_LIST } from "@/lib/data/industries";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
@@ -41,6 +42,9 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 	// Developer docs (detail before the index)
 	{ pattern: /^\/docs\/.+/, src: "src/pages/docs/DocDetailPage.tsx" },
 	{ pattern: /^\/docs\/?$/, src: "src/pages/docs/DocsIndexPage.tsx" },
+	// API recipes (detail before the index)
+	{ pattern: /^\/recipe\/.+/, src: "src/pages/recipe/RecipeDetailPage.tsx" },
+	{ pattern: /^\/recipe\/?$/, src: "src/pages/recipe/RecipesIndexPage.tsx" },
 	// Other pages
 	{ pattern: /^\/pricing$/, src: "src/pages/PricingPage.tsx" },
 	{ pattern: /^\/faq$/, src: "src/pages/FaqPage.tsx" },
@@ -95,6 +99,10 @@ export const PRERENDER_ROUTES: string[] = [
 	// Developer docs (overview + every guide & endpoint slug)
 	"/docs",
 	...getAllDocSlugs().map((slug) => docsHref(slug)),
+
+	// API recipes (overview + every recipe slug)
+	"/recipe",
+	...RECIPES.map((recipe) => recipeHref(recipe.slug)),
 
 	// Use-cases hub
 	"/use-cases",

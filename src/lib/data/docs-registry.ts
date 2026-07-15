@@ -15,6 +15,7 @@
  * slug.
  */
 import { GUIDES, type GuideMeta } from "@/content/docs/docs-guides";
+import { recipeHref } from "./api-recipes";
 import type { ApiProductCategory } from "./api-products";
 import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
 import { API_SPECS } from "./api-specs";
@@ -206,9 +207,14 @@ export interface NavCategoryGroup {
 	nodes: NavNode[];
 }
 
+/**
+ * A link in the sidebar's Guides group. Addressed by `href` rather than a docs
+ * slug, because not every guide lives under `/docs` — Recipes is its own
+ * `/recipe` section but belongs in the same group for the reader.
+ */
 export interface NavGuideLink {
-	slug: string;
 	title: string;
+	href: string;
 }
 
 export interface DocsNav {
@@ -356,9 +362,13 @@ export const productNavNodes = (
 /** Build the left-nav tree: Guides first, then API categories → products →
  * (optional providers → optional purpose-groups) → endpoints. */
 export const buildNavTree = (): DocsNav => {
-	const guides: NavGuideLink[] = [...GUIDES]
-		.sort((a, b) => a.order - b.order)
-		.map((g) => ({ slug: g.slug, title: g.title }));
+	const guides: NavGuideLink[] = [
+		...[...GUIDES]
+			.sort((a, b) => a.order - b.order)
+			.map((g) => ({ title: g.title, href: docsHref(g.slug) })),
+		// Recipes live outside the /docs slug namespace but read as a guide.
+		{ title: "Recipes", href: recipeHref() },
+	];
 
 	const categories: NavCategoryGroup[] = CATEGORY_ORDER.map((category) => {
 		const nodes: NavNode[] = API_PRODUCTS.filter(

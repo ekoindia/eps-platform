@@ -1,3 +1,4 @@
+import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
 import { withTimeout } from "./http";
@@ -10,6 +11,7 @@ export interface EkoClient {
 		app?: string;
 		clientRefId?: string;
 		source?: string;
+		xRealIp?: string;
 	}): Promise<{ ok: boolean; raw: unknown }>;
 	verifyOtp(input: {
 		mobile: string;
@@ -17,8 +19,13 @@ export interface EkoClient {
 		orgId?: number;
 		clientRefId?: string;
 		source?: string;
+		xRealIp?: string;
 	}): Promise<{ ok: boolean; raw: unknown }>;
-	getProfile(input: { mobile: string; orgId?: number }): Promise<ProfileResult>;
+	getProfile(input: {
+		mobile: string;
+		orgId?: number;
+		xRealIp?: string;
+	}): Promise<ProfileResult>;
 }
 
 const NOT_FOUND_CODES = new Set([319, 1200, 1867]);
@@ -28,29 +35,64 @@ const SUCCESS_CODE = 369;
 export function createEkoClient(
 	cfg: Config["eko"],
 	fetchImpl: typeof fetch = fetch,
+	logger: EkoLogger = noopEkoLogger,
 ): EkoClient {
 	const url = `${cfg.scheme}://${cfg.host}:${cfg.port}${cfg.path}`;
 	const doFetch = withTimeout(fetchImpl);
 
-	async function post(fields: Record<string, string>): Promise<unknown> {
+	async function post(
+		fields: Record<string, string>,
+		xRealIp?: string,
+	): Promise<unknown> {
 		const body = new URLSearchParams(fields).toString();
-		const res = await doFetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-				developer_key: cfg.developerKey,
-			},
-			body,
+		const headers: Record<string, string> = {
+			"Content-Type": "application/x-www-form-urlencoded",
+			developer_key: cfg.developerKey,
+		};
+		// Forward the trusted client IP so the upstream's own anti-abuse / rate
+		// checks see the real caller. Omit the header entirely when unknown — an
+		// empty `X-Real-IP` can be treated differently from an absent one upstream.
+		if (xRealIp) headers["X-Real-IP"] = xRealIp;
+
+		const start = performance.now();
+		let res: Response;
+		try {
+			res = await doFetch(url, { method: "POST", headers, body });
+		} catch (e) {
+			// Transport failure (timeout / connection refused): still log, then rethrow.
+			logger.log({
+				fields,
+				error: e instanceof Error ? e.message : String(e),
+				durMs: Math.round(performance.now() - start),
+			});
+			throw e;
+		}
+
+		// Read the body BEFORE the status check so an upstream error body is logged
+		// (a non-2xx often carries a diagnostic JSON payload worth capturing).
+		const text = await res.text();
+		let parsed: unknown;
+		let parseError = false;
+		try {
+			parsed = JSON.parse(text);
+		} catch {
+			parseError = true;
+		}
+		logger.log({
+			fields,
+			status: res.status,
+			response: parseError ? { nonJson: text.slice(0, 500) } : parsed,
+			error: parseError ? "non-JSON response body" : undefined,
+			durMs: Math.round(performance.now() - start),
 		});
+
 		if (!res.ok) {
 			throw new Error(`Eko upstream HTTP ${res.status}`);
 		}
-		const text = await res.text();
-		try {
-			return JSON.parse(text);
-		} catch {
+		if (parseError) {
 			throw new Error(`Eko upstream returned non-JSON (status ${res.status})`);
 		}
+		return parsed;
 	}
 
 	function base(orgId?: number): Record<string, string> {
@@ -63,59 +105,84 @@ export function createEkoClient(
 
 	return {
 		async sendOtp(input) {
-			const raw = (await post({
-				...base(input.orgId),
-				interaction_type_id: "515",
-				mobile: input.mobile,
-				app: input.app ?? "eps",
-				platform: input.platform ?? "web",
-				source: input.source ?? "EPSBACKEND",
-				intent_id: "0",
-				user_identity: input.mobile,
-				user_identity_type: "mobile_number",
-				client_ref_id: input.clientRefId ?? "",
-			})) as { response_status_id?: number };
+			const raw = (await post(
+				{
+					...base(input.orgId),
+					interaction_type_id: "515",
+					mobile: input.mobile,
+					app: input.app ?? "eps",
+					platform: input.platform ?? "web",
+					source: input.source ?? "EPSBACKEND",
+					intent_id: "0",
+					user_identity: input.mobile,
+					user_identity_type: "mobile_number",
+					client_ref_id: input.clientRefId ?? "",
+				},
+				input.xRealIp,
+			)) as { response_status_id?: number };
 			return { ok: raw?.response_status_id === 0, raw };
 		},
 		async verifyOtp(input) {
-			const raw = (await post({
-				...base(input.orgId),
-				interaction_type_id: "518",
-				otp: input.otp,
-				mobile: input.mobile,
-				source: input.source ?? "EPSBACKEND",
-				intent_id: "0",
-				verification_type: "2",
-				user_identity: input.mobile,
-				user_identity_type: "mobile_number",
-				client_ref_id: input.clientRefId ?? "",
-			})) as { response_status_id?: number };
+			const raw = (await post(
+				{
+					...base(input.orgId),
+					interaction_type_id: "518",
+					otp: input.otp,
+					mobile: input.mobile,
+					source: input.source ?? "EPSBACKEND",
+					intent_id: "0",
+					verification_type: "2",
+					user_identity: input.mobile,
+					user_identity_type: "mobile_number",
+					client_ref_id: input.clientRefId ?? "",
+				},
+				input.xRealIp,
+			)) as { response_status_id?: number };
 			return { ok: raw?.response_status_id === 0, raw };
 		},
 		async getProfile(input) {
-			const raw = (await post({
-				...base(input.orgId),
-				interaction_type_id: "151",
-				user_identity: input.mobile,
-				user_identity_type: "mobile_number",
-			})) as {
+			const raw = (await post(
+				{
+					...base(input.orgId),
+					interaction_type_id: "151",
+					user_identity: input.mobile,
+					user_identity_type: "mobile_number",
+				},
+				input.xRealIp,
+			)) as {
 				response_type_id?: number;
+				response_code?: number;
 				data?: { user_detail?: Record<string, unknown> };
 			};
-			const code = Number(raw?.response_type_id ?? -1);
+			// Classify ONLY by response_type_id (mirrors authentication.js).
+			// The upstream's response_status_id is NOT a success flag here: it is
+			// -1 for a found profile and 1 for a not-found user, so gating on it
+			// would wrongly reject real logins. `response_code` is an alternate
+			// spelling of the type id on some responses.
+			const code = Number(raw?.response_type_id ?? raw?.response_code ?? -1);
 			if (code === INACTIVE_CODE)
 				return { kind: "inactive", responseTypeId: code };
+			// 319 / 1200 / 1867 → user not registered in this org (new user).
+			// NB: 319's upstream message is "Invalid Sender/Initiator", which reads
+			// like an auth error but means MERCHANT_NOT_FOUND.
 			if (NOT_FOUND_CODES.has(code))
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
 			if (code === SUCCESS_CODE && d) {
+				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
+				if (Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23") {
+					return { kind: "not_allowed", responseTypeId: code };
+				}
+
 				return {
 					kind: "found",
 					responseTypeId: code,
 					profile: mapProfile(d),
 				};
 			}
-			return { kind: "not_found", responseTypeId: code };
+			// Unrecognized response (mirror reference's "else -> 500"): a hard
+			// error, so the caller never mints a session on an unclassified result.
+			return { kind: "error", responseTypeId: code };
 		},
 	};
 }

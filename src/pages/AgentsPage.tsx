@@ -1,4 +1,5 @@
 import { AiHint } from "@/components/AiHint";
+import { Eps } from "@/components/Eps";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { McpIcon } from "@/components/icons/McpIcon";
@@ -157,11 +158,12 @@ const AgentsPage = () => {
 								className="mx-auto mt-6 max-w-2xl animate-fade-up text-lg leading-relaxed text-white/70"
 								style={{ animationDelay: "160ms" }}
 							>
-								The EPS Transactional MCP server turns every Eko verification
-								API into a typed tool your agents call directly — PAN, Aadhaar,
-								bank account, GSTIN, and more. Drop it into any MCP-capable
-								agent and automate verification inside your own workflows. Your
-								credentials pass through per request and are never stored.
+								The <Eps /> Transactional MCP server turns every Eko
+								verification API into a typed tool your agents call directly —
+								PAN, Aadhaar, bank account, GSTIN, and more. Drop it into any
+								MCP-capable agent and automate verification inside your own
+								workflows. Your credentials pass through per request and are
+								never stored.
 							</p>
 
 							<div

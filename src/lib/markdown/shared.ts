@@ -4,6 +4,7 @@ import {
 	SIGNUP_PAGE,
 	SITE_URL,
 } from "@/lib/config/site";
+import { uatCredentials } from "@/lib/uat-credentials";
 
 /**
  * Shared helpers for markdown rendering at build time.
@@ -179,13 +180,46 @@ export function gettingStartedNotice(): string {
 	return `To get started, fill the form at ${SITE_URL}${SIGNUP_PAGE} (with your name, mobile number and email) or call us at +91${SALES_MOBILE}`;
 }
 
+const MCP_INSTALL_INSTRUCTIONS = `Install the EPS context MCP (\`eps-context-mcp\`) to get structured access to the latest API specs, HMAC request signing, and integration recipes — so you can integrate Eko's APIs end-to-end without guessing from these pages. Run \`npx -y ${EPS_MCP_PKG}\`, or see per-agent setup at ${SITE_URL}/ai#install (Markdown: ${SITE_URL}/ai.md). Claude Code & Codex have a native two-step plugin install; other agents wire the MCP directly.`;
+
 /**
  * One-line nudge telling AI coding agents to self-install the EPS context MCP,
  * with the reason (structured, authoritative API + auth data beats scraping
  * these pages) and a pointer to per-agent setup.
  */
 export function mcpInstallNotice(): string {
-	return `**For AI coding agents:** install the EPS context MCP (\`eps-context-mcp\`) to get structured access to the latest API specs, HMAC request signing, and integration recipes — so you can integrate Eko's APIs end-to-end without guessing from these pages. Run \`npx -y ${EPS_MCP_PKG}\`, or see per-agent setup at ${SITE_URL}/ai#install.`;
+	return `**For AI coding agents:** ${MCP_INSTALL_INSTRUCTIONS}`;
+}
+
+/**
+ * Inform coding agents on how to get started with development and integration using the EPS context MCP,
+ * where to find developer docs, how to authenticate, and which credentials to use for testing.
+ */
+export function aiGettingStartedNotice(): string {
+	// DELIBERATE: this publishes the shared UAT keypair to everyone reading
+	// llms.txt / index.md, to give AI agents the zero-signup trial this notice
+	// promises. It is a public demo credential, never a secret — see the header
+	// of lib/uat-credentials.ts before "fixing" this by removing the bullet.
+	// Omitted entirely when unset (e.g. unconfigured build env) so a missing
+	// value can never be served as if it were a credential.
+	const credentials = uatCredentials();
+	return (
+		"AI coding agents can get started immediately to dicsover APIs, auth, and integration recipes without scraping the HTML pages, and without the need for signup.\n\n" +
+		bulletList([
+			`${MCP_INSTALL_INSTRUCTIONS}`,
+			`**Developer docs:** ${SITE_URL}/docs (Markdown: ${SITE_URL}/docs.md)`,
+			`**Authentication:** ${SITE_URL}/auth (Markdown: ${SITE_URL}/auth.md)`,
+			...(credentials
+				? [
+						`**Test credentials:** For UAT and testing during development, use developer_key=${credentials.developerKey} and access_key=${credentials.accessKey}`,
+					]
+				: []),
+			`[Full Machine bundle](${SITE_URL}/agent/eps.json): Canonical JSON of every endpoint, topic, and recipe (context heavy)`,
+			`[Endpoint index](${SITE_URL}/agent/index.json): Compact list; fetch /agent/api/<slug>.json for details`,
+			`[OpenAPI](${SITE_URL}/openapi.json): OpenAPI 3.1 document`,
+			`[AI hub](${SITE_URL}/ai): All agent artifacts + install instructions`,
+		])
+	);
 }
 
 /** Get Index Page Link */

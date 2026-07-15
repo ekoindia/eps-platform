@@ -28,6 +28,7 @@ describe("api-recipes", () => {
 				[
 					{
 						id: "bad",
+						slug: "bad",
 						name: "Bad",
 						summary: "x",
 						steps: [{ specSlug: "does-not-exist", purpose: "x" }],

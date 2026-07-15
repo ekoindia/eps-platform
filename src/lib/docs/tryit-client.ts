@@ -24,26 +24,31 @@ import { getDocumentedSpecs } from "@/lib/data/docs-registry";
 import { ekoSigningPlugin } from "@/lib/docs/eko-signing-plugin";
 import { resolveTryItProxyUrl } from "@/lib/docs/tryit-proxy";
 import { buildOpenApiDocument } from "@/lib/openapi/build-openapi";
+import { uatCredentials } from "@/lib/uat-credentials";
 
 /** Workspace document slug — also passed to `open()` so routing is unambiguous. */
 const DOC_NAME = "eko-eps";
 
 /**
- * DEV-only credential prefill for the Scalar auth panel. `import.meta.env.DEV` is
- * false during the Node prerender and in production builds, so these never reach
- * static output. Returns undefined when no creds are configured.
+ * Prefills the Scalar auth panel with the shared UAT keypair, in production as
+ * well as dev, so a reader can send a test request without hunting for keys.
+ *
+ * This DOES inline the keypair into the production client bundle. That is
+ * deliberate and not a leak — see the header of lib/uat-credentials.ts. Never
+ * prefill anything here that isn't a public demo credential.
+ *
+ * Returns undefined when no creds are configured, leaving the panel empty for
+ * the caller to fill in.
  */
-const devAuthentication = () => {
-	if (!import.meta.env.DEV) return undefined;
-	const developerKey = import.meta.env.VITE_EPS_UAT_DEVELOPER_KEY ?? "";
-	const accessKey = import.meta.env.VITE_EPS_UAT_ACCESS_KEY ?? "";
-	if (!developerKey && !accessKey) return undefined;
+const uatAuthentication = () => {
+	const credentials = uatCredentials();
+	if (!credentials) return undefined;
 	return {
 		// AND tuple: keep both auth fields active in the panel.
 		preferredSecurityScheme: [["developerKey", "accessKey"]],
 		securitySchemes: {
-			developerKey: { value: developerKey },
-			accessKey: { value: accessKey },
+			developerKey: { value: credentials.developerKey },
+			accessKey: { value: credentials.accessKey },
 		},
 	};
 };
@@ -101,7 +106,7 @@ const createModal = async (): Promise<ApiClientModal> => {
 		plugins: [ekoSigningPlugin],
 		options: {
 			proxyUrl: resolveTryItProxyUrl(),
-			authentication: devAuthentication(),
+			authentication: uatAuthentication(),
 		},
 	});
 

@@ -25,7 +25,7 @@
 		"test:watch": "vitest",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"backend:dev": "npm run dev -w @ekoindia/eps-backend",
+		"backend:dev": "npm run dev:pretty -w @ekoindia/eps-backend",
 		"backend:build": "npm run build -w @ekoindia/eps-backend",
 		"backend:start": "npm run start -w @ekoindia/eps-backend",
 		"backend:test": "npm run test -w @ekoindia/eps-backend",

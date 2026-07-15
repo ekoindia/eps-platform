@@ -9,6 +9,7 @@ import { createSessions } from "./auth/session";
 import { createApp } from "./http/app";
 import { createSecurityLogger } from "./audit/securityLog";
 import { createAccessLogger } from "./audit/accessLog";
+import { createEkoLogger } from "./audit/ekoLog";
 import { withStoreErrors } from "./store/storeError";
 import type { KV } from "./store/kv";
 
@@ -67,7 +68,11 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		readiness,
 		securityLog: createSecurityLogger(),
 		accessLog: createAccessLogger(),
-		eko: createEkoClient(cfg.eko),
+		eko: createEkoClient(
+			cfg.eko,
+			fetch,
+			createEkoLogger({ level: cfg.eko.logLevel }),
+		),
 		zoho: createZohoClient(cfg.zoho),
 		github: createGitHubClient(cfg.github),
 		sessions: createSessions(cfg, kv, { secretbox }),

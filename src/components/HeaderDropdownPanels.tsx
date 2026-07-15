@@ -875,6 +875,11 @@ export const HeaderDropdownPanels = ({
 											{identity.name}
 										</p>
 										<p className="text-xs text-eko-slate">{identity.detail}</p>
+										{identity.meta && (
+											<p className="truncate text-xs text-eko-slate">
+												{identity.meta}
+											</p>
+										)}
 									</div>
 								</div>
 								<Button

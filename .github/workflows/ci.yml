@@ -8,10 +8,86 @@ on:
       - main
       - "feature/**"
 
+# Cancel superseded PR runs only. Push runs on dev/main are NOT cancelled — a
+# main push run's completion triggers the workflow_run deploys; cancelling it
+# would drop a deploy.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Lightweight path detection. Every heavy step below gates on these outputs so
+  # the required checks (web-and-packages, php-sdk) still ALWAYS run and report,
+  # but skip work irrelevant to the change. `code` is a deliberate SUPERSET of
+  # every specific filter, so `php|transact|poller|backend == true` implies
+  # `code == true` (php-sdk relies on this — see its job).
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.f.outputs.code }}
+      php: ${{ steps.f.outputs.php }}
+      poller: ${{ steps.f.outputs.poller }}
+      transact: ${{ steps.f.outputs.transact }}
+      backend: ${{ steps.f.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # paths-filter needs history to diff before..after on push
+      - uses: dorny/paths-filter@v3
+        id: f
+        with:
+          filters: |
+            # SUPERSET — keep every other filter's paths a subset of these so a
+            # match anywhere guarantees code==true (php-sdk's sdk-surface
+            # artifact dependency relies on the Build step having run).
+            code:
+              - 'src/**'
+              - 'packages/**'
+              - 'ssg/**'
+              - 'scripts/**'
+              - '.githooks/**'
+              - 'index.html'
+              - 'vite.config.ts'
+              - 'vitest.config.ts'
+              - 'vite-plugin-*.ts'
+              - 'tsconfig*.json'
+              - 'eslint.config.*'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+            # php ⊂ code (invariant — do not add a path here that isn't in code).
+            php:
+              - 'packages/sdk-php/**'
+              - 'src/**' # sdk-surface derives from the SSOT in src/lib/data
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+            poller:
+              - 'packages/eps-backend/deploy/poller/**'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+            # AGGRESSIVE: no bare src/** — the image smoke only needs to re-run
+            # when the Dockerfile/manifests/deps change; bundle-content
+            # correctness is covered by the package vitest above.
+            transact:
+              - 'packages/eps-transact-mcp/**'
+              - 'packages/sdk-js/**'
+              - '.githooks/setup.mjs'
+              - 'package-lock.json'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+            backend:
+              - 'packages/eps-backend/**'
+              - '.githooks/setup.mjs'
+              - 'package-lock.json'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+
   web-and-packages:
     name: Web + JS/TS packages
     runs-on: ubuntu-latest
+    needs: changes
     services:
       # Real Redis for the eps-backend KV contract + fail-closed integration
       # tests (src/store/redis.test.ts). They self-skip unless REDIS_TEST_URL is
@@ -38,27 +114,33 @@ jobs:
           fi
 
       - name: Setup Node.js
+        if: needs.changes.outputs.code == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: needs.changes.outputs.code == 'true'
         run: npm ci
 
       - name: Lint
+        if: needs.changes.outputs.code == 'true'
         run: npm run lint
 
       - name: Typecheck
+        if: needs.changes.outputs.code == 'true'
         run: npm run typecheck
 
       - name: Build (website + agent bundles)
+        if: needs.changes.outputs.code == 'true'
         run: npm run build
 
       # The SDK surface is baked here (gitignored, not committed). Hand it to the
       # separate php-sdk job as an artifact so PHP tests get the runtime asset
       # without rebuilding the website. Generic name — future SDK jobs reuse it.
       - name: Upload baked SDK surface
+        if: needs.changes.outputs.code == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sdk-surface
@@ -67,23 +149,29 @@ jobs:
           retention-days: 7
 
       - name: Test website
+        if: needs.changes.outputs.code == 'true'
         run: npx vitest run
 
       - name: Test eps-context-mcp
+        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-context-mcp
 
       - name: Test eps-sdk (Node.js)
+        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-sdk
 
       # transact-mcp imports @ekoindia/eps-sdk via its package main (dist/), so
       # the SDK must be tsup-built first; its baked data came from `npm run build`.
       - name: Test eps-transact-mcp
+        if: needs.changes.outputs.code == 'true'
         run: npm run transact:test
 
       - name: Test eps-mock-server
+        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-mock-server
 
       - name: Test eps-backend (incl. Redis integration)
+        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-backend
         env:
           # Flips src/store/redis.test.ts from skip -> run against the `redis`
@@ -92,14 +180,18 @@ jobs:
           REDIS_TEST_URL: redis://localhost:6379
 
       - name: Shellcheck poller
+        if: needs.changes.outputs.code == 'true'
         run: shellcheck packages/eps-backend/deploy/poller/poll.sh
 
       - name: Test eps-backend poller (bash shim harness)
+        if: needs.changes.outputs.code == 'true'
         run: npm run test:poller -w @ekoindia/eps-backend
 
-      # Each stack is now an independent compose project — validate them
-      # separately. A well-formed 64-hex digest (sha256:0 fails digest-format).
+      # Compose validations gate on their own package filter only (each is
+      # standalone — no dependency on the Build step above).
+      # A well-formed 64-hex digest (sha256:0 fails digest-format).
       - name: Validate eps-backend prod compose
+        if: needs.changes.outputs.backend == 'true'
         working-directory: packages/eps-backend
         run: |
           d=$(printf '0%.0s' $(seq 64))
@@ -112,6 +204,7 @@ jobs:
       # NB: no `.env` written here — the standalone transact compose drops
       # `env_file: .env`, so a bare bring-up with only the image pin must validate.
       - name: Validate eps-transact-mcp standalone compose
+        if: needs.changes.outputs.transact == 'true'
         working-directory: packages/eps-transact-mcp/deploy
         run: |
           d=$(printf '0%.0s' $(seq 64))
@@ -120,15 +213,21 @@ jobs:
             --env-file deploy.env -f docker-compose.prod.yml config -q
           rm -f deploy.env
 
+      # Docker builds gate on their own package filter only — each `docker build`
+      # runs its own npm ci inside the image, so it doesn't need the job's Build
+      # step. (Aggressive: skipped on plain src/** edits — see the `transact`
+      # filter note; the package vitest already proves bundle content.)
       # The shared poller image (consumed by the transact stack; eps-backend
       # build:s the same Dockerfile) must build — catch a broken image before
       # any stack depends on it.
       - name: Build shared poller image
+        if: needs.changes.outputs.poller == 'true'
         run: docker build -t eps-poller-ci packages/eps-backend/deploy/poller
 
       # Container smoke for the transactional MCP: the build exercises the risky
       # parts (workspace resolution, baked-data copy); then prove /healthz answers.
       - name: Build + smoke eps-transact-mcp image
+        if: needs.changes.outputs.transact == 'true'
         run: |
           docker build -t eps-transact-mcp-ci -f packages/eps-transact-mcp/Dockerfile .
           cid=$(docker run -d -p 8788:8788 eps-transact-mcp-ci)
@@ -144,10 +243,11 @@ jobs:
   php-sdk:
     name: PHP SDK
     runs-on: ubuntu-latest
-    # Depends on the JS job only to receive its baked sdk-surface artifact (the
-    # PHP runner never runs the website build). PHP failing leaves this job's
-    # status independent of the JS check; the JS check is the release gate.
-    needs: web-and-packages
+    # Needs `changes` for the gate, and `web-and-packages` to receive its baked
+    # sdk-surface artifact (the PHP runner never runs the website build). PHP
+    # failing leaves this job's status independent of the JS check; the JS check
+    # is the release gate.
+    needs: [changes, web-and-packages]
     defaults:
       run:
         working-directory: packages/sdk-php
@@ -157,24 +257,28 @@ jobs:
 
       # data/sdk-surface.json is generated (gitignored), not committed. The
       # web-and-packages job bakes it via `npm run build` and uploads it as the
-      # `sdk-surface` artifact; pull it into data/ before tests run. The path is
-      # repo-root-relative — defaults.run.working-directory does not apply here.
+      # `sdk-surface` artifact; pull it into data/ before tests run. Safe because
+      # php ⊂ code, so when php==true the Build step ran and produced the artifact.
       - name: Download baked SDK surface
+        if: needs.changes.outputs.php == 'true'
         uses: actions/download-artifact@v4
         with:
           name: sdk-surface
           path: packages/sdk-php/data
 
       - name: Setup PHP
+        if: needs.changes.outputs.php == 'true'
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
           tools: composer
 
       - name: Install Composer dependencies
+        if: needs.changes.outputs.php == 'true'
         run: composer install --no-interaction --prefer-dist
 
       # No phpunit.xml is present, so point phpunit at the tests directory and
       # bootstrap Composer's autoloader explicitly.
       - name: Run PHPUnit
+        if: needs.changes.outputs.php == 'true'
         run: vendor/bin/phpunit --bootstrap vendor/autoload.php tests

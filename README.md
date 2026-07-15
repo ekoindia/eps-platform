@@ -91,7 +91,8 @@ That's **3 npm packages, 1 Composer package, and 1 agent plugin bundle** (the `e
 | `api-auth.ts` / `api-error-codes.ts` / `api-specs-common.ts` | Shared auth headers, error catalog, common params/envelopes + resolvers |
 | [`api-products.ts`](src/lib/data/api-products.ts) | API product registry + metadata |
 | [`api-product-pages.ts`](src/lib/data/api-product-pages.ts) | Product-page marketing content (hero, features, FAQs, SEO) — no technical data |
-| `api-recipes.ts` | Multi-step integration recipes (e.g. DMT onboard-then-transfer) |
+| `api-recipes.ts` | Multi-step integration recipes (e.g. DMT onboard-then-transfer) — drives `/recipe` + `/recipe/<slug>` and the agent bundle |
+| `recipe-graph.ts` | Resolves a recipe into steps + edges; shared by the HTML stepper and the `.md` twin so they can't drift |
 | [`industries.ts`](src/lib/data/industries.ts) / [`solutions.ts`](src/lib/data/solutions.ts) | Industry pages + solution/pack definitions |
 | `api-pricing.ts` / `payments-pricing.ts` | Pricing data (drives pricing page + xlsx calculator) |
 | `docs-registry.ts` | Merges MDX guides + API endpoints into the docs nav |

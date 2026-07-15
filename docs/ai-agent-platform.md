@@ -77,6 +77,7 @@ Emitted by `buildFiles()` in `vite-plugin-generate-agent-bundle.ts` to
 |---|---|---|---|
 | `agent/eps.json` | The canonical bundle: `meta` + `topics` + `apis` (full detail) + `recipes` | `buildAgentBundle` | Everything downstream; baked into the MCP package |
 | `agent/index.json` | Compact index — all endpoints (no bodies), topic ids, recipe summaries | `buildIndex` | Fast discovery / listing |
+| `recipe.md` + `recipe/<slug>.md` | Human + agent recipe pages: a mermaid `flowchart TD` of the flow, then the numbered steps linking to each endpoint twin | `renderRecipesIndexMarkdown` / `renderRecipeMarkdown` | Linked from `/docs.md`, `/llms.txt`, `/ai.md` |
 | `agent/api/<slug>.json` | One endpoint's full detail (headers, params, sample req/resp, errors) | `buildApi` | Per-endpoint lookups |
 | `agent/topic/<topic>.json` | One topic: `auth`, `errors`, `pricing`, `environments` | `buildTopic` | Topic lookups (e.g. signing rules) |
 | `agent/AGENTS.md` | Canonical lean context pack (open `AGENTS.md` standard) | `CONTEXT_PACK_FILES` | Codex, Gemini CLI, opencode, Windsurf, Cody, Zed, aider, JetBrains AI |
@@ -183,8 +184,12 @@ marketplace, plugin manifest, and skill files consistent.
 
 ## 5. The `/ai` hub page (+ `/ai.md` text twin)
 
-`src/pages/AiPage.tsx` is the developer-facing hub. It is **data-driven** from
-the same sources as the bundle:
+`src/pages/AiPage.tsx` is the developer-facing hub. It opens with a
+**"How to build with AI?" quick-start** right after the hero — a 3-step
+stepper (get an agent → one-time EPS install, linking to the `#install`
+matrix → copyable sample prompts via `PromptChip` in
+`src/pages/ai/CommandBlock.tsx`) aimed at users new to AI coding agents.
+The rest is **data-driven** from the same sources as the bundle:
 
 - The **install matrix** (per-harness tabs with copy-to-clipboard snippets)
   comes from `buildInstallMatrix()` (`src/lib/agent/build-install-matrix.ts`),
@@ -198,7 +203,8 @@ the same sources as the bundle:
 
 `/ai.md` is the lean Markdown twin, rendered by
 `src/lib/markdown/render-agents.ts` from the **same** `buildInstallMatrix()` +
-`RECIPES`, so the text and HTML surfaces never diverge. The route is registered
+`RECIPES`, so the text and HTML surfaces never diverge (including a mirrored
+"Quick start" section with the same three steps and sample prompts). The route is registered
 in `src/App.tsx`, `src/AppServer.tsx` (SSG render twin), and `ssg/routes.ts`.
 
 ## 6. Auth model
@@ -216,6 +222,23 @@ into every context pack. Cross-language SDK conformance is pinned by
 [`docs/sdk-golden-vector.md`](./sdk-golden-vector.md).
 
 ## 7. How to update
+
+### Adding a recipe
+
+Add an entry to `RECIPES` in `src/lib/data/api-recipes.ts` with a unique,
+kebab-case `slug` (its `/recipe/<slug>` route) and a `productId` FK. Everything
+else follows automatically: the page, the `.md` twin, the prerendered route, the
+sitemap entry and the agent bundle all derive from the data. `assertRecipeSlugs`
+runs at build and fails on a duplicate/malformed slug or a step referencing an
+unknown endpoint, so a broken recipe cannot ship.
+
+> **Known data gap.** `RecipeStep.branches` encodes only the *exceptional* jump
+> (e.g. DMT step 1: `463 → onboard sender`). The implied success path — sender
+> found, so skip onboarding — has nowhere to live in the current shape, so
+> neither the stepper nor the mermaid graph draws it. Both render exactly what
+> the data says. Fixing this means extending the step shape (a success `goto`,
+> or explicit edges), which would also improve the context packs and MCP, since
+> they read the same field.
 
 1. Edit `src/lib/data/api-specs.ts` (endpoints) and/or
    `src/lib/data/api-recipes.ts` (recipes), or the shared

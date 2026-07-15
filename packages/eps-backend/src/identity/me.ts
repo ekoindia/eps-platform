@@ -9,6 +9,7 @@ export interface MeView {
 
 export function deriveStateFromProfile(r: ProfileResult): LifecycleState {
 	if (r.kind === "inactive") return "inactive";
+	if (r.kind === "error" || r.kind === "not_allowed") return "unknown";
 	if (r.kind === "not_found") return "lead";
 	return r.profile.onboarding === 0 ? "active" : "onboarded";
 }
@@ -28,6 +29,11 @@ export async function buildMeView(
 	}
 	if (r.kind === "inactive") {
 		return { state: "inactive", mobile, profile: null, zohoId: null };
+	}
+	if (r.kind === "error" || r.kind === "not_allowed") {
+		// Upstream lookup failed, or the profile is not an EPS business partner —
+		// report a neutral state, never a profile.
+		return { state: "unknown", mobile, profile: null, zohoId: null };
 	}
 	// not_found: try optional lead enrichment
 	let isLead = false;
