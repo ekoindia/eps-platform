@@ -383,4 +383,33 @@ describe("onboarding interactions", () => {
 		expect(body.get("is_pintwin_user")).toBe("1");
 		expect(body.get("booklet_serial_number")).toBe("SN123");
 	});
+
+	it("getBooklet returns null when response_status_id is not 0, even with a valid type", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 1,
+			response_type_id: 1646,
+			data: { booklet_serial_number: "SN123", is_pintwin_user: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getBooklet({ identity })).toBeNull();
+	});
+
+	it("fetchPintwinKey accepts key_id 0 as valid", async () => {
+		const f = mockFetch(200, {
+			data: { pintwin_key: "1974856302", key_id: 0 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(
+			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
+		).toEqual({ pintwinKey: "1974856302", keyId: 0 });
+	});
+
+	it("createPartialAccount returns failure when response_type_id is missing", async () => {
+		const f = mockFetch(200, {});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.createPartialAccount({ mobile: "9990000001" });
+		expect(r.ok).toBe(false);
+		expect(r.message).toBe("The request could not be completed.");
+		expect(r.responseTypeId).toBe(-1);
+	});
 });
