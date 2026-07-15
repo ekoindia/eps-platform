@@ -17,6 +17,8 @@ export interface EkoProfile {
 	dateOfJoining?: string;
 	onboarding: number;
 	zohoId: string;
+	/** Ordered onboarding steps from upstream; empty for a fully-onboarded user. */
+	onboardingSteps: Array<{ role: number; label: string }>;
 }
 
 export type ProfileResult =

@@ -397,5 +397,11 @@ function mapProfile(d: Record<string, unknown>): EkoProfile {
 		dateOfJoining: d.date_of_joining ? String(d.date_of_joining) : undefined,
 		onboarding: Number(d.onboarding ?? 0),
 		zohoId: String(d.crm_contact_id ?? ""),
+		onboardingSteps: Array.isArray(d.onboarding_steps)
+			? (d.onboarding_steps as Array<Record<string, unknown>>).map((s) => ({
+					role: Number(s.role ?? -1),
+					label: String(s.label ?? ""),
+				}))
+			: [],
 	};
 }

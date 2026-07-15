@@ -52,6 +52,7 @@ function deps(
 				orgId: 1,
 				onboarding: 0,
 				zohoId: "ZCRM_9",
+				onboardingSteps: [],
 			},
 		})),
 		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
