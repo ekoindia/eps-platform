@@ -101,6 +101,15 @@ describe("resolveSteps", () => {
 		expect(resolved.every((s) => s.status === "complete")).toBe(true);
 	});
 
+	it("marks all steps complete when currentRole is null even while in_progress — callers must check state.status", () => {
+		// When the backend has no actionable step (empty role_list), currentRole is null
+		// but status is still "in_progress". This returns all-complete steps, but that
+		// does NOT mean onboarding is finished — the caller must check state.status to know.
+		const resolved = resolveSteps(state({ currentRole: null }), registry);
+		expect(resolved.every((s) => s.status === "complete")).toBe(true);
+		expect(resolved.length).toBeGreaterThan(0); // non-empty flow, not a false positive on empty state
+	});
+
 	it("returns an empty list when the API sends no steps", () => {
 		expect(resolveSteps(state({ steps: [], currentRole: null }), registry)).toEqual([]);
 	});

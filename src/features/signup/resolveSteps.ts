@@ -34,21 +34,32 @@ export type StepSubmit = (
 export interface StepDefinition {
 	/** The backend role code identifying this step. */
 	role: number;
+	/** Unique identifier for this step within the app. */
 	name: string;
 	/** Fallback label; the API's label wins when present. */
 	label: string;
+	/** React component that renders this step's UI. */
 	Component: ComponentType<StepProps>;
+	/** Submits this step's values and returns refreshed signup state. */
 	submit: StepSubmit;
 }
 
+/** Status of a step in the onboarding flow. "complete" = already finished or no actionable step. "current" = user is here now. "pending" = not yet reached. */
 export type StepStatus = "complete" | "current" | "pending";
 
+/** A step from the API, enriched with UI metadata and status. */
 export interface ResolvedStep {
+	/** The backend role code identifying this step. */
 	role: number;
+	/** Unique identifier for this step within the app. */
 	name: string;
+	/** Display label for this step. */
 	label: string;
+	/** Current position of this step relative to the user's progress. */
 	status: StepStatus;
+	/** React component that renders this step's UI. */
 	Component: ComponentType<StepProps>;
+	/** Submits this step's values and returns refreshed signup state. */
 	submit: StepSubmit;
 }
 
@@ -62,6 +73,11 @@ export interface ResolvedStep {
  * @param state - Server-authoritative signup state.
  * @param registry - Steps this app can render.
  * @returns Steps in API order, each tagged with its status.
+ * @remarks
+ * When `currentRole` is null (either onboarding finished or no actionable step in an
+ * in-progress flow), every step is marked "complete". Consumers must check `state.status`
+ * to distinguish between these cases; an all-"complete" result alone does not prove
+ * onboarding finished.
  */
 export function resolveSteps(
 	state: SignupState,
@@ -77,8 +93,9 @@ export function resolveSteps(
 			role: def.role,
 			name: def.name,
 			label: apiStep.label || def.label,
-			// currentIndex === -1 means nothing is pending (onboarding finished),
-			// so every step is complete.
+			// currentIndex === -1 means no step is currently actionable: either onboarding
+			// is finished, or the user is in-progress but has no actionable step (empty
+			// role_list from backend). Callers must check state.status to distinguish.
 			status:
 				currentIndex === -1
 					? "complete"
