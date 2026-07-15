@@ -43,40 +43,39 @@ export function SignupWizard() {
 	const [error, setError] = useState<string | null>(null);
 	const [fatal, setFatal] = useState<string | null>(null);
 
-	// Guards against a second run of the mount effect below (e.g. a future
-	// <StrictMode> double-mount). `cancelled` only stops a stale setState after
-	// unmount — it does nothing to stop the network calls themselves, and
-	// `createProfile()` is a non-idempotent POST that creates a partial account
-	// upstream, so firing it twice would create two accounts. `started` makes
-	// the async body run at most once per mounted component regardless of how
-	// many times the effect fires.
+	// Guards against a second run of the mount effect below (e.g. a
+	// <StrictMode> double-mount). `createProfile()` is a non-idempotent POST
+	// that creates a partial account upstream, so firing it twice would create
+	// two partial accounts — that's the bug this guards against. There is
+	// deliberately no `cancelled` flag alongside it: in React 18+, `setState`
+	// on an unmounted component is a harmless no-op, so a `cancelled` closure
+	// protects nothing real. Worse, under StrictMode a `cancelled` flag set by
+	// run 1's cleanup would suppress run 1's own `setState` even though run 2
+	// reuses the same fiber and never starts its own fetch (blocked by
+	// `started`) — the component would then be stuck loading forever. `started`
+	// alone makes the async body run at most once per mounted component while
+	// still letting whichever run's promise resolves land its `setState`.
 	const started = useRef(false);
 
 	// Load initial state, creating the partial account if it does not exist yet.
 	useEffect(() => {
 		if (started.current) return;
 		started.current = true;
-		let cancelled = false;
 		void (async () => {
 			try {
 				let next = await signupClient.state();
 				if (next.status === "new") {
 					next = await signupClient.createProfile();
 				}
-				if (!cancelled) setState(next);
+				setState(next);
 			} catch (e) {
-				if (!cancelled) {
-					setFatal(
-						e instanceof ApiError
-							? e.message
-							: "Couldn't start signup. Please try again.",
-					);
-				}
+				setFatal(
+					e instanceof ApiError
+						? e.message
+						: "Couldn't start signup. Please try again.",
+				);
 			}
 		})();
-		return () => {
-			cancelled = true;
-		};
 	}, []);
 
 	// When onboarding completes the backend swaps in a developer session; pulling

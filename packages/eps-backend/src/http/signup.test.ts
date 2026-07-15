@@ -241,9 +241,11 @@ describe("session upgrade on completion", () => {
 		expect(res.headers.get("set-cookie")).toBeNull();
 	});
 
-	it("still returns the done state when the upgrade's profile fetch fails", async () => {
+	it("still returns the done state when the upgrade's profile fetch fails, logging the error", async () => {
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+		const upgradeError = new Error("upstream down");
 		const submitPin = vi.fn().mockResolvedValue(done);
-		const getProfile = vi.fn().mockRejectedValue(new Error("upstream down"));
+		const getProfile = vi.fn().mockRejectedValue(upgradeError);
 		const mintAccess = vi.fn();
 		const app = harness(
 			"signup",
@@ -258,6 +260,11 @@ describe("session upgrade on completion", () => {
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual(done);
 		expect(mintAccess).not.toHaveBeenCalled();
+		expect(consoleError).toHaveBeenCalledWith(
+			"[signup] session upgrade failed",
+			upgradeError,
+		);
+		consoleError.mockRestore();
 	});
 
 	// buildMeView never throws for these three ProfileResult kinds — it resolves

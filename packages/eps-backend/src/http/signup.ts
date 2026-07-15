@@ -117,10 +117,14 @@ export function mountSignup(
 				const refresh = await sessions.issueRefresh(claim);
 				c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
 				c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
-			} catch {
+			} catch (err) {
 				// ponytail: onboarding already succeeded upstream — never fail this
 				// request over the upgrade. The signup cookie stays valid and the
-				// next /signup/state call retries the upgrade.
+				// next /signup/state call retries the upgrade. The likely trigger is
+				// a `mintAccess` / `issueRefresh` / `zoho.findLead` failure — an
+				// `eko.getProfile` failure is already captured by `ekoLog` above, so
+				// this is just a backstop log for troubleshooting the rest.
+				console.error("[signup] session upgrade failed", err);
 			}
 		}
 		return c.json(state);

@@ -447,8 +447,8 @@ function mapProfile(d: Record<string, unknown>): EkoProfile {
 		zohoId: String(d.crm_contact_id ?? ""),
 		onboardingSteps: Array.isArray(d.onboarding_steps)
 			? (d.onboarding_steps as Array<Record<string, unknown>>).map((s) => ({
-					role: Number(s.role ?? -1),
-					label: String(s.label ?? ""),
+					role: Number(s?.role ?? -1),
+					label: String(s?.label ?? ""),
 				}))
 			: [],
 	};

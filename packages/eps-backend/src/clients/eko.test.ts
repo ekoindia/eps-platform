@@ -207,6 +207,35 @@ describe("EkoClient.getProfile", () => {
 	});
 });
 
+describe("mapProfile onboarding_steps", () => {
+	// Trust boundary: onboarding_steps is untrusted upstream data. Array.isArray
+	// guards the array itself but not its elements — a null element must
+	// degrade to a neutral step instead of throwing on `s.role`.
+	it("maps a null element to {role: -1, label: \"\"} instead of throwing", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: {
+				user_detail: {
+					mobile: "9990000001",
+					org_id: 1,
+					user_type: "23",
+					onboarding: 1,
+					onboarding_steps: [null, { role: 13000, label: "PAN Details" }],
+				},
+			},
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getProfile({ mobile: "9990000001" });
+		expect(r.kind).toBe("onboarding");
+		if (r.kind === "onboarding") {
+			expect(r.profile.onboardingSteps).toEqual([
+				{ role: -1, label: "" },
+				{ role: 13000, label: "PAN Details" },
+			]);
+		}
+	});
+});
+
 describe("getProfile onboarding classification", () => {
 	const baseDetail = {
 		name: "Test User",

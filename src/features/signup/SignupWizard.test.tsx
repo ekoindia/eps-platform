@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, type SignupState } from "@/lib/auth/client";
 import { SignupWizard } from "./SignupWizard";
@@ -62,6 +63,31 @@ describe("SignupWizard", () => {
 		resolveState({ mobile: "9990000001", status: "new", steps: [], currentRole: null });
 		await waitFor(() => expect(signupClient.createProfile).toHaveBeenCalled());
 		expect(await screen.findByText("PAN Details")).toBeInTheDocument();
+	});
+
+	// Regression guard: the mount effect used to pair a `started` ref with a
+	// `cancelled` closure flag. Under a StrictMode double-mount, run 1's
+	// cleanup set `cancelled = true` before run 2 early-returned (no new fetch,
+	// no new cleanup), so run 1's in-flight promise resolved into a `cancelled`
+	// check and skipped `setState` forever — the wizard hung on "Setting up
+	// your account…" permanently. `cancelled` is gone now (setState on an
+	// unmounted component is a no-op in React 18+), so this must resolve past
+	// loading, and `started` alone must still stop a second `createProfile()`.
+	it("resolves out of loading under StrictMode, calling createProfile at most once", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue({
+			mobile: "9990000001",
+			status: "new",
+			steps: [],
+			currentRole: null,
+		});
+		vi.mocked(signupClient.createProfile).mockResolvedValue(panPending);
+		render(
+			<StrictMode>
+				<SignupWizard />
+			</StrictMode>,
+		);
+		expect(await screen.findByText("PAN Details")).toBeInTheDocument();
+		expect(signupClient.createProfile).toHaveBeenCalledTimes(1);
 	});
 
 	it("renders the current step and its progress", async () => {
