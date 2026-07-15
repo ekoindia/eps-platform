@@ -19,6 +19,8 @@ export interface Profile {
 	dateOfJoining?: string;
 	onboarding: number;
 	zohoId: string;
+	/** Ordered onboarding steps from upstream; empty for a fully-onboarded user. */
+	onboardingSteps: Array<{ role: number; label: string }>;
 }
 
 export interface MeView {
@@ -32,6 +34,30 @@ export interface AdminView {
 	role: "admin";
 	login: string | null;
 	sub: string;
+}
+
+/** The `/me` view for a user partway through signup. */
+export interface SignupView {
+	role: "signup";
+	mobile: string;
+}
+
+/** One onboarding step, as named by the backend. */
+export interface SignupStep {
+	role: number;
+	label: string;
+}
+
+/**
+ * Server-authoritative onboarding progress. The wizard renders this and never
+ * infers progress locally — every step call returns a fresh copy.
+ */
+export interface SignupState {
+	mobile: string;
+	/** `new` = no partial account yet; `done` = onboarding complete. */
+	status: "new" | "in_progress" | "done";
+	steps: SignupStep[];
+	currentRole: number | null;
 }
 
 export interface DocItem {
@@ -127,13 +153,13 @@ export const authClient = {
 			method: "POST",
 			body: JSON.stringify({ mobile }),
 		}) as Promise<{ ok: true }>,
-	verifyOtp: (mobile: string, otp: string): Promise<MeView> =>
+	verifyOtp: (mobile: string, otp: string): Promise<MeView | SignupView> =>
 		request("/auth/otp/verify", {
 			method: "POST",
 			body: JSON.stringify({ mobile, otp }),
-		}) as Promise<MeView>,
-	me: (): Promise<MeView | AdminView> =>
-		request("/me", { method: "GET" }) as Promise<MeView | AdminView>,
+		}) as Promise<MeView | SignupView>,
+	me: (): Promise<MeView | AdminView | SignupView> =>
+		request("/me", { method: "GET" }) as Promise<MeView | AdminView | SignupView>,
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>
@@ -166,4 +192,22 @@ export const authClient = {
 				method: "POST",
 			}) as Promise<DeployResult>,
 	},
+};
+
+/** Self-serve signup API — requires a signup session cookie. */
+export const signupClient = {
+	state: (): Promise<SignupState> =>
+		request("/signup/state", { method: "GET" }) as Promise<SignupState>,
+	createProfile: (): Promise<SignupState> =>
+		request("/signup/profile", { method: "POST" }) as Promise<SignupState>,
+	submitPan: (pan: string): Promise<SignupState> =>
+		request("/signup/pan", {
+			method: "POST",
+			body: JSON.stringify({ pan }),
+		}) as Promise<SignupState>,
+	submitPin: (pin1: string, pin2: string): Promise<SignupState> =>
+		request("/signup/pin", {
+			method: "POST",
+			body: JSON.stringify({ pin1, pin2 }),
+		}) as Promise<SignupState>,
 };
