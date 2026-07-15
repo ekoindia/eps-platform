@@ -8,6 +8,10 @@ Status today: `/console` is a thin lifecycle gate (login → state-aware card).
 The UX polish landed (skeletons, empty states, success cards). The features
 below turn it into a real developer platform.
 
+Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),
+feeding new users into this same lifecycle gate. See
+[`docs/features/user-onboarding.md`](./features/user-onboarding.md).
+
 Complexity: **S** ≈ frontend-only / static · **M** ≈ needs a backend endpoint ·
 **L** ≈ needs a new backend subsystem (telemetry, billing, etc.).
 
