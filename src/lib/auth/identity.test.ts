@@ -3,15 +3,15 @@ import { accountIdentity } from "./identity";
 import type { AuthState } from "@/lib/auth/AuthProvider";
 import type { Profile } from "@/lib/auth/client";
 
-/** Builds an authed-developer AuthState; profile fields beyond name are irrelevant here. */
-function dev(mobile: string, name: string | null): AuthState {
+/** Builds an authed-developer AuthState; profile fields beyond name/code are irrelevant here. */
+function dev(mobile: string, name: string | null, code?: string): AuthState {
 	return {
 		status: "authed",
 		role: "developer",
 		me: {
 			state: "active",
 			mobile,
-			profile: name === null ? null : ({ name, mobile } as Profile),
+			profile: name === null ? null : ({ name, mobile, code } as Profile),
 			zohoId: null,
 		},
 	};
@@ -24,11 +24,20 @@ describe("accountIdentity", () => {
 	});
 
 	it("derives initials from a developer's name", () => {
-		expect(accountIdentity(dev("9990000079", "Rahul Sharma"))).toEqual({
-			name: "Rahul Sharma",
-			initials: "RS",
-			detail: "Developer",
-		});
+		expect(accountIdentity(dev("9990000079", "Rahul Sharma", "20810"))).toEqual(
+			{
+				name: "Rahul Sharma",
+				initials: "RS",
+				detail: "EPS Admin",
+				meta: "9990000079 · Code 20810",
+			},
+		);
+	});
+
+	it("omits the code from meta when the profile has none", () => {
+		expect(accountIdentity(dev("9990000079", "Rahul Sharma"))?.meta).toBe(
+			"9990000079",
+		);
 	});
 
 	it("uses a single initial for a one-word name", () => {
@@ -39,7 +48,8 @@ describe("accountIdentity", () => {
 		expect(accountIdentity(dev("9990000079", null))).toEqual({
 			name: "9990000079",
 			initials: "#79",
-			detail: "Developer",
+			detail: "EPS Admin",
+			meta: undefined,
 		});
 	});
 

@@ -8,6 +8,8 @@ export interface AccountIdentity {
 	initials: string;
 	/** Secondary line — the account role. */
 	detail: string;
+	/** Tertiary line — mobile and user code, when known. */
+	meta?: string;
 }
 
 /** Initials from a person's name: first+last word initial, or first letter for one word. */
@@ -37,10 +39,16 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 
 	const personName = state.me.profile?.name?.trim();
 	const fromName = personName ? nameInitials(personName) : "";
+	const code = state.me.profile?.code;
 	return {
 		name: personName || state.me.mobile,
 		// Mobile-derived fallback (last two digits) when no name exists.
 		initials: fromName || `#${state.me.mobile.slice(-2)}`,
 		detail: "EPS Admin",
+		// Mobile is skipped when it already serves as the primary name.
+		meta:
+			[personName ? state.me.mobile : "", code ? `Code ${code}` : ""]
+				.filter(Boolean)
+				.join(" · ") || undefined,
 	};
 }
