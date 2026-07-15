@@ -22,6 +22,7 @@ export interface SignupState {
 	currentRole: number | null;
 }
 
+/** Orchestrates user signup, validating inputs before any upstream call. */
 export interface SignupService {
 	getState(mobile: string, xRealIp?: string): Promise<SignupState>;
 	createProfile(mobile: string, xRealIp?: string): Promise<SignupState>;

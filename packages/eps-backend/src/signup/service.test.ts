@@ -99,6 +99,21 @@ describe("getState", () => {
 		expect(state.status).toBe("done");
 		expect(state.currentRole).toBeNull();
 	});
+
+	it("reports in_progress with a null currentRole when role_list is empty", async () => {
+		// This is the fallback consumers must handle: onboarding in progress but
+		// no current role yet (e.g., awaiting upstream step assignment).
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue({
+				...onboardingProfile,
+				profile: { ...onboardingProfile.profile, roleList: [] },
+			}),
+		});
+		const svc = createSignupService({ eko, cfg });
+		const state = await svc.getState("9990000001");
+		expect(state.status).toBe("in_progress");
+		expect(state.currentRole).toBeNull();
+	});
 });
 
 describe("createProfile", () => {
@@ -182,24 +197,28 @@ describe("submitPin", () => {
 
 	it("rejects mismatched pins before any upstream call", async () => {
 		const getBooklet = vi.fn();
+		const getProfile = vi.fn().mockResolvedValue(onboardingProfile);
 		const svc = createSignupService({
-			eko: ekoStub({ getBooklet, getProfile: vi.fn().mockResolvedValue(onboardingProfile) }),
+			eko: ekoStub({ getBooklet, getProfile }),
 			cfg,
 		});
 		await expect(svc.submitPin("9990000001", "1234", "5678")).rejects.toThrow(
 			/do not match/i,
 		);
 		expect(getBooklet).not.toHaveBeenCalled();
+		expect(getProfile).not.toHaveBeenCalled();
 	});
 
 	it("rejects a non-4-digit pin before any upstream call", async () => {
 		const getBooklet = vi.fn();
+		const getProfile = vi.fn().mockResolvedValue(onboardingProfile);
 		const svc = createSignupService({
-			eko: ekoStub({ getBooklet, getProfile: vi.fn().mockResolvedValue(onboardingProfile) }),
+			eko: ekoStub({ getBooklet, getProfile }),
 			cfg,
 		});
 		await expect(svc.submitPin("9990000001", "12", "12")).rejects.toThrow(/4 digits/);
 		expect(getBooklet).not.toHaveBeenCalled();
+		expect(getProfile).not.toHaveBeenCalled();
 	});
 
 	it("throws when the booklet lookup fails", async () => {
