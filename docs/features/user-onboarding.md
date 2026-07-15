@@ -178,14 +178,23 @@ set successfully), every signup route funnels its response through a `respond()`
 helper (`packages/eps-backend/src/http/signup.ts:81-110`) that upgrades the
 session to a real developer session before returning the response.
 
-The upgrade flow (`signup.ts:86-107`):
-1. Re-fetch the upstream profile via `eko.getProfile()` to confirm
-   `onboarding === 0` (line 88-91).
-2. Build the normal `MeView` from that profile (line 92), mirroring the
+The upgrade flow (`signup.ts`, inside `respond()`):
+1. Re-fetch the upstream profile via `eko.getProfile()`.
+2. Only mint on `profile.kind === "found"` — every other kind returns the
+   `done` state unmodified, no cookie set. `buildMeView` never throws for
+   `inactive` / `not_allowed` / `error` (it resolves them to a neutral or
+   inactive `MeView` instead), so gating on its *output* would silently mint a
+   developer session for exactly the profiles `POST /auth/otp/verify` refuses
+   outright (403 `ACCOUNT_INACTIVE` / 403 `NOT_ALLOWED` / 502
+   `PROFILE_UNAVAILABLE`). The realistic trigger is a transient upstream flake
+   (`error`) landing between "onboarding succeeded" and this re-fetch. Gating
+   on `profile.kind` directly closes that gap.
+3. Build the normal `MeView` from the `found` profile, mirroring the
    `POST /auth/otp/verify` "found" branch exactly.
-3. Mint a developer claim with `role: "developer"` (lines 93-98), holding the
-   same `sub` (mobile) and organizational context.
-4. Mint fresh access and refresh tokens and set them as cookies (lines 99-102).
+4. Mint a developer claim with `role: "developer"`, `orgId` taken directly
+   from the `found` profile (never `cfg.eko.defaultOrgId` — a `found` profile
+   always carries a real `orgId`), and the same `sub` (mobile).
+5. Mint fresh access and refresh tokens and set them as cookies.
 
 All four routes (`/signup/state`, `/signup/profile`, `/signup/pan`,
 `/signup/pin`) funnel responses through `respond()`. The inclusion of
@@ -194,11 +203,15 @@ a stale signup cookie (e.g., after a page reload mid-navigation), their next
 `/signup/state` call retries the upgrade rather than requiring only PIN
 completion to trigger it (line 112-119).
 
-If the upgrade's profile re-fetch fails (network, upstream error), the request
-still returns `done` state and succeeds — onboarding succeeded upstream, and
-the upgrade is automatically retried on the next `/signup/state` call (lines
-103-107, ponytail comment). This ensures a failed upgrade never rolls back
-onboarding completion.
+If the upgrade's profile re-fetch throws (network, upstream error), the
+request still returns `done` state and succeeds — onboarding succeeded
+upstream, and the upgrade is automatically retried on the next
+`/signup/state` call (ponytail comment on the `catch`). The non-`found`-kind
+guard above and this `catch` cover two different failure shapes: the guard
+handles a re-fetch that *resolves* to something other than `found`; the
+`catch` handles a re-fetch that throws outright. Either way, a failed or
+inconclusive upgrade never rolls back onboarding completion, and never mints
+a session on unverified data.
 
 Once the cookies are set, the frontend's next `/me` call arrives with a
 developer role, `AuthProvider` re-classifies it to `{ status: "authed";
@@ -208,14 +221,17 @@ role: "developer" }`, and `SignupPage`'s redirect condition
 ## Interaction reference table
 
 All five onboarding interactions post to the same `cfg.eko` SimpliBank path
-via the shared `post()` helper (`eko.ts:113-166`), form-urlencoded, with the
-`developer_key` header. Success is judged per-interaction — there is no
-single convention:
+with the `developer_key` header. Four of the five (521, 170, 10005, 5) go
+through the shared `post()` helper, form-urlencoded; 523 goes through the
+sibling `postMultipart()` helper instead — see "PAN (523)" above. Both
+helpers share one send/log/error pipeline (`sendForm()` in `eko.ts`), so
+logging and error semantics are identical either way. Success is judged
+per-interaction — there is no single convention:
 
 | # | Interaction | Method (`eko.ts`) | Identity used | Success condition |
 |---|---|---|---|---|
-| 521 | Create partial account | `createPartialAccount` (291-309) | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`) |
-| 523 | Verify PAN | `verifyPan` (310-325) | user's own (`actor()`) | `response_type_id === 1569` (`PAN_VERIFICATION_OK`) |
+| 521 | Create partial account | `createPartialAccount` | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`) |
+| 523 | Verify PAN | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`) | `response_type_id === 1569` (`PAN_VERIFICATION_OK`) |
 | 170 | Get booklet number | `getBooklet` (326-351) | user's own | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
 | 10005 | Fetch pintwin key | `fetchPintwinKey` (352-365) | user's own | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id` |
 | 5 | Set secret PIN | `setSecretPin` (366-382) | user's own | `response_type_id === 9` (`SECRET_PIN_OK`) |
@@ -224,10 +240,17 @@ single convention:
 comparing `response_type_id` against the interaction's own success constant
 and otherwise surfacing the upstream `message` as `EkoStepResult`.
 
-523 sends only `doc_id` (the PAN) as a form field — no file, no multipart
-body (`eko.ts:312-323`; confirmed by `clients/eko.test.ts`, `"verifyPan
-sends 523 with the user's own identity and no file"`). The design's original
-"no file part" question is settled: it is genuinely not sent.
+523 is the one onboarding interaction sent as `multipart/form-data` instead of
+plain urlencoded: the reference `connect-api` implementation wraps its 523
+call in a single multipart part, literally named `form-data`, whose value is
+the same URL-encoded field string every other interaction sends as its body
+directly — plus a generated `client_ref_id`, which 523 did not previously
+send. No file part is included (`eko.ts` `verifyPan`; confirmed by
+`clients/eko.test.ts`, `"verifyPan sends 523 as multipart with one
+'form-data' part and no file"`). The design's original "no file part"
+question is settled: it is genuinely not sent. **This multipart contract is
+unverified against the real upstream — a UAT gate**, same caveat as the
+`latlong` constant below.
 
 ## Pintwin (170 → 10005 → 5)
 
@@ -324,13 +347,20 @@ it is a one-line change (`eko.ts:357`).
 
 ## Log redaction
 
-`packages/eps-backend/src/audit/ekoLog.ts:74-75` redacts three fields, at
-every non-`off` log level:
+`packages/eps-backend/src/audit/ekoLog.ts:74-75` names three fields:
 
 ```ts
 const REDACTED_REQUEST_FIELDS = new Set(["first_okekey", "second_okekey"]);
 const REDACTED_RESPONSE_FIELDS = new Set(["pintwin_key"]);
 ```
+
+Redaction is applied only in the `full` branch (`ekoLog.ts:137-144`), which is
+the only level that logs raw request fields or the full response body at all.
+`basic` (the production default) never logs request fields and its
+`responseSummary()` allowlist (`ekoLog.ts:50-64`) cannot reach a nested
+`pintwin_key`, so there is nothing for these sets to redact at that level —
+not because redaction runs there too, but because `basic` never puts the
+field in the log line in the first place (`ekoLog.ts:145-150`).
 
 The raw PIN itself never reaches this logger — it never leaves the BFF
 unencoded. The actual risk is narrower but real: at `EKO_LOG_LEVEL=full`,
@@ -343,10 +373,9 @@ substitution is a plain digit map, so an `okekey` **and** the `pintwin_key`
 that produced it, logged together, recover the PIN exactly. Redacting both
 independently closes this regardless of which log line someone reads first.
 Redaction lives inside `ekoLog` itself, not at call sites, so a future
-interaction that happens to reuse either field name is covered automatically.
-The production default level, `basic`, never logs request fields or full
-response bodies (`ekoLog.ts:145-150`, `responseSummary()`), so it is
-unaffected either way.
+interaction that happens to reuse either field name is covered automatically
+at `full` — but does not extend `basic`'s safety, which was already narrower
+by construction.
 
 ## Known gaps / follow-ups
 
@@ -355,12 +384,10 @@ unaffected either way.
   that codebase. Settle which is correct at UAT (see above).
 - The hardcoded `latlong` constant is unverified against the real upstream —
   it may be accepted, rejected, or not required at all.
-- `src/components/ui/input-otp.tsx` and `PinStep.tsx` never pass a `pattern`
-  (e.g. the `input-otp` package's own `REGEXP_ONLY_DIGITS`) to `InputOTP`, so
-  the PIN fields accept non-digit characters at the input level. The 4-digit
-  numeric regex is only enforced server-side
-  (`signup/service.ts:151`); nothing blocks typing a letter into the PIN box
-  client-side today.
+- The 523 multipart envelope (one `form-data` part, URL-encoded value, no
+  file — see "PAN (523)" above) is unverified against the real upstream. This
+  is a UAT gate: if 523 starts failing where the flat urlencoded version
+  worked in earlier manual testing, this is the first thing to check.
 - `createSignupService` (`packages/eps-backend/src/signup/service.ts:52-56`)
   accepts a `cfg: Config` parameter but never reads it — `const { eko } =
   deps;` discards it immediately, and no other reference to `cfg` exists in
