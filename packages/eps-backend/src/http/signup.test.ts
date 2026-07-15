@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import type { Sessions } from "../auth/session";
+import type { EkoClient } from "../clients/eko";
+import type { ZohoClient } from "../clients/zoho";
+import type { Config } from "../config";
 import type { SignupService, SignupState } from "../signup/service";
 import { SignupStepError } from "../signup/service";
 import { AppError, errorBody } from "./errors";
@@ -17,8 +20,33 @@ const inProgress: SignupState = {
 	currentRole: 13000,
 };
 
+const foundProfile = {
+	name: "Jane",
+	email: "jane@example.com",
+	mobile: "9990000001",
+	code: 1,
+	userType: "23",
+	ekoUserId: "eko-1",
+	roleList: [],
+	orgId: 42,
+	onboarding: 0,
+	zohoId: "zoho-1",
+	onboardingSteps: [],
+};
+
+const cfgStub = { eko: { defaultOrgId: 1 } } as unknown as Config;
+
 /** Builds an app with a session double that returns `role` for any cookie. */
-function harness(role: string | null, signup: Partial<SignupService>) {
+function harness(
+	role: string | null,
+	signup: Partial<SignupService>,
+	overrides: {
+		eko?: Partial<EkoClient>;
+		zoho?: Partial<ZohoClient>;
+		cfg?: Config;
+		sessions?: Partial<Sessions>;
+	} = {},
+) {
 	const app = new Hono<AppEnv>();
 	// Mirrors app.ts's onError: AppError maps to its own status/code/message;
 	// anything else is an unhandled 500. errorBody takes (code, message), not
@@ -33,8 +61,26 @@ function harness(role: string | null, signup: Partial<SignupService>) {
 		verifyAccess: vi
 			.fn()
 			.mockResolvedValue(role ? { sub: "9990000001", role, orgId: 1 } : null),
+		mintAccess: vi.fn().mockResolvedValue("access-token"),
+		issueRefresh: vi.fn().mockResolvedValue("refresh-token"),
+		accessCookie: vi.fn().mockReturnValue("eps_at=access-token; HttpOnly"),
+		refreshCookie: vi.fn().mockReturnValue("eps_rt=refresh-token; HttpOnly"),
+		...overrides.sessions,
 	} as unknown as Sessions;
-	mountSignup(app, { sessions, signup: signup as SignupService });
+	const eko = {
+		getProfile: vi.fn().mockResolvedValue({
+			kind: "found",
+			responseTypeId: 1,
+			profile: foundProfile,
+		}),
+		...overrides.eko,
+	} as unknown as EkoClient;
+	const zoho = {
+		findLead: vi.fn().mockResolvedValue(false),
+		...overrides.zoho,
+	} as unknown as ZohoClient;
+	const cfg = overrides.cfg ?? cfgStub;
+	mountSignup(app, { sessions, signup: signup as SignupService, eko, zoho, cfg });
 	return app;
 }
 
@@ -146,5 +192,71 @@ describe("signup endpoints", () => {
 		const errBody = (await res.json()) as { error: { code: string; message: string } };
 		expect(errBody.error.code).toBe("STEP_FAILED");
 		expect(errBody.error.message).toBe("PAN already in use");
+	});
+});
+
+describe("session upgrade on completion", () => {
+	const done: SignupState = { ...inProgress, status: "done", steps: [], currentRole: null };
+
+	it("POST /signup/pin returning done sets a developer session cookie", async () => {
+		const submitPin = vi.fn().mockResolvedValue(done);
+		const mintAccess = vi.fn().mockResolvedValue("dev-access");
+		const app = harness("signup", { submitPin }, { sessions: { mintAccess } });
+		const res = await app.request("/signup/pin", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(res.headers.get("set-cookie")).toBeTruthy();
+		expect(mintAccess).toHaveBeenCalledWith(
+			expect.objectContaining({
+				sub: "9990000001",
+				role: "developer",
+				orgId: 42,
+				zohoId: "zoho-1",
+			}),
+		);
+	});
+
+	it("GET /signup/state returning done also upgrades a resumed, already-completed user", async () => {
+		const getState = vi.fn().mockResolvedValue(done);
+		const mintAccess = vi.fn().mockResolvedValue("dev-access");
+		const app = harness("signup", { getState }, { sessions: { mintAccess } });
+		const res = await app.request("/signup/state", withCookie);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("set-cookie")).toBeTruthy();
+		expect(mintAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ role: "developer" }),
+		);
+	});
+
+	it("does not upgrade an in_progress state", async () => {
+		const getState = vi.fn().mockResolvedValue(inProgress);
+		const mintAccess = vi.fn();
+		const app = harness("signup", { getState }, { sessions: { mintAccess } });
+		const res = await app.request("/signup/state", withCookie);
+		expect(res.status).toBe(200);
+		expect(mintAccess).not.toHaveBeenCalled();
+		expect(res.headers.get("set-cookie")).toBeNull();
+	});
+
+	it("still returns the done state when the upgrade's profile fetch fails", async () => {
+		const submitPin = vi.fn().mockResolvedValue(done);
+		const getProfile = vi.fn().mockRejectedValue(new Error("upstream down"));
+		const mintAccess = vi.fn();
+		const app = harness(
+			"signup",
+			{ submitPin },
+			{ eko: { getProfile }, sessions: { mintAccess } },
+		);
+		const res = await app.request("/signup/pin", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual(done);
+		expect(mintAccess).not.toHaveBeenCalled();
 	});
 });

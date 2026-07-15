@@ -356,7 +356,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json(view);
 	});
 
-	mountSignup(app, { sessions, signup });
+	mountSignup(app, { sessions, signup, eko, zoho, cfg });
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {

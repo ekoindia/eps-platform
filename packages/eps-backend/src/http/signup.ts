@@ -2,7 +2,11 @@ import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
-import type { SignupService } from "../signup/service";
+import type { EkoClient } from "../clients/eko";
+import type { ZohoClient } from "../clients/zoho";
+import type { Config } from "../config";
+import { buildMeView } from "../identity/me";
+import type { SignupService, SignupState } from "../signup/service";
 import { SignupStepError } from "../signup/service";
 import { AppError } from "./errors";
 import type { AppEnv } from "./requestId";
@@ -19,9 +23,15 @@ const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
  */
 export function mountSignup(
 	app: Hono<AppEnv>,
-	deps: { sessions: Sessions; signup: SignupService },
+	deps: {
+		sessions: Sessions;
+		signup: SignupService;
+		eko: EkoClient;
+		zoho: ZohoClient;
+		cfg: Config;
+	},
 ): void {
-	const { sessions, signup } = deps;
+	const { sessions, signup, eko, zoho, cfg } = deps;
 
 	/** Resolves the caller's mobile, or throws unless this is a signup session. */
 	async function requireSignupSession(c: Context<AppEnv>): Promise<string> {
@@ -46,10 +56,63 @@ export function mountSignup(
 		throw e;
 	}
 
+	/**
+	 * Sends `state` as the response, first upgrading a completed user off their
+	 * signup session.
+	 *
+	 * The design spec requires: once onboarding is done (`profile.onboarding
+	 * === 0`), the BFF mints a real developer session in place of the signup
+	 * session — otherwise the wizard's next `/me` call still sees
+	 * `role === "signup"` and re-renders itself forever. This is the one place
+	 * that happens: every signup route funnels its successful response through
+	 * here, including `/signup/state`, so a user who finished onboarding but
+	 * still holds a stale signup cookie (e.g. reloaded mid-navigation) gets
+	 * upgraded on their next visit too, not only at the instant of PIN submit.
+	 *
+	 * The minted claim mirrors `POST /auth/otp/verify`'s `found`-profile branch
+	 * exactly (same shape, same cookie helpers) so the two paths converge on one
+	 * kind of developer session.
+	 *
+	 * If the upgrade's profile re-fetch fails, the request still succeeds with
+	 * the (unupgraded) `done` state — onboarding itself already succeeded
+	 * upstream, and the user can retry the upgrade on their next
+	 * `/signup/state` call rather than seeing this request fail.
+	 */
+	async function respond(
+		c: Context<AppEnv>,
+		mobile: string,
+		state: SignupState,
+	): Promise<Response> {
+		if (state.status === "done") {
+			try {
+				const profile = await eko.getProfile({
+					mobile,
+					xRealIp: c.req.header("x-real-ip"),
+				});
+				const view = await buildMeView(mobile, profile, (m) => zoho.findLead(m));
+				const claim = {
+					sub: mobile,
+					role: "developer" as const,
+					orgId: view.profile?.orgId ?? cfg.eko.defaultOrgId,
+					zohoId: view.zohoId ?? undefined,
+				};
+				const access = await sessions.mintAccess(claim);
+				const refresh = await sessions.issueRefresh(claim);
+				c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
+				c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			} catch {
+				// ponytail: onboarding already succeeded upstream — never fail this
+				// request over the upgrade. The signup cookie stays valid and the
+				// next /signup/state call retries the upgrade.
+			}
+		}
+		return c.json(state);
+	}
+
 	app.get("/signup/state", async (c) => {
 		const mobile = await requireSignupSession(c);
 		try {
-			return c.json(await signup.getState(mobile, c.req.header("x-real-ip")));
+			return await respond(c, mobile, await signup.getState(mobile, c.req.header("x-real-ip")));
 		} catch (e) {
 			toAppError(e);
 		}
@@ -58,7 +121,11 @@ export function mountSignup(
 	app.post("/signup/profile", async (c) => {
 		const mobile = await requireSignupSession(c);
 		try {
-			return c.json(await signup.createProfile(mobile, c.req.header("x-real-ip")));
+			return await respond(
+				c,
+				mobile,
+				await signup.createProfile(mobile, c.req.header("x-real-ip")),
+			);
 		} catch (e) {
 			toAppError(e);
 		}
@@ -73,7 +140,9 @@ export function mountSignup(
 			throw new AppError(400, "INVALID_INPUT", "Enter a valid 10-character PAN.");
 		}
 		try {
-			return c.json(
+			return await respond(
+				c,
+				mobile,
 				await signup.submitPan(mobile, normalized, c.req.header("x-real-ip")),
 			);
 		} catch (e) {
@@ -88,7 +157,9 @@ export function mountSignup(
 			throw new AppError(400, "INVALID_INPUT", "Both PIN fields are required.");
 		}
 		try {
-			return c.json(
+			return await respond(
+				c,
+				mobile,
 				await signup.submitPin(
 					mobile,
 					String(pin1),
