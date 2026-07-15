@@ -120,8 +120,24 @@ rotation are untouched.
 Authorization:
 
 - A signup session authorizes `/signup/*` only.
-- `/me` and `/admin/*` reject it.
+- `/admin/*` rejects it.
 - Developer and admin sessions are rejected by `/signup/*`.
+
+`GET /me` **must not** reject a signup session. It returns a lightweight signup view:
+
+```ts
+export interface SignupView {
+	role: "signup";
+	mobile: string;
+}
+```
+
+`AuthProvider` boots exclusively from `/me` (`src/lib/auth/AuthProvider.tsx:53-55`). If `/me`
+rejected signup sessions, any page reload mid-onboarding would drop the user to `anon` and force
+a fresh OTP, defeating resume. The view is deliberately lightweight — no Eko call — mirroring
+how the admin branch is handled at `app.ts:321-327`.
+
+`POST /auth/otp/verify` returns `SignupView` (not `MeView`) when it mints a signup session.
 
 On completion the BFF re-fetches 151; if `onboarding === 0` it mints a developer session in
 place of the signup session.
@@ -236,9 +252,24 @@ Success: `response_type_id === 9`.
 Fetching a fresh key on every submit preserves the single-use discipline for free: a failed
 attempt re-keys naturally on retry. No refresh signalling is needed.
 
-**Security:** `POST /signup/pin` must never log its request body. `ekoLog` currently logs full
-request fields (`eko.ts:81-87`). The PIN interactions must be excluded from that logging, and
-the exclusion must be asserted by a test — raw PINs must not reach logs.
+**Security — log redaction.** The raw PIN never goes upstream (the BFF encodes it), so `ekoLog`
+never receives one. The leak is narrower but real: at `EKO_LOG_LEVEL=full`, `ekoLog` logs both
+the full request fields and the full response body (`audit/ekoLog.ts:110-113`). That would
+capture `first_okekey`/`second_okekey` (request to interaction 5) **and** `pintwin_key` (response
+from 10005). Together they make the PIN trivially recoverable, since the encoding is a plain
+digit substitution.
+
+`ekoLog` must therefore redact, at every level:
+
+- Request fields: `first_okekey`, `second_okekey`
+- Response fields: `pintwin_key`
+
+Redaction belongs in `ekoLog` itself, not at the call sites — a call site that forgets is a
+silent leak. Asserted by a test at `full` level.
+
+`basic` (the production default) already logs only a `responseSummary` allowlist and no request
+fields, so it is unaffected. The redaction protects `full`, which is development-only but is
+exactly where someone debugging the PIN step will be.
 
 ### Open item
 
@@ -421,9 +452,10 @@ Backend — `packages/eps-backend/src/`:
 | `signup/pintwin.ts` | new — pure `encodePin` |
 | `signup/service.ts` | new — step orchestration, profile re-fetch, state projection |
 | `http/signup.ts` | new — 4 routes + signup-role gate |
-| `http/app.ts` | verify-OTP branch; `mountSignup` |
+| `http/app.ts` | verify-OTP branch; `/me` signup view; `mountSignup` |
 | `auth/session.ts` | `role` union gains `"signup"` |
-| `audit/ekoLog.ts` | exclude PIN interactions from body logging |
+| `identity/me.ts` | `SignupView` type |
+| `audit/ekoLog.ts` | redact `first_okekey`/`second_okekey`/`pintwin_key` |
 
 Frontend — `src/`:
 
@@ -460,5 +492,6 @@ add a step.
 |---|---|
 | `alternate_user_id` for 10005 is a guess | One-line change; settled by the UAT smoke pass |
 | Hardcoded `latlong` may be rejected | Named constant in one place; Eloka uses the same fallback value |
-| PIN leaking into logs | Explicit exclusion plus a test asserting it |
+| PIN recoverable from `full`-level logs (okekey + pintwin_key) | Redaction inside `ekoLog`, not at call sites, plus a test at `full` level |
+| Reload mid-onboarding drops the user to `anon` | `/me` returns `SignupView` for signup sessions |
 | `/signup` prerender hydration mismatch | Reuse the existing `UserMenu.tsx:22` guard |
