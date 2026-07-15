@@ -101,11 +101,13 @@ export default function Console() {
 	return (
 		<>
 			<Helmet>
-				<title>Console — EPS</title>
+				<title>Developer Console — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
 			<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh]">
-				<h1 className="text-2xl font-bold text-eko-navy mb-8">Console</h1>
+				<h1 className="text-2xl font-bold text-eko-navy mb-8">
+					Developer Console
+				</h1>
 				{state.status === "loading" ? (
 					<div data-testid="console-loading" className="max-w-2xl">
 						<Card>
