@@ -101,7 +101,7 @@ describe("EkoClient.getProfile", () => {
 					email: "d@e.in",
 					mobile: "9990000001",
 					code: 42,
-					user_type: "merchant",
+					user_type: "23",
 					eko_user_id: "EKO123",
 					role_list: [1, 2],
 					org_id: 1,
@@ -152,11 +152,36 @@ describe("EkoClient.getProfile", () => {
 		const f = mockFetch(200, {
 			response_status_id: -1,
 			response_type_id: 369,
-			data: { user_detail: { mobile: "9990000001", role_list: [1] } },
+			data: {
+				user_detail: {
+					mobile: "9990000001",
+					role_list: [1],
+					org_id: 1,
+					user_type: "23",
+				},
+			},
 		});
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.getProfile({ mobile: "9990000001" });
 		expect(r.kind).toBe("found");
+	});
+
+	it("maps a 369 profile that is not an EPS business partner to not_allowed", async () => {
+		// org_id != 1, user_type != 23, and a missing pair each fail the gate.
+		const nonPartners = [
+			{ org_id: 2, user_type: "23" },
+			{ org_id: 1, user_type: "1" },
+			{},
+		];
+		for (const detail of nonPartners) {
+			const f = mockFetch(200, {
+				response_type_id: 369,
+				data: { user_detail: { mobile: "9990000001", ...detail } },
+			});
+			const eko = createEkoClient(ekoCfg, f);
+			const r = await eko.getProfile({ mobile: "9990000001" });
+			expect(r.kind).toBe("not_allowed");
+		}
 	});
 
 	it("maps an unrecognized response_type_id to error", async () => {

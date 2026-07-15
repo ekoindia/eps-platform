@@ -132,6 +132,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json({ ready }, ready ? 200 : 503);
 	});
 
+	/**
+	 * POST /auth/otp/start → { ok: true } (200)
+	 * MARK: /start
+	 */
 	app.post("/auth/otp/start", async (c) => {
 		const { mobile } = await c.req.json().catch(() => ({}));
 		if (!mobile || typeof mobile !== "string") {
@@ -165,6 +169,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json({ ok: true });
 	});
 
+	/**
+	 * POST /auth/otp/verify → { ...meView } (200)
+	 * MARK: /verify
+	 */
 	app.post("/auth/otp/verify", async (c) => {
 		const { mobile, otp } = await c.req.json().catch(() => ({}));
 		if (!mobile || !otp) {
@@ -232,6 +240,15 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				403,
 				"NOT_REGISTERED",
 				"This mobile number isn't registered for EPS yet.",
+			);
+		}
+		// The OTP authenticated the number, but the profile is not an EPS business
+		// partner (org 1 / user_type 23) — deny before minting any token/cookie.
+		if (profile.kind === "not_allowed") {
+			throw new AppError(
+				403,
+				"NOT_ALLOWED",
+				"This account isn't an EPS business account. Please contact support.",
 			);
 		}
 		// Only a found (existing, active) profile reaches here.

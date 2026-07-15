@@ -23,6 +23,7 @@ export type ProfileResult =
 	| { kind: "found"; responseTypeId: number; profile: EkoProfile }
 	| { kind: "not_found"; responseTypeId: number }
 	| { kind: "inactive"; responseTypeId: number }
+	| { kind: "not_allowed"; responseTypeId: number }
 	/**
 	 * The upstream did not authenticate/complete the profile lookup (e.g.
 	 * `response_status_id != 0`, "Invalid Sender/Initiator"). This is a system

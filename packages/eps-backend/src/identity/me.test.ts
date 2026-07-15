@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { deriveStateFromProfile, buildMeView } from "./me";
 import type { ProfileResult, EkoProfile } from "../types";
 
@@ -38,6 +38,11 @@ describe("deriveStateFromProfile", () => {
 			deriveStateFromProfile({ kind: "not_found", responseTypeId: 319 }),
 		).toBe("lead");
 	});
+	it("unknown for not_allowed", () => {
+		expect(
+			deriveStateFromProfile({ kind: "not_allowed", responseTypeId: 369 }),
+		).toBe("unknown");
+	});
 });
 
 describe("buildMeView", () => {
@@ -50,6 +55,19 @@ describe("buildMeView", () => {
 		expect(v.state).toBe("active");
 		expect(v.zohoId).toBe("ZCRM_9");
 		expect(v.profile?.ekoUserId).toBe("EKO1");
+	});
+
+	it("not_allowed → unknown view with no profile and no lead lookup", async () => {
+		const lookup = vi.fn(async () => true);
+		const v = await buildMeView(
+			"9990000001",
+			{ kind: "not_allowed", responseTypeId: 369 },
+			lookup,
+		);
+		expect(v.state).toBe("unknown");
+		expect(v.profile).toBeNull();
+		expect(v.zohoId).toBeNull();
+		expect(lookup).not.toHaveBeenCalled();
 	});
 
 	it("not_found + lead lookup true → lead", async () => {

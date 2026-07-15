@@ -63,4 +63,32 @@ describe("LoginForm", () => {
 			await screen.findByText(/invalid or expired otp/i),
 		).toBeInTheDocument();
 	});
+
+	it("shows the deny message and grants no session for a non-EPS-business account", async () => {
+		(authClient.startOtp as ReturnType<typeof vi.fn>).mockResolvedValue({
+			ok: true,
+		});
+		(authClient.verifyOtp as ReturnType<typeof vi.fn>).mockRejectedValue(
+			new ApiError(
+				"NOT_ALLOWED",
+				"This account isn't an EPS business account. Please contact support.",
+				403,
+			),
+		);
+		const onSuccess = vi.fn();
+		render(<LoginForm onSuccess={onSuccess} />);
+		fireEvent.change(screen.getByLabelText(/mobile/i), {
+			target: { value: "9990000001" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /send otp/i }));
+		const boxes = await screen.findAllByLabelText(/^Digit \d/);
+		"1111"
+			.split("")
+			.forEach((d, i) => fireEvent.change(boxes[i], { target: { value: d } }));
+		expect(
+			await screen.findByText(/isn't an EPS business account/i),
+		).toBeInTheDocument();
+		expect(onSuccess).not.toHaveBeenCalled();
+		expect(refresh).not.toHaveBeenCalled();
+	});
 });

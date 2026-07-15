@@ -169,6 +169,11 @@ export function createEkoClient(
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
 			if (code === SUCCESS_CODE && d) {
+				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
+				if (Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23") {
+					return { kind: "not_allowed", responseTypeId: code };
+				}
+
 				return {
 					kind: "found",
 					responseTypeId: code,
