@@ -63,7 +63,7 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 
 	return (
 		<form
-			className="flex flex-col gap-6"
+			className="flex flex-col gap-8"
 			onSubmit={(e) => {
 				e.preventDefault();
 				if (!canSubmit) return;
@@ -78,79 +78,92 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 				invoices.
 			</p>
 
-			{BUSINESS_GROUPS.map((group, index) => (
-				<fieldset
-					key={group.heading}
-					className={
-						index > 0
-							? "flex flex-col gap-4 border-t border-border pt-6"
-							: "flex flex-col gap-4"
-					}
-				>
+			{BUSINESS_GROUPS.map((group) => (
+				// No divider rule: a `legend` renders inside its fieldset's border
+				// and punches a gap in it, so a bordered group reads as a broken
+				// line. Whitespace does the separating instead, as in the
+				// Melio/Xero/Mercury onboarding forms.
+				<fieldset key={group.heading} className="border-0 p-0">
 					{/* Section header steps UP in the hierarchy — larger and bolder
 					    than a field label (text-sm font-medium) — so it never reads
 					    as one. Mirrors the Gusto/Etsy grouped-form pattern. */}
-					<legend className="mb-1 text-base font-semibold text-foreground">
+					<legend className="mb-4 text-base font-semibold text-foreground">
 						{group.heading}
 					</legend>
-					{group.fields.map((name) => {
-						const field = specOf(name);
-						const fieldError = errorFor(field);
-						return (
-							<div key={name} className="flex flex-col gap-1.5">
-								<Label htmlFor={name}>{field.label}</Label>
-								{field.description && (
-									<p className="text-xs text-muted-foreground">
-										{field.description}
-									</p>
-								)}
-								{field.kind === "select" ? (
-									<select
-										id={name}
-										value={values[name]}
-										disabled={busy}
-										className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs disabled:opacity-50"
-										aria-invalid={fieldError ? true : undefined}
-										aria-describedby={fieldError ? `${name}-error` : undefined}
-										onChange={(e) => set(name, e.target.value)}
-										onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
-									>
-										<option value="">Select…</option>
-										{field.options?.map((o) => (
-											<option key={o.value} value={o.value}>
-												{o.label}
-											</option>
-										))}
-									</select>
-								) : (
-									<Input
-										id={name}
-										value={values[name]}
-										disabled={busy}
-										readOnly={isLocked(field)}
-										maxLength={field.max}
-										type={field.inputMode === "email" ? "email" : "text"}
-										inputMode={field.inputMode}
-										autoComplete="off"
-										aria-invalid={fieldError ? true : undefined}
-										aria-describedby={fieldError ? `${name}-error` : undefined}
-										className={
-											isLocked(field)
-												? "bg-muted text-muted-foreground"
-												: undefined
-										}
-										onChange={(e) => set(name, e.target.value)}
-										onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
-									/>
-								)}
-								{fieldError && (
-									<p id={`${name}-error`} className="text-sm text-destructive">
-										{fieldError}
-									</p>
-								)}
-							</div>
-						);
-					})}
+					<div className="flex flex-col gap-5">
+						{group.fields.map((name) => {
+							const field = specOf(name);
+							const fieldError = errorFor(field);
+							const describedBy = fieldError
+								? `${name}-error`
+								: field.description
+									? `${name}-hint`
+									: undefined;
+							return (
+								// Helper text sits BELOW the control, so the label-to-input
+								// gap is identical whether or not a field has a description.
+								<div key={name} className="flex flex-col gap-2">
+									<Label htmlFor={name}>{field.label}</Label>
+									{field.kind === "select" ? (
+										<select
+											id={name}
+											value={values[name]}
+											disabled={busy}
+											className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs disabled:opacity-50"
+											aria-invalid={fieldError ? true : undefined}
+											aria-describedby={describedBy}
+											onChange={(e) => set(name, e.target.value)}
+											onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
+										>
+											<option value="">Select…</option>
+											{field.options?.map((o) => (
+												<option key={o.value} value={o.value}>
+													{o.label}
+												</option>
+											))}
+										</select>
+									) : (
+										<Input
+											id={name}
+											value={values[name]}
+											disabled={busy}
+											readOnly={isLocked(field)}
+											maxLength={field.max}
+											type={field.inputMode === "email" ? "email" : "text"}
+											inputMode={field.inputMode}
+											autoComplete="off"
+											aria-invalid={fieldError ? true : undefined}
+											aria-describedby={describedBy}
+											className={
+												isLocked(field)
+													? "bg-muted text-muted-foreground"
+													: undefined
+											}
+											onChange={(e) => set(name, e.target.value)}
+											onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
+										/>
+									)}
+									{fieldError ? (
+										<p
+											id={`${name}-error`}
+											className="text-sm text-destructive"
+										>
+											{fieldError}
+										</p>
+									) : (
+										field.description && (
+											<p
+												id={`${name}-hint`}
+												className="text-xs text-muted-foreground"
+											>
+												{field.description}
+											</p>
+										)
+									)}
+								</div>
+							);
+						})}
+					</div>
 				</fieldset>
 			))}
 
