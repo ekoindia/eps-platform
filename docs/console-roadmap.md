@@ -4,9 +4,34 @@ Future features for the logged-in developer `/console`. Derived from Mobbin
 research (Stripe, Vercel, Cohere, OpenAI, WorkOS, Klaviyo, ElevenLabs, Exa,
 PandaDoc, Clerk, Coinbase) benchmarked against the current console.
 
-Status today: `/console` is a thin lifecycle gate (login → state-aware card).
-The UX polish landed (skeletons, empty states, success cards). The features
-below turn it into a real developer platform.
+Status today: `/console` is a lifecycle gate (login → state-aware card) behind a
+left-nav shell. The UX polish landed (skeletons, empty states, success cards).
+The features below turn it into a real developer platform.
+
+## Shipped shape
+
+`ConsoleLayout` (`src/components/console/ConsoleLayout.tsx`) owns every auth
+branch — loading skeleton, anon login card, `role: "signup"` → `/signup`
+redirect, admin card — and, for a developer session only, renders a 16rem left
+rail plus `<Outlet context={me}>`. Sub-pages read the session through
+`useConsoleMe()` and carry no auth logic; the rail never renders for an anon or
+admin session. The rail follows `DocsLayout`'s shape (sticky under the fixed
+~88px header, `Sheet` below `lg`) so the console and `/docs` read as one
+product. Flat by design — group captions are worth adding past ~5 items.
+
+| Route | Page | Contents |
+|---|---|---|
+| `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
+| `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status |
+
+Both routes are registered in `App.tsx` (lazy) and `AppServer.tsx` (eager), and
+deliberately excluded from prerendering — the console is `noindex` and behind
+auth.
+
+The production block on the Credentials page is an empty state with **no request
+button**: no credential-issuance API exists yet, so its copy points at the
+account manager or at onboarding depending on `me.state`. When the issuance
+endpoint lands (see "API keys management" below), the fetch goes there.
 
 Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),
 feeding new users into this same lifecycle gate. See
@@ -24,6 +49,8 @@ View, one-time reveal, copy, and revoke UAT + production keys. Table:
 Name / masked key / created / last used / actions. Blocked on the Eko
 credential-issuance API contract (see the eps-backend roadmap). UI is a
 `Table` + `Dialog` (both present). The core reason a developer logs in.
+`/console/credentials` is the page this lands on — it already shows the shared
+UAT pair and a production empty state awaiting exactly this contract.
 _Pattern: Cohere, OpenAI, WorkOS API keys._
 
 ### Environment toggle (UAT / Production) — **S**
