@@ -53,16 +53,20 @@ describe("Credentials", () => {
 	});
 
 	it("points an active developer at their account manager for production keys", () => {
-		// Stub the UAT keys empty: the fallback UAT copy also says "issued", and
-		// on a machine with real UAT keys configured (.env.local) the
-		// credentials-present copy says "issued separately" too — pin the UAT
-		// block to a known state so this assertion targets only the production
-		// block regardless of ambient env.
-		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "");
-		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "");
+		// Pin the UAT keys present (not just the ambient env) so this test always
+		// renders the realistic combined state: a live UAT keypair alongside an
+		// active developer's production block. The UAT keys-present copy also
+		// says "issued separately", so the assertion below targets the
+		// production sentence specifically rather than the ambiguous phrase.
+		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "dev-key-123");
+		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "access-key-456");
 		renderCredentials(ACTIVE);
 		expect(screen.getByText(/production api credentials/i)).toBeInTheDocument();
-		expect(screen.getByText(/issued separately/i)).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				/production keys are issued separately from the uat pair/i,
+			),
+		).toBeInTheDocument();
 		expect(
 			screen.getByRole("link", { name: /contact your account manager/i }),
 		).toHaveAttribute("href", "/grievance");
