@@ -213,4 +213,9 @@ export const signupClient = {
 			method: "POST",
 			body: JSON.stringify({ pin1, pin2 }),
 		}) as Promise<SignupState>,
+	submitBusiness: (details: Record<string, string>): Promise<SignupState> =>
+		request("/signup/business", {
+			method: "POST",
+			body: JSON.stringify(details),
+		}) as Promise<SignupState>,
 };

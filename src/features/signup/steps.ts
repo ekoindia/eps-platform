@@ -1,4 +1,5 @@
 import type { StepDefinition } from "./resolveSteps";
+import { BusinessStep } from "./BusinessStep";
 import { PanStep } from "./PanStep";
 import { PinStep } from "./PinStep";
 
@@ -19,6 +20,13 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		label: "PAN Details",
 		Component: PanStep,
 		submit: (client, v) => client.submitPan(v.pan),
+	},
+	{
+		role: 13300,
+		name: "business",
+		label: "Business Details",
+		Component: BusinessStep,
+		submit: (client, v) => client.submitBusiness(v),
 	},
 	{
 		role: 12600,

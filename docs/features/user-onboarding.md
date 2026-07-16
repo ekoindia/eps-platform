@@ -1,7 +1,8 @@
 # User Onboarding (Self-Serve Signup)
 
 `/signup` lets a new mobile number create an EPS account without going through
-the Eloka webapp: OTP → partial account → PAN → PIN → `/console`. It replaces
+the Eloka webapp: OTP → partial account → PAN → Business Details → PIN →
+`/console`. It replaces
 the old `/signup` page, which was a Zoho lead-capture iframe
 (`src/pages/SignupPage.tsx` is now the wizard host, not that iframe).
 
@@ -23,7 +24,8 @@ flowchart TD
     E -->|"GET /signup/state → status: new"| F["POST /signup/profile\n(interaction 521)"]
     F --> G
     E -->|"status: in_progress, currentRole = PAN"| G["PAN step\n(interaction 523)"]
-    G -->|"POST /signup/pan"| H["PIN step\n(170 → 10005 ×2 → encode → 5)"]
+    G -->|"POST /signup/pan"| G2["Business Details step\n(interaction 522)"]
+    G2 -->|"POST /signup/business"| H["PIN step\n(170 → 10005 ×2 → encode → 5)"]
     H -->|"POST /signup/pin, response_type_id 9"| I["refresh 151: onboarding → 0"]
     I --> J["status: done"]
     J -->|"respond() upgrades to developer session"| K["developer session\n→ /console"]
@@ -196,8 +198,8 @@ The upgrade flow (`signup.ts`, inside `respond()`):
    always carries a real `orgId`), and the same `sub` (mobile).
 5. Mint fresh access and refresh tokens and set them as cookies.
 
-All four routes (`/signup/state`, `/signup/profile`, `/signup/pan`,
-`/signup/pin`) funnel responses through `respond()`. The inclusion of
+All five routes (`/signup/state`, `/signup/profile`, `/signup/pan`,
+`/signup/business`, `/signup/pin`) funnel responses through `respond()`. The inclusion of
 `/signup/state` is deliberate: if a user finished onboarding but still holds
 a stale signup cookie (e.g., after a page reload mid-navigation), their next
 `/signup/state` call retries the upgrade rather than requiring only PIN
@@ -220,8 +222,8 @@ role: "developer" }`, and `SignupPage`'s redirect condition
 
 ## Interaction reference table
 
-All five onboarding interactions post to the same `cfg.eko` SimpliBank path
-with the `developer_key` header. Four of the five (521, 170, 10005, 5) go
+All six onboarding interactions post to the same `cfg.eko` SimpliBank path
+with the `developer_key` header. Five of the six (521, 522, 170, 10005, 5) go
 through the shared `post()` helper, form-urlencoded; 523 goes through the
 sibling `postMultipart()` helper instead — see "PAN (523)" above. Both
 helpers share one send/log/error pipeline (`sendForm()` in `eko.ts`), so
@@ -232,11 +234,12 @@ per-interaction — there is no single convention:
 |---|---|---|---|---|
 | 521 | Create partial account | `createPartialAccount` | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`) |
 | 523 | Verify PAN | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`) | `response_type_id === 1569` (`PAN_VERIFICATION_OK`) |
+| 522 | Business details | `submitBusiness` (398-414) | user's own (`actor()`) | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`) |
 | 170 | Get booklet number | `getBooklet` (326-351) | user's own | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
 | 10005 | Fetch pintwin key | `fetchPintwinKey` (352-365) | user's own | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id` |
 | 5 | Set secret PIN | `setSecretPin` (366-382) | user's own | `response_type_id === 9` (`SECRET_PIN_OK`) |
 
-`stepResult()` (`eko.ts:185-195`) is the shared classifier for 521/523/5,
+`stepResult()` (`eko.ts:185-195`) is the shared classifier for 521/523/522/5,
 comparing `response_type_id` against the interaction's own success constant
 and otherwise surfacing the upstream `message` as `EkoStepResult`.
 
@@ -302,16 +305,23 @@ no branching logic anywhere else:
 
 **Frontend** (`src/features/signup/`):
 1. Write the step component to the `StepProps` contract
-   (`resolveSteps.ts:4-15`): `onSubmit(values: string[])`, `busy`, `error`.
+   (`resolveSteps.ts:5-16`): `onSubmit(values: Record<string, string>) =>
+   Promise<void>`, `busy`, `error`. Values are a **named record keyed by field
+   name**, not a positional array — each step picks its own keys out of the
+   record in its `submit` closure below. For a multi-field step,
+   `businessFields.ts` is the pattern to copy: declare every field once (name,
+   label, kind, validation) in one array, then derive both the rendered form
+   and client-side validation from it, so adding a field is a one-line change
+   instead of touching the component in three places.
 2. Add **one** entry to `SIGNUP_STEPS` in `steps.ts`, with the role code and a
    `submit` closure:
 
 ```ts
 { role: 13000, name: "pan", label: "PAN Details", Component: PanStep,
-  submit: (client, [pan]) => client.submitPan(pan) },
+  submit: (client, v) => client.submitPan(v.pan) },
 ```
 
-That is the entire registry surface. `resolveSteps()` (`resolveSteps.ts:82-111`)
+That is the entire registry surface. `resolveSteps()` (`resolveSteps.ts:83-122`)
 filters the registry down to whatever roles the API actually returned, orders
 them by the API's order (not the registry's), prefers the API's label,
 falling back to the registry's, and marks steps before `currentRole`
@@ -332,11 +342,22 @@ the spec proposed, and is what's actually shipped.
 
 `ONBOARDING_LATLONG = "27.176670,78.008075,7787"`
 (`packages/eps-backend/src/clients/eko.ts:61-67`) is sent on every
-interaction that wants a `latlong` field (521, 523, 170, 5). This flow does
-not port Eloka's geolocation capture step, and Eloka itself falls back to
+interaction that wants a `latlong` field (521, 523, 522, 170, 5). This flow
+does not port Eloka's geolocation capture step, and Eloka itself falls back to
 this exact value when its own capture step is skipped or denied. **Not
 confirmed against real UAT** — it may be silently accepted, or the field may
 not be required at all for these interactions.
+
+`INDIAN_STATES` (`src/features/signup/businessFields.ts:15-52`), the 36
+values the `current_address_state` field offers, came from a live probe of
+interaction 387 (the state list) against UAT on 2026-07-16 — upstream's
+`value` and `label` are identical, so one array serves both. Unlike the two
+constants above, this one **is** confirmed against real UAT, and its quirks
+are load-bearing, not typos: `"PondiCherry"`'s casing, Delhi spelled out with
+a `(UT)` suffix, `"Andhra Pradesh (New)"` sorted last rather than
+alphabetically in the source array (the UI re-sorts for display), and no
+`"Ladakh"` entry. Do not "fix" any of these — interaction 522 matches on the
+exact string.
 
 `alternate_user_id` on 10005 (`fetchPintwinKey`, `eko.ts:357`) is sent as the
 user's mobile number. Eloka's own implementation reads a `temp_user_id` from
@@ -388,6 +409,13 @@ by construction.
   file — see "PAN (523)" above) is unverified against the real upstream. This
   is a UAT gate: if 523 starts failing where the flat urlencoded version
   worked in earlier manual testing, this is the first thing to check.
+- The ten field names `BUSINESS_FIELDS` sends for interaction 522
+  (`src/features/signup/businessFields.ts`) are unverified against the real
+  upstream — every test in this feature only asserts our own assumptions back
+  to us. Driving a real UAT account sitting at role 13300 through a submit is
+  the only check that proves them right; a `response_type_id` other than 1567
+  with a field-specific message means a key name is wrong, and Eloka's
+  `BusinessDetailsStep.tsx:326-337` is the reference for what 522 expects.
 - `createSignupService` (`packages/eps-backend/src/signup/service.ts:52-56`)
   accepts a `cfg: Config` parameter but never reads it — `const { eko } =
   deps;` discards it immediately, and no other reference to `cfg` exists in

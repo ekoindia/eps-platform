@@ -59,8 +59,21 @@ describe("signupClient", () => {
 		expect(JSON.parse(init.body)).toEqual({ pin1: "1234", pin2: "1234" });
 	});
 
+	it("posts business details to /signup/business", async () => {
+		const spy = stubFetch(state);
+		const details = { name: "Acme Retail", company_type: "4" };
+		await signupClient.submitBusiness(details);
+		const [url, init] = spy.mock.calls[0];
+		expect(String(url)).toContain("/signup/business");
+		expect(init.method).toBe("POST");
+		expect(JSON.parse(init.body)).toEqual(details);
+	});
+
 	it("throws ApiError carrying the backend message", async () => {
-		stubFetch({ error: { code: "STEP_FAILED", message: "PAN already in use" } }, 400);
+		stubFetch(
+			{ error: { code: "STEP_FAILED", message: "PAN already in use" } },
+			400,
+		);
 		await expect(signupClient.submitPan("ABCDE1234F")).rejects.toThrow(
 			"PAN already in use",
 		);
