@@ -39,7 +39,9 @@ const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
 const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
 const RecipesIndexPage = lazy(() => import("./pages/recipe/RecipesIndexPage"));
 const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
-const Console = lazy(() => import("./pages/Console"));
+const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
+const ConsoleHome = lazy(() => import("./pages/console/ConsoleHome"));
+const ConsoleCredentials = lazy(() => import("./pages/console/Credentials"));
 const Admin = lazy(() => import("./pages/Admin"));
 
 function TrackingParamCapture() {
@@ -126,7 +128,10 @@ const App = ({
 								<Route path="/signup" element={<SignupPage />} />
 
 								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
-								<Route path="/console" element={<Console />} />
+								<Route path="/console" element={<ConsoleLayout />}>
+									<Route index element={<ConsoleHome />} />
+									<Route path="credentials" element={<ConsoleCredentials />} />
+								</Route>
 								<Route path="/admin" element={<Admin />} />
 
 								{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

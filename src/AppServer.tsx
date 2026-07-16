@@ -58,7 +58,9 @@ import DocsIndexPage from "./pages/docs/DocsIndexPage";
 import DocDetailPage from "./pages/docs/DocDetailPage";
 import RecipesIndexPage from "./pages/recipe/RecipesIndexPage";
 import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
-import Console from "./pages/Console";
+import ConsoleLayout from "./components/console/ConsoleLayout";
+import ConsoleHome from "./pages/console/ConsoleHome";
+import ConsoleCredentials from "./pages/console/Credentials";
 import Admin from "./pages/Admin";
 
 function TrackingParamCapture() {
@@ -146,7 +148,10 @@ const AppServer = ({
 								<Route path="/signup" element={<SignupPage />} />
 
 								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
-								<Route path="/console" element={<Console />} />
+								<Route path="/console" element={<ConsoleLayout />}>
+									<Route index element={<ConsoleHome />} />
+									<Route path="credentials" element={<ConsoleCredentials />} />
+								</Route>
 								<Route path="/admin" element={<Admin />} />
 
 								{/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
