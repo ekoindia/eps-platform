@@ -28,7 +28,9 @@ export function PanStep({ onSubmit, busy, error }: StepProps) {
 			}}
 		>
 			<p className="text-muted-foreground">
-				Enter your PAN number to continue.
+				If you are an individual or a Sole Proprietor, enter your personal PAN
+				number. If you represent a business (Pvt. Ltd., LLP, Partnership, etc.),
+				enter your company's registered PAN number.
 			</p>
 
 			<div className="flex flex-col gap-2">

@@ -34,24 +34,18 @@ const BUSINESS_RULES: Record<
 	{ pattern: RegExp; min: number; max: number; required: boolean }
 > = {
 	name: { pattern: /^[-a-zA-Z0-9 ,./:]+$/, min: 2, max: 100, required: true },
-	company_type: { pattern: /^[1-4]$/, min: 1, max: 1, required: true },
+	company_type: { pattern: /^[1-5]$/, min: 1, max: 1, required: true },
 	authorized_signatory_name: {
 		pattern: /^[a-zA-Z][a-zA-Z .]{1,49}$/,
 		min: 2,
 		max: 50,
 		required: true,
 	},
-	contact_person_cell: {
-		pattern: /^[6-9]\d{9}$/,
-		min: 10,
-		max: 10,
+	email: {
+		pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+		min: 5,
+		max: 100,
 		required: true,
-	},
-	alternate_mobile: {
-		pattern: /^[6-9]\d{9}$/,
-		min: 10,
-		max: 10,
-		required: false,
 	},
 	current_address_line1: { pattern: /^.+$/, min: 10, max: 200, required: true },
 	current_address_line2: { pattern: /^.*$/, min: 0, max: 200, required: false },
@@ -71,13 +65,13 @@ const BUSINESS_RULES: Record<
 };
 
 /**
- * Validates and narrows a request body to exactly the ten business fields.
+ * Validates and narrows a request body to exactly the nine business fields.
  *
  * Only known keys are copied out, so an attacker cannot smuggle extra form
  * fields (`mobile`, `org_id`, …) through to the upstream interaction.
  *
  * @param body - Untrusted JSON body.
- * @returns The ten fields as strings.
+ * @returns The nine fields as strings.
  * @throws {AppError} 400 INVALID_INPUT on the first field that fails.
  */
 function parseBusiness(body: unknown): BusinessDetails {

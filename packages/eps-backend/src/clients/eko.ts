@@ -107,8 +107,7 @@ export interface BusinessDetails {
 	name: string;
 	company_type: string;
 	authorized_signatory_name: string;
-	contact_person_cell: string;
-	alternate_mobile: string;
+	email: string;
 	current_address_line1: string;
 	current_address_line2: string;
 	current_address_district: string;

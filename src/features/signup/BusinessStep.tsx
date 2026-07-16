@@ -55,17 +55,32 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 				invoices.
 			</p>
 
-			{BUSINESS_GROUPS.map((group) => (
-				<fieldset key={group.heading} className="flex flex-col gap-4">
-					<legend className="text-sm font-medium text-foreground">
+			{BUSINESS_GROUPS.map((group, index) => (
+				<fieldset
+					key={group.heading}
+					className={
+						index > 0
+							? "flex flex-col gap-4 border-t border-border pt-6"
+							: "flex flex-col gap-4"
+					}
+				>
+					{/* Section header steps UP in the hierarchy — larger and bolder
+					    than a field label (text-sm font-medium) — so it never reads
+					    as one. Mirrors the Gusto/Etsy grouped-form pattern. */}
+					<legend className="mb-1 text-base font-semibold text-foreground">
 						{group.heading}
 					</legend>
 					{group.fields.map((name) => {
 						const field = specOf(name);
 						const fieldError = errorFor(field);
 						return (
-							<div key={name} className="flex flex-col gap-2">
+							<div key={name} className="flex flex-col gap-1.5">
 								<Label htmlFor={name}>{field.label}</Label>
+								{field.description && (
+									<p className="text-xs text-muted-foreground">
+										{field.description}
+									</p>
+								)}
 								{field.kind === "select" ? (
 									<select
 										id={name}
@@ -90,8 +105,8 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 										value={values[name]}
 										disabled={busy}
 										maxLength={field.max}
-										placeholder={field.placeholder}
-										inputMode={field.numeric ? "numeric" : undefined}
+										type={field.inputMode === "email" ? "email" : "text"}
+										inputMode={field.inputMode}
 										autoComplete="off"
 										aria-invalid={fieldError ? true : undefined}
 										aria-describedby={fieldError ? `${name}-error` : undefined}

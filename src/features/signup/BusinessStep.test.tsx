@@ -12,8 +12,8 @@ const fillText = () => {
 	fireEvent.change(screen.getByLabelText(/authorised signatory/i), {
 		target: { value: "Asha Rao" },
 	});
-	fireEvent.change(screen.getByLabelText(/contact person's mobile/i), {
-		target: { value: "9876543210" },
+	fireEvent.change(screen.getByLabelText(/email address/i), {
+		target: { value: "asha@acme.in" },
 	});
 	fireEvent.change(screen.getByLabelText(/address \(line 1\)/i), {
 		target: { value: "12 MG Road, Indiranagar" },
@@ -48,11 +48,11 @@ describe("BusinessStep", () => {
 		expect(screen.getByText(/valid 6-digit pincode/i)).toBeInTheDocument();
 	});
 
-	it("accepts a blank alternate mobile", () => {
+	it("accepts a blank optional address line 2", () => {
 		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
-		const alt = screen.getByLabelText(/alternate mobile/i);
-		fireEvent.blur(alt);
-		expect(screen.queryByText(/valid 10-digit mobile/i)).toBeNull();
+		const line2 = screen.getByLabelText(/address \(line 2/i);
+		fireEvent.blur(line2);
+		expect(screen.queryByText(/enter a valid address/i)).toBeNull();
 	});
 
 	it("renders the three group headings", () => {
@@ -107,8 +107,7 @@ describe("BusinessStep", () => {
 			name: "Acme Retail",
 			company_type: "4",
 			authorized_signatory_name: "Asha Rao",
-			contact_person_cell: "9876543210",
-			alternate_mobile: "",
+			email: "asha@acme.in",
 			current_address_line1: "12 MG Road, Indiranagar",
 			current_address_line2: "",
 			current_address_district: "Bengaluru",

@@ -1,7 +1,7 @@
-import type { StepDefinition } from "./resolveSteps";
 import { BusinessStep } from "./BusinessStep";
 import { PanStep } from "./PanStep";
 import { PinStep } from "./PinStep";
+import type { StepDefinition } from "./resolveSteps";
 
 /**
  * Steps this app can render, keyed by their backend role code.
@@ -22,7 +22,7 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		submit: (client, v) => client.submitPan(v.pan),
 	},
 	{
-		role: 13300,
+		role: 13100,
 		name: "business",
 		label: "Business Details",
 		Component: BusinessStep,

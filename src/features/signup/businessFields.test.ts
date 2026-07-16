@@ -35,20 +35,26 @@ describe("validateField", () => {
 		expect(validateField(field("name"), "Acme@Retail")).toBeTruthy();
 	});
 
-	it("accepts a mobile starting 6-9 and rejects anything else", () => {
-		expect(
-			validateField(field("contact_person_cell"), "9876543210"),
-		).toBeNull();
-		expect(
-			validateField(field("contact_person_cell"), "5876543210"),
-		).toBeTruthy();
-		expect(validateField(field("contact_person_cell"), "98765")).toBeTruthy();
+	it("requires a well-formed email address", () => {
+		expect(validateField(field("email"), "")).toMatch(/required/i);
+		expect(validateField(field("email"), "asha@acme.in")).toBeNull();
+		expect(validateField(field("email"), "asha@acme")).toBeTruthy();
+		expect(validateField(field("email"), "not-an-email")).toBeTruthy();
 	});
 
-	it("treats a blank alternate mobile as valid but a malformed one as invalid", () => {
-		expect(validateField(field("alternate_mobile"), "")).toBeNull();
-		expect(validateField(field("alternate_mobile"), "12345")).toBeTruthy();
-		expect(validateField(field("alternate_mobile"), "9876543210")).toBeNull();
+	it("offers the five upstream company types with their exact codes", () => {
+		const companyType = field("company_type");
+		expect(companyType.options?.map((o) => o.value)).toEqual([
+			"1",
+			"4",
+			"2",
+			"3",
+			"5",
+		]);
+		// LLP is 4, not 2 — the codes are not sequential by label.
+		expect(companyType.options?.find((o) => o.label === "LLP")?.value).toBe(
+			"4",
+		);
 	});
 
 	it("requires a 6-digit pincode", () => {

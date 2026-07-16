@@ -51,12 +51,17 @@ export const INDIAN_STATES: readonly string[] = [
 	"Andhra Pradesh (New)",
 ];
 
-/** Company types upstream accepts, mirroring Eloka's `COMPANY_TYPE_OPTIONS`. */
+/**
+ * Company types upstream accepts, mirroring Eloka's `COMPANY_TYPE_OPTIONS`. The
+ * values are NOT sequential by label — they are the exact codes interaction 522
+ * matches on, so keep them verbatim (LLP is 4, not 2).
+ */
 export const COMPANY_TYPES: readonly { label: string; value: string }[] = [
 	{ label: "Private Ltd", value: "1" },
-	{ label: "LLP", value: "2" },
-	{ label: "Partnership", value: "3" },
-	{ label: "Sole Proprietorship", value: "4" },
+	{ label: "LLP", value: "4" },
+	{ label: "Partnership", value: "2" },
+	{ label: "Sole Proprietorship", value: "3" },
+	{ label: "Public Limited", value: "5" },
 ];
 
 /** One field of the Business Details form. */
@@ -67,15 +72,16 @@ export interface BusinessField {
 	/** `select` renders a dropdown over `options`; `text` renders an input. */
 	kind: "text" | "select";
 	options?: readonly { label: string; value: string }[];
-	placeholder?: string;
+	/** Optional helper line shown under the label. */
+	description?: string;
 	required: boolean;
 	pattern: RegExp;
 	min: number;
 	max: number;
 	/** Shown when `pattern` fails. Length failures get their own message. */
 	message: string;
-	/** `inputMode` hint for numeric fields; omitted for plain text. */
-	numeric?: boolean;
+	/** `inputMode`/`type` hint for the input; omitted for plain text. */
+	inputMode?: "numeric" | "email";
 }
 
 /**
@@ -90,7 +96,8 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		name: "name",
 		label: "Company/Firm's Name",
 		kind: "text",
-		placeholder: "Acme Retail",
+		description:
+			"For an individual or sole proprietorship, enter your own name.",
 		required: true,
 		pattern: /^[-a-zA-Z0-9 ,./:]+$/,
 		min: 2,
@@ -103,16 +110,16 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		kind: "select",
 		options: COMPANY_TYPES,
 		required: true,
-		pattern: /^[1-4]$/,
+		pattern: /^[1-5]$/,
 		min: 1,
 		max: 1,
 		message: "Select a company type",
 	},
 	{
 		name: "authorized_signatory_name",
-		label: "Director/Authorised Signatory Full Name",
+		label: "Director / Authorised Signatory's Full Name",
 		kind: "text",
-		placeholder: "Asha Rao",
+		description: "Used for signing the agreement.",
 		required: true,
 		pattern: /^[a-zA-Z][a-zA-Z .]{1,49}$/,
 		min: 2,
@@ -120,34 +127,21 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		message: "Use letters, spaces and initials only",
 	},
 	{
-		name: "contact_person_cell",
-		label: "Contact Person's Mobile Number",
+		name: "email",
+		label: "Email Address",
 		kind: "text",
-		placeholder: "9876543210",
+		description: "Used for communication and agreement delivery.",
 		required: true,
-		pattern: /^[6-9]\d{9}$/,
-		min: 10,
-		max: 10,
-		message: "Enter a valid 10-digit mobile number",
-		numeric: true,
-	},
-	{
-		name: "alternate_mobile",
-		label: "Alternate Mobile Number (optional)",
-		kind: "text",
-		placeholder: "9876543210",
-		required: false,
-		pattern: /^[6-9]\d{9}$/,
-		min: 10,
-		max: 10,
-		message: "Enter a valid 10-digit mobile number",
-		numeric: true,
+		pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+		min: 5,
+		max: 100,
+		message: "Enter a valid email address",
+		inputMode: "email",
 	},
 	{
 		name: "current_address_line1",
 		label: "Registered Business Address (Line 1)",
 		kind: "text",
-		placeholder: "12 MG Road, Indiranagar",
 		required: true,
 		pattern: /^.+$/,
 		min: 10,
@@ -168,7 +162,6 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		name: "current_address_district",
 		label: "City",
 		kind: "text",
-		placeholder: "Bengaluru",
 		required: true,
 		pattern: /^[a-zA-Z ]+$/,
 		min: 2,
@@ -192,27 +185,22 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		name: "current_address_pincode",
 		label: "Pincode",
 		kind: "text",
-		placeholder: "560038",
 		required: true,
 		pattern: /^\d{6}$/,
 		min: 6,
 		max: 6,
 		message: "Enter a valid 6-digit pincode",
-		numeric: true,
+		inputMode: "numeric",
 	},
 ];
 
-/** Fields grouped for display, so ten inputs don't render as one wall. */
+/** Fields grouped for display, so nine inputs don't render as one wall. */
 export const BUSINESS_GROUPS: readonly { heading: string; fields: string[] }[] =
 	[
 		{ heading: "Business", fields: ["name", "company_type"] },
 		{
 			heading: "Contact",
-			fields: [
-				"authorized_signatory_name",
-				"contact_person_cell",
-				"alternate_mobile",
-			],
+			fields: ["authorized_signatory_name", "email"],
 		},
 		{
 			heading: "Address",

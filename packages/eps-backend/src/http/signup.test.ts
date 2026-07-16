@@ -225,8 +225,7 @@ describe("POST /signup/business", () => {
 		name: "Acme Retail",
 		company_type: "4",
 		authorized_signatory_name: "Asha Rao",
-		contact_person_cell: "9876543210",
-		alternate_mobile: "",
+		email: "asha@acme.in",
 		current_address_line1: "12 MG Road, Indiranagar",
 		current_address_line2: "",
 		current_address_district: "Bengaluru",
@@ -269,22 +268,15 @@ describe("POST /signup/business", () => {
 		expect(submitBusiness).not.toHaveBeenCalled();
 	});
 
-	it("accepts a blank alternate_mobile", async () => {
-		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
-		const app = harness("signup", { submitBusiness });
-		const res = await post(app, { ...valid, alternate_mobile: "" });
-		expect(res.status).toBe(200);
-	});
-
-	it("rejects a malformed alternate_mobile when supplied", async () => {
+	it("rejects a malformed email without calling upstream", async () => {
 		const submitBusiness = vi.fn();
 		const app = harness("signup", { submitBusiness });
-		const res = await post(app, { ...valid, alternate_mobile: "12345" });
+		const res = await post(app, { ...valid, email: "not-an-email" });
 		expect(res.status).toBe(400);
 		expect(submitBusiness).not.toHaveBeenCalled();
 	});
 
-	it("forwards exactly the ten fields, taking mobile from the session, not the body", async () => {
+	it("forwards exactly the nine fields, taking mobile from the session, not the body", async () => {
 		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
 		const app = harness("signup", { submitBusiness });
 		await post(app, { ...valid, mobile: "9999999999" });
