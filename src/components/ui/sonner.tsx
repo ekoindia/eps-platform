@@ -9,6 +9,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
 	return (
 		<Sonner
 			theme={theme as ToasterProps["theme"]}
+			// Bottom-left: the bottom-right corner is occupied by the Zoho
+			// SalesIQ chat widget. Overridable via props.
+			position="bottom-left"
 			className="toaster group"
 			toastOptions={{
 				classNames: {
