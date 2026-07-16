@@ -51,4 +51,42 @@ describe("Credentials", () => {
 			screen.getByText(/will appear here once issued/i),
 		).toBeInTheDocument();
 	});
+
+	it("points an active developer at their account manager for production keys", () => {
+		// Stub the UAT keys empty: the fallback UAT copy also says "issued", and
+		// on a machine with real UAT keys configured (.env.local) the
+		// credentials-present copy says "issued separately" too — pin the UAT
+		// block to a known state so this assertion targets only the production
+		// block regardless of ambient env.
+		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "");
+		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "");
+		renderCredentials(ACTIVE);
+		expect(screen.getByText(/production api credentials/i)).toBeInTheDocument();
+		expect(screen.getByText(/issued separately/i)).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: /contact your account manager/i }),
+		).toHaveAttribute("href", "/grievance");
+	});
+
+	it("tells a lead to finish onboarding before requesting production keys", () => {
+		renderCredentials({ ...ACTIVE, state: "lead" });
+		expect(screen.getByText(/finish onboarding/i)).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: /continue onboarding/i }),
+		).toHaveAttribute("href", "/signup");
+	});
+
+	it("tells an inactive account to contact support", () => {
+		renderCredentials({ ...ACTIVE, state: "inactive" });
+		expect(screen.getByText(/account is inactive/i)).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: /contact support/i }),
+		).toHaveAttribute("href", "/grievance");
+	});
+
+	it("never renders a production key request button", () => {
+		// There is no issuance API yet. A button that cannot issue a key is a lie.
+		renderCredentials(ACTIVE);
+		expect(screen.queryByRole("button", { name: /fetch|request/i })).toBeNull();
+	});
 });
