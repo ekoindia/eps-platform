@@ -72,6 +72,8 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 										value={values[name]}
 										disabled={busy}
 										className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs disabled:opacity-50"
+										aria-invalid={fieldError ? true : undefined}
+										aria-describedby={fieldError ? `${name}-error` : undefined}
 										onChange={(e) => set(name, e.target.value)}
 										onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
 									>
@@ -92,12 +94,15 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 										inputMode={field.numeric ? "numeric" : undefined}
 										autoComplete="off"
 										aria-invalid={fieldError ? true : undefined}
+										aria-describedby={fieldError ? `${name}-error` : undefined}
 										onChange={(e) => set(name, e.target.value)}
 										onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
 									/>
 								)}
 								{fieldError && (
-									<p className="text-sm text-destructive">{fieldError}</p>
+									<p id={`${name}-error`} className="text-sm text-destructive">
+										{fieldError}
+									</p>
 								)}
 							</div>
 						);

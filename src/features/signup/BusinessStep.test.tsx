@@ -65,7 +65,21 @@ describe("BusinessStep", () => {
 	it("disables every field while busy", () => {
 		render(<BusinessStep onSubmit={noop} busy={true} error={null} />);
 		expect(screen.getByLabelText(/company\/firm's name/i)).toBeDisabled();
+		expect(screen.getByLabelText(/company type/i)).toBeDisabled();
 		expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
+	});
+
+	it("wires an invalid select's aria-describedby to its error message", () => {
+		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
+		const state = screen.getByLabelText(/state/i);
+		fireEvent.blur(state);
+		const message = screen.getByText(/state is required/i);
+		expect(message).toHaveAttribute("id", "current_address_state-error");
+		expect(state).toHaveAttribute(
+			"aria-describedby",
+			"current_address_state-error",
+		);
+		expect(state).toHaveAttribute("aria-invalid", "true");
 	});
 
 	it("shows a server error", () => {
