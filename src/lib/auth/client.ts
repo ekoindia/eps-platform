@@ -148,18 +148,21 @@ async function request(
 
 /** Pre-built API client with typed methods for OTP auth, session management, and user profile. */
 export const authClient = {
-	startOtp: (mobile: string): Promise<{ ok: true }> =>
+	/** `otp` comes back only on dev/UAT backends, for testing without an SMS. */
+	startOtp: (mobile: string): Promise<{ ok: true; otp?: string }> =>
 		request("/auth/otp/start", {
 			method: "POST",
 			body: JSON.stringify({ mobile }),
-		}) as Promise<{ ok: true }>,
+		}) as Promise<{ ok: true; otp?: string }>,
 	verifyOtp: (mobile: string, otp: string): Promise<MeView | SignupView> =>
 		request("/auth/otp/verify", {
 			method: "POST",
 			body: JSON.stringify({ mobile, otp }),
 		}) as Promise<MeView | SignupView>,
 	me: (): Promise<MeView | AdminView | SignupView> =>
-		request("/me", { method: "GET" }) as Promise<MeView | AdminView | SignupView>,
+		request("/me", { method: "GET" }) as Promise<
+			MeView | AdminView | SignupView
+		>,
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>

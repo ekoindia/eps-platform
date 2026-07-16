@@ -32,8 +32,13 @@ const cfg = loadConfig({
 
 function deps(
 	over: Partial<EkoClient> = {},
-	opts: { accessSink?: (l: string) => void; kv?: KV } = {},
+	opts: {
+		accessSink?: (l: string) => void;
+		kv?: KV;
+		cfg?: typeof cfg;
+	} = {},
 ) {
+	const appCfg = opts.cfg ?? cfg;
 	const kv = opts.kv ?? createInMemoryKV();
 	const eko: EkoClient = {
 		sendOtp: vi.fn(async () => ({ ok: true, raw: {} })),
@@ -57,18 +62,19 @@ function deps(
 		})),
 		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
 		verifyPan: vi.fn(async () => ({ ok: true as const })),
+		submitBusiness: vi.fn(async () => ({ ok: true as const })),
 		getBooklet: vi.fn(async () => null),
 		fetchPintwinKey: vi.fn(async () => null),
 		setSecretPin: vi.fn(async () => ({ ok: true as const })),
 		...over,
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
-	const sessions = createSessions(cfg, kv);
+	const sessions = createSessions(appCfg, kv);
 	const accessLog = opts.accessSink
 		? createAccessLogger({ sink: opts.accessSink })
 		: undefined;
 	return {
-		app: createApp({ cfg, eko, zoho, sessions, kv, accessLog }),
+		app: createApp({ cfg: appCfg, eko, zoho, sessions, kv, accessLog }),
 		eko,
 		zoho,
 		sessions,
@@ -154,6 +160,36 @@ describe("otp/start", () => {
 		});
 		expect(res.status).toBe(200);
 		expect(eko.sendOtp).toHaveBeenCalled();
+	});
+
+	const sendOtpWithOtp = {
+		sendOtp: vi.fn(async () => ({
+			ok: true,
+			raw: { response_status_id: 0, data: { otp: "4723" } },
+		})),
+	};
+
+	it("echoes the upstream otp when demoOtp is on", async () => {
+		const { app } = deps(sendOtpWithOtp, { cfg: { ...cfg, demoOtp: true } });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000011" }),
+		});
+		expect(await body<{ otp?: string }>(res)).toEqual({
+			ok: true,
+			otp: "4723",
+		});
+	});
+
+	it("never echoes the otp when demoOtp is off", async () => {
+		const { app } = deps(sendOtpWithOtp);
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000012" }),
+		});
+		expect(await body<{ otp?: string }>(res)).toEqual({ ok: true });
 	});
 
 	it("502 OTP_SEND_FAILED when the upstream did not dispatch the OTP", async () => {

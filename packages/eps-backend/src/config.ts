@@ -6,6 +6,12 @@ export interface Config {
 	accessTtlSec: number;
 	refreshTtlSec: number;
 	adminRefreshTtlSec: number;
+	/**
+	 * DEV/UAT ONLY. Echoes the upstream-returned OTP back to the caller from
+	 * `/auth/otp/start` so testers need no SMS. MUST stay false in production:
+	 * it would hand anyone who knows a mobile number that number's login code.
+	 */
+	demoOtp: boolean;
 	cookieSecure: boolean;
 	cookieSameSite: string;
 	adminPostLoginRedirect: string;
@@ -81,6 +87,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		accessTtlSec: Number(env.ACCESS_TTL_SEC ?? 900),
 		refreshTtlSec: Number(env.REFRESH_TTL_SEC ?? 60 * 60 * 24 * 30),
 		adminRefreshTtlSec: Number(env.ADMIN_REFRESH_TTL_SEC ?? 28800),
+		demoOtp: env.DEMO_OTP === "true",
 		cookieSecure: env.COOKIE_SECURE !== "false",
 		cookieSameSite: env.COOKIE_SAMESITE ?? "Lax",
 		adminPostLoginRedirect: env.ADMIN_POST_LOGIN_REDIRECT ?? "/admin",

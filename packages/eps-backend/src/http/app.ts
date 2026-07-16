@@ -139,7 +139,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	});
 
 	/**
-	 * POST /auth/otp/start → { ok: true } (200)
+	 * POST /auth/otp/start → { ok: true, otp?: string } (200)
+	 * `otp` is echoed only when DEMO_OTP is on (dev/UAT) and the upstream
+	 * returned one — UAT does, production does not.
 	 * MARK: /start
 	 */
 	app.post("/auth/otp/start", async (c) => {
@@ -172,7 +174,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"Couldn't send the OTP right now. Please try again.",
 			);
 		}
-		return c.json({ ok: true });
+		const demoOtp = cfg.demoOtp
+			? (resp.raw as { data?: { otp?: string } })?.data?.otp
+			: undefined;
+		return c.json(demoOtp ? { ok: true, otp: demoOtp } : { ok: true });
 	});
 
 	/**
