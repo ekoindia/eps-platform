@@ -18,13 +18,13 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		name: "pan",
 		label: "PAN Details",
 		Component: PanStep,
-		submit: (client, [pan]) => client.submitPan(pan),
+		submit: (client, v) => client.submitPan(v.pan),
 	},
 	{
 		role: 12600,
 		name: "pin",
 		label: "Set Secret PIN",
 		Component: PinStep,
-		submit: (client, [pin1, pin2]) => client.submitPin(pin1, pin2),
+		submit: (client, v) => client.submitPin(v.pin1, v.pin2),
 	},
 ];

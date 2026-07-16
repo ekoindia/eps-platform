@@ -32,7 +32,9 @@ describe("PinStep", () => {
 		render(<PinStep onSubmit={noop} busy={false} error={null} />);
 		await typePin(/^secret pin/i, "1234");
 		await typePin(/confirm/i, "5678");
-		expect(screen.getByRole("button", { name: /finish|continue/i })).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: /finish|continue/i }),
+		).toBeDisabled();
 		expect(screen.getByText(/do not match/i)).toBeInTheDocument();
 	});
 
@@ -42,7 +44,7 @@ describe("PinStep", () => {
 		await typePin(/^secret pin/i, "1234");
 		await typePin(/confirm/i, "1234");
 		fireEvent.click(screen.getByRole("button", { name: /finish|continue/i }));
-		expect(onSubmit).toHaveBeenCalledWith(["1234", "1234"]);
+		expect(onSubmit).toHaveBeenCalledWith({ pin1: "1234", pin2: "1234" });
 	});
 
 	it("submits a PIN of 0000 — a falsy-string check would wrongly reject it", async () => {
@@ -54,7 +56,7 @@ describe("PinStep", () => {
 		const button = screen.getByRole("button", { name: /finish|continue/i });
 		expect(button).toBeEnabled();
 		fireEvent.click(button);
-		expect(onSubmit).toHaveBeenCalledWith(["0000", "0000"]);
+		expect(onSubmit).toHaveBeenCalledWith({ pin1: "0000", pin2: "0000" });
 	});
 
 	it("shows a server error", () => {

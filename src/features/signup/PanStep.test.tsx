@@ -37,7 +37,7 @@ describe("PanStep", () => {
 			target: { value: "ABCDE1234F" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
-		expect(onSubmit).toHaveBeenCalledWith(["ABCDE1234F"]);
+		expect(onSubmit).toHaveBeenCalledWith({ pan: "ABCDE1234F" });
 	});
 
 	it("disables the field and button while busy", () => {

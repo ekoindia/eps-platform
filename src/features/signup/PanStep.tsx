@@ -24,7 +24,7 @@ export function PanStep({ onSubmit, busy, error }: StepProps) {
 			className="flex flex-col gap-4"
 			onSubmit={(e) => {
 				e.preventDefault();
-				if (isValid && !busy) void onSubmit([pan]);
+				if (isValid && !busy) void onSubmit({ pan });
 			}}
 		>
 			<p className="text-muted-foreground">

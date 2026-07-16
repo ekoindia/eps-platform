@@ -67,7 +67,7 @@ export function PinStep({ onSubmit, busy, error }: StepProps) {
 			className="flex flex-col gap-5"
 			onSubmit={(e) => {
 				e.preventDefault();
-				if (canSubmit) void onSubmit([pin1, pin2]);
+				if (canSubmit) void onSubmit({ pin1, pin2 });
 			}}
 		>
 			<p className="text-muted-foreground">

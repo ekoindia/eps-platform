@@ -4,10 +4,11 @@ import type { signupClient, SignupState } from "@/lib/auth/client";
 /** Props every step component receives from the wizard. */
 export interface StepProps {
 	/**
-	 * Submits this step's collected values. Each step decides what its values
-	 * mean; the wizard just forwards them to the step's own `submit`.
+	 * Submits this step's collected values, keyed by field name. Each step
+	 * decides what its keys mean; the wizard just forwards them to the step's
+	 * own `submit`.
 	 */
-	onSubmit: (values: string[]) => Promise<void>;
+	onSubmit: (values: Record<string, string>) => Promise<void>;
 	/** True while a submit is in flight; disable inputs and the button. */
 	busy: boolean;
 	/** Server-side error for this step, or null. */
@@ -17,7 +18,7 @@ export interface StepProps {
 /** Sends one step's values to the backend and returns the refreshed state. */
 export type StepSubmit = (
 	client: typeof signupClient,
-	values: string[],
+	values: Record<string, string>,
 ) => Promise<SignupState>;
 
 /**
