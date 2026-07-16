@@ -239,7 +239,7 @@ per-interaction — there is no single convention:
 | 10005 | Fetch pintwin key | `fetchPintwinKey` (352-365) | user's own | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id` |
 | 5 | Set secret PIN | `setSecretPin` (366-382) | user's own | `response_type_id === 9` (`SECRET_PIN_OK`) |
 
-`stepResult()` (`eko.ts:185-195`) is the shared classifier for 521/523/522/5,
+`stepResult()` (`eko.ts:251-260`) is the shared classifier for 521/523/522/5,
 comparing `response_type_id` against the interaction's own success constant
 and otherwise surfacing the upstream `message` as `EkoStepResult`.
 
@@ -351,8 +351,8 @@ not be required at all for these interactions.
 `INDIAN_STATES` (`src/features/signup/businessFields.ts:15-52`), the 36
 values the `current_address_state` field offers, came from a live probe of
 interaction 387 (the state list) against UAT on 2026-07-16 — upstream's
-`value` and `label` are identical, so one array serves both. Unlike the two
-constants above, this one **is** confirmed against real UAT, and its quirks
+`value` and `label` are identical, so one array serves both. Unlike the other
+constants in this section, this one **is** confirmed against real UAT, and its quirks
 are load-bearing, not typos: `"PondiCherry"`'s casing, Delhi spelled out with
 a `(UT)` suffix, `"Andhra Pradesh (New)"` sorted last rather than
 alphabetically in the source array (the UI re-sorts for display), and no
@@ -397,6 +397,13 @@ Redaction lives inside `ekoLog` itself, not at call sites, so a future
 interaction that happens to reuse either field name is covered automatically
 at `full` — but does not extend `basic`'s safety, which was already narrower
 by construction.
+
+Interaction 522's request fields — company name, authorized signatory name,
+both mobile numbers, and the full registered address — are business PII with
+no entry in `REDACTED_REQUEST_FIELDS`, so they are logged in the clear at
+`EKO_LOG_LEVEL=full`. This is the existing documented stance, not a
+regression: `full` is development-only, and 523's PAN is already logged in
+the clear there for the same reason.
 
 ## Known gaps / follow-ups
 

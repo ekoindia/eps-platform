@@ -401,10 +401,13 @@ export function createEkoClient(
 			// pipeline sets one explicitly (executePipeline.ts:289). Match that.
 			const raw = await post(
 				{
+					// `details` is spread FIRST so none of its keys can override the
+					// system fields below (actor identity, client_ref_id,
+					// interaction_type_id).
+					...input.details,
 					...actor(input.identity),
 					client_ref_id: randomUUID(),
 					interaction_type_id: "522",
-					...input.details,
 					latlong: ONBOARDING_LATLONG,
 					source: "EPS",
 				},

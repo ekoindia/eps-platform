@@ -44,6 +44,7 @@ export interface SignupService {
 	): Promise<SignupState>;
 }
 
+/** Re-exported so route handlers have one import site for the request shape — `http/` should not reach past `service/` into `clients/`. */
 export type { BusinessDetails } from "../clients/eko";
 
 /** A step that failed upstream, carrying the upstream's own message for the user. */

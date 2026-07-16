@@ -84,7 +84,8 @@ function parseBusiness(body: unknown): BusinessDetails {
 	const src = (body ?? {}) as Record<string, unknown>;
 	const out: Record<string, string> = {};
 	for (const [field, rule] of Object.entries(BUSINESS_RULES)) {
-		const value = String(src[field] ?? "").trim();
+		const rawValue = src[field];
+		const value = typeof rawValue === "string" ? rawValue.trim() : "";
 		if (!value) {
 			if (rule.required) {
 				throw new AppError(400, "INVALID_INPUT", `${field} is required.`);

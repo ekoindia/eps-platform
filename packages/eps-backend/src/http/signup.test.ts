@@ -258,6 +258,17 @@ describe("POST /signup/business", () => {
 		expect(submitBusiness).not.toHaveBeenCalled();
 	});
 
+	it("rejects a non-string field value without calling upstream", async () => {
+		const submitBusiness = vi.fn();
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, {
+			...valid,
+			current_address_line1: {},
+		});
+		expect(res.status).toBe(400);
+		expect(submitBusiness).not.toHaveBeenCalled();
+	});
+
 	it("accepts a blank alternate_mobile", async () => {
 		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
 		const app = harness("signup", { submitBusiness });
@@ -273,17 +284,11 @@ describe("POST /signup/business", () => {
 		expect(submitBusiness).not.toHaveBeenCalled();
 	});
 
-	it("forwards the ten fields and takes mobile from the session, not the body", async () => {
+	it("forwards exactly the ten fields, taking mobile from the session, not the body", async () => {
 		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
 		const app = harness("signup", { submitBusiness });
 		await post(app, { ...valid, mobile: "9999999999" });
-		expect(submitBusiness).toHaveBeenCalledWith(
-			"9990000001",
-			expect.objectContaining({ name: "Acme Retail" }),
-			undefined,
-		);
-		const forwarded = submitBusiness.mock.calls[0][1];
-		expect(forwarded).not.toHaveProperty("mobile");
+		expect(submitBusiness).toHaveBeenCalledWith("9990000001", valid, undefined);
 	});
 
 	it("requires a signup session", async () => {
