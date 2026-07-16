@@ -137,8 +137,9 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 					<Label htmlFor="login-mobile">Mobile number</Label>
 					<Input
 						id="login-mobile"
-						inputMode="numeric"
 						autoComplete="tel"
+						prefix="+91"
+						digitGroups={[3, 3, 4]}
 						value={mobile}
 						onChange={(e) => setMobile(e.target.value)}
 						placeholder="10-digit mobile"
