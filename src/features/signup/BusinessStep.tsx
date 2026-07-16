@@ -42,7 +42,12 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 	/** A field is locked when its spec opts in AND the profile actually prefilled it. */
 	const isLocked = (field: BusinessField): boolean => {
 		if (!field.lockWhenPrefilled) return false;
-		if (field.name === "name") return Boolean(profile.name);
+		// Lock a prefilled value ONLY when it is also valid — otherwise a locked-but-
+		// invalid value (e.g. an upstream name with "&" that fails the field pattern)
+		// would leave the form permanently unsubmittable with no way to edit it.
+		if (field.name === "name") {
+			return Boolean(profile.name) && !validateField(field, profile.name ?? "");
+		}
 		if (field.name === "email") return Boolean(profile.email);
 		return false;
 	};

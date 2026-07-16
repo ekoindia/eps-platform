@@ -153,6 +153,16 @@ describe("BusinessStep", () => {
 		);
 	});
 
+	it("prefills but does not lock an invalid profile name", () => {
+		renderStep(
+			{ onSubmit: noop, busy: false, error: null },
+			{ mobile: "9990000001", name: "Tata & Sons", email: "asha@acme.in" },
+		);
+		const name = screen.getByLabelText(/company\/firm's name/i);
+		expect(name).toHaveValue("Tata & Sons");
+		expect(name).not.toHaveAttribute("readonly");
+	});
+
 	it("leaves name editable when the profile has no name", () => {
 		renderStep({ onSubmit: noop, busy: false, error: null });
 		expect(screen.getByLabelText(/company\/firm's name/i)).toHaveValue("");
