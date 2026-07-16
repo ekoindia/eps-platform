@@ -1,8 +1,23 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BusinessStep } from "./BusinessStep";
+import {
+	SignupProfileProvider,
+	type SignupProfile,
+} from "./SignupProfileContext";
 
 const noop = async () => {};
+
+/** Renders BusinessStep inside a profile provider (empty profile by default). */
+const renderStep = (
+	props: Parameters<typeof BusinessStep>[0],
+	profile: SignupProfile = { mobile: "9990000001" },
+) =>
+	render(
+		<SignupProfileProvider profile={profile}>
+			<BusinessStep {...props} />
+		</SignupProfileProvider>,
+	);
 
 /** Fills every text field with valid input. Selects are set separately. */
 const fillText = () => {
@@ -28,7 +43,7 @@ const fillText = () => {
 
 describe("BusinessStep", () => {
 	it("disables submit until every required field is valid", () => {
-		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
+		renderStep({ onSubmit: noop, busy: false, error: null });
 		const button = screen.getByRole("button", { name: /continue/i });
 		expect(button).toBeDisabled();
 		fillText();
@@ -37,7 +52,7 @@ describe("BusinessStep", () => {
 	});
 
 	it("shows a field error on blur, not while typing", () => {
-		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
+		renderStep({ onSubmit: noop, busy: false, error: null });
 		const pincode = screen.getByLabelText(/pincode/i);
 		// 6 characters (satisfies min/max) but non-numeric, so validateField
 		// reaches the pattern check and returns the field's own message rather
@@ -49,28 +64,28 @@ describe("BusinessStep", () => {
 	});
 
 	it("accepts a blank optional address line 2", () => {
-		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
+		renderStep({ onSubmit: noop, busy: false, error: null });
 		const line2 = screen.getByLabelText(/address \(line 2/i);
 		fireEvent.blur(line2);
 		expect(screen.queryByText(/enter a valid address/i)).toBeNull();
 	});
 
 	it("renders the three group headings", () => {
-		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
+		renderStep({ onSubmit: noop, busy: false, error: null });
 		expect(screen.getByText("Business")).toBeInTheDocument();
 		expect(screen.getByText("Contact")).toBeInTheDocument();
 		expect(screen.getByText("Address")).toBeInTheDocument();
 	});
 
 	it("disables every field while busy", () => {
-		render(<BusinessStep onSubmit={noop} busy={true} error={null} />);
+		renderStep({ onSubmit: noop, busy: true, error: null });
 		expect(screen.getByLabelText(/company\/firm's name/i)).toBeDisabled();
 		expect(screen.getByLabelText(/company type/i)).toBeDisabled();
 		expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
 	});
 
 	it("wires an invalid select's aria-describedby to its error message", () => {
-		render(<BusinessStep onSubmit={noop} busy={false} error={null} />);
+		renderStep({ onSubmit: noop, busy: false, error: null });
 		const state = screen.getByLabelText(/state/i);
 		fireEvent.blur(state);
 		const message = screen.getByText(/state is required/i);
@@ -83,15 +98,13 @@ describe("BusinessStep", () => {
 	});
 
 	it("shows a server error", () => {
-		render(
-			<BusinessStep onSubmit={noop} busy={false} error="Invalid pincode" />,
-		);
+		renderStep({ onSubmit: noop, busy: false, error: "Invalid pincode" });
 		expect(screen.getByRole("alert")).toHaveTextContent("Invalid pincode");
 	});
 
 	it("submits every field keyed by name, trimmed", () => {
 		const onSubmit = vi.fn().mockResolvedValue(undefined);
-		render(<BusinessStep onSubmit={onSubmit} busy={false} error={null} />);
+		renderStep({ onSubmit, busy: false, error: null });
 		fillText();
 		fireEvent.change(screen.getByLabelText(/company\/firm's name/i), {
 			target: { value: "  Acme Retail  " },
@@ -114,5 +127,37 @@ describe("BusinessStep", () => {
 			current_address_state: "Karnataka",
 			current_address_pincode: "560038",
 		});
+	});
+
+	it("prefills name and email from the profile", () => {
+		renderStep(
+			{ onSubmit: noop, busy: false, error: null },
+			{ mobile: "9990000001", name: "Asha Rao", email: "asha@acme.in" },
+		);
+		expect(screen.getByLabelText(/company\/firm's name/i)).toHaveValue(
+			"Asha Rao",
+		);
+		expect(screen.getByLabelText(/email address/i)).toHaveValue("asha@acme.in");
+	});
+
+	it("locks a prefilled name read-only but leaves email editable", () => {
+		renderStep(
+			{ onSubmit: noop, busy: false, error: null },
+			{ mobile: "9990000001", name: "Asha Rao", email: "asha@acme.in" },
+		);
+		expect(screen.getByLabelText(/company\/firm's name/i)).toHaveAttribute(
+			"readonly",
+		);
+		expect(screen.getByLabelText(/email address/i)).not.toHaveAttribute(
+			"readonly",
+		);
+	});
+
+	it("leaves name editable when the profile has no name", () => {
+		renderStep({ onSubmit: noop, busy: false, error: null });
+		expect(screen.getByLabelText(/company\/firm's name/i)).toHaveValue("");
+		expect(screen.getByLabelText(/company\/firm's name/i)).not.toHaveAttribute(
+			"readonly",
+		);
 	});
 });

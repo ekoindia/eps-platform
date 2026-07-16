@@ -82,6 +82,8 @@ export interface BusinessField {
 	message: string;
 	/** `inputMode`/`type` hint for the input; omitted for plain text. */
 	inputMode?: "numeric" | "email";
+	/** When true, the field renders read-only once the profile prefills it. */
+	lockWhenPrefilled?: boolean;
 }
 
 /**
@@ -103,6 +105,7 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		min: 2,
 		max: 100,
 		message: "Use only letters, numbers and , . / : -",
+		lockWhenPrefilled: true,
 	},
 	{
 		name: "company_type",

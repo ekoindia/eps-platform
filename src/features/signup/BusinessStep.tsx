@@ -9,6 +9,7 @@ import {
 	validateField,
 } from "./businessFields";
 import type { StepProps } from "./resolveSteps";
+import { useSignupProfile } from "./SignupProfileContext";
 
 /** Looks up a field's spec by name. */
 const specOf = (name: string): BusinessField =>
@@ -26,8 +27,25 @@ const emptyValues = (): Record<string, string> =>
  * feedback only — the BFF re-checks every field before calling upstream.
  */
 export function BusinessStep({ onSubmit, busy, error }: StepProps) {
-	const [values, setValues] = useState<Record<string, string>>(emptyValues);
+	const profile = useSignupProfile();
+	// Seed name/email from the profile when present; every other field starts
+	// empty. Computed once for the initial state — the wizard only mounts this
+	// step after SignupState (and thus the profile) has loaded, so there is no
+	// late-arriving-prop race.
+	const [values, setValues] = useState<Record<string, string>>(() => ({
+		...emptyValues(),
+		name: profile.name ?? "",
+		email: profile.email ?? "",
+	}));
 	const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+	/** A field is locked when its spec opts in AND the profile actually prefilled it. */
+	const isLocked = (field: BusinessField): boolean => {
+		if (!field.lockWhenPrefilled) return false;
+		if (field.name === "name") return Boolean(profile.name);
+		if (field.name === "email") return Boolean(profile.email);
+		return false;
+	};
 
 	const set = (name: string, value: string) =>
 		setValues((prev) => ({ ...prev, [name]: value }));
@@ -104,12 +122,18 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 										id={name}
 										value={values[name]}
 										disabled={busy}
+										readOnly={isLocked(field)}
 										maxLength={field.max}
 										type={field.inputMode === "email" ? "email" : "text"}
 										inputMode={field.inputMode}
 										autoComplete="off"
 										aria-invalid={fieldError ? true : undefined}
 										aria-describedby={fieldError ? `${name}-error` : undefined}
+										className={
+											isLocked(field)
+												? "bg-muted text-muted-foreground"
+												: undefined
+										}
 										onChange={(e) => set(name, e.target.value)}
 										onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
 									/>
