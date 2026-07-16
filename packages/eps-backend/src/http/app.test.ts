@@ -66,6 +66,14 @@ function deps(
 		getBooklet: vi.fn(async () => null),
 		fetchPintwinKey: vi.fn(async () => null),
 		setSecretPin: vi.fn(async () => ({ ok: true as const })),
+		getAgreementUrl: vi.fn(async () => ({
+			ok: true as const,
+			shortUrl: "https://sign.example/x",
+			documentId: "DOC1",
+			pipe: 3,
+			alreadySigned: false,
+		})),
+		submitSignAgreement: vi.fn(async () => ({ ok: true as const })),
 		...over,
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };

@@ -2,6 +2,7 @@ import { BusinessStep } from "./BusinessStep";
 import { PanStep } from "./PanStep";
 import { PinStep } from "./PinStep";
 import type { StepDefinition } from "./resolveSteps";
+import { SignAgreementStep } from "./SignAgreementStep";
 
 /**
  * Steps this app can render, keyed by their backend role code.
@@ -34,5 +35,12 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		label: "Set Secret PIN",
 		Component: PinStep,
 		submit: (client, v) => client.submitPin(v.pin1, v.pin2),
+	},
+	{
+		role: 12800,
+		name: "agreement",
+		label: "Sign Agreement",
+		Component: SignAgreementStep,
+		submit: (client, v) => client.submitAgreement(v.document_id),
 	},
 ];

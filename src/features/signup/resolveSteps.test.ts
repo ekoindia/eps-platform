@@ -37,7 +37,9 @@ function state(over: Partial<SignupState> = {}): SignupState {
 
 describe("resolveSteps", () => {
 	it("marks the current step and leaves later steps pending", () => {
-		expect(resolveSteps(state(), registry).map((s) => [s.name, s.status])).toEqual([
+		expect(
+			resolveSteps(state(), registry).map((s) => [s.name, s.status]),
+		).toEqual([
 			["pan", "current"],
 			["pin", "pending"],
 		]);
@@ -68,7 +70,10 @@ describe("resolveSteps", () => {
 
 	it("prefers the API label over the registry label", () => {
 		const resolved = resolveSteps(
-			state({ steps: [{ role: 13000, label: "PAN Card" }], currentRole: 13000 }),
+			state({
+				steps: [{ role: 13000, label: "PAN Card" }],
+				currentRole: 13000,
+			}),
 			registry,
 		);
 		expect(resolved[0].label).toBe("PAN Card");
@@ -100,7 +105,10 @@ describe("resolveSteps", () => {
 	});
 
 	it("marks every step complete when onboarding is done", () => {
-		const resolved = resolveSteps(state({ status: "done", currentRole: null }), registry);
+		const resolved = resolveSteps(
+			state({ status: "done", currentRole: null }),
+			registry,
+		);
 		expect(resolved.every((s) => s.status === "complete")).toBe(true);
 	});
 
@@ -114,6 +122,25 @@ describe("resolveSteps", () => {
 	});
 
 	it("returns an empty list when the API sends no steps", () => {
-		expect(resolveSteps(state({ steps: [], currentRole: null }), registry)).toEqual([]);
+		expect(
+			resolveSteps(state({ steps: [], currentRole: null }), registry),
+		).toEqual([]);
+	});
+
+	it("resolves the Sign Agreement step (role 12800) from the real registry, not skipping it", async () => {
+		const { SIGNUP_STEPS } = await import("./steps");
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const resolved = resolveSteps(
+			state({
+				steps: [{ role: 12800, label: "Sign Agreement" }],
+				currentRole: 12800,
+			}),
+			SIGNUP_STEPS,
+		);
+		expect(resolved.map((s) => [s.name, s.status])).toEqual([
+			["agreement", "current"],
+		]);
+		expect(warn).not.toHaveBeenCalled();
+		warn.mockRestore();
 	});
 });

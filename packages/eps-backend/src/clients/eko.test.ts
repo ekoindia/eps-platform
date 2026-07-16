@@ -521,3 +521,90 @@ describe("onboarding interactions", () => {
 		});
 	});
 });
+
+describe("sign agreement interactions", () => {
+	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		return new URLSearchParams(init.body as string);
+	}
+
+	it("getAgreementUrl posts 287 (mobile as csp_id/user_id) and maps a 1613 URL", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1613,
+			data: { short_url: "https://sign/x", document_id: "DOC9", pipe: 3 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		expect(r).toEqual({
+			ok: true,
+			shortUrl: "https://sign/x",
+			documentId: "DOC9",
+			pipe: 3,
+			alreadySigned: false,
+		});
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("287");
+		expect(body.get("agreement_id")).toBe("5");
+		expect(body.get("csp_id")).toBe("9990000001");
+		expect(body.get("user_id")).toBe("9990000001");
+		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("latlong")).toBe("27.176670,78.008075,7787");
+	});
+
+	it.each([1615, 1069])(
+		"getAgreementUrl treats response_type_id %i as already-signed",
+		async (code) => {
+			const f = mockFetch(200, {
+				response_type_id: code,
+				data: { document_id: "DOC9", pipe: 0 },
+			});
+			const eko = createEkoClient(ekoCfg, f);
+			const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+			expect(r).toEqual({
+				ok: true,
+				shortUrl: "",
+				documentId: "DOC9",
+				pipe: 0,
+				alreadySigned: true,
+			});
+		},
+	);
+
+	it("getAgreementUrl fails on an unexpected type, ignoring a stray short_url", async () => {
+		// Strict: a partial short_url on a non-1613 response must NOT read as success.
+		const f = mockFetch(200, {
+			response_type_id: 1500,
+			message: "Nope",
+			data: { short_url: "https://stale" },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		expect(r).toEqual({ ok: false, message: "Nope", responseTypeId: 1500 });
+	});
+
+	it("submitSignAgreement posts 293 with the document id, agreement id and a client_ref_id", async () => {
+		const f = mockFetch(200, { response_type_id: 1615 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("293");
+		expect(body.get("document_id")).toBe("DOC9");
+		expect(body.get("agreement_id")).toBe("5");
+		expect(body.get("esign_completed")).toBe("true");
+		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
+	});
+
+	it("submitSignAgreement reports the upstream message on failure", async () => {
+		const f = mockFetch(200, { response_type_id: 1500, message: "Not signed" });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		expect(r).toEqual({
+			ok: false,
+			message: "Not signed",
+			responseTypeId: 1500,
+		});
+	});
+});

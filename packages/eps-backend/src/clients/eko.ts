@@ -57,6 +57,16 @@ export interface EkoClient {
 		identity: EkoIdentity;
 		xRealIp?: string;
 	}): Promise<EkoStepResult>;
+	getAgreementUrl(input: {
+		mobile: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<SignUrlResult>;
+	submitSignAgreement(input: {
+		documentId: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
 }
 
 const NOT_FOUND_CODES = new Set([319, 1200, 1867]);
@@ -78,6 +88,31 @@ const PAN_VERIFICATION_OK = 1569;
 const BOOKLET_OK = 1646;
 const SECRET_PIN_OK = 9;
 const BUSINESS_DETAILS_OK = 1567;
+
+/** Interaction 287 (fetch e-sign URL): `response_type_id` meaning a URL was issued. */
+const GET_AGREEMENT_URL_OK = 1613;
+/**
+ * Interaction 287: `response_type_id`s meaning the agreement is already signed —
+ * skip the provider popup and go straight to the submit step (293).
+ */
+const AGREEMENT_ALREADY_SIGNED = new Set([1615, 1069]);
+/**
+ * Interaction 293 (submit signed agreement): success `response_type_id`.
+ *
+ * PROVISIONAL. The wlc step config declares 1615 for this step, but its pipeline
+ * executor actually accepts `status === 0`. This repo's `stepResult` matches on a
+ * single id, so confirm the real value against a UAT 293 response before relying
+ * on it — adjust here if upstream returns a different id.
+ */
+const SIGN_AGREEMENT_OK = 1615;
+/**
+ * Agreement id sent to interactions 287/293.
+ *
+ * ponytail: a fixed constant for the single EPS vertical (matches the wlc
+ * `config.agreementId ?? 5` default). Lift to `cfg.eko.agreementId` if it ever
+ * varies per org.
+ */
+const AGREEMENT_ID = "5";
 
 /**
  * Identity of the acting user for an onboarding interaction.
@@ -124,6 +159,22 @@ export interface EkoPintwinKey {
 /** Outcome of an onboarding interaction, carrying the upstream message on failure. */
 export type EkoStepResult =
 	| { ok: true }
+	| { ok: false; message: string; responseTypeId: number };
+
+/**
+ * Outcome of fetching the e-sign URL (interaction 287).
+ *
+ * `alreadySigned` short-circuits the provider popup: the agreement is already
+ * signed upstream, so only the submit step (293) remains.
+ */
+export type SignUrlResult =
+	| {
+			ok: true;
+			shortUrl: string;
+			documentId: string;
+			pipe: number;
+			alreadySigned: boolean;
+	  }
 	| { ok: false; message: string; responseTypeId: number };
 
 export function createEkoClient(
@@ -470,6 +521,70 @@ export function createEkoClient(
 				input.xRealIp,
 			);
 			return stepResult(raw, SECRET_PIN_OK);
+		},
+		async getAgreementUrl(input) {
+			// csp_id / user_id ride as the mobile (mirroring the reference esign
+			// service); the actor identity authorizes the call.
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "287",
+					document_id: "",
+					agreement_id: AGREEMENT_ID,
+					latlong: ONBOARDING_LATLONG,
+					csp_id: input.mobile,
+					user_id: input.mobile,
+				},
+				input.xRealIp,
+			)) as {
+				response_type_id?: number;
+				message?: string;
+				data?: { short_url?: string; document_id?: string; pipe?: number };
+			};
+			const code = Number(raw?.response_type_id ?? -1);
+			const documentId = String(raw?.data?.document_id ?? "");
+			const pipe = Number(raw?.data?.pipe ?? 0);
+			if (AGREEMENT_ALREADY_SIGNED.has(code)) {
+				return {
+					ok: true,
+					shortUrl: "",
+					documentId,
+					pipe,
+					alreadySigned: true,
+				};
+			}
+			// Classify strictly by the success id — a partial `short_url` on an
+			// otherwise-error response must NOT be treated as success.
+			if (code === GET_AGREEMENT_URL_OK) {
+				return {
+					ok: true,
+					shortUrl: String(raw?.data?.short_url ?? ""),
+					documentId,
+					pipe,
+					alreadySigned: false,
+				};
+			}
+			return {
+				ok: false,
+				message: raw?.message ?? "Couldn't start the agreement signing.",
+				responseTypeId: code,
+			};
+		},
+		async submitSignAgreement(input) {
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "293",
+					document_id: input.documentId,
+					agreement_id: AGREEMENT_ID,
+					esign_completed: "true",
+					completion_timestamp: new Date().toISOString(),
+					latlong: ONBOARDING_LATLONG,
+					client_ref_id: randomUUID(),
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, SIGN_AGREEMENT_OK);
 		},
 	};
 }

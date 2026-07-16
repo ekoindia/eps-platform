@@ -290,6 +290,70 @@ describe("POST /signup/business", () => {
 	});
 });
 
+describe("sign agreement endpoints", () => {
+	it("GET /signup/agreement/url requires a signup session", async () => {
+		const app = harness(null, {});
+		const res = await app.request("/signup/agreement/url", withCookie);
+		expect(res.status).toBe(401);
+	});
+
+	it("GET /signup/agreement/url returns the provider URL for the session's mobile", async () => {
+		const url = {
+			shortUrl: "https://sign/x",
+			documentId: "DOC9",
+			pipe: 3,
+			alreadySigned: false,
+		};
+		const getAgreementUrl = vi.fn().mockResolvedValue(url);
+		const app = harness("signup", { getAgreementUrl });
+		const res = await app.request("/signup/agreement/url", withCookie);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual(url);
+		expect(getAgreementUrl).toHaveBeenCalledWith("9990000001", undefined);
+	});
+
+	it("POST /signup/agreement forwards the document id from the body", async () => {
+		const submitSignAgreement = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { submitSignAgreement });
+		const res = await app.request("/signup/agreement", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ document_id: "DOC9" }),
+		});
+		expect(res.status).toBe(200);
+		expect(submitSignAgreement).toHaveBeenCalledWith(
+			"9990000001",
+			"DOC9",
+			undefined,
+		);
+	});
+
+	it("POST /signup/agreement returning done upgrades to a developer session", async () => {
+		const done: SignupState = {
+			...inProgress,
+			status: "done",
+			steps: [],
+			currentRole: null,
+		};
+		const submitSignAgreement = vi.fn().mockResolvedValue(done);
+		const mintAccess = vi.fn().mockResolvedValue("dev-access");
+		const app = harness(
+			"signup",
+			{ submitSignAgreement },
+			{ sessions: { mintAccess } },
+		);
+		const res = await app.request("/signup/agreement", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ document_id: "DOC9" }),
+		});
+		expect(res.status).toBe(200);
+		expect(mintAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ role: "developer" }),
+		);
+	});
+});
+
 describe("session upgrade on completion", () => {
 	const done: SignupState = {
 		...inProgress,

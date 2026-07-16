@@ -64,6 +64,18 @@ export interface SignupState {
 	email?: string;
 }
 
+/** The e-sign URL details for the Sign Agreement step, from the backend. */
+export interface SignUrlView {
+	/** Provider signing URL; empty when `alreadySigned`. */
+	shortUrl: string;
+	/** Document id echoed back on submit. */
+	documentId: string;
+	/** Provider id (0 DigiO, 1 Karza, 2 Signzy, 3 Leegality). */
+	pipe: number;
+	/** True when upstream reports the agreement is already signed. */
+	alreadySigned: boolean;
+}
+
 export interface DocItem {
 	slug: string;
 	path: string;
@@ -221,5 +233,12 @@ export const signupClient = {
 		request("/signup/business", {
 			method: "POST",
 			body: JSON.stringify(details),
+		}) as Promise<SignupState>,
+	getAgreementUrl: (): Promise<SignUrlView> =>
+		request("/signup/agreement/url", { method: "GET" }) as Promise<SignUrlView>,
+	submitAgreement: (documentId: string): Promise<SignupState> =>
+		request("/signup/agreement", {
+			method: "POST",
+			body: JSON.stringify({ document_id: documentId }),
 		}) as Promise<SignupState>,
 };

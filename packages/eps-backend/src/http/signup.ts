@@ -303,4 +303,39 @@ export function mountSignup(
 			toAppError(e);
 		}
 	});
+
+	// Fetch the provider signing URL for the Sign Agreement step. Read-only —
+	// it doesn't change signup status, so it returns the URL directly rather
+	// than routing through `respond()`.
+	app.get("/signup/agreement/url", async (c) => {
+		const mobile = await requireSignupSession(c);
+		try {
+			return c.json(
+				await signup.getAgreementUrl(mobile, c.req.header("x-real-ip")),
+			);
+		} catch (e) {
+			toAppError(e);
+		}
+	});
+
+	app.post("/signup/agreement", async (c) => {
+		const mobile = await requireSignupSession(c);
+		const { document_id } = await c.req.json().catch(() => ({}));
+		// `document_id` comes from this user's own /signup/agreement/url response
+		// and is forwarded verbatim to upstream 293 (the authority on it). It is
+		// empty only in the already-signed branch, so it is not rejected here.
+		try {
+			return await respond(
+				c,
+				mobile,
+				await signup.submitSignAgreement(
+					mobile,
+					String(document_id ?? ""),
+					c.req.header("x-real-ip"),
+				),
+			);
+		} catch (e) {
+			toAppError(e);
+		}
+	});
 }

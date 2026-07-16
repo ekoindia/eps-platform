@@ -330,3 +330,90 @@ describe("submitPin", () => {
 		);
 	});
 });
+
+describe("getAgreementUrl", () => {
+	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+
+	it("fetches the URL with the user's own identity", async () => {
+		const getAgreementUrl = vi.fn().mockResolvedValue({
+			ok: true,
+			shortUrl: "https://sign/x",
+			documentId: "DOC9",
+			pipe: 3,
+			alreadySigned: false,
+		});
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl,
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+		});
+		const r = await svc.getAgreementUrl("9990000001");
+		expect(getAgreementUrl).toHaveBeenCalledWith({
+			mobile: "9990000001",
+			identity,
+			xRealIp: undefined,
+		});
+		expect(r).toEqual({
+			shortUrl: "https://sign/x",
+			documentId: "DOC9",
+			pipe: 3,
+			alreadySigned: false,
+		});
+	});
+
+	it("throws SignupStepError when the URL fetch fails", async () => {
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl: vi.fn().mockResolvedValue({
+					ok: false,
+					message: "no url",
+					responseTypeId: 1500,
+				}),
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+		});
+		await expect(svc.getAgreementUrl("9990000001")).rejects.toThrow("no url");
+	});
+});
+
+describe("submitSignAgreement", () => {
+	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+
+	it("submits the document id with the user's identity and returns refreshed state", async () => {
+		const submitSignAgreement = vi.fn().mockResolvedValue({ ok: true });
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitSignAgreement,
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+		});
+		const state = await svc.submitSignAgreement("9990000001", "DOC9");
+		expect(submitSignAgreement).toHaveBeenCalledWith({
+			documentId: "DOC9",
+			identity,
+			xRealIp: undefined,
+		});
+		expect(state.status).toBe("in_progress");
+	});
+
+	it("throws SignupStepError carrying the upstream message", async () => {
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitSignAgreement: vi.fn().mockResolvedValue({
+					ok: false,
+					message: "not signed",
+					responseTypeId: 1500,
+				}),
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+		});
+		await expect(svc.submitSignAgreement("9990000001", "DOC9")).rejects.toThrow(
+			"not signed",
+		);
+	});
+});

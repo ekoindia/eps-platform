@@ -26,6 +26,18 @@ export interface SignupState {
 	email?: string;
 }
 
+/** The e-sign URL details the client needs to open the signing provider. */
+export interface AgreementUrl {
+	/** Provider signing URL; empty when `alreadySigned`. */
+	shortUrl: string;
+	/** Document id echoed back on the submit step. */
+	documentId: string;
+	/** Provider id (0 DigiO, 1 Karza, 2 Signzy, 3 Leegality). */
+	pipe: number;
+	/** True when upstream reports the agreement is already signed — skip the popup. */
+	alreadySigned: boolean;
+}
+
 /** Orchestrates user signup, validating inputs before any upstream call. */
 export interface SignupService {
 	getState(mobile: string, xRealIp?: string): Promise<SignupState>;
@@ -44,6 +56,12 @@ export interface SignupService {
 		mobile: string,
 		pin1: string,
 		pin2: string,
+		xRealIp?: string,
+	): Promise<SignupState>;
+	getAgreementUrl(mobile: string, xRealIp?: string): Promise<AgreementUrl>;
+	submitSignAgreement(
+		mobile: string,
+		documentId: string,
 		xRealIp?: string,
 	): Promise<SignupState>;
 }
@@ -215,6 +233,37 @@ export function createSignupService(deps: {
 				secondOkekey: encodePin(pin2, second.pintwinKey, second.keyId),
 				booklet,
 				identity,
+				xRealIp,
+			});
+			if (!result.ok) {
+				throw new SignupStepError(result.message, result.responseTypeId);
+			}
+			return refresh(mobile, xRealIp);
+		},
+
+		async getAgreementUrl(mobile, xRealIp) {
+			const profile = await requireProfile(mobile, xRealIp);
+			const result = await eko.getAgreementUrl({
+				mobile,
+				identity: identityOf(profile),
+				xRealIp,
+			});
+			if (!result.ok) {
+				throw new SignupStepError(result.message, result.responseTypeId);
+			}
+			return {
+				shortUrl: result.shortUrl,
+				documentId: result.documentId,
+				pipe: result.pipe,
+				alreadySigned: result.alreadySigned,
+			};
+		},
+
+		async submitSignAgreement(mobile, documentId, xRealIp) {
+			const profile = await requireProfile(mobile, xRealIp);
+			const result = await eko.submitSignAgreement({
+				documentId,
+				identity: identityOf(profile),
 				xRealIp,
 			});
 			if (!result.ok) {
