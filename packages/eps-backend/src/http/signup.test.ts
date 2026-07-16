@@ -80,7 +80,13 @@ function harness(
 		...overrides.zoho,
 	} as unknown as ZohoClient;
 	const cfg = overrides.cfg ?? cfgStub;
-	mountSignup(app, { sessions, signup: signup as SignupService, eko, zoho, cfg });
+	mountSignup(app, {
+		sessions,
+		signup: signup as SignupService,
+		eko,
+		zoho,
+		cfg,
+	});
 	return app;
 }
 
@@ -139,7 +145,11 @@ describe("signup endpoints", () => {
 			body: JSON.stringify({ pan: "ABCDE1234F" }),
 		});
 		expect(res.status).toBe(200);
-		expect(submitPan).toHaveBeenCalledWith("9990000001", "ABCDE1234F", undefined);
+		expect(submitPan).toHaveBeenCalledWith(
+			"9990000001",
+			"ABCDE1234F",
+			undefined,
+		);
 	});
 
 	it("POST /signup/pan rejects a malformed PAN before calling the service", async () => {
@@ -164,11 +174,17 @@ describe("signup endpoints", () => {
 			headers: { ...withCookie.headers, "Content-Type": "application/json" },
 			body: JSON.stringify({ pan: "abcde1234f" }),
 		});
-		expect(submitPan).toHaveBeenCalledWith("9990000001", "ABCDE1234F", undefined);
+		expect(submitPan).toHaveBeenCalledWith(
+			"9990000001",
+			"ABCDE1234F",
+			undefined,
+		);
 	});
 
 	it("POST /signup/pin submits both pins", async () => {
-		const submitPin = vi.fn().mockResolvedValue({ ...inProgress, status: "done" });
+		const submitPin = vi
+			.fn()
+			.mockResolvedValue({ ...inProgress, status: "done" });
 		const app = harness("signup", { submitPin });
 		const res = await app.request("/signup/pin", {
 			method: "POST",
@@ -176,12 +192,19 @@ describe("signup endpoints", () => {
 			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
 		});
 		expect(res.status).toBe(200);
-		expect(submitPin).toHaveBeenCalledWith("9990000001", "1234", "1234", undefined);
+		expect(submitPin).toHaveBeenCalledWith(
+			"9990000001",
+			"1234",
+			"1234",
+			undefined,
+		);
 	});
 
 	it("surfaces a SignupStepError as a 400 with the upstream message", async () => {
 		const app = harness("signup", {
-			submitPan: vi.fn().mockRejectedValue(new SignupStepError("PAN already in use", 1500)),
+			submitPan: vi
+				.fn()
+				.mockRejectedValue(new SignupStepError("PAN already in use", 1500)),
 		});
 		const res = await app.request("/signup/pan", {
 			method: "POST",
@@ -189,14 +212,94 @@ describe("signup endpoints", () => {
 			body: JSON.stringify({ pan: "ABCDE1234F" }),
 		});
 		expect(res.status).toBe(400);
-		const errBody = (await res.json()) as { error: { code: string; message: string } };
+		const errBody = (await res.json()) as {
+			error: { code: string; message: string };
+		};
 		expect(errBody.error.code).toBe("STEP_FAILED");
 		expect(errBody.error.message).toBe("PAN already in use");
 	});
 });
 
+describe("POST /signup/business", () => {
+	const valid = {
+		name: "Acme Retail",
+		company_type: "4",
+		authorized_signatory_name: "Asha Rao",
+		contact_person_cell: "9876543210",
+		alternate_mobile: "",
+		current_address_line1: "12 MG Road, Indiranagar",
+		current_address_line2: "",
+		current_address_district: "Bengaluru",
+		current_address_state: "Karnataka",
+		current_address_pincode: "560038",
+	};
+
+	function post(app: Hono<AppEnv>, body: Record<string, unknown>) {
+		return app.request("/signup/business", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+	}
+
+	it("rejects a bad pincode without calling upstream", async () => {
+		const submitBusiness = vi.fn();
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, { ...valid, current_address_pincode: "56" });
+		expect(res.status).toBe(400);
+		expect(submitBusiness).not.toHaveBeenCalled();
+	});
+
+	it("rejects a missing required field without calling upstream", async () => {
+		const submitBusiness = vi.fn();
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, { ...valid, name: "" });
+		expect(res.status).toBe(400);
+		expect(submitBusiness).not.toHaveBeenCalled();
+	});
+
+	it("accepts a blank alternate_mobile", async () => {
+		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, { ...valid, alternate_mobile: "" });
+		expect(res.status).toBe(200);
+	});
+
+	it("rejects a malformed alternate_mobile when supplied", async () => {
+		const submitBusiness = vi.fn();
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, { ...valid, alternate_mobile: "12345" });
+		expect(res.status).toBe(400);
+		expect(submitBusiness).not.toHaveBeenCalled();
+	});
+
+	it("forwards the ten fields and takes mobile from the session, not the body", async () => {
+		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { submitBusiness });
+		await post(app, { ...valid, mobile: "9999999999" });
+		expect(submitBusiness).toHaveBeenCalledWith(
+			"9990000001",
+			expect.objectContaining({ name: "Acme Retail" }),
+			undefined,
+		);
+		const forwarded = submitBusiness.mock.calls[0][1];
+		expect(forwarded).not.toHaveProperty("mobile");
+	});
+
+	it("requires a signup session", async () => {
+		const app = harness(null, {});
+		const res = await post(app, valid);
+		expect(res.status).toBe(401);
+	});
+});
+
 describe("session upgrade on completion", () => {
-	const done: SignupState = { ...inProgress, status: "done", steps: [], currentRole: null };
+	const done: SignupState = {
+		...inProgress,
+		status: "done",
+		steps: [],
+		currentRole: null,
+	};
 
 	it("POST /signup/pin returning done sets a developer session cookie", async () => {
 		const submitPin = vi.fn().mockResolvedValue(done);
@@ -242,7 +345,9 @@ describe("session upgrade on completion", () => {
 	});
 
 	it("still returns the done state when the upgrade's profile fetch fails, logging the error", async () => {
-		const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+		const consoleError = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
 		const upgradeError = new Error("upstream down");
 		const submitPin = vi.fn().mockResolvedValue(done);
 		const getProfile = vi.fn().mockRejectedValue(upgradeError);

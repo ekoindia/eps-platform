@@ -6,13 +6,103 @@ import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
 import { buildMeView } from "../identity/me";
-import type { SignupService, SignupState } from "../signup/service";
+import type {
+	BusinessDetails,
+	SignupService,
+	SignupState,
+} from "../signup/service";
 import { SignupStepError } from "../signup/service";
 import { AppError } from "./errors";
 import type { AppEnv } from "./requestId";
 
 /** Indian PAN: five letters, four digits, one letter. */
 const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+/**
+ * Trust-boundary rules for the Business Details step, mirroring the client's
+ * `businessFields.ts`. The duplication is deliberate — the client's copy is for
+ * feedback, this one is enforcement, exactly as `PAN_PATTERN` is duplicated
+ * between `PanStep.tsx` and this file.
+ *
+ * `current_address_state` is checked for shape only, NOT against the 36-value
+ * enum: this package cannot import the client's list, and a second verbatim copy
+ * would start silently rejecting users the day the two drift apart. Interaction
+ * 522 is the authority on which state names it accepts.
+ */
+const BUSINESS_RULES: Record<
+	string,
+	{ pattern: RegExp; min: number; max: number; required: boolean }
+> = {
+	name: { pattern: /^[-a-zA-Z0-9 ,./:]+$/, min: 2, max: 100, required: true },
+	company_type: { pattern: /^[1-4]$/, min: 1, max: 1, required: true },
+	authorized_signatory_name: {
+		pattern: /^[a-zA-Z][a-zA-Z .]{1,49}$/,
+		min: 2,
+		max: 50,
+		required: true,
+	},
+	contact_person_cell: {
+		pattern: /^[6-9]\d{9}$/,
+		min: 10,
+		max: 10,
+		required: true,
+	},
+	alternate_mobile: {
+		pattern: /^[6-9]\d{9}$/,
+		min: 10,
+		max: 10,
+		required: false,
+	},
+	current_address_line1: { pattern: /^.+$/, min: 10, max: 200, required: true },
+	current_address_line2: { pattern: /^.*$/, min: 0, max: 200, required: false },
+	current_address_district: {
+		pattern: /^[a-zA-Z ]+$/,
+		min: 2,
+		max: 50,
+		required: true,
+	},
+	current_address_state: { pattern: /^.+$/, min: 2, max: 60, required: true },
+	current_address_pincode: {
+		pattern: /^\d{6}$/,
+		min: 6,
+		max: 6,
+		required: true,
+	},
+};
+
+/**
+ * Validates and narrows a request body to exactly the ten business fields.
+ *
+ * Only known keys are copied out, so an attacker cannot smuggle extra form
+ * fields (`mobile`, `org_id`, …) through to the upstream interaction.
+ *
+ * @param body - Untrusted JSON body.
+ * @returns The ten fields as strings.
+ * @throws {AppError} 400 INVALID_INPUT on the first field that fails.
+ */
+function parseBusiness(body: unknown): BusinessDetails {
+	const src = (body ?? {}) as Record<string, unknown>;
+	const out: Record<string, string> = {};
+	for (const [field, rule] of Object.entries(BUSINESS_RULES)) {
+		const value = String(src[field] ?? "").trim();
+		if (!value) {
+			if (rule.required) {
+				throw new AppError(400, "INVALID_INPUT", `${field} is required.`);
+			}
+			out[field] = "";
+			continue;
+		}
+		if (
+			value.length < rule.min ||
+			value.length > rule.max ||
+			!rule.pattern.test(value)
+		) {
+			throw new AppError(400, "INVALID_INPUT", `${field} is not valid.`);
+		}
+		out[field] = value;
+	}
+	return out as unknown as BusinessDetails;
+}
 
 /**
  * Mounts the self-serve signup routes.
@@ -104,7 +194,9 @@ export function mountSignup(
 				// unverified profile. No upgrade here just means the next
 				// /signup/state call retries it.
 				if (profile.kind !== "found") return c.json(state);
-				const view = await buildMeView(mobile, profile, (m) => zoho.findLead(m));
+				const view = await buildMeView(mobile, profile, (m) =>
+					zoho.findLead(m),
+				);
 				const claim = {
 					sub: mobile,
 					role: "developer" as const,
@@ -116,7 +208,9 @@ export function mountSignup(
 				const access = await sessions.mintAccess(claim);
 				const refresh = await sessions.issueRefresh(claim);
 				c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-				c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+				c.header("Set-Cookie", sessions.refreshCookie(refresh), {
+					append: true,
+				});
 			} catch (err) {
 				// ponytail: onboarding already succeeded upstream — never fail this
 				// request over the upgrade. The signup cookie stays valid and the
@@ -133,7 +227,11 @@ export function mountSignup(
 	app.get("/signup/state", async (c) => {
 		const mobile = await requireSignupSession(c);
 		try {
-			return await respond(c, mobile, await signup.getState(mobile, c.req.header("x-real-ip")));
+			return await respond(
+				c,
+				mobile,
+				await signup.getState(mobile, c.req.header("x-real-ip")),
+			);
 		} catch (e) {
 			toAppError(e);
 		}
@@ -158,13 +256,31 @@ export function mountSignup(
 		// Validate at the trust boundary; the client's check is only for feedback.
 		const normalized = String(pan ?? "").toUpperCase();
 		if (!PAN_PATTERN.test(normalized)) {
-			throw new AppError(400, "INVALID_INPUT", "Enter a valid 10-character PAN.");
+			throw new AppError(
+				400,
+				"INVALID_INPUT",
+				"Enter a valid 10-character PAN.",
+			);
 		}
 		try {
 			return await respond(
 				c,
 				mobile,
 				await signup.submitPan(mobile, normalized, c.req.header("x-real-ip")),
+			);
+		} catch (e) {
+			toAppError(e);
+		}
+	});
+
+	app.post("/signup/business", async (c) => {
+		const mobile = await requireSignupSession(c);
+		const details = parseBusiness(await c.req.json().catch(() => ({})));
+		try {
+			return await respond(
+				c,
+				mobile,
+				await signup.submitBusiness(mobile, details, c.req.header("x-real-ip")),
 			);
 		} catch (e) {
 			toAppError(e);
