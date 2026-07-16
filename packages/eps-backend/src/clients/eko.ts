@@ -36,6 +36,11 @@ export interface EkoClient {
 		identity: EkoIdentity;
 		xRealIp?: string;
 	}): Promise<EkoStepResult>;
+	submitBusiness(input: {
+		details: BusinessDetails;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
 	getBooklet(input: {
 		identity: EkoIdentity;
 		xRealIp?: string;
@@ -72,6 +77,7 @@ const CREATE_PARTIAL_ACCOUNT_OK = 1566;
 const PAN_VERIFICATION_OK = 1569;
 const BOOKLET_OK = 1646;
 const SECRET_PIN_OK = 9;
+const BUSINESS_DETAILS_OK = 1567;
 
 /**
  * Identity of the acting user for an onboarding interaction.
@@ -90,6 +96,24 @@ export interface EkoIdentity {
 export interface EkoBooklet {
 	bookletSerialNumber: string;
 	isPintwinUser: number;
+}
+
+/**
+ * Business details collected by the onboarding step, keyed exactly as
+ * interaction 522 expects them. Values are forwarded verbatim — this client
+ * does not rename, trim, or re-validate them.
+ */
+export interface BusinessDetails {
+	name: string;
+	company_type: string;
+	authorized_signatory_name: string;
+	contact_person_cell: string;
+	alternate_mobile: string;
+	current_address_line1: string;
+	current_address_line2: string;
+	current_address_district: string;
+	current_address_state: string;
+	current_address_pincode: string;
 }
 
 /** A single-use substitution key from interaction 10005. */
@@ -370,6 +394,23 @@ export function createEkoClient(
 				input.xRealIp,
 			);
 			return stepResult(raw, PAN_VERIFICATION_OK);
+		},
+		async submitBusiness(input) {
+			// Eloka always sends a client_ref_id on this interaction — its
+			// apiHelper injects one when absent (helpers/apiHelper.js:103) and its
+			// pipeline sets one explicitly (executePipeline.ts:289). Match that.
+			const raw = await post(
+				{
+					...actor(input.identity),
+					client_ref_id: randomUUID(),
+					interaction_type_id: "522",
+					...input.details,
+					latlong: ONBOARDING_LATLONG,
+					source: "EPS",
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, BUSINESS_DETAILS_OK);
 		},
 		async getBooklet(input) {
 			const raw = (await post(

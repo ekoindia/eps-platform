@@ -211,7 +211,7 @@ describe("mapProfile onboarding_steps", () => {
 	// Trust boundary: onboarding_steps is untrusted upstream data. Array.isArray
 	// guards the array itself but not its elements — a null element must
 	// degrade to a neutral step instead of throwing on `s.role`.
-	it("maps a null element to {role: -1, label: \"\"} instead of throwing", async () => {
+	it('maps a null element to {role: -1, label: ""} instead of throwing', async () => {
 		const f = mockFetch(200, {
 			response_type_id: 369,
 			data: {
@@ -296,6 +296,18 @@ describe("getProfile onboarding classification", () => {
 
 describe("onboarding interactions", () => {
 	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+	const businessDetails = {
+		name: "Acme Retail",
+		company_type: "4",
+		authorized_signatory_name: "Asha Rao",
+		contact_person_cell: "9876543210",
+		alternate_mobile: "",
+		current_address_line1: "12 MG Road, Indiranagar",
+		current_address_line2: "",
+		current_address_district: "Bengaluru",
+		current_address_state: "Karnataka",
+		current_address_pincode: "560038",
+	};
 
 	/** Extracts the form-encoded body of a captured mock fetch call. */
 	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
@@ -355,7 +367,9 @@ describe("onboarding interactions", () => {
 		expect(Array.from(body.keys())).toEqual(["form-data"]);
 		expect(body.get("file")).toBeNull();
 		// fetch must set the multipart Content-Type (with boundary) itself.
-		expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+		expect(
+			(init.headers as Record<string, string>)["Content-Type"],
+		).toBeUndefined();
 
 		const fields = multipartFieldsOf(f);
 		expect(fields.get("interaction_type_id")).toBe("523");
@@ -474,6 +488,37 @@ describe("onboarding interactions", () => {
 			ok: false,
 			message: "The request could not be completed.",
 			responseTypeId: -1,
+		});
+	});
+
+	it("submitBusiness posts interaction 522 with the actor, latlong and a client_ref_id", async () => {
+		const f = mockFetch(200, { response_type_id: 1567 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitBusiness({ details: businessDetails, identity });
+		expect(r.ok).toBe(true);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("522");
+		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("user_code")).toBe("20810001");
+		expect(body.get("org_id")).toBe("1");
+		expect(body.get("source")).toBe("EPS");
+		expect(body.get("latlong")).toBe("27.176670,78.008075,7787");
+		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
+		expect(body.get("name")).toBe("Acme Retail");
+		expect(body.get("current_address_state")).toBe("Karnataka");
+	});
+
+	it("submitBusiness reports the upstream message on a non-1567 response", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1502,
+			message: "Invalid pincode",
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitBusiness({ details: businessDetails, identity });
+		expect(r).toEqual({
+			ok: false,
+			message: "Invalid pincode",
+			responseTypeId: 1502,
 		});
 	});
 });
