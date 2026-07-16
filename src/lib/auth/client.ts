@@ -58,6 +58,10 @@ export interface SignupState {
 	status: "new" | "in_progress" | "done";
 	steps: SignupStep[];
 	currentRole: number | null;
+	/** Profile display name, when an upstream record carries one. */
+	name?: string;
+	/** Profile email, when an upstream record carries one. */
+	email?: string;
 }
 
 export interface DocItem {

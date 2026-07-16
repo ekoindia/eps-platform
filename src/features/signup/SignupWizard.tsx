@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
 import { resolveSteps, type ResolvedStep } from "./resolveSteps";
+import { SignupProfileProvider } from "./SignupProfileContext";
 import { SIGNUP_STEPS } from "./steps";
 
 /** Segmented progress bar: one segment per step, filled up to the current one. */
@@ -85,24 +86,21 @@ export function SignupWizard() {
 	}, [state?.status, refresh]);
 
 	/** Runs a step submit, mapping failures to an inline error on the same step. */
-	const runStep = useCallback(
-		async (submit: () => Promise<SignupState>) => {
-			setBusy(true);
-			setError(null);
-			try {
-				setState(await submit());
-			} catch (e) {
-				setError(
-					e instanceof ApiError
-						? e.message
-						: "Something went wrong. Please try again.",
-				);
-			} finally {
-				setBusy(false);
-			}
-		},
-		[],
-	);
+	const runStep = useCallback(async (submit: () => Promise<SignupState>) => {
+		setBusy(true);
+		setError(null);
+		try {
+			setState(await submit());
+		} catch (e) {
+			setError(
+				e instanceof ApiError
+					? e.message
+					: "Something went wrong. Please try again.",
+			);
+		} finally {
+			setBusy(false);
+		}
+	}, []);
 
 	if (fatal) {
 		return (
@@ -155,11 +153,15 @@ export function SignupWizard() {
 			<div className="flex flex-col gap-1">
 				<h2 className="text-xl font-semibold">{current.label}</h2>
 			</div>
-			<Component
-				onSubmit={(values) => runStep(() => submit(signupClient, values))}
-				busy={busy}
-				error={error}
-			/>
+			<SignupProfileProvider
+				profile={{ mobile: state.mobile, name: state.name, email: state.email }}
+			>
+				<Component
+					onSubmit={(values) => runStep(() => submit(signupClient, values))}
+					busy={busy}
+					error={error}
+				/>
+			</SignupProfileProvider>
 		</div>
 	);
 }
