@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ConsoleLayout, {
 	useConsoleMe,
 } from "@/components/console/ConsoleLayout";
@@ -50,6 +50,22 @@ function ContextProbe() {
 }
 
 describe("ConsoleLayout", () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		mockNavigate.mockClear();
+	});
+
+	it("never leaks credentials to an anonymous visitor", () => {
+		// The anon branch renders no Outlet, so no sub-page — and therefore no
+		// keypair — can mount. This asserts that guarantee in the terms that
+		// make it load-bearing.
+		vi.stubEnv("VITE_EPS_UAT_DEVELOPER_KEY", "dev-key-123");
+		vi.stubEnv("VITE_EPS_UAT_ACCESS_KEY", "access-key-456");
+		renderLayout({ status: "anon" }, "/console/credentials");
+		expect(screen.queryByText("dev-key-123")).not.toBeInTheDocument();
+		expect(screen.getByText("login-form")).toBeInTheDocument();
+	});
+
 	it("renders the login form and no rail when anon", () => {
 		renderLayout({ status: "anon" });
 		expect(screen.getByText("login-form")).toBeInTheDocument();

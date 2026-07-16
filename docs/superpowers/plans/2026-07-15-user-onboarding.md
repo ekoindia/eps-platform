@@ -3500,7 +3500,7 @@ Expected: only `src/pages/SignupPage.tsx` and the component itself. If anything 
 
 - [ ] **Step 2: Write the failing test**
 
-Create `src/pages/SignupPage.test.tsx`, modelled on the existing `src/pages/Console.test.tsx`:
+Create `src/pages/SignupPage.test.tsx`, modelled on the existing `src/components/console/ConsoleLayout.test.tsx`:
 
 ```tsx
 import { render, screen } from "@testing-library/react";

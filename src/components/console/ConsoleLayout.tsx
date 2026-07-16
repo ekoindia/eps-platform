@@ -8,7 +8,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
@@ -173,6 +178,7 @@ export default function ConsoleLayout() {
 									</Button>
 								</SheetTrigger>
 								<SheetContent side="left" className="w-72 p-4 pt-10">
+									<SheetTitle className="sr-only">Console menu</SheetTitle>
 									<ConsoleNav onNavigate={() => setOpen(false)} />
 								</SheetContent>
 							</Sheet>
