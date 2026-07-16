@@ -1,4 +1,4 @@
-import type { EkoClient, EkoIdentity } from "../clients/eko";
+import type { BusinessDetails, EkoClient, EkoIdentity } from "../clients/eko";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
 import { encodePin } from "./pintwin";
@@ -26,7 +26,16 @@ export interface SignupState {
 export interface SignupService {
 	getState(mobile: string, xRealIp?: string): Promise<SignupState>;
 	createProfile(mobile: string, xRealIp?: string): Promise<SignupState>;
-	submitPan(mobile: string, pan: string, xRealIp?: string): Promise<SignupState>;
+	submitPan(
+		mobile: string,
+		pan: string,
+		xRealIp?: string,
+	): Promise<SignupState>;
+	submitBusiness(
+		mobile: string,
+		details: BusinessDetails,
+		xRealIp?: string,
+	): Promise<SignupState>;
 	submitPin(
 		mobile: string,
 		pin1: string,
@@ -34,6 +43,8 @@ export interface SignupService {
 		xRealIp?: string,
 	): Promise<SignupState>;
 }
+
+export type { BusinessDetails } from "../clients/eko";
 
 /** A step that failed upstream, carrying the upstream's own message for the user. */
 export class SignupStepError extends Error {
@@ -112,7 +123,10 @@ export function createSignupService(deps: {
 	}
 
 	/** Re-reads state from upstream after a step, so progress is never inferred. */
-	async function refresh(mobile: string, xRealIp?: string): Promise<SignupState> {
+	async function refresh(
+		mobile: string,
+		xRealIp?: string,
+	): Promise<SignupState> {
 		return project(mobile, await eko.getProfile({ mobile, xRealIp }));
 	}
 
@@ -133,6 +147,19 @@ export function createSignupService(deps: {
 			const profile = await requireProfile(mobile, xRealIp);
 			const result = await eko.verifyPan({
 				pan,
+				identity: identityOf(profile),
+				xRealIp,
+			});
+			if (!result.ok) {
+				throw new SignupStepError(result.message, result.responseTypeId);
+			}
+			return refresh(mobile, xRealIp);
+		},
+
+		async submitBusiness(mobile, details, xRealIp) {
+			const profile = await requireProfile(mobile, xRealIp);
+			const result = await eko.submitBusiness({
+				details,
 				identity: identityOf(profile),
 				xRealIp,
 			});

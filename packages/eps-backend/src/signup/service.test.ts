@@ -37,6 +37,7 @@ function ekoStub(over: Partial<EkoClient>): EkoClient {
 		getProfile: vi.fn(),
 		createPartialAccount: vi.fn(),
 		verifyPan: vi.fn(),
+		submitBusiness: vi.fn(),
 		getBooklet: vi.fn(),
 		fetchPintwinKey: vi.fn(),
 		setSecretPin: vi.fn(),
@@ -47,7 +48,9 @@ function ekoStub(over: Partial<EkoClient>): EkoClient {
 describe("getState", () => {
 	it("reports status new when the profile does not exist", async () => {
 		const eko = ekoStub({
-			getProfile: vi.fn().mockResolvedValue({ kind: "not_found", responseTypeId: 319 }),
+			getProfile: vi
+				.fn()
+				.mockResolvedValue({ kind: "not_found", responseTypeId: 319 }),
 		});
 		const svc = createSignupService({ eko, cfg });
 		expect(await svc.getState("9990000001")).toEqual({
@@ -59,7 +62,9 @@ describe("getState", () => {
 	});
 
 	it("projects steps and the current role while onboarding", async () => {
-		const eko = ekoStub({ getProfile: vi.fn().mockResolvedValue(onboardingProfile) });
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+		});
 		const svc = createSignupService({ eko, cfg });
 		expect(await svc.getState("9990000001")).toEqual({
 			mobile: "9990000001",
@@ -138,14 +143,20 @@ describe("createProfile", () => {
 	it("throws SignupStepError carrying the upstream message on failure", async () => {
 		const svc = createSignupService({
 			eko: ekoStub({
-				createPartialAccount: vi
+				createPartialAccount: vi.fn().mockResolvedValue({
+					ok: false,
+					message: "Already exists",
+					responseTypeId: 1500,
+				}),
+				getProfile: vi
 					.fn()
-					.mockResolvedValue({ ok: false, message: "Already exists", responseTypeId: 1500 }),
-				getProfile: vi.fn().mockResolvedValue({ kind: "not_found", responseTypeId: 319 }),
+					.mockResolvedValue({ kind: "not_found", responseTypeId: 319 }),
 			}),
 			cfg,
 		});
-		await expect(svc.createProfile("9990000001")).rejects.toThrow("Already exists");
+		await expect(svc.createProfile("9990000001")).rejects.toThrow(
+			"Already exists",
+		);
 	});
 });
 
@@ -153,7 +164,10 @@ describe("submitPan", () => {
 	it("acts as the user's own initiator using the fetched profile", async () => {
 		const verifyPan = vi.fn().mockResolvedValue({ ok: true });
 		const svc = createSignupService({
-			eko: ekoStub({ verifyPan, getProfile: vi.fn().mockResolvedValue(onboardingProfile) }),
+			eko: ekoStub({
+				verifyPan,
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
 			cfg,
 		});
 		await svc.submitPan("9990000001", "ABCDE1234F");
@@ -162,6 +176,57 @@ describe("submitPan", () => {
 			identity: { initiatorId: "55501", userCode: "20810001", orgId: 1 },
 			xRealIp: undefined,
 		});
+	});
+});
+
+describe("submitBusiness", () => {
+	const details = {
+		name: "Acme Retail",
+		company_type: "4",
+		authorized_signatory_name: "Asha Rao",
+		contact_person_cell: "9876543210",
+		alternate_mobile: "",
+		current_address_line1: "12 MG Road, Indiranagar",
+		current_address_line2: "",
+		current_address_district: "Bengaluru",
+		current_address_state: "Karnataka",
+		current_address_pincode: "560038",
+	};
+
+	it("submits with the user's own identity and returns refreshed state", async () => {
+		const submitBusiness = vi.fn().mockResolvedValue({ ok: true });
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitBusiness,
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+		});
+		const state = await svc.submitBusiness("9990000001", details);
+		expect(submitBusiness).toHaveBeenCalledWith(
+			expect.objectContaining({
+				details,
+				identity: expect.objectContaining({ orgId: expect.any(Number) }),
+			}),
+		);
+		expect(state.status).toBe("in_progress");
+	});
+
+	it("throws SignupStepError carrying the upstream message", async () => {
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitBusiness: vi.fn().mockResolvedValue({
+					ok: false,
+					message: "Invalid pincode",
+					responseTypeId: 1502,
+				}),
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+		});
+		await expect(svc.submitBusiness("9990000001", details)).rejects.toThrow(
+			"Invalid pincode",
+		);
 	});
 });
 
@@ -176,9 +241,10 @@ describe("submitPin", () => {
 			eko: ekoStub({
 				setSecretPin,
 				fetchPintwinKey,
-				getBooklet: vi
-					.fn()
-					.mockResolvedValue({ bookletSerialNumber: "SN123", isPintwinUser: 1 }),
+				getBooklet: vi.fn().mockResolvedValue({
+					bookletSerialNumber: "SN123",
+					isPintwinUser: 1,
+				}),
 				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
 			}),
 			cfg,
@@ -216,7 +282,9 @@ describe("submitPin", () => {
 			eko: ekoStub({ getBooklet, getProfile }),
 			cfg,
 		});
-		await expect(svc.submitPin("9990000001", "12", "12")).rejects.toThrow(/4 digits/);
+		await expect(svc.submitPin("9990000001", "12", "12")).rejects.toThrow(
+			/4 digits/,
+		);
 		expect(getBooklet).not.toHaveBeenCalled();
 		expect(getProfile).not.toHaveBeenCalled();
 	});
