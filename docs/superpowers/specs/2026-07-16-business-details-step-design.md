@@ -141,8 +141,12 @@ this loosening is not the last line of defence.
   Errors surface on blur, not on every keystroke. Submit disabled until all required
   fields validate. Ten inputs in one column is a wall, so fields are grouped under three
   headings: **Business**, **Contact**, **Address**.
-- `src/components/ui/select.tsx` — shadcn generate. `@radix-ui/react-select` is already a
-  dependency; only the generated wrapper is missing. Not a new dependency.
+- The two dropdowns use a **native `<select>`**, not shadcn's Radix wrapper. Radix's
+  Select renders into a portal, ignores `fireEvent.change`, and needs keyboard simulation
+  to test under jsdom — all to reproduce what the platform already provides. The native
+  control is keyboard- and screen-reader-accessible by default, is the better mobile
+  affordance for a 36-item list, and adds no file. (Superseded during planning: this
+  section originally called for generating `src/components/ui/select.tsx`.)
 - `src/lib/auth/client.ts` — `submitBusiness(details)` → `POST /signup/business`.
 
 ### Backend
