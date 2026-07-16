@@ -1,34 +1,13 @@
 import { CheckCircle2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
-import { resolveSteps, type ResolvedStep } from "./resolveSteps";
+import { resolveSteps } from "./resolveSteps";
 import { SignupProfileProvider } from "./SignupProfileContext";
+import { StepRail } from "./StepRail";
 import { SIGNUP_STEPS } from "./steps";
-
-/** Segmented progress bar: one segment per step, filled up to the current one. */
-function Progress({ steps }: { steps: ResolvedStep[] }) {
-	const currentIndex = steps.findIndex((s) => s.status === "current");
-	const position = currentIndex === -1 ? steps.length : currentIndex + 1;
-	return (
-		<div className="flex flex-col gap-2">
-			<div className="flex gap-2" aria-hidden="true">
-				{steps.map((s, i) => (
-					<div
-						key={s.role}
-						className={`h-1.5 flex-1 rounded-full ${
-							i < position ? "bg-primary" : "bg-muted"
-						}`}
-					/>
-				))}
-			</div>
-			<p className="text-sm text-muted-foreground">
-				Step {position} of {steps.length}
-			</p>
-		</div>
-	);
-}
 
 /**
  * Drives the onboarding steps for a signup session.
@@ -104,31 +83,39 @@ export function SignupWizard() {
 
 	if (fatal) {
 		return (
-			<p role="alert" className="text-sm text-destructive">
-				{fatal}
-			</p>
+			<Card>
+				<CardContent className="pt-6">
+					<p role="alert" className="text-sm text-destructive">
+						{fatal}
+					</p>
+				</CardContent>
+			</Card>
 		);
 	}
 
 	if (!state) {
 		return (
-			<div className="flex flex-col gap-3">
-				<p className="text-muted-foreground">Setting up your account…</p>
-				<Skeleton className="h-8 w-full" />
-				<Skeleton className="h-8 w-2/3" />
-			</div>
+			<Card>
+				<CardContent className="flex flex-col gap-3 pt-6">
+					<p className="text-muted-foreground">Setting up your account…</p>
+					<Skeleton className="h-8 w-full" />
+					<Skeleton className="h-8 w-2/3" />
+				</CardContent>
+			</Card>
 		);
 	}
 
 	if (state.status === "done") {
 		return (
-			<div className="flex flex-col items-center gap-3 py-6 text-center">
-				<CheckCircle2 className="h-12 w-12 text-primary" />
-				<h2 className="text-xl font-semibold">You're all set</h2>
-				<p className="text-muted-foreground">
-					Your account is ready. Taking you to your console…
-				</p>
-			</div>
+			<Card>
+				<CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+					<CheckCircle2 className="h-12 w-12 text-primary" />
+					<h2 className="text-xl font-semibold">You're all set</h2>
+					<p className="text-muted-foreground">
+						Your account is ready. Taking you to your console…
+					</p>
+				</CardContent>
+			</Card>
 		);
 	}
 
@@ -137,9 +124,13 @@ export function SignupWizard() {
 
 	if (!current) {
 		return (
-			<p role="alert" className="text-sm text-destructive">
-				This signup step isn't supported here yet. Please contact support.
-			</p>
+			<Card>
+				<CardContent className="pt-6">
+					<p role="alert" className="text-sm text-destructive">
+						This signup step isn't supported here yet. Please contact support.
+					</p>
+				</CardContent>
+			</Card>
 		);
 	}
 
@@ -147,21 +138,31 @@ export function SignupWizard() {
 	// signatures — adding a step touches only the registry and its component.
 	const { Component, submit } = current;
 
+	// The rail sits outside the card, so the wizard owns the card rather than the
+	// page: only the wizard knows the resolved steps.
 	return (
-		<div className="flex flex-col gap-6">
-			<Progress steps={steps} />
-			<div className="flex flex-col gap-1">
-				<h2 className="text-xl font-semibold">{current.label}</h2>
-			</div>
-			<SignupProfileProvider
-				profile={{ mobile: state.mobile, name: state.name, email: state.email }}
-			>
-				<Component
-					onSubmit={(values) => runStep(() => submit(signupClient, values))}
-					busy={busy}
-					error={error}
-				/>
-			</SignupProfileProvider>
+		<div className="grid gap-6 lg:grid-cols-[200px_1fr] lg:gap-10">
+			<StepRail steps={steps} />
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-xl">{current.label}</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<SignupProfileProvider
+						profile={{
+							mobile: state.mobile,
+							name: state.name,
+							email: state.email,
+						}}
+					>
+						<Component
+							onSubmit={(values) => runStep(() => submit(signupClient, values))}
+							busy={busy}
+							error={error}
+						/>
+					</SignupProfileProvider>
+				</CardContent>
+			</Card>
 		</div>
 	);
 }

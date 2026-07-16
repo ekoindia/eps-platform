@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, type SignupState } from "@/lib/auth/client";
@@ -16,7 +22,11 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 
 const mockRefresh = vi.fn();
 vi.mock("@/lib/auth/AuthProvider", () => ({
-	useAuth: () => ({ state: { status: "loading" }, refresh: mockRefresh, logout: vi.fn() }),
+	useAuth: () => ({
+		state: { status: "loading" },
+		refresh: mockRefresh,
+		logout: vi.fn(),
+	}),
 }));
 
 const { signupClient } = await import("@/lib/auth/client");
@@ -30,8 +40,20 @@ const { signupClient } = await import("@/lib/auth/client");
  * `PinStep.test.tsx`.
  */
 function typePin(name: RegExp, value: string) {
-	fireEvent.change(screen.getByRole("textbox", { name }), { target: { value } });
+	fireEvent.change(screen.getByRole("textbox", { name }), {
+		target: { value },
+	});
 }
+
+/**
+ * Finds the card heading for a step.
+ *
+ * A step's label now appears twice — once in the rail, once as the card
+ * heading — so plain text queries are ambiguous. The heading is the "you are
+ * here" signal, which is what these tests mean by "the current step".
+ */
+const findStepHeading = (name: string) =>
+	screen.findByRole("heading", { name, level: 3 });
 
 const panPending: SignupState = {
 	mobile: "9990000001",
@@ -59,10 +81,17 @@ describe("SignupWizard", () => {
 		);
 		vi.mocked(signupClient.createProfile).mockResolvedValue(panPending);
 		render(<SignupWizard />);
-		expect(await screen.findByText(/setting up your account/i)).toBeInTheDocument();
-		resolveState({ mobile: "9990000001", status: "new", steps: [], currentRole: null });
+		expect(
+			await screen.findByText(/setting up your account/i),
+		).toBeInTheDocument();
+		resolveState({
+			mobile: "9990000001",
+			status: "new",
+			steps: [],
+			currentRole: null,
+		});
 		await waitFor(() => expect(signupClient.createProfile).toHaveBeenCalled());
-		expect(await screen.findByText("PAN Details")).toBeInTheDocument();
+		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
 	});
 
 	// Regression guard: the mount effect used to pair a `started` ref with a
@@ -86,22 +115,44 @@ describe("SignupWizard", () => {
 				<SignupWizard />
 			</StrictMode>,
 		);
-		expect(await screen.findByText("PAN Details")).toBeInTheDocument();
+		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
 		expect(signupClient.createProfile).toHaveBeenCalledTimes(1);
 	});
 
 	it("renders the current step and its progress", async () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		render(<SignupWizard />);
-		expect(await screen.findByText("PAN Details")).toBeInTheDocument();
+		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
 		expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
 		expect(signupClient.createProfile).not.toHaveBeenCalled();
+	});
+
+	// The rail must name every step, not just the current one — that is the
+	// whole point of it over the old "Step 1 of 2" counter.
+	it("lists every step in the rail, marking the current one and the rest pending", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(panPending);
+		render(<SignupWizard />);
+		const rail = within(
+			await screen.findByRole("navigation", { name: /signup progress/i }),
+		);
+		expect(rail.getByText(/PAN Details, current step/)).toBeInTheDocument();
+		expect(rail.getByText(/Set Secret PIN, not started/)).toBeInTheDocument();
+	});
+
+	it("marks a finished step complete in the rail", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(pinPending);
+		render(<SignupWizard />);
+		const rail = within(
+			await screen.findByRole("navigation", { name: /signup progress/i }),
+		);
+		expect(rail.getByText(/PAN Details, completed/)).toBeInTheDocument();
+		expect(rail.getByText(/Set Secret PIN, current step/)).toBeInTheDocument();
 	});
 
 	it("resumes at the pending step after a drop-off", async () => {
 		vi.mocked(signupClient.state).mockResolvedValue(pinPending);
 		render(<SignupWizard />);
-		expect(await screen.findByText("Set Secret PIN")).toBeInTheDocument();
+		expect(await findStepHeading("Set Secret PIN")).toBeInTheDocument();
 		expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
 	});
 
@@ -126,8 +177,10 @@ describe("SignupWizard", () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		vi.mocked(signupClient.submitPan).mockResolvedValue(pinPending);
 		render(<SignupWizard />);
-		await screen.findByText("PAN Details");
-		fireEvent.change(screen.getByLabelText(/pan/i), { target: { value: "ABCDE1234F" } });
+		await findStepHeading("PAN Details");
+		fireEvent.change(screen.getByLabelText(/pan/i), {
+			target: { value: "ABCDE1234F" },
+		});
 		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 		expect(await screen.findByText("Set Secret PIN")).toBeInTheDocument();
 	});
@@ -138,18 +191,24 @@ describe("SignupWizard", () => {
 			new ApiError("STEP_FAILED", "PAN already in use", 400),
 		);
 		render(<SignupWizard />);
-		await screen.findByText("PAN Details");
-		fireEvent.change(screen.getByLabelText(/pan/i), { target: { value: "ABCDE1234F" } });
+		await findStepHeading("PAN Details");
+		fireEvent.change(screen.getByLabelText(/pan/i), {
+			target: { value: "ABCDE1234F" },
+		});
 		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
-		expect(await screen.findByRole("alert")).toHaveTextContent("PAN already in use");
-		expect(screen.getByText("PAN Details")).toBeInTheDocument();
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"PAN already in use",
+		);
+		expect(
+			screen.getByRole("heading", { name: "PAN Details", level: 3 }),
+		).toBeInTheDocument();
 	});
 
 	it("refreshes auth on completion so the session swaps to developer", async () => {
 		vi.mocked(signupClient.state).mockResolvedValue(pinPending);
 		vi.mocked(signupClient.submitPin).mockResolvedValue(done);
 		render(<SignupWizard />);
-		await screen.findByText("Set Secret PIN");
+		await findStepHeading("Set Secret PIN");
 		typePin(/^secret pin/i, "1234");
 		typePin(/confirm/i, "1234");
 		fireEvent.click(screen.getByRole("button", { name: /finish/i }));

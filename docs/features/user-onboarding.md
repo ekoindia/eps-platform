@@ -328,9 +328,30 @@ falling back to the registry's, and marks steps before `currentRole`
 complete. **The wizard never branches on step names** — `SignupWizard.tsx`
 picks whichever `ResolvedStep` has `status === "current"` and renders its
 `Component`, forwarding `onSubmit` straight into that step's own `submit`
-closure (`SignupWizard.tsx:159-162`). A role in the API the registry doesn't
-know is silently skipped rather than thrown on, so the backend can ship a new
-step before the frontend has UI for it.
+closure. A role in the API the registry doesn't know is silently skipped
+rather than thrown on, so the backend can ship a new step before the frontend
+has UI for it.
+
+A new entry also appears in the step rail automatically: `StepRail.tsx` renders
+whatever `resolveSteps()` returns, so there is no second list to update. It
+must stay that way — never hardcode a step count or order in the rail.
+
+## Progress UI
+
+`StepRail.tsx` draws the whole journey rather than a bare counter: every step's
+title is listed, completed steps carry a check, the current one is highlighted,
+and pending ones stay muted. It renders beside the form from `lg` up and
+collapses to a row of circles plus "Step N of M" below that — one component and
+one DOM tree, with the orientation swapped in CSS only, so no second render
+branch can drift.
+
+Status comes entirely from `ResolvedStep.status`; the rail holds no state. It
+renders only on the current-step path, and returns `null` for an empty step
+list rather than claiming "Step 0 of 0".
+
+Because each step's label appears twice (rail plus card heading), tests must
+scope to the heading — `getByRole("heading", { name, level: 3 })` — rather than
+`getByText`, which now matches both.
 
 Note: the design spec described this differently — "add its submit shape to
 the wizard's `onSubmit` switch." That switch does not exist in the built
