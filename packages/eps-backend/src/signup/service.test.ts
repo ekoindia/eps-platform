@@ -121,6 +121,35 @@ describe("getState", () => {
 	});
 });
 
+describe("project surfaces profile name/email", () => {
+	it("carries a non-empty name/email onto in-progress state", async () => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue({
+				...onboardingProfile,
+				profile: {
+					...onboardingProfile.profile,
+					name: "Asha Rao",
+					email: "asha@acme.in",
+				},
+			}),
+		});
+		const svc = createSignupService({ eko, cfg });
+		const state = await svc.getState("9990000001");
+		expect(state.name).toBe("Asha Rao");
+		expect(state.email).toBe("asha@acme.in");
+	});
+
+	it("omits name/email when the upstream strings are empty", async () => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+		});
+		const svc = createSignupService({ eko, cfg });
+		const state = await svc.getState("9990000001");
+		expect(state.name).toBeUndefined();
+		expect(state.email).toBeUndefined();
+	});
+});
+
 describe("createProfile", () => {
 	it("creates the partial account then returns refreshed state", async () => {
 		const createPartialAccount = vi.fn().mockResolvedValue({ ok: true });

@@ -20,6 +20,10 @@ export interface SignupState {
 	steps: SignupStep[];
 	/** The step awaiting input, or null when there is none. */
 	currentRole: number | null;
+	/** Profile display name, when the upstream 151 record carries one. */
+	name?: string;
+	/** Profile email, when the upstream 151 record carries one. */
+	email?: string;
 }
 
 /** Orchestrates user signup, validating inputs before any upstream call. */
@@ -95,8 +99,12 @@ export function createSignupService(deps: {
 		}
 		const { profile } = r;
 		const steps = profile.onboardingSteps;
+		// Empty upstream strings collapse to undefined so the client sees a clean
+		// "absent" rather than an empty-string prefill.
+		const name = profile.name || undefined;
+		const email = profile.email || undefined;
 		if (profile.onboarding === 0) {
-			return { mobile, status: "done", steps, currentRole: null };
+			return { mobile, status: "done", steps, currentRole: null, name, email };
 		}
 		const pending = new Set(profile.roleList.map((x) => Number(x)));
 		const current = steps.find((s) => pending.has(s.role));
@@ -105,6 +113,8 @@ export function createSignupService(deps: {
 			status: "in_progress",
 			steps,
 			currentRole: current?.role ?? null,
+			name,
+			email,
 		};
 	}
 
