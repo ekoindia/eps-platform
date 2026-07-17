@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
-import type { EkoProfile, ProfileResult } from "../types";
+import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
 import { withTimeout } from "./http";
+import { TRANSACTION_FIXTURE } from "./transactions.fixture";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -67,6 +68,33 @@ export interface EkoClient {
 		identity: EkoIdentity;
 		xRealIp?: string;
 	}): Promise<EkoStepResult>;
+	getWalletBalance(input: {
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<number | null>;
+	getTransactionHistory(
+		input: TransactionHistoryInput,
+	): Promise<{ rows: TransactionRow[] }>;
+}
+
+/**
+ * A page of this user's own transaction history.
+ *
+ * `accountId` is null until its source is known — see
+ * docs/features/transaction-history.md §Unverified. When null the field is
+ * omitted upstream, mirroring `getWalletBalance` (interaction 9), which sends no
+ * account and gets the default E-value account back. Whether interaction 154 is
+ * equally forgiving is exactly what the probe answers; the route refuses to call
+ * upstream without one rather than guess.
+ */
+export interface TransactionHistoryInput {
+	identity: EkoIdentity;
+	accountId: string | null;
+	startIndex: number;
+	limit: number;
+	/** Already allow-listed and shape-checked by the route — never raw query input. */
+	filters: Record<string, string>;
+	xRealIp?: string;
 }
 
 const NOT_FOUND_CODES = new Set([319, 1200, 1867]);
@@ -616,7 +644,160 @@ export function createEkoClient(
 			);
 			return stepResult(raw, SIGN_AGREEMENT_OK);
 		},
+		async getWalletBalance(input) {
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "9",
+					client_ref_id: randomUUID(),
+					source: "EPS",
+				},
+				input.xRealIp,
+			)) as { data?: { balance?: unknown } };
+			// Classify by the presence of a numeric `balance`, not by a status id.
+			// Eloka's own wallet read does exactly this (WalletContext.js: `"balance"
+			// in data.data`) and no success id is documented for interaction 9 —
+			// gating on `response_status_id === 0` would be a guess, and interaction
+			// 151 already proves that field is not a uniform success flag upstream.
+			// `balance` arrives as a string. Reject a blank one BEFORE Number(),
+			// which coerces "" and " " into a very convincing 0 — Eloka's own
+			// `+balance || 0` has exactly that bug. A wrong ₹0 is worse than an
+			// error the console can retry.
+			const rawBalance = raw?.data?.balance;
+			if (typeof rawBalance !== "number" && typeof rawBalance !== "string") {
+				return null;
+			}
+			if (typeof rawBalance === "string" && rawBalance.trim() === "")
+				return null;
+			const balance = Number(rawBalance);
+			return Number.isFinite(balance) ? balance : null;
+		},
+		async getTransactionHistory(input) {
+			// ponytail: fixture short-circuit. Interaction 154 is unprobed on this
+			// transport and `account_id` has no known source, so the console page is
+			// built and exercised against fixture rows. Delete this branch and the
+			// `transactionsMock` flag on wiring day — see
+			// docs/features/transaction-history.md §Unverified.
+			if (cfg.transactionsMock) {
+				return {
+					rows: filterFixture(TRANSACTION_FIXTURE, input.filters).slice(
+						input.startIndex,
+						input.startIndex + input.limit,
+					),
+				};
+			}
+			const raw = await post(
+				{
+					// `filters` is spread FIRST so none of its keys can override the
+					// system fields below (actor identity, interaction_type_id, paging).
+					// The route already narrows them to a known allow-list, so this is
+					// defence in depth — and it matches `submitBusiness` above, which
+					// spreads its untrusted `details` first for the same reason.
+					...input.filters,
+					...actor(input.identity),
+					interaction_type_id: "154",
+					client_ref_id: randomUUID(),
+					source: "EPS",
+					isNetworkTransactionHistory: "0",
+					start_index: String(input.startIndex),
+					limit: String(input.limit),
+					...(input.accountId ? { account_id: input.accountId } : {}),
+				},
+				input.xRealIp,
+			);
+			return { rows: mapTransactionRows(raw) };
+		},
 	};
+}
+
+/**
+ * Applies the mock path's filters to the fixture rows.
+ *
+ * ponytail: exists only so the fixture doesn't lie. Without it, filtering for a
+ * TID that isn't there still returns rows, which reads as a real match and makes
+ * the filter UI look broken. Exact-match on the fields a fixture can honour;
+ * date-range and amount filters are ignored, which is why the mock is a
+ * development aid and not a stand-in for upstream. Deleted with the flag.
+ */
+function filterFixture(
+	rows: TransactionRow[],
+	filters: Record<string, string>,
+): TransactionRow[] {
+	const match: Record<string, (row: TransactionRow) => string | undefined> = {
+		tid: (row) => row.tid,
+		account: (row) => row.account,
+		customer_mobile: (row) => row.customer_mobile,
+		rr_no: (row) => row.trackingnumber,
+	};
+	return rows.filter((row) =>
+		Object.entries(filters).every(([key, value]) => {
+			const read = match[key];
+			return read ? read(row) === value : true;
+		}),
+	);
+}
+
+/** Coerces an upstream money/number field, which may arrive as a numeric string. */
+function num(value: unknown): number {
+	const n = Number(value ?? 0);
+	return Number.isFinite(n) ? n : 0;
+}
+
+/** Coerces an upstream text field, dropping empties so the UI can skip them. */
+function text(value: unknown): string | undefined {
+	if (value === null || value === undefined) return undefined;
+	const s = String(value).trim();
+	return s === "" ? undefined : s;
+}
+
+/**
+ * Maps an upstream interaction-154 response to typed rows.
+ *
+ * Deliberately transport-agnostic: it takes the parsed body, so it stays correct
+ * whether the call ends up going over SimpliBank form-urlencoded or the Connect
+ * server's JSON. On wiring day only the envelope path below should need to move.
+ *
+ * The `data.transaction_list` path is UNVERIFIED — Eloka reads
+ * `data.data.transaction_list` off the Connect server, whose extra `data` layer
+ * is its own envelope. See docs/features/transaction-history.md §Unverified.
+ * @param raw - The parsed upstream response body.
+ * @returns Typed rows; an empty array when the payload carries no list.
+ */
+export function mapTransactionRows(raw: unknown): TransactionRow[] {
+	const list = (raw as { data?: { transaction_list?: unknown } })?.data
+		?.transaction_list;
+	if (!Array.isArray(list)) return [];
+	return list.map((entry) => {
+		const r = (entry ?? {}) as Record<string, unknown>;
+		return {
+			tid: String(r.tid ?? ""),
+			tx_typeid: num(r.tx_typeid),
+			tx_name: String(r.tx_name ?? ""),
+			amount_dr: num(r.amount_dr),
+			amount_cr: num(r.amount_cr),
+			fee: num(r.fee),
+			commission_earned: num(r.commission_earned),
+			bonus: num(r.bonus),
+			tds: num(r.tds),
+			gst: num(r.gst),
+			insurance_amount: num(r.insurance_amount),
+			eko_service_charge: num(r.eko_service_charge),
+			eko_gst: num(r.eko_gst),
+			r_bal: num(r.r_bal),
+			status: String(r.status ?? ""),
+			response_status_id: num(r.response_status_id),
+			datetime: String(r.datetime ?? ""),
+			customer_name: text(r.customer_name),
+			customer_mobile: text(r.customer_mobile),
+			account: text(r.account),
+			bank: text(r.bank),
+			operator: text(r.operator),
+			rrn: text(r.rrn),
+			trackingnumber: text(r.trackingnumber),
+			recipient_name: text(r.recipient_name),
+			recipient_mobile: text(r.recipient_mobile),
+		};
+	});
 }
 
 function mapProfile(d: Record<string, unknown>): EkoProfile {

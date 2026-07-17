@@ -6,6 +6,7 @@ import { noopSecurityLogger, type SecurityLogger } from "../audit/securityLog";
 import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
+import { identityOf } from "../clients/eko";
 import type { GitHubClient } from "../clients/github";
 import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
@@ -18,6 +19,7 @@ import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
 import { AppError, errorBody } from "./errors";
 import { mountSignup } from "./signup";
+import { mountTransactions } from "./transactions";
 import {
 	ADMIN_CALLBACK_IP_LIMIT,
 	ADMIN_LOGIN_IP_LIMIT,
@@ -52,6 +54,10 @@ const OTP_VERIFY_LIMIT = 5;
 const OTP_IP_LIMIT = 20;
 const OTP_VERIFY_IP_LIMIT = 50;
 const OTP_WINDOW_SEC = 600;
+
+/** Wallet reads per session per `RL_WINDOW_SEC`. The console's own 30s refresh
+ * cooldown caps a well-behaved client at 20, so this only bites a scripted one. */
+const WALLET_BALANCE_LIMIT = 30;
 
 const STATE_COOKIE = "eps_oauth_state";
 const STATE_TTL_SEC = 600;
@@ -361,7 +367,65 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json(view);
 	});
 
+	/**
+	 * The signed-in developer's E-value wallet balance.
+	 *
+	 * The identity is re-derived from the session claim's mobile on every call —
+	 * never read from the request — so one developer cannot read another's
+	 * wallet. Mirrors the rule `mountSignup` follows for onboarding.
+	 */
+	app.get("/wallet/balance", async (c) => {
+		const token = getCookie(c, ACCESS_COOKIE);
+		const claim = token ? await sessions.verifyAccess(token) : null;
+		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+		// Admin sessions have no mobile, and a signup session has no wallet until
+		// onboarding finishes.
+		if (claim.role !== "developer") {
+			throw new AppError(403, "NO_WALLET", "This session has no wallet.");
+		}
+		// Each hit is two upstream round-trips. Limit per session, not per IP:
+		// x-real-ip is spoofable by anything the reverse proxy doesn't overwrite.
+		await enforceRateLimit(
+			kv,
+			`rl:wallet:mob:${claim.sub}`,
+			WALLET_BALANCE_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const xRealIp = c.req.header("x-real-ip");
+		const profile = await eko.getProfile({ mobile: claim.sub, xRealIp });
+		// Gate on the profile kind, not on buildMeView — that view never throws and
+		// would happily hand back a state for a profile upstream refused.
+		//
+		// `error` is an unclassified upstream failure, NOT a user classification, so
+		// it must not answer 403: the console treats 403 as the definitive "no
+		// wallet here" and hides the card for good. A blip would silently retire the
+		// balance for an account that has one.
+		if (profile.kind === "error") {
+			throw new AppError(
+				502,
+				"UPSTREAM_ERROR",
+				"Couldn't reach your account right now.",
+			);
+		}
+		if (profile.kind !== "found") {
+			throw new AppError(403, "NO_WALLET", "This account has no wallet yet.");
+		}
+		const balance = await eko.getWalletBalance({
+			identity: identityOf(profile.profile),
+			xRealIp,
+		});
+		if (balance === null) {
+			throw new AppError(
+				502,
+				"UPSTREAM_ERROR",
+				"Couldn't fetch your balance right now.",
+			);
+		}
+		return c.json({ balance });
+	});
+
 	mountSignup(app, { sessions, signup, eko, zoho, cfg });
+	mountTransactions(app, { sessions, eko, cfg });
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {

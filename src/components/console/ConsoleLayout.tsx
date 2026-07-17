@@ -1,5 +1,6 @@
 import { Footer } from "@/components/Footer";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -18,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
-import { KeyRound, LayoutDashboard, Menu } from "lucide-react";
+import { KeyRound, LayoutDashboard, Menu, ReceiptText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import {
@@ -31,7 +32,7 @@ import {
 
 /**
  * Console rail items. Flat by design: developer consoles only reach for
- * uppercase group captions past ~5 items, and there are two.
+ * uppercase group captions past ~5 items, and there are three.
  */
 const NAV_ITEMS = [
 	{ to: "/console", label: "Home", icon: LayoutDashboard, end: true },
@@ -39,6 +40,12 @@ const NAV_ITEMS = [
 		to: "/console/credentials",
 		label: "Credentials",
 		icon: KeyRound,
+		end: false,
+	},
+	{
+		to: "/console/transactions",
+		label: "Transactions",
+		icon: ReceiptText,
 		end: false,
 	},
 ] as const;
@@ -52,7 +59,7 @@ export function useConsoleMe(): MeView {
 	return useOutletContext<MeView>();
 }
 
-/** The rail itself — shared by the desktop aside and the mobile Sheet. */
+/** The links themselves — shared by the desktop rail and the mobile Sheet. */
 function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	return (
 		<nav className="flex flex-col gap-0.5 text-sm" aria-label="Console">
@@ -143,7 +150,8 @@ export default function ConsoleLayout() {
 						<CardHeader>
 							<CardTitle>Log in</CardTitle>
 							<CardDescription>
-								Sign in with your mobile number to access your EPS console.
+								Sign in with your mobile number to access your EPS Developer
+								Console.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -168,28 +176,37 @@ export default function ConsoleLayout() {
 				) : null}
 				{developer ? (
 					<div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-						{/* Mobile: the rail collapses behind a Sheet, mirroring DocsLayout. */}
-						<div className="lg:hidden">
-							<Sheet open={open} onOpenChange={setOpen}>
-								<SheetTrigger asChild>
-									<Button variant="outline" size="sm" className="gap-2">
-										<Menu className="h-4 w-4" />
-										Console menu
-									</Button>
-								</SheetTrigger>
-								<SheetContent side="left" className="w-72 p-4 pt-10">
-									<SheetTitle className="sr-only">Console menu</SheetTitle>
-									<ConsoleNav onNavigate={() => setOpen(false)} />
-								</SheetContent>
-							</Sheet>
-						</div>
-						{/* Desktop: sticky under the fixed ~88px site header. */}
-						<aside className="hidden lg:block">
-							<div className="sticky top-28">
-								<ConsoleNav />
+						{/*
+						 * One rail column at every width, so `WalletBalance` mounts once and
+						 * fetches once — a second copy inside the Sheet would double the
+						 * upstream round-trips and race the visible card to the rate limit.
+						 * Only the LINKS collapse behind the Sheet below `lg`; the balance
+						 * stays on screen, as it is in Eloka. Desktop: sticky under the
+						 * fixed ~88px site header, mirroring DocsLayout.
+						 */}
+						<aside>
+							<div className="lg:sticky lg:top-28">
+								<WalletBalance />
+								<div className="lg:hidden">
+									<Sheet open={open} onOpenChange={setOpen}>
+										<SheetTrigger asChild>
+											<Button variant="outline" size="sm" className="gap-2">
+												<Menu className="h-4 w-4" />
+												Console menu
+											</Button>
+										</SheetTrigger>
+										<SheetContent side="left" className="w-72 p-4 pt-10">
+											<SheetTitle className="sr-only">Console menu</SheetTitle>
+											<ConsoleNav onNavigate={() => setOpen(false)} />
+										</SheetContent>
+									</Sheet>
+								</div>
+								<div className="hidden lg:block">
+									<ConsoleNav />
+								</div>
 							</div>
 						</aside>
-						<div className="min-w-0 max-w-2xl">
+						<div className="min-w-0">
 							<Outlet context={developer} />
 						</div>
 					</div>

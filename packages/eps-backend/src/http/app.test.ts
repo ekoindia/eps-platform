@@ -74,6 +74,8 @@ function deps(
 			alreadySigned: false,
 		})),
 		submitSignAgreement: vi.fn(async () => ({ ok: true as const })),
+		getWalletBalance: vi.fn(async () => 2800000),
+		getTransactionHistory: vi.fn(async () => ({ rows: [] })),
 		...over,
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
@@ -1485,5 +1487,105 @@ describe("KV-outage matrix (Task 4)", () => {
 		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
 			"STORE_UNAVAILABLE",
 		);
+	});
+});
+
+describe("wallet/balance", () => {
+	/** Logs in as a developer and returns the session cookie. */
+	async function login(app: Hono<AppEnv>): Promise<string> {
+		const verify = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(verify.status).toBe(200);
+		return cookieFrom(verify);
+	}
+
+	it("returns the balance for a developer session", async () => {
+		const { app, eko } = deps();
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(200);
+		expect(await body<{ balance: number }>(res)).toEqual({ balance: 2800000 });
+		// The identity must come from the session's own 151 profile, never the request.
+		// `initiator_id` is the user's MOBILE, mirroring connect-api's
+		// `initiator_id = tokenDetails.user_id` where the claim's user_id IS
+		// detail.mobile — NOT `ekoUserId` ("EKO1" here), which upstream rejects.
+		expect(eko.getWalletBalance).toHaveBeenCalledWith({
+			identity: { initiatorId: "9990000001", userCode: "1", orgId: 1 },
+			xRealIp: undefined,
+		});
+	});
+
+	it("rejects an anonymous request", async () => {
+		const { app } = deps();
+		expect((await app.request("/wallet/balance")).status).toBe(401);
+	});
+
+	it("never calls upstream for a signup session", async () => {
+		const { app, eko } = deps({
+			getProfile: vi.fn(async () => ({
+				kind: "onboarding" as const,
+				responseTypeId: 369,
+				profile: {
+					name: "Dev",
+					email: "d@e.in",
+					mobile: "9990000001",
+					code: 1,
+					userType: "23",
+					ekoUserId: "EKO1",
+					roleList: ["1"],
+					orgId: 1,
+					onboarding: 1,
+					zohoId: "",
+					onboardingSteps: [],
+				},
+			})),
+		});
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NO_WALLET",
+		);
+		expect(eko.getWalletBalance).not.toHaveBeenCalled();
+	});
+
+	it("502s (not 403) when the profile lookup itself fails", async () => {
+		// A 403 tells the console "no wallet here, hide for good". An unclassified
+		// upstream failure must not retire a real wallet — it has to stay retryable.
+		const { app } = deps({
+			getProfile: vi
+				.fn()
+				.mockResolvedValueOnce({
+					kind: "found" as const,
+					responseTypeId: 369,
+					profile: {
+						name: "Dev",
+						email: "d@e.in",
+						mobile: "9990000001",
+						code: 1,
+						userType: "23",
+						ekoUserId: "EKO1",
+						roleList: ["1"],
+						orgId: 1,
+						onboarding: 0,
+						zohoId: "ZCRM_9",
+						onboardingSteps: [],
+					},
+				})
+				.mockResolvedValue({ kind: "error" as const, responseTypeId: 9999 }),
+		});
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(502);
+	});
+
+	it("502s when upstream returns no balance", async () => {
+		const { app } = deps({ getWalletBalance: vi.fn(async () => null) });
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(502);
 	});
 });

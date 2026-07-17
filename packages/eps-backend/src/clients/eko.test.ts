@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Mock } from "vitest";
-import { createEkoClient } from "./eko";
+import { createEkoClient, identityOf, mapTransactionRows } from "./eko";
+import { INTERACTION_154_SAMPLE } from "./transactions.sample";
 
 const ekoCfg = {
 	scheme: "https",
@@ -12,6 +13,9 @@ const ekoCfg = {
 	userCode: "99029899",
 	defaultOrgId: 1,
 	logLevel: "off" as const,
+	// Default to the live path so every existing test still asserts a real POST;
+	// the fixture short-circuit is opted into per-test.
+	transactionsMock: false,
 };
 
 function mockFetch(status: number, body: unknown) {
@@ -656,5 +660,312 @@ describe("sign agreement interactions", () => {
 			message: "Not signed",
 			responseTypeId: 1500,
 		});
+	});
+});
+
+describe("identityOf", () => {
+	// REGRESSION: initiator_id is the user's registered MOBILE, never an internal
+	// id. connect-api (the live Eloka backend) puts `user_id: detail.mobile` in
+	// the 151 login claim and then sends `initiator_id = tokenDetails.user_id` on
+	// every interaction. Sending `eko_user_id` instead makes upstream answer 403
+	// "Invalid Sender/Initiator", which broke wallet balance AND every onboarding
+	// step. Pin the field so it cannot silently regress to ekoUserId again.
+	it("uses the mobile as initiator_id, not ekoUserId", () => {
+		const profile = {
+			name: "Dev",
+			email: "d@e.in",
+			mobile: "9990000001",
+			code: "20810001",
+			userType: "23",
+			ekoUserId: "55501",
+			roleList: [],
+			orgId: 1,
+			onboarding: 0,
+			zohoId: "",
+			onboardingSteps: [],
+		};
+		expect(identityOf(profile)).toEqual({
+			initiatorId: "9990000001",
+			userCode: "20810001",
+			orgId: 1,
+		});
+	});
+});
+
+describe("getWalletBalance", () => {
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
+
+	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		return new URLSearchParams(init.body as string);
+	}
+
+	it("posts 9 as the acting user and returns the balance as a number", async () => {
+		const f = mockFetch(200, {
+			response_status_id: 0,
+			data: { balance: "2800000" },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getWalletBalance({ identity })).toBe(2800000);
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("9");
+		// The acting user's own identity — NOT the configured service account.
+		expect(body.get("initiator_id")).toBe("9990000001");
+		expect(body.get("user_code")).toBe("20810001");
+		expect(body.get("org_id")).toBe("1");
+		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
+	});
+
+	it("returns 0, not null, for a genuinely empty wallet", async () => {
+		const f = mockFetch(200, { response_status_id: 0, data: { balance: "0" } });
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getWalletBalance({ identity })).toBe(0);
+	});
+
+	it("returns null when upstream omits the balance", async () => {
+		const f = mockFetch(200, { response_status_id: 1, message: "nope" });
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getWalletBalance({ identity })).toBeNull();
+	});
+
+	it("returns null on an unparseable balance rather than NaN", async () => {
+		const f = mockFetch(200, { data: { balance: "" } });
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.getWalletBalance({ identity })).toBeNull();
+	});
+
+	it("forwards X-Real-IP", async () => {
+		const f = mockFetch(200, { data: { balance: "10" } });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.getWalletBalance({ identity, xRealIp: "203.0.113.9" });
+		const [, init] = (f as unknown as Mock).mock.calls[0];
+		expect(init.headers["X-Real-IP"]).toBe("203.0.113.9");
+	});
+});
+
+describe("getTransactionHistory", () => {
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
+
+	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		return new URLSearchParams(init.body as string);
+	}
+
+	const liveCfg = { ...ekoCfg, transactionsMock: false };
+
+	it("posts 154 as the acting user with the paging window", async () => {
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient(liveCfg, f);
+		await eko.getTransactionHistory({
+			identity,
+			accountId: "392961",
+			startIndex: 25,
+			limit: 25,
+			filters: {},
+		});
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("154");
+		// The acting user's own identity — NOT the configured service account.
+		expect(body.get("initiator_id")).toBe("9990000001");
+		expect(body.get("user_code")).toBe("20810001");
+		expect(body.get("start_index")).toBe("25");
+		expect(body.get("limit")).toBe("25");
+		expect(body.get("account_id")).toBe("392961");
+		expect(body.get("isNetworkTransactionHistory")).toBe("0");
+	});
+
+	it("omits account_id when it is unknown", async () => {
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient(liveCfg, f);
+		await eko.getTransactionHistory({
+			identity,
+			accountId: null,
+			startIndex: 0,
+			limit: 25,
+			filters: {},
+		});
+		expect(bodyOf(f).has("account_id")).toBe(false);
+	});
+
+	it("forwards filters but never lets one override a system field", async () => {
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient(liveCfg, f);
+		await eko.getTransactionHistory({
+			identity,
+			accountId: null,
+			startIndex: 0,
+			limit: 25,
+			// A hostile filter object: the route's allow-list would already reject
+			// these, so this pins the client's own defence in depth.
+			filters: {
+				tid: "2886973933",
+				interaction_type_id: "515",
+				user_code: "99999999",
+				start_index: "999",
+			},
+		});
+		const body = bodyOf(f);
+		expect(body.get("tid")).toBe("2886973933");
+		expect(body.get("interaction_type_id")).toBe("154");
+		expect(body.get("user_code")).toBe("20810001");
+		expect(body.get("start_index")).toBe("0");
+	});
+
+	it("serves fixture rows without calling upstream when mock is on", async () => {
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient({ ...ekoCfg, transactionsMock: true }, f);
+		const { rows } = await eko.getTransactionHistory({
+			identity,
+			accountId: null,
+			startIndex: 0,
+			limit: 3,
+			filters: {},
+		});
+		expect(rows).toHaveLength(3);
+		expect(f).not.toHaveBeenCalled();
+	});
+
+	it("honours a filter in mock mode rather than returning every fixture row", async () => {
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient({ ...ekoCfg, transactionsMock: true }, f);
+		const { rows } = await eko.getTransactionHistory({
+			identity,
+			accountId: null,
+			startIndex: 0,
+			limit: 25,
+			filters: { tid: "2886973933" },
+		});
+		expect(rows).toHaveLength(1);
+		expect(rows[0].tid).toBe("2886973933");
+	});
+
+	it("returns nothing in mock mode when a filter matches no fixture row", async () => {
+		// Otherwise the fixture lies: a search for a TID that isn't there would
+		// still show rows, reading as a real match.
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient({ ...ekoCfg, transactionsMock: true }, f);
+		const { rows } = await eko.getTransactionHistory({
+			identity,
+			accountId: null,
+			startIndex: 0,
+			limit: 25,
+			filters: { tid: "0000000001" },
+		});
+		expect(rows).toEqual([]);
+	});
+});
+
+describe("mapTransactionRows", () => {
+	it("coerces numeric strings to numbers", () => {
+		const rows = mapTransactionRows({
+			data: {
+				transaction_list: [
+					{
+						tid: "2886973933",
+						tx_name: "Digi Khata Load Wallet",
+						amount_dr: "200000",
+						fee: "25",
+						r_bal: "2800000",
+						response_status_id: "1",
+						status: "Failed",
+						datetime: "2026-04-16 11:49:00",
+					},
+				],
+			},
+		});
+		expect(rows).toHaveLength(1);
+		expect(rows[0].amount_dr).toBe(200000);
+		expect(rows[0].fee).toBe(25);
+		expect(rows[0].r_bal).toBe(2800000);
+		expect(rows[0].response_status_id).toBe(1);
+	});
+
+	it("defaults missing money fields to 0 rather than NaN", () => {
+		const rows = mapTransactionRows({
+			data: { transaction_list: [{ tid: "1" }] },
+		});
+		expect(rows[0].amount_dr).toBe(0);
+		expect(rows[0].amount_cr).toBe(0);
+		expect(rows[0].insurance_amount).toBe(0);
+		expect(Number.isNaN(rows[0].r_bal)).toBe(false);
+	});
+
+	it("drops blank optional text fields so the UI can skip them", () => {
+		const rows = mapTransactionRows({
+			data: {
+				transaction_list: [{ tid: "1", customer_name: "  ", bank: "HDFC" }],
+			},
+		});
+		expect(rows[0].customer_name).toBeUndefined();
+		expect(rows[0].bank).toBe("HDFC");
+	});
+
+	it("returns an empty list when the payload carries no transaction_list", () => {
+		expect(mapTransactionRows({ data: {} })).toEqual([]);
+		expect(mapTransactionRows({})).toEqual([]);
+		expect(mapTransactionRows(null)).toEqual([]);
+	});
+});
+
+describe("mapTransactionRows against the real interaction-154 response", () => {
+	const rows = mapTransactionRows(INTERACTION_154_SAMPLE);
+
+	it("reads the envelope upstream actually sends", () => {
+		// data.transaction_list — NOT Eloka's data.data.transaction_list.
+		expect(rows).toHaveLength(7);
+	});
+
+	it("coerces tx_typeid, which arrives as a string", () => {
+		expect(rows[0].tx_typeid).toBe(1049);
+		expect(rows[1].tx_typeid).toBe(697);
+	});
+
+	it("defaults absent money legs to 0 rather than NaN", () => {
+		// The QR Collection row has amount_cr but no amount_dr at all.
+		expect(rows[1].amount_cr).toBe(10);
+		expect(rows[1].amount_dr).toBe(0);
+		expect(rows[0].amount_cr).toBe(0);
+		for (const row of rows) {
+			expect(Number.isNaN(row.amount_dr)).toBe(false);
+			expect(Number.isNaN(row.amount_cr)).toBe(false);
+			expect(Number.isNaN(row.r_bal)).toBe(false);
+		}
+	});
+
+	it("keeps the ISO datetime with its offset", () => {
+		expect(rows[0].datetime).toBe("2026-04-16T11:49:09.000+05:30");
+		expect(Number.isNaN(new Date(rows[0].datetime).getTime())).toBe(false);
+	});
+
+	it("carries the masked counterparty fields through untouched", () => {
+		expect(rows[2].customer_mobile).toBe("XXXXXX1732");
+		expect(rows[2].account).toBe("XXXXXXXX3882");
+		expect(rows[2].bank).toBe("State Bank of India");
+		expect(rows[2].recipient_name).toBe("Vikram Rao");
+	});
+
+	it("preserves each row's own status wording", () => {
+		expect(rows.map((r) => r.status)).toEqual([
+			"Failed",
+			"Payment received",
+			"Success",
+			"Success",
+			"Success",
+			"Success",
+			"Initiated",
+		]);
+	});
+
+	it("reads the fractional charges", () => {
+		expect(rows[1].fee).toBe(5.91);
+		expect(rows[5].gst).toBe(0.76);
 	});
 });

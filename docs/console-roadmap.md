@@ -19,14 +19,51 @@ admin session. The rail follows `DocsLayout`'s shape (sticky under the fixed
 ~88px header, `Sheet` below `lg`) so the console and `/docs` read as one
 product. Flat by design — group captions are worth adding past ~5 items.
 
+Pinned above the rail links is `WalletBalance`
+(`src/components/console/WalletBalance.tsx`) — the developer's E-value balance,
+mirroring Eloka's always-visible `StatusCard`. It sits outside `<nav>`: it is
+account state, not navigation. It fetches `GET /wallet/balance` on mount, offers
+a manual refresh on a 30s cooldown, and renders **nothing** on a 403 (the
+account has no wallet) rather than showing an empty card. Eloka's "Load balance"
+(+) action is deliberately not ported — the console has no transaction pages to
+route to.
+
+The rail column renders once at every width — only the *links* collapse into the
+`Sheet` below `lg`, while the balance stays on screen. That is deliberate on two
+counts: a second `WalletBalance` inside the `Sheet` would mount and fetch its own
+copy (doubling upstream round-trips and racing the visible card to the rate
+limit), and a balance hidden behind a hamburger isn't the always-visible one
+Eloka has. Refresh is guarded by an in-flight flag as well as the cooldown: a
+request slower than 30s would otherwise let a second start, and the later-landing
+response can be the staler one.
+
+Backend: `GET /wallet/balance` (`packages/eps-backend/src/http/app.ts`) →
+`eko.getWalletBalance` (interaction **9**) acting as the user's own identity.
+The identity is re-derived from the session claim's mobile via the 151 profile
+on every call, never read from the request, so one developer cannot read
+another's wallet. Rate-limited per session. No new env vars — it reuses
+`cfg.eko`. Note upstream returns `balance` as a *string*, and a blank one is
+rejected rather than coerced to a very convincing `₹0`.
+
+Two failure modes are deliberately distinct: an ineligible account answers **403**
+(the console hides the card for good), while any upstream failure — including
+`profile.kind === "error"` — answers **502**, which keeps the card retryable. A
+502 mapped to 403 would silently retire the balance of an account that has one.
+
 | Route | Page | Contents |
 |---|---|---|
 | `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
 | `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status |
+| `/console/transactions` | `pages/console/Transactions.tsx` | Transaction history — see [`features/transaction-history.md`](./features/transaction-history.md) |
 
-Both routes are registered in `App.tsx` (lazy) and `AppServer.tsx` (eager), and
+Every route is registered in `App.tsx` (lazy) and `AppServer.tsx` (eager), and
 deliberately excluded from prerendering — the console is `noindex` and behind
 auth.
+
+The layout caps no width: each sub-page sets its own (`max-w-2xl` on Home and
+Credentials), because the transactions table needs the full column. A layout that
+legislates width for pages it doesn't know about forces the next wide page to
+fight it.
 
 The production block on the Credentials page is an empty state with **no request
 button**: no credential-issuance API exists yet, so its copy points at the

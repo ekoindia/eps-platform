@@ -15,6 +15,10 @@ vi.mock("@/components/auth/LoginForm", () => ({
 	LoginForm: () => <div>login-form</div>,
 }));
 vi.mock("@/components/Footer", () => ({ Footer: () => <footer /> }));
+// Stubbed so the rail tests never reach the wallet endpoint; WalletBalance.test.tsx covers it.
+vi.mock("@/components/console/WalletBalance", () => ({
+	WalletBalance: () => <div>wallet-balance</div>,
+}));
 
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async (orig) => ({

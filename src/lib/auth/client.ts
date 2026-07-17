@@ -1,3 +1,8 @@
+import type {
+	TransactionFilters,
+	TransactionPage,
+} from "@/lib/console/transactions";
+
 const BASE: string = import.meta.env.VITE_EPS_BACKEND_URL ?? "/api";
 
 export type Lifecycle =
@@ -28,6 +33,11 @@ export interface MeView {
 	mobile: string;
 	profile: Profile | null;
 	zohoId: string | null;
+}
+
+/** The developer's E-value wallet balance, in rupees. */
+export interface WalletBalanceView {
+	balance: number;
 }
 
 export interface AdminView {
@@ -179,6 +189,9 @@ export const authClient = {
 		request("/me", { method: "GET" }) as Promise<
 			MeView | AdminView | SignupView
 		>,
+	/** The signed-in developer's E-value wallet balance, in rupees. */
+	walletBalance: (): Promise<WalletBalanceView> =>
+		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>
@@ -241,4 +254,33 @@ export const signupClient = {
 			method: "POST",
 			body: JSON.stringify({ document_id: documentId }),
 		}) as Promise<SignupState>,
+};
+
+/**
+ * Transaction history for the signed-in developer — requires a developer session.
+ *
+ * POST, not GET: the filters carry mobile numbers, account numbers, TIDs and
+ * amounts, which a query string would leak into browser history and server
+ * access logs.
+ */
+export const transactionsClient = {
+	/**
+	 * Fetches one page of the caller's own transactions.
+	 * @param input - Paging window and allow-listed filters.
+	 * @param signal - Aborts the request when the caller unmounts or re-queries.
+	 * @returns The page of rows plus whether a next page should be offered.
+	 */
+	search: (
+		input: {
+			start_index: number;
+			limit: number;
+			filters: TransactionFilters;
+		},
+		signal?: AbortSignal,
+	): Promise<TransactionPage> =>
+		request("/transactions/search", {
+			method: "POST",
+			body: JSON.stringify(input),
+			signal,
+		}) as Promise<TransactionPage>,
 };

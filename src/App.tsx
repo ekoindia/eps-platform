@@ -42,6 +42,9 @@ const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
 const ConsoleHome = lazy(() => import("./pages/console/ConsoleHome"));
 const ConsoleCredentials = lazy(() => import("./pages/console/Credentials"));
+const ConsoleTransactions = lazy(
+	() => import("./pages/console/Transactions"),
+);
 const Admin = lazy(() => import("./pages/Admin"));
 
 function TrackingParamCapture() {
@@ -131,6 +134,10 @@ const App = ({
 								<Route path="/console" element={<ConsoleLayout />}>
 									<Route index element={<ConsoleHome />} />
 									<Route path="credentials" element={<ConsoleCredentials />} />
+								<Route
+									path="transactions"
+									element={<ConsoleTransactions />}
+								/>
 								</Route>
 								<Route path="/admin" element={<Admin />} />
 

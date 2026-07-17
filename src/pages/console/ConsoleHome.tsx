@@ -57,7 +57,7 @@ export default function ConsoleHome() {
 	const me = useConsoleMe();
 	const copy = STATE_COPY[me.state];
 	return (
-		<Card>
+		<Card className="max-w-2xl">
 			<CardHeader>
 				<div className="flex items-center gap-3">
 					<CardTitle>{copy.title}</CardTitle>

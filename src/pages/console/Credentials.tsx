@@ -110,7 +110,7 @@ function ProductionCredentials() {
  */
 export default function Credentials() {
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex max-w-2xl flex-col gap-6">
 			<div className="flex flex-col gap-1">
 				<h2 className="text-lg font-semibold text-eko-navy">Credentials</h2>
 				<p className="text-sm text-muted-foreground">

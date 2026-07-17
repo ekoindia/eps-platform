@@ -61,6 +61,7 @@ import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
 import ConsoleLayout from "./components/console/ConsoleLayout";
 import ConsoleHome from "./pages/console/ConsoleHome";
 import ConsoleCredentials from "./pages/console/Credentials";
+import ConsoleTransactions from "./pages/console/Transactions";
 import Admin from "./pages/Admin";
 
 function TrackingParamCapture() {
@@ -151,6 +152,10 @@ const AppServer = ({
 								<Route path="/console" element={<ConsoleLayout />}>
 									<Route index element={<ConsoleHome />} />
 									<Route path="credentials" element={<ConsoleCredentials />} />
+									<Route
+										path="transactions"
+										element={<ConsoleTransactions />}
+									/>
 								</Route>
 								<Route path="/admin" element={<Admin />} />
 

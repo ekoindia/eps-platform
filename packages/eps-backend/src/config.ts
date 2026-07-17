@@ -29,6 +29,17 @@ export interface Config {
 		userCode: string;
 		defaultOrgId: number;
 		logLevel: EkoLogLevel;
+		/**
+		 * Serve transaction history from the built-in fixture instead of calling
+		 * upstream.
+		 *
+		 * ponytail: temporary. Interaction 154 is unprobed on this transport and
+		 * `account_id` has no known source here, so the console page is built and
+		 * exercised end-to-end against fixture rows. Delete this flag and the
+		 * branch in `createEkoClient.getTransactionHistory` once the contract is
+		 * confirmed — see docs/features/transaction-history.md §Unverified.
+		 */
+		transactionsMock: boolean;
 	};
 	github: {
 		clientId: string;
@@ -108,6 +119,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			userCode: env.EKO_USER_CODE ?? "99029899",
 			defaultOrgId: Number(env.EKO_DEFAULT_ORG_ID ?? 1),
 			logLevel: parseEkoLogLevel(env.EKO_LOG_LEVEL),
+			transactionsMock: env.EKO_TRANSACTIONS_MOCK === "true",
 		},
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
