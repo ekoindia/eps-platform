@@ -13,8 +13,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
 			// SalesIQ chat widget. Overridable via props.
 			position="bottom-left"
 			className="toaster group"
+			closeButton
 			toastOptions={{
 				classNames: {
+					closeButton:
+						"group-[.toast]:bg-background group-[.toast]:text-foreground group-[.toast]:border-border group-[.toast]:hover:bg-muted",
 					toast:
 						"group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
 					description: "group-[.toast]:text-muted-foreground",
