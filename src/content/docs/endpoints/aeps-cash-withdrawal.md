@@ -9,12 +9,11 @@ The agent must have completed, in order:
 
 1. AePS Fingpay activation
 2. One-time eKYC (Send OTP → Verify OTP → Biometric eKYC)
-3. **Daily 2FA** for the current day — this returns a `reference_id` that **must**
-   be sent with every cash-withdrawal request.
+3. **Daily KYC** for the current day
 
 > [!IMPORTANT]
-> Due to NPCI compliance, every cash-withdrawal needs 2FA. Omitting the daily
-> `reference_id` will reject the transaction.
+> Due to NPCI compliance, the agent's Daily KYC must succeed for the current
+> calendar day before any cash-withdrawal is attempted.
 
 ## Aadhaar encryption
 

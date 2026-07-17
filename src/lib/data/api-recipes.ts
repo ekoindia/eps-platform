@@ -121,7 +121,7 @@ export const RECIPES: Recipe[] = [
 		slug: "aeps-cash-withdrawal",
 		name: "AePS — Cash Withdrawal",
 		summary:
-			"Aadhaar-enabled cash withdrawal: one-time agent activation, daily 2FA, then the biometric withdrawal.",
+			"Aadhaar-enabled cash withdrawal: one-time agent activation and eKYC, daily KYC, then the biometric withdrawal.",
 		productId: "aeps",
 		steps: [
 			{
@@ -129,8 +129,24 @@ export const RECIPES: Recipe[] = [
 				purpose: "One-time activation of AePS Fingpay for the agent.",
 			},
 			{
+				specSlug: "aeps-send-otp-kyc",
+				purpose:
+					"One-time eKYC step 1 (agent onboarding, not per transaction): OTP to the agent's Aadhaar-linked mobile.",
+			},
+			{
+				specSlug: "aeps-verify-otp-kyc",
+				purpose:
+					"One-time eKYC step 2 (agent onboarding): verify the OTP with the otp_ref_id and reference_tid from step 1.",
+			},
+			{
+				specSlug: "aeps-biometric-ekyc",
+				purpose:
+					"One-time eKYC step 3 (agent onboarding): the agent's biometric PID completes eKYC.",
+			},
+			{
 				specSlug: "aeps-daily-auth",
-				purpose: "Daily two-factor authentication required before transacting.",
+				purpose:
+					"Daily KYC — biometric-only, repeated once per calendar day before the agent's first transaction.",
 			},
 			{
 				specSlug: "aeps-cash-withdrawal",

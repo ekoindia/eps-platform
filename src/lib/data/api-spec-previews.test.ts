@@ -41,13 +41,13 @@ describe("product-page adapters hide -status helper APIs", () => {
 /**
  * "What can you verify" must drop any response param whose name contains
  * `reference_id` (async-job tracking ids, not verifiable attributes). The
- * `aeps-daily-auth` spec carries an imp-flagged `reference_id` response field
- * and is the representative fixture.
+ * `digilocker-create-url` spec carries an imp-flagged `reference_id` response
+ * field and is the representative fixture.
  */
 describe("verifiable fields exclude reference_id params", () => {
-	it("aeps-daily-auth still has an imp reference_id response field (guards fixture)", () => {
-		const spec = getSpecsForProduct("aeps").find(
-			(s) => s.id === "aeps-daily-auth",
+	it("digilocker-create-url still has an imp reference_id response field (guards fixture)", () => {
+		const spec = getSpecsForProduct("digilocker").find(
+			(s) => s.id === "digilocker-create-url",
 		);
 		expect(spec).toBeTruthy();
 		const refField = spec?.responseData.find((f) => f.name === "reference_id");
@@ -55,19 +55,19 @@ describe("verifiable fields exclude reference_id params", () => {
 	});
 
 	it("specsToVerifiableFields omits reference_id-named fields", () => {
-		const spec = getSpecsForProduct("aeps").find(
-			(s) => s.id === "aeps-daily-auth",
+		const spec = getSpecsForProduct("digilocker").find(
+			(s) => s.id === "digilocker-create-url",
 		);
 		expect(spec).toBeTruthy();
 		const fields = specsToVerifiableFields([spec!]);
-		// other imp fields (e.g. auth_status) still surface
+		// other imp fields still surface
 		expect(fields.length).toBeGreaterThan(0);
 		expect(fields.some((f) => /reference[ _]?id/i.test(f.label))).toBe(false);
 	});
 
-	it("getVerifiableFieldsForProduct omits reference_id for aeps", () => {
+	it("getVerifiableFieldsForProduct omits reference_id for digilocker", () => {
 		expect(
-			getVerifiableFieldsForProduct("aeps").some((f) =>
+			getVerifiableFieldsForProduct("digilocker").some((f) =>
 				/reference[ _]?id/i.test(f.label),
 			),
 		).toBe(false);
