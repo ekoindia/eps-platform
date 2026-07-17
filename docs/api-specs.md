@@ -49,6 +49,9 @@ An `ApiSpec` stores **only what is unique** to that endpoint:
 - `responseData` — only the `data` subtree. The response envelope
   (`status`, `response_status_id`, `message`, `response_type_id`, plus
   `tx_status`/`txstatus_desc` for financial APIs) is **not** repeated here.
+- `responseTypes` — the `response_type_id` values this endpoint branches on,
+  with the next endpoint for each. Never hand-write that table into
+  `description`; see [`responseTypes`](#responsetypes-branching-on-response_type_id).
 - `financial: true` opts an endpoint into the financial response envelope
   (`tx_status`/`txstatus_desc`).
 
@@ -95,8 +98,45 @@ interface ApiSpec {
   responseData: ResponseField[];    // the `data` subtree only
   sampleSuccessResponse: Record<string, unknown>;
   errorScenarios?: { scenario: string; statusCode?: number; example: object }[];
+  responseTypes?: { id: number; meaning: string; next?: string }[]; // response_type_id routing
 }
 ```
+
+### `responseTypes` (branching on `response_type_id`)
+
+Most EPS endpoints return a `response_type_id` identifying **which** response
+shape came back, and integrators branch on it to pick the next call. Declare
+those values as data — never as a hand-written table in `description`:
+
+```ts
+responseTypes: [
+  { id: 308, meaning: "Sender not found", next: "dmt-onboard-sender" },
+  { id: 309, meaning: "Sender found", next: "dmt-get-recipients" },
+],
+```
+
+One field feeds every surface, so they cannot drift:
+
+- the **Response types** table on `/docs/<slug>` and its `.md` twin;
+- the OpenAPI operation description + example summaries (Scalar);
+- `responseTypes` in the agent bundle → MCP `get_api`;
+- an annotation beside every sample payload whose `response_type_id` matches,
+  via `responseTypeFor(spec, payload)`.
+
+`next` is a FK into the **documented** spec slugs. `assertResponseTypeSlugs`
+(run from `build-agent-bundle.ts`) fails the build on a dangling target or a
+duplicated id, so a stale slug can never ship as a dead link.
+
+The meaning of an id is flow-specific — `308` routes to a different onboarding
+endpoint per product — so these live per-spec rather than in a global registry.
+Only declare the ids an endpoint actually branches on; the section is omitted
+when `responseTypes` is unset.
+
+Recipes (`api-recipes.ts`) branch on the same field: a `RecipeBranch` sets
+**exactly one** of `onResponseTypeId` (the usual routing key) or
+`onResponseStatusId` (financial endpoints, whose responses carry no
+`response_type_id`). Renderers call `branchCondition(branch)` for the field name
+and value rather than assuming either.
 
 ### `imp` flags ("What can you verify?")
 
@@ -180,11 +220,15 @@ source.
    headers, and the response envelope — the resolvers add them).
 2. For verification APIs, mark the verifiable response fields with `imp: true`.
 3. Set `financial: true` for money-debit endpoints (adds the financial response envelope).
-4. For a rich description (callouts, code, headings), author
+4. If the endpoint's `response_type_id` decides the next call, declare
+   `responseTypes` — the table, the OpenAPI description and the sample
+   annotations all generate from it. See
+   [`responseTypes`](#responsetypes-branching-on-response_type_id).
+5. For a rich description (callouts, code, headings), author
    `src/content/docs/endpoints/<name>.md` and set `descriptionFile: "<name>.md"`
    — optionally alongside a short inline `description` for the `.md` twin /
    OpenAPI / agent bundle. See [Rich descriptions](#rich-descriptions-markdown).
-5. Verify: `npx tsc --noEmit`, `npm run test`, then `npm run build` and check the
+6. Verify: `npx tsc --noEmit`, `npm run test`, then `npm run build` and check the
    product's `.md` twin (e.g. `dist/products/<slug>.md`) renders the new preview.
 
 ## Data provenance & caveat

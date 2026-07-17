@@ -9,6 +9,7 @@ import { MarkdownProse } from "./MarkdownProse";
 import { NextSteps } from "./NextSteps";
 import { Params } from "./Params";
 import { ResponseAccordion } from "./ResponseAccordion";
+import { ResponseTypes } from "./ResponseTypes";
 
 const DocsSection = ({
 	title,
@@ -81,6 +82,12 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 			<DocsSection title="Headers">
 				<Params params={headers} />
 			</DocsSection>
+
+			{spec.responseTypes?.length ? (
+				<DocsSection title="Response types">
+					<ResponseTypes spec={spec} />
+				</DocsSection>
+			) : null}
 
 			<DocsSection title="Responses">
 				<ResponseAccordion spec={spec} />

@@ -2,6 +2,7 @@ import { LangIcon } from "@/components/icons/LangIcon";
 import { EPS_MCP_CMD } from "@/lib/config/site";
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
+import { responseTypeFor } from "@/lib/data/api-specs-common";
 import {
 	SAMPLE_LANGS,
 	SDK_INSTALL,
@@ -50,6 +51,7 @@ export const CodeSamples = ({
 	const [lang, setLang] = usePreferredLang();
 	const sdkLang = toSdkLang(lang);
 	const install = SDK_INSTALL[sdkLang];
+	const successResponseType = responseTypeFor(spec, spec.sampleSuccessResponse);
 
 	const code =
 		mode === "sdk"
@@ -203,6 +205,11 @@ export const CodeSamples = ({
 						<span className="text-xs text-[var(--rp-fg3)]">
 							Example response
 						</span>
+						{successResponseType && (
+							<span className="ml-auto truncate text-xs text-[var(--rp-fg3)]">
+								{successResponseType.id} — {successResponseType.meaning}
+							</span>
+						)}
 					</div>
 					<NumberedCode
 						code={JSON.stringify(spec.sampleSuccessResponse, null, 2)}

@@ -7,6 +7,10 @@ import {
 import { describe, expect, it } from "vitest";
 
 // `pan` is an active product (slug "pan-verification-api") in the registry.
+// The response half of this renderer is only exercised through this fixture, so
+// it carries a nested `responseData` with an `imp` marker, a real success
+// payload and documented `responseTypes` — drop any of those and the matching
+// assertions below go silently vacuous.
 const spec: ApiSpec = {
 	id: "pan-lite",
 	productId: "pan",
@@ -17,8 +21,26 @@ const spec: ApiSpec = {
 	path: "/pan/lite",
 	docsUrl: "",
 	extraRequestParams: [],
-	responseData: [],
-	sampleSuccessResponse: {},
+	responseData: [
+		{ name: "pan_number", type: "string", description: "The PAN.", imp: true },
+		{
+			name: "holder",
+			type: "object",
+			description: "Registered holder.",
+			children: [{ name: "name", type: "string", description: "Full name." }],
+		},
+	],
+	sampleSuccessResponse: { status: 0, response_type_id: 309, data: {} },
+	errorScenarios: [
+		{
+			scenario: "PAN not found",
+			example: { status: 1, response_type_id: 308, data: {} },
+		},
+	],
+	responseTypes: [
+		{ id: 309, meaning: "PAN found", next: "dmt-get-recipients" },
+		{ id: 308, meaning: "PAN not found" },
+	],
 };
 
 describe("renderEndpointMarkdown", () => {
@@ -28,6 +50,38 @@ describe("renderEndpointMarkdown", () => {
 		expect(md).toContain(
 			"> View product & pricing details: [PAN Verification](https://eps.eko.in/products/pan-verification-api.md)",
 		);
+	});
+
+	it("flattens the response tree into dotted-path rows, starring imp fields", () => {
+		expect(md).toContain("| data.pan_number ⭐ | string | The PAN. |");
+		expect(md).toContain("| data.holder.name | string | Full name. |");
+	});
+
+	it("tabulates the response types, linking the next step's twin", () => {
+		expect(md).toContain("## Response types");
+		expect(md).toContain(
+			"| 309 | PAN found | [dmt-get-recipients](https://eps.eko.in/docs/dmt-get-recipients.md) |",
+		);
+		// No `next` ⇒ an em dash, not an empty cell or a dead link.
+		expect(md).toContain("| 308 | PAN not found | — |");
+	});
+
+	it("annotates the example response with what its id means", () => {
+		expect(md).toContain("`response_type_id` `309` — PAN found.");
+		expect(md).toContain(
+			"Next step: [dmt-get-recipients](https://eps.eko.in/docs/dmt-get-recipients.md).",
+		);
+	});
+
+	it("carries the response type into the error-scenario table", () => {
+		expect(md).toContain("| 200 | `308` — PAN not found | PAN not found |");
+	});
+
+	it("omits the response-types section for a spec that documents none", () => {
+		const bare = renderEndpointMarkdown({ ...spec, responseTypes: undefined });
+		expect(bare).not.toContain("## Response types");
+		// The error table keeps its column, but the undocumented id still shows.
+		expect(bare).toContain("| 200 | `308` | PAN not found |");
 	});
 });
 

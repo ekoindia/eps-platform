@@ -21,6 +21,7 @@ import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
+	assertResponseTypeSlugs,
 	buildSampleRequest,
 	categoryForSpec,
 	resolveHeaders,
@@ -77,6 +78,7 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	responseFields: resolveResponseFields(spec),
 	sampleSuccessResponse: spec.sampleSuccessResponse,
 	errorScenarios: spec.errorScenarios ?? [],
+	responseTypes: spec.responseTypes ?? [],
 });
 
 const buildTopics = (): AgentTopics => ({
@@ -151,7 +153,11 @@ const buildTopics = (): AgentTopics => ({
  * (`getDocumentedSpecs()`).
  */
 export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
-	assertRecipeSlugs(RECIPES, new Set(specs.map((s) => s.slug)));
+	// `specs` is the documented set, so its slugs are exactly the endpoints that
+	// have a page — the right target for both FK checks.
+	const documentedSlugs = new Set(specs.map((s) => s.slug));
+	assertRecipeSlugs(RECIPES, documentedSlugs);
+	assertResponseTypeSlugs(specs, documentedSlugs);
 
 	const topics = buildTopics();
 	const apis = specs.map(apiDetail);
