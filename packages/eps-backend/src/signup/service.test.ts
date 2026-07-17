@@ -202,7 +202,7 @@ describe("submitPan", () => {
 		await svc.submitPan("9990000001", "ABCDE1234F");
 		expect(verifyPan).toHaveBeenCalledWith({
 			pan: "ABCDE1234F",
-			identity: { initiatorId: "55501", userCode: "20810001", orgId: 1 },
+			identity: { initiatorId: "9990000001", userCode: "20810001", orgId: 1 },
 			xRealIp: undefined,
 		});
 	});
@@ -332,7 +332,7 @@ describe("submitPin", () => {
 });
 
 describe("getAgreementUrl", () => {
-	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+	const identity = { initiatorId: "9990000001", userCode: "20810001", orgId: 1 };
 
 	it("fetches the URL with the user's own identity", async () => {
 		const getAgreementUrl = vi.fn().mockResolvedValue({
@@ -380,7 +380,7 @@ describe("getAgreementUrl", () => {
 });
 
 describe("submitSignAgreement", () => {
-	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+	const identity = { initiatorId: "9990000001", userCode: "20810001", orgId: 1 };
 
 	it("submits the document id with the user's identity and returns refreshed state", async () => {
 		const submitSignAgreement = vi.fn().mockResolvedValue({ ok: true });

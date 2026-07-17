@@ -191,6 +191,48 @@ describe("EkoClient.getProfile", () => {
 		expect(r.kind).toBe("error");
 	});
 
+	// The mobile IS the initiator_id on every later interaction, so a 369 without
+	// one must never become a usable profile — it would send `initiator_id=` and
+	// earn a 403 that reads like an auth failure. `error` (not not_found/inactive)
+	// keeps it retryable and stops any session being minted, mirroring
+	// connect-api's "unknown response → 500".
+	it.each([
+		["missing", undefined],
+		["empty", ""],
+		["blank", "   "],
+	])(
+		"maps a 369 with a %s mobile to error, not found",
+		async (_label, mobile) => {
+			const f = mockFetch(200, {
+				response_type_id: 369,
+				data: {
+					user_detail: {
+						...(mobile === undefined ? {} : { mobile }),
+						org_id: 1,
+						user_type: "23",
+						role_list: [1],
+					},
+				},
+			});
+			const eko = createEkoClient(ekoCfg, f);
+			expect((await eko.getProfile({ mobile: "9990000001" })).kind).toBe(
+				"error",
+			);
+		},
+	);
+
+	// The guard sits ahead of BOTH profile branches: an onboarding user's steps
+	// build their identity from this same profile, so a blank mobile breaks them
+	// exactly as it breaks a fully-onboarded one.
+	it("maps a 369 onboarding profile with no mobile to error", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { onboarding: 1, org_id: 1, user_type: "23" } },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect((await eko.getProfile({ mobile: "9990000001" })).kind).toBe("error");
+	});
+
 	it("falls back to response_code when response_type_id is absent", async () => {
 		const f = mockFetch(200, { response_code: 2123 });
 		const eko = createEkoClient(ekoCfg, f);
@@ -295,7 +337,11 @@ describe("getProfile onboarding classification", () => {
 });
 
 describe("onboarding interactions", () => {
-	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
 	const businessDetails = {
 		name: "Acme Retail",
 		company_type: "4",
@@ -378,7 +424,7 @@ describe("onboarding interactions", () => {
 		expect(fields.get("source")).toBe("EPS");
 		expect(fields.get("latlong")).toBe("27.176670,78.008075,7787");
 		// Once the partial account exists, the user acts as their own initiator.
-		expect(fields.get("initiator_id")).toBe("55501");
+		expect(fields.get("initiator_id")).toBe("9990000001");
 		expect(fields.get("user_code")).toBe("20810001");
 		expect(fields.get("org_id")).toBe("1");
 		// A client_ref_id is always generated, matching sendOtp/verifyOtp.
@@ -497,7 +543,7 @@ describe("onboarding interactions", () => {
 		expect(r.ok).toBe(true);
 		const body = bodyOf(f);
 		expect(body.get("interaction_type_id")).toBe("522");
-		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("user_code")).toBe("20810001");
 		expect(body.get("org_id")).toBe("1");
 		expect(body.get("source")).toBe("EPS");
@@ -523,7 +569,11 @@ describe("onboarding interactions", () => {
 });
 
 describe("sign agreement interactions", () => {
-	const identity = { initiatorId: "55501", userCode: "20810001", orgId: 1 };
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
 	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
 		const init = (f as unknown as Mock).mock.calls[call][1];
 		return new URLSearchParams(init.body as string);
@@ -548,7 +598,7 @@ describe("sign agreement interactions", () => {
 		expect(body.get("agreement_id")).toBe("5");
 		expect(body.get("csp_id")).toBe("9990000001");
 		expect(body.get("user_id")).toBe("9990000001");
-		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("latlong")).toBe("27.176670,78.008075,7787");
 	});
 
@@ -593,7 +643,7 @@ describe("sign agreement interactions", () => {
 		expect(body.get("document_id")).toBe("DOC9");
 		expect(body.get("agreement_id")).toBe("5");
 		expect(body.get("esign_completed")).toBe("true");
-		expect(body.get("initiator_id")).toBe("55501");
+		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
 	});
 

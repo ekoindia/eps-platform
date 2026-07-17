@@ -1,4 +1,5 @@
-import type { BusinessDetails, EkoClient, EkoIdentity } from "../clients/eko";
+import type { BusinessDetails, EkoClient } from "../clients/eko";
+import { identityOf } from "../clients/eko";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
 import { encodePin } from "./pintwin";
@@ -88,15 +89,6 @@ export function createSignupService(deps: {
 	cfg: Config;
 }): SignupService {
 	const { eko } = deps;
-
-	/** The user's own identity, valid once the partial account exists. */
-	function identityOf(profile: EkoProfile): EkoIdentity {
-		return {
-			initiatorId: profile.ekoUserId,
-			userCode: String(profile.code),
-			orgId: profile.orgId,
-		};
-	}
 
 	/**
 	 * Projects an upstream profile result into client state.

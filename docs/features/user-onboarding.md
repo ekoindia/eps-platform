@@ -70,9 +70,24 @@ function actor(identity: EkoIdentity): Record<string, string> {
 `base()` supplies the configured `EKO_INITIATOR_ID` / `EKO_USER_CODE` pair
 (`packages/eps-backend/src/config.ts:100-101`) before a partial account
 exists (used by `createPartialAccount`, interaction 521). `actor()` supplies
-the user's own `ekoUserId` / `code`, mapped from the 151 response
-(`eko.ts:391-392` in `mapProfile`), for every step after the account exists
-(523, 170, 10005, 5).
+the user's own **mobile** / `code`, mapped from the 151 response by
+`identityOf()`, for every step after the account exists (523, 170, 10005, 5).
+
+`initiator_id` is the user's **registered mobile number** — never an internal
+id. This mirrors connect-api, the live Eloka backend: its 151 login builds the
+JWT claim with `user_id: detail.mobile` (`routes/authentication.js`), and every
+later interaction sends `initiator_id = tokenDetails.user_id`, i.e. the mobile
+(`routes/transactions.js`). The `eko_user_id` rides in that claim but is never
+sent as `initiator_id` anywhere; the public spec agrees (`initiator_id` —
+"Registered mobile number of the API user", `api-specs-common.ts`). Sending
+`ekoUserId` here earns a 403 whose message reads "Invalid Sender/Initiator" —
+the same misleading text interaction 151 uses for MERCHANT_NOT_FOUND.
+
+Before the partial account exists, connect-api sends no user identity at all —
+it falls back to the DEFAULT pair (`DEFAULT_TRXN_INITIATOR_ID` `1234567891` /
+`DEFAULT_TRXN_USER_CODE` `99029899`, matching our config defaults) plus
+`user_identity` / `user_identity_type`, which is exactly what `base()` +
+`createPartialAccount` do.
 
 Every upstream call authenticates with the `developer_key` header alone
 (`eko.ts:120`, `post()`). No Eko access token is captured, stored, or
@@ -121,14 +136,14 @@ still returns `kind: "onboarding"`, not `found`.
 The verify-OTP handler (`packages/eps-backend/src/http/app.ts:182-282`) acts
 on this:
 
-| `getProfile` result | Response |
-|---|---|
-| `not_found` | signup session (no steps done yet) |
-| `onboarding` | signup session (resume — see below) |
-| `found` | developer session (unchanged from before this feature) |
-| `inactive` | 403 `ACCOUNT_INACTIVE` |
-| `not_allowed` | 403 `NOT_ALLOWED` |
-| `error` | 502 `PROFILE_UNAVAILABLE` |
+| `getProfile` result | Response                                               |
+| ------------------- | ------------------------------------------------------ |
+| `not_found`         | signup session (no steps done yet)                     |
+| `onboarding`        | signup session (resume — see below)                    |
+| `found`             | developer session (unchanged from before this feature) |
+| `inactive`          | 403 `ACCOUNT_INACTIVE`                                 |
+| `not_allowed`       | 403 `NOT_ALLOWED`                                      |
+| `error`             | 502 `PROFILE_UNAVAILABLE`                              |
 
 The old `403 NOT_REGISTERED` branch (behind a `TODO(signup)`) is gone —
 `not_found` and `onboarding` are combined into one branch at
@@ -166,7 +181,7 @@ special-cased away a signup session, reloading the page mid-onboarding would
 drop the user to `anon` and force a brand-new OTP — defeating resume. Instead
 `SignupView` is a fixed, two-field shape (`role`, `mobile`) with no upstream
 call, so the reload is cheap and instant; the actual onboarding progress is
-fetched separately by `SignupWizard` from `GET /signup/state`, which *does*
+fetched separately by `SignupWizard` from `GET /signup/state`, which _does_
 hit the Eko profile.
 
 `AuthProvider.classify()` (`src/lib/auth/AuthProvider.tsx:34-44`) maps this
@@ -181,11 +196,12 @@ helper (`packages/eps-backend/src/http/signup.ts:81-110`) that upgrades the
 session to a real developer session before returning the response.
 
 The upgrade flow (`signup.ts`, inside `respond()`):
+
 1. Re-fetch the upstream profile via `eko.getProfile()`.
 2. Only mint on `profile.kind === "found"` — every other kind returns the
    `done` state unmodified, no cookie set. `buildMeView` never throws for
    `inactive` / `not_allowed` / `error` (it resolves them to a neutral or
-   inactive `MeView` instead), so gating on its *output* would silently mint a
+   inactive `MeView` instead), so gating on its _output_ would silently mint a
    developer session for exactly the profiles `POST /auth/otp/verify` refuses
    outright (403 `ACCOUNT_INACTIVE` / 403 `NOT_ALLOWED` / 502
    `PROFILE_UNAVAILABLE`). The realistic trigger is a transient upstream flake
@@ -210,7 +226,7 @@ request still returns `done` state and succeeds — onboarding succeeded
 upstream, and the upgrade is automatically retried on the next
 `/signup/state` call (ponytail comment on the `catch`). The non-`found`-kind
 guard above and this `catch` cover two different failure shapes: the guard
-handles a re-fetch that *resolves* to something other than `found`; the
+handles a re-fetch that _resolves_ to something other than `found`; the
 `catch` handles a re-fetch that throws outright. Either way, a failed or
 inconclusive upgrade never rolls back onboarding completion, and never mints
 a session on unverified data.
@@ -230,14 +246,14 @@ helpers share one send/log/error pipeline (`sendForm()` in `eko.ts`), so
 logging and error semantics are identical either way. Success is judged
 per-interaction — there is no single convention:
 
-| # | Interaction | Method (`eko.ts`) | Identity used | Success condition |
-|---|---|---|---|---|
-| 521 | Create partial account | `createPartialAccount` | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`) |
-| 523 | Verify PAN | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`) | `response_type_id === 1569` (`PAN_VERIFICATION_OK`) |
-| 522 | Business details | `submitBusiness` (398-414) | user's own (`actor()`) | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`) |
-| 170 | Get booklet number | `getBooklet` (326-351) | user's own | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
-| 10005 | Fetch pintwin key | `fetchPintwinKey` (352-365) | user's own | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id` |
-| 5 | Set secret PIN | `setSecretPin` (366-382) | user's own | `response_type_id === 9` (`SECRET_PIN_OK`) |
+| #     | Interaction            | Method (`eko.ts`)                              | Identity used                 | Success condition                                                                                                                                                                          |
+| ----- | ---------------------- | ---------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 521   | Create partial account | `createPartialAccount`                         | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`)                                                                                                                                  |
+| 523   | Verify PAN             | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`)        | `response_type_id === 1569` (`PAN_VERIFICATION_OK`)                                                                                                                                        |
+| 522   | Business details       | `submitBusiness` (398-414)                     | user's own (`actor()`)        | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`)                                                                                                                                        |
+| 170   | Get booklet number     | `getBooklet` (326-351)                         | user's own                    | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
+| 10005 | Fetch pintwin key      | `fetchPintwinKey` (352-365)                    | user's own                    | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id`                                                                                     |
+| 5     | Set secret PIN         | `setSecretPin` (366-382)                       | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
 
 `stepResult()` (`eko.ts:251-260`) is the shared classifier for 521/523/522/5,
 comparing `response_type_id` against the interaction's own success constant
@@ -262,7 +278,11 @@ back a 10-character permutation of `0`-`9` in plaintext
 (`packages/eps-backend/src/signup/pintwin.ts:1-41`):
 
 ```ts
-export function encodePin(pin: string, key: string, keyId: number | string): string {
+export function encodePin(
+	pin: string,
+	key: string,
+	keyId: number | string,
+): string {
 	// out[i] = key[pin[i]], then "encoded|keyId"
 }
 ```
@@ -295,6 +315,7 @@ from the API's `onboarding_steps` at runtime. Adding a step is two additions,
 no branching logic anywhere else:
 
 **Backend** (`packages/eps-backend/src/`):
+
 1. Add an interaction method to `clients/eko.ts` (follow the `verifyPan` /
    `setSecretPin` pattern: build the form fields, call `post()`, classify the
    result).
@@ -304,9 +325,10 @@ no branching logic anywhere else:
    method, and maps `SignupStepError` via `toAppError`.
 
 **Frontend** (`src/features/signup/`):
+
 1. Write the step component to the `StepProps` contract
    (`resolveSteps.ts:5-16`): `onSubmit(values: Record<string, string>) =>
-   Promise<void>`, `busy`, `error`. Values are a **named record keyed by field
+Promise<void>`, `busy`, `error`. Values are a **named record keyed by field
    name**, not a positional array — each step picks its own keys out of the
    record in its `submit` closure below. For a multi-field step,
    `businessFields.ts` is the pattern to copy: declare every field once (name,
@@ -446,6 +468,6 @@ the clear there for the same reason.
   `BusinessDetailsStep.tsx:326-337` is the reference for what 522 expects.
 - `createSignupService` (`packages/eps-backend/src/signup/service.ts:52-56`)
   accepts a `cfg: Config` parameter but never reads it — `const { eko } =
-  deps;` discards it immediately, and no other reference to `cfg` exists in
+deps;` discards it immediately, and no other reference to `cfg` exists in
   the file. Dead parameter; harmless but worth removing or wiring to actual
   use next time this file is touched.

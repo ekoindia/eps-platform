@@ -115,16 +115,33 @@ const SIGN_AGREEMENT_OK = 1615;
 const AGREEMENT_ID = "5";
 
 /**
- * Identity of the acting user for an onboarding interaction.
+ * Identity of the acting user on an interaction.
  *
  * Before the partial account exists, this is the configured DEFAULT pair.
- * Afterwards it is the user's own `ekoUserId` / `code` from the 151 profile.
- * `user_id` is never sent upstream.
+ * Afterwards it is the user's own MOBILE / `code` from the 151 profile.
+ *
+ * `initiator_id` is the user's registered MOBILE NUMBER — not any internal id.
+ * This mirrors connect-api, the live Eloka backend: its 151 login puts
+ * `user_id: detail.mobile` in the JWT claim (routes/authentication.js), and
+ * every later interaction sends `initiator_id = tokenDetails.user_id`, i.e. the
+ * mobile (routes/transactions.js). `eko_user_id` rides in that claim too but is
+ * never sent as `initiator_id` anywhere — so do not "fix" this back to
+ * `ekoUserId`: upstream answers 403 "Invalid Sender/Initiator".
+ * `user_id` itself is never sent upstream.
  */
 export interface EkoIdentity {
 	initiatorId: string;
 	userCode: string;
 	orgId: number;
+}
+
+/** The user's own identity, valid once the partial account exists. */
+export function identityOf(profile: EkoProfile): EkoIdentity {
+	return {
+		initiatorId: profile.mobile,
+		userCode: String(profile.code),
+		orgId: profile.orgId,
+	};
 }
 
 /** Booklet details from interaction 170, forwarded verbatim to interaction 5. */
@@ -375,6 +392,19 @@ export function createEkoClient(
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
 			if (code === SUCCESS_CODE && d) {
+				// A 369 with no mobile is an upstream anomaly, not a user
+				// classification — reject it BEFORE either profile branch below.
+				// `mobile` is load-bearing twice over: it is the `initiator_id` on
+				// every later interaction (see `identityOf`), and both `found` AND
+				// `onboarding` hand this profile out as an identity. Letting a blank
+				// one through would send `initiator_id=` upstream and earn a 403
+				// reading "Invalid Sender/Initiator" — an identity bug wearing an
+				// auth bug's clothes. connect-api guards the same way: its success
+				// branch requires `user_detail.mobile` and otherwise falls through to
+				// its "unknown response → 500" (routes/authentication.js).
+				if (!String(d.mobile ?? "").trim()) {
+					return { kind: "error", responseTypeId: code };
+				}
 				// Onboarding-in-progress is checked FIRST and deliberately: user_type
 				// flips to "23" as soon as the partial account exists, so it cannot
 				// tell an in-progress user from a finished one. `onboarding === 1` is
