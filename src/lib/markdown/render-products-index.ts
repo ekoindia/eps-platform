@@ -16,8 +16,8 @@ import {
 } from "@/lib/data/api-spec-previews";
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
-import { docsHref } from "@/lib/data/docs-registry";
 import { BBPS_OPERATORS } from "@/lib/data/bbps-operators";
+import { docsHref } from "@/lib/data/docs-registry";
 import {
 	AEPS_CASHOUT_SLABS,
 	AEPS_MINI_STATEMENT_COMMISSION,
@@ -31,6 +31,7 @@ import {
 } from "@/lib/data/payments-pricing";
 import type { ProductPageDataShape } from "./render-product";
 import {
+	aiGettingStartedNotice,
 	bulletList,
 	canonicalNotice,
 	formatAmount,
@@ -509,6 +510,8 @@ function renderProductsIndex(
 				canonical,
 			}),
 			canonicalNotice(canonical),
+			"# Getting Started for AI Coding Agents",
+			aiGettingStartedNotice(),
 		);
 	}
 
@@ -534,7 +537,11 @@ function renderProductsIndex(
 		(SETUP_FEE_WAIVED ? " Setup fees are currently waived." : "");
 
 	blocks.push(
-		heading(1, opts.title ?? "Eko APIs & Products — Complete Reference", fmt),
+		heading(
+			1,
+			opts.title ?? "Eko EPS APIs & Products — Complete Reference",
+			fmt,
+		),
 		opts.lede ??
 			"Production-ready fintech APIs for payments, verification, and agent banking — built for India's digital economy. This document contains the full details of every active Eko API so it can be used standalone; per-product pages are linked in each section.",
 		gettingStartedNotice(),
