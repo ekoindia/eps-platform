@@ -6,15 +6,20 @@ import { noopSecurityLogger, type SecurityLogger } from "../audit/securityLog";
 import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
+import { identityOf } from "../clients/eko";
 import type { GitHubClient } from "../clients/github";
 import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
 import { buildMeView } from "../identity/me";
+import type { SignupView } from "../identity/me";
+import { createSignupService, type SignupService } from "../signup/service";
 import type { KV } from "../store/kv";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
 import { AppError, errorBody } from "./errors";
+import { mountSignup } from "./signup";
+import { mountTransactions } from "./transactions";
 import {
 	ADMIN_CALLBACK_IP_LIMIT,
 	ADMIN_LOGIN_IP_LIMIT,
@@ -40,6 +45,8 @@ export interface Deps {
 	readiness?: () => Promise<boolean>; // Task 7
 	securityLog?: SecurityLogger;
 	accessLog?: AccessLogger;
+	/** Signup orchestration; defaults to one built over the injected Eko client. */
+	signup?: SignupService;
 }
 
 const OTP_START_LIMIT = 5;
@@ -47,6 +54,10 @@ const OTP_VERIFY_LIMIT = 5;
 const OTP_IP_LIMIT = 20;
 const OTP_VERIFY_IP_LIMIT = 50;
 const OTP_WINDOW_SEC = 600;
+
+/** Wallet reads per session per `RL_WINDOW_SEC`. The console's own 30s refresh
+ * cooldown caps a well-behaved client at 20, so this only bites a scripted one. */
+const WALLET_BALANCE_LIMIT = 30;
 
 const STATE_COOKIE = "eps_oauth_state";
 const STATE_TTL_SEC = 600;
@@ -67,6 +78,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const accessLog = deps.accessLog ?? noopAccessLogger;
+	const signup = deps.signup ?? createSignupService({ eko, cfg });
 	const app = new Hono<AppEnv>();
 
 	app.use("*", requestId());
@@ -133,7 +145,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	});
 
 	/**
-	 * POST /auth/otp/start → { ok: true } (200)
+	 * POST /auth/otp/start → { ok: true, otp?: string } (200)
+	 * `otp` is echoed only when DEMO_OTP is on (dev/UAT) and the upstream
+	 * returned one — UAT does, production does not.
 	 * MARK: /start
 	 */
 	app.post("/auth/otp/start", async (c) => {
@@ -166,7 +180,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"Couldn't send the OTP right now. Please try again.",
 			);
 		}
-		return c.json({ ok: true });
+		const demoOtp = cfg.demoOtp
+			? (resp.raw as { data?: { otp?: string } })?.data?.otp
+			: undefined;
+		return c.json(demoOtp ? { ok: true, otp: demoOtp } : { ok: true });
 	});
 
 	/**
@@ -229,18 +246,25 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"Couldn't load your profile right now. Please try again.",
 			);
 		}
-		// TODO(signup): New users — Eko response 319/1200/1867 → `not_found` — are
-		// not onboarded via /console yet. The reference (simplibankLoginAPI) admits
-		// them with a limited-role signup session (role_list [-5] for mobile,
-		// onboarding=1) and starts the signup flow. When self-serve signup is
-		// enabled, replace this block with that flow. For now, refuse so an
-		// unregistered number cannot obtain a session.
-		if (profile.kind === "not_found") {
-			throw new AppError(
-				403,
-				"NOT_REGISTERED",
-				"This mobile number isn't registered for EPS yet.",
-			);
+		// New users (`not_found`) and users partway through onboarding
+		// (`onboarding`) both get a limited signup session, which authorizes the
+		// /signup/* endpoints and a lightweight /me — nothing else. The wizard
+		// reads its own progress from /signup/state.
+		if (profile.kind === "not_found" || profile.kind === "onboarding") {
+			const claim = {
+				sub: m,
+				role: "signup" as const,
+				orgId:
+					profile.kind === "onboarding"
+						? profile.profile.orgId
+						: cfg.eko.defaultOrgId,
+			};
+			const access = await sessions.mintAccess(claim);
+			const refresh = await sessions.issueRefresh(claim);
+			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
+			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			const view: SignupView = { role: "signup", mobile: m };
+			return c.json(view);
 		}
 		// The OTP authenticated the number, but the profile is not an EPS business
 		// partner (org 1 / user_type 23) — deny before minting any token/cookie.
@@ -251,7 +275,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"This account isn't an EPS business account. Please contact support.",
 			);
 		}
-		// Only a found (existing, active) profile reaches here.
+		// Only a `found` (existing, EPS-business, active-or-onboarded) profile
+		// reaches here — `not_found`/`onboarding` returned a signup session above,
+		// and every other kind threw before this point.
 		const view = await buildMeView(m, profile, (mob) => zoho.findLead(mob));
 		const claim = {
 			sub: m,
@@ -326,6 +352,13 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				sub: claim.sub,
 			});
 		}
+		// A signup session has no developer profile yet. Return a lightweight view
+		// without an Eko call, so a reload mid-onboarding restores the session
+		// instead of dropping the user to anonymous and forcing a fresh OTP.
+		if (claim.role === "signup") {
+			const view: SignupView = { role: "signup", mobile: claim.sub };
+			return c.json(view);
+		}
 		const profile = await eko.getProfile({
 			mobile: claim.sub,
 			xRealIp: c.req.header("x-real-ip"),
@@ -333,6 +366,66 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		const view = await buildMeView(claim.sub, profile, (m) => zoho.findLead(m));
 		return c.json(view);
 	});
+
+	/**
+	 * The signed-in developer's E-value wallet balance.
+	 *
+	 * The identity is re-derived from the session claim's mobile on every call —
+	 * never read from the request — so one developer cannot read another's
+	 * wallet. Mirrors the rule `mountSignup` follows for onboarding.
+	 */
+	app.get("/wallet/balance", async (c) => {
+		const token = getCookie(c, ACCESS_COOKIE);
+		const claim = token ? await sessions.verifyAccess(token) : null;
+		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+		// Admin sessions have no mobile, and a signup session has no wallet until
+		// onboarding finishes.
+		if (claim.role !== "developer") {
+			throw new AppError(403, "NO_WALLET", "This session has no wallet.");
+		}
+		// Each hit is two upstream round-trips. Limit per session, not per IP:
+		// x-real-ip is spoofable by anything the reverse proxy doesn't overwrite.
+		await enforceRateLimit(
+			kv,
+			`rl:wallet:mob:${claim.sub}`,
+			WALLET_BALANCE_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const xRealIp = c.req.header("x-real-ip");
+		const profile = await eko.getProfile({ mobile: claim.sub, xRealIp });
+		// Gate on the profile kind, not on buildMeView — that view never throws and
+		// would happily hand back a state for a profile upstream refused.
+		//
+		// `error` is an unclassified upstream failure, NOT a user classification, so
+		// it must not answer 403: the console treats 403 as the definitive "no
+		// wallet here" and hides the card for good. A blip would silently retire the
+		// balance for an account that has one.
+		if (profile.kind === "error") {
+			throw new AppError(
+				502,
+				"UPSTREAM_ERROR",
+				"Couldn't reach your account right now.",
+			);
+		}
+		if (profile.kind !== "found") {
+			throw new AppError(403, "NO_WALLET", "This account has no wallet yet.");
+		}
+		const balance = await eko.getWalletBalance({
+			identity: identityOf(profile.profile),
+			xRealIp,
+		});
+		if (balance === null) {
+			throw new AppError(
+				502,
+				"UPSTREAM_ERROR",
+				"Couldn't fetch your balance right now.",
+			);
+		}
+		return c.json({ balance });
+	});
+
+	mountSignup(app, { sessions, signup, eko, zoho, cfg });
+	mountTransactions(app, { sessions, eko, cfg });
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {

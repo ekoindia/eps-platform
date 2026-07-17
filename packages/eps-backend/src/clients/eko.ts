@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
-import type { EkoProfile, ProfileResult } from "../types";
+import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
 import { withTimeout } from "./http";
+import { TRANSACTION_FIXTURE } from "./transactions.fixture";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -26,11 +28,199 @@ export interface EkoClient {
 		orgId?: number;
 		xRealIp?: string;
 	}): Promise<ProfileResult>;
+	createPartialAccount(input: {
+		mobile: string;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	verifyPan(input: {
+		pan: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	submitBusiness(input: {
+		details: BusinessDetails;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	getBooklet(input: {
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoBooklet | null>;
+	fetchPintwinKey(input: {
+		mobile: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoPintwinKey | null>;
+	setSecretPin(input: {
+		firstOkekey: string;
+		secondOkekey: string;
+		booklet: EkoBooklet;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	getAgreementUrl(input: {
+		mobile: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<SignUrlResult>;
+	submitSignAgreement(input: {
+		documentId: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<EkoStepResult>;
+	getWalletBalance(input: {
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<number | null>;
+	getTransactionHistory(
+		input: TransactionHistoryInput,
+	): Promise<{ rows: TransactionRow[] }>;
+}
+
+/**
+ * A page of this user's own transaction history.
+ *
+ * `accountId` is null until its source is known — see
+ * docs/features/transaction-history.md §Unverified. When null the field is
+ * omitted upstream, mirroring `getWalletBalance` (interaction 9), which sends no
+ * account and gets the default E-value account back. Whether interaction 154 is
+ * equally forgiving is exactly what the probe answers; the route refuses to call
+ * upstream without one rather than guess.
+ */
+export interface TransactionHistoryInput {
+	identity: EkoIdentity;
+	accountId: string | null;
+	startIndex: number;
+	limit: number;
+	/** Already allow-listed and shape-checked by the route — never raw query input. */
+	filters: Record<string, string>;
+	xRealIp?: string;
 }
 
 const NOT_FOUND_CODES = new Set([319, 1200, 1867]);
 const INACTIVE_CODE = 2123;
 const SUCCESS_CODE = 369;
+
+/**
+ * Fixed geo-coordinates sent with onboarding interactions.
+ *
+ * This flow does not capture the user's location — the Eloka geolocation step
+ * is deliberately not ported — but upstream expects the field. Eloka itself
+ * falls back to this exact value when its capture step is skipped.
+ */
+const ONBOARDING_LATLONG = "27.176670,78.008075,7787";
+
+/** Upstream `response_type_id` values that mean a step succeeded. */
+const CREATE_PARTIAL_ACCOUNT_OK = 1566;
+const PAN_VERIFICATION_OK = 1569;
+const BOOKLET_OK = 1646;
+const SECRET_PIN_OK = 9;
+const BUSINESS_DETAILS_OK = 1567;
+
+/** Interaction 287 (fetch e-sign URL): `response_type_id` meaning a URL was issued. */
+const GET_AGREEMENT_URL_OK = 1613;
+/**
+ * Interaction 287: `response_type_id`s meaning the agreement is already signed —
+ * skip the provider popup and go straight to the submit step (293).
+ */
+const AGREEMENT_ALREADY_SIGNED = new Set([1615, 1069]);
+/**
+ * Interaction 293 (submit signed agreement): success `response_type_id`.
+ *
+ * PROVISIONAL. The wlc step config declares 1615 for this step, but its pipeline
+ * executor actually accepts `status === 0`. This repo's `stepResult` matches on a
+ * single id, so confirm the real value against a UAT 293 response before relying
+ * on it — adjust here if upstream returns a different id.
+ */
+const SIGN_AGREEMENT_OK = 1615;
+/**
+ * Agreement id sent to interactions 287/293.
+ *
+ * ponytail: a fixed constant for the single EPS vertical (matches the wlc
+ * `config.agreementId ?? 5` default). Lift to `cfg.eko.agreementId` if it ever
+ * varies per org.
+ */
+const AGREEMENT_ID = "5";
+
+/**
+ * Identity of the acting user on an interaction.
+ *
+ * Before the partial account exists, this is the configured DEFAULT pair.
+ * Afterwards it is the user's own MOBILE / `code` from the 151 profile.
+ *
+ * `initiator_id` is the user's registered MOBILE NUMBER — not any internal id.
+ * This mirrors connect-api, the live Eloka backend: its 151 login puts
+ * `user_id: detail.mobile` in the JWT claim (routes/authentication.js), and
+ * every later interaction sends `initiator_id = tokenDetails.user_id`, i.e. the
+ * mobile (routes/transactions.js). `eko_user_id` rides in that claim too but is
+ * never sent as `initiator_id` anywhere — so do not "fix" this back to
+ * `ekoUserId`: upstream answers 403 "Invalid Sender/Initiator".
+ * `user_id` itself is never sent upstream.
+ */
+export interface EkoIdentity {
+	initiatorId: string;
+	userCode: string;
+	orgId: number;
+}
+
+/** The user's own identity, valid once the partial account exists. */
+export function identityOf(profile: EkoProfile): EkoIdentity {
+	return {
+		initiatorId: profile.mobile,
+		userCode: String(profile.code),
+		orgId: profile.orgId,
+	};
+}
+
+/** Booklet details from interaction 170, forwarded verbatim to interaction 5. */
+export interface EkoBooklet {
+	bookletSerialNumber: string;
+	isPintwinUser: number;
+}
+
+/**
+ * Business details collected by the onboarding step, keyed exactly as
+ * interaction 522 expects them. Values are forwarded verbatim — this client
+ * does not rename, trim, or re-validate them.
+ */
+export interface BusinessDetails {
+	name: string;
+	company_type: string;
+	authorized_signatory_name: string;
+	email: string;
+	current_address_line1: string;
+	current_address_line2: string;
+	current_address_district: string;
+	current_address_state: string;
+	current_address_pincode: string;
+}
+
+/** A single-use substitution key from interaction 10005. */
+export interface EkoPintwinKey {
+	pintwinKey: string;
+	keyId: number | string;
+}
+
+/** Outcome of an onboarding interaction, carrying the upstream message on failure. */
+export type EkoStepResult =
+	| { ok: true }
+	| { ok: false; message: string; responseTypeId: number };
+
+/**
+ * Outcome of fetching the e-sign URL (interaction 287).
+ *
+ * `alreadySigned` short-circuits the provider popup: the agreement is already
+ * signed upstream, so only the submit step (293) remains.
+ */
+export type SignUrlResult =
+	| {
+			ok: true;
+			shortUrl: string;
+			documentId: string;
+			pipe: number;
+			alreadySigned: boolean;
+	  }
+	| { ok: false; message: string; responseTypeId: number };
 
 export function createEkoClient(
 	cfg: Config["eko"],
@@ -40,15 +230,20 @@ export function createEkoClient(
 	const url = `${cfg.scheme}://${cfg.host}:${cfg.port}${cfg.path}`;
 	const doFetch = withTimeout(fetchImpl);
 
-	async function post(
+	/**
+	 * Shared send/log/error pipeline for both the urlencoded (`post`) and
+	 * multipart (`postMultipart`) transports: forwards `X-Real-IP`, times the
+	 * call, reads the body BEFORE the status check (a non-2xx often carries a
+	 * diagnostic JSON payload worth capturing), logs one entry via `logger.log`
+	 * keyed by the logical `fields` (never the raw body), and throws on a
+	 * non-2xx or non-JSON response.
+	 */
+	async function sendForm(
+		body: string | FormData,
+		headers: Record<string, string>,
 		fields: Record<string, string>,
 		xRealIp?: string,
 	): Promise<unknown> {
-		const body = new URLSearchParams(fields).toString();
-		const headers: Record<string, string> = {
-			"Content-Type": "application/x-www-form-urlencoded",
-			developer_key: cfg.developerKey,
-		};
 		// Forward the trusted client IP so the upstream's own anti-abuse / rate
 		// checks see the real caller. Omit the header entirely when unknown — an
 		// empty `X-Real-IP` can be treated differently from an absent one upstream.
@@ -95,11 +290,67 @@ export function createEkoClient(
 		return parsed;
 	}
 
+	async function post(
+		fields: Record<string, string>,
+		xRealIp?: string,
+	): Promise<unknown> {
+		const body = new URLSearchParams(fields).toString();
+		const headers: Record<string, string> = {
+			"Content-Type": "application/x-www-form-urlencoded",
+			developer_key: cfg.developerKey,
+		};
+		return sendForm(body, headers, fields, xRealIp);
+	}
+
+	/**
+	 * POSTs a single `multipart/form-data` part named `form-data`, whose value
+	 * is the given URL-encoded field string. Interaction 523 (PAN verification)
+	 * is the one onboarding call the upstream expects wrapped this way instead
+	 * of plain urlencoded — see the design spec's "PAN (523)" section.
+	 *
+	 * `Content-Type` is deliberately left unset: `fetch` fills in the multipart
+	 * boundary itself once it sees a `FormData` body, and setting it manually
+	 * would omit that boundary and break the upload.
+	 */
+	async function postMultipart(
+		formDataString: string,
+		xRealIp?: string,
+	): Promise<unknown> {
+		const body = new FormData();
+		body.append("form-data", formDataString);
+		const headers: Record<string, string> = { developer_key: cfg.developerKey };
+		// Logged fields must mirror the actual wire values so redaction and the
+		// `basic`-level summary keep working exactly as they do for `post()`.
+		const fields = Object.fromEntries(new URLSearchParams(formDataString));
+		return sendForm(body, headers, fields, xRealIp);
+	}
+
 	function base(orgId?: number): Record<string, string> {
 		return {
 			initiator_id: cfg.initiatorId,
 			user_code: cfg.userCode,
 			org_id: String(orgId ?? cfg.defaultOrgId),
+		};
+	}
+
+	/** Form fields identifying the acting user on an onboarding interaction. */
+	function actor(identity: EkoIdentity): Record<string, string> {
+		return {
+			initiator_id: identity.initiatorId,
+			user_code: identity.userCode,
+			org_id: String(identity.orgId),
+		};
+	}
+
+	/** Classifies a step response against its expected success `response_type_id`. */
+	function stepResult(raw: unknown, successTypeId: number): EkoStepResult {
+		const r = raw as { response_type_id?: number; message?: string };
+		const code = Number(r?.response_type_id ?? -1);
+		if (code === successTypeId) return { ok: true };
+		return {
+			ok: false,
+			message: r?.message ?? "The request could not be completed.",
+			responseTypeId: code,
 		};
 	}
 
@@ -169,6 +420,32 @@ export function createEkoClient(
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
 			if (code === SUCCESS_CODE && d) {
+				// A 369 with no mobile is an upstream anomaly, not a user
+				// classification — reject it BEFORE either profile branch below.
+				// `mobile` is load-bearing twice over: it is the `initiator_id` on
+				// every later interaction (see `identityOf`), and both `found` AND
+				// `onboarding` hand this profile out as an identity. Letting a blank
+				// one through would send `initiator_id=` upstream and earn a 403
+				// reading "Invalid Sender/Initiator" — an identity bug wearing an
+				// auth bug's clothes. connect-api guards the same way: its success
+				// branch requires `user_detail.mobile` and otherwise falls through to
+				// its "unknown response → 500" (routes/authentication.js).
+				if (!String(d.mobile ?? "").trim()) {
+					return { kind: "error", responseTypeId: code };
+				}
+				// Onboarding-in-progress is checked FIRST and deliberately: user_type
+				// flips to "23" as soon as the partial account exists, so it cannot
+				// tell an in-progress user from a finished one. `onboarding === 1` is
+				// the only reliable signal. Gating on user_type first would classify
+				// every mid-onboarding user as not_allowed and lock them out on every
+				// subsequent login.
+				if (Number(d.onboarding ?? 0) === 1) {
+					return {
+						kind: "onboarding",
+						responseTypeId: code,
+						profile: mapProfile(d),
+					};
+				}
 				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
 				if (Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23") {
 					return { kind: "not_allowed", responseTypeId: code };
@@ -184,7 +461,343 @@ export function createEkoClient(
 			// error, so the caller never mints a session on an unclassified result.
 			return { kind: "error", responseTypeId: code };
 		},
+		async createPartialAccount(input) {
+			// The account does not exist yet, so the configured DEFAULT initiator /
+			// user_code pair acts on the new user's behalf, identified by mobile.
+			const raw = await post(
+				{
+					...base(),
+					interaction_type_id: "521",
+					user_identity: input.mobile,
+					user_identity_type: "mobile_number",
+					csp_id: input.mobile,
+					applicant_type: "1",
+					business_vertical: "EPS",
+					latlong: ONBOARDING_LATLONG,
+					source: "EPS",
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, CREATE_PARTIAL_ACCOUNT_OK);
+		},
+		async verifyPan(input) {
+			// PAN rides as `doc_id` on the document interaction; no photo is sent.
+			// Unlike every other onboarding interaction, 523 (document upload) is
+			// NOT sent as a flat urlencoded body: the reference connect-api
+			// implementation wraps it in one multipart part, literally named
+			// `form-data`, whose value is this same URL-encoded field string. See
+			// the design spec's "PAN (523)" section.
+			const fields = {
+				client_ref_id: randomUUID(),
+				interaction_type_id: "523",
+				intent_id: "3",
+				doc_type: "2",
+				doc_id: input.pan,
+				source: "EPS",
+				latlong: ONBOARDING_LATLONG,
+				...actor(input.identity),
+			};
+			const raw = await postMultipart(
+				new URLSearchParams(fields).toString(),
+				input.xRealIp,
+			);
+			return stepResult(raw, PAN_VERIFICATION_OK);
+		},
+		async submitBusiness(input) {
+			// Eloka always sends a client_ref_id on this interaction — its
+			// apiHelper injects one when absent (helpers/apiHelper.js:103) and its
+			// pipeline sets one explicitly (executePipeline.ts:289). Match that.
+			const raw = await post(
+				{
+					// `details` is spread FIRST so none of its keys can override the
+					// system fields below (actor identity, client_ref_id,
+					// interaction_type_id).
+					...input.details,
+					...actor(input.identity),
+					client_ref_id: randomUUID(),
+					interaction_type_id: "522",
+					latlong: ONBOARDING_LATLONG,
+					source: "EPS",
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, BUSINESS_DETAILS_OK);
+		},
+		async getBooklet(input) {
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "170",
+					document_id: "",
+					latlong: ONBOARDING_LATLONG,
+				},
+				input.xRealIp,
+			)) as {
+				response_status_id?: number;
+				response_type_id?: number;
+				data?: { booklet_serial_number?: string; is_pintwin_user?: number };
+			};
+			// This interaction reports success on BOTH ids; accept neither alone.
+			if (
+				Number(raw?.response_status_id ?? -1) !== 0 ||
+				Number(raw?.response_type_id ?? -1) !== BOOKLET_OK
+			) {
+				return null;
+			}
+			return {
+				bookletSerialNumber: String(raw.data?.booklet_serial_number ?? ""),
+				isPintwinUser: Number(raw.data?.is_pintwin_user ?? 0),
+			};
+		},
+		async fetchPintwinKey(input) {
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "10005",
+					alternate_user_id: input.mobile,
+				},
+				input.xRealIp,
+			)) as { data?: { pintwin_key?: string; key_id?: number | string } };
+			const key = raw?.data?.pintwin_key;
+			const keyId = raw?.data?.key_id;
+			if (!key || keyId === undefined || keyId === null) return null;
+			return { pintwinKey: String(key), keyId };
+		},
+		async setSecretPin(input) {
+			// is_pintwin_user and booklet_serial_number are forwarded verbatim from
+			// interaction 170 — they are interpreted upstream, not here.
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "5",
+					first_okekey: input.firstOkekey,
+					second_okekey: input.secondOkekey,
+					is_pintwin_user: String(input.booklet.isPintwinUser),
+					booklet_serial_number: input.booklet.bookletSerialNumber,
+					latlong: ONBOARDING_LATLONG,
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, SECRET_PIN_OK);
+		},
+		async getAgreementUrl(input) {
+			// csp_id / user_id ride as the mobile (mirroring the reference esign
+			// service); the actor identity authorizes the call.
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "287",
+					document_id: "",
+					agreement_id: AGREEMENT_ID,
+					latlong: ONBOARDING_LATLONG,
+					csp_id: input.mobile,
+					user_id: input.mobile,
+				},
+				input.xRealIp,
+			)) as {
+				response_type_id?: number;
+				message?: string;
+				data?: { short_url?: string; document_id?: string; pipe?: number };
+			};
+			const code = Number(raw?.response_type_id ?? -1);
+			const documentId = String(raw?.data?.document_id ?? "");
+			const pipe = Number(raw?.data?.pipe ?? 0);
+			if (AGREEMENT_ALREADY_SIGNED.has(code)) {
+				return {
+					ok: true,
+					shortUrl: "",
+					documentId,
+					pipe,
+					alreadySigned: true,
+				};
+			}
+			// Classify strictly by the success id — a partial `short_url` on an
+			// otherwise-error response must NOT be treated as success.
+			if (code === GET_AGREEMENT_URL_OK) {
+				return {
+					ok: true,
+					shortUrl: String(raw?.data?.short_url ?? ""),
+					documentId,
+					pipe,
+					alreadySigned: false,
+				};
+			}
+			return {
+				ok: false,
+				message: raw?.message ?? "Couldn't start the agreement signing.",
+				responseTypeId: code,
+			};
+		},
+		async submitSignAgreement(input) {
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "293",
+					document_id: input.documentId,
+					agreement_id: AGREEMENT_ID,
+					esign_completed: "true",
+					completion_timestamp: new Date().toISOString(),
+					latlong: ONBOARDING_LATLONG,
+					client_ref_id: randomUUID(),
+				},
+				input.xRealIp,
+			);
+			return stepResult(raw, SIGN_AGREEMENT_OK);
+		},
+		async getWalletBalance(input) {
+			const raw = (await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: "9",
+					client_ref_id: randomUUID(),
+					source: "EPS",
+				},
+				input.xRealIp,
+			)) as { data?: { balance?: unknown } };
+			// Classify by the presence of a numeric `balance`, not by a status id.
+			// Eloka's own wallet read does exactly this (WalletContext.js: `"balance"
+			// in data.data`) and no success id is documented for interaction 9 —
+			// gating on `response_status_id === 0` would be a guess, and interaction
+			// 151 already proves that field is not a uniform success flag upstream.
+			// `balance` arrives as a string. Reject a blank one BEFORE Number(),
+			// which coerces "" and " " into a very convincing 0 — Eloka's own
+			// `+balance || 0` has exactly that bug. A wrong ₹0 is worse than an
+			// error the console can retry.
+			const rawBalance = raw?.data?.balance;
+			if (typeof rawBalance !== "number" && typeof rawBalance !== "string") {
+				return null;
+			}
+			if (typeof rawBalance === "string" && rawBalance.trim() === "")
+				return null;
+			const balance = Number(rawBalance);
+			return Number.isFinite(balance) ? balance : null;
+		},
+		async getTransactionHistory(input) {
+			// ponytail: fixture short-circuit. Interaction 154 is unprobed on this
+			// transport and `account_id` has no known source, so the console page is
+			// built and exercised against fixture rows. Delete this branch and the
+			// `transactionsMock` flag on wiring day — see
+			// docs/features/transaction-history.md §Unverified.
+			if (cfg.transactionsMock) {
+				return {
+					rows: filterFixture(TRANSACTION_FIXTURE, input.filters).slice(
+						input.startIndex,
+						input.startIndex + input.limit,
+					),
+				};
+			}
+			const raw = await post(
+				{
+					// `filters` is spread FIRST so none of its keys can override the
+					// system fields below (actor identity, interaction_type_id, paging).
+					// The route already narrows them to a known allow-list, so this is
+					// defence in depth — and it matches `submitBusiness` above, which
+					// spreads its untrusted `details` first for the same reason.
+					...input.filters,
+					...actor(input.identity),
+					interaction_type_id: "154",
+					client_ref_id: randomUUID(),
+					source: "EPS",
+					isNetworkTransactionHistory: "0",
+					start_index: String(input.startIndex),
+					limit: String(input.limit),
+					...(input.accountId ? { account_id: input.accountId } : {}),
+				},
+				input.xRealIp,
+			);
+			return { rows: mapTransactionRows(raw) };
+		},
 	};
+}
+
+/**
+ * Applies the mock path's filters to the fixture rows.
+ *
+ * ponytail: exists only so the fixture doesn't lie. Without it, filtering for a
+ * TID that isn't there still returns rows, which reads as a real match and makes
+ * the filter UI look broken. Exact-match on the fields a fixture can honour;
+ * date-range and amount filters are ignored, which is why the mock is a
+ * development aid and not a stand-in for upstream. Deleted with the flag.
+ */
+function filterFixture(
+	rows: TransactionRow[],
+	filters: Record<string, string>,
+): TransactionRow[] {
+	const match: Record<string, (row: TransactionRow) => string | undefined> = {
+		tid: (row) => row.tid,
+		account: (row) => row.account,
+		customer_mobile: (row) => row.customer_mobile,
+		rr_no: (row) => row.trackingnumber,
+	};
+	return rows.filter((row) =>
+		Object.entries(filters).every(([key, value]) => {
+			const read = match[key];
+			return read ? read(row) === value : true;
+		}),
+	);
+}
+
+/** Coerces an upstream money/number field, which may arrive as a numeric string. */
+function num(value: unknown): number {
+	const n = Number(value ?? 0);
+	return Number.isFinite(n) ? n : 0;
+}
+
+/** Coerces an upstream text field, dropping empties so the UI can skip them. */
+function text(value: unknown): string | undefined {
+	if (value === null || value === undefined) return undefined;
+	const s = String(value).trim();
+	return s === "" ? undefined : s;
+}
+
+/**
+ * Maps an upstream interaction-154 response to typed rows.
+ *
+ * Deliberately transport-agnostic: it takes the parsed body, so it stays correct
+ * whether the call ends up going over SimpliBank form-urlencoded or the Connect
+ * server's JSON. On wiring day only the envelope path below should need to move.
+ *
+ * The `data.transaction_list` path is UNVERIFIED — Eloka reads
+ * `data.data.transaction_list` off the Connect server, whose extra `data` layer
+ * is its own envelope. See docs/features/transaction-history.md §Unverified.
+ * @param raw - The parsed upstream response body.
+ * @returns Typed rows; an empty array when the payload carries no list.
+ */
+export function mapTransactionRows(raw: unknown): TransactionRow[] {
+	const list = (raw as { data?: { transaction_list?: unknown } })?.data
+		?.transaction_list;
+	if (!Array.isArray(list)) return [];
+	return list.map((entry) => {
+		const r = (entry ?? {}) as Record<string, unknown>;
+		return {
+			tid: String(r.tid ?? ""),
+			tx_typeid: num(r.tx_typeid),
+			tx_name: String(r.tx_name ?? ""),
+			amount_dr: num(r.amount_dr),
+			amount_cr: num(r.amount_cr),
+			fee: num(r.fee),
+			commission_earned: num(r.commission_earned),
+			bonus: num(r.bonus),
+			tds: num(r.tds),
+			gst: num(r.gst),
+			insurance_amount: num(r.insurance_amount),
+			eko_service_charge: num(r.eko_service_charge),
+			eko_gst: num(r.eko_gst),
+			r_bal: num(r.r_bal),
+			status: String(r.status ?? ""),
+			response_status_id: num(r.response_status_id),
+			datetime: String(r.datetime ?? ""),
+			customer_name: text(r.customer_name),
+			customer_mobile: text(r.customer_mobile),
+			account: text(r.account),
+			bank: text(r.bank),
+			operator: text(r.operator),
+			rrn: text(r.rrn),
+			trackingnumber: text(r.trackingnumber),
+			recipient_name: text(r.recipient_name),
+			recipient_mobile: text(r.recipient_mobile),
+		};
+	});
 }
 
 function mapProfile(d: Record<string, unknown>): EkoProfile {
@@ -201,5 +814,11 @@ function mapProfile(d: Record<string, unknown>): EkoProfile {
 		dateOfJoining: d.date_of_joining ? String(d.date_of_joining) : undefined,
 		onboarding: Number(d.onboarding ?? 0),
 		zohoId: String(d.crm_contact_id ?? ""),
+		onboardingSteps: Array.isArray(d.onboarding_steps)
+			? (d.onboarding_steps as Array<Record<string, unknown>>).map((s) => ({
+					role: Number(s?.role ?? -1),
+					label: String(s?.label ?? ""),
+				}))
+			: [],
 	};
 }

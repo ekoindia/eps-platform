@@ -1,3 +1,8 @@
+import type {
+	TransactionFilters,
+	TransactionPage,
+} from "@/lib/console/transactions";
+
 const BASE: string = import.meta.env.VITE_EPS_BACKEND_URL ?? "/api";
 
 export type Lifecycle =
@@ -19,6 +24,8 @@ export interface Profile {
 	dateOfJoining?: string;
 	onboarding: number;
 	zohoId: string;
+	/** Ordered onboarding steps from upstream; empty for a fully-onboarded user. */
+	onboardingSteps: Array<{ role: number; label: string }>;
 }
 
 export interface MeView {
@@ -28,10 +35,55 @@ export interface MeView {
 	zohoId: string | null;
 }
 
+/** The developer's E-value wallet balance, in rupees. */
+export interface WalletBalanceView {
+	balance: number;
+}
+
 export interface AdminView {
 	role: "admin";
 	login: string | null;
 	sub: string;
+}
+
+/** The `/me` view for a user partway through signup. */
+export interface SignupView {
+	role: "signup";
+	mobile: string;
+}
+
+/** One onboarding step, as named by the backend. */
+export interface SignupStep {
+	role: number;
+	label: string;
+}
+
+/**
+ * Server-authoritative onboarding progress. The wizard renders this and never
+ * infers progress locally — every step call returns a fresh copy.
+ */
+export interface SignupState {
+	mobile: string;
+	/** `new` = no partial account yet; `done` = onboarding complete. */
+	status: "new" | "in_progress" | "done";
+	steps: SignupStep[];
+	currentRole: number | null;
+	/** Profile display name, when an upstream record carries one. */
+	name?: string;
+	/** Profile email, when an upstream record carries one. */
+	email?: string;
+}
+
+/** The e-sign URL details for the Sign Agreement step, from the backend. */
+export interface SignUrlView {
+	/** Provider signing URL; empty when `alreadySigned`. */
+	shortUrl: string;
+	/** Document id echoed back on submit. */
+	documentId: string;
+	/** Provider id (0 DigiO, 1 Karza, 2 Signzy, 3 Leegality). */
+	pipe: number;
+	/** True when upstream reports the agreement is already signed. */
+	alreadySigned: boolean;
 }
 
 export interface DocItem {
@@ -122,18 +174,24 @@ async function request(
 
 /** Pre-built API client with typed methods for OTP auth, session management, and user profile. */
 export const authClient = {
-	startOtp: (mobile: string): Promise<{ ok: true }> =>
+	/** `otp` comes back only on dev/UAT backends, for testing without an SMS. */
+	startOtp: (mobile: string): Promise<{ ok: true; otp?: string }> =>
 		request("/auth/otp/start", {
 			method: "POST",
 			body: JSON.stringify({ mobile }),
-		}) as Promise<{ ok: true }>,
-	verifyOtp: (mobile: string, otp: string): Promise<MeView> =>
+		}) as Promise<{ ok: true; otp?: string }>,
+	verifyOtp: (mobile: string, otp: string): Promise<MeView | SignupView> =>
 		request("/auth/otp/verify", {
 			method: "POST",
 			body: JSON.stringify({ mobile, otp }),
-		}) as Promise<MeView>,
-	me: (): Promise<MeView | AdminView> =>
-		request("/me", { method: "GET" }) as Promise<MeView | AdminView>,
+		}) as Promise<MeView | SignupView>,
+	me: (): Promise<MeView | AdminView | SignupView> =>
+		request("/me", { method: "GET" }) as Promise<
+			MeView | AdminView | SignupView
+		>,
+	/** The signed-in developer's E-value wallet balance, in rupees. */
+	walletBalance: (): Promise<WalletBalanceView> =>
+		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>
@@ -166,4 +224,63 @@ export const authClient = {
 				method: "POST",
 			}) as Promise<DeployResult>,
 	},
+};
+
+/** Self-serve signup API — requires a signup session cookie. */
+export const signupClient = {
+	state: (): Promise<SignupState> =>
+		request("/signup/state", { method: "GET" }) as Promise<SignupState>,
+	createProfile: (): Promise<SignupState> =>
+		request("/signup/profile", { method: "POST" }) as Promise<SignupState>,
+	submitPan: (pan: string): Promise<SignupState> =>
+		request("/signup/pan", {
+			method: "POST",
+			body: JSON.stringify({ pan }),
+		}) as Promise<SignupState>,
+	submitPin: (pin1: string, pin2: string): Promise<SignupState> =>
+		request("/signup/pin", {
+			method: "POST",
+			body: JSON.stringify({ pin1, pin2 }),
+		}) as Promise<SignupState>,
+	submitBusiness: (details: Record<string, string>): Promise<SignupState> =>
+		request("/signup/business", {
+			method: "POST",
+			body: JSON.stringify(details),
+		}) as Promise<SignupState>,
+	getAgreementUrl: (): Promise<SignUrlView> =>
+		request("/signup/agreement/url", { method: "GET" }) as Promise<SignUrlView>,
+	submitAgreement: (documentId: string): Promise<SignupState> =>
+		request("/signup/agreement", {
+			method: "POST",
+			body: JSON.stringify({ document_id: documentId }),
+		}) as Promise<SignupState>,
+};
+
+/**
+ * Transaction history for the signed-in developer — requires a developer session.
+ *
+ * POST, not GET: the filters carry mobile numbers, account numbers, TIDs and
+ * amounts, which a query string would leak into browser history and server
+ * access logs.
+ */
+export const transactionsClient = {
+	/**
+	 * Fetches one page of the caller's own transactions.
+	 * @param input - Paging window and allow-listed filters.
+	 * @param signal - Aborts the request when the caller unmounts or re-queries.
+	 * @returns The page of rows plus whether a next page should be offered.
+	 */
+	search: (
+		input: {
+			start_index: number;
+			limit: number;
+			filters: TransactionFilters;
+		},
+		signal?: AbortSignal,
+	): Promise<TransactionPage> =>
+		request("/transactions/search", {
+			method: "POST",
+			body: JSON.stringify(input),
+			signal,
+		}) as Promise<TransactionPage>,
 };

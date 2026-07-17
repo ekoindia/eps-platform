@@ -17,6 +17,7 @@ Only **active, not-yet-implemented** designs are kept here in full.
 | eps-backend auth foundation (OTP + admin GitHub OAuth) | on main/dev | `packages/eps-backend/README.md` |
 | Admin config console (GitOps MDX editor) | `29a9a3b` | `docs/admin-console.md` |
 | Console auth UI (login/OTP flow) | (login UI) | `docs/console-roadmap.md` |
+| Console left nav (rail + Home/Credentials sub-pages) | `9b87e4f` | `docs/console-roadmap.md` |
 | Redis KV durability | `b32c88f` | `packages/eps-backend/README.md` |
 | VM auto-deploy (pull-based GHCR → private VM) | `4b08c52` | `docs/eps-backend-vm-deploy.md` |
 | Admin authz freshness + broadened rate-limiting | `fe6d9fc` | `packages/eps-backend/README.md` |

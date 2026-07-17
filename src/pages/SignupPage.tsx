@@ -1,73 +1,80 @@
+import { LoginForm } from "@/components/auth/LoginForm";
 import { Footer } from "@/components/Footer";
-import { ZohoSignupForm } from "@/components/ZohoSignupForm";
-import { CheckCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SignupWizard } from "@/features/signup/SignupWizard";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
 
-const signupBenefits = [
-	"Sandbox access in minutes",
-	"Dedicated integration support",
-	"Comprehensive documentation",
-	"Reliable, high-volume workflows",
-];
-
+/**
+ * Self-serve signup.
+ *
+ * A switch on auth state: anonymous users log in with mobile + OTP, signup
+ * sessions run the onboarding wizard, and already-onboarded users are sent to
+ * their console.
+ */
 const SignupPage = () => {
+	const { state } = useAuth();
+	const navigate = useNavigate();
+
+	// A fully onboarded user has no business here.
+	useEffect(() => {
+		if (state.status === "authed" && state.role !== "signup") {
+			navigate("/console", { replace: true });
+		}
+	}, [state, navigate]);
+
+	// The wizard needs room for its step rail beside the form; the login form
+	// does not. The wizard also brings its own card, since only it knows the
+	// resolved steps the rail renders.
+	const isWizard = state.status === "authed" && state.role === "signup";
+
 	return (
 		<div className="min-h-screen bg-background">
 			<Helmet>
-				<title>Signup | Eko</title>
+				<title>Create your account | Eko</title>
 				<meta
 					name="description"
-					content="Get access to Eko Platform Services by submitting the signup form."
+					content="Create your Eko Platform Services account and start integrating."
 				/>
 			</Helmet>
 
 			<main className="pt-24 lg:pt-28">
-				<section className="relative overflow-hidden bg-white py-14 md:py-20">
-					<div className="absolute top-0 left-1/4 w-96 h-96 bg-eko-gold/10 rounded-full blur-3xl" />
-					<div className="absolute bottom-0 right-1/4 w-72 h-72 bg-eko-navy/5 rounded-full blur-3xl" />
-
-					<div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
-						<div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-							<div>
-								<h1 className="text-4xl md:text-5xl font-bold text-foreground mb-5 leading-tight">
-									Get Access to Eko Platform Services
-								</h1>
-								<p className="text-muted-foreground text-lg mb-7 leading-relaxed max-w-xl">
-									Sign up now and start integrating in minutes. Our team will
-									help you go live quickly.
-								</p>
-
-								<ul className="flex flex-col gap-3.5">
-									{signupBenefits.map((item) => (
-										<li
-											key={item}
-											className="flex items-center gap-3 text-foreground/80 text-lg"
-										>
-											<CheckCircle className="w-5 h-5 text-eko-gold shrink-0" />
-											{item}
-										</li>
-									))}
-								</ul>
-							</div>
-
-							<div className="relative">
-								<div className="absolute -inset-3 bg-eko-gold/10 rounded-2xl blur-2xl" />
-
-								<div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
-									<div className="bg-eko-navy px-6 py-4 border-b border-white/10">
-										<h2 className="text-lg font-bold text-white">
-											Get Platform Access
-										</h2>
-										<p className="text-white/70 text-sm">
-											Get started in 10 minutes
-										</p>
-									</div>
-
-									<div className="p-2">
-										<ZohoSignupForm />
-									</div>
-								</div>
-							</div>
+				<section className="py-4 md:py-6">
+					<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+						<div
+							className={`mx-auto w-full ${isWizard ? "max-w-3xl" : "max-w-md"}`}
+						>
+							{isWizard ? (
+								<>
+									<h1 className="mb-6 text-2xl font-semibold tracking-tight">
+										Complete your setup
+									</h1>
+									<SignupWizard />
+								</>
+							) : (
+								<Card>
+									<CardHeader>
+										<CardTitle>
+											{state.status === "anon" ? "Create your account" : ""}
+										</CardTitle>
+									</CardHeader>
+									<CardContent>
+										{state.status !== "anon" && (
+											<div
+												data-testid="signup-loading"
+												className="flex flex-col gap-3"
+											>
+												<Skeleton className="h-8 w-full" />
+												<Skeleton className="h-8 w-2/3" />
+											</div>
+										)}
+										{state.status === "anon" && <LoginForm />}
+									</CardContent>
+								</Card>
+							)}
 						</div>
 					</div>
 				</section>

@@ -6,7 +6,13 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
-import { authClient, type AdminView, type MeView } from "@/lib/auth/client";
+import {
+	authClient,
+	type AdminView,
+	type MeView,
+	type SignupView,
+} from "@/lib/auth/client";
+import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
 import { setChatIdentity } from "@/lib/zoho-chat";
 
@@ -14,7 +20,8 @@ export type AuthState =
 	| { status: "loading" }
 	| { status: "anon" }
 	| { status: "authed"; role: "developer"; me: MeView }
-	| { status: "authed"; role: "admin"; me: AdminView };
+	| { status: "authed"; role: "admin"; me: AdminView }
+	| { status: "authed"; role: "signup"; me: SignupView };
 
 interface AuthContextValue {
 	state: AuthState;
@@ -25,9 +32,14 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Maps a /me response to the typed AuthState union. */
-function classify(me: MeView | AdminView): AuthState {
+function classify(me: MeView | AdminView | SignupView): AuthState {
 	if ("role" in me && me.role === "admin") {
 		return { status: "authed", role: "admin", me };
+	}
+	// A signup session is authenticated but has no profile yet — it authorizes
+	// the onboarding wizard only.
+	if ("role" in me && me.role === "signup") {
+		return { status: "authed", role: "signup", me };
 	}
 	return { status: "authed", role: "developer", me: me as MeView };
 }
@@ -62,6 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		setChatIdentity(chatIdentity(state));
 	}, [state]);
+
+	// The E-value balance is cached in module scope to survive the remount every
+	// console navigation causes, which also means it would survive a sign-out and
+	// show one user their balance in the next user's session. Keyed on "anon"
+	// rather than on logout() so an expired session clears it too.
+	useEffect(() => {
+		if (state.status === "anon") resetWalletBalanceCache();
+	}, [state.status]);
 
 	return (
 		<AuthContext.Provider value={{ state, refresh, logout }}>

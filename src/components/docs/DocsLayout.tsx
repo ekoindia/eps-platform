@@ -1,6 +1,11 @@
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -75,6 +80,7 @@ export const DocsLayout = ({
 							side="left"
 							className="docs-scroll w-80 overflow-y-auto p-4"
 						>
+							<SheetTitle className="sr-only">Docs menu</SheetTitle>
 							<DocsNavTree onNavigate={() => setOpen(false)} />
 						</SheetContent>
 					</Sheet>

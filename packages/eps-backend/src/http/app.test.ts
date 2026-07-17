@@ -32,8 +32,13 @@ const cfg = loadConfig({
 
 function deps(
 	over: Partial<EkoClient> = {},
-	opts: { accessSink?: (l: string) => void; kv?: KV } = {},
+	opts: {
+		accessSink?: (l: string) => void;
+		kv?: KV;
+		cfg?: typeof cfg;
+	} = {},
 ) {
+	const appCfg = opts.cfg ?? cfg;
 	const kv = opts.kv ?? createInMemoryKV();
 	const eko: EkoClient = {
 		sendOtp: vi.fn(async () => ({ ok: true, raw: {} })),
@@ -52,17 +57,34 @@ function deps(
 				orgId: 1,
 				onboarding: 0,
 				zohoId: "ZCRM_9",
+				onboardingSteps: [],
 			},
 		})),
+		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
+		verifyPan: vi.fn(async () => ({ ok: true as const })),
+		submitBusiness: vi.fn(async () => ({ ok: true as const })),
+		getBooklet: vi.fn(async () => null),
+		fetchPintwinKey: vi.fn(async () => null),
+		setSecretPin: vi.fn(async () => ({ ok: true as const })),
+		getAgreementUrl: vi.fn(async () => ({
+			ok: true as const,
+			shortUrl: "https://sign.example/x",
+			documentId: "DOC1",
+			pipe: 3,
+			alreadySigned: false,
+		})),
+		submitSignAgreement: vi.fn(async () => ({ ok: true as const })),
+		getWalletBalance: vi.fn(async () => 2800000),
+		getTransactionHistory: vi.fn(async () => ({ rows: [] })),
 		...over,
 	};
 	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
-	const sessions = createSessions(cfg, kv);
+	const sessions = createSessions(appCfg, kv);
 	const accessLog = opts.accessSink
 		? createAccessLogger({ sink: opts.accessSink })
 		: undefined;
 	return {
-		app: createApp({ cfg, eko, zoho, sessions, kv, accessLog }),
+		app: createApp({ cfg: appCfg, eko, zoho, sessions, kv, accessLog }),
 		eko,
 		zoho,
 		sessions,
@@ -148,6 +170,36 @@ describe("otp/start", () => {
 		});
 		expect(res.status).toBe(200);
 		expect(eko.sendOtp).toHaveBeenCalled();
+	});
+
+	const sendOtpWithOtp = {
+		sendOtp: vi.fn(async () => ({
+			ok: true,
+			raw: { response_status_id: 0, data: { otp: "4723" } },
+		})),
+	};
+
+	it("echoes the upstream otp when demoOtp is on", async () => {
+		const { app } = deps(sendOtpWithOtp, { cfg: { ...cfg, demoOtp: true } });
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000011" }),
+		});
+		expect(await body<{ otp?: string }>(res)).toEqual({
+			ok: true,
+			otp: "4723",
+		});
+	});
+
+	it("never echoes the otp when demoOtp is off", async () => {
+		const { app } = deps(sendOtpWithOtp);
+		const res = await app.request("/auth/otp/start", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000012" }),
+		});
+		expect(await body<{ otp?: string }>(res)).toEqual({ ok: true });
 	});
 
 	it("502 OTP_SEND_FAILED when the upstream did not dispatch the OTP", async () => {
@@ -320,7 +372,7 @@ describe("otp/verify + me", () => {
 		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
 	});
 
-	it("blocks an unregistered (new) user without a session (403 NOT_REGISTERED)", async () => {
+	it("mints a signup session (not a 403) for an unregistered (new) user", async () => {
 		const { app } = deps({
 			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
 			getProfile: vi.fn(async () => ({
@@ -333,11 +385,9 @@ describe("otp/verify + me", () => {
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
 		});
-		expect(res.status).toBe(403);
-		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
-			"NOT_REGISTERED",
-		);
-		expect(res.headers.getSetCookie?.() ?? []).toEqual([]);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ role: "signup", mobile: "9990000001" });
+		expect(cookieFrom(res)).toContain("eps_at=");
 	});
 
 	it("blocks a non-EPS-business profile without a session (403 NOT_ALLOWED)", async () => {
@@ -439,6 +489,128 @@ describe("otp/verify + me", () => {
 			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
 		});
 		expect(res.status).toBe(200);
+	});
+});
+
+describe("signup sessions", () => {
+	const onboardingProfileFixture = {
+		name: "",
+		email: "",
+		mobile: "9990000001",
+		code: "20810001",
+		userType: "23",
+		ekoUserId: "55501",
+		roleList: ["13000", "12600"],
+		orgId: 1,
+		onboarding: 1,
+		zohoId: "",
+		onboardingSteps: [
+			{ role: 13000, label: "PAN Details" },
+			{ role: 12600, label: "Set Secret PIN" },
+		],
+	};
+
+	it("mints a signup session for an unregistered mobile", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_found" as const,
+				responseTypeId: 319,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ role: "signup", mobile: "9990000001" });
+		expect(cookieFrom(res)).toContain("eps_at=");
+	});
+
+	it("mints a signup session for a mid-onboarding profile", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "onboarding" as const,
+				responseTypeId: 369,
+				profile: onboardingProfileFixture,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect((await body<{ role: string }>(res)).role).toBe("signup");
+	});
+
+	it("no longer returns NOT_REGISTERED", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_found" as const,
+				responseTypeId: 319,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).not.toBe(403);
+	});
+
+	it("GET /me returns a signup view without hitting Eko", async () => {
+		const { app, eko, sessions } = deps({ getProfile: vi.fn() });
+		const token = await sessions.mintAccess({
+			sub: "9990000001",
+			role: "signup",
+			orgId: 1,
+		});
+		const res = await app.request("/me", {
+			headers: { cookie: `eps_at=${token}` },
+		});
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ role: "signup", mobile: "9990000001" });
+		// A reload mid-onboarding must restore the session cheaply.
+		expect(eko.getProfile).not.toHaveBeenCalled();
+	});
+
+	it("still refuses an inactive account", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "inactive" as const,
+				responseTypeId: 2123,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(403);
+	});
+
+	it("still refuses a completed non-EPS-business profile", async () => {
+		const { app } = deps({
+			verifyOtp: vi.fn(async () => ({ ok: true, raw: {} })),
+			getProfile: vi.fn(async () => ({
+				kind: "not_allowed" as const,
+				responseTypeId: 369,
+			})),
+		});
+		const res = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "1234" }),
+		});
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NOT_ALLOWED",
+		);
 	});
 });
 
@@ -1315,5 +1487,105 @@ describe("KV-outage matrix (Task 4)", () => {
 		expect(((await res.json()) as { error: { code: string } }).error.code).toBe(
 			"STORE_UNAVAILABLE",
 		);
+	});
+});
+
+describe("wallet/balance", () => {
+	/** Logs in as a developer and returns the session cookie. */
+	async function login(app: Hono<AppEnv>): Promise<string> {
+		const verify = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		expect(verify.status).toBe(200);
+		return cookieFrom(verify);
+	}
+
+	it("returns the balance for a developer session", async () => {
+		const { app, eko } = deps();
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(200);
+		expect(await body<{ balance: number }>(res)).toEqual({ balance: 2800000 });
+		// The identity must come from the session's own 151 profile, never the request.
+		// `initiator_id` is the user's MOBILE, mirroring connect-api's
+		// `initiator_id = tokenDetails.user_id` where the claim's user_id IS
+		// detail.mobile — NOT `ekoUserId` ("EKO1" here), which upstream rejects.
+		expect(eko.getWalletBalance).toHaveBeenCalledWith({
+			identity: { initiatorId: "9990000001", userCode: "1", orgId: 1 },
+			xRealIp: undefined,
+		});
+	});
+
+	it("rejects an anonymous request", async () => {
+		const { app } = deps();
+		expect((await app.request("/wallet/balance")).status).toBe(401);
+	});
+
+	it("never calls upstream for a signup session", async () => {
+		const { app, eko } = deps({
+			getProfile: vi.fn(async () => ({
+				kind: "onboarding" as const,
+				responseTypeId: 369,
+				profile: {
+					name: "Dev",
+					email: "d@e.in",
+					mobile: "9990000001",
+					code: 1,
+					userType: "23",
+					ekoUserId: "EKO1",
+					roleList: ["1"],
+					orgId: 1,
+					onboarding: 1,
+					zohoId: "",
+					onboardingSteps: [],
+				},
+			})),
+		});
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(403);
+		expect((await body<{ error: { code: string } }>(res)).error.code).toBe(
+			"NO_WALLET",
+		);
+		expect(eko.getWalletBalance).not.toHaveBeenCalled();
+	});
+
+	it("502s (not 403) when the profile lookup itself fails", async () => {
+		// A 403 tells the console "no wallet here, hide for good". An unclassified
+		// upstream failure must not retire a real wallet — it has to stay retryable.
+		const { app } = deps({
+			getProfile: vi
+				.fn()
+				.mockResolvedValueOnce({
+					kind: "found" as const,
+					responseTypeId: 369,
+					profile: {
+						name: "Dev",
+						email: "d@e.in",
+						mobile: "9990000001",
+						code: 1,
+						userType: "23",
+						ekoUserId: "EKO1",
+						roleList: ["1"],
+						orgId: 1,
+						onboarding: 0,
+						zohoId: "ZCRM_9",
+						onboardingSteps: [],
+					},
+				})
+				.mockResolvedValue({ kind: "error" as const, responseTypeId: 9999 }),
+		});
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(502);
+	});
+
+	it("502s when upstream returns no balance", async () => {
+		const { app } = deps({ getWalletBalance: vi.fn(async () => null) });
+		const cookie = await login(app);
+		const res = await app.request("/wallet/balance", { headers: { cookie } });
+		expect(res.status).toBe(502);
 	});
 });

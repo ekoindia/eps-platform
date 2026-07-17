@@ -1,6 +1,6 @@
+import { UserMenu } from "@/components/auth/UserMenu";
 import { EkoLogo } from "@/components/EkoLogo";
 import { Button } from "@/components/ui/button";
-import { UserMenu } from "@/components/auth/UserMenu";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
@@ -428,8 +428,8 @@ export const Header = () => {
 								<Search className="w-4 h-4" />
 								<span className="max-[1060px]:hidden">Search</span>
 								<span className="ml-1 rounded border border-white/20 bg-white/10 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white/60">
-									<span className="kbd-os-mac">⌘K</span>
-									<span className="kbd-os-other">Ctrl K</span>
+									<span className="kbd-os-mac notranslate">⌘K</span>
+									<span className="kbd-os-other notranslate">Ctrl K</span>
 								</span>
 							</button>
 

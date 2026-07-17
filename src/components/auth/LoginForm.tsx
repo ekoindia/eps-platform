@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, authClient } from "@/lib/auth/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { ApiError, authClient } from "@/lib/auth/client";
 import {
 	type ClipboardEvent,
 	type KeyboardEvent,
@@ -10,6 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { toast } from "sonner";
 
 const OTP_LENGTH = 4;
 
@@ -106,7 +107,9 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		setBusy(true);
 		setError(null);
 		try {
-			await authClient.startOtp(mobile);
+			const { otp: demoOtp } = await authClient.startOtp(mobile);
+			// dev/UAT backends echo the OTP so testers don't need the SMS.
+			if (demoOtp) toast.info(`Demo OTP: ${demoOtp}`, { duration: 6000 });
 			setStep("otp");
 			setCooldown(RESEND_COOLDOWN_SEC);
 		} catch (e) {
@@ -131,19 +134,33 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
+		// A real <form> so the browser's own implicit submission handles Enter:
+		// on either step, Enter activates the (validity-gated) submit button.
+		<form
+			className="flex flex-col gap-4"
+			onSubmit={(e) => {
+				e.preventDefault();
+				if (busy) return;
+				if (step === "mobile") {
+					if (mobile.length >= 10) void sendOtp();
+				} else if (otp.length === OTP_LENGTH) {
+					void verify();
+				}
+			}}
+		>
 			{step === "mobile" ? (
 				<div className="flex flex-col gap-2">
 					<Label htmlFor="login-mobile">Mobile number</Label>
 					<Input
 						id="login-mobile"
-						inputMode="numeric"
 						autoComplete="tel"
+						prefix="+91"
+						digitGroups={[3, 3, 4]}
 						value={mobile}
 						onChange={(e) => setMobile(e.target.value)}
 						placeholder="10-digit mobile"
 					/>
-					<Button onClick={sendOtp} disabled={busy || mobile.length < 10}>
+					<Button type="submit" disabled={busy || mobile.length < 10}>
 						{busy ? "Sending…" : "Send OTP"}
 					</Button>
 				</div>
@@ -169,12 +186,12 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 								value={d}
 								onChange={(e) => handleDigit(i, e.target.value)}
 								onKeyDown={(e) => handleOtpKeyDown(i, e)}
-								onPaste={i === 0 ? handleOtpPaste : undefined}
+								onPaste={handleOtpPaste}
 								className="h-12 w-10 text-center text-lg"
 							/>
 						))}
 					</div>
-					<Button onClick={verify} disabled={busy || otp.length < OTP_LENGTH}>
+					<Button type="submit" disabled={busy || otp.length < OTP_LENGTH}>
 						{busy ? "Verifying…" : "Verify & sign in"}
 					</Button>
 					<div className="flex items-center justify-between">
@@ -211,6 +228,6 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 					{error}
 				</p>
 			) : null}
-		</div>
+		</form>
 	);
 }

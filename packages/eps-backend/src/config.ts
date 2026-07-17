@@ -6,6 +6,12 @@ export interface Config {
 	accessTtlSec: number;
 	refreshTtlSec: number;
 	adminRefreshTtlSec: number;
+	/**
+	 * DEV/UAT ONLY. Echoes the upstream-returned OTP back to the caller from
+	 * `/auth/otp/start` so testers need no SMS. MUST stay false in production:
+	 * it would hand anyone who knows a mobile number that number's login code.
+	 */
+	demoOtp: boolean;
 	cookieSecure: boolean;
 	cookieSameSite: string;
 	adminPostLoginRedirect: string;
@@ -23,6 +29,17 @@ export interface Config {
 		userCode: string;
 		defaultOrgId: number;
 		logLevel: EkoLogLevel;
+		/**
+		 * Serve transaction history from the built-in fixture instead of calling
+		 * upstream.
+		 *
+		 * ponytail: temporary. Interaction 154 is unprobed on this transport and
+		 * `account_id` has no known source here, so the console page is built and
+		 * exercised end-to-end against fixture rows. Delete this flag and the
+		 * branch in `createEkoClient.getTransactionHistory` once the contract is
+		 * confirmed — see docs/features/transaction-history.md §Unverified.
+		 */
+		transactionsMock: boolean;
 	};
 	github: {
 		clientId: string;
@@ -81,6 +98,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		accessTtlSec: Number(env.ACCESS_TTL_SEC ?? 900),
 		refreshTtlSec: Number(env.REFRESH_TTL_SEC ?? 60 * 60 * 24 * 30),
 		adminRefreshTtlSec: Number(env.ADMIN_REFRESH_TTL_SEC ?? 28800),
+		demoOtp: env.DEMO_OTP === "true",
 		cookieSecure: env.COOKIE_SECURE !== "false",
 		cookieSameSite: env.COOKIE_SAMESITE ?? "Lax",
 		adminPostLoginRedirect: env.ADMIN_POST_LOGIN_REDIRECT ?? "/admin",
@@ -101,6 +119,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			userCode: env.EKO_USER_CODE ?? "99029899",
 			defaultOrgId: Number(env.EKO_DEFAULT_ORG_ID ?? 1),
 			logLevel: parseEkoLogLevel(env.EKO_LOG_LEVEL),
+			transactionsMock: env.EKO_TRANSACTIONS_MOCK === "true",
 		},
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
