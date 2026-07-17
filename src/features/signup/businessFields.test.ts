@@ -48,8 +48,8 @@ describe("validateField", () => {
 			"1",
 			"4",
 			"2",
-			"3",
 			"5",
+			"3",
 		]);
 		// LLP is 4, not 2 — the codes are not sequential by label.
 		expect(companyType.options?.find((o) => o.label === "LLP")?.value).toBe(

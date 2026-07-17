@@ -54,7 +54,8 @@ export const INDIAN_STATES: readonly string[] = [
 /**
  * Company types upstream accepts, mirroring Eloka's `COMPANY_TYPE_OPTIONS`. The
  * values are NOT sequential by label — they are the exact codes interaction 522
- * matches on, so keep them verbatim (LLP is 4, not 2).
+ * matches on, so keep them verbatim (LLP is 4, not 2). The listing order is
+ * ours, not upstream's: Sole Proprietorship / Individual sits last by choice.
  */
 export const COMPANY_TYPES: readonly { label: string; value: string }[] = [
 	{ label: "Private Ltd", value: "1" },
