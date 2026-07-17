@@ -317,7 +317,7 @@ describe("renderProductsIndexText", () => {
 	});
 
 	it("uses '#'-numbered headings, no markdown '#' headings", () => {
-		expect(txt).toContain("Eko APIs & Products — Complete Reference");
+		expect(txt).toContain("Eko EPS APIs & Products — Complete Reference");
 		expect(txt).toMatch(/#\d+ Verification APIs/);
 		expect(txt).toMatch(/#\d+\.\d+ PAN Verification/);
 		for (const line of txt.split("\n")) {
@@ -445,7 +445,7 @@ describe("renderProductsIndexTextPart", () => {
 
 	it("uses the part's H1 title and lede, not the combined one", () => {
 		expect(txt).toContain("Eko Verification APIs (Identity & KYC) — Reference");
-		expect(txt).not.toContain("Eko APIs & Products — Complete Reference");
+		expect(txt).not.toContain("Eko EPS APIs & Products — Complete Reference");
 		expect(txt).toContain("Identity & KYC verification APIs from Eko.");
 	});
 
