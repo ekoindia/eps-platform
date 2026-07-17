@@ -109,7 +109,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		try {
 			const { otp: demoOtp } = await authClient.startOtp(mobile);
 			// dev/UAT backends echo the OTP so testers don't need the SMS.
-			if (demoOtp) toast.info(`Demo OTP: ${demoOtp}`, { duration: 30000 });
+			if (demoOtp) toast.info(`Demo OTP: ${demoOtp}`, { duration: 6000 });
 			setStep("otp");
 			setCooldown(RESEND_COOLDOWN_SEC);
 		} catch (e) {
