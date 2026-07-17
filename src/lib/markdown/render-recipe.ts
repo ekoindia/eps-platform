@@ -11,7 +11,12 @@
  */
 import { SITE_URL } from "@/lib/config/site";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
-import { RECIPES, type Recipe, recipeHref } from "@/lib/data/api-recipes";
+import {
+	branchCondition,
+	RECIPES,
+	type Recipe,
+	recipeHref,
+} from "@/lib/data/api-recipes";
 import { docsHref } from "@/lib/data/docs-registry";
 import {
 	DONE_NODE,
@@ -52,11 +57,13 @@ const mermaidNode = (recipe: ResolvedRecipe): string[] => {
 	return nodes;
 };
 
-/** The twin has room for the full condition — status id plus the branch note. */
-const edgeLabel = (branch: ResolvedBranch): string =>
-	branch.note
-		? `${branch.onResponseStatusId}: ${branch.note}`
-		: `response_status_id ${branch.onResponseStatusId}`;
+/** The twin has room for the full condition — the trigger plus the branch note. */
+const edgeLabel = (branch: ResolvedBranch): string => {
+	const { field, value } = branchCondition(branch);
+	return branch.note
+		? `${field} ${value}: ${branch.note}`
+		: `${field} ${value}`;
+};
 
 const mermaidEdges = (recipe: ResolvedRecipe): string[] =>
 	recipe.edges.map((edge) =>
@@ -91,8 +98,9 @@ const stepList = (resolved: ResolvedRecipe): string =>
 					branch.goto === DONE_NODE
 						? "the flow is complete"
 						: `go to ${branch.targetStepNumber ? `step ${branch.targetStepNumber}` : "**" + branch.targetTitle + "**"} (${branch.targetTitle})`;
+				const { field, value } = branchCondition(branch);
 				lines.push(
-					`   - If \`response_status_id\` is \`${branch.onResponseStatusId}\` → ${target}.${branch.note ? ` ${branch.note}` : ""}`,
+					`   - If \`${field}\` is \`${value}\` → ${target}.${branch.note ? ` ${branch.note}` : ""}`,
 				);
 			}
 			return lines.join("\n");
@@ -125,7 +133,7 @@ export function renderRecipeMarkdown(recipe: Recipe): string {
 		h2("Notes"),
 		bulletList([
 			"Call the steps in the order shown above; each links to its full API reference.",
-			"Every EPS response carries `response_status_id` — branch on it as shown above.",
+			"Branch on the exact field each step names above: `response_type_id` says which response shape came back (the usual routing key), while `response_status_id` carries the status of a financial transaction.",
 			`All requests are signed; see ${link("How Auth Works", `${SITE_URL}${docsHref("how-auth-works")}`, "md")}.`,
 		]),
 	]);

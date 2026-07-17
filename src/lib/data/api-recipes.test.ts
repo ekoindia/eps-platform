@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { API_SPECS } from "@/lib/data/api-specs";
-import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
+import {
+	assertRecipeSlugs,
+	branchCondition,
+	RECIPES,
+	type RecipeBranch,
+} from "@/lib/data/api-recipes";
 
 describe("api-recipes", () => {
 	it("ships at least the two exemplar recipes", () => {
@@ -37,5 +42,44 @@ describe("api-recipes", () => {
 				new Set(["dmt-get-sender"]),
 			),
 		).toThrow(/unknown spec slug/i);
+	});
+
+	it("assertRecipeSlugs throws on a branch with no condition", () => {
+		// The union type rejects setting BOTH keys at compile time; this guards the
+		// other half — a branch that names neither, which only untyped data can
+		// produce, and which would otherwise render as "undefined".
+		const branch = { goto: "dmt-get-sender" } as unknown as RecipeBranch;
+		expect(() =>
+			assertRecipeSlugs(
+				[
+					{
+						id: "bad",
+						slug: "bad",
+						name: "Bad",
+						summary: "x",
+						steps: [
+							{ specSlug: "dmt-get-sender", purpose: "x", branches: [branch] },
+						],
+					},
+				],
+				new Set(["dmt-get-sender"]),
+			),
+		).toThrow(/neither onResponseTypeId nor onResponseStatusId/);
+	});
+});
+
+describe("branchCondition", () => {
+	it("names response_type_id for a routing branch", () => {
+		expect(
+			branchCondition({ onResponseTypeId: 308, goto: "dmt-onboard-sender" }),
+		).toEqual({ field: "response_type_id", value: 308 });
+	});
+
+	it("names response_status_id for a financial branch", () => {
+		// 0 is falsy — a truthiness check here would misreport the field.
+		expect(branchCondition({ onResponseStatusId: 0, goto: "done" })).toEqual({
+			field: "response_status_id",
+			value: 0,
+		});
 	});
 });

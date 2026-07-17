@@ -1,7 +1,7 @@
 import { CornerDownRight, Flag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HttpMethodTag } from "@/components/docs/HttpMethodTag";
-import type { Recipe } from "@/lib/data/api-recipes";
+import { branchCondition, type Recipe } from "@/lib/data/api-recipes";
 import {
 	DONE_NODE,
 	type ResolvedBranch,
@@ -37,11 +37,11 @@ const BranchCallout = ({ branch }: { branch: ResolvedBranch }) => {
 			<p className="min-w-0 text-amber-900 dark:text-amber-200">
 				If{" "}
 				<code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[0.7rem] dark:bg-amber-500/20">
-					response_status_id
+					{branchCondition(branch).field}
 				</code>{" "}
 				is{" "}
 				<code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[0.7rem] dark:bg-amber-500/20">
-					{branch.onResponseStatusId}
+					{branchCondition(branch).value}
 				</code>{" "}
 				{isDone ? (
 					<>— the flow is complete.</>
@@ -98,7 +98,7 @@ const StepCard = ({
 			<p className="mt-1.5 text-sm text-muted-foreground">{step.purpose}</p>
 			{step.branches.map((branch) => (
 				<BranchCallout
-					key={`${branch.onResponseStatusId}-${branch.goto}`}
+					key={`${branchCondition(branch).value}-${branch.goto}`}
 					branch={branch}
 				/>
 			))}

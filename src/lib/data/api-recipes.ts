@@ -10,19 +10,50 @@
  * `assertRecipeSlugs` fails the build/tests on any dangling reference.
  */
 
+/**
+ * What triggers a branch. EXACTLY ONE key — the `?: never` arms make setting
+ * both a compile error rather than a runtime surprise.
+ *
+ * Which one to use follows the API: non-financial endpoints route on
+ * `response_type_id` (the id space that says *which response shape* came back),
+ * while financial endpoints don't return one — they signal on
+ * `response_status_id` / `tx_status`.
+ */
+export type RecipeBranchCondition =
+	| { onResponseTypeId: number; onResponseStatusId?: never }
+	| { onResponseStatusId: number; onResponseTypeId?: never };
+
+/** One conditional jump out of a recipe step. */
+export type RecipeBranch = RecipeBranchCondition & {
+	/** A spec slug to jump to, or "done" to end the flow. */
+	goto: string;
+	note?: string;
+};
+
+/**
+ * The response field a branch fires on, and the value it fires at.
+ *
+ * The one place the two condition keys collapse back into "which field, which
+ * value" — every renderer calls this instead of repeating the ternary. Returned
+ * as parts, not a sentence, because each surface needs a different shape: the
+ * SVG flowchart labels an edge with the bare value, the markdown twin wants the
+ * field and value in separate code spans, the mermaid label wants both inline.
+ */
+export const branchCondition = (
+	branch: RecipeBranch,
+): { field: "response_type_id" | "response_status_id"; value: number } =>
+	branch.onResponseTypeId !== undefined
+		? { field: "response_type_id", value: branch.onResponseTypeId }
+		: { field: "response_status_id", value: branch.onResponseStatusId };
+
 /** One step in a recipe; a call to a single documented endpoint. */
 export interface RecipeStep {
 	/** FK into `API_SPECS.slug`. */
 	specSlug: string;
 	/** Why this step exists in the flow. */
 	purpose: string;
-	/** Conditional jumps keyed on the response's `response_status_id`. */
-	branches?: {
-		onResponseStatusId: number;
-		/** A spec slug to jump to, or "done" to end the flow. */
-		goto: string;
-		note?: string;
-	}[];
+	/** Conditional jumps out of this step; see {@link RecipeBranch}. */
+	branches?: RecipeBranch[];
 }
 
 /** A named, multi-step flow across several endpoints. */
@@ -60,7 +91,7 @@ export const RECIPES: Recipe[] = [
 					"Check whether the customer is already a registered DMT sender.",
 				branches: [
 					{
-						onResponseStatusId: 463,
+						onResponseTypeId: 308,
 						goto: "dmt-onboard-sender",
 						note: "Sender not found — onboard them before continuing.",
 					},
@@ -68,7 +99,7 @@ export const RECIPES: Recipe[] = [
 			},
 			{
 				specSlug: "dmt-onboard-sender",
-				purpose: "Register a new sender when Get Sender returned 463.",
+				purpose: "Register a new sender when Get Sender returned 308.",
 			},
 			{
 				specSlug: "dmt-add-recipient",
@@ -158,6 +189,16 @@ export const assertRecipeSlugs = (
 				if (branch.goto !== "done" && !knownSlugs.has(branch.goto)) {
 					throw new Error(
 						`api-recipes: recipe "${recipe.id}" branch references unknown spec slug "${branch.goto}".`,
+					);
+				}
+				// The union type rejects setting both keys; only "neither" can reach
+				// here (hand-written JSON, or a spread that drops the discriminant).
+				if (
+					branch.onResponseTypeId === undefined &&
+					branch.onResponseStatusId === undefined
+				) {
+					throw new Error(
+						`api-recipes: recipe "${recipe.id}" branch to "${branch.goto}" sets neither onResponseTypeId nor onResponseStatusId.`,
 					);
 				}
 			}

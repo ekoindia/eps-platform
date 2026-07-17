@@ -37,19 +37,21 @@ describe("RecipeFlowchart", () => {
 		expect(svg.textContent).toContain("done");
 	});
 
-	it("labels branch edges with the bare status id, not the full note", () => {
+	it("labels branch edges with the bare condition value, not the full note", () => {
 		const svg = svgOf(dmt);
 		const texts = [...svg.querySelectorAll("text")].map((t) =>
 			t.textContent?.trim(),
 		);
-		expect(texts).toContain("463");
+		expect(texts).toContain("308");
 		expect(texts).toContain("0");
 		// The verbose note belongs to the stepper, not the glance view — it is
 		// only reachable here as the edge's hover tooltip.
 		expect(svg.textContent).not.toContain("onboard them before continuing");
-		expect(
-			[...svg.querySelectorAll("title")].map((t) => t.textContent),
-		).toContain("response_status_id 463");
+		// The bare label can't say which field it came from; the tooltip must, and
+		// must name the field each branch actually fires on.
+		const titles = [...svg.querySelectorAll("title")].map((t) => t.textContent);
+		expect(titles).toContain("response_type_id 308");
+		expect(titles).toContain("response_status_id 0");
 	});
 
 	it("draws only straight edges, and reserves no arc gutter, for a linear flow", () => {

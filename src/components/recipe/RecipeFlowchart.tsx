@@ -1,4 +1,4 @@
-import type { Recipe } from "@/lib/data/api-recipes";
+import { branchCondition, type Recipe } from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	DONE_NODE,
@@ -106,18 +106,22 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 
 				{/* Edges first, so nodes paint over the line ends. */}
 				{edges.map((edge) => {
-					const key = `${edge.from}-${edge.to}-${edge.branch?.onResponseStatusId ?? ""}`;
-					// The diagram is a glance view: label the condition with just its
-					// status id. The full note lives in the stepper callout above.
-					const label = edge.branch
-						? String(edge.branch.onResponseStatusId)
+					const condition = edge.branch
+						? branchCondition(edge.branch)
 						: undefined;
+					const key = `${edge.from}-${edge.to}-${condition?.value ?? ""}`;
+					// The diagram is a glance view: label the condition with just its
+					// value. Which field it came from is in the <title>, and the full
+					// note lives in the stepper callout above.
+					const label = condition ? String(condition.value) : undefined;
 					if (isSequential(edge.from, edge.to)) {
 						const y1 = bottomY(edge.from);
 						const y2 = topY(edge.to);
 						return (
 							<g key={key}>
-								{label && <title>{`response_status_id ${label}`}</title>}
+								{condition && (
+									<title>{`${condition.field} ${condition.value}`}</title>
+								)}
 								<line
 									x1={CX}
 									y1={y1}
@@ -145,7 +149,9 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 					const lane = NODE_W + GUTTER - 14;
 					return (
 						<g key={key}>
-							{label && <title>{`response_status_id ${label}`}</title>}
+							{condition && (
+								<title>{`${condition.field} ${condition.value}`}</title>
+							)}
 							<path
 								d={`M ${NODE_W} ${yFrom} C ${lane} ${yFrom}, ${lane} ${yTo}, ${NODE_W} ${yTo}`}
 								fill="none"

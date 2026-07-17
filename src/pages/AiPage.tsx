@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
 import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
 import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
-import { RECIPES } from "@/lib/data/api-recipes";
+import { branchCondition, RECIPES } from "@/lib/data/api-recipes";
 import {
 	ArrowDown,
 	ArrowRight,
@@ -812,11 +812,11 @@ const AiPage = () => {
 															</p>
 															{branches.map((b) => (
 																<span
-																	key={`${step.specSlug}-${b.onResponseStatusId}-${b.goto}`}
+																	key={`${step.specSlug}-${branchCondition(b).value}-${b.goto}`}
 																	className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-eko-gold/15 px-2.5 py-1 text-xs font-medium text-amber-800"
 																>
 																	<GitBranch className="h-3 w-3" />
-																	{b.onResponseStatusId} →{" "}
+																	{branchCondition(b).value} →{" "}
 																	{b.goto === "done" ? "complete" : b.goto}
 																	{b.note ? ` · ${b.note}` : ""}
 																</span>

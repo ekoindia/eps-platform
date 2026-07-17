@@ -8,19 +8,19 @@
  * surfaces cannot disagree about the flow. Mermaid string-escaping lives in the
  * markdown layer, which is the only consumer that needs it.
  */
-import type { Recipe, RecipeStep } from "./api-recipes";
+import type { Recipe, RecipeBranch, RecipeStep } from "./api-recipes";
 import type { ApiSpec } from "./api-specs-common";
 import { docHrefForSlug, getDocBySlug } from "./docs-registry";
 
 /** The terminal node id for a flow that ends. */
 export const DONE_NODE = "done";
 
-export interface ResolvedBranch {
-	/** The `response_status_id` that triggers this jump. */
-	onResponseStatusId: number;
-	/** Raw target: a spec slug, or `"done"`. */
-	goto: string;
-	note?: string;
+/**
+ * A {@link RecipeBranch} resolved against its recipe. Intersects the source
+ * branch rather than restating its keys, so the condition stays a union and
+ * `branchCondition` works on a resolved branch exactly as on a raw one.
+ */
+export type ResolvedBranch = RecipeBranch & {
 	/** Node id of the target — a step id, or {@link DONE_NODE}. */
 	targetNodeId: string;
 	/** Human label for the target ("done", or the endpoint's name). */
@@ -29,7 +29,7 @@ export interface ResolvedBranch {
 	targetStepNumber?: number;
 	/** True when this branch's target is simply the next step in the flow. */
 	targetIsNextStep: boolean;
-}
+};
 
 export interface ResolvedStep {
 	/** Stable node id, `s1`-based, used by both the stepper and the graph. */
@@ -74,7 +74,7 @@ const titleFor = (specSlug: string): string =>
  * silently dropped — `assertRecipeSlugs` has already proven the slug is real.
  */
 const resolveBranch = (
-	branch: NonNullable<RecipeStep["branches"]>[number],
+	branch: RecipeBranch,
 	steps: RecipeStep[],
 	stepIndex: number,
 ): ResolvedBranch => {
