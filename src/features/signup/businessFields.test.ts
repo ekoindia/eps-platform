@@ -17,9 +17,9 @@ describe("INDIAN_STATES", () => {
 		expect(INDIAN_STATES).toHaveLength(36);
 		// These exact strings are what interaction 522 matches on. If someone
 		// "fixes" the spelling, the submit breaks — so pin them.
-		expect(INDIAN_STATES).toContain("Puducherry");
-		expect(INDIAN_STATES).toContain("Andhra Pradesh");
-		expect(INDIAN_STATES).toContain("Delhi");
+		expect(INDIAN_STATES).toContain("PondiCherry");
+		expect(INDIAN_STATES).toContain("Andhra Pradesh (New)");
+		expect(INDIAN_STATES).toContain("National Capital Territory of Delhi (UT)");
 		expect(INDIAN_STATES).not.toContain("Ladakh");
 	});
 });

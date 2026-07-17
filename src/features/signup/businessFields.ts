@@ -13,15 +13,14 @@
  * a BFF route over interaction 387 (which needs no user identity).
  */
 export const INDIAN_STATES: readonly string[] = [
-	"Andaman and Nicobar Islands",
-	"Andhra Pradesh",
+	"Andaman & Nicobar Islands",
 	"Arunachal Pradesh",
 	"Assam",
 	"Bihar",
 	"Chandigarh",
 	"Chhattisgarh",
-	"Dadra and Nagar Haveli and Daman and Diu",
-	"Delhi",
+	"Dadra and Nagar Haveli",
+	"Daman and Diu",
 	"Goa",
 	"Gujarat",
 	"Haryana",
@@ -30,7 +29,6 @@ export const INDIAN_STATES: readonly string[] = [
 	"Jharkhand",
 	"Karnataka",
 	"Kerala",
-	"Ladakh",
 	"Lakshadweep",
 	"Madhya Pradesh",
 	"Maharashtra",
@@ -38,8 +36,9 @@ export const INDIAN_STATES: readonly string[] = [
 	"Meghalaya",
 	"Mizoram",
 	"Nagaland",
+	"National Capital Territory of Delhi (UT)",
 	"Odisha",
-	"Puducherry",
+	"PondiCherry",
 	"Punjab",
 	"Rajasthan",
 	"Sikkim",
@@ -49,6 +48,7 @@ export const INDIAN_STATES: readonly string[] = [
 	"Uttar Pradesh",
 	"Uttarakhand",
 	"West Bengal",
+	"Andhra Pradesh (New)",
 ];
 
 /**
