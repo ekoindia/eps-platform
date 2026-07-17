@@ -60,8 +60,8 @@ export const COMPANY_TYPES: readonly { label: string; value: string }[] = [
 	{ label: "Private Ltd", value: "1" },
 	{ label: "LLP", value: "4" },
 	{ label: "Partnership", value: "2" },
-	{ label: "Sole Proprietorship", value: "3" },
 	{ label: "Public Limited", value: "5" },
+	{ label: "Sole Proprietorship / Individual", value: "3" },
 ];
 
 /** One field of the Business Details form. */
