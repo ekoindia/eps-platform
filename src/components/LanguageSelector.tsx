@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
-import { Globe, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Check, Globe } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 const languages = [
 	{ code: "en", label: "English" },
@@ -140,7 +140,7 @@ export const LanguageSelector = ({
 	const selectedLang = languages.find((l) => l.code === selected);
 
 	return (
-		<div className="relative" ref={dropdownRef}>
+		<div className="relative notranslate" ref={dropdownRef}>
 			<button
 				onClick={() => setOpen(!open)}
 				className={cn(

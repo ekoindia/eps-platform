@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, authClient } from "@/lib/auth/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { ApiError, authClient } from "@/lib/auth/client";
 import {
 	type ClipboardEvent,
 	type KeyboardEvent,

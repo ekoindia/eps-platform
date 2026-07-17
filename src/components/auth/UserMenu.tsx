@@ -29,6 +29,7 @@ export function UserMenu() {
 				<button
 					aria-label="Account menu"
 					className={cn(
+						"notranslate",
 						"flex h-9 w-9 items-center justify-center rounded-full",
 						"bg-white/20 text-sm font-semibold text-white",
 						"ring-2 ring-white/30 transition-all",
