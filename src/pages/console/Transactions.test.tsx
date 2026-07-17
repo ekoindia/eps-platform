@@ -203,7 +203,8 @@ describe("Transactions", () => {
 			),
 		);
 
-		fireEvent.click(screen.getByRole("button", { name: /previous/i }));
+		// pagination unmounts while the next page loads; wait for it back
+		fireEvent.click(await screen.findByRole("button", { name: /previous/i }));
 		await waitFor(() =>
 			expect(search).toHaveBeenLastCalledWith(
 				expect.objectContaining({ start_index: 0 }),
