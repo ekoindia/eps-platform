@@ -1,14 +1,19 @@
-import { ApiError, authClient } from "@/lib/auth/client";
 import { cn, formatINR } from "@/lib/utils";
+import {
+	fetchWalletBalance,
+	freshWalletBalance,
+	FRESH_FOR_MS,
+} from "@/lib/wallet-balance";
 import { RefreshCw, Wallet } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Seconds a manual refresh stays disabled, mirroring Eloka's StatusCard. The
  * balance moves only when the user transacts, so the cooldown costs them
- * nothing and keeps a jittery click well inside the backend's rate limit.
+ * nothing and keeps a jittery click well inside the backend's rate limit. Same
+ * window the cache treats a balance as fresh for — one fetch, one lockout.
  */
-const REFRESH_COOLDOWN_MS = 30_000;
+const REFRESH_COOLDOWN_MS = FRESH_FOR_MS;
 
 type Status = "loading" | "ok" | "error" | "hidden";
 
@@ -18,35 +23,51 @@ type Status = "loading" | "ok" | "error" | "hidden";
  * answers 403) — an empty card would just raise a question it can't answer.
  */
 export function WalletBalance() {
-	const [status, setStatus] = useState<Status>("loading");
-	const [balance, setBalance] = useState<number | null>(null);
-	const [cooling, setCooling] = useState(false);
-	const [busy, setBusy] = useState(true);
+	// A fresh cache paints the real balance on the first frame, so a console
+	// navigation no longer flashes "Loading…" at an answer we already have.
+	const seed = freshWalletBalance();
+	const [status, setStatus] = useState<Status>(seed?.status ?? "loading");
+	const [balance, setBalance] = useState<number | null>(seed?.balance ?? null);
+	// A remount used to hand back a fully armed refresh button, letting a user who
+	// hops pages click past the rate limit the cooldown exists to respect. Any
+	// fetch this recent counts, so the button starts locked for the remainder.
+	const [cooling, setCooling] = useState(!!seed);
+	const [busy, setBusy] = useState(!seed);
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const mounted = useRef(true);
 
 	const load = useCallback(async () => {
 		setBusy(true);
 		try {
-			const view = await authClient.walletBalance();
-			if (!mounted.current) return;
-			setBalance(view.balance);
-			setStatus("ok");
-		} catch (e) {
+			const settled = await fetchWalletBalance();
 			if (!mounted.current) return;
 			// 403 is the definitive "no wallet on this account" answer, not a
-			// transient failure — hide for good rather than offering a retry that
-			// can only fail the same way. Every other failure keeps the card, so a
-			// blip stays retryable.
-			if (e instanceof ApiError && e.httpStatus === 403) setStatus("hidden");
-			else setStatus("error");
+			// transient failure — fetchWalletBalance settles it to "hidden" rather
+			// than offering a retry that can only fail the same way.
+			setBalance(settled.balance);
+			setStatus(settled.status);
+		} catch {
+			// Every other failure keeps the card, so a blip stays retryable.
+			if (mounted.current) setStatus("error");
 		} finally {
 			if (mounted.current) setBusy(false);
 		}
 	}, []);
 
 	useEffect(() => {
-		void load();
+		if (!seed) {
+			void load();
+			return;
+		}
+		// Seeded, so the button started locked — release it when the cached
+		// balance's own cooldown runs out, not on a fresh 30s that a remount would
+		// otherwise restart. Without this nothing ever unlocks it: only refresh()
+		// arms that timer.
+		const left = REFRESH_COOLDOWN_MS - (Date.now() - seed.at);
+		timer.current = setTimeout(() => setCooling(false), left);
+		// `seed` is read once at mount; `load` is stable. Re-running on a changed
+		// `seed` would refetch mid-life, which is what this card is avoiding.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [load]);
 
 	// A cooldown or an in-flight request outliving its component would otherwise

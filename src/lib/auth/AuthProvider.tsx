@@ -12,6 +12,7 @@ import {
 	type MeView,
 	type SignupView,
 } from "@/lib/auth/client";
+import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
 import { setChatIdentity } from "@/lib/zoho-chat";
 
@@ -73,6 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		setChatIdentity(chatIdentity(state));
 	}, [state]);
+
+	// The E-value balance is cached in module scope to survive the remount every
+	// console navigation causes, which also means it would survive a sign-out and
+	// show one user their balance in the next user's session. Keyed on "anon"
+	// rather than on logout() so an expired session clears it too.
+	useEffect(() => {
+		if (state.status === "anon") resetWalletBalanceCache();
+	}, [state.status]);
 
 	return (
 		<AuthContext.Provider value={{ state, refresh, logout }}>

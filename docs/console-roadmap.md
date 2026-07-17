@@ -28,14 +28,29 @@ account has no wallet) rather than showing an empty card. Eloka's "Load balance"
 (+) action is deliberately not ported — the console has no transaction pages to
 route to.
 
+The fetched balance is cached in module scope (`src/lib/wallet-balance.ts`), not
+in the component. `AnimatedRoutes` keys the whole route subtree on the pathname
+to retrigger its fade, so every console navigation remounts the card; per-mount
+state meant a request and a "Loading…" flash on each page change, and a per-mount
+cooldown a user could walk past by hopping pages. A balance under 30s old
+(`FRESH_FOR_MS`, the cooldown window) paints on the first frame and skips the
+fetch, and the card mounts with the rest of that window already on its cooldown.
+Concurrent callers share one in-flight request, so a fast navigation before the
+first response lands doesn't double up. Only settled answers cache — "ok" and the
+403 "no wallet"; a transient failure caches nothing, so a remount retries rather
+than showing a stale error for 30s. `AuthProvider` clears the cache whenever the
+session goes anon (keyed on the state, so an expired session counts, not just
+`logout()`) — otherwise the next user to sign in in that tab would see the
+previous one's balance.
+
 The rail column renders once at every width — only the *links* collapse into the
-`Sheet` below `lg`, while the balance stays on screen. That is deliberate on two
-counts: a second `WalletBalance` inside the `Sheet` would mount and fetch its own
-copy (doubling upstream round-trips and racing the visible card to the rate
-limit), and a balance hidden behind a hamburger isn't the always-visible one
-Eloka has. Refresh is guarded by an in-flight flag as well as the cooldown: a
-request slower than 30s would otherwise let a second start, and the later-landing
-response can be the staler one.
+`Sheet` below `lg`, while the balance stays on screen. A balance hidden behind a
+hamburger isn't the always-visible one Eloka has. (A second `WalletBalance` in
+the `Sheet` would no longer double the round-trips — the shared cache and
+in-flight dedupe cover that — but it would still be the wrong shape.) Refresh is
+guarded by an in-flight flag as well as the cooldown: a request slower than 30s
+would otherwise let a second start, and the later-landing response can be the
+staler one.
 
 Backend: `GET /wallet/balance` (`packages/eps-backend/src/http/app.ts`) →
 `eko.getWalletBalance` (interaction **9**) acting as the user's own identity.
