@@ -30,7 +30,7 @@ Status legend: ✅ done · 🔜 next tranche · ⬜ pending · ⛔ blocked (sour
 | ~~`aadhaar-dmt-fino-verify-otp`~~ | — | — | — | deleted dup → redirect to `dmt-fino-validate-ekyc-otp` |
 | PPI-Levin Validate Aadhaar | `aadhaar-ppi-levin-validate` | POST | `/customer/payment/ppi-levin/sender/{customer_id}/aadhaar/otp` | path |
 | PPI-Levin Validate Aadhaar OTP | `aadhaar-ppi-levin-verify-otp` | POST | `/customer/payment/ppi-levin/sender/{customer_id}/aadhaar/otp/verify` | path — **fixed wrong-rail bug** |
-| AePS Cash Withdrawal | `aeps-cash-withdrawal` | POST | `/customer/collection/aeps-fingpay/cash-withdrawal/{customer_id}` | split; dropped `service_type`; `customer_id`→path |
+| AePS Cash Withdrawal | `aeps-cash-withdrawal` | POST | `/customer/collection/aeps-fingpay/cash-withdrawl/{customer_id}` | split; dropped `service_type`; `customer_id`→path; provider spelling `cash-withdrawl` |
 | AePS Balance Enquiry | `aeps-balance-enquiry` | POST | `/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}` | split; dropped `service_type`; `customer_id`→path |
 | AePS Mini Statement | `aeps-mini-statement` | POST | `/customer/collection/aeps-fingpay/mini-statement/{customer_id}` | split; dropped `service_type`; `customer_id`→path |
 | AePS Aadhaar Pay | `aeps-aadhaar-pay` | POST | `/customer/collection/aeps-fingpay` | ⛔ unchanged — no master path in source table; split pending backend confirmation |
@@ -38,8 +38,12 @@ Status legend: ✅ done · 🔜 next tranche · ⬜ pending · ⛔ blocked (sour
 | DMT-Levin Validate Aadhaar OTP | `aadhaar-dmt-levin-verify-otp` | POST | `/customer/payment/dmt-levin/sender/{customer_id}/aadhaar/otp/verify` | already master ✅ |
 
 **Dropped:** DMT-Airtel rail — not present in developers.eko.in/reference.
-**Flagged for backend confirmation:** AePS `service_type` removal (request); AePS response `service_type`
-echo retained pending confirmation; `aeps-aadhaar-pay` split.
+**Flagged for backend confirmation:** `aeps-aadhaar-pay` split.
+**Confirmed (2026-07-18, provider AePS transaction docs §6.1–6.3):** `service_type` gone from
+both request and response for cash-withdrawal / balance-enquiry / mini-statement (endpoints are now
+path-differentiated); cash-withdrawal path is the provider's `cash-withdrawl` spelling; request drops
+`pipe`/`notify_customer`/`source_ip` and renames `aadhaar`→`aadhar`; response shapes rewritten with
+real `response_type_id`s (1463/1464/1465, 1466, 1527/1528).
 
 ---
 

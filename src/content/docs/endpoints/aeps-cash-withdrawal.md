@@ -1,7 +1,7 @@
 Lets a customer withdraw cash from any Aadhaar-linked bank account using a live
-fingerprint scan — no card or PIN. Pass `service_type = 2`. The agent's biometric
-device produces a PID XML blob that is forwarded verbatim, and the customer's
-Aadhaar number is RSA-encrypted before transmission.
+fingerprint scan — no card or PIN. The agent's biometric device produces a PID
+XML blob that is forwarded verbatim, and the customer's Aadhaar number is
+RSA-encrypted before transmission.
 
 ## Prerequisites
 
