@@ -29,7 +29,7 @@ const codeColor = (code: string): string => {
 };
 
 const JsonBody = ({ value }: { value: unknown }) => (
-	<pre className="code-block docs-scroll mt-2 overflow-x-auto rounded-lg p-3 text-xs leading-relaxed">
+	<pre className="mt-2 overflow-x-auto rounded-lg border border-border bg-muted p-3 text-xs leading-relaxed text-foreground">
 		<code>{JSON.stringify(value, null, 2)}</code>
 	</pre>
 );
