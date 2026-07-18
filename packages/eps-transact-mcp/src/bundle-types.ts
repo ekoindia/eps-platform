@@ -24,6 +24,11 @@ export interface ApiErrorScenario {
 	statusCode?: number;
 	example: Record<string, unknown>;
 }
+export interface ApiResponseType {
+	id: number;
+	meaning: string;
+	next?: string;
+}
 export interface ApiErrorCode {
 	code: string | number;
 	scope: "http" | "transaction";
@@ -33,10 +38,17 @@ export interface ApiKeyInfo {
 	name: string;
 	description: string;
 }
+export type RecipeBranchCondition =
+	| { onResponseTypeId: number; onResponseStatusId?: never }
+	| { onResponseStatusId: number; onResponseTypeId?: never };
+export type RecipeBranch = RecipeBranchCondition & {
+	goto: string;
+	note?: string;
+};
 export interface RecipeStep {
 	specSlug: string;
 	purpose: string;
-	branches?: { onResponseStatusId: number; goto: string; note?: string }[];
+	branches?: RecipeBranch[];
 }
 export interface Recipe {
 	id: string;
@@ -86,6 +98,9 @@ export interface AgentApiDetail extends AgentApiIndexEntry {
 	responseFields: ResponseField[];
 	sampleSuccessResponse: Record<string, unknown>;
 	errorScenarios: ApiErrorScenario[];
+	/** Documented `response_type_id` values: meaning + the slug to call next.
+	 * Empty when the endpoint documents no branching. */
+	responseTypes: ApiResponseType[];
 }
 
 export interface AgentAuthTopic {
@@ -115,11 +130,19 @@ export interface AgentEnvironmentsTopic {
 	environments: AgentEnvironment[];
 }
 
+export interface AgentGettingStartedTopic {
+	id: "getting-started";
+	summary: string;
+	steps: { title: string; detail: string; url?: string }[];
+	links: { label: string; url: string }[];
+}
+
 export interface AgentTopics {
 	auth: AgentAuthTopic;
 	errors: AgentErrorsTopic;
 	pricing: AgentPricingTopic;
 	environments: AgentEnvironmentsTopic;
+	"getting-started": AgentGettingStartedTopic;
 }
 
 export type AgentTopicId = keyof AgentTopics;

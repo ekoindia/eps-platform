@@ -14,7 +14,9 @@ import {
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import { recipeHref } from "@/lib/data/api-recipes";
 import type {
+	ApiErrorScenario,
 	ApiParam,
+	ApiResponseType,
 	ApiSpec,
 	ResponseField,
 } from "@/lib/data/api-specs-common";
@@ -23,9 +25,11 @@ import {
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
+	responseTypeFor,
 } from "@/lib/data/api-specs-common";
 import {
 	buildNavTree,
+	docHrefForSlug,
 	docsHref,
 	endpointSlug,
 	type NavLeaf,
@@ -76,6 +80,41 @@ const responseRows = (fields: ResponseField[], prefix = ""): string[][] => {
 const jsonFence = (value: unknown): string =>
 	["```json", JSON.stringify(value, null, 2), "```"].join("\n");
 
+/** A response type's next endpoint, linked to its markdown twin. */
+const nextStepCell = (responseType: ApiResponseType): string => {
+	if (!responseType.next) return "—";
+	const href = docHrefForSlug(responseType.next);
+	// No page ⇒ no link, same guard the HTML table applies.
+	return href
+		? link(responseType.next, `${SITE_URL}${href}.md`, "md")
+		: responseType.next;
+};
+
+/** The `response_type_id` of an error example, when the spec documents it. */
+const errorScenarioTypeCell = (
+	spec: ApiSpec,
+	scenario: ApiErrorScenario,
+): string => {
+	const responseType = responseTypeFor(spec, scenario.example);
+	if (responseType) return `\`${responseType.id}\` — ${responseType.meaning}`;
+	const id = scenario.example.response_type_id;
+	return typeof id === "number" ? `\`${id}\`` : "—";
+};
+
+/** One-line annotation under an example: what its response type means, and
+ * where to go next. Absent when the payload carries no documented id. */
+const responseTypeLine = (
+	spec: ApiSpec,
+	payload: Record<string, unknown>,
+): string | undefined => {
+	const responseType = responseTypeFor(spec, payload);
+	if (!responseType) return undefined;
+	const next = responseType.next
+		? ` Next step: ${nextStepCell(responseType)}.`
+		: "";
+	return `\`response_type_id\` \`${responseType.id}\` — ${responseType.meaning}.${next}`;
+};
+
 const paramTable = (params: ApiParam[]): string =>
 	markdownTable(
 		["Field", "Type", "Required", "Description"],
@@ -120,16 +159,32 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 			["Field", "Type", "Description"],
 			responseRows(resolveResponseFields(spec)),
 		),
+		spec.responseTypes?.length ? h2("Response types") : undefined,
+		spec.responseTypes?.length
+			? "Branch on `response_type_id` to decide the next call:"
+			: undefined,
+		spec.responseTypes?.length
+			? markdownTable(
+					["response_type_id", "Meaning", "Next step"],
+					spec.responseTypes.map((rt) => [
+						String(rt.id),
+						rt.meaning,
+						nextStepCell(rt),
+					]),
+				)
+			: undefined,
 		hasSampleRequest ? h2("Example request") : undefined,
 		hasSampleRequest ? jsonFence(sampleRequest) : undefined,
 		h2("Example response"),
+		responseTypeLine(spec, spec.sampleSuccessResponse),
 		jsonFence(spec.sampleSuccessResponse),
 		spec.errorScenarios?.length ? h2("Error scenarios") : undefined,
 		spec.errorScenarios?.length
 			? markdownTable(
-					["Status", "Scenario"],
+					["Status", "response_type_id", "Scenario"],
 					spec.errorScenarios.map((e) => [
 						String(e.statusCode ?? 200),
+						errorScenarioTypeCell(spec, e),
 						e.scenario,
 					]),
 				)

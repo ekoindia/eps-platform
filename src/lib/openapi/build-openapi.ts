@@ -41,13 +41,16 @@ import {
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
+	responseTypeFor,
 } from "@/lib/data/api-specs-common";
 import {
 	CATEGORY_ORDER,
 	CATEGORY_TITLES,
+	docHrefForSlug,
 	type DocCategory,
 	endpointSlug,
 } from "@/lib/data/docs-registry";
+import { markdownTable } from "@/lib/markdown/shared";
 
 /** Loose JSON-schema / OpenAPI object during construction. */
 type Json = Record<string, unknown>;
@@ -196,6 +199,45 @@ const exampleKey = (scenario: string, existing: Json): string => {
 	return key;
 };
 
+/** An example's summary, prefixed with what its `response_type_id` means when
+ * the spec documents that id. */
+const exampleSummary = (
+	spec: ApiSpec,
+	payload: Record<string, unknown>,
+	fallback: string,
+): string => {
+	const responseType = responseTypeFor(spec, payload);
+	return responseType
+		? `${responseType.id} — ${responseType.meaning}`
+		: fallback;
+};
+
+/**
+ * The `response_type_id` routing table as GFM, appended to the operation
+ * description — Scalar renders tables there. Undefined when the spec documents
+ * no response types.
+ */
+const responseTypesBlock = (spec: ApiSpec): string | undefined => {
+	if (!spec.responseTypes?.length) return undefined;
+	return [
+		"### Response types",
+		"",
+		"Branch on `response_type_id` to decide the next call:",
+		"",
+		markdownTable(
+			["response_type_id", "Meaning", "Next step"],
+			spec.responseTypes.map((rt) => {
+				const href = rt.next ? docHrefForSlug(rt.next) : undefined;
+				return [
+					String(rt.id),
+					rt.meaning,
+					href ? `[${rt.next}](${SITE_URL}${href})` : (rt.next ?? "—"),
+				];
+			}),
+		),
+	].join("\n");
+};
+
 const buildResponses = (spec: ApiSpec): Json => {
 	const successSchema: Json = {
 		type: "object",
@@ -208,7 +250,16 @@ const buildResponses = (spec: ApiSpec): Json => {
 			content: {
 				"application/json": {
 					schema: successSchema,
-					examples: { success: { value: spec.sampleSuccessResponse } },
+					examples: {
+						success: {
+							summary: exampleSummary(
+								spec,
+								spec.sampleSuccessResponse,
+								"Successful response",
+							),
+							value: spec.sampleSuccessResponse,
+						},
+					},
 				},
 			},
 		},
@@ -222,7 +273,7 @@ const buildResponses = (spec: ApiSpec): Json => {
 		] as Json | undefined;
 		const examples: Json = { ...((media?.examples as Json) ?? {}) };
 		examples[exampleKey(scenario.scenario, examples)] = {
-			summary: scenario.scenario,
+			summary: exampleSummary(spec, scenario.example, scenario.scenario),
 			value: scenario.example,
 		};
 
@@ -331,11 +382,17 @@ export const buildOpenApiDocument = (
 			operationId: operationIdFor(primary),
 			summary: primary.name,
 			// NOTE: for grouped path+method variants only the PRIMARY spec's
-			// description appears in the OpenAPI/Scalar operation (variants are
-			// summary-only under `x-eko-variants`). A rich description on a
-			// non-primary variant won't reach Scalar — its `/docs/<slug>` page
-			// still renders it. Keep rich descriptions on the primary spec.
-			description: resolveShortDescription(primary) ?? primary.summary,
+			// description and responses appear in the OpenAPI/Scalar operation
+			// (variants are summary-only under `x-eko-variants`). A rich
+			// description — or a `responseTypes` table — on a non-primary variant
+			// won't reach Scalar; its `/docs/<slug>` page still renders both. Keep
+			// rich descriptions and response types on the primary spec.
+			description: [
+				resolveShortDescription(primary) ?? primary.summary,
+				responseTypesBlock(primary),
+			]
+				.filter(Boolean)
+				.join("\n\n"),
 			tags: [productNameFor(primary)],
 			[X_DOCS_SLUG]: endpointSlug(primary),
 			parameters,

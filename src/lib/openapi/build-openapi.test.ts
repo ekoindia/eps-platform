@@ -170,6 +170,27 @@ describe("buildOpenApiDocument", () => {
 		expect(headerNames).toContain("secret-key-timestamp");
 	});
 
+	it("puts the response-types table in the description and names the examples", () => {
+		const op = (
+			doc.paths?.["/customer/payment/dmt-fino/sender/{customer_id}"] as Record<
+				string,
+				unknown
+			>
+		).get as OpenAPIV3_1.OperationObject;
+		// Scalar renders GFM in descriptions, so the routing table lands there.
+		expect(op.description).toContain("### Response types");
+		expect(op.description).toContain(
+			"| 308 | Sender not found | [dmt-onboard-sender](https://eps.eko.in/docs/dmt-onboard-sender) |",
+		);
+		// The success example is labelled by what its id means, not "success".
+		const examples = (op.responses?.["200"] as OpenAPIV3_1.ResponseObject)
+			.content?.["application/json"]?.examples as Record<
+			string,
+			{ summary: string }
+		>;
+		expect(examples.success.summary).toBe("309 — Sender found");
+	});
+
 	it("operationIdFor camel-cases kebab ids", () => {
 		expect(operationIdFor({ id: "pan-lite" } as ApiSpec)).toBe("panLite");
 		expect(operationIdFor({ id: "dmt-get-sender" } as ApiSpec)).toBe(

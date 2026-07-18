@@ -9,6 +9,7 @@
  * index. Per-endpoint detail is linked (bundle/MCP/.md docs), not inlined.
  */
 import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
+import { branchCondition } from "@/lib/data/api-recipes";
 import { markdownTable } from "@/lib/markdown/shared";
 import type { AgentBundle } from "@/lib/agent/agent-bundle-types";
 
@@ -98,6 +99,14 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 			".",
 	);
 	lines.push("");
+	lines.push(
+		"Non-financial responses also carry `response_type_id`, which identifies " +
+			"*which* response shape came back and is the field to branch on when " +
+			"choosing the next call. Each API's documented values, their meaning and " +
+			"the endpoint to call next are in its `responseTypes` " +
+			`(${SITE_URL}/agent/api/<slug>.json).`,
+	);
+	lines.push("");
 
 	// Endpoint index — compact
 	lines.push("## API endpoints");
@@ -127,9 +136,10 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 		for (let i = 0; i < r.steps.length; i++) {
 			const step = r.steps[i];
 			const branch = step.branches
-				?.map(
-					(b) => ` (if response_status_id ${b.onResponseStatusId} → ${b.goto})`,
-				)
+				?.map((b) => {
+					const { field, value } = branchCondition(b);
+					return ` (if ${field} ${value} → ${b.goto})`;
+				})
 				.join("");
 			lines.push(
 				`${i + 1}. \`${step.specSlug}\` — ${step.purpose}${branch ?? ""}`,
@@ -158,7 +168,9 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 			"append `?eps_scenario=<response_status_id>` to the request for " +
 			"endpoints whose fixture includes that code — e.g. calling the DMT " +
 			"sender lookup (`dmt-get-sender`) with `?eps_scenario=463` returns its " +
-			'"sender not found" branch from the DMT — Send Money recipe.',
+			'documented "sender not found" example. Note the mock selects a scenario ' +
+			"by `response_status_id`, which is not the field you branch on: that same " +
+			"example carries `response_type_id` 308, and it is 308 the recipe routes on.",
 	);
 	lines.push("");
 

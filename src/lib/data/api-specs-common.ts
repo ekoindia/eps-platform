@@ -74,6 +74,24 @@ export interface ApiErrorScenario {
 }
 
 /**
+ * One documented `response_type_id` value: what it means and, when the id is a
+ * routing decision, which endpoint to call next.
+ *
+ * The id space is Eko-wide but the routing is flow-specific — `308` ("not
+ * enrolled") leads to a different onboard endpoint in DMT than in PPI — so these
+ * live per-spec rather than in a global registry.
+ */
+export interface ApiResponseType {
+	/** The `response_type_id` value. */
+	id: number;
+	/** What this response means, in one line. */
+	meaning: string;
+	/** OPTIONAL FK into `API_SPECS.slug` — the endpoint to call next. Resolved
+	 * through `docHrefForSlug` at render, so it never produces a 404. */
+	next?: string;
+}
+
+/**
  * An optional curated "see also" link shown in the endpoint page's Next Steps
  * block. Prefer {@link slug} for internal docs pages — it is resolved through
  * `docHrefForSlug`, which drops the link if no such page exists (never a 404).
@@ -167,6 +185,12 @@ export interface ApiSpec {
 	/** Full success response example (envelope + data). */
 	sampleSuccessResponse: Record<string, unknown>;
 	errorScenarios?: ApiErrorScenario[];
+	/** OPTIONAL: the `response_type_id` values this endpoint can return, each with
+	 * its meaning and the next endpoint to call. Set this instead of hand-writing a
+	 * routing table into {@link description} — it renders the response-types table
+	 * on the docs page, the `.md` twin and OpenAPI, feeds the agent bundle/MCP, and
+	 * annotates every sample payload whose id matches. */
+	responseTypes?: ApiResponseType[];
 	/** OPTIONAL hand-picked "see also" links shown in the endpoint's Next Steps
 	 * block, alongside the auto-computed product / AI / SDK / next-in-group links. */
 	relatedLinks?: RelatedLink[];
@@ -380,6 +404,55 @@ export const buildSampleRequest = (spec: ApiSpec): Record<string, unknown> => {
 		if (p.in === "body" && p.example !== undefined) body[p.name] = p.example;
 	}
 	return body;
+};
+
+/**
+ * The documented {@link ApiResponseType} matching a sample payload's
+ * `response_type_id`, or `undefined` when the spec documents none, the payload
+ * carries no id (financial responses often don't), or the id is undocumented.
+ *
+ * This is what keeps every rendered example in step with the routing table: the
+ * annotation beside a sample is looked up, never written twice.
+ */
+export const responseTypeFor = (
+	spec: ApiSpec,
+	payload: Record<string, unknown>,
+): ApiResponseType | undefined => {
+	const id = payload.response_type_id;
+	return typeof id === "number"
+		? spec.responseTypes?.find((rt) => rt.id === id)
+		: undefined;
+};
+
+/**
+ * Throws if any spec repeats a `response_type_id`, or points `next` at a slug
+ * that has no docs page.
+ *
+ * `knownSlugs` must be the DOCUMENTED slugs (`getAllDocSlugs()`), not every
+ * `API_SPECS.slug`: a `next` naming a real-but-undocumented spec would render as
+ * dead plain text, which is exactly the silent rot this table exists to replace.
+ * Runs at build time via `build-agent-bundle.ts`, alongside `assertRecipeSlugs`.
+ */
+export const assertResponseTypeSlugs = (
+	specs: ApiSpec[],
+	knownSlugs: ReadonlySet<string>,
+): void => {
+	for (const spec of specs) {
+		const seen = new Set<number>();
+		for (const rt of spec.responseTypes ?? []) {
+			if (seen.has(rt.id)) {
+				throw new Error(
+					`api-specs: spec "${spec.id}" documents response_type_id ${rt.id} twice.`,
+				);
+			}
+			seen.add(rt.id);
+			if (rt.next !== undefined && !knownSlugs.has(rt.next)) {
+				throw new Error(
+					`api-specs: spec "${spec.id}" response_type_id ${rt.id} points next at "${rt.next}", which has no docs page.`,
+				);
+			}
+		}
+	}
 };
 
 /** Full response tree: envelope with `data` set to the API-specific subtree. */

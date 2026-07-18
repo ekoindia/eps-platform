@@ -22,6 +22,7 @@
 import type { ApiSpec } from "./api-specs-common";
 
 export const API_SPECS: ApiSpec[] = [
+	// MARK: DMT
 	{
 		id: "dmt-get-sender",
 		productId: "dmt",
@@ -32,7 +33,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Fetch the DMT-Fino profile of a registered sender by mobile number.",
 		description:
-			"The first step in the DMT flow. Call this to check whether a customer is already registered as a DMT sender. If the sender exists, the response returns their profile and remaining transfer limits so you can skip registration.\n\nUse `response_type_id` in the response to decide the next step:\n\n| response_type_id | Meaning | Next step |\n| --- | --- | --- |\n| 308 | Sender not found | [dmt-onboard-sender](/docs/dmt-onboard-sender) |\n| 309 | Sender found | [dmt-get-recipients](/docs/dmt-get-recipients) |\n| 2134 | Sender found, Biometric eKYC pending | [dmt-fino-sender-ekyc](/docs/dmt-fino-sender-ekyc) |\n| 2129 | Sender found, Validate eKYC OTP pending | [dmt-fino-validate-ekyc-otp](/docs/dmt-fino-validate-ekyc-otp) |",
+			"The first step in the DMT flow. Call this to check whether a customer is already registered as a DMT sender. If the sender exists, the response returns their profile and remaining transfer limits so you can skip registration.",
 		relevance: "M",
 		bestFor:
 			"Checking sender registration status before starting a DMT transaction.",
@@ -50,11 +51,24 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
+				name: "is_registered",
+				type: "number",
+				imp: true,
+				description: "1 = sender already registered, 0 = not registered.",
+				example: 1,
+			},
+			{
 				name: "sender_name",
 				type: "string",
 				description: "Registered name of the sender.",
 				imp: true,
 				example: "Ramesh Kumar",
+			},
+			{
+				name: "ekyc_enabled",
+				type: "string",
+				description: 'Whether biometric eKYC is enabled ("1" = yes).',
+				example: "1",
 			},
 			{
 				name: "next_allowed_limit",
@@ -68,6 +82,44 @@ export const API_SPECS: ApiSpec[] = [
 				type: "number",
 				description: "Sender account state: 0=Active, 10=Pending verification.",
 				example: 0,
+			},
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description: "Sender profile summary.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						description: "Sender's registered name.",
+						example: "Ramesh Kumar",
+					},
+					{
+						name: "mobile",
+						type: "string",
+						description: "Sender's mobile number.",
+						example: "9123456789",
+					},
+					{
+						name: "total_monthly_limit",
+						type: "string",
+						description: "Total monthly transfer limit (INR).",
+						example: "50000",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						description: "Remaining monthly transfer limit (INR).",
+						example: "48000",
+					},
+					{
+						name: "ekyc_enabled",
+						type: "number",
+						description: "Whether eKYC is enabled (1 = yes).",
+						example: 1,
+					},
+				],
 			},
 		],
 		sampleSuccessResponse: {
@@ -98,9 +150,23 @@ export const API_SPECS: ApiSpec[] = [
 					status: 1,
 					response_status_id: 463,
 					message: "Customer not found",
-					response_type_id: 1388,
+					response_type_id: 308,
 					data: {},
 				},
+			},
+		],
+		responseTypes: [
+			{ id: 308, meaning: "Sender not found", next: "dmt-onboard-sender" },
+			{ id: 309, meaning: "Sender found", next: "dmt-get-recipients" },
+			{
+				id: 2134,
+				meaning: "Sender found, Biometric eKYC pending",
+				next: "dmt-fino-sender-ekyc",
+			},
+			{
+				id: 2129,
+				meaning: "Sender found, Validate eKYC OTP pending",
+				next: "dmt-fino-validate-ekyc-otp",
 			},
 		],
 	},
@@ -984,17 +1050,19 @@ export const API_SPECS: ApiSpec[] = [
 			},
 		],
 	},
+	// MARK: AePS
 	{
 		id: "aeps-activate-fingpay",
 		productId: "aeps",
 		name: "Activate AePS Fingpay for Agent",
 		slug: "aeps-activate-fingpay",
 		provider: "AePS – Fingpay",
+		group: "Activate for Agent",
 		summary:
-			"Onboard an agent for AePS Fingpay service by submitting their biometric device details and KYC documents.",
+			"Enable AePS Fingpay service for your agent by submitting their biometric device details and KYC documents.",
 		description:
-			"This onboarding API registers an agent (identified by their user_code) for the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.",
-		relevance: "H",
+			"This API enables an agent (identified by their `user_code`) to use the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.\n\n> [!NOTE]\n> This API must be called after onboarding your agent using the [**Onboard User API**](/docs/onboard-user).\n\n> [!WARNING]\n> The approval may take 1-2 business days.",
+		relevance: "M",
 		bestFor:
 			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
 		method: "PUT",
@@ -1026,16 +1094,25 @@ export const API_SPECS: ApiSpec[] = [
 				example: "SN1234567890",
 			},
 			{
+				name: "shop_type",
+				type: "number",
+				required: true,
+				description:
+					"The shop-type ID of the Agent. Use `Get Shop Types` API for a list of shop-types and corresponding IDs",
+				example: 4215,
+			},
+			{
 				name: "office_address",
 				type: "object",
 				required: true,
 				description:
-					"Agent's current office/operating address as a JSON object with keys: line, city, state, pincode.",
+					"Agent's current office/operating address as a JSON object with keys: line, city, state, state_id, pincode. To get state_id, see the `Get States` API",
 				example: {
 					line: "Shop No. 5, Gandhi Market",
-					city: "Patna",
-					state: "Bihar",
-					pincode: "800001",
+					city: "Gurgaon",
+					state: "Haryana",
+					state_id: 23,
+					pincode: "122003",
 				},
 			},
 			{
@@ -1043,12 +1120,13 @@ export const API_SPECS: ApiSpec[] = [
 				type: "object",
 				required: true,
 				description:
-					"Agent's address exactly as it appears on the submitted address proof document. JSON object with keys: line, city, state, pincode.",
+					"Agent's address exactly as it appears on the submitted address proof document. JSON object with keys: line, city, state, sate_id, pincode. To get state_id, see the `Get States` API",
 				example: {
 					line: "Shop No. 5, Gandhi Market",
-					city: "Patna",
-					state: "Bihar",
-					pincode: "800001",
+					city: "Gurgaon",
+					state: "Haryana",
+					state_id: 23,
+					pincode: "122003",
 				},
 			},
 			{
@@ -1060,7 +1138,16 @@ export const API_SPECS: ApiSpec[] = [
 				example: "<binary file>",
 			},
 			{
+				name: "aadhar",
+				label: "Aadhaar Number",
+				type: "string",
+				required: true,
+				description: "12-digit Aadhaar number of the sender.",
+				example: "123456789012",
+			},
+			{
 				name: "aadhar_front",
+				label: "Aadhaar Front Image",
 				type: "file",
 				required: true,
 				description:
@@ -1069,16 +1156,34 @@ export const API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "aadhar_back",
+				label: "Aadhaar Back Image",
 				type: "file",
 				required: true,
 				description:
 					"Back side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
 				example: "<binary file>",
 			},
+			{
+				name: "latlong",
+				label: "Geolocation",
+				type: "string",
+				required: true,
+				description:
+					"GPS coordinates of the agent for whom AePS Fingpay service is being activated. Format: <latitude,longitude>",
+				example: "28.6139,77.2090",
+			},
+		],
+		responseTypes: [
+			{
+				id: 1259,
+				meaning: "AePS Registration Successful",
+				next: "dmt-onboard-sender",
+			},
+			{ id: 1297, meaning: "User does not exist", next: "onboard-user" },
 		],
 		responseData: [
 			{
-				name: "activation_status",
+				name: "service_status_desc",
 				type: "string",
 				description:
 					"Current state of the AePS Fingpay activation request. 'pending' means documents are submitted and under review.",
@@ -1086,840 +1191,198 @@ export const API_SPECS: ApiSpec[] = [
 				example: "pending",
 			},
 			{
-				name: "activation_id",
-				type: "string",
-				description:
-					"Unique identifier for this activation request, for tracking and support.",
+				name: "service_status",
+				type: "number",
+				description: "State-id of the AePS Fingpay activation request.",
 				imp: true,
 				example: "ACT20240101001",
 			},
-			{
-				name: "message",
-				type: "string",
-				description: "Human-readable message about the activation status.",
-				example:
-					"Activation request submitted. Approval expected within 2-3 business days.",
-			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message:
-				"AePS Fingpay activation request submitted successfully. Approval expected within 2-3 business days.",
-			response_type_id: 1388,
+			response_type_id: 1259,
+			message: "AePS Registration Successful",
 			data: {
-				activation_status: "pending",
-				activation_id: "ACT20240101001",
-				message:
-					"Activation request submitted. Approval expected within 2-3 business days.",
+				service_status_desc: "Activated",
+				balance: "",
+				user_code: "37659001",
+				initiator_id: "7042769383",
+				service_status: "1",
+				service_code: "43",
+				remarks: "",
 			},
 		},
 		errorScenarios: [
 			{
-				scenario: "File format not accepted (PNG uploaded)",
-				statusCode: 400,
-				example: {
-					status: 1,
-					message: "Invalid file format. Only JPEG, JPG, and PDF are accepted.",
-				},
-			},
-			{
-				scenario: "File size exceeds 1 MB",
-				statusCode: 400,
-				example: {
-					status: 1,
-					message: "File size exceeds the maximum allowed limit of 1 MB.",
-				},
-			},
-			{
-				scenario: "Agent user_code not found",
+				scenario: "Agent not onboarded",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "Agent not found. Please verify the user_code.",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "aeps-cash-withdrawal",
-		productId: "aeps",
-		name: "AePS Cash Withdrawal",
-		slug: "aeps-cash-withdrawal",
-		provider: "AePS – Fingpay",
-		summary:
-			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
-		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan (`service_type = 2`). The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, OTP-based eKYC, and the daily 2FA authentication (whose `reference_id` must be sent with every withdrawal).",
-		descriptionFile: "aeps-cash-withdrawal.md",
-		relevance: "H",
-		bestFor:
-			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
-		method: "POST",
-		path: "/customer/collection/aeps-fingpay/cash-withdrawal/{customer_id}",
-		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "user_code",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-				example: "20810200",
-			},
-			{
-				name: "customer_id",
-				type: "string",
-				required: true,
-				description: "Customer's registered mobile number.",
-				example: "9876543210",
-			},
-			{
-				name: "bank_code",
-				type: "string",
-				required: true,
-				description:
-					"Bank IIN/IFS code identifying the customer's bank. Obtain from the bank list API.",
-				example: "607153",
-			},
-			{
-				name: "amount",
-				type: "number",
-				required: true,
-				description:
-					"Withdrawal amount in Indian Rupees (integer). Must be greater than 0 for cash withdrawal.",
-				example: 1000,
-			},
-			{
-				name: "aadhaar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar using the Eko RSA public key with OPENSSL_SSLV23_PADDING, then Base64-encode the ciphertext.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
-			{
-				name: "piddata",
-				type: "string",
-				required: true,
-				description:
-					"PID data captured from the UIDAI-certified biometric device, as a raw XML string. Must use Data type='X' (XML, not Protobuf). DeviceInfo must include the 'mc' (device certificate) parameter. fType must be 2.",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			},
-			{
-				name: "pipe",
-				type: "number",
-				required: true,
-				description: "Routing pipe selector. Use 0 (default).",
-				example: 0,
-			},
-			{
-				name: "notify_customer",
-				type: "number",
-				required: true,
-				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
-				example: 1,
-			},
-			{
-				name: "latlong",
-				type: "string",
-				required: true,
-				description:
-					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "source_ip",
-				type: "string",
-				required: true,
-				description:
-					"IP address of the merchant/agent system initiating the transaction.",
-				example: "103.56.78.90",
-			},
-			{
-				name: "reference_id",
-				type: "string",
-				required: true,
-				description:
-					"2FA reference ID obtained from the Daily Authentication (daily eKYC) API. Required for every Cash Withdrawal transaction due to compliance 2FA mandate.",
-				example: "DAKYC20240101001",
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				description:
-					"Eko's internal transaction ID. Use for reconciliation and support queries.",
-				imp: true,
-				example: "EKO20240101001234",
-			},
-			{
-				name: "amount",
-				type: "number",
-				description: "Withdrawal amount processed in the transaction (INR).",
-				imp: true,
-				example: 1000,
-			},
-			{
-				name: "bank_name",
-				type: "string",
-				description: "Name of the customer's bank where the debit occurred.",
-				imp: true,
-				example: "State Bank of India",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "Bank/NPCI reference number for the transaction.",
-				imp: true,
-				example: "NPCI20240101ABCD",
-			},
-			{
-				name: "balance",
-				type: "string",
-				description:
-					"Remaining balance in the customer's bank account after withdrawal, if returned by the bank.",
-				example: "4500.00",
-			},
-			{
-				name: "aadhaar_ref_num",
-				type: "string",
-				description: "Aadhaar authentication reference number from UIDAI.",
-				example: "UIDAI123456789",
-			},
-			{
-				name: "service_type",
-				type: "number",
-				description:
-					"Echo of the service_type from the request (2 for Cash Withdrawal).",
-				example: 2,
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Cash Withdrawal successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				tid: "EKO20240101001234",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				amount: 1000,
-				bank_name: "State Bank of India",
-				bank_ref_num: "NPCI20240101ABCD",
-				balance: "4500.00",
-				aadhaar_ref_num: "UIDAI123456789",
-				service_type: 2,
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Biometric authentication failure",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 108,
-					message:
-						"Biometric authentication failed. Please retry with a fresh fingerprint scan.",
-					tx_status: "1",
-					txstatus_desc: "Failed",
+					status: 1297,
+					response_status_id: 1,
+					response_type_id: 1297,
+					message: "This user does not exist",
 					data: {
-						tid: "EKO20240101001235",
-						tx_status: "1",
-						amount: 1000,
-					},
-				},
-			},
-			{
-				scenario: "Insufficient balance in customer account",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance in customer account.",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {
-						tid: "EKO20240101001236",
-						tx_status: "1",
-						amount: 1000,
-					},
-				},
-			},
-			{
-				scenario: "Daily 2FA reference_id missing or invalid",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 155,
-					message:
-						"Daily authentication (2FA) required. Complete daily eKYC before performing transactions.",
-					data: {},
-				},
-			},
-			{
-				scenario: "Transaction awaited / bank timeout",
-				statusCode: 200,
-				example: {
-					status: 2,
-					response_status_id: 2,
-					message:
-						"Transaction is being processed. Check status using Transaction Inquiry API.",
-					tx_status: "2",
-					txstatus_desc: "Awaited",
-					data: {
-						tid: "EKO20240101001237",
-						tx_status: "2",
+						initiator_id: "",
 					},
 				},
 			},
 		],
 	},
 	{
-		id: "aeps-balance-enquiry",
+		id: "aeps-fingpay-shop-types",
 		productId: "aeps",
-		name: "AePS Balance Enquiry",
-		slug: "aeps-balance-enquiry",
+		name: "Get Shop Types",
+		slug: "aeps-fingpay-shop-types",
 		provider: "AePS – Fingpay",
+		group: "Activate for Agent",
 		summary:
-			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
+			"List the Merchant Category Codes (MCC) available for AePS Fingpay agent onboarding.",
 		description:
-			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint with amount=0. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
-		relevance: "H",
-		bestFor:
-			"Agent-assisted balance checks for rural customers without smartphone or internet access",
-		method: "POST",
-		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
-		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "user_code",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-				example: "20810200",
-			},
-			{
-				name: "customer_id",
-				type: "string",
-				required: true,
-				description: "Customer's registered mobile number.",
-				example: "9876543210",
-			},
-			{
-				name: "bank_code",
-				type: "string",
-				required: true,
-				description: "Bank IIN/IFS code identifying the customer's bank.",
-				example: "607153",
-			},
-			{
-				name: "amount",
-				type: "number",
-				required: true,
-				description: "Must be 0 for Balance Enquiry. No debit is performed.",
-				example: 0,
-			},
-			{
-				name: "aadhaar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the customer.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
-			{
-				name: "piddata",
-				type: "string",
-				required: true,
-				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc present in DeviceInfo).",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			},
-			{
-				name: "pipe",
-				type: "number",
-				required: true,
-				description: "Routing pipe selector. Use 0 (default).",
-				example: 0,
-			},
-			{
-				name: "notify_customer",
-				type: "number",
-				required: true,
-				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
-				example: 0,
-			},
-			{
-				name: "latlong",
-				type: "string",
-				required: true,
-				description:
-					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "source_ip",
-				type: "string",
-				required: true,
-				description:
-					"IP address of the merchant/agent system initiating the transaction.",
-				example: "103.56.78.90",
-			},
-		],
-		responseData: [
-			{
-				name: "balance",
-				type: "string",
-				description:
-					"Current account balance returned by the bank (INR). This is the key output of a Balance Enquiry.",
-				imp: true,
-				example: "5500.75",
-			},
-			{
-				name: "bank_name",
-				type: "string",
-				description: "Name of the customer's bank.",
-				imp: true,
-				example: "State Bank of India",
-			},
-			{
-				name: "tid",
-				type: "string",
-				description: "Eko's internal transaction ID for this enquiry.",
-				imp: true,
-				example: "EKO20240101005678",
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "NPCI/bank reference number.",
-				example: "NPCI20240101EFGH",
-			},
-			{
-				name: "aadhaar_ref_num",
-				type: "string",
-				description: "UIDAI authentication reference number.",
-				example: "UIDAI987654321",
-			},
-		],
-		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Balance Enquiry successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				tid: "EKO20240101005678",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				balance: "5500.75",
-				bank_name: "State Bank of India",
-				bank_ref_num: "NPCI20240101EFGH",
-				aadhaar_ref_num: "UIDAI987654321",
-			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Bank server timeout / balance unavailable",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 108,
-					message:
-						"Unable to fetch balance. Bank server did not respond in time.",
-					tx_status: "1",
-					data: {},
-				},
-			},
-			{
-				scenario: "Aadhaar not linked to selected bank",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 463,
-					message:
-						"Aadhaar not linked to this bank. Please select the correct bank.",
-					tx_status: "1",
-					data: {},
-				},
-			},
-		],
-	},
-	{
-		id: "aeps-mini-statement",
-		productId: "aeps",
-		name: "AePS Mini Statement",
-		slug: "aeps-mini-statement",
-		provider: "AePS – Fingpay",
-		summary:
-			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
-		description:
-			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint with amount=0. No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
+			"Returns the list of Merchant Category Codes (MCC). Use the `value` of the chosen entry as the `shop_type` in the Activate AePS Fingpay request.",
 		relevance: "M",
 		bestFor:
-			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
-		method: "POST",
-		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
-		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-		financial: true,
-		extraRequestParams: [
+			"Populating the shop-type dropdown before onboarding an agent for AePS Fingpay",
+		method: "GET",
+		path: "/user/collection/aeps-fingpay/get-Mcc-Category",
+		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
+		extraRequestParams: [],
+		responseTypes: [
 			{
-				name: "user_code",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-				example: "20810200",
-			},
-			{
-				name: "customer_id",
-				type: "string",
-				required: true,
-				description: "Customer's registered mobile number.",
-				example: "9876543210",
-			},
-			{
-				name: "bank_code",
-				type: "string",
-				required: true,
-				description: "Bank IIN/IFS code identifying the customer's bank.",
-				example: "607153",
-			},
-			{
-				name: "amount",
-				type: "number",
-				required: true,
-				description: "Must be 0 for Mini Statement. No debit is performed.",
-				example: 0,
-			},
-			{
-				name: "aadhaar",
-				type: "string",
-				required: true,
-				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the customer.",
-				example: "BASE64_ENCRYPTED_AADHAAR",
-			},
-			{
-				name: "piddata",
-				type: "string",
-				required: true,
-				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc present in DeviceInfo).",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-			},
-			{
-				name: "pipe",
-				type: "number",
-				required: true,
-				description: "Routing pipe selector. Use 0 (default).",
-				example: 0,
-			},
-			{
-				name: "notify_customer",
-				type: "number",
-				required: true,
-				description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
-				example: 0,
-			},
-			{
-				name: "latlong",
-				type: "string",
-				required: true,
-				description:
-					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "source_ip",
-				type: "string",
-				required: true,
-				description:
-					"IP address of the merchant/agent system initiating the transaction.",
-				example: "103.56.78.90",
+				id: 2110,
+				meaning: "Shop-type list returned successfully",
+				next: "aeps-activate-fingpay",
 			},
 		],
 		responseData: [
 			{
-				name: "tid",
-				type: "string",
-				description: "Eko's internal transaction ID for this enquiry.",
-				imp: true,
-				example: "EKO20240101009012",
-			},
-			{
-				name: "bank_name",
-				type: "string",
-				description: "Name of the customer's bank.",
-				imp: true,
-				example: "Punjab National Bank",
-			},
-			{
-				name: "ministatement",
-				type: "array",
-				description:
-					"List of recent transactions. Each entry contains transaction date, amount, transaction type (debit/credit), and narration.",
-				imp: true,
+				name: "param_attributes",
+				type: "object",
+				description: "Container for the returned list.",
 				children: [
 					{
-						name: "date",
-						type: "string",
-						description:
-							"Transaction date (DD-MM-YYYY or YYYY-MM-DD depending on bank).",
-						example: "2024-01-01",
-					},
-					{
-						name: "amount",
-						type: "string",
-						description: "Transaction amount in INR.",
+						name: "list_elements",
+						type: "array",
+						description: "Array of available MCC categories.",
 						imp: true,
-						example: "500.00",
-					},
-					{
-						name: "txn_type",
-						type: "string",
-						description:
-							"Transaction direction: 'C' for credit, 'D' for debit.",
-						imp: true,
-						example: "D",
-					},
-					{
-						name: "narration",
-						type: "string",
-						description: "Bank-provided transaction narration or description.",
-						example: "AePS CW",
+						children: [
+							{
+								name: "label",
+								type: "string",
+								description:
+									"Human-readable category name (display to the agent).",
+								example: "Electronics Shops",
+							},
+							{
+								name: "value",
+								type: "number",
+								description:
+									"Integer MCC code — use as `shop_type` in the Activate AePS Fingpay request.",
+								imp: true,
+								example: 5732,
+							},
+						],
 					},
 				],
-			},
-			{
-				name: "bank_ref_num",
-				type: "string",
-				description: "NPCI/bank reference number for this statement fetch.",
-				example: "NPCI20240101IJKL",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Mini Statement fetched successfully",
-			tx_status: "0",
-			txstatus_desc: "Success",
-			data: {
-				tid: "EKO20240101009012",
-				tx_status: "0",
-				txstatus_desc: "Success",
-				bank_name: "Punjab National Bank",
-				bank_ref_num: "NPCI20240101IJKL",
-				ministatement: [
+			param_attributes: {
+				list_elements: [
 					{
-						date: "2024-01-01",
-						amount: "500.00",
-						txn_type: "D",
-						narration: "AePS CW",
+						label: "Courier services — air and ground and freight forwarders",
+						value: 4215,
 					},
+					{ label: "Travel agencies and tour operators", value: 4722 },
+					{ label: "Groceries and supermarkets", value: 5411 },
+					{ label: "Electronics Shops", value: 5732 },
+					{ label: "Fast food restaurants", value: 5814 },
+				],
+			},
+			response_type_id: 2110,
+			message: "Success",
+			status: 0,
+		},
+	},
+	{
+		id: "aeps-fingpay-states",
+		productId: "aeps",
+		name: "Get States",
+		slug: "aeps-fingpay-states",
+		provider: "AePS – Fingpay",
+		group: "Activate for Agent",
+		summary:
+			"List the states (with their state_id) available for AePS Fingpay agent onboarding.",
+		description:
+			"Returns the list of states. Use the `value` of the chosen state as the `state_id` inside the `address_as_per_proof` and `office_address` objects in the Activate AePS Fingpay request.",
+		relevance: "M",
+		bestFor:
+			"Populating the state dropdown for the agent address before AePS Fingpay onboarding",
+		method: "GET",
+		path: "/user/collection/aeps-fingpay/get-states",
+		docsUrl: "https://developers.eko.in/reference/activate-aeps-fingpay",
+		extraRequestParams: [],
+		responseTypes: [
+			{
+				id: 2127,
+				meaning: "State list returned successfully",
+				next: "aeps-activate-fingpay",
+			},
+		],
+		responseData: [
+			{
+				name: "param_attributes",
+				type: "object",
+				description: "Container for the returned list.",
+				children: [
 					{
-						date: "2023-12-30",
-						amount: "2000.00",
-						txn_type: "C",
-						narration: "NEFT CR",
-					},
-					{
-						date: "2023-12-28",
-						amount: "300.00",
-						txn_type: "D",
-						narration: "AePS CW",
+						name: "list_elements",
+						type: "array",
+						description: "Array of available states.",
+						imp: true,
+						children: [
+							{
+								name: "stateCode",
+								type: "string",
+								description: "Two-letter state code.",
+								example: "MH",
+							},
+							{
+								name: "label",
+								type: "string",
+								description: "State name (display to the agent).",
+								example: "Maharashtra",
+							},
+							{
+								name: "value",
+								type: "number",
+								description:
+									"Integer state ID — use as `state_id` in the address objects.",
+								imp: true,
+								example: 15,
+							},
+						],
 					},
 				],
 			},
-		},
-		errorScenarios: [
-			{
-				scenario: "Mini statement not supported by bank",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 108,
-					message: "Mini statement service not available for this bank.",
-					tx_status: "1",
-					data: {},
-				},
-			},
 		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			param_attributes: {
+				list_elements: [
+					{ stateCode: "HR", label: "Haryana", value: 8 },
+					{ stateCode: "KA", label: "Karnataka", value: 12 },
+					{ stateCode: "MH", label: "Maharashtra", value: 15 },
+					{ stateCode: "SK", label: "Sikkim", value: 23 },
+					{ stateCode: "UP", label: "Uttar Pradesh", value: 27 },
+				],
+			},
+			response_type_id: 2127,
+			message: "Success",
+			status: 0,
+		},
 	},
-	// {
-	// 	id: "aeps-aadhaar-pay",
-	// 	productId: "aeps",
-	// 	name: "AePS Aadhaar Pay",
-	// 	slug: "aeps-aadhaar-pay",
-	// 	summary:
-	// 		"Accept merchant payments debited directly from a customer's Aadhaar-linked bank account via biometric authentication.",
-	// 	description:
-	// 		"Aadhaar Pay (service_type=5) enables merchants to accept payments from customers whose bank accounts are Aadhaar-linked, authenticated with a fingerprint scan. Unlike Cash Withdrawal (where cash is dispensed), the funds are transferred to the merchant. This is useful for last-mile digital payments at kirana stores and service points where customers have no UPI or debit card. The flow is identical to Cash Withdrawal but with a positive merchant-side credit.",
-	// 	relevance: "M",
-	// 	bestFor:
-	// 		"Merchants accepting digital payments from Aadhaar-linked accounts without UPI or card infrastructure",
-	// 	method: "POST",
-	// 	path: "/customer/collection/aeps-fingpay",
-	// 	docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
-	// 	financial: true,
-	// 	extraRequestParams: [
-	// 		{
-	// 			name: "service_type",
-	// 			in: "body",
-	// 			type: "number",
-	// 			required: true,
-	// 			description: "Transaction type. Use 5 for Aadhaar Pay.",
-	// 			example: 5,
-	// 		},
-	// 		{
-	// 			name: "customer_id",
-	// 			in: "body",
-	// 			type: "string",
-	// 			required: true,
-	// 			description: "Customer's registered mobile number.",
-	// 			example: "9876543210",
-	// 		},
-	// 		{
-	// 			name: "bank_code",
-	// 			in: "body",
-	// 			type: "string",
-	// 			required: true,
-	// 			description: "Bank IIN/IFS code identifying the customer's bank.",
-	// 			example: "607153",
-	// 		},
-	// 		{
-	// 			name: "amount",
-	// 			in: "body",
-	// 			type: "number",
-	// 			required: true,
-	// 			description:
-	// 				"Payment amount in INR (integer). This amount is debited from the customer and credited to the merchant.",
-	// 			example: 250,
-	// 		},
-	// 		{
-	// 			name: "aadhaar",
-	// 			in: "body",
-	// 			type: "string",
-	// 			required: true,
-	// 			description:
-	// 				"RSA-encrypted, Base64-encoded Aadhaar number of the paying customer.",
-	// 			example: "BASE64_ENCRYPTED_AADHAAR",
-	// 		},
-	// 		{
-	// 			name: "piddata",
-	// 			in: "body",
-	// 			type: "string",
-	// 			required: true,
-	// 			description:
-	// 				"PID XML string from UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo).",
-	// 			example:
-	// 				"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
-	// 		},
-	// 		{
-	// 			name: "pipe",
-	// 			in: "body",
-	// 			type: "number",
-	// 			required: true,
-	// 			description: "Routing pipe selector. Use 0 (default).",
-	// 			example: 0,
-	// 		},
-	// 		{
-	// 			name: "notify_customer",
-	// 			in: "body",
-	// 			type: "number",
-	// 			required: true,
-	// 			description: "Send SMS notification to the customer. 1 = yes, 0 = no.",
-	// 			example: 1,
-	// 		},
-	// 		{
-	// 			name: "latlong",
-	// 			in: "body",
-	// 			type: "string",
-	// 			required: true,
-	// 			description:
-	// 				"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
-	// 			example: "28.6139,77.2090",
-	// 		},
-	// 		{
-	// 			name: "source_ip",
-	// 			in: "body",
-	// 			type: "string",
-	// 			required: true,
-	// 			description:
-	// 				"IP address of the merchant system initiating the transaction.",
-	// 			example: "103.56.78.90",
-	// 		},
-	// 	],
-	// 	responseData: [
-	// 		{
-	// 			name: "tid",
-	// 			type: "string",
-	// 			description: "Eko's internal transaction ID.",
-	// 			imp: true,
-	// 			example: "EKO20240101012345",
-	// 		},
-	// 		{
-	// 			name: "amount",
-	// 			type: "number",
-	// 			description: "Payment amount processed (INR).",
-	// 			imp: true,
-	// 			example: 250,
-	// 		},
-	// 		{
-	// 			name: "bank_name",
-	// 			type: "string",
-	// 			description: "Name of the customer's debited bank.",
-	// 			imp: true,
-	// 			example: "Bank of Baroda",
-	// 		},
-	// 		{
-	// 			name: "bank_ref_num",
-	// 			type: "string",
-	// 			description: "NPCI/bank reference number.",
-	// 			imp: true,
-	// 			example: "NPCI20240101MNOP",
-	// 		},
-	// 	],
-	// 	sampleSuccessResponse: {
-	// 		status: 0,
-	// 		response_status_id: 0,
-	// 		message: "Aadhaar Pay successful",
-	// 		tx_status: "0",
-	// 		txstatus_desc: "Success",
-	// 		data: {
-	// 			tid: "EKO20240101012345",
-	// 			tx_status: "0",
-	// 			txstatus_desc: "Success",
-	// 			amount: 250,
-	// 			bank_name: "Bank of Baroda",
-	// 			bank_ref_num: "NPCI20240101MNOP",
-	// 		},
-	// 	},
-	// 	errorScenarios: [
-	// 		{
-	// 			scenario: "Biometric authentication failed",
-	// 			statusCode: 200,
-	// 			example: {
-	// 				status: 1,
-	// 				response_status_id: 108,
-	// 				message: "Fingerprint authentication failed. Please re-scan.",
-	// 				tx_status: "1",
-	// 				data: {},
-	// 			},
-	// 		},
-	// 	],
-	// },
 	{
 		id: "aeps-send-otp-kyc",
 		productId: "aeps",
@@ -1930,7 +1393,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Initiate AePS Fingpay eKYC by sending an OTP to the agent's registered Aadhaar-linked mobile number.",
 		description:
-			"The first step in the one-time AePS Fingpay eKYC flow. Sends an OTP to the mobile number registered with the agent's Aadhaar. The eKYC flow — Send OTP → Verify OTP → Biometric Capture — must be completed once per agent before they can perform any AePS transactions. This step is a prerequisite; do not confuse it with the daily authentication (2FA) which is required on each calendar day.",
+			"First-time KYC follows three steps in order: `Send OTP` → `Verify OTP` → `Biometric`. On subsequent days, use the Daily KYC (biometric-only) endpoint.\n\nThis is the first step in the one-time AePS Fingpay eKYC flow. The OTP is delivered to the number passed in `customer_id`. The eKYC flow — Send OTP → Verify OTP → Biometric — must be completed once per agent before they can perform any AePS transactions. This step is a prerequisite; do not confuse it with the Daily KYC which is required on each calendar day.",
 		relevance: "M",
 		bestFor:
 			"Initial one-time KYC setup for newly activated AePS Fingpay agents",
@@ -1947,59 +1410,87 @@ export const API_SPECS: ApiSpec[] = [
 				example: "20810200",
 			},
 			{
-				name: "aadhaar",
+				name: "aadhar",
 				type: "string",
 				required: true,
 				description:
 					"RSA-encrypted, Base64-encoded Aadhaar number of the agent undergoing eKYC.",
 				example: "BASE64_ENCRYPTED_AADHAAR",
 			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description:
+					"Registered mobile number of the agent/merchant undergoing eKYC. The OTP is delivered to this number.",
+				example: "9123456789",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
+				example: "28.6139,77.2090",
+			},
+		],
+		responseTypes: [
+			{
+				id: 1600,
+				meaning: "OTP request has been sent",
+				next: "aeps-verify-otp-kyc",
+			},
 		],
 		responseData: [
+			{
+				name: "reference_tid",
+				type: "string",
+				description:
+					"Transaction reference ID for this eKYC session. Must be passed to the Verify OTP API.",
+				imp: true,
+				example: "EKYKF4719702240123152147525I",
+			},
 			{
 				name: "otp_ref_id",
 				type: "string",
 				description:
 					"Reference ID for the OTP session. Must be passed to the Verify OTP API.",
 				imp: true,
-				example: "OTPREF20240101001",
-			},
-			{
-				name: "mobile_hint",
-				type: "string",
-				description:
-					"Masked mobile number to which the OTP was sent (e.g., ******7890), for UI display.",
-				example: "******7890",
+				example: "2465238",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "OTP sent successfully to Aadhaar-linked mobile number.",
-			response_type_id: 1388,
 			data: {
-				otp_ref_id: "OTPREF20240101001",
-				mobile_hint: "******7890",
+				reference_tid: "EKYKF4719702240123152147525I",
+				otp_ref_id: "2465238",
 			},
+			response_type_id: 1600,
+			message: "OTP request has been sent",
+			status: 0,
 		},
 		errorScenarios: [
 			{
-				scenario: "OTP already sent / too many requests",
+				scenario: "AePS Fingpay service not activated for this agent",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 302,
-					message: "OTP already sent. Please wait before requesting a new OTP.",
+					response_status_id: 1,
+					response_type_id: 346,
+					message: "Agent not allowed to this transaction",
+					status: 346,
 				},
 			},
 			{
-				scenario: "Aadhaar not eligible for eKYC",
+				scenario: "Incorrectly encrypted Aadhaar",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "Aadhaar not found or not eligible for eKYC.",
-					data: {},
+					response_status_id: 1,
+					invalid_params: {
+						aadhar: "Please provide the value of the field {2} {3}",
+					},
+					response_type_id: -1,
+					message: "Please provide the value of the field",
+					status: 97,
 				},
 			},
 		],
@@ -2014,7 +1505,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Verify the eKYC OTP sent to the agent's Aadhaar-linked mobile number to advance the one-time AePS Fingpay eKYC.",
 		description:
-			"The second step of the one-time AePS Fingpay eKYC flow (Send OTP → Verify OTP → Biometric Capture). Submits the OTP the agent received, together with the `otp_ref_id` and `reference_tid` returned by the Send OTP API, to validate the agent's identity before biometric capture. Aadhaar must be RSA-encrypted and Base64-encoded.",
+			"The second step of the one-time AePS Fingpay eKYC flow (Send OTP → Verify OTP → Biometric). Submits the OTP the agent received, together with the `otp_ref_id` and `reference_tid` returned by the Send OTP API, to validate the agent's identity before biometric capture. Aadhaar must be RSA-encrypted and Base64-encoded.",
 		relevance: "M",
 		bestFor: "Completing OTP validation during initial one-time agent eKYC",
 		method: "PUT",
@@ -2038,7 +1529,7 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9123456789",
 			},
 			{
-				name: "aadhaar",
+				name: "aadhar",
 				type: "string",
 				required: true,
 				description:
@@ -2077,19 +1568,21 @@ export const API_SPECS: ApiSpec[] = [
 				example: "28.6139,77.2090",
 			},
 		],
-		responseData: [
+		responseTypes: [
 			{
-				name: "user_code",
-				type: "string",
-				description: "User code of the agent whose eKYC was verified.",
-				imp: true,
-				example: "20810200",
+				id: 1604,
+				meaning: "Validation successful",
+				next: "aeps-biometric-ekyc",
 			},
+		],
+		responseData: [
 			{
 				name: "reference_tid",
 				type: "string",
-				description: "Transaction reference ID for this eKYC verification.",
-				example: "EKYKF4719702240123152147525I",
+				description:
+					"Transaction reference ID for this eKYC verification. Carry forward to the Biometric eKYC step.",
+				imp: true,
+				example: "BEKYF4719702240123152147525I",
 			},
 			{
 				name: "otp_ref_id",
@@ -2097,15 +1590,14 @@ export const API_SPECS: ApiSpec[] = [
 				description:
 					"Reference ID of the OTP session. Carry forward to the Biometric eKYC step.",
 				imp: true,
-				example: "2465238",
+				example: "815031",
 			},
 		],
 		sampleSuccessResponse: {
 			response_status_id: 0,
 			data: {
-				user_code: "20810200",
-				reference_tid: "EKYKF4719702240123152147525I",
-				otp_ref_id: "2465238",
+				reference_tid: "BEKYF4719702240123152147525I",
+				otp_ref_id: "815031",
 			},
 			response_type_id: 1604,
 			message: "Validation successful",
@@ -2116,10 +1608,15 @@ export const API_SPECS: ApiSpec[] = [
 				scenario: "Invalid or expired OTP",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 109,
-					message: "Invalid OTP. Please request a new OTP and try again.",
-					data: {},
+					response_status_id: 1,
+					data: {
+						last_used_okekey: "",
+						reason:
+							"The details entered are incorrect or the OTP has expired. Kindly request a new OTP.",
+					},
+					response_type_id: 461,
+					message: "Failed!Please try after some time",
+					status: 461,
 				},
 			},
 		],
@@ -2136,12 +1633,12 @@ export const API_SPECS: ApiSpec[] = [
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
 		// renders the richer `descriptionFile` (callouts, Aadhaar-encryption code).
 		description:
-			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.",
+			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.",
 		descriptionFile: "aeps-biometric-ekyc.md",
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
-		method: "POST",
+		method: "PUT",
 		path: "/user/collection/aeps-fingpay/kyc/biometric",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
@@ -2154,12 +1651,28 @@ export const API_SPECS: ApiSpec[] = [
 				example: "20810200",
 			},
 			{
-				name: "aadhaar",
+				name: "aadhar",
 				type: "string",
 				required: true,
 				description:
 					"RSA-encrypted, Base64-encoded Aadhaar number of the agent.",
 				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description:
+					"Registered mobile number of the agent/merchant undergoing eKYC.",
+				example: "9123456789",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
+				example: "28.6139,77.2090",
 			},
 			{
 				name: "piddata",
@@ -2171,63 +1684,67 @@ export const API_SPECS: ApiSpec[] = [
 					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
 			},
 			{
+				name: "bank_code",
+				type: "string",
+				required: true,
+				description:
+					"Eko bank code of the agent's bank. Resolve it using the [Get List of Banks](./get-banks) API.",
+				example: "HDFC",
+			},
+			{
 				name: "otp_ref_id",
 				type: "string",
 				required: true,
 				description:
-					"Reference ID returned by the Send OTP (eKYC) API, linking this biometric capture to the verified OTP session.",
-				example: "OTPREF20240101001",
+					"Reference ID returned by the preceding OTP step, linking this biometric capture to the verified OTP session.",
+				example: "2465238",
+			},
+			{
+				name: "reference_tid",
+				type: "string",
+				required: true,
+				description:
+					"Transaction reference ID returned by the preceding OTP step.",
+				example: "EKYKF4719702240123152147525I",
+			},
+		],
+		responseTypes: [
+			{
+				id: 1605,
+				meaning: "eKYC successful — agent may now complete Daily KYC",
+				next: "aeps-daily-auth",
 			},
 		],
 		responseData: [
 			{
-				name: "kyc_status",
+				name: "user_code",
 				type: "string",
-				description:
-					"Result of the eKYC verification. 'completed' means the agent is now KYC-verified for AePS.",
+				description: "User code of the agent whose eKYC is now complete.",
 				imp: true,
-				example: "completed",
-			},
-			{
-				name: "aadhaar_ref_num",
-				type: "string",
-				description:
-					"UIDAI authentication reference number for the biometric capture.",
-				example: "UIDAI112233445",
+				example: "20810200",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message:
-				"Biometric eKYC completed successfully. Agent is now eligible for AePS transactions.",
-			response_type_id: 1388,
-			data: {
-				kyc_status: "completed",
-				aadhaar_ref_num: "UIDAI112233445",
-			},
+			data: { user_code: "20810200" },
+			response_type_id: 1605,
+			message: "Congratulations! eKYC successful",
+			status: 0,
 		},
 		errorScenarios: [
 			{
-				scenario: "Biometric match failed",
+				scenario:
+					"OTP steps skipped — Send OTP and Verify OTP must both succeed first",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 108,
-					message:
-						"Biometric verification failed. Please retry with a fresh fingerprint scan.",
-					data: {},
-				},
-			},
-			{
-				scenario: "OTP session expired",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 303,
-					message:
-						"OTP reference expired. Please restart the eKYC flow from Send OTP.",
-					data: {},
+					response_status_id: 1,
+					data: {
+						last_used_okekey: "",
+						reason: "Merchant is Inactive or Invalid Details",
+					},
+					response_type_id: 461,
+					message: "Failed!Please try after some time",
+					status: 461,
 				},
 			},
 		],
@@ -2235,18 +1752,18 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "aeps-daily-auth",
 		productId: "aeps",
-		name: "Daily Authentication (2FA)",
+		name: "Daily KYC",
 		slug: "aeps-daily-auth",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (Daily)",
 		summary:
-			"Perform the mandatory daily biometric authentication that authorises an agent to carry out AePS transactions for the current calendar day.",
+			"Perform the mandatory daily biometric re-verification that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
-			"AePS Fingpay requires every agent to authenticate themselves biometrically at the start of each working day. This daily 2FA must be completed before the first Cash Withdrawal transaction of the day (and is available only 3 or more days after the initial eKYC is completed). The API returns a `reference_id` that must be included in every subsequent Cash Withdrawal request as proof of daily authentication. Daily Auth does not need to be repeated for Balance Enquiry or Mini Statement within the same day.",
+			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.",
 		relevance: "H",
 		bestFor:
-			"Agent-side automation to trigger daily 2FA at session start before serving AePS cash withdrawal customers",
-		method: "POST",
+			"Agent-side automation to trigger the daily biometric KYC at session start before serving AePS customers",
+		method: "PUT",
 		path: "/user/collection/aeps-fingpay/kyc/biometric/daily",
 		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
 		extraRequestParams: [
@@ -2259,113 +1776,1412 @@ export const API_SPECS: ApiSpec[] = [
 				example: "20810200",
 			},
 			{
-				name: "aadhaar",
+				name: "aadhar",
 				type: "string",
 				required: true,
 				description:
-					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily authentication.",
+					"RSA-encrypted, Base64-encoded Aadhaar number of the agent performing daily KYC.",
 				example: "BASE64_ENCRYPTED_AADHAAR",
 			},
 			{
-				name: "piddata",
+				name: "customer_id",
 				type: "string",
 				required: true,
-				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's.",
-				example:
-					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+				description: "Registered mobile number of the agent/merchant.",
+				example: "9123456789",
 			},
 			{
 				name: "latlong",
 				type: "string",
 				required: true,
 				description:
-					"GPS coordinates of the agent's location at the time of daily authentication.",
-				example: "25.5941,85.1376",
+					"GPS coordinates of the agent's location at the time of daily KYC.",
+				example: "28.6139,77.2090",
 			},
 			{
-				name: "source_ip",
+				name: "piddata",
 				type: "string",
 				required: true,
-				description: "IP address of the agent's terminal/system.",
-				example: "103.56.78.90",
+				description:
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's. If you generate the PID block yourself, it must carry `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=`.",
+				example:
+					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+			},
+			{
+				name: "bank_code",
+				type: "string",
+				required: true,
+				description:
+					"Eko bank code of the agent's bank. Resolve it using the [Get List of Banks](./get-banks) API.",
+				example: "HDFC",
+			},
+		],
+		responseTypes: [
+			{
+				id: 1713,
+				meaning: "Daily KYC successful — the agent may transact today",
+			},
+			{
+				id: 1714,
+				meaning:
+					"Daily KYC failed — if `data.reason` is 'Please complete bank eKYC to process the transaction.', re-run the full eKYC from Send OTP",
+				next: "aeps-send-otp-kyc",
 			},
 		],
 		responseData: [
 			{
-				name: "reference_id",
+				name: "user_code",
 				type: "string",
 				description:
-					"Daily authentication reference ID. Pass this as the 'reference_id' parameter in every Cash Withdrawal request made during the current day. Valid for the current calendar day only.",
+					"User code of the agent whose daily KYC is now complete for the current calendar day.",
 				imp: true,
-				example: "DAKYC20240101001",
-			},
-			{
-				name: "auth_status",
-				type: "string",
-				description:
-					"Result of the daily biometric authentication. 'success' means the agent is cleared to perform Cash Withdrawal transactions for the day.",
-				imp: true,
-				example: "success",
-			},
-			{
-				name: "valid_till",
-				type: "string",
-				description:
-					"Expiry timestamp of this daily auth token (end of the current calendar day, IST).",
-				example: "2024-01-01T23:59:59+05:30",
+				example: "20810200",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message:
-				"Daily authentication successful. You can now process Cash Withdrawal transactions.",
-			response_type_id: 1388,
-			data: {
-				reference_id: "DAKYC20240101001",
-				auth_status: "success",
-				valid_till: "2024-01-01T23:59:59+05:30",
-			},
+			data: { user_code: "20810200" },
+			response_type_id: 1713,
+			message: "KYC sucess",
+			status: 0,
 		},
 		errorScenarios: [
 			{
-				scenario: "Biometric authentication failed",
+				scenario: "KYC failed — no reason returned",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 108,
-					message:
-						"Daily biometric authentication failed. Please re-scan fingerprint.",
-					data: {},
+					response_status_id: 1,
+					data: { reason: "", comment: "" },
+					response_type_id: 1714,
+					message: "KYC Fail",
+					status: 1714,
 				},
 			},
 			{
-				scenario: "eKYC not completed — daily auth not yet eligible",
+				scenario:
+					"Invalid biometric data — check the `wadh` value in the PID block",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 327,
-					message:
-						"eKYC not completed or daily auth not eligible yet (minimum 3 days after eKYC required).",
-					data: {},
-				},
-			},
-			{
-				scenario: "Daily auth already completed for today",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 17,
-					message:
-						"Daily authentication already completed for today. Use the existing reference_id for transactions.",
+					response_status_id: 1,
 					data: {
-						reference_id: "DAKYC20240101001",
+						reason: "Authentication Failed. Invalid Biometric data.",
+						comment: "",
 					},
+					response_type_id: 1714,
+					message: "KYC Fail",
+					status: 1714,
+				},
+			},
+			{
+				scenario:
+					"Bank eKYC pending — re-run Send OTP → Verify OTP → Biometric first",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: {
+						reason: "Please complete bank eKYC to process the transaction.",
+						comment: "",
+					},
+					response_type_id: 1714,
+					message: "KYC Fail",
+					status: 1714,
 				},
 			},
 		],
 	},
+	{
+		id: "aeps-cash-withdrawal",
+		productId: "aeps",
+		name: "AePS Cash Withdrawal",
+		slug: "aeps-cash-withdrawal",
+		provider: "AePS – Fingpay",
+		summary:
+			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
+		description:
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.",
+		descriptionFile: "aeps-cash-withdrawal.md",
+		relevance: "H",
+		bestFor:
+			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
+		method: "POST",
+		path: "/customer/collection/aeps-fingpay/cash-withdrawl/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "10000001",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description: "Customer's registered mobile number.",
+				example: "9000000000",
+			},
+			{
+				name: "bank_code",
+				type: "string",
+				required: true,
+				description:
+					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API.",
+				example: "HDFC",
+			},
+			{
+				name: "aadhar",
+				type: "string",
+				required: true,
+				description:
+					'RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
+				example: "28.6139,77.2090",
+			},
+			{
+				name: "piddata",
+				type: "string",
+				required: true,
+				description:
+					"PID data captured from the UIDAI-certified biometric device, as a raw XML string. Must use Data type='X' (XML, not Protobuf). DeviceInfo must include the 'mc' (device certificate) parameter. fType must be 2.",
+				example:
+					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+			},
+			{
+				name: "amount",
+				type: "number",
+				required: true,
+				description:
+					"Withdrawal amount in Indian Rupees (integer). Must be greater than 0 for cash withdrawal.",
+				example: 1000,
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				description:
+					"Eko's internal transaction ID. Use for reconciliation and support queries.",
+				imp: true,
+				example: "0000000000",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description: "Withdrawal amount processed in the transaction (INR).",
+				imp: true,
+				example: "1000.00",
+			},
+			{
+				name: "bank",
+				type: "string",
+				description: "Name of the customer's bank where the debit occurred.",
+				imp: true,
+				example: "Example Bank",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				description:
+					"Bank/NPCI reference number (RRN) for the transaction. Empty on failure.",
+				imp: true,
+				example: "0000000000",
+			},
+			{
+				name: "balance",
+				type: "string",
+				description:
+					"Remaining balance in the customer's bank account after withdrawal, if returned by the bank.",
+				example: "0.00",
+			},
+			{
+				name: "customer_balance",
+				type: "string",
+				description:
+					"Customer's account balance as reported by the bank. Empty when not returned.",
+				imp: true,
+				example: "0.00",
+			},
+			{
+				name: "tds",
+				type: "string",
+				description: "Tax deducted at source on the agent's commission (INR).",
+				example: "0.00",
+			},
+			{
+				name: "commission",
+				type: "string",
+				description:
+					"Commission earned by the agent on this transaction (INR).",
+				example: "0.00",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for the transaction (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "service_tax",
+				type: "string",
+				description: "Service tax component on the fee (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "totalfee",
+				type: "string",
+				description: "Total fee including taxes (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "shop",
+				type: "string",
+				description: "Agent's shop/merchant name.",
+				example: "Test User",
+			},
+			{
+				name: "shop_address_line1",
+				type: "string",
+				description: "Agent's shop address. May be empty.",
+				example: "",
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				description: "Name of the agent/sender initiating the transaction.",
+				example: "Test User",
+			},
+			{
+				name: "merchantname",
+				type: "string",
+				description: "Registered merchant name of the agent.",
+				example: "Test User",
+			},
+			{
+				name: "merchant_code",
+				type: "string",
+				description: "Merchant code of the agent. May be empty.",
+				example: "",
+			},
+			{
+				name: "user_code",
+				type: "string",
+				description: "Echo of the agent's user_code from the request.",
+				example: "10000001",
+			},
+			{
+				name: "aadhar",
+				type: "string",
+				description: "Masked Aadhaar number of the customer.",
+				example: "XXXX XXXX 0000",
+			},
+			{
+				name: "auth_code",
+				type: "string",
+				description: "Bank authorization code. May be empty.",
+				example: "",
+			},
+			{
+				name: "stan",
+				type: "string",
+				description:
+					"System Trace Audit Number assigned by the switch. May be empty.",
+				example: "",
+			},
+			{
+				name: "terminal_id",
+				type: "string",
+				description: "Terminal identifier. May be empty.",
+				example: "",
+			},
+			{
+				name: "tx_status",
+				type: "string",
+				description:
+					"Transaction state within the data block: 0=Success, 1=Fail, 2=Pending.",
+				example: "0",
+			},
+			{
+				name: "transaction_date",
+				type: "string",
+				description: "Transaction date (DD-MM-YY HH:MM:SS).",
+				example: "01-01-24 00:00:00",
+			},
+			{
+				name: "transaction_time",
+				type: "string",
+				description: "Transaction timestamp (DD-MM-YY HH:MM:SS).",
+				example: "01-01-24 00:00:00",
+			},
+			{
+				name: "reason",
+				type: "string",
+				description:
+					"Failure reason, when the transaction did not complete. Empty on success.",
+				example: "",
+			},
+			{
+				name: "comment",
+				type: "string",
+				description:
+					"Human-readable transaction remark from the provider (e.g. 'Request Completed').",
+				example: "Request Completed",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				tx_status: "0",
+				tds: "0.00",
+				shop: "Test User",
+				sender_name: "Test User",
+				tid: "0000000000",
+				bank: "Example Bank",
+				balance: "0.00",
+				user_code: "10000001",
+				merchantname: "Test User",
+				aadhar: "XXXX XXXX 0000",
+				customer_balance: "0.00",
+				transaction_time: "01-01-24 00:00:00",
+				commission: "0.00",
+				bank_ref_num: "0000000000",
+				transaction_date: "01-01-24 00:00:00",
+				amount: "1000.00",
+				comment: "Request Completed",
+			},
+			response_type_id: 1463,
+			message: "Transaction Successful",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Transaction Fail — incorrect merchant credentials",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: {
+						tx_status: "1",
+						transaction_date: "01-01-24 00:00:00",
+						reason: "",
+						amount: "1000.00",
+						merchant_code: "",
+						shop: "Test User",
+						sender_name: "Test User",
+						tid: "0000000000",
+						auth_code: "",
+						shop_address_line1: "",
+						user_code: "10000001",
+						merchantname: "Test User",
+						stan: "",
+						aadhar: "XXXX XXXX 0000",
+						customer_balance: "0.00",
+						transaction_time: "01-01-24 00:00:00",
+						comment: "Incorrect merchantId or pin",
+						bank_ref_num: "",
+						terminal_id: "",
+					},
+					response_type_id: 1464,
+					message: "Transaction Fail",
+					status: 1464,
+				},
+			},
+			{
+				scenario:
+					"Transaction Fail — invalid bank_code (transaction not completed)",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: {
+						tx_status: "",
+						transaction_date: "",
+						reason: "Transaction Not Completed",
+						amount: "",
+						merchant_code: "",
+						shop: "",
+						sender_name: "",
+						tid: "",
+						auth_code: "",
+						shop_address_line1: "",
+						user_code: "",
+						merchantname: "",
+						stan: "",
+						aadhar: "",
+						customer_balance: "",
+						transaction_time: "",
+						comment: "Transaction Not Completed",
+						bank_ref_num: "",
+						terminal_id: "",
+					},
+					response_type_id: 1464,
+					message: "Transaction Fail",
+					status: 1464,
+				},
+			},
+			{
+				scenario: "Transaction Pending — awaiting bank confirmation",
+				statusCode: 200,
+				example: {
+					response_status_id: 2,
+					data: {
+						tx_status: "2",
+						transaction_date: "01-01-24 00:00:00",
+						reason: "Transaction Pending",
+						amount: "1000.00",
+						merchant_code: "",
+						shop: "Test User",
+						fee: "",
+						sender_name: "",
+						tid: "0000000000",
+						auth_code: "",
+						shop_address_line1: "",
+						user_code: "10000001",
+						service_tax: "0.00",
+						totalfee: "0.00",
+						merchantname: "Test User",
+						stan: "",
+						aadhar: "XXXX XXXX 0000",
+						customer_balance: "",
+						transaction_time: "01-01-24 00:00:00",
+						comment: "Transaction Pending",
+						bank_ref_num: "",
+						terminal_id: "",
+					},
+					response_type_id: 1465,
+					message: "Transaction Pending",
+					status: 0,
+				},
+			},
+		],
+		responseTypes: [
+			{ id: 1463, meaning: "Transaction Successful" },
+			{ id: 1464, meaning: "Transaction Fail" },
+			{
+				id: 1465,
+				meaning: "Transaction Pending — check final status later",
+				next: "transaction-inquiry",
+			},
+		],
+	},
+	{
+		id: "aeps-balance-enquiry",
+		productId: "aeps",
+		name: "AePS Balance Enquiry",
+		slug: "aeps-balance-enquiry",
+		provider: "AePS – Fingpay",
+		summary:
+			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
+		description:
+			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
+		relevance: "L",
+		bestFor:
+			"Agent-assisted balance checks for rural customers without smartphone or internet access",
+		method: "POST",
+		path: "/customer/collection/aeps-fingpay/balance-enquiry/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "10000001",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description: "Customer's registered mobile number.",
+				example: "9000000000",
+			},
+			{
+				name: "bank_code",
+				type: "string",
+				required: true,
+				description:
+					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API.",
+				example: "HDFC",
+			},
+			{
+				name: "aadhar",
+				type: "string",
+				required: true,
+				description:
+					'RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
+				example: "28.6139,77.2090",
+			},
+			{
+				name: "piddata",
+				type: "string",
+				required: true,
+				description:
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc present in DeviceInfo).",
+				example:
+					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				description: "Eko's internal transaction ID for this enquiry.",
+				imp: true,
+				example: "0000000000",
+			},
+			{
+				name: "amount",
+				type: "string",
+				description:
+					"Echo of the transacted amount (INR). '0.0' for a balance enquiry.",
+				example: "0.00",
+			},
+			{
+				name: "customer_balance",
+				type: "string",
+				description:
+					"Customer's account balance returned by the bank (INR). This is the key output of a Balance Enquiry.",
+				imp: true,
+				example: "0.00",
+			},
+			{
+				name: "shop",
+				type: "string",
+				description: "Agent's shop/merchant name.",
+				example: "Test User",
+			},
+			{
+				name: "shop_address_line1",
+				type: "string",
+				description: "Agent's shop address. May be empty.",
+				example: "",
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				description: "Name of the agent/sender initiating the enquiry.",
+				example: "Test User",
+			},
+			{
+				name: "merchantname",
+				type: "string",
+				description: "Registered merchant name of the agent.",
+				example: "Test User",
+			},
+			{
+				name: "merchant_code",
+				type: "string",
+				description: "Merchant code of the agent. May be empty.",
+				example: "",
+			},
+			{
+				name: "user_code",
+				type: "string",
+				description: "Echo of the agent's user_code from the request.",
+				example: "10000001",
+			},
+			{
+				name: "aadhar",
+				type: "string",
+				description: "Masked Aadhaar number of the customer.",
+				example: "XXXX XXXX 0000",
+			},
+			{
+				name: "auth_code",
+				type: "string",
+				description: "Bank authorization code. May be empty.",
+				example: "",
+			},
+			{
+				name: "stan",
+				type: "string",
+				description:
+					"System Trace Audit Number assigned by the switch. May be empty.",
+				example: "",
+			},
+			{
+				name: "terminal_id",
+				type: "string",
+				description: "Terminal identifier. May be empty.",
+				example: "",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for the enquiry (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "service_tax",
+				type: "string",
+				description: "Service tax component on the fee (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "totalfee",
+				type: "string",
+				description: "Total fee including taxes (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "transaction_date",
+				type: "string",
+				description: "Transaction date (DD-MM-YY HH:MM:SS).",
+				example: "01-01-24 00:00:00",
+			},
+			{
+				name: "transaction_time",
+				type: "string",
+				description: "Transaction timestamp (DD-MM-YY HH:MM:SS).",
+				example: "01-01-24 00:00:00",
+			},
+			{
+				name: "reason",
+				type: "string",
+				description:
+					"Failure reason, when the enquiry did not complete. Empty on success.",
+				example: "",
+			},
+			{
+				name: "comment",
+				type: "string",
+				description:
+					"Human-readable remark from the provider (e.g. 'Request Completed').",
+				example: "Request Completed",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				transaction_date: "01-01-24 00:00:00",
+				amount: "0.00",
+				shop: "Test User",
+				sender_name: "Test User",
+				tid: "0000000000",
+				user_code: "10000001",
+				merchantname: "Test User",
+				aadhar: "XXXX XXXX 0000",
+				customer_balance: "0.00",
+				transaction_time: "01-01-24 00:00:00",
+				comment: "Request Completed",
+			},
+			response_type_id: 1466,
+			message: "Transaction Successful",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Transaction Fail — incorrect merchant credentials",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: {
+						tx_status: "1",
+						transaction_date: "01-01-24 00:00:00",
+						reason: "",
+						amount: "0.00",
+						merchant_code: "",
+						shop: "Test User",
+						sender_name: "Test User",
+						tid: "0000000000",
+						auth_code: "",
+						shop_address_line1: "",
+						user_code: "10000001",
+						merchantname: "Test User",
+						stan: "",
+						aadhar: "XXXX XXXX 0000",
+						customer_balance: "0.00",
+						transaction_time: "01-01-24 00:00:00",
+						comment: "Incorrect merchantId or pin",
+						bank_ref_num: "",
+						terminal_id: "",
+					},
+					response_type_id: 1464,
+					message: "Transaction Fail",
+					status: 1464,
+				},
+			},
+		],
+		responseTypes: [
+			{ id: 1466, meaning: "Transaction Successful" },
+			{ id: 1464, meaning: "Transaction Fail" },
+		],
+	},
+	{
+		id: "aeps-mini-statement",
+		productId: "aeps",
+		name: "AePS Mini Statement",
+		slug: "aeps-mini-statement",
+		provider: "AePS – Fingpay",
+		summary:
+			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
+		description:
+			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
+		relevance: "L",
+		bestFor:
+			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
+		method: "POST",
+		path: "/customer/collection/aeps-fingpay/mini-statement/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "10000001",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description: "Customer's registered mobile number.",
+				example: "9000000000",
+			},
+			{
+				name: "bank_code",
+				type: "string",
+				required: true,
+				description:
+					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API.",
+				example: "HDFC",
+			},
+			{
+				name: "aadhar",
+				type: "string",
+				required: true,
+				description:
+					'RSA-encrypted, Base64-encoded Aadhaar number. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				required: true,
+				description:
+					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
+				example: "28.6139,77.2090",
+			},
+			{
+				name: "piddata",
+				type: "string",
+				required: true,
+				description:
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc present in DeviceInfo).",
+				example:
+					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
+			},
+		],
+		responseData: [
+			{
+				name: "tid",
+				type: "string",
+				description: "Eko's internal transaction ID for this enquiry.",
+				imp: true,
+				example: "0000000000",
+			},
+			{
+				name: "mini_statement_list",
+				type: "array",
+				description:
+					"List of recent transactions. Each entry carries the transaction date, amount, direction (Dr/Cr), and narration.",
+				imp: true,
+				children: [
+					{
+						name: "date",
+						type: "string",
+						description: "Transaction date (DD/MM).",
+						example: "01/01",
+					},
+					{
+						name: "amount",
+						type: "string",
+						description: "Transaction amount in INR.",
+						imp: true,
+						example: "0.00",
+					},
+					{
+						name: "narration",
+						type: "string",
+						description: "Bank-provided transaction narration or description.",
+						example: "MAT/W/000000",
+					},
+					{
+						name: "txnType",
+						type: "string",
+						description:
+							"Transaction direction: 'Cr' for credit, 'Dr' for debit.",
+						imp: true,
+						example: "Dr",
+					},
+				],
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				description: "Name of the agent/sender initiating the enquiry.",
+				example: "Test User",
+			},
+			{
+				name: "merchantname",
+				type: "string",
+				description: "Registered merchant name of the agent.",
+				example: "Test User",
+			},
+			{
+				name: "merchant_code",
+				type: "string",
+				description: "Merchant code of the agent. May be empty.",
+				example: "",
+			},
+			{
+				name: "user_code",
+				type: "string",
+				description: "Echo of the agent's user_code from the request.",
+				example: "10000001",
+			},
+			{
+				name: "customer_balance",
+				type: "string",
+				description:
+					"Customer's account balance as reported by the bank (INR). May be empty.",
+				imp: true,
+				example: "0.00",
+			},
+			{
+				name: "commission",
+				type: "string",
+				description: "Commission earned by the agent on this enquiry (INR).",
+				example: "0.00",
+			},
+			{
+				name: "service_tax",
+				type: "string",
+				description: "Service tax component on the fee (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "totalfee",
+				type: "string",
+				description: "Total fee including taxes (INR). May be empty.",
+				example: "0.00",
+			},
+			{
+				name: "terminal_id",
+				type: "string",
+				description: "Terminal identifier. May be empty.",
+				example: "",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				description:
+					"NPCI/bank reference number for this statement fetch. May be empty.",
+				example: "",
+			},
+			{
+				name: "transaction_date",
+				type: "string",
+				description: "Transaction date (DD-MM-YY HH:MM:SS).",
+				example: "01-01-24 00:00:00",
+			},
+			{
+				name: "transaction_time",
+				type: "string",
+				description: "Transaction timestamp (DD-MM-YY HH:MM:SS).",
+				example: "01-01-24 00:00:00",
+			},
+			{
+				name: "reason",
+				type: "string",
+				description:
+					"Failure reason, when the enquiry did not complete. Empty on success.",
+				example: "",
+			},
+			{
+				name: "comment",
+				type: "string",
+				description:
+					"Human-readable remark from the provider (e.g. 'Request Completed').",
+				example: "Request Completed",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				transaction_date: "01-01-24 00:00:00",
+				mini_statement_list: [
+					{
+						date: "01/01",
+						amount: "0.00",
+						narration: "MAT/W/000000",
+						txnType: "Dr",
+					},
+					{
+						date: "31/12",
+						amount: "0.00",
+						narration: "MAT/D/000000",
+						txnType: "Cr",
+					},
+					{
+						date: "28/12",
+						amount: "0.00",
+						narration: "POS/W/000000",
+						txnType: "Dr",
+					},
+				],
+				sender_name: "Test User",
+				tid: "0000000000",
+				user_code: "10000001",
+				merchantname: "Test User",
+				customer_balance: "0.00",
+				transaction_time: "01-01-24 00:00:00",
+				commission: "0.00",
+				terminal_id: "",
+				comment: "Request Completed",
+			},
+			response_type_id: 1527,
+			message: "Transaction Successful",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Transaction Fail — incorrect merchant credentials",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: {
+						transaction_date: "01-01-24 00:00:00",
+						reason: "",
+						merchant_code: "",
+						merchantname: "Test User",
+						customer_balance: "",
+						transaction_time: "01-01-24 00:00:00",
+						sender_name: "Test User",
+						comment: "Incorrect merchantId or pin",
+						bank_ref_num: "",
+						tid: "0000000000",
+						terminal_id: "",
+					},
+					response_type_id: 1528,
+					message: "Transaction Fail",
+					status: 1528,
+				},
+			},
+		],
+		responseTypes: [
+			{ id: 1527, meaning: "Transaction Successful" },
+			{ id: 1528, meaning: "Transaction Fail" },
+		],
+	},
+	{
+		id: "aeps-add-settlement-account",
+		productId: "aeps",
+		name: "Add Settlement Bank Account",
+		slug: "aeps-add-settlement-account",
+		provider: "AePS – Fingpay",
+		group: "AePS Fund Settlement",
+		summary:
+			"Register a bank account as an AePS fund-settlement recipient for an agent.",
+		description:
+			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch. An agent can register up to 3 settlement accounts, and only banks that offer account verification are accepted.",
+		relevance: "M",
+		bestFor: "Registering an agent's settlement bank account before payout.",
+		method: "POST",
+		path: "/user/payment/aeps/settlement/account",
+		docsUrl:
+			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "bank_id",
+				type: "integer",
+				required: true,
+				description: "Unique identifier for the bank.",
+				example: 12,
+			},
+			{
+				name: "ifsc",
+				type: "string",
+				required: true,
+				description: "IFSC code of the bank account.",
+				example: "SBIN0000000",
+			},
+			{
+				name: "service_code",
+				type: "integer",
+				required: true,
+				description: "Service code for AePS fund settlement. Value: 39.",
+				example: 39,
+			},
+			{
+				name: "account",
+				type: "string",
+				required: true,
+				description: "Account number of the user's bank account.",
+				example: "00000000000002",
+			},
+		],
+		responseData: [
+			{
+				name: "recipient_id",
+				type: "number",
+				imp: true,
+				description:
+					"Settlement recipient identifier — pass to Initiate Settlement.",
+				example: 1893,
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: { recipient_id: 1893 },
+			response_type_id: 1336,
+			message: "Account added",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario: "Account verification failed — name mismatch",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					data: { sender_name: "SANATAN CSP", recipient_name: "R K LAKSHYKAR" },
+					response_type_id: 1335,
+					message: "Account verification fail, Name not matched",
+					status: 1335,
+				},
+			},
+			{
+				scenario: "Account verification failed — name not returned by bank",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					response_type_id: 1334,
+					message: "Account verification fail name not returned by bank",
+					status: 1334,
+				},
+			},
+		],
+	},
+	{
+		// TODO(reconcile): sheet prod capture was a KYC-status response (rtid 1969,
+		// "Fingpay daily KYC is completed", data {reason,user_code}), NOT an accounts
+		// list — current sample keeps the correct shape; needs a clean prod success.
+		id: "aeps-get-settlement-accounts",
+		productId: "aeps",
+		name: "Get Settlement Bank Accounts",
+		slug: "aeps-get-settlement-accounts",
+		provider: "AePS – Fingpay",
+		group: "AePS Fund Settlement",
+		summary:
+			"List an agent's registered AePS settlement recipients with unsettled funds and remaining limit.",
+		description:
+			"Returns the agent's saved settlement bank accounts (each with a `recipient_id`), the total unsettled fund, and the remaining daily settlement limit.",
+		relevance: "M",
+		bestFor: "Choosing a settlement account and checking unsettled funds.",
+		method: "GET",
+		path: "/user/payment/aeps/settlement/accounts",
+		docsUrl:
+			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+		],
+		responseData: [
+			{
+				name: "unsettled_fund",
+				type: "string",
+				imp: true,
+				description: "Total unsettled AePS fund available to settle (INR).",
+				example: "6100.0",
+			},
+			{
+				name: "remaining_limit",
+				type: "string",
+				description: "Remaining settlement limit for the day (INR).",
+				example: "190000",
+			},
+			{
+				name: "fund_transfer_list",
+				type: "array",
+				imp: true,
+				description: "Registered settlement recipients.",
+				children: [
+					{
+						name: "recipient_id",
+						type: "string",
+						imp: true,
+						description:
+							"Settlement recipient identifier — pass to Initiate Settlement.",
+						example: "1828",
+					},
+					{
+						name: "name",
+						type: "string",
+						description: "Account holder name.",
+						example: "Test Recipient",
+					},
+					{
+						name: "account",
+						type: "string",
+						description: "Bank account number.",
+						example: "00000000000001",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Bank branch IFSC.",
+						example: "SBIN0000000",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: -1,
+			data: {
+				unsettled_fund: "6100.0",
+				remaining_limit: "190000",
+				fund_transfer_list: [
+					{
+						name: "Test Recipient",
+						ifsc: "SBIN0000000",
+						account: "00000000000001",
+						recipient_id: "1828",
+					},
+					{
+						name: "Test Recipient",
+						ifsc: "SBIN0000000",
+						account: "00000000000002",
+						recipient_id: "1829",
+					},
+				],
+			},
+			response_type_id: 1321,
+			message: "List of fund transfer recipients",
+			status: 0,
+		},
+	},
+	{
+		id: "aeps-initiate-settlement",
+		productId: "aeps",
+		name: "Initiate Settlement",
+		slug: "aeps-initiate-settlement",
+		provider: "AePS – Fingpay",
+		group: "AePS Fund Settlement",
+		summary:
+			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
+		description:
+			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm (excl. RBI holidays); max ₹2,00,000 per transaction; requests after 5pm settle the next working day.",
+		descriptionFile: "aeps-initiate-settlement.md",
+		relevance: "M",
+		bestFor: "Settling collected AePS funds to an agent's bank account.",
+		method: "POST",
+		path: "/user/payment/aeps/settlement",
+		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
+		sourceDoc:
+			"https://developers.eko.in/reference/aeps-fund-settlement-request",
+		financial: true,
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+			{
+				name: "amount",
+				type: "integer",
+				required: true,
+				description:
+					"Settlement amount requested (INR). Max 200000 per transaction.",
+				example: 100,
+			},
+			{
+				name: "recipient_id",
+				type: "integer",
+				required: true,
+				description:
+					"Settlement recipient identifier (from Add / Get Settlement Account).",
+				example: 1829,
+			},
+			{
+				name: "payment_mode",
+				type: "integer",
+				required: true,
+				description: "Transfer method: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
+				example: 5,
+			},
+		],
+		responseData: [
+			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description: "Transaction status code (0 = success).",
+				example: "0",
+			},
+			{
+				name: "amount",
+				type: "string",
+				imp: true,
+				description: "Settled amount (INR).",
+				example: "5000.00",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Base fee charged for the settlement (INR).",
+				example: "17.70",
+			},
+			{
+				name: "gst",
+				type: "string",
+				description: "GST charged on the settlement fee (INR).",
+				example: "2.70",
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				description: "Name of the settling agent.",
+				example: "Test User",
+			},
+			{
+				name: "tid",
+				type: "string",
+				imp: true,
+				description: "Eko transaction ID for the settlement.",
+				example: "0000000000",
+			},
+			{
+				name: "client_ref_id",
+				type: "string",
+				description: "Client reference id echoed for the settlement.",
+				example: "00000000000000000000",
+			},
+			{
+				name: "balance",
+				type: "string",
+				imp: true,
+				description: "Agent balance after the settlement (INR).",
+				example: "0.00",
+			},
+			{
+				name: "user_code",
+				type: "string",
+				imp: true,
+				description: "Code of the user/agent the settlement was run for.",
+				example: "10000001",
+			},
+			{
+				name: "totalfee",
+				type: "string",
+				description: "Total fee charged for the settlement, incl. GST (INR).",
+				example: "17.70",
+			},
+			{
+				name: "recipient_name",
+				type: "string",
+				description: "Name on the destination bank account.",
+				example: "Test Recipient",
+			},
+			{
+				name: "ifsc",
+				type: "string",
+				description: "Destination branch IFSC.",
+				example: "SBIN0000000",
+			},
+			{
+				name: "bank_ref_num",
+				type: "string",
+				imp: true,
+				description:
+					"Bank reference / UTR number. Empty until the bank confirms the transfer.",
+				example: "",
+			},
+			{
+				name: "account",
+				type: "string",
+				description: "Destination account number.",
+				example: "00000000000000",
+			},
+			{
+				name: "timestamp",
+				type: "string",
+				description: "Settlement timestamp. Empty on the initial response.",
+				example: "",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				tx_status: "0",
+				amount: "5000.00",
+				txstatus_desc: "Success",
+				fee: "17.70",
+				gst: "2.70",
+				sender_name: "Test User",
+				tid: "0000000000",
+				client_ref_id: "00000000000000000000",
+				balance: "0.00",
+				user_code: "10000001",
+				totalfee: "17.70",
+				recipient_name: "Test Recipient",
+				ifsc: "SBIN0000000",
+				bank_ref_num: "",
+				account: "00000000000000",
+				timestamp: "",
+			},
+			response_type_id: 1477,
+			message: "Transaction processed successfully",
+			status: 0,
+		},
+	},
+	// MARK: BBPS
 	{
 		id: "bbps-get-categories",
 		productId: "bbps",
@@ -2792,7 +3608,7 @@ export const API_SPECS: ApiSpec[] = [
 			"Retrieve outstanding bill details from a biller before processing payment.",
 		description:
 			"Fetches the live bill for a customer from the biller's system. Required for operators where `billFetchResponse = 1`. The response includes the outstanding amount, due date, and a `billfetchresponse` token that must be forwarded verbatim in the subsequent Pay Bill call. Pass `hc_channel=1` to use the higher-commission delayed channel.",
-		relevance: "M",
+		relevance: "H",
 		bestFor:
 			"Showing the customer their outstanding bill amount and due date before confirming payment.",
 		method: "GET",
@@ -2967,7 +3783,7 @@ export const API_SPECS: ApiSpec[] = [
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
 			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included. Parameter names sent here must exactly match the `param_name` values from Get Operator Parameters. Pass `hc_channel=1` to route through the high-commission channel, which can take up to 6 hours to settle on the biller side.",
-		relevance: "M",
+		relevance: "H",
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
 		method: "POST",
@@ -8803,331 +9619,6 @@ export const API_SPECS: ApiSpec[] = [
 				},
 			},
 		],
-	},
-	{
-		id: "aeps-add-settlement-account",
-		productId: "aeps",
-		name: "Add Settlement Bank Account",
-		slug: "aeps-add-settlement-account",
-		provider: "AePS – Fingpay",
-		group: "AePS Fund Settlement",
-		summary:
-			"Register a bank account as an AePS fund-settlement recipient for an agent.",
-		description:
-			"Adds and name-verifies a bank account to which an agent can settle AePS funds. On success a `recipient_id` is returned — pass it to Initiate Settlement. If the account holder name does not match, the response reports the mismatch. An agent can register up to 3 settlement accounts, and only banks that offer account verification are accepted.",
-		relevance: "M",
-		bestFor: "Registering an agent's settlement bank account before payout.",
-		method: "POST",
-		path: "/user/payment/aeps/settlement/account",
-		docsUrl:
-			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
-		sourceDoc:
-			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
-		extraRequestParams: [
-			{
-				name: "user_code",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-				example: "20810200",
-			},
-			{
-				name: "bank_id",
-				type: "integer",
-				required: true,
-				description: "Unique identifier for the bank.",
-				example: 12,
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				required: true,
-				description: "IFSC code of the bank account.",
-				example: "BKID0006701",
-			},
-			{
-				name: "service_code",
-				type: "integer",
-				required: true,
-				description: "Service code for AePS fund settlement. Value: 39.",
-				example: 39,
-			},
-			{
-				name: "account",
-				type: "string",
-				required: true,
-				description: "Account number of the user's bank account.",
-				example: "987867867967969",
-			},
-		],
-		responseData: [
-			{
-				name: "recipient_id",
-				type: "number",
-				imp: true,
-				description:
-					"Settlement recipient identifier — pass to Initiate Settlement.",
-				example: 1893,
-			},
-		],
-		sampleSuccessResponse: {
-			response_status_id: 0,
-			data: { recipient_id: 1893 },
-			response_type_id: 1336,
-			message: "Account added",
-			status: 0,
-		},
-		errorScenarios: [
-			{
-				scenario: "Account verification failed — name mismatch",
-				statusCode: 200,
-				example: {
-					response_status_id: 1,
-					data: { sender_name: "SANATAN CSP", recipient_name: "R K LAKSHYKAR" },
-					response_type_id: 1335,
-					message: "Account verification fail, Name not matched",
-					status: 1335,
-				},
-			},
-			{
-				scenario: "Account verification failed — name not returned by bank",
-				statusCode: 200,
-				example: {
-					response_status_id: 1,
-					response_type_id: 1334,
-					message: "Account verification fail name not returned by bank",
-					status: 1334,
-				},
-			},
-		],
-	},
-	{
-		id: "aeps-get-settlement-accounts",
-		productId: "aeps",
-		name: "Get Settlement Bank Accounts",
-		slug: "aeps-get-settlement-accounts",
-		provider: "AePS – Fingpay",
-		group: "AePS Fund Settlement",
-		summary:
-			"List an agent's registered AePS settlement recipients with unsettled funds and remaining limit.",
-		description:
-			"Returns the agent's saved settlement bank accounts (each with a `recipient_id`), the total unsettled fund, and the remaining daily settlement limit.",
-		relevance: "M",
-		bestFor: "Choosing a settlement account and checking unsettled funds.",
-		method: "GET",
-		path: "/user/payment/aeps/settlement/accounts",
-		docsUrl:
-			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
-		sourceDoc:
-			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
-		extraRequestParams: [
-			{
-				name: "user_code",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-				example: "20810200",
-			},
-		],
-		responseData: [
-			{
-				name: "unsettled_fund",
-				type: "string",
-				imp: true,
-				description: "Total unsettled AePS fund available to settle (INR).",
-				example: "6100.0",
-			},
-			{
-				name: "remaining_limit",
-				type: "string",
-				description: "Remaining settlement limit for the day (INR).",
-				example: "190000",
-			},
-			{
-				name: "fund_transfer_list",
-				type: "array",
-				imp: true,
-				description: "Registered settlement recipients.",
-				children: [
-					{
-						name: "recipient_id",
-						type: "string",
-						imp: true,
-						description:
-							"Settlement recipient identifier — pass to Initiate Settlement.",
-						example: "1828",
-					},
-					{
-						name: "name",
-						type: "string",
-						description: "Account holder name.",
-						example: "Gaurav Mallik",
-					},
-					{
-						name: "account",
-						type: "string",
-						description: "Bank account number.",
-						example: "9989834392752938",
-					},
-					{
-						name: "ifsc",
-						type: "string",
-						description: "Bank branch IFSC.",
-						example: "PUNB0309300",
-					},
-				],
-			},
-		],
-		sampleSuccessResponse: {
-			response_status_id: -1,
-			data: {
-				unsettled_fund: "6100.0",
-				remaining_limit: "190000",
-				fund_transfer_list: [
-					{
-						name: "Gaurav Mallik",
-						ifsc: "PUNB0309300",
-						account: "9989834392752938",
-						recipient_id: "1828",
-					},
-					{
-						name: "Gaurav Mallik",
-						ifsc: "BKID0006701",
-						account: "987867867967969",
-						recipient_id: "1829",
-					},
-				],
-			},
-			response_type_id: 1321,
-			message: "List of fund transfer recipients",
-			status: 0,
-		},
-	},
-	{
-		id: "aeps-initiate-settlement",
-		productId: "aeps",
-		name: "Initiate Settlement",
-		slug: "aeps-initiate-settlement",
-		provider: "AePS – Fingpay",
-		group: "AePS Fund Settlement",
-		summary:
-			"Settle an agent's AePS funds to a registered bank account via NEFT/IMPS/RTGS.",
-		description:
-			"Initiates a fund settlement of the requested amount to a registered `recipient_id`. Returns the financial response envelope with `tx_status`, transaction id (`tid`), fee, and updated balance. Settlement is available Mon–Fri 10am–5pm (excl. RBI holidays); max ₹2,00,000 per transaction; requests after 5pm settle the next working day.",
-		descriptionFile: "aeps-initiate-settlement.md",
-		relevance: "H",
-		bestFor: "Settling collected AePS funds to an agent's bank account.",
-		method: "POST",
-		path: "/user/payment/aeps/settlement",
-		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
-		sourceDoc:
-			"https://developers.eko.in/reference/aeps-fund-settlement-request",
-		financial: true,
-		extraRequestParams: [
-			{
-				name: "user_code",
-				type: "string",
-				required: true,
-				description:
-					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
-				example: "20810200",
-			},
-			{
-				name: "amount",
-				type: "integer",
-				required: true,
-				description:
-					"Settlement amount requested (INR). Max 200000 per transaction.",
-				example: 100,
-			},
-			{
-				name: "recipient_id",
-				type: "integer",
-				required: true,
-				description:
-					"Settlement recipient identifier (from Add / Get Settlement Account).",
-				example: 1829,
-			},
-			{
-				name: "payment_mode",
-				type: "integer",
-				required: true,
-				description: "Transfer method: 4 = NEFT, 5 = IMPS, 13 = RTGS.",
-				example: 5,
-			},
-		],
-		responseData: [
-			{
-				name: "tid",
-				type: "string",
-				imp: true,
-				description: "Eko transaction ID for the settlement.",
-				example: "12937465",
-			},
-			{
-				name: "tx_status",
-				type: "string",
-				imp: true,
-				description: "Transaction status (2 = initiated).",
-				example: "2",
-			},
-			{
-				name: "txstatus_desc",
-				type: "string",
-				imp: true,
-				description: "Human-readable transaction status.",
-				example: "Initiated",
-			},
-			{
-				name: "amount",
-				type: "string",
-				description: "Settled amount (INR).",
-				example: "100.00",
-			},
-			{
-				name: "totalfee",
-				type: "string",
-				description: "Total fee charged for the settlement (INR).",
-				example: "5.00",
-			},
-			{
-				name: "balance",
-				type: "string",
-				imp: true,
-				description: "Agent balance after the settlement (INR).",
-				example: "2.251010664E7",
-			},
-			{
-				name: "account",
-				type: "string",
-				description: "Destination account number.",
-				example: "987867867967969",
-			},
-			{
-				name: "ifsc",
-				type: "string",
-				description: "Destination branch IFSC.",
-				example: "BKID0006701",
-			},
-		],
-		sampleSuccessResponse: {
-			response_status_id: 0,
-			data: {
-				tx_status: "2",
-				amount: "100.00",
-				balance: "2.251010664E7",
-				txstatus_desc: "Initiated",
-				totalfee: "5.00",
-				ifsc: "BKID0006701",
-				account: "987867867967969",
-				tid: "12937465",
-			},
-			response_type_id: 1329,
-			message: "Transaction initiated successfully",
-			status: 0,
-		},
 	},
 	{
 		id: "transaction-inquiry",

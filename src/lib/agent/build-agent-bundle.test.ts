@@ -51,6 +51,7 @@ describe("slices", () => {
 		for (const entry of index.apis) {
 			expect(entry).not.toHaveProperty("responseFields");
 			expect(entry).not.toHaveProperty("sampleRequest");
+			expect(entry).not.toHaveProperty("responseTypes");
 		}
 		expect(index.topics).toContain("auth");
 		expect(index.recipes.some((r) => r.id === "dmt-send-money")).toBe(true);
@@ -60,5 +61,22 @@ describe("slices", () => {
 		const known = specs[0].slug;
 		expect(buildApi(bundle, known)?.responseFields.length).toBeGreaterThan(0);
 		expect(buildApi(bundle, "nope-not-real")).toBeUndefined();
+	});
+
+	it("carries a spec's response types through to the per-API slice", () => {
+		// This is what lets an agent branch on response_type_id without scraping
+		// the docs prose.
+		const responseTypes = buildApi(bundle, "dmt-get-sender")?.responseTypes;
+		expect(responseTypes).toContainEqual({
+			id: 308,
+			meaning: "Sender not found",
+			next: "dmt-onboard-sender",
+		});
+	});
+
+	it("gives an endpoint with no documented response types an empty array", () => {
+		// Never undefined — consumers map over it without a guard.
+		const withNone = bundle.apis.find((a) => a.slug !== "dmt-get-sender");
+		expect(withNone?.responseTypes).toEqual([]);
 	});
 });

@@ -1,46 +1,83 @@
-# Error Codes
+# Status & Error Codes
 
 Eko APIs report status at two levels: the transport-level **HTTP status code**
 and the business-level **`response_status_id`** inside the response envelope. A
 `200 OK` with a non-zero `response_status_id` is a successful call that returned
 a business error — always check both.
 
-## HTTP status codes
+## HTTP Status Codes
 
 | Code  | Meaning                                                       |
 | ----- | ------------------------------------------------------------- |
 | `200` | OK — response returned by our system.                         |
 | `403` | Forbidden — incorrect `secret-key` or timestamp.              |
 | `404` | Not Found — wrong request URL.                                |
-| `405` | Method Not Allowed — incorrect HTTP method.                   |
 | `415` | Unsupported Media Type — wrong `Content-Type` header.         |
 | `500` | Internal Server Error — connectivity or URL misconfiguration. |
 
-## Transaction status codes (`response_status_id`)
+## The Response Structure
 
-| Code  | Meaning                                     |
-| ----- | ------------------------------------------- |
-| `0`   | Success.                                    |
-| `17`  | User wallet already exists.                 |
-| `302` | Wrong OTP.                                  |
-| `303` | OTP expired.                                |
-| `327` | Enrollment done; verification pending.      |
-| `342` | Recipient already registered.               |
-| `347` | Insufficient balance.                       |
-| `463` | User not found.                             |
-| `585` | Customer already KYC approved.              |
-| `945` | Sender/beneficiary monthly limit exhausted. |
+| Field                | Type   | Meaning                                                      |
+| -------------------- | ------ | ------------------------------------------------------------ |
+| `status`             | number | Primary success indicator (`0` = success).                   |
+| `response_status_id` | number | Granular status id — the codes above.                        |
+| `response_type_id`   | number | Response type id for non-financial requests.                 |
+| `tx_status`          | number | Financial Transactions status code (`0` = success)           |
+| `message`            | string | Human-readable result or error message.                      |
+| `data`               | object | Rest of the response parameters specific to that transaction |
 
-## The response envelope
+## Input Validation Errors
 
-| Field                | Type   | Meaning                                      |
-| -------------------- | ------ | -------------------------------------------- |
-| `status`             | number | Primary success indicator (`0` = success).   |
-| `response_status_id` | number | Granular status id — the codes above.        |
-| `message`            | string | Human-readable result or error message.      |
-| `response_type_id`   | number | Response type id for non-financial requests. |
+In case of input parameter validation errors, you will receive and error (non-zero) `status` code, `response_status_id = 1`, `response_type_id = -1`, and the response will contain `invalid_parameters` object with each invalid parameter name and its error message. This can be used to show proper error response in the user-input form itself.
 
-Financial (money-debit) responses additionally carry `tx_status`
-(`0`=Success, `1`=Fail, `2`=Awaited, `3`=Refund Pending, `4`=Refunded,
-`5`=On Hold) and `txstatus_desc`. When `tx_status` is `2` (Awaited), poll the
-relevant status endpoint rather than retrying the debit.
+For example:
+
+```json
+{
+	"status": 461,
+	"response_status_id": 1,
+	"response_type_id": -1,
+	"invalid_params": {
+		"name": "Name too long",
+		"dob": "Must be over 18 years",
+	},
+	...
+}
+```
+
+## Financial Transaction Status Codes (`tx_status`)
+
+Financial (money-debit) responses additionally carry `tx_status` and `txstatus_desc`. When `tx_status` is `2` (Awaited), poll the relevant status endpoint rather than retrying the debit.
+
+| tx_status | Meaning                                         |
+| --------- | ----------------------------------------------- |
+| `0`       | Success                                         |
+| `1`       | Failed                                          |
+| `2`       | Initiated (In case of NEFT Money Transfer)      |
+| `3`       | Refund Pending                                  |
+| `4`       | Refunded                                        |
+| `6`       | Response Awaited (Transaction Inquiry Required) |
+
+## Common Transaction Status Codes (`status`)
+
+For all financial transactions, **status = 0** should be treated as successful else failed. The current state of a financial transaction can be retrieved from **tx_status** and **txstatus_desc** parameters.
+
+For all non-financial requests, you may need to consider both status and response_type_id parameters.
+
+Here are some of the common `status` codes:
+
+| status | Meaning                                                   |
+| ------ | --------------------------------------------------------- |
+| `0`    | Success                                                   |
+| `17`   | User wallet already exists                                |
+| `132`  | Sender name should only contain letters                   |
+| `302`  | Wrong OTP                                                 |
+| `303`  | OTP expired                                               |
+| `319`  | Invalid `initiator_id`. User does not exist in our system |
+| `327`  | Enrollment done; verification pending                     |
+| `342`  | Recipient already registered                              |
+| `347`  | Insufficient balance                                      |
+| `463`  | User not found                                            |
+| `585`  | Customer already KYC approved                             |
+| `945`  | Sender/beneficiary monthly limit exhausted                |
+| `1297` | User/Agent not onboarded                                  |

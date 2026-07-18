@@ -1,7 +1,12 @@
 import { CornerDownRight, Flag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HttpMethodTag } from "@/components/docs/HttpMethodTag";
-import type { Recipe } from "@/lib/data/api-recipes";
+import {
+	branchCondition,
+	type Recipe,
+	type RecipeStepFrequency,
+	STEP_FREQUENCY_LABEL,
+} from "@/lib/data/api-recipes";
 import {
 	DONE_NODE,
 	type ResolvedBranch,
@@ -17,6 +22,31 @@ import {
  * everything a graph-layout engine would, at no dependency cost. The flow comes
  * from `resolveRecipe`, shared with the markdown twin.
  */
+
+/** Per-frequency pill tint. Deliberately off the method palette
+ * (emerald/sky/violet/rose) and the branch-callout amber, so a frequency badge
+ * never reads as a method or a branch. */
+const FREQUENCY_TINT: Record<RecipeStepFrequency, string> = {
+	once: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30",
+	daily:
+		"bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-400 dark:border-teal-500/30",
+};
+
+/** A frequency badge (one-time / daily), pinned to the right of the step header.
+ * Mirrors the `HttpMethodTag` pill shape for a consistent header row. */
+const FrequencyTag = ({
+	frequency,
+	className,
+}: {
+	frequency: RecipeStepFrequency;
+	className?: string;
+}) => (
+	<span
+		className={`inline-flex items-center rounded-[5px] border px-[7px] py-[3px] font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.04em] ${FREQUENCY_TINT[frequency]} ${className ?? ""}`}
+	>
+		{STEP_FREQUENCY_LABEL[frequency]}
+	</span>
+);
 
 /** A conditional jump, shown inset under the step whose response triggers it. */
 const BranchCallout = ({ branch }: { branch: ResolvedBranch }) => {
@@ -37,11 +67,11 @@ const BranchCallout = ({ branch }: { branch: ResolvedBranch }) => {
 			<p className="min-w-0 text-amber-900 dark:text-amber-200">
 				If{" "}
 				<code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[0.7rem] dark:bg-amber-500/20">
-					response_status_id
+					{branchCondition(branch).field}
 				</code>{" "}
 				is{" "}
 				<code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[0.7rem] dark:bg-amber-500/20">
-					{branch.onResponseStatusId}
+					{branchCondition(branch).value}
 				</code>{" "}
 				{isDone ? (
 					<>— the flow is complete.</>
@@ -82,23 +112,33 @@ const StepCard = ({
 		</span>
 
 		<div className="min-w-0 flex-1 rounded-lg border border-border bg-card p-4">
-			<div className="flex flex-wrap items-center gap-2">
-				{step.method && <HttpMethodTag method={step.method} short />}
-				{step.docHref ? (
-					<Link
-						to={step.docHref}
-						className="font-medium text-foreground underline-offset-4 hover:underline"
-					>
-						{step.title}
-					</Link>
-				) : (
-					<span className="font-medium text-foreground">{step.title}</span>
+			<div className="flex items-start gap-2">
+				{/* Method + title in their own group; the frequency badge is pushed to
+				    the far right of the header by `ml-auto`. */}
+				<div className="flex min-w-0 flex-wrap items-center gap-2">
+					{step.method && <HttpMethodTag method={step.method} short />}
+					{step.docHref ? (
+						<Link
+							to={step.docHref}
+							className="font-medium text-foreground underline-offset-4 hover:underline"
+						>
+							{step.title}
+						</Link>
+					) : (
+						<span className="font-medium text-foreground">{step.title}</span>
+					)}
+				</div>
+				{step.frequency && (
+					<FrequencyTag
+						frequency={step.frequency}
+						className="ml-auto shrink-0"
+					/>
 				)}
 			</div>
 			<p className="mt-1.5 text-sm text-muted-foreground">{step.purpose}</p>
 			{step.branches.map((branch) => (
 				<BranchCallout
-					key={`${branch.onResponseStatusId}-${branch.goto}`}
+					key={`${branchCondition(branch).value}-${branch.goto}`}
 					branch={branch}
 				/>
 			))}

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { RECIPES, type Recipe } from "@/lib/data/api-recipes";
+import {
+	RECIPES,
+	type Recipe,
+	STEP_FREQUENCY_LABEL,
+} from "@/lib/data/api-recipes";
 import { resolveRecipe } from "@/lib/data/recipe-graph";
 import {
 	escapeMermaidLabel,
@@ -36,15 +40,30 @@ describe("recipeMermaidFence", () => {
 	it("emits one quoted node per step, labelled METHOD Name", () => {
 		const fence = recipeMermaidFence(aeps);
 		for (const step of resolveRecipe(aeps).steps) {
-			expect(fence).toContain(`${step.nodeId}["${step.method} ${step.title}"]`);
+			const suffix = step.frequency
+				? ` · ${STEP_FREQUENCY_LABEL[step.frequency]}`
+				: "";
+			expect(fence).toContain(
+				`${step.nodeId}["${step.method} ${step.title}${suffix}"]`,
+			);
 		}
 	});
 
+	it("suffixes the frequency onto tagged step nodes, and only those", () => {
+		const fence = recipeMermaidFence(aeps);
+		// The activation + 3 eKYC steps are one-time; step 5 (daily-auth) is daily;
+		// step 6 (withdrawal) carries no tag and must stay unsuffixed.
+		expect(fence).toContain("· One-time");
+		expect(fence).toContain("· Daily");
+		expect(fence).toMatch(/s6\["POST AePS Cash Withdrawal"\]/);
+	});
+
 	it("collapses a branch that targets the next step into one labelled edge", () => {
-		// DMT step 1 branches to onboarding on 463 — which is also step 2. That
-		// must be a single labelled edge, not a labelled edge plus a bare one.
+		// DMT step 1 branches to onboarding on response_type_id 308 — which is also
+		// step 2. That must be a single labelled edge, not a labelled edge plus a
+		// bare one.
 		const fence = recipeMermaidFence(dmt);
-		expect(fence).toContain('s1 -->|"463: Sender not found');
+		expect(fence).toContain('s1 -->|"response_type_id 308: Sender not found');
 		expect(fence).not.toMatch(/^\s*s1 --> s2$/m);
 		expect(fence.match(/s1 -->/g)).toHaveLength(1);
 	});
@@ -75,7 +94,10 @@ describe("recipeMermaidFence", () => {
 		expect(fence).toMatch(/^\s*s1 --> s2$/m);
 	});
 
-	it("labels every branch edge with its response_status_id", () => {
+	it("labels each branch edge with the field it actually fires on", () => {
+		// Both condition keys in one recipe: routing on response_type_id, and a
+		// financial success on response_status_id. The label must name the right
+		// field for each — that is the whole point of `branchCondition`.
 		const multi: Recipe = {
 			id: "m",
 			slug: "m",
@@ -86,7 +108,7 @@ describe("recipeMermaidFence", () => {
 					specSlug: "dmt-get-sender",
 					purpose: "a",
 					branches: [
-						{ onResponseStatusId: 463, goto: "dmt-onboard-sender" },
+						{ onResponseTypeId: 308, goto: "dmt-onboard-sender" },
 						{ onResponseStatusId: 0, goto: "done" },
 					],
 				},
@@ -94,7 +116,7 @@ describe("recipeMermaidFence", () => {
 			],
 		};
 		const fence = recipeMermaidFence(multi);
-		expect(fence).toContain('s1 -->|"response_status_id 463"| s2');
+		expect(fence).toContain('s1 -->|"response_type_id 308"| s2');
 		expect(fence).toContain('s1 -->|"response_status_id 0"| done');
 		// The 463 branch already covers s1 -> s2; no duplicate bare edge.
 		expect(fence).not.toMatch(/^\s*s1 --> s2$/m);
@@ -127,9 +149,18 @@ describe("renderRecipeMarkdown", () => {
 		expect(renderRecipeMarkdown(orphan)).not.toContain("Product & pricing");
 	});
 
+	it("marks frequency-tagged steps in the step list", () => {
+		const md = renderRecipeMarkdown(aeps);
+		expect(md).toContain(`_(${STEP_FREQUENCY_LABEL.once})_`);
+		expect(md).toContain(`_(${STEP_FREQUENCY_LABEL.daily})_`);
+		// The final withdrawal step carries no tag — no marker leaks onto it.
+		expect(md).not.toMatch(/AePS Cash Withdrawal\*\* — [^\n]*_\(/);
+	});
+
 	it("spells out each branch condition in the step list", () => {
 		const md = renderRecipeMarkdown(dmt);
-		expect(md).toContain("`response_status_id` is `463`");
+		expect(md).toContain("`response_type_id` is `308`");
+		expect(md).toContain("`response_status_id` is `0`");
 		expect(md).toContain("the flow is complete");
 	});
 });

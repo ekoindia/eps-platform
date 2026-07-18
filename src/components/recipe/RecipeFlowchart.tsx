@@ -1,4 +1,9 @@
-import type { Recipe } from "@/lib/data/api-recipes";
+import {
+	branchCondition,
+	type Recipe,
+	type RecipeStepFrequency,
+	STEP_FREQUENCY_LABEL,
+} from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	DONE_NODE,
@@ -19,7 +24,9 @@ import {
  * variables as the rest of the site, so light/dark need no JS.
  */
 
-const NODE_W = 240;
+/** Floor width; the node grows past this to fit the longest title + pill so no
+ * title is ever cropped. */
+const MIN_NODE_W = 240;
 const NODE_H = 46;
 const V_GAP = 46;
 const PITCH = NODE_H + V_GAP;
@@ -27,8 +34,16 @@ const PITCH = NODE_H + V_GAP;
  * recipe actually has such an edge — otherwise it is dead space that shifts the
  * chain off-centre. */
 const GUTTER = 76;
-const CX = NODE_W / 2;
 const DONE_W = 84;
+/** Char-width estimates (SVG <text> can't be measured pre-render): the 11px
+ * medium title, and the 8px semibold pill label. Both carry slack so real fonts
+ * never overrun. */
+const TITLE_CHAR_W = 6.6;
+const PILL_CHAR_W = 5.4;
+/** x where a node's title starts — after the method chip, or the left pad. */
+const titleStartX = (hasMethod: boolean): number => (hasMethod ? 54 : 12);
+/** Pill box width for a label (padding included). */
+const pillWidth = (label: string): number => label.length * PILL_CHAR_W + 16;
 
 const METHOD_FILL: Record<ApiSpec["method"], string> = {
 	GET: "fill-emerald-500/15 stroke-emerald-500/30",
@@ -44,17 +59,43 @@ const METHOD_TEXT: Record<ApiSpec["method"], string> = {
 	DELETE: "fill-rose-700 dark:fill-rose-400",
 };
 
-/** SVG <text> does not wrap or ellipsise, so budget characters instead.
- * ponytail: char budget, not real measurement — the full name is in the
- * <title> tooltip and in the stepper above, so a clipped label is cosmetic. */
-const truncate = (text: string, max: number): string =>
-	text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+/** Frequency pill tints, the SVG twins of the stepper's `FREQUENCY_TINT` —
+ * indigo for one-time, teal for daily, both off the method palette. */
+const FREQUENCY_FILL: Record<RecipeStepFrequency, string> = {
+	once: "fill-indigo-500/15 stroke-indigo-500/30",
+	daily: "fill-teal-500/15 stroke-teal-500/30",
+};
+
+const FREQUENCY_TEXT: Record<RecipeStepFrequency, string> = {
+	once: "fill-indigo-700 dark:fill-indigo-400",
+	daily: "fill-teal-700 dark:fill-teal-400",
+};
 
 const nodeY = (index: number): number => index * PITCH;
 
 export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 	const resolved: ResolvedRecipe = resolveRecipe(recipe);
 	const { steps, edges, hasDone } = resolved;
+
+	// Per-step frequency label (also drives node width), computed once.
+	const freqLabels = steps.map((s) =>
+		s.frequency ? STEP_FREQUENCY_LABEL[s.frequency] : undefined,
+	);
+	// Node width grows to fit the widest (title + optional pill) so no title is
+	// ever cropped; a single width keeps the chain aligned. `CX` follows.
+	const NODE_W = Math.max(
+		MIN_NODE_W,
+		...steps.map((s, i) => {
+			const label = freqLabels[i];
+			return (
+				titleStartX(Boolean(s.method)) +
+				s.title.length * TITLE_CHAR_W +
+				(label ? 10 + pillWidth(label) : 0) +
+				12
+			);
+		}),
+	);
+	const CX = NODE_W / 2;
 
 	const indexOf = (nodeId: string): number =>
 		steps.findIndex((s) => s.nodeId === nodeId);
@@ -86,7 +127,7 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 			<svg
 				viewBox={`0 0 ${viewW} ${height}`}
 				className="mx-auto h-auto w-full"
-				style={{ maxWidth: hasArc ? 340 : 268 }}
+				style={{ maxWidth: viewW + 28 }}
 				role="img"
 				aria-label={`Flowchart of the ${recipe.name} API recipe`}
 			>
@@ -106,18 +147,22 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 
 				{/* Edges first, so nodes paint over the line ends. */}
 				{edges.map((edge) => {
-					const key = `${edge.from}-${edge.to}-${edge.branch?.onResponseStatusId ?? ""}`;
-					// The diagram is a glance view: label the condition with just its
-					// status id. The full note lives in the stepper callout above.
-					const label = edge.branch
-						? String(edge.branch.onResponseStatusId)
+					const condition = edge.branch
+						? branchCondition(edge.branch)
 						: undefined;
+					const key = `${edge.from}-${edge.to}-${condition?.value ?? ""}`;
+					// The diagram is a glance view: label the condition with just its
+					// value. Which field it came from is in the <title>, and the full
+					// note lives in the stepper callout above.
+					const label = condition ? String(condition.value) : undefined;
 					if (isSequential(edge.from, edge.to)) {
 						const y1 = bottomY(edge.from);
 						const y2 = topY(edge.to);
 						return (
 							<g key={key}>
-								{label && <title>{`response_status_id ${label}`}</title>}
+								{condition && (
+									<title>{`${condition.field} ${condition.value}`}</title>
+								)}
 								<line
 									x1={CX}
 									y1={y1}
@@ -145,7 +190,9 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 					const lane = NODE_W + GUTTER - 14;
 					return (
 						<g key={key}>
-							{label && <title>{`response_status_id ${label}`}</title>}
+							{condition && (
+								<title>{`${condition.field} ${condition.value}`}</title>
+							)}
 							<path
 								d={`M ${NODE_W} ${yFrom} C ${lane} ${yFrom}, ${lane} ${yTo}, ${NODE_W} ${yTo}`}
 								fill="none"
@@ -168,48 +215,77 @@ export const RecipeFlowchart = ({ recipe }: { recipe: Recipe }) => {
 					);
 				})}
 
-				{steps.map((step, index) => (
-					<g key={step.nodeId}>
-						<title>{`${step.number}. ${step.method ?? ""} ${step.title}`}</title>
-						<rect
-							x={0}
-							y={nodeY(index)}
-							width={NODE_W}
-							height={NODE_H}
-							rx={8}
-							className="fill-card stroke-border"
-							strokeWidth={1}
-						/>
-						{step.method && (
-							<>
-								<rect
-									x={12}
-									y={nodeY(index) + 15}
-									width={34}
-									height={16}
-									rx={4}
-									className={METHOD_FILL[step.method]}
-									strokeWidth={1}
-								/>
-								<text
-									x={29}
-									y={nodeY(index) + 26}
-									textAnchor="middle"
-									className={`${METHOD_TEXT[step.method]} font-mono text-[8px] font-semibold`}
-								>
-									{step.method}
-								</text>
-							</>
-						)}
-						<text
-							x={step.method ? 54 : 12}
-							y={nodeY(index) + 27}
-							className="fill-foreground text-[11px] font-medium"
-						>
-							{truncate(step.title, step.method ? 26 : 32)}
-						</text>
-					</g>
-				))}
+				{steps.map((step, index) => {
+					const freqLabel = freqLabels[index];
+					const pillW = freqLabel ? pillWidth(freqLabel) : 0;
+					// Node was sized to fit this title + gap + pill, so the pill sits at
+					// the far right and the (untruncated) title always clears it.
+					const pillX = NODE_W - pillW - 10;
+					const titleX = titleStartX(Boolean(step.method));
+					return (
+						<g key={step.nodeId}>
+							<title>{`${step.number}. ${step.method ?? ""} ${step.title}${freqLabel ? ` (${freqLabel})` : ""}`}</title>
+							<rect
+								x={0}
+								y={nodeY(index)}
+								width={NODE_W}
+								height={NODE_H}
+								rx={8}
+								className="fill-card stroke-border"
+								strokeWidth={1}
+							/>
+							{step.method && (
+								<>
+									<rect
+										x={12}
+										y={nodeY(index) + 15}
+										width={34}
+										height={16}
+										rx={4}
+										className={METHOD_FILL[step.method]}
+										strokeWidth={1}
+									/>
+									<text
+										x={29}
+										y={nodeY(index) + 26}
+										textAnchor="middle"
+										className={`${METHOD_TEXT[step.method]} font-mono text-[8px] font-semibold`}
+									>
+										{step.method}
+									</text>
+								</>
+							)}
+							<text
+								x={titleX}
+								y={nodeY(index) + 27}
+								className="fill-foreground text-[11px] font-medium"
+							>
+								{step.title}
+							</text>
+							{step.frequency && freqLabel && (
+								<>
+									<rect
+										x={pillX}
+										y={nodeY(index) + 15}
+										width={pillW}
+										height={16}
+										rx={4}
+										className={FREQUENCY_FILL[step.frequency]}
+										strokeWidth={1}
+									/>
+									<text
+										x={pillX + pillW / 2}
+										y={nodeY(index) + 26}
+										textAnchor="middle"
+										className={`${FREQUENCY_TEXT[step.frequency]} font-mono text-[8px] font-semibold`}
+									>
+										{freqLabel}
+									</text>
+								</>
+							)}
+						</g>
+					);
+				})}
 
 				{hasDone && (
 					<g>

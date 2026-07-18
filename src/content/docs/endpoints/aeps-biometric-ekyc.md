@@ -53,3 +53,17 @@ For Fingpay AePS, it is mandatory to use **e-KYC OTP request**, **e-KYC OTP veri
 > **`fType = 2`** (not `0`). A subset of banks that have not yet completed
 > FMR+FIR compliance still require `fType = 0` — check the current bank list
 > before going live. The same PID format applies to all AePS transaction APIs.
+
+## PID `wadh` value
+
+> [!WARNING]
+> If you generate the PID block with your own code (rather than taking the RD
+> service default), you **must** set this `wadh` alongside the other attributes
+> such as `fCount` and `fType`:
+>
+> ```text
+> wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=
+> ```
+>
+> A missing or wrong `wadh` surfaces later as Daily KYC failing with
+> `"Authentication Failed. Invalid Biometric data."`

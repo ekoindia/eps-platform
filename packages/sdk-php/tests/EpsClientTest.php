@@ -121,12 +121,15 @@ final class EpsClientTest extends TestCase
             'user_code' => '20810200',
             'modelname' => 'Morpho 1300E3',
             'devicenumber' => 'SN1234567890',
+            'shop_type' => 4215,
             'office_address' => $address,
             'address_as_per_proof' => $address,
             // Path string is wrapped in a CURLFile; a CURLFile passes through.
             'pan_card' => __FILE__,
+            'aadhar' => '123456789012',
             'aadhar_front' => new \CURLFile(__FILE__),
             'aadhar_back' => __FILE__,
+            'latlong' => '28.6139,77.2090',
         ]);
         $this->assertStringContainsString('/admin/network/agent/20810200/aeps-fingpay/activate', $target['url']);
         $this->assertTrue($target['multipart']);
@@ -158,11 +161,14 @@ final class EpsClientTest extends TestCase
             'user_code' => '20810200',
             'modelname' => 'Morpho 1300E3',
             'devicenumber' => 'SN1234567890',
+            'shop_type' => 4215,
             'office_address' => [],
             'address_as_per_proof' => [],
             'pan_card' => '/no/such/file.jpg', // nonexistent path fails early
+            'aadhar' => '123456789012',
             'aadhar_front' => new \CURLFile(__FILE__),
             'aadhar_back' => new \CURLFile(__FILE__),
+            'latlong' => '28.6139,77.2090',
         ]);
     }
 

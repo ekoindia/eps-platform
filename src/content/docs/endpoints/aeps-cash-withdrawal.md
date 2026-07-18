@@ -1,7 +1,7 @@
 Lets a customer withdraw cash from any Aadhaar-linked bank account using a live
-fingerprint scan — no card or PIN. Pass `service_type = 2`. The agent's biometric
-device produces a PID XML blob that is forwarded verbatim, and the customer's
-Aadhaar number is RSA-encrypted before transmission.
+fingerprint scan — no card or PIN. The agent's biometric device produces a PID
+XML blob that is forwarded verbatim, and the customer's Aadhaar number is
+RSA-encrypted before transmission.
 
 ## Prerequisites
 
@@ -9,12 +9,11 @@ The agent must have completed, in order:
 
 1. AePS Fingpay activation
 2. One-time eKYC (Send OTP → Verify OTP → Biometric eKYC)
-3. **Daily 2FA** for the current day — this returns a `reference_id` that **must**
-   be sent with every cash-withdrawal request.
+3. **Daily KYC** for the current day
 
 > [!IMPORTANT]
-> Due to NPCI compliance, every cash-withdrawal needs 2FA. Omitting the daily
-> `reference_id` will reject the transaction.
+> Due to NPCI compliance, the agent's Daily KYC must succeed for the current
+> calendar day before any cash-withdrawal is attempted.
 
 ## Aadhaar encryption
 

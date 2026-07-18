@@ -9,6 +9,7 @@ import type {
 	ApiErrorScenario,
 	ApiParam,
 	ResponseField,
+	ApiResponseType,
 } from "@/lib/data/api-specs-common";
 import type { ApiErrorCode } from "@/lib/data/api-error-codes";
 import type { ApiKeyInfo } from "@/lib/data/api-auth";
@@ -54,6 +55,9 @@ export interface AgentApiDetail extends AgentApiIndexEntry {
 	responseFields: ResponseField[];
 	sampleSuccessResponse: Record<string, unknown>;
 	errorScenarios: ApiErrorScenario[];
+	/** Documented `response_type_id` values: meaning + the slug to call next.
+	 * Empty when the endpoint documents no branching. */
+	responseTypes: ApiResponseType[];
 }
 
 export interface AgentAuthTopic {

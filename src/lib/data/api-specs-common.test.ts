@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { ApiParam, ApiSpec } from "./api-specs-common";
 import {
+	assertResponseTypeSlugs,
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
 	isMultipart,
 	resolveContentType,
 	resolveHeaders,
 	resolveRequestParams,
+	responseTypeFor,
 } from "./api-specs-common";
 
 /** Minimal spec covering only the fields the resolvers read. */
@@ -241,5 +243,97 @@ describe("resolveHeaders / content-type derivation", () => {
 		expect(byName(headers, "x-extra")).toBeDefined();
 		// Untouched shared headers survive the merge.
 		expect(byName(headers, "secret-key")).toBeDefined();
+	});
+});
+
+describe("responseTypeFor", () => {
+	const documented = spec({
+		responseTypes: [
+			{ id: 309, meaning: "Sender found", next: "dmt-get-recipients" },
+			{ id: 308, meaning: "Sender not found" },
+		],
+	});
+
+	it("matches a payload's response_type_id to its documented meaning", () => {
+		expect(
+			responseTypeFor(documented, { response_type_id: 309 })?.meaning,
+		).toBe("Sender found");
+	});
+
+	it("returns undefined for an id the spec does not document", () => {
+		expect(
+			responseTypeFor(documented, { response_type_id: 1388 }),
+		).toBeUndefined();
+	});
+
+	it("returns undefined when the payload carries no response_type_id", () => {
+		// Financial responses routinely omit it — must not throw or half-match.
+		expect(responseTypeFor(documented, { status: 0 })).toBeUndefined();
+	});
+
+	it("ignores a non-numeric response_type_id rather than coercing it", () => {
+		expect(
+			responseTypeFor(documented, { response_type_id: "309" }),
+		).toBeUndefined();
+	});
+
+	it("returns undefined for a spec that documents no response types", () => {
+		expect(
+			responseTypeFor(spec({}), { response_type_id: 309 }),
+		).toBeUndefined();
+	});
+});
+
+describe("assertResponseTypeSlugs", () => {
+	const known = new Set(["dmt-get-recipients"]);
+
+	it("passes a spec whose next targets a documented slug", () => {
+		expect(() =>
+			assertResponseTypeSlugs(
+				[
+					spec({
+						responseTypes: [
+							{ id: 1, meaning: "m", next: "dmt-get-recipients" },
+						],
+					}),
+				],
+				known,
+			),
+		).not.toThrow();
+	});
+
+	it("passes a spec with no responseTypes at all", () => {
+		expect(() => assertResponseTypeSlugs([spec({})], known)).not.toThrow();
+	});
+
+	it("throws when next names a slug with no docs page", () => {
+		expect(() =>
+			assertResponseTypeSlugs(
+				[
+					spec({
+						id: "x",
+						responseTypes: [{ id: 1, meaning: "m", next: "not-a-real-page" }],
+					}),
+				],
+				known,
+			),
+		).toThrow(/not-a-real-page/);
+	});
+
+	it("throws when a spec documents the same id twice", () => {
+		expect(() =>
+			assertResponseTypeSlugs(
+				[
+					spec({
+						id: "x",
+						responseTypes: [
+							{ id: 7, meaning: "first" },
+							{ id: 7, meaning: "second" },
+						],
+					}),
+				],
+				known,
+			),
+		).toThrow(/7 twice/);
 	});
 });
