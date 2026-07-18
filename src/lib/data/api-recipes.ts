@@ -46,6 +46,19 @@ export const branchCondition = (
 		? { field: "response_type_id", value: branch.onResponseTypeId }
 		: { field: "response_status_id", value: branch.onResponseStatusId };
 
+/**
+ * How often a step runs: once per agent ever (`once` — a one-time activation or
+ * eKYC onboarding step), or once per calendar day (`daily` — the biometric
+ * re-auth KYC). Absent means no frequency badge is rendered for the step.
+ */
+export type RecipeStepFrequency = "once" | "daily";
+
+/** Human label for a step's frequency badge, shared by every surface. */
+export const STEP_FREQUENCY_LABEL: Record<RecipeStepFrequency, string> = {
+	once: "One-time",
+	daily: "Daily",
+};
+
 /** One step in a recipe; a call to a single documented endpoint. */
 export interface RecipeStep {
 	/** FK into `API_SPECS.slug`. */
@@ -54,6 +67,9 @@ export interface RecipeStep {
 	purpose: string;
 	/** Conditional jumps out of this step; see {@link RecipeBranch}. */
 	branches?: RecipeBranch[];
+	/** How often the step runs (one-time setup/eKYC, or a daily KYC gate); see
+	 * {@link RecipeStepFrequency}. Absent → no frequency badge. */
+	frequency?: RecipeStepFrequency;
 }
 
 /** A named, multi-step flow across several endpoints. */
@@ -99,7 +115,8 @@ export const RECIPES: Recipe[] = [
 			},
 			{
 				specSlug: "dmt-onboard-sender",
-				purpose: "Register a new sender when Get Sender returned 308.",
+				purpose:
+					"Register a new sender when Get Sender API returns `response_type_id=308`.",
 			},
 			{
 				specSlug: "dmt-add-recipient",
@@ -127,26 +144,31 @@ export const RECIPES: Recipe[] = [
 			{
 				specSlug: "aeps-activate-fingpay",
 				purpose: "One-time activation of AePS Fingpay for the agent.",
+				frequency: "once",
 			},
 			{
 				specSlug: "aeps-send-otp-kyc",
 				purpose:
 					"One-time eKYC step 1 (agent onboarding, not per transaction): OTP to the agent's Aadhaar-linked mobile.",
+				frequency: "once",
 			},
 			{
 				specSlug: "aeps-verify-otp-kyc",
 				purpose:
 					"One-time eKYC step 2 (agent onboarding): verify the OTP with the otp_ref_id and reference_tid from step 1.",
+				frequency: "once",
 			},
 			{
 				specSlug: "aeps-biometric-ekyc",
 				purpose:
 					"One-time eKYC step 3 (agent onboarding): the agent's biometric PID completes eKYC.",
+				frequency: "once",
 			},
 			{
 				specSlug: "aeps-daily-auth",
 				purpose:
 					"Daily KYC — biometric-only, repeated once per calendar day before the agent's first transaction.",
+				frequency: "daily",
 			},
 			{
 				specSlug: "aeps-cash-withdrawal",

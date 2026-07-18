@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { RECIPES, type Recipe } from "@/lib/data/api-recipes";
+import {
+	RECIPES,
+	type Recipe,
+	STEP_FREQUENCY_LABEL,
+} from "@/lib/data/api-recipes";
 import { resolveRecipe } from "@/lib/data/recipe-graph";
 import {
 	escapeMermaidLabel,
@@ -36,8 +40,22 @@ describe("recipeMermaidFence", () => {
 	it("emits one quoted node per step, labelled METHOD Name", () => {
 		const fence = recipeMermaidFence(aeps);
 		for (const step of resolveRecipe(aeps).steps) {
-			expect(fence).toContain(`${step.nodeId}["${step.method} ${step.title}"]`);
+			const suffix = step.frequency
+				? ` · ${STEP_FREQUENCY_LABEL[step.frequency]}`
+				: "";
+			expect(fence).toContain(
+				`${step.nodeId}["${step.method} ${step.title}${suffix}"]`,
+			);
 		}
+	});
+
+	it("suffixes the frequency onto tagged step nodes, and only those", () => {
+		const fence = recipeMermaidFence(aeps);
+		// The activation + 3 eKYC steps are one-time; step 5 (daily-auth) is daily;
+		// step 6 (withdrawal) carries no tag and must stay unsuffixed.
+		expect(fence).toContain("· One-time");
+		expect(fence).toContain("· Daily");
+		expect(fence).toMatch(/s6\["POST AePS Cash Withdrawal"\]/);
 	});
 
 	it("collapses a branch that targets the next step into one labelled edge", () => {
@@ -129,6 +147,14 @@ describe("renderRecipeMarkdown", () => {
 	it("drops the product cross-link when the product is disabled or unset", () => {
 		const orphan: Recipe = { ...dmt, productId: undefined };
 		expect(renderRecipeMarkdown(orphan)).not.toContain("Product & pricing");
+	});
+
+	it("marks frequency-tagged steps in the step list", () => {
+		const md = renderRecipeMarkdown(aeps);
+		expect(md).toContain(`_(${STEP_FREQUENCY_LABEL.once})_`);
+		expect(md).toContain(`_(${STEP_FREQUENCY_LABEL.daily})_`);
+		// The final withdrawal step carries no tag — no marker leaks onto it.
+		expect(md).not.toMatch(/AePS Cash Withdrawal\*\* — [^\n]*_\(/);
 	});
 
 	it("spells out each branch condition in the step list", () => {

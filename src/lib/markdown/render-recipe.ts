@@ -16,6 +16,7 @@ import {
 	RECIPES,
 	type Recipe,
 	recipeHref,
+	STEP_FREQUENCY_LABEL,
 } from "@/lib/data/api-recipes";
 import { docsHref } from "@/lib/data/docs-registry";
 import {
@@ -48,8 +49,13 @@ export const escapeMermaidLabel = (text: string): string =>
 /** `s1["GET Get Sender Profile"]`, or the rounded terminal for `done`. */
 const mermaidNode = (recipe: ResolvedRecipe): string[] => {
 	const nodes = recipe.steps.map((step) => {
+		const base = step.method ? `${step.method} ${step.title}` : step.title;
+		// Suffix the frequency as plain text — reliable across every mermaid
+		// renderer (agents, GitHub) without a per-node classDef.
 		const label = escapeMermaidLabel(
-			step.method ? `${step.method} ${step.title}` : step.title,
+			step.frequency
+				? `${base} · ${STEP_FREQUENCY_LABEL[step.frequency]}`
+				: base,
 		);
 		return `  ${step.nodeId}["${label}"]`;
 	});
@@ -92,7 +98,12 @@ const stepList = (resolved: ResolvedRecipe): string =>
 				? link(step.title, `${SITE_URL}${step.docHref}.md`, "md")
 				: step.title;
 			const method = step.method ? `\`${step.method}\` ` : "";
-			const lines = [`${step.number}. ${method}**${name}** — ${step.purpose}`];
+			const freq = step.frequency
+				? ` _(${STEP_FREQUENCY_LABEL[step.frequency]})_`
+				: "";
+			const lines = [
+				`${step.number}. ${method}**${name}** — ${step.purpose}${freq}`,
+			];
 			for (const branch of step.branches) {
 				const target =
 					branch.goto === DONE_NODE

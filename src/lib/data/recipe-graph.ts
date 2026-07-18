@@ -8,7 +8,12 @@
  * surfaces cannot disagree about the flow. Mermaid string-escaping lives in the
  * markdown layer, which is the only consumer that needs it.
  */
-import type { Recipe, RecipeBranch, RecipeStep } from "./api-recipes";
+import type {
+	Recipe,
+	RecipeBranch,
+	RecipeStep,
+	RecipeStepFrequency,
+} from "./api-recipes";
 import type { ApiSpec } from "./api-specs-common";
 import { docHrefForSlug, getDocBySlug } from "./docs-registry";
 
@@ -43,6 +48,9 @@ export interface ResolvedStep {
 	method?: ApiSpec["method"];
 	/** Docs link, or `undefined` when the endpoint has no page (never a 404). */
 	docHref?: string;
+	/** Frequency tag, when the step is a one-time or daily gate. Carried through
+	 * so both HTML surfaces and the markdown twin can badge it. */
+	frequency?: RecipeStepFrequency;
 	branches: ResolvedBranch[];
 }
 
@@ -122,6 +130,7 @@ export const resolveRecipe = (recipe: Recipe): ResolvedRecipe => {
 		title: titleFor(step.specSlug),
 		method: getDocBySlug(step.specSlug)?.method,
 		docHref: docHrefForSlug(step.specSlug),
+		frequency: step.frequency,
 		branches: (step.branches ?? []).map((branch) =>
 			resolveBranch(branch, recipe.steps, index),
 		),
