@@ -51,11 +51,24 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
+				name: "is_registered",
+				type: "number",
+				imp: true,
+				description: "1 = sender already registered, 0 = not registered.",
+				example: 1,
+			},
+			{
 				name: "sender_name",
 				type: "string",
 				description: "Registered name of the sender.",
 				imp: true,
 				example: "Ramesh Kumar",
+			},
+			{
+				name: "ekyc_enabled",
+				type: "string",
+				description: 'Whether biometric eKYC is enabled ("1" = yes).',
+				example: "1",
 			},
 			{
 				name: "next_allowed_limit",
@@ -69,6 +82,44 @@ export const API_SPECS: ApiSpec[] = [
 				type: "number",
 				description: "Sender account state: 0=Active, 10=Pending verification.",
 				example: 0,
+			},
+			{
+				name: "customer_profile",
+				type: "object",
+				imp: true,
+				description: "Sender profile summary.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						description: "Sender's registered name.",
+						example: "Ramesh Kumar",
+					},
+					{
+						name: "mobile",
+						type: "string",
+						description: "Sender's mobile number.",
+						example: "9123456789",
+					},
+					{
+						name: "total_monthly_limit",
+						type: "string",
+						description: "Total monthly transfer limit (INR).",
+						example: "50000",
+					},
+					{
+						name: "next_allowed_limit",
+						type: "string",
+						description: "Remaining monthly transfer limit (INR).",
+						example: "48000",
+					},
+					{
+						name: "ekyc_enabled",
+						type: "number",
+						description: "Whether eKYC is enabled (1 = yes).",
+						example: 1,
+					},
+				],
 			},
 		],
 		sampleSuccessResponse: {
