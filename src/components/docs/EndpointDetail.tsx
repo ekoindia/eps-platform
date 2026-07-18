@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { API_AUTH_DOCS_URL } from "@/lib/data/api-auth";
+import { recipeHref, recipesForSpec } from "@/lib/data/api-recipes";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
 	resolveHeaders,
@@ -8,6 +9,7 @@ import {
 } from "@/lib/data/api-specs-common";
 import { resolveDescription } from "@/lib/data/endpoint-descriptions";
 import { cn } from "@/lib/utils";
+import { Callout } from "./Callout";
 import { HttpMethodTag } from "./HttpMethodTag";
 import { MarkdownProse } from "./MarkdownProse";
 import { NextSteps } from "./NextSteps";
@@ -152,6 +154,7 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 	const headers = resolveHeaders(spec);
 	const requestParams = resolveRequestParams(spec);
 	const description = resolveDescription(spec);
+	const recipes = recipesForSpec(spec);
 
 	const pathParams = requestParams.filter((p) => p.in === "path");
 	const queryParams = requestParams.filter((p) => p.in === "query");
@@ -176,6 +179,31 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 			</header>
 
 			{description && <MarkdownProse content={description} className="mt-6" />}
+
+			{recipes.length > 0 && (
+				<div className="mt-6">
+					<Callout type="tip">
+						{recipes.length === 1
+							? "This endpoint is one step in a complete workflow:"
+							: "This endpoint is used in these workflows:"}
+						<ul className="mt-2 space-y-1">
+							{recipes.map((recipe) => (
+								<li key={recipe.slug}>
+									<Link
+										to={recipeHref(recipe.slug)}
+										className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+									>
+										{recipe.name}
+									</Link>{" "}
+									<span className="text-muted-foreground">
+										— {recipe.summary}
+									</span>
+								</li>
+							))}
+						</ul>
+					</Callout>
+				</div>
+			)}
 
 			<RequestSection
 				pathParams={pathParams}

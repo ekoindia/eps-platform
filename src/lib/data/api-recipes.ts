@@ -187,6 +187,25 @@ const RECIPES_BY_SLUG: Map<string, Recipe> = new Map(
 export const getRecipeBySlug = (slug: string): Recipe | undefined =>
 	RECIPES_BY_SLUG.get(slug);
 
+/**
+ * Recipes whose product matches this endpoint AND that use it as a step — the
+ * reverse of `specSlug`, so an endpoint page can cross-link the workflows it
+ * belongs to. Structurally typed to keep this file free of an `api-specs`
+ * import cycle. A product-less spec never matches (avoids two `undefined`s
+ * colliding into a false match).
+ */
+export const recipesForSpec = (spec: {
+	slug: string;
+	productId?: string;
+}): Recipe[] =>
+	spec.productId
+		? RECIPES.filter(
+				(recipe) =>
+					recipe.productId === spec.productId &&
+					recipe.steps.some((step) => step.specSlug === spec.slug),
+			)
+		: [];
+
 /** Kebab-case: lowercase alphanumerics separated by single hyphens. */
 const KEBAB_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

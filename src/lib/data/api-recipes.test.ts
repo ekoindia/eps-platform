@@ -6,6 +6,7 @@ import {
 	branchCondition,
 	RECIPES,
 	type RecipeBranch,
+	recipesForSpec,
 } from "@/lib/data/api-recipes";
 
 describe("api-recipes", () => {
@@ -65,6 +66,27 @@ describe("api-recipes", () => {
 				new Set(["dmt-get-sender"]),
 			),
 		).toThrow(/neither onResponseTypeId nor onResponseStatusId/);
+	});
+});
+
+describe("recipesForSpec", () => {
+	it("finds a recipe that uses the endpoint with a matching product", () => {
+		const found = recipesForSpec({ slug: "dmt-get-sender", productId: "dmt" });
+		expect(found.map((r) => r.id)).toEqual(["dmt-send-money"]);
+	});
+
+	it("returns [] for an endpoint no recipe uses", () => {
+		expect(
+			recipesForSpec({ slug: "dmt-get-sender", productId: "pan" }),
+		).toEqual([]);
+	});
+
+	it("returns [] when the product does not match the recipe's product", () => {
+		// The slug IS a recipe step, but under the wrong product — the AND guard
+		// must reject it, not link the DMT recipe from an unrelated product.
+		expect(
+			recipesForSpec({ slug: "dmt-get-sender", productId: "aeps" }),
+		).toEqual([]);
 	});
 });
 
