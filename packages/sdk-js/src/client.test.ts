@@ -240,11 +240,14 @@ describe("EpsClient.call", () => {
 			user_code: "20810200",
 			modelname: "Morpho 1300E3",
 			devicenumber: "SN1234567890",
+			shop_type: 4215,
 			office_address: address,
 			address_as_per_proof: address,
 			pan_card: new Blob(["pan"], { type: "image/jpeg" }),
+			aadhar: "123456789012",
 			aadhar_front: selfPath,
 			aadhar_back: new Blob(["back"]),
+			latlong: "28.6139,77.2090",
 		});
 		const [url, init] = fetchMock.mock.calls[0];
 		expect(String(url)).toContain(
@@ -283,11 +286,14 @@ describe("EpsClient.call", () => {
 				user_code: "20810200",
 				modelname: "Morpho 1300E3",
 				devicenumber: "SN1234567890",
+				shop_type: 4215,
 				office_address: {},
 				address_as_per_proof: {},
 				pan_card: 123,
+				aadhar: "123456789012",
 				aadhar_front: new Blob(["a"]),
 				aadhar_back: new Blob(["b"]),
+				latlong: "28.6139,77.2090",
 			}),
 		).rejects.toThrow(/invalid param types.*pan_card \(expected file\)/i);
 		expect(fetchMock).not.toHaveBeenCalled();
