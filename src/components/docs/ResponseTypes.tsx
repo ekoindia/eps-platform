@@ -1,7 +1,7 @@
+import type { ApiResponseType, ApiSpec } from "@/lib/data/api-specs-common";
+import { docHrefForSlug, getDocBySlug } from "@/lib/data/docs-registry";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { ApiSpec, ApiResponseType } from "@/lib/data/api-specs-common";
-import { docHrefForSlug, getDocBySlug } from "@/lib/data/docs-registry";
 import { InlineCode } from "./InlineCode";
 
 /**
@@ -36,13 +36,13 @@ export const ResponseTypeNote = ({
 }: {
 	responseType: ApiResponseType;
 }) => (
-	<span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
+	<span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground border-1 rounded-md p-2">
 		<InlineCode className="text-[0.7rem]">{responseType.id}</InlineCode>
 		<span>{responseType.meaning}</span>
 		{responseType.next && (
 			<>
 				<span aria-hidden="true">·</span>
-				<span>next:</span>
+				<span>Next:</span>
 				<NextStepLink slug={responseType.next} />
 			</>
 		)}
