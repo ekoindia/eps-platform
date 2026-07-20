@@ -9232,11 +9232,11 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "get-wallet-balance",
 		productId: "user-management",
-		name: "Get Settlement Account Balance",
+		name: "Get Wallet Balance",
 		slug: "get-wallet-balance",
-		summary: "Fetch the settlement-account (wallet) balance for a user.",
+		summary: "Fetch the wallet balance for a user.",
 		description:
-			"Returns the current settlement-account balance for the given registered mobile number.",
+			"Returns the current wallet (settlement account) balance for the given registered mobile number (for your own account or that of your users/agents).",
 		relevance: "M",
 		bestFor: "Checking an agent's wallet/settlement balance.",
 		method: "GET",
