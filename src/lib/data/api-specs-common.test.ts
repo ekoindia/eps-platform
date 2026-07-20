@@ -32,10 +32,11 @@ describe("resolveRequestParams", () => {
 		expect(byName(params, "client_ref_id")?.in).toBe("body");
 	});
 
-	it("places common params in the query and drops client_ref_id for GET", () => {
+	it("places common params in the query for GET (client_ref_id included)", () => {
 		const params = resolveRequestParams(spec({ method: "GET" }));
 		expect(byName(params, "initiator_id")?.in).toBe("query");
-		expect(byName(params, "client_ref_id")).toBeUndefined();
+		// client_ref_id rides along on GET too, so every call is traceable.
+		expect(byName(params, "client_ref_id")?.in).toBe("query");
 	});
 
 	it("derives in:path for an extra param matching a {token} in the path", () => {

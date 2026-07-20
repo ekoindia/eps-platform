@@ -62,8 +62,8 @@ describe("code samples", () => {
 		const curl = toCurl(getSpec);
 		// initiator_id is a common param → query (not body) on a GET.
 		expect(curl).toContain("?initiator_id=");
-		// client_ref_id does not apply to GET requests.
-		expect(curl).not.toContain("client_ref_id");
+		// client_ref_id rides along on GET too, as another query param.
+		expect(curl).toMatch(/[?&]client_ref_id=/);
 	});
 
 	it("SAMPLE_LANGS exposes php and sampleFor handles it", () => {
