@@ -228,7 +228,7 @@ export const COMMON_REQUEST_PARAMS: CommonRequestParam[] = [
 	},
 	{
 		name: "client_ref_id",
-		// Requited for POST calls only, but asking for all methods
+		// Required for POST calls only, but asking for all methods
 		// so that it is easier to trace all user requests for debugging
 		allowedMethods: ALL_METHODS,
 		type: "string",

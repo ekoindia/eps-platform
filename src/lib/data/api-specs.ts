@@ -2810,8 +2810,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/user/payment/aeps/settlement/account",
 		docsUrl:
 			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
-		sourceDoc:
-			"https://developers.eko.in/reference/add-fund-settlement-recipient-request",
 		extraRequestParams: [
 			{
 				name: "user_code",
@@ -2910,8 +2908,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/user/payment/aeps/settlement/accounts",
 		docsUrl:
-			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
-		sourceDoc:
 			"https://developers.eko.in/reference/get-all-aeps-fund-settlement-recipient-request",
 		extraRequestParams: [
 			{
@@ -3014,8 +3010,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/user/payment/aeps/settlement",
 		docsUrl: "https://developers.eko.in/reference/aeps-fund-settlement-request",
-		sourceDoc:
-			"https://developers.eko.in/reference/aeps-fund-settlement-request",
 		financial: true,
 		extraRequestParams: [
 			{
@@ -6182,8 +6176,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-get-sender-profile",
-		sourceDoc:
-			"https://developers.eko.in/reference/ppi-levin-get-sender-profile",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -6258,7 +6250,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-onboard-sender",
-		sourceDoc: "https://developers.eko.in/reference/ppi-levin-onboard-sender",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -6348,8 +6339,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-verify-sender-otp",
-		sourceDoc:
-			"https://developers.eko.in/reference/ppi-levin-verify-sender-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -6582,7 +6571,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}/pan",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-validate-pan",
-		sourceDoc: "https://developers.eko.in/reference/ppi-levin-validate-pan",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -6715,8 +6703,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}/recipients",
 		docsUrl:
-			"https://developers.eko.in/reference/ppi-levin-get-list-of-recipients",
-		sourceDoc:
 			"https://developers.eko.in/reference/ppi-levin-get-list-of-recipients",
 		extraRequestParams: [
 			{
@@ -6883,7 +6869,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}/recipient",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-add-recipient",
-		sourceDoc: "https://developers.eko.in/reference/ppi-levin-add-recipient",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7000,8 +6985,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin/sender/{customer_id}/bank/recipient",
 		docsUrl: "https://developers.eko.in/reference/ppi-levin-add-recipient-bank",
-		sourceDoc:
-			"https://developers.eko.in/reference/ppi-levin-add-recipient-bank",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7065,8 +7048,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin/otp",
 		docsUrl:
-			"https://developers.eko.in/reference/ppi-levin-send-transaction-otp",
-		sourceDoc:
 			"https://developers.eko.in/reference/ppi-levin-send-transaction-otp",
 		extraRequestParams: [
 			{
@@ -7143,8 +7124,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-levin",
 		docsUrl:
-			"https://developers.eko.in/reference/ppi-levin-initiate-transaction",
-		sourceDoc:
 			"https://developers.eko.in/reference/ppi-levin-initiate-transaction",
 		financial: true,
 		extraRequestParams: [
@@ -7372,7 +7351,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/get-sender-information",
-		sourceDoc: "https://developers.eko.in/reference/get-sender-information",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7447,7 +7425,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/onboard-sender",
-		sourceDoc: "https://developers.eko.in/reference/onboard-sender",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7547,7 +7524,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/otp",
 		docsUrl: "https://developers.eko.in/reference/generate-sender-otp",
-		sourceDoc: "https://developers.eko.in/reference/generate-sender-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7603,7 +7579,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/verify-sender-otp",
-		sourceDoc: "https://developers.eko.in/reference/verify-sender-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7761,8 +7736,6 @@ export const API_SPECS: ApiSpec[] = [
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/languages",
 		docsUrl:
 			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-languages",
-		sourceDoc:
-			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-languages",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -7850,8 +7823,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/consent/details",
 		docsUrl:
-			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-details",
-		sourceDoc:
 			"https://developers.eko.in/reference/get-digikhata-aadhaar-kyc-consent-details",
 		extraRequestParams: [
 			{
@@ -7960,8 +7931,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp",
 		docsUrl: "https://developers.eko.in/reference/generate-sender-aadhaar-otp",
-		sourceDoc:
-			"https://developers.eko.in/reference/generate-sender-aadhaar-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8024,7 +7993,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/aadhaar/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/verify-aadhaar-otp",
-		sourceDoc: "https://developers.eko.in/reference/verify-aadhaar-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8080,7 +8048,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/pan",
 		docsUrl: "https://developers.eko.in/reference/verify-pan",
-		sourceDoc: "https://developers.eko.in/reference/verify-pan",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8187,7 +8154,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/wallet/loadwallet",
 		docsUrl: "https://developers.eko.in/reference/load-digikhata-wallet",
-		sourceDoc: "https://developers.eko.in/reference/load-digikhata-wallet",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8255,7 +8221,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipients",
 		docsUrl: "https://developers.eko.in/reference/get-all-recipients",
-		sourceDoc: "https://developers.eko.in/reference/get-all-recipients",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8402,7 +8367,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipient",
 		docsUrl: "https://developers.eko.in/reference/paypoint-add-recipient",
-		sourceDoc: "https://developers.eko.in/reference/paypoint-add-recipient",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8493,8 +8457,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipient/bank/otp",
 		docsUrl: "https://developers.eko.in/reference/recipient-bank-registration",
-		sourceDoc:
-			"https://developers.eko.in/reference/recipient-bank-registration",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8559,7 +8521,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/sender/{customer_id}/recipient/bank/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/validate-otp",
-		sourceDoc: "https://developers.eko.in/reference/validate-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -8616,7 +8577,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata/otp",
 		docsUrl: "https://developers.eko.in/reference/send-transaction-otp",
-		sourceDoc: "https://developers.eko.in/reference/send-transaction-otp",
 		extraRequestParams: [
 			{
 				name: "recipient_id",
@@ -8693,7 +8653,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/ppi-digikhata",
 		docsUrl: "https://developers.eko.in/reference/initiate-ppi-transaction",
-		sourceDoc: "https://developers.eko.in/reference/initiate-ppi-transaction",
 		financial: true,
 		extraRequestParams: [
 			{
@@ -8912,7 +8871,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/user/network/eps-agent",
 		docsUrl: "https://developers.eko.in/reference/onboard-user-new",
-		sourceDoc: "https://developers.eko.in/reference/onboard-user-new",
 		extraRequestParams: [
 			{
 				name: "pan_number",
@@ -9010,7 +8968,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "PUT",
 		path: "/admin/network/agent/{user_code}/service/{service_code}/activate",
 		docsUrl: "https://developers.eko.in/reference/activate-user-service",
-		sourceDoc: "https://developers.eko.in/reference/activate-user-service",
 		extraRequestParams: [
 			{
 				name: "user_code",
@@ -9054,8 +9011,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "PUT",
 		path: "/admin/network/agent/{user_code}/service/{service_code}/deactivate",
 		docsUrl: "https://developers.eko.in/reference/deactivate-service-for-user",
-		sourceDoc:
-			"https://developers.eko.in/reference/deactivate-service-for-user",
 		extraRequestParams: [
 			{
 				name: "user_code",
@@ -9091,15 +9046,22 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "get-user-services",
 		summary:
 			"Check the activation status of every service for one of your agents.",
-		description:
-			"Returns the list of services for the given `user_code` with each service's status (ACTIVATED / PENDING), verification status, and timestamps.",
+		descriptionFile: "get-user-services.md",
 		relevance: "M",
 		bestFor: "Auditing which services are active for an agent.",
 		method: "GET",
 		path: "/user/account/services",
 		docsUrl: "https://developers.eko.in/reference/user-services",
-		sourceDoc: "https://developers.eko.in/reference/user-services",
-		extraRequestParams: [],
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+		],
 		responseData: [
 			{
 				name: "service_status_list",
@@ -9118,20 +9080,30 @@ export const API_SPECS: ApiSpec[] = [
 						name: "status_desc",
 						type: "string",
 						imp: true,
-						description: "Human-readable status (ACTIVATED / PENDING).",
+						description:
+							"Human-readable status (ACTIVATED / PENDING / DEACTIVATED).",
 						example: "ACTIVATED",
 					},
 					{
 						name: "status",
 						type: "number",
-						description: "Numeric status (1 = active, 2 = pending).",
+						description:
+							"Activation status — 0 = deactivated (agent must re-upload documents via Activate Service), 1 = activated, 2 = pending.",
 						example: 1,
 					},
 					{
 						name: "verification_status",
 						type: "number",
-						description: "Verification state of the service.",
+						description:
+							"Ops-team verification state — 0 = not applicable, 1 = verified, 2 = rejected (reason in `comments`), 3 = pending.",
 						example: 3,
+					},
+					{
+						name: "comments",
+						type: "string",
+						description:
+							"Ops-team remark — holds the rejection reason when `verification_status` is 2, otherwise null.",
+						example: null,
 					},
 					{
 						name: "createdAt",
@@ -9199,7 +9171,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/tools/catalog/service-codes",
 		docsUrl: "https://developers.eko.in/reference/service-codes",
-		sourceDoc: "https://developers.eko.in/reference/service-codes",
 		extraRequestParams: [],
 		responseData: [
 			{
@@ -9261,17 +9232,16 @@ export const API_SPECS: ApiSpec[] = [
 	{
 		id: "get-wallet-balance",
 		productId: "user-management",
-		name: "Get Settlement Account Balance",
+		name: "Get Wallet Balance",
 		slug: "get-wallet-balance",
-		summary: "Fetch the settlement-account (wallet) balance for a user.",
+		summary: "Fetch the wallet balance for a user.",
 		description:
-			"Returns the current settlement-account balance for the given registered mobile number.",
+			"Returns the current wallet (settlement account) balance for the given registered mobile number (for your own account or that of your users/agents).",
 		relevance: "M",
 		bestFor: "Checking an agent's wallet/settlement balance.",
 		method: "GET",
 		path: "/user/account/balance",
 		docsUrl: "https://developers.eko.in/reference/wallet-balance",
-		sourceDoc: "https://developers.eko.in/reference/wallet-balance",
 		extraRequestParams: [
 			{
 				name: "customer_id_type",
@@ -9336,7 +9306,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/account/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/onboard-customer",
-		sourceDoc: "https://developers.eko.in/reference/onboard-customer",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -9411,7 +9380,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/profile/{customer_id}",
 		docsUrl: "https://developers.eko.in/reference/get-customer-info",
-		sourceDoc: "https://developers.eko.in/reference/get-customer-info",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -9477,7 +9445,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/account/{customer_id}/otp/verify",
 		docsUrl: "https://developers.eko.in/reference/verify-customer-otp",
-		sourceDoc: "https://developers.eko.in/reference/verify-customer-otp",
 		extraRequestParams: [
 			{
 				name: "customer_id",
@@ -9634,7 +9601,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/tools/reference/transaction/{transaction-reference}",
 		docsUrl: "https://developers.eko.in/reference/transaction-inquiry",
-		sourceDoc: "https://developers.eko.in/reference/transaction-inquiry",
 		extraRequestParams: [
 			{
 				name: "transaction-reference",
@@ -9738,7 +9704,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/refund/{tid}/otp",
 		docsUrl: "https://developers.eko.in/reference/refund-otp",
-		sourceDoc: "https://developers.eko.in/reference/refund-otp",
 		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
 			{
@@ -9783,7 +9748,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "POST",
 		path: "/customer/payment/refund/{tid}",
 		docsUrl: "https://developers.eko.in/reference/refund",
-		sourceDoc: "https://developers.eko.in/reference/refund",
 		financial: true,
 		omitCommonParams: ["client_ref_id"],
 		extraRequestParams: [
@@ -9914,7 +9878,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/tools/reference/bank/{bank_code}",
 		docsUrl: "https://developers.eko.in/reference/bank-details",
-		sourceDoc: "https://developers.eko.in/reference/bank-details",
 		extraRequestParams: [
 			{
 				name: "bank_code",
@@ -10007,7 +9970,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/tools/reference/banks/ifsc/{ifsc}",
 		docsUrl: "https://developers.eko.in/reference/get-ifsc-details",
-		sourceDoc: "https://developers.eko.in/reference/get-ifsc-details",
 		extraRequestParams: [
 			{
 				name: "ifsc",
@@ -10083,7 +10045,6 @@ export const API_SPECS: ApiSpec[] = [
 		method: "GET",
 		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator",
 		docsUrl: "https://developers.eko.in/reference/operator-and-circle-area",
-		sourceDoc: "https://developers.eko.in/reference/operator-and-circle-area",
 		extraRequestParams: [
 			{
 				name: "customer_mobile",
