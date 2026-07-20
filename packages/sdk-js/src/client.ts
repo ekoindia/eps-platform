@@ -140,6 +140,18 @@ export const signSecretKey = (accessKey: string, timestamp: string): string => {
 		.digest("base64");
 };
 
+/**
+ * Generate a unique client_ref_id using Node's crypto module.
+ * Uses crypto.randomUUID() when available (Node >= 14.17 / Node >= 19 stable),
+ * falling back to crypto.randomBytes(16).toString('hex').
+ */
+const generateClientRefId = (): string => {
+	if (typeof crypto.randomUUID === "function") {
+		return crypto.randomUUID();
+	}
+	return crypto.randomBytes(16).toString("hex");
+};
+
 export class EpsClient {
 	private readonly baseUrl: string;
 	private readonly fetchFn: typeof fetch;
@@ -182,6 +194,13 @@ export class EpsClient {
 			}),
 			...params,
 		};
+		// Auto-inject client_ref_id for non-GET requests when the caller has not
+		// supplied one. Done BEFORE required-param validation so a generated id
+		// satisfies endpoints that require client_ref_id, and every mutating request
+		// gets a unique idempotency key without the caller thinking about it.
+		if (endpoint.method !== "GET" && merged["client_ref_id"] == null) {
+			merged["client_ref_id"] = generateClientRefId();
+		}
 		// Spec-driven guard: every requiredParam (from the API spec, baked into the
 		// surface) must be present and non-null before we sign and send.
 		const missing = endpoint.requiredParams.filter(
@@ -222,15 +241,15 @@ export class EpsClient {
 		// Path params (e.g. {customer_id}) fill the URL; the rest become the
 		// query string on GET, a FormData body when the endpoint has file
 		// uploads, or the JSON body on every other method.
-		let path = endpoint.path;
+		let urlPath = endpoint.path;
 		const rest: Record<string, unknown> = {};
 		for (const [k, v] of Object.entries(merged)) {
 			const token = `{${k}}`;
-			if (path.includes(token))
-				path = path.replace(token, encodeURIComponent(String(v)));
+			if (urlPath.includes(token))
+				urlPath = urlPath.replace(token, encodeURIComponent(String(v)));
 			else rest[k] = v;
 		}
-		let url = `${this.baseUrl}${path}`;
+		let url = `${this.baseUrl}${urlPath}`;
 		const init: RequestInit = { method: endpoint.method, headers };
 		if (endpoint.method === "GET") {
 			const query = new URLSearchParams(

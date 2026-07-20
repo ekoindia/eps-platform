@@ -311,4 +311,110 @@ describe("EpsClient.call", () => {
 		).toThrow(/backend-only/i);
 		delete (globalThis as { window?: unknown }).window;
 	});
+
+	// ── client_ref_id auto-injection tests ────────────────────────────────────
+
+	it("auto-injects a non-empty client_ref_id for a non-GET call when not supplied", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await client.call("dmt-send-otp", {
+			initiator_id: "9962981729",
+			user_code: "20810200",
+			customer_id: "9123456789",
+			recipient_id: "1",
+			amount: 100,
+			tid: "1",
+		});
+		const [, init] = fetchMock.mock.calls[0];
+		const body = JSON.parse(init!.body as string) as Record<string, unknown>;
+		expect(typeof body["client_ref_id"]).toBe("string");
+		expect((body["client_ref_id"] as string).length).toBeGreaterThan(0);
+	});
+
+	it("does not override an explicitly supplied client_ref_id on a non-GET call", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await client.call("dmt-send-otp", {
+			initiator_id: "9962981729",
+			user_code: "20810200",
+			customer_id: "9123456789",
+			recipient_id: "1",
+			amount: 100,
+			tid: "1",
+			client_ref_id: "MY_REF",
+		});
+		const [, init] = fetchMock.mock.calls[0];
+		const body = JSON.parse(init!.body as string) as Record<string, unknown>;
+		expect(body["client_ref_id"]).toBe("MY_REF");
+	});
+
+	it("does NOT inject client_ref_id for a GET call", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await client.call("dmt-get-sender", {
+			customer_id: "9123456789",
+			initiator_id: "9962981729",
+			user_code: "20810200",
+		});
+		const [url] = fetchMock.mock.calls[0];
+		expect(String(url)).not.toContain("client_ref_id");
+	});
+
+	it("generates distinct client_ref_id values on successive non-GET calls", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		const callParams = {
+			initiator_id: "9962981729",
+			user_code: "20810200",
+			customer_id: "9123456789",
+			recipient_id: "1",
+			amount: 100,
+			tid: "1",
+		};
+		await client.call("dmt-send-otp", callParams);
+		await client.call("dmt-send-otp", callParams);
+		const body1 = JSON.parse(
+			fetchMock.mock.calls[0][1]!.body as string,
+		) as Record<string, unknown>;
+		const body2 = JSON.parse(
+			fetchMock.mock.calls[1][1]!.body as string,
+		) as Record<string, unknown>;
+		expect(body1["client_ref_id"]).not.toBe(body2["client_ref_id"]);
+	});
 });
