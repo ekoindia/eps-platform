@@ -9091,15 +9091,23 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "get-user-services",
 		summary:
 			"Check the activation status of every service for one of your agents.",
-		description:
-			"Returns the list of services for the given `user_code` with each service's status (ACTIVATED / PENDING), verification status, and timestamps.",
+		descriptionFile: "get-user-services.md",
 		relevance: "M",
 		bestFor: "Auditing which services are active for an agent.",
 		method: "GET",
 		path: "/user/account/services",
 		docsUrl: "https://developers.eko.in/reference/user-services",
 		sourceDoc: "https://developers.eko.in/reference/user-services",
-		extraRequestParams: [],
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "20810200",
+			},
+		],
 		responseData: [
 			{
 				name: "service_status_list",
@@ -9118,20 +9126,30 @@ export const API_SPECS: ApiSpec[] = [
 						name: "status_desc",
 						type: "string",
 						imp: true,
-						description: "Human-readable status (ACTIVATED / PENDING).",
+						description:
+							"Human-readable status (ACTIVATED / PENDING / DEACTIVATED).",
 						example: "ACTIVATED",
 					},
 					{
 						name: "status",
 						type: "number",
-						description: "Numeric status (1 = active, 2 = pending).",
+						description:
+							"Activation status — 0 = deactivated (agent must re-upload documents via Activate Service), 1 = activated, 2 = pending.",
 						example: 1,
 					},
 					{
 						name: "verification_status",
 						type: "number",
-						description: "Verification state of the service.",
+						description:
+							"Ops-team verification state — 0 = not applicable, 1 = verified, 2 = rejected (reason in `comments`), 3 = pending.",
 						example: 3,
+					},
+					{
+						name: "comments",
+						type: "string",
+						description:
+							"Ops-team remark — holds the rejection reason when `verification_status` is 2, otherwise null.",
+						example: null,
 					},
 					{
 						name: "createdAt",
