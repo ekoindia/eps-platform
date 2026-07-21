@@ -235,7 +235,7 @@ describe("EpsClient.call", () => {
 		// aadhar_front exercises the path-string branch (read from disk) using
 		// this test file itself as a real, readable file.
 		const selfPath = fileURLToPath(import.meta.url);
-		await client.call("aeps-activate-fingpay", {
+		await client.call("activate-aeps-fingpay", {
 			initiator_id: "9962981729",
 			user_code: "20810200",
 			modelname: "Morpho 1300E3",
@@ -281,7 +281,7 @@ describe("EpsClient.call", () => {
 			now: () => 1700000000000,
 		});
 		await expect(
-			client.call("aeps-activate-fingpay", {
+			client.call("activate-aeps-fingpay", {
 				initiator_id: "9962981729",
 				user_code: "20810200",
 				modelname: "Morpho 1300E3",

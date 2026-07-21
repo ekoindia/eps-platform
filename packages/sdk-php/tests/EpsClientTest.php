@@ -116,7 +116,7 @@ final class EpsClientTest extends TestCase
     {
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $address = ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'];
-        $target = $client->resolveTarget('aeps-activate-fingpay', [
+        $target = $client->resolveTarget('activate-aeps-fingpay', [
             'initiator_id' => '9962981729',
             'user_code' => '20810200',
             'modelname' => 'Morpho 1300E3',
@@ -156,7 +156,7 @@ final class EpsClientTest extends TestCase
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/Invalid param types.*pan_card \(expected file\)/');
-        $client->resolveTarget('aeps-activate-fingpay', [
+        $client->resolveTarget('activate-aeps-fingpay', [
             'initiator_id' => '9962981729',
             'user_code' => '20810200',
             'modelname' => 'Morpho 1300E3',

@@ -14,7 +14,9 @@ import {
 } from "@/lib/markdown/render-recipe";
 
 const dmt = RECIPES.find((r) => r.slug === "dmt-send-money") as Recipe;
-const aeps = RECIPES.find((r) => r.slug === "aeps-cash-withdrawal") as Recipe;
+const aeps = RECIPES.find(
+	(r) => r.slug === "aeps-fingpay-cash-withdrawal",
+) as Recipe;
 
 describe("escapeMermaidLabel", () => {
 	it("neutralises quotes, which would otherwise close the label early", () => {

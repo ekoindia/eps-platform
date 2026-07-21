@@ -1052,10 +1052,10 @@ export const API_SPECS: ApiSpec[] = [
 	},
 	// MARK: AePS
 	{
-		id: "aeps-activate-fingpay",
+		id: "activate-aeps-fingpay",
 		productId: "aeps",
 		name: "Activate AePS Fingpay for Agent",
-		slug: "aeps-activate-fingpay",
+		slug: "activate-aeps-fingpay",
 		provider: "AePS – Fingpay",
 		group: "Activate for Agent",
 		summary:
@@ -1251,7 +1251,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 2110,
 				meaning: "Shop-type list returned successfully",
-				next: "aeps-activate-fingpay",
+				next: "activate-aeps-fingpay",
 			},
 		],
 		responseData: [
@@ -1327,7 +1327,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 2127,
 				meaning: "State list returned successfully",
-				next: "aeps-activate-fingpay",
+				next: "activate-aeps-fingpay",
 			},
 		],
 		responseData: [
@@ -1384,10 +1384,10 @@ export const API_SPECS: ApiSpec[] = [
 		},
 	},
 	{
-		id: "aeps-send-otp-kyc",
+		id: "aeps-fingpay-send-otp-kyc",
 		productId: "aeps",
 		name: "Send OTP (eKYC)",
-		slug: "aeps-send-otp-kyc",
+		slug: "aeps-fingpay-send-otp-kyc",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (1-Time)",
 		summary:
@@ -1438,7 +1438,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 1600,
 				meaning: "OTP request has been sent",
-				next: "aeps-verify-otp-kyc",
+				next: "aeps-fingpay-verify-otp-kyc",
 			},
 		],
 		responseData: [
@@ -1496,10 +1496,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-verify-otp-kyc",
+		id: "aeps-fingpay-verify-otp-kyc",
 		productId: "aeps",
 		name: "Verify OTP (eKYC)",
-		slug: "aeps-verify-otp-kyc",
+		slug: "aeps-fingpay-verify-otp-kyc",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (1-Time)",
 		summary:
@@ -1572,7 +1572,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 1604,
 				meaning: "Validation successful",
-				next: "aeps-biometric-ekyc",
+				next: "aeps-fingpay-biometric-ekyc",
 			},
 		],
 		responseData: [
@@ -1622,10 +1622,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-biometric-ekyc",
+		id: "aeps-fingpay-biometric-ekyc",
 		productId: "aeps",
 		name: "Biometric eKYC",
-		slug: "aeps-biometric-ekyc",
+		slug: "aeps-fingpay-biometric-ekyc",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (1-Time)",
 		summary:
@@ -1634,7 +1634,7 @@ export const API_SPECS: ApiSpec[] = [
 		// renders the richer `descriptionFile` (callouts, Aadhaar-encryption code).
 		description:
 			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.",
-		descriptionFile: "aeps-biometric-ekyc.md",
+		descriptionFile: "aeps-fingpay-biometric-ekyc.md",
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
@@ -1712,7 +1712,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 1605,
 				meaning: "eKYC successful — agent may now complete Daily KYC",
-				next: "aeps-daily-auth",
+				next: "aeps-fingpay-daily-auth",
 			},
 		],
 		responseData: [
@@ -1750,10 +1750,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-daily-auth",
+		id: "aeps-fingpay-daily-auth",
 		productId: "aeps",
 		name: "Daily KYC",
-		slug: "aeps-daily-auth",
+		slug: "aeps-fingpay-daily-auth",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (Daily)",
 		summary:
@@ -1803,7 +1803,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's. If you generate the PID block yourself, it must carry `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=`.",
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's. If you generate the PID block yourself, the value of `wadh` must be blank/empty for Daily KYC.",
 				example:
 					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
 			},
@@ -1825,7 +1825,7 @@ export const API_SPECS: ApiSpec[] = [
 				id: 1714,
 				meaning:
 					"Daily KYC failed — if `data.reason` is 'Please complete bank eKYC to process the transaction.', re-run the full eKYC from Send OTP",
-				next: "aeps-send-otp-kyc",
+				next: "aeps-fingpay-send-otp-kyc",
 			},
 		],
 		responseData: [
@@ -1890,16 +1890,16 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-cash-withdrawal",
+		id: "aeps-fingpay-cash-withdrawal",
 		productId: "aeps",
 		name: "AePS Cash Withdrawal",
-		slug: "aeps-cash-withdrawal",
+		slug: "aeps-fingpay-cash-withdrawal",
 		provider: "AePS – Fingpay",
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
 			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.",
-		descriptionFile: "aeps-cash-withdrawal.md",
+		descriptionFile: "aeps-fingpay-cash-withdrawal.md",
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
@@ -2272,10 +2272,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-balance-enquiry",
+		id: "aeps-fingpay-balance-enquiry",
+		slug: "aeps-fingpay-balance-enquiry",
 		productId: "aeps",
 		name: "AePS Balance Enquiry",
-		slug: "aeps-balance-enquiry",
 		provider: "AePS – Fingpay",
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
@@ -2525,10 +2525,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-mini-statement",
+		id: "aeps-fingpay-mini-statement",
 		productId: "aeps",
 		name: "AePS Mini Statement",
-		slug: "aeps-mini-statement",
+		slug: "aeps-fingpay-mini-statement",
 		provider: "AePS – Fingpay",
 		summary:
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",

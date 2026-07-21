@@ -134,44 +134,44 @@ export const RECIPES: Recipe[] = [
 		],
 	},
 	{
-		id: "aeps-cash-withdrawal",
-		slug: "aeps-cash-withdrawal",
+		id: "aeps-fingpay-cash-withdrawal",
+		slug: "aeps-fingpay-cash-withdrawal",
 		name: "AePS — Cash Withdrawal",
 		summary:
 			"Aadhaar-enabled cash withdrawal: one-time agent activation and eKYC, daily KYC, then the biometric withdrawal.",
 		productId: "aeps",
 		steps: [
 			{
-				specSlug: "aeps-activate-fingpay",
+				specSlug: "activate-aeps-fingpay",
 				purpose: "One-time activation of AePS Fingpay for the agent.",
 				frequency: "once",
 			},
 			{
-				specSlug: "aeps-send-otp-kyc",
+				specSlug: "aeps-fingpay-send-otp-kyc",
 				purpose:
 					"One-time eKYC step 1 (agent onboarding, not per transaction): OTP to the agent's Aadhaar-linked mobile.",
 				frequency: "once",
 			},
 			{
-				specSlug: "aeps-verify-otp-kyc",
+				specSlug: "aeps-fingpay-verify-otp-kyc",
 				purpose:
 					"One-time eKYC step 2 (agent onboarding): verify the OTP with the otp_ref_id and reference_tid from step 1.",
 				frequency: "once",
 			},
 			{
-				specSlug: "aeps-biometric-ekyc",
+				specSlug: "aeps-fingpay-biometric-ekyc",
 				purpose:
 					"One-time eKYC step 3 (agent onboarding): the agent's biometric PID completes eKYC.",
 				frequency: "once",
 			},
 			{
-				specSlug: "aeps-daily-auth",
+				specSlug: "aeps-fingpay-daily-auth",
 				purpose:
 					"Daily KYC — biometric-only, repeated once per calendar day before the agent's first transaction.",
 				frequency: "daily",
 			},
 			{
-				specSlug: "aeps-cash-withdrawal",
+				specSlug: "aeps-fingpay-cash-withdrawal",
 				purpose: "Perform the biometric Aadhaar-enabled cash withdrawal.",
 				branches: [{ onResponseStatusId: 0, goto: "done" }],
 			},

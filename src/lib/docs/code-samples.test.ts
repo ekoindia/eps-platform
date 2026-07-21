@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import {
@@ -14,6 +13,7 @@ import {
 	toPhpSdk,
 	toPython,
 } from "@/lib/docs/code-samples";
+import { describe, expect, it } from "vitest";
 
 const panLite = API_SPECS_MAP["pan-lite"];
 const getSpec = API_SPECS_MAP["dmt-get-sender"]; // GET with a path param
@@ -174,7 +174,7 @@ function phpArrayProbe(body: Record<string, unknown>): string {
 }
 
 describe("multipart endpoints (file uploads)", () => {
-	const multipart = API_SPECS_MAP["aeps-activate-fingpay"];
+	const multipart = API_SPECS_MAP["activate-aeps-fingpay"];
 
 	it("curl uses --form (client-generated boundary), never --data or a content-type header", () => {
 		const curl = toCurl(multipart);
@@ -215,7 +215,7 @@ describe("multipart endpoints (file uploads)", () => {
 });
 
 describe("SDK snippets for multipart endpoints", () => {
-	const multipart = API_SPECS_MAP["aeps-activate-fingpay"];
+	const multipart = API_SPECS_MAP["activate-aeps-fingpay"];
 
 	it("Node snippet passes file path placeholders with a Node-only note", () => {
 		const js = toNodeSdk(multipart);

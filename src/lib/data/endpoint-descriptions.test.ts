@@ -1,5 +1,5 @@
 // Resolver semantics for inline `description` vs external `descriptionFile`.
-// Uses the real `aeps-biometric-ekyc.md` fixture (loaded via the module's glob).
+// Uses the real `aeps-fingpay-biometric-ekyc.md` fixture (loaded via the module's glob).
 import { describe, expect, it } from "vitest";
 import type { ApiSpec } from "./api-specs-common";
 import {
@@ -10,7 +10,7 @@ import {
 const spec = (over: Partial<ApiSpec>): ApiSpec =>
 	({ id: "test", ...over }) as unknown as ApiSpec;
 
-const FILE = "aeps-biometric-ekyc.md";
+const FILE = "aeps-fingpay-biometric-ekyc.md";
 
 describe("resolveDescription (rich — docs page)", () => {
 	it("prefers the file over the inline description when both are set", () => {

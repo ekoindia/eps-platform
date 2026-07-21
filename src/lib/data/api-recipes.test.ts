@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { API_SPECS } from "@/lib/data/api-specs";
 import {
 	assertRecipeSlugs,
 	branchCondition,
 	RECIPES,
-	type RecipeBranch,
 	recipesForSpec,
+	type RecipeBranch,
 } from "@/lib/data/api-recipes";
+import { API_SPECS } from "@/lib/data/api-specs";
 
 describe("api-recipes", () => {
 	it("ships at least the two exemplar recipes", () => {
 		const ids = RECIPES.map((r) => r.id);
 		expect(ids).toContain("dmt-send-money");
-		expect(ids).toContain("aeps-cash-withdrawal");
+		expect(ids).toContain("aeps-fingpay-cash-withdrawal");
 	});
 
 	it("every step references a real spec slug", () => {
