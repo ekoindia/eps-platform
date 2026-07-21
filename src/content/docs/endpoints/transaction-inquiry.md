@@ -5,7 +5,6 @@ more).
 
 The transaction reference goes in the URL path. Pass an Eko **TID as-is**; to
 look up by your **`client_ref_id`, prefix it** with `client_ref_id:`:
-
 - By TID — `/tools/reference/transaction/<TID>`
 - By client_ref_id — `/tools/reference/transaction/client_ref_id:<your client_ref_id>`
 
