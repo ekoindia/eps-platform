@@ -3970,8 +3970,7 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "bbps-transaction-status",
 		summary:
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
-		description:
-			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill. A timeout or slow bank response is not a failure — re-query with your `client_ref_id` to get the real status instead of retrying the payment.",
+		descriptionFile: "transaction-inquiry.md",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
@@ -3984,7 +3983,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Eko TID (`tid`) or your `client_ref_id` that uniquely identifies the transaction.",
+					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
 				example: "1734567890",
 			},
 		],
@@ -4637,6 +4636,7 @@ export const API_SPECS: ApiSpec[] = [
 			"Query the current status of a QR payment transaction by Eko TID or your client reference ID.",
 		description:
 			"Polls the real-time status of any transaction — including QR collection payments — using either the Eko transaction ID (tid) or your own client_ref_id. Use this when a webhook has not arrived within your expected window or to implement a status-check polling flow.",
+		descriptionFile: "transaction-inquiry.md",
 		relevance: "M",
 		bestFor:
 			"Reconciliation polling, fallback status check when webhook delivery is delayed.",
@@ -4649,7 +4649,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Eko TID or your client_ref_id that uniquely identifies the transaction.",
+					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
 				example: "2886601782",
 			},
 		],
@@ -9597,6 +9597,7 @@ export const API_SPECS: ApiSpec[] = [
 			"Get the status of any transaction by Eko TID or your client_ref_id.",
 		description:
 			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: 0 = Success, 1 = Fail, 2 = Awaited/Initiated (NEFT), 3 = Refund Pending, 4 = Refunded, 5 = Hold. A timeout should never be treated as an automatic failure — always inquire.",
+		descriptionFile: "transaction-inquiry.md",
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
 		method: "GET",
@@ -9608,7 +9609,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Eko TID or your client_ref_id identifying the transaction.",
+					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
 				example: "12971397",
 			},
 		],
