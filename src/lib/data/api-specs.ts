@@ -8961,7 +8961,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Activate a specific service (by service code) for one of your agents/retailers.",
 		description:
-			"Enables a service for the given agent so they can begin transacting on it. The agent is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. After activation, confirm the status with the Get User's Services API.",
+			"Enables a service for the given user (agent/retailer/distributor) so they can begin transacting on it. Activating a service is mandatory before your users can use it in production. The user is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. Look up service codes via the Get All Services API. After activation, confirm the status with the Get User's Services API.",
+		descriptionFile: "activate-user-service.md",
 		relevance: "M",
 		bestFor:
 			"Enabling a new service on an existing agent before their first transaction on it",
