@@ -322,7 +322,7 @@ const DocsIndexPage = () => {
 					<Step
 						n={1}
 						title="Get your credentials"
-						subtitle="Eko's UAT / sandbox is self-serve — sign up with your mobile number, verify with your PAN and address details (business or personal)."
+						subtitle="Eko's UAT/sandbox is self-serve — sign up with your mobile number, verify with your PAN and address details (business or personal)."
 					>
 						<div className="flex flex-wrap items-center gap-4">
 							<Button variant="gold" onClick={() => openZohoChat()}>
