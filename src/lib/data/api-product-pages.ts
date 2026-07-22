@@ -101,7 +101,7 @@ const VERIFICATION_STEPS_BASE = [
 	},
 	{
 		title: "Verify Identity",
-		desc: "Provide your PAN to verify your identity.",
+		desc: "Complete your basic KYC with PAN and address details to verify your identity.",
 	},
 	{
 		title: "Test APIs Live",
@@ -126,7 +126,7 @@ const VERIFICATION_STEPS_BASE = [
 export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "How do I get started?",
-		a: "Sign up at ekostore.app/eps, verify your identity with your PAN, load your wallet to test the verification APIs live, then integrate and go live.",
+		a: "Sign up at ekostore.app/eps, verify your identity with your PAN and address details, load your wallet to test the verification APIs live, then integrate and go live.",
 		links: [
 			{ label: "Developer docs", href: "/docs" },
 			{ label: "Sign up", href: SIGNUP_URL },
