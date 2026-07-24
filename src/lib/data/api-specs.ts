@@ -48,110 +48,174 @@ export const API_SPECS: ApiSpec[] = [
 				description: "Sender's 10-digit mobile number.",
 				example: "9123456789",
 			},
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description: "Agent user code (sent as a query parameter).",
+				example: "20810200",
+			},
 		],
 		responseData: [
 			{
 				name: "is_registered",
 				type: "number",
-				imp: true,
-				description: "1 = sender already registered, 0 = not registered.",
-				example: 1,
-			},
-			{
-				name: "sender_name",
-				type: "string",
-				description: "Registered name of the sender.",
-				imp: true,
-				example: "Ramesh Kumar",
-			},
-			{
-				name: "ekyc_enabled",
-				type: "string",
-				description: 'Whether biometric eKYC is enabled ("1" = yes).',
-				example: "1",
+				description:
+					"Registration flag from the profile lookup. Read customer_profile.kyc_state to determine KYC completion.",
+				example: 0,
 			},
 			{
 				name: "next_allowed_limit",
 				type: "number",
-				description: "Remaining transfer limit for the current month (in INR).",
 				imp: true,
-				example: 48000,
+				description: "Remaining remittance limit currently available (INR).",
+				example: 25000.0,
 			},
 			{
 				name: "kyc_state",
 				type: "number",
-				description: "Sender account state: 0=Active, 10=Pending verification.",
+				description: "Top-level KYC flag for the lookup response.",
 				example: 0,
 			},
 			{
 				name: "customer_profile",
 				type: "object",
 				imp: true,
-				description: "Sender profile summary.",
+				description: "Sender profile summary (present once KYC is complete).",
 				children: [
 					{
 						name: "name",
 						type: "string",
-						description: "Sender's registered name.",
-						example: "Ramesh Kumar",
+						description: "Sender name.",
+						imp: true,
+						example: "Rahul",
 					},
 					{
 						name: "mobile",
 						type: "string",
 						description: "Sender's mobile number.",
-						example: "9123456789",
+						example: "9155927131",
+					},
+					{
+						name: "balance",
+						type: "string",
+						description: "Sender wallet balance (INR).",
+						example: "0.00",
 					},
 					{
 						name: "total_monthly_limit",
 						type: "string",
-						description: "Total monthly transfer limit (INR).",
-						example: "50000",
+						description: "Sender's monthly remittance limit (INR).",
+						example: "25000.0",
 					},
 					{
 						name: "next_allowed_limit",
 						type: "string",
-						description: "Remaining monthly transfer limit (INR).",
-						example: "48000",
+						description: "Remaining limit currently available (INR).",
+						example: "25000.0",
 					},
 					{
-						name: "ekyc_enabled",
+						name: "kyc_state",
 						type: "number",
-						description: "Whether eKYC is enabled (1 = yes).",
+						description: "Sender KYC state (1 = KYC complete on the profile).",
+						imp: true,
 						example: 1,
+					},
+					{
+						name: "chart",
+						type: "array",
+						description: "Per-period limit-usage breakdown.",
+						children: [
+							{
+								name: "data_type_id",
+								type: "number",
+								description: "Identifier for the limit period/bucket.",
+								example: 10,
+							},
+							{
+								name: "data",
+								type: "object",
+								description: "Limit usage for the period.",
+								children: [
+									{
+										name: "unavailable",
+										type: "number",
+										description: "Amount blocked/unavailable (INR).",
+										example: 0,
+									},
+									{
+										name: "used",
+										type: "number",
+										description: "Amount already used (INR).",
+										example: 0,
+									},
+									{
+										name: "remaining",
+										type: "number",
+										description: "Remaining limit for the period (INR).",
+										example: 25000,
+									},
+								],
+							},
+							{
+								name: "label",
+								type: "string",
+								description: "Display label for the period.",
+								example: "",
+							},
+						],
 					},
 				],
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
+			response_status_id: -1,
 			response_type_id: 309,
 			message: "Success!",
-			response_status_id: -1,
 			data: {
-				is_registered: 1,
-				sender_name: "Ramesh Kumar",
-				ekyc_enabled: "1",
-				next_allowed_limit: 48000.0,
+				is_registered: 0,
+				next_allowed_limit: 25000.0,
 				kyc_state: 0,
 				customer_profile: {
-					name: "Ramesh Kumar",
-					mobile: "9123456789",
-					total_monthly_limit: "50000",
-					next_allowed_limit: "48000",
-					ekyc_enabled: 1,
+					total_monthly_limit: "25000.0",
+					mobile: "9155927131",
+					balance: "0.00",
+					next_allowed_limit: "25000.0",
+					name: "Rahul",
+					kyc_state: 1,
+					chart: [
+						{
+							data_type_id: 10,
+							data: { unavailable: 0, used: 0, remaining: 25000 },
+							label: "",
+						},
+					],
 				},
 			},
 		},
 		errorScenarios: [
 			{
-				scenario: "Sender not found — proceed to Onboard Sender",
+				scenario: "Sender not enrolled — proceed to Onboard Sender",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 463,
-					message: "Customer not found",
+					status: 308,
+					response_status_id: 1,
+					message: "Failure!Customer Not Enrolled",
 					response_type_id: 308,
-					data: {},
+					data: { ekyc_enabled: "" },
+				},
+			},
+			{
+				scenario:
+					"Enrolled on Eko, KYC pending on Fino — proceed to Sender eKYC",
+				statusCode: 200,
+				example: {
+					status: 0,
+					response_status_id: 0,
+					message: "Customer KYC Pending",
+					response_type_id: 2134,
+					data: { otp_ref_id: "" },
 				},
 			},
 		],
@@ -180,7 +244,7 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Register a new customer as a DMT-Fino sender using basic KYC details.",
 		description:
-			"Registers a new customer in the DMT-Fino system. Provide the customer's name, date of birth, and residence address. On success the sender is created in a pending state; biometric eKYC (via Sender KYC) must follow to activate full monthly limits. An OTP is dispatched to the customer's mobile number for confirmation.",
+			"Registers a new customer in the DMT-Fino system. Provide the customer's name, date of birth, and residence address. On success the sender is opened on Eko but KYC on Fino is still pending — complete biometric eKYC (Sender eKYC → Validate eKYC OTP) next. If the sender was already onboarded on Fino externally, the response instead matches the KYC-complete profile from Get Sender Profile (response_type_id 309) and no eKYC is required. After onboarding, call Get Sender Profile to read the sender's current stage.",
 		relevance: "M",
 		bestFor: "First-time sender registration in the DMT flow.",
 		method: "POST",
@@ -214,63 +278,63 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Customer's residence address as a JSON-encoded array of address lines.",
+					"Customer's residence address as a JSON-encoded object with keys: line, city, state, pincode, district, area.",
 				example:
-					'["123 Main Street", "Connaught Place", "New Delhi", "110001"]',
+					'{"line":"India","city":"Indore","state":"Madhya Pradesh","pincode":"226024","district":"Indore","area":"gita bhavan"}',
 			},
 		],
 		responseData: [
 			{
-				name: "customer_id",
-				type: "string",
-				description: "Mobile number of the newly registered sender.",
-				imp: true,
-				example: "9123456789",
-			},
-			{
-				name: "state",
-				type: "number",
-				description: "Account state: 10=Pending KYC verification.",
-				example: 10,
-			},
-			{
 				name: "otp_ref_id",
 				type: "string",
 				description:
-					"Reference ID for the OTP sent to the sender's mobile. Used in the Validate eKYC OTP step.",
-				example: "OTP20240101001",
-			},
-			{
-				name: "available_limit",
-				type: "number",
-				description:
-					"Initial transfer limit before eKYC (in INR). Typically ₹5,000.",
-				example: 5000,
+					"OTP reference placeholder returned with the KYC-pending status. Empty until eKYC is initiated via Sender eKYC.",
+				example: "",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message: "Customer registered successfully",
-			response_type_id: 1388,
-			data: {
-				customer_id: "9123456789",
-				state: 10,
-				otp_ref_id: "OTP20240101001",
-				available_limit: 5000,
-			},
+			message: "Customer KYC Pending",
+			response_type_id: 2134,
+			data: { otp_ref_id: "" },
 		},
 		errorScenarios: [
 			{
-				scenario: "Sender already exists in the system",
+				scenario:
+					"Alternate success — sender already onboarded on Eko, KYC pending",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 17,
-					message: "User wallet already exists",
-					response_type_id: 1388,
-					data: {},
+					status: 0,
+					response_status_id: 0,
+					message: "Wallet opened successfully.",
+					response_type_id: 300,
+					data: {
+						customer_id_type: "mobile_number",
+						state_desc: "Non-Kyc",
+						state: "2",
+						customer_id: "9002331157",
+					},
 				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 2134,
+				meaning: "Onboarded, KYC pending — proceed to Sender eKYC",
+				next: "dmt-fino-sender-ekyc",
+			},
+			{
+				id: 300,
+				meaning:
+					"Already onboarded, KYC pending — re-check stage with Get Sender Profile",
+				next: "dmt-get-sender",
+			},
+			{
+				id: 309,
+				meaning:
+					"Already onboarded on Fino — KYC complete, proceed to Recipients",
+				next: "dmt-get-recipients",
 			},
 		],
 	},
@@ -284,8 +348,16 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Initiate biometric Aadhaar eKYC to verify and upgrade a DMT sender's account.",
 		description:
-			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible RD-service device; the PID XML is captured at the agent's terminal and submitted with the RSA-encrypted Aadhaar number (include the `wadh` value when generating the PID). On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
+			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible RD-service device; the PID XML is captured at the agent's terminal and submitted with the sender's Aadhaar number (include the `wadh` value when generating the PID). On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
 		descriptionFile: "dmt-fino-sender-ekyc.md",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "PUT",
@@ -318,49 +390,78 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
+				name: "user_code",
+				type: "string",
+				description: "Agent user code associated with the KYC request.",
+				example: "10472151",
+			},
+			{
+				name: "intent_id",
+				type: "string",
+				description: "Reserved intent identifier (empty in the standard flow).",
+				example: "",
+			},
+			{
 				name: "kyc_request_id",
 				type: "string",
 				description:
 					"Unique identifier for this KYC request. Required for the Validate eKYC OTP step.",
 				imp: true,
-				example: "KYC20240101001",
+				example: "9332126",
 			},
 			{
 				name: "otp_ref_id",
 				type: "string",
 				description:
-					"Reference ID for the OTP sent to the sender's Aadhaar-linked mobile.",
-				example: "OTPREF20240101001",
-			},
-			{
-				name: "mobile",
-				type: "string",
-				description: "Masked mobile number to which the OTP was dispatched.",
-				example: "XXXXXXX789",
+					"Reference ID for the OTP sent to the sender's Aadhaar-linked mobile. Required for the Validate eKYC OTP step.",
+				imp: true,
+				example: "666803844",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message: "OTP sent for eKYC verification",
-			response_type_id: 1388,
+			message: "Validate the OTP",
+			response_type_id: 2129,
 			data: {
-				kyc_request_id: "KYC20240101001",
-				otp_ref_id: "OTPREF20240101001",
-				mobile: "XXXXXXX789",
+				user_code: "10472151",
+				intent_id: "",
+				kyc_request_id: "9332126",
+				otp_ref_id: "666803844",
 			},
 		},
 		errorScenarios: [
 			{
-				scenario: "Sender already KYC verified — no further upgrade needed",
+				scenario: "Incorrect PID data — eKYC verification failed",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 585,
-					message: "Customer already KYC approved",
-					response_type_id: 1388,
-					data: {},
+					status: 2135,
+					response_status_id: 1,
+					message: "Customer KYC Pending",
+					response_type_id: 2135,
+					data: { description: "K-100 EKYC Verification failed" },
 				},
+			},
+			{
+				scenario: "Sender already has an existing relationship with the bank",
+				statusCode: 200,
+				example: {
+					status: 2135,
+					response_status_id: 1,
+					message: "Customer KYC Pending",
+					response_type_id: 2135,
+					data: {
+						description:
+							"Sorry! Since you already have an existing relationship with the bank",
+					},
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 2129,
+				meaning: "OTP sent — proceed to Validate eKYC OTP",
+				next: "dmt-fino-validate-ekyc-otp",
 			},
 		],
 	},
@@ -415,58 +516,53 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
-				name: "customer_id",
+				name: "user_code",
 				type: "string",
-				description: "Sender's mobile number (echoed back).",
-				example: "9123456789",
-			},
-			{
-				name: "kyc_verified",
-				type: "boolean",
-				description: "Confirms successful eKYC completion.",
+				description:
+					"Agent user code for the now KYC-verified sender. eKYC is complete on success.",
 				imp: true,
-				example: true,
-			},
-			{
-				name: "available_limit",
-				type: "number",
-				description: "Updated monthly transfer limit after KYC (in INR).",
-				imp: true,
-				example: 25000,
+				example: "10472151",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message: "eKYC verification successful",
-			response_type_id: 1388,
-			data: {
-				customer_id: "9123456789",
-				kyc_verified: true,
-				available_limit: 25000,
-			},
+			message: "Customer Registration Completed",
+			response_type_id: 2132,
+			data: { user_code: "10472151" },
 		},
 		errorScenarios: [
+			{
+				scenario: "Sender already registered",
+				statusCode: 200,
+				example: {
+					status: 2131,
+					response_status_id: 1,
+					message: "Validate OTP Failed",
+					response_type_id: 2131,
+					data: { description: "Customer Already registred" },
+				},
+			},
 			{
 				scenario: "Incorrect OTP entered",
 				statusCode: 200,
 				example: {
-					status: 1,
+					status: 2131,
 					response_status_id: 302,
-					message: "Wrong OTP",
-					response_type_id: 1388,
-					data: {},
+					message: "Validate OTP Failed",
+					response_type_id: 2131,
+					data: { description: "Wrong OTP" },
 				},
 			},
 			{
 				scenario: "OTP has expired",
 				statusCode: 200,
 				example: {
-					status: 1,
+					status: 2131,
 					response_status_id: 303,
-					message: "OTP expired",
-					response_type_id: 1388,
-					data: {},
+					message: "Validate OTP Failed",
+					response_type_id: 2131,
+					data: { description: "OTP expired" },
 				},
 			},
 		],
@@ -498,61 +594,106 @@ export const API_SPECS: ApiSpec[] = [
 		],
 		responseData: [
 			{
-				name: "count",
+				name: "pan_required",
 				type: "number",
-				description: "Total number of recipients registered under this sender.",
+				description: "PAN requirement flag for the sender.",
 				example: 2,
 			},
 			{
-				name: "recipient",
+				name: "remaining_limit_before_pan_required",
+				type: "number",
+				description:
+					"Amount the sender can still transfer before PAN becomes mandatory (INR).",
+				example: 50000.0,
+			},
+			{
+				name: "recipient_list",
 				type: "array",
-				description: "List of registered beneficiaries.",
+				description: "Registered beneficiaries for this sender.",
 				children: [
 					{
 						name: "recipient_id",
 						type: "number",
 						description:
-							"Unique identifier for the recipient. Used as input to Send OTP and Initiate Transfer APIs.",
+							"Identifier used in the Send Transaction OTP and Execute Transaction APIs.",
 						imp: true,
-						example: 98765,
+						example: 117015428,
+					},
+					{
+						name: "beneficiary_id",
+						type: "number",
+						description: "Beneficiary identifier (mirrors recipient_id).",
+						example: 117015428,
+					},
+					{
+						name: "bank_recipient_id",
+						type: "number",
+						description: "Bank-side recipient identifier.",
+						example: 117015428,
 					},
 					{
 						name: "recipient_name",
 						type: "string",
-						description: "Full name of the beneficiary.",
+						description: "Beneficiary name.",
 						imp: true,
-						example: "Sunil Sharma",
-					},
-					{
-						name: "account",
-						type: "string",
-						description: "Beneficiary's bank account number.",
-						example: "012345678901",
-					},
-					{
-						name: "ifsc",
-						type: "string",
-						description: "IFSC code of the beneficiary's bank branch.",
-						example: "SBIN0001234",
-					},
-					{
-						name: "bank_name",
-						type: "string",
-						description: "Name of the beneficiary's bank.",
-						example: "State Bank of India",
+						example: "yashwant basnett",
 					},
 					{
 						name: "recipient_mobile",
 						type: "string",
-						description: "Mobile number registered for the recipient.",
-						example: "9988776655",
+						description: "Beneficiary mobile number.",
+						example: "9002331157",
+					},
+					{
+						name: "bank",
+						type: "string",
+						description: "Beneficiary bank name.",
+						example: "State Bank of India",
+					},
+					{
+						name: "ifsc",
+						type: "string",
+						description: "Beneficiary bank IFSC code.",
+						example: "SBIN0007515",
+					},
+					{
+						name: "account",
+						type: "string",
+						description: "Beneficiary bank account number.",
+						example: "38759149196",
+					},
+					{
+						name: "account_type",
+						type: "string",
+						description: "Type of the beneficiary account.",
+						example: "Bank Account",
+					},
+					{
+						name: "ifsc_status",
+						type: "number",
+						description: "Whether the IFSC is valid/active (1 = valid).",
+						example: 1,
 					},
 					{
 						name: "is_verified",
-						type: "boolean",
+						type: "number",
 						description:
-							"Whether the recipient's account has been penny-drop verified.",
-						example: true,
+							"Whether the account has been penny-drop verified (1 = verified).",
+						example: 0,
+					},
+					{
+						name: "is_otp_required",
+						type: "string",
+						description:
+							"Whether an OTP is required to transact to this recipient.",
+						example: "0",
+					},
+					{
+						name: "pipes",
+						type: "object",
+						description:
+							"Available settlement pipes for this recipient, keyed by pipe id.",
+						example: { "3": { pipe: 3, status: 1 } },
 					},
 				],
 			},
@@ -561,31 +702,64 @@ export const API_SPECS: ApiSpec[] = [
 			status: 0,
 			response_status_id: 0,
 			message: "Success",
-			response_type_id: 1388,
+			response_type_id: 23,
 			data: {
-				count: 2,
-				recipient: [
+				pan_required: 2,
+				recipient_list: [
 					{
-						recipient_id: 98765,
-						recipient_name: "Sunil Sharma",
-						account: "012345678901",
-						ifsc: "SBIN0001234",
-						bank_name: "State Bank of India",
-						recipient_mobile: "9988776655",
-						is_verified: true,
-					},
-					{
-						recipient_id: 98766,
-						recipient_name: "Priya Verma",
-						account: "987654321098",
-						ifsc: "HDFC0002345",
-						bank_name: "HDFC Bank",
-						recipient_mobile: "9811223344",
-						is_verified: true,
+						recipient_id: 117015428,
+						beneficiary_id: 117015428,
+						bank_recipient_id: 117015428,
+						recipient_name: "yashwant basnett",
+						recipient_mobile: "9002331157",
+						bank: "State Bank of India",
+						ifsc: "SBIN0007515",
+						account: "38759149196",
+						account_type: "Bank Account",
+						ifsc_status: 1,
+						is_verified: 0,
+						is_otp_required: "0",
+						pipes: { "3": { pipe: 3, status: 1 } },
 					},
 				],
+				remaining_limit_before_pan_required: 50000.0,
 			},
 		},
+		errorScenarios: [
+			{
+				scenario: "No recipients registered yet — add one",
+				statusCode: 200,
+				example: {
+					status: 0,
+					response_status_id: -1,
+					message: "No recepients found",
+					response_type_id: 22,
+				},
+			},
+			{
+				scenario: "Customer does not exist in system",
+				statusCode: 200,
+				example: {
+					status: 463,
+					response_status_id: 1,
+					message: "customer_id does not exist in system",
+					response_type_id: -1,
+					invalid_params: { customer_id: "Customer does not exist in System" },
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 22,
+				meaning: "No recipients — add one before transacting",
+				next: "dmt-add-recipient",
+			},
+			{
+				id: 23,
+				meaning: "Recipients found — proceed to Send Transaction OTP",
+				next: "dmt-send-otp",
+			},
+		],
 	},
 	{
 		id: "dmt-add-recipient",
@@ -596,11 +770,11 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "dmt-add-recipient",
 		summary: "Register a new beneficiary under a sender's DMT-Fino account.",
 		description:
-			"Adds a new beneficiary to the sender's saved recipients list. Provide the recipient's full name, bank account number, IFSC code, and mobile number. The bank_id identifies the destination bank (fetch from the bank list if needed). On success a recipient_id is returned; use it in Send OTP and Initiate Transfer. The system may validate the account via penny-drop before activating the recipient.",
+			"Adds a new beneficiary to the sender's saved recipients list. Provide the recipient's full name, bank account number, IFSC code, and mobile number. On success a recipient_id is returned; use it in Send Transaction OTP and Execute Transaction. The system may validate the account via penny-drop before activating the recipient.",
 		relevance: "M",
 		bestFor: "Adding a new beneficiary before a first-time transfer.",
 		method: "POST",
-		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipient1",
+		path: "/customer/payment/dmt-fino/sender/{customer_id}/recipient",
 		docsUrl: "https://developers.eko.in/reference/fino-add-recipient",
 		extraRequestParams: [
 			{
@@ -611,48 +785,33 @@ export const API_SPECS: ApiSpec[] = [
 				example: "9123456789",
 			},
 			{
+				name: "recipient_mobile",
+				type: "string",
+				required: true,
+				description: "Beneficiary's 10-digit mobile number.",
+				example: "9002331157",
+			},
+			{
 				name: "recipient_name",
 				type: "string",
 				required: true,
 				description:
 					"Full name of the beneficiary as it appears on their bank account.",
-				example: "Sunil Sharma",
-			},
-			{
-				name: "account",
-				type: "string",
-				required: true,
-				description: "Beneficiary's bank account number.",
-				example: "012345678901",
+				example: "yashwant basnett",
 			},
 			{
 				name: "ifsc",
 				type: "string",
 				required: true,
 				description: "IFSC code of the beneficiary's bank branch.",
-				example: "SBIN0001234",
+				example: "SBIN0007515",
 			},
 			{
-				name: "bank_id",
-				type: "number",
-				required: true,
-				description: "Unique bank identifier from Eko's bank list API.",
-				example: 20,
-			},
-			{
-				name: "recipient_mobile",
+				name: "account",
 				type: "string",
 				required: true,
-				description: "10-digit mobile number of the recipient.",
-				example: "9988776655",
-			},
-			{
-				name: "recipient_type",
-				type: "string",
-				required: true,
-				description:
-					'Recipient type. Fixed value: "3" for DMT-Fino bank account recipients.',
-				example: "3",
+				description: "Beneficiary's bank account number.",
+				example: "38759149196",
 			},
 		],
 		responseData: [
@@ -660,47 +819,53 @@ export const API_SPECS: ApiSpec[] = [
 				name: "recipient_id",
 				type: "number",
 				description:
-					"Unique identifier assigned to the newly added recipient. Required for Send OTP and Initiate Transfer.",
+					"Unique identifier assigned to the newly added recipient. Required for Send Transaction OTP and Execute Transaction.",
 				imp: true,
-				example: 98765,
+				example: 117015428,
 			},
 			{
-				name: "recipient_name",
+				name: "customer_id",
 				type: "string",
-				description: "Name of the recipient as registered.",
-				imp: true,
-				example: "Sunil Sharma",
+				description: "Sender's mobile number (echoed back).",
+				example: "9155927131",
 			},
 			{
-				name: "account",
+				name: "recipient_mobile",
 				type: "string",
-				description: "Bank account number of the recipient.",
-				example: "012345678901",
+				description: "Beneficiary mobile number (echoed back).",
+				example: "9002331157",
 			},
 			{
-				name: "ifsc",
+				name: "initiator_id",
 				type: "string",
-				description: "IFSC code of the recipient's bank branch.",
-				example: "SBIN0001234",
+				description: "Partner initiator ID (echoed back).",
+				example: "<initiator_id>",
 			},
 			{
-				name: "is_verified",
-				type: "boolean",
-				description: "Whether the account passed penny-drop verification.",
-				example: false,
+				name: "pipes",
+				type: "object",
+				description: "Available settlement pipes for the new recipient.",
+				example: {},
+			},
+			{
+				name: "otp_ref_id",
+				type: "string",
+				description: "OTP reference placeholder (empty on add).",
+				example: "",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message: "Recipient added successfully",
-			response_type_id: 1388,
+			message: "Success!Please transact using Recipientid",
+			response_type_id: 43,
 			data: {
-				recipient_id: 98765,
-				recipient_name: "Sunil Sharma",
-				account: "012345678901",
-				ifsc: "SBIN0001234",
-				is_verified: false,
+				recipient_id: 117015428,
+				customer_id: "9155927131",
+				recipient_mobile: "9002331157",
+				initiator_id: "<initiator_id>",
+				pipes: {},
+				otp_ref_id: "",
 			},
 		},
 		errorScenarios: [
@@ -708,12 +873,30 @@ export const API_SPECS: ApiSpec[] = [
 				scenario: "Recipient already registered for this sender",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 342,
+					status: 342,
+					response_status_id: 1,
 					message: "Recipient already registered",
-					response_type_id: 1388,
+					response_type_id: -1,
 					data: {},
 				},
+			},
+			{
+				scenario: "Customer does not exist in system",
+				statusCode: 200,
+				example: {
+					status: 463,
+					response_status_id: 1,
+					message: "customer_id does not exist in system",
+					response_type_id: -1,
+					invalid_params: { customer_id: "Customer does not exist in System" },
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 43,
+				meaning: "Recipient added — proceed to Send Transaction OTP",
+				next: "dmt-send-otp",
 			},
 		],
 	},
@@ -763,26 +946,18 @@ export const API_SPECS: ApiSpec[] = [
 				name: "otp_ref_id",
 				type: "string",
 				description:
-					"Reference ID for the OTP sent. Must be passed to Initiate Transfer along with the customer-entered OTP.",
+					"Reference ID for the OTP sent. Must be passed to Execute Transaction along with the customer-entered OTP.",
 				imp: true,
-				example: "TXNOTP20240101001",
-			},
-			{
-				name: "mobile",
-				type: "string",
-				description:
-					"Masked mobile number to which the OTP was sent (for display to agent/customer).",
-				example: "XXXXXX6789",
+				example: "666902416",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
-			message: "OTP sent successfully",
-			response_type_id: 1388,
+			message: "Send OTP",
+			response_type_id: 2133,
 			data: {
-				otp_ref_id: "TXNOTP20240101001",
-				mobile: "XXXXXX6789",
+				otp_ref_id: "666902416",
 			},
 		},
 		errorScenarios: [
@@ -790,12 +965,41 @@ export const API_SPECS: ApiSpec[] = [
 				scenario: "Sender monthly limit exhausted",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 945,
+					status: 36,
+					response_type_id: 36,
+					response_status_id: 1,
 					message: "Sender/beneficiary monthly limit exhausted",
-					response_type_id: 1388,
 					data: {},
 				},
+			},
+			{
+				scenario: "Beneficiary monthly limit exhausted",
+				statusCode: 200,
+				example: {
+					status: 945,
+					response_type_id: 945,
+					response_status_id: 1,
+					message: "Beneficiary monthly limit exhausted",
+					data: {},
+				},
+			},
+			{
+				scenario: "Customer does not exist in system",
+				statusCode: 200,
+				example: {
+					status: 463,
+					response_status_id: 1,
+					message: "customer_id does not exist in system",
+					response_type_id: -1,
+					invalid_params: { customer_id: "Customer does not exist in System" },
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 2133,
+				meaning: "Transaction OTP sent — proceed to Execute Transaction",
+				next: "dmt-initiate-transfer",
 			},
 		],
 	},
@@ -808,7 +1012,7 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "dmt-initiate-transfer",
 		summary: "Execute a DMT-Fino money transfer after OTP verification.",
 		description:
-			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account. Requires the OTP and otp_ref_id from Send Transaction OTP and the merchant's GPS coordinates (latlong). The response returns a tid (Eko transaction ID) and the banking UTR for the IMPS transaction. Always poll Get Transaction Status if tx_status is 2 (Awaited).",
+			"The final and only financial step in the DMT flow. Debits the agent's wallet and initiates an IMPS transfer to the registered recipient's bank account after OTP validation. Requires the otp and otp_ref_id from Send Transaction OTP plus a unique client_ref_id per attempt for idempotency and reconciliation. The response returns tid (Eko transaction ID) and bank_ref_num (the IMPS RRN/UTR). Use a fresh otp_ref_id and OTP for each attempt — a consumed OTP is rejected — and always persist tid, bank_ref_num, and your client_ref_id to reconcile before retrying.",
 		relevance: "M",
 		bestFor:
 			"Executing the actual money transfer — the only money-debit step in the DMT flow.",
@@ -823,22 +1027,22 @@ export const API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"Unique recipient ID from Add Recipient or Get Recipients.",
-				example: 98765,
+				example: 117015428,
 			},
 			{
 				name: "amount",
 				type: "number",
 				required: true,
 				description:
-					"Transfer amount in INR (must match the amount sent to Send OTP).",
-				example: 500,
+					"Transfer amount in INR (must match the amount sent to Send Transaction OTP).",
+				example: 100,
 			},
 			{
 				name: "customer_id",
 				type: "string",
 				required: true,
 				description: "Sender's 10-digit mobile number.",
-				example: "9123456789",
+				example: "9155927131",
 			},
 			{
 				name: "otp",
@@ -846,216 +1050,273 @@ export const API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"OTP entered by the customer, received on their registered mobile.",
-				example: "251834",
+				example: "4702",
 			},
 			{
 				name: "otp_ref_id",
 				type: "string",
 				required: true,
 				description: "OTP reference ID from the Send Transaction OTP response.",
-				example: "TXNOTP20240101001",
+				example: "667007109",
 			},
 			{
-				name: "latlong",
+				name: "client_ref_id",
 				type: "string",
 				required: true,
 				description:
-					"GPS coordinates of the agent/merchant's device at the time of transaction (required for regulatory compliance).",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "state",
-				type: "string",
-				required: true,
-				description: 'Fixed value: "1".',
-				example: "1",
-			},
-			{
-				name: "recipient_id_type",
-				type: "string",
-				required: true,
-				description: 'Fixed value: "1" for bank account recipients.',
-				example: "1",
-			},
-			{
-				name: "channel",
-				type: "number",
-				required: false,
-				description: "Transfer channel. Fixed value: 2 (IMPS). Defaults to 2.",
-				example: 2,
-			},
-			{
-				name: "currency",
-				type: "string",
-				required: false,
-				description: 'Currency code. Defaults to "INR".',
-				example: "INR",
-			},
-			{
-				name: "timestamp",
-				type: "string",
-				required: false,
-				description: "ISO 8601 request timestamp.",
-				example: "2024-01-01T10:30:00Z",
+					"Unique partner reference for this transaction (idempotency & reconciliation). Use a fresh value per attempt.",
+				example: "<unique_client_ref_id>",
 			},
 		],
 		responseData: [
 			{
+				name: "tx_status",
+				type: "string",
+				description:
+					"Transaction state within the data block: 0=Success, 1=Fail, 2=Awaited.",
+				imp: true,
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
 				name: "tid",
 				type: "string",
 				description:
-					"Eko's internal transaction ID. Use this for status enquiries and reconciliation.",
+					"Eko's internal transaction ID. Store for reconciliation and support queries.",
 				imp: true,
-				example: "2309876543",
+				example: "3570311831",
 			},
 			{
-				name: "utrnumber",
+				name: "bank_ref_num",
 				type: "string",
 				description:
-					"Unique Transaction Reference (UTR) from the IMPS network — the banking-side reference number.",
+					"Bank reference number (RRN / UTR) for the IMPS transaction.",
 				imp: true,
-				example: "412345678901",
+				example: "620415011744",
 			},
 			{
 				name: "amount",
-				type: "number",
-				description: "Amount transferred in INR.",
+				type: "string",
+				description: "Amount transferred (INR).",
 				imp: true,
-				example: 500,
+				example: "100.00",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for the transfer (INR).",
+				example: "10.0",
+			},
+			{
+				name: "collectable_amount",
+				type: "string",
+				description: "Total collectable from the sender (amount + fee).",
+				example: "110.0",
+			},
+			{
+				name: "service_tax",
+				type: "string",
+				description: "Service tax component on the fee (INR).",
+				example: "1.53",
+			},
+			{
+				name: "tds",
+				type: "string",
+				description: "Tax deducted at source on the agent's commission (INR).",
+				example: "0.01",
+			},
+			{
+				name: "commission",
+				type: "string",
+				description:
+					"Commission earned by the agent on this transaction (INR).",
+				example: "0.47",
+			},
+			{
+				name: "sender_name",
+				type: "string",
+				description: "Name of the sender.",
+				example: "Rahul",
 			},
 			{
 				name: "recipient_name",
 				type: "string",
 				description: "Name of the beneficiary credited.",
 				imp: true,
-				example: "Sunil Sharma",
+				example: "Master YASHWANT BASNETT",
+			},
+			{
+				name: "recipient_id",
+				type: "number",
+				description: "Recipient identifier credited.",
+				example: 117015428,
+			},
+			{
+				name: "bank",
+				type: "string",
+				description: "Beneficiary bank name.",
+				example: "State Bank of India",
 			},
 			{
 				name: "account",
 				type: "string",
 				description: "Beneficiary account number credited.",
-				example: "012345678901",
+				example: "38759149196",
 			},
 			{
-				name: "ifsc",
+				name: "channel_desc",
 				type: "string",
-				description: "IFSC code of the credited bank account.",
-				example: "SBIN0001234",
-			},
-			{
-				name: "fee",
-				type: "number",
-				description: "Transaction fee charged (in INR).",
-				example: 5,
-			},
-			{
-				name: "commission",
-				type: "number",
-				description:
-					"Commission earned by the agent on this transaction (in INR).",
-				example: 3,
+				description: "Settlement channel used (e.g. IMPS).",
+				example: "IMPS",
 			},
 			{
 				name: "balance",
-				type: "number",
-				description:
-					"Remaining wallet balance of the agent after the transaction.",
-				example: 4495,
+				type: "string",
+				description: "Agent wallet balance after the transaction (INR).",
+				imp: true,
+				example: "10131.18",
 			},
 			{
 				name: "client_ref_id",
 				type: "string",
-				description: "Your system's reference ID (echoed back).",
-				example: "REF-20240101-001",
+				description: "Echo of the partner reference sent in the request.",
+				example: "<unique_client_ref_id>",
+			},
+			{
+				name: "currency",
+				type: "string",
+				description: "Currency code.",
+				example: "INR",
 			},
 			{
 				name: "timestamp",
 				type: "string",
 				description: "Server-side timestamp of the transaction.",
-				example: "2024-01-01T10:30:05Z",
+				example: "2026-07-23T09:46:35.396Z",
 			},
 		],
 		sampleSuccessResponse: {
 			status: 0,
 			response_status_id: 0,
 			message: "Transaction successful",
-			tx_status: "0",
-			txstatus_desc: "Success",
+			response_type_id: 325,
 			data: {
-				tid: "2309876543",
-				utrnumber: "412345678901",
-				amount: 500,
 				tx_status: "0",
-				recipient_name: "Sunil Sharma",
-				account: "012345678901",
-				ifsc: "SBIN0001234",
-				fee: 5,
-				commission: 3,
-				balance: 4495,
-				client_ref_id: "REF-20240101-001",
-				timestamp: "2024-01-01T10:30:05Z",
+				txstatus_desc: "Success",
+				tid: "3570311831",
+				amount: "100.00",
+				fee: "10.0",
+				collectable_amount: "110.0",
+				service_tax: "1.53",
+				tds: "0.01",
+				commission: "0.47",
+				sender_name: "Rahul",
+				recipient_name: "Master YASHWANT BASNETT",
+				recipient_id: 117015428,
+				bank: "State Bank of India",
+				account: "38759149196",
+				channel_desc: "IMPS",
+				bank_ref_num: "620415011744",
+				balance: "10131.18",
+				client_ref_id: "<unique_client_ref_id>",
+				currency: "INR",
+				timestamp: "2026-07-23T09:46:35.396Z",
 			},
 		},
 		errorScenarios: [
 			{
-				scenario: "Insufficient balance in agent wallet",
+				scenario: "Transaction declined — OTP already consumed",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
+					status: 55,
+					response_status_id: 1,
+					message: "Transaction declined. Please try after sometime.",
+					response_type_id: 55,
+					data: {
+						tx_status: "1",
+						txstatus_desc: "Failed",
+						reason: "OTP already Consumed",
+						amount: "100.00",
+						tid: "3570311840",
+						client_ref_id: "<unique_client_ref_id>",
+						balance: "10021.64",
+					},
 				},
 			},
 			{
-				scenario: "Transaction pending / awaited — poll Get Transaction Status",
+				scenario: "Transaction declined — insufficient balance in agent wallet",
+				statusCode: 200,
+				example: {
+					status: 55,
+					response_status_id: 1,
+					message: "Transaction declined. Please try after sometime.",
+					response_type_id: 55,
+					data: {
+						tx_status: "1",
+						txstatus_desc: "Failed",
+						reason: "Insufficient balance",
+					},
+				},
+			},
+			{
+				scenario: "Transaction declined — wrong OTP entered",
+				statusCode: 200,
+				example: {
+					status: 55,
+					response_status_id: 1,
+					message: "Transaction declined. Please try after sometime.",
+					response_type_id: 55,
+					data: {
+						tx_status: "1",
+						txstatus_desc: "Failed",
+						reason: "Wrong OTP",
+					},
+				},
+			},
+			{
+				scenario: "Transaction declined — sender monthly limit exhausted",
+				statusCode: 200,
+				example: {
+					status: 55,
+					response_status_id: 1,
+					message: "Transaction declined. Please try after sometime.",
+					response_type_id: 55,
+					data: {
+						tx_status: "1",
+						txstatus_desc: "Failed",
+						reason: "Sender/beneficiary monthly limit exhausted",
+					},
+				},
+			},
+			{
+				scenario:
+					"Transaction awaited (non-final) — reconcile by tid before retrying",
 				statusCode: 200,
 				example: {
 					status: 0,
 					response_status_id: 0,
 					message: "Transaction in progress",
-					tx_status: "2",
-					txstatus_desc: "Awaited",
 					data: {
-						tid: "2309876543",
-						amount: 500,
+						tx_status: "2",
+						txstatus_desc: "Awaited",
+						tid: "3570311831",
+						amount: "100.00",
 					},
-				},
-			},
-			{
-				scenario: "Wrong OTP entered",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 302,
-					message: "Wrong OTP",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
-				},
-			},
-			{
-				scenario: "Sender monthly limit exhausted",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 945,
-					message: "Sender/beneficiary monthly limit exhausted",
-					tx_status: "1",
-					txstatus_desc: "Failed",
-					data: {},
 				},
 			},
 		],
 	},
 	// MARK: AePS
 	{
-		id: "aeps-activate-fingpay",
+		id: "activate-aeps-fingpay",
 		productId: "aeps",
 		name: "Activate AePS Fingpay for Agent",
-		slug: "aeps-activate-fingpay",
+		slug: "activate-aeps-fingpay",
 		provider: "AePS – Fingpay",
 		group: "Activate for Agent",
 		summary:
@@ -1251,7 +1512,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 2110,
 				meaning: "Shop-type list returned successfully",
-				next: "aeps-activate-fingpay",
+				next: "activate-aeps-fingpay",
 			},
 		],
 		responseData: [
@@ -1327,7 +1588,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 2127,
 				meaning: "State list returned successfully",
-				next: "aeps-activate-fingpay",
+				next: "activate-aeps-fingpay",
 			},
 		],
 		responseData: [
@@ -1384,10 +1645,10 @@ export const API_SPECS: ApiSpec[] = [
 		},
 	},
 	{
-		id: "aeps-send-otp-kyc",
+		id: "aeps-fingpay-send-otp-kyc",
 		productId: "aeps",
 		name: "Send OTP (eKYC)",
-		slug: "aeps-send-otp-kyc",
+		slug: "aeps-fingpay-send-otp-kyc",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (1-Time)",
 		summary:
@@ -1438,7 +1699,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 1600,
 				meaning: "OTP request has been sent",
-				next: "aeps-verify-otp-kyc",
+				next: "aeps-fingpay-verify-otp-kyc",
 			},
 		],
 		responseData: [
@@ -1496,10 +1757,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-verify-otp-kyc",
+		id: "aeps-fingpay-verify-otp-kyc",
 		productId: "aeps",
 		name: "Verify OTP (eKYC)",
-		slug: "aeps-verify-otp-kyc",
+		slug: "aeps-fingpay-verify-otp-kyc",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (1-Time)",
 		summary:
@@ -1572,7 +1833,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 1604,
 				meaning: "Validation successful",
-				next: "aeps-biometric-ekyc",
+				next: "aeps-fingpay-biometric-ekyc",
 			},
 		],
 		responseData: [
@@ -1622,10 +1883,10 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-biometric-ekyc",
+		id: "aeps-fingpay-biometric-ekyc",
 		productId: "aeps",
 		name: "Biometric eKYC",
-		slug: "aeps-biometric-ekyc",
+		slug: "aeps-fingpay-biometric-ekyc",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (1-Time)",
 		summary:
@@ -1633,8 +1894,16 @@ export const API_SPECS: ApiSpec[] = [
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
 		// renders the richer `descriptionFile` (callouts, Aadhaar-encryption code).
 		description:
-			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.",
-		descriptionFile: "aeps-biometric-ekyc.md",
+			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		descriptionFile: "aeps-fingpay-biometric-ekyc.md",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
@@ -1712,7 +1981,7 @@ export const API_SPECS: ApiSpec[] = [
 			{
 				id: 1605,
 				meaning: "eKYC successful — agent may now complete Daily KYC",
-				next: "aeps-daily-auth",
+				next: "aeps-fingpay-daily-auth",
 			},
 		],
 		responseData: [
@@ -1750,16 +2019,24 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-daily-auth",
+		id: "aeps-fingpay-daily-auth",
 		productId: "aeps",
 		name: "Daily KYC",
-		slug: "aeps-daily-auth",
+		slug: "aeps-fingpay-daily-auth",
 		provider: "AePS – Fingpay",
 		group: "Agent eKYC (Daily)",
 		summary:
 			"Perform the mandatory daily biometric re-verification that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
-			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.",
+			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "H",
 		bestFor:
 			"Agent-side automation to trigger the daily biometric KYC at session start before serving AePS customers",
@@ -1803,7 +2080,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's. If you generate the PID block yourself, it must carry `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=`.",
+					"PID XML string from the UIDAI-certified biometric device (fType=2, Data type='X', mc in DeviceInfo). This represents the agent's own fingerprint, not the customer's. If you generate the PID block yourself, the value of `wadh` must be blank/empty for Daily KYC.",
 				example:
 					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
 			},
@@ -1825,7 +2102,7 @@ export const API_SPECS: ApiSpec[] = [
 				id: 1714,
 				meaning:
 					"Daily KYC failed — if `data.reason` is 'Please complete bank eKYC to process the transaction.', re-run the full eKYC from Send OTP",
-				next: "aeps-send-otp-kyc",
+				next: "aeps-fingpay-send-otp-kyc",
 			},
 		],
 		responseData: [
@@ -1890,16 +2167,24 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-cash-withdrawal",
+		id: "aeps-fingpay-cash-withdrawal",
 		productId: "aeps",
 		name: "AePS Cash Withdrawal",
-		slug: "aeps-cash-withdrawal",
+		slug: "aeps-fingpay-cash-withdrawal",
 		provider: "AePS – Fingpay",
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.",
-		descriptionFile: "aeps-cash-withdrawal.md",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		descriptionFile: "aeps-fingpay-cash-withdrawal.md",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
@@ -2272,15 +2557,23 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-balance-enquiry",
+		id: "aeps-fingpay-balance-enquiry",
+		slug: "aeps-fingpay-balance-enquiry",
 		productId: "aeps",
 		name: "AePS Balance Enquiry",
-		slug: "aeps-balance-enquiry",
 		provider: "AePS – Fingpay",
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
-			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
+			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "L",
 		bestFor:
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
@@ -2525,15 +2818,23 @@ export const API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "aeps-mini-statement",
+		id: "aeps-fingpay-mini-statement",
 		productId: "aeps",
 		name: "AePS Mini Statement",
-		slug: "aeps-mini-statement",
+		slug: "aeps-fingpay-mini-statement",
 		provider: "AePS – Fingpay",
 		summary:
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
 		description:
-			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
+			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "L",
 		bestFor:
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
@@ -3970,8 +4271,7 @@ export const API_SPECS: ApiSpec[] = [
 		slug: "bbps-transaction-status",
 		summary:
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
-		description:
-			"Generic transaction enquiry endpoint that works for all Eko transaction types including BBPS. Pass either the Eko `tid` or your `client_ref_id` as the path parameter. Returns the current `tx_status` (0=Success, 1=Fail, 2=Awaited, 3=Refund Pending, 4=Refunded, 5=On Hold), the operator reference, and the debited amount. Use this to handle `tx_status=2` (Response Awaited) cases from Pay Bill. A timeout or slow bank response is not a failure — re-query with your `client_ref_id` to get the real status instead of retrying the payment.",
+		descriptionFile: "transaction-inquiry.md",
 		relevance: "M",
 		bestFor:
 			"Reconciling pending transactions and confirming payment outcomes when the Pay Bill response is awaited.",
@@ -3984,7 +4284,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Eko TID (`tid`) or your `client_ref_id` that uniquely identifies the transaction.",
+					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
 				example: "1734567890",
 			},
 		],
@@ -4637,6 +4937,7 @@ export const API_SPECS: ApiSpec[] = [
 			"Query the current status of a QR payment transaction by Eko TID or your client reference ID.",
 		description:
 			"Polls the real-time status of any transaction — including QR collection payments — using either the Eko transaction ID (tid) or your own client_ref_id. Use this when a webhook has not arrived within your expected window or to implement a status-check polling flow.",
+		descriptionFile: "transaction-inquiry.md",
 		relevance: "M",
 		bestFor:
 			"Reconciliation polling, fallback status check when webhook delivery is delayed.",
@@ -4649,7 +4950,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Eko TID or your client_ref_id that uniquely identifies the transaction.",
+					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
 				example: "2886601782",
 			},
 		],
@@ -8961,7 +9262,8 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Activate a specific service (by service code) for one of your agents/retailers.",
 		description:
-			"Enables a service for the given agent so they can begin transacting on it. The agent is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. After activation, confirm the status with the Get User's Services API.",
+			"Enables a service for the given user (agent/retailer/distributor) so they can begin transacting on it. Activating a service is mandatory before your users can use it in production. The user is identified by their `user_code` and the service by its `service_code`, both supplied as path parameters. Look up service codes via the Get All Services API. After activation, confirm the status with the Get User's Services API.",
+		descriptionFile: "activate-user-service.md",
 		relevance: "M",
 		bestFor:
 			"Enabling a new service on an existing agent before their first transaction on it",
@@ -9596,6 +9898,7 @@ export const API_SPECS: ApiSpec[] = [
 			"Get the status of any transaction by Eko TID or your client_ref_id.",
 		description:
 			"Looks up a transaction's status using either Eko's TID or your own `client_ref_id` — useful when a response timed out and you never received the TID. tx_status codes: 0 = Success, 1 = Fail, 2 = Awaited/Initiated (NEFT), 3 = Refund Pending, 4 = Refunded, 5 = Hold. A timeout should never be treated as an automatic failure — always inquire.",
+		descriptionFile: "transaction-inquiry.md",
 		relevance: "H",
 		bestFor: "Reconciling a transaction whose response timed out.",
 		method: "GET",
@@ -9607,7 +9910,7 @@ export const API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"Eko TID or your client_ref_id identifying the transaction.",
+					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
 				example: "12971397",
 			},
 		],

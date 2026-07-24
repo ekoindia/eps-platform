@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
+import { MiniToc } from "@/components/MiniToc";
 import { DocsNavTree } from "./DocsNavTree";
 import { DocsThemeToggle, type DocsTheme } from "./DocsThemeToggle";
 
@@ -112,7 +113,9 @@ export const DocsLayout = ({
 
 					{/* Middle content — top padding clears the fixed header */}
 					<main className="min-w-0 px-5 pb-16 pt-32 sm:px-8 lg:px-12">
-						<div className="mx-auto max-w-3xl">{children}</div>
+						<div data-toc-anchor className="mx-auto max-w-3xl">
+							{children}
+						</div>
 					</main>
 
 					{/* Right rail — flows with the page (no inner scrollbar). Stacks below the content on <lg screens.
@@ -124,6 +127,15 @@ export const DocsLayout = ({
 						</aside>
 					)}
 				</div>
+
+				{/* Guides (no right pane) pin to the viewport edge like the rest of
+				    the site; endpoint pages pin to the content gutter, since the
+				    code-samples pane owns the true right edge. */}
+				<MiniToc
+					maxLevel={3}
+					align={rightPane ? "container" : "viewport"}
+					scopeSelector="[data-toc-anchor]"
+				/>
 			</div>
 
 			<Footer />

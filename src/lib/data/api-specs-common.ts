@@ -136,7 +136,7 @@ export interface ApiSpec {
 	description?: string;
 	/** OPTIONAL: basename of a markdown file under
 	 * `src/content/docs/endpoints/` holding this endpoint's RICH description
-	 * (callouts, headings, code blocks) — e.g. "aeps-biometric-ekyc.md". Rendered
+	 * (callouts, headings, code blocks) — e.g. "aeps-fingpay-biometric-ekyc.md". Rendered
 	 * on the docs page; may be combined with a short inline {@link description}.
 	 * Resolved via `resolveDescription` / `resolveShortDescription` in
 	 * `endpoint-descriptions.ts`. */

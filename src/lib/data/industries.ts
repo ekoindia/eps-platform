@@ -125,7 +125,7 @@ const DEFAULT_INTEGRATION_STEPS = [
 		step: 2,
 		title: "Verify Identity",
 		description:
-			"Provide your PAN and bank account details to verify your account.",
+			"Complete your basic KYC with PAN and address details to verify your identity.",
 	},
 	{
 		step: 3,

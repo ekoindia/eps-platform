@@ -43,4 +43,11 @@ export const GUIDES: GuideMeta[] = [
 		summary:
 			"HTTP status codes, transaction status ids, and the response envelope.",
 	},
+	{
+		slug: "aadhaar-biometric-rdservice",
+		title: "Aadhaar Biometric Auth (RDService)",
+		order: 3,
+		summary:
+			"UIDAI registered-device fingerprint/iris capture on Web and Android, with an interactive in-browser device tester.",
+	},
 ];

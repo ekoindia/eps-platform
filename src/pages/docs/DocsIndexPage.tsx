@@ -1,8 +1,8 @@
 import { AiHint } from "@/components/AiHint";
-import { Eps } from "@/components/Eps";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { InlineCode } from "@/components/docs/InlineCode";
+import { Eps } from "@/components/Eps";
 import { LangIcon } from "@/components/icons/LangIcon";
 import { McpIcon } from "@/components/icons/McpIcon";
 import { Button } from "@/components/ui/button";
@@ -322,7 +322,7 @@ const DocsIndexPage = () => {
 					<Step
 						n={1}
 						title="Get your credentials"
-						subtitle="Eko's UAT / sandbox is self-serve — sign up with your mobile number, verify with your PAN and bank account."
+						subtitle="Eko's UAT/sandbox is self-serve — sign up with your mobile number, verify with your PAN and address details (business or personal)."
 					>
 						<div className="flex flex-wrap items-center gap-4">
 							<Button variant="gold" onClick={() => openZohoChat()}>

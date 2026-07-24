@@ -48,6 +48,12 @@ For Fingpay AePS, it is mandatory to use **e-KYC OTP request**, **e-KYC OTP veri
 
 ## Fingerprint capture (`fType`)
 
+> [!NOTE]
+> New to RDService? The
+> [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)
+> covers the full capture flow — driver discovery, `PidOptions`, error codes —
+> for Web and Android, and includes an in-browser device tester.
+
 > [!WARNING]
 > Per NPCI's FIR-FMR single-PID-block guidance, capture fingerprints with
 > **`fType = 2`** (not `0`). A subset of banks that have not yet completed

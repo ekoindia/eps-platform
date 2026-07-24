@@ -236,6 +236,26 @@ describe("route parity", () => {
 		expect(navSlugs.has("pan-bulk-status")).toBe(true);
 	});
 
+	it("resolves every curated spec.relatedLinks slug to a live docs page", () => {
+		// relatedLinks slugs are 404-guarded at render time (NextSteps silently
+		// drops dead ones) — this guard makes a typo'd slug fail the build instead.
+		const withLinks = getDocumentedSpecs().filter(
+			(s) => s.relatedLinks?.length,
+		);
+		// The biometric-PID specs cross-link the RDService guide; if this ever
+		// goes to zero the assertion below is vacuous — re-anchor it.
+		expect(withLinks.length).toBeGreaterThan(0);
+		for (const spec of withLinks) {
+			for (const link of spec.relatedLinks ?? []) {
+				if (!link.slug) continue;
+				expect(
+					docHrefForSlug(link.slug),
+					`spec "${spec.id}" relatedLinks slug "${link.slug}" resolves to no docs page`,
+				).toBeTruthy();
+			}
+		}
+	});
+
 	it("keeps -status specs out of the marketing product .md tree (productNavNodes)", () => {
 		for (const productId of ["pan", "bank"]) {
 			const treeSlugs = new Set(

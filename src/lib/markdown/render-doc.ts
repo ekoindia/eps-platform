@@ -217,11 +217,37 @@ function expandCodeSnippets(body: string): string {
 	return out;
 }
 
+/** Matches `<RdServiceTester />` (self-closing) or its empty paired form,
+ * tolerating internal whitespace/newlines. The component takes no props. */
+const RD_SERVICE_TESTER_TAG =
+	/<RdServiceTester\s*(?:\/>|>\s*<\/RdServiceTester\s*>)/g;
+
+/**
+ * Replace the browser-only `<RdServiceTester />` widget with a static pointer
+ * in the `.md` twin — the interactive tester probes localhost drivers and only
+ * exists on the HTML page. Throws on any other `<RdServiceTester …>` form
+ * rather than leaking raw JSX into the markdown twin.
+ */
+function expandRdServiceTester(body: string, slug: string): string {
+	const out = body.replace(
+		RD_SERVICE_TESTER_TAG,
+		`> **Interactive RDService device tester** — available on the HTML version ` +
+			`of this page (${SITE_URL}${docsHref(slug)}). It runs in the browser and ` +
+			`probes the locally-installed RDService driver, so it has no markdown equivalent.`,
+	);
+	if (/<RdServiceTester\b/.test(out))
+		throw new Error(
+			"renderGuideMarkdown: unrecognised <RdServiceTester> form — expected <RdServiceTester /> with no props",
+		);
+	return out;
+}
+
 /**
  * Render a guide's `/docs/<slug>.md` twin from its raw MDX source. Guides are
  * authored as GFM markdown that may embed the `<CodeSnippets id="…" />`
  * component; that tag is expanded here to a fenced block of its default
- * (first) language so the twin stays valid, single-language markdown. All other
+ * (first) language so the twin stays valid, single-language markdown. The
+ * browser-only `<RdServiceTester />` widget becomes a static note. All other
  * content is plain GFM, emitted verbatim under front-matter + the canonical notice.
  */
 export function renderGuideMarkdown(
@@ -236,7 +262,7 @@ export function renderGuideMarkdown(
 			canonical,
 		}),
 		canonicalNotice(canonical),
-		expandCodeSnippets(rawBody.trim()),
+		expandCodeSnippets(expandRdServiceTester(rawBody.trim(), meta.slug)),
 	]);
 }
 

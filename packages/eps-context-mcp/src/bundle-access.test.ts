@@ -23,9 +23,9 @@ describe("bundle-access", () => {
 
 	it("listTopics + listRecipes return ids", () => {
 		expect(listTopics(bundle)).toContain("auth");
-		expect(listRecipes(bundle).some((r) => r.id === "dmt-send-money")).toBe(
-			true,
-		);
+		expect(
+			listRecipes(bundle).some((r) => r.id === "dmt-fino-send-money"),
+		).toBe(true);
 	});
 
 	it("searchApis ranks by query, returns ids only", () => {
@@ -43,8 +43,8 @@ describe("bundle-access", () => {
 
 	it("getTopic('auth') is backend-only; getRecipe resolves", () => {
 		expect(getTopic(bundle, "auth")?.backendOnly).toBe(true);
-		expect(getRecipe(bundle, "dmt-send-money")?.steps.length).toBeGreaterThan(
-			0,
-		);
+		expect(
+			getRecipe(bundle, "dmt-fino-send-money")?.steps.length,
+		).toBeGreaterThan(0);
 	});
 });

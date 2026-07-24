@@ -178,7 +178,11 @@ export const EndpointDetail = ({ spec }: { spec: ApiSpec }) => {
 				</div>
 			</header>
 
-			{description && <MarkdownProse content={description} className="mt-6" />}
+			{description && (
+				<div data-toc="Description" data-toc-level="2">
+					<MarkdownProse content={description} className="mt-6" />
+				</div>
+			)}
 
 			{recipes.length > 0 && (
 				<div className="mt-6">

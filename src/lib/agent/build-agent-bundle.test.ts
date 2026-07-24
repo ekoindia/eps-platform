@@ -54,7 +54,9 @@ describe("slices", () => {
 			expect(entry).not.toHaveProperty("responseTypes");
 		}
 		expect(index.topics).toContain("auth");
-		expect(index.recipes.some((r) => r.id === "dmt-send-money")).toBe(true);
+		expect(index.recipes.some((r) => r.id === "dmt-fino-send-money")).toBe(
+			true,
+		);
 	});
 
 	it("buildApi returns full detail for a known slug and undefined otherwise", () => {
@@ -76,7 +78,8 @@ describe("slices", () => {
 
 	it("gives an endpoint with no documented response types an empty array", () => {
 		// Never undefined — consumers map over it without a guard.
-		const withNone = bundle.apis.find((a) => a.slug !== "dmt-get-sender");
+		const withNone = bundle.apis.find((a) => a.responseTypes.length === 0);
+		expect(withNone).toBeDefined();
 		expect(withNone?.responseTypes).toEqual([]);
 	});
 });

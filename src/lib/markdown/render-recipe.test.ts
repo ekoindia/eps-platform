@@ -13,8 +13,10 @@ import {
 	renderRecipesIndexMarkdown,
 } from "@/lib/markdown/render-recipe";
 
-const dmt = RECIPES.find((r) => r.slug === "dmt-send-money") as Recipe;
-const aeps = RECIPES.find((r) => r.slug === "aeps-cash-withdrawal") as Recipe;
+const dmt = RECIPES.find((r) => r.slug === "dmt-fino-send-money") as Recipe;
+const aeps = RECIPES.find(
+	(r) => r.slug === "aeps-fingpay-cash-withdrawal",
+) as Recipe;
 
 describe("escapeMermaidLabel", () => {
 	it("neutralises quotes, which would otherwise close the label early", () => {
@@ -126,8 +128,8 @@ describe("recipeMermaidFence", () => {
 describe("renderRecipeMarkdown", () => {
 	it("carries front-matter, the canonical notice, and the flow", () => {
 		const md = renderRecipeMarkdown(dmt);
-		expect(md).toContain('title: "DMT — Send Money — API Recipe"');
-		expect(md).toContain("https://eps.eko.in/recipe/dmt-send-money");
+		expect(md).toContain('title: "DMT (Fino) — Send Money — API Recipe"');
+		expect(md).toContain("https://eps.eko.in/recipe/dmt-fino-send-money");
 		expect(md).toContain("```mermaid");
 		expect(md).toContain("## Steps");
 	});

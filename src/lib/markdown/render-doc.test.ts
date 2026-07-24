@@ -120,3 +120,28 @@ describe("renderGuideMarkdown — <CodeSnippets> expansion", () => {
 		).toThrow(/unknown <CodeSnippets/);
 	});
 });
+
+describe("renderGuideMarkdown — <RdServiceTester> substitution", () => {
+	const meta = {
+		slug: "aadhaar-biometric-rdservice",
+		title: "Aadhaar Biometric Auth (RDService)",
+	};
+
+	it("replaces the browser-only widget with a static pointer to the HTML page", () => {
+		const md = renderGuideMarkdown(meta, "Intro.\n\n<RdServiceTester />");
+		expect(md).not.toContain("<RdServiceTester");
+		expect(md).toContain("Interactive RDService device tester");
+		expect(md).toContain("/docs/aadhaar-biometric-rdservice");
+	});
+
+	it("also handles the empty paired form", () => {
+		const md = renderGuideMarkdown(meta, "<RdServiceTester></RdServiceTester>");
+		expect(md).not.toContain("<RdServiceTester");
+	});
+
+	it("throws (never leaks JSX) on a form with props", () => {
+		expect(() =>
+			renderGuideMarkdown(meta, '<RdServiceTester mode="iris" />'),
+		).toThrow(/unrecognised <RdServiceTester>/);
+	});
+});

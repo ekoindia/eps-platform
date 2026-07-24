@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { API_SPECS } from "@/lib/data/api-specs";
 import {
 	assertRecipeSlugs,
 	branchCondition,
 	RECIPES,
-	type RecipeBranch,
 	recipesForSpec,
+	type RecipeBranch,
 } from "@/lib/data/api-recipes";
+import { API_SPECS } from "@/lib/data/api-specs";
 
 describe("api-recipes", () => {
 	it("ships at least the two exemplar recipes", () => {
 		const ids = RECIPES.map((r) => r.id);
-		expect(ids).toContain("dmt-send-money");
-		expect(ids).toContain("aeps-cash-withdrawal");
+		expect(ids).toContain("dmt-fino-send-money");
+		expect(ids).toContain("aeps-fingpay-cash-withdrawal");
 	});
 
 	it("every step references a real spec slug", () => {
@@ -72,7 +72,7 @@ describe("api-recipes", () => {
 describe("recipesForSpec", () => {
 	it("finds a recipe that uses the endpoint with a matching product", () => {
 		const found = recipesForSpec({ slug: "dmt-get-sender", productId: "dmt" });
-		expect(found.map((r) => r.id)).toEqual(["dmt-send-money"]);
+		expect(found.map((r) => r.id)).toEqual(["dmt-fino-send-money"]);
 	});
 
 	it("returns [] for an endpoint no recipe uses", () => {

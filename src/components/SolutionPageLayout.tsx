@@ -2,6 +2,7 @@ import { ApiChip } from "@/components/ApiChip";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { Footer } from "@/components/Footer";
 import { IndustryCard } from "@/components/IndustryCard";
+import { MiniToc } from "@/components/MiniToc";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
@@ -338,6 +339,7 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
 				{/* Bottom CTA */}
 				<LeadFormCTASection />
 			</main>
+			<MiniToc maxLevel={2} />
 			<Footer />
 		</div>
 	);

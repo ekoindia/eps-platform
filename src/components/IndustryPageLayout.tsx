@@ -3,6 +3,7 @@ import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { IndustryCard } from "@/components/IndustryCard";
+import { MiniToc } from "@/components/MiniToc";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
@@ -400,6 +401,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
 				{/* Bottom CTA */}
 				<LeadFormCTASection />
 			</main>
+			<MiniToc maxLevel={2} />
 			<Footer />
 		</div>
 	);

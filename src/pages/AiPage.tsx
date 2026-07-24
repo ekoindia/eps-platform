@@ -4,6 +4,7 @@ import { CodeBlock } from "@/components/CodeBlock";
 import { Eps } from "@/components/Eps";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
+import { MiniToc } from "@/components/MiniToc";
 import { HarnessIcon } from "@/components/icons/HarnessIcon";
 import { McpIcon } from "@/components/icons/McpIcon";
 import type { IconComponent } from "@/components/icons/types";
@@ -901,6 +902,7 @@ const AiPage = () => {
 				</section>
 			</main>
 
+			<MiniToc maxLevel={2} />
 			<Footer />
 		</div>
 	);

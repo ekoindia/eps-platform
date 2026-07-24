@@ -2,6 +2,7 @@ import { AiHint } from "@/components/AiHint";
 import { Eps } from "@/components/Eps";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
+import { MiniToc } from "@/components/MiniToc";
 import { McpIcon } from "@/components/icons/McpIcon";
 import type { IconComponent } from "@/components/icons/types";
 import { Button } from "@/components/ui/button";
@@ -406,6 +407,7 @@ const AgentsPage = () => {
 				</section>
 			</main>
 
+			<MiniToc maxLevel={2} />
 			<Footer />
 		</div>
 	);
