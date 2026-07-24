@@ -93,9 +93,97 @@ string secretKey = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetByte
 	},
 ];
 
+/**
+ * Android RDService integration via Eko's open-source
+ * `android-uidai-rdservice-manager` library (JitPack). Mirrors the library
+ * README (v1.3.x), which uses the classic `onActivityResult` flow.
+ */
+const RDSERVICE_ANDROID: CodeSnippet[] = [
+	{
+		language: "kotlin",
+		label: "Kotlin",
+		code: `// build.gradle: implementation 'com.github.ekoindia:android-uidai-rdservice-manager:1.3.0'
+// (repositories: maven { url 'https://jitpack.io' })
+class BiometricActivity : AppCompatActivity(), RDServiceEvents {
+
+	private lateinit var rdServiceManager: RDServiceManager
+
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		rdServiceManager = RDServiceManager.Builder(this).create()
+		rdServiceManager.discoverRdService() // find installed RDService driver apps
+	}
+
+	// The library routes driver-app results back to you through this hook:
+	override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		super.onActivityResult(requestCode, resultCode, data)
+		rdServiceManager.onActivityResult(requestCode, resultCode, data)
+	}
+
+	override fun onRDServiceDriverDiscovery(rdServiceInfo: String, rdServicePackage: String, isWhitelisted: Boolean) {
+		// Driver found. Check <RDService status="READY"> in rdServiceInfo, then capture:
+		val pidOptions = """<PidOptions ver="1.0"><Opts fCount="1" fType="2" format="0" pidVer="2.0" timeout="30000" otp="" posh="UNKNOWN" env="P" /></PidOptions>"""
+		rdServiceManager.captureRdService(rdServicePackage, pidOptions)
+	}
+
+	override fun onRDServiceCaptureResponse(pidData: String, rdServicePackage: String) {
+		// PID XML — check <Resp errCode="0">, then send to your backend as-is.
+	}
+
+	override fun onRDServiceDriverNotFound() { /* prompt: install driver from Play Store */ }
+	override fun onRDServiceDriverDiscoveryFailed(resultCode: Int, intent: Intent?, pkg: String, info: String?) {}
+	override fun onRDServiceCaptureFailed(resultCode: Int, intent: Intent?, pkg: String) {}
+}`,
+	},
+	{
+		language: "java",
+		label: "Java",
+		code: `// build.gradle: implementation 'com.github.ekoindia:android-uidai-rdservice-manager:1.3.0'
+// (repositories: maven { url 'https://jitpack.io' })
+public class BiometricActivity extends AppCompatActivity implements RDServiceEvents {
+
+	private RDServiceManager rdServiceManager;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		rdServiceManager = new RDServiceManager.Builder(this).create();
+		rdServiceManager.discoverRdService(); // find installed RDService driver apps
+	}
+
+	// The library routes driver-app results back to you through this hook:
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		rdServiceManager.onActivityResult(requestCode, resultCode, data);
+	}
+
+	@Override
+	public void onRDServiceDriverDiscovery(String rdServiceInfo, String rdServicePackage, Boolean isWhitelisted) {
+		// Driver found. Check <RDService status="READY"> in rdServiceInfo, then capture:
+		String pidOptions = "<PidOptions ver=\\"1.0\\"><Opts fCount=\\"1\\" fType=\\"2\\" format=\\"0\\" pidVer=\\"2.0\\" timeout=\\"30000\\" otp=\\"\\" posh=\\"UNKNOWN\\" env=\\"P\\" /></PidOptions>";
+		rdServiceManager.captureRdService(rdServicePackage, pidOptions);
+	}
+
+	@Override
+	public void onRDServiceCaptureResponse(String pidData, String rdServicePackage) {
+		// PID XML — check <Resp errCode="0">, then send to your backend as-is.
+	}
+
+	@Override
+	public void onRDServiceDriverNotFound() { /* prompt: install driver from Play Store */ }
+	@Override
+	public void onRDServiceDriverDiscoveryFailed(int resultCode, Intent intent, String pkg, String info) {}
+	@Override
+	public void onRDServiceCaptureFailed(int resultCode, Intent intent, String pkg) {}
+}`,
+	},
+];
+
 /** Named snippet sets addressable by `<CodeSnippets id="…" />`. */
 export const CODE_SNIPPET_SETS: Record<string, CodeSnippet[]> = {
 	"sign-request": SIGN_REQUEST,
+	"rdservice-android": RDSERVICE_ANDROID,
 };
 
 /** The snippets for a set, or `undefined` for an unknown id. */

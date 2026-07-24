@@ -1,0 +1,389 @@
+# Aadhaar Biometric Authentication with RDService
+
+Several Eko APIs — AePS transactions, biometric eKYC, Aadhaar-based sender
+registration — require a live **fingerprint or iris scan** of the customer,
+captured through a UIDAI-certified scanner. Talking to that scanner is a
+separate, standardised integration called **RDService**, and it is the step
+most integrations get stuck on.
+
+This guide explains how UIDAI's registered-device system works and walks
+through a complete integration for **Web (desktop browser)** and **Android**.
+At the end there is an [interactive device tester](#test-your-device-setup)
+that runs right on this page — use it to verify your scanner, driver and
+`PidOptions` configuration, and to compare its request/response log against
+your own implementation.
+
+## How UIDAI registered devices work
+
+UIDAI (the Aadhaar authority) only accepts biometrics captured by a
+**registered device** — a scanner whose manufacturer signs and encrypts every
+capture inside a certified driver, so raw biometrics never touch your
+application.
+
+- **Use L1 devices only** — UIDAI mandates **L1 registered devices**, which
+  sign and encrypt the capture inside the device's trusted hardware. Older
+  **L0** devices (signing in host software) are being phased out: they may
+  still complete some transactions today, but they are no longer supported —
+  buy and deploy L1 scanners and their L1 RD services. The integration code
+  in this guide is identical for both, so upgrading a device does not change
+  your code.
+- **RDService** — the manufacturer's driver program (Mantra, Morpho, SecuGen,
+  Startek, Precision, Tatvik, …). On Windows it runs as a local HTTP service
+  on `127.0.0.1`; on Android it is a driver app from the Play Store that
+  responds to standard Intents. Your app never talks USB — it always talks to
+  RDService.
+- **PID block** — the capture result: biometric data **encrypted for UIDAI**
+  and signed by the device. Your application, and even Eko's servers, cannot
+  decrypt it.
+
+> **The one mental model that matters:** your code is a _courier_, not a
+> _consumer_, of biometric data. You ask RDService to capture, receive an
+> encrypted PID block, and forward it untouched to the API. If you find
+> yourself trying to read fingerprint data, you have taken a wrong turn.
+
+## Architecture at a glance
+
+```text
+┌──────────────────────── Customer's machine ────────────────────────┐
+│                                                                    │
+│  Your Web page / Android app                                       │
+│        │  1. discover  (RDSERVICE verb / Android Intent)           │
+│        │  2. capture   (CAPTURE verb + PidOptions XML)             │
+│        ▼                                                           │
+│  RDService driver  ──────────▶  Fingerprint / Iris scanner         │
+│  (localhost :11100–:11120,                                         │
+│   or driver app on Android)                                        │
+│        │                                                           │
+│        ▼  3. encrypted, signed PID block (XML)                     │
+└────────┼───────────────────────────────────────────────────────────┘
+         │  4. send PID as-is (never decode, never store)
+         ▼
+   Your backend ──▶ Eko API ──▶ UIDAI (decrypts + matches)
+```
+
+## Web integration (desktop browser)
+
+On desktop, the customer installs the manufacturer's RDService driver
+(a small Windows program). It listens on `127.0.0.1`, on a port between
+**11100 and 11120**, and speaks HTTP with two custom verbs: `RDSERVICE`
+(discovery) and `CAPTURE`. Your page — even one served from `https://` —
+can call it directly with `fetch`, because browsers treat `127.0.0.1` as a
+trustworthy origin.
+
+### 1. Discover the driver
+
+Probe every candidate port with the custom `RDSERVICE` HTTP method. Check
+`http` first (most drivers), then `https` (some drivers, e.g. Morpho, install
+a local certificate). Run probes through a small concurrency pool — a full
+sequential scan is slow.
+
+```js
+const RD_PORTS = { first: 11100, last: 11120 };
+
+async function probePort(port, protocol) {
+	const res = await fetch(`${protocol}://127.0.0.1:${port}`, {
+		method: "RDSERVICE",
+		signal: AbortSignal.timeout(2500), // per-port timeout
+	});
+	return res.text(); // XML — see next step
+}
+
+async function discoverRdService() {
+	// Probe the common range first for a faster hit.
+	const probes = [];
+	for (let port = RD_PORTS.first; port <= RD_PORTS.last; port++) {
+		probes.push({ port, protocol: "http" }, { port, protocol: "https" });
+	}
+	for (const { port, protocol } of probes) {
+		try {
+			const xml = await probePort(port, protocol);
+			if (xml.includes("<RDService")) return { port, protocol, xml };
+		} catch {
+			// Nothing listening on this port/protocol — the normal case.
+		}
+	}
+	return null; // no driver installed/running
+}
+```
+
+### 2. Parse the discovery response
+
+A driver answers with a small XML document:
+
+```xml
+<RDService status="READY" info="Mantra_RD_Service">
+	<Interface id="CAPTURE" path="/rd/capture" />
+	<Interface id="DEVICEINFO" path="/rd/info" />
+</RDService>
+```
+
+- `status` — `READY` (scanner connected, go ahead), `NOTREADY` (driver
+  running but no scanner / not initialised), or `USED` (another application
+  is holding the device).
+- `info` — human-readable driver name; show it to the user.
+- `Interface` — find the entry with `id="CAPTURE"` **by its `id` attribute,
+  not by position** — drivers list the interfaces in different orders.
+
+Sanitise the capture `path` before using it: some drivers emit a full URL
+(`http://127.0.0.1:11100/rd/capture`) or stray whitespace instead of a clean
+path. Strip any scheme/host/port prefix, remove whitespace, and ensure a
+leading `/`. Reject anything that points at a host other than
+`127.0.0.1`/`localhost`.
+
+```js
+function captureUrl(port, protocol, rawPath) {
+	const path = rawPath
+		.replace(/\s+/g, "")
+		.replace(/^(?:https?)?:?\/?\/?(?:127\.0\.0\.1|localhost)(?::\d+)?/i, "");
+	return `${protocol}://127.0.0.1:${port}/${path.replace(/^\/+/, "")}`;
+}
+```
+
+The `DEVICEINFO` interface (called with the custom `DEVICEINFO` verb) returns
+device metadata — model, provider id, certificate identifiers. It is optional
+but useful for support tickets.
+
+### 3. Build the PidOptions request
+
+`PidOptions` is a small XML document telling RDService what to capture:
+
+```xml
+<!-- Fingerprint capture -->
+<PidOptions ver="1.0">
+	<Opts fCount="1" fType="2" format="0" pidVer="2.0"
+	      timeout="30000" otp="" posh="UNKNOWN" env="P" />
+</PidOptions>
+```
+
+```xml
+<!-- Iris capture: iCount/iType instead of fCount/fType -->
+<PidOptions ver="1.0">
+	<Opts iCount="1" iType="0" format="0" pidVer="2.0"
+	      timeout="30000" otp="" posh="UNKNOWN" env="P" />
+</PidOptions>
+```
+
+For **eKYC** flows the API provider additionally requires a `wadh` attribute
+inside `<Opts … />` — a base64 SHA-256 digest that binds the capture to a
+specific KYC API version:
+
+```text
+wadh = BASE64( SHA-256( ver + ra + rc + lr + de + pfr ) )
+     e.g. SHA-256("2.1" + "F" + "Y" + "N" + "N" + "N")
+     = "rhVuL7SnJi2W2UmsyukVqY7c93JWyL9O/kVKgdNMfv8="   (KYC API 2.1)
+```
+
+**Do not compute or guess this value yourself** — use exactly the `wadh` your
+API's documentation specifies (each eKYC endpoint documents its own; the KYC
+2.1 value above is only an example). For plain **authentication** captures
+(e.g. AePS transactions), omit the `wadh` attribute entirely.
+
+> **Field-tested gotchas:**
+>
+> - **Always send `env="P"`.** Morpho drivers reject `env="S"` and
+>   `env="PP"`, and Mantra drivers fail when `env` is missing — so `P` is the
+>   only value that works across vendors, even against UAT APIs (the UIDAI
+>   environment is selected server-side, not by this flag).
+> - **Keep `format="0"` (XML).** Many drivers return error `210` for
+>   Protobuf.
+
+### 4. Capture
+
+Send the PidOptions to the capture URL with the custom `CAPTURE` verb. Use a
+long timeout — the driver shows its own UI and waits for the customer to
+place a finger:
+
+```js
+async function capture(captureUrl, pidOptionsXml) {
+	const res = await fetch(captureUrl, {
+		method: "CAPTURE",
+		headers: { "Content-Type": "text/xml" },
+		body: pidOptionsXml,
+		signal: AbortSignal.timeout(120000), // driver waits for the finger
+	});
+	return res.text(); // PID data XML — see next step
+}
+```
+
+### 5. Parse the capture response
+
+The response is a `PidData` document:
+
+```xml
+<?xml version="1.0"?>
+<PidData>
+	<Resp errCode="0" errInfo="Success." fCount="1" fType="2"
+	      nmPoints="32" qScore="78" />
+	<DeviceInfo dpId="MANTRA.MSIPL" rdsId="MANTRA.WIN.001" … />
+	<Skey ci="20260930">…encrypted session key…</Skey>
+	<Hmac>…integrity hash…</Hmac>
+	<Data type="X">…encrypted PID block…</Data>
+</PidData>
+```
+
+Read **only** the `<Resp>` element:
+
+- `errCode="0"` means success — anything else is an error (see the
+  [error table](#capture-response--error-codes) below).
+- `qScore` is the capture quality (0–100). Eko's production apps **retry
+  below 45** and **block below 25** — a low-quality scan will fail
+  authentication at UIDAI anyway, so re-scanning early saves a round trip.
+- `Skey`, `Hmac`, `Data` and the rest are the encrypted payload. Treat the
+  whole document as opaque.
+
+### 6. Send the PID to the API
+
+Send the **entire PidData XML, unmodified**, in the field your Eko endpoint
+specifies (typically `piddata`). The relevant endpoint reference tells you
+the exact field name and any accompanying parameters:
+
+- [Fino DMT — Sender Biometric eKYC](/docs/dmt-fino-sender-ekyc)
+- [AePS — Agent Biometric eKYC](/docs/aeps-fingpay-biometric-ekyc)
+
+## PidOptions reference
+
+All attributes go on the `<Opts … />` element inside
+`<PidOptions ver="1.0">`:
+
+| Attribute | Applies to  | Values                           | Notes                                                                  |
+| --------- | ----------- | -------------------------------- | ---------------------------------------------------------------------- |
+| `fCount`  | Fingerprint | `1`–`10`                         | Number of fingers to capture. `1` for auth/eKYC.                       |
+| `fType`   | Fingerprint | `0` = FMR, `1` = FIR, `2` = both | `2` is the safe default.                                               |
+| `iCount`  | Iris        | `1`–`2`                          | Number of iris records.                                                |
+| `iType`   | Iris        | `0` = IIR                        | Only defined value.                                                    |
+| `format`  | Both        | `0` = XML, `1` = Protobuf        | Use `0`; many drivers reject Protobuf (error `210`).                   |
+| `pidVer`  | Both        | `2.0`                            | PID block version.                                                     |
+| `timeout` | Both        | milliseconds                     | How long the driver waits for the finger/eye. `30000` is typical.      |
+| `otp`     | Both        | string                           | Only for OTP-combined flows; usually empty.                            |
+| `wadh`    | Both        | base64 digest                    | **eKYC only** — use the exact value your API specifies. Omit for auth. |
+| `posh`    | Both        | `UNKNOWN` or position list       | `UNKNOWN` = any finger.                                                |
+| `env`     | Both        | `P`                              | Always `P` in practice — see gotchas above.                            |
+
+## Capture response & error codes
+
+`<Resp>` attributes:
+
+| Attribute           | Meaning                                                      |
+| ------------------- | ------------------------------------------------------------ |
+| `errCode`           | `0` = success; anything else = failure (table below).        |
+| `errInfo`           | Human-readable message from the driver.                      |
+| `qScore`            | Capture quality 0–100. Retry < 45, block < 25.               |
+| `nmPoints`          | Fingerprint minutiae count — more points, better match odds. |
+| `fCount` / `iCount` | Records actually captured.                                   |
+
+Common `errCode` values (treat codes as identifiers — some vendors emit
+non-numeric ones):
+
+| Code  | Meaning                            | What to do                                              |
+| ----- | ---------------------------------- | ------------------------------------------------------- |
+| `0`   | Success                            | Send the PID to the API.                                |
+| `210` | Protobuf format not supported      | Use `format="0"`.                                       |
+| `700` | Capture timed out                  | No finger/eye presented in time — retry.                |
+| `710` | Device used by another application | Close other biometric apps/browser tabs, retry.         |
+| `720` | Device not ready                   | Reconnect the scanner; check the driver tray icon.      |
+| `730` | Capture failed                     | Clean the sensor, retry.                                |
+| `740` | Device needs re-initialisation     | Unplug/replug the scanner or restart the driver.        |
+| `750` | Fingerprint not supported          | Wrong driver selected for a fingerprint capture.        |
+| `760` | Iris not supported                 | The selected driver/device has no iris capability.      |
+| `999` | Internal driver error              | Restart the RDService driver; reinstall if it persists. |
+
+## Android integration
+
+On Android, RDService drivers are **apps from the Play Store** (one per
+manufacturer) that respond to the standard Intents
+`in.gov.uidai.rdservice.fp.INFO` (discovery) and
+`in.gov.uidai.rdservice.fp.CAPTURE` (capture). Rather than hand-rolling the
+Intent plumbing, use Eko's open-source
+[android-uidai-rdservice-manager](https://github.com/ekoindia/android-uidai-rdservice-manager)
+library:
+
+```groovy
+// settings.gradle / build.gradle
+repositories {
+	maven { url 'https://jitpack.io' }
+}
+dependencies {
+	implementation 'com.github.ekoindia:android-uidai-rdservice-manager:1.3.0'
+}
+```
+
+<CodeSnippets id="rdservice-android" />
+
+The `rdServiceInfo` string passed to `onRDServiceDriverDiscovery` is the same
+`<RDService status="…">` XML as on the web, and `pidData` is the same PidData
+XML — the parsing and PidOptions sections above apply unchanged. The library
+uses the classic `onActivityResult` mechanism (as of v1.3.x); in a
+modern-AndroidX app you can keep it isolated in one Activity alongside the
+Activity Result API used elsewhere.
+
+Driver apps your users may need to install (link them straight to the Play
+Store when `onRDServiceDriverNotFound` fires):
+
+| Manufacturer    | Android driver package            |
+| --------------- | --------------------------------- |
+| Mantra          | `com.mantra.rdservice`            |
+| Morpho (IDEMIA) | `com.scl.rdservice`               |
+| SecuGen         | `com.secugen.rdservice`           |
+| Startek (ACPL)  | `com.acpl.registersdk`            |
+| Tatvik          | `com.tatvik.bio.tmf20`            |
+| Precision       | `com.precision.pb510.rdservice`   |
+| Gemalto / 3M    | `com.rd.gemalto.com.rdserviceapp` |
+
+> **Face authentication:** UIDAI also offers FaceRD (package
+> `in.gov.uidai.facerd`, Intent `in.gov.uidai.rdservice.face.CAPTURE`) for
+> camera-based authentication on Android. It uses a different PidOptions
+> shape and is out of scope for this guide.
+
+## Browser & platform caveats
+
+- **HTTPS pages can call `http://127.0.0.1`** in Chrome and Edge — loopback
+  is exempt from mixed-content blocking. This is what makes web RDService
+  integrations possible at all.
+- **Chrome's Local Network Access changes** are progressively restricting
+  requests from public websites to local devices. Current Chrome still allows
+  loopback, possibly behind a permission prompt; if discovery suddenly fails
+  for users after a Chrome update, check this first.
+- **Custom HTTP verbs** (`RDSERVICE`, `CAPTURE`, `DEVICEINFO`) work with
+  `fetch`/XHR in all major browsers, and RDService drivers answer the CORS
+  preflight these requests trigger. Recommend **Chrome or Edge on desktop**;
+  Firefox and Safari behaviour with local custom-verb requests is less
+  consistent.
+- **Mobile browsers cannot reach RDService** — there is no localhost driver
+  on a phone. On mobile, ship the Android integration above (native app or
+  your page inside a WebView with a JS bridge to the library).
+
+## Security & compliance notes
+
+- **Never decrypt, parse or store the PID block** beyond reading `<Resp>`.
+  It is encrypted for UIDAI; possession of decrypted biometrics would violate
+  the Aadhaar Act.
+- **Capture explicit consent** from the Aadhaar holder before every scan, as
+  required by UIDAI regulations.
+- **Use each capture once.** A PID block is bound to its capture time; send
+  it immediately and discard it. Never log or persist `Skey`, `Hmac` or
+  `Data` values.
+- **Aadhaar numbers** accompanying the PID in your API call are subject to
+  their own handling rules — mask them in logs and UIs.
+
+## Troubleshooting
+
+| Symptom                                           | Likely cause & fix                                                                                                                                                                                                                                                            |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No driver found on any port                       | RDService not installed or not running — check the system tray; reinstall the manufacturer's driver; antivirus/firewall may block localhost ports.                                                                                                                            |
+| Driver found but `NOTREADY`                       | Scanner unplugged, or device not registered/initialised — open the driver's own utility and check.                                                                                                                                                                            |
+| Driver found but `USED`                           | Another application (or another browser tab) holds the device — close it and rescan.                                                                                                                                                                                          |
+| `errCode 700` immediately                         | `timeout` too low in PidOptions, or the driver's capture window never got focus.                                                                                                                                                                                              |
+| `errCode 720` / `740`                             | Replug the scanner; restart the RDService driver.                                                                                                                                                                                                                             |
+| Capture works but the API rejects the PID         | Wrong or missing `wadh` (eKYC), or a stale capture — PID blocks expire quickly; capture fresh per call. Also check the device: **L0 devices are no longer supported by UIDAI** — their captures can be rejected even when the scan succeeds locally; upgrade to an L1 device. |
+| Low `qScore`                                      | Dirty/dry finger or sensor — clean both, press firmly, retry.                                                                                                                                                                                                                 |
+| Works in the vendor's test tool, not in your page | Compare your request against this page's tester log below — usually a PidOptions difference or a missed CORS/timeout error in the console.                                                                                                                                    |
+
+## Test your device setup
+
+The tester below runs the exact flow described above — discovery across ports
+11100–11120 (`http` + `https`), driver selection, `PidOptions` configuration
+and capture — entirely inside your browser. Use it on the **desktop machine
+with your scanner and driver installed** to confirm the hardware works, then
+compare its log with your own implementation's requests.
+
+<RdServiceTester />

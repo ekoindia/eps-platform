@@ -1,8 +1,9 @@
 import { GUIDE_COMPONENTS } from "@/content/docs/docs-guide-components";
 import { CodeSnippets } from "@/components/docs/CodeSnippets";
+import { RdServiceTester } from "@/components/docs/RdServiceTester";
 
 /** Custom components MDX guides may use by tag name (no import needed in `.mdx`). */
-const MDX_COMPONENTS = { CodeSnippets };
+const MDX_COMPONENTS = { CodeSnippets, RdServiceTester };
 
 /**
  * Renders a compiled MDX guide inside a typographic `prose` container that
