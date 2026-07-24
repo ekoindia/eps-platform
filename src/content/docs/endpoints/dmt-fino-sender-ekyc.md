@@ -1,12 +1,8 @@
 Performs biometric Aadhaar eKYC for a DMT-Fino sender. The agent captures a live
-fingerprint at their terminal; the resulting PID XML and the (encrypted) Aadhaar
+fingerprint at their terminal; the resulting PID XML and the sender's Aadhaar
 number are submitted here. On success an OTP is dispatched for confirmation —
 call Validate eKYC OTP next. A successful eKYC raises the sender's monthly limit
 from **₹5,000 to ₹25,000**.
-
-> [!WARNING]
-> RSA-encrypt the Aadhaar number before sending it, using the same scheme as the
-> AePS transaction APIs (base64-decode the public key → RSA-encrypt → base64-encode).
 
 ## Biometric (PID) capture
 
@@ -18,7 +14,7 @@ The captured `PidData` XML uses these parameters:
 
 ```xml
 <PidOptions ver="1.0">
-  <Opts fCount="1" fType="2" pidVer="2.0" timeout="10000" env="P" wadh="18f4CEiXeXcfGXvgWA/blxD+w2pw7hfQPY45JMytkPw=" />
+  <Opts fCount="1" fType="2" pidVer="2.0" timeout="10000" env="P" wadh="E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=" />
 </PidOptions>
 ```
 

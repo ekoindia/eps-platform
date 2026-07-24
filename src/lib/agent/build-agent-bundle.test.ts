@@ -76,7 +76,8 @@ describe("slices", () => {
 
 	it("gives an endpoint with no documented response types an empty array", () => {
 		// Never undefined — consumers map over it without a guard.
-		const withNone = bundle.apis.find((a) => a.slug !== "dmt-get-sender");
+		const withNone = bundle.apis.find((a) => a.responseTypes.length === 0);
+		expect(withNone).toBeDefined();
 		expect(withNone?.responseTypes).toEqual([]);
 	});
 });
