@@ -1,4 +1,5 @@
 import { Footer } from "@/components/Footer";
+import { MiniToc } from "@/components/MiniToc";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Users,
@@ -384,6 +385,7 @@ const AboutPage = () => {
 					</div>
 				</section>
 			</main>
+			<MiniToc maxLevel={2} />
 			<Footer />
 		</>
 	);

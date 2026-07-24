@@ -9,6 +9,7 @@ import type {
 } from "@/components/ApiInputOutputPreview";
 import { ApiInputOutputPreview } from "@/components/ApiInputOutputPreview";
 import { FadeIn } from "@/components/FadeIn";
+import { MiniToc } from "@/components/MiniToc";
 import { Picture, type PictureSource } from "@/components/Picture";
 import { SectionContainer } from "@/components/SectionContainer";
 import { FaqSection } from "@/components/sections/FaqSection";
@@ -766,6 +767,7 @@ export const ProductPageLayout = ({
 				/>
 			</main>
 
+			<MiniToc maxLevel={2} />
 			<Footer />
 		</div>
 	);
