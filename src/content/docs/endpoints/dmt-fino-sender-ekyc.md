@@ -10,6 +10,12 @@ Capture is done client-side against an RD-service device on ports
 **11100–11112**. Supported RD services include Mantra, Morpho, SecuGen (Level 0),
 Precision, Startek FM220, and NEXT.
 
+> [!NOTE]
+> New to RDService? The
+> [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)
+> covers the full capture flow — driver discovery, `PidOptions`, error codes —
+> for Web and Android, and includes an in-browser device tester.
+
 The captured `PidData` XML uses these parameters:
 
 ```xml

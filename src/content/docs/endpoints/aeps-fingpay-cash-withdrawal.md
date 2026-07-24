@@ -32,6 +32,12 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCaFyrzeDhMaFLx+LZUNOOO14Pj9aPfr+1WOanDgDHx
 
 ## Biometric (PID) capture
 
+> [!NOTE]
+> New to RDService? The
+> [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice)
+> covers the full capture flow — driver discovery, `PidOptions`, error codes —
+> for Web and Android, and includes an in-browser device tester.
+
 The `PidData` XML from the RD-service device must use:
 
 - `Data type="X"` (XML), base64-encoded

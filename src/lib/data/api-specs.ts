@@ -348,8 +348,16 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Initiate biometric Aadhaar eKYC to verify and upgrade a DMT sender's account.",
 		description:
-			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible RD-service device; the PID XML is captured at the agent's terminal and submitted with the sender's Aadhaar number (include the `wadh` value when generating the PID). On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.",
+			"Performs biometric eKYC using fingerprint data linked to the sender's Aadhaar number. Requires a compatible RD-service device; the PID XML is captured at the agent's terminal and submitted with the sender's Aadhaar number (include the `wadh` value when generating the PID). On success the system dispatches an OTP for confirmation; call Validate eKYC OTP next. A successful eKYC upgrades the sender's monthly limit from ₹5,000 to ₹25,000.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
 		descriptionFile: "dmt-fino-sender-ekyc.md",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "M",
 		bestFor: "KYC upgrade for new senders to raise monthly transfer limits.",
 		method: "PUT",
@@ -1886,8 +1894,16 @@ export const API_SPECS: ApiSpec[] = [
 		// Short text for the .md twin / OpenAPI / agent bundle; the docs page
 		// renders the richer `descriptionFile` (callouts, Aadhaar-encryption code).
 		description:
-			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.",
+			"The final step in the one-time AePS Fingpay eKYC flow, called after OTP verification. Submits the agent's RSA-encrypted Aadhaar and live biometric PID to UIDAI; on success the agent is eligible for AePS transactions.\n\nIf you generate the PID block with your own code rather than the RD service default, set `wadh=E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc=` alongside `fCount`, `fType` and the other attributes.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
 		descriptionFile: "aeps-fingpay-biometric-ekyc.md",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "M",
 		bestFor:
 			"Completing the mandatory one-time biometric identity verification for AePS Fingpay agents",
@@ -2012,7 +2028,15 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Perform the mandatory daily biometric re-verification that authorises an agent to carry out AePS transactions for the current calendar day.",
 		description:
-			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.",
+			"Biometric-only re-verification for the days after the one-time eKYC — no OTP step is required. AePS Fingpay requires every agent to re-authenticate themselves biometrically at the start of each working day, before their first transaction of the day.\n\nIf this fails with reason `Please complete bank eKYC to process the transaction.`, re-run the full first-time eKYC sequence — Send OTP → Verify OTP → Biometric — before retrying.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "H",
 		bestFor:
 			"Agent-side automation to trigger the daily biometric KYC at session start before serving AePS customers",
@@ -2151,8 +2175,16 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
 		descriptionFile: "aeps-fingpay-cash-withdrawal.md",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "H",
 		bestFor:
 			"BC agents, CSPs, and kirana-store banking points enabling cardless cash withdrawal for rural customers",
@@ -2533,7 +2565,15 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Check a customer's bank account balance using Aadhaar number and biometric fingerprint — no card or PIN required.",
 		description:
-			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.",
+			"Retrieves the real-time account balance from any Aadhaar-linked bank. Uses the dedicated `balance-enquiry` endpoint — the request shape matches Cash Withdrawal without the `amount` field. No money movement occurs and no debit takes place. The agent must have completed AePS Fingpay activation and the current-day daily authentication before calling this API.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "L",
 		bestFor:
 			"Agent-assisted balance checks for rural customers without smartphone or internet access",
@@ -2786,7 +2826,15 @@ export const API_SPECS: ApiSpec[] = [
 		summary:
 			"Retrieve the last few transactions from an Aadhaar-linked bank account via biometric authentication.",
 		description:
-			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.",
+			"Fetches a mini statement (typically the last 5–10 transactions) from a customer's bank account by authenticating through Aadhaar biometrics. Uses the dedicated `mini-statement` endpoint — the request shape matches Balance Enquiry (no `amount`). No money movement occurs. The response includes a list of recent debit/credit transactions with amounts and dates. Useful for customers who want to verify recent activity at an agent point without visiting a branch.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to capture the PID block from a fingerprint scanner on Web or Android.",
+			},
+		],
 		relevance: "L",
 		bestFor:
 			"BC agents providing passbook-equivalent transaction history to Aadhaar-linked account holders",
