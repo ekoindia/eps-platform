@@ -39,8 +39,8 @@ describe("buildContextPackBody", () => {
 	});
 
 	it("includes the exemplar recipes", () => {
-		expect(body).toContain("DMT — Send Money");
-		expect(body).toContain("AePS — Cash Withdrawal");
+		expect(body).toContain("DMT (Fino) — Send Money");
+		expect(body).toContain("AePS (Fingpay) — Cash Withdrawal");
 	});
 });
 

@@ -94,11 +94,11 @@ export const recipeHref = (slug?: string): string =>
 
 export const RECIPES: Recipe[] = [
 	{
-		id: "dmt-send-money",
-		slug: "dmt-send-money",
-		name: "DMT — Send Money",
+		id: "dmt-fino-send-money",
+		slug: "dmt-fino-send-money",
+		name: "DMT (Fino) — Send Money",
 		summary:
-			"Full domestic money transfer flow: look up the sender, onboard them if new, add the recipient, then send an OTP-verified transfer.",
+			"Full Fino DMT money-transfer flow: look up the sender, onboard them if new, add the recipient, then send an OTP-verified transfer.",
 		productId: "dmt",
 		steps: [
 			{
@@ -136,7 +136,7 @@ export const RECIPES: Recipe[] = [
 	{
 		id: "aeps-fingpay-cash-withdrawal",
 		slug: "aeps-fingpay-cash-withdrawal",
-		name: "AePS — Cash Withdrawal",
+		name: "AePS (Fingpay) — Cash Withdrawal",
 		summary:
 			"Aadhaar-enabled cash withdrawal: one-time agent activation and eKYC, daily KYC, then the biometric withdrawal.",
 		productId: "aeps",

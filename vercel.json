@@ -34,6 +34,16 @@
 			"source": "/docs/quickstart",
 			"destination": "/docs",
 			"permanent": true
+		},
+		{
+			"source": "/recipe/dmt-send-money",
+			"destination": "/recipe/dmt-fino-send-money",
+			"permanent": true
+		},
+		{
+			"source": "/recipe/dmt-send-money.md",
+			"destination": "/recipe/dmt-fino-send-money.md",
+			"permanent": true
 		}
 	],
 	"rewrites": [

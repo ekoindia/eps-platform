@@ -54,7 +54,9 @@ describe("slices", () => {
 			expect(entry).not.toHaveProperty("responseTypes");
 		}
 		expect(index.topics).toContain("auth");
-		expect(index.recipes.some((r) => r.id === "dmt-send-money")).toBe(true);
+		expect(index.recipes.some((r) => r.id === "dmt-fino-send-money")).toBe(
+			true,
+		);
 	});
 
 	it("buildApi returns full detail for a known slug and undefined otherwise", () => {

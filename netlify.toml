@@ -38,6 +38,19 @@
   status = 301
   force = true
 
+# DMT recipe disambiguated to its Fino variant — id/slug renamed.
+[[redirects]]
+  from = "/recipe/dmt-send-money"
+  to = "/recipe/dmt-fino-send-money"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/recipe/dmt-send-money.md"
+  to = "/recipe/dmt-fino-send-money.md"
+  status = 301
+  force = true
+
 # Quickstart guide folded into the /docs overview (now the quickstart itself).
 [[redirects]]
   from = "/docs/quickstart"

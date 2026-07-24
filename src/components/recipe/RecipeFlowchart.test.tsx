@@ -3,7 +3,7 @@ import { RECIPES, type Recipe } from "@/lib/data/api-recipes";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-const dmt = RECIPES.find((r) => r.slug === "dmt-send-money") as Recipe;
+const dmt = RECIPES.find((r) => r.slug === "dmt-fino-send-money") as Recipe;
 const aeps = RECIPES.find(
 	(r) => r.slug === "aeps-fingpay-cash-withdrawal",
 ) as Recipe;
