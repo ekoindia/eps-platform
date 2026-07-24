@@ -957,10 +957,21 @@ export const API_SPECS: ApiSpec[] = [
 				scenario: "Sender monthly limit exhausted",
 				statusCode: 200,
 				example: {
-					status: 945,
+					status: 36,
+					response_type_id: 36,
 					response_status_id: 1,
 					message: "Sender/beneficiary monthly limit exhausted",
-					response_type_id: -1,
+					data: {},
+				},
+			},
+			{
+				scenario: "Beneficiary monthly limit exhausted",
+				statusCode: 200,
+				example: {
+					status: 945,
+					response_type_id: 945,
+					response_status_id: 1,
+					message: "Beneficiary monthly limit exhausted",
 					data: {},
 				},
 			},
