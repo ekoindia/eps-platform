@@ -10,4 +10,14 @@ interface ImportMetaEnv {
 	 * empty string → proxy disabled (direct request). See lib/docs/tryit-proxy.ts.
 	 */
 	readonly VITE_SCALAR_PROXY_URL?: string;
+	/**
+	 * Origin serving the Eko Connect widget bundle, e.g.
+	 * `https://beta.ekoconnect.in`. Must match the environment
+	 * `CONNECT_API_BASE_URL` points at on the backend — the widget's own API host
+	 * is baked into its bundle, so a mismatch splits traffic across two backends
+	 * while sharing one session.
+	 */
+	readonly VITE_CONNECT_WIDGET_URL?: string;
+	/** Enable the embedded Connect transaction-flow widget in the console. */
+	readonly VITE_SHOW_CONNECT_WIDGET?: string;
 }

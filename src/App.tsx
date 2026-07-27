@@ -42,8 +42,9 @@ const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
 const ConsoleHome = lazy(() => import("./pages/console/ConsoleHome"));
 const ConsoleCredentials = lazy(() => import("./pages/console/Credentials"));
-const ConsoleTransactions = lazy(
-	() => import("./pages/console/Transactions"),
+const ConsoleTransactions = lazy(() => import("./pages/console/Transactions"));
+const ConsoleConnectTransaction = lazy(
+	() => import("./pages/console/ConnectTransaction"),
 );
 const Admin = lazy(() => import("./pages/Admin"));
 
@@ -134,10 +135,14 @@ const App = ({
 								<Route path="/console" element={<ConsoleLayout />}>
 									<Route index element={<ConsoleHome />} />
 									<Route path="credentials" element={<ConsoleCredentials />} />
-								<Route
-									path="transactions"
-									element={<ConsoleTransactions />}
-								/>
+									<Route
+										path="transactions"
+										element={<ConsoleTransactions />}
+									/>
+									<Route
+										path="transaction/:startId/*"
+										element={<ConsoleConnectTransaction />}
+									/>
 								</Route>
 								<Route path="/admin" element={<Admin />} />
 

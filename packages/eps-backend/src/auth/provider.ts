@@ -12,6 +12,15 @@ import type { ProfileResult } from "../types";
 export interface UpstreamSession {
 	accessToken: string;
 	refreshToken: string;
+	/**
+	 * Reduced-scope token the browser-side Connect widget reads from
+	 * `sessionStorage`. This is the ONLY field here that is ever handed to a
+	 * browser, and only via `GET /connect/token`; `accessToken` and
+	 * `refreshToken` never leave this process.
+	 */
+	accessTokenLite?: string;
+	/** CRM-scoped token, likewise browser-visible via `GET /connect/token`. */
+	accessTokenCrm?: string;
 	/** Epoch ms after which `accessToken` must be exchanged for a fresh one. */
 	accessExpiresAt: number;
 	/** Epoch ms after which `refreshToken` is dead and the user must log in again. */
@@ -87,4 +96,16 @@ export interface AuthProvider {
 
 	/** Best-effort upstream logout. Must not throw. */
 	revoke?(sid: string): Promise<void>;
+
+	/**
+	 * Reads back the stored upstream session.
+	 *
+	 * Exists solely so `GET /connect/token` can hand the browser the reduced-scope
+	 * `accessTokenLite`/`accessTokenCrm` that the embedded Connect widget reads
+	 * from `sessionStorage` — it has no prop or postMessage API, so there is no
+	 * other way to authenticate it. Callers MUST NOT return `accessToken` or
+	 * `refreshToken` to a client.
+	 * @returns The session, or null when it has expired or cannot be opened.
+	 */
+	getUpstream?(sid: string): Promise<UpstreamSession | null>;
 }

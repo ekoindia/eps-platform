@@ -21,6 +21,15 @@ export interface ConnectLoginEnvelope {
 	response_type_id?: number;
 	access_token?: string;
 	refresh_token?: string;
+	/**
+	 * Reduced-scope access token (`{org_id, is_org_admin, user_id, code,
+	 * eko_user_id, user_type, email}` — `authentication.js:1044`). This is the
+	 * only token the Connect widget reads for transaction calls, and the only one
+	 * this service ever hands to a browser. See `mountConnect`.
+	 */
+	access_token_lite?: string;
+	/** CRM-scoped token (`{org_id, zoho_id}` — `authentication.js:1055`). */
+	access_token_crm?: string;
 	/** Access-token lifetime in SECONDS (`ACCESS_TTL_MINS * 60`). */
 	token_expiration?: number;
 	long_session?: boolean;
@@ -32,6 +41,10 @@ export interface ConnectLoginEnvelope {
 export interface ConnectTokens {
 	accessToken: string;
 	refreshToken: string;
+	/** Reduced-scope token for the browser-side Connect widget. May be absent. */
+	accessTokenLite?: string;
+	/** CRM-scoped token, used only by the widget's deal-stage ping. May be absent. */
+	accessTokenCrm?: string;
 	/** Access-token lifetime in seconds, already clamped. */
 	accessTtlSec: number;
 	/** Refresh-window lifetime in seconds, derived from `long_session`. */
@@ -50,6 +63,17 @@ export interface ConnectClient {
 	}): Promise<ConnectLoginEnvelope>;
 	refreshTokens(refreshToken: string): Promise<ConnectTokens | null>;
 	revoke(refreshToken: string): Promise<void>;
+	/**
+	 * The role-scoped interaction list backing the Connect widget's
+	 * `role_trxn_list`. One call returns every interaction the caller's role may
+	 * run — there is no per-interaction lookup.
+	 * @param accessToken - The caller's FULL upstream access token; the lite token
+	 *   is not accepted here.
+	 */
+	interactions(
+		accessToken: string,
+		opts?: { xRealIp?: string },
+	): Promise<unknown[]>;
 }
 
 /**
@@ -95,6 +119,11 @@ export function tokensOf(env: ConnectLoginEnvelope): ConnectTokens | null {
 	return {
 		accessToken,
 		refreshToken,
+		// Optional on purpose: absent lite/crm must not invalidate a session that
+		// is otherwise fine. Only the widget needs them, and it degrades to a
+		// failed CRM ping rather than a broken login.
+		accessTokenLite: env.access_token_lite,
+		accessTokenCrm: env.access_token_crm,
 		accessTtlSec: accessTtlOf(env),
 		sessionTtlSec: env.long_session ? LONG_SESSION_TTL_SEC : SESSION_TTL_SEC,
 	};
@@ -206,14 +235,23 @@ export function mapConnectLogin(
 		return { kind: "not_allowed", responseTypeId: code };
 	}
 
-	return { kind: "found", responseTypeId: code, profile: mapConnectProfile(d, env.account_details) };
+	return {
+		kind: "found",
+		responseTypeId: code,
+		profile: mapConnectProfile(d, env.account_details),
+	};
 }
 
 /**
- * A thin client for connect-api's `/authentication/*` endpoints.
+ * A thin client for connect-api's `/authentication/*` and `/transactions/*`
+ * endpoints.
  *
- * Server-to-server only — the browser never sees connect-api, so its CORS
- * allowlist (`ACCESS_ORIGINS`) needs no entry for this app.
+ * This client is server-to-server. The browser used to have no reason to reach
+ * connect-api at all — but the embedded Connect widget (`ConnectWidget.tsx`)
+ * calls it directly, using an API base URL baked into its own bundle, so
+ * connect-api's CORS allowlist (`ACCESS_ORIGINS`) DOES need an entry for the
+ * console origin. That is a prerequisite outside this repo; see
+ * docs/features/connect-widget.md.
  */
 export function createConnectClient(
 	cfg: NonNullable<Config["connectApi"]>,
@@ -298,6 +336,21 @@ export function createConnectClient(
 
 		async revoke(refreshToken) {
 			await post("/authentication/revoke", { refresh_token: refreshToken });
+		},
+
+		async interactions(accessToken, opts = {}) {
+			// `source: "WLC"` and a `client_ref_id` are what Eloka's shared fetcher
+			// adds to every connect-api call; the endpoint expects both.
+			const raw = await post(
+				"/transactions/wlc",
+				{ source: "WLC", client_ref_id: `eps-${Date.now()}` },
+				{ bearer: accessToken, xRealIp: opts.xRealIp },
+			);
+			// Shape varies across connect-api versions: a bare array in some, wrapped
+			// in `data` in others. Normalize rather than trust one of them.
+			if (Array.isArray(raw)) return raw;
+			const data = (raw as { data?: unknown })?.data;
+			return Array.isArray(data) ? data : [];
 		},
 	};
 }

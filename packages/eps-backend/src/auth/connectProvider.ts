@@ -76,6 +76,8 @@ export function createConnectAuthProvider(
 					? {
 							accessToken: tokens.accessToken,
 							refreshToken: tokens.refreshToken,
+							accessTokenLite: tokens.accessTokenLite,
+							accessTokenCrm: tokens.accessTokenCrm,
 							accessExpiresAt: now + tokens.accessTtlSec * 1000,
 							sessionExpiresAt: now + tokens.sessionTtlSec * 1000,
 						}
@@ -102,10 +104,18 @@ export function createConnectAuthProvider(
 			await save(sid, {
 				accessToken: next.accessToken,
 				refreshToken: next.refreshToken,
+				// Keep the previous lite/crm tokens when a rotation omits them, rather
+				// than blanking a widget session that was working: `/authentication/token`
+				// is not guaranteed to re-mint every tier. They share the access token's
+				// lifetime, so a stale one simply fails and triggers `login-again`.
+				accessTokenLite: next.accessTokenLite ?? current.accessTokenLite,
+				accessTokenCrm: next.accessTokenCrm ?? current.accessTokenCrm,
 				accessExpiresAt: now + next.accessTtlSec * 1000,
 				sessionExpiresAt: now + next.sessionTtlSec * 1000,
 			});
 		},
+
+		getUpstream: load,
 
 		async revoke(sid) {
 			const current = await load(sid).catch(() => null);

@@ -24,6 +24,7 @@ function setup(over: Partial<ConnectClient> = {}, kv: KV = createInMemoryKV()) {
 		login: vi.fn(async () => ({})),
 		refreshTokens: vi.fn(async () => null),
 		revoke: vi.fn(async () => {}),
+		interactions: vi.fn(async () => []),
 		...over,
 	};
 	const provider = createConnectAuthProvider(connect, {
@@ -73,6 +74,21 @@ describe("connect auth provider — verify", () => {
 		expect(r.upstream!.sessionExpiresAt).toBeGreaterThan(
 			r.upstream!.accessExpiresAt,
 		);
+	});
+
+	it("carries the lite and crm tokens the Connect widget needs", async () => {
+		const { provider } = setup({
+			login: vi.fn(async () => ({
+				...LOGIN_OK,
+				access_token_lite: "ca_lite",
+				access_token_crm: "ca_crm",
+			})),
+		});
+		const r = await provider.verify({ mobile: "9990000001", otp: "123456" });
+		expect(r.ok).toBe(true);
+		if (!r.ok) return;
+		expect(r.upstream?.accessTokenLite).toBe("ca_lite");
+		expect(r.upstream?.accessTokenCrm).toBe("ca_crm");
 	});
 
 	it("classifies without upstream tokens when connect-api minted no session", async () => {
@@ -173,6 +189,59 @@ describe("connect auth provider — refresh", () => {
 		expect(stored.refreshToken).toBe("r2");
 	});
 
+	it("keeps the previous lite/crm tokens when a rotation omits them", async () => {
+		// `/authentication/token` is not guaranteed to re-mint every tier. Blanking
+		// them would break a widget session that was working; a stale one merely
+		// fails and triggers `login-again`.
+		const { provider, kv } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessTokenLite: "lite1",
+			accessTokenCrm: "crm1",
+			accessExpiresAt: Date.now() + 5_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refresh!("sid1");
+
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessTokenLite).toBe("lite1");
+		expect(stored.accessTokenCrm).toBe("crm1");
+	});
+
+	it("takes the rotated lite/crm tokens when connect-api does re-mint them", async () => {
+		const { provider, kv } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTokenLite: "lite2",
+				accessTokenCrm: "crm2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessTokenLite: "lite1",
+			accessTokenCrm: "crm1",
+			accessExpiresAt: Date.now() + 5_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refresh!("sid1");
+
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessTokenLite).toBe("lite2");
+		expect(stored.accessTokenCrm).toBe("crm2");
+	});
+
 	it("throws when connect-api refuses to rotate", async () => {
 		const { provider } = setup({ refreshTokens: vi.fn(async () => null) });
 		await provider.persist!("sid1", {
@@ -184,6 +253,32 @@ describe("connect auth provider — refresh", () => {
 		await expect(provider.refresh!("sid1")).rejects.toThrow(
 			/refused to rotate/,
 		);
+	});
+});
+
+describe("connect auth provider — getUpstream", () => {
+	it("round-trips the sealed session including lite/crm", async () => {
+		const { provider } = setup();
+		await provider.persist!("sid1", {
+			accessToken: "a",
+			refreshToken: "r",
+			accessTokenLite: "lite",
+			accessTokenCrm: "crm",
+			accessExpiresAt: Date.now() + 60_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+
+		const read = await provider.getUpstream!("sid1");
+		expect(read).toMatchObject({
+			accessToken: "a",
+			accessTokenLite: "lite",
+			accessTokenCrm: "crm",
+		});
+	});
+
+	it("returns null for an unknown sid", async () => {
+		const { provider } = setup();
+		expect(await provider.getUpstream!("nope")).toBeNull();
 	});
 });
 

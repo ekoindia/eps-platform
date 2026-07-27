@@ -7,6 +7,7 @@ import type { AuthProvider, UpstreamSession } from "../auth/provider";
 import { createEkoAuthProvider } from "../auth/ekoProvider";
 import type { SessionClaim, Sessions } from "../auth/session";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
+import type { ConnectClient } from "../clients/connect";
 import type { EkoClient } from "../clients/eko";
 import { identityOf } from "../clients/eko";
 import type { GitHubClient } from "../clients/github";
@@ -19,6 +20,7 @@ import type { KV } from "../store/kv";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
+import { mountConnect } from "./connect";
 import { AppError, errorBody } from "./errors";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
@@ -44,6 +46,11 @@ export interface Deps {
 	 * provider, so existing callers and tests need not supply it.
 	 */
 	auth?: AuthProvider;
+	/**
+	 * connect-api client, supplied only when the connect provider is configured.
+	 * Its presence is what mounts the Connect-widget routes — see `mountConnect`.
+	 */
+	connect?: ConnectClient;
 	zoho: ZohoClient;
 	sessions: Sessions;
 	kv: KV;
@@ -482,6 +489,14 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg });
 	mountTransactions(app, { sessions, eko });
+
+	// Connect-widget routes exist only where they can work: they need a provider
+	// that stores upstream credentials AND a client to spend them. Under the `eko`
+	// provider the token-bearing endpoints are not registered at all, so a
+	// misconfiguration cannot leave them reachable.
+	if (deps.connect && auth.getUpstream) {
+		mountConnect(app, { sessions, auth, connect: deps.connect, kv });
+	}
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {

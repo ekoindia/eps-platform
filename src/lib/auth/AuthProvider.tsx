@@ -12,6 +12,8 @@ import {
 	type MeView,
 	type SignupView,
 } from "@/lib/auth/client";
+import { resetRoleTransactionCache } from "@/lib/connect/interactions";
+import { clearConnectTokens } from "@/lib/connect/token";
 import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
 import { setChatIdentity } from "@/lib/zoho-chat";
@@ -80,7 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	// show one user their balance in the next user's session. Keyed on "anon"
 	// rather than on logout() so an expired session clears it too.
 	useEffect(() => {
-		if (state.status === "anon") resetWalletBalanceCache();
+		if (state.status !== "anon") return;
+		resetWalletBalanceCache();
+		// Same hazard, higher stakes: the Connect widget's credentials live in
+		// sessionStorage, which outlives the session that minted them. The widget's
+		// own unmount clears them; this catches every other way a session ends.
+		clearConnectTokens();
+		resetRoleTransactionCache();
 	}, [state.status]);
 
 	return (

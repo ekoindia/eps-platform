@@ -72,12 +72,13 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 
 	// Configuration-time choice, not a runtime failover: a connect-api outage
 	// does NOT fall back to the direct path. Switching providers is a redeploy.
-	const auth = cfg.connectApi
-		? createConnectAuthProvider(createConnectClient(cfg.connectApi, fetch), {
-				kv,
-				secretbox,
-				cfg,
-			})
+	// One client instance, shared by the auth provider and the Connect-widget
+	// routes, so both spend the same timeout and base URL.
+	const connect = cfg.connectApi
+		? createConnectClient(cfg.connectApi, fetch)
+		: undefined;
+	const auth = connect
+		? createConnectAuthProvider(connect, { kv, secretbox, cfg })
 		: createEkoAuthProvider(eko);
 	console.log(`[eps-backend] auth provider: ${auth.name}`);
 
@@ -90,6 +91,7 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		accessLog: createAccessLogger(),
 		eko,
 		auth,
+		connect,
 		zoho: createZohoClient(cfg.zoho),
 		github: createGitHubClient(cfg.github),
 		sessions: createSessions(cfg, kv, { secretbox }),

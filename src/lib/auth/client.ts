@@ -110,6 +110,14 @@ export interface DeployResult {
 	prNumber: number;
 }
 
+/** Browser-visible connect-api tokens. Never carries the full access token. */
+export interface ConnectTokenView {
+	accessTokenLite: string;
+	accessTokenCrm: string | null;
+	/** Epoch ms the lite token stops being accepted upstream. */
+	expiresAt: number;
+}
+
 /** Error thrown when the API returns a non-2xx response, carrying the envelope code and HTTP status. */
 export class ApiError extends Error {
 	public code: string;
@@ -192,6 +200,20 @@ export const authClient = {
 	/** The signed-in developer's E-value wallet balance, in rupees. */
 	walletBalance: (): Promise<WalletBalanceView> =>
 		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
+	/**
+	 * Reduced-scope connect-api tokens for the embedded Connect widget.
+	 *
+	 * The full access token is deliberately NOT part of this response — see
+	 * `mountConnect` in the backend. Callers must treat this as a credential:
+	 * write it where the widget reads it and nowhere else.
+	 */
+	connectToken: (): Promise<ConnectTokenView> =>
+		request("/connect/token", { method: "GET" }) as Promise<ConnectTokenView>,
+	/** The role-scoped interaction list backing `role_trxn_list`. */
+	connectInteractions: (): Promise<{ interactions: unknown[] }> =>
+		request("/connect/interactions", { method: "GET" }) as Promise<{
+			interactions: unknown[];
+		}>,
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>

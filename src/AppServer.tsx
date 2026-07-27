@@ -62,6 +62,7 @@ import ConsoleLayout from "./components/console/ConsoleLayout";
 import ConsoleHome from "./pages/console/ConsoleHome";
 import ConsoleCredentials from "./pages/console/Credentials";
 import ConsoleTransactions from "./pages/console/Transactions";
+import ConsoleConnectTransaction from "./pages/console/ConnectTransaction";
 import Admin from "./pages/Admin";
 
 function TrackingParamCapture() {
@@ -155,6 +156,10 @@ const AppServer = ({
 									<Route
 										path="transactions"
 										element={<ConsoleTransactions />}
+									/>
+									<Route
+										path="transaction/:startId/*"
+										element={<ConsoleConnectTransaction />}
 									/>
 								</Route>
 								<Route path="/admin" element={<Admin />} />

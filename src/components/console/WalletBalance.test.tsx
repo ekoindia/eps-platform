@@ -16,6 +16,15 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	authClient: { walletBalance: () => walletBalance() },
 }));
 
+// Pinned, not inherited: vitest loads .env.local too, so a developer who turns
+// the widget on locally would otherwise flip these cases into fetching an
+// interaction list this file does not mock. The Load-Balance button has its own
+// suite in WalletBalance.connect.test.tsx.
+vi.mock("@/lib/config/features", async (orig) => ({
+	...(await orig<typeof import("@/lib/config/features")>()),
+	SHOW_CONNECT_WIDGET: false,
+}));
+
 beforeEach(() => {
 	walletBalance.mockReset();
 	// The balance cache is module state that deliberately outlives a mount, so
