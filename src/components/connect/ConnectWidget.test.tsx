@@ -1,4 +1,5 @@
 import { ConnectWidget } from "@/components/connect/ConnectWidget";
+import { ConnectDialogProvider } from "@/components/connect/DialogHost";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { clearConnectTokens } from "@/lib/connect/token";
 import { render, waitFor } from "@testing-library/react";
@@ -47,7 +48,9 @@ beforeEach(() => {
 async function mountWidget() {
 	const { container } = render(
 		<MemoryRouter>
-			<ConnectWidget interactionId={491} paths={[]} />
+			<ConnectDialogProvider>
+				<ConnectWidget interactionId={491} paths={[]} />
+			</ConnectDialogProvider>
 		</MemoryRouter>,
 	);
 	const el = await waitFor(() => {
@@ -104,7 +107,9 @@ describe("ConnectWidget", () => {
 	it("clears those credentials on unmount", async () => {
 		const { unmount } = render(
 			<MemoryRouter>
-				<ConnectWidget interactionId={491} paths={[]} />
+				<ConnectDialogProvider>
+					<ConnectWidget interactionId={491} paths={[]} />
+				</ConnectDialogProvider>
 			</MemoryRouter>,
 		);
 		await waitFor(() =>

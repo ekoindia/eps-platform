@@ -1,3 +1,16 @@
+import type { FileViewOptions } from "@/components/connect/FileViewDialog";
+
+/** A file the flow wants shown, already normalised for the viewer. */
+export interface FileViewRequest {
+	file: string;
+	options: FileViewOptions;
+	/**
+	 * The flow is not showing the file, it is asking the user to accept it — so
+	 * this opens the image editor and the answer is sent back to the widget.
+	 */
+	userConfirmation: boolean;
+}
+
 /**
  * Callbacks the widget's events are translated into.
  *
@@ -6,6 +19,8 @@
  * console's.
  */
 export interface WidgetEventHandlers {
+	/** Show (or ask the user to confirm) a file the flow produced. */
+	onFileView: (request: FileViewRequest) => void;
 	/** The flow moved the user's E-value. */
 	onBalanceChanged: (balance: number) => void;
 	/** The upstream session expired mid-flow and must be renewed. */
@@ -23,7 +38,15 @@ interface IronSignalDetail {
 	name?: string;
 	trxnid?: string;
 	product_id?: string;
-	data?: { balance?: unknown };
+	data?: {
+		balance?: unknown;
+		/** `file-view`: URL of the file, or a bare video id when `is_youtube`. */
+		file?: string;
+		options?: FileViewOptions;
+		userConfirmation?: boolean;
+		is_youtube?: boolean;
+		label?: string;
+	};
 }
 
 /**
@@ -65,6 +88,24 @@ export function attachWidgetEvents(handlers: WidgetEventHandlers): () => void {
 					detail.product_id ? String(detail.product_id) : undefined,
 				);
 				return;
+			case "file-view": {
+				const data = detail.data;
+				if (!data?.file) return;
+				// A YouTube payload carries the bare video id, not a URL.
+				const file = data.is_youtube
+					? `https://www.youtube.com/watch?v=${data.file}`
+					: data.file;
+				handlers.onFileView({
+					file,
+					options: {
+						label: data.label,
+						...data.options,
+						...(data.is_youtube ? { type: "youtube" as const } : {}),
+					},
+					userConfirmation: Boolean(data.userConfirmation),
+				});
+				return;
+			}
 		}
 	};
 

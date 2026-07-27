@@ -1,3 +1,5 @@
+import { useConnectDialogs } from "@/components/connect/DialogHost";
+import { PrintReceipt } from "@/components/connect/PrintReceipt";
 import { useAppLink } from "@/hooks/use-app-link";
 import {
 	fetchRoleTransactionList,
@@ -65,6 +67,9 @@ function syncWidgetProps(
 	},
 ): void {
 	const w = el as unknown as Record<string, unknown>;
+	// Polymer's camel-case form of the `enable-print` attribute Eloka sets: it
+	// puts a print button on the receipt card, which calls `window.print()`.
+	w.enablePrint = true;
 	w.role_trxn_list = props.roleTxList;
 	w.route_params = {
 		trxntypeid: props.interactionId,
@@ -105,6 +110,7 @@ export function ConnectWidget({
 	const widgetRef = useRef<HTMLElement | null>(null);
 	const navigate = useNavigate();
 	const { openUrl } = useAppLink();
+	const { showFile } = useConnectDialogs();
 
 	useEffect(() => {
 		if (!SHOW_CONNECT_WIDGET || !CONNECT_WIDGET_URL) return;
@@ -176,8 +182,11 @@ export function ConnectWidget({
 						: "/console/transactions",
 				),
 			onOpenUrl: openUrl,
+			onFileView: ({ file, options }) => {
+				void showFile(file, options);
+			},
 		});
-	}, [status, navigate, openUrl]);
+	}, [status, navigate, openUrl, showFile]);
 
 	if (status === "unavailable") {
 		return (
@@ -212,5 +221,9 @@ export function ConnectWidget({
 		);
 	}
 
-	return <tf-wlc-widget ref={widgetRef} />;
+	return (
+		<PrintReceipt heading="Transaction Receipt">
+			<tf-wlc-widget ref={widgetRef} />
+		</PrintReceipt>
+	);
 }

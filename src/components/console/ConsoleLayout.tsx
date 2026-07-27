@@ -1,5 +1,6 @@
 import { Footer } from "@/components/Footer";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { ConnectDialogProvider } from "@/components/connect/DialogHost";
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,8 +141,12 @@ export default function ConsoleLayout() {
 				<title>Developer Console — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
-			<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh]">
-				<h1 className="text-2xl font-bold text-eko-navy mb-8">
+			{/* Printing a console page means printing a receipt: the page's own
+			    padding, title and rail are chrome, and only the sub-page's content
+			    belongs on paper. See `connect/PrintReceipt.tsx` for what replaces
+			    them there. */}
+			<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh] print:p-0">
+				<h1 className="text-2xl font-bold text-eko-navy mb-8 print:hidden">
 					Developer Console
 				</h1>
 				{showLoading ? <ConsoleLoading /> : null}
@@ -175,41 +180,45 @@ export default function ConsoleLayout() {
 					</Card>
 				) : null}
 				{developer ? (
-					<div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-						{/*
-						 * One rail column at every width, so `WalletBalance` mounts once and
-						 * fetches once — a second copy inside the Sheet would double the
-						 * upstream round-trips and race the visible card to the rate limit.
-						 * Only the LINKS collapse behind the Sheet below `lg`; the balance
-						 * stays on screen, as it is in Eloka. Desktop: sticky under the
-						 * fixed ~88px site header, mirroring DocsLayout.
-						 */}
-						<aside>
-							<div className="lg:sticky lg:top-28">
-								<WalletBalance />
-								<div className="lg:hidden">
-									<Sheet open={open} onOpenChange={setOpen}>
-										<SheetTrigger asChild>
-											<Button variant="outline" size="sm" className="gap-2">
-												<Menu className="h-4 w-4" />
-												Console menu
-											</Button>
-										</SheetTrigger>
-										<SheetContent side="left" className="w-72 p-4 pt-10">
-											<SheetTitle className="sr-only">Console menu</SheetTitle>
-											<ConsoleNav onNavigate={() => setOpen(false)} />
-										</SheetContent>
-									</Sheet>
+					<ConnectDialogProvider>
+						<div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8 print:block">
+							{/*
+							 * One rail column at every width, so `WalletBalance` mounts once and
+							 * fetches once — a second copy inside the Sheet would double the
+							 * upstream round-trips and race the visible card to the rate limit.
+							 * Only the LINKS collapse behind the Sheet below `lg`; the balance
+							 * stays on screen, as it is in Eloka. Desktop: sticky under the
+							 * fixed ~88px site header, mirroring DocsLayout.
+							 */}
+							<aside className="print:hidden">
+								<div className="lg:sticky lg:top-28">
+									<WalletBalance />
+									<div className="lg:hidden">
+										<Sheet open={open} onOpenChange={setOpen}>
+											<SheetTrigger asChild>
+												<Button variant="outline" size="sm" className="gap-2">
+													<Menu className="h-4 w-4" />
+													Console menu
+												</Button>
+											</SheetTrigger>
+											<SheetContent side="left" className="w-72 p-4 pt-10">
+												<SheetTitle className="sr-only">
+													Console menu
+												</SheetTitle>
+												<ConsoleNav onNavigate={() => setOpen(false)} />
+											</SheetContent>
+										</Sheet>
+									</div>
+									<div className="hidden lg:block">
+										<ConsoleNav />
+									</div>
 								</div>
-								<div className="hidden lg:block">
-									<ConsoleNav />
-								</div>
+							</aside>
+							<div className="min-w-0">
+								<Outlet context={developer} />
 							</div>
-						</aside>
-						<div className="min-w-0">
-							<Outlet context={developer} />
 						</div>
-					</div>
+					</ConnectDialogProvider>
 				) : null}
 			</main>
 			<Footer />
