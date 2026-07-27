@@ -1,4 +1,4 @@
-import { useConnectDialogs } from "@/components/connect/DialogHost";
+import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,13 +16,7 @@ import {
 	type IssueInput,
 	type IssueType,
 } from "@/lib/connect/support";
-import {
-	Camera as CameraIcon,
-	CheckCircle2,
-	FolderOpen,
-	ScanLine,
-	X,
-} from "lucide-react";
+import { CheckCircle2, ScanLine, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
@@ -608,15 +602,23 @@ export function RaiseIssueDialog({
 					))}
 
 					{files.map((file, index) => (
-						<FileField
+						<FileUpload
 							key={file.label}
-							field={file}
-							index={index}
+							label={file.label}
+							required={file.is_required}
 							disabled={disabled}
-							onChange={(value) =>
+							className="max-w-sm"
+							accept={
+								file.accept ||
+								"image/jpeg,image/pjpeg,image/png,application/pdf"
+							}
+							file={file.value}
+							onFileChange={(value) =>
 								setFiles((prev) =>
 									prev.map((current, i) =>
-										i === index ? { ...current, value } : current,
+										i === index
+											? { ...current, value: value ?? undefined }
+											: current,
 									),
 								)
 							}
@@ -664,158 +666,6 @@ export function RaiseIssueDialog({
 				</>
 			) : null}
 		</Panel>
-	);
-}
-
-/** Whether an `accept` string lets the user attach an image at all. */
-function acceptsImages(accept?: string): boolean {
-	return (
-		!accept ||
-		accept.split(",").some((type) => type.trim().startsWith("image/"))
-	);
-}
-
-/**
- * One attachment the issue type asked for.
- *
- * A bare file input would be enough to *submit* something, but Eloka's Dropzone
- * put an image through the editor first, offered the camera as a source, and
- * showed a preview that could be discarded. Support needs a legible crop of a
- * receipt, not whatever the phone's gallery handed over — so the editor round
- * trip is kept; only the drag-and-drop surface is not.
- * @param props.field - The field definition, including its current value.
- * @param props.index - Position in the form, for element ids.
- * @param props.disabled - The form is submitting or already submitted.
- * @param props.onChange - Receives the file to attach, or undefined to discard.
- */
-function FileField({
-	field,
-	index,
-	disabled,
-	onChange,
-}: {
-	field: IssueFile;
-	index: number;
-	disabled?: boolean;
-	onChange: (value: File | undefined) => void;
-}) {
-	const { editImage, openCamera, showFile } = useConnectDialogs();
-	const inputRef = useRef<HTMLInputElement | null>(null);
-	const [preview, setPreview] = useState<string | null>(null);
-	const accept =
-		field.accept || "image/jpeg,image/pjpeg,image/png,application/pdf";
-
-	/** Clears the native input so re-picking the same file still fires `change`. */
-	function resetInput() {
-		if (inputRef.current) inputRef.current.value = "";
-	}
-
-	async function onPick(picked: File | undefined) {
-		if (!picked) return;
-		if (!picked.type.toLowerCase().startsWith("image/")) {
-			// Nothing to crop in a PDF.
-			setPreview(null);
-			onChange(picked);
-			return;
-		}
-
-		const objectUrl = URL.createObjectURL(picked);
-		try {
-			const result = await editImage(objectUrl, { fileName: picked.name });
-			if (result.accepted && result.file) {
-				setPreview(result.image ?? null);
-				onChange(result.file);
-			} else {
-				resetInput();
-			}
-		} finally {
-			URL.revokeObjectURL(objectUrl);
-		}
-	}
-
-	async function onCameraCapture() {
-		// No `fileName`: the editor's generated `Image_<timestamp>.jpg` at least
-		// carries an extension, which a field label would not.
-		const result = await openCamera();
-		if (result.accepted && result.file) {
-			setPreview(result.image ?? null);
-			onChange(result.file);
-		}
-	}
-
-	return (
-		<div className="mb-4 flex max-w-sm flex-col gap-1.5">
-			<Label htmlFor={`issue-file-${index}`}>
-				{field.label}
-				{field.is_required ? " *" : ""}
-			</Label>
-			<input
-				ref={inputRef}
-				id={`issue-file-${index}`}
-				type="file"
-				accept={accept}
-				disabled={disabled}
-				hidden
-				onChange={(event) => void onPick(event.target.files?.[0])}
-			/>
-
-			{field.value ? (
-				<div className="relative inline-block w-fit">
-					{preview ? (
-						<img
-							src={preview}
-							alt={field.label}
-							onClick={() => void showFile(preview)}
-							className="max-h-40 max-w-40 cursor-pointer rounded-sm shadow-sm"
-						/>
-					) : (
-						<p className="max-w-50 truncate rounded-md border px-3 py-2 text-xs">
-							{field.value.name}
-						</p>
-					)}
-					<button
-						type="button"
-						aria-label={`Discard ${field.label}`}
-						disabled={disabled}
-						onClick={() => {
-							setPreview(null);
-							onChange(undefined);
-							resetInput();
-						}}
-						className="absolute -right-2.5 -top-2.5 cursor-pointer rounded-full bg-eko-navy p-1 text-white"
-					>
-						<X className="h-3.5 w-3.5" />
-					</button>
-				</div>
-			) : (
-				<div className="flex flex-wrap gap-2">
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						disabled={disabled}
-						onClick={() => inputRef.current?.click()}
-						className="gap-2"
-					>
-						<FolderOpen className="h-4 w-4" />
-						Select file
-					</Button>
-					{acceptsImages(field.accept) ? (
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							disabled={disabled}
-							onClick={() => void onCameraCapture()}
-							className="gap-2"
-						>
-							<CameraIcon className="h-4 w-4" />
-							Camera
-						</Button>
-					) : null}
-				</div>
-			)}
-		</div>
 	);
 }
 

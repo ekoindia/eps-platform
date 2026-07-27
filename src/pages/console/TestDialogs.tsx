@@ -1,3 +1,4 @@
+import { FileUpload } from "@/components/FileUpload";
 import { useConnectDialogs } from "@/components/connect/DialogHost";
 import { PrintReceipt } from "@/components/connect/PrintReceipt";
 import type { CameraOptions } from "@/components/connect/CameraDialog";
@@ -38,6 +39,9 @@ export default function TestDialogs() {
 
 			<Section title="File viewer">
 				<FileViewerTest />
+			</Section>
+			<Section title="File upload (Eloka's Dropzone)">
+				<FileUploadTest />
 			</Section>
 			<Section title="Image editor">
 				<ImageEditorTest />
@@ -215,6 +219,70 @@ function FileViewerTest() {
 					}}
 				/>
 			</label>
+		</div>
+	);
+}
+
+/** Accept presets, mirroring Eloka's Dropzone bench. */
+const ACCEPT_PRESETS = [
+	{ label: "Any file type", value: "" },
+	{ label: "JPG / PNG / PDF", value: "image/jpeg,image/png,application/pdf" },
+	{ label: "Any image type", value: "image/*" },
+	{ label: "PDF only", value: "application/pdf" },
+];
+
+/** The reusable upload control, with every switch it exposes. */
+function FileUploadTest() {
+	const { options, controls } = useEditorOptions();
+	const [file, setFile] = useState<File | null>(null);
+	const [accept, setAccept] = useState("");
+	const [cameraOnly, setCameraOnly] = useState(false);
+	const [disableImageConfirm, setDisableImageConfirm] = useState(false);
+
+	return (
+		<div>
+			{controls}
+			<div className="mb-3 flex flex-wrap items-end gap-3">
+				<Toggle label="cameraOnly" checked={cameraOnly} onChange={setCameraOnly} />
+				<Toggle
+					label="disableImageConfirm"
+					checked={disableImageConfirm}
+					onChange={setDisableImageConfirm}
+				/>
+				<div className="flex flex-col gap-1">
+					<Label htmlFor="opt-accept" className="text-[10px]">
+						accept
+					</Label>
+					<select
+						id="opt-accept"
+						value={accept}
+						onChange={(event) => setAccept(event.target.value)}
+						className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+					>
+						{ACCEPT_PRESETS.map((preset) => (
+							<option key={preset.label} value={preset.value}>
+								{preset.label}
+							</option>
+						))}
+					</select>
+				</div>
+			</div>
+			<FileUpload
+				label="Upload your photo"
+				accept={accept}
+				cameraOnly={cameraOnly}
+				file={file}
+				onFileChange={setFile}
+				options={{ ...options, disableImageConfirm }}
+				className="max-w-md"
+			/>
+			<ResultJson
+				value={
+					file
+						? { name: file.name, type: file.type, size: file.size }
+						: null
+				}
+			/>
 		</div>
 	);
 }

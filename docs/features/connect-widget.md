@@ -170,7 +170,36 @@ MediaPipe are not in the console's initial bundle.
 | File view | Native `<img>`/`<video>`/`<audio>`/`<iframe>`, no react-player. Non-`http(s)`/`data`/`blob` URLs are refused: `javascript:` in an iframe `src` would run in the origin holding the widget's tokens. |
 | Camera | `react-webcam` + Eloka's device classification (label regex → facing mode → mirror). Capture pauses the preview and stacks the editor; rejecting there resumes it rather than closing the camera. |
 | Image editor | `react-image-crop` with its own stylesheet. Rotation is 90°-only. Face detection loads MediaPipe dynamically behind a 3s timeout, and `minFaceCount` is enforced **only when detection completed** — otherwise a slow WASM load would lock the user out. |
-| Raise issue | Category → sub-category → issue type, then whatever that issue type asks for. Screenshot capture uses `getDisplayMedia({ preferCurrentTab, monitorTypeSurfaces: "exclude" })` and hides the dialog while the shot is taken; `autoCaptureScreenshot` starts it once, unprompted. Attachment fields put an image through the editor first and offer the camera as a source, with a preview that can be discarded. |
+| Raise issue | Category → sub-category → issue type, then whatever that issue type asks for. Screenshot capture uses `getDisplayMedia({ preferCurrentTab, monitorTypeSurfaces: "exclude" })` and hides the dialog while the shot is taken; `autoCaptureScreenshot` starts it once, unprompted. Attachment fields are `<FileUpload>`. |
+
+### `<FileUpload>`
+
+`src/components/FileUpload.tsx` is the general-purpose upload control — Eloka's
+`Dropzone`, and the reason those three dialogs are worth having. Every image,
+whether picked, dropped or captured, goes through the editor before the caller
+sees it, so a form receives a cropped, rotated, size-capped JPEG instead of a
+4 MB photo of a desk.
+
+```tsx
+<FileUpload
+	label="Shop photo"
+	accept="image/*"
+	file={photo}
+	onFileChange={setPhoto}
+	options={{ aspectRatio: 1, maxLength: 1200, detectFace: true }}
+/>
+```
+
+`accept` decides which sources appear (no camera for a PDF-only field, "Select
+photo" rather than "Select file" when images are all that is allowed);
+`cameraOnly` drops the picker and the drop zone; `options.disableImageConfirm`
+takes the capture as-is. It needs a `ConnectDialogProvider` above it.
+
+Dropping a file from the file system attaches it directly; dropping an image
+dragged from another tab re-fetches it by URL, which cross-origin hosts without
+CORS refuse — hence a fallback, not the main path. Eloka's watermark builder
+(user, org, IP, GPS fix) is not ported: no org context and no IP endpoint here,
+so callers pass the `watermark` text they want.
 
 The face model is committed at `public/wasm/mediapipe-models/`; the WASM runtime
 comes from `cdn.jsdelivr.net`.
@@ -189,9 +218,9 @@ Deliberately skipped from Eloka's wrapper: KBar/command-bar actions and the
 Android PubSub bridge (no counterpart here), the MediaPipe text classifier that
 scored comment sentiment, `customIssueType` (it existed for the command-bar entry
 point), and the screenshot-editing branch, which was already dead behind
-`DISABLE_EDIT`. Of the 612-line Dropzone, attachment fields keep what mattered —
-the image → editor round trip, camera capture, preview and discard — but not its
-drag-and-drop surface, IP lookup or watermark builder.
+`DISABLE_EDIT`. Of the 612-line Dropzone, `<FileUpload>` keeps the image →
+editor round trip, camera capture, drag and drop, preview and discard, but not
+the IP lookup or the watermark builder.
 There is no "Raise issue" entry point on the transaction-history rows yet — the
 dialog is reached from a flow.
 
@@ -252,7 +281,8 @@ npx vitest run src/lib/connect src/hooks/use-app-link.test.ts \
 The dialogs are hard to reach through a flow (entitled UAT account, widget
 loaded, right transaction), so `npm run dev` mounts a bench at
 **`/console/test`** — last item in the console rail — that opens each one
-directly with the options a flow would send, and shows what it resolved with.
+directly — plus `<FileUpload>` with every switch it exposes — with the options a
+flow would send, and shows what it resolved with.
 Both the route and the rail item sit behind `import.meta.env.DEV`, with the
 `import()` inside the guard so no chunk is emitted in a production build.
 
