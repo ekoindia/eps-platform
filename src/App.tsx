@@ -46,6 +46,13 @@ const ConsoleTransactions = lazy(() => import("./pages/console/Transactions"));
 const ConsoleConnectTransaction = lazy(
 	() => import("./pages/console/ConnectTransaction"),
 );
+// Dev-only bench for the connect dialogs. The `import()` sits INSIDE the DEV
+// check so a production build folds the whole expression away and never emits
+// the chunk — guarding only the <Route> below would still ship it, dead.
+// Deliberately absent from AppServer: /console is never prerendered.
+const ConsoleTestDialogs = import.meta.env.DEV
+	? lazy(() => import("./pages/console/TestDialogs"))
+	: null;
 const Admin = lazy(() => import("./pages/Admin"));
 
 function TrackingParamCapture() {
@@ -143,6 +150,9 @@ const App = ({
 										path="transaction/:startId/*"
 										element={<ConsoleConnectTransaction />}
 									/>
+									{ConsoleTestDialogs ? (
+										<Route path="test" element={<ConsoleTestDialogs />} />
+									) : null}
 								</Route>
 								<Route path="/admin" element={<Admin />} />
 

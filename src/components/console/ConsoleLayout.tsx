@@ -22,6 +22,7 @@ import type { MeView } from "@/lib/auth/client";
 import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn } from "@/lib/utils";
 import {
+	FlaskConical,
 	KeyRound,
 	LayoutDashboard,
 	Menu,
@@ -63,6 +64,19 @@ const NAV_ITEMS: readonly NavItem[] = [
 		icon: ReceiptText,
 		end: false,
 	},
+	// Last, and only while developing: the bench opens the camera, image editor,
+	// file viewer and raise-issue form without needing a transaction flow. The
+	// route itself is registered under the same guard in App.tsx.
+	...(import.meta.env.DEV
+		? [
+				{
+					to: "/console/test",
+					label: "Test bench",
+					icon: FlaskConical,
+					end: false,
+				},
+			]
+		: []),
 ];
 
 /**

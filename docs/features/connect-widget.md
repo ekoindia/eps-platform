@@ -249,6 +249,13 @@ npx vitest run src/lib/connect src/hooks/use-app-link.test.ts \
   src/components/console/WalletBalance.connect.test.tsx
 ```
 
+The dialogs are hard to reach through a flow (entitled UAT account, widget
+loaded, right transaction), so `npm run dev` mounts a bench at
+**`/console/test`** — last item in the console rail — that opens each one
+directly with the options a flow would send, and shows what it resolved with.
+Both the route and the rail item sit behind `import.meta.env.DEV`, with the
+`import()` inside the guard so no chunk is emitted in a production build.
+
 jsdom cannot load an HTML import, so the widget itself is only testable in a real
 browser: sign in to `/console` on a UAT mobile, confirm the `＋`, open the flow,
 and check DevTools for a `Bearer` header with **no CORS error**. Complete a UAT
