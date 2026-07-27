@@ -170,7 +170,7 @@ MediaPipe are not in the console's initial bundle.
 | File view | Native `<img>`/`<video>`/`<audio>`/`<iframe>`, no react-player. Non-`http(s)`/`data`/`blob` URLs are refused: `javascript:` in an iframe `src` would run in the origin holding the widget's tokens. |
 | Camera | `react-webcam` + Eloka's device classification (label regex → facing mode → mirror). Capture pauses the preview and stacks the editor; rejecting there resumes it rather than closing the camera. |
 | Image editor | `react-image-crop` with its own stylesheet. Rotation is 90°-only. Face detection loads MediaPipe dynamically behind a 3s timeout, and `minFaceCount` is enforced **only when detection completed** — otherwise a slow WASM load would lock the user out. |
-| Raise issue | Category → sub-category → issue type, then whatever that issue type asks for. Screenshot capture uses `getDisplayMedia({ preferCurrentTab, monitorTypeSurfaces: "exclude" })` and hides the dialog while the shot is taken. |
+| Raise issue | Category → sub-category → issue type, then whatever that issue type asks for. Screenshot capture uses `getDisplayMedia({ preferCurrentTab, monitorTypeSurfaces: "exclude" })` and hides the dialog while the shot is taken; `autoCaptureScreenshot` starts it once, unprompted. Attachment fields put an image through the editor first and offer the camera as a source, with a preview that can be discarded. |
 
 The face model is committed at `public/wasm/mediapipe-models/`; the WASM runtime
 comes from `cdn.jsdelivr.net`.
@@ -187,9 +187,11 @@ page uses it, and prints only the expanded row.
 
 Deliberately skipped from Eloka's wrapper: KBar/command-bar actions and the
 Android PubSub bridge (no counterpart here), the MediaPipe text classifier that
-scored comment sentiment, the 612-line Dropzone (a plain `<input type="file">`
-covers it), `customIssueType` (it existed for the command-bar entry point), and
-the screenshot-editing branch, which was already dead behind `DISABLE_EDIT`.
+scored comment sentiment, `customIssueType` (it existed for the command-bar entry
+point), and the screenshot-editing branch, which was already dead behind
+`DISABLE_EDIT`. Of the 612-line Dropzone, attachment fields keep what mattered —
+the image → editor round trip, camera capture, preview and discard — but not its
+drag-and-drop surface, IP lookup or watermark builder.
 There is no "Raise issue" entry point on the transaction-history rows yet — the
 dialog is reached from a flow.
 

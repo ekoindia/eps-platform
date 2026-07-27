@@ -1,11 +1,21 @@
 import type { CameraOptions } from "@/components/connect/CameraDialog";
 import type { FileViewOptions } from "@/components/connect/FileViewDialog";
+import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog";
 import type { RaiseIssueOptions } from "@/components/connect/RaiseIssueDialog";
 
 /** A file the flow wants shown, already normalised for the viewer. */
 export interface FileViewRequest {
 	file: string;
 	options: FileViewOptions;
+	/**
+	 * The same payload read as editor requirements, for the confirmation path.
+	 *
+	 * The widget sends ONE options object serving both: `type`/`label` steer the
+	 * viewer, while `detectFace`, `minFaceCount`, `aspectRatio`, `maxLength`,
+	 * `disableCrop` and friends steer the editor. Dropping the second half would
+	 * silently confirm a face photo with no face check and no aspect ratio.
+	 */
+	editorOptions: ImageEditorOptions;
 	/**
 	 * The flow is not showing the file, it is asking the user to accept it — so
 	 * this opens the image editor and the answer is sent back to the widget.
@@ -48,10 +58,13 @@ interface IronSignalDetail {
 		balance?: unknown;
 		/** `file-view`: URL of the file, or a bare video id when `is_youtube`. */
 		file?: string;
-		options?: FileViewOptions;
+		/** Viewer AND editor options in one object; see `FileViewRequest`. */
+		options?: FileViewOptions & ImageEditorOptions;
 		userConfirmation?: boolean;
 		is_youtube?: boolean;
 		label?: string;
+		/** The flow's own name for the file, which the accepted `File` keeps. */
+		name?: string;
 	};
 }
 
@@ -107,6 +120,12 @@ export function attachWidgetEvents(handlers: WidgetEventHandlers): () => void {
 						label: data.label,
 						...data.options,
 						...(data.is_youtube ? { type: "youtube" as const } : {}),
+					},
+					editorOptions: {
+						// Eloka folds `name` into the editor options as `fileName`; without
+						// it the accepted upload is named `Image_<timestamp>.jpg`.
+						fileName: data.name,
+						...data.options,
 					},
 					userConfirmation: Boolean(data.userConfirmation),
 				});

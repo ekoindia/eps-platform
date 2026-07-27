@@ -199,14 +199,14 @@ export function ConnectWidget({
 						: "/console/transactions",
 				),
 			onOpenUrl: openUrl,
-			onFileView: ({ file, options, userConfirmation }) => {
+			onFileView: ({ file, options, editorOptions, userConfirmation }) => {
 				if (!userConfirmation) {
 					void showFile(file, options);
 					return;
 				}
 				// The flow is waiting on an answer, and takes the editor's result
 				// verbatim — `{ image, file?, accepted }`.
-				void editImage(file).then((result) => {
+				void editImage(file, editorOptions).then((result) => {
 					widgetOf(widgetRef.current)?.fileViewResponse?.(result);
 				});
 			},
