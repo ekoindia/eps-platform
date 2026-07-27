@@ -297,7 +297,9 @@ export function ImageEditorDialog({
 					className="block max-h-[calc(100vh-60px)] max-w-screen"
 				/>
 			</ReactCrop>
-			<div className="fixed inset-x-0 bottom-0 flex h-15 flex-row-reverse items-center justify-center gap-2.5 bg-gray-200 md:gap-6 md:rounded-md">
+			{/* In flow, under the image: fixed to the viewport it covered the bottom
+			    of the photo — including the crop handles the user needs to drag. */}
+			<div className="flex h-15 w-full shrink-0 flex-row-reverse items-center justify-center gap-2.5 rounded-b-md bg-gray-200 md:gap-6">
 				<ToolButton label="Accept image" variant="accept" onClick={onAccept}>
 					<Check className="h-6 w-6" />
 				</ToolButton>

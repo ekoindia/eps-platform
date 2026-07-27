@@ -10,8 +10,9 @@ const FIX = {
 
 describe("formatLocation", () => {
 	it("pairs the fix with the IP", () => {
+		// Coordinates are fixed to 5 decimals — ~1 m, past what any GPS knows.
 		expect(formatLocation(FIX, "203.0.113.7")).toBe(
-			"28.6139, 77.209 (12m) – 203.0.113.7",
+			"28.61390, 77.20900 (12m) – 203.0.113.7",
 		);
 	});
 
@@ -24,7 +25,7 @@ describe("formatLocation", () => {
 			),
 		).toBe("203.0.113.7");
 		// Backend unreachable: the fix alone is better than nothing.
-		expect(formatLocation(FIX, "")).toBe("28.6139, 77.209 (12m)");
+		expect(formatLocation(FIX, "")).toBe("28.61390, 77.20900 (12m)");
 	});
 
 	it("is empty when neither is known", () => {

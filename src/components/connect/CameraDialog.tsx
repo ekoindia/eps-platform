@@ -227,9 +227,10 @@ export function CameraDialog({
 				}}
 				className="max-h-[calc(100vh-80px)] max-w-full rounded-md"
 			/>
-			<div className="h-20 w-full" />
 			{status === "ready" ? (
-				<div className="fixed inset-x-0 bottom-0 flex h-20 flex-row-reverse items-center justify-center gap-2.5 bg-black/60 md:gap-6 md:rounded-md">
+				// Under the preview, not over it: a fixed bar hides whatever the user
+				// is trying to frame at the bottom of the shot.
+				<div className="flex h-20 w-full shrink-0 flex-row-reverse items-center justify-center gap-2.5 rounded-b-md bg-black/60 md:gap-6">
 					<IconButton label="Capture image" isMain onClick={onCapture}>
 						<Camera className="h-7 w-7" />
 					</IconButton>

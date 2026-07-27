@@ -50,9 +50,11 @@ export function formatLocation(
 	},
 	ip: string,
 ): string {
+	// 5 decimals is ~1 m at the equator — past the accuracy of any consumer GPS,
+	// and the raw floats stamp 15 digits of noise across the photo.
 	const fix =
 		position.latitude !== null && position.longitude !== null
-			? `${position.latitude}, ${position.longitude}` +
+			? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` +
 				(position.accuracy !== null
 					? ` (${Math.round(position.accuracy)}m)`
 					: "")
