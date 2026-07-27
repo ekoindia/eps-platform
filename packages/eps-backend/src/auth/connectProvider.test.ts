@@ -25,6 +25,8 @@ function setup(over: Partial<ConnectClient> = {}, kv: KV = createInMemoryKV()) {
 		refreshTokens: vi.fn(async () => null),
 		revoke: vi.fn(async () => {}),
 		interactions: vi.fn(async () => []),
+		interact: vi.fn(async () => ({})),
+		createSupportTicket: vi.fn(async () => ({})),
 		...over,
 	};
 	const provider = createConnectAuthProvider(connect, {

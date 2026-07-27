@@ -74,6 +74,34 @@ export interface ConnectClient {
 		accessToken: string,
 		opts?: { xRealIp?: string },
 	): Promise<unknown[]>;
+	/**
+	 * Runs a plain interaction and returns its envelope, for the support-ticket
+	 * routes. Kept generic rather than one method per interaction id: the fields
+	 * are validated at the trust boundary in `mountConnect`, not here.
+	 * @param accessToken - The caller's FULL upstream access token.
+	 * @param body - The interaction fields, already validated.
+	 */
+	interact(
+		accessToken: string,
+		body: Record<string, unknown>,
+		opts?: { xRealIp?: string },
+	): Promise<Record<string, unknown>>;
+	/**
+	 * Creates a support ticket, with attachments when there are any.
+	 *
+	 * Files force the `/transactions/upload` transport, where every field travels
+	 * URL-encoded inside a single `formdata` part — connect-api's own convention,
+	 * not a general multipart form.
+	 * @param accessToken - The caller's FULL upstream access token.
+	 * @param fields - The interaction fields.
+	 * @param files - Attachments, already named for the upstream.
+	 */
+	createSupportTicket(
+		accessToken: string,
+		fields: Record<string, string>,
+		files: Array<{ name: string; file: File }>,
+		opts?: { xRealIp?: string },
+	): Promise<Record<string, unknown>>;
 }
 
 /**
@@ -295,6 +323,36 @@ export function createConnectClient(
 		return parsed;
 	}
 
+	/**
+	 * Posts a `multipart/form-data` body, for the upload transport. The boundary
+	 * header is left to `fetch`, which derives it from the `FormData`.
+	 */
+	async function postMultipart(
+		path: string,
+		form: FormData,
+		opts: { xRealIp?: string; bearer?: string } = {},
+	): Promise<unknown> {
+		const headers: Record<string, string> = {};
+		if (opts.xRealIp) headers["X-Real-IP"] = opts.xRealIp;
+		if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`;
+		const res = await doFetch(`${base}${path}`, {
+			method: "POST",
+			headers,
+			body: form,
+		});
+		const text = await res.text();
+		if (!res.ok) {
+			throw new Error(`connect-api HTTP ${res.status} from ${path}`);
+		}
+		try {
+			return JSON.parse(text);
+		} catch {
+			throw new Error(
+				`connect-api returned non-JSON from ${path} (status ${res.status})`,
+			);
+		}
+	}
+
 	return {
 		async sendOtp({ mobile, xRealIp }) {
 			const raw = (await post(
@@ -351,6 +409,36 @@ export function createConnectClient(
 			if (Array.isArray(raw)) return raw;
 			const data = (raw as { data?: unknown })?.data;
 			return Array.isArray(data) ? data : [];
+		},
+
+		async interact(accessToken, body, opts = {}) {
+			const raw = await post("/transactions/do", body, {
+				bearer: accessToken,
+				xRealIp: opts.xRealIp,
+			});
+			return (raw ?? {}) as Record<string, unknown>;
+		},
+
+		async createSupportTicket(accessToken, fields, files, opts = {}) {
+			if (!files.length) {
+				const raw = await post("/transactions/do", fields, {
+					bearer: accessToken,
+					xRealIp: opts.xRealIp,
+				});
+				return (raw ?? {}) as Record<string, unknown>;
+			}
+
+			const form = new FormData();
+			// One `formdata` part carrying every field URL-encoded — how connect-api's
+			// upload endpoint expects them, not a part per field.
+			form.append("formdata", new URLSearchParams(fields).toString());
+			for (const { name, file } of files) form.append(name, file, file.name);
+
+			const raw = await postMultipart("/transactions/upload", form, {
+				bearer: accessToken,
+				xRealIp: opts.xRealIp,
+			});
+			return (raw ?? {}) as Record<string, unknown>;
 		},
 	};
 }

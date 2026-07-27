@@ -65,6 +65,10 @@ on session expiry (`AuthProvider`).
 | Widget events → console | `src/lib/connect/widget-events.ts` |
 | The component | `src/components/connect/ConnectWidget.tsx` |
 | Route | `src/pages/console/ConnectTransaction.tsx` |
+| Dialog host (camera, editor, file view, raise issue) | `src/components/connect/DialogHost.tsx` |
+| Print header/footer + `printPage()` | `src/components/connect/PrintReceipt.tsx`, `src/lib/print.ts` |
+| Issue-list shaping + `raise_issue_after` gate | `src/lib/connect/support.ts` |
+| Ticket assembly (server-side) | `packages/eps-backend/src/http/support-ticket.ts` |
 
 ### Backend
 
@@ -78,6 +82,22 @@ on session expiry (`AuthProvider`).
     session gone) · `502 CONNECT_TOKEN_MISSING` (upstream minted no lite token).
 - `GET /connect/interactions` → `{ interactions }`. Proxied rather than called
   from the browser **because it needs the full token**.
+- `POST /connect/support/query-types` → `{ issueTypes }` (interaction 10022).
+  `is_admin` is pinned to `0`; it widens the list to internal-only issue types.
+- `POST /connect/support/ticket` (multipart) → `{ feedbackTicketId, message }`
+  (interaction 10000, via `/transactions/upload` when there are attachments and
+  `/transactions/do` otherwise).
+
+  The Zoho-Desk formatting lives **server-side**: the browser posts a `payload`
+  JSON part with the user's answers plus what only it knows (user-agent, screen,
+  device time, URL) and its attachments; the description, comment HTML and
+  `technical_notes` are assembled from that and the session. So the console never
+  learns the ticket schema, and cannot claim to be a different user. Eloka read
+  that context from `sessionStorage.org_detail` / `user_details` — deliberately
+  not replicated.
+
+  Caps at the trust boundary: 6 attachments, 5 MB each, 20 input fields, 4000
+  characters of free text.
 
 ### Frontend ordering
 
@@ -93,6 +113,22 @@ storage goes out as `Bearer null`.
 | `login-again` | `POST /auth/refresh` (re-seals upstream) then republish the lite token |
 | `goto-transaction` / `goto-history` | in-app navigation |
 | `open-url` | internal route, or `window.open(…, "noopener,noreferrer")` |
+| `file-view` | `showFile(…)`, or the image editor when `userConfirmation` |
+| `request-camera-capture` | `openCamera(…)` → `cameraResponse(dataUrl)` |
+| `feedback-dialog-event` | `showRaiseIssue(…)` → `feedbackResponse(…)` |
+
+### Reply contracts
+
+Three replies, three shapes — the easiest thing to get wrong here:
+
+| Reply | Argument |
+| --- | --- |
+| `fileViewResponse(result)` | the editor's whole result, `{ image, file?, accepted }` |
+| `cameraResponse(image)` | a **bare** data-URL string |
+| `feedbackResponse(result)` | `{ feedback_ticket_id, to_and_fro_data }` — `to_and_fro_data` is the caller's `context`, echoed back untouched |
+
+All four dialogs resolve `{}` when simply dismissed, so every caller guards on
+the field it needs rather than the object.
 
 ## Configuration
 
@@ -118,12 +154,49 @@ VITE_SHOW_CONNECT_WIDGET=true
 2. ~~CSP~~ — not an issue: this repo sets no Content-Security-Policy
    (`vercel.json` carries only cache and content-type headers).
 
+## Dialogs
+
+`ConnectDialogProvider` (mounted in `ConsoleLayout`) replaces Eloka's 571-line
+pub/sub `DynamicPopupModuleLoader`: a context over a Radix dialog stack, where
+each entry owns the promise its opener awaits. The pub/sub indirection there
+exists only because that loader is mounted in a Next.js layout that cannot see
+its callers.
+
+Every dialog is `React.lazy`-loaded — react-image-crop, react-webcam and
+MediaPipe are not in the console's initial bundle.
+
+| Dialog | Notes |
+| --- | --- |
+| File view | Native `<img>`/`<video>`/`<audio>`/`<iframe>`, no react-player. Non-`http(s)`/`data`/`blob` URLs are refused: `javascript:` in an iframe `src` would run in the origin holding the widget's tokens. |
+| Camera | `react-webcam` + Eloka's device classification (label regex → facing mode → mirror). Capture pauses the preview and stacks the editor; rejecting there resumes it rather than closing the camera. |
+| Image editor | `react-image-crop` with its own stylesheet. Rotation is 90°-only. Face detection loads MediaPipe dynamically behind a 3s timeout, and `minFaceCount` is enforced **only when detection completed** — otherwise a slow WASM load would lock the user out. |
+| Raise issue | Category → sub-category → issue type, then whatever that issue type asks for. Screenshot capture uses `getDisplayMedia({ preferCurrentTab, monitorTypeSurfaces: "exclude" })` and hides the dialog while the shot is taken. |
+
+The face model is committed at `public/wasm/mediapipe-models/`; the WASM runtime
+comes from `cdn.jsdelivr.net`.
+
+## Printing
+
+`PrintReceipt` wraps the widget with a `@media print` header and footer, the
+widget's own print button is enabled (`enable-print`), and site chrome — header,
+footer, console rail and title — is `print:hidden`. `printPage(title)` swaps
+`document.title` so the saved PDF is named after the receipt; the Transactions
+page uses it, and prints only the expanded row.
+
 ## Not built
 
-Eloka's wrapper also handles camera capture, image editing, file viewing, print
-receipts and raise-issue ticketing. Those are follow-on work. KBar/command-bar
-actions and the Android PubSub bridge are explicitly out of scope — neither has a
-counterpart here.
+Deliberately skipped from Eloka's wrapper: KBar/command-bar actions and the
+Android PubSub bridge (no counterpart here), the MediaPipe text classifier that
+scored comment sentiment, the 612-line Dropzone (a plain `<input type="file">`
+covers it), `customIssueType` (it existed for the command-bar entry point), and
+the screenshot-editing branch, which was already dead behind `DISABLE_EDIT`.
+There is no "Raise issue" entry point on the transaction-history rows yet — the
+dialog is reached from a flow.
+
+Two Eloka bugs are **not** ported: `transaction_time` vs `transactionTime`
+(`RaiseIssueCard.tsx:61` vs `HistoryCard.jsx:258`, which silently killed the
+`raise_issue_after` gate — this dialog accepts both spellings), and the inverted
+multipart guard at `apiHelper.js:207`, where body fields never reached FormData.
 
 ## Gotcha: `id` vs `interaction_type_id`
 

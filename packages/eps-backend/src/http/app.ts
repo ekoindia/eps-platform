@@ -495,7 +495,13 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	// provider the token-bearing endpoints are not registered at all, so a
 	// misconfiguration cannot leave them reachable.
 	if (deps.connect && auth.getUpstream) {
-		mountConnect(app, { sessions, auth, connect: deps.connect, kv });
+		mountConnect(app, {
+			sessions,
+			auth,
+			connect: deps.connect,
+			kv,
+			connectBaseUrl: cfg.connectApi?.baseUrl ?? "",
+		});
 	}
 
 	if (github) {

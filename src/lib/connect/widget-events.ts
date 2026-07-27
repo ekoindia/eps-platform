@@ -1,5 +1,6 @@
 import type { CameraOptions } from "@/components/connect/CameraDialog";
 import type { FileViewOptions } from "@/components/connect/FileViewDialog";
+import type { RaiseIssueOptions } from "@/components/connect/RaiseIssueDialog";
 
 /** A file the flow wants shown, already normalised for the viewer. */
 export interface FileViewRequest {
@@ -24,6 +25,8 @@ export interface WidgetEventHandlers {
 	onFileView: (request: FileViewRequest) => void;
 	/** The flow wants a photo taken — an ID document, a customer's face. */
 	onCameraCapture: (options: CameraOptions) => void;
+	/** The user asked for help with this transaction. */
+	onRaiseIssue: (options: RaiseIssueOptions) => void;
 	/** The flow moved the user's E-value. */
 	onBalanceChanged: (balance: number) => void;
 	/** The upstream session expired mid-flow and must be renewed. */
@@ -123,9 +126,18 @@ export function attachWidgetEvents(handlers: WidgetEventHandlers): () => void {
 		);
 	};
 
+	const onFeedbackDialog = (e: Event) => {
+		handlers.onRaiseIssue(
+			(e as CustomEvent<RaiseIssueOptions | undefined>).detail ?? {},
+		);
+	};
+
 	window.addEventListener("iron-signal", onIronSignal, { signal });
 	window.addEventListener("open-url", onOpenUrl, { signal });
 	window.addEventListener("request-camera-capture", onRequestCameraCapture, {
+		signal,
+	});
+	window.addEventListener("feedback-dialog-event", onFeedbackDialog, {
 		signal,
 	});
 

@@ -8,6 +8,11 @@ import type { KV } from "../store/kv";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
 import type { AppEnv } from "./requestId";
+import {
+	buildTicketFields,
+	isProductionConnect,
+	QUERY_TYPES_INTERACTION,
+} from "./support-ticket";
 
 /**
  * Token reads per session per `RL_WINDOW_SEC`. The console fetches once per
@@ -18,6 +23,28 @@ const TOKEN_LIMIT = 60;
 
 /** Interaction-list reads per session per window. The console caches it. */
 const INTERACTIONS_LIMIT = 30;
+
+/** Query-type reads per session per window — one per raise-issue dialog opened. */
+const QUERY_TYPES_LIMIT = 30;
+
+/** Tickets per session per window. A human raises one, then waits for an answer. */
+const TICKET_LIMIT = 10;
+
+/** Caps on the untrusted parts of a ticket, before it reaches the support desk. */
+const MAX_TEXT = 4000;
+const MAX_INPUTS = 20;
+const MAX_FILES = 6;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Trims an untrusted string to a bounded one.
+ * @param value - Anything the browser sent.
+ * @param max - Longest string to keep.
+ * @returns The trimmed string, or "" for anything that is not a string.
+ */
+function text(value: unknown, max = 200): string {
+	return typeof value === "string" ? value.slice(0, max) : "";
+}
 
 /**
  * Mounts the endpoints backing the embedded Connect widget.
@@ -51,9 +78,12 @@ export function mountConnect(
 		auth: AuthProvider;
 		connect: ConnectClient;
 		kv: KV;
+		/** The configured connect-api, which decides whether tickets are real. */
+		connectBaseUrl: string;
 	},
 ): void {
 	const { sessions, auth, connect, kv } = deps;
+	const isProduction = isProductionConnect(deps.connectBaseUrl);
 
 	/**
 	 * Resolves the caller's claim, or throws unless this is a developer session
@@ -165,5 +195,170 @@ export function mountConnect(
 		// Entitlements, not public data — same reasoning as the token route.
 		c.header("Cache-Control", "no-store");
 		return c.json({ interactions });
+	});
+
+	/**
+	 * POST /connect/support/query-types → { issueTypes }
+	 *
+	 * The categories, sub-categories and issue types a query may be raised under,
+	 * scoped to one transaction. Proxied because it needs the FULL upstream token.
+	 *
+	 * `is_admin` is fixed at 0: it widens the list to internal-only issue types,
+	 * and no console session is an upstream admin.
+	 */
+	app.post("/connect/support/query-types", async (c) => {
+		const claim = await requireWidgetSession(c);
+		await enforceRateLimit(
+			kv,
+			`rl:cxqt:${claim.sid}`,
+			QUERY_TYPES_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const upstream = await requireUpstream(claim);
+
+		const body = (await c.req.json().catch(() => ({}))) as Record<
+			string,
+			unknown
+		>;
+		const envelope = await connect.interact(
+			upstream.accessToken,
+			{
+				interaction_type_id: QUERY_TYPES_INTERACTION,
+				tid: text(body.tid, 32),
+				tx_typeid: text(body.tx_typeid, 32),
+				feedback_origin: text(body.feedback_origin, 64),
+				status: text(body.status, 8),
+				operator: text(body.operator, 64),
+				partner_id: text(body.partner_id, 64),
+				channel: text(body.channel, 64),
+				is_admin: 0,
+			},
+			{ xRealIp: c.req.header("x-real-ip") },
+		);
+
+		const data = envelope.data as { issuetype_list?: unknown } | undefined;
+		const issueTypes = Array.isArray(data?.issuetype_list)
+			? data.issuetype_list
+			: [];
+
+		c.header("Cache-Control", "no-store");
+		return c.json({ issueTypes });
+	});
+
+	/**
+	 * POST /connect/support/ticket (multipart) → { feedbackTicketId, message }
+	 *
+	 * Raises a support ticket. The browser sends a `payload` JSON part plus any
+	 * attachments; the Zoho-Desk description, comment and technical notes are
+	 * assembled here, from that payload and the session — so the console never
+	 * learns the ticket schema and cannot claim to be a different user.
+	 */
+	app.post("/connect/support/ticket", async (c) => {
+		const claim = await requireWidgetSession(c);
+		await enforceRateLimit(
+			kv,
+			`rl:cxtkt:${claim.sid}`,
+			TICKET_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const upstream = await requireUpstream(claim);
+
+		const form = await c.req.formData().catch(() => null);
+		if (!form) {
+			throw new AppError(400, "INVALID_INPUT", "Expected a multipart body");
+		}
+
+		let payload: Record<string, unknown>;
+		try {
+			payload = JSON.parse(String(form.get("payload") ?? "{}")) as Record<
+				string,
+				unknown
+			>;
+		} catch {
+			throw new AppError(400, "INVALID_INPUT", "payload is not valid JSON");
+		}
+
+		const summary = text(payload.summary, 200);
+		if (!summary) {
+			throw new AppError(400, "INVALID_INPUT", "summary is required");
+		}
+
+		const rawInputs = Array.isArray(payload.inputs) ? payload.inputs : [];
+		const inputs = rawInputs.slice(0, MAX_INPUTS).map((field) => {
+			const entry = (field ?? {}) as Record<string, unknown>;
+			return { label: text(entry.label, 120), value: text(entry.value, 500) };
+		});
+
+		const client = (payload.client ?? {}) as Record<string, unknown>;
+
+		const fields = buildTicketFields({
+			summary,
+			category: text(payload.category, 120),
+			subCategory: text(payload.subCategory, 120),
+			comment: text(payload.comment, MAX_TEXT),
+			context: text(payload.context, MAX_TEXT),
+			inputs,
+			origin: text(payload.origin, 64),
+			tat: text(payload.tat, 16),
+			priority: text(payload.priority, 32),
+			tid: text(payload.tid, 32),
+			txTypeId: text(payload.txTypeId, 32),
+			transactionDetail: payload.transactionDetail,
+			preMsgTemplate: text(payload.preMsgTemplate, 500),
+			client: {
+				useragent: text(client.useragent, 500),
+				screen: text(client.screen, 64),
+				deviceTime: text(client.deviceTime, 64),
+				url: text(client.url, 500),
+			},
+			user: {
+				mobile: claim.sub,
+				orgId: claim.orgId,
+				zohoId: claim.zohoId,
+				role: claim.role,
+			},
+			isProduction,
+		});
+
+		const files: Array<{ name: string; file: File }> = [];
+		for (const [name, value] of form.entries()) {
+			if (name === "payload" || !(value instanceof File)) continue;
+			if (files.length >= MAX_FILES) {
+				throw new AppError(400, "INVALID_INPUT", "Too many attachments");
+			}
+			if (value.size > MAX_FILE_BYTES) {
+				throw new AppError(
+					400,
+					"FILE_TOO_LARGE",
+					`${value.name || name} is larger than 5 MB`,
+				);
+			}
+			files.push({ name, file: value });
+		}
+
+		const envelope = await connect.createSupportTicket(
+			upstream.accessToken,
+			fields,
+			files,
+			{ xRealIp: c.req.header("x-real-ip") },
+		);
+
+		const data = (envelope.data ?? {}) as { feedback_ticket_id?: unknown };
+		const feedbackTicketId = data.feedback_ticket_id
+			? String(data.feedback_ticket_id)
+			: "";
+		if (Number(envelope.status ?? -1) !== 0 || !feedbackTicketId) {
+			throw new AppError(
+				502,
+				"TICKET_NOT_CREATED",
+				text(envelope.message, 200) || "Couldn't create the ticket.",
+			);
+		}
+
+		c.header("Cache-Control", "no-store");
+		return c.json({
+			feedbackTicketId,
+			message: text(envelope.message, 200) || "Submitted successfully.",
+		});
 	});
 }

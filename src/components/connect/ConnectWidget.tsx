@@ -126,7 +126,8 @@ export function ConnectWidget({
 	const widgetRef = useRef<HTMLElement | null>(null);
 	const navigate = useNavigate();
 	const { openUrl } = useAppLink();
-	const { showFile, editImage, openCamera } = useConnectDialogs();
+	const { showFile, editImage, openCamera, showRaiseIssue } =
+		useConnectDialogs();
 
 	useEffect(() => {
 		if (!SHOW_CONNECT_WIDGET || !CONNECT_WIDGET_URL) return;
@@ -209,6 +210,18 @@ export function ConnectWidget({
 					widgetOf(widgetRef.current)?.fileViewResponse?.(result);
 				});
 			},
+			onRaiseIssue: (options) => {
+				void showRaiseIssue(options).then((result) => {
+					// Nothing to report when the user just closed the dialog.
+					if (!result.feedback_ticket_id) return;
+					widgetOf(widgetRef.current)?.feedbackResponse?.({
+						feedback_ticket_id: result.feedback_ticket_id,
+						// The flow's own context, echoed back untouched under the name it
+						// expects.
+						to_and_fro_data: result.context,
+					});
+				});
+			},
 			onCameraCapture: (options) => {
 				void openCamera(options).then((result) => {
 					// Unlike the editor, this one takes a bare data URL, not an object.
@@ -218,7 +231,15 @@ export function ConnectWidget({
 				});
 			},
 		});
-	}, [status, navigate, openUrl, showFile, editImage, openCamera]);
+	}, [
+		status,
+		navigate,
+		openUrl,
+		showFile,
+		editImage,
+		openCamera,
+		showRaiseIssue,
+	]);
 
 	if (status === "unavailable") {
 		return (

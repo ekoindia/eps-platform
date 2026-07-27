@@ -162,7 +162,14 @@ async function request(
 	const res = await fetch(`${BASE}${path}`, {
 		...init,
 		credentials: "include",
-		headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+		headers: {
+			// A FormData body must set its own content type: the boundary is part of
+			// it, and naming the type here would leave the request unparseable.
+			...(init.body instanceof FormData
+				? {}
+				: { "Content-Type": "application/json" }),
+			...(init.headers ?? {}),
+		},
 	});
 	if (
 		res.status === 401 &&
@@ -214,6 +221,33 @@ export const authClient = {
 		request("/connect/interactions", { method: "GET" }) as Promise<{
 			interactions: unknown[];
 		}>,
+	/**
+	 * Raise-issue support desk. Both calls are proxied because they need the full
+	 * upstream token, and the ticket is *assembled* server-side — the browser
+	 * sends answers, not a Zoho-Desk payload.
+	 */
+	connectSupport: {
+		/** Issue types available for one transaction. */
+		queryTypes: (
+			body: Record<string, string>,
+			signal?: AbortSignal,
+		): Promise<{ issueTypes: unknown[] }> =>
+			request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify(body),
+				signal,
+			}) as Promise<{ issueTypes: unknown[] }>,
+		/** Files the ticket. `form` carries a `payload` JSON part plus attachments. */
+		ticket: (
+			form: FormData,
+			signal?: AbortSignal,
+		): Promise<{ feedbackTicketId: string; message: string }> =>
+			request("/connect/support/ticket", {
+				method: "POST",
+				body: form,
+				signal,
+			}) as Promise<{ feedbackTicketId: string; message: string }>,
+	},
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>

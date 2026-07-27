@@ -64,7 +64,13 @@ function harness(
 		...overrides.connect,
 	} as unknown as ConnectClient;
 
-	mountConnect(app, { sessions, auth, connect, kv: createInMemoryKV() });
+	mountConnect(app, {
+		sessions,
+		auth,
+		connect,
+		kv: createInMemoryKV(),
+		connectBaseUrl: "https://api.beta.ekoconnect.in",
+	});
 	return { app, connect, auth };
 }
 
@@ -205,5 +211,155 @@ describe("GET /connect/interactions", () => {
 
 		expect(res.status).toBe(401);
 		expect((await errorOf(res)).code).toBe("NO_SESSION");
+	});
+});
+
+describe("POST /connect/support/query-types", () => {
+	it("unwraps issuetype_list and pins is_admin to 0", async () => {
+		const { app, connect } = harness(developer, {
+			connect: {
+				interact: vi.fn(async () => ({
+					data: { issuetype_list: [{ label: "Money not received" }] },
+				})),
+			},
+		});
+
+		const res = await app.request("/connect/support/query-types", {
+			method: "POST",
+			body: JSON.stringify({ tid: "123", tx_typeid: "77", is_admin: 1 }),
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			issueTypes: [{ label: "Money not received" }],
+		});
+		// Sent as 0 whatever the browser asked for: is_admin widens the list to
+		// internal-only issue types.
+		expect(connect.interact).toHaveBeenCalledWith(
+			"ca_full",
+			expect.objectContaining({ interaction_type_id: 10022, is_admin: 0 }),
+			expect.anything(),
+		);
+	});
+});
+
+describe("POST /connect/support/ticket", () => {
+	/** A multipart body with the payload part plus any attachments. */
+	function ticketBody(
+		payload: Record<string, unknown>,
+		files: File[] = [],
+	): FormData {
+		const form = new FormData();
+		form.append("payload", JSON.stringify(payload));
+		files.forEach((file, i) => form.append(`file_${i + 1}`, file, file.name));
+		return form;
+	}
+
+	it("builds the ticket from the session, not the browser", async () => {
+		const created = vi.fn(async (
+			_token: string,
+			_fields: Record<string, string>,
+			_files: Array<{ name: string; file: File }>,
+		) => ({
+			status: 0,
+			message: "Submitted",
+			data: { feedback_ticket_id: "T-42" },
+		}));
+		const { app } = harness(developer, {
+			connect: { createSupportTicket: created },
+		});
+
+		const res = await app.request("/connect/support/ticket", {
+			method: "POST",
+			body: ticketBody({
+				summary: "Money not received",
+				comment: "Customer says <b>nothing</b> arrived",
+				client: { useragent: "jsdom" },
+			}),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			feedbackTicketId: "T-42",
+			message: "Submitted",
+		});
+
+		const [token, fields, files] = created.mock.calls[0];
+		expect(token).toBe("ca_full");
+		expect(files).toEqual([]);
+		expect(fields.feedback_issue_type).toBe("Money not received");
+		// The harness points at beta, so support can filter these out.
+		expect(fields.summary).toBe("[IGNORE] Money not received");
+		// The user's markup is escaped, not rendered, in the ticket body.
+		expect(fields.comment).toContain("&lt;b&gt;nothing&lt;/b&gt;");
+		// Identity comes from the session claim.
+		expect(JSON.parse(fields.technical_notes).user.user_mobile).toBe(
+			"9990000001",
+		);
+	});
+
+	it("forwards attachments", async () => {
+		const created = vi.fn(async (
+			_token: string,
+			_fields: Record<string, string>,
+			_files: Array<{ name: string; file: File }>,
+		) => ({
+			status: 0,
+			data: { feedback_ticket_id: "T-43" },
+		}));
+		const { app } = harness(developer, {
+			connect: { createSupportTicket: created },
+		});
+
+		await app.request("/connect/support/ticket", {
+			method: "POST",
+			body: ticketBody({ summary: "Proof needed" }, [
+				new File(["x"], "screenshot.jpg", { type: "image/jpeg" }),
+			]),
+			...withCookie,
+		});
+
+		expect(created.mock.calls[0][2]).toHaveLength(1);
+	});
+
+	it("refuses an oversized attachment", async () => {
+		const { app } = harness(developer, {
+			connect: { createSupportTicket: vi.fn(async () => ({ status: 0 })) },
+		});
+
+		const res = await app.request("/connect/support/ticket", {
+			method: "POST",
+			body: ticketBody({ summary: "Big" }, [
+				new File([new Uint8Array(6 * 1024 * 1024)], "big.jpg", {
+					type: "image/jpeg",
+				}),
+			]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(400);
+		expect((await errorOf(res)).code).toBe("FILE_TOO_LARGE");
+	});
+
+	it("502s when upstream creates no ticket", async () => {
+		const { app } = harness(developer, {
+			connect: {
+				createSupportTicket: vi.fn(async () => ({
+					status: 1,
+					message: "Not allowed",
+				})),
+			},
+		});
+
+		const res = await app.request("/connect/support/ticket", {
+			method: "POST",
+			body: ticketBody({ summary: "Nope" }),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("TICKET_NOT_CREATED");
 	});
 });

@@ -17,6 +17,7 @@ import type {
 	ImageEditorOptions,
 	ImageEditorResult,
 } from "./ImageEditorDialog";
+import type { RaiseIssueOptions, RaiseIssueResult } from "./RaiseIssueDialog";
 
 // Lazily loaded, and worth it: the editor pulls in react-image-crop and the
 // camera react-webcam, neither of which most console sessions ever open.
@@ -29,12 +30,16 @@ const ImageEditorDialog = lazy(() =>
 const CameraDialog = lazy(() =>
 	import("./CameraDialog").then((m) => ({ default: m.CameraDialog })),
 );
+const RaiseIssueDialog = lazy(() =>
+	import("./RaiseIssueDialog").then((m) => ({ default: m.RaiseIssueDialog })),
+);
 
 /** One open dialog, discriminated by `kind`. */
 type DialogRequest =
 	| { kind: "file"; file: string; options?: FileViewOptions }
 	| { kind: "image"; image: string; options?: ImageEditorOptions }
-	| { kind: "camera"; options?: CameraOptions };
+	| { kind: "camera"; options?: CameraOptions }
+	| { kind: "issue"; options?: RaiseIssueOptions };
 
 /** What a dialog hands back. Closing without a decision resolves `{}`. */
 export type DialogResult = Record<string, unknown>;
@@ -45,6 +50,12 @@ interface StackEntry {
 	resolve: (result: DialogResult) => void;
 	/** Set while the dialog asks the browser to capture the page behind it. */
 	hidden: boolean;
+	/**
+	 * What to resolve with if the dialog is dismissed rather than closed from
+	 * inside it — the raise-issue dialog files its ticket well before the user
+	 * gets round to pressing Close.
+	 */
+	pending?: DialogResult;
 }
 
 /** Per-kind dialog chrome. Media fills the screen; forms get a panel. */
@@ -58,6 +69,12 @@ const CHROME: Record<
 	// decision.
 	image: { className: "bg-transparent", closeButton: false },
 	camera: { className: "bg-transparent", closeButton: false },
+	// A form, not media: a readable panel, and its own close control so a close
+	// after submitting still carries the ticket id back.
+	issue: {
+		className: "w-full max-w-[100vw] px-2 md:w-162 lg:w-200",
+		closeButton: false,
+	},
 };
 
 /** Screen-reader titles; Radix requires one per dialog. */
@@ -65,6 +82,7 @@ const TITLES: Record<DialogRequest["kind"], string> = {
 	file: "File preview",
 	image: "Edit image",
 	camera: "Camera",
+	issue: "Raise a query",
 };
 
 /**
@@ -84,6 +102,10 @@ export interface ConnectDialogs {
 	) => Promise<Partial<ImageEditorResult>>;
 	/** Opens the camera; resolves with the capture the user accepted. */
 	openCamera: (options?: CameraOptions) => Promise<Partial<CameraResult>>;
+	/** Opens the support-ticket form for a transaction. */
+	showRaiseIssue: (
+		options?: RaiseIssueOptions,
+	) => Promise<Partial<RaiseIssueResult>>;
 }
 
 const DialogContext = createContext<ConnectDialogs | null>(null);
@@ -143,11 +165,18 @@ export function ConnectDialogProvider({ children }: { children: ReactNode }) {
 		);
 	}, []);
 
+	const setPending = useCallback((id: number, pending: DialogResult) => {
+		setStack((prev) =>
+			prev.map((entry) => (entry.id === id ? { ...entry, pending } : entry)),
+		);
+	}, []);
+
 	const dialogs = useMemo<ConnectDialogs>(
 		() => ({
 			showFile: (file, options) => open({ kind: "file", file, options }),
 			editImage: (image, options) => open({ kind: "image", image, options }),
 			openCamera: (options) => open({ kind: "camera", options }),
+			showRaiseIssue: (options) => open({ kind: "issue", options }),
 		}),
 		[open],
 	);
@@ -161,6 +190,7 @@ export function ConnectDialogProvider({ children }: { children: ReactNode }) {
 					entry={entry}
 					onClose={close}
 					onHiddenChange={setHidden}
+					onPendingChange={setPending}
 				/>
 			))}
 		</DialogContext.Provider>
@@ -172,13 +202,16 @@ function HostedDialog({
 	entry,
 	onClose,
 	onHiddenChange,
+	onPendingChange,
 }: {
 	entry: StackEntry;
 	onClose: (id: number, result: DialogResult) => void;
 	onHiddenChange: (id: number, hidden: boolean) => void;
+	onPendingChange: (id: number, pending: DialogResult) => void;
 }) {
 	const chrome = CHROME[entry.request.kind];
-	const dismiss = (result: DialogResult = {}) => onClose(entry.id, result);
+	const dismiss = (result?: DialogResult) =>
+		onClose(entry.id, result ?? entry.pending ?? {});
 	// Hiding must not unmount: the raise-issue dialog hides itself so the browser's
 	// screen-capture picker photographs the page underneath, then shows itself
 	// again with its form state intact.
@@ -205,6 +238,7 @@ function HostedDialog({
 							entry={entry}
 							dismiss={dismiss}
 							setHidden={(hidden) => onHiddenChange(entry.id, hidden)}
+							setPending={(pending) => onPendingChange(entry.id, pending)}
 						/>
 					</Suspense>
 					{chrome.closeButton ? (
@@ -226,12 +260,13 @@ function DialogBody({
 	entry,
 	dismiss,
 	setHidden,
+	setPending,
 }: {
 	entry: StackEntry;
 	dismiss: (result?: DialogResult) => void;
 	setHidden: (hidden: boolean) => void;
+	setPending: (pending: DialogResult) => void;
 }) {
-	void setHidden;
 	switch (entry.request.kind) {
 		case "file":
 			return (
@@ -250,5 +285,14 @@ function DialogBody({
 			);
 		case "camera":
 			return <CameraDialog options={entry.request.options} onClose={dismiss} />;
+		case "issue":
+			return (
+				<RaiseIssueDialog
+					options={entry.request.options}
+					onClose={dismiss}
+					setHidden={setHidden}
+					setPending={setPending}
+				/>
+			);
 	}
 }
