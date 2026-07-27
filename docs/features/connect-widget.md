@@ -195,6 +195,23 @@ photo" rather than "Select file" when images are all that is allowed);
 `cameraOnly` drops the picker and the drop zone; `options.disableImageConfirm`
 takes the capture as-is. It needs a `ConnectDialogProvider` above it.
 
+**Watermark.** `watermark` carries provenance into the pixels, because a KYC
+photo is evidence and evidence without provenance can be re-used for a different
+customer on a different day.
+
+| Value | Stamped |
+| --- | --- |
+| `true` | user name + code, org, position + IP, timestamp + host |
+| `{ location: "Branch 12" }` | those defaults, with named keys replaced and unknown ones appended |
+| `"Any text"` | verbatim |
+| omitted / `false` | nothing — and neither the location prompt nor the IP call happens |
+
+The position comes from `useGeolocation` and the IP from `GET /me/ip`, which
+reads `x-real-ip`/`x-forwarded-for` server-side: coordinates can be spoofed on a
+rooted phone, while an observed IP cannot, so the line carries both. The text is
+resolved on mount rather than at capture time — a prompt answered after the
+shutter would stamp a blank location.
+
 Dropping a file from the file system attaches it directly; dropping an image
 dragged from another tab re-fetches it by URL, which cross-origin hosts without
 CORS refuse — hence a fallback, not the main path. Eloka's watermark builder

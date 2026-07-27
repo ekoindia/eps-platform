@@ -431,6 +431,27 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	});
 
 	/**
+	 * GET /me/ip → { ip }
+	 *
+	 * The caller's own public IP, which the browser cannot see. Used to stamp a
+	 * KYC capture with where it was taken from — a watermark claiming a location
+	 * is worth more when the network agrees with it.
+	 *
+	 * Read from the proxy headers rather than the socket: this runs behind nginx
+	 * and Vercel, so the socket peer is the proxy. Session-gated because it is a
+	 * fact about the caller, not public data.
+	 */
+	app.get("/me/ip", async (c) => {
+		const token = getCookie(c, ACCESS_COOKIE);
+		const claim = token ? await sessions.verifyAccess(token) : null;
+		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+		const forwarded = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
+		const ip = c.req.header("x-real-ip") || forwarded || "";
+		c.header("Cache-Control", "no-store");
+		return c.json({ ip });
+	});
+
+	/**
 	 * The signed-in developer's E-value wallet balance.
 	 *
 	 * The identity is re-derived from the session claim's mobile on every call —

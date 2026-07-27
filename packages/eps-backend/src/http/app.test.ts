@@ -1496,6 +1496,49 @@ describe("KV-outage matrix (Task 4)", () => {
 	});
 });
 
+describe("me/ip", () => {
+	/** Signs in and returns the session cookie. */
+	async function login(app: ReturnType<typeof deps>["app"]) {
+		const verify = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		return cookieFrom(verify);
+	}
+
+	it("reports the IP the proxy saw, not the socket peer", async () => {
+		const { app } = deps();
+		const cookie = await login(app);
+
+		const res = await app.request("/me/ip", {
+			headers: { cookie, "x-real-ip": "203.0.113.7" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ ip: "203.0.113.7" });
+		// A credential-adjacent fact about one caller; never cached.
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+	});
+
+	it("falls back to the first x-forwarded-for hop", async () => {
+		const { app } = deps();
+		const cookie = await login(app);
+
+		const res = await app.request("/me/ip", {
+			headers: { cookie, "x-forwarded-for": "203.0.113.7, 10.0.0.1" },
+		});
+
+		expect(await res.json()).toEqual({ ip: "203.0.113.7" });
+	});
+
+	it("rejects an anonymous request", async () => {
+		const { app } = deps();
+		const res = await app.request("/me/ip");
+		expect(res.status).toBe(401);
+	});
+});
+
 describe("wallet/balance", () => {
 	/** Logs in as a developer and returns the session cookie. */
 	async function login(app: Hono<AppEnv>): Promise<string> {

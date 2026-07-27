@@ -238,12 +238,17 @@ function FileUploadTest() {
 	const [accept, setAccept] = useState("");
 	const [cameraOnly, setCameraOnly] = useState(false);
 	const [disableImageConfirm, setDisableImageConfirm] = useState(false);
+	const [watermark, setWatermark] = useState(false);
 
 	return (
 		<div>
 			{controls}
 			<div className="mb-3 flex flex-wrap items-end gap-3">
-				<Toggle label="cameraOnly" checked={cameraOnly} onChange={setCameraOnly} />
+				<Toggle
+					label="cameraOnly"
+					checked={cameraOnly}
+					onChange={setCameraOnly}
+				/>
 				<Toggle
 					label="disableImageConfirm"
 					checked={disableImageConfirm}
@@ -271,6 +276,10 @@ function FileUploadTest() {
 				label="Upload your photo"
 				accept={accept}
 				cameraOnly={cameraOnly}
+				// Prompts for location and asks the backend for the IP, exactly as a
+				// KYC field would. Takes precedence over the free-text `watermark`
+				// option above, which is the fallback.
+				watermark={watermark}
 				file={file}
 				onFileChange={setFile}
 				options={{ ...options, disableImageConfirm }}
@@ -278,9 +287,7 @@ function FileUploadTest() {
 			/>
 			<ResultJson
 				value={
-					file
-						? { name: file.name, type: file.type, size: file.size }
-						: null
+					file ? { name: file.name, type: file.type, size: file.size } : null
 				}
 			/>
 		</div>

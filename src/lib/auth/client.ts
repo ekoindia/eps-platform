@@ -204,6 +204,9 @@ export const authClient = {
 		request("/me", { method: "GET" }) as Promise<
 			MeView | AdminView | SignupView
 		>,
+	/** The caller's public IP, as the proxy saw it. Used for KYC watermarks. */
+	myIp: (): Promise<{ ip: string }> =>
+		request("/me/ip", { method: "GET" }) as Promise<{ ip: string }>,
 	/** The signed-in developer's E-value wallet balance, in rupees. */
 	walletBalance: (): Promise<WalletBalanceView> =>
 		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,

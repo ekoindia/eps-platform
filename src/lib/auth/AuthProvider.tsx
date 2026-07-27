@@ -104,3 +104,13 @@ export function useAuth(): AuthContextValue {
 	if (!ctx) throw new Error("useAuth must be used within AuthProvider");
 	return ctx;
 }
+
+/**
+ * The same context, for components that merely *decorate* with the session and
+ * must still work without one — a reusable form control has no business
+ * crashing a page that never mounted the provider.
+ * @returns The context, or null outside an `AuthProvider`.
+ */
+export function useOptionalAuth(): AuthContextValue | null {
+	return useContext(AuthContext);
+}

@@ -2,6 +2,7 @@ import { useConnectDialogs } from "@/components/connect/DialogHost";
 import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useWatermarkText, type WatermarkSpec } from "@/hooks/use-watermark";
 import { cn } from "@/lib/utils";
 import { Camera, FolderOpen, ImageIcon, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -23,8 +24,15 @@ export interface FileUploadProps {
 	accept?: string;
 	/** Camera as the only source: no picker, no drag and drop. */
 	cameraOnly?: boolean;
-	/** Text burnt into the bottom-left of a captured or edited image. */
-	watermark?: string;
+	/**
+	 * Provenance burnt into the bottom-left of a captured or edited image.
+	 *
+	 * `true` stamps the KYC defaults — who is signed in, the org, the position
+	 * and IP, and the moment — which is what makes a capture evidence rather
+	 * than just a photo. An object keeps those and overrides the keys it names;
+	 * a string is stamped verbatim. See {@link useWatermarkText}.
+	 */
+	watermark?: WatermarkSpec;
 	/** Editing requirements applied to images from every source. */
 	options?: FileUploadOptions;
 	required?: boolean;
@@ -75,8 +83,7 @@ function acceptsNonImages(accept: string): boolean {
 /**
  * File input with a camera, an image editor and a preview.
  *
- * The port of Eloka's `Dropzone`. An attachment is rarely usable as it leaves
- * the phone: it is 4 MB, rotated, and shows the whole desk around the document.
+ * An attachment is rarely usable as it leaves the phone: it is 4 MB, rotated, and shows the whole desk around the document.
  * So every image — picked, dropped or captured — goes through the editor
  * (`options` decide crop, ratio, size cap, face checks) and only the processed
  * result is handed to the caller.
@@ -84,9 +91,9 @@ function acceptsNonImages(accept: string): boolean {
  * Requires a `ConnectDialogProvider` above it, which owns the three dialogs
  * this drives.
  *
- * Not ported from Eloka: the watermark builder that stitched together the
- * signed-in user, org, IP and GPS fix — this app has no org context and no IP
- * endpoint, so callers pass the `watermark` text they want.
+ * `watermark` carries provenance into the pixels: pass `true` for the KYC
+ * defaults (user, org, position, IP, timestamp) as Eloka's flag did, an object
+ * to override individual fields, or a string to stamp exact text.
  * @param props - See {@link FileUploadProps}.
  * @example
  * <FileUpload
@@ -110,6 +117,10 @@ export function FileUpload({
 	className,
 }: FileUploadProps) {
 	const { editImage, openCamera, showFile } = useConnectDialogs();
+	// Resolved here rather than at capture time: the position prompt and the IP
+	// call must already have settled when the editor draws, or the first capture
+	// of a session is stamped with a blank location.
+	const watermarkText = useWatermarkText(watermark);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [preview, setPreview] = useState<string | null>(null);
 	const [dragState, setDragState] = useState<"none" | "valid" | "invalid">(
@@ -131,7 +142,7 @@ export function FileUpload({
 	const nonImageAllowed = acceptsNonImages(accept);
 	const editorOptions = {
 		...options,
-		watermark: watermark || options.watermark,
+		watermark: watermarkText || options.watermark,
 	};
 
 	/** Replaces the preview, releasing the previous object URL if there was one. */
