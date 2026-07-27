@@ -36,6 +36,28 @@ fresh `SignupState`; the client never infers its own progress. This is what
 makes resume-after-drop-off and retry-after-failure the same code path
 (`packages/eps-backend/src/signup/service.ts:114-117`, `refresh()`).
 
+## Which backend authenticates the OTP
+
+The OTP exchange has two possible answerers, selected at startup by whether
+`CONNECT_API_BASE_URL` is set (`packages/eps-backend/src/buildApp.ts`):
+
+- **unset (default)** — `eps-backend` calls SimpliBank interactions 515 → 518 →
+  151 itself. This is the path described everywhere below.
+- **set** — login is delegated to Eloka's `connect-api`
+  (`POST /authentication/sendotp` + `/login`), so the EPS portal and Eloka share
+  one identity and one upstream session. `connect-api`'s own token pair is
+  sealed in KV at `ca:<sid>` and never reaches the browser.
+
+Either way the browser sees only this service's `eps_at` / `eps_rt` HttpOnly
+cookies, and the classification table below is unchanged — `mapConnectLogin`
+(`packages/eps-backend/src/clients/connect.ts`) maps `connect-api`'s login
+envelope onto the same `ProfileResult` union `getProfile` returns, in the same
+branch order. See "Auth providers" in `packages/eps-backend/README.md`.
+
+Only _login_ is delegated. Every onboarding interaction below (521, 523, 522,
+170, 10005, 5) still goes straight to SimpliBank with the `developer_key`
+header under both providers, and so does the `/signup/state` profile refresh.
+
 ## Why there is no Eko access token
 
 `/transactions/do` and `/transactions/upload`, which the Eloka webapp calls,

@@ -3,7 +3,9 @@ import { getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { noopAccessLogger, type AccessLogger } from "../audit/accessLog";
 import { noopSecurityLogger, type SecurityLogger } from "../audit/securityLog";
-import type { Sessions } from "../auth/session";
+import type { AuthProvider, UpstreamSession } from "../auth/provider";
+import { createEkoAuthProvider } from "../auth/ekoProvider";
+import type { SessionClaim, Sessions } from "../auth/session";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import { identityOf } from "../clients/eko";
@@ -37,6 +39,11 @@ import { requestId, type AppEnv } from "./requestId";
 export interface Deps {
 	cfg: Config;
 	eko: EkoClient;
+	/**
+	 * Who answers the OTP/login exchange. Defaults to the direct-to-SimpliBank
+	 * provider, so existing callers and tests need not supply it.
+	 */
+	auth?: AuthProvider;
 	zoho: ZohoClient;
 	sessions: Sessions;
 	kv: KV;
@@ -79,7 +86,31 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const accessLog = deps.accessLog ?? noopAccessLogger;
 	const signup = deps.signup ?? createSignupService({ eko, cfg });
+	const auth = deps.auth ?? createEkoAuthProvider(eko);
 	const app = new Hono<AppEnv>();
+
+	/**
+	 * Mints session cookies for a claim, persisting any upstream session material
+	 * FIRST.
+	 *
+	 * Order is the whole point: a KV failure must surface as a 503 with no
+	 * `Set-Cookie` at all, rather than a live browser session whose upstream
+	 * credentials were silently dropped. The reverse ordering cannot fail safely —
+	 * once a cookie is on the response there is nothing to roll back.
+	 */
+	async function issueSession(
+		c: { header: (k: string, v: string, o?: { append?: boolean }) => void },
+		claim: SessionClaim,
+		upstream?: UpstreamSession,
+	): Promise<void> {
+		if (upstream && auth.persist && claim.sid) {
+			await auth.persist(claim.sid, upstream);
+		}
+		const access = await sessions.mintAccess(claim);
+		const refresh = await sessions.issueRefresh(claim);
+		c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
+		c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+	}
 
 	app.use("*", requestId());
 	app.use("*", async (c, next) => {
@@ -165,7 +196,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		const mobKey = `otp:mob:${m}`;
 		await enforceRateLimit(kv, mobKey, OTP_START_LIMIT, OTP_WINDOW_SEC);
 		await enforceRateLimit(kv, ipKey, OTP_IP_LIMIT, OTP_WINDOW_SEC);
-		const resp = await eko.sendOtp({
+		const resp = await auth.sendOtp({
 			mobile: m,
 			xRealIp: c.req.header("x-real-ip"),
 		});
@@ -180,9 +211,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				"Couldn't send the OTP right now. Please try again.",
 			);
 		}
-		const demoOtp = cfg.demoOtp
-			? (resp.raw as { data?: { otp?: string } })?.data?.otp
-			: undefined;
+		// The provider surfaces the code whenever upstream echoes it; whether the
+		// caller may SEE it stays gated here, where the security decision is visible.
+		const demoOtp = cfg.demoOtp ? resp.otp : undefined;
 		return c.json(demoOtp ? { ok: true, otp: demoOtp } : { ok: true });
 	});
 
@@ -213,7 +244,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			throw new AppError(429, "RATE_LIMITED", "Too many attempts");
 		}
 		const xRealIp = c.req.header("x-real-ip");
-		const verified = await eko.verifyOtp({ mobile: m, otp, xRealIp });
+		const verified = await auth.verify({ mobile: m, otp, xRealIp });
 		if (!verified.ok) {
 			// Fail-closed: if the failed attempt cannot be counted, refuse (503)
 			// rather than let unbounded guesses through.
@@ -224,7 +255,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		// Best-effort cleanup: a valid OTP is already consumed; a stale failKey
 		// expires by its own TTL, so never 502/503 the user over it.
 		await kv.del(failKey).catch(() => {});
-		const profile = await eko.getProfile({ mobile: m, xRealIp });
+		const { profile, upstream } = verified;
+		// Only providers that hold upstream session material need a session id, so
+		// sessions minted by the direct path stay exactly as they were.
+		const sid = upstream ? crypto.randomUUID() : undefined;
 		// An inactive account (upstream 2123) authenticated the OTP but must NOT
 		// receive a session — deny before minting any token/cookie (parity with
 		// the reference login). The OTP already proved control of the number, so a
@@ -258,11 +292,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 					profile.kind === "onboarding"
 						? profile.profile.orgId
 						: cfg.eko.defaultOrgId,
+				sid,
 			};
-			const access = await sessions.mintAccess(claim);
-			const refresh = await sessions.issueRefresh(claim);
-			c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-			c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+			await issueSession(c, claim, upstream);
 			const view: SignupView = { role: "signup", mobile: m };
 			return c.json(view);
 		}
@@ -284,11 +316,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			role: "developer" as const,
 			orgId: view.profile?.orgId ?? cfg.eko.defaultOrgId,
 			zohoId: view.zohoId ?? undefined,
+			sid,
 		};
-		const access = await sessions.mintAccess(claim);
-		const refresh = await sessions.issueRefresh(claim);
-		c.header("Set-Cookie", sessions.accessCookie(access), { append: true });
-		c.header("Set-Cookie", sessions.refreshCookie(refresh), { append: true });
+		await issueSession(c, claim, upstream);
 		return c.json(view);
 	});
 
@@ -298,6 +328,24 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		const rotated = await sessions.rotateRefresh(token);
 		if (!rotated)
 			throw new AppError(401, "SESSION_EXPIRED", "Please log in again");
+		// Keep the upstream (connect-api) session alive alongside our own rotation.
+		//
+		// Fail CLOSED: an EPS session whose upstream credentials are gone is not a
+		// degraded session, it is a session that cannot act. Because rotation above
+		// already burned the old refresh token, recovery here means discarding the
+		// new one too and sending the user back through login — cheaper and safer
+		// than serving a cookie that will fail at the first upstream call.
+		if (auth.refresh && rotated.claim.sid) {
+			try {
+				await auth.refresh(rotated.claim.sid);
+			} catch {
+				await sessions.revokeRefresh(rotated.refresh).catch(() => {});
+				for (const ck of sessions.clearCookies()) {
+					c.header("Set-Cookie", ck, { append: true });
+				}
+				throw new AppError(401, "SESSION_EXPIRED", "Please log in again");
+			}
+		}
 		// C1: re-extend the stored GitHub token TTL so a long-lived admin session
 		// does not lose write access when its refresh token is rotated.
 		if (rotated.claim.role === "admin" && rotated.claim.sid) {
@@ -333,9 +381,17 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		}
 		const token = getCookie(c, REFRESH_COOKIE);
 		if (token) await sessions.revokeRefresh(token).catch(() => {});
+		// `getCookie` reads the REQUEST, so clearing cookies on the response above
+		// does not hide the claim we still need to identify what to revoke.
 		const at = getCookie(c, ACCESS_COOKIE);
 		const claim = at ? await sessions.verifyAccess(at).catch(() => null) : null;
-		if (claim?.sid) await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
+		if (claim?.sid) {
+			await kv.del(`ghtoken:${claim.sid}`).catch(() => {});
+			// Best-effort upstream logout. An already-expired access cookie yields no
+			// claim and therefore no sid, in which case `ca:<sid>` simply expires on
+			// its own TTL — the same trade-off the GitHub token above accepts.
+			if (auth.revoke) await auth.revoke(claim.sid).catch(() => {});
+		}
 		return c.json({ ok: true });
 	});
 
@@ -425,7 +481,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	});
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg });
-	mountTransactions(app, { sessions, eko, cfg });
+	mountTransactions(app, { sessions, eko });
 
 	if (github) {
 		app.get("/auth/admin/github", async (c) => {

@@ -129,3 +129,55 @@ it("accepts a valid REDIS_URL + 32-byte key and TLS opt-out", () => {
 	expect(cfg.redisUrl).toBe("rediss://r:6379");
 	expect(cfg.redisTlsRejectUnauthorized).toBe(false);
 });
+
+describe("connect-api auth provider config", () => {
+	it("is absent by default, selecting the direct-to-SimpliBank path", () => {
+		expect(loadConfig(baseEnv).connectApi).toBeUndefined();
+	});
+
+	it("defaults org to 1 and carries a request timeout", () => {
+		const cfg = loadConfig({
+			...baseEnv,
+			CONNECT_API_BASE_URL: "https://api.beta.ekoconnect.in",
+		});
+		expect(cfg.connectApi).toEqual({
+			baseUrl: "https://api.beta.ekoconnect.in",
+			orgId: 1,
+			timeoutMs: 15000,
+		});
+	});
+
+	it("rejects a malformed base URL at boot, not at first login", () => {
+		expect(() =>
+			loadConfig({ ...baseEnv, CONNECT_API_BASE_URL: "api.ekoconnect.in" }),
+		).toThrow(/not a valid URL/);
+	});
+
+	it("refuses plaintext http to a non-loopback host", () => {
+		// OTPs and access tokens travel over this connection.
+		expect(() =>
+			loadConfig({
+				...baseEnv,
+				CONNECT_API_BASE_URL: "http://api.beta.ekoconnect.in",
+			}),
+		).toThrow(/must be https/);
+	});
+
+	it("allows plaintext http to loopback for local development", () => {
+		const cfg = loadConfig({
+			...baseEnv,
+			CONNECT_API_BASE_URL: "http://127.0.0.1:8001",
+		});
+		expect(cfg.connectApi?.baseUrl).toBe("http://127.0.0.1:8001");
+	});
+
+	it("rejects a non-positive CONNECT_ORG_ID", () => {
+		expect(() =>
+			loadConfig({
+				...baseEnv,
+				CONNECT_API_BASE_URL: "https://api.beta.ekoconnect.in",
+				CONNECT_ORG_ID: "nope",
+			}),
+		).toThrow(/positive integer/);
+	});
+});

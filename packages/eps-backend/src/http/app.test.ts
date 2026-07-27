@@ -58,6 +58,8 @@ function deps(
 				onboarding: 0,
 				zohoId: "ZCRM_9",
 				onboardingSteps: [],
+				accounts: [],
+				evalueAccountId: null,
 			},
 		})),
 		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
@@ -508,6 +510,10 @@ describe("signup sessions", () => {
 			{ role: 13000, label: "PAN Details" },
 			{ role: 12600, label: "Set Secret PIN" },
 		],
+		// A mid-onboarding profile has no accounts yet — upstream sends no
+		// account_detail until the account exists.
+		accounts: [],
+		evalueAccountId: null,
 	};
 
 	it("mints a signup session for an unregistered mobile", async () => {
@@ -1540,6 +1546,8 @@ describe("wallet/balance", () => {
 					onboarding: 1,
 					zohoId: "",
 					onboardingSteps: [],
+					accounts: [],
+					evalueAccountId: null,
 				},
 			})),
 		});
@@ -1573,6 +1581,8 @@ describe("wallet/balance", () => {
 						onboarding: 0,
 						zohoId: "ZCRM_9",
 						onboardingSteps: [],
+						accounts: [],
+						evalueAccountId: null,
 					},
 				})
 				.mockResolvedValue({ kind: "error" as const, responseTypeId: 9999 }),

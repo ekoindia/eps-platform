@@ -24,22 +24,35 @@ export interface Config {
 		host: string;
 		port: number;
 		path: string;
+		/**
+		 * Upstream path for the history/dashboard interactions (154, 206), which
+		 * live on an older API version than everything else.
+		 *
+		 * Same host and port as `path` — only the version segment differs.
+		 * connect-api switches the same way in `utils/url.js:70-99`, and its
+		 * config pins `/ekoicici/v1/request` here against `/ekoicici/v2/request`
+		 * for the default.
+		 */
+		historyPath: string;
 		developerKey: string;
 		initiatorId: string;
 		userCode: string;
 		defaultOrgId: number;
 		logLevel: EkoLogLevel;
+	};
+	/**
+	 * Present only when `CONNECT_API_BASE_URL` is set, which selects Eloka's
+	 * connect-api as the auth provider instead of calling SimpliBank's OTP
+	 * interactions directly. Absent → the original direct path (the default).
+	 */
+	connectApi?: {
+		baseUrl: string;
 		/**
-		 * Serve transaction history from the built-in fixture instead of calling
-		 * upstream.
-		 *
-		 * ponytail: temporary. Interaction 154 is unprobed on this transport and
-		 * `account_id` has no known source here, so the console page is built and
-		 * exercised end-to-end against fixture rows. Delete this flag and the
-		 * branch in `createEkoClient.getTransactionHistory` once the contract is
-		 * confirmed — see docs/features/transaction-history.md §Unverified.
+		 * The connect-api org this portal authenticates against, and the org a
+		 * profile must belong to to earn a developer session. 1 = Eko.
 		 */
-		transactionsMock: boolean;
+		orgId: number;
+		timeoutMs: number;
 	};
 	github: {
 		clientId: string;
@@ -82,6 +95,33 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			`SIMPLIBANK_API_SCHEME=http is only allowed for loopback hosts; refusing plaintext to "${ekoHost}". Set SIMPLIBANK_ALLOW_INSECURE_HTTP=true to opt in for a trusted private-network upstream.`,
 		);
 	}
+	// Setting CONNECT_API_BASE_URL switches the auth provider. A malformed or
+	// plaintext value must fail at boot, not at the first login attempt.
+	let connectApi: Config["connectApi"];
+	const connectBaseUrl = env.CONNECT_API_BASE_URL || undefined;
+	if (connectBaseUrl) {
+		let parsed: URL;
+		try {
+			parsed = new URL(connectBaseUrl);
+		} catch {
+			throw new Error(
+				`CONNECT_API_BASE_URL is not a valid URL: "${connectBaseUrl}"`,
+			);
+		}
+		if (parsed.protocol !== "https:" && !LOOPBACK_HOSTS.has(parsed.hostname)) {
+			throw new Error(
+				`CONNECT_API_BASE_URL must be https for a non-loopback host; refusing plaintext to "${parsed.hostname}". Access tokens and OTPs travel over this connection.`,
+			);
+		}
+		connectApi = {
+			baseUrl: connectBaseUrl,
+			orgId: Number(env.CONNECT_ORG_ID ?? 1),
+			timeoutMs: Number(env.CONNECT_API_TIMEOUT_MS ?? 15_000),
+		};
+		if (!Number.isFinite(connectApi.orgId) || connectApi.orgId < 1) {
+			throw new Error("CONNECT_ORG_ID must be a positive integer");
+		}
+	}
 	const redisUrl = env.REDIS_URL || undefined;
 	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
 	if (redisUrl) {
@@ -114,13 +154,14 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			host: ekoHost,
 			port: Number(env.SIMPLIBANK_API_PORT!),
 			path: env.SIMPLIBANK_API_PATH!,
+			historyPath: env.SIMPLIBANK_HISTORY_API_PATH ?? "/ekoicici/v1/request",
 			developerKey: env.EKO_DEVELOPER_KEY!,
 			initiatorId: env.EKO_INITIATOR_ID ?? "1234567891",
 			userCode: env.EKO_USER_CODE ?? "99029899",
 			defaultOrgId: Number(env.EKO_DEFAULT_ORG_ID ?? 1),
 			logLevel: parseEkoLogLevel(env.EKO_LOG_LEVEL),
-			transactionsMock: env.EKO_TRANSACTIONS_MOCK === "true",
 		},
+		connectApi,
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
 			clientSecret: env.GITHUB_CLIENT_SECRET!,

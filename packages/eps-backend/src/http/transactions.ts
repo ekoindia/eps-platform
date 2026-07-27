@@ -4,7 +4,6 @@ import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import { identityOf } from "../clients/eko";
-import type { Config } from "../config";
 import type { TransactionRow } from "../types";
 import { AppError } from "./errors";
 import type { AppEnv } from "./requestId";
@@ -20,7 +19,7 @@ const MAX_LIMIT = 25;
  *
  * `start_date`/`tx_date` are Eloka's names for From/To. Their exact upstream
  * semantics are UNVERIFIED on this transport — see
- * docs/features/transaction-history.md §Unverified.
+ * docs/features/transaction-history.md.
  */
 const FILTER_RULES: Record<string, RegExp> = {
 	tid: /^\d{1,20}$/,
@@ -86,13 +85,13 @@ export function parsePaging(body: unknown): {
  * amounts, and a query string would put all of them into browser history, proxy
  * logs and this app's own access log (which records `path`).
  * @param app - The Hono app.
- * @param deps - Session verifier, Eko client, and config.
+ * @param deps - Session verifier and Eko client.
  */
 export function mountTransactions(
 	app: Hono<AppEnv>,
-	deps: { sessions: Sessions; eko: EkoClient; cfg: Config },
+	deps: { sessions: Sessions; eko: EkoClient },
 ): void {
-	const { sessions, eko, cfg } = deps;
+	const { sessions, eko } = deps;
 
 	/** Resolves the caller's mobile, or throws unless this is a developer session. */
 	async function requireDeveloperSession(c: Context<AppEnv>): Promise<string> {
@@ -131,17 +130,21 @@ export function mountTransactions(
 			);
 		}
 
-		// UNVERIFIED: `account_id`'s source. Eloka reads it from a login response
-		// this backend never calls, so it is null here. Refuse to call upstream
-		// without one rather than let wiring day discover the gap inside a generic
-		// 502 — the fixture path is the only wired path today.
-		// See docs/features/transaction-history.md §Unverified.
-		const accountId: string | null = null;
-		if (!cfg.eko.transactionsMock && accountId === null) {
+		// The E-value account interaction 154 filters by, resolved from this
+		// caller's own 151 profile — never read from the request, so one developer
+		// cannot page through another's history.
+		//
+		// Refuse rather than omit the filter when it cannot be resolved. Upstream
+		// treats a missing `account_id` as "the default account" (that is how
+		// interaction 9 behaves), which would quietly answer with somebody's
+		// default rather than this user's, and a retryable 502 is the honest
+		// answer to "we could not tell which account is yours".
+		const accountId = profile.profile.evalueAccountId;
+		if (accountId === null) {
 			throw new AppError(
-				501,
-				"NOT_WIRED",
-				"Transaction history isn't connected yet.",
+				502,
+				"NO_ACCOUNT",
+				"Couldn't identify your account right now. Please try again.",
 			);
 		}
 

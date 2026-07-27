@@ -14,6 +14,8 @@ const profile: EkoProfile = {
 	onboarding: 0,
 	zohoId: "ZCRM_9",
 	onboardingSteps: [],
+		accounts: [],
+		evalueAccountId: null,
 };
 
 describe("deriveStateFromProfile", () => {

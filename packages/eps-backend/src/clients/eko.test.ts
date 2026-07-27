@@ -8,14 +8,12 @@ const ekoCfg = {
 	host: "sb.local",
 	port: 8080,
 	path: "/v1",
+	historyPath: "/v1-history",
 	developerKey: "devkey",
 	initiatorId: "1234567891",
 	userCode: "99029899",
 	defaultOrgId: 1,
 	logLevel: "off" as const,
-	// Default to the live path so every existing test still asserts a real POST;
-	// the fixture short-circuit is opted into per-test.
-	transactionsMock: false,
 };
 
 function mockFetch(status: number, body: unknown) {
@@ -683,6 +681,8 @@ describe("identityOf", () => {
 			onboarding: 0,
 			zohoId: "",
 			onboardingSteps: [],
+		accounts: [],
+		evalueAccountId: null,
 		};
 		expect(identityOf(profile)).toEqual({
 			initiatorId: "9990000001",
@@ -759,11 +759,9 @@ describe("getTransactionHistory", () => {
 		return new URLSearchParams(init.body as string);
 	}
 
-	const liveCfg = { ...ekoCfg, transactionsMock: false };
-
 	it("posts 154 as the acting user with the paging window", async () => {
 		const f = mockFetch(200, { data: { transaction_list: [] } });
-		const eko = createEkoClient(liveCfg, f);
+		const eko = createEkoClient(ekoCfg, f);
 		await eko.getTransactionHistory({
 			identity,
 			accountId: "392961",
@@ -782,9 +780,36 @@ describe("getTransactionHistory", () => {
 		expect(body.get("isNetworkTransactionHistory")).toBe("0");
 	});
 
+	it("sends 154 to the history path, not the default interaction path", async () => {
+		// Interaction 154 lives on an older API version — same host and port, a
+		// different version segment. connect-api routes it the same way
+		// (utils/url.js:70-99); posting it to the default path 404s.
+		const f = mockFetch(200, { data: { transaction_list: [] } });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.getTransactionHistory({
+			identity,
+			accountId: "392961",
+			startIndex: 0,
+			limit: 25,
+			filters: {},
+		});
+		expect((f as unknown as Mock).mock.calls[0][0]).toBe(
+			"https://sb.local:8080/v1-history",
+		);
+	});
+
+	it("sends every other interaction to the default path", async () => {
+		const f = mockFetch(200, { response_type_id: 1566 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.createPartialAccount({ mobile: "9990000001" });
+		expect((f as unknown as Mock).mock.calls[0][0]).toBe(
+			"https://sb.local:8080/v1",
+		);
+	});
+
 	it("omits account_id when it is unknown", async () => {
 		const f = mockFetch(200, { data: { transaction_list: [] } });
-		const eko = createEkoClient(liveCfg, f);
+		const eko = createEkoClient(ekoCfg, f);
 		await eko.getTransactionHistory({
 			identity,
 			accountId: null,
@@ -797,7 +822,7 @@ describe("getTransactionHistory", () => {
 
 	it("forwards filters but never lets one override a system field", async () => {
 		const f = mockFetch(200, { data: { transaction_list: [] } });
-		const eko = createEkoClient(liveCfg, f);
+		const eko = createEkoClient(ekoCfg, f);
 		await eko.getTransactionHistory({
 			identity,
 			accountId: null,
@@ -819,48 +844,6 @@ describe("getTransactionHistory", () => {
 		expect(body.get("start_index")).toBe("0");
 	});
 
-	it("serves fixture rows without calling upstream when mock is on", async () => {
-		const f = mockFetch(200, { data: { transaction_list: [] } });
-		const eko = createEkoClient({ ...ekoCfg, transactionsMock: true }, f);
-		const { rows } = await eko.getTransactionHistory({
-			identity,
-			accountId: null,
-			startIndex: 0,
-			limit: 3,
-			filters: {},
-		});
-		expect(rows).toHaveLength(3);
-		expect(f).not.toHaveBeenCalled();
-	});
-
-	it("honours a filter in mock mode rather than returning every fixture row", async () => {
-		const f = mockFetch(200, { data: { transaction_list: [] } });
-		const eko = createEkoClient({ ...ekoCfg, transactionsMock: true }, f);
-		const { rows } = await eko.getTransactionHistory({
-			identity,
-			accountId: null,
-			startIndex: 0,
-			limit: 25,
-			filters: { tid: "2886973933" },
-		});
-		expect(rows).toHaveLength(1);
-		expect(rows[0].tid).toBe("2886973933");
-	});
-
-	it("returns nothing in mock mode when a filter matches no fixture row", async () => {
-		// Otherwise the fixture lies: a search for a TID that isn't there would
-		// still show rows, reading as a real match.
-		const f = mockFetch(200, { data: { transaction_list: [] } });
-		const eko = createEkoClient({ ...ekoCfg, transactionsMock: true }, f);
-		const { rows } = await eko.getTransactionHistory({
-			identity,
-			accountId: null,
-			startIndex: 0,
-			limit: 25,
-			filters: { tid: "0000000001" },
-		});
-		expect(rows).toEqual([]);
-	});
 });
 
 describe("mapTransactionRows", () => {
