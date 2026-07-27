@@ -19,8 +19,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
+import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn } from "@/lib/utils";
-import { KeyRound, LayoutDashboard, Menu, ReceiptText } from "lucide-react";
+import {
+	KeyRound,
+	LayoutDashboard,
+	Menu,
+	PlusCircle,
+	ReceiptText,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import {
@@ -35,7 +42,14 @@ import {
  * Console rail items. Flat by design: developer consoles only reach for
  * uppercase group captions past ~5 items, and there are three.
  */
-const NAV_ITEMS = [
+type NavItem = {
+	to: string;
+	label: string;
+	icon: typeof LayoutDashboard;
+	end: boolean;
+};
+
+const NAV_ITEMS: readonly NavItem[] = [
 	{ to: "/console", label: "Home", icon: LayoutDashboard, end: true },
 	{
 		to: "/console/credentials",
@@ -49,7 +63,7 @@ const NAV_ITEMS = [
 		icon: ReceiptText,
 		end: false,
 	},
-] as const;
+];
 
 /**
  * The signed-in developer, as handed down by `ConsoleLayout` through the router
@@ -62,9 +76,26 @@ export function useConsoleMe(): MeView {
 
 /** The links themselves — shared by the desktop rail and the mobile Sheet. */
 function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
+	// Same entitlement that gates the wallet card's "+" button, and the same
+	// route it links to — the rail just says it in words.
+	const loadFlowId = useLoadWalletFlowId();
+	const items: readonly NavItem[] =
+		loadFlowId === null
+			? NAV_ITEMS
+			: [
+					NAV_ITEMS[0],
+					{
+						to: `/console/transaction/${loadFlowId}`,
+						label: "Load Wallet",
+						icon: PlusCircle,
+						end: false,
+					},
+					...NAV_ITEMS.slice(1),
+				];
+
 	return (
 		<nav className="flex flex-col gap-0.5 text-sm" aria-label="Console">
-			{NAV_ITEMS.map((item) => (
+			{items.map((item) => (
 				<NavLink
 					key={item.to}
 					to={item.to}

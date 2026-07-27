@@ -1,8 +1,4 @@
-import { SHOW_CONNECT_WIDGET } from "@/lib/config/features";
-import {
-	fetchRoleTransactionList,
-	loadWalletInteractionId,
-} from "@/lib/connect/interactions";
+import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn, formatINR } from "@/lib/utils";
 import {
 	fetchWalletBalance,
@@ -41,10 +37,10 @@ export function WalletBalance() {
 	const [busy, setBusy] = useState(!seed);
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const mounted = useRef(true);
-	// Which Load-E-value flow this user may run, if any. Resolved from their own
-	// entitlements rather than assumed, because retailers get 491 and distributors
-	// 240 — and plenty of API-only accounts get neither.
-	const [loadFlowId, setLoadFlowId] = useState<number | null>(null);
+	// Resolved separately from the balance so a slow or failing interaction list
+	// never delays the number itself — the button simply stays hidden. Shared with
+	// the console rail's "Load Wallet" link, which gates on the same id.
+	const loadFlowId = useLoadWalletFlowId();
 
 	const load = useCallback(async () => {
 		setBusy(true);
@@ -79,17 +75,6 @@ export function WalletBalance() {
 		// `seed` would refetch mid-life, which is what this card is avoiding.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [load]);
-
-	// Resolved separately from the balance so a slow or failing interaction list
-	// never delays the number itself — the button simply stays hidden.
-	useEffect(() => {
-		if (!SHOW_CONNECT_WIDGET) return;
-		void fetchRoleTransactionList()
-			.then((list) => {
-				if (mounted.current) setLoadFlowId(loadWalletInteractionId(list));
-			})
-			.catch(() => undefined);
-	}, []);
 
 	// A cooldown or an in-flight request outliving its component would otherwise
 	// set state on an unmounted one.
