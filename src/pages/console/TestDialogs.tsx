@@ -233,12 +233,16 @@ const ACCEPT_PRESETS = [
 
 /** The reusable upload control, with every switch it exposes. */
 function FileUploadTest() {
-	const { options, controls } = useEditorOptions();
+	// The control owns the watermark here, so the editor's free-text field is
+	// hidden: two boxes both labelled "watermark" would say nothing about which
+	// one wins.
+	const { options, controls } = useEditorOptions({ watermarkField: false });
 	const [file, setFile] = useState<File | null>(null);
 	const [accept, setAccept] = useState("");
 	const [cameraOnly, setCameraOnly] = useState(false);
 	const [disableImageConfirm, setDisableImageConfirm] = useState(false);
-	const [watermark, setWatermark] = useState(false);
+	const [kycWatermark, setKycWatermark] = useState(false);
+	const [customWatermark, setCustomWatermark] = useState("");
 
 	return (
 		<div>
@@ -253,6 +257,17 @@ function FileUploadTest() {
 					label="disableImageConfirm"
 					checked={disableImageConfirm}
 					onChange={setDisableImageConfirm}
+				/>
+				<Toggle
+					label="watermark (KYC defaults)"
+					checked={kycWatermark}
+					onChange={setKycWatermark}
+				/>
+				<Field
+					label="watermark text (overrides)"
+					value={customWatermark}
+					onChange={setCustomWatermark}
+					width="w-56"
 				/>
 				<div className="flex flex-col gap-1">
 					<Label htmlFor="opt-accept" className="text-[10px]">
@@ -272,14 +287,20 @@ function FileUploadTest() {
 					</select>
 				</div>
 			</div>
+			{kycWatermark && !customWatermark ? (
+				<p className="mb-3 text-xs text-muted-foreground">
+					Asks for location permission and calls <code>/me/ip</code>. Stamps
+					name + code, org, position + IP, and the timestamp — sign in first,
+					or the name and IP lines come out empty.
+				</p>
+			) : null}
 			<FileUpload
 				label="Upload your photo"
 				accept={accept}
 				cameraOnly={cameraOnly}
-				// Prompts for location and asks the backend for the IP, exactly as a
-				// KYC field would. Takes precedence over the free-text `watermark`
-				// option above, which is the fallback.
-				watermark={watermark}
+				// A string wins over the flag, which is what the component does: an
+				// explicit caption replaces the KYC defaults rather than joining them.
+				watermark={customWatermark || kycWatermark}
 				file={file}
 				onFileChange={setFile}
 				options={{ ...options, disableImageConfirm }}
@@ -294,8 +315,12 @@ function FileUploadTest() {
 	);
 }
 
-/** Editor options, shared by the editor and camera benches. */
-function useEditorOptions() {
+/**
+ * Editor options, shared by the editor, camera and upload benches.
+ * @param props.watermarkField - Render the free-text watermark box. Off where
+ *   the component under test owns the watermark itself.
+ */
+function useEditorOptions({ watermarkField = true } = {}) {
 	const [detectFace, setDetectFace] = useState(false);
 	const [disableCrop, setDisableCrop] = useState(false);
 	const [disableRotate, setDisableRotate] = useState(false);
@@ -348,12 +373,14 @@ function useEditorOptions() {
 			/>
 			<Field label="minFaces" value={minFaceCount} onChange={setMinFaceCount} />
 			<Field label="maxFaces" value={maxFaceCount} onChange={setMaxFaceCount} />
-			<Field
-				label="watermark"
-				value={watermark}
-				onChange={setWatermark}
-				width="w-48"
-			/>
+			{watermarkField ? (
+				<Field
+					label="watermark"
+					value={watermark}
+					onChange={setWatermark}
+					width="w-48"
+				/>
+			) : null}
 		</div>
 	);
 
