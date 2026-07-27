@@ -1,3 +1,4 @@
+import type { CameraOptions } from "@/components/connect/CameraDialog";
 import type { FileViewOptions } from "@/components/connect/FileViewDialog";
 
 /** A file the flow wants shown, already normalised for the viewer. */
@@ -21,6 +22,8 @@ export interface FileViewRequest {
 export interface WidgetEventHandlers {
 	/** Show (or ask the user to confirm) a file the flow produced. */
 	onFileView: (request: FileViewRequest) => void;
+	/** The flow wants a photo taken — an ID document, a customer's face. */
+	onCameraCapture: (options: CameraOptions) => void;
 	/** The flow moved the user's E-value. */
 	onBalanceChanged: (balance: number) => void;
 	/** The upstream session expired mid-flow and must be renewed. */
@@ -114,8 +117,17 @@ export function attachWidgetEvents(handlers: WidgetEventHandlers): () => void {
 		if (url) handlers.onOpenUrl(url);
 	};
 
+	const onRequestCameraCapture = (e: Event) => {
+		handlers.onCameraCapture(
+			(e as CustomEvent<CameraOptions | undefined>).detail ?? {},
+		);
+	};
+
 	window.addEventListener("iron-signal", onIronSignal, { signal });
 	window.addEventListener("open-url", onOpenUrl, { signal });
+	window.addEventListener("request-camera-capture", onRequestCameraCapture, {
+		signal,
+	});
 
 	return () => controller.abort();
 }

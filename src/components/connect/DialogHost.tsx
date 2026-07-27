@@ -11,14 +11,30 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
+import type { CameraOptions, CameraResult } from "./CameraDialog";
 import type { FileViewOptions } from "./FileViewDialog";
+import type {
+	ImageEditorOptions,
+	ImageEditorResult,
+} from "./ImageEditorDialog";
 
+// Lazily loaded, and worth it: the editor pulls in react-image-crop and the
+// camera react-webcam, neither of which most console sessions ever open.
 const FileViewDialog = lazy(() =>
 	import("./FileViewDialog").then((m) => ({ default: m.FileViewDialog })),
 );
+const ImageEditorDialog = lazy(() =>
+	import("./ImageEditorDialog").then((m) => ({ default: m.ImageEditorDialog })),
+);
+const CameraDialog = lazy(() =>
+	import("./CameraDialog").then((m) => ({ default: m.CameraDialog })),
+);
 
 /** One open dialog, discriminated by `kind`. */
-type DialogRequest = { kind: "file"; file: string; options?: FileViewOptions };
+type DialogRequest =
+	| { kind: "file"; file: string; options?: FileViewOptions }
+	| { kind: "image"; image: string; options?: ImageEditorOptions }
+	| { kind: "camera"; options?: CameraOptions };
 
 /** What a dialog hands back. Closing without a decision resolves `{}`. */
 export type DialogResult = Record<string, unknown>;
@@ -37,6 +53,18 @@ const CHROME: Record<
 	{ className: string; closeButton: boolean }
 > = {
 	file: { className: "bg-transparent", closeButton: true },
+	// Both carry their own accept/reject/close controls, and a second close
+	// button would leave the caller's promise resolving `{}` instead of a
+	// decision.
+	image: { className: "bg-transparent", closeButton: false },
+	camera: { className: "bg-transparent", closeButton: false },
+};
+
+/** Screen-reader titles; Radix requires one per dialog. */
+const TITLES: Record<DialogRequest["kind"], string> = {
+	file: "File preview",
+	image: "Edit image",
+	camera: "Camera",
 };
 
 /**
@@ -49,6 +77,13 @@ const CHROME: Record<
 export interface ConnectDialogs {
 	/** Shows a file (image, video, PDF, page) full-screen. */
 	showFile: (file: string, options?: FileViewOptions) => Promise<DialogResult>;
+	/** Lets the user crop, rotate and confirm an image. */
+	editImage: (
+		image: string,
+		options?: ImageEditorOptions,
+	) => Promise<Partial<ImageEditorResult>>;
+	/** Opens the camera; resolves with the capture the user accepted. */
+	openCamera: (options?: CameraOptions) => Promise<Partial<CameraResult>>;
 }
 
 const DialogContext = createContext<ConnectDialogs | null>(null);
@@ -111,6 +146,8 @@ export function ConnectDialogProvider({ children }: { children: ReactNode }) {
 	const dialogs = useMemo<ConnectDialogs>(
 		() => ({
 			showFile: (file, options) => open({ kind: "file", file, options }),
+			editImage: (image, options) => open({ kind: "image", image, options }),
+			openCamera: (options) => open({ kind: "camera", options }),
 		}),
 		[open],
 	);
@@ -159,7 +196,7 @@ function HostedDialog({
 				>
 					{/* Radix requires a title; these dialogs carry their own visible chrome. */}
 					<DialogPrimitive.Title className="sr-only">
-						{entry.request.kind === "file" ? "File preview" : "Dialog"}
+						{TITLES[entry.request.kind]}
 					</DialogPrimitive.Title>
 					<Suspense
 						fallback={<p className="p-8 text-sm text-white">Loading…</p>}
@@ -194,7 +231,6 @@ function DialogBody({
 	dismiss: (result?: DialogResult) => void;
 	setHidden: (hidden: boolean) => void;
 }) {
-	void dismiss;
 	void setHidden;
 	switch (entry.request.kind) {
 		case "file":
@@ -204,5 +240,15 @@ function DialogBody({
 					options={entry.request.options}
 				/>
 			);
+		case "image":
+			return (
+				<ImageEditorDialog
+					image={entry.request.image}
+					options={entry.request.options}
+					onClose={dismiss}
+				/>
+			);
+		case "camera":
+			return <CameraDialog options={entry.request.options} onClose={dismiss} />;
 	}
 }

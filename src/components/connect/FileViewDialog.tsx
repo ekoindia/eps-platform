@@ -46,6 +46,25 @@ const TYPE_BY_EXTENSION: Record<string, FileViewType> = {
 };
 
 /**
+ * Whether a URL is safe to hand to an `<iframe>` or media element.
+ *
+ * The URL comes from the transaction flow, and `javascript:` in an iframe `src`
+ * executes in this document's origin — where the widget's session tokens live.
+ * Relative paths and the http(s)/data/blob schemes are all it ever legitimately
+ * sends.
+ * @param url - The URL to check.
+ * @returns True when it is safe to render.
+ */
+function isSafeUrl(url: string): boolean {
+	try {
+		const { protocol } = new URL(url, window.location.origin);
+		return ["http:", "https:", "data:", "blob:"].includes(protocol);
+	} catch {
+		return false;
+	}
+}
+
+/**
  * Sniffs the content type from the file extension.
  * @param file - The file URL.
  * @returns The matching type, defaulting to `html` so an extension-less URL is
@@ -90,6 +109,12 @@ export function FileViewDialog({
 }) {
 	const [ready, setReady] = useState(false);
 	const type = options?.type ?? sniffType(file);
+
+	if (!isSafeUrl(file)) {
+		return (
+			<p className="p-8 text-sm text-white">This attachment can't be shown.</p>
+		);
+	}
 	const label = options?.label || options?.header || "";
 	const done = () => setReady(true);
 

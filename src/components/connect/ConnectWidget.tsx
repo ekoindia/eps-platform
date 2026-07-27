@@ -42,6 +42,22 @@ declare module "react" {
 
 type Status = "loading" | "ready" | "error" | "unavailable";
 
+/** The widget's own response methods, which exist only once Polymer upgrades it. */
+interface WidgetElement extends HTMLElement {
+	fileViewResponse?: (result: unknown) => void;
+	cameraResponse?: (image: string) => void;
+	feedbackResponse?: (result: unknown) => void;
+}
+
+/**
+ * Types the upgraded custom element for its response callbacks.
+ * @param el - The element, if it is mounted.
+ * @returns The same element, or null.
+ */
+function widgetOf(el: HTMLElement | null): WidgetElement | null {
+	return el as WidgetElement | null;
+}
+
 /**
  * Assigns the widget's inputs as DOM properties rather than JSX attributes.
  *
@@ -110,7 +126,7 @@ export function ConnectWidget({
 	const widgetRef = useRef<HTMLElement | null>(null);
 	const navigate = useNavigate();
 	const { openUrl } = useAppLink();
-	const { showFile } = useConnectDialogs();
+	const { showFile, editImage, openCamera } = useConnectDialogs();
 
 	useEffect(() => {
 		if (!SHOW_CONNECT_WIDGET || !CONNECT_WIDGET_URL) return;
@@ -182,11 +198,27 @@ export function ConnectWidget({
 						: "/console/transactions",
 				),
 			onOpenUrl: openUrl,
-			onFileView: ({ file, options }) => {
-				void showFile(file, options);
+			onFileView: ({ file, options, userConfirmation }) => {
+				if (!userConfirmation) {
+					void showFile(file, options);
+					return;
+				}
+				// The flow is waiting on an answer, and takes the editor's result
+				// verbatim — `{ image, file?, accepted }`.
+				void editImage(file).then((result) => {
+					widgetOf(widgetRef.current)?.fileViewResponse?.(result);
+				});
+			},
+			onCameraCapture: (options) => {
+				void openCamera(options).then((result) => {
+					// Unlike the editor, this one takes a bare data URL, not an object.
+					if (result.image) {
+						widgetOf(widgetRef.current)?.cameraResponse?.(result.image);
+					}
+				});
 			},
 		});
-	}, [status, navigate, openUrl, showFile]);
+	}, [status, navigate, openUrl, showFile, editImage, openCamera]);
 
 	if (status === "unavailable") {
 		return (
