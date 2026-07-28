@@ -5,7 +5,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, authClient } from "@/lib/auth/client";
 import {
 	parseDocumentList,
-	progressOf,
 	statusOfDocument,
 	type KycDocument,
 } from "@/lib/connect/kyc";
@@ -23,38 +22,6 @@ function Header() {
 				Upload the documents we need to verify your business. All of them are
 				required.
 			</p>
-		</div>
-	);
-}
-
-/**
- * How far through the pack the user is.
- *
- * A plain two-div bar. There is no `ui/progress.tsx` in this project and this
- * does not justify one.
- * @param props.uploaded - Documents done.
- * @param props.total - Documents in the pack.
- */
-function Progress({ uploaded, total }: { uploaded: number; total: number }) {
-	const percent = total > 0 ? Math.round((uploaded / total) * 100) : 0;
-	return (
-		<div className="flex flex-col gap-2">
-			<p className="text-sm text-muted-foreground">
-				{uploaded} of {total} uploaded
-			</p>
-			<div
-				className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
-				role="progressbar"
-				aria-valuenow={uploaded}
-				aria-valuemin={0}
-				aria-valuemax={total}
-				aria-label="Documents uploaded"
-			>
-				<div
-					className="h-full rounded-full bg-primary transition-[width] duration-300"
-					style={{ width: `${percent}%` }}
-				/>
-			</div>
 		</div>
 	);
 }
@@ -82,11 +49,9 @@ function DocumentRow({
 			</div>
 			<div className="flex min-w-0 flex-1 flex-col gap-1">
 				<p className="font-medium">{doc.name}</p>
-				<p className="text-sm text-muted-foreground">
-					{[doc.info, `${doc.pages} page${doc.pages > 1 ? "s" : ""}`]
-						.filter(Boolean)
-						.join(" · ")}
-				</p>
+				{doc.info ? (
+					<p className="text-sm text-muted-foreground">{doc.info}</p>
+				) : null}
 			</div>
 			<div className="flex shrink-0 items-center gap-3">
 				{status.uploaded ? (
@@ -94,10 +59,10 @@ function DocumentRow({
 						<CheckCircle2 className="h-4 w-4" />
 						{status.label}
 					</span>
-				) : (
+				) : status.label ? (
 					<Badge variant={status.variant}>{status.label}</Badge>
-				)}
-				<Button variant="outline" size="sm" onClick={onUpload}>
+				) : null}
+				<Button size="sm" onClick={onUpload}>
 					{status.uploaded ? "Replace" : doc.error ? "Retry" : "Upload"}
 				</Button>
 			</div>
@@ -167,7 +132,6 @@ export default function Documents() {
 		);
 	}
 
-	const { uploaded, total } = progressOf(documents, uploadedNow);
 	const resolving = enabled === null || loading;
 
 	return (
@@ -197,7 +161,9 @@ export default function Documents() {
 
 			{!resolving && !error && documents.length > 0 ? (
 				<>
-					<Progress uploaded={uploaded} total={total} />
+					<p className="text-sm text-muted-foreground">
+						{`${documents.length} document${documents.length > 1 ? "s" : ""} pending`}
+					</p>
 					<div className="divide-y rounded-lg border">
 						{documents.map((doc) => (
 							<DocumentRow

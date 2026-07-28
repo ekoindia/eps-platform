@@ -4,7 +4,6 @@ import {
 	KYC_UPLOAD_ID,
 	kycEnabled,
 	parseDocumentList,
-	progressOf,
 	statusOfDocument,
 	type KycDocument,
 } from "@/lib/connect/kyc";
@@ -72,6 +71,32 @@ describe("parseDocumentList", () => {
 		]);
 	});
 
+	it("overlays this console's own overrides", async () => {
+		// The merge itself is covered in kyc-docs.test; what matters here is that
+		// parsing runs it at all, which is what keeps the dev bench and the console
+		// showing the same thing. Stubbed, because the shipped map deliberately
+		// overrides no presentation field yet and an unrun merge would be invisible.
+		vi.doMock("@/lib/connect/kyc-docs", async (orig) => ({
+			...(await orig<typeof import("@/lib/connect/kyc-docs")>()),
+			withDocConfig: (row: KycDocument) => ({
+				...row,
+				name: `overlaid ${row.name}`,
+			}),
+		}));
+		vi.resetModules();
+		try {
+			const { parseDocumentList: parseWithStub } =
+				await import("@/lib/connect/kyc");
+
+			expect(parseWithStub([{ doc_type: "9", name: "Upstream" }])[0].name).toBe(
+				"overlaid Upstream",
+			);
+		} finally {
+			vi.doUnmock("@/lib/connect/kyc-docs");
+			vi.resetModules();
+		}
+	});
+
 	it("treats an optional document exactly like a required one", () => {
 		const documents = parseDocumentList(SAMPLE_LIST);
 		const required = documents.find((d) => d.docType === "1");
@@ -134,6 +159,11 @@ describe("statusOfDocument", () => {
 		expect(status.variant).toBe("outline");
 	});
 
+	it("says nothing at all when upstream has nothing to report", () => {
+		// An empty label is the signal to render no pill.
+		expect(statusOfDocument(doc({ status: 1 })).label).toBe("");
+	});
+
 	it("prefers upstream's own wording", () => {
 		expect(statusOfDocument(doc({ statusDesc: "Under review" })).label).toBe(
 			"Under review",
@@ -156,27 +186,5 @@ describe("statusOfDocument", () => {
 			variant: "default",
 			uploaded: true,
 		});
-	});
-});
-
-describe("progressOf", () => {
-	it("counts nothing done on a freshly fetched list", () => {
-		expect(progressOf(parseDocumentList(SAMPLE_LIST))).toEqual({
-			uploaded: 0,
-			total: 5,
-		});
-	});
-
-	it("counts this session's uploads", () => {
-		const documents = parseDocumentList(SAMPLE_LIST);
-
-		expect(progressOf(documents, new Set(["1", "15"]))).toEqual({
-			uploaded: 2,
-			total: 5,
-		});
-	});
-
-	it("counts an empty pack as zero of zero", () => {
-		expect(progressOf([])).toEqual({ uploaded: 0, total: 0 });
 	});
 });

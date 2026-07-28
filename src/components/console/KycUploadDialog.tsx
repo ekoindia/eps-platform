@@ -9,13 +9,15 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError, authClient } from "@/lib/auth/client";
+import {
+	configOf,
+	KYC_ACCEPT,
+	KYC_MAX_FILE_BYTES,
+} from "@/lib/connect/kyc-docs";
 import type { KycDocument } from "@/lib/connect/kyc";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-/** What a KYC document may be, matching the backend's allow-list exactly. */
-const ACCEPT = "image/jpeg,image/png,application/pdf";
 
 export interface KycUploadDialogProps {
 	/** The document being uploaded. Null closes the dialog. */
@@ -51,9 +53,24 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 	}, [doc]);
 
 	const complete = files.length > 0 && files.every(Boolean);
+	// What this console knows about this document type over and above upstream.
+	const config = configOf(doc?.docType ?? "");
+	const maxBytes = config.maxBytes ?? KYC_MAX_FILE_BYTES;
 
 	/** Replaces one page's file, leaving the others alone. */
 	function setPage(index: number, file: File | null) {
+		// Checked here, after the editor has run, rather than at pick time: images
+		// come back re-encoded and usually far smaller, so an early check would
+		// refuse a phone photo the editor was about to shrink to under a megabyte.
+		// What this actually catches is the path that skips the editor entirely —
+		// an oversized PDF. For images `options.maxLength` is the better lever,
+		// since it fixes the file instead of refusing it.
+		if (file && file.size > maxBytes) {
+			toast.error(
+				`${file.name} is larger than ${Math.round(maxBytes / 1024 / 1024)} MB.`,
+			);
+			return;
+		}
 		setFiles((prev) => prev.map((item, i) => (i === index ? file : item)));
 	}
 
@@ -106,15 +123,20 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 							// Slots are positional and fixed for the life of the dialog, so
 							// the index is a stable identity here.
 							key={index}
-							label={files.length > 1 ? `Page ${index + 1}` : "File"}
+							label={
+								config.pageLabels?.[index] ??
+								(files.length > 1 ? `Page ${index + 1}` : "File")
+							}
 							required
-							accept={ACCEPT}
+							accept={config.accept ?? KYC_ACCEPT}
+							cameraOnly={config.cameraOnly}
+							options={config.options}
 							file={file}
 							disabled={busy}
 							// Provenance burnt into the pixels — who, where and when — which
 							// is what makes a captured document evidence rather than a photo.
 							// Images only; a PDF is attached untouched.
-							watermark
+							watermark={config.watermark ?? true}
 							onFileChange={(picked) => setPage(index, picked)}
 						/>
 					))}

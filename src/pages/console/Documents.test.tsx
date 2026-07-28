@@ -59,20 +59,18 @@ describe("Documents", () => {
 		expect(screen.getAllByRole("button", { name: "Upload" })).toHaveLength(5);
 	});
 
-	it("shows the page count and upstream's own note", async () => {
+	it("shows upstream's own note, and never a page count", async () => {
 		render(<Documents />);
 
-		expect(
-			await screen.findByText("Director's Aadhaar Card · 2 pages"),
-		).toBeVisible();
-		// Singular, and three of the five documents are single-page.
-		expect(screen.getAllByText("1 page")).toHaveLength(3);
+		expect(await screen.findByText("Director's Aadhaar Card")).toBeVisible();
+		// The dialog asks for the pages; the list does not advertise them.
+		expect(screen.queryByText(/\d+ pages?/)).toBeNull();
 	});
 
-	it("counts nothing uploaded while upstream's statuses are unconfirmed", async () => {
+	it("counts what is still outstanding, not what is done", async () => {
 		render(<Documents />);
 
-		expect(await screen.findByText("0 of 5 uploaded")).toBeVisible();
+		expect(await screen.findByText("5 documents pending")).toBeVisible();
 	});
 
 	it("refuses the page, and fires no request, without the entitlement", async () => {

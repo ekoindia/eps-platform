@@ -14,6 +14,7 @@
  */
 
 import type { RoleTransactionList } from "@/lib/connect/interactions";
+import { withDocConfig } from "@/lib/connect/kyc-docs";
 
 /** Interaction id for "fetch the required document list". Gates the feature. */
 export const KYC_LIST_ID = 586;
@@ -74,12 +75,12 @@ const DOCUMENT_STATUS: Record<
 	number,
 	{ label: string; variant: StatusVariant; uploaded: boolean }
 > = {
-	1: { label: "Not uploaded", variant: "outline", uploaded: false },
+	1: { label: "", variant: "outline", uploaded: false },
 };
 
 /** How an unrecognised `status` reads. Deliberately the same as "nothing yet". */
 const UNKNOWN_STATUS = {
-	label: "Not uploaded",
+	label: "",
 	variant: "outline" as StatusVariant,
 	uploaded: false,
 };
@@ -128,6 +129,11 @@ function str(value: unknown): string {
  * single malformed row should cost that row, not the page. Rows without a
  * `doc_type` are dropped — that field is the upload key, so a row missing it
  * could be listed but never submitted.
+ *
+ * Rows are normalized *and* overlaid: `withDocConfig` applies this console's own
+ * overrides for the document types it knows about. Merging here rather than at
+ * each call site is what stops the dev bench and the console from drifting apart
+ * — see `kyc-docs.ts`.
  * @param raw - The `document_list` array, of unknown shape.
  * @returns The documents, in upstream's order.
  */
@@ -139,15 +145,17 @@ export function parseDocumentList(raw: unknown): KycDocument[] {
 		const row = item as Record<string, unknown>;
 		const docType = str(row.doc_type);
 		if (!docType) continue;
-		documents.push({
-			docType,
-			name: str(row.name) || `Document ${docType}`,
-			info: str(row.info),
-			pages: parsePages(row.pages),
-			status: Number(row.status ?? NaN),
-			statusDesc: str(row.status_desc),
-			error: str(row.error),
-		});
+		documents.push(
+			withDocConfig({
+				docType,
+				name: str(row.name) || `Document ${docType}`,
+				info: str(row.info),
+				pages: parsePages(row.pages),
+				status: Number(row.status ?? NaN),
+				statusDesc: str(row.status_desc),
+				error: str(row.error),
+			}),
+		);
 	}
 	return documents;
 }
@@ -165,7 +173,9 @@ export function parseDocumentList(raw: unknown): KycDocument[] {
  *   envelope, and it exists because `DOCUMENT_STATUS` cannot yet recognise the
  *   uploaded state on its own. It drops away on the next fetch.
  * @returns The label to show, the Badge variant to show it in, and whether the
- *   document counts as done.
+ *   document counts as done. An empty label means upstream has nothing to say
+ *   about this document yet — the row shows no pill, since "not uploaded" is
+ *   already what an Upload button next to a listed document means.
  */
 export function statusOfDocument(
 	doc: KycDocument,
@@ -179,20 +189,4 @@ export function statusOfDocument(
 		return { label: doc.error, variant: "destructive", uploaded: false };
 	}
 	return { ...mapped, label: doc.statusDesc || mapped.label };
-}
-
-/**
- * Completion counts for the whole pack.
- * @param documents - Every document upstream listed.
- * @param uploadedNow - Doc types uploaded successfully in this session.
- * @returns How many are done out of how many there are.
- */
-export function progressOf(
-	documents: KycDocument[],
-	uploadedNow: ReadonlySet<string> = new Set(),
-): { uploaded: number; total: number } {
-	const uploaded = documents.filter(
-		(doc) => statusOfDocument(doc, uploadedNow.has(doc.docType)).uploaded,
-	).length;
-	return { uploaded, total: documents.length };
 }

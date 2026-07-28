@@ -172,11 +172,22 @@ turn if upstream accepts more.
 ## UI
 
 `/console/documents` — titled **Upload Documents**, in the rail and on the page
-— is a single-column checklist (`max-w-3xl`): the standard
-two-line console header, a progress bar, then one row per document showing its
-icon, name, `info · N pages`, status pill and action button (Upload / Retry /
-Replace). States render in the console's usual order — error, skeletons, dashed
+— is a single-column checklist (`max-w-3xl`): the standard two-line console
+header, an "N documents pending" line, then one row per document showing its
+icon, name, upstream's note and a primary-coloured action button (Upload / Retry
+/ Replace). States render in the console's usual order — error, skeletons, dashed
 empty state, content.
+
+Three things the row deliberately does **not** show:
+
+- **A progress bar.** The list is refetched after every upload and comes back
+  without the document just sent, so "0 of 6" would count against a total that
+  shrinks under it. The outstanding count is the honest number.
+- **The page count.** It tells the user nothing until they open the dialog,
+  which is where the slots make it obvious.
+- **A "Not uploaded" pill.** An Upload button next to a listed document already
+  says that. The pill appears only when upstream has something to add — a
+  `status_desc`, a rejection reason (in red), or this session's "Uploaded".
 
 Selecting a document opens `KycUploadDialog`, a plain shadcn `Dialog` holding
 one `FileUpload` per page. It is *not* an entry on `DialogHost`: the camera and
@@ -193,14 +204,76 @@ through `toast.error` — re-picking every page because the network blipped is t
 worst possible recovery. On success the page toasts, marks the row, and
 refetches.
 
-There is no upload percentage (`fetch` cannot report one, and a fake bar is
-worse than none) and no `ui/progress.tsx` (the bar is two divs).
+There is no upload percentage: `fetch` cannot report one, and a fake bar is
+worse than none.
+
+## Per-document overrides
+
+`src/lib/connect/kyc-docs.ts` holds a local map keyed by `doc_type`. Upstream's
+list is shared across every Eko product — it says what a document is called and
+how many files it takes, and nothing about how it should be *captured*. This is
+where the console records what it knows that the shared list cannot express.
+
+| Field | Effect |
+| --- | --- |
+| `name`, `info`, `pages` | Replace upstream's values on every parsed row |
+| `pageLabels` | Names each slot, instead of "Page 1", "Page 2", … |
+| `accept` | Narrows the allowed types for this document |
+| `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
+| `watermark` | Overrides the default provenance stamp |
+| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions` |
+| `maxBytes` | A tighter per-file limit than the backend's 5 MB |
+
+Rules that matter:
+
+- **Local always wins**, unconditionally — the merge is `??`, so `info: ""` is a
+  deliberate instruction to show no note, not an omission. The cost is that an
+  upstream rename is invisible once overridden, so keep the map small.
+- **An unknown `doc_type` gets an empty config**, never an error: upstream can
+  add a document tomorrow and it must still be uploadable.
+- **`pages` is a claim about upstream's contract**, not about presentation. The
+  backend takes our count at face value and forwards exactly that many files;
+  above `KYC_MAX_PAGES` every upload 400s. Use it only to correct a count
+  upstream got wrong. A table-driven test in `kyc-docs.test.ts` enforces the
+  range.
+- **`maxBytes` only ever goes down.** Raising it past the backend's ceiling does
+  not accept a larger file; it spends the upload before the same rejection. It
+  is enforced *after* the image editor has run, so a phone photo the editor was
+  about to shrink is not refused — what it really catches is an oversized PDF,
+  which skips the editor entirely.
+- **Never combine `options.disableImageConfirm` with a document that needs
+  provenance.** It skips the editor, and the editor is where the watermark is
+  burnt into the pixels.
+
+Presentation fields are overlaid inside `parseDocumentList`, so the page and the
+dev bench cannot drift; capture metadata is read by `KycUploadDialog` straight
+from `configOf`.
+
+The one shipped entry is Aadhaar (`doc_type: "1"`), labelling its two slots
+"Aadhaar front" / "Aadhaar back" — two identical "Page 1 / Page 2" slots is how
+a user attaches the front twice and hears about it at review, a week later.
+
+The document that most needs an entry is **Directors' Live Photograph with
+Location Coordinates**, and it cannot have one yet: production screenshots give
+its display name, not its `doc_type` code, and an entry under a guessed key is
+inert while looking configured. The config it wants, for the day a real 586
+response shows the code:
+
+```ts
+cameraOnly: true,                       // a "live" photo picked from the gallery is not live
+accept: "image/jpeg,image/png",
+pageLabels: ["Live photograph"],
+options: { detectFace: true, minFaceCount: 1, aspectRatio: 1, maxLength: 1200 },
+// watermark left at the default — that is what supplies the coordinates the
+// document's own name promises
+```
 
 ## Files
 
 | Path | Role |
 | --- | --- |
-| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, gating, parsing, status, progress |
+| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, gating, parsing, status |
+| `src/lib/connect/kyc-docs.ts` | Per-`doc_type` overrides, `KYC_ACCEPT`, the mirrored backend limits |
 | `src/lib/connect/kyc.fixture.ts` | The 586 sample, shared by tests and the bench |
 | `src/lib/connect/use-kyc.ts` | `useKycEnabled()` |
 | `src/pages/console/Documents.tsx` | The checklist page |
@@ -221,3 +294,5 @@ but none should be treated as settled before this is enabled in production:
 4. Whether a 2-page document may be sent as a single 2-page PDF, which the
    "exactly N files" rule currently forbids.
 5. Whether 5 MB is a workable per-file ceiling.
+6. The `doc_type` code for the live-photograph document, which is the one type
+   the override map is waiting on.
