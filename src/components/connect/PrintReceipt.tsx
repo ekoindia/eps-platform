@@ -2,11 +2,8 @@ import { EkoLogo } from "@/components/EkoLogo";
 import type { ReactNode } from "react";
 
 /** Boilerplate printed under every receipt, matching Eloka's default. */
-const TNC =
-	"Eko at no such point of time has any right, title or interest over the " +
-	"contract for sale of any of the products or services between the Retailer " +
-	"and the Buyer nor shall Eko have any obligation or liabilities in respect " +
-	"of such contract.";
+const TNC = "";
+// "Eko at no such point of time has any right, title or interest over the contract for sale of any of the products or services between the Retailer and the Buyer nor shall Eko have any obligation or liabilities in respect of such contract.";
 
 /**
  * Wraps printable content with a header and footer that exist only on paper.

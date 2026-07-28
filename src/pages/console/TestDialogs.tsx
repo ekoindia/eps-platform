@@ -1,8 +1,8 @@
 import { FileUpload } from "@/components/FileUpload";
-import { useConnectDialogs } from "@/components/connect/DialogHost";
-import { PrintReceipt } from "@/components/connect/PrintReceipt";
 import type { CameraOptions } from "@/components/connect/CameraDialog";
+import { useConnectDialogs } from "@/components/connect/DialogHost";
 import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog";
+import { PrintReceipt } from "@/components/connect/PrintReceipt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +18,7 @@ import { Helmet } from "react-helmet-async";
  * far too much ceremony to check that a crop still lands on the right pixels.
  * Each section here opens one dialog directly and shows what it resolved with.
  *
- * Modelled on Eloka's `/test` page. Mounted only under `import.meta.env.DEV`,
- * so it never reaches a production bundle.
+ * Mounted only under `import.meta.env.DEV`, so it never reaches a production bundle.
  */
 export default function TestDialogs() {
 	return (
@@ -40,7 +39,7 @@ export default function TestDialogs() {
 			<Section title="File viewer">
 				<FileViewerTest />
 			</Section>
-			<Section title="File upload (Eloka's Dropzone)">
+			<Section title="File upload">
 				<FileUploadTest />
 			</Section>
 			<Section title="Image editor">
@@ -223,7 +222,7 @@ function FileViewerTest() {
 	);
 }
 
-/** Accept presets, mirroring Eloka's Dropzone bench. */
+/** Accept presets for File Upload test */
 const ACCEPT_PRESETS = [
 	{ label: "Any file type", value: "" },
 	{ label: "JPG / PNG / PDF", value: "image/jpeg,image/png,application/pdf" },
@@ -290,8 +289,8 @@ function FileUploadTest() {
 			{kycWatermark && !customWatermark ? (
 				<p className="mb-3 text-xs text-muted-foreground">
 					Asks for location permission and calls <code>/me/ip</code>. Stamps
-					name + code, org, position + IP, and the timestamp — sign in first,
-					or the name and IP lines come out empty.
+					name + code, org, position + IP, and the timestamp — sign in first, or
+					the name and IP lines come out empty.
 				</p>
 			) : null}
 			<FileUpload

@@ -7,8 +7,7 @@ import { Link, useParams } from "react-router-dom";
  * Hosts a single Eko Connect transaction flow, e.g.
  * `/console/transaction/491` for Load E-value.
  *
- * The splat carries the flow's own sub-path so a step is deep-linkable, matching
- * Eloka's `/transaction/[...id]`.
+ * The splat carries the flow's own sub-path so a step is deep-linkable.
  */
 const ConnectTransaction = () => {
 	const params = useParams();
