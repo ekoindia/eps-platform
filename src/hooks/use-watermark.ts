@@ -14,7 +14,7 @@ export type WatermarkSpec = boolean | string | Record<string, string>;
 /** The default fields, in the order they are stamped. */
 export interface WatermarkFields {
 	name: string;
-	org: string;
+	// org: string;
 	location: string;
 	timestamp: string;
 }
@@ -115,7 +115,7 @@ export function useWatermarkText(watermark?: WatermarkSpec): string {
 		const code = profile?.code ? ` (${profile.code})` : "";
 		const defaults: WatermarkFields = {
 			name: who ? `${who}${code}` : "",
-			org: profile?.orgId ? `Eko (${profile.orgId})` : "Eko",
+			// org: profile?.orgId ? `Eko (${profile.orgId})` : "Eko",
 			location: formatLocation(position, ip),
 			timestamp: `${new Date().toLocaleString()} @ ${window.location.host}`,
 		};

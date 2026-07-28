@@ -64,12 +64,16 @@ function ToolButton({
 }) {
 	const tone =
 		variant === "accept"
-			? "bg-emerald-600 text-white min-w-25"
+			? "bg-emerald-600 text-white"
 			: variant === "reject"
 				? "bg-destructive text-white"
 				: selected
 					? "bg-eko-navy text-white"
 					: "bg-white text-black";
+	// Accept is a wide pill — the primary action; the rest are circles, which
+	// needs an explicit width or the icon plus padding decides it and they come
+	// out as slightly squashed ovals.
+	const shape = variant === "accept" ? "min-w-25 px-6" : "w-12";
 	return (
 		<button
 			type="button"
@@ -77,7 +81,7 @@ function ToolButton({
 			aria-label={label}
 			title={label}
 			aria-pressed={selected}
-			className={`flex h-12 cursor-pointer items-center justify-center rounded-full p-2.5 shadow-md hover:brightness-90 ${tone}`}
+			className={`flex h-12 cursor-pointer items-center justify-center rounded-full shadow-md hover:brightness-90 ${shape} ${tone}`}
 		>
 			{children}
 		</button>
