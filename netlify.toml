@@ -69,3 +69,26 @@
   from = "/*"
   to = "/__spa-fallback.html"
   status = 200
+
+# Auth-gated internal routes must never be indexed. public/robots.txt already
+# Disallows them; these headers cover bots that ignore robots.txt, which would
+# otherwise get a 200 SPA shell carrying no robots meta until JS runs.
+[[headers]]
+  for = "/console"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/console/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"

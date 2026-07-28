@@ -85,6 +85,30 @@
 					"value": "public, max-age=300, must-revalidate"
 				}
 			]
+		},
+		{
+			"source": "/console",
+			"headers": [
+				{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+			]
+		},
+		{
+			"source": "/console/(.*)",
+			"headers": [
+				{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+			]
+		},
+		{
+			"source": "/admin",
+			"headers": [
+				{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+			]
+		},
+		{
+			"source": "/admin/(.*)",
+			"headers": [
+				{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+			]
 		}
 	]
 }
