@@ -104,6 +104,41 @@ export function getCompositeFaceBound(
 }
 
 /**
+ * Fits a box inside the image.
+ *
+ * `getFullFaceBound` grows a detection by half its height to take in hair and
+ * chin, and squares it off — for a face near an edge that lands partly outside
+ * the picture, and react-image-crop will happily render the selection there.
+ * The crop is then read back scaled against the source bitmap, so the overhang
+ * is not merely cosmetic: it crops from pixels that do not exist.
+ *
+ * Shrinking keeps the aspect ratio rather than clipping one side, because a
+ * square face box is what makes `circularCrop` a circle instead of an ellipse.
+ * @param box - The box to fit, in the same units as `bounds`.
+ * @param bounds - The image's width and height.
+ * @returns A box wholly inside the image.
+ */
+export function clampBoxToBounds(
+	box: Box,
+	bounds: { width: number; height: number },
+): Box {
+	const scale = Math.min(
+		1,
+		bounds.width / box.width,
+		bounds.height / box.height,
+	);
+	const width = box.width * scale;
+	const height = box.height * scale;
+
+	return {
+		x: Math.min(Math.max(box.x, 0), bounds.width - width),
+		y: Math.min(Math.max(box.y, 0), bounds.height - height),
+		width,
+		height,
+	};
+}
+
+/**
  * The crop selection to start with: the whole image, or the largest centred
  * rectangle of the required aspect ratio.
  * @param width - Displayed image width.

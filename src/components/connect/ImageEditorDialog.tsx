@@ -1,4 +1,5 @@
 import {
+	clampBoxToBounds,
 	getCompositeFaceBound,
 	getDefaultCrop,
 	initializeFaceDetector,
@@ -185,15 +186,20 @@ export function ImageEditorDialog({
 
 			const fullFace = getCompositeFaceBound(detections, maxFaceCount);
 			// Detections are in natural pixels; the crop rectangle is in displayed
-			// ones.
+			// ones. Clamped after scaling: the head box is grown past the detection
+			// to take in hair and chin, which for a face near an edge lands outside
+			// the picture.
 			const scale = element.height / element.naturalHeight;
-			setCrop({
-				unit: "px",
-				x: fullFace.x * scale,
-				y: fullFace.y * scale,
-				width: fullFace.width * scale,
-				height: fullFace.height * scale,
-			});
+			const fitted = clampBoxToBounds(
+				{
+					x: fullFace.x * scale,
+					y: fullFace.y * scale,
+					width: fullFace.width * scale,
+					height: fullFace.height * scale,
+				},
+				{ width: element.width, height: element.height },
+			);
+			setCrop({ unit: "px", ...fitted });
 		} catch {
 			setFaceDetectionStatus("failed");
 		}

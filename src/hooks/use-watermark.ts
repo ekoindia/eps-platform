@@ -65,9 +65,8 @@ export function formatLocation(
 /**
  * The watermark text for a capture — who took it, from where, and when.
  *
- * Ported from Eloka's Dropzone, where this was the point of the flag: a KYC
- * photo is evidence, and evidence with no provenance stamped into the pixels
- * can be re-used for a different customer on a different day.
+ * A KYC photo is evidence, and evidence with no provenance stamped into
+ * the pixels can be re-used for a different customer on a different day.
  *
  * Nothing is requested unless a watermark is actually asked for: `false` (or a
  * literal string) skips the geolocation prompt and the IP call entirely.
