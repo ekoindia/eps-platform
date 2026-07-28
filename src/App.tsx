@@ -42,6 +42,7 @@ const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
 const ConsoleHome = lazy(() => import("./pages/console/ConsoleHome"));
 const ConsoleCredentials = lazy(() => import("./pages/console/Credentials"));
+const ConsoleDocuments = lazy(() => import("./pages/console/Documents"));
 const ConsoleTransactions = lazy(() => import("./pages/console/Transactions"));
 const ConsoleConnectTransaction = lazy(
 	() => import("./pages/console/ConnectTransaction"),
@@ -141,6 +142,7 @@ const App = ({
 								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
 								<Route path="/console" element={<ConsoleLayout />}>
 									<Route index element={<ConsoleHome />} />
+									<Route path="documents" element={<ConsoleDocuments />} />
 									<Route path="credentials" element={<ConsoleCredentials />} />
 									<Route
 										path="transactions"

@@ -251,6 +251,29 @@ export const authClient = {
 				signal,
 			}) as Promise<{ feedbackTicketId: string; message: string }>,
 	},
+	/**
+	 * KYC document upload. Both calls are proxied because they need the full
+	 * upstream token, and the uploader's identity is added server-side — the
+	 * browser says which document, never whose.
+	 */
+	connectKyc: {
+		/** The documents this user must upload. Rows are upstream's, unparsed. */
+		documents: (signal?: AbortSignal): Promise<{ documents: unknown[] }> =>
+			request("/connect/kyc/documents", {
+				method: "POST",
+				signal,
+			}) as Promise<{ documents: unknown[] }>,
+		/** Uploads one document. `form` carries `doc_type`, `pages` and `file1..fileN`. */
+		upload: (
+			form: FormData,
+			signal?: AbortSignal,
+		): Promise<{ message: string }> =>
+			request("/connect/kyc/upload", {
+				method: "POST",
+				body: form,
+				signal,
+			}) as Promise<{ message: string }>,
+	},
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>

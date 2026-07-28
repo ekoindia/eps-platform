@@ -68,6 +68,7 @@ Two failure modes are deliberately distinct: an ineligible account answers **403
 | Route | Page | Contents |
 |---|---|---|
 | `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
+| `/console/documents` | `pages/console/Documents.tsx` | Upload Documents — KYC pack, see [`features/kyc-documents.md`](./features/kyc-documents.md) |
 | `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status |
 | `/console/transactions` | `pages/console/Transactions.tsx` | Transaction history — see [`features/transaction-history.md`](./features/transaction-history.md) |
 
@@ -88,6 +89,13 @@ endpoint lands (see "API keys management" below), the fetch goes there.
 Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),
 feeding new users into this same lifecycle gate. See
 [`docs/features/user-onboarding.md`](./features/user-onboarding.md).
+
+Picking up where signup stops, `/console/documents` ("Upload Documents") is the
+KYC document pack — the checklist a user uploads to get the account activated.
+It appears in the rail directly after Home, and only for accounts entitled to
+both upstream interactions (586 list, 587 upload). Every listed document is
+treated as mandatory; upstream's `is_required` is deliberately ignored. See
+[`docs/features/kyc-documents.md`](./features/kyc-documents.md).
 
 Complexity: **S** ≈ frontend-only / static · **M** ≈ needs a backend endpoint ·
 **L** ≈ needs a new backend subsystem (telemetry, billing, etc.).

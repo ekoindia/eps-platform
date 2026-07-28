@@ -214,6 +214,349 @@ describe("GET /connect/interactions", () => {
 	});
 });
 
+describe("POST /connect/kyc/documents", () => {
+	/** The 586 envelope, trimmed to the two rows the assertions need. */
+	const listEnvelope = {
+		status: 0,
+		message: "Success",
+		data: {
+			user_code: "39300001",
+			document_list: [
+				{ doc_type: "1", name: "Aadhaar Card", pages: "2", is_required: 1 },
+				{ doc_type: "13", name: "Blank Check", pages: "1", is_required: 0 },
+			],
+		},
+	};
+
+	it("passes the rows through unparsed", async () => {
+		const { app } = harness(developer, {
+			connect: { interact: vi.fn(async () => listEnvelope) },
+		});
+
+		const res = await app.request("/connect/kyc/documents", {
+			method: "POST",
+			...withCookie,
+		});
+
+		expect(res.status).toBe(200);
+		// `is_required` survives the proxy; the console is what ignores it.
+		expect(await res.json()).toEqual({
+			documents: listEnvelope.data.document_list,
+		});
+	});
+
+	it("identifies the user from the session, not the browser", async () => {
+		const interact = vi.fn(
+			async (_token: string, _fields: Record<string, unknown>) => listEnvelope,
+		);
+		const { app } = harness(developer, { connect: { interact } });
+
+		await app.request("/connect/kyc/documents", {
+			method: "POST",
+			body: new URLSearchParams({ user_id: "8888888888" }),
+			...withCookie,
+		});
+
+		const [token, fields] = interact.mock.calls[0] as [
+			string,
+			Record<string, unknown>,
+		];
+		expect(token).toBe("ca_full");
+		expect(fields.user_id).toBe("9990000001");
+		expect(fields.interaction_type_id).toBe(539);
+		expect(String(fields.client_ref_id)).toMatch(/^\d{20}$/);
+	});
+
+	it("marks the response no-store", async () => {
+		const { app } = harness(developer, {
+			connect: { interact: vi.fn(async () => listEnvelope) },
+		});
+
+		const res = await app.request("/connect/kyc/documents", {
+			method: "POST",
+			...withCookie,
+		});
+
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+	});
+
+	it("returns an empty list rather than null when upstream sends none", async () => {
+		const { app } = harness(developer, {
+			connect: { interact: vi.fn(async () => ({ status: 0, data: {} })) },
+		});
+
+		const res = await app.request("/connect/kyc/documents", {
+			method: "POST",
+			...withCookie,
+		});
+
+		expect(await res.json()).toEqual({ documents: [] });
+	});
+
+	it("reads upstream's 'no records found' failure as an empty pack", async () => {
+		// Upstream reports "nothing outstanding" as a FAILED envelope. Surfacing
+		// that as an error would show a red box to every account whose KYC is
+		// already complete — the most common state a live account is in.
+		for (const message of [
+			"No Records Found",
+			"no records found",
+			"No Record Found",
+		]) {
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => ({ status: 1, message })) },
+			});
+
+			const res = await app.request("/connect/kyc/documents", {
+				method: "POST",
+				...withCookie,
+			});
+
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual({ documents: [] });
+		}
+	});
+
+	it("502s on a business failure behind an HTTP 200", async () => {
+		const { app } = harness(developer, {
+			connect: {
+				interact: vi.fn(async () => ({ status: 1, message: "Not allowed" })),
+			},
+		});
+
+		const res = await app.request("/connect/kyc/documents", {
+			method: "POST",
+			...withCookie,
+		});
+
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("KYC_LIST_FAILED");
+	});
+
+	it("403s a non-developer session", async () => {
+		const { app } = harness({ ...developer, role: "admin" });
+		const res = await app.request("/connect/kyc/documents", {
+			method: "POST",
+			...withCookie,
+		});
+
+		expect(res.status).toBe(403);
+		expect((await errorOf(res)).code).toBe("NOT_DEVELOPER_SESSION");
+	});
+});
+
+describe("POST /connect/kyc/upload", () => {
+	/** A JPG of `bytes` bytes, named so the extension check passes. */
+	function jpg(name = "page.jpg", bytes = 8): File {
+		return new File([new Uint8Array(bytes)], name, { type: "image/jpeg" });
+	}
+
+	/** An upload body: the two fields plus `file1..fileN`. */
+	function uploadBody(
+		fields: Record<string, string>,
+		files: Array<[string, File]> = [],
+	): FormData {
+		const form = new FormData();
+		for (const [key, value] of Object.entries(fields)) form.append(key, value);
+		for (const [name, file] of files) form.append(name, file, file.name);
+		return form;
+	}
+
+	/** A harness whose upload double records what it was handed. */
+	function uploadHarness(
+		envelope: Record<string, unknown> = {
+			status: 0,
+			message: "Details updated",
+		},
+	) {
+		const uploadInteraction = vi.fn(
+			async (
+				_token: string,
+				_fields: Record<string, string>,
+				_files: Array<{ name: string; file: File }>,
+			) => envelope,
+		);
+		const { app } = harness(developer, { connect: { uploadInteraction } });
+		return { app, uploadInteraction };
+	}
+
+	it("sends both pages, named and ordered, with session identity", async () => {
+		const { app, uploadInteraction } = uploadHarness();
+
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "1", pages: "2" }, [
+				["file1", jpg("front.jpg")],
+				["file2", jpg("back.jpg")],
+			]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ message: "Details updated" });
+
+		const [token, fields, files] = uploadInteraction.mock.calls[0] as [
+			string,
+			Record<string, string>,
+			Array<{ name: string; file: File }>,
+		];
+		expect(token).toBe("ca_full");
+		expect(fields).toEqual({
+			interaction_type_id: "523",
+			client_ref_id: expect.stringMatching(/^\d{20}$/),
+			locale: "en",
+			user_id: "9990000001",
+			doc_type: "1",
+			pages: "2",
+		});
+		// The upload transport URL-encodes these into one part, so every value has
+		// to already be a string.
+		expect(Object.values(fields).every((v) => typeof v === "string")).toBe(
+			true,
+		);
+		expect(files.map((f) => f.name)).toEqual(["file1", "file2"]);
+		expect(files.map((f) => f.file.name)).toEqual(["front.jpg", "back.jpg"]);
+		// `doc_id` and `intent_id` are deliberately not sent.
+		expect(fields).not.toHaveProperty("doc_id");
+		expect(fields).not.toHaveProperty("intent_id");
+	});
+
+	it("refuses a short pack rather than half-uploading a document", async () => {
+		const { app, uploadInteraction } = uploadHarness();
+
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "1", pages: "2" }, [["file1", jpg()]]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(400);
+		expect((await errorOf(res)).code).toBe("INVALID_INPUT");
+		expect(uploadInteraction).not.toHaveBeenCalled();
+	});
+
+	it("ignores files past the declared page count", async () => {
+		const { app, uploadInteraction } = uploadHarness();
+
+		await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "1", pages: "1" }, [
+				["file1", jpg()],
+				["file2", jpg()],
+			]),
+			...withCookie,
+		});
+
+		const [, , files] = uploadInteraction.mock.calls[0] as [
+			string,
+			Record<string, string>,
+			Array<{ name: string; file: File }>,
+		];
+		expect(files.map((f) => f.name)).toEqual(["file1"]);
+	});
+
+	it("requires doc_type", async () => {
+		const { app } = uploadHarness();
+
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ pages: "1" }, [["file1", jpg()]]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(400);
+		expect((await errorOf(res)).code).toBe("INVALID_INPUT");
+	});
+
+	it("rejects an unusable page count", async () => {
+		const { app } = uploadHarness();
+
+		for (const pages of ["0", "-1", "abc", "1.5", "99", ""]) {
+			const res = await app.request("/connect/kyc/upload", {
+				method: "POST",
+				body: uploadBody({ doc_type: "1", pages }, [["file1", jpg()]]),
+				...withCookie,
+			});
+
+			expect(res.status).toBe(400);
+		}
+	});
+
+	it("refuses an oversized page", async () => {
+		const { app } = uploadHarness();
+
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "1", pages: "1" }, [
+				["file1", jpg("big.jpg", 6 * 1024 * 1024)],
+			]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(400);
+		expect((await errorOf(res)).code).toBe("FILE_TOO_LARGE");
+	});
+
+	it("refuses a file type document review would reject", async () => {
+		const { app } = uploadHarness();
+
+		for (const file of [
+			new File(["x"], "scan.svg", { type: "image/svg+xml" }),
+			new File(["x"], "scan.webp", { type: "image/webp" }),
+			// A disallowed file wearing an allowed extension, and the reverse.
+			new File(["x"], "scan.png", { type: "image/svg+xml" }),
+			new File(["x"], "scan.svg", { type: "image/png" }),
+			new File(["x"], "scan", { type: "image/png" }),
+		]) {
+			const res = await app.request("/connect/kyc/upload", {
+				method: "POST",
+				body: uploadBody({ doc_type: "1", pages: "1" }, [["file1", file]]),
+				...withCookie,
+			});
+
+			expect((await errorOf(res)).code).toBe("UNSUPPORTED_FILE_TYPE");
+		}
+	});
+
+	it("accepts a PDF", async () => {
+		const { app } = uploadHarness();
+
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "12", pages: "1" }, [
+				["file1", new File(["x"], "cert.pdf", { type: "application/pdf" })],
+			]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(200);
+	});
+
+	it("502s on a business failure behind an HTTP 200", async () => {
+		const { app } = uploadHarness({ status: 1, message: "Document rejected" });
+
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "1", pages: "1" }, [["file1", jpg()]]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("KYC_UPLOAD_FAILED");
+	});
+
+	it("401s without a session", async () => {
+		const { app } = harness(null);
+		const res = await app.request("/connect/kyc/upload", {
+			method: "POST",
+			body: uploadBody({ doc_type: "1", pages: "1" }, [["file1", jpg()]]),
+			...withCookie,
+		});
+
+		expect(res.status).toBe(401);
+		expect((await errorOf(res)).code).toBe("NO_SESSION");
+	});
+});
+
 describe("POST /connect/support/query-types", () => {
 	it("unwraps issuetype_list and pins is_admin to 0", async () => {
 		const { app, connect } = harness(developer, {
@@ -257,15 +600,17 @@ describe("POST /connect/support/ticket", () => {
 	}
 
 	it("builds the ticket from the session, not the browser", async () => {
-		const created = vi.fn(async (
-			_token: string,
-			_fields: Record<string, string>,
-			_files: Array<{ name: string; file: File }>,
-		) => ({
-			status: 0,
-			message: "Submitted",
-			data: { feedback_ticket_id: "T-42" },
-		}));
+		const created = vi.fn(
+			async (
+				_token: string,
+				_fields: Record<string, string>,
+				_files: Array<{ name: string; file: File }>,
+			) => ({
+				status: 0,
+				message: "Submitted",
+				data: { feedback_ticket_id: "T-42" },
+			}),
+		);
 		const { app } = harness(developer, {
 			connect: { createSupportTicket: created },
 		});
@@ -301,14 +646,16 @@ describe("POST /connect/support/ticket", () => {
 	});
 
 	it("forwards attachments", async () => {
-		const created = vi.fn(async (
-			_token: string,
-			_fields: Record<string, string>,
-			_files: Array<{ name: string; file: File }>,
-		) => ({
-			status: 0,
-			data: { feedback_ticket_id: "T-43" },
-		}));
+		const created = vi.fn(
+			async (
+				_token: string,
+				_fields: Record<string, string>,
+				_files: Array<{ name: string; file: File }>,
+			) => ({
+				status: 0,
+				data: { feedback_ticket_id: "T-43" },
+			}),
+		);
 		const { app } = harness(developer, {
 			connect: { createSupportTicket: created },
 		});

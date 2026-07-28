@@ -26,6 +26,7 @@ function setup(over: Partial<ConnectClient> = {}, kv: KV = createInMemoryKV()) {
 		revoke: vi.fn(async () => {}),
 		interactions: vi.fn(async () => []),
 		interact: vi.fn(async () => ({})),
+		uploadInteraction: vi.fn(async () => ({})),
 		createSupportTicket: vi.fn(async () => ({})),
 		...over,
 	};

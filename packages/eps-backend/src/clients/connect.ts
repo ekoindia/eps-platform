@@ -87,11 +87,27 @@ export interface ConnectClient {
 		opts?: { xRealIp?: string },
 	): Promise<Record<string, unknown>>;
 	/**
+	 * Runs an interaction that carries files, over `/transactions/upload`.
+	 *
+	 * That transport has a convention of its own: every field travels URL-encoded
+	 * inside a single `formdata` part, and the files are sibling parts named
+	 * however the interaction expects (`file1`, `file2`, … for KYC documents).
+	 * It is NOT a general multipart form.
+	 * @param accessToken - The caller's FULL upstream access token.
+	 * @param fields - The interaction fields, already validated.
+	 * @param files - The files, already named for the upstream.
+	 */
+	uploadInteraction(
+		accessToken: string,
+		fields: Record<string, string>,
+		files: Array<{ name: string; file: File }>,
+		opts?: { xRealIp?: string },
+	): Promise<Record<string, unknown>>;
+	/**
 	 * Creates a support ticket, with attachments when there are any.
 	 *
-	 * Files force the `/transactions/upload` transport, where every field travels
-	 * URL-encoded inside a single `formdata` part — connect-api's own convention,
-	 * not a general multipart form.
+	 * Attachments route through `uploadInteraction`; a ticket with none is a plain
+	 * `/transactions/do` call.
 	 * @param accessToken - The caller's FULL upstream access token.
 	 * @param fields - The interaction fields.
 	 * @param files - Attachments, already named for the upstream.
@@ -353,7 +369,32 @@ export function createConnectClient(
 		}
 	}
 
+	/**
+	 * Runs an interaction over the upload transport. Shared by every caller that
+	 * has files, so the `formdata` convention lives in exactly one place.
+	 */
+	async function uploadInteraction(
+		accessToken: string,
+		fields: Record<string, string>,
+		files: Array<{ name: string; file: File }>,
+		opts: { xRealIp?: string } = {},
+	): Promise<Record<string, unknown>> {
+		const form = new FormData();
+		// One `formdata` part carrying every field URL-encoded — how connect-api's
+		// upload endpoint expects them, not a part per field.
+		form.append("formdata", new URLSearchParams(fields).toString());
+		for (const { name, file } of files) form.append(name, file, file.name);
+
+		const raw = await postMultipart("/transactions/upload", form, {
+			bearer: accessToken,
+			xRealIp: opts.xRealIp,
+		});
+		return (raw ?? {}) as Record<string, unknown>;
+	}
+
 	return {
+		uploadInteraction,
+
 		async sendOtp({ mobile, xRealIp }) {
 			const raw = (await post(
 				"/authentication/sendotp",
@@ -420,6 +461,8 @@ export function createConnectClient(
 		},
 
 		async createSupportTicket(accessToken, fields, files, opts = {}) {
+			// A ticket with no attachment has nothing to upload, and the plain
+			// interaction endpoint is the cheaper transport for it.
 			if (!files.length) {
 				const raw = await post("/transactions/do", fields, {
 					bearer: accessToken,
@@ -427,18 +470,7 @@ export function createConnectClient(
 				});
 				return (raw ?? {}) as Record<string, unknown>;
 			}
-
-			const form = new FormData();
-			// One `formdata` part carrying every field URL-encoded — how connect-api's
-			// upload endpoint expects them, not a part per field.
-			form.append("formdata", new URLSearchParams(fields).toString());
-			for (const { name, file } of files) form.append(name, file, file.name);
-
-			const raw = await postMultipart("/transactions/upload", form, {
-				bearer: accessToken,
-				xRealIp: opts.xRealIp,
-			});
-			return (raw ?? {}) as Record<string, unknown>;
+			return uploadInteraction(accessToken, fields, files, opts);
 		},
 	};
 }

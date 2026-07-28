@@ -3,9 +3,12 @@ import type { CameraOptions } from "@/components/connect/CameraDialog";
 import { useConnectDialogs } from "@/components/connect/DialogHost";
 import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog";
 import { PrintReceipt } from "@/components/connect/PrintReceipt";
+import { KycUploadDialog } from "@/components/console/KycUploadDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
+import { parseDocumentList, type KycDocument } from "@/lib/connect/kyc";
 import { printPage } from "@/lib/print";
 import { useState, type ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
@@ -50,6 +53,9 @@ export default function TestDialogs() {
 			</Section>
 			<Section title="Raise issue">
 				<RaiseIssueTest />
+			</Section>
+			<Section title="KYC document upload">
+				<KycUploadTest />
 			</Section>
 			<Section title="Print receipt">
 				<PrintTest />
@@ -520,6 +526,49 @@ function RaiseIssueTest() {
 			>
 				Raise a query
 			</Button>
+			<ResultJson value={result} />
+		</div>
+	);
+}
+
+/**
+ * The KYC upload dialog, on the sample document list and without an entitled
+ * account.
+ *
+ * Worth a bench slot for one reason beyond convenience: this dialog is a plain
+ * shadcn `Dialog`, and the camera and image editor it opens are portalled by
+ * `ConnectDialogProvider` instead. Pick a multi-page document here and open the
+ * camera on one of its pages to confirm the two still stack the right way up.
+ *
+ * It posts for real — expect the upload to fail on an account without the 587
+ * entitlement, which is itself the interesting half of the test.
+ */
+function KycUploadTest() {
+	const documents = parseDocumentList(KYC_DOCUMENTS_SAMPLE.data.document_list);
+	const [doc, setDoc] = useState<KycDocument | null>(null);
+	const [result, setResult] = useState<unknown>(null);
+
+	return (
+		<div className="flex flex-col gap-3">
+			<div className="flex flex-wrap gap-2">
+				{documents.map((candidate) => (
+					<Button
+						key={candidate.docType}
+						variant="outline"
+						size="sm"
+						onClick={() => setDoc(candidate)}
+					>
+						{candidate.name} ({candidate.pages}p)
+					</Button>
+				))}
+			</div>
+			<KycUploadDialog
+				doc={doc}
+				onClose={(uploaded) => {
+					setDoc(null);
+					setResult(uploaded ?? { cancelled: true });
+				}}
+			/>
 			<ResultJson value={result} />
 		</div>
 	);

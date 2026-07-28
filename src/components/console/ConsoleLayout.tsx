@@ -19,9 +19,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
+import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn } from "@/lib/utils";
 import {
+	FileCheck2,
 	FlaskConical,
 	KeyRound,
 	LayoutDashboard,
@@ -88,24 +90,42 @@ export function useConsoleMe(): MeView {
 	return useOutletContext<MeView>();
 }
 
+/**
+ * KYC document upload. Sits directly after Home when entitled, ahead of Load
+ * Wallet: an unfinished KYC pack is what blocks the account, so it outranks
+ * everything else the rail offers.
+ */
+const DOCUMENTS_ITEM: NavItem = {
+	to: "/console/documents",
+	label: "Upload Documents",
+	icon: FileCheck2,
+	end: false,
+};
+
 /** The links themselves — shared by the desktop rail and the mobile Sheet. */
 function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	// Same entitlement that gates the wallet card's "+" button, and the same
 	// route it links to — the rail just says it in words.
 	const loadFlowId = useLoadWalletFlowId();
-	const items: readonly NavItem[] =
-		loadFlowId === null
-			? NAV_ITEMS
+	const kycEnabled = useKycEnabled();
+	// Home, then whatever this user is entitled to, then the fixed tail. Built as
+	// a flat spread rather than spliced: two independent entitlements land in
+	// here, and a nested ternary per item is how the order quietly goes wrong.
+	const items: readonly NavItem[] = [
+		NAV_ITEMS[0],
+		...(kycEnabled ? [DOCUMENTS_ITEM] : []),
+		...(loadFlowId === null
+			? []
 			: [
-					NAV_ITEMS[0],
 					{
 						to: `/console/transaction/${loadFlowId}`,
 						label: "Load Wallet",
 						icon: PlusCircle,
 						end: false,
 					},
-					...NAV_ITEMS.slice(1),
-				];
+				]),
+		...NAV_ITEMS.slice(1),
+	];
 
 	return (
 		<nav className="flex flex-col gap-0.5 text-sm" aria-label="Console">
