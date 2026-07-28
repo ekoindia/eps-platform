@@ -249,24 +249,18 @@ Presentation fields are overlaid inside `parseDocumentList`, so the page and the
 dev bench cannot drift; capture metadata is read by `KycUploadDialog` straight
 from `configOf`.
 
-The one shipped entry is Aadhaar (`doc_type: "1"`), labelling its two slots
-"Aadhaar front" / "Aadhaar back" — two identical "Page 1 / Page 2" slots is how
-a user attaches the front twice and hears about it at review, a week later.
+Two entries ship today:
 
-The document that most needs an entry is **Directors' Live Photograph with
-Location Coordinates**, and it cannot have one yet: production screenshots give
-its display name, not its `doc_type` code, and an entry under a guessed key is
-inert while looking configured. The config it wants, for the day a real 586
-response shows the code:
+| `doc_type` | Config | Why |
+| --- | --- | --- |
+| `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. |
+| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `cameraOnly`, `watermark`, `options: { detectFace: true, minFaceCount: 1 }` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
 
-```ts
-cameraOnly: true,                       // a "live" photo picked from the gallery is not live
-accept: "image/jpeg,image/png",
-pageLabels: ["Live photograph"],
-options: { detectFace: true, minFaceCount: 1, aspectRatio: 1, maxLength: 1200 },
-// watermark left at the default — that is what supplies the coordinates the
-// document's own name promises
-```
+The live-photograph entry is what the whole map exists for. A "live" photograph
+selectable from the gallery is not live, so the camera is the only source;
+`minFaceCount: 1` refuses a frame with nobody in it; and the watermark is what
+actually supplies the coordinates the document's name promises. With all three
+enforced, the name can go back to naming the document.
 
 ## Files
 
@@ -294,5 +288,3 @@ but none should be treated as settled before this is enabled in production:
 4. Whether a 2-page document may be sent as a single 2-page PDF, which the
    "exactly N files" rule currently forbids.
 5. Whether 5 MB is a workable per-file ceiling.
-6. The `doc_type` code for the live-photograph document, which is the one type
-   the override map is waiting on.

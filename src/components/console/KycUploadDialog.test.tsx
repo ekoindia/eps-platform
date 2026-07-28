@@ -104,6 +104,16 @@ describe("KycUploadDialog", () => {
 		expect(screen.getByText("Aadhaar back")).toBeVisible();
 	});
 
+	it("takes the live photograph from the camera or not at all", () => {
+		// doc_type 24. A "live" photograph picked from the gallery is not live.
+		render(<KycUploadDialog doc={doc({ docType: "24" })} onClose={vi.fn()} />);
+
+		expect(screen.getByTestId("file-upload")).toHaveAttribute(
+			"data-camera-only",
+			"true",
+		);
+	});
+
 	it("passes the backend's allow-list on to an unconfigured document", () => {
 		render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
 		const slot = screen.getByTestId("file-upload");

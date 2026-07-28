@@ -96,21 +96,24 @@ export interface KycDocConfig {
  * upstream describes it, which is what must happen when upstream adds a new one
  * tomorrow — an unknown code is not an error.
  *
- * The live-photograph document ("Directors' Live Photograph with Location
- * Coordinates") is the type that most needs an entry — camera-only, face
- * detection, and the default watermark that supplies the coordinates its own
- * name promises. It is not here because we have its display name from a
- * screenshot and not its `doc_type` code, and an entry under a guessed key is
- * inert while looking configured. The worked config is in
- * `docs/features/kyc-documents.md`; move it here once a real 586 response shows
- * the code.
- *
  * MARK: Docs Config
  */
 export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// Two identical "Page 1 / Page 2" slots is how a user ends up attaching the
 	// front twice and hearing about it a week later, at review.
 	"1": { pageLabels: ["Aadhaar front", "Aadhaar back"] },
+
+	// The live photograph. Upstream's name spells out the capture instructions
+	// ("with Location Coordinates", and an `info` naming a third-party GPS camera
+	// app) because upstream cannot enforce them. This console can: the camera is
+	// the only source, a face has to be in frame, and the watermark carries the
+	// coordinates — so the name goes back to naming the document.
+	"24": {
+		name: "Directors' Live Photograph",
+		cameraOnly: true,
+		watermark: true,
+		options: { detectFace: true, minFaceCount: 1 },
+	},
 };
 
 /** Frozen so a caller cannot mutate the fallback into every unknown document. */
