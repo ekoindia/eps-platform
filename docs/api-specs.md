@@ -134,10 +134,11 @@ Only declare the ids an endpoint actually branches on; the section is omitted
 when `responseTypes` is unset.
 
 Recipes (`api-recipes.ts`) branch on the same field: a `RecipeBranch` sets
-**exactly one** of `onResponseTypeId` (the usual routing key) or
-`onResponseStatusId` (financial endpoints, whose responses carry no
-`response_type_id`). Renderers call `branchCondition(branch)` for the field name
-and value rather than assuming either.
+**exactly one** of `onResponseTypeId` (the usual routing key) or `onStatus`
+(financial endpoints, whose responses carry no `response_type_id`; `status` is
+the envelope's success flag, `0` = success). Renderers call
+`branchCondition(branch)` for the field name and value rather than assuming
+either.
 
 ### `imp` flags ("What can you verify?")
 

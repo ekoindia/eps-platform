@@ -16,12 +16,13 @@
  *
  * Which one to use follows the API: non-financial endpoints route on
  * `response_type_id` (the id space that says *which response shape* came back),
- * while financial endpoints don't return one — they signal on
- * `response_status_id` / `tx_status`.
+ * while financial endpoints don't return one — they signal on `status`, the
+ * envelope's standard success flag where `0` is success and anything else is a
+ * failure.
  */
 export type RecipeBranchCondition =
-	| { onResponseTypeId: number; onResponseStatusId?: never }
-	| { onResponseStatusId: number; onResponseTypeId?: never };
+	| { onResponseTypeId: number; onStatus?: never }
+	| { onStatus: number; onResponseTypeId?: never };
 
 /** One conditional jump out of a recipe step. */
 export type RecipeBranch = RecipeBranchCondition & {
@@ -41,10 +42,10 @@ export type RecipeBranch = RecipeBranchCondition & {
  */
 export const branchCondition = (
 	branch: RecipeBranch,
-): { field: "response_type_id" | "response_status_id"; value: number } =>
+): { field: "response_type_id" | "status"; value: number } =>
 	branch.onResponseTypeId !== undefined
 		? { field: "response_type_id", value: branch.onResponseTypeId }
-		: { field: "response_status_id", value: branch.onResponseStatusId };
+		: { field: "status", value: branch.onStatus };
 
 /**
  * How often a step runs: once per agent ever (`once` — a one-time activation or
@@ -181,7 +182,7 @@ export const RECIPES: Recipe[] = [
 				specSlug: "dmt-initiate-transfer",
 				purpose:
 					"Submit the transfer with the customer-entered OTP, its `otp_ref_id`, and a `client_ref_id` unique to this attempt. The only money-debit step — persist `tid` and `bank_ref_num` and reconcile before any retry.",
-				branches: [{ onResponseStatusId: 0, goto: "done" }],
+				branches: [{ onStatus: 0, goto: "done" }],
 			},
 		],
 	},
@@ -225,7 +226,7 @@ export const RECIPES: Recipe[] = [
 			{
 				specSlug: "aeps-fingpay-cash-withdrawal",
 				purpose: "Perform the biometric Aadhaar-enabled cash withdrawal.",
-				branches: [{ onResponseStatusId: 0, goto: "done" }],
+				branches: [{ onStatus: 0, goto: "done" }],
 			},
 		],
 	},
@@ -304,10 +305,10 @@ export const assertRecipeSlugs = (
 				// here (hand-written JSON, or a spread that drops the discriminant).
 				if (
 					branch.onResponseTypeId === undefined &&
-					branch.onResponseStatusId === undefined
+					branch.onStatus === undefined
 				) {
 					throw new Error(
-						`api-recipes: recipe "${recipe.id}" branch to "${branch.goto}" sets neither onResponseTypeId nor onResponseStatusId.`,
+						`api-recipes: recipe "${recipe.id}" branch to "${branch.goto}" sets neither onResponseTypeId nor onStatus.`,
 					);
 				}
 			}

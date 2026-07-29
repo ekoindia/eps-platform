@@ -144,7 +144,7 @@ export function renderRecipeMarkdown(recipe: Recipe): string {
 		h2("Notes"),
 		bulletList([
 			"Call the steps in the order shown above; each links to its full API reference.",
-			"Branch on the exact field each step names above: `response_type_id` says which response shape came back (the usual routing key), while `response_status_id` carries the status of a financial transaction.",
+			"Branch on the exact field each step names above: `response_type_id` says which response shape came back (the usual routing key), while `status` is the envelope's success flag — `0` is success, anything else is a failure.",
 			`All requests are signed; see ${link("How Auth Works", `${SITE_URL}${docsHref("how-auth-works")}`, "md")}.`,
 		]),
 	]);
