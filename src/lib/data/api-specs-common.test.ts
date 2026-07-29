@@ -4,6 +4,7 @@ import {
 	assertResponseTypeSlugs,
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
+	enabledSpecs,
 	isMultipart,
 	resolveContentType,
 	resolveHeaders,
@@ -336,5 +337,16 @@ describe("assertResponseTypeSlugs", () => {
 				known,
 			),
 		).toThrow(/7 twice/);
+	});
+});
+
+describe("enabledSpecs", () => {
+	it("drops specs flagged disabled and keeps the rest", () => {
+		const kept = enabledSpecs([
+			spec({ id: "live" }),
+			spec({ id: "archived", disabled: true }),
+			spec({ id: "explicitly-live", disabled: false }),
+		]);
+		expect(kept.map((s) => s.id)).toEqual(["live", "explicitly-live"]);
 	});
 });
