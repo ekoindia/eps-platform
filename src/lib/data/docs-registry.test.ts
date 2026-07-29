@@ -209,9 +209,10 @@ describe("route parity", () => {
 		for (const g of nav.guides) expect(prerendered.has(g.href)).toBe(true);
 	});
 
+	// Matched by href, not title — the label is marketing copy and churns.
 	it("surfaces Recipes as a guide link pointing at the recipe section", () => {
-		const recipes = buildNavTree().guides.find((g) => g.title === "Recipes");
-		expect(recipes?.href).toBe("/recipe");
+		const recipes = buildNavTree().guides.find((g) => g.href === "/recipe");
+		expect(recipes?.title).toMatch(/Recipes/);
 	});
 
 	it("every nav endpoint resolves to an endpoint doc node", () => {
