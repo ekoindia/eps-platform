@@ -54,7 +54,7 @@ const KYC_UPLOAD_INTERACTION = 523;
  * than the support desk's `MAX_FILE_BYTES`: a passport scan is not a screenshot,
  * and this is the knob to turn if upstream accepts more.
  */
-const KYC_MAX_FILE_BYTES = 5 * 1024 * 1024;
+const KYC_MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 /** Most files one document may ask for. A sanity bound on upstream's `pages`. */
 const KYC_MAX_PAGES = 6;
@@ -564,7 +564,7 @@ export function mountConnect(
 				throw new AppError(
 					400,
 					"FILE_TOO_LARGE",
-					`${value.name || name} is larger than 5 MB`,
+					`${value.name || name} is larger than ${MAX_FILE_BYTES / (1024 * 1024)} MB`,
 				);
 			}
 			files.push({ name, file: value });

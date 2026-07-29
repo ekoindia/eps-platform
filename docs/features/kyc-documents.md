@@ -155,7 +155,7 @@ account shows what the codes mean.** At that point `uploadedNow` can go.
 | --- | --- | --- |
 | Allowed types | `image/jpeg`, `image/png`, `application/pdf` | `KYC_TYPES` |
 | Allowed extensions | `.jpg` `.jpeg` `.png` `.pdf` | `KYC_EXTENSIONS` |
-| Per-file ceiling | 5 MB | `KYC_MAX_FILE_BYTES` |
+| Per-file ceiling | 10 MB, or a document's own `maxBytes` | `KYC_MAX_FILE_BYTES` |
 | Pages per document | 1–6 | `KYC_MAX_PAGES` |
 
 An explicit type list, not `image/*`: the wildcard waves through HEIC, WEBP and
@@ -166,8 +166,18 @@ declaration-only — no magic-byte sniffing — which is enough while connect-ap
 does its own validation.
 
 `KYC_MAX_FILE_BYTES` is its own constant rather than the support desk's
-`MAX_FILE_BYTES`: a passport scan is not a screenshot, and this is the knob to
-turn if upstream accepts more.
+`MAX_FILE_BYTES`, and the two now differ: a passport scan is not a screenshot, so
+KYC takes 10 MB where a ticket attachment takes 5. It is declared twice — in
+`connect.ts` for the backend, mirrored in `kyc-docs.ts` so the picker can refuse
+early — and the backend's copy is the authority. Raise them together.
+
+A single document type may ask for **less** via `maxBytes` in `KYC_DOC_CONFIG`
+(see [Per-document overrides](#per-document-overrides)); it may never ask for more,
+which `kyc-docs.test.ts` pins.
+
+Both ceilings are only real if the hops in front of the app allow them: nginx
+defaults `client_max_body_size` to 1 MB, and a serverless deploy caps request
+bodies at a few MB regardless of what the handler checks.
 
 ## UI
 
@@ -240,7 +250,7 @@ where the console records what it knows that the shared list cannot express.
 | `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
 | `watermark` | Overrides the default provenance stamp |
 | `options` | Crop ratio, size cap, face checks — see `FileUploadOptions` |
-| `maxBytes` | A tighter per-file limit than the backend's 5 MB |
+| `maxBytes` | A tighter per-file limit than the backend's 10 MB |
 
 Rules that matter:
 
@@ -310,4 +320,6 @@ but none should be treated as settled before this is enabled in production:
    `intent_id`.
 4. Whether a 2-page document may be sent as a single 2-page PDF, which the
    "exactly N files" rule currently forbids.
-5. Whether 5 MB is a workable per-file ceiling.
+5. Whether 10 MB survives every hop in front of the app — nginx's
+   `client_max_body_size` and any serverless body cap — and whether upstream
+   itself accepts a file that large.

@@ -5,6 +5,15 @@ export const REQUIREMENT = {
 	MANDATORY: 1,
 } as const;
 
+/**
+ * Per-attachment ceiling for a ticket, mirrored so the picker can refuse early.
+ *
+ * Kept in step with `MAX_FILE_BYTES` in
+ * `packages/eps-backend/src/http/connect.ts`, which is the authority. Lower than
+ * KYC's on purpose: a support attachment is a screenshot, not a passport scan.
+ */
+export const TICKET_MAX_FILE_BYTES = 5 * 1024 * 1024;
+
 /** Generic issue types, used when no transaction type is in play. */
 export const GENERIC_ISSUE_TYPE = {
 	DEFAULT: "-1",

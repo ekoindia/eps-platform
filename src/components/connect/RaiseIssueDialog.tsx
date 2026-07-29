@@ -9,6 +9,7 @@ import {
 	GENERIC_ISSUE_TYPE,
 	isRaiseWindowOpen,
 	REQUIREMENT,
+	TICKET_MAX_FILE_BYTES,
 	type Category,
 	type FeedbackOrigin,
 	type IssueCatalogue,
@@ -612,6 +613,7 @@ export function RaiseIssueDialog({
 								file.accept ||
 								"image/jpeg,image/pjpeg,image/png,application/pdf"
 							}
+							maxBytes={TICKET_MAX_FILE_BYTES}
 							file={file.value}
 							onFileChange={(value) =>
 								setFiles((prev) =>

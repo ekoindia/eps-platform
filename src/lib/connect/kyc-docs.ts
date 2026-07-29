@@ -32,8 +32,14 @@ import type { KycDocument } from "@/lib/connect/kyc";
  */
 export const KYC_ACCEPT = "image/jpeg,image/png,application/pdf";
 
-/** The backend's per-file ceiling, mirrored so the picker can refuse early. */
-export const KYC_MAX_FILE_BYTES = 5 * 1024 * 1024;
+/**
+ * The backend's per-file ceiling, mirrored so the picker can refuse early.
+ *
+ * Kept in step with `KYC_MAX_FILE_BYTES` in
+ * `packages/eps-backend/src/http/connect.ts`, which is the authority. A single
+ * document type may ask for less via {@link KycDocConfig.maxBytes}.
+ */
+export const KYC_MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 /** The backend's per-document file-count ceiling. Above it, every upload 400s. */
 export const KYC_MAX_PAGES = 6;

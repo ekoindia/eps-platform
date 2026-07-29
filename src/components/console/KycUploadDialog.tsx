@@ -60,18 +60,6 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 
 	/** Replaces one page's file, leaving the others alone. */
 	function setPage(index: number, file: File | null) {
-		// Checked here, after the editor has run, rather than at pick time: images
-		// come back re-encoded and usually far smaller, so an early check would
-		// refuse a phone photo the editor was about to shrink to under a megabyte.
-		// What this actually catches is the path that skips the editor entirely —
-		// an oversized PDF. For images `options.maxLength` is the better lever,
-		// since it fixes the file instead of refusing it.
-		if (file && file.size > maxBytes) {
-			toast.error(
-				`${file.name} is larger than ${Math.round(maxBytes / 1024 / 1024)} MB.`,
-			);
-			return;
-		}
 		setFiles((prev) => prev.map((item, i) => (i === index ? file : item)));
 	}
 
@@ -130,6 +118,7 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 							}
 							required
 							accept={config.accept ?? KYC_ACCEPT}
+							maxBytes={maxBytes}
 							cameraOnly={config.cameraOnly}
 							options={config.options}
 							file={file}

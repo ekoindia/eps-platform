@@ -12,11 +12,13 @@ vi.mock("@/components/FileUpload", () => ({
 	FileUpload: ({
 		label,
 		accept,
+		maxBytes,
 		cameraOnly,
 		onFileChange,
 	}: {
 		label?: string;
 		accept?: string;
+		maxBytes?: number;
 		cameraOnly?: boolean;
 		onFileChange: (file: File | null) => void;
 	}) => (
@@ -24,6 +26,7 @@ vi.mock("@/components/FileUpload", () => ({
 			type="button"
 			data-testid="file-upload"
 			data-accept={accept}
+			data-max-bytes={String(maxBytes)}
 			data-camera-only={String(Boolean(cameraOnly))}
 			onClick={() => onFileChange(pick())}
 		>
@@ -125,17 +128,21 @@ describe("KycUploadDialog", () => {
 		expect(slot).toHaveAttribute("data-camera-only", "false");
 	});
 
-	it("refuses a file over the limit, and never submits it", async () => {
-		const onClose = vi.fn();
-		pick = () => fileOf("huge.pdf", KYC_MAX_FILE_BYTES + 1);
-		render(<KycUploadDialog doc={doc()} onClose={onClose} />);
+	// The refusal itself belongs to FileUpload, which every source funnels
+	// through — see FileUpload.test. What this dialog owes is the right ceiling.
+	it("hands each slot the size ceiling the backend enforces", () => {
+		render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
 
-		fireEvent.click(screen.getByTestId("file-upload"));
-
-		expect(toastError).toHaveBeenCalledWith(
-			expect.stringContaining("larger than 5 MB"),
+		expect(screen.getByTestId("file-upload")).toHaveAttribute(
+			"data-max-bytes",
+			String(KYC_MAX_FILE_BYTES),
 		);
-		// Nothing attached, so Upload stays disabled and nothing reaches the wire.
+	});
+
+	it("never submits a page the picker refused", () => {
+		render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+		// A refused file never reaches onFileChange, so the slot stays empty.
 		expect(screen.getByRole("button", { name: "Upload" })).toBeDisabled();
 		expect(upload).not.toHaveBeenCalled();
 	});

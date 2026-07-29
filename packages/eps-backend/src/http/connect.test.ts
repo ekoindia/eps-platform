@@ -487,7 +487,7 @@ describe("POST /connect/kyc/upload", () => {
 		const res = await app.request("/connect/kyc/upload", {
 			method: "POST",
 			body: uploadBody({ doc_type: "1", pages: "1" }, [
-				["file1", jpg("big.jpg", 6 * 1024 * 1024)],
+				["file1", jpg("big.jpg", 11 * 1024 * 1024)],
 			]),
 			...withCookie,
 		});

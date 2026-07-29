@@ -6,6 +6,7 @@ import { useWatermarkText, type WatermarkSpec } from "@/hooks/use-watermark";
 import { cn } from "@/lib/utils";
 import { Camera, FolderOpen, ImageIcon, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 /** What the picked image must satisfy before it is accepted. */
 export interface FileUploadOptions extends ImageEditorOptions {
@@ -22,6 +23,14 @@ export interface FileUploadProps {
 	onFileChange: (file: File | null) => void;
 	/** `accept` for the file input, e.g. `image/*,application/pdf`. */
 	accept?: string;
+	/**
+	 * Per-file ceiling in bytes. Omitted, nothing is refused for its size.
+	 *
+	 * Mirror whatever the receiving endpoint enforces, never more: a higher
+	 * number here does not make a larger file acceptable, it just spends the
+	 * upload before the same rejection.
+	 */
+	maxBytes?: number;
 	/** Camera as the only source: no picker, no drag and drop. */
 	cameraOnly?: boolean;
 	/**
@@ -109,6 +118,7 @@ export function FileUpload({
 	file,
 	onFileChange,
 	accept = "",
+	maxBytes,
 	cameraOnly = false,
 	watermark,
 	options = {},
@@ -157,8 +167,26 @@ export function FileUpload({
 		if (inputRef.current) inputRef.current.value = "";
 	}
 
-	/** Hands a file to the caller and shows its preview. */
+	/** Hands a file to the caller and shows its preview, unless it is too large. */
 	function attach(picked: File, image: string | null, isObjectUrl = false) {
+		// Every source funnels through here, which is why the size check lives here
+		// and not in each caller — a caller that forgets it uploads unbounded.
+		//
+		// Late on purpose: images come back from the editor re-encoded and usually
+		// far smaller, so checking at pick time would refuse a phone photo the
+		// editor was about to shrink. What this catches is the path that skips the
+		// editor — an oversized PDF. For images `options.maxLength` is the better
+		// lever, since it fixes the file instead of refusing it.
+		if (maxBytes && picked.size > maxBytes) {
+			// Nothing took ownership of the URL, so release it here.
+			if (isObjectUrl && image) URL.revokeObjectURL(image);
+			// Or picking the same file again fires no `change` and looks like a hang.
+			resetInput();
+			toast.error(
+				`${picked.name} is larger than ${Math.round(maxBytes / 1024 / 1024)} MB.`,
+			);
+			return;
+		}
 		showPreview(image, isObjectUrl);
 		onFileChange(picked);
 	}

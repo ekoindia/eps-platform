@@ -97,7 +97,11 @@ on session expiry (`AuthProvider`).
   not replicated.
 
   Caps at the trust boundary: 6 attachments, 5 MB each, 20 input fields, 4000
-  characters of free text.
+  characters of free text. The size cap is also applied in the browser —
+  `TICKET_MAX_FILE_BYTES` mirrors the backend's `MAX_FILE_BYTES` into
+  `FileUpload`'s `maxBytes`, so an oversized attachment is refused at the picker
+  instead of after a full upload. The browser check is a courtesy; the backend's
+  is the one that counts.
 
 ### Frontend ordering
 
