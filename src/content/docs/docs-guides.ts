@@ -25,14 +25,13 @@ export interface GuideMeta {
 }
 
 /**
- * Authored guides. Empty until the MDX pipeline lands (phase P5); endpoints
- * ship first. Keep in sync with the `.mdx` files in this directory and the
- * eager component map in `docs-guide-components.tsx`.
+ * Authored guides. Keep in sync with the `.mdx` files in this directory and
+ * the eager component map in `docs-guide-components.tsx`.
  */
 export const GUIDES: GuideMeta[] = [
 	{
 		slug: "how-auth-works",
-		title: "How Auth Works",
+		title: "How Authentication Works",
 		order: 1,
 		summary: "Keys, request signing, and the per-request HMAC secret-key.",
 	},
