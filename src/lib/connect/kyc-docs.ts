@@ -106,13 +106,17 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// The live photograph. Upstream's name spells out the capture instructions
 	// ("with Location Coordinates", and an `info` naming a third-party GPS camera
 	// app) because upstream cannot enforce them. This console can: the camera is
-	// the only source, a face has to be in frame, and the watermark carries the
-	// coordinates — so the name goes back to naming the document.
+	// the only source, and the watermark carries the coordinates — so the name
+	// goes back to naming the document.
+	//
+	// No face detection: it pre-crops to the face it finds, which is wrong for a
+	// photograph that has to show the director *and* their surroundings, and it
+	// refuses outright when the model misses in poor light. `minFaceCount` would
+	// be dead config without it — the editor only enforces it under `detectFace`.
 	"24": {
 		name: "Directors' Live Photograph",
 		cameraOnly: true,
 		watermark: true,
-		options: { detectFace: true, minFaceCount: 1 },
 	},
 };
 

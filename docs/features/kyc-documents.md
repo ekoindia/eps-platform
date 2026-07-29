@@ -254,13 +254,18 @@ Two entries ship today:
 | `doc_type` | Config | Why |
 | --- | --- | --- |
 | `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. |
-| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `cameraOnly`, `watermark`, `options: { detectFace: true, minFaceCount: 1 }` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
+| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `cameraOnly`, `watermark` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
 
 The live-photograph entry is what the whole map exists for. A "live" photograph
-selectable from the gallery is not live, so the camera is the only source;
-`minFaceCount: 1` refuses a frame with nobody in it; and the watermark is what
-actually supplies the coordinates the document's name promises. With all three
-enforced, the name can go back to naming the document.
+selectable from the gallery is not live, so the camera is the only source, and
+the watermark is what actually supplies the coordinates the document's name
+promises. With both enforced, the name can go back to naming the document.
+
+Face detection is deliberately **off**: it pre-crops to the face it finds, which
+is wrong for a photograph that has to show the director *and* their
+surroundings, and it refuses outright when the model misses in poor light.
+`minFaceCount` is only enforced under `detectFace`, so it would be dead config
+on its own.
 
 ## Files
 
