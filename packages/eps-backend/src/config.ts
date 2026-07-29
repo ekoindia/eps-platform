@@ -38,7 +38,25 @@ export interface Config {
 		initiatorId: string;
 		userCode: string;
 		defaultOrgId: number;
+		/**
+		 * Per-request abort for direct SimpliBank calls. UAT regularly answers
+		 * interaction 151 in 10-11s, which the old hardcoded 10s default aborted —
+		 * a slow upstream read arriving as a 502 on `/me`.
+		 */
+		timeoutMs: number;
 		logLevel: EkoLogLevel;
+		/**
+		 * DEV/UAT ONLY. Skips the EPS-business-partner gate (org 1 / user_type 23)
+		 * so ANY authenticated Eloka user — retailer, distributor, agent — earns a
+		 * developer session. For testing the console with existing test mobiles.
+		 * MUST stay false in production: it opens the developer portal to the whole
+		 * Eloka user base.
+		 *
+		 * Lives in the `eko` block because both auth paths need it and both already
+		 * receive it: the direct client takes `Config["eko"]`, the connect provider
+		 * takes the whole config.
+		 */
+		devAllowAnyUserType?: boolean;
 	};
 	/**
 	 * Present only when `CONNECT_API_BASE_URL` is set, which selects Eloka's
@@ -159,7 +177,9 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			initiatorId: env.EKO_INITIATOR_ID ?? "1234567891",
 			userCode: env.EKO_USER_CODE ?? "99029899",
 			defaultOrgId: Number(env.EKO_DEFAULT_ORG_ID ?? 1),
+			timeoutMs: Number(env.SIMPLIBANK_API_TIMEOUT_MS ?? 30_000),
 			logLevel: parseEkoLogLevel(env.EKO_LOG_LEVEL),
+			devAllowAnyUserType: env.DEV_ALLOW_ANY_USER_TYPE === "true",
 		},
 		connectApi,
 		github: {

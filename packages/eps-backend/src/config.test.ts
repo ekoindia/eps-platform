@@ -21,6 +21,8 @@ describe("loadConfig", () => {
 		expect(cfg.eko.initiatorId).toBe("1234567891");
 		expect(cfg.eko.userCode).toBe("99029899");
 		expect(cfg.eko.defaultOrgId).toBe(1);
+		expect(cfg.eko.timeoutMs).toBe(30_000);
+		expect(cfg.eko.devAllowAnyUserType).toBe(false);
 		expect(cfg.zoho.enabled).toBe(false);
 		expect(cfg.port).toBe(8787);
 	});

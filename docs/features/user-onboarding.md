@@ -167,6 +167,14 @@ on this:
 | `not_allowed`       | 403 `NOT_ALLOWED`                                      |
 | `error`             | 502 `PROFILE_UNAVAILABLE`                              |
 
+**`DEV_ALLOW_ANY_USER_TYPE=true` (DEV/UAT only)** skips the business-partner
+gate in both classifiers (`clients/eko.ts`, `clients/connect.ts`), org check
+included, so any authenticated Eloka user — retailer, distributor, agent — gets
+a developer session instead of `not_allowed`. It exists so the console can be
+tested with existing test mobiles. The `onboarding` and `inactive` branches are
+untouched; the flag only removes the `not_allowed` outcome. Must stay `false` in
+production — it opens the developer portal to the whole Eloka user base.
+
 The old `403 NOT_REGISTERED` branch (behind a `TODO(signup)`) is gone —
 `not_found` and `onboarding` are combined into one branch at
 `app.ts:238-257`. The error code no longer exists anywhere in the codebase.

@@ -243,6 +243,11 @@ function mapConnectProfile(
 export function mapConnectLogin(
 	env: ConnectLoginEnvelope,
 	expectedOrgId: number,
+	/**
+	 * DEV/UAT ONLY (`DEV_ALLOW_ANY_USER_TYPE`) — skips step 4 entirely, org check
+	 * included, so any authenticated Eloka user reaches the console. Never in prod.
+	 */
+	devAllowAnyUserType = false,
 ): ProfileResult {
 	const code = Number(env.response_type_id ?? 0);
 	if (env.accountInactive) return { kind: "inactive", responseTypeId: code };
@@ -273,8 +278,9 @@ export function mapConnectLogin(
 	}
 
 	if (
-		Number(d.org_id ?? 0) !== expectedOrgId ||
-		userType !== EPS_BUSINESS_USER_TYPE
+		!devAllowAnyUserType &&
+		(Number(d.org_id ?? 0) !== expectedOrgId ||
+			userType !== EPS_BUSINESS_USER_TYPE)
 	) {
 		return { kind: "not_allowed", responseTypeId: code };
 	}

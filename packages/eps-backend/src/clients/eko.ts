@@ -238,7 +238,7 @@ export function createEkoClient(
 	 * connect-api routes them the same way (`utils/url.js:70-99`).
 	 */
 	const historyUrl = `${origin}${cfg.historyPath}`;
-	const doFetch = withTimeout(fetchImpl);
+	const doFetch = withTimeout(fetchImpl, cfg.timeoutMs);
 
 	/**
 	 * Shared send/log/error pipeline for both the urlencoded (`post`) and
@@ -469,7 +469,12 @@ export function createEkoClient(
 					};
 				}
 				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
-				if (Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23") {
+				// DEV_ALLOW_ANY_USER_TYPE skips the whole gate (org included) so any
+				// test mobile can reach the console. Never true in production.
+				if (
+					!cfg.devAllowAnyUserType &&
+					(Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23")
+				) {
 					return { kind: "not_allowed", responseTypeId: code };
 				}
 

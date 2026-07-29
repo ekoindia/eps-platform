@@ -66,7 +66,7 @@ export function createConnectAuthProvider(
 			// code alone would mint a session for any six digits.
 			if (env.otpFailed) return { ok: false };
 
-			const profile = mapConnectLogin(env, orgId);
+			const profile = mapConnectLogin(env, orgId, cfg.eko.devAllowAnyUserType);
 			const tokens = tokensOf(env);
 			const now = Date.now();
 			return {

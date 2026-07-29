@@ -98,6 +98,16 @@ describe("mapConnectLogin classification", () => {
 		expect(r.kind).toBe("not_allowed");
 	});
 
+	it("lets a non-partner through as found when devAllowAnyUserType is on", () => {
+		// DEV_ALLOW_ANY_USER_TYPE skips the gate, org check included.
+		const r = mapConnectLogin(
+			{ details: foundDetails({ user_type: "6", org_id: 7 }) },
+			1,
+			true,
+		);
+		expect(r.kind).toBe("found");
+	});
+
 	it("compares org against the configured org, not a hardcoded 1", () => {
 		const r = mapConnectLogin({ details: foundDetails({ org_id: 7 }) }, 7);
 		expect(r.kind).toBe("found");
