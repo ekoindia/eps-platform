@@ -67,17 +67,18 @@ describe("recipeMermaidFence", () => {
 		const fence = recipeMermaidFence(dmt);
 		expect(fence).toContain('s1 -->|"response_type_id 308: Sender not found');
 		expect(fence).not.toMatch(/^\s*s1 --> s2$/m);
-		expect(fence.match(/s1 -->/g)).toHaveLength(1);
+		// Step 1's four routing branches, and no bare fall-through alongside them.
+		expect(fence.match(/s1 -->/g)).toHaveLength(4);
 	});
 
 	it("draws unlabelled fall-through edges between plain sequential steps", () => {
-		expect(recipeMermaidFence(dmt)).toMatch(/^\s*s2 --> s3$/m);
+		expect(recipeMermaidFence(dmt)).toMatch(/^\s*s3 --> s4$/m);
 	});
 
 	it("terminates a done branch at a rounded terminal node", () => {
 		const fence = recipeMermaidFence(dmt);
 		expect(fence).toContain('done(["done"])');
-		expect(fence).toMatch(/s5 -->\|"[^"]*0[^"]*"\| done/);
+		expect(fence).toMatch(/s8 -->\|"[^"]*0[^"]*"\| done/);
 	});
 
 	it("omits the done node entirely when no branch reaches it", () => {
@@ -177,6 +178,6 @@ describe("renderRecipesIndexMarkdown", () => {
 	});
 
 	it("states each recipe's step count", () => {
-		expect(renderRecipesIndexMarkdown()).toContain("5 steps");
+		expect(renderRecipesIndexMarkdown()).toContain("8 steps");
 	});
 });

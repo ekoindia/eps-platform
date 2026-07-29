@@ -98,37 +98,89 @@ export const RECIPES: Recipe[] = [
 		slug: "dmt-fino-send-money",
 		name: "DMT (Fino) — Send Money",
 		summary:
-			"Full Fino DMT money-transfer flow: look up the sender, onboard them if new, add the recipient, then send an OTP-verified transfer.",
+			"Full Fino DMT money-transfer flow: look up the sender, onboard and biometric-eKYC them if new, pick or add the recipient, then send an OTP-verified transfer.",
 		productId: "dmt",
 		steps: [
 			{
 				specSlug: "dmt-get-sender",
 				purpose:
-					"Check whether the customer is already a registered DMT sender.",
+					"Check whether the customer is already a registered DMT sender, and which stage of onboarding they are at. The `response_type_id` decides where the flow enters.",
 				branches: [
 					{
 						onResponseTypeId: 308,
 						goto: "dmt-onboard-sender",
 						note: "Sender not found — onboard them before continuing.",
 					},
+					{
+						onResponseTypeId: 2134,
+						goto: "dmt-fino-sender-ekyc",
+						note: "Sender found but biometric eKYC is pending — capture their fingerprint.",
+					},
+					{
+						onResponseTypeId: 2129,
+						goto: "dmt-fino-validate-ekyc-otp",
+						note: "Sender found mid-eKYC — only the OTP validation is left.",
+					},
+					{
+						onResponseTypeId: 309,
+						goto: "dmt-get-recipients",
+						note: "Sender found and KYC complete — skip onboarding and go straight to recipients.",
+					},
 				],
 			},
 			{
 				specSlug: "dmt-onboard-sender",
 				purpose:
-					"Register a new sender when Get Sender API returns `response_type_id=308`.",
+					"Register a new sender with name, date of birth and residence address. This opens the sender on Eko but leaves KYC pending on Fino (`response_type_id=2134`) — they cannot transact yet.",
+				branches: [
+					{
+						onResponseTypeId: 309,
+						goto: "dmt-get-recipients",
+						note: "Already onboarded on Fino externally, KYC complete — no eKYC needed.",
+					},
+				],
+			},
+			{
+				specSlug: "dmt-fino-sender-ekyc",
+				purpose:
+					"Biometric Aadhaar eKYC — one-time per sender. Capture the PID block from an RD-service fingerprint scanner and submit it with the sender's Aadhaar number; the response returns the `kyc_request_id` and `otp_ref_id` the next step needs. Completing eKYC raises the sender's monthly limit from ₹5,000 to ₹25,000.",
+			},
+			{
+				specSlug: "dmt-fino-validate-ekyc-otp",
+				purpose:
+					"Confirm the eKYC by submitting the OTP sent to the sender's Aadhaar-linked mobile, along with the `kyc_request_id` and `otp_ref_id` from the biometric step. The sender is fully KYC-verified on success.",
+			},
+			{
+				specSlug: "dmt-get-recipients",
+				purpose:
+					"List the sender's saved beneficiaries. If the one they want is already there, reuse its `recipient_id` and skip Add Recipient.",
+				branches: [
+					{
+						onResponseTypeId: 22,
+						goto: "dmt-add-recipient",
+						note: "No recipients saved yet — add one before transacting.",
+					},
+					{
+						onResponseTypeId: 23,
+						goto: "dmt-send-otp",
+						note: "Recipient already saved — reuse its `recipient_id`.",
+					},
+				],
 			},
 			{
 				specSlug: "dmt-add-recipient",
-				purpose: "Add the beneficiary the sender wants to transfer to.",
+				purpose:
+					"Add the beneficiary the sender wants to transfer to; returns the `recipient_id` used by the two transaction steps.",
 			},
 			{
 				specSlug: "dmt-send-otp",
-				purpose: "Trigger the transaction OTP sent to the sender.",
+				purpose:
+					"Pre-authorise the transfer: sends an OTP to the sender's registered mobile and returns the `otp_ref_id`. Required before every transfer — request a fresh one per attempt.",
 			},
 			{
 				specSlug: "dmt-initiate-transfer",
-				purpose: "Submit the OTP-verified transfer to complete the flow.",
+				purpose:
+					"Submit the transfer with the customer-entered OTP, its `otp_ref_id`, and a `client_ref_id` unique to this attempt. The only money-debit step — persist `tid` and `bank_ref_num` and reconcile before any retry.",
 				branches: [{ onResponseStatusId: 0, goto: "done" }],
 			},
 		],

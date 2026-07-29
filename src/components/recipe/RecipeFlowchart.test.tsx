@@ -43,8 +43,9 @@ const nodeWidth = (svg: SVGSVGElement): number =>
 describe("RecipeFlowchart", () => {
 	it("draws one node per step plus the done terminal", () => {
 		const svg = svgOf(dmt);
-		// 5 step boxes + 5 method pills + 1 done pill
-		expect(svg.querySelectorAll("rect")).toHaveLength(11);
+		// One box + one method pill per step, plus the done pill. Counted off the
+		// recipe rather than hardcoded, so adding a step does not fail this case.
+		expect(svg.querySelectorAll("rect")).toHaveLength(dmt.steps.length * 2 + 1);
 		expect(svg.textContent).toContain("done");
 	});
 
@@ -66,10 +67,21 @@ describe("RecipeFlowchart", () => {
 	});
 
 	it("draws only straight edges, and reserves no arc gutter, for a linear flow", () => {
-		const svg = svgOf(dmt);
+		// AePS is the fully sequential recipe — every step falls through to the
+		// next, so nothing should reach for the gutter.
+		const svg = svgOf(aeps);
 		expect(svg.querySelectorAll("path[stroke-dasharray]")).toHaveLength(0);
 		// No dead gutter: the node box fills the whole (dynamic) viewBox width.
 		expect(viewWidth(svg)).toBe(nodeWidth(svg));
+	});
+
+	it("arcs every skip edge of a branching flow through the gutter", () => {
+		// DMT's four skip branches (get-sender → eKYC/validate/recipients, and
+		// onboard → recipients) plus recipients → send-otp all bow out; the
+		// 308 and 22 branches target the next step and stay straight.
+		const svg = svgOf(dmt);
+		expect(svg.querySelectorAll("path[stroke-dasharray]")).toHaveLength(5);
+		expect(viewWidth(svg)).toBe(nodeWidth(svg) + 76);
 	});
 
 	it("arcs a skip edge through the gutter and widens the viewBox for it", () => {
