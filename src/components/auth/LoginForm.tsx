@@ -26,6 +26,12 @@ function maskMobile(mobile: string): string {
 
 const RESEND_COOLDOWN_SEC = 30;
 
+/**
+ * localStorage key holding the last mobile number that passed OTP verification,
+ * so returning developers don't retype it. Stored as raw 10 digits.
+ */
+const LAST_MOBILE_KEY = "eko-last-mobile";
+
 /** Two-step OTP login form: collect mobile → send OTP → verify OTP → call onSuccess. */
 export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 	const { refresh } = useAuth();
@@ -81,6 +87,18 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		focusBox(Math.min(text.length, OTP_LENGTH - 1));
 	}
 
+	// Prefill the last verified number. Read after mount (never during SSR /
+	// pre-render, so the server's empty field hydrates cleanly), and only into a
+	// still-empty field so a fast typist is never clobbered.
+	useEffect(() => {
+		try {
+			const saved = localStorage.getItem(LAST_MOBILE_KEY);
+			if (saved && /^\d{10}$/.test(saved)) setMobile((cur) => cur || saved);
+		} catch {
+			/* ignore */
+		}
+	}, []);
+
 	// Tick the resend countdown down to zero, one second at a time.
 	useEffect(() => {
 		if (cooldown <= 0) return;
@@ -124,6 +142,13 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		setError(null);
 		try {
 			await authClient.verifyOtp(mobile, otp);
+			// OTP passed — whether this ends in a session or an onboarding wizard,
+			// the number is worth remembering for the next login.
+			try {
+				localStorage.setItem(LAST_MOBILE_KEY, mobile);
+			} catch {
+				/* ignore */
+			}
 			await refresh();
 			onSuccess?.();
 		} catch (e) {
