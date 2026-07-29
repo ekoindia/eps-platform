@@ -1,3 +1,4 @@
+import { ignoreNestedDialogInteraction } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import {
@@ -221,10 +222,16 @@ function HostedDialog({
 		<DialogPrimitive.Root open onOpenChange={(open) => !open && dismiss()}>
 			<DialogPrimitive.Portal>
 				<DialogPrimitive.Overlay
+					// See `ignoreNestedDialogInteraction`.
+					data-dialog-layer=""
 					className={`fixed inset-0 z-50 bg-black/80 ${hiddenClass}`}
 				/>
 				<DialogPrimitive.Content
 					aria-describedby={undefined}
+					// These dialogs stack on each other — the camera opens the editor —
+					// and are hand-rolled rather than the shadcn `DialogContent`, so they
+					// need the same guard it applies.
+					onInteractOutside={ignoreNestedDialogInteraction}
 					className={`fixed left-1/2 top-1/2 z-50 flex max-h-screen max-w-[100vw] -translate-x-1/2 -translate-y-1/2 items-center justify-center focus:outline-hidden ${chrome.className} ${hiddenClass}`}
 				>
 					{/* Radix requires a title; these dialogs carry their own visible chrome. */}

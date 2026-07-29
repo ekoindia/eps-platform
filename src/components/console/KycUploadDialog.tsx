@@ -32,10 +32,11 @@ export interface KycUploadDialogProps {
 /**
  * Collects one document's pages and uploads them.
  *
- * A plain shadcn dialog rather than an entry on `DialogHost`: the camera and
- * image editor `FileUpload` drives are portalled by `ConnectDialogProvider`
- * independently, so they stack above this on their own and there is nothing for
- * the host to coordinate.
+ * A plain shadcn dialog rather than an entry on `DialogHost`: the camera, image
+ * editor and viewer `FileUpload` drives are portalled by `ConnectDialogProvider`
+ * independently and stack above this on their own. Coordinating that stack is
+ * `DialogContent`'s job — see `ignoreNestedDialogInteraction`, without which
+ * closing any of them takes this dialog, and every attached page, with it.
  *
  * All pages are required before Submit enables — upstream reviews a document as
  * a set, and a half-uploaded one can only come back as a rejection.

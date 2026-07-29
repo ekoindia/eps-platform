@@ -190,9 +190,27 @@ Three things the row deliberately does **not** show:
   `status_desc`, a rejection reason (in red), or this session's "Uploaded".
 
 Selecting a document opens `KycUploadDialog`, a plain shadcn `Dialog` holding
-one `FileUpload` per page. It is *not* an entry on `DialogHost`: the camera and
-image editor `FileUpload` drives are portalled by `ConnectDialogProvider`
-independently, so they stack above it on their own.
+one `FileUpload` per page. It is *not* an entry on `DialogHost`: the camera,
+image editor and file viewer `FileUpload` drives are portalled by
+`ConnectDialogProvider` independently, so they stack above it on their own.
+
+Stacking needs one guard, `ignoreNestedDialogInteraction` in
+`src/components/ui/dialog.tsx`, applied by `DialogContent` and by `DialogHost`'s
+own content. Radix defers its "am I the top layer?" test to the click after the
+pointerdown; the dialog above closes by unmounting *during* that click, so the
+one below reads as topmost and dismisses itself. Without it, closing the image
+viewer took the upload dialog — and every page already attached — with it. The
+ordering does not reproduce under jsdom, so it is checked by hand on the
+dev-only bench at `/console/test`.
+
+Clicking an attached page's thumbnail opens it full-screen in `FileViewDialog`,
+fitted to the viewport, with pinch/ctrl-wheel and `−`/`+` zoom up to 8× and
+scroll to pan. Zoom is an explicit size rather than a transform: a transform
+paints outside the scroll area instead of extending it, leaving no way to reach
+the part of a zoomed document the user is trying to read. Previews are object or
+`data:` URLs with no extension to sniff, so `FileUpload` passes `type: "image"`
+outright — without it the viewer framed them in an iframe, at original size,
+with scrollbars.
 
 Every page is uploaded with `watermark` on, which burns provenance — who, where,
 when — into the pixels. That applies to **images only**; `FileUpload.handleFile`

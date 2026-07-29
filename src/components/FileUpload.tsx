@@ -267,7 +267,10 @@ export function FileUpload({
 							<img
 								src={preview}
 								alt={label ?? "Attachment"}
-								onClick={() => void showFile(preview)}
+								// Typed explicitly: a preview is an object or data URL, and the
+								// viewer cannot sniff an extension off either. Only images are
+								// ever previewed — everything else falls back to the file name.
+								onClick={() => void showFile(preview, { type: "image" })}
 								className="max-h-50 max-w-full cursor-pointer rounded-sm shadow-sm"
 							/>
 						) : (
