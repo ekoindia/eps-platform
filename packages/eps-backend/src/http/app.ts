@@ -21,6 +21,7 @@ import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
 import { mountConnect } from "./connect";
+import { mountDashboard } from "./dashboard";
 import { AppError, errorBody } from "./errors";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
@@ -510,6 +511,18 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg });
 	mountTransactions(app, { sessions, eko });
+
+	// Mounted unconditionally, unlike the Connect-widget routes below: it serves
+	// aggregate counts rather than credentials, so under the `eko` provider the
+	// honest answer is a named 501 the console can explain, not a 404 it has to
+	// guess at. See `mountDashboard`.
+	mountDashboard(app, {
+		sessions,
+		auth,
+		connect: deps.connect,
+		kv,
+		connectBaseUrl: cfg.connectApi?.baseUrl,
+	});
 
 	// Connect-widget routes exist only where they can work: they need a provider
 	// that stores upstream credentials AND a client to spend them. Under the `eko`

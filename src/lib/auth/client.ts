@@ -1,3 +1,4 @@
+import type { DashboardView, DatePreset } from "@/lib/console/dashboard";
 import type {
 	TransactionFilters,
 	TransactionPage,
@@ -365,4 +366,32 @@ export const transactionsClient = {
 			body: JSON.stringify(input),
 			signal,
 		}) as Promise<TransactionPage>,
+};
+
+/**
+ * Business analytics for the signed-in developer — requires a developer session
+ * that carries upstream Connect credentials.
+ *
+ * POST, not GET, for the same reason as the transaction search: this runs an
+ * aggregate upstream rather than reading a cacheable resource, and the body is
+ * one partner's business numbers, which must not sit in a proxy cache.
+ *
+ * A deployment without connect-api answers 501 `DASHBOARD_UNAVAILABLE`; callers
+ * should treat that as "not on this deployment", not as a failure.
+ */
+export const dashboardClient = {
+	/**
+	 * Loads one window of the caller's own dashboard.
+	 * @param input - The preset window, and an optional single-service filter.
+	 * @param signal - Aborts the request when the caller unmounts or re-queries.
+	 */
+	load: (
+		input: { preset: DatePreset; typeId?: string },
+		signal?: AbortSignal,
+	): Promise<DashboardView> =>
+		request("/dashboard", {
+			method: "POST",
+			body: JSON.stringify(input),
+			signal,
+		}) as Promise<DashboardView>,
 };

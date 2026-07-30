@@ -87,6 +87,20 @@ export interface ConnectClient {
 		opts?: { xRealIp?: string },
 	): Promise<Record<string, unknown>>;
 	/**
+	 * Runs an interaction over `/transactions/dojson`.
+	 *
+	 * Same envelope and same auth as `interact`; a different path. It exists for
+	 * interaction 682, whose `requestPayload` is a NESTED object —
+	 * `/transactions/do` flattens its fields and cannot carry one.
+	 * @param accessToken - The caller's FULL upstream access token.
+	 * @param body - The interaction fields, already validated.
+	 */
+	interactJson(
+		accessToken: string,
+		body: Record<string, unknown>,
+		opts?: { xRealIp?: string },
+	): Promise<Record<string, unknown>>;
+	/**
 	 * Runs an interaction that carries files, over `/transactions/upload`.
 	 *
 	 * That transport has a convention of its own: every field travels URL-encoded
@@ -460,6 +474,14 @@ export function createConnectClient(
 
 		async interact(accessToken, body, opts = {}) {
 			const raw = await post("/transactions/do", body, {
+				bearer: accessToken,
+				xRealIp: opts.xRealIp,
+			});
+			return (raw ?? {}) as Record<string, unknown>;
+		},
+
+		async interactJson(accessToken, body, opts = {}) {
+			const raw = await post("/transactions/dojson", body, {
 				bearer: accessToken,
 				xRealIp: opts.xRealIp,
 			});

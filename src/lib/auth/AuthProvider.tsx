@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/client";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { clearConnectTokens } from "@/lib/connect/token";
+import { resetDashboardCache } from "@/lib/console/dashboard";
 import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
 import { setChatIdentity } from "@/lib/zoho-chat";
@@ -104,6 +105,9 @@ export function useAuth(): AuthContextValue {
 	if (!ctx) throw new Error("useAuth must be used within AuthProvider");
 	return ctx;
 }
+		// Same hazard as the balance: the dashboard's numbers are one partner's
+		// business data, cached in module scope for the same remount reason.
+		resetDashboardCache();
 
 /**
  * The same context, for components that merely *decorate* with the session and
