@@ -356,6 +356,38 @@
 		scroll-behavior: smooth;
 	}
 
+	/* Scrollbars follow the theme rather than the OS: `--foreground` is navy in
+	   light mode and near-white in dark, so one declaration covers both. Anything
+	   with its own scrollbar rules (`.docs-scroll`, the `--rp-*` docs panes, the
+	   hide-scrollbar utilities) still wins on specificity. */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent)
+			transparent;
+	}
+
+	/* Safari gained the standard properties only in 18.2; until then it needs the
+	   WebKit pseudo-elements. Gated so browsers with both don't style twice. */
+	@supports not (scrollbar-color: auto) {
+		::-webkit-scrollbar {
+			width: 8px;
+			height: 8px;
+		}
+
+		::-webkit-scrollbar-track {
+			background: transparent;
+		}
+
+		::-webkit-scrollbar-thumb {
+			background: color-mix(in oklab, var(--foreground) 22%, transparent);
+			border-radius: 9999px;
+		}
+
+		::-webkit-scrollbar-thumb:hover {
+			background: color-mix(in oklab, var(--foreground) 35%, transparent);
+		}
+	}
+
 	/* Docs-local dark mode (see DocsLayout) tints only its own subtree, so the
 	   page root stays light and the over-scroll bounce flashes white. Match the
 	   root to the `.dark` --background token while docs dark mode is active. */
