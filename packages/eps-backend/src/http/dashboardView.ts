@@ -74,18 +74,33 @@ export interface DashboardView {
 }
 
 /**
- * Where each dataset lands in the response.
+ * The four datasets, and how upstream names each one going out and coming back.
  *
  * Upstream is not symmetric: the REQUEST keys are all snake_case, but only
  * `products_overview` comes back that way — the other three come back camelCase.
  * Stated once, here, so no reader has to rediscover it.
+ *
+ * `perService` marks the two datasets a `typeid` filter is meaningful on;
+ * upstream takes dates alone for the other two.
  */
-export const REQUEST_KEYS = {
-	overview: "products_overview",
-	successRates: "success_rate",
-	mostUsedServices: "most_used_services",
-	usage: "verification_trends",
-} as const;
+export const DATASETS = [
+	{
+		request: "products_overview",
+		response: "products_overview",
+		perService: true,
+	},
+	{
+		request: "most_used_services",
+		response: "mostUsedServices",
+		perService: true,
+	},
+	{ request: "success_rate", response: "successRate", perService: false },
+	{
+		request: "verification_trends",
+		response: "verificationTrends",
+		perService: false,
+	},
+] as const;
 
 const RESPONSE_KEYS = {
 	overview: "products_overview",
@@ -137,12 +152,27 @@ function nameOf(names: Map<string, string>, typeId: string): string {
 }
 
 /**
- * Parses the per-service GTV split.
+ * Unwraps a block that upstream sometimes JSON-encodes.
  *
- * `typeBreakdown` arrives as an object on some accounts and as a JSON-encoded
- * STRING on others, so both are handled; malformed JSON yields an empty split
- * rather than throwing, because one bad field must not cost the whole dashboard.
- * @param raw - The `gtv.typeBreakdown` field.
+ * `typeBreakdown` demonstrably arrives as an object on some accounts and as a
+ * JSON STRING on others, and nothing says the other blocks are exempt — so every
+ * block goes through here. Malformed JSON yields `undefined` rather than
+ * throwing: one bad field must not cost the whole dashboard.
+ * @param raw - Whatever upstream sent for that block.
+ * @returns The decoded value, or `undefined` when it cannot be decoded.
+ */
+function decode(raw: unknown): unknown {
+	if (typeof raw !== "string") return raw;
+	try {
+		return JSON.parse(raw);
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * Parses the per-service GTV split.
+ * @param raw - The `gtv.typeBreakdown` field, object or JSON string.
  * @param names - The 1044 name map.
  * @returns Per-service amounts, largest first.
  */
@@ -150,15 +180,8 @@ function parseBreakdown(
 	raw: unknown,
 	names: Map<string, string>,
 ): ServiceAmount[] {
-	let source: unknown = raw;
-	if (typeof raw === "string") {
-		try {
-			source = JSON.parse(raw);
-		} catch {
-			return [];
-		}
-	}
-	if (!source || typeof source !== "object") return [];
+	const source = decode(raw);
+	if (!source || typeof source !== "object" || Array.isArray(source)) return [];
 	return Object.entries(source as Record<string, unknown>)
 		.map(([typeId, entry]) => {
 			const e = (entry ?? {}) as Record<string, unknown>;
@@ -173,13 +196,21 @@ function parseBreakdown(
 		.sort((a, b) => b.amount - a.amount);
 }
 
-/** Turns a `{ "<typeId>": {...} }` map into a sorted array, dropping junk entries. */
+/**
+ * Turns a `{ "<typeId>": {...} }` map into a sorted array, dropping junk entries.
+ *
+ * An ARRAY is rejected rather than accepted: `Object.entries` would hand back
+ * "0", "1", "2" as service ids and the view would render three rows named
+ * `Service 0` — worse than empty, because it looks like data. If upstream ever
+ * sends one, the shape log below is what says so.
+ */
 function fromServiceMap<T>(
-	source: unknown,
+	raw: unknown,
 	map: (typeId: string, entry: Record<string, unknown>) => T,
 	sortBy: (row: T) => number,
 ): T[] {
-	if (!source || typeof source !== "object") return [];
+	const source = decode(raw);
+	if (!source || typeof source !== "object" || Array.isArray(source)) return [];
 	return Object.entries(source as Record<string, unknown>)
 		.map(([typeId, entry]) =>
 			map(typeId, (entry ?? {}) as Record<string, unknown>),
@@ -213,6 +244,41 @@ export function parseServiceList(envelope: unknown): ServiceRef[] {
 }
 
 /**
+ * Describes the SHAPE of a `dashboard_object`, for the log.
+ *
+ * Keys and kinds only, never values: a real body is one partner's revenue and
+ * service mix, which does not belong in a log line. This is the one thing that
+ * can tell an upstream contract change ("the key isn't there") from an
+ * encoding surprise ("it's a string") from a quiet week ("it's an empty map"),
+ * and none of those are distinguishable from the rendered view.
+ *
+ * Kinds are reported AFTER `decode`, so a JSON-encoded block reads as
+ * `verificationTrends:string→array[12]` rather than just `string`.
+ * @param dashboardObject - The raw block from upstream.
+ * @returns A one-line `key:kind, key:kind` summary.
+ */
+export function shapeOf(dashboardObject: unknown): string {
+	if (!dashboardObject || typeof dashboardObject !== "object") {
+		return `<${dashboardObject === null ? "null" : typeof dashboardObject}>`;
+	}
+	const kind = (value: unknown): string => {
+		if (value === null) return "null";
+		if (Array.isArray(value)) return `array[${value.length}]`;
+		if (typeof value === "object") {
+			return `object{${Object.keys(value as object).length}}`;
+		}
+		return typeof value;
+	};
+	return Object.entries(dashboardObject as Record<string, unknown>)
+		.map(([key, value]) => {
+			if (typeof value !== "string") return `${key}:${kind(value)}`;
+			const decoded = decode(value);
+			return `${key}:string→${decoded === undefined ? "unparseable" : kind(decoded)}`;
+		})
+		.join(", ");
+}
+
+/**
  * Normalizes one interaction-682 `dashboard_object` into the console's view.
  *
  * Everything upstream-shaped stops here: the snake/camel asymmetry, the
@@ -234,6 +300,8 @@ export function buildDashboardView(input: {
 	range: { datefrom: string; dateto: string };
 	dashboardObject: unknown;
 	services: ServiceRef[];
+	/** The active single-service filter, so the Most-Used fallback can honour it. */
+	typeId?: string;
 }): { view: DashboardView; absent: string[] } {
 	const { dashboardObject, services } = input;
 	const names = new Map(services.map((s) => [s.typeId, s.label]));
@@ -243,8 +311,55 @@ export function buildDashboardView(input: {
 		(key) => root[key] === undefined || root[key] === null,
 	);
 
-	const overview = root[RESPONSE_KEYS.overview];
+	const overview = decode(root[RESPONSE_KEYS.overview]);
 	const gtv = block(overview, "gtv");
+
+	const successRates = fromServiceMap(
+		root[RESPONSE_KEYS.successRates],
+		(typeId, e) => ({
+			typeId,
+			name: nameOf(names, typeId),
+			successCount: num(e.successCount),
+			totalCount: num(e.totalCount),
+		}),
+		(row) => row.totalCount,
+	);
+
+	const mostUsed = fromServiceMap(
+		root[RESPONSE_KEYS.mostUsedServices],
+		(typeId, e) => ({
+			typeId,
+			name: nameOf(names, typeId),
+			totalCount: num(e.totalCount),
+			// Optional upstream — Eloka types it as "in case revenue is added later".
+			totalRevenue: num(e.totalRevenue),
+		}),
+		(row) => row.totalCount,
+	);
+
+	// FALLBACK, not a second source of truth: upstream returns `mostUsedServices`
+	// empty for this account while `successRate` carries a `totalCount` per
+	// service — which is the same per-service call volume this widget charts. It is
+	// an APPROXIMATION: if upstream ever scopes the two blocks differently (e.g.
+	// success rates omitting a service with no successes), the counts drift. The
+	// shape log says which one is being rendered; delete this once `mostUsedServices`
+	// is reliable.
+	//
+	// `success_rate` is never sent `typeid` upstream, so the fallback is filtered
+	// here — otherwise a service filter would show every service in this widget.
+	const mostUsedServices =
+		mostUsed.length > 0
+			? mostUsed
+			: successRates
+					.filter((row) => !input.typeId || row.typeId === input.typeId)
+					.map((row) => ({
+						typeId: row.typeId,
+						name: row.name,
+						totalCount: row.totalCount,
+						totalRevenue: 0,
+					}));
+
+	const usage = decode(root[RESPONSE_KEYS.usage]);
 
 	const view: DashboardView = {
 		range: {
@@ -269,29 +384,10 @@ export function buildDashboardView(input: {
 			},
 			breakdown: parseBreakdown(gtv.typeBreakdown, names),
 		},
-		successRates: fromServiceMap(
-			root[RESPONSE_KEYS.successRates],
-			(typeId, e) => ({
-				typeId,
-				name: nameOf(names, typeId),
-				successCount: num(e.successCount),
-				totalCount: num(e.totalCount),
-			}),
-			(row) => row.totalCount,
-		),
-		mostUsedServices: fromServiceMap(
-			root[RESPONSE_KEYS.mostUsedServices],
-			(typeId, e) => ({
-				typeId,
-				name: nameOf(names, typeId),
-				totalCount: num(e.totalCount),
-				// Optional upstream — Eloka types it as "in case revenue is added later".
-				totalRevenue: num(e.totalRevenue),
-			}),
-			(row) => row.totalCount,
-		),
-		usage: Array.isArray(root[RESPONSE_KEYS.usage])
-			? (root[RESPONSE_KEYS.usage] as unknown[]).map((entry) => {
+		successRates,
+		mostUsedServices,
+		usage: Array.isArray(usage)
+			? (usage as unknown[]).map((entry) => {
 					const e = (entry ?? {}) as Record<string, unknown>;
 					return {
 						startDate: String(e.startDate ?? ""),

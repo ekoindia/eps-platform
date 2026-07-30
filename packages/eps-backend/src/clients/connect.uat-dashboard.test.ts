@@ -50,10 +50,12 @@ describe.skipIf(!enabled)("interaction 682 (live UAT probe)", () => {
 			datefrom: "2026-07-01 00:00:00",
 			dateto: "2026-07-28 23:59:59",
 		};
-		// All four datasets in ONE requestPayload. If upstream rejects a multi-key
-		// payload, the route must split into four parallel calls — that is the
-		// second question this probe answers.
-		const dashboard = await connect.interactJson(accessToken!, {
+		// Both payload shapes, side by side. A multi-key payload came back missing
+		// `mostUsedServices` and `verificationTrends` on a live account, which is why
+		// the route now sends one key per call — the shape Eloka uses. Keep both
+		// here: the diff is the evidence, and it is the thing to re-check whenever
+		// upstream moves.
+		const multiKey = await connect.interactJson(accessToken!, {
 			source: "EPS",
 			client_ref_id: `${Date.now()}0000000`.slice(0, 20),
 			interaction_type_id: 682,
@@ -64,6 +66,23 @@ describe.skipIf(!enabled)("interaction 682 (live UAT probe)", () => {
 				verification_trends: range,
 			},
 		});
+
+		const requestKeys = [
+			"products_overview",
+			"success_rate",
+			"most_used_services",
+			"verification_trends",
+		];
+		const perKey: Record<string, unknown> = {};
+		for (const [i, key] of requestKeys.entries()) {
+			perKey[key] = await connect.interactJson(accessToken!, {
+				source: "EPS",
+				client_ref_id: `${Date.now()}000000${i}`.slice(0, 20),
+				interaction_type_id: 682,
+				requestPayload: { [key]: range },
+			});
+		}
+		const dashboard = { multiKey, perKey };
 
 		const services = await connect.interact(accessToken!, {
 			interaction_type_id: 1044,

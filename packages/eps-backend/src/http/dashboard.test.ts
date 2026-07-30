@@ -9,7 +9,7 @@ import {
 	SAMPLE_SERVICE_LIST,
 } from "./dashboard.sample";
 import { mountDashboard } from "./dashboard";
-import type { DashboardView } from "./dashboardView";
+import { DATASETS, type DashboardView } from "./dashboardView";
 import { AppError, errorBody } from "./errors";
 import type { AppEnv } from "./requestId";
 
@@ -172,17 +172,40 @@ describe("dashboard route input", () => {
 		expect(res.status).toBe(400);
 	});
 
+	it("asks for one dataset per call, never four keys in one payload", async () => {
+		// Upstream answers only some keys when they share a payload, which is what
+		// left Most Used Services and Usage Analytics blank. Eloka sends one per
+		// call; so do we.
+		const { app, interactJson } = harness();
+		await load(app);
+		expect(interactJson).toHaveBeenCalledTimes(DATASETS.length);
+		const keys = interactJson.mock.calls.map((call) =>
+			Object.keys(call[1].requestPayload as Record<string, unknown>),
+		);
+		expect(keys.every((k) => k.length === 1)).toBe(true);
+		expect(keys.flat().sort()).toEqual(
+			DATASETS.map((d) => d.request)
+				.slice()
+				.sort(),
+		);
+	});
+
 	it("forwards a known typeId on the per-service datasets only", async () => {
 		const { app, interactJson } = harness();
 		await load(app, { preset: "last7", typeId: "81" });
-		const payload = interactJson.mock.calls[0][1].requestPayload as Record<
-			string,
-			Record<string, string>
-		>;
-		expect(payload.products_overview.typeid).toBe("81");
-		expect(payload.most_used_services.typeid).toBe("81");
-		expect(payload.success_rate.typeid).toBeUndefined();
-		expect(payload.verification_trends.typeid).toBeUndefined();
+		const typeIdFor = (request: string) => {
+			const call = interactJson.mock.calls.find(
+				(c) => request in (c[1].requestPayload as Record<string, unknown>),
+			);
+			const payload = (call?.[1].requestPayload as Record<string, unknown>)[
+				request
+			] as Record<string, string>;
+			return payload.typeid;
+		};
+		expect(typeIdFor("products_overview")).toBe("81");
+		expect(typeIdFor("most_used_services")).toBe("81");
+		expect(typeIdFor("success_rate")).toBeUndefined();
+		expect(typeIdFor("verification_trends")).toBeUndefined();
 	});
 
 	it("ignores a browser-supplied date window and sends its own", async () => {
@@ -230,6 +253,56 @@ describe("dashboard route response", () => {
 					status: 1,
 					message: "not allowed",
 				})),
+			},
+		});
+		const res = await load(app);
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("DASHBOARD_FAILED");
+	});
+
+	it("loses one widget, not the page, when a secondary dataset fails", async () => {
+		// Splitting into four calls means four things that can fail independently.
+		// Only the overview is worth a 502; the rest degrade to an empty widget.
+		const { app } = harness({
+			connect: {
+				interactJson: vi.fn(
+					async (_token: string, body: Record<string, unknown>) => {
+						const key = Object.keys(
+							body.requestPayload as Record<string, unknown>,
+						)[0];
+						if (key === "verification_trends") throw new Error("upstream blip");
+						return {
+							status: 0,
+							data: { dashboard_object: SAMPLE_DASHBOARD_OBJECT },
+						};
+					},
+				),
+			},
+		});
+		const res = await load(app);
+		expect(res.status).toBe(200);
+		const view = (await res.json()) as DashboardView;
+		expect(view.usage).toEqual([]);
+		expect(view.overview.transactions.value).toBe(939);
+	});
+
+	it("502s when the overview dataset itself fails", async () => {
+		const { app } = harness({
+			connect: {
+				interactJson: vi.fn(
+					async (_token: string, body: Record<string, unknown>) => {
+						const key = Object.keys(
+							body.requestPayload as Record<string, unknown>,
+						)[0];
+						if (key === "products_overview") {
+							return { status: 1, message: "not allowed" };
+						}
+						return {
+							status: 0,
+							data: { dashboard_object: SAMPLE_DASHBOARD_OBJECT },
+						};
+					},
+				),
 			},
 		});
 		const res = await load(app);
@@ -293,14 +366,15 @@ describe("dashboard route response", () => {
 		const { app, interactJson } = harness();
 		await load(app);
 		await load(app);
-		expect(interactJson).toHaveBeenCalledTimes(1);
+		// One window costs one round of dataset calls, however many that is.
+		expect(interactJson).toHaveBeenCalledTimes(DATASETS.length);
 	});
 
 	it("does not share a cache entry across presets", async () => {
 		const { app, interactJson } = harness();
 		await load(app, { preset: "last7" });
 		await load(app, { preset: "last30" });
-		expect(interactJson).toHaveBeenCalledTimes(2);
+		expect(interactJson).toHaveBeenCalledTimes(DATASETS.length * 2);
 	});
 });
 
@@ -319,7 +393,7 @@ describe("dashboard KV outage", () => {
 		const { app, interactJson } = harness({ kv: brokenCacheKv() });
 		const res = await load(app);
 		expect(res.status).toBe(200);
-		expect(interactJson).toHaveBeenCalledTimes(1);
+		expect(interactJson).toHaveBeenCalledTimes(DATASETS.length);
 	});
 
 	it("503s when the rate-limit counter store is down (limiter fails closed)", async () => {

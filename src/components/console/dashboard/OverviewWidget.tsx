@@ -2,14 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	type DashboardMetric,
 	type DashboardView,
+	type ServiceRef,
 	deltaOf,
 } from "@/lib/console/dashboard";
-import { hueOf } from "@/lib/console/transactions";
 import { cn, formatINR } from "@/lib/utils";
 import { Activity, ArrowDownRight, ArrowUpRight } from "lucide-react";
-
-/** How many services the GTV split lists before collapsing the tail. */
-const BREAKDOWN_ROWS = 6;
 
 /**
  * Period-on-period change, when there is one worth showing.
@@ -66,19 +63,48 @@ function Tile({
  * in a muted row — the inverse of Eloka's ordering, where GTV is the headline
  * because its users move other people's money for a commission.
  */
-export default function OverviewWidget({ view }: { view: DashboardView }) {
+export default function OverviewWidget({
+	view,
+	services,
+	typeId,
+	onTypeIdChange,
+}: {
+	view: DashboardView;
+	/** Selectable services, sticky across filtered views. */
+	services: ServiceRef[];
+	/** The selected service, or undefined for all of them. */
+	typeId?: string;
+	onTypeIdChange: (typeId: string | undefined) => void;
+}) {
 	const { overview } = view;
-	const rows = overview.breakdown.slice(0, BREAKDOWN_ROWS);
-	const hidden = overview.breakdown.length - rows.length;
-	const largest = rows[0]?.amount ?? 0;
 
 	return (
 		<Card>
-			<CardHeader>
+			<CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
 				<CardTitle className="flex items-center gap-2 text-base">
 					<Activity className="h-4 w-4 text-eko-navy" aria-hidden="true" />
 					Business Overview
 				</CardTitle>
+
+				{/* A native select on purpose: keyboard, mobile wheel and screen-reader
+				    behaviour come free, and this replaced a static GTV-by-service list —
+				    the same numbers, now scoped to what you pick. Hidden when there is
+				    nothing to choose between. */}
+				{services.length > 1 ? (
+					<select
+						aria-label="Filter by service"
+						className="h-9 max-w-[14rem] rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						value={typeId ?? ""}
+						onChange={(e) => onTypeIdChange(e.target.value || undefined)}
+					>
+						<option value="">All Services</option>
+						{services.map((service) => (
+							<option key={service.typeId} value={service.typeId}>
+								{service.label}
+							</option>
+						))}
+					</select>
+				) : null}
 			</CardHeader>
 			<CardContent className="flex flex-col gap-6">
 				<div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-10">
@@ -118,39 +144,6 @@ export default function OverviewWidget({ view }: { view: DashboardView }) {
 						format={(n) => formatINR(n, 2, 2)}
 					/>
 				</div>
-
-				{rows.length > 0 ? (
-					<div className="flex flex-col gap-2 border-t pt-4">
-						<p className="text-xs font-medium text-muted-foreground">
-							GTV by service
-						</p>
-						{rows.map((row) => (
-							<div key={row.typeId} className="flex items-center gap-3 text-sm">
-								<span
-									className="h-2.5 w-2.5 shrink-0 rounded-full"
-									style={{ background: `hsl(${hueOf(row.name)} 65% 55%)` }}
-									aria-hidden="true"
-								/>
-								<span className="min-w-0 flex-1 truncate">{row.name}</span>
-								<span
-									className="hidden h-1.5 rounded-full bg-eko-navy/15 sm:block"
-									style={{
-										width: `${largest ? (row.amount / largest) * 30 : 0}%`,
-									}}
-									aria-hidden="true"
-								/>
-								<span className="tabular-nums text-muted-foreground">
-									{formatINR(row.amount)}
-								</span>
-							</div>
-						))}
-						{hidden > 0 ? (
-							<p className="text-xs text-muted-foreground">
-								+{hidden} more service{hidden > 1 ? "s" : ""}
-							</p>
-						) : null}
-					</div>
-				) : null}
 			</CardContent>
 		</Card>
 	);

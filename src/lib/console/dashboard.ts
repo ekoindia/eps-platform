@@ -57,6 +57,12 @@ export interface UsagePoint {
 	totalCount: number;
 }
 
+/** A service id and its human name, from the backend's 1044 join. */
+export interface ServiceRef {
+	typeId: string;
+	label: string;
+}
+
 /** Everything the dashboard renders, already normalized by the backend. */
 export interface DashboardView {
 	range: { preset: DatePreset; from: string; to: string };
@@ -73,7 +79,7 @@ export interface DashboardView {
 	successRates: ServiceSuccess[];
 	mostUsedServices: ServiceCount[];
 	usage: UsagePoint[];
-	services: Array<{ typeId: string; label: string }>;
+	services: ServiceRef[];
 }
 
 /**
@@ -146,9 +152,37 @@ export function freshDashboard(
 }
 
 /**
- * A service's success rate as a percentage.
- * @returns 0 when nothing ran — a rate of "NaN%" is worse than an honest zero.
+ * The services worth offering in the filter dropdown.
+ *
+ * The 1044 master list is every service Eko sells, most of which a given partner
+ * has never called — so the options are that list NARROWED to the ids this window
+ * actually has data for, the way Eloka intersects it with the GTV breakdown. All
+ * three datasets contribute: a verification API with ₹0 GTV is still a service
+ * worth filtering by.
+ *
+ * Only ever call this with an UNFILTERED view. Under a filter the data shrinks to
+ * one service, and recomputing would collapse the dropdown to the option already
+ * selected — the trap Eloka works around with a sticky cached list.
+ * @param view - An unfiltered dashboard view.
+ * @returns Selectable services, by name.
  */
+export function serviceOptions(view: DashboardView): ServiceRef[] {
+	const labels = new Map(view.services.map((s) => [s.typeId, s.label]));
+	const seen = new Map<string, string>();
+	for (const row of [
+		...view.overview.breakdown,
+		...view.successRates,
+		...view.mostUsedServices,
+	]) {
+		if (!seen.has(row.typeId)) {
+			seen.set(row.typeId, labels.get(row.typeId) ?? row.name);
+		}
+	}
+	return [...seen]
+		.map(([typeId, label]) => ({ typeId, label }))
+		.sort((a, b) => a.label.localeCompare(b.label));
+}
+
 export function successPct(successCount: number, totalCount: number): number {
 	if (!totalCount) return 0;
 	return (successCount / totalCount) * 100;

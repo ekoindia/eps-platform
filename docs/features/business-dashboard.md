@@ -4,12 +4,13 @@ The signed-in partner's own API usage and business numbers, at `/console` — th
 page you land on after signing in. Ported from Eloka's (`wlc-webapp`) Admin
 Business Dashboard, `page-components/Admin/Dashboard/BusinessDashboard/`.
 
-> **Status: built, upstream scope UNVERIFIED.** Every layer is wired and tested,
-> but interaction 682's server-side scope has never been run against an EPS
-> partner account. It is implemented in SimpliBank — not in any repo here — and
-> Eloka only ever calls it as an *admin* whose scope is a downline. An EPS
-> partner has no downline. Run the probe in
-> [§First live run](#first-live-run) before believing any number on this page.
+> **Status: live.** A multi-key `requestPayload` returned only two of the four
+> datasets on a real partner account, leaving Most Used Services and Usage
+> Analytics blank; the route now issues **one call per dataset**, as Eloka does
+> (see [§Upstream contract](#upstream-contract)). 682's aggregation lives in
+> SimpliBank, not in any repo here, so the shape log
+> ([§Zero versus absent](#zero-versus-absent)) is the only way to tell a quiet
+> week from a contract change — read it before debugging any number here.
 
 ## Shape
 
@@ -50,14 +51,38 @@ backend boundary, so they never reach the browser and nobody is tempted to
 render one.
 
 **Also not ported:** the draggable/resizable widget grid
-(`react-grid-layout` + `localStorage`), the waffle/dot-matrix chart, and the
-per-widget product dropdown. The backend accepts a `typeId` filter already; add
-the control when a partner actually has more services than the list comfortably
-shows.
+(`react-grid-layout` + `localStorage`) and the waffle/dot-matrix chart.
+
+### The service filter
+
+Business Overview's header carries a **service dropdown** — Eloka's "All
+Products", renamed — replacing what used to be a static "GTV by service" list
+under the tiles. Picking a service refetches the window scoped to it; the default
+is All Services.
+
+- **Options** are the 1044 master list NARROWED to the `tx_typeid`s this window
+  actually has data for, from all three datasets (`serviceOptions` in
+  `src/lib/console/dashboard.ts`). The bare master list would offer forty
+  services a partner has never called. Hidden entirely when there is ≤1 option.
+- **Sticky:** options are only ever recomputed from an *unfiltered* view. A
+  filtered response carries one service, so recomputing would collapse the
+  dropdown to whatever is already selected — the trap Eloka works around with a
+  cached full list.
+- **Reset on window change**, as Eloka does: the selected service may have no
+  activity in the new window, which reads as "this service is broken".
+- **Scope:** `typeid` reaches `products_overview` and `most_used_services` only,
+  so Business Overview and Most Used Services narrow while Success Rates and
+  Usage Analytics stay all-services. Same as Eloka. Both caches key on the
+  filter (`dash:…:<preset>:<typeId|all>` server-side, `<preset>:<typeId|all>` in
+  the browser).
+- It is a **native `<select>`**, not the Radix one. Keyboard, mobile wheel and
+  screen-reader behaviour come free, and it is ten lines against a hundred and
+  fifty of `components/ui/select.tsx` that does not exist yet.
 
 ## Upstream contract
 
-One interaction, four datasets, over connect-api's JSON transport:
+One interaction, four datasets, **one call each**, over connect-api's JSON
+transport:
 
 ```jsonc
 POST {connect-api}/transactions/dojson     Authorization: Bearer <FULL upstream token>
@@ -66,16 +91,32 @@ POST {connect-api}/transactions/dojson     Authorization: Bearer <FULL upstream 
   "client_ref_id": "<20 digits, minted server-side>",
   "interaction_type_id": 682,
   "requestPayload": {
-    "products_overview":   { "datefrom": "...", "dateto": "...", "typeid": "81" },
-    "most_used_services":  { "datefrom": "...", "dateto": "...", "typeid": "81" },
-    "success_rate":        { "datefrom": "...", "dateto": "..." },
     "verification_trends": { "datefrom": "...", "dateto": "..." }
   }
 }
 ```
 
-`typeid` goes only on the two per-service datasets; upstream takes dates alone
-for the other two.
+**One `requestPayload` key per call — never four in one payload.** This route
+originally sent all four together, and upstream answered `products_overview` and
+`success_rate` while silently omitting `mostUsedServices` and
+`verificationTrends`: two widgets blank on a perfectly healthy account, no error
+anywhere. Eloka — where all four widgets work — issues a separate call per key
+(`UsageAnalytics.tsx` sends `verification_trends` alone). The four calls run
+concurrently, so wall-clock is the slowest not the sum, and a cache miss costs
+four upstream calls at 60s/900s TTL. The table lives in `DATASETS`
+(`dashboardView.ts`); adding a dataset there adds its call.
+
+Each response is read for **its own key only**. Spreading whole
+`dashboard_object`s together would let whichever call settled last overwrite
+another's block.
+
+Failures are per-call: only `products_overview` failing is worth a 502 — it is
+the headline. Any other dataset failing costs its own widget and a
+`[dashboard] <key> unavailable: …` line, because one blinking call should not
+take down a page that is three-quarters fine.
+
+`typeid` goes only on the two per-service datasets (`perService` in `DATASETS`);
+upstream takes dates alone for the other two.
 
 **The request keys are snake_case; only one of the response keys is.** This
 asymmetry is real, and it is stated exactly once, in `RESPONSE_KEYS`:
@@ -89,9 +130,15 @@ asymmetry is real, and it is stated exactly once, in `RESPONSE_KEYS`:
 
 Other upstream quirks the normalizer absorbs:
 
-- **`gtv.typeBreakdown` is an object on some accounts and a JSON-encoded STRING
-  on others.** Both are handled; malformed JSON yields an empty split rather
-  than throwing, because one bad field must not cost the whole page.
+- **Any block may arrive as a JSON-encoded STRING.** `gtv.typeBreakdown`
+  demonstrably does on some accounts; nothing says the others are exempt, so
+  every block goes through one `decode` helper. Malformed JSON yields an empty
+  dataset rather than throwing, because one bad field must not cost the whole
+  page.
+- **A service map that arrives as an ARRAY is rejected, not accepted.**
+  `Object.entries` on an array yields `"0","1","2"` as service ids, so the widget
+  would render rows named `Service 0` — data-shaped nonsense, worse than an empty
+  state. The shape log is what says it happened.
 - **`gtv.revenuelastPeriod`** really is spelled with a lowercase `l`.
 - Numbers arrive as numeric strings on some branches, so everything goes
   through a finite-checked coercion.
@@ -179,10 +226,44 @@ A quiet week and an out-of-scope account both look like zeros in the UI, so:
 - The UI **never hides a zero.** Hiding it would make "you had no traffic"
   indistinguishable from "we cannot see your account", and the link to the
   transaction history is how a partner tells the two apart in one click.
-- The route **logs which datasets were absent** rather than present-and-zero
-  (`[dashboard] absent datasets: …`, from `buildDashboardView`'s `absent`). That
-  log is where an upstream contract change, or the 682 scope problem, shows up
-  first.
+- The route **logs the shape** whenever any dataset comes out absent *or* empty:
+
+  ```
+  [dashboard] preset=last7 typeId=all absent=[] empty=[mostUsedServices, usage]
+              shape={products_overview:object{9}, successRate:object{11}, verificationTrends:string→array[0]}
+  ```
+
+  `absent` (from `buildDashboardView`) catches only `undefined`/`null`; `empty`
+  catches the shapes an upstream change actually arrives as — `{}`, `[]`, a
+  JSON-encoded block, a wrongly-typed one. `shapeOf` reports **keys and kinds
+  only, never values**: a real body is one partner's revenue and service mix, and
+  that does not belong in a log line. Kinds are reported after `decode`, so
+  `verificationTrends:string→array[12]` distinguishes "encoded" from "missing".
+
+  Reading it:
+
+  | Log says | Means | Do |
+  |---|---|---|
+  | key missing from `shape` | upstream returned nothing for that dataset even on its own dedicated call — wrong response key, or 682's scope excludes this account | run the UAT probe (it prints the per-key and multi-key bodies side by side) and raise with the Connect team quoting both |
+  | `string→unparseable` | upstream sent a broken encoding | upstream bug; the widget stays empty by design |
+  | `object{0}` / `array[0]` | genuinely no data for this account and window | nothing — cross-check `/console/transactions` |
+
+### Most Used Services falls back to Success Rates
+
+Kept as a belt-and-braces net after the per-dataset split: upstream returned
+`mostUsedServices` **empty for EPS partner accounts** on a shared payload, while
+`successRate` carries a `totalCount` for every service — which is the same
+per-service call volume this widget charts. So when `mostUsedServices` is empty,
+`buildDashboardView` derives the rows from `successRates` (`totalRevenue: 0`,
+filtered to the active `typeId` because `success_rate` never gets one upstream).
+
+It is an **approximation, not a second source of truth**: if upstream ever scopes
+the two blocks differently — success rates omitting a service with no successes,
+say — the counts drift. The shape log says which one is being rendered. Delete
+the fallback once `mostUsedServices` is reliable.
+
+Usage Analytics has no such stand-in: a per-bucket time series exists only in
+`verificationTrends`. If that stays empty, the widget stays empty.
 
 ## Charts
 

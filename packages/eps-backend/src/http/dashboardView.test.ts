@@ -3,7 +3,7 @@ import {
 	SAMPLE_DASHBOARD_OBJECT,
 	SAMPLE_SERVICE_LIST,
 } from "./dashboard.sample";
-import { buildDashboardView, parseServiceList } from "./dashboardView";
+import { buildDashboardView, parseServiceList, shapeOf } from "./dashboardView";
 
 const services = parseServiceList(SAMPLE_SERVICE_LIST);
 const range = {
@@ -39,6 +39,31 @@ describe("parseServiceList", () => {
 				param_attributes: { list_elements: [{ label: "", tx_typeid: 81 }] },
 			}),
 		).toEqual([]);
+	});
+});
+
+describe("shapeOf", () => {
+	it("reports keys and kinds, never values", () => {
+		const shape = shapeOf(SAMPLE_DASHBOARD_OBJECT);
+		expect(shape).toContain("successRate:object{3}");
+		expect(shape).toContain("verificationTrends:array[2]");
+		// No number from the body may leak into a log line.
+		expect(shape).not.toContain("29549");
+		expect(shape).not.toContain("939");
+	});
+
+	it("names the shape a JSON-encoded block decodes to", () => {
+		expect(shapeOf({ verificationTrends: "[{}]" })).toBe(
+			"verificationTrends:string→array[1]",
+		);
+		expect(shapeOf({ successRate: "{oops" })).toBe(
+			"successRate:string→unparseable",
+		);
+	});
+
+	it("describes a missing or wrongly-typed block", () => {
+		expect(shapeOf(null)).toBe("<null>");
+		expect(shapeOf({ successRate: null })).toBe("successRate:null");
 	});
 });
 
@@ -159,6 +184,79 @@ describe("buildDashboardView", () => {
 			"verificationTrends",
 		]);
 		expect(view.overview.transactions.value).toBe(0);
+	});
+
+	it("parses every dataset whether it is an object or a JSON string", () => {
+		// Upstream JSON-encodes `typeBreakdown` on some accounts; nothing says the
+		// other blocks are exempt, and a silently-empty widget is what that costs.
+		const encoded = build({
+			successRate: JSON.stringify(SAMPLE_DASHBOARD_OBJECT.successRate),
+			mostUsedServices: JSON.stringify(
+				SAMPLE_DASHBOARD_OBJECT.mostUsedServices,
+			),
+			verificationTrends: JSON.stringify(
+				SAMPLE_DASHBOARD_OBJECT.verificationTrends,
+			),
+		});
+		expect(encoded.view.successRates).toEqual(build().view.successRates);
+		expect(encoded.view.mostUsedServices).toEqual(
+			build().view.mostUsedServices,
+		);
+		expect(encoded.view.usage).toEqual(build().view.usage);
+	});
+
+	it("rejects a service map that arrives as an array, rather than inventing ids", () => {
+		// `Object.entries` on an array yields "0","1","2" — three rows named
+		// `Service 0` read as data, which is worse than an empty widget.
+		const { view } = build({
+			successRate: [{ successCount: 1, totalCount: 2 }],
+			mostUsedServices: [{ totalCount: 9 }],
+		});
+		expect(view.successRates).toEqual([]);
+		expect(view.mostUsedServices).toEqual([]);
+	});
+
+	it("falls back to the success-rate volumes when mostUsedServices is empty", () => {
+		for (const wrong of [undefined, null, {}, "{}"]) {
+			const { view } = build({ mostUsedServices: wrong });
+			expect(view.mostUsedServices).toEqual([
+				{
+					typeId: "96",
+					name: "GSTIN Verify",
+					totalCount: 169,
+					totalRevenue: 0,
+				},
+				{
+					typeId: "82",
+					name: "Fund Transfer",
+					totalCount: 150,
+					totalRevenue: 0,
+				},
+				{
+					typeId: "81",
+					name: "Accept Payment",
+					totalCount: 17,
+					totalRevenue: 0,
+				},
+			]);
+		}
+		// Primary data still wins whenever upstream sends any.
+		expect(build().view.mostUsedServices[0].totalCount).toBe(223);
+	});
+
+	it("scopes the fallback to the active service filter", () => {
+		// `success_rate` is never sent `typeid`, so an unfiltered fallback would
+		// contradict the dropdown that asked for one service.
+		const { view } = buildDashboardView({
+			preset: "last7",
+			range,
+			dashboardObject: { ...SAMPLE_DASHBOARD_OBJECT, mostUsedServices: {} },
+			services,
+			typeId: "82",
+		});
+		expect(view.mostUsedServices).toEqual([
+			{ typeId: "82", name: "Fund Transfer", totalCount: 150, totalRevenue: 0 },
+		]);
 	});
 
 	it("survives a null or wrongly-typed dashboard_object", () => {
