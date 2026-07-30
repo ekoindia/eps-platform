@@ -181,7 +181,10 @@ Copy `.env.example` to `/deploy/.env` and fill in all required values:
     cp /deploy/.env.example /deploy/.env
     $EDITOR /deploy/.env
 
-At minimum you need `JWT_SECRET`, the `SIMPLIBANK_*` and `EKO_*` variables,
+At minimum you need `JWT_SECRET`, the `SIMPLIBANK_*` and `EKO_*` variables
+(including `SIMPLIBANK_HISTORY_API_HOST` / `_PORT` / `_PATH` — transaction
+history runs on a different box, and each unset part silently falls back to the
+main upstream),
 `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CALLBACK_URL`,
 `GITHUB_REPO`, `REDIS_URL`, and `KV_ENCRYPTION_KEY`. See `.env.example` for
 the full list and inline notes. Restrict file permissions:
@@ -191,18 +194,12 @@ the full list and inline notes. Restrict file permissions:
 ### Step 6 — Seed `/deploy/deploy.env` with the current `:prod` digest
 
 The poller will overwrite this file on every reconciliation, but it must exist
-for the first `up -d`. Use `docker buildx imagetools` (part of the Docker
-Buildx plugin already installed in Step 1) to resolve the current `:prod`
-digest without pulling the image. This reuses the GHCR credentials from the
-`docker login` in Step 4:
+for the first `up -d`. Seed it with the **tag**, not a digest — the poller pins
+the immutable digest on its first real deploy (poller README pattern; also
+sidesteps multi-arch digest parsing and old-buildx `--format` incompatibility,
+which bit the first production bootstrap):
 
-    EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@$(docker buildx imagetools inspect \
-      ghcr.io/ekoindia/eps-backend:prod --format '{{.Manifest.Digest}}')
-    printf 'EPS_BACKEND_IMAGE=%s\n' "$EPS_BACKEND_IMAGE" > /deploy/deploy.env
-
-Verify it looks like:
-
-    EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<64 hex chars>
+    printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend:prod\n' > /deploy/deploy.env
 
 > **Bootstrap is never health-gated:** the seed pins the current `:prod`, so
 > the poller sees remote == running and idles until the next `main` merge

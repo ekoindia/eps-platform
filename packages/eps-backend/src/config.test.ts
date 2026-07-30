@@ -62,6 +62,77 @@ describe("loadConfig", () => {
 		).toBe("http");
 	});
 
+	it("points history at the main upstream when no override is set", () => {
+		expect(loadConfig(base).eko.historyUrl).toBe(
+			"https://sb.local:8080/ekoicici/v1/request",
+		);
+	});
+
+	it("gives history its own host, port and path", () => {
+		const cfg = loadConfig({
+			...base,
+			SIMPLIBANK_HISTORY_API_HOST: "10.100.10.9",
+			SIMPLIBANK_HISTORY_API_PORT: "8080",
+			SIMPLIBANK_HISTORY_API_PATH: "/eko/v1/request",
+			SIMPLIBANK_API_PORT: "25008",
+		});
+		expect(cfg.eko.historyUrl).toBe("https://10.100.10.9:8080/eko/v1/request");
+		// the main upstream is untouched
+		expect(cfg.eko.host).toBe("sb.local");
+		expect(cfg.eko.port).toBe(25008);
+		expect(cfg.eko.path).toBe("/v1");
+	});
+
+	it("inherits the parts history does not override", () => {
+		expect(
+			loadConfig({ ...base, SIMPLIBANK_HISTORY_API_HOST: "10.100.10.9" }).eko
+				.historyUrl,
+		).toBe("https://10.100.10.9:8080/ekoicici/v1/request");
+		expect(
+			loadConfig({ ...base, SIMPLIBANK_HISTORY_API_PORT: "9090" }).eko
+				.historyUrl,
+		).toBe("https://sb.local:9090/ekoicici/v1/request");
+	});
+
+	it("treats a blank history override as unset, not as a value", () => {
+		expect(
+			loadConfig({
+				...base,
+				SIMPLIBANK_HISTORY_API_HOST: "",
+				SIMPLIBANK_HISTORY_API_PORT: "",
+			}).eko.historyUrl,
+		).toBe("https://sb.local:8080/ekoicici/v1/request");
+	});
+
+	it("rejects http to a non-loopback history host inherited from the scheme", () => {
+		// Main host is loopback so the main guard passes; history is not, and it
+		// inherits SIMPLIBANK_API_SCHEME=http.
+		expect(() =>
+			loadConfig({
+				...base,
+				SIMPLIBANK_API_SCHEME: "http",
+				SIMPLIBANK_API_HOST: "localhost",
+				SIMPLIBANK_HISTORY_API_HOST: "10.100.10.9",
+			}),
+		).toThrowError(/SIMPLIBANK_HISTORY_API_SCHEME/);
+	});
+
+	it("rejects http to a non-loopback history host set explicitly", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				SIMPLIBANK_HISTORY_API_SCHEME: "http",
+				SIMPLIBANK_HISTORY_API_HOST: "10.100.10.9",
+			}),
+		).toThrowError(/SIMPLIBANK_HISTORY_API_SCHEME/);
+	});
+
+	it("rejects a history port that is not a valid port", () => {
+		expect(() =>
+			loadConfig({ ...base, SIMPLIBANK_HISTORY_API_PORT: "not-a-port" }),
+		).toThrowError(/valid URL/);
+	});
+
 	it("defaults edit/prod base branches and allows override", () => {
 		const base = {
 			JWT_SECRET: "x".repeat(32),

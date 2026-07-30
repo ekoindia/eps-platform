@@ -11,15 +11,15 @@ from Eloka's (`wlc-webapp`) History feature — see
 
 ## Shape
 
-| Piece | File |
-|---|---|
-| Types + all pure logic | `src/lib/console/transactions.ts` |
-| Page | `src/pages/console/Transactions.tsx` |
-| Client method | `transactionsClient.search` in `src/lib/auth/client.ts` |
-| BFF route | `packages/eps-backend/src/http/transactions.ts` |
+| Piece                     | File                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| Types + all pure logic    | `src/lib/console/transactions.ts`                                                           |
+| Page                      | `src/pages/console/Transactions.tsx`                                                        |
+| Client method             | `transactionsClient.search` in `src/lib/auth/client.ts`                                     |
+| BFF route                 | `packages/eps-backend/src/http/transactions.ts`                                             |
 | Upstream adapter + mapper | `getTransactionHistory` / `mapTransactionRows` in `packages/eps-backend/src/clients/eko.ts` |
-| Account resolution | `selectEvalueAccountId` in `packages/eps-backend/src/clients/accounts.ts` |
-| Real captured response | `packages/eps-backend/src/clients/transactions.sample.ts` |
+| Account resolution        | `selectEvalueAccountId` in `packages/eps-backend/src/clients/accounts.ts`                   |
+| Real captured response    | `packages/eps-backend/src/clients/transactions.sample.ts`                                   |
 
 Columns: expand toggle · Summary · Transaction Amount · Debit · Credit · Running
 Balance · Date & Time · Status. Expanding a row reveals "Other Details" (status,
@@ -46,7 +46,7 @@ exists as its own tested module:
 - **A failed row (`response_status_id === 1`) contributes 0 to both** — no money
   moved. Its Running Balance still renders.
 - `debitOf`/`creditOf` return `0`, not `""`. Blanking an empty cell is the
-  *renderer's* job (`v || ""`); Eloka folds the blanking into its compute and
+  _renderer's_ job (`v || ""`); Eloka folds the blanking into its compute and
   then has to coerce numbers back out of strings everywhere downstream.
 
 `response_status_id`: `0` success · `1` failure · `2` initiated · `3` refund
@@ -84,6 +84,7 @@ TIDs and amounts. A query string would put all of them into browser history,
 proxy logs, and this app's own access log (which records `path`).
 
 The route:
+
 1. `requireDeveloperSession` — 401 without a session, 403 for a signup/admin one.
 2. `eko.getProfile(mobile)` for the caller's identity; a non-`found` profile is
    403 `NO_PROFILE`, never an empty list (an empty list reads as "you have none").
@@ -141,7 +142,7 @@ the E-value account from it:
 3. otherwise the route answers **502 `NO_ACCOUNT`**.
 
 That last step matters. Omitting `account_id` does not fail — upstream falls
-back to the *default* account (that is exactly how interaction 9 behaves), which
+back to the _default_ account (that is exactly how interaction 9 behaves), which
 would quietly report somebody else's history as this user's. Refusing is the
 honest answer to "we could not tell which account is yours".
 
@@ -156,19 +157,32 @@ Both auth providers supply the same block: the direct 151 response carries
 `account_details` (`routes/authentication.js:1075`). Neither path needs an extra
 upstream call.
 
-## Which upstream path
+## Which upstream
 
-Interaction 154 does **not** live on the same path as every other interaction.
-It is the same host and port, on an older API version:
+Interaction 154 does **not** share an upstream with every other interaction: it
+runs on its own host and port, on an older API version. Each part of its URL is
+an optional override that falls back to the main upstream, so a deployment that
+happens to share one box only has to set the path:
 
-| Interactions | Path | Config |
-|---|---|---|
-| 154 (history), 206 (dashboard) | `/ekoicici/v1/request` | `SIMPLIBANK_HISTORY_API_PATH` |
-| everything else | `/ekoicici/v2/request` | `SIMPLIBANK_API_PATH` |
+| Part   | History (154)                   | Everything else         | Fallback               |
+| ------ | ------------------------------- | ----------------------- | ---------------------- |
+| host   | `SIMPLIBANK_HISTORY_API_HOST`   | `SIMPLIBANK_API_HOST`   | main host              |
+| port   | `SIMPLIBANK_HISTORY_API_PORT`   | `SIMPLIBANK_API_PORT`   | main port              |
+| path   | `SIMPLIBANK_HISTORY_API_PATH`   | `SIMPLIBANK_API_PATH`   | `/ekoicici/v1/request` |
+| scheme | `SIMPLIBANK_HISTORY_API_SCHEME` | `SIMPLIBANK_API_SCHEME` | main scheme            |
+
+`config.ts` resolves these into a single `eko.historyUrl` at boot, validating it
+with `new URL` and running the history host through the same plaintext-http guard
+as the main one — an `http` history host that is not loopback needs
+`SIMPLIBANK_ALLOW_INSECURE_HTTP=true`. `clients/eko.ts` passes that URL as the
+`post()` target for 154 only; every other interaction keeps the main URL.
 
 connect-api switches the same way in `utils/url.js:70-99`. An earlier version of
-this document recorded "which server" as an open question and guessed a separate
-Connect deployment might be needed; it is not — only the version segment differs.
+this document recorded "which server" as an open question, then answered it with
+"same host, only the version segment differs" — that was wrong; the history box
+is genuinely separate. Interaction 206 was also listed here; the dashboard
+actually uses interaction 682 via connect-api (`src/http/dashboard.ts`), not this
+path.
 
 ## Still unconfirmed
 
