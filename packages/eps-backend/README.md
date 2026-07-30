@@ -84,21 +84,41 @@ session's profile view.
 ## Scaling & storage backends
 
 Two KV backends are available, selected at startup based on whether `REDIS_URL`
-is set:
+is set. The backend choice is a **deployment-time decision** — there is
+deliberately no runtime failover between them (a mid-flight fallback would
+split rate-limit counters and refresh-token state across two stores):
 
 | Mode      | Backend                      | When to use                               |
 | --------- | ---------------------------- | ----------------------------------------- |
-| In-memory | `createInMemoryKV` (default) | Single instance; no external dependency   |
-| Redis     | `createRedisKV`              | Multi-instance, restarts, rolling deploys |
+| In-memory | `createInMemoryKV` (default) | Single process; no external dependency    |
+| RESP      | `createRedisKV`              | Multi-instance, restarts, rolling deploys |
 
 **In-memory** is process-local. Refresh tokens, OAuth state, and rate-limit
-windows are not shared across processes — running more than one replica will
-cause token-validation failures and ineffective rate limits.
+windows are not shared across processes — the constraint is **exactly one
+backend process**, not one VM: PM2 replicas or Node `cluster` workers on the
+same machine break it the same way a second VM would. Restarting the process
+drops all sessions (every user re-logs-in) and resets rate-limit counters.
+This is a supported degraded mode, not just a dev convenience: on a single
+small VM with a low user base it removes the KV service entirely. After a
+restart, a still-valid access JWT whose `sid` no longer resolves gets 401
+`CONNECT_SESSION_EXPIRED` on connect/dashboard routes; the frontend's
+refresh-then-logout retry path recovers it to a clean re-login.
 
-**Redis** makes all of that shared and durable across restarts. Swap between
-self-hosted and managed/serverless Redis by changing `REDIS_URL` only
-(standard RESP-over-URL). Minimum capability floor: **Redis ≥ 6.2** (`GETDEL`)
-with Lua scripting enabled.
+**RESP** (any Redis-protocol server) makes all of that shared and durable
+across restarts. Swap between self-hosted and managed/serverless by changing
+`REDIS_URL` only (standard RESP-over-URL). Minimum capability floor:
+**Redis ≥ 6.2 semantics** (`GETDEL`) with Lua scripting enabled. Known-good
+servers, in recommended order:
+
+- **Valkey** (FOSS Redis fork, BSD) — what the compose stacks and CI run;
+  `valkey/valkey:8-alpine`. Valkey 8 loads Redis 7 AOF/RDB data in place, but
+  the upgrade is one-way: snapshot the data volume before switching if a
+  rollback to `redis:7` must stay possible.
+- **Upstash** free tier (managed, TLS `rediss://`) — the Vercel serverless
+  path (see deploy doc); also usable from a VM when running a KV container is
+  undesirable. Current traffic (≈200 DAU) sits far below the free 500k
+  commands/month.
+- **Redis** 6.2+ — works unchanged; note 7.4+ license terms.
 
 **At-rest protection (Redis mode):** the GitHub token value and refresh-token
 claim value are encrypted with AES-256-GCM before writing to Redis; refresh
@@ -303,6 +323,7 @@ Per-key-class outage policy:
 | `ca:` get on `/auth/refresh` (upstream keep-alive)          | get         | fail-closed   | 401 `SESSION_EXPIRED` + cookies cleared                   |
 | `otp:fail:` del after success                               | del         | fail-open     | best-effort _(unchanged)_                                 |
 | refresh `rt:*` del + `ghtoken:` / `ca:` del on logout       | del         | fail-open     | best-effort, logout still 200 _(unchanged)_               |
+| `dash:` / `dash:svc:` cache get + set (`/dashboard`)        | get/set     | **fail-open** | cache miss → upstream call still runs, response 200       |
 | GitHub API malformed / unreachable                          | —           | —             | 502 `UPSTREAM_ERROR` / `GitHubApiError` _(unchanged)_     |
 
 **Boundaries — what is not `STORE_UNAVAILABLE`:**
