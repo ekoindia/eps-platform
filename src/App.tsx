@@ -42,9 +42,18 @@ const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
 const ConsoleHome = lazy(() => import("./pages/console/ConsoleHome"));
 const ConsoleCredentials = lazy(() => import("./pages/console/Credentials"));
-const ConsoleTransactions = lazy(
-	() => import("./pages/console/Transactions"),
+const ConsoleDocuments = lazy(() => import("./pages/console/Documents"));
+const ConsoleTransactions = lazy(() => import("./pages/console/Transactions"));
+const ConsoleConnectTransaction = lazy(
+	() => import("./pages/console/ConnectTransaction"),
 );
+// Dev-only bench for the connect dialogs. The `import()` sits INSIDE the DEV
+// check so a production build folds the whole expression away and never emits
+// the chunk — guarding only the <Route> below would still ship it, dead.
+// Deliberately absent from AppServer: /console is never prerendered.
+const ConsoleTestDialogs = import.meta.env.DEV
+	? lazy(() => import("./pages/console/TestDialogs"))
+	: null;
 const Admin = lazy(() => import("./pages/Admin"));
 
 function TrackingParamCapture() {
@@ -133,11 +142,19 @@ const App = ({
 								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
 								<Route path="/console" element={<ConsoleLayout />}>
 									<Route index element={<ConsoleHome />} />
+									<Route path="documents" element={<ConsoleDocuments />} />
 									<Route path="credentials" element={<ConsoleCredentials />} />
-								<Route
-									path="transactions"
-									element={<ConsoleTransactions />}
-								/>
+									<Route
+										path="transactions"
+										element={<ConsoleTransactions />}
+									/>
+									<Route
+										path="transaction/:startId/*"
+										element={<ConsoleConnectTransaction />}
+									/>
+									{ConsoleTestDialogs ? (
+										<Route path="test" element={<ConsoleTestDialogs />} />
+									) : null}
 								</Route>
 								<Route path="/admin" element={<Admin />} />
 

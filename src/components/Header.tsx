@@ -330,7 +330,7 @@ export const Header = () => {
 				onMouseEnter={cancelClose}
 				onMouseLeave={scheduleClose}
 				className={cn(
-					"fixed top-0 left-0 right-0 z-50 transition-[transform,translate,background-color,padding,box-shadow] duration-300 ease-out will-change-[transform,translate]",
+					"fixed top-0 left-0 right-0 z-50 transition-[transform,translate,background-color,padding,box-shadow] duration-300 ease-out will-change-[transform,translate] print:hidden",
 					isScrolled
 						? "bg-[#00394bdd] backdrop-blur-md shadow-xs py-3"
 						: "bg-[#00394b] py-5",

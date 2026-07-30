@@ -1,11 +1,13 @@
+import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn, formatINR } from "@/lib/utils";
 import {
 	fetchWalletBalance,
 	freshWalletBalance,
 	FRESH_FOR_MS,
 } from "@/lib/wallet-balance";
-import { RefreshCw, Wallet } from "lucide-react";
+import { Plus, RefreshCw, Wallet } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 /**
  * Seconds a manual refresh stays disabled, mirroring Eloka's StatusCard. The
@@ -35,6 +37,10 @@ export function WalletBalance() {
 	const [busy, setBusy] = useState(!seed);
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const mounted = useRef(true);
+	// Resolved separately from the balance so a slow or failing interaction list
+	// never delays the number itself — the button simply stays hidden. Shared with
+	// the console rail's "Load Wallet" link, which gates on the same id.
+	const loadFlowId = useLoadWalletFlowId();
 
 	const load = useCallback(async () => {
 		setBusy(true);
@@ -115,20 +121,32 @@ export function WalletBalance() {
 					</div>
 				</div>
 			</div>
-			<button
-				type="button"
-				onClick={refresh}
-				disabled={cooling || busy}
-				aria-label="Refresh E-value balance"
-				className={cn(
-					"grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-eko-navy transition-opacity",
-					cooling || busy
-						? "cursor-not-allowed opacity-30"
-						: "cursor-pointer hover:opacity-90",
+			<div className="flex shrink-0 items-center gap-1.5">
+				<button
+					type="button"
+					onClick={refresh}
+					disabled={cooling || busy}
+					aria-label="Refresh E-value balance"
+					className={cn(
+						"grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-eko-navy transition-opacity",
+						cooling || busy
+							? "cursor-not-allowed opacity-30"
+							: "cursor-pointer hover:opacity-90",
+					)}
+				>
+					<RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />
+				</button>
+				{loadFlowId !== null && (
+					<Link
+						to={`/console/transaction/${loadFlowId}`}
+						aria-label="Load E-value balance"
+						title="Load Balance"
+						className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500 text-white transition-opacity hover:opacity-90"
+					>
+						<Plus className="h-4 w-4" />
+					</Link>
 				)}
-			>
-				<RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />
-			</button>
+			</div>
 		</div>
 	);
 }

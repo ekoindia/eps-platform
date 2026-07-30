@@ -1,5 +1,6 @@
 import { Footer } from "@/components/Footer";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { ConnectDialogProvider } from "@/components/connect/DialogHost";
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +19,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
+import { useKycEnabled } from "@/lib/connect/use-kyc";
+import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn } from "@/lib/utils";
-import { KeyRound, LayoutDashboard, Menu, ReceiptText } from "lucide-react";
+import {
+	FileCheck2,
+	FlaskConical,
+	KeyRound,
+	LayoutDashboard,
+	Menu,
+	PlusCircle,
+	ReceiptText,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import {
@@ -34,7 +45,14 @@ import {
  * Console rail items. Flat by design: developer consoles only reach for
  * uppercase group captions past ~5 items, and there are three.
  */
-const NAV_ITEMS = [
+type NavItem = {
+	to: string;
+	label: string;
+	icon: typeof LayoutDashboard;
+	end: boolean;
+};
+
+const NAV_ITEMS: readonly NavItem[] = [
 	{ to: "/console", label: "Home", icon: LayoutDashboard, end: true },
 	{
 		to: "/console/credentials",
@@ -48,7 +66,20 @@ const NAV_ITEMS = [
 		icon: ReceiptText,
 		end: false,
 	},
-] as const;
+	// Last, and only while developing: the bench opens the camera, image editor,
+	// file viewer and raise-issue form without needing a transaction flow. The
+	// route itself is registered under the same guard in App.tsx.
+	...(import.meta.env.DEV
+		? [
+				{
+					to: "/console/test",
+					label: "Test bench",
+					icon: FlaskConical,
+					end: false,
+				},
+			]
+		: []),
+];
 
 /**
  * The signed-in developer, as handed down by `ConsoleLayout` through the router
@@ -59,11 +90,46 @@ export function useConsoleMe(): MeView {
 	return useOutletContext<MeView>();
 }
 
+/**
+ * KYC document upload. Sits directly after Home when entitled, ahead of Load
+ * Wallet: an unfinished KYC pack is what blocks the account, so it outranks
+ * everything else the rail offers.
+ */
+const DOCUMENTS_ITEM: NavItem = {
+	to: "/console/documents",
+	label: "Upload Documents",
+	icon: FileCheck2,
+	end: false,
+};
+
 /** The links themselves — shared by the desktop rail and the mobile Sheet. */
 function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
+	// Same entitlement that gates the wallet card's "+" button, and the same
+	// route it links to — the rail just says it in words.
+	const loadFlowId = useLoadWalletFlowId();
+	const kycEnabled = useKycEnabled();
+	// Home, then whatever this user is entitled to, then the fixed tail. Built as
+	// a flat spread rather than spliced: two independent entitlements land in
+	// here, and a nested ternary per item is how the order quietly goes wrong.
+	const items: readonly NavItem[] = [
+		NAV_ITEMS[0],
+		...(kycEnabled ? [DOCUMENTS_ITEM] : []),
+		...(loadFlowId === null
+			? []
+			: [
+					{
+						to: `/console/transaction/${loadFlowId}`,
+						label: "Load Wallet",
+						icon: PlusCircle,
+						end: false,
+					},
+				]),
+		...NAV_ITEMS.slice(1),
+	];
+
 	return (
 		<nav className="flex flex-col gap-0.5 text-sm" aria-label="Console">
-			{NAV_ITEMS.map((item) => (
+			{items.map((item) => (
 				<NavLink
 					key={item.to}
 					to={item.to}
@@ -140,8 +206,12 @@ export default function ConsoleLayout() {
 				<title>Developer Console — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
-			<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh]">
-				<h1 className="text-2xl font-bold text-eko-navy mb-8">
+			{/* Printing a console page means printing a receipt: the page's own
+			    padding, title and rail are chrome, and only the sub-page's content
+			    belongs on paper. See `connect/PrintReceipt.tsx` for what replaces
+			    them there. */}
+			<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh] print:p-0">
+				<h1 className="text-2xl font-bold text-eko-navy mb-8 print:hidden">
 					Developer Console
 				</h1>
 				{showLoading ? <ConsoleLoading /> : null}
@@ -155,7 +225,16 @@ export default function ConsoleLayout() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<LoginForm />
+							{/* Warm the dashboard's chunk while the user reads the SMS.
+							    `ConsoleHome` is lazy, so without this its request only
+							    starts once the session lands — a round-trip bolted onto
+							    the screen the user is already waiting for. Must resolve to
+							    the same module App.tsx lazy-loads — the `@/` alias and its
+							    relative path do, and share one chunk — or this warms a
+							    second copy instead of the one that gets rendered. */}
+							<LoginForm
+								prefetch={() => import("@/pages/console/ConsoleHome")}
+							/>
 						</CardContent>
 					</Card>
 				) : null}
@@ -175,41 +254,45 @@ export default function ConsoleLayout() {
 					</Card>
 				) : null}
 				{developer ? (
-					<div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-						{/*
-						 * One rail column at every width, so `WalletBalance` mounts once and
-						 * fetches once — a second copy inside the Sheet would double the
-						 * upstream round-trips and race the visible card to the rate limit.
-						 * Only the LINKS collapse behind the Sheet below `lg`; the balance
-						 * stays on screen, as it is in Eloka. Desktop: sticky under the
-						 * fixed ~88px site header, mirroring DocsLayout.
-						 */}
-						<aside>
-							<div className="lg:sticky lg:top-28">
-								<WalletBalance />
-								<div className="lg:hidden">
-									<Sheet open={open} onOpenChange={setOpen}>
-										<SheetTrigger asChild>
-											<Button variant="outline" size="sm" className="gap-2">
-												<Menu className="h-4 w-4" />
-												Console menu
-											</Button>
-										</SheetTrigger>
-										<SheetContent side="left" className="w-72 p-4 pt-10">
-											<SheetTitle className="sr-only">Console menu</SheetTitle>
-											<ConsoleNav onNavigate={() => setOpen(false)} />
-										</SheetContent>
-									</Sheet>
+					<ConnectDialogProvider>
+						<div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8 print:block">
+							{/*
+							 * One rail column at every width, so `WalletBalance` mounts once and
+							 * fetches once — a second copy inside the Sheet would double the
+							 * upstream round-trips and race the visible card to the rate limit.
+							 * Only the LINKS collapse behind the Sheet below `lg`; the balance
+							 * stays on screen, as it is in Eloka. Desktop: sticky under the
+							 * fixed ~88px site header, mirroring DocsLayout.
+							 */}
+							<aside className="print:hidden">
+								<div className="lg:sticky lg:top-28">
+									<WalletBalance />
+									<div className="lg:hidden">
+										<Sheet open={open} onOpenChange={setOpen}>
+											<SheetTrigger asChild>
+												<Button variant="outline" size="sm" className="gap-2">
+													<Menu className="h-4 w-4" />
+													Console menu
+												</Button>
+											</SheetTrigger>
+											<SheetContent side="left" className="w-72 p-4 pt-10">
+												<SheetTitle className="sr-only">
+													Console menu
+												</SheetTitle>
+												<ConsoleNav onNavigate={() => setOpen(false)} />
+											</SheetContent>
+										</Sheet>
+									</div>
+									<div className="hidden lg:block">
+										<ConsoleNav />
+									</div>
 								</div>
-								<div className="hidden lg:block">
-									<ConsoleNav />
-								</div>
+							</aside>
+							<div className="min-w-0">
+								<Outlet context={developer} />
 							</div>
-						</aside>
-						<div className="min-w-0">
-							<Outlet context={developer} />
 						</div>
-					</div>
+					</ConnectDialogProvider>
 				) : null}
 			</main>
 			<Footer />

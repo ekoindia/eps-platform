@@ -12,6 +12,9 @@ import {
 	type MeView,
 	type SignupView,
 } from "@/lib/auth/client";
+import { resetRoleTransactionCache } from "@/lib/connect/interactions";
+import { clearConnectTokens } from "@/lib/connect/token";
+import { resetDashboardCache } from "@/lib/console/dashboard";
 import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
 import { setChatIdentity } from "@/lib/zoho-chat";
@@ -26,6 +29,17 @@ export type AuthState =
 interface AuthContextValue {
 	state: AuthState;
 	refresh: () => Promise<void>;
+	/**
+	 * Adopts a session view the caller has ALREADY been handed, without going
+	 * back to `/me` for it.
+	 *
+	 * `/auth/otp/verify` answers with the very same view `/me` builds — same
+	 * upstream profile call, same shape. Calling `refresh()` after a successful
+	 * verify therefore spends a second round-trip, and a second upstream
+	 * interaction-151 lookup, to re-learn what the response in hand already says
+	 * — on the one path where the user is staring at a spinner.
+	 */
+	adopt: (me: MeView | AdminView | SignupView) => void;
 	logout: () => Promise<void>;
 }
 
@@ -56,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 	}, []);
 
+	const adopt = useCallback((me: MeView | AdminView | SignupView) => {
+		setState(classify(me));
+	}, []);
+
 	const logout = useCallback(async () => {
 		try {
 			await authClient.logout();
@@ -80,11 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	// show one user their balance in the next user's session. Keyed on "anon"
 	// rather than on logout() so an expired session clears it too.
 	useEffect(() => {
-		if (state.status === "anon") resetWalletBalanceCache();
+		if (state.status !== "anon") return;
+		resetWalletBalanceCache();
+		// Same hazard, higher stakes: the Connect widget's credentials live in
+		// sessionStorage, which outlives the session that minted them. The widget's
+		// own unmount clears them; this catches every other way a session ends.
+		clearConnectTokens();
+		resetRoleTransactionCache();
+		// Same hazard as the balance: the dashboard's numbers are one partner's
+		// business data, cached in module scope for the same remount reason.
+		resetDashboardCache();
 	}, [state.status]);
 
 	return (
-		<AuthContext.Provider value={{ state, refresh, logout }}>
+		<AuthContext.Provider value={{ state, refresh, adopt, logout }}>
 			{children}
 		</AuthContext.Provider>
 	);
@@ -95,4 +122,14 @@ export function useAuth(): AuthContextValue {
 	const ctx = useContext(AuthContext);
 	if (!ctx) throw new Error("useAuth must be used within AuthProvider");
 	return ctx;
+}
+
+/**
+ * The same context, for components that merely *decorate* with the session and
+ * must still work without one — a reusable form control has no business
+ * crashing a page that never mounted the provider.
+ * @returns The context, or null outside an `AuthProvider`.
+ */
+export function useOptionalAuth(): AuthContextValue | null {
+	return useContext(AuthContext);
 }

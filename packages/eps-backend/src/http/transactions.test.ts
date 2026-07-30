@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
-import type { Config } from "../config";
 import type { TransactionRow } from "../types";
 import { AppError, errorBody } from "./errors";
 import type { AppEnv } from "./requestId";
@@ -20,6 +19,8 @@ const foundProfile = {
 	onboarding: 0,
 	zohoId: "zoho-1",
 	onboardingSteps: [],
+	accounts: [{ id: 392961, label: "E-value", productId: 1, typeId: 1 }],
+	evalueAccountId: "392961",
 };
 
 /** One fixture row; the route only ever passes these through. */
@@ -46,17 +47,11 @@ function row(overrides: Partial<TransactionRow> = {}): TransactionRow {
 	};
 }
 
-/** Config double; mock mode on unless a test says otherwise. */
-function cfgStub(transactionsMock = true): Config {
-	return { eko: { defaultOrgId: 1, transactionsMock } } as unknown as Config;
-}
-
 /** Builds an app with a session double that returns `role` for any cookie. */
 function harness(
 	role: string | null,
 	overrides: {
 		eko?: Partial<EkoClient>;
-		cfg?: Config;
 	} = {},
 ) {
 	const app = new Hono<AppEnv>();
@@ -81,7 +76,7 @@ function harness(
 		getTransactionHistory: vi.fn().mockResolvedValue({ rows: [row()] }),
 		...overrides.eko,
 	} as unknown as EkoClient;
-	mountTransactions(app, { sessions, eko, cfg: overrides.cfg ?? cfgStub() });
+	mountTransactions(app, { sessions, eko });
 	return { app, eko };
 }
 
@@ -244,13 +239,30 @@ describe("transactions search", () => {
 		);
 	});
 
-	it("501s instead of calling upstream when mock is off and account_id is unresolved", async () => {
-		// Guards the known gap: account_id has no source yet, so a live call could
-		// only fail as a confusing 502. See docs §Unverified.
-		const { app, eko } = harness("developer", { cfg: cfgStub(false) });
+	it("sends the caller's own E-value account, never one from the request", async () => {
+		const { app, eko } = harness("developer");
+		await search(app, { account_id: "999999", filters: {} });
+		expect(eko.getTransactionHistory).toHaveBeenCalledWith(
+			expect.objectContaining({ accountId: "392961" }),
+		);
+	});
+
+	it("502s rather than calling upstream when the account cannot be resolved", async () => {
+		// Omitting account_id would make upstream answer with its DEFAULT account
+		// (interaction 9 behaves that way), i.e. report somebody else's history as
+		// this user's. Refusing is the honest answer.
+		const { app, eko } = harness("developer", {
+			eko: {
+				getProfile: vi.fn().mockResolvedValue({
+					kind: "found",
+					responseTypeId: 1,
+					profile: { ...foundProfile, accounts: [], evalueAccountId: null },
+				}),
+			},
+		});
 		const res = await search(app, {});
-		expect(res.status).toBe(501);
-		expect((await errorOf(res)).code).toBe("NOT_WIRED");
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("NO_ACCOUNT");
 		expect(eko.getTransactionHistory).not.toHaveBeenCalled();
 	});
 });

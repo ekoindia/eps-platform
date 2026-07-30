@@ -26,9 +26,30 @@ function maskMobile(mobile: string): string {
 
 const RESEND_COOLDOWN_SEC = 30;
 
-/** Two-step OTP login form: collect mobile → send OTP → verify OTP → call onSuccess. */
-export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
-	const { refresh } = useAuth();
+/**
+ * localStorage key holding the last mobile number that passed OTP verification,
+ * so returning developers don't retype it. Stored as raw 10 digits.
+ */
+const LAST_MOBILE_KEY = "eko-last-mobile";
+
+/**
+ * Two-step OTP login form: collect mobile → send OTP → verify OTP → call onSuccess.
+ *
+ * @param onSuccess - Called once the session has been adopted.
+ * @param prefetch - Optional warm-up for whatever renders after a successful
+ *   login, fired when the OTP step appears. Typically a bare `import()` of the
+ *   next lazy route. The caller supplies it rather than this component naming a
+ *   page, because the two call sites go to different places: the console lands
+ *   on the dashboard, `/signup` on the wizard.
+ */
+export function LoginForm({
+	onSuccess,
+	prefetch,
+}: {
+	onSuccess?: () => void;
+	prefetch?: () => Promise<unknown>;
+}) {
+	const { adopt } = useAuth();
 	const [step, setStep] = useState<"mobile" | "otp">("mobile");
 	const [mobile, setMobile] = useState("");
 	const [digits, setDigits] = useState<string[]>(() =>
@@ -37,6 +58,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 	const otp = digits.join("");
 	const boxesRef = useRef<Array<HTMLInputElement | null>>([]);
 	const lastSubmittedRef = useRef<string>("");
+	const prefetchedRef = useRef(false);
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [cooldown, setCooldown] = useState(0);
@@ -81,6 +103,30 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		focusBox(Math.min(text.length, OTP_LENGTH - 1));
 	}
 
+	// Prefill the last verified number. Read after mount (never during SSR /
+	// pre-render, so the server's empty field hydrates cleanly), and only into a
+	// still-empty field so a fast typist is never clobbered.
+	useEffect(() => {
+		try {
+			const saved = localStorage.getItem(LAST_MOBILE_KEY);
+			if (saved && /^\d{10}$/.test(saved)) setMobile((cur) => cur || saved);
+		} catch {
+			/* ignore */
+		}
+	}, []);
+
+	// Warm the next route's chunk while the user is reading the SMS. That is
+	// several idle seconds on the one navigation that cannot start until they
+	// finish typing, so the download is free — and without it the chunk request
+	// only begins after the session lands, adding a round-trip to a screen the
+	// user is already waiting on. Once per mount; a failure is silent, because a
+	// prefetch that fails must never fail a login (the real import retries).
+	useEffect(() => {
+		if (step !== "otp" || prefetchedRef.current || !prefetch) return;
+		prefetchedRef.current = true;
+		void prefetch()?.catch(() => {});
+	}, [step, prefetch]);
+
 	// Tick the resend countdown down to zero, one second at a time.
 	useEffect(() => {
 		if (cooldown <= 0) return;
@@ -123,8 +169,18 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		setBusy(true);
 		setError(null);
 		try {
-			await authClient.verifyOtp(mobile, otp);
-			await refresh();
+			const me = await authClient.verifyOtp(mobile, otp);
+			// OTP passed — whether this ends in a session or an onboarding wizard,
+			// the number is worth remembering for the next login.
+			try {
+				localStorage.setItem(LAST_MOBILE_KEY, mobile);
+			} catch {
+				/* ignore */
+			}
+			// The verify response IS the /me view. Adopting it saves a round-trip
+			// and a second upstream profile lookup on the one path where the user
+			// is watching a spinner.
+			adopt(me);
 			onSuccess?.();
 		} catch (e) {
 			setError(message(e));
@@ -137,7 +193,6 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 		// A real <form> so the browser's own implicit submission handles Enter:
 		// on either step, Enter activates the (validity-gated) submit button.
 		<form
-			className="flex flex-col gap-4"
 			onSubmit={(e) => {
 				e.preventDefault();
 				if (busy) return;
@@ -148,86 +203,93 @@ export function LoginForm({ onSuccess }: { onSuccess?: () => void }) {
 				}
 			}}
 		>
-			{step === "mobile" ? (
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="login-mobile">Mobile number</Label>
-					<Input
-						id="login-mobile"
-						autoComplete="tel"
-						prefix="+91"
-						digitGroups={[3, 3, 4]}
-						value={mobile}
-						onChange={(e) => setMobile(e.target.value)}
-						placeholder="10-digit mobile"
-					/>
-					<Button type="submit" disabled={busy || mobile.length < 10}>
-						{busy ? "Sending…" : "Send OTP"}
-					</Button>
-				</div>
-			) : (
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="login-otp">Enter OTP</Label>
-					<p className="text-sm text-muted-foreground">
-						Code sent to {maskMobile(mobile)}
+			{/* Native disabled fieldset switches off every input and button inside
+			    while a request is in flight — no per-control busy wiring needed. */}
+			<fieldset disabled={busy} className="flex flex-col gap-4">
+				{step === "mobile" ? (
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="login-mobile">Mobile number</Label>
+						<Input
+							id="login-mobile"
+							autoComplete="tel"
+							prefix="+91"
+							digitGroups={[3, 3, 4]}
+							value={mobile}
+							onChange={(e) => setMobile(e.target.value)}
+							placeholder="10-digit mobile"
+						/>
+						<Button type="submit" disabled={busy || mobile.length < 10}>
+							{busy ? "Sending…" : "Send OTP"}
+						</Button>
+					</div>
+				) : (
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="login-otp">Enter OTP</Label>
+						<p className="text-sm text-muted-foreground">
+							Code sent to {maskMobile(mobile)}
+						</p>
+						<div className="flex gap-2" role="group" aria-label="One-time code">
+							{digits.map((d, i) => (
+								<Input
+									key={i}
+									id={i === 0 ? "login-otp" : undefined}
+									ref={(el) => {
+										boxesRef.current[i] = el;
+									}}
+									inputMode="numeric"
+									autoComplete={i === 0 ? "one-time-code" : "off"}
+									aria-label={`Digit ${i + 1}`}
+									maxLength={1}
+									autoFocus={i === 0}
+									value={d}
+									onChange={(e) => handleDigit(i, e.target.value)}
+									onKeyDown={(e) => handleOtpKeyDown(i, e)}
+									onPaste={handleOtpPaste}
+									className="h-12 w-10 text-center text-lg"
+								/>
+							))}
+						</div>
+						<Button type="submit" disabled={busy || otp.length < OTP_LENGTH}>
+							{busy ? "Verifying…" : "Verify & sign in"}
+						</Button>
+						{/* Redundant while a code is already being verified — hide, don't
+					    just disable, so the user isn't offered retry paths mid-flight. */}
+						{!busy && (
+							<div className="flex items-center justify-between">
+								<button
+									type="button"
+									className="text-xs text-muted-foreground underline self-start disabled:opacity-50"
+									onClick={() => {
+										setStep("mobile");
+										resetOtp();
+										setError(null);
+										setCooldown(0);
+									}}
+								>
+									Use a different number
+								</button>
+								<button
+									type="button"
+									className="text-sm text-muted-foreground hover:underline self-start disabled:opacity-50"
+									onClick={() => {
+										resetOtp();
+										setError(null);
+										void sendOtp();
+									}}
+									disabled={cooldown > 0}
+								>
+									{cooldown > 0 ? `Resend OTP (${cooldown}s)` : "Resend OTP"}
+								</button>
+							</div>
+						)}
+					</div>
+				)}
+				{error ? (
+					<p role="alert" className="text-sm text-destructive">
+						{error}
 					</p>
-					<div className="flex gap-2" role="group" aria-label="One-time code">
-						{digits.map((d, i) => (
-							<Input
-								key={i}
-								id={i === 0 ? "login-otp" : undefined}
-								ref={(el) => {
-									boxesRef.current[i] = el;
-								}}
-								inputMode="numeric"
-								autoComplete={i === 0 ? "one-time-code" : "off"}
-								aria-label={`Digit ${i + 1}`}
-								maxLength={1}
-								autoFocus={i === 0}
-								value={d}
-								onChange={(e) => handleDigit(i, e.target.value)}
-								onKeyDown={(e) => handleOtpKeyDown(i, e)}
-								onPaste={handleOtpPaste}
-								className="h-12 w-10 text-center text-lg"
-							/>
-						))}
-					</div>
-					<Button type="submit" disabled={busy || otp.length < OTP_LENGTH}>
-						{busy ? "Verifying…" : "Verify & sign in"}
-					</Button>
-					<div className="flex items-center justify-between">
-						<button
-							type="button"
-							className="text-xs text-muted-foreground underline self-start disabled:opacity-50"
-							onClick={() => {
-								setStep("mobile");
-								resetOtp();
-								setError(null);
-								setCooldown(0);
-							}}
-							disabled={busy}
-						>
-							Use a different number
-						</button>
-						<button
-							type="button"
-							className="text-sm text-muted-foreground hover:underline self-start disabled:opacity-50"
-							onClick={() => {
-								resetOtp();
-								setError(null);
-								void sendOtp();
-							}}
-							disabled={busy || cooldown > 0}
-						>
-							{cooldown > 0 ? `Resend OTP (${cooldown}s)` : "Resend OTP"}
-						</button>
-					</div>
-				</div>
-			)}
-			{error ? (
-				<p role="alert" className="text-sm text-destructive">
-					{error}
-				</p>
-			) : null}
+				) : null}
+			</fieldset>
 		</form>
 	);
 }

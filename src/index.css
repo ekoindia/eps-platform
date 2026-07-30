@@ -384,6 +384,31 @@
 }
 
 @layer components {
+	/* Recipe flowchart (components/recipe/RecipeFlowchart.tsx): hovering one edge
+	   — its label pill or its line — fades every other edge out and thickens the
+	   hovered one, so a gutter carrying several arcs can be read one arc at a
+	   time. Pure CSS via `:has()`; browsers without it just get the plain
+	   diagram, which is the pre-hover state anyway. */
+	.recipe-flow .recipe-edge {
+		transition:
+			opacity 120ms ease,
+			stroke-width 120ms ease;
+	}
+
+	.recipe-flow:has(.recipe-edge:hover) .recipe-edge:not(:hover) {
+		opacity: 0.15;
+	}
+
+	.recipe-flow .recipe-edge:hover :is(path, line) {
+		stroke-width: 2.5;
+	}
+
+	/* Wider dashes only on the arcs — a straight edge has no dash pattern to
+	   widen, and giving it one would make it read as a conditional jump. */
+	.recipe-flow .recipe-edge:hover path {
+		stroke-dasharray: 8 4;
+	}
+
 	/* Hero Section Styles */
 	.hero-gradient {
 		background: var(--gradient-hero);

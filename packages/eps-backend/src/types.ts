@@ -5,6 +5,14 @@ export type LifecycleState =
 	| "inactive"
 	| "unknown";
 
+/** One entry of interaction 151's `account_detail.account_list`. */
+export interface EkoAccount {
+	id: number;
+	label: string;
+	productId: number;
+	typeId: number;
+}
+
 export interface EkoProfile {
 	name: string;
 	email: string;
@@ -19,6 +27,16 @@ export interface EkoProfile {
 	zohoId: string;
 	/** Ordered onboarding steps from upstream; empty for a fully-onboarded user. */
 	onboardingSteps: Array<{ role: number; label: string }>;
+	/**
+	 * The user's accounts, from the same interaction-151 response. Empty when
+	 * upstream sent no `account_detail` (e.g. a mid-onboarding profile).
+	 */
+	accounts: EkoAccount[];
+	/**
+	 * The E-value account id interaction 154 filters transaction history by, or
+	 * null when it cannot be resolved — see `selectEvalueAccountId`.
+	 */
+	evalueAccountId: string | null;
 }
 
 export type ProfileResult =

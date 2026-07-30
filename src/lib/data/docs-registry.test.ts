@@ -152,7 +152,7 @@ describe("buildNavTree", () => {
 		expect(new Set(leafSlugs).size).toBe(leafSlugs.length);
 	});
 
-	it("nests DMT into Fino/Levin providers with purpose-groups", () => {
+	it("nests DMT into provider branches with purpose-groups", () => {
 		const { categories } = buildNavTree();
 		const bc = categories.find((c) => c.category === "bc")!;
 		const dmt = findBranch(bc.nodes, "Domestic Money Transfer (DMT)");
@@ -161,7 +161,10 @@ describe("buildNavTree", () => {
 			(b) => b.label,
 		);
 		// Provider labels carry a "<product> – <provider>" prefix (see api-specs-common.ts).
-		expect(providers).toEqual(["DMT – Fino", "DMT – Levin"]); // first-appearance order
+		// DMT – Levin is absent by design: both of its specs are `disabled: true`
+		// in api-specs.ts (archived, not deleted), so the branch must not render.
+		expect(providers).toEqual(["DMT – Fino"]);
+		expect(providers).not.toContain("DMT – Levin");
 		const fino = findBranch(dmt!.children, "DMT – Fino")!;
 		const finoGroups = childBranches(fino.children, "group").map(
 			(b) => b.label,
@@ -209,9 +212,10 @@ describe("route parity", () => {
 		for (const g of nav.guides) expect(prerendered.has(g.href)).toBe(true);
 	});
 
+	// Matched by href, not title — the label is marketing copy and churns.
 	it("surfaces Recipes as a guide link pointing at the recipe section", () => {
-		const recipes = buildNavTree().guides.find((g) => g.title === "Recipes");
-		expect(recipes?.href).toBe("/recipe");
+		const recipes = buildNavTree().guides.find((g) => g.href === "/recipe");
+		expect(recipes?.title).toMatch(/Recipes/);
 	});
 
 	it("every nav endpoint resolves to an endpoint doc node", () => {

@@ -1,5 +1,12 @@
 # eps-backend on Vercel (managed serverless)
 
+> **Status (2026-07-30): evaluated, rejected for production.** Production SimpliBank
+> IP-allowlists clients; Vercel's egress IPs are dynamic, so this path would need the
+> Static IPs add-on (~$100/mo/project), erasing its cost advantage. Production runs on
+> the VM per [eps-backend-vm-deploy.md](./eps-backend-vm-deploy.md) (shared with
+> eps-transact-mcp). The serverless entry (`api/index.ts`, `vercel.json`) stays in the
+> repo, unused — this doc remains valid if the allowlist constraint ever lifts.
+
 Alternative to the VM deploy ([eps-backend-vm-deploy.md](./eps-backend-vm-deploy.md)). At ~20
 daily logged-in users the load sits inside a $20 Pro seat's included usage (near-zero marginal
 cost). Viable **only because production SimpliBank is a public HTTPS endpoint** — Vercel functions

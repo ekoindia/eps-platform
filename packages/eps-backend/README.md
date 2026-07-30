@@ -14,8 +14,8 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 
 | Method | Path                        | Auth           | Purpose                                                 |
 | ------ | --------------------------- | -------------- | ------------------------------------------------------- |
-| POST   | /auth/otp/start             | none           | Send mobile OTP (Eko 515)                               |
-| POST   | /auth/otp/verify            | none           | Verify OTP (518), fetch profile (151), set session      |
+| POST   | /auth/otp/start             | none           | Send mobile OTP (see Auth providers)                    |
+| POST   | /auth/otp/verify            | none           | Verify OTP, classify profile, set session               |
 | GET    | /me                         | cookie         | Profile + lifecycle state                               |
 | POST   | /auth/refresh               | refresh cookie | Rotate session                                          |
 | POST   | /auth/logout                | cookie         | Revoke session                                          |
@@ -24,24 +24,101 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET    | /healthz                    | none           | Liveness                                                |
 | GET    | /readyz                     | none           | Readiness; PINGs Redis when configured, else always 200 |
 
+## Auth providers
+
+Who answers "is this the right OTP for this mobile, and whose account is it" is
+chosen at startup by whether `CONNECT_API_BASE_URL` is set. Both providers stay
+supported; neither is going away.
+
+| Provider  | Selected when                | Login path                                                  |
+| --------- | ---------------------------- | ----------------------------------------------------------- |
+| `eko`     | `CONNECT_API_BASE_URL` unset | SimpliBank interactions 515 → 518 → 151, directly (default) |
+| `connect` | `CONNECT_API_BASE_URL` set   | Eloka's connect-api `/authentication/sendotp` + `/login`    |
+
+The startup line `[eps-backend] auth provider: <name>` records which one is live.
+
+**This is a configuration fallback, not an availability one.** The choice is
+made at boot, so a connect-api outage does _not_ silently fail over to the
+direct path — switching providers is a redeploy.
+
+### What the `connect` provider changes, and what it does not
+
+Delegating login gives both products one identity, one OTP journey, and one
+upstream session. It changes nothing the browser can see: this service still
+issues its own `eps_at` / `eps_rt` HttpOnly cookies, and the frontend contract
+is untouched.
+
+connect-api's own access/refresh pair never leaves this process. It is sealed
+with the same `SecretBox` used for admin GitHub tokens and stored at `ca:<sid>`,
+keyed by the session id in the EPS claim. Nothing is ever decoded out of
+connect-api's JWT into an EPS claim — connect-api signs an audience it then
+skips at verify time, so its tokens are treated as opaque credentials for
+calling connect-api and nothing more.
+
+Profile _reads_ are deliberately outside the provider seam: `/me`,
+`/wallet/balance`, `/signup/*` and `/transactions/search` call `eko.getProfile`
+under either provider, because both ultimately read the same interaction 151.
+Only login is delegated, so a connect-api outage cannot break an established
+session's profile view.
+
+### Invariants worth not breaking
+
+- **Rate limiting stays here.** connect-api has none on `/sendotp` or `/login`.
+  The per-mobile (5) and per-IP (20) OTP limits in this service are the only
+  ones on that path.
+- **The EPS business-partner gate stays here.** connect-api authenticates the
+  entire Eloka user base — retailers, distributors, agents. `mapConnectLogin`
+  rejects anything that is not org `CONNECT_ORG_ID` with `user_type` `23`;
+  without it any Eloka retailer would hold a developer session on this portal.
+- **New-user detection reads `user_type`, never `role_list`.** connect-api
+  overwrites the role to `[-5]` for every mobile login
+  (`routes/authentication.js:791`), so the role says nothing about who a user is.
+- **Persist before cookies.** `/auth/otp/verify` writes `ca:<sid>` first; a
+  store failure answers 503 with no `Set-Cookie` at all, because a live session
+  holding dropped upstream credentials cannot be rolled back.
+- **`/auth/refresh` fails closed.** If the upstream session cannot be kept
+  alive, the freshly rotated refresh token is revoked, both cookies are cleared,
+  and the caller gets 401 — better than serving a cookie that fails at the first
+  upstream call.
+
 ## Scaling & storage backends
 
 Two KV backends are available, selected at startup based on whether `REDIS_URL`
-is set:
+is set. The backend choice is a **deployment-time decision** — there is
+deliberately no runtime failover between them (a mid-flight fallback would
+split rate-limit counters and refresh-token state across two stores):
 
 | Mode      | Backend                      | When to use                               |
 | --------- | ---------------------------- | ----------------------------------------- |
-| In-memory | `createInMemoryKV` (default) | Single instance; no external dependency   |
-| Redis     | `createRedisKV`              | Multi-instance, restarts, rolling deploys |
+| In-memory | `createInMemoryKV` (default) | Single process; no external dependency    |
+| RESP      | `createRedisKV`              | Multi-instance, restarts, rolling deploys |
 
 **In-memory** is process-local. Refresh tokens, OAuth state, and rate-limit
-windows are not shared across processes — running more than one replica will
-cause token-validation failures and ineffective rate limits.
+windows are not shared across processes — the constraint is **exactly one
+backend process**, not one VM: PM2 replicas or Node `cluster` workers on the
+same machine break it the same way a second VM would. Restarting the process
+drops all sessions (every user re-logs-in) and resets rate-limit counters.
+This is a supported degraded mode, not just a dev convenience: on a single
+small VM with a low user base it removes the KV service entirely. After a
+restart, a still-valid access JWT whose `sid` no longer resolves gets 401
+`CONNECT_SESSION_EXPIRED` on connect/dashboard routes; the frontend's
+refresh-then-logout retry path recovers it to a clean re-login.
 
-**Redis** makes all of that shared and durable across restarts. Swap between
-self-hosted and managed/serverless Redis by changing `REDIS_URL` only
-(standard RESP-over-URL). Minimum capability floor: **Redis ≥ 6.2** (`GETDEL`)
-with Lua scripting enabled.
+**RESP** (any Redis-protocol server) makes all of that shared and durable
+across restarts. Swap between self-hosted and managed/serverless by changing
+`REDIS_URL` only (standard RESP-over-URL). Minimum capability floor:
+**Redis ≥ 6.2 semantics** (`GETDEL`) with Lua scripting enabled. Known-good
+servers, in recommended order:
+
+- **Valkey** (FOSS Redis fork, BSD) — what the compose stacks and CI run;
+  `valkey/valkey:8-alpine`. Valkey 8 loads Redis 7 AOF/RDB data in place, but
+  the upgrade is one-way: snapshot the data volume before switching if a
+  rollback to `redis:7` must stay possible.
+- **Upstash** free tier (managed, TLS `rediss://`) — the Vercel serverless
+  path (see deploy doc); also usable from a VM when running a KV container is
+  undesirable. Current traffic (≈200 DAU) sits far below the free 500k
+  commands/month.
+- **Redis** 6.2+ — works unchanged; note 7.4+ license terms.
 
 **At-rest protection (Redis mode):** the GitHub token value and refresh-token
 claim value are encrypted with AES-256-GCM before writing to Redis; refresh
@@ -242,8 +319,11 @@ Per-key-class outage policy:
 | `ghtoken:` set (admin token persistence)                    | set         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
 | `ghtoken:` get (mutation gate, refresh read)                | get         | fail-closed   | 503 `STORE_UNAVAILABLE`                                   |
 | `ghtoken:` TTL re-extend on `/auth/refresh`                 | set         | **fail-open** | best-effort, refresh still succeeds                       |
+| `ca:` set (connect-api session persist, before cookies)     | set         | fail-closed   | 503 `STORE_UNAVAILABLE`, and **no `Set-Cookie` at all**   |
+| `ca:` get on `/auth/refresh` (upstream keep-alive)          | get         | fail-closed   | 401 `SESSION_EXPIRED` + cookies cleared                   |
 | `otp:fail:` del after success                               | del         | fail-open     | best-effort _(unchanged)_                                 |
-| refresh `rt:*` del + `ghtoken:` del on logout               | del         | fail-open     | best-effort, logout still 200 _(unchanged)_               |
+| refresh `rt:*` del + `ghtoken:` / `ca:` del on logout       | del         | fail-open     | best-effort, logout still 200 _(unchanged)_               |
+| `dash:` / `dash:svc:` cache get + set (`/dashboard`)        | get/set     | **fail-open** | cache miss → upstream call still runs, response 200       |
 | GitHub API malformed / unreachable                          | —           | —             | 502 `UPSTREAM_ERROR` / `GitHubApiError` _(unchanged)_     |
 
 **Boundaries — what is not `STORE_UNAVAILABLE`:**

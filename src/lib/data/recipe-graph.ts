@@ -112,7 +112,8 @@ const resolveBranch = (
  * - Each step falls through to the next one, unless a branch already targets
  *   that same next step — then the single labelled branch edge stands in for it,
  *   rather than drawing a duplicate unlabelled edge alongside it.
- * - Branch edges carry their `response_status_id` (and note) as the label.
+ * - Branch edges carry their condition — `response_type_id` or `status` — and
+ *   note as the label.
  * - A `goto: "done"` branch draws an edge to the terminal node.
  *
  * NOTE: the flow drawn here is exactly what `RECIPES` encodes and no more. Where

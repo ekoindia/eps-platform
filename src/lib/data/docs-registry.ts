@@ -15,9 +15,9 @@
  * slug.
  */
 import { GUIDES, type GuideMeta } from "@/content/docs/docs-guides";
-import { recipeHref } from "./api-recipes";
 import type { ApiProductCategory } from "./api-products";
 import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
+import { recipeHref } from "./api-recipes";
 import { API_SPECS } from "./api-specs";
 import type { ApiSpec } from "./api-specs-common";
 import { categoryForSpec } from "./api-specs-common";
@@ -367,7 +367,7 @@ export const buildNavTree = (): DocsNav => {
 			.sort((a, b) => a.order - b.order)
 			.map((g) => ({ title: g.title, href: docsHref(g.slug) })),
 		// Recipes live outside the /docs slug namespace but read as a guide.
-		{ title: "Recipes", href: recipeHref() },
+		{ title: "Transaction Flows (Recipes)", href: recipeHref() },
 	];
 
 	const categories: NavCategoryGroup[] = CATEGORY_ORDER.map((category) => {

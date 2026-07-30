@@ -39,8 +39,8 @@ export interface ApiKeyInfo {
 	description: string;
 }
 export type RecipeBranchCondition =
-	| { onResponseTypeId: number; onResponseStatusId?: never }
-	| { onResponseStatusId: number; onResponseTypeId?: never };
+	| { onResponseTypeId: number; onStatus?: never }
+	| { onStatus: number; onResponseTypeId?: never };
 export type RecipeBranch = RecipeBranchCondition & {
 	goto: string;
 	note?: string;

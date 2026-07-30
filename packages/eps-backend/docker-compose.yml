@@ -1,9 +1,14 @@
-# Self-hosted Redis + eps-backend. Run from the repo ROOT:
+# Self-hosted Valkey (FOSS Redis fork, RESP-compatible) + eps-backend.
+# Run from the repo ROOT:
 #   docker compose -f packages/eps-backend/docker-compose.yml up --build
 services:
+  # Service stays named "redis" so REDIS_URL and the deploy poller need no
+  # change. Valkey 8 loads Redis 7 AOF/RDB data in place, but the upgrade is
+  # one-way: back up the eps-redis-data volume before switching if the data
+  # matters (worst case here is a mass re-login — tokens and counters only).
   redis:
-    image: redis:7
-    command: ["redis-server", "--appendonly", "yes"]
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
     volumes:
       - eps-redis-data:/data
     networks:

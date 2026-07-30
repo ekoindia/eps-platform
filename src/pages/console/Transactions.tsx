@@ -36,6 +36,7 @@ import {
 	type TransactionFilters,
 	type TransactionRow,
 } from "@/lib/console/transactions";
+import { printPage } from "@/lib/print";
 import { formatINR } from "@/lib/utils";
 import {
 	ChevronLeft,
@@ -43,6 +44,7 @@ import {
 	ListFilter,
 	Minus,
 	Plus,
+	Printer,
 	Search,
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -147,7 +149,7 @@ function RowDetails({ row }: { row: TransactionRow }) {
 			? [{ label: "Recipient", value: row.recipient_name }]
 			: []),
 		...(row.fee > 0
-			? [{ label: "Charges", value: formatINR(row.fee, 2, 2) }]
+			? [{ label: "Charges (Incl. of GST)", value: formatINR(row.fee, 2, 2) }]
 			: []),
 		...(row.commission_earned > 0
 			? [{ label: "Commission", value: formatINR(row.commission_earned, 2, 2) }]
@@ -155,7 +157,20 @@ function RowDetails({ row }: { row: TransactionRow }) {
 	];
 	return (
 		<div className="flex flex-col gap-3 bg-muted/40 px-4 py-3">
-			<p className="text-xs font-medium text-muted-foreground">Other Details</p>
+			<div className="flex items-center justify-between">
+				<p className="text-xs font-medium text-muted-foreground">
+					Other Details
+				</p>
+				<Button
+					variant="link"
+					size="sm"
+					className="h-auto gap-1.5 p-0 text-xs print:hidden"
+					onClick={() => printPage("Receipt (Copy)")}
+				>
+					<Printer className="h-3.5 w-3.5" />
+					Print
+				</Button>
+			</div>
 			<dl className="flex flex-wrap gap-x-8 gap-y-3">
 				{details.map((detail) => (
 					<div key={detail.label} className="flex flex-col">
@@ -277,7 +292,7 @@ export default function Transactions() {
 		<div className="flex flex-col gap-6">
 			<Header />
 
-			<div className="flex flex-wrap items-center justify-end gap-2">
+			<div className="flex flex-wrap items-center justify-end gap-2 print:hidden">
 				<form onSubmit={onSearch} className="relative flex-1 sm:max-w-xs">
 					<Search
 						aria-hidden="true"
@@ -381,7 +396,11 @@ export default function Transactions() {
 							const isOpen = expanded === row.tid;
 							return (
 								<Fragment key={row.tid}>
-									<TableRow>
+									{/* Printing an expanded row means printing that receipt, so
+									    the other rows stay off the page. */}
+									<TableRow
+										className={expanded && !isOpen ? "print:hidden" : undefined}
+									>
 										<TableCell>
 											<Button
 												variant="ghost"

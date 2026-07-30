@@ -36,7 +36,7 @@ function row(overrides: Partial<TransactionRow> = {}): TransactionRow {
 }
 
 describe("debitOf", () => {
-	it("sums the debit leg with every charge levied on it", () => {
+	it("sums the debit leg with every charge levied on it, excluding GST (fee is GST-inclusive)", () => {
 		const r = row({
 			amount_dr: 1000,
 			fee: 10,
@@ -45,7 +45,9 @@ describe("debitOf", () => {
 			insurance_amount: 5,
 			eko_gst: 3,
 		});
-		expect(debitOf(r)).toBe(1021);
+		// gst/eko_gst are set above but must NOT be added: `fee` already
+		// includes GST, so summing them would double-count.
+		expect(debitOf(r)).toBe(1016);
 	});
 
 	it("is 0 for a failed transaction — no money moved", () => {

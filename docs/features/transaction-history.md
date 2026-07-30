@@ -4,11 +4,10 @@ The signed-in developer's own transactions, at `/console/transactions`. Ported
 from Eloka's (`wlc-webapp`) History feature — see
 `docs/features/transaction-history.md` in that repo.
 
-> **Status: the UI is real, the data is not.** The page runs end-to-end through
-> the actual auth → cookie → BFF → client path, but serves fixture rows behind
-> `EKO_TRANSACTIONS_MOCK=true`. The upstream contract is unverified — see
-> [§Unverified](#unverified) — and with the flag off the route returns
-> `501 NOT_WIRED` rather than guessing.
+> **Status: wired to upstream.** The page calls interaction 154 for real. The
+> fixture path, the `EKO_TRANSACTIONS_MOCK` flag and the `501 NOT_WIRED` guard
+> are gone. What remains unconfirmed against a live UAT account is listed in
+> [§Still unconfirmed](#still-unconfirmed) — none of it blocks the call.
 
 ## Shape
 
@@ -19,7 +18,7 @@ from Eloka's (`wlc-webapp`) History feature — see
 | Client method | `transactionsClient.search` in `src/lib/auth/client.ts` |
 | BFF route | `packages/eps-backend/src/http/transactions.ts` |
 | Upstream adapter + mapper | `getTransactionHistory` / `mapTransactionRows` in `packages/eps-backend/src/clients/eko.ts` |
-| Fixture (mock mode) | `packages/eps-backend/src/clients/transactions.fixture.ts` |
+| Account resolution | `selectEvalueAccountId` in `packages/eps-backend/src/clients/accounts.ts` |
 | Real captured response | `packages/eps-backend/src/clients/transactions.sample.ts` |
 
 Columns: expand toggle · Summary · Transaction Amount · Debit · Credit · Running
@@ -93,6 +92,8 @@ The route:
    (`org_id`, `interaction_type_id`, …) can be smuggled upstream. This is a trust
    boundary.
 4. `parsePaging` — `limit` clamped to 25, `start_index` to `>= 0`.
+5. `selectEvalueAccountId` on that same profile — 502 `NO_ACCOUNT` rather than
+   an unfiltered call. See [§How the account is resolved](#how-the-account-is-resolved).
 
 `hasNext = rows.length === limit`, a full-page heuristic since upstream reports no
 count. On an exactly-full final page that costs one empty page.
@@ -124,53 +125,70 @@ A genuine interaction-154 response is captured verbatim in
   `pipe`, `channel`, `customer_fee`, `ifsc`, `transaction_additional_metadata`,
   and a top-level `asofdate`.
 
-## Unverified
+## How the account is resolved
 
-**Everything in this section must still be probed before the flag comes off.**
-The sample above proves the response *shape*; it does not prove this backend can
-*make the call*. Eloka's path does not exist for this backend:
+Interaction 154 filters by `account_id`. It comes from the caller's own
+interaction-151 profile, never from the request — `getProfile` maps the
+`data.account_detail` block that sits beside `user_detail`, and
+`selectEvalueAccountId` (`packages/eps-backend/src/clients/accounts.ts`) picks
+the E-value account from it:
 
-| | Eloka (`wlc-webapp`) | `packages/eps-backend` |
+1. `account_details.evalue_account_id` when it names a real account.
+2. otherwise the `account_list` entry with `product_id === 1 && type_id === 1`
+   (label "E-value"). Eloka reaches the same row by defaulting its account
+   switcher to index 0; this page has no switcher, so it matches on the product
+   rather than a position that only happens to be right.
+3. otherwise the route answers **502 `NO_ACCOUNT`**.
+
+That last step matters. Omitting `account_id` does not fail — upstream falls
+back to the *default* account (that is exactly how interaction 9 behaves), which
+would quietly report somebody else's history as this user's. Refusing is the
+honest answer to "we could not tell which account is yours".
+
+**Negative ids are always filtered out.** connect-api appends a synthetic
+`{ id: -500000, label: "Response Awaited Transactions" }` row to every
+`account_list` it forwards (`routes/authentication.js:869`). It is a UI
+pseudo-filter for Eloka's history screen, not an account, and SimpliBank never
+sends it.
+
+Both auth providers supply the same block: the direct 151 response carries
+`data.account_detail`, and connect-api's login envelope carries
+`account_details` (`routes/authentication.js:1075`). Neither path needs an extra
+upstream call.
+
+## Which upstream path
+
+Interaction 154 does **not** live on the same path as every other interaction.
+It is the same host and port, on an older API version:
+
+| Interactions | Path | Config |
 |---|---|---|
-| Server | Connect (`api.beta.ekoconnect.in`) | SimpliBank internal API |
-| Call | `POST /transactions/do`, JSON | form-urlencoded interaction |
-| Auth | `Authorization: Bearer <jwt>` | `developer_key` header |
-| Identity | derived from the JWT | explicit `initiator_id`/`user_code`/`org_id` |
-| `account_id` | login response `account_details.evalue_account_id` | **no known source** |
+| 154 (history), 206 (dashboard) | `/ekoicici/v1/request` | `SIMPLIBANK_HISTORY_API_PATH` |
+| everything else | `/ekoicici/v2/request` | `SIMPLIBANK_API_PATH` |
 
-1. **Which server.** This backend has no Connect base URL and no JWT minting. If
-   interaction 154 isn't reachable over the SimpliBank form transport, adding
-   Connect is a **separate task, not a tweak**.
-2. **`account_id` — the blocker.** Eloka reads it from a login response this
-   backend never calls; interaction 151 (`getProfile`) is *dead code* in Eloka,
-   so nothing proves it returns account ids. Probe: dump 151's raw `user_detail`
-   and look for `account_details` / `evalue_account_id`. If present, map it in
-   `mapProfile`; if absent, find the interaction that returns it. **Do not invent
-   a default.** Encouraging sign: `getWalletBalance` (interaction 9) sends no
-   account and gets the default E-value account back, so 154 may be equally
-   forgiving — but that is a guess until probed.
-3. ~~**Response envelope.**~~ **Resolved** — a real response confirms
-   `data.transaction_list`. See [§Confirmed](#confirmed-by-a-real-response).
-4. **`source` / `isNetworkTransactionHistory`.** Whether they're required. Note
-   this client sends `source: "EPSBACKEND"` elsewhere; Eloka sends `"WLC"`.
-5. **`limit` cap**, and whether `start_index` is a row offset or a page index.
-6. **Filter date semantics.** `start_date`/`tx_date` are Eloka's From/To names;
+connect-api switches the same way in `utils/url.js:70-99`. An earlier version of
+this document recorded "which server" as an open question and guessed a separate
+Connect deployment might be needed; it is not — only the version segment differs.
+
+## Still unconfirmed
+
+None of these block the call; each is a thing to watch on the first real UAT run.
+
+1. **`source`.** This client sends `source: "EPS"`; Eloka sends `"WLC"` and
+   connect-api defaults to `"NEWCONNECT"`. Whether upstream cares is untested.
+2. **`limit` cap**, and whether `start_index` is a row offset or a page index.
+3. **Filter date semantics.** `start_date`/`tx_date` are Eloka's From/To names;
    their exact upstream meaning on this transport is assumed, not confirmed.
+4. **`isNetworkTransactionHistory`.** Sent as `"0"`; the network/admin statement
+   view is not ported, so the non-zero case is unexercised.
 
-### Wiring day
+### First live run
 
-1. `curl` SimpliBank with `interaction_type_id=154` + `developer_key` +
-   `initiator_id/user_code/org_id` for a known-active UAT developer.
-2. Resolve `account_id` per (2) above.
-3. The envelope path is already confirmed against a real body — expect no
-   mapper change. If the live body disagrees with
-   `transactions.sample.ts`, update that sample and let its tests tell you what
-   broke.
-4. Delete the `transactionsMock` branch, the `EKO_TRANSACTIONS_MOCK` flag, the
-   `filterFixture` helper, the `NOT_WIRED` guard in the route, and this section.
-   Keep `transactions.sample.ts` and its tests — that's the regression net.
-5. Sanity-check against Eloka: Debit / Credit / Running Balance for the same user
-   must agree.
-
-The design intent is that only step 3 touches code above the adapter —
-`mapTransactionRows` is transport-agnostic on purpose.
+1. Sign in as a known-active UAT developer and open `/console/transactions`.
+2. A **502 `NO_ACCOUNT`** means 151 returned no usable `account_detail` for that
+   account — dump the raw 151 body and check the block before changing anything.
+   Do not add a default.
+3. Cross-check Debit / Credit / Running Balance against Eloka's History screen
+   for the same user and window. The numbers must agree.
+4. If the live body disagrees with `transactions.sample.ts`, update that sample
+   and let its tests say what broke.

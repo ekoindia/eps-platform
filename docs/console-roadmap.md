@@ -19,6 +19,14 @@ admin session. The rail follows `DocsLayout`'s shape (sticky under the fixed
 ~88px header, `Sheet` below `lg`) so the console and `/docs` read as one
 product. Flat by design — group captions are worth adding past ~5 items.
 
+The console's index page (`/console`) is the **Business Dashboard** — call
+volume, success rates, most-used services and usage over time, from upstream
+interaction 682. The lifecycle-state card that used to be the whole page now
+renders in full only for an account that still has something to finish; an
+active account gets it as a one-line banner above the widgets. See
+`docs/features/business-dashboard.md`, whose status banner is worth reading
+before trusting a number on that page.
+
 Pinned above the rail links is `WalletBalance`
 (`src/components/console/WalletBalance.tsx`) — the developer's E-value balance,
 mirroring Eloka's always-visible `StatusCard`. It sits outside `<nav>`: it is
@@ -68,6 +76,7 @@ Two failure modes are deliberately distinct: an ineligible account answers **403
 | Route | Page | Contents |
 |---|---|---|
 | `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
+| `/console/documents` | `pages/console/Documents.tsx` | Upload Documents — KYC pack, see [`features/kyc-documents.md`](./features/kyc-documents.md) |
 | `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status |
 | `/console/transactions` | `pages/console/Transactions.tsx` | Transaction history — see [`features/transaction-history.md`](./features/transaction-history.md) |
 
@@ -88,6 +97,13 @@ endpoint lands (see "API keys management" below), the fetch goes there.
 Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),
 feeding new users into this same lifecycle gate. See
 [`docs/features/user-onboarding.md`](./features/user-onboarding.md).
+
+Picking up where signup stops, `/console/documents` ("Upload Documents") is the
+KYC document pack — the checklist a user uploads to get the account activated.
+It appears in the rail directly after Home, and only for accounts entitled to
+both upstream interactions (586 list, 587 upload). Every listed document is
+treated as mandatory; upstream's `is_required` is deliberately ignored. See
+[`docs/features/kyc-documents.md`](./features/kyc-documents.md).
 
 Complexity: **S** ≈ frontend-only / static · **M** ≈ needs a backend endpoint ·
 **L** ≈ needs a new backend subsystem (telemetry, billing, etc.).
@@ -132,9 +148,13 @@ EPS is a payments API — event-driven integration is the primary pattern for
 partners. `Table` + `Dialog` form; needs a backend registration endpoint.
 _Pattern: PandaDoc webhooks, Klaviyo webhook events._
 
-### API usage / request metrics — **L**
-Calls, error rate, per-endpoint counts over 7/30 days; sparkline or CSS bar.
-First signal an integration works or is broken. Needs a telemetry pipeline.
+### API usage / request metrics — **DONE** (as the Business Dashboard)
+Shipped at `/console` from upstream interaction 682, not from a telemetry
+pipeline: call volume, per-service counts, success rates and usage over time,
+across five preset windows. What is still missing is the *per-endpoint* and
+error-rate view this line originally asked for — 682 aggregates by product
+(`tx_typeid`), not by HTTP endpoint, and nothing upstream reports a 4xx/5xx rate.
+That remains an **L** and still needs a telemetry pipeline.
 _Pattern: Klaviyo developer tools, Exa usage strip._
 
 ---

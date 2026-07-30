@@ -87,6 +87,7 @@ interface ApiSpec {
   // category is NOT stored here — it is derived from the product via
   // categoryForSpec(spec) (productId -> API_PRODUCTS[…].category).
   relevance?: "H" | "M" | "L";
+  disabled?: boolean;         // hide the endpoint everywhere — see "Hide (disable) an API"
   bestFor?: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
   path: string;               // relative; full URL = environment baseUrl + path
@@ -133,10 +134,11 @@ Only declare the ids an endpoint actually branches on; the section is omitted
 when `responseTypes` is unset.
 
 Recipes (`api-recipes.ts`) branch on the same field: a `RecipeBranch` sets
-**exactly one** of `onResponseTypeId` (the usual routing key) or
-`onResponseStatusId` (financial endpoints, whose responses carry no
-`response_type_id`). Renderers call `branchCondition(branch)` for the field name
-and value rather than assuming either.
+**exactly one** of `onResponseTypeId` (the usual routing key) or `onStatus`
+(financial endpoints, whose responses carry no `response_type_id`; `status` is
+the envelope's success flag, `0` = success). Renderers call
+`branchCondition(branch)` for the field name and value rather than assuming
+either.
 
 ### `imp` flags ("What can you verify?")
 
@@ -230,6 +232,35 @@ source.
    OpenAPI / agent bundle. See [Rich descriptions](#rich-descriptions-markdown).
 6. Verify: `npx tsc --noEmit`, `npm run test`, then `npm run build` and check the
    product's `.md` twin (e.g. `dist/products/<slug>.md`) renders the new preview.
+
+## Hide (disable) an API
+
+To stop shipping an endpoint, set `disabled: true` on its spec — **do not delete
+the object**. The researched request/response data survives in the file, and
+re-enabling is a one-word change.
+
+The filter is applied once, at the `API_SPECS` export in `api-specs.ts`
+(`enabledSpecs(ALL_API_SPECS)`), so a disabled spec disappears from every surface
+with no other edit: docs page + sidebar nav, product-page previews, `.md` twins,
+`llms.txt` / `llms-full.txt`, the command-palette search index, `openapi.json`,
+the agent bundle (and therefore MCP, the JS/PHP SDK surfaces, the Postman
+collection, mock-server fixtures and the context packs), the prerender routes and
+`sitemap.xml`. The raw literal `ALL_API_SPECS` is module-private and must stay
+that way — there is no runtime accessor for disabled specs, by design.
+
+**Clean up inbound references in the same change**, or the build/tests fail:
+
+| Pointer | Guard |
+| --- | --- |
+| A recipe `step.specSlug` or branch `goto` | `assertRecipeSlugs` throws at build |
+| Another spec's `responseTypes[].next` | `assertResponseTypeSlugs` throws at build |
+| A curated `relatedLinks[].slug` | asserted in `docs-registry.test.ts` |
+| A hard-coded `API_SPECS_MAP["<id>"]` (e.g. the `/docs` showcase spec, code-sample tests) | becomes `undefined` — update the caller |
+
+Loud failure is deliberate: a half-removed endpoint leaving a recipe with a
+missing step is exactly the drift these guards exist to catch. Note this is a
+different mechanism from the `-status` convention, which only hides async-job
+pollers from the *marketing* surface while keeping their docs pages.
 
 ## Data provenance & caveat
 

@@ -214,6 +214,29 @@ from `src/lib/config/site.ts`. Updating that constant propagates everywhere.
 Sitemap: https://eps.eko.in/sitemap.xml
 ```
 
+#### Keeping `/console` and `/admin` out of search
+
+The internal console and admin routes are blocked at three independent layers:
+
+1. **Not in `PRERENDER_ROUTES`** — so they can never appear in `dist/sitemap.xml`
+   or `llms.txt`.
+2. **`Disallow: /console` + `Disallow: /admin`** in `public/robots.txt`. Note
+   robots.txt matching is prefix-only — there is no exact-match syntax, so these
+   lines would also cover a hypothetical `/admin-tools` route.
+3. **`X-Robots-Tag: noindex, nofollow, noarchive`** response header on `/console`,
+   `/console/*`, `/admin`, `/admin/*` in `vercel.json`, `netlify.toml` and
+   `nginx.conf`. Needed because every non-prerendered path is served the raw SPA
+   shell (`dist/__spa-fallback.html`), which carries **no** robots meta tag — a
+   crawler that ignores robots.txt or doesn't execute JS would otherwise see a
+   plain HTTP 200 page. The nginx rules use exact + slash-prefix locations
+   (`= /admin`, `^~ /admin/`) so unrelated paths like `/administrator` are
+   unaffected.
+
+Layers 2 and 3 don't stack for compliant crawlers — a bot obeying `Disallow`
+never fetches the URL and so never reads the header. Layer 3 exists purely for
+bots that ignore robots.txt. The in-app `<meta name="robots" content="noindex,nofollow">`
+in `ConsoleLayout.tsx` / `Admin.tsx` is a fourth, JS-dependent layer.
+
 ### SSR-safe compatibility layer
 
 A small number of browser APIs needed guarding before server-side rendering

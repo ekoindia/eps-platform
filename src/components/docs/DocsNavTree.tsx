@@ -17,7 +17,8 @@ import { HttpMethodTag } from "./HttpMethodTag";
  * links. Branch rows render at normal weight with a right-edge chevron (the slot
  * leaves use for the HTTP-method tag); children indent under a left rail. Single
  * endpoint products are flattened to cut the redundant subheading. Only the
- * active endpoint's ancestor branches are expanded by default.
+ * active endpoint's ancestor branches are expanded by default; opening a branch
+ * also opens any sole-branch-child chain under it.
  */
 
 /** Strip a trailing slash (except the root) so `/docs/x/` matches `/docs/x`. */
@@ -40,6 +41,20 @@ const collectActiveBranchIds = (
 		}
 	}
 	return onPath;
+};
+
+/**
+ * Ids of the sole-branch-child chain under a branch. Opening a branch whose only
+ * child is another branch should reveal its contents, not one more chevron.
+ */
+export const soleBranchChain = (branch: NavBranch): string[] => {
+	const ids: string[] = [];
+	let node = branch;
+	while (node.children.length === 1 && node.children[0].type === "branch") {
+		node = node.children[0];
+		ids.push(node.id);
+	}
+	return ids;
 };
 
 export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
@@ -68,11 +83,14 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 		setOpen((prev) => new Set([...prev, ...activeBranchIds]));
 	}, [activeBranchIds]);
 
-	const toggle = (id: string) =>
+	// Collapsing only drops the branch's own id, so a re-open re-applies the
+	// sole-child chain even if the reader had closed that child by hand.
+	const toggle = (branch: NavBranch) =>
 		setOpen((prev) => {
 			const next = new Set(prev);
-			if (next.has(id)) next.delete(id);
-			else next.add(id);
+			if (next.has(branch.id)) next.delete(branch.id);
+			else
+				for (const id of [branch.id, ...soleBranchChain(branch)]) next.add(id);
 			return next;
 		});
 
@@ -115,7 +133,7 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 			<div>
 				<button
 					type="button"
-					onClick={() => toggle(branch.id)}
+					onClick={() => toggle(branch)}
 					aria-expanded={isOpen}
 					title={branch.label}
 					className={cn(

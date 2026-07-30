@@ -3,9 +3,15 @@
 #     --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml <cmd>
 # EPS_BACKEND_IMAGE comes from deploy.env via --env-file (NOT service env_file).
 services:
+  # Valkey (FOSS Redis fork, RESP-compatible). Service stays named "redis" so
+  # REDIS_URL, the poller's redis-cli ping, and the network assertions in
+  # deploy-artifacts.test.ts need no change. Valkey 8 loads Redis 7 AOF/RDB in
+  # place; upgrade is one-way — snapshot the eps-redis-data volume first if
+  # rollback to redis:7 must stay possible (data is tokens/counters only, so
+  # the worst case of a flush is a mass re-login).
   redis:
-    image: redis:7
-    command: ["redis-server", "--appendonly", "yes"]
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
     volumes:
       - eps-redis-data:/data
     networks:

@@ -1,14 +1,14 @@
-# How Auth Works
+# How Authentication Works
 
 Every Eko API request is authenticated with a static key plus a per-request
 HMAC signature. Nothing secret ever travels on the wire in plain form.
 
 ## The two keys
 
-| Key               | Where it comes from                                   | How it's used                                             |
-| ----------------- | ----------------------------------------------------- | --------------------------------------------------------- |
-| **Access Key**    | Shared once, kept server-side only                    | Never sent in a request; used to compute the `secret-key` |
-| **Developer Key** | UAT key from your dashboard; production key after KYC | Sent as the `developer_key` header                        |
+| Key                                     | Where it comes from                                                                           | How it's used                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Access Key _(also called Auth Key)_** | Shared once, kept server-side only. Get UAT key from your dashboard; production key after KYC | Never sent in a request; used to compute the `secret-key` |
+| **Developer Key**                       | Get UAT key from your dashboard; production key after KYC                                     | Sent as the `developer_key` header                        |
 
 ## Request headers
 
@@ -47,12 +47,3 @@ Sign on your **backend** — the `access_key` must never reach a browser. The sa
 recipe in five languages:
 
 <CodeSnippets id="sign-request" />
-
-## Why sign client-side
-
-Because the `access_key` never leaves your server, a leaked request can't be
-replayed or forged — the timestamp-bound signature is only valid for a short
-window. When using the in-page **Test Request** modal, signing happens locally
-in your browser with the UAT credentials you supply: your `access_key` is used
-only to compute the signature and is stripped before the request is sent — it is
-never transmitted.

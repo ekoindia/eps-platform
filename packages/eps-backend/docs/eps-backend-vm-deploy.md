@@ -37,31 +37,31 @@ Merging to `main` → green CI → image publish → poller deploys to the prod 
 GitHub → **Settings → Rules → Rulesets** (or Settings → Branches), target `main`:
 
 - [ ] **Require a pull request before merging** (≥1 approval; dismiss stale
-  approvals on new commits).
+      approvals on new commits).
 - [ ] **Require status checks to pass** — select the **CI** check (job
-  "Web + JS/TS packages"); tick "require branches up to date before merging".
+      "Web + JS/TS packages"); tick "require branches up to date before merging".
 - [ ] **Block force pushes** and **block deletions**.
 - [ ] **Enforce for administrators** (no bypass — otherwise the deploy gate has
-  a hole).
+      a hole).
 
 ### 2. GHCR package private + access (push for CI, read for the VM)
 
 The image is private (locked decision). CI must push; the VM must pull read-only.
 
 - [ ] **Create the package** — it is created on first publish (see step 3). New
-  org packages default to private.
+      org packages default to private.
 - [ ] **Verify** at org/user → **Packages → eps-backend → Package settings**:
-  visibility = **Private**; **Manage Actions access** grants the `eps-platform`
-  repo **Write** (this backs `permissions: packages: write` in the workflow).
+      visibility = **Private**; **Manage Actions access** grants the `eps-platform`
+      repo **Write** (this backs `permissions: packages: write` in the workflow).
 - [ ] **Create the VM's read-only credential** — GitHub → Settings → Developer
-  settings → Personal access tokens: fine-grained **Packages: Read** for this
-  package, or classic PAT scope **`read:packages`**; ensure that token's owner
-  has **Read** under the package's **Manage access**.
+      settings → Personal access tokens: fine-grained **Packages: Read** for this
+      package, or classic PAT scope **`read:packages`**; ensure that token's owner
+      has **Read** under the package's **Manage access**.
 - [ ] On the VM, use that token for `docker login ghcr.io` in
-  [Bootstrap Step 4](#step-4--log-in-to-ghcr-and-create-the-authfile). It must
-  store a **plain** token (no credential helper) — else `.ghcr-auth.json` has no
-  usable secret and the poller's skopeo gets 401. Step 4 documents the explicit
-  authfile workaround if your host uses a credStore.
+      [Bootstrap Step 4](#step-4--log-in-to-ghcr-and-create-the-authfile). It must
+      store a **plain** token (no credential helper) — else `.ghcr-auth.json` has no
+      usable secret and the poller's skopeo gets 401. Step 4 documents the explicit
+      authfile workaround if your host uses a credStore.
 
 ### 3. Arm the pipeline (merge to `main`) + run the first deploy manually
 
@@ -71,17 +71,20 @@ nothing until merged to `main`. And a fresh VM has nothing to reconcile, so the
 first deploy is hands-on; the poller takes over afterward.
 
 - [ ] **Merge `dev` → `main`** (PR) — puts `deploy-eps-backend.yml` + code on
-  `main`. The green CI run on that merge publishes the **first image**
-  (`:<sha>` + moves `:prod`). If it doesn't fire on the arming merge itself,
-  push one trivial follow-up commit to `main`.
+      `main`. The green CI run on that merge publishes the **first image**
+      (`:<sha>` + moves `:prod`). If it doesn't fire on the arming merge itself,
+      push one harmless **backend-affecting** follow-up commit to `main` — the
+      deploy workflow path-guards on `packages/eps-backend/**` (plus root
+      `package*.json`, `.githooks/setup.mjs`, and the workflow itself), so a
+      commit outside those paths publishes nothing.
 - [ ] **Confirm the first image exists** at `:prod` in GHCR before bootstrapping
-  — Bootstrap Step 6 seeds `deploy.env` from it (chicken-and-egg: seed needs an
-  image, image needs the workflow on `main`; so **merge first, then bootstrap**).
+      — Bootstrap Step 6 seeds `deploy.env` from it (chicken-and-egg: seed needs an
+      image, image needs the workflow on `main`; so **merge first, then bootstrap**).
 - [ ] **Run the [Bootstrap](#bootstrap) steps on the VM** (Docker + NTP,
-  `/deploy` files, `.env` secrets, GHCR login + authfile, seed `deploy.env`,
-  auth smoke-test, `up -d`, reverse proxy → `127.0.0.1:8787`, prune timer).
+      `/deploy` files, `.env` secrets, GHCR login + authfile, seed `deploy.env`,
+      auth smoke-test, `up -d`, reverse proxy → `127.0.0.1:8787`, prune timer).
 - [ ] **Thereafter:** every green `main` push auto-deploys within ~30 s — no
-  manual steps unless a deploy HOLDs (see [Clearing HOLD](#clearing-hold)).
+      manual steps unless a deploy HOLDs (see [Clearing HOLD](#clearing-hold)).
 
 ---
 
@@ -90,14 +93,28 @@ first deploy is hands-on; the poller takes over afterward.
 Complete these steps once, in order, before the poller starts managing the
 stack.
 
+> **Shared-VM note (production reality):** eps-backend deploys onto the same VM
+> as eps-transact-mcp. On a shared VM, use a per-project directory
+> `/data/eps-backend/` instead of `/deploy` — substitute
+> `--project-directory /data/eps-backend` in every compose command below — with
+> its own `deploy.env`, `.env`, and `.ghcr-auth.json` (never shared across
+> stacks; see the [poller README](../deploy/poller/README.md) shared-VM
+> checklist). Steps 1–2 (Docker, NTP) are already done on that VM. Before
+> copying anything, check capacity: `df -h /data && df -i /data &&
+> docker system df && free -m` — the VM's Docker data-root uses the `vfs`
+> storage driver, which shares no layers between images, so image storage (not
+> container count) drives disk use. Copy the deploy files from the merged
+> `main` SHA, not a local working tree, so compose/poller config matches the
+> published image.
+
 ### Step 1 — Install Docker Engine and the Compose plugin
 
 Follow the official Docker Engine installation guide for your distro (Ubuntu
 example: `apt-get install docker-ce docker-ce-cli containerd.io
 docker-buildx-plugin docker-compose-plugin`). Verify:
 
-	docker version
-	docker compose version
+    docker version
+    docker compose version
 
 Both commands must succeed. Ensure the Docker daemon starts on boot
 (`systemctl enable --now docker`).
@@ -107,8 +124,8 @@ Both commands must succeed. Ensure the Docker daemon starts on boot
 Digest comparisons and JWT validation are time-sensitive. Enable and start an
 NTP client before anything else:
 
-	timedatectl set-ntp true
-	timedatectl status          # confirm "System clock synchronized: yes"
+    timedatectl set-ntp true
+    timedatectl status          # confirm "System clock synchronized: yes"
 
 ### Step 3 — Copy the deploy directory to the VM
 
@@ -116,8 +133,8 @@ Place the contents of `packages/eps-backend/` (which includes
 `docker-compose.prod.yml` and `deploy/poller/`) at `/deploy` on the VM so the
 invariant compose command can find the file:
 
-	/deploy/docker-compose.prod.yml
-	/deploy/deploy/poller/          # poller Dockerfile + poll.sh
+    /deploy/docker-compose.prod.yml
+    /deploy/deploy/poller/          # poller Dockerfile + poll.sh
 
 Ownership and permissions: the files need to be readable by the user running
 Docker. On most setups `root` or a `docker` group member is fine.
@@ -127,7 +144,7 @@ Docker. On most setups `root` or a `docker` group member is fine.
 The `ghcr.io/ekoindia/eps-backend` image is private. The user running Docker
 must authenticate before the poller can pull:
 
-	docker login ghcr.io
+    docker login ghcr.io
 
 Use a GitHub Personal Access Token (PAT) with `read:packages` scope as the
 password, or a machine account token.
@@ -136,16 +153,16 @@ After logging in, create a deterministic authfile at `/deploy/.ghcr-auth.json`.
 The poller mounts this path rather than `~/.docker/config.json`, which is empty
 under `sudo` without `-H` or in systemd units where `$HOME` is unset:
 
-	cp ~/.docker/config.json /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
+    cp ~/.docker/config.json /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
 
 **credStore caveat:** if `docker login` used a credential helper, `config.json`
 contains a `credStore` key but no inline `auth` token — the copy above will not
 contain any credentials and skopeo will get a 401. In that case, create the
 authfile explicitly with an inline base64 token:
 
-	printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' \
-	  "$(printf '%s:%s' "$GHCR_USER" "$GHCR_PAT" | base64 -w0)" \
-	  > /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
+    printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' \
+      "$(printf '%s:%s' "$GHCR_USER" "$GHCR_PAT" | base64 -w0)" \
+      > /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
 
 The poller mounts `/deploy/.ghcr-auth.json` read-only at
 `/root/.docker/config.json` inside the container and sets `REGISTRY_AUTH_FILE`
@@ -156,15 +173,15 @@ already uses the host daemon's auth context.
 
 Copy `.env.example` to `/deploy/.env` and fill in all required values:
 
-	cp /deploy/.env.example /deploy/.env
-	$EDITOR /deploy/.env
+    cp /deploy/.env.example /deploy/.env
+    $EDITOR /deploy/.env
 
 At minimum you need `JWT_SECRET`, the `SIMPLIBANK_*` and `EKO_*` variables,
 `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CALLBACK_URL`,
 `GITHUB_REPO`, `REDIS_URL`, and `KV_ENCRYPTION_KEY`. See `.env.example` for
 the full list and inline notes. Restrict file permissions:
 
-	chmod 600 /deploy/.env
+    chmod 600 /deploy/.env
 
 ### Step 6 — Seed `/deploy/deploy.env` with the current `:prod` digest
 
@@ -174,13 +191,21 @@ Buildx plugin already installed in Step 1) to resolve the current `:prod`
 digest without pulling the image. This reuses the GHCR credentials from the
 `docker login` in Step 4:
 
-	EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@$(docker buildx imagetools inspect \
-	  ghcr.io/ekoindia/eps-backend:prod --format '{{.Manifest.Digest}}')
-	printf 'EPS_BACKEND_IMAGE=%s\n' "$EPS_BACKEND_IMAGE" > /deploy/deploy.env
+    EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@$(docker buildx imagetools inspect \
+      ghcr.io/ekoindia/eps-backend:prod --format '{{.Manifest.Digest}}')
+    printf 'EPS_BACKEND_IMAGE=%s\n' "$EPS_BACKEND_IMAGE" > /deploy/deploy.env
 
 Verify it looks like:
 
-	EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<64 hex chars>
+    EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<64 hex chars>
+
+> **Rollback state starts empty:** because the seed pins the *current* `:prod`
+> digest, the poller sees remote == running on its first ticks and never
+> health-gates the bootstrap deploy — `/state/last_good` is only written by the
+> first real poller-driven deploy (next `main` merge that publishes a new
+> digest). Until then there is no automatic rollback target; the poller HOLDs
+> on a first-deploy fault instead. The end-to-end poller test below doubles as
+> the step that initializes rollback state.
 
 ### Step 7 — Smoke-test in-container auth
 
@@ -188,9 +213,9 @@ Before starting the full stack, confirm that the authfile works for skopeo
 inside the poller container. This catches credStore/empty-token problems before
 they cause silent failures in the live pipeline:
 
-	docker compose -p eps-backend --project-directory /deploy \
-	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-	  run --rm poller skopeo inspect docker://ghcr.io/ekoindia/eps-backend:prod
+    docker compose -p eps-backend --project-directory /deploy \
+      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
+      run --rm poller skopeo inspect docker://ghcr.io/ekoindia/eps-backend:prod
 
 This must print a manifest (containing a `Digest:` field). A `401` /
 "authentication required" error means the authfile has no valid token — fix it
@@ -198,13 +223,13 @@ This must print a manifest (containing a `Digest:` field). A `401` /
 
 ### Step 8 — Bring up the stack
 
-	docker compose -p eps-backend --project-directory /deploy \
-	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d
+    docker compose -p eps-backend --project-directory /deploy \
+      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d
 
 Wait a few seconds, then confirm all three containers are running:
 
-	docker compose -p eps-backend --project-directory /deploy \
-	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml ps
+    docker compose -p eps-backend --project-directory /deploy \
+      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml ps
 
 Expected: `redis`, `eps-backend`, and `poller` with status `Up` (eps-backend
 will show `(healthy)` once the healthcheck passes). The backend is reachable at
@@ -249,25 +274,25 @@ image, clobbering the rollback.
 
 **1. Set HOLD to pause the poller.**
 
-	docker run --rm \
-	  -v eps-backend_eps-poller-state:/state \
-	  busybox sh -c 'echo "manual rollback" > /state/HOLD'
+    docker run --rm \
+      -v eps-backend_eps-poller-state:/state \
+      busybox sh -c 'echo "manual rollback" > /state/HOLD'
 
 **2. Find the target digest.**
 
 The last automatically verified digest is in the poller state volume:
 
-	docker run --rm \
-	  -v eps-backend_eps-poller-state:/state \
-	  busybox cat /state/last_good
+    docker run --rm \
+      -v eps-backend_eps-poller-state:/state \
+      busybox cat /state/last_good
 
 For an older digest, check the GHCR package history or your deploy logs for a
 `sha256:` string.
 
 **3. Write the known-good digest to `/deploy/deploy.env`.**
 
-	printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' \
-	  "sha256:<64-hex-digest>" > /deploy/deploy.env
+    printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' \
+      "sha256:<64-hex-digest>" > /deploy/deploy.env
 
 Replace `sha256:<64-hex-digest>` with the full digest including the `sha256:`
 prefix — e.g. `sha256:abc123…` (64 hex characters after the colon). The
@@ -276,16 +301,16 @@ form `ghcr.io/ekoindia/eps-backend@sha256:<64 hex>`.
 
 **4. Recreate the backend with the invariant compose command.**
 
-	docker compose -p eps-backend --project-directory /deploy \
-	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-	  up -d --no-deps eps-backend
+    docker compose -p eps-backend --project-directory /deploy \
+      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
+      up -d --no-deps eps-backend
 
 Only `eps-backend` is recreated; `redis` and `poller` are left running.
 
 **5. Verify.**
 
-	curl -f http://127.0.0.1:8787/healthz && echo OK
-	curl -f http://127.0.0.1:8787/readyz  && echo READY
+    curl -f http://127.0.0.1:8787/healthz && echo OK
+    curl -f http://127.0.0.1:8787/readyz  && echo READY
 
 `/healthz` is a liveness check. `/readyz` additionally checks Redis and is
 what the poller gates on before recording a deploy as successful.
@@ -323,16 +348,16 @@ takes no action.
 
 **To clear HOLD and resume automatic deploys:**
 
-	docker run --rm \
-	  -v eps-backend_eps-poller-state:/state \
-	  busybox rm -f /state/HOLD
+    docker run --rm \
+      -v eps-backend_eps-poller-state:/state \
+      busybox rm -f /state/HOLD
 
 Confirm the poller resumes by tailing its logs:
 
-	docker logs -f \
-	  $(docker compose -p eps-backend --project-directory /deploy \
-	    --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-	    ps -q poller)
+    docker logs -f \
+      $(docker compose -p eps-backend --project-directory /deploy \
+        --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
+        ps -q poller)
 
 You should see normal `[poller] deploying ...` or idle tick output without the
 `HOLD set` message.
@@ -345,29 +370,58 @@ The poller always writes structured log lines to stderr. To also receive
 webhook notifications on deploy, rollback, and fault events, add this line to
 `/deploy/.env`:
 
-	POLLER_ALERT_WEBHOOK=https://your.webhook.endpoint/path
+    POLLER_ALERT_WEBHOOK=https://your.webhook.endpoint/path
 
 The poller reads `/deploy/.env` via its `env_file` configuration in
 `docker-compose.prod.yml`. Restart the poller after editing:
 
-	docker compose -p eps-backend --project-directory /deploy \
-	  --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-	  up -d --no-deps poller
+    docker compose -p eps-backend --project-directory /deploy \
+      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
+      up -d --no-deps poller
 
 **Payload format** — the poller POSTs JSON on every alert:
 
-	{"level":"INFO"|"WARN"|"CRIT","service":"eps-backend","message":"<text>"}
+    {"level":"INFO"|"WARN"|"CRIT","service":"eps-backend","message":"<text>"}
 
 Levels: `INFO` for successful deploys; `WARN` for rollbacks and transient
 issues; `CRIT` for faults that set HOLD.
 
 **Without a webhook**, monitor the poller with:
 
-	docker logs -f <poller-container-id>
+    docker logs -f <poller-container-id>
 
 ---
 
 ## Ongoing ops
+
+### KV store tiers (Valkey / no-KV degraded mode / managed)
+
+The stack's `redis` service runs **Valkey** (`valkey/valkey:8-alpine`), the
+FOSS BSD-licensed Redis fork — same RESP protocol, same `redis-cli` ping from
+the poller, same data files. The service keeps the name `redis` so
+`REDIS_URL`, the poller, and the compose network assertions never change.
+Migration note: Valkey 8 reads a Redis 7 AOF/RDB volume in place, but the
+upgrade is one-way — snapshot the `eps-redis-data` volume first if a rollback
+to `redis:7` must stay possible. Worst case of losing the volume is a mass
+re-login (it holds only tokens, counters, and cache).
+
+Redundancy tiers, in order of preference:
+
+1. **Valkey container** (default, this stack) — durable across restarts and
+   deploys.
+2. **In-memory degraded mode** — remove `REDIS_URL` (and the `redis` service)
+   and set `REDIS_REQUIRED=0` in the poller env so its Redis health gate is
+   skipped. Constraint: **exactly one backend process** (no PM2/cluster
+   replicas — process-local state, not merely per-VM). Every backend restart
+   logs all users out and resets rate-limit counters; a stale access JWT then
+   sees 401 `CONNECT_SESSION_EXPIRED` on connect/dashboard routes until the
+   frontend's refresh-retry path lands the user back at login.
+3. **Upstash free tier** (managed, `rediss://` URL) — when running a KV
+   container on the VM is undesirable; same setup as the Vercel deploy doc.
+   Current traffic (~200 DAU) is far below the free 500k commands/month.
+
+The choice is deployment-time only; the backend never fails over between
+stores at runtime.
 
 ### Log rotation
 
@@ -380,13 +434,13 @@ No additional log rotation configuration is needed.
 Old image layers accumulate on the VM after each deploy. Schedule a periodic
 prune — for example, a daily cron job:
 
-	# /etc/cron.daily/docker-image-prune
-	#!/bin/sh
-	docker image prune -f
+    # /etc/cron.daily/docker-image-prune
+    #!/bin/sh
+    docker image prune -f
 
 Or with crontab:
 
-	0 3 * * * docker image prune -f >> /var/log/docker-prune.log 2>&1
+    0 3 * * * docker image prune -f >> /var/log/docker-prune.log 2>&1
 
 ### `KV_ENCRYPTION_KEY` stability
 

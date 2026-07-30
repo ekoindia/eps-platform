@@ -89,16 +89,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     services:
-      # Real Redis for the eps-backend KV contract + fail-closed integration
-      # tests (src/store/redis.test.ts). They self-skip unless REDIS_TEST_URL is
-      # set, so this service is what makes them actually run in CI. redis:7
-      # satisfies the >=6.2 GETDEL/Lua floor the backend requires.
+      # Real RESP store for the eps-backend KV contract + fail-closed
+      # integration tests (src/store/redis.test.ts). They self-skip unless
+      # REDIS_TEST_URL is set, so this service is what makes them actually run
+      # in CI. Valkey (FOSS Redis fork) matches the image the prod compose
+      # stack runs and satisfies the >=6.2 GETDEL/Lua floor the backend needs.
       redis:
-        image: redis:7
+        image: valkey/valkey:8-alpine
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "valkey-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

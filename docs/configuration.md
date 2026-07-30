@@ -97,11 +97,14 @@ Per-platform redirect/header configs. Each platform reads only its own file; the
 
 | File | Platform | Configures |
 |------|----------|-----------|
-| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback), `.md`/`.txt` content-type headers |
-| [`netlify.toml`](../netlify.toml) + [`public/_redirects`](../public/_redirects) | Netlify | Redirects / SPA fallback |
-| [`.htaccess`](../.htaccess) | Apache | Rewrites / SPA fallback |
-| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt` MIME types, SPA fallback |
+| [`vercel.json`](../vercel.json) | Vercel | Rewrites (`/llms-full.txt`→`/index.md`, SPA fallback), `.md`/`.txt` content-type headers, `X-Robots-Tag` on `/console` + `/admin` |
+| [`netlify.toml`](../netlify.toml) + [`public/_redirects`](../public/_redirects) | Netlify | Redirects / SPA fallback, `X-Robots-Tag` on `/console` + `/admin` |
+| [`.htaccess`](../.htaccess) | Apache | Rewrites / SPA fallback (no `X-Robots-Tag` — not a live target) |
+| [`nginx.conf`](../nginx.conf) | Nginx | `.md`/`.txt` MIME types, SPA fallback, `X-Robots-Tag` on `/console` + `/admin` |
 | [`public/robots.txt`](../public/robots.txt) | All | Crawler directives |
+
+Internal `/console` and `/admin` routes are blocked from indexing at three
+layers — see [static-page-generation.md](static-page-generation.md#sitemap-and-robotstxt).
 
 ## 9. Secrets / environment
 

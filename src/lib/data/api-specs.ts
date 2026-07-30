@@ -20,8 +20,15 @@
  * seeded from curated samples and should be reconciled against live API calls.
  */
 import type { ApiSpec } from "./api-specs-common";
+import { enabledSpecs } from "./api-specs-common";
 
-export const API_SPECS: ApiSpec[] = [
+/**
+ * The raw spec literal, INCLUDING entries flagged `disabled`. Deliberately
+ * module-private and never exported: `API_SPECS` (below) is the only view any
+ * consumer — inside this file or out — may use. A disabled spec is archived
+ * source, not data the site is allowed to reach.
+ */
+const ALL_API_SPECS: ApiSpec[] = [
 	// MARK: DMT
 	{
 		id: "dmt-get-sender",
@@ -6032,6 +6039,7 @@ export const API_SPECS: ApiSpec[] = [
 		group: "Sender",
 		name: "Validate Aadhaar & Generate OTP",
 		slug: "aadhaar-dmt-levin-validate",
+		disabled: true,
 		summary:
 			"Validate a sender's Aadhaar number and trigger an OTP to the linked mobile for DMT Levin onboarding.",
 		description:
@@ -6119,6 +6127,7 @@ export const API_SPECS: ApiSpec[] = [
 		group: "Sender",
 		name: "Validate Sender Aadhaar OTP",
 		slug: "aadhaar-dmt-levin-verify-otp",
+		disabled: true,
 		summary:
 			"Verify the Aadhaar OTP for a DMT Levin sender to complete identity validation.",
 		description:
@@ -15696,7 +15705,15 @@ export const API_SPECS: ApiSpec[] = [
 	},
 ];
 
-/** Lookup a spec by its unique id. */
+/**
+ * Every ENABLED API. Specs flagged {@link ApiSpec.disabled} are dropped here —
+ * the single choke point — so `API_SPECS_MAP`, `getSpecsForProduct` and
+ * `getDocumentedSpecs` (and every docs page, `.md` twin, OpenAPI path, agent
+ * bundle entry, sitemap URL derived from them) inherit the filter for free.
+ */
+export const API_SPECS: ApiSpec[] = enabledSpecs(ALL_API_SPECS);
+
+/** Lookup an ENABLED spec by its unique id; a disabled id yields `undefined`. */
 export const API_SPECS_MAP: Record<string, ApiSpec> = Object.fromEntries(
 	API_SPECS.map((spec) => [spec.id, spec]),
 );

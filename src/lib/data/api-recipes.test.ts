@@ -65,7 +65,7 @@ describe("api-recipes", () => {
 				],
 				new Set(["dmt-get-sender"]),
 			),
-		).toThrow(/neither onResponseTypeId nor onResponseStatusId/);
+		).toThrow(/neither onResponseTypeId nor onStatus/);
 	});
 });
 
@@ -97,10 +97,10 @@ describe("branchCondition", () => {
 		).toEqual({ field: "response_type_id", value: 308 });
 	});
 
-	it("names response_status_id for a financial branch", () => {
+	it("names status for a financial branch", () => {
 		// 0 is falsy — a truthiness check here would misreport the field.
-		expect(branchCondition({ onResponseStatusId: 0, goto: "done" })).toEqual({
-			field: "response_status_id",
+		expect(branchCondition({ onStatus: 0, goto: "done" })).toEqual({
+			field: "status",
 			value: 0,
 		});
 	});

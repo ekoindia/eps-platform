@@ -67,17 +67,18 @@ describe("recipeMermaidFence", () => {
 		const fence = recipeMermaidFence(dmt);
 		expect(fence).toContain('s1 -->|"response_type_id 308: Sender not found');
 		expect(fence).not.toMatch(/^\s*s1 --> s2$/m);
-		expect(fence.match(/s1 -->/g)).toHaveLength(1);
+		// Step 1's four routing branches, and no bare fall-through alongside them.
+		expect(fence.match(/s1 -->/g)).toHaveLength(4);
 	});
 
 	it("draws unlabelled fall-through edges between plain sequential steps", () => {
-		expect(recipeMermaidFence(dmt)).toMatch(/^\s*s2 --> s3$/m);
+		expect(recipeMermaidFence(dmt)).toMatch(/^\s*s3 --> s4$/m);
 	});
 
 	it("terminates a done branch at a rounded terminal node", () => {
 		const fence = recipeMermaidFence(dmt);
 		expect(fence).toContain('done(["done"])');
-		expect(fence).toMatch(/s5 -->\|"[^"]*0[^"]*"\| done/);
+		expect(fence).toMatch(/s8 -->\|"[^"]*0[^"]*"\| done/);
 	});
 
 	it("omits the done node entirely when no branch reaches it", () => {
@@ -98,8 +99,8 @@ describe("recipeMermaidFence", () => {
 
 	it("labels each branch edge with the field it actually fires on", () => {
 		// Both condition keys in one recipe: routing on response_type_id, and a
-		// financial success on response_status_id. The label must name the right
-		// field for each — that is the whole point of `branchCondition`.
+		// financial success on status. The label must name the right field for
+		// each — that is the whole point of `branchCondition`.
 		const multi: Recipe = {
 			id: "m",
 			slug: "m",
@@ -111,7 +112,7 @@ describe("recipeMermaidFence", () => {
 					purpose: "a",
 					branches: [
 						{ onResponseTypeId: 308, goto: "dmt-onboard-sender" },
-						{ onResponseStatusId: 0, goto: "done" },
+						{ onStatus: 0, goto: "done" },
 					],
 				},
 				{ specSlug: "dmt-onboard-sender", purpose: "b" },
@@ -119,7 +120,7 @@ describe("recipeMermaidFence", () => {
 		};
 		const fence = recipeMermaidFence(multi);
 		expect(fence).toContain('s1 -->|"response_type_id 308"| s2');
-		expect(fence).toContain('s1 -->|"response_status_id 0"| done');
+		expect(fence).toContain('s1 -->|"status 0"| done');
 		// The 463 branch already covers s1 -> s2; no duplicate bare edge.
 		expect(fence).not.toMatch(/^\s*s1 --> s2$/m);
 	});
@@ -162,7 +163,7 @@ describe("renderRecipeMarkdown", () => {
 	it("spells out each branch condition in the step list", () => {
 		const md = renderRecipeMarkdown(dmt);
 		expect(md).toContain("`response_type_id` is `308`");
-		expect(md).toContain("`response_status_id` is `0`");
+		expect(md).toContain("`status` is `0`");
 		expect(md).toContain("the flow is complete");
 	});
 });
@@ -177,6 +178,6 @@ describe("renderRecipesIndexMarkdown", () => {
 	});
 
 	it("states each recipe's step count", () => {
-		expect(renderRecipesIndexMarkdown()).toContain("5 steps");
+		expect(renderRecipesIndexMarkdown()).toContain("8 steps");
 	});
 });

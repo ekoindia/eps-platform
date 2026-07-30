@@ -3,9 +3,12 @@ import { createInMemoryKV } from "./store/kv";
 import { createRedisKV } from "./store/redis";
 import { createSecretBox, passThroughSecretBox } from "./store/secretbox";
 import { createEkoClient } from "./clients/eko";
+import { createConnectClient } from "./clients/connect";
 import { createZohoClient } from "./clients/zoho";
 import { createGitHubClient } from "./clients/github";
 import { createSessions } from "./auth/session";
+import { createEkoAuthProvider } from "./auth/ekoProvider";
+import { createConnectAuthProvider } from "./auth/connectProvider";
 import { createApp } from "./http/app";
 import { createSecurityLogger } from "./audit/securityLog";
 import { createAccessLogger } from "./audit/accessLog";
@@ -61,6 +64,24 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 	// createApp and createSessions which share this instance.
 	kv = withStoreErrors(kv);
 
+	const eko = createEkoClient(
+		cfg.eko,
+		fetch,
+		createEkoLogger({ level: cfg.eko.logLevel }),
+	);
+
+	// Configuration-time choice, not a runtime failover: a connect-api outage
+	// does NOT fall back to the direct path. Switching providers is a redeploy.
+	// One client instance, shared by the auth provider and the Connect-widget
+	// routes, so both spend the same timeout and base URL.
+	const connect = cfg.connectApi
+		? createConnectClient(cfg.connectApi, fetch)
+		: undefined;
+	const auth = connect
+		? createConnectAuthProvider(connect, { kv, secretbox, cfg })
+		: createEkoAuthProvider(eko);
+	console.log(`[eps-backend] auth provider: ${auth.name}`);
+
 	const app = createApp({
 		cfg,
 		kv,
@@ -68,11 +89,9 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		readiness,
 		securityLog: createSecurityLogger(),
 		accessLog: createAccessLogger(),
-		eko: createEkoClient(
-			cfg.eko,
-			fetch,
-			createEkoLogger({ level: cfg.eko.logLevel }),
-		),
+		eko,
+		auth,
+		connect,
 		zoho: createZohoClient(cfg.zoho),
 		github: createGitHubClient(cfg.github),
 		sessions: createSessions(cfg, kv, { secretbox }),

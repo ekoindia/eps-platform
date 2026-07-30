@@ -2,8 +2,12 @@ import { randomUUID } from "node:crypto";
 import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
+import {
+	mapAccounts,
+	selectEvalueAccountId,
+	type AccountDetail,
+} from "./accounts";
 import { withTimeout } from "./http";
-import { TRANSACTION_FIXTURE } from "./transactions.fixture";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -80,12 +84,11 @@ export interface EkoClient {
 /**
  * A page of this user's own transaction history.
  *
- * `accountId` is null until its source is known — see
- * docs/features/transaction-history.md §Unverified. When null the field is
- * omitted upstream, mirroring `getWalletBalance` (interaction 9), which sends no
- * account and gets the default E-value account back. Whether interaction 154 is
- * equally forgiving is exactly what the probe answers; the route refuses to call
- * upstream without one rather than guess.
+ * `accountId` comes from the caller's 151 profile via `selectEvalueAccountId`.
+ * The route refuses the request when it cannot be resolved, so in practice this
+ * is never null by the time it reaches upstream — the type keeps the null case
+ * explicit rather than letting a missing account silently omit the filter and
+ * return somebody else's default account.
  */
 export interface TransactionHistoryInput {
 	identity: EkoIdentity;
@@ -227,8 +230,15 @@ export function createEkoClient(
 	fetchImpl: typeof fetch = fetch,
 	logger: EkoLogger = noopEkoLogger,
 ): EkoClient {
-	const url = `${cfg.scheme}://${cfg.host}:${cfg.port}${cfg.path}`;
-	const doFetch = withTimeout(fetchImpl);
+	const origin = `${cfg.scheme}://${cfg.host}:${cfg.port}`;
+	const url = `${origin}${cfg.path}`;
+	/**
+	 * Interactions 154 (history) and 206 (dashboard) live on an older API version
+	 * than everything else — same host and port, different version segment.
+	 * connect-api routes them the same way (`utils/url.js:70-99`).
+	 */
+	const historyUrl = `${origin}${cfg.historyPath}`;
+	const doFetch = withTimeout(fetchImpl, cfg.timeoutMs);
 
 	/**
 	 * Shared send/log/error pipeline for both the urlencoded (`post`) and
@@ -243,6 +253,7 @@ export function createEkoClient(
 		headers: Record<string, string>,
 		fields: Record<string, string>,
 		xRealIp?: string,
+		target: string = url,
 	): Promise<unknown> {
 		// Forward the trusted client IP so the upstream's own anti-abuse / rate
 		// checks see the real caller. Omit the header entirely when unknown — an
@@ -252,7 +263,7 @@ export function createEkoClient(
 		const start = performance.now();
 		let res: Response;
 		try {
-			res = await doFetch(url, { method: "POST", headers, body });
+			res = await doFetch(target, { method: "POST", headers, body });
 		} catch (e) {
 			// Transport failure (timeout / connection refused): still log, then rethrow.
 			logger.log({
@@ -293,13 +304,14 @@ export function createEkoClient(
 	async function post(
 		fields: Record<string, string>,
 		xRealIp?: string,
+		target: string = url,
 	): Promise<unknown> {
 		const body = new URLSearchParams(fields).toString();
 		const headers: Record<string, string> = {
 			"Content-Type": "application/x-www-form-urlencoded",
 			developer_key: cfg.developerKey,
 		};
-		return sendForm(body, headers, fields, xRealIp);
+		return sendForm(body, headers, fields, xRealIp, target);
 	}
 
 	/**
@@ -403,7 +415,16 @@ export function createEkoClient(
 			)) as {
 				response_type_id?: number;
 				response_code?: number;
-				data?: { user_detail?: Record<string, unknown> };
+				data?: {
+					user_detail?: Record<string, unknown>;
+					/**
+					 * Sibling of `user_detail`, carrying the account list transaction
+					 * history filters by. connect-api reads the same block
+					 * (`routes/authentication.js:868`) and hands it to Eloka as
+					 * `account_details`.
+					 */
+					account_detail?: AccountDetail;
+				};
 			};
 			// Classify ONLY by response_type_id (mirrors authentication.js).
 			// The upstream's response_status_id is NOT a success flag here: it is
@@ -419,6 +440,7 @@ export function createEkoClient(
 			if (NOT_FOUND_CODES.has(code))
 				return { kind: "not_found", responseTypeId: code };
 			const d = raw?.data?.user_detail;
+			const accountDetail = raw?.data?.account_detail;
 			if (code === SUCCESS_CODE && d) {
 				// A 369 with no mobile is an upstream anomaly, not a user
 				// classification — reject it BEFORE either profile branch below.
@@ -443,18 +465,23 @@ export function createEkoClient(
 					return {
 						kind: "onboarding",
 						responseTypeId: code,
-						profile: mapProfile(d),
+						profile: mapProfile(d, accountDetail),
 					};
 				}
 				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
-				if (Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23") {
+				// DEV_ALLOW_ANY_USER_TYPE skips the whole gate (org included) so any
+				// test mobile can reach the console. Never true in production.
+				if (
+					!cfg.devAllowAnyUserType &&
+					(Number(d.org_id ?? 0) !== 1 || String(d.user_type ?? "") !== "23")
+				) {
 					return { kind: "not_allowed", responseTypeId: code };
 				}
 
 				return {
 					kind: "found",
 					responseTypeId: code,
-					profile: mapProfile(d),
+					profile: mapProfile(d, accountDetail),
 				};
 			}
 			// Unrecognized response (mirror reference's "else -> 500"): a hard
@@ -673,19 +700,6 @@ export function createEkoClient(
 			return Number.isFinite(balance) ? balance : null;
 		},
 		async getTransactionHistory(input) {
-			// ponytail: fixture short-circuit. Interaction 154 is unprobed on this
-			// transport and `account_id` has no known source, so the console page is
-			// built and exercised against fixture rows. Delete this branch and the
-			// `transactionsMock` flag on wiring day — see
-			// docs/features/transaction-history.md §Unverified.
-			if (cfg.transactionsMock) {
-				return {
-					rows: filterFixture(TRANSACTION_FIXTURE, input.filters).slice(
-						input.startIndex,
-						input.startIndex + input.limit,
-					),
-				};
-			}
 			const raw = await post(
 				{
 					// `filters` is spread FIRST so none of its keys can override the
@@ -704,37 +718,12 @@ export function createEkoClient(
 					...(input.accountId ? { account_id: input.accountId } : {}),
 				},
 				input.xRealIp,
+				// 154 lives on the older API version — see `historyUrl`.
+				historyUrl,
 			);
 			return { rows: mapTransactionRows(raw) };
 		},
 	};
-}
-
-/**
- * Applies the mock path's filters to the fixture rows.
- *
- * ponytail: exists only so the fixture doesn't lie. Without it, filtering for a
- * TID that isn't there still returns rows, which reads as a real match and makes
- * the filter UI look broken. Exact-match on the fields a fixture can honour;
- * date-range and amount filters are ignored, which is why the mock is a
- * development aid and not a stand-in for upstream. Deleted with the flag.
- */
-function filterFixture(
-	rows: TransactionRow[],
-	filters: Record<string, string>,
-): TransactionRow[] {
-	const match: Record<string, (row: TransactionRow) => string | undefined> = {
-		tid: (row) => row.tid,
-		account: (row) => row.account,
-		customer_mobile: (row) => row.customer_mobile,
-		rr_no: (row) => row.trackingnumber,
-	};
-	return rows.filter((row) =>
-		Object.entries(filters).every(([key, value]) => {
-			const read = match[key];
-			return read ? read(row) === value : true;
-		}),
-	);
 }
 
 /** Coerces an upstream money/number field, which may arrive as a numeric string. */
@@ -754,12 +743,12 @@ function text(value: unknown): string | undefined {
  * Maps an upstream interaction-154 response to typed rows.
  *
  * Deliberately transport-agnostic: it takes the parsed body, so it stays correct
- * whether the call ends up going over SimpliBank form-urlencoded or the Connect
- * server's JSON. On wiring day only the envelope path below should need to move.
+ * whatever transport the call arrives over.
  *
- * The `data.transaction_list` path is UNVERIFIED — Eloka reads
- * `data.data.transaction_list` off the Connect server, whose extra `data` layer
- * is its own envelope. See docs/features/transaction-history.md §Unverified.
+ * The `data.transaction_list` path is CONFIRMED against a real response, kept
+ * verbatim in `transactions.sample.ts` and asserted by its tests. Eloka reads
+ * `data.data.transaction_list` only because its own fetcher adds an extra
+ * `data` layer — that wrapper is Eloka's, not upstream's.
  * @param raw - The parsed upstream response body.
  * @returns Typed rows; an empty array when the payload carries no list.
  */
@@ -800,9 +789,14 @@ export function mapTransactionRows(raw: unknown): TransactionRow[] {
 	});
 }
 
-function mapProfile(d: Record<string, unknown>): EkoProfile {
+function mapProfile(
+	d: Record<string, unknown>,
+	accountDetail?: AccountDetail,
+): EkoProfile {
 	const roles = Array.isArray(d.role_list) ? d.role_list : [];
 	return {
+		accounts: mapAccounts(accountDetail),
+		evalueAccountId: selectEvalueAccountId(accountDetail),
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),

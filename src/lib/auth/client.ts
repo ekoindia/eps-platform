@@ -1,3 +1,4 @@
+import type { DashboardView, DatePreset } from "@/lib/console/dashboard";
 import type {
 	TransactionFilters,
 	TransactionPage,
@@ -110,6 +111,14 @@ export interface DeployResult {
 	prNumber: number;
 }
 
+/** Browser-visible connect-api tokens. Never carries the full access token. */
+export interface ConnectTokenView {
+	accessTokenLite: string;
+	accessTokenCrm: string | null;
+	/** Epoch ms the lite token stops being accepted upstream. */
+	expiresAt: number;
+}
+
 /** Error thrown when the API returns a non-2xx response, carrying the envelope code and HTTP status. */
 export class ApiError extends Error {
 	public code: string;
@@ -154,7 +163,14 @@ async function request(
 	const res = await fetch(`${BASE}${path}`, {
 		...init,
 		credentials: "include",
-		headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+		headers: {
+			// A FormData body must set its own content type: the boundary is part of
+			// it, and naming the type here would leave the request unparseable.
+			...(init.body instanceof FormData
+				? {}
+				: { "Content-Type": "application/json" }),
+			...(init.headers ?? {}),
+		},
 	});
 	if (
 		res.status === 401 &&
@@ -189,9 +205,76 @@ export const authClient = {
 		request("/me", { method: "GET" }) as Promise<
 			MeView | AdminView | SignupView
 		>,
+	/** The caller's public IP, as the proxy saw it. Used for KYC watermarks. */
+	myIp: (): Promise<{ ip: string }> =>
+		request("/me/ip", { method: "GET" }) as Promise<{ ip: string }>,
 	/** The signed-in developer's E-value wallet balance, in rupees. */
 	walletBalance: (): Promise<WalletBalanceView> =>
 		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
+	/**
+	 * Reduced-scope connect-api tokens for the embedded Connect widget.
+	 *
+	 * The full access token is deliberately NOT part of this response — see
+	 * `mountConnect` in the backend. Callers must treat this as a credential:
+	 * write it where the widget reads it and nowhere else.
+	 */
+	connectToken: (): Promise<ConnectTokenView> =>
+		request("/connect/token", { method: "GET" }) as Promise<ConnectTokenView>,
+	/** The role-scoped interaction list backing `role_trxn_list`. */
+	connectInteractions: (): Promise<{ interactions: unknown[] }> =>
+		request("/connect/interactions", { method: "GET" }) as Promise<{
+			interactions: unknown[];
+		}>,
+	/**
+	 * Raise-issue support desk. Both calls are proxied because they need the full
+	 * upstream token, and the ticket is *assembled* server-side — the browser
+	 * sends answers, not a Zoho-Desk payload.
+	 */
+	connectSupport: {
+		/** Issue types available for one transaction. */
+		queryTypes: (
+			body: Record<string, string>,
+			signal?: AbortSignal,
+		): Promise<{ issueTypes: unknown[] }> =>
+			request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify(body),
+				signal,
+			}) as Promise<{ issueTypes: unknown[] }>,
+		/** Files the ticket. `form` carries a `payload` JSON part plus attachments. */
+		ticket: (
+			form: FormData,
+			signal?: AbortSignal,
+		): Promise<{ feedbackTicketId: string; message: string }> =>
+			request("/connect/support/ticket", {
+				method: "POST",
+				body: form,
+				signal,
+			}) as Promise<{ feedbackTicketId: string; message: string }>,
+	},
+	/**
+	 * KYC document upload. Both calls are proxied because they need the full
+	 * upstream token, and the uploader's identity is added server-side — the
+	 * browser says which document, never whose.
+	 */
+	connectKyc: {
+		/** The documents this user must upload. Rows are upstream's, unparsed. */
+		documents: (signal?: AbortSignal): Promise<{ documents: unknown[] }> =>
+			request("/connect/kyc/documents", {
+				method: "POST",
+				signal,
+			}) as Promise<{ documents: unknown[] }>,
+		/** Uploads one document. `form` carries `doc_type`, `pages` and `file1..fileN`. */
+		upload: (
+			form: FormData,
+			signal?: AbortSignal,
+		): Promise<{ message: string }> =>
+			request("/connect/kyc/upload", {
+				method: "POST",
+				body: form,
+				signal,
+			}) as Promise<{ message: string }>,
+	},
 	refresh: (): Promise<{ ok: true }> =>
 		request("/auth/refresh", { method: "POST" }) as Promise<{ ok: true }>,
 	logout: (): Promise<{ ok: true }> =>
@@ -283,4 +366,32 @@ export const transactionsClient = {
 			body: JSON.stringify(input),
 			signal,
 		}) as Promise<TransactionPage>,
+};
+
+/**
+ * Business analytics for the signed-in developer — requires a developer session
+ * that carries upstream Connect credentials.
+ *
+ * POST, not GET, for the same reason as the transaction search: this runs an
+ * aggregate upstream rather than reading a cacheable resource, and the body is
+ * one partner's business numbers, which must not sit in a proxy cache.
+ *
+ * A deployment without connect-api answers 501 `DASHBOARD_UNAVAILABLE`; callers
+ * should treat that as "not on this deployment", not as a failure.
+ */
+export const dashboardClient = {
+	/**
+	 * Loads one window of the caller's own dashboard.
+	 * @param input - The preset window, and an optional single-service filter.
+	 * @param signal - Aborts the request when the caller unmounts or re-queries.
+	 */
+	load: (
+		input: { preset: DatePreset; typeId?: string },
+		signal?: AbortSignal,
+	): Promise<DashboardView> =>
+		request("/dashboard", {
+			method: "POST",
+			body: JSON.stringify(input),
+			signal,
+		}) as Promise<DashboardView>,
 };

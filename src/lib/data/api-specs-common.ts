@@ -142,6 +142,22 @@ export interface ApiSpec {
 	 * `endpoint-descriptions.ts`. */
 	descriptionFile?: string;
 	relevance?: ApiProductRelevance;
+	/** When true, the endpoint is completely removed from the website: no docs
+	 * page or nav entry, no product-page preview, no `.md` twin, no llms.txt /
+	 * search-index entry, no OpenAPI path, no agent-bundle (→ MCP / SDK / Postman
+	 * / fixtures) entry, no prerender route or sitemap URL. Use this instead of
+	 * deleting the spec, so its researched request/response data survives.
+	 *
+	 * The spec stays in this file but disappears from `API_SPECS` (filtered at the
+	 * export, see `api-specs.ts`) — there is no runtime accessor for the raw list.
+	 *
+	 * Anything still POINTING at a disabled spec fails the build/tests: recipe
+	 * steps and branch `goto`s ({@link assertRecipeSlugs}), another spec's
+	 * {@link ApiResponseType.next} ({@link assertResponseTypeSlugs}), and curated
+	 * {@link RelatedLink.slug}s (guarded in `docs-registry.test.ts`). Clean those
+	 * up in the same change. Same for hard-coded `API_SPECS_MAP[id]` lookups
+	 * (e.g. the `/docs` showcase spec). */
+	disabled?: boolean;
 	/** OPTIONAL sub-product grouping for products with multiple integration
 	 * providers (e.g. Fino & Levin" for DMT).
 	 * Format: "<product short name> – <provider>" (Eg: "DMT – Fino")
@@ -302,6 +318,15 @@ export const FINANCIAL_RESPONSE_ENVELOPE: ResponseField[] = [
  */
 export const categoryForSpec = (spec: ApiSpec): ApiProductCategory =>
 	API_PRODUCTS_MAP[spec.productId]?.category ?? "bc";
+
+/**
+ * Drop specs flagged {@link ApiSpec.disabled}. Applied ONCE, at the `API_SPECS`
+ * export in `api-specs.ts`, so every downstream view — `API_SPECS_MAP`,
+ * `getSpecsForProduct`, `getDocumentedSpecs` and everything they feed — inherits
+ * it and no consumer has to remember the filter.
+ */
+export const enabledSpecs = (specs: ApiSpec[]): ApiSpec[] =>
+	specs.filter((spec) => !spec.disabled);
 
 /** True when the endpoint takes binary uploads (any `type:"file"` body param). */
 export const isMultipart = (spec: ApiSpec): boolean =>
