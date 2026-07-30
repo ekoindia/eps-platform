@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
@@ -51,6 +51,35 @@ describe("docker-compose.prod.yml", () => {
 		const c = compose();
 		expect(c).toContain("REGISTRY_AUTH_FILE: /root/.docker/config.json");
 		expect(c).toContain("./.ghcr-auth.json:/root/.docker/config.json:ro");
+	});
+});
+
+describe("Dockerfile", () => {
+	const dockerfile = readFileSync(resolve(root, "Dockerfile"), "utf8");
+
+	// Regression: jose@5 (this package) vs jose@6 (hoisted for
+	// @modelcontextprotocol/sdk) made npm nest jose under
+	// packages/eps-backend/node_modules. The runtime stage copied only the root
+	// node_modules and flattened dist into /app, so the nested deps were
+	// invisible and the container crash-looped on ERR_MODULE_NOT_FOUND.
+	it("ships every prod dependency npm nested under the workspace", () => {
+		const { dependencies } = JSON.parse(
+			readFileSync(resolve(root, "package.json"), "utf8"),
+		) as { dependencies: Record<string, string> };
+		const nested = Object.keys(dependencies).filter((dep) =>
+			existsSync(resolve(root, "node_modules", dep)),
+		);
+		if (nested.length > 0) {
+			expect(dockerfile).toContain(
+				"COPY --from=build /app/packages/eps-backend/node_modules ./node_modules",
+			);
+		}
+		expect(dockerfile).toContain(
+			"COPY --from=build /app/node_modules /app/node_modules",
+		);
+	});
+	it("runs from the workspace path so upward resolution reaches both trees", () => {
+		expect(dockerfile).toContain("WORKDIR /app/packages/eps-backend");
 	});
 });
 
