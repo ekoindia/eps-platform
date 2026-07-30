@@ -56,9 +56,12 @@ services:
   # packages/eps-transact-mcp/deploy/docker-compose.prod.yml. It can run on a
   # different host entirely, or beside this one as a separate compose project.
 
+  # Shared poller image (same as eps-transact-mcp + eko-business-dashboard
+  # stacks) — published from ./deploy/poller by deploy-poller.yml. One poller
+  # CONTAINER per stack by design (fault/HOLD isolation); only the image is
+  # shared. Pulling beats building on the VM's vfs storage driver.
   poller:
-    build:
-      context: ./deploy/poller
+    image: ghcr.io/ekoindia/eps-poller:prod
     # .env (operator secrets) feeds POLLER_ALERT_WEBHOOK into the container env;
     # the explicit `environment:` literals below override/augment it. (deploy.env
     # holds only EPS_BACKEND_IMAGE and is NOT an env source for the poller.)

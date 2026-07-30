@@ -101,7 +101,7 @@ stack.
 > stacks; see the [poller README](../deploy/poller/README.md) shared-VM
 > checklist). Steps 1–2 (Docker, NTP) are already done on that VM. Before
 > copying anything, check capacity: `df -h /data && df -i /data &&
-> docker system df && free -m` — the VM's Docker data-root uses the `vfs`
+docker system df && free -m` — the VM's Docker data-root uses the `vfs`
 > storage driver, which shares no layers between images, so image storage (not
 > container count) drives disk use. Copy the deploy files from the merged
 > `main` SHA, not a local working tree, so compose/poller config matches the
@@ -129,12 +129,17 @@ NTP client before anything else:
 
 ### Step 3 — Copy the deploy directory to the VM
 
-Place the contents of `packages/eps-backend/` (which includes
-`docker-compose.prod.yml` and `deploy/poller/`) at `/deploy` on the VM so the
-invariant compose command can find the file:
+Place these files from `packages/eps-backend/` at `/deploy` on the VM so the
+invariant compose command can find them:
 
     /deploy/docker-compose.prod.yml
-    /deploy/deploy/poller/          # poller Dockerfile + poll.sh
+    /deploy/.env.example
+
+The poller is NOT built on the VM — the compose file pulls the shared
+`ghcr.io/ekoindia/eps-poller:prod` image (same image as the eps-transact-mcp
+and eko-business-dashboard stacks; source in `deploy/poller/`, published by
+`deploy-poller.yml`). Each stack still runs its own poller container —
+fault/HOLD isolation — only the image is shared.
 
 Ownership and permissions: the files need to be readable by the user running
 Docker. On most setups `root` or a `docker` group member is fine.
@@ -205,7 +210,7 @@ Verify it looks like:
 > health gate the poller redeploys whatever digest was running before the
 > attempt (`prev` in `poll.sh`), so it works from the first poller-driven
 > deploy onward. `/state/last_good` (written on each successful gate) feeds
-> only the *manual* rollback procedure below.
+> only the _manual_ rollback procedure below.
 
 ### Step 7 — Smoke-test in-container auth
 
