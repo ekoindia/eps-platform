@@ -225,7 +225,16 @@ export default function ConsoleLayout() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<LoginForm />
+							{/* Warm the dashboard's chunk while the user reads the SMS.
+							    `ConsoleHome` is lazy, so without this its request only
+							    starts once the session lands — a round-trip bolted onto
+							    the screen the user is already waiting for. Must resolve to
+							    the same module App.tsx lazy-loads — the `@/` alias and its
+							    relative path do, and share one chunk — or this warms a
+							    second copy instead of the one that gets rendered. */}
+							<LoginForm
+								prefetch={() => import("@/pages/console/ConsoleHome")}
+							/>
 						</CardContent>
 					</Card>
 				) : null}

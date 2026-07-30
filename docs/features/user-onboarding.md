@@ -214,6 +214,25 @@ call, so the reload is cheap and instant; the actual onboarding progress is
 fetched separately by `SignupWizard` from `GET /signup/state`, which _does_
 hit the Eko profile.
 
+**On a fresh login, `AuthProvider` does not call `/me` at all.**
+`POST /auth/otp/verify` already answers with the exact view `/me` would build —
+same `buildMeView`, same upstream interaction-151 lookup — so `LoginForm` hands
+that response to `adopt()` instead of calling `refresh()`. Doing otherwise spent
+a second round-trip, and a second upstream profile call, re-learning what was
+already in hand, on the one path where the user is watching a spinner.
+`refresh()` remains for `SignupWizard`, which genuinely needs a re-read after
+onboarding changes the profile.
+
+`LoginForm` also takes an optional **`prefetch`** callback, fired once when the
+OTP step appears. The console passes
+`() => import("@/pages/console/ConsoleHome")`, so the dashboard's lazy chunk
+downloads during the seconds the user spends reading the SMS instead of adding a
+round-trip after the session lands. The caller supplies it rather than the form
+naming a page: the two call sites go to different places (`/console` → the
+dashboard, `/signup` → the wizard, which is not wired up yet and could be). A
+prefetch that rejects is swallowed — the real `import()` retries on render, and a
+cold cache must never fail a login.
+
 `AuthProvider.classify()` (`src/lib/auth/AuthProvider.tsx:34-44`) maps this
 onto a typed `AuthState` variant, `{ status: "authed"; role: "signup"; me:
 SignupView }`, which `SignupPage.tsx` switches on directly.

@@ -29,6 +29,17 @@ export type AuthState =
 interface AuthContextValue {
 	state: AuthState;
 	refresh: () => Promise<void>;
+	/**
+	 * Adopts a session view the caller has ALREADY been handed, without going
+	 * back to `/me` for it.
+	 *
+	 * `/auth/otp/verify` answers with the very same view `/me` builds — same
+	 * upstream profile call, same shape. Calling `refresh()` after a successful
+	 * verify therefore spends a second round-trip, and a second upstream
+	 * interaction-151 lookup, to re-learn what the response in hand already says
+	 * — on the one path where the user is staring at a spinner.
+	 */
+	adopt: (me: MeView | AdminView | SignupView) => void;
 	logout: () => Promise<void>;
 }
 
@@ -57,6 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} catch {
 			setState({ status: "anon" });
 		}
+	}, []);
+
+	const adopt = useCallback((me: MeView | AdminView | SignupView) => {
+		setState(classify(me));
 	}, []);
 
 	const logout = useCallback(async () => {
@@ -90,10 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// own unmount clears them; this catches every other way a session ends.
 		clearConnectTokens();
 		resetRoleTransactionCache();
+		// Same hazard as the balance: the dashboard's numbers are one partner's
+		// business data, cached in module scope for the same remount reason.
+		resetDashboardCache();
 	}, [state.status]);
 
 	return (
-		<AuthContext.Provider value={{ state, refresh, logout }}>
+		<AuthContext.Provider value={{ state, refresh, adopt, logout }}>
 			{children}
 		</AuthContext.Provider>
 	);
@@ -105,9 +123,6 @@ export function useAuth(): AuthContextValue {
 	if (!ctx) throw new Error("useAuth must be used within AuthProvider");
 	return ctx;
 }
-		// Same hazard as the balance: the dashboard's numbers are one partner's
-		// business data, cached in module scope for the same remount reason.
-		resetDashboardCache();
 
 /**
  * The same context, for components that merely *decorate* with the session and
