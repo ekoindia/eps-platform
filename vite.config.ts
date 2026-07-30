@@ -49,6 +49,11 @@ export default defineConfig(({ mode }) => ({
 			jpeg: { quality: 80 },
 		}),
 	].filter(Boolean),
+	// The PDF toolkit's worker (src/lib/pdf/pdf-worker.ts) is a module worker, so
+	// it needs ESM output. Vite's default is "iife", which cannot carry imports.
+	worker: {
+		format: "es",
+	},
 	build: {
 		cssMinify: "lightningcss",
 		manifest: true,

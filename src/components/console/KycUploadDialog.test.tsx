@@ -14,12 +14,18 @@ vi.mock("@/components/FileUpload", () => ({
 		accept,
 		maxBytes,
 		cameraOnly,
+		multiple,
+		combinedFileName,
+		watermark,
 		onFileChange,
 	}: {
 		label?: string;
 		accept?: string;
 		maxBytes?: number;
 		cameraOnly?: boolean;
+		multiple?: boolean;
+		combinedFileName?: string;
+		watermark?: boolean | string | Record<string, string>;
 		onFileChange: (file: File | null) => void;
 	}) => (
 		<button
@@ -28,6 +34,9 @@ vi.mock("@/components/FileUpload", () => ({
 			data-accept={accept}
 			data-max-bytes={String(maxBytes)}
 			data-camera-only={String(Boolean(cameraOnly))}
+			data-multiple={String(Boolean(multiple))}
+			data-combined-name={combinedFileName}
+			data-watermark={String(watermark)}
 			onClick={() => onFileChange(pick())}
 		>
 			{label}
@@ -117,6 +126,30 @@ describe("KycUploadDialog", () => {
 		);
 	});
 
+	it("stamps provenance on the live photograph, which this console witnessed", () => {
+		render(<KycUploadDialog doc={doc({ docType: "24" })} onClose={vi.fn()} />);
+
+		expect(screen.getByTestId("file-upload")).toHaveAttribute(
+			"data-watermark",
+			"true",
+		);
+	});
+
+	it("leaves every other document unstamped", () => {
+		// The watermark is opt-in, per document. A stamp on a scan of a card that
+		// existed long before the upload defaces someone's Aadhaar and proves
+		// nothing about it — only a capture taken here carries provenance.
+		for (const docType of ["999", "1"]) {
+			const { unmount } = render(
+				<KycUploadDialog doc={doc({ docType })} onClose={vi.fn()} />,
+			);
+			for (const slot of screen.getAllByTestId("file-upload")) {
+				expect(slot).toHaveAttribute("data-watermark", "undefined");
+			}
+			unmount();
+		}
+	});
+
 	it("passes the backend's allow-list on to an unconfigured document", () => {
 		render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
 		const slot = screen.getByTestId("file-upload");
@@ -165,6 +198,72 @@ describe("KycUploadDialog", () => {
 		expect(onClose).toHaveBeenCalledWith({
 			docType: "999",
 			message: "Received",
+		});
+	});
+
+	describe("multi-file capture", () => {
+		/** The `multiple` flag each slot was handed. */
+		function multipleFlags() {
+			return screen
+				.getAllByTestId("file-upload")
+				.map((slot) => slot.dataset.multiple);
+		}
+
+		it("lets both sides of an Aadhaar take several photos", () => {
+			render(
+				<KycUploadDialog
+					doc={doc({ docType: "1", pages: 2 })}
+					onClose={vi.fn()}
+				/>,
+			);
+
+			expect(multipleFlags()).toEqual(["true", "true"]);
+		});
+
+		// Upstream uses two codes for a PAN card; the 586 sample only carries the
+		// second, so a config on one of them alone would silently do nothing.
+		it.each(["2", "15"])("lets PAN %s take several photos", (docType) => {
+			render(<KycUploadDialog doc={doc({ docType })} onClose={vi.fn()} />);
+
+			expect(multipleFlags()).toEqual(["true"]);
+		});
+
+		it("takes several frames of the live photograph, images only", () => {
+			render(
+				<KycUploadDialog doc={doc({ docType: "24" })} onClose={vi.fn()} />,
+			);
+
+			const [slot] = screen.getAllByTestId("file-upload");
+			expect(slot.dataset.multiple).toBe("true");
+			expect(slot.dataset.cameraOnly).toBe("true");
+			// A "live" photograph that arrives as a PDF is not one, so the accept
+			// list is narrower than the backend's.
+			expect(slot.dataset.accept).toBe("image/jpeg,image/png");
+		});
+
+		it("leaves an unconfigured document on single-file upload", () => {
+			render(
+				<KycUploadDialog doc={doc({ docType: "999" })} onClose={vi.fn()} />,
+			);
+
+			expect(multipleFlags()).toEqual(["false"]);
+		});
+
+		it("names a combined page after its slot", () => {
+			render(
+				<KycUploadDialog
+					doc={doc({ docType: "1", pages: 2 })}
+					onClose={vi.fn()}
+				/>,
+			);
+
+			// Two files both called "combined-documents.pdf" tell a reviewer
+			// nothing about which side of the card they are looking at.
+			expect(
+				screen
+					.getAllByTestId("file-upload")
+					.map((slot) => slot.dataset.combinedName),
+			).toEqual(["aadhaar-front.pdf", "aadhaar-back.pdf"]);
 		});
 	});
 });

@@ -1,4 +1,8 @@
-import { FileUpload, acceptsType } from "@/components/FileUpload";
+import {
+	FileUpload,
+	acceptsOnlyImagesAndPdfs,
+	acceptsType,
+} from "@/components/FileUpload";
 import { ConnectDialogProvider } from "@/components/connect/DialogHost";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -182,5 +186,74 @@ describe("FileUpload", () => {
 		discard.click();
 
 		expect(onFileChange).toHaveBeenCalledWith(null);
+	});
+});
+
+describe("acceptsOnlyImagesAndPdfs", () => {
+	it("allows an empty accept, which constrains nothing", () => {
+		expect(acceptsOnlyImagesAndPdfs("")).toBe(true);
+	});
+
+	it("allows images and PDFs in any combination", () => {
+		expect(acceptsOnlyImagesAndPdfs("image/*,application/pdf")).toBe(true);
+		expect(acceptsOnlyImagesAndPdfs("image/jpeg, image/png")).toBe(true);
+		expect(acceptsOnlyImagesAndPdfs("APPLICATION/PDF")).toBe(true);
+		expect(acceptsOnlyImagesAndPdfs(".jpg,.png,.pdf")).toBe(true);
+	});
+
+	it("refuses anything that cannot go into a PDF", () => {
+		// A zone that also takes a spreadsheet keeps single-file behaviour
+		// rather than silently dropping the one file it cannot fold in.
+		expect(acceptsOnlyImagesAndPdfs("image/*,.docx")).toBe(false);
+		expect(
+			acceptsOnlyImagesAndPdfs("application/pdf,application/vnd.ms-excel"),
+		).toBe(false);
+	});
+
+	it("ignores a trailing comma", () => {
+		expect(acceptsOnlyImagesAndPdfs("image/*,")).toBe(true);
+	});
+});
+
+describe("FileUpload multi-file mode", () => {
+	/** The hidden native input, which carries the `multiple` attribute. */
+	function inputOf(container: HTMLElement) {
+		const input =
+			container.querySelector<HTMLInputElement>('input[type="file"]');
+		if (!input) throw new Error("no file input rendered");
+		return input;
+	}
+
+	it("engages when every accepted type can go into a PDF", () => {
+		const { container } = renderUpload({
+			multiple: true,
+			accept: "image/*,application/pdf",
+		});
+
+		expect(inputOf(container).multiple).toBe(true);
+	});
+
+	it("falls back to single-file when a type cannot go into a PDF", () => {
+		const { container } = renderUpload({
+			multiple: true,
+			accept: "image/*,.docx",
+		});
+
+		expect(inputOf(container).multiple).toBe(false);
+	});
+
+	it("stays single-file unless asked", () => {
+		const { container } = renderUpload({ accept: "image/*,application/pdf" });
+
+		expect(inputOf(container).multiple).toBe(false);
+	});
+
+	it("invites several files rather than one", () => {
+		const { container } = renderUpload({
+			multiple: true,
+			accept: "image/*,application/pdf",
+		});
+
+		expect(container.textContent).toContain("drag and drop files here");
 	});
 });

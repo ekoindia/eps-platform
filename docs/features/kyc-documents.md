@@ -222,10 +222,15 @@ the part of a zoomed document the user is trying to read. Previews are object or
 outright — without it the viewer framed them in an iframe, at original size,
 with scrollbars.
 
-Every page is uploaded with `watermark` on, which burns provenance — who, where,
-when — into the pixels. That applies to **images only**; `FileUpload.handleFile`
-routes non-images straight through, so a PDF is attached untouched and carries
-no watermark evidence.
+A page whose document type asks for a `watermark` is uploaded with provenance —
+who, where, when — burnt into the pixels. It is **opt-in per document type**, and
+today only `"24"` (the live photograph) asks: a stamp is evidence about a capture
+this console witnessed, so on a scan of a card that existed long before the
+upload it defaces someone's Aadhaar and proves nothing about it.
+
+Either way it applies to **images only**; `FileUpload.handleFile` routes
+non-images straight through, so a PDF is attached untouched and carries no
+watermark evidence.
 
 On failure the dialog stays open with the files still attached and reports
 through `toast.error` — re-picking every page because the network blipped is the
@@ -248,7 +253,8 @@ where the console records what it knows that the shared list cannot express.
 | `pageLabels` | Names each slot, instead of "Page 1", "Page 2", … |
 | `accept` | Narrows the allowed types for this document |
 | `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
-| `watermark` | Overrides the default provenance stamp |
+| `multiple` | One slot may take several attachments, combined into a single PDF |
+| `watermark` | Burns a provenance stamp into this type's captures. Opt-in — absent means none |
 | `options` | Crop ratio, size cap, face checks — see `FileUploadOptions` |
 | `maxBytes` | A tighter per-file limit than the backend's 10 MB |
 
@@ -272,22 +278,31 @@ Rules that matter:
 - **Never combine `options.disableImageConfirm` with a document that needs
   provenance.** It skips the editor, and the editor is where the watermark is
   burnt into the pixels.
+- **`multiple` is per *slot*, not per document.** A two-page document with it set
+  can take several photos of the front and several of the back, and uploads one
+  combined PDF as `file1` and another as `file2`. A slot given a single
+  attachment sends it unchanged, so nothing becomes a PDF that did not need to
+  be. Each attachment still goes through the editor, so every page carries the
+  watermark. It only engages while `accept` is images and/or PDFs — see
+  `docs/pdf-toolkit.md`.
 
 Presentation fields are overlaid inside `parseDocumentList`, so the page and the
 dev bench cannot drift; capture metadata is read by `KycUploadDialog` straight
 from `configOf`.
 
-Two entries ship today:
+Four entries ship today:
 
 | `doc_type` | Config | Why |
 | --- | --- | --- |
-| `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. |
-| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `cameraOnly`, `watermark` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
+| `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]`, `multiple` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. Photographed far more often than scanned, and a phone rarely gets a whole card square in one frame — so each side may take several shots. |
+| `"2"` and `"15"` PAN | `multiple` | Same reasoning as Aadhaar: a photographed card, sometimes worth two shots. Both codes are configured — the 586 sample calls `15` "Director PAN Card", so configuring only one would silently do nothing for accounts asked for the other. |
+| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `accept` images only, `cameraOnly`, `multiple`, `watermark` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
 
 The live-photograph entry is what the whole map exists for. A "live" photograph
-selectable from the gallery is not live, so the camera is the only source, and
-the watermark is what actually supplies the coordinates the document's name
-promises. With both enforced, the name can go back to naming the document.
+selectable from the gallery is not live, so the camera is the only source, the
+`accept` list is narrowed to images so a PDF cannot arrive claiming to be one,
+and the watermark is what actually supplies the coordinates the document's name
+promises. With those enforced, the name can go back to naming the document.
 
 Face detection is deliberately **off**: it pre-crops to the face it finds, which
 is wrong for a photograph that has to show the director *and* their

@@ -71,7 +71,34 @@ export interface KycDocConfig {
 	accept?: string;
 	/** The camera as the only source: no file picker, no drag and drop. */
 	cameraOnly?: boolean;
-	/** Overrides the KYC default provenance stamp. See `useWatermarkText`. */
+	/**
+	 * Lets one page slot take several attachments, combined into a single PDF.
+	 *
+	 * For documents a user photographs rather than scans: a long Aadhaar, a PAN
+	 * held at an angle, a shop front that needs two frames. Each attachment
+	 * still goes through the editor, so the watermark is burnt into every page.
+	 *
+	 * Note this is per *slot*, not per document — a two-page document with this
+	 * set can take several photos for the front and several for the back, and
+	 * uploads one combined PDF for each. A slot given a single attachment sends
+	 * it unchanged, so nothing becomes a PDF that did not need to be.
+	 *
+	 * Only takes effect while `accept` is images and/or PDFs; see
+	 * `acceptsOnlyImagesAndPdfs` in `FileUpload`.
+	 */
+	multiple?: boolean;
+	/**
+	 * Burns a provenance stamp into this document's captures. See
+	 * `useWatermarkText`.
+	 *
+	 * Opt-IN: absent means no watermark. A stamp is evidence about a capture
+	 * this console witnessed — who took it, from where, when — so it belongs on
+	 * a live photograph and not on a scan of a card that existed long before the
+	 * upload, where it defaces the document and proves nothing about it.
+	 *
+	 * `true` takes the defaults; a string replaces the text outright; an object
+	 * overrides individual lines.
+	 */
 	watermark?: WatermarkSpec;
 	/**
 	 * Editing requirements for images of this document — crop ratio, size cap,
@@ -107,7 +134,18 @@ export interface KycDocConfig {
 export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// Two identical "Page 1 / Page 2" slots is how a user ends up attaching the
 	// front twice and hearing about it a week later, at review.
-	"1": { pageLabels: ["Aadhaar front", "Aadhaar back"] },
+	//
+	// Photographed far more often than scanned, and a phone rarely gets a whole
+	// card square in one frame — so each side may take several shots, combined
+	// into one PDF per side.
+	"1": { pageLabels: ["Aadhaar front", "Aadhaar back"], multiple: true },
+
+	// Same reasoning as Aadhaar: a photographed card, sometimes worth two shots.
+	// Both PAN codes upstream uses — `2` and the `15` that the 586 sample calls
+	// "Director PAN Card" — so whichever one a given account is asked for
+	// behaves the same.
+	"2": { multiple: true },
+	"15": { multiple: true },
 
 	// The live photograph. Upstream's name spells out the capture instructions
 	// ("with Location Coordinates", and an `info` naming a third-party GPS camera
@@ -119,9 +157,17 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// photograph that has to show the director *and* their surroundings, and it
 	// refuses outright when the model misses in poor light. `minFaceCount` would
 	// be dead config without it — the editor only enforces it under `detectFace`.
+	//
+	// Images only, narrower than {@link KYC_ACCEPT}: a "live" photograph that
+	// arrives as a PDF is not one. `cameraOnly` already hides the file picker,
+	// but the narrowed `accept` is what makes that a rule rather than a UI
+	// choice. Several frames may be captured — the surroundings rarely fit one —
+	// and they are combined into a single PDF, which the backend accepts.
 	"24": {
 		name: "Directors' Live Photograph",
+		accept: "image/jpeg,image/png",
 		cameraOnly: true,
+		multiple: true,
 		watermark: true,
 	},
 };

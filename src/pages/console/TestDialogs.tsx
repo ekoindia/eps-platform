@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import { parseDocumentList, type KycDocument } from "@/lib/connect/kyc";
+import {
+	compressPdf,
+	extractPdfImages,
+	mergePdfs,
+	pdfFromImages,
+	pdfPageCount,
+} from "@/lib/pdf/pdf-client";
 import { printPage } from "@/lib/print";
 import { useState, type ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
@@ -56,6 +63,9 @@ export default function TestDialogs() {
 			</Section>
 			<Section title="KYC document upload">
 				<KycUploadTest />
+			</Section>
+			<Section title="PDF tools">
+				<PdfToolsTest />
 			</Section>
 			<Section title="Print receipt">
 				<PrintTest />
@@ -248,6 +258,7 @@ function FileUploadTest() {
 	const [disableImageConfirm, setDisableImageConfirm] = useState(false);
 	const [kycWatermark, setKycWatermark] = useState(false);
 	const [customWatermark, setCustomWatermark] = useState("");
+	const [multiple, setMultiple] = useState(false);
 
 	return (
 		<div>
@@ -258,6 +269,7 @@ function FileUploadTest() {
 					checked={cameraOnly}
 					onChange={setCameraOnly}
 				/>
+				<Toggle label="multiple" checked={multiple} onChange={setMultiple} />
 				<Toggle
 					label="disableImageConfirm"
 					checked={disableImageConfirm}
@@ -308,9 +320,17 @@ function FileUploadTest() {
 				watermark={customWatermark || kycWatermark}
 				file={file}
 				onFileChange={setFile}
+				multiple={multiple}
 				options={{ ...options, disableImageConfirm }}
 				className="max-w-md"
 			/>
+			{multiple ? (
+				<p className="mb-3 text-xs text-muted-foreground">
+					Engages only while <code>accept</code> is images and/or PDFs. Two or
+					more attachments are combined into one PDF; a single one is passed
+					through as itself.
+				</p>
+			) : null}
 			<ResultJson
 				value={
 					file ? { name: file.name, type: file.type, size: file.size } : null
@@ -569,6 +589,185 @@ function KycUploadTest() {
 					setResult(uploaded ?? { cancelled: true });
 				}}
 			/>
+			<ResultJson value={result} />
+		</div>
+	);
+}
+
+/**
+ * The browser-side PDF toolkit, one button per operation.
+ *
+ * Nothing here touches the network: page counts, merges, image-to-PDF and
+ * compression all run in the worker (and pdf.js) on this machine.
+ */
+function PdfToolsTest() {
+	const { showFile } = useConnectDialogs();
+	const [files, setFiles] = useState<File[]>([]);
+	const [result, setResult] = useState<unknown>(null);
+	const [output, setOutput] = useState<string | null>(null);
+	const [thumbnails, setThumbnails] = useState<string[]>([]);
+	const [busy, setBusy] = useState(false);
+
+	const pdfs = files.filter((file) => file.type === "application/pdf");
+	const images = files.filter((file) => file.type.startsWith("image/"));
+
+	/** Runs an operation, showing whatever it produced or why it refused. */
+	async function run(label: string, action: () => Promise<unknown>) {
+		setBusy(true);
+		setResult(null);
+		setThumbnails([]);
+		const startedAt = performance.now();
+		try {
+			const value = await action();
+			setResult({
+				op: label,
+				ms: Math.round(performance.now() - startedAt),
+				...(value as object),
+			});
+		} catch (error) {
+			setResult({
+				op: label,
+				error: error instanceof Error ? error.name : "Error",
+				message: error instanceof Error ? error.message : String(error),
+			});
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	/** Publishes a produced PDF so it can be viewed and downloaded. */
+	function publish(blob: Blob): { size: number } {
+		if (output) URL.revokeObjectURL(output);
+		setOutput(URL.createObjectURL(blob));
+		return { size: blob.size };
+	}
+
+	return (
+		<div className="flex flex-col gap-3">
+			<Input
+				type="file"
+				multiple
+				accept="application/pdf,image/*"
+				onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
+			/>
+			<p className="text-xs text-muted-foreground">
+				{files.length === 0
+					? "Pick PDFs and/or images. Everything runs locally."
+					: `${pdfs.length} PDF(s), ${images.length} image(s) selected.`}
+			</p>
+
+			<div className="flex flex-wrap gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={busy || pdfs.length === 0}
+					onClick={() =>
+						run("pageCount", async () => ({
+							pages: await pdfPageCount(pdfs[0]),
+							file: pdfs[0].name,
+						}))
+					}
+				>
+					Page count
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={busy || pdfs.length < 2}
+					onClick={() =>
+						run("merge", async () => {
+							const merged = await mergePdfs(pdfs);
+							return {
+								...publish(merged),
+								pages: await pdfPageCount(merged),
+							};
+						})
+					}
+				>
+					Merge PDFs
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={busy || images.length === 0}
+					onClick={() =>
+						run("pdfFromImages", async () => {
+							const built = await pdfFromImages(images);
+							return { ...publish(built), pages: images.length };
+						})
+					}
+				>
+					Images → PDF
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={busy || pdfs.length === 0}
+					onClick={() =>
+						run("compress", async () => {
+							const compressed = await compressPdf(pdfs[0]);
+							publish(compressed.blob);
+							return {
+								compressed: compressed.compressed,
+								originalSize: compressed.originalSize,
+								outputSize: compressed.outputSize,
+								saved: `${Math.round(
+									(1 - compressed.outputSize / compressed.originalSize) * 100,
+								)}%`,
+							};
+						})
+					}
+				>
+					Compress
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={busy || pdfs.length === 0}
+					onClick={() =>
+						run("extractImages", async () => {
+							const extracted = await extractPdfImages(pdfs[0]);
+							setThumbnails(extracted.map((blob) => URL.createObjectURL(blob)));
+							return { found: extracted.length };
+						})
+					}
+				>
+					Extract images
+				</Button>
+			</div>
+
+			{output && (
+				<div className="flex flex-wrap items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => showFile(output, { type: "pdf" })}
+					>
+						View result
+					</Button>
+					<a
+						href={output}
+						download="result.pdf"
+						className="text-sm text-eko-blue underline"
+					>
+						Download
+					</a>
+				</div>
+			)}
+
+			{thumbnails.length > 0 && (
+				<div className="flex flex-wrap gap-2">
+					{thumbnails.map((source) => (
+						<img
+							key={source}
+							src={source}
+							alt="Extracted"
+							className="max-h-32 rounded-md border"
+						/>
+					))}
+				</div>
+			)}
+
 			<ResultJson value={result} />
 		</div>
 	);

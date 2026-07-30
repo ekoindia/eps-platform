@@ -19,6 +19,20 @@ import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+/**
+ * Turns a slot label into something safe to use as a file name.
+ * @param label - The page label, e.g. `Aadhaar front`.
+ * @returns A lowercase hyphenated stem, e.g. `aadhaar-front`.
+ */
+function slugify(label: string): string {
+	return (
+		label
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "") || "document"
+	);
+}
+
 export interface KycUploadDialogProps {
 	/** The document being uploaded. Null closes the dialog. */
 	doc: KycDocument | null;
@@ -107,29 +121,44 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 				</DialogHeader>
 
 				<div className="flex flex-col gap-4">
-					{files.map((file, index) => (
-						<FileUpload
-							// Slots are positional and fixed for the life of the dialog, so
-							// the index is a stable identity here.
-							key={index}
-							label={
-								config.pageLabels?.[index] ??
-								(files.length > 1 ? `Page ${index + 1}` : "File")
-							}
-							required
-							accept={config.accept ?? KYC_ACCEPT}
-							maxBytes={maxBytes}
-							cameraOnly={config.cameraOnly}
-							options={config.options}
-							file={file}
-							disabled={busy}
-							// Provenance burnt into the pixels — who, where and when — which
-							// is what makes a captured document evidence rather than a photo.
-							// Images only; a PDF is attached untouched.
-							watermark={config.watermark ?? true}
-							onFileChange={(picked) => setPage(index, picked)}
-						/>
-					))}
+					{files.map((file, index) => {
+						const label =
+							config.pageLabels?.[index] ??
+							(files.length > 1 ? `Page ${index + 1}` : "File");
+						return (
+							<FileUpload
+								// Slots are positional and fixed for the life of the dialog, so
+								// the index is a stable identity here.
+								key={index}
+								label={label}
+								required
+								accept={config.accept ?? KYC_ACCEPT}
+								maxBytes={maxBytes}
+								cameraOnly={config.cameraOnly}
+								// Several photos of one side, combined into a single PDF. Off
+								// unless this document type asks for it.
+								multiple={config.multiple}
+								// Names the combined PDF after the slot, so a reviewer opening
+								// the upload can tell which side of the card they are looking
+								// at instead of two files both called "combined-documents".
+								combinedFileName={`${slugify(label)}.pdf`}
+								options={config.options}
+								file={file}
+								disabled={busy}
+								// Provenance burnt into the pixels — who, where and when —
+								// which is what makes a captured document evidence rather than
+								// a photo. Images only; a PDF is attached untouched.
+								//
+								// Opt-IN, per document. A stamp belongs on a capture this
+								// console witnessed (a live photograph taken here, now); on a
+								// scan of a pre-existing card it defaces someone's Aadhaar
+								// with our metadata and proves nothing about the card. Only
+								// doc_type 24 asks for it today.
+								watermark={config.watermark}
+								onFileChange={(picked) => setPage(index, picked)}
+							/>
+						);
+					})}
 				</div>
 
 				<DialogFooter>

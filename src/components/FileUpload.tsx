@@ -3,8 +3,23 @@ import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog"
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useWatermarkText, type WatermarkSpec } from "@/hooks/use-watermark";
+import {
+	combinePdfParts,
+	compressIfLarge,
+	DEFAULT_COMPRESS_THRESHOLD_BYTES,
+	fileToPdfBytes,
+	shrinkToFit,
+} from "@/lib/pdf/upload-combine";
 import { cn } from "@/lib/utils";
-import { Camera, FolderOpen, ImageIcon, X } from "lucide-react";
+import {
+	Camera,
+	ChevronDown,
+	ChevronUp,
+	FileText,
+	FolderOpen,
+	ImageIcon,
+	X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -44,9 +59,42 @@ export interface FileUploadProps {
 	watermark?: WatermarkSpec;
 	/** Editing requirements applied to images from every source. */
 	options?: FileUploadOptions;
+	/**
+	 * Let the user attach several files, combined into a single PDF.
+	 *
+	 * Only takes effect when every type in `accept` is an image or a PDF —
+	 * anything else and this falls back to the single-file behaviour, since
+	 * there is no sane way to fold a spreadsheet into a PDF here. The caller
+	 * still receives exactly one `File` through `onFileChange`.
+	 *
+	 * A lone attachment is passed through as itself: one image stays an image,
+	 * one PDF stays a PDF. Combining starts at two.
+	 */
+	multiple?: boolean;
+	/** Ceiling on how many attachments may be combined. Default 10. */
+	maxFiles?: number;
+	/**
+	 * Size above which a picked PDF is compressed before being combined.
+	 *
+	 * Compression pulls in pdf.js and rasterises every page, so small PDFs are
+	 * left alone. Images are always re-encoded — that part is cheap.
+	 */
+	compressThresholdBytes?: number;
+	/** Name for the combined PDF. Default `combined-documents.pdf`. */
+	combinedFileName?: string;
 	required?: boolean;
 	disabled?: boolean;
 	className?: string;
+}
+
+/** One picked attachment, already edited or compressed, waiting to be combined. */
+interface PendingItem {
+	/** Stable list key, also the key into the per-item PDF cache. */
+	id: string;
+	/** The processed attachment: an edited image, or a compressed PDF. */
+	file: File;
+	/** Data URL thumbnail for images; null for PDFs. */
+	thumbnail: string | null;
 }
 
 /**
@@ -90,6 +138,45 @@ function acceptsNonImages(accept: string): boolean {
 }
 
 /**
+ * Renders a byte count for a list row.
+ * @param bytes - Size in bytes.
+ * @returns A short human-readable size, e.g. `1.4 MB`.
+ */
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+	return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** Extension rules we can still fold into a PDF, for `accept` lists that use them. */
+const PDF_COMBINABLE_EXTENSIONS = /^\.(jpe?g|png|gif|webp|bmp|heic|heif|pdf)$/;
+
+/**
+ * Whether every accepted type is something that can go into a PDF.
+ *
+ * Gates multi-file mode: combining only makes sense for images and PDFs, so a
+ * zone that also takes, say, a spreadsheet keeps the single-file behaviour
+ * rather than silently dropping the one file it cannot fold in.
+ * @param accept - The accept attribute; empty means everything is allowed,
+ * which we treat as eligible since the caller has expressed no constraint.
+ * @returns True when multi-file mode may engage.
+ */
+export function acceptsOnlyImagesAndPdfs(accept: string): boolean {
+	if (!accept) return true;
+	const rules = accept
+		.split(",")
+		.map((entry) => entry.trim().toLowerCase())
+		.filter(Boolean);
+	if (rules.length === 0) return true;
+	return rules.every(
+		(rule) =>
+			isImageType(rule) ||
+			rule === "application/pdf" ||
+			PDF_COMBINABLE_EXTENSIONS.test(rule),
+	);
+}
+
+/**
  * File input with a camera, an image editor and a preview.
  *
  * An attachment is rarely usable as it leaves the phone: it is 4 MB, rotated, and shows the whole desk around the document.
@@ -122,6 +209,10 @@ export function FileUpload({
 	cameraOnly = false,
 	watermark,
 	options = {},
+	multiple = false,
+	maxFiles = 10,
+	compressThresholdBytes = DEFAULT_COMPRESS_THRESHOLD_BYTES,
+	combinedFileName = "combined-documents.pdf",
 	required = false,
 	disabled = false,
 	className,
@@ -148,12 +239,40 @@ export function FileUpload({
 		[],
 	);
 
+	// Attachments waiting to be combined, in page order. Only used in multi mode.
+	const [items, setItems] = useState<PendingItem[]>([]);
+	const [progress, setProgress] = useState<{
+		done: number;
+		total: number;
+	} | null>(null);
+	// Each item's PDF form, built once and keyed by item id, so reordering or
+	// removing one attachment re-merges cached bytes instead of re-editing and
+	// re-compressing the whole batch.
+	const pdfCacheRef = useRef(new Map<string, Uint8Array>());
+	// Rebuilds are async; a later one must win even if an earlier one finishes
+	// after it, or a removed attachment can reappear in the combined document.
+	const rebuildTokenRef = useRef(0);
+	const nextItemIdRef = useRef(0);
+	// A mirror of `items` that is safe to read after an await. Adding files
+	// spans several modal dialogs, and the `items` captured in that closure is
+	// whatever it was when the user started — by the time they finish cropping,
+	// a removal or another add may have moved on.
+	const itemsRef = useRef<PendingItem[]>([]);
+	// Serialises the batch operations, which the disabled buttons alone do not:
+	// a drop lands on the zone whatever the buttons say.
+	const addingRef = useRef(false);
+
 	const imageAllowed = acceptsImages(accept);
 	const nonImageAllowed = acceptsNonImages(accept);
+	const multiEnabled = multiple && acceptsOnlyImagesAndPdfs(accept);
+	const busy = progress !== null;
 	const editorOptions = {
 		...options,
 		watermark: watermarkText || options.watermark,
 	};
+	// The editor already caps image size; carry the same cap into the PDF so a
+	// combined document is not larger than the images it was built from.
+	const imageToPdfOptions = { maxLength: options.maxLength };
 
 	/** Replaces the preview, releasing the previous object URL if there was one. */
 	function showPreview(url: string | null, isObjectUrl = false) {
@@ -167,7 +286,11 @@ export function FileUpload({
 		if (inputRef.current) inputRef.current.value = "";
 	}
 
-	/** Hands a file to the caller and shows its preview, unless it is too large. */
+	/**
+	 * Hands a file to the caller and shows its preview, unless it is too large.
+	 *
+	 * @returns False when the file was refused for its size.
+	 */
 	function attach(picked: File, image: string | null, isObjectUrl = false) {
 		// Every source funnels through here, which is why the size check lives here
 		// and not in each caller — a caller that forgets it uploads unbounded.
@@ -185,10 +308,11 @@ export function FileUpload({
 			toast.error(
 				`${picked.name} is larger than ${Math.round(maxBytes / 1024 / 1024)} MB.`,
 			);
-			return;
+			return false;
 		}
 		showPreview(image, isObjectUrl);
 		onFileChange(picked);
+		return true;
 	}
 
 	/** Routes a file: images through the editor, anything else straight through. */
@@ -223,11 +347,249 @@ export function FileUpload({
 		}
 	}
 
-	async function captureFromCamera() {
-		const result = await openCamera(editorOptions);
-		if (result.accepted && result.file) {
-			attach(result.file, result.image ?? null);
+	/**
+	 * Prepares one picked file for the batch: images through the editor, PDFs
+	 * through compression.
+	 *
+	 * @param candidate - The file as picked.
+	 * @returns The pending item, or null when it was cancelled or unusable.
+	 */
+	async function prepareItem(candidate: File): Promise<PendingItem | null> {
+		if (!acceptsType(accept, candidate.type)) {
+			toast.error(`${candidate.name} is not an accepted file type.`);
+			return null;
 		}
+
+		if (isImageType(candidate.type)) {
+			// ponytail: with the confirm step disabled there is no data URL to
+			// show, so the row falls back to the file name. Keeping the object URL
+			// instead would mean tracking a revoke per row for a thumbnail.
+			if (options.disableImageConfirm) {
+				return { id: nextItemId(), file: candidate, thumbnail: null };
+			}
+			const objectUrl = URL.createObjectURL(candidate);
+			try {
+				const result = await editImage(objectUrl, {
+					fileName: candidate.name,
+					...editorOptions,
+				});
+				// Cancelling one image drops that image, not the whole batch —
+				// having to re-crop four accepted photos would be punishing.
+				if (!result.accepted || !result.file) return null;
+				return {
+					id: nextItemId(),
+					file: result.file,
+					thumbnail: result.image ?? null,
+				};
+			} finally {
+				URL.revokeObjectURL(objectUrl);
+			}
+		}
+
+		try {
+			const compressed = await compressIfLarge(
+				candidate,
+				compressThresholdBytes,
+			);
+			return { id: nextItemId(), file: compressed, thumbnail: null };
+		} catch (error) {
+			// A PDF we cannot even read — encrypted or corrupt. Say so and skip it;
+			// a document that merely resists compression never lands here.
+			toast.error(
+				error instanceof Error
+					? error.message
+					: `Could not read ${candidate.name}.`,
+			);
+			return null;
+		}
+	}
+
+	/** Issues the next list key. */
+	function nextItemId(): string {
+		nextItemIdRef.current += 1;
+		return `item-${nextItemIdRef.current}`;
+	}
+
+	/**
+	 * Turns the pending list into the single file the caller submits.
+	 *
+	 * One attachment passes through as itself; two or more are combined into a
+	 * PDF. If the combined document busts `maxBytes`, it gets one compression
+	 * pass before the size check refuses it.
+	 *
+	 * @param next - The list to build from.
+	 */
+	async function rebuild(next: PendingItem[]) {
+		const token = ++rebuildTokenRef.current;
+
+		if (next.length === 0) {
+			showPreview(null);
+			onFileChange(null);
+			return;
+		}
+
+		if (next.length === 1) {
+			const [only] = next;
+			if (!attach(only.file, only.thumbnail)) onFileChange(null);
+			return;
+		}
+
+		setProgress({ done: 0, total: next.length });
+		try {
+			const parts: Uint8Array[] = [];
+			for (const [index, item] of next.entries()) {
+				setProgress({ done: index, total: next.length });
+				let cached = pdfCacheRef.current.get(item.id);
+				if (!cached) {
+					cached = await fileToPdfBytes(item.file, imageToPdfOptions);
+					pdfCacheRef.current.set(item.id, cached);
+				}
+				parts.push(cached);
+			}
+			if (token !== rebuildTokenRef.current) return;
+
+			const merged = await combinePdfParts(parts, combinedFileName);
+			const combined = await shrinkToFit(merged, maxBytes);
+			if (token !== rebuildTokenRef.current) return;
+
+			if (!attach(combined, null)) onFileChange(null);
+		} catch (error) {
+			if (token !== rebuildTokenRef.current) return;
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Could not combine those files.",
+			);
+			onFileChange(null);
+		} finally {
+			if (token === rebuildTokenRef.current) setProgress(null);
+		}
+	}
+
+	/**
+	 * Publishes a new list: state, the post-await mirror, and the rebuild.
+	 *
+	 * @param next - The list that is now current.
+	 */
+	function commitItems(next: PendingItem[]) {
+		itemsRef.current = next;
+		setItems(next);
+		void rebuild(next);
+	}
+
+	/** Adds picked or dropped files to the batch, respecting `maxFiles`. */
+	async function addFiles(picked: File[]) {
+		if (disabled || picked.length === 0) return;
+		// Two batches interleaving would each finish against the list they
+		// started from, and the later one would erase the earlier one's work.
+		if (addingRef.current) return;
+
+		// Trimmed before any editor opens: making the user crop five photos and
+		// then telling them three were over the limit is the wrong order.
+		const slots = maxFiles - itemsRef.current.length;
+		if (slots <= 0) {
+			toast.error(`You can attach at most ${maxFiles} files.`);
+			resetInput();
+			return;
+		}
+		const batch = picked.slice(0, slots);
+		if (batch.length < picked.length) {
+			toast.error(
+				`Only the first ${slots} were added — the limit is ${maxFiles} files.`,
+			);
+		}
+
+		const added: PendingItem[] = [];
+		addingRef.current = true;
+		setProgress({ done: 0, total: batch.length });
+		try {
+			for (const [index, candidate] of batch.entries()) {
+				setProgress({ done: index, total: batch.length });
+				const item = await prepareItem(candidate);
+				if (item) added.push(item);
+			}
+		} finally {
+			addingRef.current = false;
+			setProgress(null);
+			resetInput();
+		}
+
+		if (added.length === 0) return;
+		// Re-read the list rather than trusting the closure: the user has been
+		// cropping for a while and may have removed rows in between. Re-check the
+		// ceiling for the same reason.
+		const current = itemsRef.current;
+		const room = Math.max(0, maxFiles - current.length);
+		const keep = added.slice(0, room);
+		if (keep.length < added.length) {
+			toast.error(`You can attach at most ${maxFiles} files.`);
+		}
+		if (keep.length === 0) return;
+		commitItems([...current, ...keep]);
+	}
+
+	/** Drops one attachment from the batch. */
+	function removeItem(id: string) {
+		pdfCacheRef.current.delete(id);
+		commitItems(itemsRef.current.filter((item) => item.id !== id));
+	}
+
+	/** Moves one attachment up or down the page order. */
+	function moveItem(id: string, delta: -1 | 1) {
+		const current = itemsRef.current;
+		const index = current.findIndex((item) => item.id === id);
+		const target = index + delta;
+		if (index < 0 || target < 0 || target >= current.length) return;
+		const next = [...current];
+		[next[index], next[target]] = [next[target], next[index]];
+		commitItems(next);
+	}
+
+	/** Empties the batch. */
+	function clearItems() {
+		pdfCacheRef.current.clear();
+		itemsRef.current = [];
+		setItems([]);
+		showPreview(null);
+		onFileChange(null);
+		resetInput();
+	}
+
+	/** Opens the combined PDF in the viewer, releasing the URL when it closes. */
+	async function viewCombined() {
+		if (!file) return;
+		const url = URL.createObjectURL(file);
+		try {
+			await showFile(url, { type: "pdf" });
+		} finally {
+			URL.revokeObjectURL(url);
+		}
+	}
+
+	async function captureFromCamera() {
+		if (multiEnabled && addingRef.current) return;
+		const result = await openCamera(editorOptions);
+		if (!result.accepted || !result.file) return;
+
+		if (!multiEnabled) {
+			attach(result.file, result.image ?? null);
+			return;
+		}
+		// Checked after the dialog, not before: the camera can be open for a
+		// while, and the list it closes onto is the one that matters.
+		const current = itemsRef.current;
+		if (current.length >= maxFiles) {
+			toast.error(`You can attach at most ${maxFiles} files.`);
+			return;
+		}
+		commitItems([
+			...current,
+			{
+				id: nextItemId(),
+				file: result.file,
+				thumbnail: result.image ?? null,
+			},
+		]);
 	}
 
 	function onDragOver(event: React.DragEvent) {
@@ -244,9 +606,10 @@ export function FileUpload({
 		setDragState("none");
 		if (!wasValid) return;
 
-		const dropped = event.dataTransfer.files[0];
-		if (dropped) {
-			void handleFile(dropped);
+		const dropped = Array.from(event.dataTransfer.files);
+		if (dropped.length > 0) {
+			if (multiEnabled) void addFiles(dropped);
+			else void handleFile(dropped[0]);
 			return;
 		}
 
@@ -263,10 +626,130 @@ export function FileUpload({
 			if (!acceptsType(accept, blob.type)) return;
 			const stamp = new Date().toLocaleString().replace(/[^0-9]+/g, "_");
 			const name = `FileDrop_${stamp}.${blob.type.split("/")[1] || "jpg"}`;
-			void handleFile(new File([blob], name, { type: blob.type }));
+			const fetched = new File([blob], name, { type: blob.type });
+			if (multiEnabled) void addFiles([fetched]);
+			else void handleFile(fetched);
 		} catch {
 			// Nothing to attach; the user can still pick the file.
 		}
+	}
+
+	// The pick/camera controls, shared by the single and multi layouts. A plain
+	// value rather than a helper function: a function called during render puts
+	// its handlers in render scope as far as react-hooks/refs is concerned.
+	const sourceButtons = (
+		<>
+			<input
+				ref={inputRef}
+				type="file"
+				accept={accept || undefined}
+				multiple={multiEnabled}
+				disabled={disabled || busy}
+				hidden
+				onChange={(event) => {
+					const picked = Array.from(event.target.files ?? []);
+					if (multiEnabled) void addFiles(picked);
+					else void handleFile(picked[0]);
+				}}
+			/>
+			<div className="flex flex-wrap items-center justify-center gap-2">
+				{cameraOnly ? null : (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						disabled={disabled || busy}
+						onClick={() => inputRef.current?.click()}
+						className="gap-2"
+					>
+						{nonImageAllowed ? (
+							<FolderOpen className="h-4 w-4" />
+						) : (
+							<ImageIcon className="h-4 w-4" />
+						)}
+						{multiEnabled && items.length > 0 ? "Add more" : null}
+						{multiEnabled && items.length === 0
+							? `Select ${nonImageAllowed ? "files" : "photos"}`
+							: null}
+						{multiEnabled
+							? null
+							: `Select ${nonImageAllowed ? "file" : "photo"}`}
+					</Button>
+				)}
+				{imageAllowed ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						disabled={disabled || busy}
+						onClick={() => void captureFromCamera()}
+						className="gap-2"
+					>
+						<Camera className="h-4 w-4" />
+						{cameraOnly ? "Open camera" : "Camera"}
+					</Button>
+				) : null}
+			</div>
+		</>
+	);
+
+	/** One row of the pending batch. */
+	function renderItemRow(item: PendingItem, index: number) {
+		return (
+			<li
+				key={item.id}
+				className="flex w-full items-center gap-2 rounded-md border bg-background p-2"
+			>
+				<span className="w-4 shrink-0 text-center text-[10px] text-muted-foreground">
+					{index + 1}
+				</span>
+				{item.thumbnail ? (
+					<img
+						src={item.thumbnail}
+						alt=""
+						className="h-9 w-9 shrink-0 rounded-sm object-cover"
+					/>
+				) : (
+					<FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+				)}
+				<span
+					className="min-w-0 flex-1 truncate text-xs"
+					title={item.file.name}
+				>
+					{item.file.name}
+				</span>
+				<span className="shrink-0 text-[10px] text-muted-foreground">
+					{formatBytes(item.file.size)}
+				</span>
+				<button
+					type="button"
+					aria-label={`Move ${item.file.name} up`}
+					disabled={index === 0 || busy}
+					onClick={() => moveItem(item.id, -1)}
+					className="cursor-pointer rounded p-1 disabled:opacity-30"
+				>
+					<ChevronUp className="h-3.5 w-3.5" />
+				</button>
+				<button
+					type="button"
+					aria-label={`Move ${item.file.name} down`}
+					disabled={index === items.length - 1 || busy}
+					onClick={() => moveItem(item.id, 1)}
+					className="cursor-pointer rounded p-1 disabled:opacity-30"
+				>
+					<ChevronDown className="h-3.5 w-3.5" />
+				</button>
+				<button
+					type="button"
+					aria-label={`Remove ${item.file.name}`}
+					disabled={busy}
+					onClick={() => removeItem(item.id)}
+					className="cursor-pointer rounded-full bg-eko-navy p-1 text-white disabled:opacity-30"
+				>
+					<X className="h-3 w-3" />
+				</button>
+			</li>
+		);
 	}
 
 	return (
@@ -289,7 +772,56 @@ export function FileUpload({
 					disabled && "pointer-events-none opacity-50",
 				)}
 			>
-				{file ? (
+				{multiEnabled ? (
+					<>
+						{items.length > 0 ? (
+							<ul className="flex w-full flex-col gap-1.5">
+								{items.map(renderItemRow)}
+							</ul>
+						) : null}
+
+						{items.length < maxFiles ? sourceButtons : null}
+
+						{busy && progress ? (
+							<p className="text-xs text-muted-foreground">
+								Processing {Math.min(progress.done + 1, progress.total)} of{" "}
+								{progress.total}…
+							</p>
+						) : null}
+
+						{items.length === 0 && !busy && !cameraOnly ? (
+							<p className="select-none text-xs text-muted-foreground">
+								{dragState === "none"
+									? "or drag and drop files here"
+									: dragState === "valid"
+										? "Drop your files here"
+										: "File type not allowed"}
+							</p>
+						) : null}
+
+						{file && items.length > 1 && !busy ? (
+							<div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+								<span>Combined into one PDF · {formatBytes(file.size)}</span>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => void viewCombined()}
+								>
+									View
+								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									onClick={clearItems}
+								>
+									Clear all
+								</Button>
+							</div>
+						) : null}
+					</>
+				) : file ? (
 					<div className="relative">
 						{preview ? (
 							<img
@@ -321,46 +853,7 @@ export function FileUpload({
 					</div>
 				) : (
 					<>
-						<input
-							ref={inputRef}
-							type="file"
-							accept={accept || undefined}
-							disabled={disabled}
-							hidden
-							onChange={(event) => void handleFile(event.target.files?.[0])}
-						/>
-						<div className="flex flex-wrap items-center justify-center gap-2">
-							{cameraOnly ? null : (
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									disabled={disabled}
-									onClick={() => inputRef.current?.click()}
-									className="gap-2"
-								>
-									{nonImageAllowed ? (
-										<FolderOpen className="h-4 w-4" />
-									) : (
-										<ImageIcon className="h-4 w-4" />
-									)}
-									Select {nonImageAllowed ? "file" : "photo"}
-								</Button>
-							)}
-							{imageAllowed ? (
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									disabled={disabled}
-									onClick={() => void captureFromCamera()}
-									className="gap-2"
-								>
-									<Camera className="h-4 w-4" />
-									{cameraOnly ? "Open camera" : "Camera"}
-								</Button>
-							) : null}
-						</div>
+						{sourceButtons}
 						{cameraOnly ? null : (
 							<p className="select-none text-xs text-muted-foreground">
 								{dragState === "none"
