@@ -199,13 +199,13 @@ Verify it looks like:
 
     EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<64 hex chars>
 
-> **Rollback state starts empty:** because the seed pins the *current* `:prod`
-> digest, the poller sees remote == running on its first ticks and never
-> health-gates the bootstrap deploy — `/state/last_good` is only written by the
-> first real poller-driven deploy (next `main` merge that publishes a new
-> digest). Until then there is no automatic rollback target; the poller HOLDs
-> on a first-deploy fault instead. The end-to-end poller test below doubles as
-> the step that initializes rollback state.
+> **Bootstrap is never health-gated:** the seed pins the current `:prod`, so
+> the poller sees remote == running and idles until the next `main` merge
+> publishes a new digest. Automatic rollback needs no prior state — on a failed
+> health gate the poller redeploys whatever digest was running before the
+> attempt (`prev` in `poll.sh`), so it works from the first poller-driven
+> deploy onward. `/state/last_good` (written on each successful gate) feeds
+> only the *manual* rollback procedure below.
 
 ### Step 7 — Smoke-test in-container auth
 
