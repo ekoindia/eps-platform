@@ -63,7 +63,7 @@ function DocumentRow({
 					<Badge variant={status.variant}>{status.label}</Badge>
 				) : null}
 				<Button size="sm" onClick={onUpload}>
-					{status.uploaded ? "Replace" : doc.error ? "Retry" : "Upload"}
+					{status.uploaded ? "Replace" : doc.status === 3 ? "Retry" : "Upload"}
 				</Button>
 			</div>
 		</div>
@@ -85,9 +85,10 @@ export default function Documents() {
 	/**
 	 * Doc types uploaded successfully in this session.
 	 *
-	 * Not optimism — each entry is an upstream success envelope. It exists
-	 * because the meaning of upstream's own `status` codes is still unconfirmed,
-	 * so a refetch alone cannot yet show a document as done. See `kyc.ts`.
+	 * Each entry is an upstream success envelope, read ahead of the refetch it
+	 * triggers — there's no guarantee that refetch already reflects the write
+	 * it's chasing. Bridges that gap only; the refetched `status: 2` takes over
+	 * from here. See `kyc.ts`.
 	 */
 	const [uploadedNow, setUploadedNow] = useState<ReadonlySet<string>>(
 		new Set(),

@@ -19,10 +19,26 @@ vi.mock("@/lib/connect/use-kyc", () => ({
 }));
 
 // The dialog pulls in the camera and image editor; this page's tests are about
-// the list, and the dialog has the bench for its own exercise.
+// the list, and the dialog has the bench for its own exercise. The extra
+// button lets tests drive `onClose` the way a real upload success would.
 vi.mock("@/components/console/KycUploadDialog", () => ({
-	KycUploadDialog: ({ doc }: { doc: { name: string } | null }) =>
-		doc ? <div data-testid="upload-dialog">{doc.name}</div> : null,
+	KycUploadDialog: ({
+		doc,
+		onClose,
+	}: {
+		doc: { docType: string; name: string } | null;
+		onClose: (result: { docType: string; message: string } | null) => void;
+	}) =>
+		doc ? (
+			<div data-testid="upload-dialog">
+				{doc.name}
+				<button
+					onClick={() => onClose({ docType: doc.docType, message: "Uploaded" })}
+				>
+					simulate-upload-success
+				</button>
+			</div>
+		) : null,
 }));
 
 const { authClient } = await import("@/lib/auth/client");
@@ -127,5 +143,63 @@ describe("Documents", () => {
 				"Director PAN Card",
 			),
 		);
+	});
+
+	it("keeps showing Replace when the post-upload refetch lands stale", async () => {
+		// The refetch a successful upload triggers is not guaranteed to already
+		// reflect the write it's chasing — upstream may still report `status: 1`
+		// for a moment. `uploadedNow` must survive that redraw rather than let a
+		// stale read flip the row back to "Upload".
+		fetchDocuments.mockResolvedValueOnce({
+			documents: [...KYC_DOCUMENTS_SAMPLE.data.document_list],
+		});
+		fetchDocuments.mockResolvedValueOnce({
+			documents: [...KYC_DOCUMENTS_SAMPLE.data.document_list],
+		});
+
+		render(<Documents />);
+		await screen.findByText("Aadhaar Card");
+		screen.getAllByRole("button", { name: "Upload" })[0].click();
+		await screen.findByTestId("upload-dialog");
+		screen.getByText("simulate-upload-success").click();
+
+		await waitFor(() => expect(fetchDocuments).toHaveBeenCalledTimes(2));
+		expect(
+			await screen.findByRole("button", { name: "Replace" }),
+		).toBeVisible();
+	});
+
+	it("shows Replace once the refetch itself reports status 2", async () => {
+		fetchDocuments.mockResolvedValueOnce({
+			documents: [...KYC_DOCUMENTS_SAMPLE.data.document_list],
+		});
+		fetchDocuments.mockResolvedValueOnce({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) =>
+				d.doc_type === "1" ? { ...d, status: 2 } : d,
+			),
+		});
+
+		render(<Documents />);
+		await screen.findByText("Aadhaar Card");
+		screen.getAllByRole("button", { name: "Upload" })[0].click();
+		await screen.findByTestId("upload-dialog");
+		screen.getByText("simulate-upload-success").click();
+
+		await waitFor(() => expect(fetchDocuments).toHaveBeenCalledTimes(2));
+		expect(screen.getAllByRole("button", { name: "Replace" })).toHaveLength(1);
+	});
+
+	it("offers Retry, not Upload, once upstream reports resubmission needed", async () => {
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) =>
+				d.doc_type === "1" ? { ...d, status: 3, error: "Blurred scan" } : d,
+			),
+		});
+
+		render(<Documents />);
+		await screen.findByText("Aadhaar Card");
+
+		expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
+		expect(screen.getByText("Blurred scan")).toBeVisible();
 	});
 });
