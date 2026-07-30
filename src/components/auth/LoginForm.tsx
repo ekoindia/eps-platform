@@ -193,7 +193,6 @@ export function LoginForm({
 		// A real <form> so the browser's own implicit submission handles Enter:
 		// on either step, Enter activates the (validity-gated) submit button.
 		<form
-			className="flex flex-col gap-4"
 			onSubmit={(e) => {
 				e.preventDefault();
 				if (busy) return;
@@ -204,86 +203,93 @@ export function LoginForm({
 				}
 			}}
 		>
-			{step === "mobile" ? (
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="login-mobile">Mobile number</Label>
-					<Input
-						id="login-mobile"
-						autoComplete="tel"
-						prefix="+91"
-						digitGroups={[3, 3, 4]}
-						value={mobile}
-						onChange={(e) => setMobile(e.target.value)}
-						placeholder="10-digit mobile"
-					/>
-					<Button type="submit" disabled={busy || mobile.length < 10}>
-						{busy ? "Sending…" : "Send OTP"}
-					</Button>
-				</div>
-			) : (
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="login-otp">Enter OTP</Label>
-					<p className="text-sm text-muted-foreground">
-						Code sent to {maskMobile(mobile)}
+			{/* Native disabled fieldset switches off every input and button inside
+			    while a request is in flight — no per-control busy wiring needed. */}
+			<fieldset disabled={busy} className="flex flex-col gap-4">
+				{step === "mobile" ? (
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="login-mobile">Mobile number</Label>
+						<Input
+							id="login-mobile"
+							autoComplete="tel"
+							prefix="+91"
+							digitGroups={[3, 3, 4]}
+							value={mobile}
+							onChange={(e) => setMobile(e.target.value)}
+							placeholder="10-digit mobile"
+						/>
+						<Button type="submit" disabled={busy || mobile.length < 10}>
+							{busy ? "Sending…" : "Send OTP"}
+						</Button>
+					</div>
+				) : (
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="login-otp">Enter OTP</Label>
+						<p className="text-sm text-muted-foreground">
+							Code sent to {maskMobile(mobile)}
+						</p>
+						<div className="flex gap-2" role="group" aria-label="One-time code">
+							{digits.map((d, i) => (
+								<Input
+									key={i}
+									id={i === 0 ? "login-otp" : undefined}
+									ref={(el) => {
+										boxesRef.current[i] = el;
+									}}
+									inputMode="numeric"
+									autoComplete={i === 0 ? "one-time-code" : "off"}
+									aria-label={`Digit ${i + 1}`}
+									maxLength={1}
+									autoFocus={i === 0}
+									value={d}
+									onChange={(e) => handleDigit(i, e.target.value)}
+									onKeyDown={(e) => handleOtpKeyDown(i, e)}
+									onPaste={handleOtpPaste}
+									className="h-12 w-10 text-center text-lg"
+								/>
+							))}
+						</div>
+						<Button type="submit" disabled={busy || otp.length < OTP_LENGTH}>
+							{busy ? "Verifying…" : "Verify & sign in"}
+						</Button>
+						{/* Redundant while a code is already being verified — hide, don't
+					    just disable, so the user isn't offered retry paths mid-flight. */}
+						{!busy && (
+							<div className="flex items-center justify-between">
+								<button
+									type="button"
+									className="text-xs text-muted-foreground underline self-start disabled:opacity-50"
+									onClick={() => {
+										setStep("mobile");
+										resetOtp();
+										setError(null);
+										setCooldown(0);
+									}}
+								>
+									Use a different number
+								</button>
+								<button
+									type="button"
+									className="text-sm text-muted-foreground hover:underline self-start disabled:opacity-50"
+									onClick={() => {
+										resetOtp();
+										setError(null);
+										void sendOtp();
+									}}
+									disabled={cooldown > 0}
+								>
+									{cooldown > 0 ? `Resend OTP (${cooldown}s)` : "Resend OTP"}
+								</button>
+							</div>
+						)}
+					</div>
+				)}
+				{error ? (
+					<p role="alert" className="text-sm text-destructive">
+						{error}
 					</p>
-					<div className="flex gap-2" role="group" aria-label="One-time code">
-						{digits.map((d, i) => (
-							<Input
-								key={i}
-								id={i === 0 ? "login-otp" : undefined}
-								ref={(el) => {
-									boxesRef.current[i] = el;
-								}}
-								inputMode="numeric"
-								autoComplete={i === 0 ? "one-time-code" : "off"}
-								aria-label={`Digit ${i + 1}`}
-								maxLength={1}
-								autoFocus={i === 0}
-								value={d}
-								onChange={(e) => handleDigit(i, e.target.value)}
-								onKeyDown={(e) => handleOtpKeyDown(i, e)}
-								onPaste={handleOtpPaste}
-								className="h-12 w-10 text-center text-lg"
-							/>
-						))}
-					</div>
-					<Button type="submit" disabled={busy || otp.length < OTP_LENGTH}>
-						{busy ? "Verifying…" : "Verify & sign in"}
-					</Button>
-					<div className="flex items-center justify-between">
-						<button
-							type="button"
-							className="text-xs text-muted-foreground underline self-start disabled:opacity-50"
-							onClick={() => {
-								setStep("mobile");
-								resetOtp();
-								setError(null);
-								setCooldown(0);
-							}}
-							disabled={busy}
-						>
-							Use a different number
-						</button>
-						<button
-							type="button"
-							className="text-sm text-muted-foreground hover:underline self-start disabled:opacity-50"
-							onClick={() => {
-								resetOtp();
-								setError(null);
-								void sendOtp();
-							}}
-							disabled={busy || cooldown > 0}
-						>
-							{cooldown > 0 ? `Resend OTP (${cooldown}s)` : "Resend OTP"}
-						</button>
-					</div>
-				</div>
-			)}
-			{error ? (
-				<p role="alert" className="text-sm text-destructive">
-					{error}
-				</p>
-			) : null}
+				) : null}
+			</fieldset>
 		</form>
 	);
 }
