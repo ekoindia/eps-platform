@@ -81,7 +81,7 @@ first deploy is hands-on; the poller takes over afterward.
       — Bootstrap Step 6 seeds `deploy.env` from it (chicken-and-egg: seed needs an
       image, image needs the workflow on `main`; so **merge first, then bootstrap**).
 - [ ] **Run the [Bootstrap](#bootstrap) steps on the VM** (Docker + NTP,
-      `/deploy` files, `.env` secrets, GHCR login + authfile, seed `deploy.env`,
+      `/data/eps-backend` files, `.env` secrets, GHCR login + authfile, seed `deploy.env`,
       auth smoke-test, `up -d`, reverse proxy → `127.0.0.1:8787`, prune timer).
 - [ ] **Thereafter:** every green `main` push auto-deploys within ~30 s — no
       manual steps unless a deploy HOLDs (see [Clearing HOLD](#clearing-hold)).
@@ -94,10 +94,9 @@ Complete these steps once, in order, before the poller starts managing the
 stack.
 
 > **Shared-VM note (production reality):** eps-backend deploys onto the same VM
-> as eps-transact-mcp. On a shared VM, use a per-project directory
-> `/data/eps-backend/` instead of `/deploy` — substitute
-> `--project-directory /data/eps-backend` in every compose command below — with
-> its own `deploy.env`, `.env`, and `.ghcr-auth.json` (never shared across
+> as eps-transact-mcp. On a shared VM, use a per-project directory `/data/eps-backend/`
+> — substitute `--project-directory /data/eps-backend` in every compose command below —
+> with its own `deploy.env`, `.env`, and `.ghcr-auth.json` (never shared across
 > stacks; see the [poller README](../deploy/poller/README.md) shared-VM
 > checklist). Steps 1–2 (Docker, NTP) are already done on that VM. Before
 > copying anything, check capacity: `df -h /data && df -i /data &&
@@ -129,11 +128,11 @@ NTP client before anything else:
 
 ### Step 3 — Copy the deploy directory to the VM
 
-Place these files from `packages/eps-backend/` at `/deploy` on the VM so the
+Place these files from `packages/eps-backend/` at `/data/eps-backend` on the VM so the
 invariant compose command can find them:
 
-    /deploy/docker-compose.prod.yml
-    /deploy/.env.example
+    /data/eps-backend/docker-compose.prod.yml
+    /data/eps-backend/.env.example
 
 The poller is NOT built on the VM — the compose file pulls the shared
 `ghcr.io/ekoindia/eps-poller:prod` image (same image as the eps-transact-mcp
@@ -149,37 +148,43 @@ Docker. On most setups `root` or a `docker` group member is fine.
 The `ghcr.io/ekoindia/eps-backend` image is private. The user running Docker
 must authenticate before the poller can pull:
 
-    docker login ghcr.io
+```sh
+docker login ghcr.io
+```
 
 Use a GitHub Personal Access Token (PAT) with `read:packages` scope as the
 password, or a machine account token.
 
-After logging in, create a deterministic authfile at `/deploy/.ghcr-auth.json`.
+After logging in, create a deterministic authfile at `/data/eps-backend/.ghcr-auth.json`.
 The poller mounts this path rather than `~/.docker/config.json`, which is empty
 under `sudo` without `-H` or in systemd units where `$HOME` is unset:
 
-    cp ~/.docker/config.json /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
+```sh
+cp ~/.docker/config.json /data/eps-backend/.ghcr-auth.json && chmod 600 /data/eps-backend/.ghcr-auth.json
+```
 
 **credStore caveat:** if `docker login` used a credential helper, `config.json`
 contains a `credStore` key but no inline `auth` token — the copy above will not
 contain any credentials and skopeo will get a 401. In that case, create the
 authfile explicitly with an inline base64 token:
 
-    printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' \
-      "$(printf '%s:%s' "$GHCR_USER" "$GHCR_PAT" | base64 -w0)" \
-      > /deploy/.ghcr-auth.json && chmod 600 /deploy/.ghcr-auth.json
+```sh
+printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$(printf '%s:%s' "$GHCR_USER" "$GHCR_PAT" | base64 -w0)" > /data/eps-backend/.ghcr-auth.json && chmod 600 /data/eps-backend/.ghcr-auth.json
+```
 
-The poller mounts `/deploy/.ghcr-auth.json` read-only at
+The poller mounts `/data/eps-backend/.ghcr-auth.json` read-only at
 `/root/.docker/config.json` inside the container and sets `REGISTRY_AUTH_FILE`
 to that path. The `docker compose pull` path goes through the Docker socket and
 already uses the host daemon's auth context.
 
-### Step 5 — Create `/deploy/.env` with production secrets
+### Step 5 — Create `/data/eps-backend/.env` with production secrets
 
-Copy `.env.example` to `/deploy/.env` and fill in all required values:
+Copy `.env.example` to `/data/eps-backend/.env` and fill in all required values:
 
-    cp /deploy/.env.example /deploy/.env
-    $EDITOR /deploy/.env
+```sh
+cp /data/eps-backend/.env.example /data/eps-backend/.env
+$EDITOR /data/eps-backend/.env
+```
 
 At minimum you need `JWT_SECRET`, the `SIMPLIBANK_*` and `EKO_*` variables
 (including `SIMPLIBANK_HISTORY_API_HOST` / `_PORT` / `_PATH` — transaction
@@ -189,9 +194,11 @@ main upstream),
 `GITHUB_REPO`, `REDIS_URL`, and `KV_ENCRYPTION_KEY`. See `.env.example` for
 the full list and inline notes. Restrict file permissions:
 
-    chmod 600 /deploy/.env
+```sh
+chmod 600 /data/eps-backend/.env
+```
 
-### Step 6 — Seed `/deploy/deploy.env` with the current `:prod` digest
+### Step 6 — Seed `/data/eps-backend/deploy.env` with the current `:prod` digest
 
 The poller will overwrite this file on every reconciliation, but it must exist
 for the first `up -d`. Seed it with the **tag**, not a digest — the poller pins
@@ -199,7 +206,9 @@ the immutable digest on its first real deploy (poller README pattern; also
 sidesteps multi-arch digest parsing and old-buildx `--format` incompatibility,
 which bit the first production bootstrap):
 
-    printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend:prod\n' > /deploy/deploy.env
+```sh
+printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend:prod\n' > /data/eps-backend/deploy.env
+```
 
 > **Bootstrap is never health-gated:** the seed pins the current `:prod`, so
 > the poller sees remote == running and idles until the next `main` merge
@@ -215,10 +224,9 @@ Before starting the full stack, confirm that the authfile works for skopeo
 inside the poller container. This catches credStore/empty-token problems before
 they cause silent failures in the live pipeline:
 
-    docker compose -p eps-backend --project-directory /deploy \
-      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-      run --rm --entrypoint skopeo poller \
-      inspect docker://ghcr.io/ekoindia/eps-backend:prod
+```sh
+docker compose -p eps-backend --project-directory /data/eps-backend --env-file /data/eps-backend/deploy.env -f /data/eps-backend/docker-compose.prod.yml run --rm --entrypoint skopeo poller inspect docker://ghcr.io/ekoindia/eps-backend:prod
+```
 
 `--entrypoint` is required: the shared `eps-poller` image's entrypoint is
 `poll.sh`, so without it the trailing args are swallowed and the full poller
@@ -233,13 +241,15 @@ This must print a manifest (containing a `Digest:` field). A `401` /
 
 ### Step 8 — Bring up the stack
 
-    docker compose -p eps-backend --project-directory /deploy \
-      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d
+```sh
+docker compose -p eps-backend --project-directory /data/eps-backend --env-file /data/eps-backend/deploy.env -f /data/eps-backend/docker-compose.prod.yml up -d
+```
 
 Wait a few seconds, then confirm all three containers are running:
 
-    docker compose -p eps-backend --project-directory /deploy \
-      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml ps
+```sh
+docker compose -p eps-backend --project-directory /data/eps-backend --env-file /data/eps-backend/deploy.env -f /data/eps-backend/docker-compose.prod.yml ps
+```
 
 Expected: `redis`, `eps-backend`, and `poller` with status `Up` (eps-backend
 will show `(healthy)` once the healthcheck passes). The backend is reachable at
@@ -260,7 +270,7 @@ will show `(healthy)` once the healthcheck passes). The backend is reachable at
    No rebuild occurs during the retag step — the digest is canonical.
 4. Within at most 30 seconds the poller calls `skopeo inspect` and detects that
    the remote `:prod` digest differs from what the running container was pulled
-   from. It writes the new image reference to `/deploy/deploy.env`, pulls the
+   from. It writes the new image reference to `/data/eps-backend/deploy.env`, pulls the
    image, and calls `docker compose up -d --no-deps eps-backend`.
 5. The health gate polls `http://eps-backend:8787/readyz` up to 10 times with a
    3-second delay between attempts. Redis availability is checked in parallel.
@@ -284,25 +294,26 @@ image, clobbering the rollback.
 
 **1. Set HOLD to pause the poller.**
 
-    docker run --rm \
-      -v eps-backend_eps-poller-state:/state \
-      busybox sh -c 'echo "manual rollback" > /state/HOLD'
+```sh
+docker run --rm -v eps-backend_eps-poller-state:/state busybox sh -c 'echo "manual rollback" > /state/HOLD'
+```
 
 **2. Find the target digest.**
 
 The last automatically verified digest is in the poller state volume:
 
-    docker run --rm \
-      -v eps-backend_eps-poller-state:/state \
-      busybox cat /state/last_good
+```sh
+docker run --rm -v eps-backend_eps-poller-state:/state busybox cat /state/last_good
+```
 
 For an older digest, check the GHCR package history or your deploy logs for a
 `sha256:` string.
 
-**3. Write the known-good digest to `/deploy/deploy.env`.**
+**3. Write the known-good digest to `/data/eps-backend/deploy.env`.**
 
-    printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' \
-      "sha256:<64-hex-digest>" > /deploy/deploy.env
+```sh
+printf 'EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@%s\n' "sha256:<64-hex-digest>" > /data/eps-backend/deploy.env
+```
 
 Replace `sha256:<64-hex-digest>` with the full digest including the `sha256:`
 prefix — e.g. `sha256:abc123…` (64 hex characters after the colon). The
@@ -311,9 +322,9 @@ form `ghcr.io/ekoindia/eps-backend@sha256:<64 hex>`.
 
 **4. Recreate the backend with the invariant compose command.**
 
-    docker compose -p eps-backend --project-directory /deploy \
-      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-      up -d --no-deps eps-backend
+```sh
+docker compose -p eps-backend --project-directory /data/eps-backend --env-file /data/eps-backend/deploy.env -f /data/eps-backend/docker-compose.prod.yml up -d --no-deps eps-backend
+```
 
 Only `eps-backend` is recreated; `redis` and `poller` are left running.
 
@@ -358,16 +369,15 @@ takes no action.
 
 **To clear HOLD and resume automatic deploys:**
 
-    docker run --rm \
-      -v eps-backend_eps-poller-state:/state \
-      busybox rm -f /state/HOLD
+```sh
+docker run --rm -v eps-backend_eps-poller-state:/state busybox rm -f /state/HOLD
+```
 
 Confirm the poller resumes by tailing its logs:
 
-    docker logs -f \
-      $(docker compose -p eps-backend --project-directory /deploy \
-        --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-        ps -q poller)
+```sh
+docker logs -f $(docker compose -p eps-backend --project-directory /data/eps-backend --env-file /data/eps-backend/deploy.env -f /data/eps-backend/docker-compose.prod.yml ps -q poller)
+```
 
 You should see normal `[poller] deploying ...` or idle tick output without the
 `HOLD set` message.
@@ -378,16 +388,16 @@ You should see normal `[poller] deploying ...` or idle tick output without the
 
 The poller always writes structured log lines to stderr. To also receive
 webhook notifications on deploy, rollback, and fault events, add this line to
-`/deploy/.env`:
+`/data/eps-backend/.env`:
 
     POLLER_ALERT_WEBHOOK=https://your.webhook.endpoint/path
 
-The poller reads `/deploy/.env` via its `env_file` configuration in
+The poller reads `/data/eps-backend/.env` via its `env_file` configuration in
 `docker-compose.prod.yml`. Restart the poller after editing:
 
-    docker compose -p eps-backend --project-directory /deploy \
-      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-      up -d --no-deps poller
+```sh
+docker compose -p eps-backend --project-directory /data/eps-backend --env-file /data/eps-backend/deploy.env -f /data/eps-backend/docker-compose.prod.yml up -d --no-deps poller
+```
 
 **Payload format** — the poller POSTs JSON on every alert:
 
@@ -398,7 +408,9 @@ issues; `CRIT` for faults that set HOLD.
 
 **Without a webhook**, monitor the poller with:
 
-    docker logs -f <poller-container-id>
+```sh
+docker logs -f <poller-container-id>
+```
 
 ---
 
