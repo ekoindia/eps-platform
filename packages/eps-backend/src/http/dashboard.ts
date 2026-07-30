@@ -14,7 +14,7 @@ import {
 } from "./dashboardView";
 import { istRange, parsePreset } from "./dashboardRange";
 import { AppError } from "./errors";
-import { enforceRateLimit, kvOr503, RL_WINDOW_SEC } from "./rateLimit";
+import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
 import type { AppEnv } from "./requestId";
 
 /** `interaction_type_id` for the business-dashboard aggregates. */
@@ -159,7 +159,10 @@ export function mountDashboard(
 		xRealIp?: string,
 	): Promise<ServiceRef[]> {
 		const key = `dash:svc:${scopeTag}:${claim.sub}`;
-		const cached = await kvOr503(() => kv.get(key));
+		// Cache reads/writes here are best-effort: a store outage should cost a
+		// cache miss (recompute upstream), not a 503. Auth, session and the rate
+		// limiter above stay fail-closed — only the dash:* cache is expendable.
+		const cached = await kv.get(key).catch(() => null);
 		if (cached) return JSON.parse(cached) as ServiceRef[];
 
 		let services: ServiceRef[] = [];
@@ -181,9 +184,9 @@ export function mountDashboard(
 			return [];
 		}
 		if (services.length > 0) {
-			await kvOr503(() =>
-				kv.set(key, JSON.stringify(services), TTL_SERVICES_SEC),
-			);
+			await kv
+				.set(key, JSON.stringify(services), TTL_SERVICES_SEC)
+				.catch(() => {});
 		}
 		return services;
 	}
@@ -222,7 +225,9 @@ export function mountDashboard(
 
 		const xRealIp = c.req.header("x-real-ip");
 		const cacheKey = `dash:${scopeTag}:${claim.sub}:${preset}:${typeId ?? "all"}`;
-		const cached = await kvOr503(() => kv.get(cacheKey));
+		// Best-effort read — see loadServices. A dead store degrades to a cache
+		// miss and the upstream call below, never a 503.
+		const cached = await kv.get(cacheKey).catch(() => null);
 		if (cached) {
 			c.header("Cache-Control", "no-store");
 			return c.json(JSON.parse(cached) as DashboardView);
@@ -310,13 +315,13 @@ export function mountDashboard(
 			console.warn(`[dashboard] absent datasets: ${absent.join(", ")}`);
 		}
 
-		await kvOr503(() =>
-			kv.set(
+		await kv
+			.set(
 				cacheKey,
 				JSON.stringify(view),
 				preset === "today" ? TTL_TODAY_SEC : TTL_CLOSED_SEC,
-			),
-		);
+			)
+			.catch(() => {});
 
 		c.header("Cache-Control", "no-store");
 		return c.json(view);

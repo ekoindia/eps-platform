@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AuthProvider } from "../auth/provider";
 import type { Sessions } from "../auth/session";
 import type { ConnectClient } from "../clients/connect";
-import { createInMemoryKV } from "../store/kv";
+import { createInMemoryKV, type KV } from "../store/kv";
 import {
 	SAMPLE_DASHBOARD_OBJECT,
 	SAMPLE_SERVICE_LIST,
@@ -40,6 +40,7 @@ function harness(
 		sid?: string | null;
 		connect?: Partial<ConnectClient> | null;
 		upstreamSession?: unknown;
+		kv?: KV;
 	} = {},
 ) {
 	const role = opts.role === undefined ? "developer" : opts.role;
@@ -93,7 +94,7 @@ function harness(
 		sessions,
 		auth,
 		connect,
-		kv: createInMemoryKV(),
+		kv: opts.kv ?? createInMemoryKV(),
 		connectBaseUrl: "https://api.beta.ekoconnect.in",
 	});
 	return { app, interactJson, interact, connect };
@@ -300,5 +301,36 @@ describe("dashboard route response", () => {
 		await load(app, { preset: "last7" });
 		await load(app, { preset: "last30" });
 		expect(interactJson).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe("dashboard KV outage", () => {
+	/** A KV whose cache reads/writes are dead but whose limiter still works. */
+	function brokenCacheKv(): KV {
+		const real = createInMemoryKV();
+		return {
+			...real,
+			get: vi.fn().mockRejectedValue(new Error("store down")),
+			set: vi.fn().mockRejectedValue(new Error("store down")),
+		};
+	}
+
+	it("still renders when the dash cache store is down (cache fails open)", async () => {
+		const { app, interactJson } = harness({ kv: brokenCacheKv() });
+		const res = await load(app);
+		expect(res.status).toBe(200);
+		expect(interactJson).toHaveBeenCalledTimes(1);
+	});
+
+	it("503s when the rate-limit counter store is down (limiter fails closed)", async () => {
+		const real = createInMemoryKV();
+		const kv: KV = {
+			...real,
+			incr: vi.fn().mockRejectedValue(new Error("store down")),
+		};
+		const { app } = harness({ kv });
+		const res = await load(app);
+		expect(res.status).toBe(503);
+		expect((await errorOf(res)).code).toBe("RATE_LIMIT_UNAVAILABLE");
 	});
 });
