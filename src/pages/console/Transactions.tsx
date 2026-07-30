@@ -149,7 +149,7 @@ function RowDetails({ row }: { row: TransactionRow }) {
 			? [{ label: "Recipient", value: row.recipient_name }]
 			: []),
 		...(row.fee > 0
-			? [{ label: "Charges", value: formatINR(row.fee, 2, 2) }]
+			? [{ label: "Charges (Incl. of GST)", value: formatINR(row.fee, 2, 2) }]
 			: []),
 		...(row.commission_earned > 0
 			? [{ label: "Commission", value: formatINR(row.commission_earned, 2, 2) }]

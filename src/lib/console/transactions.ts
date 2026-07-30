@@ -160,9 +160,10 @@ export function debitOf(row: TransactionRow): number {
 		row.amount_dr,
 		row.fee,
 		row.tds,
-		row.gst,
 		row.insurance_amount,
-		row.eko_gst,
+		// No need to add GST. The `row.fee` value is already inclusive of GST
+		// row.gst,
+		// row.eko_gst,
 	);
 }
 
