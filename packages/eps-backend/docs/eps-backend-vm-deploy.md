@@ -217,7 +217,15 @@ they cause silent failures in the live pipeline:
 
     docker compose -p eps-backend --project-directory /deploy \
       --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml \
-      run --rm poller skopeo inspect docker://ghcr.io/ekoindia/eps-backend:prod
+      run --rm --entrypoint skopeo poller \
+      inspect docker://ghcr.io/ekoindia/eps-backend:prod
+
+`--entrypoint` is required: the shared `eps-poller` image's entrypoint is
+`poll.sh`, so without it the trailing args are swallowed and the full poller
+loop starts in the foreground instead (Ctrl-C and re-run with `--entrypoint`
+if that happens — a foreground poller with no redis just logs
+"redis down — deploy paused" each tick and deploys nothing; if it manages to
+resolve the remote digest in those logs, auth is in fact proven).
 
 This must print a manifest (containing a `Digest:` field). A `401` /
 "authentication required" error means the authfile has no valid token — fix it
