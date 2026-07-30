@@ -73,7 +73,10 @@ first deploy is hands-on; the poller takes over afterward.
 - [ ] **Merge `dev` → `main`** (PR) — puts `deploy-eps-backend.yml` + code on
       `main`. The green CI run on that merge publishes the **first image**
       (`:<sha>` + moves `:prod`). If it doesn't fire on the arming merge itself,
-      push one trivial follow-up commit to `main`.
+      push one harmless **backend-affecting** follow-up commit to `main` — the
+      deploy workflow path-guards on `packages/eps-backend/**` (plus root
+      `package*.json`, `.githooks/setup.mjs`, and the workflow itself), so a
+      commit outside those paths publishes nothing.
 - [ ] **Confirm the first image exists** at `:prod` in GHCR before bootstrapping
       — Bootstrap Step 6 seeds `deploy.env` from it (chicken-and-egg: seed needs an
       image, image needs the workflow on `main`; so **merge first, then bootstrap**).
@@ -89,6 +92,20 @@ first deploy is hands-on; the poller takes over afterward.
 
 Complete these steps once, in order, before the poller starts managing the
 stack.
+
+> **Shared-VM note (production reality):** eps-backend deploys onto the same VM
+> as eps-transact-mcp. On a shared VM, use a per-project directory
+> `/data/eps-backend/` instead of `/deploy` — substitute
+> `--project-directory /data/eps-backend` in every compose command below — with
+> its own `deploy.env`, `.env`, and `.ghcr-auth.json` (never shared across
+> stacks; see the [poller README](../deploy/poller/README.md) shared-VM
+> checklist). Steps 1–2 (Docker, NTP) are already done on that VM. Before
+> copying anything, check capacity: `df -h /data && df -i /data &&
+> docker system df && free -m` — the VM's Docker data-root uses the `vfs`
+> storage driver, which shares no layers between images, so image storage (not
+> container count) drives disk use. Copy the deploy files from the merged
+> `main` SHA, not a local working tree, so compose/poller config matches the
+> published image.
 
 ### Step 1 — Install Docker Engine and the Compose plugin
 
@@ -181,6 +198,14 @@ digest without pulling the image. This reuses the GHCR credentials from the
 Verify it looks like:
 
     EPS_BACKEND_IMAGE=ghcr.io/ekoindia/eps-backend@sha256:<64 hex chars>
+
+> **Rollback state starts empty:** because the seed pins the *current* `:prod`
+> digest, the poller sees remote == running on its first ticks and never
+> health-gates the bootstrap deploy — `/state/last_good` is only written by the
+> first real poller-driven deploy (next `main` merge that publishes a new
+> digest). Until then there is no automatic rollback target; the poller HOLDs
+> on a first-deploy fault instead. The end-to-end poller test below doubles as
+> the step that initializes rollback state.
 
 ### Step 7 — Smoke-test in-container auth
 
