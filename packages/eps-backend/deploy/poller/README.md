@@ -7,6 +7,9 @@ by [`.github/workflows/deploy-poller.yml`](../../../../.github/workflows/deploy-
 `eps-transact-mcp` already reuses it unmodified. This doc is how to point it at a
 **new** `github.com/ekoindia` project on the same (or any) VM.
 
+Why a homegrown sidecar instead of Watchtower/Komodo/Coolify, and what to add for
+logs + health alerting instead: [alternatives-evaluated.md](./alternatives-evaluated.md).
+
 ## What it does
 
 Each tick it reads the registry digest of `IMAGE:WATCH_TAG` (skopeo, no pull). If
