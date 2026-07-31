@@ -124,10 +124,11 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 			"Load Wallet",
 			"Sign Agreement",
 		]);
-		// Last of the real links; the DEV-only test bench sits behind it.
-		expect(labels.filter((l) => l !== "Test bench").at(-1)).toBe(
-			"Manage My Account",
-		);
+		// Closes the Account group, immediately ahead of Build & Monitor. The
+		// DEV-only bench and the fixed API Docs footer link sit behind both.
+		expect(
+			labels.filter((l) => l !== "Test bench" && l !== "API Docs").slice(-2),
+		).toEqual(["Manage My Account", "Transactions"]);
 	});
 
 	it("hides a flow the user is not entitled to", async () => {
@@ -139,6 +140,48 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		expect(
 			screen.queryByRole("link", { name: "Manage My Account" }),
 		).toBeNull();
+	});
+});
+
+describe("ConsoleLayout — rail shell", () => {
+	it("captions the groups and closes with a link back to the docs", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+
+		renderRail();
+
+		await screen.findByRole("link", { name: "Load Wallet" });
+		expect(screen.getByText("Account")).toBeVisible();
+		expect(screen.getByText("Build & Monitor")).toBeVisible();
+		expect(screen.getByRole("link", { name: /API Docs/ })).toHaveAttribute(
+			"href",
+			"/docs",
+		);
+	});
+
+	// The rail caption IS the page heading now — the old `<h1>Developer Console`
+	// above the grid is gone. Sub-pages start at `<h2>`, so a rail that drops or
+	// duplicates the h1 breaks the heading order on every console route.
+	it("keeps exactly one h1 and the main landmark", () => {
+		connectInteractions.mockResolvedValue({ interactions: [] });
+
+		renderRail();
+
+		const headings = screen.getAllByRole("heading", { level: 1 });
+		expect(headings).toHaveLength(1);
+		expect(headings[0]).toHaveTextContent("Developer Console");
+		expect(screen.getByRole("main")).toContainElement(
+			screen.getByText("home-page"),
+		);
+	});
+
+	it("shows the lifecycle state beside the caption", () => {
+		connectInteractions.mockResolvedValue({ interactions: [] });
+
+		renderRail();
+
+		// DEVELOPER is `state: "active"`; an unknown state falls back to "Pending"
+		// through `lifecycleBadge`, which LifecycleCard.test.tsx pins.
+		expect(screen.getByText("Active")).toBeVisible();
 	});
 });
 

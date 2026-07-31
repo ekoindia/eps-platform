@@ -52,6 +52,15 @@ const STATE_COPY: Record<
 };
 
 /**
+ * The short label for a lifecycle state. The rail caption badge and this card
+ * read the same copy; a state this build doesn't know reads as "Pending".
+ * @param state - The session's lifecycle state.
+ * @returns The badge label.
+ */
+export const lifecycleBadge = (state: Lifecycle): string =>
+	(STATE_COPY[state] ?? STATE_COPY.unknown).badge;
+
+/**
  * The signed-in developer's lifecycle state.
  *
  * Two shapes, because the state matters at very different volumes. For an
