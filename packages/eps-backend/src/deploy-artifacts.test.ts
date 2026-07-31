@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
@@ -61,25 +61,28 @@ describe("Dockerfile", () => {
 	// @modelcontextprotocol/sdk) made npm nest jose under
 	// packages/eps-backend/node_modules. The runtime stage copied only the root
 	// node_modules and flattened dist into /app, so the nested deps were
-	// invisible and the container crash-looped on ERR_MODULE_NOT_FOUND.
-	it("ships every prod dependency npm nested under the workspace", () => {
-		const { dependencies } = JSON.parse(
-			readFileSync(resolve(root, "package.json"), "utf8"),
-		) as { dependencies: Record<string, string> };
-		const nested = Object.keys(dependencies).filter((dep) =>
-			existsSync(resolve(root, "node_modules", dep)),
-		);
-		if (nested.length > 0) {
-			expect(dockerfile).toContain(
-				"COPY --from=build /app/packages/eps-backend/node_modules ./node_modules",
-			);
-		}
-		expect(dockerfile).toContain(
-			"COPY --from=build /app/node_modules /app/node_modules",
+	// invisible and the container crash-looped on ERR_MODULE_NOT_FOUND. Copying
+	// the whole resolved tree keeps that true however npm decides to nest.
+	it("ships the whole resolved dependency tree, not hand-picked paths", () => {
+		expect(dockerfile).toContain("COPY --from=proddeps /app /app");
+		expect(dockerfile).not.toMatch(
+			/COPY --from=\S+ \S*packages\/eps-backend\/node_modules/,
 		);
 	});
 	it("runs from the workspace path so upward resolution reaches both trees", () => {
 		expect(dockerfile).toContain("WORKDIR /app/packages/eps-backend");
+	});
+	// Dev deps are dead weight on a vfs-backed VM: no layer sharing means image
+	// size is paid again in full on every pull and every container create.
+	it("installs runtime deps without devDependencies", () => {
+		expect(dockerfile).toMatch(/FROM \S+ AS proddeps/);
+		expect(dockerfile).toMatch(/npm ci .*--omit=dev/);
+		// dist is the one thing that must come from the build stage; node_modules
+		// must not, or the pruned tree is silently bypassed.
+		expect(dockerfile).toContain(
+			"COPY --from=build /app/packages/eps-backend/dist ./dist",
+		);
+		expect(dockerfile).not.toMatch(/COPY --from=build \S*node_modules/);
 	});
 });
 

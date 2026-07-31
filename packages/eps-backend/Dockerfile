@@ -10,6 +10,18 @@ RUN npm ci --workspace @ekoindia/eps-backend --include-workspace-root
 COPY packages/eps-backend packages/eps-backend
 RUN npm run build -w @ekoindia/eps-backend
 
+# Runtime dependencies only, resolved fresh from the lockfile rather than pruned
+# out of the build tree — tsup, typescript, vitest and friends never enter the
+# final image. Worth a second npm ci: the deploy VM's Docker runs on the vfs
+# storage driver, which copies every layer in full, so image size converts
+# directly into pull and container-create minutes.
+FROM node:20-alpine AS proddeps
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY .githooks/setup.mjs .githooks/setup.mjs
+COPY packages/eps-backend/package.json packages/eps-backend/package.json
+RUN npm ci --workspace @ekoindia/eps-backend --include-workspace-root --omit=dev
+
 FROM node:20-alpine
 # Keep the monorepo path layout from the build stage — do NOT flatten dist into
 # /app. npm nests a workspace dep whenever the hoisted version conflicts (here:
@@ -19,9 +31,10 @@ FROM node:20-alpine
 # or those deps are invisible at runtime.
 WORKDIR /app/packages/eps-backend
 ENV NODE_ENV=production
-COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /app/packages/eps-backend/node_modules ./node_modules
+# The whole resolved tree, not hand-picked node_modules paths: which deps nest
+# under the workspace vs hoist to the root is npm's call and changes with the
+# lockfile, and a COPY naming a path that stops existing fails the build.
+COPY --from=proddeps /app /app
 COPY --from=build /app/packages/eps-backend/dist ./dist
-COPY --from=build /app/packages/eps-backend/package.json ./package.json
 EXPOSE 8787
 CMD ["node", "dist/index.js"]
