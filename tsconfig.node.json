@@ -1,7 +1,16 @@
 {
 	"compilerOptions": {
 		"target": "ES2022",
-		"lib": ["ES2023"],
+		/*
+		 * Browser libs + `vite/client` look wrong for a "node" project, but
+		 * `ssg/routes.ts` and `ssg/sitemap.ts` import `@/lib/*`, which transitively
+		 * pulls most of `src/` (down to `.tsx` components, `import.meta.env`,
+		 * `?url`/imagetools asset imports) into this project. These settings —
+		 * including `strict: false` below — mirror tsconfig.app.json so the shared
+		 * files typecheck identically in both projects.
+		 */
+		"lib": ["ES2023", "DOM", "DOM.Iterable"],
+		"types": ["vite/client", "node"],
 		"module": "ESNext",
 		"skipLibCheck": true,
 		"jsx": "react-jsx",
@@ -19,10 +28,12 @@
 		},
 
 		/* Linting */
-		"strict": true,
+		"strict": false,
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": ["vite.config.ts", "ssg"]
+	/* `src/*.d.ts`: ambient decls for `.mdx` and imagetools `?w=…&as=picture`
+	 * imports, needed by the `src/` files reachable from `ssg/`. */
+	"include": ["vite.config.ts", "ssg", "src/*.d.ts"]
 }

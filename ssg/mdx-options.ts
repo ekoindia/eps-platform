@@ -1,3 +1,4 @@
+import type { Options } from "@mdx-js/rollup";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -14,7 +15,7 @@ import remarkGfm from "remark-gfm";
  * `endpoint-descriptions.ts`). Those files are pure markdown loaded as strings,
  * never as MDX, so we keep MDX away from that directory.
  */
-export const mdxOptions = {
+export const mdxOptions: Options = {
 	exclude: ["**/content/docs/endpoints/**"],
 	// Always compile against the stable automatic JSX runtime (`jsx`/`jsxs`),
 	// never the dev runtime (`jsxDEV`). The prerender's inner SSR server runs in
@@ -22,8 +23,5 @@ export const mdxOptions = {
 	// output renders MDX to nothing there. The stable runtime works everywhere.
 	development: false,
 	remarkPlugins: [remarkGfm],
-	rehypePlugins: [
-		rehypeSlug,
-		[rehypeAutolinkHeadings, { behavior: "wrap" }] as const,
-	],
+	rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, { behavior: "wrap" }]],
 };
