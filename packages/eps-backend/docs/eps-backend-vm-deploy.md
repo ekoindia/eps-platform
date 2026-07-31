@@ -275,57 +275,55 @@ domain.
 
 2. **nginx** — a new file, never an edit of an existing site's block. On RHEL:
 
-   ```nginx
-   # /etc/nginx/conf.d/eps-backend.conf
-   server {
-       listen 80;
-       server_name api.eps.eko.in;
+```nginx
+# /etc/nginx/conf.d/eps-backend.conf
+server {
+      listen 80;
+      server_name api.eps.eko.in;
 
-       location / {
-           proxy_pass http://127.0.0.1:8787;
-           proxy_http_version 1.1;
+      location / {
+            proxy_pass http://127.0.0.1:8787;
+            proxy_http_version 1.1;
 
-           proxy_set_header Host              $host;
-           # MUST overwrite, not append: the backend's rate limiter trusts
-           # X-Real-IP for its per-client bucket, so a client-supplied value
-           # would let one caller spoof another's quota.
-           proxy_set_header X-Real-IP         $remote_addr;
-           proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Host              $host;
+            # MUST overwrite, not append: the backend's rate limiter trusts
+            # X-Real-IP for its per-client bucket, so a client-supplied value
+            # would let one caller spoof another's quota.
+            proxy_set_header X-Real-IP         $remote_addr;
+            proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
-           proxy_read_timeout 120s;
-       }
-   }
-   ```
+            proxy_read_timeout 120s;
+      }
+}
+```
 
-   No path prefix and no trailing slash on `proxy_pass` — the backend's routes
-   (`/healthz`, `/me`, `/auth/admin/github/callback`) sit at the root, and the
-   GitHub OAuth callback URL must match byte for byte.
+No path prefix and no trailing slash on `proxy_pass` — the backend's routes
+(`/healthz`, `/me`, `/auth/admin/github/callback`) sit at the root, and the
+GitHub OAuth callback URL must match byte for byte.
 
-   ```sh
-   nginx -t && systemctl reload nginx   # reload, never restart: other sites share this nginx
-   ```
+```sh
+nginx -t && systemctl reload nginx   # reload, never restart: other sites share this nginx
+```
 
-3. **TLS** — `certbot --nginx -d api.eps.eko.in`. Then verify the renewal timer
-   actually exists (it did not, the first time, on this VM):
+3. **TLS** — `certbot --nginx -d api.eps.eko.in`. Then verify the renewal timer actually exists (it did not, the first time, on this VM):
 
-   ```sh
-   systemctl list-timers | grep certbot || systemctl enable --now certbot-renew.timer
-   firewall-cmd --permanent --list-ports    # must include 80/tcp and 443/tcp
-   ```
+```sh
+systemctl list-timers | grep certbot || systemctl enable --now certbot-renew.timer
+firewall-cmd --permanent --list-ports    # must include 80/tcp and 443/tcp
+```
 
 4. **Verify** — `curl -f https://api.eps.eko.in/healthz`.
 
-5. **Upstream allowlist** — production SimpliBank restricts client IPs, so send Eko
-   the VM's **outbound** address, which is not necessarily the one DNS points at:
+5. **Upstream allowlist** — production SimpliBank restricts client IPs, so send Eko the VM's **outbound** address, which is not necessarily the one DNS points at:
 
-   ```sh
-   curl -s ifconfig.me     # run ON the VM
-   ```
+```sh
+curl -s ifconfig.me     # run ON the VM
+```
 
-   Confirm in the cloud console that this address is static (a reserved public IP
-   or a NAT gateway) before requesting the allowlist entry — a dynamic one will
-   silently start returning 403s after a reallocation.
+Confirm in the cloud console that this address is static (a reserved public IP
+or a NAT gateway) before requesting the allowlist entry — a dynamic one will
+silently start returning 403s after a reallocation.
 
 ### Step 10 — Point the frontend at it
 
