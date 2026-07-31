@@ -82,7 +82,8 @@ first deploy is hands-on; the poller takes over afterward.
       image, image needs the workflow on `main`; so **merge first, then bootstrap**).
 - [ ] **Run the [Bootstrap](#bootstrap) steps on the VM** (Docker + NTP,
       `/data/eps-backend` files, `.env` secrets, GHCR login + authfile, seed `deploy.env`,
-      auth smoke-test, `up -d`, reverse proxy → `127.0.0.1:8787`, prune timer).
+      auth smoke-test, `up -d`, then [DNS/nginx/TLS](#step-9--publish-it-dns-nginx-tls)
+      and [pointing the frontend at it](#step-10--point-the-frontend-at-it)).
 - [ ] **Thereafter:** every green `main` push auto-deploys within ~30 s — no
       manual steps unless a deploy HOLDs (see [Clearing HOLD](#clearing-hold)).
 
@@ -254,6 +255,128 @@ docker compose -p eps-backend --project-directory /data/eps-backend --env-file /
 Expected: `redis`, `eps-backend`, and `poller` with status `Up` (eps-backend
 will show `(healthy)` once the healthcheck passes). The backend is reachable at
 `127.0.0.1:8787` — point your reverse proxy there.
+
+### Step 9 — Publish it: DNS, nginx, TLS
+
+The container binds `127.0.0.1:8787` only and is never exposed directly. Host
+nginx terminates TLS and proxies to it. The examples use `api.eps.eko.in`;
+substitute your own hostname.
+
+**Pick the hostname before anything else** — it is load-bearing for cookies. The
+backend issues `SameSite=Lax` session cookies, which a browser only sends on
+requests to the same registrable domain as the page. A backend on a *different*
+domain (say `eps-backend.example.net` while the site is `eps.eko.in`) makes those
+cookies third-party and auth silently breaks. Use a subdomain of the site's own
+domain.
+
+1. **DNS** — an `A` record for `api.eps.eko.in` pointing at the VM's public
+   address. On a shared box this is the same address the other sites already use;
+   confirm with `dig +short <existing-host>`.
+
+2. **nginx** — a new file, never an edit of an existing site's block. On RHEL:
+
+   ```nginx
+   # /etc/nginx/conf.d/eps-backend.conf
+   server {
+       listen 80;
+       server_name api.eps.eko.in;
+
+       location / {
+           proxy_pass http://127.0.0.1:8787;
+           proxy_http_version 1.1;
+
+           proxy_set_header Host              $host;
+           # MUST overwrite, not append: the backend's rate limiter trusts
+           # X-Real-IP for its per-client bucket, so a client-supplied value
+           # would let one caller spoof another's quota.
+           proxy_set_header X-Real-IP         $remote_addr;
+           proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+
+           proxy_read_timeout 120s;
+       }
+   }
+   ```
+
+   No path prefix and no trailing slash on `proxy_pass` — the backend's routes
+   (`/healthz`, `/me`, `/auth/admin/github/callback`) sit at the root, and the
+   GitHub OAuth callback URL must match byte for byte.
+
+   ```sh
+   nginx -t && systemctl reload nginx   # reload, never restart: other sites share this nginx
+   ```
+
+3. **TLS** — `certbot --nginx -d api.eps.eko.in`. Then verify the renewal timer
+   actually exists (it did not, the first time, on this VM):
+
+   ```sh
+   systemctl list-timers | grep certbot || systemctl enable --now certbot-renew.timer
+   firewall-cmd --permanent --list-ports    # must include 80/tcp and 443/tcp
+   ```
+
+4. **Verify** — `curl -f https://api.eps.eko.in/healthz`.
+
+5. **Upstream allowlist** — production SimpliBank restricts client IPs, so send Eko
+   the VM's **outbound** address, which is not necessarily the one DNS points at:
+
+   ```sh
+   curl -s ifconfig.me     # run ON the VM
+   ```
+
+   Confirm in the cloud console that this address is static (a reserved public IP
+   or a NAT gateway) before requesting the allowlist entry — a dynamic one will
+   silently start returning 403s after a reallocation.
+
+### Step 10 — Point the frontend at it
+
+The website reads its backend base from `VITE_EPS_BACKEND_URL`, defaulting to the
+same-origin path `/api` (`src/lib/auth/client.ts`). That default only works where
+something actually *serves* `/api`: in development the Vite dev server proxies it
+(`vite.config.ts`), and in production the host must. With neither, `/api/me` falls
+through to the SPA fallback and returns `index.html` with a **200**, which is how
+`/console` once rendered a "signed-in" user built from the site's own HTML.
+
+**Prefer a same-origin rewrite over an absolute URL.** Routing `/api` through the
+site's own origin keeps session cookies first-party, so there is no credentialed
+CORS to configure, no preflight, and no `SameSite=None`. Pointing
+`VITE_EPS_BACKEND_URL` at `https://api.eps.eko.in` instead makes every console
+request cross-site and drags all of that in.
+
+On Vercel, add a `routes` entry — **not** a `rewrites` one, because only `routes`
+can expand an environment variable, which keeps the backend hostname out of the
+repository:
+
+```json
+{
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "${EPS_BACKEND_ORIGIN}/$1",
+      "env": ["EPS_BACKEND_ORIGIN"]
+    }
+  ]
+}
+```
+
+- `EPS_BACKEND_ORIGIN` is a **Vercel project environment variable** (Production,
+  and Preview if previews should reach a backend) set to `https://api.eps.eko.in`.
+  No `VITE_` prefix: it is expanded at the edge per request, never compiled into
+  the client bundle. Only names listed in `env` are expandable; an unset variable
+  is left as the literal string `${EPS_BACKEND_ORIGIN}`, which fails loudly.
+- `/$1` strips the `/api` prefix, mirroring the dev proxy's
+  `rewrite: (p) => p.replace(/^\/api/, "")`.
+- **Leave `VITE_EPS_BACKEND_URL` unset.** Setting it would send the browser
+  straight to the backend origin and bypass this proxy entirely.
+- **Ordering matters.** `vercel.json` already ends its `rewrites` with a catch-all
+  SPA fallback (`/((?!assets/).*)`); the `/api` rule must win over it. `routes` are
+  the lower-level primitive and are evaluated in array order, so put this first —
+  then **verify on a preview deployment** (`curl https://<preview>/api/healthz`
+  should return the backend's JSON, not HTML) before relying on it in production.
+
+If the host cannot do a rewrite at all, set `VITE_EPS_BACKEND_URL` to the absolute
+origin and configure the backend for it: `CORS_ORIGINS` listing the exact site
+origin(s), `Access-Control-Allow-Credentials: true`, `OPTIONS` preflight handling,
+and cookies that survive the cross-site hop.
 
 ---
 
