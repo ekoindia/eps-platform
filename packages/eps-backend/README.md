@@ -80,6 +80,18 @@ session's profile view.
   alive, the freshly rotated refresh token is revoked, both cookies are cleared,
   and the caller gets 401 — better than serving a cookie that fails at the first
   upstream call.
+- **The browser recovers, then gives up, in one place.** Every frontend call
+  goes through `request()` in `src/lib/auth/client.ts`, which answers a 401 with
+  a single `/auth/refresh` and replays the request. That refresh is
+  **single-flight**: refresh tokens rotate with a `getdel`, so N parallel 401s
+  firing N refreshes would have the first consume the token and sign the user
+  out of a session that was just renewed. When the refresh cannot save the call
+  — or the replay 401s anyway, which is what an admin whose `ghtoken:` expired
+  sees — the client notifies `AuthProvider`, which drops the app to `anon` and
+  raises one "Your session has expired. Please sign in again." toast. The
+  console and `/admin` already render sign-in for `anon`, so the user lands on
+  login in place, with the URL intact. `/auth/otp/*` and `/auth/logout` are
+  exempt: a 401 there is a bad OTP or an already-dead session, not an expiry.
 
 ## Scaling & storage backends
 

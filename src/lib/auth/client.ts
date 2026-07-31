@@ -168,6 +168,61 @@ async function parse(res: Response): Promise<unknown> {
 	return json;
 }
 
+/** Called when a 401 survives the refresh attempt — i.e. the session is really gone. */
+type SessionExpiredHandler = () => void;
+
+let onSessionExpired: SessionExpiredHandler | null = null;
+
+/**
+ * Registers the single listener notified when a request 401s and the silent
+ * refresh could not save it. `AuthProvider` owns it; passing `null` unregisters.
+ * @param handler - The listener, or null to clear.
+ */
+export function setSessionExpiredHandler(
+	handler: SessionExpiredHandler | null,
+): void {
+	onSessionExpired = handler;
+}
+
+/** In-flight `/auth/refresh`, shared by every 401 that arrives while it runs. */
+let refreshInFlight: Promise<boolean> | null = null;
+
+/**
+ * Rotates the session, at most one rotation at a time.
+ *
+ * Refresh tokens are single-use — the backend's `rotateRefresh` does a `getdel`
+ * — so N parallel 401s (a console page fires several) firing N refreshes means
+ * the first consumes the token and the rest 401 on a session that was just
+ * successfully renewed. Sharing one promise makes the losers await the winner's
+ * answer instead of racing it into a false expiry.
+ * @returns True when the session was rotated.
+ */
+function refreshSession(): Promise<boolean> {
+	refreshInFlight ??= fetch(`${BASE}/auth/refresh`, {
+		method: "POST",
+		credentials: "include",
+	})
+		.then(async (res) => {
+			// Drain the body so the connection can be reused either way.
+			await res.text().catch(() => undefined);
+			return res.ok;
+		})
+		.catch(() => false)
+		.finally(() => {
+			refreshInFlight = null;
+		});
+	return refreshInFlight;
+}
+
+/**
+ * A 401 on these paths is not an expired session: OTP paths mean a bad code, and
+ * a logout that 401s has already achieved what it was asked to do.
+ * @param path - Request path, without the base.
+ */
+function isSessionSignal(path: string): boolean {
+	return path !== "/auth/logout" && !path.startsWith("/auth/otp/");
+}
+
 /** Fetches a backend endpoint, auto-refreshing once on 401 (except for /auth/refresh and /auth/otp/* paths). */
 async function request(
 	path: string,
@@ -186,18 +241,20 @@ async function request(
 			...(init.headers ?? {}),
 		},
 	});
-	if (
-		res.status === 401 &&
-		retry &&
-		path !== "/auth/refresh" &&
-		!path.startsWith("/auth/otp/")
-	) {
-		const refreshed = await fetch(`${BASE}/auth/refresh`, {
-			method: "POST",
-			credentials: "include",
-		});
-		if (refreshed.ok) return request(path, init, false);
-		await refreshed.text().catch(() => undefined);
+	if (res.status === 401) {
+		if (
+			retry &&
+			path !== "/auth/refresh" &&
+			!path.startsWith("/auth/otp/") &&
+			(await refreshSession())
+		) {
+			return request(path, init, false);
+		}
+		// Either the refresh failed, or the replay came back 401 anyway (an admin
+		// whose GitHub token died holds a perfectly valid EPS session). Both mean
+		// the user cannot continue, so tell the provider once, here, rather than
+		// leaving every caller to render the message on its own.
+		if (isSessionSignal(path)) onSessionExpired?.();
 	}
 	return parse(res);
 }

@@ -1,4 +1,5 @@
 import {
+	act,
 	fireEvent,
 	render,
 	renderHook,
@@ -14,10 +15,31 @@ import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 vi.mock("@/lib/auth/client", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/auth/client")>()),
 	authClient: { me: vi.fn(), logout: vi.fn() },
+	setSessionExpiredHandler: vi.fn(),
 }));
 vi.mock("@/lib/zoho-chat", () => ({ setChatIdentity: vi.fn() }));
-import { authClient } from "@/lib/auth/client";
+vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+import { toast } from "sonner";
+import {
+	authClient,
+	setSessionExpiredHandler,
+	type MeView,
+} from "@/lib/auth/client";
 import { setChatIdentity } from "@/lib/zoho-chat";
+
+/**
+ * The expiry handler the provider registered on mount.
+ * @returns The registered callback.
+ */
+function registeredHandler(): () => void {
+	const registered = vi
+		.mocked(setSessionExpiredHandler)
+		.mock.calls.map(([handler]) => handler)
+		.filter((handler) => typeof handler === "function");
+	const latest = registered[registered.length - 1];
+	if (!latest) throw new Error("no session-expired handler registered");
+	return latest as () => void;
+}
 
 function Probe() {
 	const { state, logout } = useAuth();
@@ -151,6 +173,96 @@ describe("AuthProvider", () => {
 		fireEvent.click(screen.getByRole("button", { name: /log out/i }));
 
 		await waitFor(() => expect(setChatIdentity).toHaveBeenLastCalledWith(null));
+	});
+
+	describe("session expiry", () => {
+		const DEVELOPER: MeView = {
+			state: "active",
+			mobile: "9990000001",
+			profile: null,
+			zohoId: null,
+		};
+
+		/** Renders the provider with a signed-in developer and waits for it. */
+		async function renderAuthed() {
+			vi.mocked(authClient.me).mockResolvedValue(DEVELOPER);
+			vi.mocked(authClient.logout).mockResolvedValue({ ok: true });
+			const view = renderHook(() => useAuth(), { wrapper: AuthProvider });
+			await waitFor(() =>
+				expect(view.result.current.state.status).toBe("authed"),
+			);
+			return view;
+		}
+
+		it("drops to anon and says why", async () => {
+			const { result } = await renderAuthed();
+
+			await act(async () => registeredHandler()());
+
+			expect(result.current.state.status).toBe("anon");
+			expect(toast.error).toHaveBeenCalledWith(
+				"Your session has expired. Please sign in again.",
+			);
+			expect(authClient.logout).toHaveBeenCalledTimes(1);
+		});
+
+		// A console page fires several requests at once; they all 401 together.
+		it("says it once however many requests fail together", async () => {
+			await renderAuthed();
+			const expire = registeredHandler();
+
+			await act(async () => {
+				expire();
+				expire();
+				expire();
+			});
+
+			expect(toast.error).toHaveBeenCalledTimes(1);
+			expect(authClient.logout).toHaveBeenCalledTimes(1);
+		});
+
+		// The boot /me of a signed-out visitor on /console 401s exactly like an
+		// expired session does — they must not be told a session ended.
+		it("stays silent for a visitor who was never signed in", async () => {
+			vi.mocked(authClient.me).mockRejectedValue(new Error("401"));
+			const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+			await waitFor(() => expect(result.current.state.status).toBe("anon"));
+
+			await act(async () => registeredHandler()());
+
+			expect(toast.error).not.toHaveBeenCalled();
+			expect(authClient.logout).not.toHaveBeenCalled();
+		});
+
+		// Signing back in has to re-arm the guard, or the next genuine expiry —
+		// hours later, after another idle stretch — passes in silence.
+		it("re-arms after the user signs back in", async () => {
+			const { result } = await renderAuthed();
+			await act(async () => registeredHandler()());
+			expect(toast.error).toHaveBeenCalledTimes(1);
+
+			await act(async () => {
+				result.current.adopt(DEVELOPER);
+			});
+			expect(result.current.state.status).toBe("authed");
+
+			await act(async () => registeredHandler()());
+
+			expect(result.current.state.status).toBe("anon");
+			expect(toast.error).toHaveBeenCalledTimes(2);
+			expect(authClient.logout).toHaveBeenCalledTimes(2);
+		});
+
+		// Best-effort courtesy, not a gate: a hung logout must not leave a console
+		// the user can no longer use on screen.
+		it("does not wait for the logout call to settle", async () => {
+			const { result } = await renderAuthed();
+			vi.mocked(authClient.logout).mockReturnValue(new Promise(() => {}));
+
+			await act(async () => registeredHandler()());
+
+			expect(result.current.state.status).toBe("anon");
+		});
 	});
 
 	it("classifies a signup session", async () => {

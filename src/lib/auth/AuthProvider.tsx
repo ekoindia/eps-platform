@@ -3,12 +3,15 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 	type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import {
 	authClient,
 	LIFECYCLES,
+	setSessionExpiredHandler,
 	type AdminView,
 	type MeView,
 	type SignupView,
@@ -101,6 +104,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		void refresh();
 	}, [refresh]);
+
+	// The expiry handler below runs outside React's data flow — it is called from
+	// a fetch, not from an event — so it needs the CURRENT state, not the one
+	// captured when it was registered.
+	const stateRef = useRef(state);
+	/** True between the first expired request and the state landing on `anon`. */
+	const expiring = useRef(false);
+
+	useEffect(() => {
+		stateRef.current = state;
+		// Signing back in re-arms the guard, or the next genuine expiry — hours
+		// later, after another idle stretch — would pass in silence.
+		if (state.status === "authed") expiring.current = false;
+	}, [state]);
+
+	// A session that cannot be recovered ends here, once, for the whole app: the
+	// shell drops to `anon` (every console/admin page already renders sign-in for
+	// that) and one toast says why. Without this each caller rendered the
+	// backend's "session has expired" message as inline text inside a console the
+	// user could no longer use.
+	useEffect(() => {
+		setSessionExpiredHandler(() => {
+			// Never on a page the user was only browsing anonymously — the boot /me
+			// of a signed-out visitor 401s exactly like an expired session does.
+			if (stateRef.current.status !== "authed") return;
+			// A console page fires several requests at once; they all 401 together.
+			if (expiring.current) return;
+			expiring.current = true;
+			// Drop the shell FIRST. Logging out is best-effort courtesy — it makes
+			// `anon` stick for an admin whose GitHub token died while the EPS session
+			// is still live — but a hung request must not leave a broken console up.
+			setState({ status: "anon" });
+			toast.error("Your session has expired. Please sign in again.");
+			void authClient.logout().catch(() => undefined);
+		});
+		return () => setSessionExpiredHandler(null);
+	}, []);
 
 	// Keep the support chat's visitor identity in step with the session, so a
 	// logged-in user who opens chat from any page reaches the operator by name
