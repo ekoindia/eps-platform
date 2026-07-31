@@ -46,6 +46,13 @@
 			"permanent": true
 		}
 	],
+	"routes": [
+		{
+			"src": "/api/(.*)",
+			"dest": "${EPS_BACKEND_ORIGIN}/$1",
+			"env": ["EPS_BACKEND_ORIGIN"]
+		}
+	],
 	"rewrites": [
 		{
 			"source": "/llms-full.txt",
