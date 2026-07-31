@@ -19,17 +19,21 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
+import type { RoleTransactionList } from "@/lib/connect/interactions";
+import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn } from "@/lib/utils";
 import {
 	FileCheck2,
+	FilePen,
 	FlaskConical,
 	KeyRound,
 	LayoutDashboard,
 	Menu,
 	PlusCircle,
 	ReceiptText,
+	UserCog,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -66,20 +70,23 @@ const NAV_ITEMS: readonly NavItem[] = [
 		icon: ReceiptText,
 		end: false,
 	},
-	// Last, and only while developing: the bench opens the camera, image editor,
-	// file viewer and raise-issue form without needing a transaction flow. The
-	// route itself is registered under the same guard in App.tsx.
-	...(import.meta.env.DEV
-		? [
-				{
-					to: "/console/test",
-					label: "Test bench",
-					icon: FlaskConical,
-					end: false,
-				},
-			]
-		: []),
 ];
+
+/**
+ * Last of all, and only while developing: the bench opens the camera, image
+ * editor, file viewer and raise-issue form without needing a transaction flow.
+ * The route itself is registered under the same guard in App.tsx.
+ */
+const DEV_ITEMS: readonly NavItem[] = import.meta.env.DEV
+	? [
+			{
+				to: "/console/test",
+				label: "Test bench",
+				icon: FlaskConical,
+				end: false,
+			},
+		]
+	: [];
 
 /**
  * The signed-in developer, as handed down by `ConsoleLayout` through the router
@@ -102,12 +109,52 @@ const DOCUMENTS_ITEM: NavItem = {
 	end: false,
 };
 
+/**
+ * Self-service flows the rail links straight to. Each is placed by hand rather
+ * than as one block: Sign Agreement follows Load Wallet, Manage My Account
+ * closes the rail.
+ */
+type Flow = { id: number; label: string; icon: typeof FilePen };
+
+const SIGN_AGREEMENT: Flow = {
+	id: 898,
+	label: "Sign Agreement",
+	icon: FilePen,
+};
+const MANAGE_ACCOUNT: Flow = {
+	id: 536,
+	label: "Manage My Account",
+	icon: UserCog,
+};
+
+/**
+ * The rail item for a flow, when this user is entitled to run it.
+ * @param list - The caller's interaction list, or null while unresolved.
+ * @param flow - The flow to link to.
+ * @returns A one-item array to spread, or an empty one when not entitled.
+ */
+function flowItem(
+	list: RoleTransactionList | null,
+	flow: Flow,
+): readonly NavItem[] {
+	if (!list?.[String(flow.id)]) return [];
+	return [
+		{
+			to: `/console/transaction/${flow.id}`,
+			label: flow.label,
+			icon: flow.icon,
+			end: false,
+		},
+	];
+}
+
 /** The links themselves — shared by the desktop rail and the mobile Sheet. */
 function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	// Same entitlement that gates the wallet card's "+" button, and the same
 	// route it links to — the rail just says it in words.
 	const loadFlowId = useLoadWalletFlowId();
 	const kycEnabled = useKycEnabled();
+	const interactions = useRoleTransactionList();
 	// Home, then whatever this user is entitled to, then the fixed tail. Built as
 	// a flat spread rather than spliced: two independent entitlements land in
 	// here, and a nested ternary per item is how the order quietly goes wrong.
@@ -124,7 +171,10 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 						end: false,
 					},
 				]),
+		...flowItem(interactions, SIGN_AGREEMENT),
 		...NAV_ITEMS.slice(1),
+		...flowItem(interactions, MANAGE_ACCOUNT),
+		...DEV_ITEMS,
 	];
 
 	return (

@@ -102,6 +102,46 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 	});
 });
 
+describe("ConsoleLayout — self-service flow rail items", () => {
+	it("puts Sign Agreement behind Load Wallet and Manage My Account last", async () => {
+		connectInteractions.mockResolvedValue({
+			interactions: [{ id: 491 }, { id: 898 }, { id: 536 }],
+		});
+
+		renderRail();
+
+		expect(
+			await screen.findByRole("link", { name: "Sign Agreement" }),
+		).toHaveAttribute("href", "/console/transaction/898");
+		expect(
+			screen.getByRole("link", { name: "Manage My Account" }),
+		).toHaveAttribute("href", "/console/transaction/536");
+		const labels = screen
+			.getAllByRole("link")
+			.map((a) => a.textContent?.trim());
+		expect(labels.slice(0, 3)).toEqual([
+			"Home",
+			"Load Wallet",
+			"Sign Agreement",
+		]);
+		// Last of the real links; the DEV-only test bench sits behind it.
+		expect(labels.filter((l) => l !== "Test bench").at(-1)).toBe(
+			"Manage My Account",
+		);
+	});
+
+	it("hides a flow the user is not entitled to", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 898 }] });
+
+		renderRail();
+
+		await screen.findByRole("link", { name: "Sign Agreement" });
+		expect(
+			screen.queryByRole("link", { name: "Manage My Account" }),
+		).toBeNull();
+	});
+});
+
 describe("ConsoleLayout — Documents rail item", () => {
 	it("appears directly after Home when KYC upload is entitled", async () => {
 		connectInteractions.mockResolvedValue({
