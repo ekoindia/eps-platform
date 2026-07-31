@@ -8,7 +8,11 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 
-vi.mock("@/lib/auth/client", () => ({
+// Only `authClient` is stubbed — the rest of the module stays real so constants
+// like LIFECYCLES (which classify() validates against) can't drift from a
+// hand-written copy.
+vi.mock("@/lib/auth/client", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/auth/client")>()),
 	authClient: { me: vi.fn(), logout: vi.fn() },
 }));
 vi.mock("@/lib/zoho-chat", () => ({ setChatIdentity: vi.fn() }));
@@ -69,6 +73,27 @@ describe("AuthProvider", () => {
 		(authClient.me as ReturnType<typeof vi.fn>).mockRejectedValue(
 			new Error("401"),
 		);
+		render(
+			<AuthProvider>
+				<Probe />
+			</AuthProvider>,
+		);
+		await waitFor(() =>
+			expect(screen.getByTestId("s").textContent).toBe("anon"),
+		);
+	});
+
+	// Fail closed. A /me that parses but carries no recognizable session — `{}`
+	// from a proxy, an error envelope, a role this build doesn't know — used to
+	// fall through to "authed developer" and crash the console downstream on
+	// fields that were all undefined.
+	it.each([
+		["an empty object", {}],
+		["an error envelope", { error: { code: "PARSE_ERROR", message: "x" } }],
+		["an unknown lifecycle", { state: "retired", mobile: "999" }],
+		["an unknown role", { role: "auditor" }],
+	])("stays anon when /me returns %s", async (_label, payload) => {
+		(authClient.me as ReturnType<typeof vi.fn>).mockResolvedValue(payload);
 		render(
 			<AuthProvider>
 				<Probe />

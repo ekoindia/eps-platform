@@ -14,6 +14,23 @@ function mockFetch(responses: Array<{ status: number; body: unknown }>) {
 	return fn;
 }
 
+/**
+ * Like `mockFetch`, but the body is returned VERBATIM — `mockFetch` JSON-encodes
+ * it, which would turn an HTML string into a perfectly valid JSON document and
+ * quietly defeat the point of these cases.
+ * @param status - HTTP status to answer with.
+ * @param body - Raw response text.
+ */
+function mockRawFetch(status: number, body: string) {
+	const fn = vi.fn().mockResolvedValue({
+		ok: status >= 200 && status < 300,
+		status,
+		text: async () => body,
+	} as Response);
+	vi.stubGlobal("fetch", fn);
+	return fn;
+}
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("authClient", () => {
@@ -75,5 +92,23 @@ describe("authClient", () => {
 		]);
 		await expect(authClient.me()).rejects.toBeInstanceOf(ApiError);
 		expect(fetchFn).toHaveBeenCalledTimes(2);
+	});
+
+	// Production regression: with no VITE_EPS_BACKEND_URL the base is "/api", so
+	// on the static host /api/me hit the SPA fallback and came back as 200 +
+	// index.html. That used to resolve to an error-shaped object, which the
+	// provider then classified as a signed-in developer.
+	it("rejects a 200 whose body is not JSON", async () => {
+		mockRawFetch(200, '<!doctype html><html lang="en"><head><script>');
+		await expect(authClient.me()).rejects.toMatchObject({
+			name: "ApiError",
+			code: "PARSE_ERROR",
+			httpStatus: 200,
+		});
+	});
+
+	it("still resolves a 200 with an empty body", async () => {
+		mockRawFetch(200, "");
+		await expect(authClient.me()).resolves.toEqual({});
 	});
 });
