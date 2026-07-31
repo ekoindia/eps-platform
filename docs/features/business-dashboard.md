@@ -4,13 +4,19 @@ The signed-in partner's own API usage and business numbers, at `/console` — th
 page you land on after signing in. Ported from Eloka's (`wlc-webapp`) Admin
 Business Dashboard, `page-components/Admin/Dashboard/BusinessDashboard/`.
 
-> **Status: live.** A multi-key `requestPayload` returned only two of the four
-> datasets on a real partner account, leaving Most Used Services and Usage
-> Analytics blank; the route now issues **one call per dataset**, as Eloka does
-> (see [§Upstream contract](#upstream-contract)). 682's aggregation lives in
-> SimpliBank, not in any repo here, so the shape log
-> ([§Zero versus absent](#zero-versus-absent)) is the only way to tell a quiet
-> week from a contract change — read it before debugging any number here.
+> **Status: live; Usage Analytics still blank on at least one account.** A
+> multi-key `requestPayload` returned only two of the four datasets, so the route
+> now issues **one call per dataset** as Eloka does — but `verificationTrends`
+> stayed empty afterwards. 682's aggregation is SimpliBank's; connect-api merely
+> proxies it (`routes/transactions.js`, which never reads `requestPayload`) and
+> **ships a mock of 682 that implements only three keys** — the first thing to
+> rule out, see [§Zero versus absent](#zero-versus-absent). The log's `raw=` and
+> `echo=` fields are the instrument; read them before debugging any number here.
+>
+> Untested difference against Eloka, kept deliberately: Eloka's dashboard sends no
+> `source`, so connect-api defaults it to `NEWCONNECT`; this route sends `EPS`.
+> Token type is not a factor — connect-api forwards only `initiator_id`,
+> `user_code` and `org_id` upstream, which both token types carry.
 
 ## Shape
 
@@ -106,9 +112,38 @@ concurrently, so wall-clock is the slowest not the sum, and a cache miss costs
 four upstream calls at 60s/900s TTL. The table lives in `DATASETS`
 (`dashboardView.ts`); adding a dataset there adds its call.
 
-Each response is read for **its own key only**. Spreading whole
-`dashboard_object`s together would let whichever call settled last overwrite
-another's block.
+Each response is read for **its own key only**, via `pickDataset`
+(`dashboardView.ts`). Spreading whole `dashboard_object`s together would let
+whichever call settled last overwrite another's block.
+
+`pickDataset` tolerates a renamed key, because upstream's naming is already
+inconsistent — three of the four datasets convert snake to camel on the way back
+and one does not, so `verification_trends` instead of `verificationTrends` is a
+live possibility that would otherwise present as a blank widget. It tries every
+**exact** candidate first (response name, then request name) before any
+normalized (lowercased, separator-free) matching, so an exact hit can never lose
+to a fuzzy one; an **ambiguous** normalized match — two keys collapsing to the
+same form — resolves to nothing rather than to whichever upstream serialized
+first, and the `raw=` log line shows the collision.
+
+A real capture (`verification_trends`, a one-year window):
+
+```jsonc
+{ "response_status_id": 0, "status": 0, "message": "Dashboard Displayed!",
+  "data": {
+    "client_ref_id": "1785471135464865", "user_code": "99027178", "org_id": 3, "source": "",
+    "dashboard_object": {
+      "verificationTrends": [
+        { "startDate": "2025-08-12", "endDate": "2025-08-12", "totalCount": 1 },
+        { "startDate": "2025-12-29", "endDate": "2025-12-29", "totalCount": 63 }
+      ] } } }
+```
+
+Two things that matters for: usage buckets are **date-only** with
+`startDate === endDate` (not the `T`-separated stamps the hand-written fixture
+uses), and the envelope echoes `user_code` / `org_id` / `source` — which is what
+the log's `echo` field reports. A bucket with no usable `startDate` is dropped
+rather than rendered as a nameless bar.
 
 Failures are per-call: only `products_overview` failing is worth a 502 — it is
 the headline. Any other dataset failing costs its own widget and a
@@ -229,24 +264,46 @@ A quiet week and an out-of-scope account both look like zeros in the UI, so:
 - The route **logs the shape** whenever any dataset comes out absent *or* empty:
 
   ```
-  [dashboard] preset=last7 typeId=all absent=[] empty=[mostUsedServices, usage]
-              shape={products_overview:object{9}, successRate:object{11}, verificationTrends:string→array[0]}
+  [dashboard] preset=last365 typeId=all absent=[verificationTrends] empty=[usage]
+              view={products_overview:object{9}, successRate:object{11}, mostUsedServices:object{12}}
+              raw=[verification_trends→{somethingElse:object{1}} [user_code:…7178, org_id:3, source:]]
   ```
 
   `absent` (from `buildDashboardView`) catches only `undefined`/`null`; `empty`
   catches the shapes an upstream change actually arrives as — `{}`, `[]`, a
-  JSON-encoded block, a wrongly-typed one. `shapeOf` reports **keys and kinds
-  only, never values**: a real body is one partner's revenue and service mix, and
-  that does not belong in a log line. Kinds are reported after `decode`, so
-  `verificationTrends:string→array[12]` distinguishes "encoded" from "missing".
+  JSON-encoded block, a wrongly-typed one.
 
-  Reading it:
+  `view=` is the merged object the view was built from. **`raw=` is the
+  diagnostic one**: the `dashboard_object` each *dry* call actually received,
+  before its expected key was lifted out. Without it the log could only ever
+  print names this service already recognizes, so an upstream that answered under
+  a name nobody asked for would be invisible — `view=` would simply lack the key,
+  exactly as if nothing came back. Dry calls only, so a healthy page logs nothing.
 
-  | Log says | Means | Do |
+  `shapeOf` reports **keys and kinds only, never values**: a real body is one
+  partner's revenue and service mix, and that does not belong in a log line. Kinds
+  are reported after `decode`, so `verificationTrends:string→array[12]`
+  distinguishes "encoded" from "missing".
+
+  The bracketed `echo` is what upstream says it answered *as* — `user_code`
+  (masked to its last four), `org_id`, `source`, all echoed back by connect-api
+  from the bearer token. It is recorded **per call**, never merged: two calls can
+  disagree, and one shared echo would report whichever settled last as if it spoke
+  for all four.
+
+  Reading it — these are *consistent with*, not proof of:
+
+  | Log says | Consistent with | Do |
   |---|---|---|
-  | key missing from `shape` | upstream returned nothing for that dataset even on its own dedicated call — wrong response key, or 682's scope excludes this account | run the UAT probe (it prints the per-key and multi-key bodies side by side) and raise with the Connect team quoting both |
+  | `echo` shows `user_code:…7178, org_id:3` | connect-api's **682 mock** (`routes_mock/mock_responses/682.js`, active when `DUMMY_API_RESPONSE=true`), which implements `products_overview`, `gtv_top_merchants` and `success_rate` and silently ignores the other two | check that flag on the connect-api the backend points at before suspecting anything here |
+  | a differently-named key in `raw=` carrying data | upstream renamed the block | already handled — `pickDataset` accepts it; confirm the widget filled |
+  | the key present in `raw=` as `array[0]` / `object{0}` | genuinely no data for this account and window | cross-check `/console/transactions` for the same range |
+  | no recognisable key in `raw=` at all | upstream omitted the dataset even on its own dedicated call — scope, `source`, or an upstream defect; the log cannot tell these apart | run the UAT probe (it prints the per-key and multi-key bodies side by side) and raise with the Connect team quoting both |
   | `string→unparseable` | upstream sent a broken encoding | upstream bug; the widget stays empty by design |
-  | `object{0}` / `array[0]` | genuinely no data for this account and window | nothing — cross-check `/console/transactions` |
+
+  **A cached view logs nothing**, because it never reaches upstream (60s for
+  `today`, 900s otherwise). Restart the backend or wait out the TTL before reading
+  the log — switching preset is *not* equivalent, it changes the window too.
 
 ### Most Used Services falls back to Success Rates
 

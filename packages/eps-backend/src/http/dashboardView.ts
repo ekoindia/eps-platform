@@ -243,6 +243,45 @@ export function parseServiceList(envelope: unknown): ServiceRef[] {
 		.filter((s) => s.typeId !== "" && s.label !== "");
 }
 
+/** Lowercased, separator-free form of a key, for tolerant matching. */
+function normalizeKey(key: string): string {
+	return key.replace(/[_-]/g, "").toLowerCase();
+}
+
+/**
+ * Finds one dataset inside a `dashboard_object`, tolerating a renamed key.
+ *
+ * Upstream's naming is already inconsistent — three of the four datasets convert
+ * snake to camel on the way back and one does not — so a block arriving as
+ * `verification_trends` rather than `verificationTrends` is a live possibility,
+ * and it would otherwise present as a silently blank widget.
+ *
+ * EXACT candidates are tried first, in order, before any normalized matching:
+ * an exact hit on the request name must never lose to a fuzzy hit on the
+ * response name. A normalized match that is AMBIGUOUS — two raw keys collapsing
+ * to the same normalized form — resolves to `undefined` rather than to whichever
+ * key upstream happened to serialize first; the caller logs the raw key set, so
+ * the ambiguity is visible instead of arbitrary.
+ * @param root - The `dashboard_object` (or anything, if upstream sent junk).
+ * @param candidates - Accepted names, most authoritative first.
+ * @returns The block, or `undefined` when absent or ambiguous.
+ */
+export function pickDataset(root: unknown, ...candidates: string[]): unknown {
+	const source = decode(root);
+	if (!source || typeof source !== "object" || Array.isArray(source)) {
+		return undefined;
+	}
+	const record = source as Record<string, unknown>;
+	for (const candidate of candidates) {
+		if (record[candidate] !== undefined) return record[candidate];
+	}
+	const wanted = new Set(candidates.map(normalizeKey));
+	const matches = Object.keys(record).filter((key) =>
+		wanted.has(normalizeKey(key)),
+	);
+	return matches.length === 1 ? record[matches[0]] : undefined;
+}
+
 /**
  * Describes the SHAPE of a `dashboard_object`, for the log.
  *
@@ -387,14 +426,25 @@ export function buildDashboardView(input: {
 		successRates,
 		mostUsedServices,
 		usage: Array.isArray(usage)
-			? (usage as unknown[]).map((entry) => {
-					const e = (entry ?? {}) as Record<string, unknown>;
-					return {
-						startDate: String(e.startDate ?? ""),
-						endDate: String(e.endDate ?? ""),
-						totalCount: num(e.totalCount),
-					};
-				})
+			? (usage as unknown[])
+					// A bucket with no `startDate` cannot be placed on an axis, so it is
+					// dropped rather than rendered as a nameless bar. Upstream sends
+					// date-only stamps here (`2026-07-28`), not the `T`-separated form
+					// the other blocks use.
+					.filter(
+						(entry) =>
+							typeof (entry as Record<string, unknown> | null)?.startDate ===
+								"string" &&
+							((entry as Record<string, string>).startDate ?? "").trim() !== "",
+					)
+					.map((entry) => {
+						const e = entry as Record<string, unknown>;
+						return {
+							startDate: String(e.startDate ?? ""),
+							endDate: String(e.endDate ?? ""),
+							totalCount: num(e.totalCount),
+						};
+					})
 			: [],
 		services,
 	};
