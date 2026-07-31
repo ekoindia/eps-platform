@@ -41,7 +41,13 @@ export async function enforceRateLimit(
 		);
 	}
 	if (count > limit) {
-		throw new AppError(429, "RATE_LIMITED", "Rate limit exceeded");
+		// Consoles surface this message verbatim, so it has to tell a user what to
+		// do: the window is fixed and short, and waiting is the whole remedy.
+		throw new AppError(
+			429,
+			"RATE_LIMITED",
+			"Rate limit exceeded. Please try again after a few minutes.",
+		);
 	}
 }
 
