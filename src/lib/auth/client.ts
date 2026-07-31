@@ -6,12 +6,20 @@ import type {
 
 const BASE: string = import.meta.env.VITE_EPS_BACKEND_URL ?? "/api";
 
-export type Lifecycle =
-	| "lead"
-	| "onboarded"
-	| "active"
-	| "inactive"
-	| "unknown";
+/**
+ * Every lifecycle the backend can report, as a runtime value so a `/me` payload
+ * can actually be checked against it — a type alone would leave `state` to be
+ * trusted on faith.
+ */
+export const LIFECYCLES = [
+	"lead",
+	"onboarded",
+	"active",
+	"inactive",
+	"unknown",
+] as const;
+
+export type Lifecycle = (typeof LIFECYCLES)[number];
 
 export interface Profile {
 	name: string;
@@ -140,7 +148,13 @@ async function parse(res: Response): Promise<unknown> {
 		try {
 			json = JSON.parse(text);
 		} catch {
-			json = { error: { code: "PARSE_ERROR", message: text.slice(0, 200) } };
+			// A body that isn't JSON is a broken response, never data — an SPA
+			// fallback serving index.html, a proxy error page, a captive portal.
+			// Returning it as an error-shaped OBJECT (what this used to do) let a
+			// 200 sail past the `res.ok` check below and reach callers as a
+			// session, which is how /console rendered an "authenticated" user
+			// built from the site's own HTML.
+			throw new ApiError("PARSE_ERROR", text.slice(0, 200), res.status);
 		}
 	}
 	if (!res.ok) {

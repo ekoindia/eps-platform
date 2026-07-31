@@ -69,8 +69,10 @@ export default function LifecycleCard({
 	me: MeView;
 	variant?: "card" | "banner";
 }) {
-	const copy = STATE_COPY[me.state];
-	const who = me.profile?.name || me.mobile;
+	// A lifecycle this build doesn't know — a new one added upstream — reads as
+	// "unknown" rather than white-screening the console on `copy.title`.
+	const copy = STATE_COPY[me.state] ?? STATE_COPY.unknown;
+	const who = me.profile?.name || me.mobile || "your account";
 
 	if (variant === "banner") {
 		return (

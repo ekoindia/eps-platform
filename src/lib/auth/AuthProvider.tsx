@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
 	authClient,
+	LIFECYCLES,
 	type AdminView,
 	type MeView,
 	type SignupView,
@@ -45,7 +46,18 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Maps a /me response to the typed AuthState union. */
+/**
+ * Maps a /me response to the typed AuthState union.
+ *
+ * Fails CLOSED: anything that doesn't match a known session shape throws, and
+ * the caller's catch lands on `anon`. The developer branch used to be the
+ * fallthrough — any object without a `role` became an authenticated developer,
+ * so a `{}` (or a proxy's error envelope) produced a session whose every field
+ * was undefined and crashed the console downstream.
+ * @param me - The parsed /me payload.
+ * @returns The matching auth state.
+ * @throws If the payload matches no known session shape.
+ */
 function classify(me: MeView | AdminView | SignupView): AuthState {
 	if ("role" in me && me.role === "admin") {
 		return { status: "authed", role: "admin", me };
@@ -55,7 +67,11 @@ function classify(me: MeView | AdminView | SignupView): AuthState {
 	if ("role" in me && me.role === "signup") {
 		return { status: "authed", role: "signup", me };
 	}
-	return { status: "authed", role: "developer", me: me as MeView };
+	const developer = me as MeView;
+	if (LIFECYCLES.includes(developer.state)) {
+		return { status: "authed", role: "developer", me: developer };
+	}
+	throw new Error("unrecognized /me payload");
 }
 
 /** Context provider that boots auth state from /me and exposes refresh/logout actions. */
