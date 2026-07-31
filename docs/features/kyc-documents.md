@@ -127,27 +127,29 @@ review, too many blocks the upload outright.
   against someone else's account; `client_ref_id` is minted server-side as 20
   digits (13-digit timestamp + 7 random, `node:crypto`).
 
-## Status semantics — UNCONFIRMED
+## Status semantics
 
-The only payload we have is a freshly issued list in which every document,
-uploaded or not, carries `status: 1` with an empty `status_desc`. So 1 cannot
-mean "uploaded", and nothing distinguishes the other codes.
+Confirmed against a live UAT account:
 
-`DOCUMENT_STATUS` therefore claims only what the sample supports, and
-`statusOfDocument` treats every unrecognised code as not-yet-uploaded. The
-failure mode is telling a user they still have work to do when they don't —
-which they can act on — instead of telling them they are finished when upstream
-disagrees, which they cannot.
+| `status` | Meaning |
+| --- | --- |
+| 1 | Pending upload |
+| 2 | Success — uploaded and approved |
+| 3 | Resubmission needed — `error` carries the rejection reason |
 
-Because of that, a successful upload is remembered for the session
-(`uploadedNow` in `Documents.tsx`) so the row can read "Uploaded" at all. That
-is not optimism: each entry comes from an upstream success envelope. It drops
-away on reload, and the list is refetched after every upload so upstream stays
-the source of truth for everything else, including a rejection it decides on
-straight away.
+`DOCUMENT_STATUS` (`src/lib/connect/kyc.ts`) encodes exactly this, and
+`statusOfDocument` treats any other code the same as unconfirmed ones always
+were: not-yet-uploaded, never a false "done". At status 3 the label prefers
+upstream's own `error`, then `status_desc`, before falling back to a generic
+"Resubmission needed".
 
-**Widen `DOCUMENT_STATUS` — do not add heuristics elsewhere — once a real UAT
-account shows what the codes mean.** At that point `uploadedNow` can go.
+A successful upload is still also remembered for the session (`uploadedNow`
+in `Documents.tsx`), read ahead of the mapped status. This is no longer a
+workaround for an unknown code — the list is refetched after every upload,
+and there is no guarantee that refetch already reflects the write it is
+chasing. `uploadedNow` bridges exactly that gap; it drops away on reload,
+and every fetch after the first is upstream's own `status: 2` doing the same
+job.
 
 ## File rules
 
@@ -329,12 +331,11 @@ on its own.
 None of these are assumptions the code hides — each is a small, localised fix —
 but none should be treated as settled before this is enabled in production:
 
-1. What `status` and `status_desc` actually mean (`DOCUMENT_STATUS`).
-2. Whether `pages` is ever non-numeric or a range (`parsePages`).
-3. Whether upstream accepts the calls without `latlong`, `doc_id` and
+1. Whether `pages` is ever non-numeric or a range (`parsePages`).
+2. Whether upstream accepts the calls without `latlong`, `doc_id` and
    `intent_id`.
-4. Whether a 2-page document may be sent as a single 2-page PDF, which the
+3. Whether a 2-page document may be sent as a single 2-page PDF, which the
    "exactly N files" rule currently forbids.
-5. Whether 10 MB survives every hop in front of the app — nginx's
+4. Whether 10 MB survives every hop in front of the app — nginx's
    `client_max_body_size` and any serverless body cap — and whether upstream
    itself accepts a file that large.

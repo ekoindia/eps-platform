@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UsagePoint } from "@/lib/console/dashboard";
-import { summarizeUsage } from "@/lib/console/dashboard";
+import { isHourlyRange, summarizeUsage } from "@/lib/console/dashboard";
 import { formatIndianCompact } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
 import {
@@ -57,7 +57,12 @@ export default function UsageAnalyticsWidget({
 			<CardContent className="flex flex-col gap-6">
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
 					<Stat label="Total Volume" value={total.toLocaleString("en-IN")} />
-					<Stat label="Avg / Bucket" value={average.toLocaleString("en-IN")} />
+					{/* Named after what a bucket actually is in this window, as Eloka
+					    does — "Avg / Bucket" is accurate and tells a partner nothing. */}
+					<Stat
+						label={isHourlyRange(usage) ? "Avg / Hour" : "Avg / Day"}
+						value={average.toLocaleString("en-IN")}
+					/>
 					<Stat label="Peak Volume" value={peak.toLocaleString("en-IN")} />
 					<Stat label="Peak Time" value={peakLabel} />
 				</div>

@@ -55,6 +55,24 @@ function view(overrides: Partial<DashboardView> = {}): DashboardView {
 	};
 }
 
+/** A view with two services' worth of activity, for the filter dropdown. */
+function withServices(overrides: Partial<DashboardView> = {}): DashboardView {
+	return view({
+		overview: {
+			...view().overview,
+			breakdown: [
+				{ typeId: "81", name: "Accept Payment", amount: 700 },
+				{ typeId: "82", name: "Fund Transfer", amount: 404 },
+			],
+		},
+		services: [
+			{ typeId: "81", label: "Accept Payment" },
+			{ typeId: "82", label: "Fund Transfer" },
+		],
+		...overrides,
+	});
+}
+
 function renderDashboard() {
 	return render(
 		<MemoryRouter>
@@ -108,6 +126,81 @@ describe("BusinessDashboard", () => {
 		// screen reader gets.
 		expect(await screen.findByText(/top: accept payment/i)).toBeInTheDocument();
 		expect(await screen.findByText("Total Volume")).toBeInTheDocument();
+	});
+
+	it("offers the services with activity, and refetches the one picked", async () => {
+		load.mockResolvedValue(withServices());
+		renderDashboard();
+		const select = await screen.findByRole("combobox", {
+			name: /filter by service/i,
+		});
+		expect(
+			screen.getByRole("option", { name: "All Services" }),
+		).toBeInTheDocument();
+		// Named from the 1044 join, not from the raw breakdown label.
+		expect(
+			screen.getByRole("option", { name: "Accept Payment" }),
+		).toBeInTheDocument();
+
+		fireEvent.change(select, { target: { value: "82" } });
+		await waitFor(() =>
+			expect(load).toHaveBeenCalledWith({ preset: "last7", typeId: "82" }),
+		);
+	});
+
+	it("keeps every option once a single service is selected", async () => {
+		// A filtered view carries one service; recomputing from it would collapse
+		// the dropdown to the option already picked.
+		load.mockResolvedValueOnce(withServices()).mockResolvedValueOnce(
+			withServices({
+				overview: {
+					...withServices().overview,
+					breakdown: [{ typeId: "82", name: "Fund Transfer", amount: 404 }],
+				},
+				successRates: [],
+				mostUsedServices: [],
+			}),
+		);
+		renderDashboard();
+		const select = await screen.findByRole("combobox", {
+			name: /filter by service/i,
+		});
+		fireEvent.change(select, { target: { value: "82" } });
+		await waitFor(() =>
+			expect(load).toHaveBeenCalledWith({ preset: "last7", typeId: "82" }),
+		);
+		expect(
+			await screen.findByRole("option", { name: "Accept Payment" }),
+		).toBeInTheDocument();
+	});
+
+	it("drops the service filter when the window changes", async () => {
+		load.mockResolvedValue(withServices());
+		renderDashboard();
+		const select = await screen.findByRole("combobox", {
+			name: /filter by service/i,
+		});
+		fireEvent.change(select, { target: { value: "82" } });
+		await waitFor(() =>
+			expect(load).toHaveBeenCalledWith({ preset: "last7", typeId: "82" }),
+		);
+		fireEvent.mouseDown(screen.getByRole("tab", { name: "Last 30 Days" }));
+		await waitFor(() =>
+			expect(load).toHaveBeenCalledWith({
+				preset: "last30",
+				typeId: undefined,
+			}),
+		);
+	});
+
+	it("hides the filter when there is nothing to choose between", async () => {
+		load.mockResolvedValue(view());
+		renderDashboard();
+		await screen.findByText("939");
+		// One service in the data — "All Services" plus itself is not a choice.
+		expect(
+			screen.queryByRole("combobox", { name: /filter by service/i }),
+		).not.toBeInTheDocument();
 	});
 
 	it("treats a deployment without analytics as a note, not a failure", async () => {

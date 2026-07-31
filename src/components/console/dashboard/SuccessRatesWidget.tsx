@@ -49,7 +49,15 @@ export default function SuccessRatesWidget({
 	rows: ServiceSuccess[];
 }) {
 	return (
-		<Card>
+		// The list scrolls to whatever height the grid row gives this card — which
+		// is the taller Most Used Services next to it — instead of a fixed
+		// max-height that left the bottom of the card empty. `min-h-0` on the
+		// content is the part that makes it work: without it the flex child refuses
+		// to shrink below its content and the scroll area overflows the card. The
+		// list's `max-h` survives only as a ceiling for a pathological list: Most
+		// Used Services caps at 10 bars, so a partner using thirty services would
+		// otherwise stretch this row past a screenful.
+		<Card className="flex h-full flex-col">
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2 text-base">
 					<ShieldCheck
@@ -59,13 +67,13 @@ export default function SuccessRatesWidget({
 					Success Rates
 				</CardTitle>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="min-h-0 flex-1">
 				{rows.length === 0 ? (
 					<p className="text-sm text-muted-foreground">
 						No service activity in this window.
 					</p>
 				) : (
-					<ul className="flex max-h-96 flex-col divide-y overflow-y-auto">
+					<ul className="flex h-full max-h-[40rem] flex-col divide-y overflow-y-auto">
 						{rows.map((row) => {
 							const pct = successPct(row.successCount, row.totalCount);
 							return (

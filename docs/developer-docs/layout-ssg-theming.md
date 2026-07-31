@@ -115,4 +115,26 @@ useEffect(() => {
 **Toggle UI** — `DocsThemeToggle.tsx` is a stateless sun/moon button
 (`{ theme, onToggle }`); placed in the left-nav header on desktop and the sticky
 toolbar on mobile.
+
+## Scrollbars
+
+Themed globally in `src/index.css` (`@layer base`), not per-component:
+
+```css
+* {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+}
+```
+
+`--foreground` is navy in light and near-white in dark, so one declaration
+tracks both themes — including the docs subtree, whose scoped `.dark` rebinds the
+token. The WebKit pseudo-element block below it is wrapped in
+`@supports not (scrollbar-color: auto)`: Safari gained the standard properties
+only in 18.2, and the gate stops browsers that support both from styling twice.
+
+Everything with its own scrollbar rules still wins on specificity and needs no
+change: `.docs-scroll` (`index.css`), the `--rp-*` docs code panes
+(`code-samples.css`), and the `[scrollbar-width:none]` hide-utilities in
+`CommandPalette.tsx` / `PricingTabs.tsx`.
 </content>

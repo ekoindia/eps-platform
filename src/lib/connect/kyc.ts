@@ -46,10 +46,11 @@ export interface KycDocument {
 	info: string;
 	/** How many files this document takes. Always >= 1; see `parseDocumentList`. */
 	pages: number;
+	/** Confirmed against a live UAT account: 1 pending, 2 uploaded/approved, 3 needs resubmission. */
 	status: number;
 	/** Upstream's own wording for `status`. Usually "". */
 	statusDesc: string;
-	/** Upstream's rejection reason, when it sends one. */
+	/** Upstream's rejection reason, when it sends one. Only meaningful at status 3. */
 	error: string;
 }
 
@@ -57,25 +58,21 @@ export interface KycDocument {
 type StatusVariant = "default" | "secondary" | "destructive" | "outline";
 
 /**
- * `status` → how the row should read.
+ * `status` → how the row should read. Confirmed against a live UAT account:
+ * 1 pending upload, 2 uploaded and approved, 3 needs resubmission.
  *
- * UNCONFIRMED against a live account. The only payload we have is a freshly
- * issued list in which every document — uploaded or not — carries `status: 1`
- * with an empty `status_desc`, so 1 cannot mean "uploaded" and nothing in that
- * sample distinguishes the other codes. Rather than guess, this map claims only
- * what the sample supports and `statusOfDocument` treats everything else as
- * not-yet-uploaded: the failure mode is telling a user they still have work to
- * do when they don't, which they can act on, instead of telling them they are
- * finished when upstream disagrees, which they cannot.
- *
- * Widen this map — do not add heuristics elsewhere — once a real UAT account
- * shows what the codes mean.
+ * 1 keeps an empty label — the Upload button next to a pending row already
+ * says "not uploaded", so a matching pill would be redundant. 3's label here
+ * is only the fallback; `statusOfDocument` prefers upstream's own `error` or
+ * `status_desc` text when either is present.
  */
 const DOCUMENT_STATUS: Record<
 	number,
 	{ label: string; variant: StatusVariant; uploaded: boolean }
 > = {
 	1: { label: "", variant: "outline", uploaded: false },
+	2: { label: "Uploaded", variant: "default", uploaded: true },
+	3: { label: "Resubmission needed", variant: "destructive", uploaded: false },
 };
 
 /** How an unrecognised `status` reads. Deliberately the same as "nothing yet". */
@@ -163,15 +160,18 @@ export function parseDocumentList(raw: unknown): KycDocument[] {
 /**
  * How one document's status should read.
  *
- * Label prefers upstream's own wording — `error` first, since a rejection
- * reason is the most useful thing a row can say, then `status_desc` — and falls
- * back to the map. Same idiom as `statusOf` in `lib/console/transactions.ts`,
- * and for the same reason: one status code spans several upstream wordings.
+ * At status 3 (needs resubmission), the label prefers upstream's own
+ * wording — `error` first, since a rejection reason is the most useful thing
+ * a row can say, then `status_desc` — and falls back to the map's generic
+ * "Resubmission needed". Every other status prefers `status_desc` over the
+ * map. Same idiom as `statusOf` in `lib/console/transactions.ts`, and for the
+ * same reason: one status code spans several upstream wordings.
  * @param doc - The document row.
  * @param justUploaded - Whether this session has uploaded it successfully since
- *   the list was fetched. Not optimism: it is set from an upstream success
- *   envelope, and it exists because `DOCUMENT_STATUS` cannot yet recognise the
- *   uploaded state on its own. It drops away on the next fetch.
+ *   the list was fetched. Set from an upstream success envelope; it is an
+ *   optimistic overlay for the gap between that envelope and the refetch that
+ *   follows it, not a stand-in for `status` — it drops away on the next fetch,
+ *   by which point upstream's own `status: 2` reports the same thing.
  * @returns The label to show, the Badge variant to show it in, and whether the
  *   document counts as done. An empty label means upstream has nothing to say
  *   about this document yet — the row shows no pill, since "not uploaded" is
@@ -185,8 +185,9 @@ export function statusOfDocument(
 		return { label: "Uploaded", variant: "default", uploaded: true };
 	}
 	const mapped = DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS;
-	if (doc.error) {
-		return { label: doc.error, variant: "destructive", uploaded: false };
-	}
-	return { ...mapped, label: doc.statusDesc || mapped.label };
+	const label =
+		doc.status === 3
+			? doc.error || doc.statusDesc || mapped.label
+			: doc.statusDesc || mapped.label;
+	return { ...mapped, label };
 }

@@ -8,7 +8,7 @@ const ekoCfg = {
 	host: "sb.local",
 	port: 8080,
 	path: "/v1",
-	historyPath: "/v1-history",
+	historyUrl: "https://sb.local:8080/v1-history",
 	developerKey: "devkey",
 	initiatorId: "1234567891",
 	userCode: "99029899",

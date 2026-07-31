@@ -170,8 +170,16 @@ describe("statusOfDocument", () => {
 		);
 	});
 
-	it("surfaces a rejection reason, in red", () => {
-		const status = statusOfDocument(doc({ error: "Blurred scan" }));
+	it("reads status 2 as uploaded and approved", () => {
+		expect(statusOfDocument(doc({ status: 2 }))).toEqual({
+			label: "Uploaded",
+			variant: "default",
+			uploaded: true,
+		});
+	});
+
+	it("surfaces a rejection reason, in red, at status 3", () => {
+		const status = statusOfDocument(doc({ status: 3, error: "Blurred scan" }));
 
 		expect(status).toEqual({
 			label: "Blurred scan",
@@ -180,8 +188,34 @@ describe("statusOfDocument", () => {
 		});
 	});
 
-	it("shows a document uploaded in this session as done", () => {
-		expect(statusOfDocument(doc(), true)).toEqual({
+	it("falls back to status_desc at status 3 when there is no error text", () => {
+		const status = statusOfDocument(
+			doc({ status: 3, statusDesc: "Photo unclear" }),
+		);
+
+		expect(status.label).toBe("Photo unclear");
+		expect(status.variant).toBe("destructive");
+	});
+
+	it("falls back to a generic label at status 3 when upstream sends neither", () => {
+		const status = statusOfDocument(doc({ status: 3 }));
+
+		expect(status).toEqual({
+			label: "Resubmission needed",
+			variant: "destructive",
+			uploaded: false,
+		});
+	});
+
+	it("does not read a stray error as a rejection outside status 3", () => {
+		// error only means something once status says resubmission is needed.
+		const status = statusOfDocument(doc({ status: 1, error: "Blurred scan" }));
+
+		expect(status.variant).not.toBe("destructive");
+	});
+
+	it("shows a document uploaded in this session as done, ahead of a refetch", () => {
+		expect(statusOfDocument(doc({ status: 1 }), true)).toEqual({
 			label: "Uploaded",
 			variant: "default",
 			uploaded: true,

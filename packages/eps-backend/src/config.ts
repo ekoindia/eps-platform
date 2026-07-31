@@ -25,15 +25,17 @@ export interface Config {
 		port: number;
 		path: string;
 		/**
-		 * Upstream path for the history/dashboard interactions (154, 206), which
-		 * live on an older API version than everything else.
+		 * Full upstream URL for interaction 154 (transaction history), which lives
+		 * on a different box AND an older API version than everything else — its
+		 * own scheme, host, port and path.
 		 *
-		 * Same host and port as `path` — only the version segment differs.
-		 * connect-api switches the same way in `utils/url.js:70-99`, and its
-		 * config pins `/ekoicici/v1/request` here against `/ekoicici/v2/request`
-		 * for the default.
+		 * Every part is an optional `SIMPLIBANK_HISTORY_API_*` override that falls
+		 * back to the matching `SIMPLIBANK_API_*` value, so a deploy that shares
+		 * one box only needs the path (connect-api switches the same way in
+		 * `utils/url.js:70-99`, pinning `/ekoicici/v1/request` against
+		 * `/ekoicici/v2/request` for the default).
 		 */
-		historyPath: string;
+		historyUrl: string;
 		developerKey: string;
 		initiatorId: string;
 		userCode: string;
@@ -100,17 +102,47 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 	if (missing.length > 0) {
 		throw new Error(`Missing required env vars: ${missing.join(", ")}`);
 	}
-	const ekoScheme = env.SIMPLIBANK_API_SCHEME ?? "https";
+	// An env var set to "" is unset, not configured: `??` alone would let a blank
+	// SIMPLIBANK_HISTORY_API_HOST win over its fallback and build a broken URL.
+	const opt = (value: string | undefined) => value || undefined;
+	const ekoScheme = opt(env.SIMPLIBANK_API_SCHEME) ?? "https";
 	const ekoHost = env.SIMPLIBANK_API_HOST!;
 	const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 	const allowInsecureHttp = env.SIMPLIBANK_ALLOW_INSECURE_HTTP === "true";
-	if (
-		ekoScheme === "http" &&
-		!LOOPBACK_HOSTS.has(ekoHost) &&
-		!allowInsecureHttp
-	) {
+	const assertSchemeSafe = (
+		scheme: string,
+		host: string,
+		schemeVar: string,
+	) => {
+		if (scheme === "http" && !LOOPBACK_HOSTS.has(host) && !allowInsecureHttp) {
+			throw new Error(
+				`${schemeVar}=http is only allowed for loopback hosts; refusing plaintext to "${host}". Set SIMPLIBANK_ALLOW_INSECURE_HTTP=true to opt in for a trusted private-network upstream.`,
+			);
+		}
+	};
+	assertSchemeSafe(ekoScheme, ekoHost, "SIMPLIBANK_API_SCHEME");
+	// Interaction 154 (history) can sit on its own box, port and API version; each
+	// part falls back to the main upstream. The scheme is inherited too, so a
+	// history host reached over plaintext http still hits the guard above.
+	const historyScheme = opt(env.SIMPLIBANK_HISTORY_API_SCHEME) ?? ekoScheme;
+	const historyHost = opt(env.SIMPLIBANK_HISTORY_API_HOST) ?? ekoHost;
+	const historyPort =
+		opt(env.SIMPLIBANK_HISTORY_API_PORT) ?? env.SIMPLIBANK_API_PORT!;
+	const historyPath =
+		opt(env.SIMPLIBANK_HISTORY_API_PATH) ?? "/ekoicici/v1/request";
+	assertSchemeSafe(historyScheme, historyHost, "SIMPLIBANK_HISTORY_API_SCHEME");
+	// `new URL` validates scheme/host/port/path in one shot, brackets IPv6 hosts
+	// and drops a redundant default port — a bad value fails at boot, not on the
+	// first history request.
+	let historyUrl: string;
+	try {
+		historyUrl = new URL(
+			historyPath,
+			`${historyScheme}://${historyHost}:${historyPort}`,
+		).toString();
+	} catch {
 		throw new Error(
-			`SIMPLIBANK_API_SCHEME=http is only allowed for loopback hosts; refusing plaintext to "${ekoHost}". Set SIMPLIBANK_ALLOW_INSECURE_HTTP=true to opt in for a trusted private-network upstream.`,
+			`SIMPLIBANK_HISTORY_API_* does not form a valid URL: "${historyScheme}://${historyHost}:${historyPort}${historyPath}"`,
 		);
 	}
 	// Setting CONNECT_API_BASE_URL switches the auth provider. A malformed or
@@ -172,7 +204,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			host: ekoHost,
 			port: Number(env.SIMPLIBANK_API_PORT!),
 			path: env.SIMPLIBANK_API_PATH!,
-			historyPath: env.SIMPLIBANK_HISTORY_API_PATH ?? "/ekoicici/v1/request",
+			historyUrl,
 			developerKey: env.EKO_DEVELOPER_KEY!,
 			initiatorId: env.EKO_INITIATOR_ID ?? "1234567891",
 			userCode: env.EKO_USER_CODE ?? "99029899",

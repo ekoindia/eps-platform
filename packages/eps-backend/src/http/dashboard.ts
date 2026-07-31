@@ -9,8 +9,9 @@ import type { KV } from "../store/kv";
 import type { DashboardView, ServiceRef } from "./dashboardView";
 import {
 	buildDashboardView,
+	DATASETS,
 	parseServiceList,
-	REQUEST_KEYS,
+	shapeOf,
 } from "./dashboardView";
 import { istRange, parsePreset } from "./dashboardRange";
 import { AppError } from "./errors";
@@ -239,33 +240,87 @@ export function mountDashboard(
 		// takes dates alone for the other two.
 		const filtered = typeId ? { ...range, typeid: typeId } : range;
 
-		/** The dashboard aggregate itself. Started before it is awaited. */
-		const dashboardCall = () =>
-			connect!.interactJson(
+		/**
+		 * One dataset, one 682 call.
+		 *
+		 * NOT one call carrying all four `requestPayload` keys, which is what this
+		 * route used to send: upstream answered only `products_overview` and
+		 * `success_rate` for it and silently omitted the other two, so Most Used
+		 * Services and Usage Analytics rendered empty on a healthy account. Eloka —
+		 * where all four widgets work — issues a separate call per key
+		 * (`UsageAnalytics.tsx` sends `verification_trends` alone). Four calls per
+		 * cache miss is the price; they run concurrently, and the result is cached
+		 * for 60s/900s.
+		 * @param dataset - Which dataset to ask for.
+		 * @returns Just that dataset's block, keyed by its response name.
+		 */
+		async function datasetCall(
+			dataset: (typeof DATASETS)[number],
+		): Promise<Record<string, unknown>> {
+			const envelope = await connect!.interactJson(
 				upstream.accessToken,
 				{
 					source: "EPS",
 					client_ref_id: clientRefId(),
 					interaction_type_id: DASHBOARD_INTERACTION,
 					requestPayload: {
-						[REQUEST_KEYS.overview]: filtered,
-						[REQUEST_KEYS.mostUsedServices]: filtered,
-						[REQUEST_KEYS.successRates]: range,
-						[REQUEST_KEYS.usage]: range,
+						[dataset.request]: dataset.perService ? filtered : range,
 					},
 				},
 				{ xRealIp },
 			);
+			// connect-api answers HTTP 200 for business failures, so the envelope is
+			// what decides — same rule every route in `connect.ts` follows.
+			if (Number(envelope.status ?? -1) !== 0) {
+				throw new AppError(
+					502,
+					"DASHBOARD_FAILED",
+					text(envelope.message) || "Couldn't load your dashboard right now.",
+				);
+			}
+			// Only this call's own key is lifted out. Spreading whole
+			// `dashboard_object`s would let one response overwrite another's block
+			// depending on which settled last.
+			const root = (envelope.data as { dashboard_object?: unknown } | undefined)
+				?.dashboard_object;
+			const value = (root as Record<string, unknown> | undefined)?.[
+				dataset.response
+			];
+			return value === undefined ? {} : { [dataset.response]: value };
+		}
 
-		// The two upstream calls are INDEPENDENT — 1044 names services, 682
-		// counts them — so the unfiltered case runs them concurrently and the
-		// partner waits for the slower one rather than for their sum.
+		/** All four datasets, merged. */
+		const dashboardCall = async (): Promise<Record<string, unknown>> => {
+			const settled = await Promise.allSettled(DATASETS.map(datasetCall));
+			// The overview is the page's headline; if it failed there is nothing
+			// worth rendering, so that one error propagates. A secondary dataset
+			// failing costs its own widget and a log line — the alternative is one
+			// blinking call taking down a page that is 75% fine.
+			const overview = settled[0];
+			if (overview.status === "rejected") throw overview.reason;
+			const merged: Record<string, unknown> = {};
+			settled.forEach((result, i) => {
+				if (result.status === "fulfilled") {
+					Object.assign(merged, result.value);
+					return;
+				}
+				const reason = result.reason;
+				console.warn(
+					`[dashboard] ${DATASETS[i].request} unavailable: ${reason instanceof Error ? reason.message : String(reason)}`,
+				);
+			});
+			return merged;
+		};
+
+		// The upstream calls are INDEPENDENT — 1044 names services, 682 counts
+		// them — so the unfiltered case runs them concurrently and the partner
+		// waits for the slowest rather than for their sum.
 		//
 		// A `typeId` filter is the one case that must stay sequential: the name
 		// list is what says whether that id is real, and it has to say so before
 		// the id is forwarded upstream.
 		let services: ServiceRef[];
-		let envelope: Record<string, unknown>;
+		let dashboardObject: Record<string, unknown>;
 		if (typeId) {
 			services = await loadServices(claim, upstream, xRealIp);
 			// Membership is checked only when the list actually loaded. Rejecting a
@@ -279,40 +334,42 @@ export function mountDashboard(
 					"typeId is not a known service",
 				);
 			}
-			envelope = await dashboardCall();
+			dashboardObject = await dashboardCall();
 		} else {
-			[services, envelope] = await Promise.all([
+			[services, dashboardObject] = await Promise.all([
 				loadServices(claim, upstream, xRealIp),
 				dashboardCall(),
 			]);
 		}
 
-		// connect-api answers HTTP 200 for business failures, so the envelope is
-		// what decides — same rule every route in `connect.ts` follows.
-		if (Number(envelope.status ?? -1) !== 0) {
-			throw new AppError(
-				502,
-				"DASHBOARD_FAILED",
-				text(envelope.message) || "Couldn't load your dashboard right now.",
-			);
-		}
-
-		const dashboardObject = (
-			envelope.data as { dashboard_object?: unknown } | undefined
-		)?.dashboard_object;
 		const { view, absent } = buildDashboardView({
 			preset,
 			range,
 			dashboardObject,
 			services,
+			typeId,
 		});
 
 		// An absent dataset is not the same as a zero one, and only the log can
 		// tell them apart later: zeros are what a quiet week looks like, absences
 		// are what an upstream contract change or an out-of-scope account looks
 		// like. This is the first place a 682 scope problem would show up.
-		if (absent.length > 0) {
-			console.warn(`[dashboard] absent datasets: ${absent.join(", ")}`);
+		//
+		// It logs on EMPTY too, not just absent: `absent` only catches
+		// undefined/null, so a `{}`, a `[]` or a JSON-encoded block — the shapes an
+		// upstream change actually arrives as — would otherwise render as a blank
+		// widget with nothing said anywhere. `shapeOf` is keys-and-kinds only, never
+		// values.
+		const empty = [
+			view.overview.breakdown.length === 0 && "breakdown",
+			view.successRates.length === 0 && "successRates",
+			view.mostUsedServices.length === 0 && "mostUsedServices",
+			view.usage.length === 0 && "usage",
+		].filter((name): name is string => typeof name === "string");
+		if (absent.length > 0 || empty.length > 0) {
+			console.warn(
+				`[dashboard] preset=${preset} typeId=${typeId ?? "all"} absent=[${absent.join(", ")}] empty=[${empty.join(", ")}] shape={${shapeOf(dashboardObject)}}`,
+			);
 		}
 
 		await kv

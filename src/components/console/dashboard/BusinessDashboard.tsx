@@ -3,9 +3,11 @@ import { ApiError } from "@/lib/auth/client";
 import {
 	type DashboardView,
 	type DatePreset,
+	type ServiceRef,
 	describeRange,
 	fetchDashboard,
 	freshDashboard,
+	serviceOptions,
 } from "@/lib/console/dashboard";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -59,39 +61,53 @@ function DashboardSkeleton() {
  */
 export default function BusinessDashboard() {
 	const [preset, setPreset] = useState<DatePreset>(DEFAULT_PRESET);
-	// Both the loaded view and the error are tagged with the window they belong
-	// to, so switching windows never shows the previous one's numbers under the
-	// new one's label while the fetch is in flight.
+	const [typeId, setTypeId] = useState<string | undefined>(undefined);
+	// Both the loaded view and the error are tagged with the query they belong
+	// to, so switching window or service never shows the previous one's numbers
+	// under the new one's label while the fetch is in flight.
 	const [loaded, setLoaded] = useState<{
 		preset: DatePreset;
+		typeId?: string;
 		view: DashboardView;
 	} | null>(null);
 	const [failed, setFailed] = useState<{
 		preset: DatePreset;
+		typeId?: string;
 		error: ApiError | Error;
 	} | null>(null);
+	// Sticky: a filtered view only carries the selected service, so the options
+	// are only ever refreshed from an unfiltered one. Without this the dropdown
+	// collapses to whatever is already picked.
+	const [options, setOptions] = useState<ServiceRef[]>([]);
+
+	const matches = (tagged: { preset: DatePreset; typeId?: string } | null) =>
+		tagged?.preset === preset && tagged.typeId === typeId;
 
 	// Read during render, not written from an effect: the module cache means a
 	// return to /console paints immediately instead of flashing skeletons, and
 	// this page is remounted on every console navigation.
 	const view =
-		(loaded?.preset === preset ? loaded.view : null) ?? freshDashboard(preset);
-	const error = failed?.preset === preset ? failed.error : null;
+		(matches(loaded) ? loaded?.view : null) ?? freshDashboard(preset, typeId);
+	const error = matches(failed) ? failed?.error : null;
 
 	useEffect(() => {
-		if (freshDashboard(preset)) return;
+		if (freshDashboard(preset, typeId)) return;
 		let live = true;
-		fetchDashboard(preset)
+		fetchDashboard(preset, typeId)
 			.then((next) => {
-				if (live) setLoaded({ preset, view: next });
+				if (live) setLoaded({ preset, typeId, view: next });
 			})
 			.catch((e: Error) => {
-				if (live) setFailed({ preset, error: e });
+				if (live) setFailed({ preset, typeId, error: e });
 			});
 		return () => {
 			live = false;
 		};
-	}, [preset]);
+	}, [preset, typeId]);
+
+	useEffect(() => {
+		if (view && !typeId) setOptions(serviceOptions(view));
+	}, [view, typeId]);
 
 	// A deployment without connect-api cannot serve this at all. That is a
 	// configuration fact, not a fault, so it reads as a note rather than as the
@@ -108,7 +124,13 @@ export default function BusinessDashboard() {
 		<div className="flex flex-col gap-6">
 			<DashboardDateFilter
 				preset={preset}
-				onChange={setPreset}
+				onChange={(next) => {
+					setPreset(next);
+					// The selected service may have no activity in the new window, which
+					// would read as "this service is broken". Eloka resets for the same
+					// reason.
+					setTypeId(undefined);
+				}}
 				description={view ? describeRange(view.range) : undefined}
 			/>
 
@@ -138,7 +160,12 @@ export default function BusinessDashboard() {
 						</p>
 					) : null}
 
-					<OverviewWidget view={view} />
+					<OverviewWidget
+						view={view}
+						services={options}
+						typeId={typeId}
+						onTypeIdChange={setTypeId}
+					/>
 
 					<div className="grid gap-6 lg:grid-cols-3">
 						<div className="lg:col-span-2">

@@ -8,6 +8,7 @@ import {
 	freshDashboard,
 	isHourlyRange,
 	resetDashboardCache,
+	serviceOptions,
 	successPct,
 	summarizeUsage,
 } from "@/lib/console/dashboard";
@@ -130,6 +131,47 @@ describe("usage series", () => {
 			peak: 0,
 			peakLabel: "—",
 		});
+	});
+});
+
+describe("serviceOptions", () => {
+	it("offers every service with activity, named from the 1044 list", () => {
+		const base = view();
+		expect(
+			serviceOptions({
+				...base,
+				overview: {
+					...base.overview,
+					breakdown: [{ typeId: "82", name: "Fund Transfer", amount: 404 }],
+				},
+				// Present only in the volume datasets — a ₹0 verification API is still
+				// worth filtering by.
+				successRates: [
+					{ typeId: "96", name: "Service 96", successCount: 1, totalCount: 2 },
+				],
+				mostUsedServices: [
+					{
+						typeId: "82",
+						name: "Fund Transfer",
+						totalCount: 9,
+						totalRevenue: 0,
+					},
+				],
+				services: [
+					{ typeId: "81", label: "Accept Payment" },
+					{ typeId: "96", label: "GSTIN Verify" },
+				],
+			}),
+		).toEqual([
+			// 81 has no activity in this window, so it is not offered; 96 takes its
+			// name from the master list over the row's `Service 96` placeholder.
+			{ typeId: "82", label: "Fund Transfer" },
+			{ typeId: "96", label: "GSTIN Verify" },
+		]);
+	});
+
+	it("offers nothing when the window has no activity", () => {
+		expect(serviceOptions(view())).toEqual([]);
 	});
 });
 

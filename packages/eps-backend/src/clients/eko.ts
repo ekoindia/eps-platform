@@ -233,11 +233,11 @@ export function createEkoClient(
 	const origin = `${cfg.scheme}://${cfg.host}:${cfg.port}`;
 	const url = `${origin}${cfg.path}`;
 	/**
-	 * Interactions 154 (history) and 206 (dashboard) live on an older API version
-	 * than everything else — same host and port, different version segment.
-	 * connect-api routes them the same way (`utils/url.js:70-99`).
+	 * Interaction 154 (history) is a separate upstream — its own host, port and
+	 * API version, resolved in `config.ts` (each part falls back to the main
+	 * upstream). connect-api routes it the same way (`utils/url.js:70-99`).
 	 */
-	const historyUrl = `${origin}${cfg.historyPath}`;
+	const historyUrl = cfg.historyUrl;
 	const doFetch = withTimeout(fetchImpl, cfg.timeoutMs);
 
 	/**
