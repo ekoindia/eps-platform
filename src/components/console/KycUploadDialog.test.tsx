@@ -1,6 +1,6 @@
 import { KycUploadDialog } from "@/components/console/KycUploadDialog";
 import type { KycDocument } from "@/lib/connect/kyc";
-import { KYC_MAX_FILE_BYTES } from "@/lib/connect/kyc-docs";
+import { configOf, KYC_MAX_FILE_BYTES } from "@/lib/connect/kyc-docs";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,6 +52,20 @@ vi.mock("sonner", () => ({
 	},
 }));
 
+// Only `configOf` is stubbed, and only so a sample link can be exercised
+// without committing a real .docx to satisfy a test. Every other test here keeps
+// the real map: it is restored in `beforeEach`.
+vi.mock("@/lib/connect/kyc-docs", async (orig) => ({
+	...(await orig<typeof import("@/lib/connect/kyc-docs")>()),
+	configOf: vi.fn(),
+}));
+
+const realConfigOf = (
+	await vi.importActual<typeof import("@/lib/connect/kyc-docs")>(
+		"@/lib/connect/kyc-docs",
+	)
+).configOf;
+
 vi.mock("@/lib/auth/client", async (orig) => ({
 	...(await orig<typeof import("@/lib/auth/client")>()),
 	authClient: { connectKyc: { documents: vi.fn(), upload: vi.fn() } },
@@ -85,6 +99,7 @@ function doc(overrides: Partial<KycDocument> = {}): KycDocument {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	vi.mocked(configOf).mockImplementation(realConfigOf);
 	pick = () => fileOf("scan.pdf", 1024);
 	upload.mockResolvedValue({ message: "Received" });
 });
@@ -170,6 +185,68 @@ describe("KycUploadDialog", () => {
 			"data-max-bytes",
 			String(KYC_MAX_FILE_BYTES),
 		);
+	});
+
+	describe("sample document", () => {
+		it("offers the blank to fill in, when the document has one", () => {
+			vi.mocked(configOf).mockReturnValue({
+				sampleUrl: "/kyc-samples/authorisation-letter.docx",
+			});
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			const link = screen.getByRole("link", { name: /sample/i });
+			expect(link).toHaveAttribute(
+				"href",
+				"/kyc-samples/authorisation-letter.docx",
+			);
+			// Without `download` the browser navigates away from a half-filled
+			// dialog, or opens the .docx in a viewer that cannot save it back.
+			expect(link).toHaveAttribute("download");
+		});
+
+		it("offers nothing to download for a document that has no blank", () => {
+			// A PAN card has no sample: it exists whether or not we describe it.
+			render(
+				<KycUploadDialog doc={doc({ docType: "15" })} onClose={vi.fn()} />,
+			);
+
+			expect(screen.queryByRole("link")).toBeNull();
+		});
+	});
+
+	describe("instructions", () => {
+		it("renders the notice as markdown, not as source", () => {
+			vi.mocked(configOf).mockReturnValue({
+				instructions:
+					"Print on **company letterhead**.\n\n- Signed by a director\n- Dated within 30 days",
+			});
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			// The asterisks and hyphens are formatting, not text the user should see.
+			expect(screen.getByText("company letterhead").tagName).toBe("STRONG");
+			expect(screen.getAllByRole("listitem")).toHaveLength(2);
+		});
+
+		it("shows embedded markup as text rather than parsing it", () => {
+			// No `rehype-raw`: a notice is copy, never a way to inject markup.
+			vi.mocked(configOf).mockReturnValue({
+				instructions: "<img src=x onerror=alert(1)> Sign in blue ink",
+			});
+			const { container } = render(
+				<KycUploadDialog doc={doc()} onClose={vi.fn()} />,
+			);
+
+			expect(container.querySelector("img")).toBeNull();
+		});
+
+		it("shows no notice for a document that has nothing extra to say", () => {
+			render(
+				<KycUploadDialog doc={doc({ docType: "15" })} onClose={vi.fn()} />,
+			);
+
+			expect(screen.queryByRole("listitem")).toBeNull();
+			expect(screen.queryByRole("link")).toBeNull();
+		});
 	});
 
 	it("never submits a page the picker refused", () => {

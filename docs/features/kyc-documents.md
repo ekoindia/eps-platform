@@ -234,6 +234,11 @@ Either way it applies to **images only**; `FileUpload.handleFile` routes
 non-images straight through, so a PDF is attached untouched and carries no
 watermark evidence.
 
+A document type configured with a `sampleUrl` shows a download link above the
+slots — "Download the sample, fill and sign it, then upload the PDF" — so it is
+read before anything is attached rather than after. See
+[Sample documents](#sample-documents).
+
 On failure the dialog stays open with the files still attached and reports
 through `toast.error` — re-picking every page because the network blipped is the
 worst possible recovery. On success the page toasts, marks the row, and
@@ -253,6 +258,8 @@ where the console records what it knows that the shared list cannot express.
 | --- | --- |
 | `name`, `info`, `pages` | Replace upstream's values on every parsed row |
 | `pageLabels` | Names each slot, instead of "Page 1", "Page 2", … |
+| `sampleUrl` | A blank of this document to download, fill in and upload back — see [Sample documents](#sample-documents) |
+| `instructions` | A markdown notice in the upload dialog, above the slots — see [Sample documents](#sample-documents) |
 | `accept` | Narrows the allowed types for this document |
 | `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
 | `multiple` | One slot may take several attachments, combined into a single PDF |
@@ -292,12 +299,13 @@ Presentation fields are overlaid inside `parseDocumentList`, so the page and the
 dev bench cannot drift; capture metadata is read by `KycUploadDialog` straight
 from `configOf`.
 
-Four entries ship today:
+The entries that ship today:
 
 | `doc_type` | Config | Why |
 | --- | --- | --- |
 | `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]`, `multiple` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. Photographed far more often than scanned, and a phone rarely gets a whole card square in one frame — so each side may take several shots. |
 | `"2"` and `"15"` PAN | `multiple` | Same reasoning as Aadhaar: a photographed card, sometimes worth two shots. Both codes are configured — the 586 sample calls `15` "Director PAN Card", so configuring only one would silently do nothing for accounts asked for the other. |
+| `"14"` Board resolution | `name: "Board Resolution (BR)"`, `sampleUrl` | A partner does not own a blank board resolution; the wording is ours to dictate, and one invented from scratch comes back rejected weeks later. The sample is `public/kyc-samples/Board_Resolution_Format.docx`. |
 | `"24"` Live photograph | `name: "Directors' Live Photograph"`, `accept` images only, `cameraOnly`, `multiple`, `watermark` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
 
 The live-photograph entry is what the whole map exists for. A "live" photograph
@@ -312,6 +320,59 @@ surroundings, and it refuses outright when the model misses in poor light.
 `minFaceCount` is only enforced under `detectFace`, so it would be dead config
 on its own.
 
+## Sample documents
+
+Some of what KYC asks for is not a document a partner already owns. An
+authorisation letter, a declaration, an undertaking — the wording is ours to
+dictate, upstream's list only names the thing, and a partner left to invent their
+own only finds out it was wrong at review, weeks later. For those, a document
+type carries a `sampleUrl`: a blank to download, fill in, sign, and upload back
+as a PDF through the same slots as everything else.
+
+- **The file is committed**, under `public/kyc-samples/`, so a sample and the
+  console that describes it ship together and a revision is a reviewable diff.
+  Vite copies `public/` verbatim into `dist/`, and both the Vercel and Netlify
+  SPA fallbacks are rewrites — the filesystem is checked first, which is why
+  `/scripts/leegalityv5.min.js` and `/eps-pricing-calculator.xlsx` already
+  resolve rather than returning the app shell.
+- **`sampleUrl` is a root-relative path** into that directory, and nothing else:
+  `kyc-docs.test.ts` pins the shape *and* that the file exists on disk, so a
+  rename fails CI instead of 404-ing at the one moment a partner cannot proceed
+  without it.
+- **`sampleUrl` is not merged onto the row.** Like `accept` and `watermark` it is
+  read by `KycUploadDialog` straight from `configOf`; the checklist deliberately
+  does not repeat the link, since the dialog is where the upload happens.
+- **Absent means the document exists independently of us.** A PAN card has no
+  blank. Do not point one at a specimen image — a sample is something to fill in,
+  not an example to compare against.
+- **The link text is fixed** — download, fill, sign, upload the PDF. Every sample
+  today follows that flow; a document that genuinely does not needs its own label
+  field, not a misleading shared sentence.
+
+The `.docx` files themselves are business artefacts, not code: they carry legal
+wording, so what lands here is whatever compliance approved, macro-free, and
+checked for stray metadata before it is committed.
+
+### Instructions
+
+A blank on its own rarely says everything. `instructions` puts a notice at the
+top of the upload dialog — above the sample link and the slots, because it is
+only useful before a file is picked.
+
+- **Markdown, with GFM.** Upstream's `info` is one line of plain text; the rules
+  for a board resolution are a list. Rendered by `react-markdown` with
+  `remark-gfm`.
+- **No raw HTML.** `rehype-raw` is deliberately not used, so anything that looks
+  like a tag renders as text. The copy comes from `kyc-docs.ts` and is ours;
+  upstream's strings are never rendered as markup.
+- **Styled inline, not by `MarkdownProse`.** That component is the docs
+  renderer and pulls the syntax highlighter in with it — a cost the console
+  should not pay for a paragraph and a list. The handful of `[&_ul]`-style rules
+  in `KycUploadDialog` cover what an instruction block actually uses; there is no
+  typography plugin in this project.
+- **Write it only when it changes what gets attached.** A notice on every
+  document is a notice nobody reads.
+
 ## Files
 
 | Path | Role |
@@ -319,6 +380,7 @@ on its own.
 | `src/lib/connect/kyc.ts` | Constants, `KycDocument`, gating, parsing, status |
 | `src/lib/connect/kyc-docs.ts` | Per-`doc_type` overrides, `KYC_ACCEPT`, the mirrored backend limits |
 | `src/lib/connect/kyc.fixture.ts` | The 586 sample, shared by tests and the bench |
+| `public/kyc-samples/` | The downloadable blanks a `sampleUrl` points at |
 | `src/lib/connect/use-kyc.ts` | `useKycEnabled()` |
 | `src/pages/console/Documents.tsx` | The checklist page |
 | `src/components/console/KycUploadDialog.tsx` | The upload dialog |

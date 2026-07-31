@@ -6,7 +6,13 @@ import {
 	withDocConfig,
 } from "@/lib/connect/kyc-docs";
 import type { KycDocument } from "@/lib/connect/kyc";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+// The repo root: vitest runs from it, and `import.meta.url` is not a file URL
+// under the jsdom environment.
+const PUBLIC_DIR = join(process.cwd(), "public");
 
 /** A parsed row as upstream described it, before any local overlay. */
 function doc(overrides: Partial<KycDocument> = {}): KycDocument {
@@ -94,6 +100,15 @@ describe("KYC_DOC_CONFIG entries", () => {
 			}
 		},
 	);
+
+	it.each(entries)("%s offers a sample that exists", (_docType, config) => {
+		// A renamed or forgotten file is a 404 the partner meets mid-upload, with
+		// no way to produce the document they are being asked for. Cheaper to fail
+		// here than to hear about it from support.
+		if (config.sampleUrl === undefined) return;
+		expect(config.sampleUrl).toMatch(/^\/kyc-samples\/[\w.-]+$/);
+		expect(existsSync(join(PUBLIC_DIR, config.sampleUrl))).toBe(true);
+	});
 
 	it.each(entries)(
 		"%s labels no more pages than it has",
