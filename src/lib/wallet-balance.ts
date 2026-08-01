@@ -17,16 +17,50 @@ export type CachedBalance = {
 };
 
 // ponytail: in-memory, this tab, this session — cleared by AuthProvider when the
-// session goes anon. Not invalidated when the user spends E-value elsewhere. If
-// the console grows an in-page flow that moves the balance, invalidate from that
-// flow; if it needs to survive a reload, sessionStorage is the next rung.
+// session goes anon, and written straight from the Connect widget when a flow
+// moves the balance. Not invalidated when the user spends E-value elsewhere; if
+// it needs to survive a reload, sessionStorage is the next rung.
 let cache: CachedBalance | null = null;
 let inflight: Promise<CachedBalance> | null = null;
+// Bumped by everything that supersedes an in-flight fetch. A request started
+// before a transaction was computed against the old balance, so letting it write
+// the cache when it lands would silently undo the newer answer.
+let version = 0;
+
+const listeners = new Set<() => void>();
 
 /** Drops the cached balance. Called when the session ends, and by tests. */
 export function resetWalletBalanceCache() {
 	cache = null;
 	inflight = null;
+	version++;
+}
+
+/**
+ * Subscribes to balances pushed in from outside a fetch.
+ * @param listener - Called after the cached balance changes.
+ * @returns An unsubscribe function.
+ */
+export function subscribeWalletBalance(listener: () => void): () => void {
+	listeners.add(listener);
+	return () => {
+		listeners.delete(listener);
+	};
+}
+
+/**
+ * Records a balance the user's own transaction just produced.
+ *
+ * The Connect widget reports the post-transaction balance itself, so the rail
+ * can repaint immediately instead of showing the pre-transaction number for the
+ * rest of the freshness window and then spending a round trip on a number we
+ * were already handed.
+ * @param balance - The post-transaction balance, in rupees.
+ */
+export function setWalletBalance(balance: number) {
+	cache = { status: "ok", balance, at: Date.now() };
+	version++;
+	for (const listener of listeners) listener();
 }
 
 /**
@@ -39,27 +73,35 @@ export function resetWalletBalanceCache() {
  * immediately rather than showing a stale error for the rest of the window.
  */
 export function fetchWalletBalance(): Promise<CachedBalance> {
-	inflight ??= authClient
-		.walletBalance()
-		.then(
-			(view): CachedBalance => ({
-				status: "ok",
-				balance: view.balance,
-				at: Date.now(),
-			}),
-		)
-		.catch((e): CachedBalance => {
-			if (e instanceof ApiError && e.httpStatus === 403)
-				return { status: "hidden", balance: null, at: Date.now() };
-			throw e;
-		})
-		.then((settled) => {
-			cache = settled;
-			return settled;
-		})
-		.finally(() => {
-			inflight = null;
-		});
+	if (!inflight) {
+		const startedAt = version;
+		inflight = authClient
+			.walletBalance()
+			.then(
+				(view): CachedBalance => ({
+					status: "ok",
+					balance: view.balance,
+					at: Date.now(),
+				}),
+			)
+			.catch((e): CachedBalance => {
+				if (e instanceof ApiError && e.httpStatus === 403)
+					return { status: "hidden", balance: null, at: Date.now() };
+				throw e;
+			})
+			.then((settled) => {
+				// A transaction landed, or the session ended, while this was in the
+				// air. Either way this answer predates that and must not overwrite it —
+				// otherwise completing a transfer repaints the pre-transfer balance the
+				// moment the older request returns.
+				if (version !== startedAt) return cache ?? settled;
+				cache = settled;
+				return settled;
+			})
+			.finally(() => {
+				inflight = null;
+			});
+	}
 	return inflight;
 }
 

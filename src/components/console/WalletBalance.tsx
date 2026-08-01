@@ -4,6 +4,7 @@ import {
 	fetchWalletBalance,
 	freshWalletBalance,
 	FRESH_FOR_MS,
+	subscribeWalletBalance,
 } from "@/lib/wallet-balance";
 import { Plus, RefreshCw, Wallet } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -75,6 +76,21 @@ export function WalletBalance() {
 		// `seed` would refetch mid-life, which is what this card is avoiding.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [load]);
+
+	// A transaction in the embedded Connect widget reports the new balance
+	// straight into the cache. Without this the rail would keep showing the
+	// pre-transaction number until the user navigated — the card only remounts on
+	// a route change, and the cache stays fresh for 30s either way.
+	useEffect(
+		() =>
+			subscribeWalletBalance(() => {
+				const pushed = freshWalletBalance();
+				if (!pushed) return;
+				setBalance(pushed.balance);
+				setStatus(pushed.status);
+			}),
+		[],
+	);
 
 	// A cooldown or an in-flight request outliving its component would otherwise
 	// set state on an unmounted one.

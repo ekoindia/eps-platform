@@ -1,6 +1,9 @@
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { ApiError } from "@/lib/auth/client";
-import { resetWalletBalanceCache } from "@/lib/wallet-balance";
+import {
+	resetWalletBalanceCache,
+	setWalletBalance,
+} from "@/lib/wallet-balance";
 import {
 	act,
 	fireEvent,
@@ -122,6 +125,49 @@ describe("WalletBalance", () => {
 		render(<WalletBalance />);
 		expect(await screen.findByText("₹100")).toBeInTheDocument();
 		expect(walletBalance).toHaveBeenCalledTimes(2);
+	});
+
+	// The Connect widget reports the post-transaction balance itself. Before this,
+	// the rail kept showing the pre-transaction number until the user navigated.
+	it("repaints on a balance pushed in by a transaction, without refetching", async () => {
+		walletBalance.mockResolvedValue({ balance: 100 });
+		render(<WalletBalance />);
+		expect(await screen.findByText("₹100")).toBeInTheDocument();
+
+		act(() => setWalletBalance(250));
+
+		expect(screen.getByText("₹250")).toBeInTheDocument();
+		expect(walletBalance).toHaveBeenCalledTimes(1);
+	});
+
+	// A request that started before the transaction was computed against the old
+	// balance, so letting it land last would silently undo the push.
+	it("keeps a pushed balance when an older request lands afterwards", async () => {
+		let settle: (view: { balance: number }) => void = () => {};
+		walletBalance.mockReturnValue(
+			new Promise<{ balance: number }>((resolve) => {
+				settle = resolve;
+			}),
+		);
+		render(<WalletBalance />);
+		expect(await screen.findByText("Loading…")).toBeInTheDocument();
+
+		act(() => setWalletBalance(250));
+		expect(screen.getByText("₹250")).toBeInTheDocument();
+
+		await act(async () => {
+			settle({ balance: 100 });
+		});
+		expect(screen.getByText("₹250")).toBeInTheDocument();
+	});
+
+	it("survives a push after the card is gone", async () => {
+		walletBalance.mockResolvedValue({ balance: 100 });
+		const card = render(<WalletBalance />);
+		expect(await screen.findByText("₹100")).toBeInTheDocument();
+		card.unmount();
+
+		expect(() => setWalletBalance(250)).not.toThrow();
 	});
 
 	it("refetches on refresh, then locks the button for the cooldown", async () => {

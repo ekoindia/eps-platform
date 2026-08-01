@@ -18,6 +18,7 @@ function listen(): WidgetEventHandlers {
 		onGotoTransaction: vi.fn(),
 		onGotoHistory: vi.fn(),
 		onOpenUrl: vi.fn(),
+		onTrackEvent: vi.fn(),
 	};
 	detach = attachWidgetEvents(handlers);
 	return handlers;
@@ -78,6 +79,56 @@ describe("file-view", () => {
 		fireFileView({ userConfirmation: true });
 
 		expect(handlers.onFileView).not.toHaveBeenCalled();
+	});
+});
+
+describe("track-event", () => {
+	/** Dispatches what the widget dispatches for a `track-event`. */
+	function fireTrackEvent(data: Record<string, unknown>) {
+		window.dispatchEvent(
+			new CustomEvent("iron-signal", { detail: { name: "track-event", data } }),
+		);
+	}
+
+	it("forwards the analytics triple", () => {
+		const handlers = listen();
+
+		fireTrackEvent({
+			category: "Transaction",
+			action: "Page Change",
+			label: "Money Transfer > Add Recipient",
+		});
+
+		expect(handlers.onTrackEvent).toHaveBeenCalledWith({
+			category: "Transaction",
+			action: "Page Change",
+			label: "Money Transfer > Add Recipient",
+		});
+	});
+
+	// Eloka forwards only Transaction/Page Change because its one consumer is a
+	// breadcrumb card. Reinstating that filter here would silently drop most of
+	// what the tag manager is meant to receive.
+	it("forwards categories outside Eloka's breadcrumb filter", () => {
+		const handlers = listen();
+
+		fireTrackEvent({ category: "Onboarding", action: "Click" });
+
+		expect(handlers.onTrackEvent).toHaveBeenCalledWith({
+			category: "Onboarding",
+			action: "Click",
+			label: undefined,
+		});
+	});
+
+	it("ignores a payload missing either half of the pair", () => {
+		const handlers = listen();
+
+		fireTrackEvent({ category: "Transaction" });
+		fireTrackEvent({ action: "Page Change" });
+		fireTrackEvent({});
+
+		expect(handlers.onTrackEvent).not.toHaveBeenCalled();
 	});
 });
 
