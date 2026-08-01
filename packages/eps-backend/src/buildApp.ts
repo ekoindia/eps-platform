@@ -70,12 +70,21 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		createEkoLogger({ level: cfg.eko.logLevel }),
 	);
 
+	// EKO_LOG_LEVEL governs BOTH upstream clients. connect-api lines are tagged
+	// `connect_upstream` so the two transports stay separately greppable — the
+	// absence of any connect-api logging is what made a one-line upstream
+	// validation error read as an unexplained 502 in production.
+	const connectLogger = createEkoLogger({
+		level: cfg.eko.logLevel,
+		type: "connect_upstream",
+	});
+
 	// Configuration-time choice, not a runtime failover: a connect-api outage
 	// does NOT fall back to the direct path. Switching providers is a redeploy.
 	// One client instance, shared by the auth provider and the Connect-widget
 	// routes, so both spend the same timeout and base URL.
 	const connect = cfg.connectApi
-		? createConnectClient(cfg.connectApi, fetch)
+		? createConnectClient(cfg.connectApi, fetch, connectLogger)
 		: undefined;
 	const auth = connect
 		? createConnectAuthProvider(connect, { kv, secretbox, cfg })

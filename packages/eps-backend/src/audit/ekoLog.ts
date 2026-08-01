@@ -19,8 +19,18 @@ export function parseEkoLogLevel(raw: string | undefined): EkoLogLevel {
 
 /** One upstream call to log: the request form-fields plus the outcome. */
 export interface EkoLogEntry {
-	/** The form-encoded request fields sent to the upstream. */
-	fields: Record<string, string>;
+	/**
+	 * The request fields sent upstream. `string` for the form-encoded Eko
+	 * transport; connect-api posts JSON, so values may be numbers or nested
+	 * objects — redaction recurses, so a credential nested under `data` is
+	 * caught wherever it sits.
+	 */
+	fields: Record<string, unknown>;
+	/**
+	 * Endpoint path, for transports with no `interaction_type_id` to identify the
+	 * call by (connect-api).
+	 */
+	path?: string;
 	/** HTTP status of the upstream response; undefined on a transport failure. */
 	status?: number;
 	/** Parsed response body (or `{ nonJson }` when unparseable). */
@@ -71,33 +81,39 @@ function responseSummary(response: unknown): Record<string, unknown> {
  * alongside the `pintwin_key` that produced it recovers the PIN exactly.
  * Redacting either one breaks that; we redact both.
  */
-const REDACTED_REQUEST_FIELDS = new Set(["first_okekey", "second_okekey"]);
-const REDACTED_RESPONSE_FIELDS = new Set(["pintwin_key"]);
+const REDACTED_REQUEST_FIELDS = new Set([
+	"first_okekey",
+	"second_okekey",
+	// connect-api credentials. `id_token` is the OTP on /authentication/login;
+	// `refresh_token` is long-lived and posted to /token and /revoke — strictly
+	// worse to leak than the OTP that `full` already documents as dev-only.
+	"id_token",
+	"refresh_token",
+	"access_token",
+]);
+const REDACTED_RESPONSE_FIELDS = new Set([
+	"pintwin_key",
+	// Every token on ConnectLoginEnvelope. Without these a `full`-level login
+	// writes a live session's tokens straight to the container log.
+	"access_token",
+	"access_token_lite",
+	"refresh_token",
+]);
 
 const REDACTION_PLACEHOLDER = "[REDACTED]";
 
-/** Returns a copy of `fields` with sensitive entries replaced. Never mutates the input. */
-function redactFields(fields: Record<string, string>): Record<string, string> {
-	const out: Record<string, string> = {};
-	for (const [k, v] of Object.entries(fields)) {
-		out[k] = REDACTED_REQUEST_FIELDS.has(k) ? REDACTION_PLACEHOLDER : v;
-	}
-	return out;
-}
-
 /**
- * Deep-copies `value`, replacing any property named in REDACTED_RESPONSE_FIELDS.
- * Upstream nests the pintwin key under `data`, so this must recurse. Never
- * mutates the input.
+ * Deep-copies `value`, replacing any property whose name is in `secretKeys`.
+ * Recurses because secrets nest: upstream puts `pintwin_key` under `data`, and
+ * connect-api posts JSON request bodies whose credentials need not sit at the
+ * top level. Never mutates the input.
  */
-function redactResponse(value: unknown): unknown {
-	if (Array.isArray(value)) return value.map(redactResponse);
+function redact(value: unknown, secretKeys: Set<string>): unknown {
+	if (Array.isArray(value)) return value.map((v) => redact(v, secretKeys));
 	if (!value || typeof value !== "object") return value;
 	const out: Record<string, unknown> = {};
 	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-		out[k] = REDACTED_RESPONSE_FIELDS.has(k)
-			? REDACTION_PLACEHOLDER
-			: redactResponse(v);
+		out[k] = secretKeys.has(k) ? REDACTION_PLACEHOLDER : redact(v, secretKeys);
 	}
 	return out;
 }
@@ -111,15 +127,20 @@ function redactResponse(value: unknown): unknown {
  * @param opts.level verbosity; `off` makes `log()` a no-op
  * @param opts.sink  destination for each JSON line; defaults to `console.log`
  * @param opts.now   clock for the `ts` field; defaults to `() => new Date()`
+ * @param opts.type  the record's `type` tag; defaults to `"eko_upstream"`. The
+ *                   connect-api client passes `"connect_upstream"` so the two
+ *                   transports stay separately greppable in one log stream.
  */
 export function createEkoLogger(opts: {
 	level: EkoLogLevel;
 	sink?: (line: string) => void;
 	now?: () => Date;
+	type?: string;
 }): EkoLogger {
 	const { level } = opts;
 	const sink = opts.sink ?? ((line: string) => console.log(line));
 	const now = opts.now ?? (() => new Date());
+	const type = opts.type ?? "eko_upstream";
 
 	return {
 		log(entry) {
@@ -127,9 +148,10 @@ export function createEkoLogger(opts: {
 			try {
 				const f = entry.fields;
 				const base = {
-					type: "eko_upstream",
+					type,
 					ts: now().toISOString(),
 					interaction_type_id: f.interaction_type_id,
+					path: entry.path ?? null,
 					http_status: entry.status ?? null,
 					durMs: entry.durMs,
 					error: entry.error ?? null,
@@ -138,13 +160,17 @@ export function createEkoLogger(opts: {
 					level === "full"
 						? {
 								...base,
-								request: redactFields(f),
+								request: redact(f, REDACTED_REQUEST_FIELDS),
 								response:
-									entry.response == null ? null : redactResponse(entry.response),
+									entry.response == null
+										? null
+										: redact(entry.response, REDACTED_RESPONSE_FIELDS),
 							}
 						: {
 								...base,
-								mobile: maskMobile(f.mobile),
+								mobile: maskMobile(
+									f.mobile == null ? undefined : String(f.mobile),
+								),
 								org_id: f.org_id,
 								response: responseSummary(entry.response),
 							};
