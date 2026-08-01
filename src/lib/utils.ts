@@ -47,6 +47,44 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Flattens the markdown subset used in FAQ answers to plain text, for contexts
+ * that must not contain markup: `schema.org` FAQPage `acceptedAnswer.text` and
+ * command-palette snippets.
+ *
+ * This is a flattener for a **known, in-repo authored subset** — not a parser.
+ * Supported: links `[text](url)`, images `![alt](url)`, bold `**x**`/`__x__`,
+ * italics `*x*`/`_x_`, inline code, bullet/numbered list markers, and ATX
+ * headings. Reference-style links, nested emphasis and HTML are NOT handled;
+ * if FAQ copy ever needs those, render through an AST instead.
+ *
+ * @param text - Markdown-formatted source text.
+ * @returns The same text with the supported markers removed.
+ */
+export const stripMarkdown = (text: string): string =>
+	text
+		// Park backslash-escaped markers behind a placeholder so the rules below
+		// cannot mistake a literal `\*` for emphasis; restored at the end.
+		.replace(
+			/\\([\\`*_[\]])/g,
+			(_match, char: string) => `@@esc${char.charCodeAt(0)}@@`,
+		)
+		// Images before links — `![alt](src)` would otherwise leave a stray "!".
+		.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+		.replace(/(\*\*|__)(.*?)\1/g, "$2")
+		.replace(/(^|\W)[*_](\S(?:.*?\S)?)[*_](?=\W|$)/g, "$1$2")
+		.replace(/`/g, "")
+		.replace(/^\s{0,3}#{1,6}\s+/gm, "")
+		.replace(/^\s*(?:[-*+]|\d+\.)\s+/gm, "")
+		.replace(/\n{2,}/g, " ")
+		.replace(/\s*\n\s*/g, " ")
+		.replace(/\s{2,}/g, " ")
+		.replace(/@@esc(\d+)@@/g, (_match, code: string) =>
+			String.fromCharCode(Number(code)),
+		)
+		.trim();
+
+/**
  * Utility function to format a mobile number (string or number) by inserting spaces for better readability. If the mobile number has 10 digits, it formats it as `### ### ####`. For any other length, it returns the mobile number as a string without formatting.
  * @param mobile - The mobile number to format.
  * @returns A formatted mobile number string.

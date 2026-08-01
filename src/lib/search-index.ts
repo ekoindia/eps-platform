@@ -18,13 +18,14 @@ import {
 
 import {
 	API_PRODUCT_PAGES,
-	GLOBAL_FAQS,
 	hasProductPage,
 } from "@/lib/data/api-product-pages";
+import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { docsHref, getAllDocNodes } from "@/lib/data/docs-registry";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
+import { stripMarkdown } from "@/lib/utils";
 
 export type SearchCategory =
 	| "api"
@@ -372,7 +373,7 @@ const buildFaqItems = (): SearchItem[] => {
 		const count = seen.get(base) ?? 0;
 		seen.set(base, count + 1);
 		const slug = count === 0 ? base : `${base}-${count + 1}`;
-		const answer = faq.a.replace(/`/g, "").trim();
+		const answer = stripMarkdown(faq.a);
 		return {
 			id: `faq:${slug}`,
 			slug,

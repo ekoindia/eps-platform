@@ -49,4 +49,11 @@ export const GUIDES: GuideMeta[] = [
 		summary:
 			"UIDAI registered-device fingerprint/iris capture on Web and Android, with an interactive in-browser device tester.",
 	},
+	{
+		slug: "faqs",
+		title: "Integration FAQs",
+		order: 4,
+		summary:
+			"Common integration questions — credentials, request signing, environments, error handling and support.",
+	},
 ];

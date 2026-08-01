@@ -42,6 +42,7 @@ Primary content sources:
 - `src/lib/data/api-specs.ts` (technical REST specs: endpoints, params, request/response shapes, docs links — see docs/api-specs.md)
 - `src/lib/data/industries.ts`
 - `src/lib/data/solutions.ts`
+- `src/lib/data/common-faqs.ts` (cross-product + global FAQs; markdown answers pass through verbatim)
 - `src/lib/data/api-pricing.ts` (rates, pricing FAQs)
 - `src/lib/data/payments-pricing.ts` (DMT/AePS/BBPS commission slabs)
 - `src/lib/data/bbps-operators.ts` (BBPS operator count referenced in `/products.md`)

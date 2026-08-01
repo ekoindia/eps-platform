@@ -13,6 +13,7 @@ import {
 } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import { recipeHref } from "@/lib/data/api-recipes";
+import { faqsByTag, GLOBAL_FAQS, parseFaqTags } from "@/lib/data/common-faqs";
 import type {
 	ApiErrorScenario,
 	ApiParam,
@@ -49,6 +50,7 @@ import {
 	link,
 	markdownTable,
 } from "./shared";
+import { faqBlocks } from "./render-faq";
 
 const paramRows = (params: ApiParam[]): string[][] =>
 	params.map((p) => [
@@ -217,6 +219,38 @@ function expandCodeSnippets(body: string): string {
 	return out;
 }
 
+/** Matches a paired `<Callout …> … </Callout>` block, and the `<Button asChild>`
+ * link wrapper a callout may use for its call-to-action. */
+const CALLOUT_BLOCK = /<Callout\b[^>]*>([\s\S]*?)<\/Callout\s*>/g;
+const BUTTON_LINK =
+	/<Button\b[^>]*>\s*<a\s+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>\s*<\/Button\s*>/g;
+
+/**
+ * Flatten `<Callout>` blocks into GFM blockquotes for the `.md` twin — the
+ * styled admonition and its scroll-to button are HTML-page affordances. A
+ * `<Button asChild><a href="…">` call-to-action becomes a plain markdown link.
+ * Throws on any leftover `<Callout>`/`<Button>` rather than leaking raw JSX.
+ */
+function expandCallouts(body: string): string {
+	const out = body.replace(CALLOUT_BLOCK, (_match, inner: string) =>
+		inner
+			.replace(
+				BUTTON_LINK,
+				(_button, href: string, label: string) =>
+					`[${label.trim().replace(/\s+/g, " ")}](${href})`,
+			)
+			.trim()
+			.split("\n")
+			.map((line) => (line.trim() ? `> ${line.trim()}` : ">"))
+			.join("\n"),
+	);
+	if (/<(?:Callout|Button)\b/.test(out))
+		throw new Error(
+			"renderGuideMarkdown: unrecognised <Callout>/<Button> form — expected a paired <Callout …> … </Callout>",
+		);
+	return out;
+}
+
 /** Matches `<RdServiceTester />` (self-closing) or its empty paired form,
  * tolerating internal whitespace/newlines. The component takes no props. */
 const RD_SERVICE_TESTER_TAG =
@@ -242,12 +276,65 @@ function expandRdServiceTester(body: string, slug: string): string {
 	return out;
 }
 
+/** Matches `<SecretKeyTester />` (self-closing) or its empty paired form,
+ * tolerating internal whitespace/newlines. The component takes no props. */
+const SECRET_KEY_TESTER_TAG =
+	/<SecretKeyTester\s*(?:\/>|>\s*<\/SecretKeyTester\s*>)/g;
+
+/**
+ * Replace the browser-only `<SecretKeyTester />` widget with a static pointer in
+ * the `.md` twin — the playground computes signatures with Web Crypto in the
+ * visitor's browser, so it only exists on the HTML page. Throws on any other
+ * `<SecretKeyTester …>` form rather than leaking raw JSX into the twin.
+ */
+function expandSecretKeyTester(body: string, slug: string): string {
+	const out = body.replace(
+		SECRET_KEY_TESTER_TAG,
+		`> **Interactive secret-key playground** — available on the HTML version ` +
+			`of this page (${SITE_URL}${docsHref(slug)}). It computes and verifies the ` +
+			`signature in the browser, so it has no markdown equivalent.`,
+	);
+	if (/<SecretKeyTester\b/.test(out))
+		throw new Error(
+			"renderGuideMarkdown: unrecognised <SecretKeyTester> form — expected <SecretKeyTester /> with no props",
+		);
+	return out;
+}
+
+/** Matches `<FaqList tags="a,b" />` (self-closing) or its empty paired form. */
+const FAQ_LIST_TAG = /<FaqList\s+tags="([^"]+)"\s*(?:\/>|>\s*<\/FaqList\s*>)/g;
+
+/**
+ * Expand `<FaqList tags="…" />` into the actual questions and answers, so the
+ * `.md` twin carries the FAQ content rather than a component reference. Nested
+ * at `h4` because the guide's own `##` headings own the section levels.
+ *
+ * Throws on an unknown tag, on a filter that matches nothing, and on any other
+ * `<FaqList …>` form — a silently-empty section would read as "no such FAQs".
+ */
+function expandFaqList(body: string): string {
+	const out = body.replace(FAQ_LIST_TAG, (_match, tags: string) => {
+		const faqs = faqsByTag(GLOBAL_FAQS, parseFaqTags(tags));
+		if (!faqs.length)
+			throw new Error(
+				`renderGuideMarkdown: <FaqList tags="${tags}"> matched no FAQs`,
+			);
+		return faqBlocks(faqs, 4).join("\n\n");
+	});
+	if (/<FaqList\b/.test(out))
+		throw new Error(
+			'renderGuideMarkdown: unrecognised <FaqList> form — expected <FaqList tags="…" />',
+		);
+	return out;
+}
+
 /**
  * Render a guide's `/docs/<slug>.md` twin from its raw MDX source. Guides are
  * authored as GFM markdown that may embed the `<CodeSnippets id="…" />`
  * component; that tag is expanded here to a fenced block of its default
  * (first) language so the twin stays valid, single-language markdown. The
- * browser-only `<RdServiceTester />` widget becomes a static note. All other
+ * browser-only `<RdServiceTester />` and `<SecretKeyTester />` widgets become
+ * static notes. All other
  * content is plain GFM, emitted verbatim under front-matter + the canonical notice.
  */
 export function renderGuideMarkdown(
@@ -262,7 +349,16 @@ export function renderGuideMarkdown(
 			canonical,
 		}),
 		canonicalNotice(canonical),
-		expandCodeSnippets(expandRdServiceTester(rawBody.trim(), meta.slug)),
+		expandCallouts(
+			expandCodeSnippets(
+				expandFaqList(
+					expandSecretKeyTester(
+						expandRdServiceTester(rawBody.trim(), meta.slug),
+						meta.slug,
+					),
+				),
+			),
+		),
 	]);
 }
 

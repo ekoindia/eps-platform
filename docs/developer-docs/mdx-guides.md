@@ -10,6 +10,7 @@ endpoints and appear in the "Guides" group at the top of the left nav.
 - `src/content/docs/how-auth-works.mdx`
 - `src/content/docs/error-codes.mdx`
 - `src/content/docs/aadhaar-biometric-rdservice.mdx`
+- `src/content/docs/faqs.mdx`
 
 The `.mdx` filename stem **must** equal the guide's `slug`.
 
@@ -80,11 +81,26 @@ these tags with no import:
   `src/lib/docs/rdservice.ts`). Browser-only behaviour, but SSR-safe: the
   initial render is a static shell and all network calls start from click
   handlers.
+- `<SecretKeyTester />` — interactive `secret-key` playground on
+  `/docs/how-auth-works` (`src/components/docs/SecretKeyTester.tsx`; signing via
+  `computeSecretKey` in `src/lib/docs/eko-signing.ts`). Computes and verifies the
+  HMAC signature in the browser with Web Crypto; the access key never leaves the
+  page. SSR-safe: the timestamp is seeded from a mount effect.
+
+- `<FaqList tags="auth,testing" />` — the global FAQs in one or more categories
+  (`src/components/docs/FaqList.tsx`), rendered as the shared `FaqAccordion`.
+  Data and the `FaqTag` union live in `src/lib/data/common-faqs.ts`; an unknown
+  tag throws. Used by `/docs/faqs`, which puts one `<FaqList>` under each `##`
+  heading — the tags are mutually exclusive, so no FAQ appears twice, and
+  `MiniToc` gets one entry per section rather than one per question.
+
+Interactive widgets share the copy button in `src/components/docs/copy-btn.tsx`.
 
 Every custom tag MUST also be handled by the markdown-twin renderer
 (`src/lib/markdown/render-doc.ts`): `<CodeSnippets>` expands to its default
-language's fenced block, `<RdServiceTester />` becomes a static pointer to the
-HTML page. Unhandled/unknown forms make `renderGuideMarkdown` **throw at build
+language's fenced block, `<RdServiceTester />` and `<SecretKeyTester />` become
+static pointers to the HTML page, and `<FaqList>` inlines the tagged questions
+and answers as `####` blocks. Unhandled/unknown forms make `renderGuideMarkdown` **throw at build
 time** rather than leak raw JSX into `/docs/<slug>.md`. Adding a new custom
 component means adding its substitution (plus a `render-doc.test.ts` case)
 alongside the `MDX_COMPONENTS` registration.

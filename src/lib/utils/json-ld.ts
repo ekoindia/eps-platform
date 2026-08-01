@@ -13,8 +13,34 @@ import {
 	CB_TXN_SLABS,
 } from "@/lib/data/connected-banking-pricing";
 import type { FaqItem } from "@/components/sections/FaqSection";
+import { stripMarkdown } from "@/lib/utils";
 
 const ORG_ID = `${SITE_URL}/#organization`;
+
+/**
+ * Builds a `schema.org` FAQPage node from any FAQ collection. The single place
+ * FAQ answers are serialised for search engines — answers are authored in
+ * markdown, which `stripMarkdown` flattens so no `**`, backticks or `](…)`
+ * leak into `acceptedAnswer.text`.
+ *
+ * @param faqs - FAQ entries in either `{q,a}` or `{question,answer}` shape.
+ * @param id   - Optional `@id` for the node (omit on pages that don't use one).
+ */
+export function faqPageJsonLd(faqs: FaqItem[], id?: string): object {
+	return {
+		"@context": "https://schema.org",
+		"@type": "FAQPage",
+		...(id ? { "@id": id } : {}),
+		mainEntity: faqs.map((faq) => ({
+			"@type": "Question",
+			name: faq.q ?? faq.question,
+			acceptedAnswer: {
+				"@type": "Answer",
+				text: stripMarkdown(faq.a ?? faq.answer ?? ""),
+			},
+		})),
+	};
+}
 
 /**
  * Generates structured JSON-LD schema objects for an API product page.
@@ -111,19 +137,7 @@ export function generateProductJsonLd(
 	];
 
 	if (pageData.faqs?.length) {
-		result.push({
-			"@context": "https://schema.org",
-			"@type": "FAQPage",
-			"@id": `${productUrl}#faq`,
-			mainEntity: pageData.faqs.map((faq) => ({
-				"@type": "Question",
-				name: faq.q,
-				acceptedAnswer: {
-					"@type": "Answer",
-					text: faq.a,
-				},
-			})),
-		});
+		result.push(faqPageJsonLd(pageData.faqs, `${productUrl}#faq`));
 	}
 
 	return result;
@@ -251,19 +265,7 @@ export function generatePricingJsonLd(faqs: FaqItem[]): object[] {
 	];
 
 	if (faqs.length) {
-		result.push({
-			"@context": "https://schema.org",
-			"@type": "FAQPage",
-			"@id": `${pricingUrl}#faq`,
-			mainEntity: faqs.map((faq) => ({
-				"@type": "Question",
-				name: faq.q ?? faq.question,
-				acceptedAnswer: {
-					"@type": "Answer",
-					text: faq.a ?? faq.answer,
-				},
-			})),
-		});
+		result.push(faqPageJsonLd(faqs, `${pricingUrl}#faq`));
 	}
 
 	return result;
@@ -279,19 +281,5 @@ export function generatePricingJsonLd(faqs: FaqItem[]): object[] {
 export function generateFaqJsonLd(faqs: FaqItem[]): object[] {
 	const faqUrl = `${SITE_URL}/faq`;
 	if (!faqs.length) return [];
-	return [
-		{
-			"@context": "https://schema.org",
-			"@type": "FAQPage",
-			"@id": `${faqUrl}#faq`,
-			mainEntity: faqs.map((faq) => ({
-				"@type": "Question",
-				name: faq.q ?? faq.question,
-				acceptedAnswer: {
-					"@type": "Answer",
-					text: faq.a ?? faq.answer,
-				},
-			})),
-		},
-	];
+	return [faqPageJsonLd(faqs, `${faqUrl}#faq`)];
 }

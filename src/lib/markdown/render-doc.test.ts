@@ -1,4 +1,5 @@
 import type { ApiSpec } from "@/lib/data/api-specs-common";
+import { faqsByTag, GLOBAL_FAQS } from "@/lib/data/common-faqs";
 import { defaultSnippet } from "@/lib/docs/code-snippet-sets";
 import {
 	renderEndpointMarkdown,
@@ -143,5 +144,103 @@ describe("renderGuideMarkdown — <RdServiceTester> substitution", () => {
 		expect(() =>
 			renderGuideMarkdown(meta, '<RdServiceTester mode="iris" />'),
 		).toThrow(/unrecognised <RdServiceTester>/);
+	});
+});
+
+describe("renderGuideMarkdown — <FaqList> expansion", () => {
+	const meta = { slug: "faqs", title: "Integration FAQs" };
+
+	it("inlines the tagged questions and answers, not a component reference", () => {
+		const md = renderGuideMarkdown(meta, '## Auth\n\n<FaqList tags="auth" />');
+		const authFaqs = faqsByTag(GLOBAL_FAQS, ["auth"]);
+
+		expect(md).not.toContain("<FaqList");
+		expect(authFaqs.length).toBeGreaterThan(0);
+		for (const faq of authFaqs) {
+			expect(md).toContain(`#### ${faq.q}`);
+		}
+	});
+
+	it("nests questions under the guide's own headings (h4, not h3)", () => {
+		const md = renderGuideMarkdown(meta, '<FaqList tags="support" />');
+		expect(md).toMatch(/^#### /m);
+		expect(md).not.toMatch(/^### /m);
+	});
+
+	it("expands several sections independently", () => {
+		const md = renderGuideMarkdown(
+			meta,
+			'## A\n\n<FaqList tags="auth" />\n\n## B\n\n<FaqList tags="support" />',
+		);
+		for (const tag of ["auth", "support"] as const) {
+			for (const faq of faqsByTag(GLOBAL_FAQS, [tag])) {
+				expect(md).toContain(`#### ${faq.q}`);
+			}
+		}
+	});
+
+	it("throws on an unknown tag rather than rendering a short list", () => {
+		expect(() =>
+			renderGuideMarkdown(meta, '<FaqList tags="integration,typo" />'),
+		).toThrow(/Unknown FAQ tag/);
+	});
+
+	it("throws (never leaks JSX) on a form without a tags prop", () => {
+		expect(() => renderGuideMarkdown(meta, "<FaqList />")).toThrow(
+			/unrecognised <FaqList>/,
+		);
+	});
+});
+
+describe("renderGuideMarkdown — <SecretKeyTester> substitution", () => {
+	const meta = { slug: "how-auth-works", title: "How Authentication Works" };
+
+	it("replaces the browser-only widget with a static pointer to the HTML page", () => {
+		const md = renderGuideMarkdown(meta, "Intro.\n\n<SecretKeyTester />");
+		expect(md).not.toContain("<SecretKeyTester");
+		expect(md).toContain("Interactive secret-key playground");
+		expect(md).toContain("/docs/how-auth-works");
+	});
+
+	it("also handles the empty paired form", () => {
+		const md = renderGuideMarkdown(meta, "<SecretKeyTester></SecretKeyTester>");
+		expect(md).not.toContain("<SecretKeyTester");
+	});
+
+	it("throws (never leaks JSX) on a form with props", () => {
+		expect(() =>
+			renderGuideMarkdown(meta, '<SecretKeyTester mode="verify" />'),
+		).toThrow(/unrecognised <SecretKeyTester>/);
+	});
+});
+
+describe("renderGuideMarkdown — <Callout> flattening", () => {
+	const meta = { slug: "aadhaar-biometric-rdservice", title: "RDService" };
+
+	it("becomes a blockquote and its button becomes a markdown link", () => {
+		const md = renderGuideMarkdown(
+			meta,
+			[
+				'<Callout type="note">',
+				"Already have a scanner? Test it right here.",
+				"",
+				'<Button asChild size="sm" className="mt-3">',
+				'<a href="#test-your-device-setup" className="not-prose">Test my biometric device</a>',
+				"</Button>",
+				"</Callout>",
+			].join("\n"),
+		);
+		expect(md).not.toContain("<Callout");
+		expect(md).not.toContain("<Button");
+		expect(md).toContain("> Already have a scanner? Test it right here.");
+		expect(md).toContain(
+			"> [Test my biometric device](#test-your-device-setup)",
+		);
+	});
+
+	it("throws (never leaks JSX) on an unpaired callout", () => {
+		expect(() => renderGuideMarkdown(meta, '<Callout type="note" />')).toThrow(
+			/unrecognised <Callout>/,
+		);
 	});
 });

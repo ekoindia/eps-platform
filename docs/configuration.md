@@ -30,7 +30,34 @@ Data-driven pages are generated from these — edit data here, not page componen
 | [`src/lib/data/api-product-pages.ts`](../src/lib/data/api-product-pages.ts) | Per-product **marketing/content**: hero, overview, features, benefits, use cases, who-should-use, integration steps, FAQs, SEO. **No technical API data** (that lives in the spec layer below) | Change product-page copy |
 | [`src/lib/data/industries.ts`](../src/lib/data/industries.ts) | Industry pages: challenges, packs, use-case scenarios, FAQs | Add/edit an industry |
 | [`src/lib/data/solutions.ts`](../src/lib/data/solutions.ts) | Solution packs: bundled APIs, workflow, comparisons, FAQs | Add/edit a solution pack |
+| [`src/lib/data/common-faqs.ts`](../src/lib/data/common-faqs.ts) | Platform-agnostic FAQs: the commons appended to every product page, plus the global-only reference set. Answers are **markdown**; each carries one `FaqTag` category | Add/edit a cross-product FAQ |
 | [`src/lib/data/bbps-operators.ts`](../src/lib/data/bbps-operators.ts) | BBPS biller/operator list (count referenced in `/products.md`) | Operator list changes |
+
+### FAQ answers are markdown
+
+Every FAQ rendered through `FaqSection` / `FaqAccordion`
+([`src/components/sections/FaqSection.tsx`](../src/components/sections/FaqSection.tsx))
+supports **bold**, `inline code`, links and bullet lists — GFM tables and
+autolinks are deliberately not enabled. Internal links (`/docs/…`, `#anchor`)
+client-navigate via react-router; everything else opens in a new tab.
+
+Answers must stay plain text in two places, both handled centrally — do not
+re-introduce per-call-site stripping:
+
+- **JSON-LD** — `faqPageJsonLd` in [`src/lib/utils/json-ld.ts`](../src/lib/utils/json-ld.ts)
+  is the only builder of `schema.org` FAQPage nodes, and runs `stripMarkdown`.
+- **Command palette** — `buildFaqItems` in `src/lib/search-index.ts`, same helper.
+
+`stripMarkdown` ([`src/lib/utils.ts`](../src/lib/utils.ts)) flattens the
+documented subset above; it is not a full parser. If FAQ copy ever needs more,
+render through an AST instead of widening the regexes.
+
+Each entry in `common-faqs.ts` carries one `FaqTag` — `getting-started`, `auth`,
+`testing`, `integration`, `ai`, `support`, `pricing`, `compliance`. Categories
+are **mutually exclusive**: the `/docs/faqs` guide renders one section per tag,
+so a second tag would show the same FAQ twice. Tests in `common-faqs.test.ts`
+enforce that every global FAQ is tagged, that no docs section is empty, and that
+no FAQ spans two sections.
 
 ## 3. Technical API specifications (developer-reference data)
 

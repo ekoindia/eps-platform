@@ -1,9 +1,20 @@
 import { GUIDE_COMPONENTS } from "@/content/docs/docs-guide-components";
+import { Callout } from "@/components/docs/Callout";
 import { CodeSnippets } from "@/components/docs/CodeSnippets";
+import { FaqList } from "@/components/docs/FaqList";
 import { RdServiceTester } from "@/components/docs/RdServiceTester";
+import { SecretKeyTester } from "@/components/docs/SecretKeyTester";
+import { Button } from "@/components/ui/button";
 
 /** Custom components MDX guides may use by tag name (no import needed in `.mdx`). */
-const MDX_COMPONENTS = { CodeSnippets, RdServiceTester };
+const MDX_COMPONENTS = {
+	Button,
+	Callout,
+	CodeSnippets,
+	FaqList,
+	RdServiceTester,
+	SecretKeyTester,
+};
 
 /**
  * Renders a compiled MDX guide inside a typographic `prose` container that
