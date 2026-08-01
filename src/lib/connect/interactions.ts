@@ -73,6 +73,53 @@ export function resetRoleTransactionCache(): void {
 	inflight = null;
 }
 
+/** A child interaction of a composite row, ready to render as a link. */
+export interface GroupChild {
+	id: number;
+	label: string;
+}
+
+/**
+ * The children of a composite interaction, in the order upstream listed them.
+ *
+ * `group_interaction_ids` is a comma-separated id string on the parent row (536
+ * Manage My Account, 491 Load E-value, …). A child id the caller is not
+ * entitled to simply has no row of its own, and is dropped — same rule Eloka's
+ * ManageMyAccountCard applies, and the same fail-closed default as the rest of
+ * this module: unreadable means not entitled, never "show it anyway".
+ *
+ * Rows are `Record<string, unknown>` off the wire, so both halves are checked
+ * rather than cast: a non-finite id would build a broken route, and a
+ * non-string label would render as "[object Object]".
+ * @param list - The caller's interaction list.
+ * @param id - The composite interaction whose children to read.
+ * @returns The renderable children; empty when the parent is absent, has no
+ * children, or none of them survived validation.
+ */
+export function groupChildren(
+	list: RoleTransactionList,
+	id: number,
+): GroupChild[] {
+	const raw = list[String(id)]?.group_interaction_ids;
+	if (typeof raw !== "string") return [];
+	const out: GroupChild[] = [];
+	const seen = new Set<number>();
+	for (const part of raw.split(",")) {
+		const childId = Number(part.trim());
+		// Upstream has been seen to list an id twice (see `buildRoleTransactionList`);
+		// rendering it twice would give React duplicate keys and the user a repeated row.
+		if (!Number.isFinite(childId) || childId <= 0 || seen.has(childId))
+			continue;
+		const row = list[String(childId)];
+		if (!row) continue;
+		const label = typeof row.label === "string" ? row.label.trim() : "";
+		if (!label) continue;
+		seen.add(childId);
+		out.push({ id: childId, label });
+	}
+	return out;
+}
+
 /**
  * Picks the Load-E-value flow this user is entitled to.
  * @param list - The caller's interaction list.

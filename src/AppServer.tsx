@@ -61,6 +61,7 @@ import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
 import ConsoleLayout from "./components/console/ConsoleLayout";
 import ConsoleHome from "./pages/console/ConsoleHome";
 import ConsoleCredentials from "./pages/console/Credentials";
+import ConsoleProfile from "./pages/console/Profile";
 import ConsoleDocuments from "./pages/console/Documents";
 import ConsoleTransactions from "./pages/console/Transactions";
 import ConsoleConnectTransaction from "./pages/console/ConnectTransaction";
@@ -153,6 +154,7 @@ const AppServer = ({
 								{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}
 								<Route path="/console" element={<ConsoleLayout />}>
 									<Route index element={<ConsoleHome />} />
+									<Route path="profile" element={<ConsoleProfile />} />
 									<Route path="documents" element={<ConsoleDocuments />} />
 									<Route path="credentials" element={<ConsoleCredentials />} />
 									<Route

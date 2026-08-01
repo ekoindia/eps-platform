@@ -279,3 +279,116 @@ describe("AuthProvider", () => {
 		});
 	});
 });
+
+describe("AuthProvider session cache", () => {
+	const KEY = "eps.session.me";
+	const CACHED: MeView = {
+		state: "active",
+		mobile: "9990000079",
+		profile: null,
+		zohoId: null,
+	};
+
+	/** Parks a view in the cache the way a previous page load would have. */
+	function seed(me: unknown, version = 1) {
+		sessionStorage.setItem(KEY, JSON.stringify({ v: version, me }));
+	}
+
+	afterEach(() => sessionStorage.clear());
+
+	it("paints the cached session before /me answers", async () => {
+		seed(CACHED);
+		// A /me that never resolves: anything authed on screen came from the cache.
+		vi.mocked(authClient.me).mockReturnValue(new Promise(() => {}));
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+		await waitFor(() =>
+			expect(result.current.state.status).toBe("authed"),
+		);
+		expect(result.current.state).toEqual({
+			status: "authed",
+			role: "developer",
+			me: CACHED,
+		});
+	});
+
+	it("still revalidates against /me, and the fresh view wins", async () => {
+		seed(CACHED);
+		const fresh: MeView = { ...CACHED, state: "inactive" };
+		vi.mocked(authClient.me).mockResolvedValue(fresh);
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+		await waitFor(() => {
+			expect(result.current.state).toEqual({
+				status: "authed",
+				role: "developer",
+				me: fresh,
+			});
+		});
+		expect(authClient.me).toHaveBeenCalled();
+	});
+
+	// The cache is display data only — it must never keep a dead session alive.
+	it("drops to anon when the cached session no longer authenticates", async () => {
+		seed(CACHED);
+		vi.mocked(authClient.me).mockRejectedValue(new Error("401"));
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+		await waitFor(() => expect(result.current.state.status).toBe("anon"));
+		expect(sessionStorage.getItem(KEY)).toBeNull();
+	});
+
+	it("caches the session /me resolved", async () => {
+		vi.mocked(authClient.me).mockResolvedValue(CACHED);
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+		await waitFor(() => expect(result.current.state.status).toBe("authed"));
+		expect(JSON.parse(sessionStorage.getItem(KEY) ?? "null")).toEqual({
+			v: 1,
+			me: CACHED,
+		});
+	});
+
+	it("forgets the session on logout", async () => {
+		vi.mocked(authClient.me).mockResolvedValue(CACHED);
+		vi.mocked(authClient.logout).mockResolvedValue(undefined);
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+		await waitFor(() => expect(result.current.state.status).toBe("authed"));
+		await act(async () => {
+			await result.current.logout();
+		});
+
+		expect(result.current.state.status).toBe("anon");
+		expect(sessionStorage.getItem(KEY)).toBeNull();
+	});
+
+	it("ignores a cached blob it cannot trust and waits for /me", async () => {
+		// A primitive would throw inside classify()'s `"role" in me`.
+		seed(5);
+		vi.mocked(authClient.me).mockResolvedValue(CACHED);
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+		await waitFor(() => expect(result.current.state.status).toBe("authed"));
+		expect(result.current.state).toEqual({
+			status: "authed",
+			role: "developer",
+			me: CACHED,
+		});
+	});
+
+	it("ignores a blob from an older build", async () => {
+		seed(CACHED, 0);
+		vi.mocked(authClient.me).mockReturnValue(new Promise(() => {}));
+
+		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+		// Nothing to hydrate from: it stays on the boot state.
+		await waitFor(() => expect(result.current.state.status).toBe("loading"));
+	});
+});

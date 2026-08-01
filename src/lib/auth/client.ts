@@ -21,6 +21,21 @@ export const LIFECYCLES = [
 
 export type Lifecycle = (typeof LIFECYCLES)[number];
 
+/** One account from the profile's `account_detail` block. */
+export interface Account {
+	id: number;
+	label: string;
+	productId: number;
+	typeId: number;
+}
+
+/**
+ * The signed-in user's Eko profile.
+ *
+ * A hand-kept mirror of `EkoProfile` in `packages/eps-backend/src/types.ts` —
+ * the two are not generated from one source, so a field added there has to be
+ * added here before the UI can read it.
+ */
 export interface Profile {
 	name: string;
 	email: string;
@@ -33,8 +48,22 @@ export interface Profile {
 	dateOfJoining?: string;
 	onboarding: number;
 	zohoId: string;
-	/** Ordered onboarding steps from upstream; empty for a fully-onboarded user. */
+	/**
+	 * Ordered onboarding steps from upstream; empty for a fully-onboarded user.
+	 * `roleList` carries the steps still PENDING — see `profileCompleteness`.
+	 */
 	onboardingSteps: Array<{ role: number; label: string }>;
+	/** The user's accounts; empty when upstream sent no `account_detail`. */
+	accounts: Account[];
+	/** The E-value account transaction history filters by, or null if unresolved. */
+	evalueAccountId: string | null;
+	/**
+	 * Profile blocks passed through whole from interaction 151 —
+	 * `personal_detail`, `shop_detail`, `business_detail`. Untyped by design: the
+	 * fields inside are upstream's and vary by user type. Read them with
+	 * `detailField` (`@/lib/auth/identity`) rather than casting.
+	 */
+	detailBlocks: Record<string, unknown>;
 }
 
 export interface MeView {

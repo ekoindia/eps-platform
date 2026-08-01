@@ -294,6 +294,84 @@ describe("mapProfile onboarding_steps", () => {
 	});
 });
 
+describe("mapProfile detailBlocks", () => {
+	const activeDetail = {
+		name: "Test User",
+		mobile: "9990000001",
+		code: "20810001",
+		org_id: 1,
+		user_type: "23",
+		onboarding: 0,
+	};
+
+	/** Runs getProfile against a 369 whose `data` carries the given sibling blocks. */
+	async function profileFrom(blocks: Record<string, unknown>) {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: activeDetail, ...blocks },
+		});
+		const r = await createEkoClient(ekoCfg, f).getProfile({
+			mobile: "9990000001",
+		});
+		if (r.kind !== "found") throw new Error(`expected found, got ${r.kind}`);
+		return r.profile;
+	}
+
+	it("copies the allowlisted profile blocks through whole", async () => {
+		const personal = {
+			gender: "Male",
+			dob: "01-01-1990",
+			qualification: "Graduate",
+			marital_status: "Single",
+		};
+		const profile = await profileFrom({
+			personal_detail: personal,
+			shop_detail: { shop_name: "Test Store" },
+		});
+		expect(profile.detailBlocks).toEqual({
+			personal_detail: personal,
+			shop_detail: { shop_name: "Test Store" },
+		});
+	});
+
+	// The allowlist is the security boundary: /me serves whatever lands in
+	// detailBlocks to the browser, so a block upstream adds later must NOT ride
+	// along unreviewed.
+	it("drops blocks that are not on the allowlist", async () => {
+		const profile = await profileFrom({
+			personal_detail: { gender: "Female" },
+			secret_credentials: { token: "should-never-reach-the-browser" },
+		});
+		expect(profile.detailBlocks).toEqual({
+			personal_detail: { gender: "Female" },
+		});
+	});
+
+	// Both are mapped into dedicated fields already; duplicating them here would
+	// ship the whole user_detail a second time, unredacted.
+	it("never copies user_detail or account_detail into detailBlocks", async () => {
+		const profile = await profileFrom({
+			account_detail: { account_list: [] },
+		});
+		expect(profile.detailBlocks).toEqual({});
+	});
+
+	// A scalar under a block name is upstream sending something other than a
+	// detail block; the UI would render it as an empty card at best.
+	it("ignores allowlisted names whose value is not an object", async () => {
+		const profile = await profileFrom({
+			personal_detail: "not-a-block",
+			shop_detail: ["also", "not", "a", "block"],
+		});
+		expect(profile.detailBlocks).toEqual({});
+	});
+
+	it("is an empty object when 151 sent no detail blocks", async () => {
+		const profile = await profileFrom({});
+		expect(profile.detailBlocks).toEqual({});
+	});
+});
+
 describe("getProfile onboarding classification", () => {
 	const baseDetail = {
 		name: "Test User",
@@ -697,6 +775,7 @@ describe("identityOf", () => {
 			onboardingSteps: [],
 			accounts: [],
 			evalueAccountId: null,
+			detailBlocks: {},
 		};
 		expect(identityOf(profile)).toEqual({
 			initiatorId: "9990000001",

@@ -8,7 +8,7 @@ import {
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { accountIdentity } from "@/lib/auth/identity";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /**
@@ -22,6 +22,9 @@ export function UserMenu() {
 	if (!identity || state.status !== "authed") return null;
 
 	const isAdmin = state.role === "admin";
+	// Only a developer session has an Eko profile to show. An admin's `/me` never
+	// carries one, so the page would render an empty shell for them.
+	const isDeveloper = state.role === "developer";
 
 	return (
 		<DropdownMenu>
@@ -51,6 +54,14 @@ export function UserMenu() {
 					)}
 				</div>
 				<DropdownMenuSeparator />
+				{isDeveloper && (
+					<DropdownMenuItem asChild>
+						<Link to="/console/profile">
+							<UserRound />
+							My Profile
+						</Link>
+					</DropdownMenuItem>
+				)}
 				<DropdownMenuItem asChild>
 					<Link to="/console">
 						<LayoutDashboard />

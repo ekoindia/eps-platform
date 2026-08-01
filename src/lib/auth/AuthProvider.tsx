@@ -21,6 +21,11 @@ import { clearConnectTokens } from "@/lib/connect/token";
 import { resetDashboardCache } from "@/lib/console/dashboard";
 import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
+import {
+	clearCachedSession,
+	readCachedSession,
+	writeCachedSession,
+} from "@/lib/auth/session-cache";
 import { setChatIdentity } from "@/lib/zoho-chat";
 
 export type AuthState =
@@ -81,23 +86,73 @@ function classify(me: MeView | AdminView | SignupView): AuthState {
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [state, setState] = useState<AuthState>({ status: "loading" });
 
+	/**
+	 * Accepts a session view and remembers it for this tab's next reload.
+	 *
+	 * Every path that lands on an authenticated state goes through here, so the
+	 * cache cannot drift from what was actually rendered. A view that
+	 * `classify()` rejects throws before the write, so a malformed payload is
+	 * never cached.
+	 */
+	const accept = useCallback((me: MeView | AdminView | SignupView) => {
+		const next = classify(me);
+		setState(next);
+		if (next.status === "authed") writeCachedSession(me);
+	}, []);
+
 	const refresh = useCallback(async () => {
 		try {
-			setState(classify(await authClient.me()));
+			accept(await authClient.me());
 		} catch {
 			setState({ status: "anon" });
 		}
-	}, []);
+	}, [accept]);
 
-	const adopt = useCallback((me: MeView | AdminView | SignupView) => {
-		setState(classify(me));
-	}, []);
+	const adopt = useCallback(
+		(me: MeView | AdminView | SignupView) => {
+			accept(me);
+		},
+		[accept],
+	);
 
 	const logout = useCallback(async () => {
 		try {
 			await authClient.logout();
 		} finally {
 			setState({ status: "anon" });
+		}
+	}, []);
+
+	// Paint the signed-in shell from the last view this tab saw, then go and
+	// confirm it. Without this a reload shows the console skeleton for a whole
+	// `/me` round-trip, on every page, every time.
+	//
+	// In an EFFECT and never in the `useState` initializer above: `main.tsx`
+	// hydrates prerendered HTML, which was built with `status: "loading"`.
+	// Reading storage during the first render would produce authed markup
+	// against a loading server tree and trip a hydration mismatch — the same
+	// hazard that makes `UserMenu` render null until the session resolves. This
+	// runs after hydration commits, still long before `/me` answers.
+	//
+	// The cached view is DISPLAY DATA ONLY. Every request still carries the
+	// session cookie, so a cache that outlives the cookie shows a name for one
+	// paint and then drops to `anon` the moment `/me` 401s. Nothing is
+	// authorized off it, and `refresh()` below runs unconditionally either way.
+	useEffect(() => {
+		const cached = readCachedSession();
+		if (!cached) return;
+		try {
+			const hydrated = classify(cached);
+			// Only ever fills the initial blank. If `/me` has already answered (a
+			// fast network, or `adopt()` after an OTP verify), that result is the
+			// newer truth and must not be overwritten by a stale blob.
+			setState((current) =>
+				current.status === "loading" ? hydrated : current,
+			);
+		} catch {
+			// Shape from an older build that `isSessionView` still accepted. Drop it
+			// and wait for `/me`.
+			clearCachedSession();
 		}
 	}, []);
 
@@ -155,6 +210,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	// rather than on logout() so an expired session clears it too.
 	useEffect(() => {
 		if (state.status !== "anon") return;
+		// Same hazard as the caches below, and the reason this is keyed on `anon`
+		// rather than on `logout()`: the parked profile must not outlive the
+		// session that produced it, or the next sign-in on this tab paints the
+		// previous user's name before `/me` corrects it.
+		clearCachedSession();
 		resetWalletBalanceCache();
 		// Same hazard, higher stakes: the Connect widget's credentials live in
 		// sessionStorage, which outlives the session that minted them. The widget's

@@ -206,6 +206,12 @@ function mapConnectProfile(
 	return {
 		accounts: mapAccounts(accountDetail),
 		evalueAccountId: selectEvalueAccountId(accountDetail),
+		// Always empty on this path: connect-api's login envelope carries the
+		// detail blocks as its own top-level siblings, not inside the object this
+		// mapper receives. Nothing reads them here — the Profile page is served by
+		// the interaction-151 path in `eko.ts` — so this stays `{}` rather than
+		// growing a second, differently-shaped extractor.
+		detailBlocks: {},
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),

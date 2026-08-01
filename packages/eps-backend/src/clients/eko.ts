@@ -424,6 +424,14 @@ export function createEkoClient(
 					 * `account_details`.
 					 */
 					account_detail?: AccountDetail;
+					/**
+					 * `data` carries further sibling blocks — `personal_detail`,
+					 * `shop_detail`, … — which `mapProfile` copies out by name via
+					 * `PROFILE_DETAIL_BLOCKS`. Left as an index signature rather than
+					 * enumerated: the allowlist is the one place that decides which of
+					 * them reach the browser.
+					 */
+					[block: string]: unknown;
 				};
 			};
 			// Classify ONLY by response_type_id (mirrors authentication.js).
@@ -465,7 +473,7 @@ export function createEkoClient(
 					return {
 						kind: "onboarding",
 						responseTypeId: code,
-						profile: mapProfile(d, accountDetail),
+						profile: mapProfile(d, accountDetail, raw?.data),
 					};
 				}
 				// Check if the user matches EPS Business partner type (orgId == 1 && userType == "23"). If not, treat as an invalid user (not_allowed) so the caller does not mint a session for a non-business user.
@@ -481,7 +489,7 @@ export function createEkoClient(
 				return {
 					kind: "found",
 					responseTypeId: code,
-					profile: mapProfile(d, accountDetail),
+					profile: mapProfile(d, accountDetail, raw?.data),
 				};
 			}
 			// Unrecognized response (mirror reference's "else -> 500"): a hard
@@ -789,14 +797,58 @@ export function mapTransactionRows(raw: unknown): TransactionRow[] {
 	});
 }
 
+/**
+ * The blocks of interaction 151's `data` that `/me` forwards to the browser,
+ * beyond the `user_detail` and `account_detail` already mapped above.
+ *
+ * An ALLOWLIST, deliberately, rather than "every sibling key": whatever lands
+ * here is served to the page, so a block upstream starts sending later must be
+ * read and reviewed before it ships — not forwarded the moment it appears.
+ * Nothing here may carry credentials, tokens or PINs.
+ *
+ * Both spellings of each name are listed because the singular/plural is
+ * upstream's choice and differs between blocks; the extra entries cost nothing
+ * and save a release if 151 answers with the other one.
+ */
+const PROFILE_DETAIL_BLOCKS = [
+	"personal_detail",
+	"personal_details",
+	"shop_detail",
+	"shop_details",
+	"business_detail",
+	"business_details",
+] as const;
+
+/**
+ * Copies the allowlisted profile blocks out of interaction 151's `data`.
+ * @param data - The whole `data` object; `{}` for callers that have only the user detail.
+ * @returns Only the blocks that are present AND objects — a scalar under one of
+ * these names is upstream sending something other than a detail block, and is
+ * dropped rather than handed to the UI to render.
+ */
+function pickDetailBlocks(
+	data: Record<string, unknown>,
+): Record<string, unknown> {
+	const out: Record<string, unknown> = {};
+	for (const key of PROFILE_DETAIL_BLOCKS) {
+		const block = data[key];
+		if (block && typeof block === "object" && !Array.isArray(block)) {
+			out[key] = block;
+		}
+	}
+	return out;
+}
+
 function mapProfile(
 	d: Record<string, unknown>,
 	accountDetail?: AccountDetail,
+	data: Record<string, unknown> = {},
 ): EkoProfile {
 	const roles = Array.isArray(d.role_list) ? d.role_list : [];
 	return {
 		accounts: mapAccounts(accountDetail),
 		evalueAccountId: selectEvalueAccountId(accountDetail),
+		detailBlocks: pickDetailBlocks(data),
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),

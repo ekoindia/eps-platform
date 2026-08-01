@@ -37,6 +37,23 @@ export interface EkoProfile {
 	 * null when it cannot be resolved — see `selectEvalueAccountId`.
 	 */
 	evalueAccountId: string | null;
+	/**
+	 * The profile blocks interaction 151 returns ALONGSIDE `user_detail` —
+	 * `personal_detail` (gender, dob, qualification, marital status),
+	 * `shop_detail`, `business_detail`. Eloka splits the same blocks out of its
+	 * login payload (`wlc-webapp/utils/userObjectBuilder.js`) and renders them as
+	 * the Profile page's Personal Details and Shop cards.
+	 *
+	 * Each block is passed through whole and untyped — the fields inside are
+	 * upstream's, vary by user type, and modelling a subset silently drops
+	 * whatever was left out (same reasoning as `RoleTransaction`).
+	 *
+	 * The BLOCK NAMES, though, are an allowlist and not a passthrough
+	 * (`PROFILE_DETAIL_BLOCKS`): everything here is served to the browser by
+	 * `/me`, so a block upstream adds later must be reviewed before it ships
+	 * rather than forwarded automatically. Empty when 151 sent none of them.
+	 */
+	detailBlocks: Record<string, unknown>;
 }
 
 export type ProfileResult =

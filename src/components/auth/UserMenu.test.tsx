@@ -58,6 +58,30 @@ describe("UserMenu", () => {
 		await waitFor(() => expect(logout).toHaveBeenCalled());
 	});
 
+	it("links a developer to their profile page", async () => {
+		renderMenu(developer);
+		fireEvent.keyDown(screen.getByRole("button", { name: /account menu/i }), {
+			key: "Enter",
+		});
+		// Radix puts role="menuitem" on the anchor, overriding its implicit "link".
+		expect(
+			await screen.findByRole("menuitem", { name: /my profile/i }),
+		).toHaveAttribute("href", "/console/profile");
+	});
+
+	it("hides the profile entry from admins, who have no Eko profile", async () => {
+		renderMenu({
+			status: "authed",
+			role: "admin",
+			me: { role: "admin", login: "octocat", sub: "gh:1" },
+		});
+		fireEvent.keyDown(screen.getByRole("button", { name: /account menu/i }), {
+			key: "Enter",
+		});
+		await screen.findByRole("menuitem", { name: /admin console/i });
+		expect(screen.queryByRole("menuitem", { name: /my profile/i })).toBeNull();
+	});
+
 	it("shows the admin console entry for admins", async () => {
 		renderMenu({
 			status: "authed",
