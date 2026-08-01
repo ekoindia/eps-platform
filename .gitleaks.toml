@@ -34,6 +34,24 @@ regexes = [
   '''wtkn_abc123xyz''',
 ]
 
+# The published known-answer test vector for the secret-key algorithm
+# (API_AUTH_INFO.testVector). It is high-entropy because it IS an HMAC digest —
+# but of the dummy string "test-access-key-123", not of any real access_key, and
+# it authenticates nothing. It is deliberately public: the `debug_auth` MCP tool
+# and the /docs/how-auth-works playground both hand it out so an integrator can
+# prove their signing code without touching a real credential. condition = "AND"
+# plus the exact literal keeps this as narrow as it can be — the same value
+# anywhere else, or any other digest in this file, still trips the scan.
+[[allowlists]]
+description = "Published secret-key test vector in api-auth.ts"
+condition = "AND"
+paths = [
+  '''(^|/)src/lib/data/api-auth\.ts$''',
+]
+regexes = [
+  '''88lqTf9ew69XbVbeczjxVL8/B4vibfp1MvTi1mIj2Xo=''',
+]
+
 # Illustrative / expired example JWTs shown as `example:` values in the API spec
 # docs (any header alg — HS256, RS256 — or `typ`-first tokens like the OTP
 # verification token). condition = "AND" scopes this narrowly: a JWT-shaped value

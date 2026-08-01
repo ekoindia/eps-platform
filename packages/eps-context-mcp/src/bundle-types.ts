@@ -111,6 +111,10 @@ export interface AgentAuthTopic {
 	keys: ApiKeyInfo[];
 	headers: ApiParam[];
 	secretKeyGeneration: string[];
+	/** Known-answer test: sign `timestamp` with `accessKey` and the result must
+	 * equal `secretKey`. The key is a dummy — it proves an implementation is
+	 * correct without anyone handling a real credential. */
+	testVector: { accessKey: string; timestamp: string; secretKey: string };
 }
 
 export interface AgentErrorsTopic {

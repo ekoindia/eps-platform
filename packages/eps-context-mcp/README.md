@@ -45,6 +45,7 @@ clients can see this programmatically.
 | `get_topic`           | `topic` (`auth` \| `errors` \| `pricing` \| `environments`)                  | One documentation topic.                                                                                                                           |
 | `get_recipe`          | `id`                                                                         | One multi-step recipe (steps + branches).                                                                                                          |
 | `get_signing_snippet` | `language` (`php` \| `java` \| `csharp` \| `javascript` \| `python` \| `go`) | Paste-ready **backend** code to compute the request `secret-key`.                                                                                  |
+| `debug_auth`          | `timestamp?`, `secret_key?`                                                  | Diagnose a `403`: returns a known-answer test vector to check your signing against, mechanical checks on a supplied timestamp/signature, and ranked causes. **Never takes an `access_key`.** |
 | `get_meta`            | —                                                                            | Bundle org/version, data source (`baked` or `remote`), this server's `packageVersion`, and `updateAvailable` (whether a newer npm release exists). |
 
 **Tiered usage:** start with `list_apis` / `search` (cheap, compact), then call
@@ -205,6 +206,25 @@ languages. **This code is backend-only.**
 - The signing tool only emits an **algorithm template** — it never embeds a real
   key. This MCP server holds **no credentials** and performs **no signing or API
   calls** itself; it only provides context and code.
+
+### Debugging a 403 without handing over a key
+
+`debug_auth` is **secret-free by design** and there is no plan to add an
+`access_key` parameter. Two reasons, both structural:
+
+1. This server is also reachable **anonymously over HTTP**, so a key in a tool
+   argument would travel to infrastructure that deliberately holds no secrets.
+2. A tool argument lands in the **caller's model context** and its transcript.
+   Today an agent writes `process.env.EKO_ACCESS_KEY` and never sees the value;
+   a signing tool would teach it to read the secret out and paste it into a chat.
+
+Instead the tool hands back a **known-answer test vector** — a dummy key, a
+fixed timestamp, and the signature they must produce. Reproduce it with your own
+code and the algorithm is proven; the 403 is then almost always provisioning
+(IP allowlist, inactive key, wrong environment), which `ranked_causes` walks in
+likelihood order. If you want a server that signs with real credentials, that is
+`@ekoindia/eps-transact-mcp`, which takes them from the environment or per-request
+headers — never as tool arguments.
 
 ## License
 

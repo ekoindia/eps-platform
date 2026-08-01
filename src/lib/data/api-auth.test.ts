@@ -1,5 +1,6 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { API_ENVIRONMENTS } from "./api-auth";
+import { API_AUTH_INFO, API_ENVIRONMENTS } from "./api-auth";
 
 // ponytail: URL-parse + port==="" guards the exact regression we chased —
 // a stray `:25004` (or any port) sneaking back into a base URL. Parsing beats
@@ -20,4 +21,26 @@ describe("API_ENVIRONMENTS base URLs are portless", () => {
 			expect(url.pathname.startsWith(pathPrefix)).toBe(true);
 		},
 	);
+});
+
+// The vector is published to agents (bundle `auth` topic → `debug_auth`) and to
+// humans (the docs playground) as a known-answer test. It is only worth anything
+// if it is actually right, so recompute it from an independent implementation.
+describe("API_AUTH_INFO.testVector", () => {
+	const { accessKey, timestamp, secretKey } = API_AUTH_INFO.testVector;
+
+	it("reproduces under an independent HMAC implementation", () => {
+		const expected = createHmac(
+			"sha256",
+			Buffer.from(accessKey).toString("base64"),
+		)
+			.update(timestamp)
+			.digest("base64");
+		expect(secretKey).toBe(expected);
+	});
+
+	it("uses milliseconds and carries no real credential", () => {
+		expect(timestamp).toMatch(/^\d{13}$/);
+		expect(accessKey).toMatch(/^test-/);
+	});
 });

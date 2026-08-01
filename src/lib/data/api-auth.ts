@@ -113,4 +113,18 @@ export const API_AUTH_INFO = {
 		"Compute HMAC-SHA256 of the timestamp using the base64-encoded key.",
 		"Base64-encode the resulting signature — this is the secret-key.",
 	],
+	/**
+	 * Known-answer test for the secret-key algorithm.
+	 *
+	 * `accessKey` is a dummy string, NOT a credential — the point is that an
+	 * integrator (or an AI agent) can prove their signing code is correct without
+	 * ever handling a real key. Run your own implementation over these inputs; if
+	 * it reproduces `secretKey`, the HMAC is right and a 403 is coming from
+	 * somewhere else. Pinned against `node:crypto` in `api-auth.test.ts`.
+	 */
+	testVector: {
+		accessKey: "test-access-key-123",
+		timestamp: "1700000000000",
+		secretKey: "88lqTf9ew69XbVbeczjxVL8/B4vibfp1MvTi1mIj2Xo=",
+	},
 } as const;
