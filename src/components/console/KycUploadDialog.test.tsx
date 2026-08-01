@@ -240,9 +240,10 @@ describe("KycUploadDialog", () => {
 		});
 
 		it("shows no notice for a document that has nothing extra to say", () => {
-			render(
-				<KycUploadDialog doc={doc({ docType: "15" })} onClose={vi.fn()} />,
-			);
+			// `999` is this file's unknown-type sentinel: `configOf` answers
+			// NO_CONFIG, which is the only way a document genuinely has nothing to
+			// say now that every configured type carries instructions.
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
 
 			expect(screen.queryByRole("listitem")).toBeNull();
 			expect(screen.queryByRole("link")).toBeNull();
