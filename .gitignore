@@ -36,6 +36,11 @@ docs/local-roadmap/
 # Override the global (~/.config/git/ignore) exclude so this repo tracks SDD docs.
 !docs/superpowers/
 
+# Graphify (https://github.com/Graphify-Labs/graphify)
+graphify-out/cost.json
+graphify-out/cache/            # regenerable; content hashes trip gitleaks' entropy rule
+
+
 # Ignore TypeScript incremental compilation cache
 *.tsbuildinfo
 
@@ -58,3 +63,9 @@ ds-bundle/
 .design-sync/.cache/
 .design-sync/node_modules
 .design-sync/styles-src.css
+
+# graphify settings backup written by `graphify claude install`
+.claude/settings.json.graphify-bak
+# machine-local interpreter/scan-root pointers
+graphify-out/.graphify_python
+graphify-out/.graphify_root

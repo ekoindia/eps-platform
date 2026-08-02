@@ -1,0 +1,23 @@
+node_modules/
+dist/
+*.generated.py
+docs/local-roadmap/
+.env
+.env.local
+
+
+# only index src/, packages/, ssg/, scripts/, docs/, README.md, etc.
+# Ignore everything else
+*
+!src/
+!src/**
+!packages/
+!packages/**
+!ssg/
+!ssg/**
+!scripts/
+!scripts/**
+!docs/
+!docs/**
+!README.md
+!.env.example
