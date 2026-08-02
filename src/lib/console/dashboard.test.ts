@@ -124,6 +124,30 @@ describe("usage series", () => {
 		expect(summary.series.map((p) => p.cumulativeCount)).toEqual([10, 40, 60]);
 	});
 
+	it("labels a date-only bucket as that calendar day, in any timezone", () => {
+		// Upstream sends usage buckets as bare dates with startDate === endDate.
+		// `new Date("2025-08-12")` is ISO date-only, i.e. UTC midnight — so left
+		// alone, every bar reads a day early west of UTC while the "Showing stats"
+		// line above it, parsed from a space-separated stamp, stays local and
+		// correct. Both forms must land on the same calendar day.
+		const dateOnly = {
+			startDate: "2025-08-12",
+			endDate: "2025-08-12",
+			totalCount: 5,
+		};
+		expect(formatBucketLabel(dateOnly, false)).toContain("12");
+		expect(formatBucketLabel(dateOnly, false)).toContain("Aug");
+		// A zero-length span is not hourly, and must not be mistaken for one.
+		expect(isHourlyRange([dateOnly])).toBe(false);
+		const summary = summarizeUsage([
+			dateOnly,
+			{ startDate: "2025-12-29", endDate: "2025-12-29", totalCount: 63 },
+		]);
+		expect(summary.total).toBe(68);
+		expect(summary.peak).toBe(63);
+		expect(summary.peakLabel).toContain("29");
+	});
+
 	it("survives an empty series", () => {
 		expect(summarizeUsage([])).toMatchObject({
 			total: 0,

@@ -19,7 +19,7 @@
 		"build:dev": "vite build --mode development && npm run bake:all",
 		"bake:all": "node packages/eps-context-mcp/scripts/bake-bundle.mjs && node packages/sdk-js/scripts/bake-surface.mjs && node packages/sdk-php/scripts/bake-surface.mjs && node packages/eps-mock-server/scripts/bake-fixtures.mjs && node packages/eps-transact-mcp/scripts/bake-bundle.mjs",
 		"lint": "eslint .",
-		"typecheck": "tsc -p tsconfig.app.json --noEmit",
+		"typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit && npm run typecheck -w @ekoindia/eps-backend -w @ekoindia/eps-context-mcp -w @ekoindia/eps-mock-server -w @ekoindia/eps-sdk",
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",
@@ -32,7 +32,7 @@
 		"backend:typecheck": "npm run typecheck -w @ekoindia/eps-backend",
 		"transact:dev": "npm run dev -w @ekoindia/eps-transact-mcp",
 		"transact:build": "npm run build -w @ekoindia/eps-sdk && npm run build -w @ekoindia/eps-transact-mcp",
-		"transact:test": "npm run build -w @ekoindia/eps-sdk && npm run test -w @ekoindia/eps-transact-mcp",
+		"transact:test": "npm run build -w @ekoindia/eps-sdk && npm run typecheck -w @ekoindia/eps-transact-mcp && npm run test -w @ekoindia/eps-transact-mcp",
 		"transact:typecheck": "npm run typecheck -w @ekoindia/eps-transact-mcp"
 	},
 	"dependencies": {

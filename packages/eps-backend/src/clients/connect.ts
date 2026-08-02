@@ -1,3 +1,4 @@
+import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
 import {
@@ -205,6 +206,12 @@ function mapConnectProfile(
 	return {
 		accounts: mapAccounts(accountDetail),
 		evalueAccountId: selectEvalueAccountId(accountDetail),
+		// Always empty on this path: connect-api's login envelope carries the
+		// detail blocks as its own top-level siblings, not inside the object this
+		// mapper receives. Nothing reads them here — the Profile page is served by
+		// the interaction-151 path in `eko.ts` — so this stays `{}` rather than
+		// growing a second, differently-shaped extractor.
+		detailBlocks: {},
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),
@@ -320,9 +327,89 @@ export function mapConnectLogin(
 export function createConnectClient(
 	cfg: NonNullable<Config["connectApi"]>,
 	fetchImpl: typeof fetch = fetch,
+	logger: EkoLogger = noopEkoLogger,
 ): ConnectClient {
 	const doFetch = withTimeout(fetchImpl, cfg.timeoutMs);
 	const base = cfg.baseUrl.replace(/\/+$/, "");
+
+	/**
+	 * Runs one upstream call and logs it EXACTLY ONCE on every exit path —
+	 * transport failure, unreadable body, unparseable body, non-2xx, and success
+	 * alike. A silent path here is what turned a one-line upstream validation
+	 * error ("Client reference Id length should be in between 1 and 10") into an
+	 * unexplained production 502.
+	 *
+	 * `send` returns the response so the caller owns body encoding, and the
+	 * outcome is returned rather than thrown because `post` and `postMultipart`
+	 * disagree on which error wins — see their respective throw sites.
+	 */
+	async function callUpstream(
+		path: string,
+		fields: Record<string, unknown>,
+		send: () => Promise<Response>,
+	): Promise<{ res: Response; parsed: unknown; parseError: boolean }> {
+		const start = performance.now();
+		const durMs = () => Math.round(performance.now() - start);
+		let res: Response;
+		try {
+			res = await send();
+		} catch (e) {
+			// Timeout / DNS / connection refused: log, then rethrow untouched.
+			logger.log({
+				fields,
+				path,
+				error: e instanceof Error ? e.message : String(e),
+				durMs: durMs(),
+			});
+			throw e;
+		}
+
+		let text: string;
+		try {
+			text = await res.text();
+		} catch (e) {
+			// A body that dies mid-read (truncated response, socket reset after
+			// headers) still gets a line, with the status we did receive.
+			logger.log({
+				fields,
+				path,
+				status: res.status,
+				error: e instanceof Error ? e.message : String(e),
+				durMs: durMs(),
+			});
+			throw e;
+		}
+
+		let parsed: unknown;
+		let parseError = false;
+		try {
+			parsed = JSON.parse(text);
+		} catch {
+			parseError = true;
+		}
+		logger.log({
+			fields,
+			path,
+			status: res.status,
+			response: parseError ? { nonJson: text.slice(0, 500) } : parsed,
+			error: parseError ? "non-JSON response body" : undefined,
+			durMs: durMs(),
+		});
+
+		return { res, parsed, parseError };
+	}
+
+	/** The non-JSON error, shared by both transports' throw sites. */
+	function nonJsonError(path: string, status: number): Error {
+		return new Error(
+			`connect-api returned non-JSON from ${path} (status ${status})`,
+		);
+	}
+
+	/** The unreachable/server-fault error, shared by both transports. */
+	function httpError(path: string, status: number): Error {
+		return new Error(`connect-api HTTP ${status} from ${path}`);
+	}
 
 	async function post(
 		path: string,
@@ -336,26 +423,22 @@ export function createConnectClient(
 		// upstream anti-abuse see the real caller rather than this server.
 		if (opts.xRealIp) headers["X-Real-IP"] = opts.xRealIp;
 		if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`;
-		const res = await doFetch(`${base}${path}`, {
-			method: "POST",
-			headers,
-			body: JSON.stringify(body),
-		});
-		const text = await res.text();
-		let parsed: unknown;
-		try {
-			parsed = JSON.parse(text);
-		} catch {
-			throw new Error(
-				`connect-api returned non-JSON from ${path} (status ${res.status})`,
-			);
-		}
+		// The body goes to the logger as-is; redaction there is recursive, so a
+		// credential nested inside an interaction payload is caught too.
+		const { res, parsed, parseError } = await callUpstream(path, body, () =>
+			doFetch(`${base}${path}`, {
+				method: "POST",
+				headers,
+				body: JSON.stringify(body),
+			}),
+		);
+		// Non-JSON wins over status here: a proxy's HTML error page is more
+		// usefully reported as "non-JSON" than as its status alone.
+		if (parseError) throw nonJsonError(path, res.status);
 		// connect-api answers 200 for business-level failures (wrong OTP, inactive
 		// account) and reserves non-2xx for transport/server faults, so the status
 		// check is about reachability only — the envelope decides the outcome.
-		if (!res.ok) {
-			throw new Error(`connect-api HTTP ${res.status} from ${path}`);
-		}
+		if (!res.ok) throw httpError(path, res.status);
 		return parsed;
 	}
 
@@ -371,22 +454,20 @@ export function createConnectClient(
 		const headers: Record<string, string> = {};
 		if (opts.xRealIp) headers["X-Real-IP"] = opts.xRealIp;
 		if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`;
-		const res = await doFetch(`${base}${path}`, {
-			method: "POST",
-			headers,
-			body: form,
-		});
-		const text = await res.text();
-		if (!res.ok) {
-			throw new Error(`connect-api HTTP ${res.status} from ${path}`);
-		}
-		try {
-			return JSON.parse(text);
-		} catch {
-			throw new Error(
-				`connect-api returned non-JSON from ${path} (status ${res.status})`,
-			);
-		}
+		// Log an allowlisted summary, never the parts themselves: this transport
+		// carries KYC document scans and selfies. Part NAMES identify the call
+		// well enough to debug it; their contents must not reach the log.
+		const { res, parsed, parseError } = await callUpstream(
+			path,
+			{ multipart_parts: [...form.keys()].join(",") },
+			() => doFetch(`${base}${path}`, { method: "POST", headers, body: form }),
+		);
+		// Status wins over non-JSON here — the reverse of `post`. An upload is the
+		// call most likely to be rejected by a proxy (413, 502) with an HTML body,
+		// and the status is the actionable half of that pair.
+		if (!res.ok) throw httpError(path, res.status);
+		if (parseError) throw nonJsonError(path, res.status);
+		return parsed;
 	}
 
 	/**
@@ -423,6 +504,11 @@ export function createConnectClient(
 					platform: "web",
 					app: "EPS",
 					org_id: cfg.orgId,
+					// REQUIRED, and connect-api caps it at 10 characters — longer or
+					// absent and it answers response_status_id 1 without dispatching the
+					// SMS. The other endpoints here take the 20-digit form; this one
+					// does not, so it gets its own short ref rather than clientRefId().
+					client_ref_id: crypto.randomUUID().replace(/-/g, "").slice(0, 10),
 				},
 				{ xRealIp },
 			)) as { response_status_id?: number; data?: { otp?: string } };

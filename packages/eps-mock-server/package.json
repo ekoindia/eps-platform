@@ -22,6 +22,7 @@
 	"scripts": {
 		"bake": "node scripts/bake-fixtures.mjs",
 		"build": "tsup",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"prepublishOnly": "npm run bake && npm run build"
 	},

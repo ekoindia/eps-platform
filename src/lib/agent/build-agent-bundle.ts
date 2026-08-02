@@ -90,6 +90,7 @@ const buildTopics = (): AgentTopics => ({
 		keys: API_AUTH_INFO.keys,
 		headers: resolveHeaders(),
 		secretKeyGeneration: [...API_AUTH_INFO.secretKeyGeneration],
+		testVector: { ...API_AUTH_INFO.testVector },
 	},
 	errors: {
 		id: "errors",

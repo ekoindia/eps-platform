@@ -15,8 +15,10 @@ import {
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
 import type { KycDocument } from "@/lib/connect/kyc";
-import { RefreshCw } from "lucide-react";
+import { Download, Info, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 
 /**
@@ -119,6 +121,54 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 								: "Attach a JPG, PNG or PDF.")}
 					</DialogDescription>
 				</DialogHeader>
+
+				{/*
+				 * Whatever this document needs said before a file is picked — what
+				 * must be on the letterhead, which director signs, what makes review
+				 * reject it. Markdown so a list reads as a list.
+				 */}
+				{config.instructions ? (
+					<div className="flex gap-3 rounded-md border border-eko-gold/40 bg-eko-gold-light/50 p-3 text-sm text-foreground">
+						<Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+						<div
+							className={
+								// No typography plugin in this project, and pulling in
+								// `MarkdownProse` would drag the docs syntax highlighter into
+								// the console bundle. These are the few elements an
+								// instruction block actually uses.
+								"min-w-0 flex-1 [&_p]:my-0 [&_p+p]:mt-2 [&_strong]:font-semibold [&_a]:font-medium [&_a]:underline [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em]"
+							}
+						>
+							{/*
+							 * The text is ours, from `kyc-docs.ts`, never upstream's — and
+							 * raw HTML stays off (no `rehype-raw`), so markdown here cannot
+							 * become markup.
+							 */}
+							<Markdown remarkPlugins={[remarkGfm]}>
+								{config.instructions}
+							</Markdown>
+						</div>
+					</div>
+				) : null}
+
+				{/*
+				 * Above the slots, not below: a partner who has already attached
+				 * something they wrote themselves has no reason to read on, and the
+				 * point of the sample is to be read first.
+				 *
+				 * A plain download link — the same `<a href download>` the docs and
+				 * pricing pages use. The file is static, under `public/kyc-samples/`.
+				 */}
+				{config.sampleUrl ? (
+					<a
+						href={config.sampleUrl}
+						download
+						className="inline-flex items-center gap-2 self-start rounded-md text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+					>
+						<Download className="h-4 w-4 shrink-0" />
+						Download the sample, fill and sign it, then upload the PDF
+					</a>
+				) : null}
 
 				<div className="flex flex-col gap-4">
 					{files.map((file, index) => {

@@ -38,6 +38,7 @@ const FOUND_PROFILE = {
 		onboardingSteps: [],
 		accounts: [],
 		evalueAccountId: null,
+		detailBlocks: {},
 	},
 };
 

@@ -127,7 +127,7 @@ export const calcCbQuote = (input: CbInput): CbQuote => {
 export const CB_FAQS: PricingFaq[] = [
 	{
 		q: "What does the Connected Banking setup fee cover?",
-		a: "The one-time setup fee of ₹75,000 + GST applies per bank per user and covers the virtual-account and BaaS infrastructure integration with that bank.",
+		a: "The one-time setup fee of **₹75,000 + GST** applies **per bank, per user** and covers the virtual-account and BaaS infrastructure integration with that bank.",
 	},
 	{
 		q: "Which banks are available for Connected Banking?",
@@ -135,6 +135,6 @@ export const CB_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "What are the Connected Banking transaction charges?",
-		a: "₹8 per transaction (excl. GST) for amounts of ₹100–₹25,000 and ₹15 per transaction for ₹25,001–₹50,000.",
+		a: "**₹8 per transaction** (excl. GST) for amounts of ₹100–₹25,000 and **₹15 per transaction** for ₹25,001–₹50,000.",
 	},
 ];

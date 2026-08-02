@@ -60,6 +60,7 @@ function deps(
 				onboardingSteps: [],
 				accounts: [],
 				evalueAccountId: null,
+				detailBlocks: {},
 			},
 		})),
 		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
@@ -514,6 +515,7 @@ describe("signup sessions", () => {
 		// account_detail until the account exists.
 		accounts: [],
 		evalueAccountId: null,
+		detailBlocks: {},
 	};
 
 	it("mints a signup session for an unregistered mobile", async () => {
@@ -1591,6 +1593,7 @@ describe("wallet/balance", () => {
 					onboardingSteps: [],
 					accounts: [],
 					evalueAccountId: null,
+					detailBlocks: {},
 				},
 			})),
 		});
@@ -1626,6 +1629,7 @@ describe("wallet/balance", () => {
 						onboardingSteps: [],
 						accounts: [],
 						evalueAccountId: null,
+						detailBlocks: {},
 					},
 				})
 				.mockResolvedValue({ kind: "error" as const, responseTypeId: 9999 }),

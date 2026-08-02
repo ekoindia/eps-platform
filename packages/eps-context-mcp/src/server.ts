@@ -12,6 +12,11 @@ import {
 	listTopics,
 	searchApis,
 } from "./bundle-access.js";
+import {
+	RANKED_403_CAUSES,
+	checkSignatureShape,
+	checkTimestamp,
+} from "./auth-debug.js";
 import { SIGNING_LANGUAGES, getSigningSnippet } from "./signing-snippets.js";
 import type { VersionState } from "./update-check.js";
 
@@ -189,6 +194,47 @@ export const createEpsServer = (
 		async ({ language }) => ({
 			content: [{ type: "text" as const, text: getSigningSnippet(language) }],
 		}),
+	);
+
+	server.registerTool(
+		"debug_auth",
+		{
+			title: "Debug auth / 403",
+			description:
+				"Diagnose a 403 from an EPS API. Returns a known-answer TEST VECTOR: run " +
+				"your own signing code over test_vector.accessKey + test_vector.timestamp — " +
+				"if you reproduce test_vector.secretKey, your HMAC is correct, so stop " +
+				"debugging the algorithm and work through ranked_causes instead. Optionally " +
+				"pass the timestamp and secret-key from the failing request and they are " +
+				"checked for the mechanical faults (seconds instead of milliseconds, clock " +
+				"drift, wrong digest length, stray newline). SECRET-FREE BY DESIGN: there is " +
+				"no access_key parameter and there never will be — never paste an access_key " +
+				"into a tool call; it is a server-side secret.",
+			inputSchema: {
+				timestamp: z
+					.string()
+					.optional()
+					.describe("The secret-key-timestamp sent on the failing request."),
+				secret_key: z
+					.string()
+					.optional()
+					.describe("The secret-key your code produced. Never the access_key."),
+			},
+			annotations: READ_ONLY,
+		},
+		async ({ timestamp, secret_key }) =>
+			json({
+				test_vector: bundle.topics.auth.testVector,
+				how_to_use_test_vector:
+					"secret-key = base64(HMAC_SHA256(key = base64(access_key) AS A STRING, message = timestamp)). " +
+					"Reproduce test_vector.secretKey from the vector's inputs to prove your implementation.",
+				checks: [
+					...checkTimestamp(timestamp, Date.now()),
+					...checkSignatureShape(secret_key),
+				],
+				ranked_causes: RANKED_403_CAUSES,
+				docs_url: bundle.topics.auth.docsUrl,
+			}),
 	);
 
 	server.registerTool(

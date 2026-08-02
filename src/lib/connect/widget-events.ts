@@ -47,6 +47,12 @@ export interface WidgetEventHandlers {
 	onGotoHistory: (productId?: string) => void;
 	/** Follow a link the flow asked to open (internal route or external site). */
 	onOpenUrl: (url: string) => void;
+	/** The flow reached a step, or the user did something worth recording. */
+	onTrackEvent: (event: {
+		category: string;
+		action: string;
+		label?: string;
+	}) => void;
 }
 
 /** The event `detail` shape the widget dispatches on `iron-signal`. */
@@ -65,6 +71,9 @@ interface IronSignalDetail {
 		label?: string;
 		/** The flow's own name for the file, which the accepted `File` keeps. */
 		name?: string;
+		/** `track-event`: the analytics triple. `label` doubles as the breadcrumb. */
+		category?: string;
+		action?: string;
 	};
 }
 
@@ -129,6 +138,15 @@ export function attachWidgetEvents(handlers: WidgetEventHandlers): () => void {
 					},
 					userConfirmation: Boolean(data.userConfirmation),
 				});
+				return;
+			}
+			case "track-event": {
+				const { category, action, label } = detail.data ?? {};
+				// Eloka forwards only `Transaction`/`Page Change`, because its single
+				// consumer is a breadcrumb card. Everything goes to the tag manager
+				// here; deciding which events matter is what the container is for.
+				if (!category || !action) return;
+				handlers.onTrackEvent({ category, action, label });
 				return;
 			}
 		}

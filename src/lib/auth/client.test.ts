@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, authClient } from "@/lib/auth/client";
+import {
+	ApiError,
+	authClient,
+	setSessionExpiredHandler,
+} from "@/lib/auth/client";
 
 function mockFetch(responses: Array<{ status: number; body: unknown }>) {
 	const fn = vi.fn();
@@ -31,7 +35,31 @@ function mockRawFetch(status: number, body: string) {
 	return fn;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+/**
+ * Like `mockFetch`, but answers by URL rather than by call order — parallel
+ * requests interleave, so a fixed sequence would describe a race, not a rule.
+ * @param routes - Substring of the URL → the response to answer with.
+ */
+function mockRoutedFetch(
+	routes: Array<{ match: string; status: number; body: unknown }>,
+) {
+	const fn = vi.fn(async (url: string) => {
+		const route = routes.find((r) => url.includes(r.match));
+		if (!route) throw new Error(`no mock route for ${url}`);
+		return {
+			ok: route.status >= 200 && route.status < 300,
+			status: route.status,
+			text: async () => JSON.stringify(route.body),
+		} as Response;
+	});
+	vi.stubGlobal("fetch", fn);
+	return fn;
+}
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+	setSessionExpiredHandler(null);
+});
 
 describe("authClient", () => {
 	it("startOtp posts mobile and returns ok", async () => {
@@ -110,5 +138,154 @@ describe("authClient", () => {
 	it("still resolves a 200 with an empty body", async () => {
 		mockRawFetch(200, "");
 		await expect(authClient.me()).resolves.toEqual({});
+	});
+});
+
+describe("session expiry signal", () => {
+	const ME = {
+		state: "active",
+		mobile: "9990000001",
+		profile: null,
+		zohoId: null,
+	};
+
+	it("stays quiet when the refresh rescues the request", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		mockFetch([
+			{ status: 401, body: { error: { code: "NO_SESSION", message: "x" } } },
+			{ status: 200, body: { ok: true } }, // refresh
+			{ status: 200, body: ME }, // replay
+		]);
+		await expect(authClient.me()).resolves.toMatchObject({ state: "active" });
+		expect(expired).not.toHaveBeenCalled();
+	});
+
+	it("fires once when the refresh cannot rescue the request", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		mockFetch([
+			{ status: 401, body: { error: { code: "NO_SESSION", message: "x" } } },
+			{
+				status: 401,
+				body: { error: { code: "SESSION_EXPIRED", message: "y" } },
+			}, // refresh
+		]);
+		await expect(authClient.me()).rejects.toBeInstanceOf(ApiError);
+		expect(expired).toHaveBeenCalledTimes(1);
+	});
+
+	// An admin whose GitHub token died holds a perfectly valid EPS session: the
+	// refresh succeeds and the replay 401s anyway.
+	it("fires when the replayed request 401s after a successful refresh", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		mockFetch([
+			{ status: 401, body: { error: { code: "NO_GH_TOKEN", message: "x" } } },
+			{ status: 200, body: { ok: true } }, // refresh
+			{ status: 401, body: { error: { code: "NO_GH_TOKEN", message: "x" } } },
+		]);
+		await expect(authClient.adminDocs.list()).rejects.toMatchObject({
+			code: "NO_GH_TOKEN",
+		});
+		expect(expired).toHaveBeenCalledTimes(1);
+	});
+
+	it("stays quiet on a rejected OTP", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		mockFetch([
+			{ status: 401, body: { error: { code: "OTP_INVALID", message: "x" } } },
+		]);
+		await expect(authClient.verifyOtp("9990000001", "0000")).rejects.toThrow();
+		expect(expired).not.toHaveBeenCalled();
+	});
+
+	it("stays quiet when logging out of an already-dead session", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		mockFetch([
+			{ status: 401, body: { error: { code: "NO_SESSION", message: "x" } } },
+			{ status: 200, body: { ok: true } }, // refresh
+			{ status: 401, body: { error: { code: "NO_SESSION", message: "x" } } },
+		]);
+		await expect(authClient.logout()).rejects.toBeInstanceOf(ApiError);
+		expect(expired).not.toHaveBeenCalled();
+	});
+
+	// The decisive one. Refresh tokens are single-use (the backend rotates with a
+	// `getdel`), so one refresh per 401 would have the first request consume the
+	// token and every sibling 401 on a session that was just renewed — signing the
+	// user out of a perfectly good session.
+	it("shares one refresh across simultaneous 401s and expires none of them", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		let refreshed = false;
+		const fetchFn = vi.fn(async (url: string) => {
+			if (url.includes("/auth/refresh")) {
+				refreshed = true;
+				return {
+					ok: true,
+					status: 200,
+					text: async () => JSON.stringify({ ok: true }),
+				} as Response;
+			}
+			// Every protected call 401s until the single rotation lands.
+			return refreshed
+				? ({
+						ok: true,
+						status: 200,
+						text: async () => JSON.stringify(ME),
+					} as Response)
+				: ({
+						ok: false,
+						status: 401,
+						text: async () =>
+							JSON.stringify({ error: { code: "NO_SESSION", message: "x" } }),
+					} as Response);
+		});
+		vi.stubGlobal("fetch", fetchFn);
+
+		const results = await Promise.all([
+			authClient.me(),
+			authClient.me(),
+			authClient.me(),
+		]);
+
+		expect(results).toHaveLength(3);
+		expect(expired).not.toHaveBeenCalled();
+		const refreshCalls = fetchFn.mock.calls.filter(([url]) =>
+			String(url).includes("/auth/refresh"),
+		);
+		expect(refreshCalls).toHaveLength(1);
+	});
+
+	it("expires every simultaneous 401 through a single shared refresh attempt", async () => {
+		const expired = vi.fn();
+		setSessionExpiredHandler(expired);
+		const fetchFn = mockRoutedFetch([
+			{
+				match: "/auth/refresh",
+				status: 401,
+				body: { error: { code: "SESSION_EXPIRED", message: "y" } },
+			},
+			{
+				match: "/me",
+				status: 401,
+				body: { error: { code: "NO_SESSION", message: "x" } },
+			},
+		]);
+
+		await Promise.all([
+			expect(authClient.me()).rejects.toBeInstanceOf(ApiError),
+			expect(authClient.me()).rejects.toBeInstanceOf(ApiError),
+		]);
+
+		const refreshCalls = fetchFn.mock.calls.filter(([url]) =>
+			String(url).includes("/auth/refresh"),
+		);
+		expect(refreshCalls).toHaveLength(1);
+		// The provider dedupes; the client's job is only to report every one.
+		expect(expired).toHaveBeenCalledTimes(2);
 	});
 });

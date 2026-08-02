@@ -260,6 +260,91 @@ describe("dashboard route response", () => {
 		expect((await errorOf(res)).code).toBe("DASHBOARD_FAILED");
 	});
 
+	it("still reads a dataset upstream returned under a renamed key", async () => {
+		// Upstream's own naming is inconsistent (three keys convert snake→camel,
+		// one does not), so a block arriving as `verification_trends` is a live
+		// possibility — and it used to present as a silently blank widget.
+		const { app } = harness({
+			connect: {
+				interactJson: vi.fn(
+					async (_token: string, body: Record<string, unknown>) => {
+						const key = Object.keys(
+							body.requestPayload as Record<string, unknown>,
+						)[0];
+						if (key !== "verification_trends") {
+							return {
+								status: 0,
+								data: { dashboard_object: SAMPLE_DASHBOARD_OBJECT },
+							};
+						}
+						return {
+							status: 0,
+							data: {
+								dashboard_object: {
+									verification_trends: [
+										{
+											startDate: "2025-08-12",
+											endDate: "2025-08-12",
+											totalCount: 7,
+										},
+									],
+								},
+							},
+						};
+					},
+				),
+			},
+		});
+		const view = (await (await load(app)).json()) as DashboardView;
+		expect(view.usage).toEqual([
+			{ startDate: "2025-08-12", endDate: "2025-08-12", totalCount: 7 },
+		]);
+	});
+
+	it("logs the raw shape and echo of whichever dataset came back dry", async () => {
+		// The view is built from keys this service already recognizes, so the
+		// merged shape alone can never show that upstream answered under a name
+		// nobody asked for. This line is the only instrument that can.
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const { app } = harness({
+			connect: {
+				interactJson: vi.fn(
+					async (_token: string, body: Record<string, unknown>) => {
+						const key = Object.keys(
+							body.requestPayload as Record<string, unknown>,
+						)[0];
+						return {
+							status: 0,
+							data: {
+								user_code: "99027178",
+								org_id: 3,
+								source: "",
+								dashboard_object:
+									key === "verification_trends"
+										? { somethingElse: { nested: 1 } }
+										: SAMPLE_DASHBOARD_OBJECT,
+							},
+						};
+					},
+				),
+			},
+		});
+		await load(app);
+		const line =
+			warn.mock.calls.map(String).find((c) => c.includes("raw=")) ?? "";
+		expect(line).toContain("empty=[usage]");
+		// The key upstream really sent, which the merged view cannot show.
+		expect(line).toContain("verification_trends→{somethingElse:object{1}}");
+		// Masked to its last four: enough to spot connect-api's mock account,
+		// not a customer identifier in full.
+		expect(line).toContain("user_code:…7178");
+		expect(line).toContain("org_id:3");
+		expect(line).not.toContain("99027178");
+		// Only the dry dataset is reported, not the three that answered.
+		expect(line).not.toContain("products_overview→");
+		warn.mockRestore();
+	});
+
 	it("loses one widget, not the page, when a secondary dataset fails", async () => {
 		// Splitting into four calls means four things that can fail independently.
 		// Only the overview is worth a 502; the rest degrade to an empty widget.

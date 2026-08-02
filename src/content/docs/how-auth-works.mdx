@@ -47,3 +47,18 @@ Sign on your **backend** — the `access_key` must never reach a browser. The sa
 recipe in five languages:
 
 <CodeSnippets id="sign-request" />
+
+## Try it: `secret-key` playground
+
+Paste an access key and a timestamp to see the exact `secret-key` those inputs
+produce — or paste a signature your own code generated and check it against
+ours to find out why a request is coming back `403`.
+
+<SecretKeyTester />
+
+<Callout type="warning">
+	This playground signs entirely inside your browser with the Web Crypto API —
+	your access key is never sent to Eko or stored anywhere. That is safe for a
+	scratchpad, but not a pattern to copy: in a real integration the `access_key`
+	must stay on your backend, because anything shipped to a browser is public.
+</Callout>

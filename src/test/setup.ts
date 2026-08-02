@@ -18,6 +18,26 @@ if (typeof window !== "undefined") {
 		}),
 	});
 
+	// jsdom ships a CSS object without `supports`. FadeIn feature-detects
+	// scroll-driven animations through it; report unsupported so components
+	// under test take the plain (non-animated) path.
+	window.CSS = window.CSS ?? ({} as typeof window.CSS);
+	window.CSS.supports = window.CSS.supports ?? (() => false);
+
+	// FadeIn reveals content on intersection; jsdom has no IntersectionObserver.
+	// The stub never fires, so components render in their pre-reveal state —
+	// enough for markup assertions, which is all component tests need.
+	window.IntersectionObserver =
+		window.IntersectionObserver ??
+		(class {
+			observe() {}
+			unobserve() {}
+			disconnect() {}
+			takeRecords() {
+				return [];
+			}
+		} as unknown as typeof IntersectionObserver);
+
 	// input-otp observes its container for resizes; jsdom has no ResizeObserver.
 	window.ResizeObserver =
 		window.ResizeObserver ??

@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -24,6 +25,7 @@ describe("eps-context-mcp tools", () => {
 		const names = (await client.listTools()).tools.map((t) => t.name).sort();
 		expect(names).toEqual(
 			[
+				"debug_auth",
 				"get_api",
 				"get_meta",
 				"get_recipe",
@@ -69,6 +71,43 @@ describe("eps-context-mcp tools", () => {
 		expect(meta.latestVersion).toBe("0.2.0");
 		expect(meta.updateAvailable).toBe(true);
 		expect(meta.source).toBe("baked");
+	});
+
+	it("debug_auth serves a test vector that actually reproduces", async () => {
+		const client = await connect();
+		const res = parse(
+			(await client.callTool({
+				name: "debug_auth",
+				arguments: {},
+			})) as never,
+		);
+		const { accessKey, timestamp, secretKey } = res.test_vector;
+		// Independent implementation: if this drifts, the vector we publish to
+		// agents is wrong and would send them chasing a phantom signing bug.
+		expect(secretKey).toBe(
+			createHmac("sha256", Buffer.from(accessKey).toString("base64"))
+				.update(timestamp)
+				.digest("base64"),
+		);
+		expect(res.ranked_causes.length).toBeGreaterThan(0);
+		// Callable with no arguments: useful before the caller has anything to check.
+		expect(res.checks.every((c: { ok: boolean | null }) => c.ok === null)).toBe(
+			true,
+		);
+	});
+
+	it("debug_auth diagnoses the supplied timestamp and signature", async () => {
+		const client = await connect();
+		const res = parse(
+			(await client.callTool({
+				name: "debug_auth",
+				arguments: { timestamp: "1700000000", secret_key: "not-base64!!" },
+			})) as never,
+		);
+		const checks: { name: string; ok: boolean | null; detail: string }[] =
+			res.checks;
+		expect(checks.find((c) => c.name === "timestamp_unit")?.ok).toBe(false);
+		expect(checks.find((c) => c.name === "signature_shape")?.ok).toBe(false);
 	});
 
 	it("no tool accepts an access_key parameter (secret-free)", async () => {

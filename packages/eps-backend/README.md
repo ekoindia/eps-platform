@@ -80,6 +80,18 @@ session's profile view.
   alive, the freshly rotated refresh token is revoked, both cookies are cleared,
   and the caller gets 401 — better than serving a cookie that fails at the first
   upstream call.
+- **The browser recovers, then gives up, in one place.** Every frontend call
+  goes through `request()` in `src/lib/auth/client.ts`, which answers a 401 with
+  a single `/auth/refresh` and replays the request. That refresh is
+  **single-flight**: refresh tokens rotate with a `getdel`, so N parallel 401s
+  firing N refreshes would have the first consume the token and sign the user
+  out of a session that was just renewed. When the refresh cannot save the call
+  — or the replay 401s anyway, which is what an admin whose `ghtoken:` expired
+  sees — the client notifies `AuthProvider`, which drops the app to `anon` and
+  raises one "Your session has expired. Please sign in again." toast. The
+  console and `/admin` already render sign-in for `anon`, so the user lands on
+  login in place, with the URL intact. `/auth/otp/*` and `/auth/logout` are
+  exempt: a 401 there is a bad OTP or an already-dead session, not an expiry.
 
 ## Scaling & storage backends
 
@@ -391,11 +403,19 @@ log_ above). Both types land on the same stdout stream.
 rate-limit decision. Reusing the inbound header is therefore safe: a forged
 value affects only the caller's own correlation data.
 
-### Observability: upstream (Eko/SimpliBank) log
+### Observability: upstream (Eko/SimpliBank + connect-api) log
 
-Every request/response to the Eko/SimpliBank upstream is logged to **stdout** as
-a single JSON object tagged `"type":"eko_upstream"`. Verbosity is set by
-`EKO_LOG_LEVEL` so it can differ between dev and prod:
+Every request/response to an upstream is logged to **stdout** as a single JSON
+object, one line per call. `EKO_LOG_LEVEL` governs **both** upstream clients;
+the `type` tag says which transport produced the line:
+
+| `type`             | client                     | identified by                             |
+| ------------------ | -------------------------- | ----------------------------------------- |
+| `eko_upstream`     | Eko/SimpliBank (`eko.ts`)  | `interaction_type_id` (e.g. `515`, `518`) |
+| `connect_upstream` | connect-api (`connect.ts`) | `path` (e.g. `/authentication/sendotp`)   |
+
+Grep one transport with `docker logs … | grep connect_upstream`. Verbosity is set
+by `EKO_LOG_LEVEL` so it can differ between dev and prod:
 
 | level               | what it logs                                                                                                                                                                                                                                            |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -406,6 +426,22 @@ a single JSON object tagged `"type":"eko_upstream"`. Verbosity is set by
 The `developer_key` / `secret-key` auth headers are never part of the logged
 form-fields, so they are never emitted at any level. Logging is best-effort and
 never throws or alters an upstream call.
+
+**Redaction** happens inside the logger, so no call site can forget it, and it
+**recurses** — a credential nested inside a JSON body is caught wherever it
+sits. Redacted at `full` on top of the above: request `first_okekey` /
+`second_okekey` / `id_token` (the connect-api OTP) / `refresh_token` /
+`access_token`, and response `pintwin_key` / `access_token` /
+`access_token_lite` / `refresh_token`. The multipart upload transport logs only
+its **part names** (`{"multipart_parts":"formdata,file1"}`) — never the KYC
+scans and selfies it carries.
+
+**Every exit path logs exactly once** — success, non-2xx, unparseable body,
+body-read failure, and transport failure alike. This is load-bearing: connect-api
+answers HTTP 200 with a non-zero `response_status_id` for business-level
+failures, which the BFF deliberately collapses into a uniform `502
+OTP_SEND_FAILED` (no per-mobile detail, no enumeration). The upstream `message`
+in this log is therefore the **only** place the real reason appears.
 
 **Reading the logs in dev.** The raw JSON lines are hard to scan. Run
 `npm run dev:pretty` instead of `npm run dev` — it pipes stdout through

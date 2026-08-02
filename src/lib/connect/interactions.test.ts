@@ -1,5 +1,6 @@
 import {
 	buildRoleTransactionList,
+	groupChildren,
 	loadWalletInteractionId,
 } from "@/lib/connect/interactions";
 import { describe, expect, it } from "vitest";
@@ -110,5 +111,92 @@ describe("loadWalletInteractionId", () => {
 		const list = buildRoleTransactionList([BANK_STATUS]);
 
 		expect(loadWalletInteractionId(list)).toBeNull();
+	});
+});
+
+describe("groupChildren", () => {
+	/** 536's children, as Eloka's Manage-My-Account card reads them. */
+	const MANAGE_ACCOUNT = {
+		id: 536,
+		interaction_type_id: 0,
+		behavior: 7,
+		group_interaction_ids: "898,7775,92",
+		label: "Manage My Account",
+	};
+	const SIGN_AGREEMENT = { id: 898, label: "Sign Agreement" };
+	const CHANGE_MOBILE = { id: 7775, label: "Change Registered Mobile Number" };
+
+	it("returns the children in upstream's order", () => {
+		const list = buildRoleTransactionList([
+			MANAGE_ACCOUNT,
+			CHANGE_MOBILE,
+			SIGN_AGREEMENT,
+		]);
+
+		// Listed 898 before 7775 despite being built in the other order.
+		expect(groupChildren(list, 536)).toEqual([
+			{ id: 898, label: "Sign Agreement" },
+			{ id: 7775, label: "Change Registered Mobile Number" },
+		]);
+	});
+
+	it("drops children the caller is not entitled to", () => {
+		// 92 is named in group_interaction_ids but has no row of its own.
+		const list = buildRoleTransactionList([MANAGE_ACCOUNT, SIGN_AGREEMENT]);
+
+		expect(groupChildren(list, 536)).toEqual([
+			{ id: 898, label: "Sign Agreement" },
+		]);
+	});
+
+	it("returns nothing when the parent interaction is absent", () => {
+		const list = buildRoleTransactionList([SIGN_AGREEMENT]);
+
+		expect(groupChildren(list, 536)).toEqual([]);
+	});
+
+	it("returns nothing when the parent has no children", () => {
+		const list = buildRoleTransactionList([BANK_STATUS]);
+
+		expect(groupChildren(list, 1025)).toEqual([]);
+	});
+
+	it("skips a child whose label is missing or not a string", () => {
+		// Rows are untyped off the wire; a non-string label would render as
+		// "[object Object]".
+		const list = buildRoleTransactionList([
+			MANAGE_ACCOUNT,
+			SIGN_AGREEMENT,
+			{ id: 7775, label: { en: "Change Mobile" } },
+			{ id: 92 },
+		]);
+
+		expect(groupChildren(list, 536)).toEqual([
+			{ id: 898, label: "Sign Agreement" },
+		]);
+	});
+
+	it("skips unparseable ids and tolerates whitespace", () => {
+		const list = buildRoleTransactionList([
+			{ ...MANAGE_ACCOUNT, group_interaction_ids: " 898 ,,abc,-1" },
+			SIGN_AGREEMENT,
+		]);
+
+		expect(groupChildren(list, 536)).toEqual([
+			{ id: 898, label: "Sign Agreement" },
+		]);
+	});
+
+	it("renders a duplicated child once", () => {
+		// Upstream does repeat ids (7775 arrives twice in the real response);
+		// twice on screen would also mean duplicate React keys.
+		const list = buildRoleTransactionList([
+			{ ...MANAGE_ACCOUNT, group_interaction_ids: "898,898" },
+			SIGN_AGREEMENT,
+		]);
+
+		expect(groupChildren(list, 536)).toEqual([
+			{ id: 898, label: "Sign Agreement" },
+		]);
 	});
 });

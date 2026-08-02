@@ -59,18 +59,12 @@ export interface IntegrationStep {
 	href?: string;
 }
 
-/** Optional "Also See" cross-link rendered beneath an FAQ answer. */
-export interface FaqLink {
-	label: string;
-	href: string;
-}
-
-export interface FAQ {
-	q: string;
-	a: string;
-	/** Optional "Also See" links shown beneath the answer. */
-	links?: FaqLink[];
-}
+/**
+ * FAQ types live with the FAQ data in `@/lib/data/common-faqs`; re-exported
+ * here so existing `@/components/ProductPageLayout` importers keep working.
+ */
+import type { FAQ } from "@/lib/data/common-faqs";
+export type { FAQ, FaqLink, FaqTag } from "@/lib/data/common-faqs";
 
 export interface ProductPageLayoutProps {
 	title: string;

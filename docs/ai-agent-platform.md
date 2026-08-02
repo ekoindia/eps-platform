@@ -101,9 +101,9 @@ An npm-workspaces monorepo. All three npm packages already carry
 
 ### `@ekoindia/eps-context-mcp` (local MCP server)
 
-Local **stdio** MCP server exposing **9 tiered, secret-free** tools over the
+Local **stdio** MCP server exposing **10 tiered, secret-free** tools over the
 baked bundle: `list_apis`, `list_topics`, `list_recipes`, `search`, `get_api`,
-`get_topic`, `get_recipe`, `get_signing_snippet`, `get_meta`. It reads the
+`get_topic`, `get_recipe`, `get_signing_snippet`, `debug_auth`, `get_meta`. It reads the
 **baked** `data/eps.json` shipped in the package; set `EPS_BUNDLE_URL` to fetch
 a fresher bundle at startup. No secrets are ever required or handled.
 
@@ -220,6 +220,15 @@ Never expose `access_key` or compute `secret-key` in a browser/frontend. This
 warning and the algorithm are carried in the bundle's `auth` topic and inlined
 into every context pack. Cross-language SDK conformance is pinned by
 [`docs/sdk-golden-vector.md`](./sdk-golden-vector.md).
+
+The `auth` topic also carries a **`testVector`** — a dummy `accessKey`, a fixed
+`timestamp`, and the `secretKey` they must produce. It is defined once in
+`API_AUTH_INFO` (`src/lib/data/api-auth.ts`, pinned against `node:crypto` in its
+test) and consumed by both audiences: the `debug_auth` MCP tool returns it to
+agents, and the docs playground on `/docs/how-auth-works` loads it with one
+click. That is what lets an integrator prove their signing code without anyone
+handling a real credential — the reason no tool anywhere takes an `access_key`
+parameter (guarded by a test in `packages/eps-context-mcp/src/server.test.ts`).
 
 ## 7. How to update
 

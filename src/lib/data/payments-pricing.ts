@@ -522,11 +522,11 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Who pays the DMT customer fee and sender KYC charge?",
-		a: "Both are charged to the sender: a 1% transaction fee (minimum ₹10) per transfer, and a one-time ₹11 (excl. GST) KYC charge when a new sender is registered.",
+		a: "Both are charged to the **sender**: a 1% transaction fee (minimum ₹10) per transfer, and a one-time ₹11 (excl. GST) KYC charge when a new sender is registered. The [DMT recipe](/recipe) shows where sender KYC fits in the transaction flow.",
 	},
 	{
 		q: "Is TDS deducted from commissions?",
-		a: "Yes. TDS @ 2% is deducted from every commission payout, as required by law. The calculator shows both your gross commission and an indicative after-TDS figure.",
+		a: "Yes. **TDS @ 2%** is deducted from every commission payout, as required by law. The [calculator](/pricing) shows both your gross commission and an indicative after-TDS figure.",
 	},
 	{
 		q: "How does AePS commission work?",
@@ -538,6 +538,6 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Are the commission rates inclusive of GST?",
-		a: "No. All commission figures are exclusive of GST @ 18%. Add your GST number on the Connect portal for GST-compliant invoices.",
+		a: "No. All commission figures are **exclusive of GST @ 18%**. Add your GST number on the Connect portal for GST-compliant invoices.",
 	},
 ];

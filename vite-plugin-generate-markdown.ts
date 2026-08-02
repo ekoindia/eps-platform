@@ -360,6 +360,7 @@ async function loadRenderBundle(
 	const [
 		productsMod,
 		productPagesMod,
+		commonFaqsMod,
 		industriesMod,
 		solutionsMod,
 		renderProductMod,
@@ -379,6 +380,7 @@ async function loadRenderBundle(
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
+		server.ssrLoadModule("/src/lib/data/common-faqs.ts"),
 		server.ssrLoadModule("/src/lib/data/industries.ts"),
 		server.ssrLoadModule("/src/lib/data/solutions.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-product.ts"),
@@ -400,8 +402,8 @@ async function loadRenderBundle(
 	return {
 		API_PRODUCTS: productsMod.API_PRODUCTS,
 		API_PRODUCT_PAGES: productPagesMod.API_PRODUCT_PAGES,
-		COMMON_API_FAQS: productPagesMod.COMMON_API_FAQS,
-		GLOBAL_FAQS: productPagesMod.GLOBAL_FAQS,
+		COMMON_API_FAQS: commonFaqsMod.COMMON_API_FAQS,
+		GLOBAL_FAQS: commonFaqsMod.GLOBAL_FAQS,
 		INDUSTRIES_LIST: industriesMod.ACTIVE_INDUSTRIES_LIST,
 		SOLUTIONS_LIST: solutionsMod.ACTIVE_SOLUTIONS_LIST,
 		renderProductMarkdown: renderProductMod.renderProductMarkdown,

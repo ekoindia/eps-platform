@@ -10,7 +10,8 @@ import { clearConnectTokens, ensureConnectTokens } from "@/lib/connect/token";
 import { attachWidgetEvents } from "@/lib/connect/widget-events";
 import { authClient } from "@/lib/auth/client";
 import { CONNECT_WIDGET_URL, SHOW_CONNECT_WIDGET } from "@/lib/config/features";
-import { resetWalletBalanceCache } from "@/lib/wallet-balance";
+import { pushDataLayer, redactIdentifiers } from "@/lib/analytics";
+import { setWalletBalance } from "@/lib/wallet-balance";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -177,11 +178,10 @@ export function ConnectWidget({
 	useEffect(() => {
 		if (status !== "ready") return;
 		return attachWidgetEvents({
-			onBalanceChanged: () => {
-				// The flow just moved the balance, so the cached one is wrong. This is
-				// the in-page flow the cache's own note anticipated.
-				resetWalletBalanceCache();
-			},
+			// The flow reports the post-transaction balance itself, so record it
+			// rather than invalidating and spending a round trip re-asking for a
+			// number we were just handed. The console rail repaints on the push.
+			onBalanceChanged: setWalletBalance,
 			onLoginAgain: () => {
 				void (async () => {
 					// Rotate our session first — that is what re-seals the upstream
@@ -222,6 +222,17 @@ export function ConnectWidget({
 					});
 				});
 			},
+			onTrackEvent: ({ category, action, label }) => {
+				// The label is the flow's own breadcrumb, written in another codebase
+				// and forwarded to Google — scrub anything that could be a customer's
+				// number before it leaves.
+				pushDataLayer("connect_widget", {
+					category,
+					action,
+					label: label ? redactIdentifiers(label) : undefined,
+					interaction_id: interactionId,
+				});
+			},
 			onCameraCapture: (options) => {
 				void openCamera(options).then((result) => {
 					// Unlike the editor, this one takes a bare data URL, not an object.
@@ -231,8 +242,12 @@ export function ConnectWidget({
 				});
 			},
 		});
+		// `interactionId` only tags the analytics events. Re-attaching when the flow
+		// changes is safe: React runs this cleanup and setup in the same commit, so
+		// there is no window in which an event could fall through.
 	}, [
 		status,
+		interactionId,
 		navigate,
 		openUrl,
 		showFile,

@@ -395,7 +395,7 @@ export interface PricingFaq {
 export const PRICING_FAQS: PricingFaq[] = [
 	{
 		q: "How does billing work?",
-		a: "Usage is billed per successful API call — you pay only for verifications that return a result. There is no monthly minimum and no lock-in. Monthly invoices are available on the Connect portal.",
+		a: "Usage is billed **per successful API call** — you pay only for verifications that return a result. There is **no monthly minimum and no lock-in**. Monthly invoices are available on the Connect portal.",
 	},
 	{
 		q: "Is there a setup fee?",
@@ -405,23 +405,23 @@ export const PRICING_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Are the listed prices inclusive of GST?",
-		a: "No. All listed rates are exclusive of GST, which is charged at 18%. The calculator lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number on the Connect portal for GST-compliant invoices.",
+		a: "No. All listed rates are **exclusive of GST**, which is charged at 18%. The [calculator](/pricing) lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number on the Connect portal for GST-compliant invoices.",
 	},
 	{
 		q: "Am I charged for failed verifications?",
-		a: "No. You are only billed for successful API responses. Failed or errored calls are not counted toward your usage.",
+		a: "No. You are only billed for **successful** API responses. Failed or errored calls are not counted toward your usage — see [Status & Error Codes](/docs/error-codes) for how success is determined.",
 	},
 	...(HAS_VOLUME_DISCOUNTS
 		? [
 				{
 					q: "Do you offer volume discounts?",
-					a: "Yes. Volume-based rates are built into the calculator — as your monthly volume grows, the applicable per-transaction rate drops automatically.",
+					a: "Yes. Volume-based rates are built into the [calculator](/pricing) — as your monthly volume grows, the applicable per-transaction rate **drops automatically**.",
 				},
 			]
 		: []),
 	{
 		q: "Is there a free sandbox to test the APIs?",
-		a: "Yes. Sandbox access is free — sign up, test every API end-to-end with sample data, and move to production whenever you're ready.",
+		a: "Yes. **Sandbox access is free** — sign up, test every API end-to-end with sample data, and move to production whenever you're ready. You can also run our [offline mock server](/ai#artifacts) (`npx -y @ekoindia/eps-mock-server`) with no signup at all.",
 	},
 	{
 		q: "Can prices change?",

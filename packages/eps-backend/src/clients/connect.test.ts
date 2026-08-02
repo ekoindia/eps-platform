@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { EkoLogEntry } from "../audit/ekoLog";
 import {
 	createConnectClient,
 	mapConnectLogin,
@@ -230,6 +231,18 @@ describe("createConnectClient", () => {
 		expect((init as RequestInit).headers).not.toHaveProperty("X-Real-IP");
 	});
 
+	it("sends a client_ref_id within connect-api's 1..10 character limit", async () => {
+		// connect-api validates this field on /authentication/sendotp and answers
+		// response_status_id 1 ("Client reference Id length should be in between 1
+		// and 10") when it is missing or too long — which surfaced as a blanket
+		// 502 OTP_SEND_FAILED in production.
+		const f = fetchReturning({ response_status_id: 0 });
+		await createConnectClient(cfg, f).sendOtp({ mobile: "9990000001" });
+		const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+		const body = JSON.parse((init as RequestInit).body as string);
+		expect(body.client_ref_id).toMatch(/^[0-9a-f]{5,20}$/);
+	});
+
 	it("does not send api_partner_signup", async () => {
 		// connect-api overrides the role for every mobile login anyway, so sending
 		// it would imply a guarantee we do not get.
@@ -276,5 +289,136 @@ describe("createConnectClient", () => {
 		await expect(
 			createConnectClient(cfg, f).sendOtp({ mobile: "9" }),
 		).rejects.toThrow(/non-JSON/);
+	});
+});
+
+describe("createConnectClient upstream logging", () => {
+	/** Captures entries instead of serializing, so assertions read the raw shape. */
+	function captureLogger() {
+		const entries: EkoLogEntry[] = [];
+		return { entries, logger: { log: (e: EkoLogEntry) => entries.push(e) } };
+	}
+
+	function fetchReturning(body: unknown, status = 200) {
+		return vi.fn(
+			async () =>
+				new Response(JSON.stringify(body), {
+					status,
+					headers: { "content-type": "application/json" },
+				}),
+		) as unknown as typeof fetch;
+	}
+
+	it("logs the upstream envelope for a business-level failure", async () => {
+		// THE REGRESSION: this envelope was the entire cause of a production
+		// send-OTP outage and nothing recorded it. A 200 with a non-zero
+		// response_status_id must leave a line behind.
+		const { entries, logger } = captureLogger();
+		const f = fetchReturning({
+			response_status_id: 1,
+			message: "Client reference Id length should be in between 1 and 10",
+		});
+		await createConnectClient(cfg, f, logger).sendOtp({ mobile: "9990000001" });
+		expect(entries).toHaveLength(1);
+		expect(entries[0].path).toBe("/authentication/sendotp");
+		expect(entries[0].status).toBe(200);
+		expect(entries[0].response).toMatchObject({
+			response_status_id: 1,
+			message: "Client reference Id length should be in between 1 and 10",
+		});
+	});
+
+	it("logs exactly once on every exit path", async () => {
+		const cases: Array<[string, typeof fetch]> = [
+			["success", fetchReturning({ response_status_id: 0 })],
+			["non-2xx with JSON", fetchReturning({ error: "boom" }, 500)],
+			[
+				"non-2xx with non-JSON",
+				vi.fn(
+					async () => new Response("<html>502</html>", { status: 502 }),
+				) as unknown as typeof fetch,
+			],
+			[
+				"2xx with non-JSON",
+				vi.fn(
+					async () => new Response("<html>ok?</html>", { status: 200 }),
+				) as unknown as typeof fetch,
+			],
+			[
+				"transport failure",
+				vi.fn(async () => {
+					throw new Error("ECONNREFUSED");
+				}) as unknown as typeof fetch,
+			],
+			[
+				"body read failure",
+				vi.fn(async () => ({
+					status: 200,
+					ok: true,
+					text: async () => {
+						throw new Error("socket reset mid-body");
+					},
+				})) as unknown as typeof fetch,
+			],
+		];
+		for (const [label, f] of cases) {
+			const { entries, logger } = captureLogger();
+			await createConnectClient(cfg, f, logger)
+				.sendOtp({ mobile: "9" })
+				.catch(() => {});
+			expect(entries, `${label} should log exactly one line`).toHaveLength(1);
+		}
+	});
+
+	it("records a transport failure with no status, then rethrows", async () => {
+		const { entries, logger } = captureLogger();
+		const f = vi.fn(async () => {
+			throw new Error("ECONNREFUSED");
+		}) as unknown as typeof fetch;
+		await expect(
+			createConnectClient(cfg, f, logger).sendOtp({ mobile: "9" }),
+		).rejects.toThrow(/ECONNREFUSED/);
+		expect(entries[0].status).toBeUndefined();
+		expect(entries[0].error).toMatch(/ECONNREFUSED/);
+	});
+
+	it("captures a non-JSON body in the log before throwing", async () => {
+		const { entries, logger } = captureLogger();
+		const f = vi.fn(
+			async () => new Response("<html>gateway</html>", { status: 200 }),
+		) as unknown as typeof fetch;
+		await expect(
+			createConnectClient(cfg, f, logger).sendOtp({ mobile: "9" }),
+		).rejects.toThrow(/non-JSON/);
+		expect(entries[0].error).toBe("non-JSON response body");
+		expect(entries[0].response).toMatchObject({
+			nonJson: "<html>gateway</html>",
+		});
+	});
+
+	it("logs only multipart part NAMES, never the uploaded file contents", async () => {
+		// This transport carries KYC scans and selfies.
+		const { entries, logger } = captureLogger();
+		const f = fetchReturning({ response_status_id: 0 });
+		const file = new File(["SECRET-SCAN-BYTES"], "pan.jpg", {
+			type: "image/jpeg",
+		});
+		await createConnectClient(cfg, f, logger).uploadInteraction(
+			"token",
+			{ interaction_type_id: "523" },
+			[{ name: "file1", file }],
+		);
+		expect(entries[0].fields).toEqual({ multipart_parts: "formdata,file1" });
+		expect(JSON.stringify(entries[0].fields)).not.toContain("SECRET-SCAN");
+	});
+
+	it("stays silent by default so existing call sites log nothing", async () => {
+		// createConnectClient's logger arg is optional; the default must be the
+		// no-op, not console.
+		const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const f = fetchReturning({ response_status_id: 0 });
+		await createConnectClient(cfg, f).sendOtp({ mobile: "9" });
+		expect(spy).not.toHaveBeenCalled();
+		spy.mockRestore();
 	});
 });

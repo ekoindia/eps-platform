@@ -6,6 +6,7 @@ import {
 	gettingStartedNotice,
 	h1,
 	h3,
+	h4,
 	indexPageNotice,
 	joinBlocks,
 	link,
@@ -18,6 +19,42 @@ export interface FaqMarkdownItem {
 	question?: string;
 	answer?: string;
 	links?: Array<{ label: string; href: string }>;
+}
+
+/**
+ * Render a list of FAQs as markdown blocks: a heading per question, the answer
+ * (already markdown), and an "Also see" line of links. Shared by `/faq.md` and
+ * the `<FaqList>` expansion in guide twins, which nests them under its own
+ * headings and so needs a deeper level.
+ *
+ * @param faqs  - The FAQ entries to render, in order.
+ * @param level - Heading level for the question: 3 (default) or 4.
+ */
+export function faqBlocks(faqs: FaqMarkdownItem[], level: 3 | 4 = 3): string[] {
+	const heading = level === 4 ? h4 : h3;
+	const blocks: string[] = [];
+
+	for (const faq of faqs) {
+		const question = faq.q ?? faq.question;
+		const answer = faq.a ?? faq.answer;
+		if (!question && !answer) continue;
+		blocks.push(heading(question ?? ""));
+		if (answer) blocks.push(answer);
+		if (faq.links?.length) {
+			const rendered = faq.links
+				.map((l) =>
+					link(
+						l.label,
+						l.href.startsWith("/") ? `${SITE_URL}${l.href}` : l.href,
+						"md",
+					),
+				)
+				.join(" · ");
+			blocks.push(`Also see: ${rendered}`);
+		}
+	}
+
+	return blocks;
 }
 
 /**
@@ -41,25 +78,7 @@ export function renderFaqMarkdown(faqs: FaqMarkdownItem[]): string {
 		"Common questions about integrating Eko's APIs, across all products.",
 	];
 
-	for (const faq of faqs) {
-		const question = faq.q ?? faq.question;
-		const answer = faq.a ?? faq.answer;
-		if (!question && !answer) continue;
-		blocks.push(h3(question ?? ""));
-		if (answer) blocks.push(answer);
-		if (faq.links?.length) {
-			const rendered = faq.links
-				.map((l) =>
-					link(
-						l.label,
-						l.href.startsWith("/") ? `${SITE_URL}${l.href}` : l.href,
-						"md",
-					),
-				)
-				.join(" · ");
-			blocks.push(`Also see: ${rendered}`);
-		}
-	}
+	blocks.push(...faqBlocks(faqs));
 
 	blocks.push(gettingStartedNotice(), indexPageNotice());
 

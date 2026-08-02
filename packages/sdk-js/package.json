@@ -22,12 +22,13 @@
 	"scripts": {
 		"bake": "node scripts/bake-surface.mjs",
 		"build": "tsup",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"prepublishOnly": "npm run bake && npm run build"
 	},
 	"devDependencies": {
 		"tsup": "^8.0.0",
-		"typescript": "^5.8.3",
+		"typescript": "^6.0.3",
 		"vitest": "^3.2.4"
 	},
 	"engines": {

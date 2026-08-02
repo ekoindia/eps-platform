@@ -171,7 +171,7 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 				onClick={onNavigate}
 				className={itemClass(current === docsHref())}
 			>
-				Overview
+				Get Started
 			</Link>
 
 			{nav.guides.length > 0 && (

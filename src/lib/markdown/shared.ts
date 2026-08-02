@@ -121,6 +121,7 @@ export const slabValue = (slab: SlabLike): string =>
 export const h1 = (s: string) => `# ${s}`;
 export const h2 = (s: string) => `## ${s}`;
 export const h3 = (s: string) => `### ${s}`;
+export const h4 = (s: string) => `#### ${s}`;
 
 /** Output format for the products-index renderer: GitHub Markdown or plain text. */
 export type MarkdownFormat = "md" | "txt";

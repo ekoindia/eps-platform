@@ -8,7 +8,7 @@ import { FaqSection } from "@/components/sections/FaqSection";
 import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { SITE_OG_IMAGE, SITE_URL } from "@/lib/config/site";
-import { GLOBAL_FAQS } from "@/lib/data/api-product-pages";
+import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
 import { generateFaqJsonLd } from "@/lib/utils/json-ld";
 
 const PAGE_TITLE = "Frequently Asked Questions | Eko Platform Services API";

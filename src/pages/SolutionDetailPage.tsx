@@ -4,6 +4,7 @@ import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { SolutionPageLayout } from "@/components/SolutionPageLayout";
 import { AiHint } from "@/components/AiHint";
 import { SITE_URL } from "@/lib/config/site";
+import { faqPageJsonLd } from "@/lib/utils/json-ld";
 import NotFound from "@/pages/NotFound";
 
 const SolutionDetailPage = () => {
@@ -55,15 +56,7 @@ const SolutionDetailPage = () => {
 				</script>
 				{data.faqs.length > 0 && (
 					<script type="application/ld+json">
-						{JSON.stringify({
-							"@context": "https://schema.org",
-							"@type": "FAQPage",
-							mainEntity: data.faqs.map((faq) => ({
-								"@type": "Question",
-								name: faq.question,
-								acceptedAnswer: { "@type": "Answer", text: faq.answer },
-							})),
-						})}
+						{JSON.stringify(faqPageJsonLd(data.faqs))}
 					</script>
 				)}
 				<script type="application/ld+json">

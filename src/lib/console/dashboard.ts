@@ -208,8 +208,23 @@ export function deltaOf(
 	return { label: `${Math.abs(change).toFixed(1)}%`, up };
 }
 
-/** Parses an upstream bucket timestamp, tolerating a space separator. */
+/**
+ * Parses an upstream stamp as a LOCAL time, in either form upstream sends.
+ *
+ * Upstream mixes two: `2026-07-28 23:59:59` for windows, and a bare
+ * `2026-07-28` for usage buckets. `new Date` treats those differently — the
+ * space-separated form is local, the date-only form is ISO and therefore UTC —
+ * so left alone, a partner west of UTC would see every usage bar labelled a day
+ * earlier than the "Showing stats from…" line above it. Both are read as local
+ * here, so one calendar day means one calendar day everywhere.
+ * @param raw - `yyyy-MM-dd`, `yyyy-MM-dd HH:mm:ss` or `yyyy-MM-ddTHH:mm:ss`.
+ */
 function parseStamp(raw: string): Date {
+	const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.trim());
+	if (dateOnly) {
+		const [, year, month, day] = dateOnly;
+		return new Date(Number(year), Number(month) - 1, Number(day));
+	}
 	return new Date(raw.replace(" ", "T"));
 }
 

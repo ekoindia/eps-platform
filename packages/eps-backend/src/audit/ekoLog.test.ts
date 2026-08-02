@@ -104,7 +104,10 @@ describe("createEkoLogger", () => {
 describe("redaction", () => {
 	it("redacts okekeys from request fields at full level", () => {
 		const lines: string[] = [];
-		const logger = createEkoLogger({ level: "full", sink: (l) => lines.push(l) });
+		const logger = createEkoLogger({
+			level: "full",
+			sink: (l) => lines.push(l),
+		});
 		logger.log({
 			fields: {
 				interaction_type_id: "5",
@@ -126,7 +129,10 @@ describe("redaction", () => {
 
 	it("redacts pintwin_key from the response body at full level", () => {
 		const lines: string[] = [];
-		const logger = createEkoLogger({ level: "full", sink: (l) => lines.push(l) });
+		const logger = createEkoLogger({
+			level: "full",
+			sink: (l) => lines.push(l),
+		});
 		logger.log({
 			fields: { interaction_type_id: "10005" },
 			status: 200,
@@ -141,6 +147,73 @@ describe("redaction", () => {
 		// key_id is not secret on its own and aids debugging.
 		expect(rec.response.data.key_id).toBe(39);
 		expect(lines[0]).not.toContain("1974856302");
+	});
+
+	it("redacts connect-api credentials from request and response at full level", () => {
+		// A connect-api login carries the OTP up and a live session back. Assert on
+		// the VALUES: the keys legitimately survive as placeholders, so grepping
+		// for the key names would pass even with no redaction at all.
+		const lines: string[] = [];
+		const logger = createEkoLogger({
+			level: "full",
+			sink: (l) => lines.push(l),
+			type: "connect_upstream",
+		});
+		logger.log({
+			fields: { mobile: "9990000001", id_token: "654321", org_id: 1 },
+			path: "/authentication/login",
+			status: 200,
+			response: {
+				response_status_id: 0,
+				access_token: "AT-live-value",
+				refresh_token: "RT-live-value",
+				access_token_lite: "ATL-live-value",
+				details: { name: "Dev" },
+			},
+			durMs: 40,
+		});
+		expect(lines[0]).not.toContain("654321");
+		expect(lines[0]).not.toContain("AT-live-value");
+		expect(lines[0]).not.toContain("RT-live-value");
+		expect(lines[0]).not.toContain("ATL-live-value");
+		const rec = JSON.parse(lines[0]);
+		expect(rec.type).toBe("connect_upstream");
+		expect(rec.path).toBe("/authentication/login");
+		// Non-secret context must survive, or the log is useless for debugging.
+		expect(rec.response.details.name).toBe("Dev");
+		expect(rec.response.response_status_id).toBe(0);
+	});
+
+	it("redacts a credential nested below the top level", () => {
+		// connect-api posts JSON, so a token need not sit at the root the way it
+		// does in Eko's flat form encoding.
+		const lines: string[] = [];
+		createEkoLogger({ level: "full", sink: (l) => lines.push(l) }).log({
+			fields: { wrapper: { refresh_token: "RT-nested" } },
+			status: 200,
+			durMs: 1,
+		});
+		expect(lines[0]).not.toContain("RT-nested");
+	});
+
+	it("basic never emits request fields, secret or not", () => {
+		const lines: string[] = [];
+		createEkoLogger({ level: "basic", sink: (l) => lines.push(l) }).log({
+			fields: { mobile: "9990000001", id_token: "654321" },
+			path: "/authentication/login",
+			status: 200,
+			response: { response_status_id: 1, message: "Client reference Id" },
+			durMs: 3,
+		});
+		const rec = JSON.parse(lines[0]);
+		expect(lines[0]).not.toContain("654321");
+		expect(rec.request).toBeUndefined();
+		expect(rec.mobile).toBe("••••••0001");
+		// The summary that would have identified the production outage in one line.
+		expect(rec.response).toEqual({
+			response_status_id: 1,
+			message: "Client reference Id",
+		});
 	});
 
 	it("does not mutate the caller's objects", () => {

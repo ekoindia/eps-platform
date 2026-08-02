@@ -15,9 +15,26 @@ branch — loading skeleton, anon login card, `role: "signup"` → `/signup`
 redirect, admin card — and, for a developer session only, renders a 16rem left
 rail plus `<Outlet context={me}>`. Sub-pages read the session through
 `useConsoleMe()` and carry no auth logic; the rail never renders for an anon or
-admin session. The rail follows `DocsLayout`'s shape (sticky under the fixed
-~88px header, `Sheet` below `lg`) so the console and `/docs` read as one
-product. Flat by design — group captions are worth adding past ~5 items.
+admin session.
+
+The rail borrows `DocsLayout`'s shape outright so the console and `/docs` read as
+one product: a full-bleed 16rem `bg-slate-50` panel with a `border-r`, sticky
+under the fixed ~88px header, collapsing into a `Sheet` below `lg` (where the
+slate panel and border drop away). Its caption — `DEVELOPER CONSOLE` in the small
+uppercase style `DocsLayout` uses — **is** the page's `<h1>`; there is no separate
+page title above the grid, and sub-pages start at `<h2>`. Where docs puts its
+theme toggle, the console puts the account's lifecycle badge, reading the same
+copy as `LifecycleCard` through its exported `lifecycleBadge()`. Only the
+developer branch is full-bleed; the anon/admin/loading cards keep the old
+container and their own `<h1>`.
+
+Links are grouped under the docs rail's uppercase captions rather than flat:
+**Home** alone at the top, then **Account** (Upload Documents, Load Wallet, Sign
+Agreement, Credentials, Manage My Account) and **Build & Monitor** (Transactions,
+plus the DEV-only Test bench). A group whose items are all unentitled renders
+nothing rather than an empty caption. An `API Docs ↗` link closes the rail. Order
+within a group is entitlement-independent and pinned by
+`ConsoleLayout.nav.test.tsx`, which also guards the single-`h1`/`<main>` contract.
 
 The console's index page (`/console`) is the **Business Dashboard** — call
 volume, success rates, most-used services and usage over time, from upstream
@@ -33,8 +50,9 @@ mirroring Eloka's always-visible `StatusCard`. It sits outside `<nav>`: it is
 account state, not navigation. It fetches `GET /wallet/balance` on mount, offers
 a manual refresh on a 30s cooldown, and renders **nothing** on a 403 (the
 account has no wallet) rather than showing an empty card. Eloka's "Load balance"
-(+) action is deliberately not ported — the console has no transaction pages to
-route to.
+(+) action sits beside the refresh button for accounts entitled to the flow, and
+links to the same `/console/transaction/:id` route the rail's Load Wallet item
+does.
 
 The fetched balance is cached in module scope (`src/lib/wallet-balance.ts`), not
 in the component. `AnimatedRoutes` keys the whole route subtree on the pathname
@@ -52,7 +70,7 @@ session goes anon (keyed on the state, so an expired session counts, not just
 previous one's balance.
 
 The rail column renders once at every width — only the *links* collapse into the
-`Sheet` below `lg`, while the balance stays on screen. A balance hidden behind a
+`Sheet` below `lg`, while the caption, badge and balance stay on screen. A balance hidden behind a
 hamburger isn't the always-visible one Eloka has. (A second `WalletBalance` in
 the `Sheet` would no longer double the round-trips — the shared cache and
 in-flight dedupe cover that — but it would still be the wrong shape.) Refresh is
@@ -76,6 +94,7 @@ Two failure modes are deliberately distinct: an ineligible account answers **403
 | Route | Page | Contents |
 |---|---|---|
 | `/console` | `pages/console/ConsoleHome.tsx` | Lifecycle overview card (`STATE_COPY`) |
+| `/console/profile` | `pages/console/Profile.tsx` | My Profile — identity, onboarding progress, personal details |
 | `/console/documents` | `pages/console/Documents.tsx` | Upload Documents — KYC pack, see [`features/kyc-documents.md`](./features/kyc-documents.md) |
 | `/console/credentials` | `pages/console/Credentials.tsx` | Shared UAT keypair + production-key status |
 | `/console/transactions` | `pages/console/Transactions.tsx` | Transaction history — see [`features/transaction-history.md`](./features/transaction-history.md) |
@@ -97,6 +116,57 @@ endpoint lands (see "API keys management" below), the fetch goes there.
 Self-serve signup now exists at `/signup` (OTP → partial account → PAN → PIN),
 feeding new users into this same lifecycle gate. See
 [`docs/features/user-onboarding.md`](./features/user-onboarding.md).
+
+### My Profile
+
+`/console/profile` ports Eloka's profile page (`wlc-webapp/page-components/Profile`)
+to the console. It is reached from **My Profile** in the header account dropdown
+(`components/auth/UserMenu.tsx`), shown only for a developer session — an admin's
+`/me` carries no Eko profile. There is no rail entry.
+
+The page issues no request of its own; it reads the `MeView` the layout already
+fetched, via `useConsoleMe()`. Three blocks:
+
+- **Identity card** — name, user type, user code and mobile, over the brand
+  gradient. Initials come from `accountIdentity()`, the same derivation the
+  header menu uses, so a session with no profile still renders.
+- **Profile completeness** — onboarding progress, NOT Eloka's shop+personal field
+  checklist (those fields are opaque to us, and Eloka's own count treats an
+  absent key as complete). `profileCompleteness()` in `lib/auth/identity.ts`
+  reads `onboardingSteps` (the full ordered list) against `roleList` (the steps
+  still pending) — the same projection `eps-backend/src/signup/service.ts` makes.
+- **Manage My Account** — the children of interaction 536, read from the cached
+  interaction list with `groupChildren()`. The rows are upstream's and follow the
+  user's role; each deep-links to `/console/transaction/536/<childId>`.
+- **Personal details** — gender, DOB, qualification, marital status, from the
+  `personal_detail` block (below). Editing links out to `/console/transaction/401`
+  when the user is entitled to that flow, rather than reimplementing upstream's
+  form: the BFF exposes no profile-write endpoint.
+
+#### Profile detail blocks
+
+Interaction 151 returns `personal_detail` / `shop_detail` / `business_detail`
+beside `user_detail`. `EkoProfile.detailBlocks` forwards them, and `/me` serves
+them to the page. The block names are an **allowlist**
+(`PROFILE_DETAIL_BLOCKS` in `clients/eko.ts`), not a passthrough of every sibling
+key: whatever lands there is readable by anything running in the page, so a block
+upstream adds later must be reviewed before it ships. Contents stay untyped and
+are read with `detailField()`, which tolerates upstream's singular/plural spelling.
+
+#### Session cache
+
+`lib/auth/session-cache.ts` parks the resolved `/me` view in `sessionStorage`
+(`eps.session.me`) so a tab reload paints the signed-in shell immediately instead
+of the skeleton. `AuthProvider` hydrates from it in an **effect** — never in the
+`useState` initializer, because `main.tsx` hydrates prerendered HTML built with
+`status: "loading"`, and a synchronous read would trip a hydration mismatch.
+
+The cached view is display data only. Every request still carries the session
+cookie, so a cache outliving the cookie shows a name for one paint and then drops
+to `anon` when `/me` 401s; `refresh()` runs unconditionally on every boot. The
+blob is versioned and validated on read (a primitive would throw inside
+`classify()`'s `"role" in me`), and cleared whenever the state reaches `anon`,
+which covers expiry as well as explicit logout.
 
 Picking up where signup stops, `/console/documents` ("Upload Documents") is the
 KYC document pack — the checklist a user uploads to get the account activated.

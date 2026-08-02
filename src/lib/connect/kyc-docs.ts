@@ -67,6 +67,34 @@ export interface KycDocConfig {
 	pages?: number;
 	/** What each page is, in order. Falls back to "Page 1", "Page 2", … */
 	pageLabels?: string[];
+	/**
+	 * A blank of this document to download, fill in, sign and upload back.
+	 *
+	 * A root-relative path into `public/kyc-samples/`, e.g.
+	 * `/kyc-samples/authorisation-letter.docx`. For the documents whose wording is
+	 * ours to dictate — a letter, a declaration, an undertaking — where a partner
+	 * left to invent their own only finds out it was wrong at review. Absent for
+	 * anything that exists independently of us: a PAN card has no blank.
+	 *
+	 * Upstream's list has no field for this, and the file is committed rather than
+	 * fetched, so a sample and the console that describes it ship together.
+	 * `kyc-docs.test.ts` pins that every configured path is a file that exists.
+	 */
+	sampleUrl?: string;
+	/**
+	 * A notice shown in the upload dialog, above the slots. **Markdown**, GFM.
+	 *
+	 * For what a partner must know *before* picking a file — whose signature is
+	 * needed, what has to be on the letterhead, what review rejects — where
+	 * upstream's one-line `info` cannot carry a list. Only worth writing when it
+	 * changes what the user attaches; a notice nobody needs is a notice nobody
+	 * reads.
+	 *
+	 * Rendered by `react-markdown` with `remark-gfm` and without `rehype-raw`, so
+	 * embedded HTML is shown as text rather than parsed. The copy is ours, from
+	 * this file — never upstream's, which is not trusted with markup.
+	 */
+	instructions?: string;
 	/** Narrows {@link KYC_ACCEPT} for this document, e.g. images only. */
 	accept?: string;
 	/** The camera as the only source: no file picker, no drag and drop. */
@@ -132,20 +160,95 @@ export interface KycDocConfig {
  * MARK: Docs Config
  */
 export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
+	// Aadhaar Card
 	// Two identical "Page 1 / Page 2" slots is how a user ends up attaching the
 	// front twice and hearing about it a week later, at review.
 	//
 	// Photographed far more often than scanned, and a phone rarely gets a whole
 	// card square in one frame — so each side may take several shots, combined
 	// into one PDF per side.
-	"1": { pageLabels: ["Aadhaar front", "Aadhaar back"], multiple: true },
+	"1": {
+		pageLabels: ["Aadhaar front", "Aadhaar back"],
+		multiple: true,
+		instructions:
+			"- The Aadhaar copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the Aadhaar copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.",
+	},
 
+	// PAN Card (2 = Personal, 15 = Director's)
 	// Same reasoning as Aadhaar: a photographed card, sometimes worth two shots.
 	// Both PAN codes upstream uses — `2` and the `15` that the 586 sample calls
 	// "Director PAN Card" — so whichever one a given account is asked for
 	// behaves the same.
-	"2": { multiple: true },
-	"15": { multiple: true },
+	"2": {
+		multiple: true,
+		instructions:
+			"- The PAN copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the PAN copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
+	},
+	"15": {
+		multiple: true,
+		instructions:
+			"- The PAN copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the PAN copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
+	},
+
+	// MOA - Memorandum of Association
+	"4": {
+		name: "Memorandum of Association (MOA)",
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// AOA - Company articles of association
+	"5": {
+		name: "Company Articles of Association (AOA)",
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// Certificate of Incorporation (COI)
+	"6": {
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// Bank Statement (of company)
+	"7": {
+		instructions:
+			"Company bank statement must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// Company PAN
+	"8": {
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// 9: Address Proof (Electricity Bill, Rent Agreement, or Lease Agreement)
+
+	// LLP Agreement
+	"10": {
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// Partnership Deed
+	"11": {
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// Company Registration Certificate
+	"12": {
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
+
+	// BR-Board Resolution - Show a sample file
+	"14": {
+		name: "Board Resolution (BR)",
+		sampleUrl: "/kyc-samples/Board_Resolution_Format.docx",
+		instructions:
+			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	},
 
 	// The live photograph. Upstream's name spells out the capture instructions
 	// ("with Location Coordinates", and an `info` naming a third-party GPS camera
@@ -169,6 +272,16 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 		cameraOnly: true,
 		multiple: true,
 		watermark: true,
+		info: "Capture the live photographs of all your directors",
+		instructions:
+			"- If you represent a company, capture the live photographs of **all directors**.\n  - Start with capturing the first photograph\n  - then, you will get option to add more.",
+	},
+
+	// GST Certificate (or, UDYAM for Sole Propreietor Firms)
+	"25": {
+		name: "GST Registration (or, Udyam) Certificate",
+		instructions:
+			"- If you are a **Sole Proprietor** Firm and don't have a GST registration certificate, please **upload your Udyam certificate**.\n- Company GST must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 };
 

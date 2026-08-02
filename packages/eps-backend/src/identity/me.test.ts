@@ -16,6 +16,7 @@ const profile: EkoProfile = {
 	onboardingSteps: [],
 		accounts: [],
 		evalueAccountId: null,
+		detailBlocks: {},
 };
 
 describe("deriveStateFromProfile", () => {
