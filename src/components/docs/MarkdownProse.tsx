@@ -52,7 +52,7 @@ export const MarkdownProse = ({
 	<div
 		className={cn(
 			"docs-inline-code-prose text-[0.9375rem] leading-relaxed text-foreground/80",
-			"[&_a]:font-medium [&_a]:text-eko-navy [&_a]:underline dark:[&_a]:text-eko-gold",
+			"[&_a]:font-medium [&_a]:text-eko-gold-ink [&_a]:underline dark:[&_a]:text-eko-gold",
 			"[&_strong]:font-semibold [&_strong]:text-foreground",
 			"[&_p]:my-0 [&_p+p]:mt-3",
 			"[&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1",

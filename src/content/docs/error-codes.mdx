@@ -7,13 +7,13 @@ a business error — always check both.
 
 ## HTTP Status Codes
 
-| Code  | Meaning                                                       |
-| ----- | ------------------------------------------------------------- |
-| `200` | OK — response returned by our system.                         |
-| `403` | Forbidden — incorrect `secret-key` or timestamp.              |
-| `404` | Not Found — wrong request URL.                                |
-| `415` | Unsupported Media Type — wrong `Content-Type` header.         |
-| `500` | Internal Server Error — connectivity or URL misconfiguration. |
+| Code  | Meaning                                                                                                                                                                                      |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200` | OK — response returned by our system.                                                                                                                                                        |
+| `403` | Forbidden — incorrect `secret-key` or timestamp. See [how authentication works](/docs/how-auth-works) or [test your generated secret-key](/docs/how-auth-works#try-it-secret-key-playground) |
+| `404` | Not Found — wrong request URL.                                                                                                                                                               |
+| `415` | Unsupported Media Type — wrong `Content-Type` header.                                                                                                                                        |
+| `500` | Internal Server Error — connectivity or URL misconfiguration.                                                                                                                                |
 
 ## The Response Structure
 

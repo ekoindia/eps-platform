@@ -16,6 +16,9 @@
 	--color-eko-gold: hsl(42 96% 54%);
 	--color-eko-gold-hover: hsl(42 96% 48%);
 	--color-eko-gold-light: hsl(42 96% 95%);
+	/* Body-text gold: brand gold is ~2.1:1 on white, this is ~4.8:1 (WCAG AA).
+	   Use for prose links in light mode; keep --color-eko-gold on dark. */
+	--color-eko-gold-ink: hsl(42 96% 30%);
 	--color-eko-navy: hsl(195 91% 15%);
 	--color-eko-navy-light: hsl(195 60% 25%);
 	--color-eko-slate: hsl(0 0% 33%);
