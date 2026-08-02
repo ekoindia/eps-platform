@@ -38,7 +38,7 @@ docs/local-roadmap/
 
 # Graphify (https://github.com/Graphify-Labs/graphify)
 graphify-out/cost.json
-graphify-out/cache/            # regenerable; content hashes trip gitleaks' entropy rule
+graphify-out/cache/
 
 
 # Ignore TypeScript incremental compilation cache
