@@ -1125,9 +1125,9 @@
     "semantic_hash": "79d1dc170576bac94cad57ad3e040e56"
   },
   "src/components/connect/PrintReceipt.tsx": {
-    "mtime": 1785202817.6387267,
-    "ast_hash": "433b91dcb33b545e1669fd006fd9a46f",
-    "semantic_hash": "433b91dcb33b545e1669fd006fd9a46f"
+    "mtime": 1785650114.5744607,
+    "ast_hash": "bdc1242e51f7fa82824fcf7b7985e600",
+    "semantic_hash": ""
   },
   "src/components/connect/RaiseIssueDialog.tsx": {
     "mtime": 1785313673.375244,
