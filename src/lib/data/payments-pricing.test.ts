@@ -13,7 +13,14 @@ import {
 	EARNINGS_PRODUCTS,
 	EARNINGS_PRODUCTS_MAP,
 	MAX_TXNS,
+	BC_SETUP_FEE,
+	bcSetupFeeFaqAnswer,
+	calcPaymentsSetupFee,
 } from "@/lib/data/payments-pricing";
+import {
+	SETUP_FEE_DISCOUNT_PERCENT,
+	applySetupFeeDiscount,
+} from "@/lib/data/api-pricing";
 
 describe("DMT_SLABS", () => {
 	it("is ascending and contiguous (VLOOKUP-safe)", () => {
@@ -143,5 +150,70 @@ describe("EARNINGS_PRODUCTS", () => {
 	it("has unique URL-stable ids", () => {
 		const ids = EARNINGS_PRODUCTS.map((p) => p.id);
 		expect(new Set(ids).size).toBe(ids.length);
+	});
+});
+
+describe("calcPaymentsSetupFee", () => {
+	const bbpsIds = BBPS_CATEGORIES.slice(0, 3).map((c) => c.id);
+
+	it("charges once per API family, however many BBPS categories are picked", () => {
+		expect(calcPaymentsSetupFee(bbpsIds).amount).toBe(BC_SETUP_FEE);
+		expect(calcPaymentsSetupFee(["aeps-cashout", "aeps-mini"]).amount).toBe(
+			BC_SETUP_FEE,
+		);
+	});
+
+	it("adds up across families", () => {
+		expect(
+			calcPaymentsSetupFee(["dmt", "aeps-cashout", bbpsIds[0]]).amount,
+		).toBe(BC_SETUP_FEE * 3);
+	});
+
+	it("ignores unknown ids and charges nothing for an empty selection", () => {
+		expect(calcPaymentsSetupFee([]).amount).toBe(0);
+		expect(calcPaymentsSetupFee(["not-a-product"]).amount).toBe(0);
+	});
+
+	it("applies the site-wide discount and GST", () => {
+		const quote = calcPaymentsSetupFee(["dmt"]);
+		expect(quote.discountPercent).toBe(SETUP_FEE_DISCOUNT_PERCENT);
+		expect(quote.payable).toBe(
+			applySetupFeeDiscount(BC_SETUP_FEE * 100, SETUP_FEE_DISCOUNT_PERCENT),
+		);
+		expect(quote.total).toBeCloseTo(quote.payable * 1.18, 2);
+	});
+});
+
+describe("calcEarningsQuote setup fee", () => {
+	it("only counts families with non-zero transactions", () => {
+		const quote = calcEarningsQuote([
+			{ productId: "dmt", monthlyTxns: 100 },
+			{ productId: "aeps-cashout", monthlyTxns: 0 },
+		]);
+		expect(quote.setupFee.amount).toBe(BC_SETUP_FEE);
+	});
+
+	it("keeps the one-time cost out of the commission totals", () => {
+		const quote = calcEarningsQuote([{ productId: "dmt", monthlyTxns: 100 }]);
+		// Holds at every discount level, including a full waiver (payable 0).
+		expect(quote.setupFee.amount).toBeGreaterThan(0);
+		expect(quote.totalAfterTds).toBeLessThan(quote.total);
+		expect(quote.total).toBeCloseTo(quote.lines[0].monthlyEarnings, 2);
+	});
+});
+
+describe("bcSetupFeeFaqAnswer", () => {
+	it("never promises a waiver it is not running", () => {
+		expect(bcSetupFeeFaqAnswer(100)).toContain("fully waived");
+		expect(bcSetupFeeFaqAnswer(50)).toContain("50% off");
+		expect(bcSetupFeeFaqAnswer(0)).not.toContain("limited-time");
+	});
+
+	it("always names the per-family fee", () => {
+		for (const percent of [0, 50, 100]) {
+			expect(bcSetupFeeFaqAnswer(percent)).toContain(
+				BC_SETUP_FEE.toLocaleString("en-IN"),
+			);
+		}
 	});
 });

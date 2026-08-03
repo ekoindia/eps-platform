@@ -5,7 +5,9 @@ import {
 	HAS_VOLUME_DISCOUNTS,
 	PRICING_FAQS,
 	PRICING_GROUPS,
-	SETUP_FEE_WAIVED,
+	SETUP_FEE_DISCOUNTED,
+	SETUP_FEE_DISCOUNT_PERCENT,
+	VERIFICATION_SETUP_FEE,
 	displayName,
 	type PricedApi,
 } from "@/lib/data/api-pricing";
@@ -14,6 +16,7 @@ import {
 	AEPS_MINI_STATEMENT_COMMISSION,
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
+	BC_SETUP_FEE,
 	DMT_CUSTOMER_FEE_MIN,
 	DMT_CUSTOMER_FEE_PCT,
 	DMT_MAX_TXN_AMOUNT,
@@ -87,9 +90,11 @@ export function renderPricingMarkdown(): string {
 		}),
 		canonicalNotice(canonical),
 		h1("EPS API Pricing — Full Rate Card & Commissions"),
-		SETUP_FEE_WAIVED
+		SETUP_FEE_DISCOUNT_PERCENT >= 100
 			? "Transparent, pay-per-use API pricing. Setup fee waived for a limited time on verification APIs. No monthly minimums. Pay only for successful verifications."
-			: "Transparent, pay-per-use API pricing. No monthly minimums. Pay only for successful verifications.",
+			: SETUP_FEE_DISCOUNTED
+				? `Transparent, pay-per-use API pricing. ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. No monthly minimums. Pay only for successful verifications.`
+				: "Transparent, pay-per-use API pricing. No monthly minimums. Pay only for successful verifications.",
 		"This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Connected Banking charges.",
 		`Interactive pricing calculators (pick APIs, set monthly volumes, see your estimated cost or earnings) are available on the HTML page: ${canonical}`,
 		gettingStartedNotice(),
@@ -191,11 +196,18 @@ export function renderPricingMarkdown(): string {
 			`All listed rates exclude GST, charged at ${Math.round(GST_RATE * 100)}%.`,
 			"Billing is per successful API call — failed or errored calls are not charged.",
 			"No monthly minimums and no lock-in.",
-			...(SETUP_FEE_WAIVED
+			`One-time setup fee: ${formatAmount(VERIFICATION_SETUP_FEE)} per verification API and ${formatAmount(BC_SETUP_FEE)} per BC/Payments API family (DMT, AePS, BBPS), excl. GST.`,
+			...(SETUP_FEE_DISCOUNT_PERCENT >= 100
 				? [
 						"Setup fees are currently waived as a limited-time offer (₹0 to activate).",
 					]
-				: []),
+				: SETUP_FEE_DISCOUNTED
+					? [
+							`Setup fees are currently **${SETUP_FEE_DISCOUNT_PERCENT}% off** as a limited-time offer. A full waiver is available against a higher monthly volume commitment.`,
+						]
+					: [
+							"A full setup-fee waiver is available against a higher monthly volume commitment.",
+						]),
 			...(HAS_VOLUME_DISCOUNTS
 				? [
 						"Volume discounts apply automatically — higher monthly volumes get lower per-transaction rates.",

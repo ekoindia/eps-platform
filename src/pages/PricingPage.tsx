@@ -16,7 +16,9 @@ import { SITE_URL } from "@/lib/config/site";
 import {
 	HAS_VOLUME_DISCOUNTS,
 	PRICING_FAQS,
-	SETUP_FEE_WAIVED,
+	SETUP_FEE_DISCOUNTED,
+	SETUP_FEE_DISCOUNT_PERCENT,
+	SETUP_FEE_OFFER_LABEL,
 } from "@/lib/data/api-pricing";
 import { CB_FAQS } from "@/lib/data/connected-banking-pricing";
 import { PAYMENTS_FAQS } from "@/lib/data/payments-pricing";
@@ -83,15 +85,17 @@ const PricingPage = () => {
 								Transparent API pricing & partner commissions
 							</h1>
 							<p className="text-xl text-white/70 max-w-2xl mx-auto mb-8">
-								{SETUP_FEE_WAIVED
+								{SETUP_FEE_DISCOUNT_PERCENT >= 100
 									? "Pay per use for verification APIs — setup fee waived for a limited time. Earn commission on every DMT, AePS and BBPS transaction."
-									: "Pay per use for verification APIs. Earn commission on every DMT, AePS and BBPS transaction."}
+									: SETUP_FEE_DISCOUNTED
+										? `Pay per use for verification APIs — ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. Earn commission on every DMT, AePS and BBPS transaction.`
+										: "Pay per use for verification APIs. Earn commission on every DMT, AePS and BBPS transaction."}
 							</p>
 							<div className="flex flex-wrap justify-center gap-3">
-								{SETUP_FEE_WAIVED && (
+								{SETUP_FEE_DISCOUNTED && (
 									<span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-eko-gold/20 border border-eko-gold/40 text-sm font-semibold text-eko-gold">
 										<Sparkles className="w-4 h-4" />
-										₹0 setup fee — limited-time offer
+										{SETUP_FEE_OFFER_LABEL}
 									</span>
 								)}
 								{TRUST_CHIPS.map((chip) => (

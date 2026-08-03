@@ -1,4 +1,33 @@
+import {
+	SETUP_FEE_DISCOUNT_PERCENT,
+	VERIFICATION_SETUP_FEE,
+	clampDiscountPercent,
+	sentences,
+} from "@/lib/data/api-pricing";
 import { API_PRODUCTS, API_PRODUCTS_MAP } from "@/lib/data/api-products";
+import { BC_SETUP_FEE } from "@/lib/data/payments-pricing";
+
+/**
+ * "Is there a per-seat or platform fee?" — the setup-fee half of the answer,
+ * in the three discount states. Unlike the generic `SETUP_FEE_CLAUSE` this
+ * spells out the actual fee, so it needs its own state-specific wording (a
+ * bare "No setup fee." after "a setup fee applies" would contradict itself).
+ * The volume-commitment waiver is a standing commercial term, not campaign
+ * copy, so it holds at 0% too.
+ * @param raw - Discount percentage
+ */
+const industrySetupFeeAnswer = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	const standard = `A one-time setup fee applies per API — ₹${VERIFICATION_SETUP_FEE.toLocaleString("en-IN")} for a verification API and ₹${BC_SETUP_FEE.toLocaleString("en-IN")} per BC/Payments API family, excl. GST.`;
+	if (percent >= 100) {
+		return `${standard} It is fully waived right now as a limited-time offer.`;
+	}
+	const commitment =
+		"A full waiver is available against a higher monthly volume commitment.";
+	return percent > 0
+		? `${standard} It is currently ${percent}% off as a limited-time offer. ${commitment}`
+		: `${standard} ${commitment}`;
+};
 import type { LucideIcon } from "lucide-react";
 import {
 	Banknote,
@@ -2052,8 +2081,10 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 			},
 			{
 				question: "Is there a per-seat or platform fee?",
-				answer:
-					"No platform fee. Billing is purely per API call. Volume pricing tiers kick in at 1,000+ monthly calls.",
+				answer: sentences(
+					"No platform fee and no per-seat fee — recurring billing is purely per API call.",
+					industrySetupFeeAnswer(SETUP_FEE_DISCOUNT_PERCENT),
+				),
 			},
 			{
 				question: "Can my SaaS customers get their own API credentials?",
