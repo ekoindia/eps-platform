@@ -12,6 +12,8 @@ import {
 	introRow,
 	markInputCell,
 	protectSheet,
+	setupFeeLabel,
+	setupFeeNote,
 	solidFill,
 	type PricingXlsxData,
 } from "./shared";
@@ -80,14 +82,13 @@ export async function buildVerificationCalculatorSheet(
 	link.font = { size: 10, underline: true, color: { argb: "FF0563C1" } };
 	row++;
 
-	if (data.setupFeeWaived) {
-		const waived = fullWidthRow(
-			ws,
-			row,
-			"F",
-			"One-time setup fee: ₹0 — waived (limited-time offer).",
-		);
-		waived.font = { size: 10, italic: true, color: { argb: "FF475569" } };
+	const feeNote = setupFeeNote(
+		data.setupFeeDiscountPercent,
+		data.verificationSetupFee,
+	);
+	if (feeNote) {
+		const note = fullWidthRow(ws, row, "F", feeNote);
+		note.font = { size: 10, italic: true, color: { argb: "FF475569" } };
 		row++;
 	}
 
@@ -178,11 +179,15 @@ export async function buildVerificationCalculatorSheet(
 	const gstRow = summaryRow(`GST @ ${gstPct}%`, {
 		formula: `E${subtotalRow}*${data.gstRate}`,
 	});
+	// One-time fee — live, so it tracks whatever usage the reader types in.
+	// An API only attracts its fee once it has non-zero volume, matching the
+	// web calculator. (Setup-fee bundles are not modelled here.)
+	const netFactor = (100 - data.setupFeeDiscountPercent) / 100;
 	summaryRow(
-		data.setupFeeWaived
-			? "One-time setup fee (waived — limited-time offer)"
-			: "One-time setup fee",
-		0,
+		setupFeeLabel(data.setupFeeDiscountPercent),
+		{
+			formula: `SUMPRODUCT(--(D${firstDataRow}:D${lastDataRow}>0))*${data.verificationSetupFee}*${netFactor}`,
+		},
 		{ bold: false },
 	);
 	summaryRow(

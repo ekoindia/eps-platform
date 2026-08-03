@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { SetupFeeLine } from "@/components/pricing/SetupFeeLine";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -27,13 +27,6 @@ const QUICK_ADD_APIS = [
 	{ id: "bank-pennydrop", label: "Bank Pennydrop" },
 	{ id: "upi-vpa", label: "UPI ID" },
 ];
-
-/** Gold "Limited-time offer" pill shown next to the waived setup fee */
-const LimitedTimeOfferBadge = () => (
-	<Badge className="bg-eko-gold/15 text-amber-700 hover:bg-eko-gold/15 border-0 text-[10px] px-1.5">
-		Limited-time offer
-	</Badge>
-);
 
 /**
  * Live monthly estimate panel. Rendered in the desktop sticky sidebar and
@@ -132,36 +125,7 @@ export const QuoteSummary = ({
 						</div>
 
 						{/* One-time setup fee — separate from the monthly total */}
-						<div className="flex items-baseline justify-between gap-2 text-sm mb-3">
-							<span className="text-muted-foreground">
-								One-time setup fee
-								{setupFee.appliedPacks.length > 0 && (
-									<span className="text-xs text-muted-foreground/70">
-										{" "}
-										· {setupFee.appliedPacks.join(", ")}
-									</span>
-								)}
-							</span>
-							<span className="flex items-center gap-1.5 whitespace-nowrap">
-								{setupFee.waived ? (
-									<>
-										<LimitedTimeOfferBadge />
-										{setupFee.amount > 0 && (
-											<span className="text-xs text-muted-foreground/70 line-through tabular-nums">
-												{formatINR(setupFee.amount, 0)}
-											</span>
-										)}
-										<span className="font-medium text-eko-success tabular-nums">
-											₹0
-										</span>
-									</>
-								) : (
-									<span className="font-medium tabular-nums">
-										{formatINR(setupFee.payable, 0)}
-									</span>
-								)}
-							</span>
-						</div>
+						<SetupFeeLine quote={setupFee} includeGst={includeGst} />
 
 						<div className="rounded-xl bg-muted/60 px-4 py-3 mb-1">
 							<div className="flex items-end justify-between gap-2">

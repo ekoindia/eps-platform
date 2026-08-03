@@ -14,7 +14,13 @@
  * Rates sourced from the EPS Fintech API Commercial Proposal.
  */
 
-import type { PricingFaq } from "./api-pricing";
+import {
+	SETUP_FEE_DISCOUNT_PERCENT,
+	buildSetupFeeQuote,
+	clampDiscountPercent,
+	type PricingFaq,
+	type SetupFeeQuote,
+} from "./api-pricing";
 
 /**
  * One commission slab keyed on TRANSACTION AMOUNT (₹) — not monthly volume.
@@ -252,6 +258,13 @@ export interface EarningsProduct {
 	notes?: string;
 }
 
+/**
+ * One-time setup fee per BC/Payments API family (INR, excl. GST). Charged
+ * once per family — DMT, AePS and BBPS are one API each, however many BBPS
+ * bill categories a partner enables.
+ */
+export const BC_SETUP_FEE = 20_000;
+
 /** Hard cap for the monthly transaction-count input */
 export const MAX_TXNS = 10_000_000;
 /** Fallback cap for the avg transaction amount input when not product-capped */
@@ -443,7 +456,43 @@ export interface EarningsQuote {
 	totalAfterTds: number;
 	/** Total monthly transactions across lines */
 	totalTxns: number;
+	/** One-time setup fee — a COST, deliberately excluded from `total` */
+	setupFee: SetupFeeQuote;
 }
+
+/**
+ * "Is there a setup fee for DMT, AePS and BBPS?" answer, in the three
+ * discount states. The volume-commitment waiver is a standing commercial
+ * term, so it holds whether or not a campaign is running.
+ * @param raw - Discount percentage
+ */
+export const bcSetupFeeFaqAnswer = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	const standard = `Yes — a one-time setup fee of **₹${BC_SETUP_FEE.toLocaleString("en-IN")} per API family** (excl. GST) applies. DMT, AePS and BBPS are one API each, so enabling six BBPS bill categories still carries a single BBPS fee.`;
+	if (percent >= 100) {
+		return `${standard} It is **fully waived right now** as a limited-time offer — you pay ₹0 to activate.`;
+	}
+	const commitment =
+		"A full waiver is also available against a higher monthly volume commitment.";
+	return percent > 0
+		? `${standard} It is currently **${percent}% off** as a limited-time offer. ${commitment}`
+		: `${standard} ${commitment}`;
+};
+
+/**
+ * One-time setup fee for a payments selection. Charged once per API family
+ * (DMT / AePS / BBPS), so enabling six BBPS bill categories is still a single
+ * BBPS API. Products parked at zero transactions do not activate a fee.
+ * @param productIds - Selected EarningsProduct ids with non-zero volume
+ */
+export const calcPaymentsSetupFee = (productIds: string[]): SetupFeeQuote => {
+	const families = new Set(
+		productIds
+			.map((id) => EARNINGS_PRODUCTS_MAP[id]?.family)
+			.filter((family): family is EarningsProduct["family"] => Boolean(family)),
+	);
+	return buildSetupFeeQuote(families.size * BC_SETUP_FEE * 100);
+};
 
 /**
  * Clamps an average transaction amount to a product's supported range.
@@ -504,6 +553,11 @@ export const calcEarningsQuote = (
 		total: totalPaise / 100,
 		totalAfterTds: afterTdsPaise / 100,
 		totalTxns: lines.reduce((sum, line) => sum + line.monthlyTxns, 0),
+		setupFee: calcPaymentsSetupFee(
+			lines
+				.filter((line) => line.monthlyTxns > 0)
+				.map((line) => line.product.id),
+		),
 	};
 };
 
@@ -535,6 +589,10 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 	{
 		q: "Where can I find operator-wise BBPS commission rates?",
 		a: "The calculator uses category-level rates (conservative, lowest operator rate where rates vary). The downloadable Excel rate card lists commission for every BBPS operator — 100+ billers across electricity, insurance, EMI, FASTag, prepaid and more.",
+	},
+	{
+		q: "Is there a setup fee for DMT, AePS and BBPS?",
+		a: bcSetupFeeFaqAnswer(SETUP_FEE_DISCOUNT_PERCENT),
 	},
 	{
 		q: "Are the commission rates inclusive of GST?",

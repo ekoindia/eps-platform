@@ -14,6 +14,7 @@ import {
 	introRow,
 	markInputCell,
 	protectSheet,
+	setupFeeLabel,
 	solidFill,
 	type PricingXlsxData,
 } from "./shared";
@@ -187,10 +188,14 @@ export async function buildPaymentsEarningsSheet(
 
 	let firstDataRow = 0;
 	let lastDataRow = 0;
+	// Row span per API family — the setup fee is charged once per family, so
+	// the one-time row needs each block's range, not just the overall extent.
+	const familyRanges: { first: number; last: number }[] = [];
 	for (const group of groups) {
 		groupBandRow(ws, row, "G", group.label);
 		row++;
 
+		const familyFirstRow = row;
 		for (const def of group.rows) {
 			if (!firstDataRow) firstDataRow = row;
 			lastDataRow = row;
@@ -250,6 +255,7 @@ export async function buildPaymentsEarningsSheet(
 
 			row++;
 		}
+		familyRanges.push({ first: familyFirstRow, last: row - 1 });
 	}
 
 	row++; // spacer
@@ -289,6 +295,20 @@ export async function buildPaymentsEarningsSheet(
 	summaryRow("Indicative net monthly payout", `F${grossRow}-F${tdsRow}`, {
 		gold: true,
 	});
+
+	// One-time cost, deliberately below the payout headline and never netted
+	// off it. One fee per API family, activated by any non-zero txn count in
+	// that family's block — matching calcPaymentsSetupFee on the web.
+	const netFactor = (100 - data.setupFeeDiscountPercent) / 100;
+	const familyFees = familyRanges
+		.map(
+			({ first, last }) => `IF(SUM(D${first}:D${last})>0,${data.bcSetupFee},0)`,
+		)
+		.join("+");
+	summaryRow(
+		setupFeeLabel(data.setupFeeDiscountPercent),
+		familyFees ? `(${familyFees})*${netFactor}` : "0",
+	);
 
 	row++; // spacer
 

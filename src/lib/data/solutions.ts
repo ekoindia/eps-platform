@@ -1,4 +1,5 @@
 import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
+import { SETUP_FEE_CLAUSE, sentences } from "@/lib/data/api-pricing";
 import {
 	ACTIVE_PRODUCTS_MAP,
 	API_PRODUCTS_MAP,
@@ -218,8 +219,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "5 STQC-certified models pre-integrated",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-transaction. No setup fee. Sandbox is free. Agents earn ₹2–25 per transaction depending on service and amount. Eko shares interchange revenue with you under a transparent multi-tier structure.",
+		pricingBlurb: sentences(
+			"Pay-per-transaction.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free. Agents earn ₹2–25 per transaction depending on service and amount. Eko shares interchange revenue with you under a transparent multi-tier structure.",
+		),
 		faqs: [
 			{
 				question: "How long does AePS agent activation take?",
@@ -411,8 +415,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 			},
 			{ aspect: "Time to integrate", diy: "3–6 months", eko: "1–3 days" },
 		],
-		pricingBlurb:
-			"Pay-per-verification. Sandbox is free. Single invoice, single dashboard — no multi-vendor billing.",
+		pricingBlurb: sentences(
+			"Pay-per-verification.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free. Single invoice, single dashboard — no multi-vendor billing.",
+		),
 		faqs: [
 			// { question: "Is Eko's Fund Transfer API compliant with RBI Digital Lending Directions?", answer: "Yes. Eko's fund transfer API is designed for direct RE-to-borrower disbursals, with full audit trails meeting RBI Digital Lending Direction requirements on traceability and direct credit." },
 			// { question: "Can I bulk-verify 50,000 borrowers in a single batch?", answer: "Yes. The Lending KYC Pack supports bulk PAN and bank account verification via asynchronous batch APIs with webhook notifications on completion. Typical batch of 50,000 completes in 2–4 hours." },
@@ -576,8 +583,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Under 10 minutes",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-verification. No setup fee. Sandbox is free. Volume pricing available for 10,000+ monthly onboardings.",
+		pricingBlurb: sentences(
+			"Pay-per-verification.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free. Volume pricing available for 10,000+ monthly onboardings.",
+		),
 		faqs: [
 			{
 				question: "Does this pack work for ONDC seller onboarding?",
@@ -716,7 +726,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Minutes",
 			},
 		],
-		pricingBlurb: "Pay-per-assessment. No setup fee. Sandbox is free.",
+		pricingBlurb: sentences(
+			"Pay-per-assessment.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free.",
+		),
 		faqs: [
 			{
 				question: "How many quarters of GST data can I access?",
@@ -856,8 +870,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Biometric audit trail eliminates it",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-transaction. No setup fee. Sandbox is free. Special MFI pricing tiers available.",
+		pricingBlurb: sentences(
+			"Pay-per-transaction.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free. Special MFI pricing tiers available.",
+		),
 		faqs: [
 			{
 				question: "Does AePS work in areas with poor internet connectivity?",
@@ -1019,8 +1036,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Pay-per-API — <₹50 total",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-verification. No setup fee. Sandbox is free. Volume pricing at 1,000+ monthly BGVs.",
+		pricingBlurb: sentences(
+			"Pay-per-verification.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free. Volume pricing at 1,000+ monthly BGVs.",
+		),
 		faqs: [
 			{
 				question: "Is consent required for EPFO lookup?",
@@ -1151,8 +1171,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Agent point — instant",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-transaction. No setup fee. Sandbox is free. Special rural pricing tiers available for NGOs and SHG platforms.",
+		pricingBlurb: sentences(
+			"Pay-per-transaction.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox is free. Special rural pricing tiers available for NGOs and SHG platforms.",
+		),
 		faqs: [
 			{
 				question: "Works in areas without smartphones?",
@@ -1267,8 +1290,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Under 30 seconds at agent",
 			},
 		],
-		pricingBlurb:
-			"Per-transaction pricing. No setup fee. Sandbox free. Special state government rates available.",
+		pricingBlurb: sentences(
+			"Per-transaction pricing.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox free. Special state government rates available.",
+		),
 		faqs: [
 			{
 				question: "Which DBT schemes work with AePS cashout?",
@@ -1391,8 +1417,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "200K+ agents urban + rural",
 			},
 		],
-		pricingBlurb:
-			"Per-transaction fee. No setup cost. Sandbox free. Volume tiers for high-volume corridors.",
+		pricingBlurb: sentences(
+			"Per-transaction fee.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox free. Volume tiers for high-volume corridors.",
+		),
 		faqs: [
 			// { question: "What is the daily DMT transfer limit?", answer: "Per RBI guidelines, DMT allows up to ₹25,000 per transaction and ₹1 lakh per month per sender for basic KYC customers. Full KYC customers get higher limits." },
 			// { question: "Is the sender KYC required for every transaction?", answer: "Sender KYC (Aadhaar + mobile) is required once during registration. Subsequent transactions only require mobile OTP confirmation." },
@@ -1516,8 +1545,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Automated via RC API",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-verification. No setup fee. Sandbox free. Volume tiers at 1,000+ weekly onboardings.",
+		pricingBlurb: sentences(
+			"Pay-per-verification.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox free. Volume tiers at 1,000+ weekly onboardings.",
+		),
 		faqs: [
 			{
 				question: "Can I re-verify DL validity periodically?",
@@ -1632,8 +1664,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Real-time blacklist check via API",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-look-up. No setup fee. Sandbox free. Bulk pricing for fleets of 1,000+ vehicles.",
+		pricingBlurb: sentences(
+			"Pay-per-look-up.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox free. Bulk pricing for fleets of 1,000+ vehicles.",
+		),
 		faqs: [
 			{
 				question: "Can I check vehicles across multiple states?",
@@ -1749,8 +1784,11 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				eko: "Under 10 minutes",
 			},
 		],
-		pricingBlurb:
-			"Pay-per-verification. No setup fee. Sandbox free. Insurance-sector volume pricing available.",
+		pricingBlurb: sentences(
+			"Pay-per-verification.",
+			SETUP_FEE_CLAUSE,
+			"Sandbox free. Insurance-sector volume pricing available.",
+		),
 		faqs: [
 			{
 				question: "Does Eko provide claims verification too?",

@@ -47,8 +47,9 @@ export interface PricedApi {
 	/** Highlighted in quick-add chips and shown with a "Popular" badge */
 	popular?: boolean;
 	/**
-	 * One-time setup/activation fee in INR (excl. GST). Omit when none.
-	 * Waived site-wide while SETUP_FEE_WAIVED is true.
+	 * One-time setup/activation fee in INR (excl. GST). **Omit to charge the
+	 * standard `VERIFICATION_SETUP_FEE`**; set `0` to exempt this API.
+	 * Discounted site-wide by SETUP_FEE_DISCOUNT_PERCENT.
 	 */
 	setupFee?: number;
 	/**
@@ -72,11 +73,111 @@ export interface SetupFeePack {
 
 /** GST rate applied on top of all listed prices */
 export const GST_RATE = 0.18;
+
 /**
- * When true, all one-time setup fees are waived (limited-time offer).
- * Flip to false to start charging the configured setupFee / pack fees.
+ * Standard one-time setup fee per verification API (INR, excl. GST).
+ * Applies to every `PricedApi` that does not override `setupFee`.
  */
-export const SETUP_FEE_WAIVED = true;
+export const VERIFICATION_SETUP_FEE = 6_000;
+
+/**
+ * Normalises any raw discount input to a whole 0–100. NaN/±Infinity → 0.
+ * @param raw - Unvalidated percentage
+ */
+export const clampDiscountPercent = (raw: number): number =>
+	Number.isFinite(raw) ? Math.min(100, Math.max(0, Math.round(raw))) : 0;
+
+/**
+ * One-time setup-fee discount, 0–100 (%). Single source of truth for every
+ * setup-fee claim on the site — page copy, FAQs, solution blurbs, generated
+ * markdown and the Excel calculator all derive from it.
+ *
+ * 100 = fully waived ("No setup fee"), 1–99 = partial ("50% off setup fee"),
+ * 0 = no offer running (all offer copy disappears automatically).
+ */
+export const SETUP_FEE_DISCOUNT_PERCENT = clampDiscountPercent(50);
+
+/** True while any setup-fee offer (partial or full) is running. */
+export const SETUP_FEE_DISCOUNTED = SETUP_FEE_DISCOUNT_PERCENT > 0;
+
+/**
+ * Marketing sentence for blurbs and FAQ answers. Empty string when no offer
+ * is running, so callers can drop it without leaving a gap.
+ * @param raw - Discount percentage
+ */
+export const setupFeeClause = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	if (percent >= 100) return "No setup fee.";
+	return percent > 0 ? `${percent}% off setup fee.` : "";
+};
+
+/**
+ * Chip / badge label for the running offer. Empty string at 0 so a
+ * mis-gated caller renders nothing rather than "0% off".
+ * @param raw - Discount percentage
+ */
+export const setupFeeOfferLabel = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	if (percent >= 100) return "₹0 setup fee — limited-time offer";
+	return percent > 0 ? `${percent}% off setup fee — limited-time offer` : "";
+};
+
+/**
+ * Compact badge text for a quote line that already says "setup fee" in its
+ * own label — the full `setupFeeOfferLabel` repeats it and is wide enough to
+ * crush the label column. Empty string at 0.
+ * @param raw - Discount percentage
+ */
+export const setupFeeBadgeLabel = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	if (percent >= 100) return "Waived — limited time";
+	return percent > 0 ? `${percent}% off — limited time` : "";
+};
+
+/**
+ * Applies the discount to a paise amount and returns whole-paise INR, so
+ * ₹999.99 at 50% yields ₹500.00 rather than ₹499.995.
+ * @param paise - Undiscounted amount in paise
+ * @param raw - Discount percentage
+ */
+export const applySetupFeeDiscount = (paise: number, raw: number): number =>
+	Math.round((paise * (100 - clampDiscountPercent(raw))) / 100) / 100;
+
+/**
+ * Full "Is there a setup fee?" answer. Unlike `setupFeeClause` this spells
+ * out the standard fee and the volume-commitment waiver — a standing
+ * commercial term that holds whether or not a campaign is running.
+ * @param raw - Discount percentage
+ */
+export const setupFeeFaqAnswer = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	const standard = `A one-time setup fee of **₹${VERIFICATION_SETUP_FEE.toLocaleString("en-IN")} per verification API** (excl. GST) applies, plus ₹20,000 per BC/Payments API family for DMT, AePS and BBPS.`;
+	if (percent >= 100) {
+		return `${standard} It is **fully waived right now** as a limited-time offer — you pay ₹0 to activate. The [calculator](/pricing) shows the exact one-time fee for your selection.`;
+	}
+	const commitment =
+		"A full waiver is also available against a higher monthly volume commitment.";
+	if (percent > 0) {
+		return `${standard} It is currently **${percent}% off** as a limited-time offer. ${commitment} The [calculator](/pricing) shows the exact one-time fee for your selection.`;
+	}
+	return `${standard} ${commitment} The [calculator](/pricing) shows the exact one-time fee for your selection.`;
+};
+
+/** The running offer's sentence, e.g. "50% off setup fee." */
+export const SETUP_FEE_CLAUSE = setupFeeClause(SETUP_FEE_DISCOUNT_PERCENT);
+/** The running offer's chip label. */
+export const SETUP_FEE_OFFER_LABEL = setupFeeOfferLabel(
+	SETUP_FEE_DISCOUNT_PERCENT,
+);
+
+/**
+ * Joins sentence fragments, dropping empty ones — so a 0% offer leaves no
+ * double space where the setup-fee clause would have been.
+ * @param parts - Sentence fragments, already punctuated
+ */
+export const sentences = (...parts: string[]): string =>
+	parts.filter(Boolean).join(" ");
+
 /**
  * Discounted setup-fee bundles. A pack applies when ALL of its apiIds are
  * selected and its fee beats the sum of those APIs' individual setup fees.
@@ -102,6 +203,14 @@ export const PRICING_GROUP_ORDER = [
 
 export const PRICED_APIS: PricedApi[] = [
 	// PAN
+	{
+		id: "pan-fetch",
+		name: "Fetch PAN Details",
+		shortName: "Fetch",
+		productId: "pan",
+		group: "PAN",
+		tiers: [{ upTo: null, rate: 1.3 }],
+	},
 	{
 		id: "pan-lite",
 		name: "PAN Verification (Lite)",
@@ -399,9 +508,7 @@ export const PRICING_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Is there a setup fee?",
-		a: SETUP_FEE_WAIVED
-			? "Setup fees are currently waived as a limited-time offer — you pay ₹0 to activate. Standard activation fees may apply for new integrations once the offer ends."
-			: "A one-time setup fee may apply per API or as a discounted bundle. The calculator shows the exact one-time fee for your selection before you sign up.",
+		a: setupFeeFaqAnswer(SETUP_FEE_DISCOUNT_PERCENT),
 	},
 	{
 		q: "Are the listed prices inclusive of GST?",
@@ -545,14 +652,50 @@ export interface QuoteLine {
 }
 
 export interface SetupFeeQuote {
-	/** Applicable one-time fees after best pack pricing (INR, excl. GST) */
+	/** Applicable one-time fees before discount (INR, excl. GST) */
 	amount: number;
-	/** What the user actually pays — 0 while SETUP_FEE_WAIVED */
+	/** What the user actually pays after the discount (INR, excl. GST) */
 	payable: number;
-	waived: boolean;
+	/** GST on `payable` */
+	gst: number;
+	/** payable + gst — the real one-time outgo */
+	total: number;
+	/** Discount applied, 0–100 (%). 100 means fully waived. */
+	discountPercent: number;
 	/** Names of setup-fee packs applied (discounted bundles) */
 	appliedPacks: string[];
 }
+
+/**
+ * Builds a `SetupFeeQuote` from an undiscounted paise amount, applying the
+ * site-wide discount and GST. Shared by the verification and payments
+ * calculators so both show one-time fees identically.
+ * @param paise - Undiscounted one-time fee in paise
+ * @param appliedPacks - Names of any discounted bundles applied
+ */
+export const buildSetupFeeQuote = (
+	paise: number,
+	appliedPacks: string[] = [],
+): SetupFeeQuote => {
+	const payable = applySetupFeeDiscount(paise, SETUP_FEE_DISCOUNT_PERCENT);
+	const gstPaise = Math.round(payable * 100 * GST_RATE);
+	return {
+		amount: paise / 100,
+		payable,
+		gst: gstPaise / 100,
+		total: (Math.round(payable * 100) + gstPaise) / 100,
+		discountPercent: SETUP_FEE_DISCOUNT_PERCENT,
+		appliedPacks,
+	};
+};
+
+/**
+ * Configured one-time fee for a priced API (INR, excl. GST). Omitting
+ * `setupFee` means the standard fee; an explicit `0` exempts the API.
+ * @param api - The priced API
+ */
+export const setupFeeFor = (api: PricedApi): number =>
+	api.setupFee ?? VERIFICATION_SETUP_FEE;
 
 export interface Quote {
 	lines: QuoteLine[];
@@ -574,7 +717,7 @@ export interface Quote {
  * Computes the one-time setup fee for a set of selected APIs.
  * Greedy pack pricing: packs (in declared order) whose apiIds are all
  * selected replace those APIs' individual fees when cheaper; each API is
- * counted at most once. Returns 0 payable while SETUP_FEE_WAIVED.
+ * counted at most once. SETUP_FEE_DISCOUNT_PERCENT is applied to the result.
  * @param apiIds - Selected priced-API ids
  */
 export const calcSetupFee = (apiIds: string[]): SetupFeeQuote => {
@@ -586,7 +729,7 @@ export const calcSetupFee = (apiIds: string[]): SetupFeeQuote => {
 	for (const pack of SETUP_FEE_PACKS) {
 		if (!pack.apiIds.every((id) => uncovered.has(id))) continue;
 		const individualPaise = pack.apiIds.reduce(
-			(sum, id) => sum + Math.round((PRICED_APIS_MAP[id].setupFee ?? 0) * 100),
+			(sum, id) => sum + Math.round(setupFeeFor(PRICED_APIS_MAP[id]) * 100),
 			0,
 		);
 		const packPaise = Math.round(pack.fee * 100);
@@ -598,16 +741,10 @@ export const calcSetupFee = (apiIds: string[]): SetupFeeQuote => {
 	}
 
 	for (const id of uncovered) {
-		paise += Math.round((PRICED_APIS_MAP[id].setupFee ?? 0) * 100);
+		paise += Math.round(setupFeeFor(PRICED_APIS_MAP[id]) * 100);
 	}
 
-	const amount = paise / 100;
-	return {
-		amount,
-		payable: SETUP_FEE_WAIVED ? 0 : amount,
-		waived: SETUP_FEE_WAIVED,
-		appliedPacks,
-	};
+	return buildSetupFeeQuote(paise, appliedPacks);
 };
 
 /**
@@ -649,6 +786,10 @@ export const calcQuote = (
 		total: (subtotalPaise + gstPaise) / 100,
 		totalVolume,
 		effectiveRate: totalVolume > 0 ? subtotalPaise / 100 / totalVolume : 0,
-		setupFee: calcSetupFee(lines.map((line) => line.api.id)),
+		// An API only attracts its setup fee once it is actually used, so a
+		// row parked at zero volume costs nothing. Mirrors the Excel formulas.
+		setupFee: calcSetupFee(
+			lines.filter((line) => line.volume > 0).map((line) => line.api.id),
+		),
 	};
 };

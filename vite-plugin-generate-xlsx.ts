@@ -106,7 +106,9 @@ async function loadPricingData(
 	return {
 		groups: pricingMod.PRICING_GROUPS,
 		gstRate: pricingMod.GST_RATE,
-		setupFeeWaived: pricingMod.SETUP_FEE_WAIVED,
+		setupFeeDiscountPercent: pricingMod.SETUP_FEE_DISCOUNT_PERCENT,
+		verificationSetupFee: pricingMod.VERIFICATION_SETUP_FEE,
+		bcSetupFee: paymentsMod.BC_SETUP_FEE,
 		hasVolumeDiscounts: pricingMod.HAS_VOLUME_DISCOUNTS,
 		maxVolume: pricingMod.MAX_VOLUME,
 		siteUrl: siteMod.SITE_URL,

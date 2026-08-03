@@ -5381,6 +5381,94 @@ const ALL_API_SPECS: ApiSpec[] = [
 
 	// MARK: KYC APIs...
 	{
+		id: "pan-fetch",
+		productId: "pan",
+		name: "Fetch PAN Details",
+		slug: "pan-fetch",
+		summary:
+			"Fetch the PAN holder's registered full name and category from the PAN number alone.",
+		description:
+			"Fetch PAN is the lightest PAN lookup: pass only the PAN number and get back the registered full name, the holder category (person / company / firm …) and the PAN status. Unlike PAN Lite and PAN Advanced — which require the PAN number, holder name and date of birth to compute match flags — this endpoint needs no name or DOB, so use it when you have to *discover* the holder's name rather than verify one you already hold.",
+		relevance: "H",
+		bestFor:
+			"Resolving a PAN number to its registered name when no name or DOB is available",
+		method: "POST",
+		path: "/tools/kyc/fetch-pan",
+		docsUrl: "https://developers.eko.in/reference/fetch-pan",
+		extraRequestParams: [
+			{
+				name: "pan_number",
+				label: "PAN Number",
+				type: "string",
+				required: true,
+				description:
+					"10-character alphanumeric PAN identifier (5 letters, 4 digits, 1 letter).",
+				example: "GGTPB7880Q",
+			},
+			{
+				name: "source",
+				type: "string",
+				required: false,
+				description:
+					"Origin of the request. Use 'API' for server-to-server calls.",
+				example: "API",
+			},
+		],
+		responseData: [
+			{
+				name: "upstream_rrn",
+				label: "Upstream Reference",
+				type: "string",
+				description: "Reference number of the lookup at the upstream source.",
+				example: "pan_ZLpBnmwapOwtixPUmijB",
+			},
+			{
+				name: "pan_no",
+				label: "PAN Number",
+				type: "string",
+				description: "The PAN number submitted in the request.",
+				imp: true,
+				example: "GGTPB7880Q",
+			},
+			{
+				name: "fullname",
+				label: "Full Name",
+				type: "string",
+				description: "Full name registered against the PAN.",
+				imp: true,
+				example: "YASHWANT BASNETT",
+			},
+			{
+				name: "category",
+				type: "string",
+				description:
+					"PAN holder category, e.g. 'person', 'company', 'firm', 'trust', 'huf'.",
+				imp: true,
+				example: "person",
+			},
+			{
+				name: "status",
+				label: "Lookup Status",
+				type: "string",
+				description: "Outcome of the PAN lookup, e.g. 'success'.",
+				imp: true,
+				example: "success",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				upstream_rrn: "pan_ZLpBnmwapOwtixPUmijB",
+				pan_no: "GGTPB7880Q",
+				fullname: "YASHWANT BASNETT",
+				category: "person",
+				status: "success",
+			},
+			response_type_id: 0,
+			status: 0,
+		},
+	},
+	{
 		id: "pan-lite",
 		productId: "pan",
 		name: "PAN Lite",

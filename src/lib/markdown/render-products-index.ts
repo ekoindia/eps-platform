@@ -2,7 +2,9 @@ import type { FAQ } from "@/components/ProductPageLayout";
 import { SITE_URL } from "@/lib/config/site";
 import {
 	GST_RATE,
-	SETUP_FEE_WAIVED,
+	SETUP_FEE_DISCOUNTED,
+	SETUP_FEE_DISCOUNT_PERCENT,
+	sentences,
 	displayName,
 	getPricedApisForProduct,
 	type PricedApi,
@@ -531,10 +533,15 @@ function renderProductsIndex(
 			: undefined,
 	].filter(Boolean);
 	const ratesWord = hasCommission ? "rates and commissions" : "rates";
-	const pricingNotes =
-		`**Pricing notes (apply to every product below):** All ${ratesWord} are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. Billing is per successful API call.` +
-		(typeClauses.length ? ` ${typeClauses.join("; ")}.` : "") +
-		(SETUP_FEE_WAIVED ? " Setup fees are currently waived." : "");
+	const pricingNotes = sentences(
+		`**Pricing notes (apply to every product below):** All ${ratesWord} are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. Billing is per successful API call.`,
+		typeClauses.length ? `${typeClauses.join("; ")}.` : "",
+		SETUP_FEE_DISCOUNT_PERCENT >= 100
+			? "Setup fees are currently waived."
+			: SETUP_FEE_DISCOUNTED
+				? `Setup fees are currently ${SETUP_FEE_DISCOUNT_PERCENT}% off.`
+				: "",
+	);
 
 	blocks.push(
 		heading(

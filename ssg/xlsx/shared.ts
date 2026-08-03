@@ -30,13 +30,47 @@ export const SHEETS = {
  * the Vite plugin loads the data modules via `ssrLoadModule` and hands the
  * data over.
  */
+/**
+ * Summary-row label for the one-time setup fee, in the three discount states.
+ * @param percent - `SETUP_FEE_DISCOUNT_PERCENT`
+ */
+export const setupFeeLabel = (percent: number): string => {
+	if (percent >= 100) return "One-time setup fee (waived — limited-time offer)";
+	return percent > 0
+		? `One-time setup fee (${percent}% off — limited-time offer)`
+		: "One-time setup fee";
+};
+
+/**
+ * Intro note for the one-time setup fee, or `null` when no offer is running
+ * and the note would say nothing the summary row does not already show.
+ * @param percent - `SETUP_FEE_DISCOUNT_PERCENT`
+ * @param verificationFee - Standard per-API fee in ₹
+ */
+export const setupFeeNote = (
+	percent: number,
+	verificationFee: number,
+): string | null => {
+	const fee = `₹${verificationFee.toLocaleString("en-IN")}`;
+	if (percent >= 100) {
+		return `One-time setup fee: ${fee} per API — currently ₹0, waived as a limited-time offer.`;
+	}
+	return percent > 0
+		? `One-time setup fee: ${fee} per API — currently ${percent}% off as a limited-time offer.`
+		: null;
+};
+
 export interface PricingXlsxData {
 	/** `PRICING_GROUPS` — verification APIs grouped and ordered for display. */
 	groups: { label: string; apis: PricedApi[] }[];
 	/** `GST_RATE` — e.g. 0.18. */
 	gstRate: number;
-	/** `SETUP_FEE_WAIVED` — limited-time-offer flag (verification APIs). */
-	setupFeeWaived: boolean;
+	/** `SETUP_FEE_DISCOUNT_PERCENT` — 0–100; 100 = fully waived. */
+	setupFeeDiscountPercent: number;
+	/** `VERIFICATION_SETUP_FEE` — one-time fee per verification API (₹). */
+	verificationSetupFee: number;
+	/** `BC_SETUP_FEE` — one-time fee per BC/Payments API family (₹). */
+	bcSetupFee: number;
 	/** `HAS_VOLUME_DISCOUNTS` — any API with more than one tier. */
 	hasVolumeDiscounts: boolean;
 	/** `MAX_VOLUME` — upper bound for the usage-input validation. */

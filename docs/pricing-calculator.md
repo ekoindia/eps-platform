@@ -120,19 +120,57 @@ FIRST, RBL, SLICE), `CB_TXN_SLABS` (₹8 up to ₹25,000; ₹15 up to ₹50,000)
 `vite-plugin-generate-xlsx.ts`, never imported by client code. To update the
 operator list, edit this file; the workbook regenerates on the next build.
 
-### Setup fees & limited-time waiver (verification)
+### Setup fees & the discount campaign
 
-- `SETUP_FEE_WAIVED = true` waives all one-time fees site-wide and shows the
-  "₹0 setup fee — limited-time offer" marketing (hero chip, summary badge,
-  FAQ). **To end the offer, flip it to `false`** — configured fees become
-  payable and the offer copy disappears automatically.
-- Per-API fee: set `setupFee` on the `PricedApi`.
+**The fees**
+
+- Verification: `VERIFICATION_SETUP_FEE` (₹6,000, excl. GST) applies **per
+  priced API**. A `PricedApi` that omits `setupFee` inherits it; set
+  `setupFee: 0` to exempt one deliberately (`setupFeeFor` resolves this, and
+  a test asserts no API gets exempted by accident).
+- BC/Payments: `BC_SETUP_FEE` (₹20,000, excl. GST) in `payments-pricing.ts`,
+  charged **once per API family** — DMT, AePS and BBPS are one API each, so
+  enabling six BBPS bill categories still carries a single BBPS fee. See
+  `calcPaymentsSetupFee`.
+- Connected Banking's `CB_SETUP_FEE` is separate and **never discounted**.
 - Discounted bundles: add to `SETUP_FEE_PACKS` (`{ id, name, apiIds, fee }`).
   A pack applies when ALL its `apiIds` are selected and its `fee` beats the
   sum of those APIs' individual fees (greedy, declared order, each API
-  counted once) — see `calcSetupFee`.
-- The setup fee is always a **separate one-time line** in the summary, never
-  added into the monthly total.
+  counted once) — see `calcSetupFee`. Not modelled in the Excel workbook.
+
+**The discount** — `SETUP_FEE_DISCOUNT_PERCENT` (currently `50`) in
+`api-pricing.ts` is the **single source of truth for every setup-fee claim on
+the site**. It has three states, and all copy follows automatically:
+
+| Value | Copy | Payable |
+| ----- | ---- | ------- |
+| `100` | "No setup fee." / "₹0 setup fee — limited-time offer" | ₹0 |
+| `1`–`99` | "50% off setup fee." / "50% off setup fee — limited-time offer" | fee × (1 − pct) |
+| `0` | no offer copy at all | full fee |
+
+Change the number and nothing else. It drives the pricing hero chip and
+subtitle, both calculator summaries, the pricing and payments FAQs, the 12
+solution `pricingBlurb`s, the industries platform-fee FAQ, `/pricing.md`,
+`/products.md` and both Excel calculator sheets.
+
+- Builders live in `api-pricing.ts`: `setupFeeClause` (blurb sentence),
+  `setupFeeOfferLabel` (chip/badge), `setupFeeFaqAnswer`, and
+  `applySetupFeeDiscount` (paise-exact). Each **clamps its own input** via
+  `clampDiscountPercent`, so no caller can emit "0% off" or "33.4% off".
+- Both builders return `""` at 0, and data files compose with `sentences(...)`
+  so a dropped clause leaves no double space.
+- A "full waiver against a higher monthly volume commitment" is a **standing
+  commercial term**, not campaign copy — it stays in the FAQ answers at 0%.
+
+**Activation semantics** — an API attracts its setup fee only once it has
+**non-zero volume** (`calcQuote` filters before calling `calcSetupFee`;
+`calcEarningsQuote` filters on `monthlyTxns`). The Excel formulas gate on the
+same condition, so a row parked at zero costs nothing in either place.
+
+- The setup fee is always a **separate one-time line** (`SetupFeeLine`, shared
+  by both summaries), never added into the monthly total or netted off
+  commission. It carries its own GST (`SetupFeeQuote.gst` / `.total`) and
+  respects the summary's incl./excl.-GST toggle.
 
 ### Volume-discount visibility
 

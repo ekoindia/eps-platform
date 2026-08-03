@@ -1,3 +1,4 @@
+import { SetupFeeLine } from "@/components/pricing/SetupFeeLine";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/sonner";
@@ -94,6 +95,13 @@ export const EarningsSummary = ({
 						</ul>
 
 						<Separator className="mb-3" />
+
+						{/* A COST, not a commission — kept out of the earnings headline */}
+						<SetupFeeLine
+							quote={quote.setupFee}
+							includeGst={false}
+							label="One-time setup fee (you pay)"
+						/>
 
 						<div className="rounded-xl bg-eko-success/10 px-4 py-3 mb-1">
 							<p className="text-xs text-muted-foreground">

@@ -8,7 +8,8 @@ import {
 	MAX_VOLUME,
 	PRICED_APIS,
 	PRICING_GROUPS,
-	SETUP_FEE_WAIVED,
+	SETUP_FEE_DISCOUNT_PERCENT,
+	VERIFICATION_SETUP_FEE,
 	displayName,
 } from "@/lib/data/api-pricing";
 import {
@@ -16,6 +17,7 @@ import {
 	AEPS_MINI_STATEMENT_COMMISSION,
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
+	BC_SETUP_FEE,
 	DMT_CUSTOMER_FEE_MIN,
 	DMT_CUSTOMER_FEE_PCT,
 	DMT_MAX_TXN_AMOUNT,
@@ -68,7 +70,9 @@ describe("renderPricingXlsx", () => {
 		const buffer = await renderPricingXlsx({
 			groups: PRICING_GROUPS,
 			gstRate: GST_RATE,
-			setupFeeWaived: SETUP_FEE_WAIVED,
+			setupFeeDiscountPercent: SETUP_FEE_DISCOUNT_PERCENT,
+			verificationSetupFee: VERIFICATION_SETUP_FEE,
+			bcSetupFee: BC_SETUP_FEE,
 			hasVolumeDiscounts: HAS_VOLUME_DISCOUNTS,
 			maxVolume: MAX_VOLUME,
 			siteUrl: SITE_URL,
@@ -233,13 +237,40 @@ describe("renderPricingXlsx", () => {
 				);
 			}
 			expect(texts).toContain("Billed per successful API call");
-			if (SETUP_FEE_WAIVED) {
+			if (SETUP_FEE_DISCOUNT_PERCENT >= 100) {
 				expect(texts).toContain("waived");
+			} else if (SETUP_FEE_DISCOUNT_PERCENT > 0) {
+				expect(texts).toContain(`${SETUP_FEE_DISCOUNT_PERCENT}% off`);
 			}
+		});
+
+		it("charges the setup fee per API with non-zero usage, net of the discount", () => {
+			let formula = "";
+			calculator.eachRow((row) => {
+				const f = row.getCell(5).formula ?? "";
+				if (f.includes("SUMPRODUCT")) formula = f;
+			});
+			// One fee per used API, scaled by the surviving share of the fee.
+			const netFactor = (100 - SETUP_FEE_DISCOUNT_PERCENT) / 100;
+			expect(formula).toContain(`>0))*${VERIFICATION_SETUP_FEE}*${netFactor}`);
 		});
 	});
 
 	describe("Payments Earnings sheet", () => {
+		it("charges one setup fee per API family, not per selected row", () => {
+			let formula = "";
+			earnings.eachRow((row) => {
+				const f = row.getCell(6).formula ?? "";
+				if (f.includes(`${BC_SETUP_FEE},0)`)) formula = f;
+			});
+			// DMT, AePS and BBPS — three IF terms however many BBPS categories
+			// the sheet lists.
+			const terms = formula.match(/IF\(SUM\(/g) ?? [];
+			expect(terms).toHaveLength(3);
+			const netFactor = (100 - SETUP_FEE_DISCOUNT_PERCENT) / 100;
+			expect(formula).toContain(`*${netFactor}`);
+		});
+
 		it("resolves the DMT commission via VLOOKUP against the Payments Rate Card", () => {
 			let vlookup = "";
 			earnings.eachRow((row) => {
