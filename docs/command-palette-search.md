@@ -33,7 +33,19 @@ Score = BM25 over the boosted fields × an asset-type multiplier.
 |---|---|---|
 | Field boosts | `slug: 8`, `label: 3`, `keywords: 1.5`, `sublabel: 1` | Slug is the strongest identity signal: short, unique, and URL-stable. Labels are marketing prose of variable length, and BM25 penalises long fields — at `slug: 4` the query "bbps" ranked `api:bbps-api` *seventh*, behind six of its own endpoints, because the label "Bharat Bill Payment System (BBPS)" dilutes the term across five tokens while "Pay BBPS Bill" concentrates it in three. |
 | `TYPE_ALPHA` | `1.5` (multiplier spans 1.0–2.5) | Delivers what `TYPE_WEIGHT` promises — *"higher = surfaced first on equal text relevance"*. The previous 0.5 was too weak to overcome BM25 spread between sibling documents. |
-| `combineWith` | `"AND"` | Every meaningful query term must match. Requires the stopword list to be correct — see below. |
+| `combineWith` | `"AND"`, with an OR fallback | Every meaningful query term must match. Requires the stopword list to be correct — see below. |
+| `OR_SCORE_FLOOR` | `0.2` | Trims the fallback's noise tail — see below. |
+| `MAX_RESULTS` | `50` | Body indexing widened recall a lot ("pricing" matches 102 documents). Nobody scrolls a palette that far, and each result is a DOM node rebuilt per keystroke. Applied *after* scope filtering. |
+
+### The descriptive-query fallback
+
+Under `AND`, a single word no document uses zeroes the entire query — and sentence-shaped queries are full of such words. Measured on 12 natural-language queries, **7 returned nothing**: *"confirm a company actually exists"*, *"make sure a driver is licensed"*, *"let shopkeepers withdraw cash for customers"* and so on.
+
+When the strict pass returns **zero** results, the query is retried with `combineWith: "OR"`, keeping only results scoring at least `OR_SCORE_FLOOR` of the best. Unfiltered OR returns 30–100 items for these queries, almost all noise; the score curve drops off a cliff after the genuine matches, so the floor cuts them to 1–9.
+
+This recovers 6 of the 8 previously-dead queries with the right answer in the top 3. Two remain unanswerable lexically (*"check if someone is who they say they are"*, *"stop fraudulent payouts"*) — they share no vocabulary with any document, and would need semantic retrieval.
+
+The fallback fires **only on a total miss**, so a query that already matched precisely is never diluted, and gibberish still returns nothing.
 | `fuzzy` | length-gated: off < 4 chars, `0.15` at 4, `0.2` at 5+ | At 3 characters an edit distance of 1 makes "pan" match "pin", "can" and "ban". |
 
 **Stopwords are load-bearing.** With `combineWith: "AND"`, a query like *"how do I verify a bank account"* is unanswerable unless `how`/`do`/`i`/`a` are dropped — no document contains them. They are stripped from both the index and the query.

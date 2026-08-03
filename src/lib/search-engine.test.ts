@@ -130,6 +130,77 @@ describe("precision", () => {
 	});
 });
 
+describe("descriptive-query fallback", () => {
+	// combineWith:"AND" means one word no document uses zeroes the whole query.
+	// Sentence-shaped queries hit that constantly, so a total miss retries with
+	// OR and keeps only results near the top score.
+	it("answers a sentence containing words no document uses", () => {
+		// No document contains "confirm" AND "company" AND "actually" AND
+		// "exists", so the strict pass finds nothing and the loose pass rescues it.
+		const rescued = search(engine, "confirm a company actually exists", "all");
+		expect(rescued.length).toBeGreaterThan(0);
+		expect(rescued[0].item.id).toBe("api:cin-verification-api");
+	});
+
+	it("rescues descriptive queries across several phrasings", () => {
+		const cases: [string, string][] = [
+			["make sure a driver is licensed", "dl"],
+			["prove a phone number belongs to someone", "otp"],
+			["let shopkeepers withdraw cash for customers", "aeps"],
+		];
+		for (const [query, expected] of cases) {
+			const top3 = search(engine, query, "all")
+				.slice(0, 3)
+				.map((r) => r.item.id)
+				.join(" ");
+			expect(top3, `query: ${query}`).toContain(expected);
+		}
+	});
+
+	it("discards the OR noise tail rather than returning everything", () => {
+		// Unfiltered OR over this corpus returns 30-100 items for such queries.
+		const rescued = search(engine, "let shopkeepers withdraw cash", "all");
+		expect(rescued.length).toBeLessThan(15);
+	});
+
+	it("does not dilute a query that already matched precisely", () => {
+		// "pan verification api" matches under AND, so the loose pass must not run.
+		const strict = search(engine, "pan verification api", "all");
+		expect(strict[0].item.id).toBe("api:pan-verification-api");
+		expect(strict.length).toBeLessThan(15);
+	});
+
+	it("still returns nothing for gibberish", () => {
+		// The fallback must not turn a genuine miss into noise.
+		expect(search(engine, "zzzqqxx", "all")).toHaveLength(0);
+	});
+});
+
+describe("result cap", () => {
+	it("caps how many results are returned", () => {
+		// Body indexing widens recall a lot: "pricing" matches 102 documents.
+		const withBodies = buildEngine(
+			Object.fromEntries(
+				SEARCH_INDEX.map((i) => [i.id, "pricing rates cost billing"]),
+			),
+		);
+		expect(search(withBodies, "pricing", "all").length).toBeLessThanOrEqual(50);
+	});
+
+	it("caps after scope filtering, not before", () => {
+		const withBodies = buildEngine(
+			Object.fromEntries(
+				SEARCH_INDEX.map((i) => [i.id, "pricing rates cost billing"]),
+			),
+		);
+		// If the cap were applied to the global head, scoping to a category that
+		// sorts late would return nothing.
+		const faqs = search(withBodies, "pricing", "faq");
+		expect(faqs.length).toBeGreaterThan(0);
+		expect(faqs.every((r) => r.item.category === "faq")).toBe(true);
+	});
+});
+
 describe("scope", () => {
 	it("narrows without reordering", () => {
 		const globalOrder = search(engine, "bank", "all")

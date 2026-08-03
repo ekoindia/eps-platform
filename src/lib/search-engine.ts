@@ -213,6 +213,25 @@ export const buildEngine = (
 	return engine;
 };
 
+/**
+ * Fraction of the best score a result must reach to survive the OR fallback.
+ *
+ * OR matches a document on any single term, so an unfiltered fallback returns
+ * 30–100 items, almost all noise. Measured score curves drop off a cliff after
+ * the genuine matches — at 0.2 the same queries return 1–9.
+ */
+const OR_SCORE_FLOOR = 0.2;
+
+/**
+ * Hard cap on rendered results.
+ *
+ * Indexing body prose widened recall a lot — "pricing" goes from 2 matches to
+ * 102 once page text is searchable. The extra matches are real but nobody
+ * scrolls a command palette that far (the list viewport shows ~9 rows), and
+ * every one of them is a DOM node built on each keystroke.
+ */
+const MAX_RESULTS = 50;
+
 export interface Ranked {
 	item: SearchItem;
 	score: number;
@@ -236,15 +255,32 @@ export const search = (
 	const expanded = expandPhrases(query.trim());
 	if (!expanded) return [];
 
-	return engine
-		.search(expanded)
-		.reduce<Ranked[]>((acc, result: SearchResult) => {
-			const item = ITEM_BY_ID.get(result.id as string);
-			if (!item) return acc;
-			if (scope !== "all" && item.category !== scope) return acc;
-			acc.push({ item, score: result.score, terms: Object.keys(result.match) });
-			return acc;
-		}, []);
+	let hits = engine.search(expanded);
+
+	// Descriptive queries phrased as a sentence — "confirm a company actually
+	// exists" — routinely contain a word no document uses, and under AND a
+	// single such word zeroes the whole query. Retry with OR, keeping only
+	// results close to the best score so the long noise tail is discarded.
+	//
+	// Only on a total miss: a query that already returned something precise must
+	// not be diluted by loosely-related OR matches.
+	if (hits.length === 0) {
+		const loose = engine.search(expanded, { combineWith: "OR" });
+		const floor = (loose[0]?.score ?? 0) * OR_SCORE_FLOOR;
+		hits = loose.filter((r) => r.score >= floor);
+	}
+
+	const ranked = hits.reduce<Ranked[]>((acc, result: SearchResult) => {
+		const item = ITEM_BY_ID.get(result.id as string);
+		if (!item) return acc;
+		if (scope !== "all" && item.category !== scope) return acc;
+		acc.push({ item, score: result.score, terms: Object.keys(result.match) });
+		return acc;
+	}, []);
+
+	// Capped after scope filtering, so narrowing to a scope never returns fewer
+	// items than it should just because the global head filled the cap.
+	return ranked.length > MAX_RESULTS ? ranked.slice(0, MAX_RESULTS) : ranked;
 };
 
 /**
