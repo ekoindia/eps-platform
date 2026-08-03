@@ -197,7 +197,14 @@ The jobs then run **concurrently**:
   `@ekoindia/eps-backend` (with `REDIS_TEST_URL` set) → shellcheck + poller harness.
 - **`docker`** (gated on the `backend`/`transact`/`poller` filters): compose
   validations + Buildx image builds with a GHA layer cache (separate cache
-  scopes per image) + the transact `/healthz` smoke.
+  scopes per image) + the transact `/healthz` smoke. When `transact` matches it
+  also runs `npm ci && npm run build` first: the transact image `COPY`s the
+  gitignored `packages/{sdk-js,eps-transact-mcp}/data/` out of the **build
+  context** (see the prerequisite note atop
+  `packages/eps-transact-mcp/Dockerfile`), so those files must exist on the
+  runner. A guard step asserts both are present before Buildx, so a build that
+  stops emitting them fails with a clear message instead of an opaque BuildKit
+  checksum error. The poller image and the compose validations need none of this.
 - **`php-sdk`** (PHP 8.2 + Composer, in `packages/sdk-php`): `needs`
   `build-and-test-packages` and **downloads the `sdk-surface` artifact** into
   `data/` (the baked surface is gitignored and never built on the PHP runner) →

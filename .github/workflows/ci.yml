@@ -230,9 +230,14 @@ jobs:
       - name: Test eps-backend poller (bash shim harness)
         run: npm run test:poller -w @ekoindia/eps-backend
 
-  # Compose validations and image builds gate on their own package filters —
-  # none of them depend on the build job (each `docker build` runs its own
-  # `npm ci` inside the image).
+  # Compose validations and image builds gate on their own package filters.
+  # Each `docker build` runs its own `npm ci` INSIDE the image, so no job
+  # dependency is needed for dependencies — but the transact image also COPYs
+  # gitignored baked data OUT OF the build context, so this job bakes that
+  # itself (see the Setup Node/Build steps below). An earlier version of this
+  # comment claimed the images needed nothing from a build step at all; that
+  # was true of npm install and false of the baked data, and it broke the
+  # transact image when this job was split onto its own runner.
   docker:
     name: Docker images
     runs-on: ubuntu-latest
@@ -267,6 +272,40 @@ jobs:
           docker compose -p eps-transact-mcp --project-directory . \
             --env-file deploy.env -f docker-compose.prod.yml config -q
           rm -f deploy.env
+
+      # The transact image COPYs packages/{sdk-js,eps-transact-mcp}/data into the
+      # build context — both gitignored, both produced by the root `vite build` +
+      # `bake:all`. See the prerequisite note atop packages/eps-transact-mcp/Dockerfile.
+      # Only the transact image needs this: the poller image builds from its own
+      # self-contained context and the compose validations read no baked data.
+      - name: Setup Node.js
+        if: needs.changes.outputs.transact == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: needs.changes.outputs.transact == 'true'
+        run: npm ci
+
+      - name: Build (bakes packages/*/data into the image build context)
+        if: needs.changes.outputs.transact == 'true'
+        run: npm run build
+
+      # Fail loudly and precisely here rather than as an opaque BuildKit
+      # "failed to calculate checksum ... not found" three steps later, if the
+      # build ever stops emitting these.
+      - name: Assert baked data present
+        if: needs.changes.outputs.transact == 'true'
+        run: |
+          for f in packages/sdk-js/data/sdk-surface.json \
+                   packages/eps-transact-mcp/data/eps.json; do
+            if [ ! -s "$f" ]; then
+              echo "::error::$f missing or empty after 'npm run build' — the transact image COPYs it from the build context."
+              exit 1
+            fi
+          done
 
       # buildx is required for the GHA layer cache below; the default docker
       # driver cannot export cache.
