@@ -14,6 +14,11 @@ import { createServer } from "vite";
  */
 export function generateMarkdownPlugin(): Plugin {
 	let resolvedConfig: ResolvedConfig | undefined;
+	// Dev-only cache. Serving /search-body.json means rendering every twin, so
+	// without this each keystroke-triggered fetch would rebuild the whole corpus.
+	// Not invalidated on HMR: restart the dev server after editing page data if
+	// you need the body index to reflect it.
+	let devBodies: string | undefined;
 
 	return {
 		name: "eko:generate-markdown",
@@ -24,6 +29,19 @@ export function generateMarkdownPlugin(): Plugin {
 			server.middlewares.use(async (req, res, next) => {
 				try {
 					const url = req.url?.split("?")[0] ?? "";
+
+					if (url === "/search-body.json") {
+						const bundle = await loadRenderBundle(server);
+						devBodies ??= JSON.stringify(
+							await collectBodies(bundle, server.config.root),
+						);
+						res.statusCode = 200;
+						res.setHeader("Content-Type", "application/json; charset=utf-8");
+						res.setHeader("Cache-Control", "no-cache");
+						res.end(devBodies);
+						return;
+					}
+
 					const bundle = await loadRenderBundle(server);
 					let body = renderDevRoute(url, bundle);
 					// Guide twins need an async file read, so they're not handled by
@@ -275,9 +293,18 @@ export function generateMarkdownPlugin(): Plugin {
 				);
 				written++;
 
+				// -- ⌘K body index --------------------------------------------------
+				// Lazily fetched by CommandPalette on the first keystroke, so its
+				// size is off the critical path.
+				const bodies = await collectBodies(bundle, resolvedConfig.root);
+				const bodiesJson = JSON.stringify(bodies);
+				await writeFile(path.join(outDir, "search-body.json"), bodiesJson);
+				written++;
+
 				// eslint-disable-next-line no-console
 				console.log(
-					`\n[eko:markdown] wrote ${written} markdown files to ${path.relative(resolvedConfig.root, outDir)}/`,
+					`\n[eko:markdown] wrote ${written} markdown files to ${path.relative(resolvedConfig.root, outDir)}/` +
+						`\n[eko:markdown] search-body.json: ${Object.keys(bodies).length} entries, ${(bodiesJson.length / 1024).toFixed(0)} KB`,
 				);
 			} finally {
 				await ssrServer.close();
@@ -344,6 +371,74 @@ interface MarkdownBundle {
 	renderRecipesIndexMarkdown: () => string;
 	renderAgentsMarkdown: () => string;
 	renderTransactAgentsMarkdown: () => string;
+	/** Shared with the runtime search index so body keys can never drift. */
+	searchItemId: (category: string, slug: string) => string;
+	extractBody: (markdown: string, cap?: number) => string;
+}
+
+/**
+ * Builds the ⌘K body index: `SearchItem.id` → prose extracted from that item's
+ * generated markdown twin.
+ *
+ * Covers the five categories that have a twin. Static pages and FAQs are
+ * deliberately absent — a page's content *is* its label and keywords, and an
+ * FAQ's answer is already its sublabel, so neither gains anything from a body.
+ *
+ * This re-renders the twins rather than harvesting them from the write loops in
+ * `closeBundle`. Rendering is pure string work over ~160 documents, and paying
+ * for it twice at build time buys one code path shared with the dev route
+ * instead of five inline mutations that the dev server would have to duplicate.
+ */
+async function collectBodies(
+	bundle: MarkdownBundle,
+	root: string,
+): Promise<Record<string, string>> {
+	const bodies: Record<string, string> = {};
+	const add = (category: string, slug: string, md: string): void => {
+		bodies[bundle.searchItemId(category, slug)] = bundle.extractBody(md);
+	};
+
+	const marketedProducts = bundle.API_PRODUCTS.filter(
+		(p) => !p.disabled && Boolean(bundle.API_PRODUCT_PAGES[p.id]),
+	);
+	for (const product of marketedProducts) {
+		const page = bundle.API_PRODUCT_PAGES[product.id];
+		if (!page) continue;
+		const related = marketedProducts
+			.filter((p) => p.category === product.category && p.id !== product.id)
+			.slice(0, 5);
+		add(
+			"api",
+			product.slug,
+			bundle.renderProductMarkdown(product, page, related),
+		);
+	}
+
+	for (const ind of bundle.INDUSTRIES_LIST) {
+		add("industry", ind.slug, bundle.renderIndustryMarkdown(ind));
+	}
+
+	const industryNames: Record<string, string> = Object.fromEntries(
+		bundle.INDUSTRIES_LIST.map((i) => [i.slug, i.name]),
+	);
+	for (const sol of bundle.SOLUTIONS_LIST) {
+		add(
+			"solution",
+			sol.slug,
+			bundle.renderSolutionMarkdown(sol, industryNames),
+		);
+	}
+
+	for (const spec of bundle.DOCUMENTED_SPECS) {
+		add("endpoint", spec.slug, bundle.renderEndpointMarkdown(spec));
+	}
+
+	for (const guide of bundle.GUIDES) {
+		const raw = await readGuideSource(root, guide.slug);
+		add("guide", guide.slug, bundle.renderGuideMarkdown(guide, raw));
+	}
+
+	return bodies;
 }
 
 /** Read a guide's raw `.mdx` source (pure markdown) from the content dir. */
@@ -377,6 +472,8 @@ async function loadRenderBundle(
 		renderTransactMod,
 		recipesMod,
 		renderRecipeMod,
+		searchIndexMod,
+		extractBodyMod,
 	] = await Promise.all([
 		server.ssrLoadModule("/src/lib/data/api-products.ts"),
 		server.ssrLoadModule("/src/lib/data/api-product-pages.ts"),
@@ -397,6 +494,8 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/lib/markdown/render-transact.ts"),
 		server.ssrLoadModule("/src/lib/data/api-recipes.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-recipe.ts"),
+		server.ssrLoadModule("/src/lib/search-index.ts"),
+		server.ssrLoadModule("/src/lib/markdown/extract-body.ts"),
 	]);
 
 	return {
@@ -430,6 +529,8 @@ async function loadRenderBundle(
 		RECIPES: recipesMod.RECIPES,
 		renderRecipeMarkdown: renderRecipeMod.renderRecipeMarkdown,
 		renderRecipesIndexMarkdown: renderRecipeMod.renderRecipesIndexMarkdown,
+		searchItemId: searchIndexMod.searchItemId,
+		extractBody: extractBodyMod.extractBody,
 	};
 }
 

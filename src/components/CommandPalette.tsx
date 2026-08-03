@@ -204,13 +204,36 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
 export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	const [query, setQuery] = useState("");
 	const [scope, setScope] = useState<Scope>("all");
-	// State, not a ref: Phase B swaps in a body-aware engine once
+	// State, not a ref: the body-aware engine replaces this one once
 	// search-body.json loads, and that swap has to re-run the memo below.
 	// Built lazily on first render — the palette only mounts once opened.
-	const [engine] = useState(() => buildEngine());
+	const [engine, setEngine] = useState(() => buildEngine());
 	const navigate = useNavigate();
 	const location = useLocation();
 	const previousPathRef = useRef(location.pathname);
+
+	// Long-form page prose is a separate ~160 KB payload. Fetched once when the
+	// palette first mounts — which only happens on first open, so the user has
+	// already signalled intent to search, and the index is usually body-aware
+	// before they finish typing.
+	//
+	// Deliberately no abort: the guard would have to survive query changes, and
+	// a one-shot 160 KB fetch is not worth the cancellation bookkeeping. Until
+	// it lands (or if it never does) the label/keyword index already answers
+	// most queries, so every failure path here is a silent no-op.
+	useEffect(() => {
+		fetch("/search-body.json")
+			.then((r) => (r.ok ? r.json() : null))
+			.then((bodies: Record<string, string> | null) => {
+				// MiniSearch cannot add a field to already-indexed documents, so the
+				// index is rebuilt rather than amended. ~4 ms for ~195 docs — cheaper
+				// than shipping a pre-serialised index that would have to stay in sync.
+				if (bodies) setEngine(buildEngine(bodies));
+			})
+			.catch(() => {
+				// Offline or 404 — body search is a pure enhancement.
+			});
+	}, []);
 
 	// Lexical search is sub-millisecond over ~195 docs, so no debounce.
 	const results = useMemo(

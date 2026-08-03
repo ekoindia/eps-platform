@@ -18,6 +18,7 @@ Global fuzzy search across APIs, industries, solution packs and site pages. Impl
 |---|---|
 | Search engine | **MiniSearch** (`minisearch@^7`, ~5 KB gz) in `src/lib/search-engine.ts` — BM25 with prefix matching, length-gated fuzzy, and per-field boosts. `cmdk` is left to do rendering and keyboard navigation only (`shouldFilter={false}`); it no longer scores anything. |
 | Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products with a page), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `docs-registry.ts` (endpoints + guides), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), `common-faqs.ts`, plus a static pages list. New APIs/endpoints/industries/solutions appear in search automatically. |
+| Body index | `dist/search-body.json` — long-form page prose, keyed by `SearchItem.id`. Emitted by `vite-plugin-generate-markdown.ts` from the same renderers that produce the `.md` twins, so there is no second source of truth. **Lazily fetched when the palette first mounts**, then the MiniSearch index is rebuilt with a `body` field. 157 entries / ~160 KB (~38 KB gz), entirely off the critical path; a 404 or offline just leaves the label-only index in place. |
 | Lazy loading | `CommandPalette` is a separate Vite chunk, lazy-imported by `Header.tsx` (same pattern as `HeaderDropdownPanels`), mounted on first open, prefetched via `requestIdleCallback`. **Zero initial-bundle impact, zero CLS** — only the fixed-size trigger pill and a keydown listener live in the main bundle. |
 | Data weight | The big data modules (`api-product-pages`, `industries`, `solutions`) are already shared Rollup chunks (used by header dropdowns + detail pages), so the palette references them at no extra network cost. Verified: page-data strings appear in exactly one dist chunk. |
 | SSG safety | Palette never renders during prerender (`searchMounted` starts `false`); `dist/index.html` contains the trigger pill but no cmdk markup. No `window` access at module scope in the index. |
@@ -44,12 +45,24 @@ Score = BM25 over the boosted fields × an asset-type multiplier.
 
 `TOKEN_ALIASES` handles single tokens; `PHRASE_ALIASES` handles multi-word forms, applied to the raw query *before* MiniSearch tokenizes (the tokenizer would otherwise have already split them).
 
+## Body index (long-form prose)
+
+Labels and one-line summaries alone can't answer a lot of real queries — "penny drop" appears in the Bank Account Verification *description*, not its title. `search-body.json` closes that gap.
+
+- **Produced by** `collectBodies()` in `vite-plugin-generate-markdown.ts`, which renders each product / industry / solution / endpoint / guide twin and runs it through `extractBody()`.
+- **Keyed by** `searchItemId(category, slug)` — the same constructor `search-index.ts` uses to build `SearchItem.id`, so the two cannot drift. A test asserts every non-page/non-FAQ item's id round-trips through it.
+- **Excludes pages and FAQs** by design: a page's content *is* its label and keywords, and an FAQ's answer is already its sublabel.
+- **`extractBody`** (`src/lib/markdown/extract-body.ts`) drops frontmatter, the boilerplate canonical-URL blockquote, fenced code and pipe tables; it keeps heading *text* and non-boilerplate blockquote prose. Capped at 1500 chars/document — measured: 500 → 82 KB, 1500 → 160 KB, 3000 → 240 KB raw.
+- **Dev**: served by the plugin's middleware at `/search-body.json`, cached in the plugin closure (336 ms cold → 2 ms warm). Not invalidated on HMR — restart the dev server after editing page data if the body index needs to reflect it.
+
 ## Files
 
 - `src/lib/search-engine.ts` — MiniSearch config, synonyms, stopwords, ranking, `parseQuery`.
 - `src/lib/search-engine.test.ts` — ranking behaviour + regression guards.
-- `src/lib/search-index.ts` — `SearchItem` type + `SEARCH_INDEX` builder (lazy chunk only).
+- `src/lib/search-index.ts` — `SearchItem` type, `searchItemId()`, `SEARCH_INDEX` builder (lazy chunk only).
 - `src/lib/search-index.test.ts` — index integrity (unique ids, live `/docs` slugs).
+- `src/lib/markdown/extract-body.ts` (+ `.test.ts`) — markdown → searchable prose.
+- `vite-plugin-generate-markdown.ts` — `collectBodies()` + the `search-body.json` emit and dev route.
 - `src/components/CommandPalette.tsx` — palette UI (Dialog + `ui/command.tsx` primitives).
 - `src/components/Header.tsx` — triggers, ⌘K listener, lazy mount + idle prefetch.
 - `index.html` / `src/index.css` — OS detection + kbd-hint visibility.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildEngine, parseQuery, search } from "@/lib/search-engine";
-import { SEARCH_INDEX } from "@/lib/search-index";
+import { SEARCH_INDEX, searchItemId } from "@/lib/search-index";
 
 /**
  * Ranking behaviour for the ⌘K palette. Complements search-index.test.ts, which
@@ -158,6 +158,46 @@ describe("parseQuery", () => {
 
 	it("leaves an ordinary query alone", () => {
 		expect(parseQuery("pan card")).toEqual({ scope: null, query: "pan card" });
+	});
+});
+
+describe("body index", () => {
+	// search-body.json is keyed by searchItemId(). If the plugin and the runtime
+	// index ever disagreed, every body would silently attach to nothing — the
+	// engine would still work, just with no body matches at all.
+	it("keys bodies by the same id the index generates", () => {
+		for (const item of SEARCH_INDEX) {
+			if (item.category === "page" || item.category === "faq") continue;
+			expect(searchItemId(item.category, item.slug as string)).toBe(item.id);
+		}
+	});
+
+	it("makes prose searchable that labels and keywords do not contain", () => {
+		const target = SEARCH_INDEX.find((i) => i.category === "endpoint")!;
+		const withBodies = buildEngine({
+			[target.id]: "supercalifragilistic reconciliation ledger",
+		});
+		expect(search(engine, "supercalifragilistic", "all")).toHaveLength(0);
+		expect(search(withBodies, "supercalifragilistic", "all")[0]?.item.id).toBe(
+			target.id,
+		);
+	});
+
+	it("ranks a body-only match below a label match for the same term", () => {
+		const [labelled, bodied] = SEARCH_INDEX.filter(
+			(i) => i.category === "endpoint",
+		);
+		const withBodies = buildEngine({ [bodied.id]: `prose ${labelled.label}` });
+		const results = search(withBodies, labelled.label, "all");
+		const labelRank = results.findIndex((r) => r.item.id === labelled.id);
+		const bodyRank = results.findIndex((r) => r.item.id === bodied.id);
+		if (bodyRank >= 0) expect(labelRank).toBeLessThan(bodyRank);
+	});
+
+	it("ignores body entries for ids that are not in the index", () => {
+		expect(() =>
+			buildEngine({ "endpoint:does-not-exist": "orphan" }),
+		).not.toThrow();
 	});
 });
 

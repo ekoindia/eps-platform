@@ -124,7 +124,7 @@ All Markdown generation logic lives in `src/lib/markdown/`.
 
 The file `vite-plugin-generate-markdown.ts` is the core integration point.
 
-It does two jobs:
+It does three jobs:
 
 1. **Build-time generation**
 	 During `npm run build`, it loads the data modules and renderer modules using
@@ -134,6 +134,15 @@ It does two jobs:
 	 During `npm run dev`, it serves `.md` and `.txt` endpoints dynamically from
 	 the same renderer logic, so routes like `/products/aeps-api.md` work locally
 	 without needing a production build.
+
+3. **`search-body.json` for the ⌘K palette**
+	 `collectBodies()` reuses the same renderers to build a map of
+	 `SearchItem.id` → page prose (via `src/lib/markdown/extract-body.ts`), written
+	 to `dist/search-body.json` at build time and served from an in-memory cache in
+	 dev. This is what makes long-form page text searchable in the command palette —
+	 see [command-palette-search.md](./command-palette-search.md). Adding a new page
+	 type to the renderers means adding it to `collectBodies()` too, or its prose
+	 stays unsearchable.
 
 The plugin is registered in `vite.config.ts`:
 
