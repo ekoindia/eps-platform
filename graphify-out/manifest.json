@@ -3015,8 +3015,8 @@
     "semantic_hash": "337ba817628f1338ed57a006fe6a8e66"
   },
   "docs/command-palette-search.md": {
-    "mtime": 1785755178.2704482,
-    "ast_hash": "7ad982570758f2f0d501a9370d0311b3",
+    "mtime": 1785755467.0069952,
+    "ast_hash": "3e17f4e2f22f8ccc2fc9ebe26e3341f4",
     "semantic_hash": ""
   },
   "docs/configuration.md": {
@@ -3615,13 +3615,13 @@
     "semantic_hash": ""
   },
   "src/lib/search-engine.test.ts": {
-    "mtime": 1785755020.9103765,
-    "ast_hash": "c437711f1c046eaa626dd514c5b78ce6",
+    "mtime": 1785755428.2154284,
+    "ast_hash": "56d0d693e1183d7b516c43fb8f29df43",
     "semantic_hash": ""
   },
   "src/lib/search-engine.ts": {
-    "mtime": 1785754252.0332477,
-    "ast_hash": "9ac2ee47c814b26f944e1dfd90d7f2b9",
+    "mtime": 1785755394.1957717,
+    "ast_hash": "360d5ff91cd61d0923c66b7661af98b0",
     "semantic_hash": ""
   },
   "src/lib/markdown/extract-body.test.ts": {

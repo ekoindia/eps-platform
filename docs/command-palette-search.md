@@ -46,6 +46,14 @@ When the strict pass returns **zero** results, the query is retried with `combin
 This recovers 6 of the 8 previously-dead queries with the right answer in the top 3. Two remain unanswerable lexically (*"check if someone is who they say they are"*, *"stop fraudulent payouts"*) — they share no vocabulary with any document, and would need semantic retrieval.
 
 The fallback fires **only on a total miss**, so a query that already matched precisely is never diluted, and gibberish still returns nothing.
+
+### Semantic search: considered, deferred
+
+A semantic hybrid was designed and costed — build-time embeddings (Voyage `voyage-3.5-lite`, int8, ~100 KB shipped), a `POST /search/embed` endpoint on eps-backend to embed the query, and reciprocal-rank fusion against the lexical results.
+
+It was **deferred**, because the measurement above moved the goalposts: the lexical gap it was meant to close went from 7 of 12 natural-language queries to 2. The cost is a paid vendor, an API key in CI, a new public endpoint with rate limiting and KV caching, a committed binary artifact, and hash-based staleness detection — for two queries.
+
+Revisit when there is evidence rather than intuition: log zero-result queries first. If real users are hitting the *"check if someone is who they say they are"* class of query at volume, the design is in this repo's history (`git log --grep="semantic"` on the planning notes). Note also that Anthropic has no embeddings API — this would be a third-party dependency regardless.
 | `fuzzy` | length-gated: off < 4 chars, `0.15` at 4, `0.2` at 5+ | At 3 characters an edit distance of 1 makes "pan" match "pin", "can" and "ban". |
 
 **Stopwords are load-bearing.** With `combineWith: "AND"`, a query like *"how do I verify a bank account"* is unanswerable unless `how`/`do`/`i`/`a` are dropped — no document contains them. They are stripped from both the index and the query.
