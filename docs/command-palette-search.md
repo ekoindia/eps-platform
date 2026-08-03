@@ -7,31 +7,57 @@ Global fuzzy search across APIs, industries, solution packs and site pages. Impl
 - **Desktop trigger**: search pill in the header CTA area — search icon + "Search" + OS-aware kbd badge (`⌘K` on macOS/iOS, `Ctrl K` elsewhere).
 - **Mobile trigger**: icon-only search button next to the hamburger.
 - **Keyboard**: `⌘K` / `Ctrl+K` toggles the palette anywhere (ignored while typing in a form field when the palette is closed). `↑↓` navigate, `↵` open, `esc` close.
-- **Empty query**: curated "suggested" view (flagship APIs, priority-1 industries/solutions, key pages). Typing searches the full index.
-- Results grouped in fixed order: **APIs → Industries → Solutions → Pages**, each row with category icon tile, label and sublabel. Footer shows keyboard hints.
+- **Empty query**: curated "suggested" view (flagship APIs, priority-1 industries/solutions, key pages), grouped in fixed order: **APIs → Guides → Industries → Solutions → Pages**.
+- **Typing**: a flat, globally-ranked list — grouping would fight the ranking. Each row has a category icon tile, label, sublabel and a type badge (endpoints show an HTTP method pill and their request path instead).
+- **Scope tabs** narrow to one asset type. Leading prefix tokens jump straight to a scope and are consumed from the input: `e: upi`, `g: auth`, `api:`, `sol:`, `ind:`, `page:`, `faq:`.
 - Selecting a result: SPA navigation (`useNavigate`, no full reload); external items (Developer Docs) open in a new tab; the "Talk to Sales" action dispatches the existing `open-talk-to-sales` window event.
 
 ## Architecture
 
 | Concern | Approach |
 |---|---|
-| Fuzzy engine | `cmdk` built-in scorer (command-score) — no new dependencies. Extra match terms fed via the `CommandItem keywords` prop. |
-| Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products only), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), plus a static pages list. New APIs/industries/solutions appear in search automatically. |
+| Search engine | **MiniSearch** (`minisearch@^7`, ~5 KB gz) in `src/lib/search-engine.ts` — BM25 with prefix matching, length-gated fuzzy, and per-field boosts. `cmdk` is left to do rendering and keyboard navigation only (`shouldFilter={false}`); it no longer scores anything. |
+| Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products with a page), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `docs-registry.ts` (endpoints + guides), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), `common-faqs.ts`, plus a static pages list. New APIs/endpoints/industries/solutions appear in search automatically. |
 | Lazy loading | `CommandPalette` is a separate Vite chunk, lazy-imported by `Header.tsx` (same pattern as `HeaderDropdownPanels`), mounted on first open, prefetched via `requestIdleCallback`. **Zero initial-bundle impact, zero CLS** — only the fixed-size trigger pill and a keydown listener live in the main bundle. |
 | Data weight | The big data modules (`api-product-pages`, `industries`, `solutions`) are already shared Rollup chunks (used by header dropdowns + detail pages), so the palette references them at no extra network cost. Verified: page-data strings appear in exactly one dist chunk. |
 | SSG safety | Palette never renders during prerender (`searchMounted` starts `false`); `dist/index.html` contains the trigger pill but no cmdk markup. No `window` access at module scope in the index. |
 | OS detection | 1-line inline script in `index.html` sets `<html data-os="mac|other">` before first paint; CSS rules in `src/index.css` show the matching kbd hint (`.kbd-os-mac` / `.kbd-os-other`). No hydration mismatch, no flicker. |
 | A11y | Radix Dialog (focus trap, esc, scroll lock) + cmdk combobox semantics; `sr-only` DialogTitle; `aria-keyshortcuts` on the trigger; `motion-reduce:animate-none`. |
 
+## Ranking
+
+Score = BM25 over the boosted fields × an asset-type multiplier.
+
+| Knob | Value | Why |
+|---|---|---|
+| Field boosts | `slug: 8`, `label: 3`, `keywords: 1.5`, `sublabel: 1` | Slug is the strongest identity signal: short, unique, and URL-stable. Labels are marketing prose of variable length, and BM25 penalises long fields — at `slug: 4` the query "bbps" ranked `api:bbps-api` *seventh*, behind six of its own endpoints, because the label "Bharat Bill Payment System (BBPS)" dilutes the term across five tokens while "Pay BBPS Bill" concentrates it in three. |
+| `TYPE_ALPHA` | `1.5` (multiplier spans 1.0–2.5) | Delivers what `TYPE_WEIGHT` promises — *"higher = surfaced first on equal text relevance"*. The previous 0.5 was too weak to overcome BM25 spread between sibling documents. |
+| `combineWith` | `"AND"` | Every meaningful query term must match. Requires the stopword list to be correct — see below. |
+| `fuzzy` | length-gated: off < 4 chars, `0.15` at 4, `0.2` at 5+ | At 3 characters an edit distance of 1 makes "pan" match "pin", "can" and "ban". |
+
+**Stopwords are load-bearing.** With `combineWith: "AND"`, a query like *"how do I verify a bank account"* is unanswerable unless `how`/`do`/`i`/`a` are dropped — no document contains them. They are stripped from both the index and the query.
+
+**Synonyms** are canonicalised on *both* sides (index and query) rather than expanded at index time; expansion inflates term frequency for documents that naturally contain several aliases. Two rules, both guarded by tests in `search-engine.test.ts`:
+
+1. **Only alias spellings absent from the corpus.** Aliasing a word documents actually use (e.g. `remittance` → `dmt`) strips its surface form from the index, so fuzzy can no longer bridge a typo to it — `remitance` would find nothing.
+2. **The target must be a token that exists.** Mapping `cibil` onto a coined `creditscore` guarantees zero results.
+
+`TOKEN_ALIASES` handles single tokens; `PHRASE_ALIASES` handles multi-word forms, applied to the raw query *before* MiniSearch tokenizes (the tokenizer would otherwise have already split them).
+
 ## Files
 
+- `src/lib/search-engine.ts` — MiniSearch config, synonyms, stopwords, ranking, `parseQuery`.
+- `src/lib/search-engine.test.ts` — ranking behaviour + regression guards.
 - `src/lib/search-index.ts` — `SearchItem` type + `SEARCH_INDEX` builder (lazy chunk only).
+- `src/lib/search-index.test.ts` — index integrity (unique ids, live `/docs` slugs).
 - `src/components/CommandPalette.tsx` — palette UI (Dialog + `ui/command.tsx` primitives).
 - `src/components/Header.tsx` — triggers, ⌘K listener, lazy mount + idle prefetch.
 - `index.html` / `src/index.css` — OS detection + kbd-hint visibility.
 
 ## Maintenance
 
-- **Adding a searchable static page**: append to `buildPageItems()` in `src/lib/search-index.ts`.
+- **Adding a synonym**: one line in `TOKEN_ALIASES` (single word) or `PHRASE_ALIASES` (multi-word) in `src/lib/search-engine.ts`. Check the two rules above first — the test suite enforces them.
+- **Adding a searchable static page**: append to `PAGE_ITEMS` in `src/lib/search-index.ts`.
 - **Curating the empty-query view**: edit `SUGGESTED_API_IDS` (APIs) or rely on `priority: 1` (industries/solutions); set `suggested: true` on page items.
+- **Retuning ranking**: adjust the boosts or `TYPE_ALPHA` in `search-engine.ts`, then `npx vitest run src/lib/search-engine.test.ts`. The suite pins the cases that previously regressed.
 - **Verifying chunk isolation after changes**: `npm run build`, then confirm `dist/assets/CommandPalette-*.js` exists, `grep -c cmdk dist/index.html` → 0, and a long product string (e.g. "domestic money transfer API") appears in only one dist chunk.

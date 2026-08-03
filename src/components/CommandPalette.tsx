@@ -1,11 +1,9 @@
-import { defaultFilter } from "cmdk";
 import { Search } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
 	Command,
-	CommandEmpty,
 	CommandGroup,
 	CommandInput,
 	CommandItem,
@@ -14,7 +12,12 @@ import {
 import { HttpMethodTag } from "@/components/docs/HttpMethodTag";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
-	MAX_TYPE_WEIGHT,
+	buildEngine,
+	parseQuery,
+	search,
+	type Scope,
+} from "@/lib/search-engine";
+import {
 	SEARCH_INDEX,
 	type SearchCategory,
 	type SearchItem,
@@ -74,8 +77,7 @@ const ICON_TINT: Record<SearchCategory, string> = {
 	faq: "bg-muted text-muted-foreground",
 };
 
-/** Scope tabs — narrow the result set by asset type. */
-type Scope = SearchCategory | "all";
+/** Scope tabs — narrow the result set by asset type. `Scope` lives in search-engine. */
 const SCOPES: { id: Scope; label: string }[] = [
 	{ id: "all", label: "All" },
 	{ id: "api", label: "Products" },
@@ -87,114 +89,31 @@ const SCOPES: { id: Scope; label: string }[] = [
 	{ id: "faq", label: "FAQs" },
 ];
 
-/** Leading prefix tokens that jump straight to a scope (e.g. `e: upi`). Tokens
- * are consumed from the input the moment they're typed; the active tab reflects
- * the chosen scope. Avoids the ambiguous `p:`. */
-const TOKEN_SCOPE: Record<string, Scope> = {
-	"all:": "all",
-	"api:": "api",
-	"prod:": "api",
-	"product:": "api",
-	"e:": "endpoint",
-	"ep:": "endpoint",
-	"endpoint:": "endpoint",
-	"g:": "guide",
-	"guide:": "guide",
-	"sol:": "solution",
-	"solution:": "solution",
-	"ind:": "industry",
-	"industry:": "industry",
-	"page:": "page",
-	"faq:": "faq",
-};
-
 /** Curated items for the empty-query view */
 const SUGGESTED_ITEMS = SEARCH_INDEX.filter((item) => item.suggested);
-
-/** cmdk's CommandItem `value`, also the join key back to the SearchItem. Single
- * source of truth — used by both ResultRow and ITEM_BY_VALUE so they never drift. */
-const itemValue = (item: SearchItem): string => `${item.label} ${item.id}`;
-
-const ITEM_BY_VALUE = new Map(
-	SEARCH_INDEX.map((item) => [itemValue(item).toLowerCase(), item]),
-);
-
-/**
- * cmdk's fuzzy score, gated on the query appearing as a contiguous substring
- * of the item's value + keywords. The default fuzzy filter matches scattered
- * letter subsequences, so e.g. "pricing" matched half the index via long SEO
- * keyword strings.
- */
-const substringGatedFilter = (
-	value: string,
-	search: string,
-	keywords?: string[],
-): number => {
-	const haystack = `${value} ${keywords?.join(" ") ?? ""}`.toLowerCase();
-	if (!haystack.includes(search.trim().toLowerCase())) return 0;
-	return defaultFilter(value, search, keywords);
-};
-
-// Ranking weights — tuned empirically; kept named for easy adjustment.
-const TYPE_ALPHA = 0.5; // asset-type multiplier ∈ [1.0 .. 1.5]
-const FIELD_BETA = 0.5; // match-field multiplier ∈ [0.75 .. 1.5]
-const FIELD_WEIGHT = {
-	slug: 1.0,
-	label: 0.8,
-	keyword: 0.55,
-	description: 0.35,
-	none: 0.25,
-};
-
-/** Where the query hit, in priority order: slug/id > label > keyword > description. */
-const matchFieldWeight = (item: SearchItem, search: string): number => {
-	const s = search.trim().toLowerCase();
-	if (!s) return FIELD_WEIGHT.none;
-	if (item.slug?.toLowerCase().includes(s) || item.id.toLowerCase().includes(s))
-		return FIELD_WEIGHT.slug;
-	if (item.label.toLowerCase().includes(s)) return FIELD_WEIGHT.label;
-	if (item.keywords.some((k) => k.toLowerCase().includes(s)))
-		return FIELD_WEIGHT.keyword;
-	if (item.sublabel?.toLowerCase().includes(s)) return FIELD_WEIGHT.description;
-	return FIELD_WEIGHT.none;
-};
-
-/** Two-factor ranked filter: cmdk fuzzy score × asset-type weight × match-field weight. */
-const rankedFilter = (
-	value: string,
-	search: string,
-	keywords?: string[],
-): number => {
-	const base = substringGatedFilter(value, search, keywords);
-	if (base === 0) return 0;
-	const item = ITEM_BY_VALUE.get(value.toLowerCase());
-	if (!item) return base;
-	const typeMul = 1 + TYPE_ALPHA * (item.typeWeight / MAX_TYPE_WEIGHT);
-	const fieldMul = FIELD_BETA + matchFieldWeight(item, search);
-	return base * typeMul * fieldMul;
-};
-
-/** Splits leading prefix token off the raw input → { scope, query }. */
-const parseQuery = (raw: string): { scope: Scope | null; query: string } => {
-	const lower = raw.toLowerCase();
-	for (const [token, scope] of Object.entries(TOKEN_SCOPE)) {
-		if (lower.startsWith(token)) {
-			return { scope, query: raw.slice(token.length).replace(/^\s+/, "") };
-		}
-	}
-	return { scope: null, query: raw };
-};
 
 const escapeRegExp = (s: string): string =>
 	s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Bolds the matched substring of `text`; safe for regex-special queries. */
-const highlight = (text: string, query: string): React.ReactNode => {
-	const q = query.trim();
-	if (!q) return text;
-	const parts = text.split(new RegExp(`(${escapeRegExp(q)})`, "ig"));
+/**
+ * Bolds every matched term. `terms` comes from MiniSearch's match metadata, so
+ * multi-token queries highlight each hit — the previous version took the raw
+ * query and could only bold one contiguous run.
+ *
+ * These are the *indexed* terms, which is what we want: type "aadhar" and the
+ * word actually bolded is "Aadhaar". Terms that matched only the body or
+ * keywords simply find nothing in `text` and are left alone.
+ */
+const highlight = (text: string, terms: string[]): React.ReactNode => {
+	if (!terms.length) return text;
+	// Longest-first so "aadhaar" wins over "aadhar" inside the alternation.
+	const ordered = [...terms].sort((a, b) => b.length - a.length);
+	const parts = text.split(
+		new RegExp(`(${ordered.map(escapeRegExp).join("|")})`, "ig"),
+	);
+	const hit = new Set(terms.map((t) => t.toLowerCase()));
 	return parts.map((part, i) =>
-		part.toLowerCase() === q.toLowerCase() ? (
+		hit.has(part.toLowerCase()) ? (
 			<mark
 				key={i}
 				className="bg-transparent font-semibold text-foreground group-data-[selected=true]:text-accent-foreground"
@@ -211,12 +130,13 @@ const highlight = (text: string, query: string): React.ReactNode => {
 const ResultRow = ({
 	item,
 	showCategory,
-	query,
+	terms,
 	onSelect,
 }: {
 	item: SearchItem;
 	showCategory?: boolean;
-	query?: string;
+	/** Matched terms to bold; omitted in the empty-query suggested view. */
+	terms?: string[];
 	onSelect: (item: SearchItem) => void;
 }) => {
 	const isEndpoint = item.category === "endpoint";
@@ -224,8 +144,9 @@ const ResultRow = ({
 	const secondary = isEndpoint ? item.path : item.sublabel;
 	return (
 		<CommandItem
-			value={itemValue(item)}
-			keywords={item.keywords}
+			// The id is unique (guarded by search-index.test.ts) and cmdk no longer
+			// filters on this value, so it needs no searchable text baked in.
+			value={item.id}
 			onSelect={() => onSelect(item)}
 			className="group gap-3 px-3 py-2"
 		>
@@ -239,7 +160,7 @@ const ResultRow = ({
 			</div>
 			<div className="min-w-0 flex-1">
 				<div className="truncate text-sm font-medium">
-					{query ? highlight(item.label, query) : item.label}
+					{terms ? highlight(item.label, terms) : item.label}
 				</div>
 				{secondary && (
 					<div
@@ -248,7 +169,7 @@ const ResultRow = ({
 							isEndpoint && "font-mono",
 						)}
 					>
-						{isEndpoint && query ? highlight(secondary, query) : secondary}
+						{isEndpoint && terms ? highlight(secondary, terms) : secondary}
 					</div>
 				)}
 			</div>
@@ -283,9 +204,19 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
 export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	const [query, setQuery] = useState("");
 	const [scope, setScope] = useState<Scope>("all");
+	// State, not a ref: Phase B swaps in a body-aware engine once
+	// search-body.json loads, and that swap has to re-run the memo below.
+	// Built lazily on first render — the palette only mounts once opened.
+	const [engine] = useState(() => buildEngine());
 	const navigate = useNavigate();
 	const location = useLocation();
 	const previousPathRef = useRef(location.pathname);
+
+	// Lexical search is sub-millisecond over ~195 docs, so no debounce.
+	const results = useMemo(
+		() => (query.trim() ? search(engine, query, scope) : []),
+		[engine, query, scope],
+	);
 
 	// Fresh query + scope every time the palette opens
 	useEffect(() => {
@@ -322,11 +253,6 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 		}
 	};
 
-	const visible =
-		scope === "all"
-			? SEARCH_INDEX
-			: SEARCH_INDEX.filter((item) => item.category === scope);
-
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
@@ -334,7 +260,9 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 				className="top-[12%] translate-y-0 sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden [--tw-enter-translate-x:0]! [--tw-enter-translate-y:0]! [--tw-exit-translate-x:0]! [--tw-exit-translate-y:0]!"
 			>
 				<DialogTitle className="sr-only">Search</DialogTitle>
-				<Command loop filter={rankedFilter}>
+				{/* shouldFilter={false}: search-engine.ts ranks and filters; cmdk is
+				    left to do rendering and keyboard navigation only. */}
+				<Command loop shouldFilter={false}>
 					<CommandInput
 						placeholder="Search APIs, endpoints, guides, solutions…"
 						value={query}
@@ -359,8 +287,11 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 						))}
 					</div>
 					<CommandList className="max-h-[min(60vh,420px)] overscroll-contain">
-						<CommandEmpty>
-							<div className="flex flex-col items-center gap-2 py-2">
+						{/* Rendered directly rather than via <CommandEmpty>, whose
+						    internal count is derived from cmdk's own filtering — which
+						    is switched off here. */}
+						{query && results.length === 0 && (
+							<div className="flex flex-col items-center gap-2 py-6">
 								<Search className="h-5 w-5 text-muted-foreground/60" />
 								<p className="text-sm text-muted-foreground">
 									No results for{" "}
@@ -373,16 +304,15 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 									&ldquo;lending&rdquo;
 								</p>
 							</div>
-						</CommandEmpty>
+						)}
 						{query
-							? // Searching → flat list so cmdk ranks all matches globally by
-								// score (cross-group reordering is broken in cmdk v1.1.1)
-								visible.map((item) => (
+							? // Searching → flat list, already ranked globally by relevance
+								results.map(({ item, terms }) => (
 									<ResultRow
 										key={item.id}
 										item={item}
 										showCategory
-										query={query}
+										terms={terms}
 										onSelect={handleSelect}
 									/>
 								))
