@@ -103,6 +103,14 @@ export const PRICING_GROUP_ORDER = [
 export const PRICED_APIS: PricedApi[] = [
 	// PAN
 	{
+		id: "pan-fetch",
+		name: "Fetch PAN Details",
+		shortName: "Fetch",
+		productId: "pan",
+		group: "PAN",
+		tiers: [{ upTo: null, rate: 1.3 }],
+	},
+	{
 		id: "pan-lite",
 		name: "PAN Verification (Lite)",
 		shortName: "Lite",
