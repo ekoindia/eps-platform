@@ -392,7 +392,7 @@ export const PRICED_APIS: PricedApi[] = [
 		name: "DigiLocker (Create URL)",
 		productId: "digilocker",
 		group: "Identity Documents",
-		tiers: [{ upTo: null, rate: 1.44 }],
+		tiers: [{ upTo: null, rate: 2.5 }],
 		unitLabel: "per request",
 	},
 	{
