@@ -170,27 +170,68 @@ mirror repo + deploy key.
 
 ## 5. CI (`.github/workflows/ci.yml`)
 
-Runs on pull requests and on pushes to `dev`, `main`, and `feature/**`.
+Runs on pull requests and on pushes to `main` only. `dev` and `feature/**` are
+covered by their pull-request run; building them on push as well produced a
+duplicate identical run and made back-to-back `dev` pushes queue behind each
+other on the concurrency group (once, 4m28s of pure wait before the first job
+started). `main` keeps its push trigger because the `workflow_run` deploys key
+off a completed `main` push run.
 
 > **CI never publishes.** PRs and branch pushes run only lint/build/test here.
 > Publishing happens in `release.yml` (§3): npm on push to `main`, PHP on a
 > `vX.Y.Z` tag — not this workflow.
 
-- **Job `web-and-packages`** (Node 20): `npm ci` → `npm run lint` →
-  `npm run build` (website + agent bundles) → uploads the baked
-  `sdk-surface.json` as the `sdk-surface` artifact → `npx vitest run` (website
-  tests) → `npm test` for `@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`,
-  `@ekoindia/eps-mock-server`, and `@ekoindia/eps-transact-mcp` (+ its Docker
-  image build/`/healthz` smoke).
-- **Job `php-sdk`** (PHP 8.2 + Composer, in `packages/sdk-php`): `needs`
-  `web-and-packages` and **downloads the `sdk-surface` artifact** into `data/`
-  (the baked surface is gitignored and never built on the PHP runner) →
+`changes` (`dorny/paths-filter`) runs first and every job below gates on its
+outputs with a **job-level** `if:`, not a step-level one — a skipped job never
+boots a runner or its service containers, so a docs-only change costs nothing.
+The jobs then run **concurrently**:
+
+- **`lint`** / **`typecheck`** (Node 20): `npm ci` → `npm run lint` / `npm run typecheck`.
+- **`test-web`**: `npm ci` → `npx vitest run`. Runs **no build** — verified that
+  all 101 website test files pass with neither `dist/` nor `packages/*/data/`
+  present. This is what keeps the critical path short.
+- **`build-and-test-packages`** (owns the Valkey service container): `npm ci` →
+  `npm run build` → uploads the baked `sdk-surface.json` as the `sdk-surface`
+  artifact → `npm test` for `@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`,
+  `@ekoindia/eps-mock-server`, `@ekoindia/eps-transact-mcp`, and
+  `@ekoindia/eps-backend` (with `REDIS_TEST_URL` set) → shellcheck + poller harness.
+- **`docker`** (gated on the `backend`/`transact`/`poller` filters): compose
+  validations + Buildx image builds with a GHA layer cache (separate cache
+  scopes per image) + the transact `/healthz` smoke. When `transact` matches it
+  also runs `npm ci && npm run build` first: the transact image `COPY`s the
+  gitignored `packages/{sdk-js,eps-transact-mcp}/data/` out of the **build
+  context** (see the prerequisite note atop
+  `packages/eps-transact-mcp/Dockerfile`), so those files must exist on the
+  runner. A guard step asserts both are present before Buildx, so a build that
+  stops emitting them fails with a clear message instead of an opaque BuildKit
+  checksum error. The poller image and the compose validations need none of this.
+- **`php-sdk`** (PHP 8.2 + Composer, in `packages/sdk-php`): `needs`
+  `build-and-test-packages` and **downloads the `sdk-surface` artifact** into
+  `data/` (the baked surface is gitignored and never built on the PHP runner) →
   `composer install` → `vendor/bin/phpunit --bootstrap vendor/autoload.php tests`.
 
-> **Isolation:** `php-sdk` is its own status check. Set branch protection to
-> require only **`Web + JS/TS packages`** so a PHP failure never blocks the
-> `dev → main` merge that gates the npm release. Future SDK jobs follow the same
-> pattern (own check, optional).
+> **Why build and the package tests share one job:** every `bake-*.mjs` script
+> reads `dist/agent/*.json`, so `bake:all` — and therefore the eps-context-mcp,
+> eps-sdk, and eps-transact-mcp suites — hard-depends on `vite build`. Splitting
+> them would mean either a second `vite build` on another runner or an artifact
+> hand-off that re-serializes the two. `eps-backend` and `eps-mock-server` do not
+> need the baked data, but they are fast and ride along.
+
+- **`ci-ok`** — the single **required** status check. It `needs` every job above
+  except `php-sdk`, runs with `if: always()`, and fails if any of them reports
+  anything other than `success` or `skipped`. It also asserts `changes` itself
+  succeeded, so a broken gate (which would skip everything downstream) can never
+  pass the pipeline silently.
+
+> **Isolation:** `php-sdk` is its own status check and is deliberately **not** in
+> `ci-ok`'s `needs`, so a PHP failure never blocks the `dev → main` merge that
+> gates the npm release. Future SDK jobs follow the same pattern (own check,
+> optional).
+>
+> **Branch protection:** require only **`CI / CI OK`**. Because every other job
+> is intentionally skippable via a path filter, requiring them individually would
+> leave merges stuck on checks that legitimately never report. Adding or renaming
+> a job never needs a branch-protection edit again — just update `ci-ok`'s `needs`.
 
 ## 6. Consumer verification checklist
 

@@ -39,7 +39,10 @@ GitHub → **Settings → Rules → Rulesets** (or Settings → Branches), targe
 - [ ] **Require a pull request before merging** (≥1 approval; dismiss stale
       approvals on new commits).
 - [ ] **Require status checks to pass** — select the **CI** check (job
-      "Web + JS/TS packages"); tick "require branches up to date before merging".
+      "CI OK"); tick "require branches up to date before merging". `CI OK` is the
+      aggregator job that gates on every other CI job, so it is the only name to
+      select — do not add the individual jobs, they are path-filtered and skip
+      legitimately.
 - [ ] **Block force pushes** and **block deletions**.
 - [ ] **Enforce for administrators** (no bypass — otherwise the deploy gate has
       a hole).

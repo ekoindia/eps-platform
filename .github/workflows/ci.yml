@@ -1,26 +1,36 @@
 name: CI
 
+# Only `main` pushes are built directly — a main push run's completion is what
+# triggers the workflow_run deploys (deploy-eps-backend.yml,
+# deploy-eps-transact-mcp.yml). dev/feature branches are covered by their PR
+# run; building them on push too produced a duplicate, identical run AND made
+# back-to-back dev pushes queue behind each other on the concurrency group
+# below (observed: 4m28s of pure wait before the first job even started).
 on:
   pull_request:
   push:
     branches:
-      - dev
       - main
-      - "feature/**"
 
-# Cancel superseded PR runs only. Push runs on dev/main are NOT cancelled — a
+# Cancel superseded PR runs only. Push runs on main are NOT cancelled — a
 # main push run's completion triggers the workflow_run deploys; cancelling it
 # would drop a deploy.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# The heavy work is fanned out across independent jobs that run concurrently.
+# Each pays ~25s of checkout + setup-node + `npm ci`, which is far cheaper than
+# the serial chain it replaces. `ci-ok` at the bottom is the single required
+# status check — add or rename jobs freely, branch protection never changes.
+#
+# Job-level `if:` (not step-level) is deliberate: a skipped job never boots its
+# runner or its service containers, so a docs-only change costs nothing.
 jobs:
-  # Lightweight path detection. Every heavy step below gates on these outputs so
-  # the required checks (web-and-packages, php-sdk) still ALWAYS run and report,
-  # but skip work irrelevant to the change. `code` is a deliberate SUPERSET of
-  # every specific filter, so `php|transact|poller|backend == true` implies
-  # `code == true` (php-sdk relies on this — see its job).
+  # Lightweight path detection. Every job below gates on these outputs.
+  # `code` is a deliberate SUPERSET of every specific filter, so
+  # `php|transact|poller|backend == true` implies `code == true` (php-sdk
+  # relies on this — see its job).
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
@@ -34,13 +44,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # paths-filter needs history to diff before..after on push
+
+      # Lives here, not on a gated job: bun.lock matches no path filter, so a
+      # commit adding one alone would skip every gated job and never be caught.
+      - name: Enforce npm (no Bun lockfiles)
+        run: |
+          if git ls-files --error-unmatch bun.lock bun.lockb 2>/dev/null; then
+            echo "::error::Bun lockfile committed. This project standardizes on npm — remove bun.lock/bun.lockb."
+            exit 1
+          fi
+
       - uses: dorny/paths-filter@v3
         id: f
         with:
           filters: |
             # SUPERSET — keep every other filter's paths a subset of these so a
             # match anywhere guarantees code==true (php-sdk's sdk-surface
-            # artifact dependency relies on the Build step having run).
+            # artifact dependency relies on the build job having run).
             code:
               - 'src/**'
               - 'packages/**'
@@ -69,7 +89,7 @@ jobs:
               - '.github/workflows/ci.yml'
             # AGGRESSIVE: no bare src/** — the image smoke only needs to re-run
             # when the Dockerfile/manifests/deps change; bundle-content
-            # correctness is covered by the package vitest above.
+            # correctness is covered by the package vitest in test-packages.
             transact:
               - 'packages/eps-transact-mcp/**'
               - 'packages/sdk-js/**'
@@ -84,16 +104,70 @@ jobs:
               - '.dockerignore'
               - '.github/workflows/ci.yml'
 
-  web-and-packages:
-    name: Web + JS/TS packages
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     needs: changes
+    if: needs.changes.outputs.code == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  # The website test suite needs NO build output — verified: all 101 test files
+  # pass with neither dist/ nor packages/*/data present. Keeping `vite build`
+  # off this job is what makes it the (short) critical path.
+  test-web:
+    name: Test website
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Test website
+        run: npx vitest run
+
+  # Build + the package suites are ONE job because they are genuinely coupled:
+  # every bake script reads dist/agent/*.json, so `bake:all` (and therefore the
+  # eps-context-mcp / eps-sdk / eps-transact-mcp suites) hard-depends on
+  # `vite build`. Splitting them would mean either a second `vite build` in
+  # another runner or an artifact hand-off that re-serializes the two.
+  build-and-test-packages:
+    name: Build + package tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     services:
       # Real RESP store for the eps-backend KV contract + fail-closed
       # integration tests (src/store/redis.test.ts). They self-skip unless
       # REDIS_TEST_URL is set, so this service is what makes them actually run
       # in CI. Valkey (FOSS Redis fork) matches the image the prod compose
       # stack runs and satisfies the >=6.2 GETDEL/Lua floor the backend needs.
+      # Scoped to this job only — service containers boot before any step-level
+      # `if`, so keeping it off the other jobs is what saves their ~16s init.
       redis:
         image: valkey/valkey:8-alpine
         ports:
@@ -104,44 +178,23 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Enforce npm (no Bun lockfiles)
-        run: |
-          if git ls-files --error-unmatch bun.lock bun.lockb 2>/dev/null; then
-            echo "::error::Bun lockfile committed. This project standardizes on npm — remove bun.lock/bun.lockb."
-            exit 1
-          fi
-
-      - name: Setup Node.js
-        if: needs.changes.outputs.code == 'true'
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+      - run: npm ci
 
-      - name: Install dependencies
-        if: needs.changes.outputs.code == 'true'
-        run: npm ci
-
-      - name: Lint
-        if: needs.changes.outputs.code == 'true'
-        run: npm run lint
-
-      - name: Typecheck
-        if: needs.changes.outputs.code == 'true'
-        run: npm run typecheck
-
+      # Proves the website actually builds AND produces dist/agent/*.json, which
+      # `bake:all` copies into each package's data/ dir. Required by the
+      # eps-context-mcp / eps-sdk / eps-transact-mcp suites below.
       - name: Build (website + agent bundles)
-        if: needs.changes.outputs.code == 'true'
         run: npm run build
 
-      # The SDK surface is baked here (gitignored, not committed). Hand it to the
-      # separate php-sdk job as an artifact so PHP tests get the runtime asset
-      # without rebuilding the website. Generic name — future SDK jobs reuse it.
+      # The SDK surface is baked here (gitignored, not committed). Hand it to
+      # the php-sdk job as an artifact so PHP tests get the runtime asset
+      # without a Node toolchain. Generic name — future SDK jobs reuse it.
       - name: Upload baked SDK surface
-        if: needs.changes.outputs.code == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sdk-surface
@@ -149,30 +202,21 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Test website
-        if: needs.changes.outputs.code == 'true'
-        run: npx vitest run
-
       - name: Test eps-context-mcp
-        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-context-mcp
 
       - name: Test eps-sdk (Node.js)
-        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-sdk
 
       # transact-mcp imports @ekoindia/eps-sdk via its package main (dist/), so
-      # the SDK must be tsup-built first; its baked data came from `npm run build`.
+      # the SDK must be tsup-built first — `transact:test` does that itself.
       - name: Test eps-transact-mcp
-        if: needs.changes.outputs.code == 'true'
         run: npm run transact:test
 
       - name: Test eps-mock-server
-        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-mock-server
 
       - name: Test eps-backend (incl. Redis integration)
-        if: needs.changes.outputs.code == 'true'
         run: npm test -w @ekoindia/eps-backend
         env:
           # Flips src/store/redis.test.ts from skip -> run against the `redis`
@@ -181,15 +225,30 @@ jobs:
           REDIS_TEST_URL: redis://localhost:6379
 
       - name: Shellcheck poller
-        if: needs.changes.outputs.code == 'true'
         run: shellcheck packages/eps-backend/deploy/poller/poll.sh
 
       - name: Test eps-backend poller (bash shim harness)
-        if: needs.changes.outputs.code == 'true'
         run: npm run test:poller -w @ekoindia/eps-backend
 
-      # Compose validations gate on their own package filter only (each is
-      # standalone — no dependency on the Build step above).
+  # Compose validations and image builds gate on their own package filters.
+  # Each `docker build` runs its own `npm ci` INSIDE the image, so no job
+  # dependency is needed for dependencies — but the transact image also COPYs
+  # gitignored baked data OUT OF the build context, so this job bakes that
+  # itself (see the Setup Node/Build steps below). An earlier version of this
+  # comment claimed the images needed nothing from a build step at all; that
+  # was true of npm install and false of the baked data, and it broke the
+  # transact image when this job was split onto its own runner.
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.transact == 'true' ||
+      needs.changes.outputs.poller == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
       # A well-formed 64-hex digest (sha256:0 fails digest-format).
       - name: Validate eps-backend prod compose
         if: needs.changes.outputs.backend == 'true'
@@ -214,24 +273,79 @@ jobs:
             --env-file deploy.env -f docker-compose.prod.yml config -q
           rm -f deploy.env
 
-      # Docker builds gate on their own package filter only — each `docker build`
-      # runs its own npm ci inside the image, so it doesn't need the job's Build
-      # step. (Aggressive: skipped on plain src/** edits — see the `transact`
-      # filter note; the package vitest already proves bundle content.)
+      # The transact image COPYs packages/{sdk-js,eps-transact-mcp}/data into the
+      # build context — both gitignored, both produced by the root `vite build` +
+      # `bake:all`. See the prerequisite note atop packages/eps-transact-mcp/Dockerfile.
+      # Only the transact image needs this: the poller image builds from its own
+      # self-contained context and the compose validations read no baked data.
+      - name: Setup Node.js
+        if: needs.changes.outputs.transact == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: needs.changes.outputs.transact == 'true'
+        run: npm ci
+
+      - name: Build (bakes packages/*/data into the image build context)
+        if: needs.changes.outputs.transact == 'true'
+        run: npm run build
+
+      # Fail loudly and precisely here rather than as an opaque BuildKit
+      # "failed to calculate checksum ... not found" three steps later, if the
+      # build ever stops emitting these.
+      - name: Assert baked data present
+        if: needs.changes.outputs.transact == 'true'
+        run: |
+          for f in packages/sdk-js/data/sdk-surface.json \
+                   packages/eps-transact-mcp/data/eps.json; do
+            if [ ! -s "$f" ]; then
+              echo "::error::$f missing or empty after 'npm run build' — the transact image COPYs it from the build context."
+              exit 1
+            fi
+          done
+
+      # buildx is required for the GHA layer cache below; the default docker
+      # driver cannot export cache.
+      - name: Set up Buildx
+        if: needs.changes.outputs.poller == 'true' || needs.changes.outputs.transact == 'true'
+        uses: docker/setup-buildx-action@v3
+
       # The shared poller image (consumed by the transact stack; eps-backend
       # build:s the same Dockerfile) must build — catch a broken image before
-      # any stack depends on it.
+      # any stack depends on it. Distinct cache scope: a shared scope would let
+      # the two images thrash each other's layers.
       - name: Build shared poller image
         if: needs.changes.outputs.poller == 'true'
-        run: docker build -t eps-poller-ci packages/eps-backend/deploy/poller
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/eps-backend/deploy/poller
+          load: true
+          push: false
+          tags: eps-poller-ci:latest
+          cache-from: type=gha,scope=poller
+          cache-to: type=gha,mode=max,scope=poller
 
       # Container smoke for the transactional MCP: the build exercises the risky
       # parts (workspace resolution, baked-data copy); then prove /healthz answers.
-      - name: Build + smoke eps-transact-mcp image
+      - name: Build eps-transact-mcp image
+        if: needs.changes.outputs.transact == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/eps-transact-mcp/Dockerfile
+          load: true
+          push: false
+          tags: eps-transact-mcp-ci:latest
+          cache-from: type=gha,scope=transact
+          cache-to: type=gha,mode=max,scope=transact
+
+      - name: Smoke eps-transact-mcp image
         if: needs.changes.outputs.transact == 'true'
         run: |
-          docker build -t eps-transact-mcp-ci -f packages/eps-transact-mcp/Dockerfile .
-          cid=$(docker run -d -p 8788:8788 eps-transact-mcp-ci)
+          cid=$(docker run -d -p 8788:8788 eps-transact-mcp-ci:latest)
           ok=""
           for i in $(seq 1 15); do
             if curl -fsS http://localhost:8788/healthz > /dev/null; then ok=1; break; fi
@@ -244,42 +358,80 @@ jobs:
   php-sdk:
     name: PHP SDK
     runs-on: ubuntu-latest
-    # Needs `changes` for the gate, and `web-and-packages` to receive its baked
-    # sdk-surface artifact (the PHP runner never runs the website build). PHP
-    # failing leaves this job's status independent of the JS check; the JS check
-    # is the release gate.
-    needs: [changes, web-and-packages]
+    # Needs `build-and-test-packages` to receive its baked sdk-surface artifact
+    # (the PHP runner never runs the website build). Safe because php ⊂ code, so
+    # when php==true that job ran and produced the artifact.
+    needs: [changes, build-and-test-packages]
+    if: needs.changes.outputs.php == 'true'
     defaults:
       run:
         working-directory: packages/sdk-php
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # data/sdk-surface.json is generated (gitignored), not committed. The
-      # web-and-packages job bakes it via `npm run build` and uploads it as the
-      # `sdk-surface` artifact; pull it into data/ before tests run. Safe because
-      # php ⊂ code, so when php==true the Build step ran and produced the artifact.
+      # data/sdk-surface.json is generated (gitignored), not committed.
       - name: Download baked SDK surface
-        if: needs.changes.outputs.php == 'true'
         uses: actions/download-artifact@v4
         with:
           name: sdk-surface
           path: packages/sdk-php/data
 
       - name: Setup PHP
-        if: needs.changes.outputs.php == 'true'
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
           tools: composer
 
       - name: Install Composer dependencies
-        if: needs.changes.outputs.php == 'true'
         run: composer install --no-interaction --prefer-dist
 
       # No phpunit.xml is present, so point phpunit at the tests directory and
       # bootstrap Composer's autoloader explicitly.
       - name: Run PHPUnit
-        if: needs.changes.outputs.php == 'true'
         run: vendor/bin/phpunit --bootstrap vendor/autoload.php tests
+
+  # THE required status check. Every other job is intentionally skippable via a
+  # path filter, so this one aggregates them: it always runs, and it is the only
+  # name branch protection needs to know about.
+  #
+  # `php-sdk` is deliberately NOT in `needs` — it stays its own independent,
+  # non-blocking check so a PHP failure never blocks the dev → main merge that
+  # gates the npm release (see docs/releasing-agent-packages.md §5). Leaving it
+  # out also keeps this gate from waiting on the PHP job's build dependency.
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - changes
+      - lint
+      - typecheck
+      - test-web
+      - build-and-test-packages
+      - docker
+    steps:
+      - name: Verify no job failed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+          CHANGES: ${{ needs.changes.result }}
+        run: |
+          echo "job results: $RESULTS"
+          # `changes` gates every other job, so if it fails they all report
+          # 'skipped' — which is otherwise an accepted result. Assert it
+          # explicitly so a broken gate can never pass the whole pipeline.
+          if [ "$CHANGES" != "success" ]; then
+            echo "::error::Detect changes did not succeed (result: $CHANGES)"
+            exit 1
+          fi
+          # 'skipped' is accepted: it only comes from the deliberate path-filter
+          # gates above. Anything else (failure, cancelled) fails the run.
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *)
+                echo "::error::A required job reported '$result'"
+                exit 1
+                ;;
+            esac
+          done
+          echo "All required jobs passed or were intentionally skipped."

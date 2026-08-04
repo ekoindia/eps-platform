@@ -80,6 +80,20 @@ const TYPE_WEIGHT: Record<SearchCategory, number> = {
 /** Highest type weight — normaliser for the ranking multiplier. */
 export const MAX_TYPE_WEIGHT = TYPE_WEIGHT.api;
 
+/**
+ * The one place a `SearchItem.id` is formed.
+ *
+ * Exported so build-time producers of per-item side data — currently
+ * `search-body.json`, written by vite-plugin-generate-markdown.ts — key on
+ * exactly the same string, making key drift structurally impossible.
+ *
+ * Only used by the five categories that have a generated `.md` twin. Static
+ * pages and FAQs keep their literal ids: neither has a twin, so neither can
+ * drift against anything.
+ */
+export const searchItemId = (category: SearchCategory, slug: string): string =>
+	`${category}:${slug}`;
+
 /** Icons per API product category */
 const API_CATEGORY_ICONS: Record<string, LucideIcon> = {
 	bc: Landmark,
@@ -103,7 +117,7 @@ const buildApiItems = (): SearchItem[] =>
 	getActiveProducts()
 		.filter((p) => hasProductPage(p.id))
 		.map((p) => ({
-			id: `api:${p.slug}`,
+			id: searchItemId("api", p.slug),
 			slug: p.slug,
 			label: p.name,
 			sublabel: p.shortDesc,
@@ -125,7 +139,7 @@ const buildEndpointItems = (): SearchItem[] =>
 	getAllDocNodes()
 		.filter((n) => n.kind === "endpoint")
 		.map((n) => ({
-			id: `endpoint:${n.slug}`,
+			id: searchItemId("endpoint", n.slug),
 			slug: n.slug,
 			label: n.title,
 			sublabel: n.summary,
@@ -150,7 +164,7 @@ const buildGuideItems = (): SearchItem[] =>
 	getAllDocNodes()
 		.filter((n) => n.kind === "guide")
 		.map((n) => ({
-			id: `guide:${n.slug}`,
+			id: searchItemId("guide", n.slug),
 			slug: n.slug,
 			label: n.title,
 			sublabel: n.summary,
@@ -166,7 +180,7 @@ const buildGuideItems = (): SearchItem[] =>
 /** Builds industry search items (priority 3 = hidden/draft, excluded) */
 const buildIndustryItems = (): SearchItem[] =>
 	ACTIVE_INDUSTRIES_LIST.filter((i) => i.priority !== 3).map((i) => ({
-		id: `industry:${i.slug}`,
+		id: searchItemId("industry", i.slug),
 		slug: i.slug,
 		label: i.name,
 		sublabel: i.tagline,
@@ -181,7 +195,7 @@ const buildIndustryItems = (): SearchItem[] =>
 /** Builds solution-pack search items (priority 3 = hidden/draft, excluded) */
 const buildSolutionItems = (): SearchItem[] =>
 	ACTIVE_SOLUTIONS_LIST.filter((s) => s.priority !== 3).map((s) => ({
-		id: `solution:${s.slug}`,
+		id: searchItemId("solution", s.slug),
 		slug: s.slug,
 		label: s.name,
 		sublabel: s.tagline,
