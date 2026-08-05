@@ -19,6 +19,12 @@ records success (`last_good`) or rolls back / writes a `HOLD` sentinel that stop
 further deploys until you clear it. Full algorithm: read [`poll.sh`](./poll.sh);
 don't reimplement it.
 
+The pull and the recreate are timed separately and their durations logged
+(`pull ok in Ns` / `up ok in Ns`), and a failing step logs compose's own stderr
+rather than just "deploy error". A pull measured in minutes rather than seconds
+means the host is on the `vfs` storage driver, which copies every layer in full
+instead of sharing it — check `docker info | grep -i 'storage driver'`.
+
 ## Deployment model: one poller per project
 
 Each project is its **own** isolated compose stack with its own poller sidecar —
