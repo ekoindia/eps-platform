@@ -8,6 +8,10 @@ running image every 30 seconds, with a health gate and automatic rollback.
 > [poller README](../deploy/poller/README.md) — it reuses this same sidecar for
 > any project.
 
+> Already bootstrapped and just need to operate the stack? The
+> [Docker ops cheatsheet](./eps-backend-docker-ops.md) has the day-2 one-liners:
+> status, logs, restarts, `.env` changes, Redis, capacity, triage.
+
 ---
 
 ## Contents
@@ -267,7 +271,7 @@ substitute your own hostname.
 
 **Pick the hostname before anything else** — it is load-bearing for cookies. The
 backend issues `SameSite=Lax` session cookies, which a browser only sends on
-requests to the same registrable domain as the page. A backend on a *different*
+requests to the same registrable domain as the page. A backend on a _different_
 domain (say `eps-backend.example.net` while the site is `eps.eko.in`) makes those
 cookies third-party and auth silently breaks. Use a subdomain of the site's own
 domain.
@@ -332,7 +336,7 @@ silently start returning 403s after a reallocation.
 
 The website reads its backend base from `VITE_EPS_BACKEND_URL`, defaulting to the
 same-origin path `/api` (`src/lib/auth/client.ts`). That default only works where
-something actually *serves* `/api`: in development the Vite dev server proxies it
+something actually _serves_ `/api`: in development the Vite dev server proxies it
 (`vite.config.ts`), and in production the host must. With neither, `/api/me` falls
 through to the SPA fallback and returns `index.html` with a **200**, which is how
 `/console` once rendered a "signed-in" user built from the site's own HTML.
@@ -349,13 +353,13 @@ repository:
 
 ```json
 {
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "${EPS_BACKEND_ORIGIN}/$1",
-      "env": ["EPS_BACKEND_ORIGIN"]
-    }
-  ]
+	"routes": [
+		{
+			"src": "/api/(.*)",
+			"dest": "${EPS_BACKEND_ORIGIN}/$1",
+			"env": ["EPS_BACKEND_ORIGIN"]
+		}
+	]
 }
 ```
 
@@ -539,6 +543,10 @@ docker logs -f <poller-container-id>
 ---
 
 ## Ongoing ops
+
+Policy and background below; the day-to-day commands (status, logs, restarts,
+`.env` changes, Redis inspection, capacity, triage) are in the
+[Docker ops cheatsheet](./eps-backend-docker-ops.md).
 
 ### KV store tiers (Valkey / no-KV degraded mode / managed)
 

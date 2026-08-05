@@ -501,6 +501,8 @@ run `docker login ghcr.io` on the VM before starting the stack.
 
 For the full operator runbook — bootstrap, rollback, HOLD handling, alerts,
 and ongoing ops — see [`docs/eps-backend-vm-deploy.md`](docs/eps-backend-vm-deploy.md).
+For day-2 one-liners — status, logs, restarts, `.env` changes, Redis, triage —
+see [`docs/eps-backend-docker-ops.md`](docs/eps-backend-docker-ops.md).
 
 ## Deferred
 
