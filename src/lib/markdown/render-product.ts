@@ -11,6 +11,7 @@ import { getSpecsForProduct } from "@/lib/data/api-specs";
 import {
 	docHrefForSlug,
 	docsHref,
+	getDocumentedSpecs,
 	type NavNode,
 	productNavNodes,
 } from "@/lib/data/docs-registry";
@@ -199,7 +200,21 @@ export function renderProductMarkdown(
 		}
 	}
 
-	const apiTree = renderApiTree(productNavNodes(product.id, specs));
+	// `productNavNodes` orders provider/group branches by FIRST APPEARANCE, so it
+	// needs registry file order — but `specs` arrives relevance-sorted (which the
+	// API Previews above rely on). Left as-is, a high-relevance UNGROUPED endpoint
+	// hoists its inline leaf above the group branches, so the product twin and the
+	// docs nav would disagree (BBPS: Fetch/Pay above the Lookups groups).
+	// Re-sort a copy into file order for the nav only. Specs absent from the
+	// registry (tests inject synthetic ones) share rank -1 and, since sort is
+	// stable, keep the caller's order.
+	const fileOrder = new Map(
+		getDocumentedSpecs().map((spec, index) => [spec.id, index] as const),
+	);
+	const navSpecs = [...specs].sort(
+		(a, b) => (fileOrder.get(a.id) ?? -1) - (fileOrder.get(b.id) ?? -1),
+	);
+	const apiTree = renderApiTree(productNavNodes(product.id, navSpecs));
 	if (apiTree.length > 0) {
 		blocks.push(h2("API Endpoints"), apiTree.join("\n"));
 	}

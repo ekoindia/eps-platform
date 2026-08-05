@@ -164,12 +164,13 @@ Utilities product added. Some "extras" already existed pre-Phase-6 (`pan-bulk-st
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | Get Bank Details | `get-bank-details` | GET | `/tools/reference/bank/{bank_code}` | `utilities` | ✅ |
 | Get IFSC Details | `get-ifsc-details` | GET | `/tools/reference/banks/ifsc/{ifsc}` | `utilities` | ✅ |
-| Get Operator Code & Circle | `bbps-operator-code-circle` | GET | `…/bbps/recharge/{customer_mobile}/operator` | `bbps` | ✅ |
+| Get Operator Code & Circle | `bbps-operator-code-circle` | GET | `…/bbps/recharge/{customer_mobile}/operator` | `bbps` | ✅ (group: Recharge Lookups) |
 | Bulk Bank Verification — Status | `bulk-bank-account-verification-status` | GET | `/tools/kyc/bank-account/bulk/status` | `bank` | ✅ |
 | Send OTP (generic) | `mobile-otp-send` | POST | `/tools/kyc/mobile/otp` | `utilities` | ⛔ response pending |
 | Verify OTP (generic) | `mobile-otp-verify` | PUT | `/tools/kyc/mobile/otp/verify` | `utilities` | ⛔ response pending |
 | Get Banks | `get-banks` | GET | `/tools/reference/banks` | `utilities` | ⛔ response pending |
-| Get Recharge Plans | `bbps-recharge-plans` | GET | `…/operator/plans` | `bbps` | ⛔ response pending |
+| Get Recharge Plans | `bbps-recharge-plans` | GET | `…/operator/plans` | `bbps` | ✅ |
+| Get District Discome (UPPCL) | `bbps-district-discome` | GET | `…/bbps/operators/190/district-discome` | `bbps` | ✅ |
 | PAN Comprehensive | `pan-comprehensive` | POST | `/tools/kyc/touras/pan-verification` | `pan` | ⛔ response pending |
 | Bank Verification — Pennydrop | `bank-pennydrop` | POST | `/tools/kyc/touras/bank-acc-verify-pennydrop` | `bank` | ⛔ response pending |
 | Bank Verification — Pennyless | `bank-pennyless` | POST | `/tools/kyc/touras/bank-acc-verify-pennyless` | `bank` | ⛔ response pending |
@@ -180,7 +181,69 @@ All ⛔ rows have **request side captured**; awaiting user-pasted responses to a
 ## Outstanding (blocked on user-pasted responses; request side captured)
 - **Phase 3:** Activate / Deactivate Service for User; Get Agent Network (GET — confirm it exists).
 - **Phase 5:** Transaction Status Callback (webhook → guide page, not an `ApiSpec`).
-- **Phase 6:** Send/Verify OTP, Get Banks, Get Recharge Plans, PAN Comprehensive, Bank Pennydrop/Pennyless, Advance GST.
+- **Phase 6:** Send/Verify OTP, Get Banks, PAN Comprehensive, Bank Pennydrop/Pennyless, Advance GST.
+  (Get Recharge Plans is done — the 2026-08 BBPS reference supplied the response.)
+
+---
+
+## BBPS re-authored from the 2026-08 reference
+
+The whole BBPS block was rewritten against Eko's updated BBPS guide. The previous entries had been
+authored from guesswork and did not match the live API. Do not reintroduce the old shapes:
+
+| Was (wrong) | Is (per the reference) |
+| :-- | :-- |
+| `data.categories[]` / `data.locations[]` / `data.operators[]` | `param_attributes.list_elements[]` |
+| `5 = Electricity`, `1 = Prepaid` | `8 = Electricity`, `1 = Broadband Postpaid` |
+| `operator_id` on Fetch Bill / Pay Bill | **`phone_operator_code`** (still `operator_id` in the Get Operators *response*) |
+| `bill_amount` in **paise** | `amount` in **rupees** (`"2870.0"`) |
+| `due_date`, `bill_number`, `customer_name` | `billDueDate` (`YYYYMMDD`), `customer_id`, `utilitycustomername` |
+| fetch→pay carryover = `billfetchresponse` token | carryover = `amount` + `utilitycustomername` |
+| `latlong`, `hc_channel`, `dob`, `cycle_number`, `authenticator`, `postalcode` | not in the reference — removed |
+| error codes `131`, `151`, `347`, `148` | `97`, `208`, `319`, `1468` |
+
+Also note:
+- `operator_location_id` is a zero-padded **string** (`"06"`), not a number.
+- Fetch Bill returns `response_status_id: -1` on success — branch on `status` / `response_type_id`.
+- District Discome (`2434`) and Recharge Plans (`1805`) signal failure while still returning
+  `status: 0` — branch on `response_type_id` for those two.
+- `circle_area` (Get Operator Code and Circle) is passed as **`circleid`** to Get Recharge Plans.
+- Per-operator fields come from Get Operator Parameters and must go to **both** Fetch Bill and
+  Pay Bill. The documented params are only the common set.
+
+**Resolved (2026-08-05):** the reference marks Pay Bill's `utilitycustomername` required, but its
+only source is Fetch Bill — which a prepaid recharge skips. Confirmed with Eko: the field is
+**optional**, and mandatory only for bill payments where Bill Fetch was done. `bbps-pay-bill` now
+carries `required: false` with that condition in the param description, and the
+`bbps-mobile-recharge` recipe tells the integrator to omit it.
+
+### Retired BBPS specs (2026-08)
+
+Both are `disabled: true` rather than deleted, per the `ApiSpec.disabled` convention — the
+researched request/response data survives in `api-specs.ts` if they are ever needed again.
+
+| Spec | Why | Use instead |
+| :-- | :-- | :-- |
+| `bbps-transaction-status` | Only ever aliased the generic endpoint — same path, same contract | `transaction-inquiry` (now the final step of `bbps-bill-payment`) |
+| `bbps-activate-service` | Agent onboarding is not BBPS-specific | `activate-user-service`, passing the BBPS `service_code` |
+
+Removing `bbps-transaction-status` left `transaction-inquiry` alone on
+`GET /tools/reference/transaction/{transaction-reference}`, so the OpenAPI "non-`-status` spec wins
+primary" test no longer had a production collision to assert on. It now builds a synthetic pair
+instead — the same idiom the neighbouring body-discriminated-variant test already used.
+
+### BBPS docs nav order
+
+BBPS specs carry a `group` tag, so the docs nav renders as: **Bill Payment Lookups** (categories,
+locations, operators, operator parameters, district discome) → **Recharge Lookups** (operator code
+and circle, recharge plans) → ungrouped **Fetch BBPS Bill**, **Pay BBPS Bill**.
+
+Two ordering rules drive this and are easy to trip over when editing:
+- **Groups render in first-appearance file order**, so the spec array order in `api-specs.ts` is
+  load-bearing — the ungrouped fetch/pay pair must stay *after* both grouped blocks to hoist last.
+- **Leaves within a group sort by `relevance`**, not file order (stable, so equal relevance falls
+  back to file order). District Discome is `relevance: "L"`, which is what keeps it last inside
+  Bill Payment Lookups.
 
 ---
 

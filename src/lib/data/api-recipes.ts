@@ -230,6 +230,114 @@ export const RECIPES: Recipe[] = [
 			},
 		],
 	},
+	{
+		id: "bbps-bill-payment",
+		slug: "bbps-bill-payment",
+		name: "BBPS — Pay a Utility Bill",
+		summary:
+			"Pick a biller by category, read the fields it requires, fetch the live bill, then pay the exact amount. Get Locations is an optional extra filter on the biller list, and UPPCL (operator 190) additionally needs a district_discome from Get District Discome — neither is a step here because neither applies to every biller.",
+		productId: "bbps",
+		steps: [
+			{
+				specSlug: "bbps-get-categories",
+				purpose:
+					"List the biller categories and let the agent pick one. The `operator_category_id` chosen here filters the biller list, and is also the `category` param on Fetch Bill and Pay Bill. Do not hard-code these ids — the live list is authoritative.",
+				branches: [
+					{
+						onResponseTypeId: 2457,
+						goto: "bbps-get-operators",
+						note: "Categories returned — list the billers in the chosen category.",
+					},
+				],
+			},
+			{
+				specSlug: "bbps-get-operators",
+				purpose:
+					"List the billers, filtered by the chosen `category` (and optionally by `location` from Get Locations). Note the rename: the `operator_id` returned here is sent as `phone_operator_code` to Fetch Bill and Pay Bill.",
+				branches: [
+					{
+						onResponseTypeId: 2461,
+						goto: "bbps-get-operator-parameters",
+						note: "Billers returned — read the chosen operator's input fields.",
+					},
+				],
+			},
+			{
+				specSlug: "bbps-get-operator-parameters",
+				purpose:
+					"Read the fields this operator requires and render the bill-entry form from them. `list_elements` is the source of truth: every `param_name` it returns must be sent to BOTH the next step and Pay Bill, with identical values. For operator 190 (UPPCL) only, also resolve `district_discome` via Get District Discome before continuing.",
+			},
+			{
+				specSlug: "bbps-fetch-bill",
+				purpose:
+					"Fetch the live bill and show the customer the amount and due date. Carry `amount` and `utilitycustomername` into the payment, and reuse this call's `client_ref_id` for it. `response_status_id` is `-1` on success here — branch on `response_type_id`, not on it. On `1468` the bill could not be fetched: verify the account details, retry later, and do not pay.",
+				branches: [
+					{
+						onResponseTypeId: 1052,
+						goto: "bbps-pay-bill",
+						note: "Bill fetched — pay the exact amount returned.",
+					},
+				],
+			},
+			{
+				specSlug: "bbps-pay-bill",
+				purpose:
+					"Pay the exact amount returned by Fetch Bill, echoing back `utilitycustomername`. The only money-debit step — persist `tid` and your `client_ref_id` before any retry. A `208` means the amount did not match: re-fetch the bill and retry with a FRESH `client_ref_id` (one reference identifies one payment attempt and must never be reused across retries); a `tid` is returned even on `208`, so store it first.",
+				branches: [
+					{ onStatus: 0, goto: "done" },
+					{
+						onResponseTypeId: 208,
+						goto: "bbps-fetch-bill",
+						note: "Amount mismatch — re-fetch the bill and retry with a fresh client_ref_id.",
+					},
+				],
+			},
+			{
+				specSlug: "transaction-inquiry",
+				purpose:
+					"Reconciliation only, not a mandatory leg — the previous step already completes the flow on success. This is the generic Transaction Inquiry endpoint, shared across every product. Use it when the Pay Bill response timed out or came back awaited: inquire by `tid`, or by your `client_ref_id` if you never received the `tid`. A timeout is never an automatic failure.",
+				branches: [{ onStatus: 0, goto: "done" }],
+			},
+		],
+	},
+	{
+		id: "bbps-mobile-recharge",
+		slug: "bbps-mobile-recharge",
+		name: "BBPS — Prepaid Mobile / DTH Recharge",
+		summary:
+			"Detect the operator and circle from the customer's mobile number, read the operator's input fields, list the available plans, then submit the chosen plan as a payment.",
+		productId: "bbps",
+		steps: [
+			{
+				specSlug: "bbps-operator-code-circle",
+				purpose:
+					"Detect the telecom operator and circle from the customer's mobile number. Both come back as name/value pairs under `dependent_params` at the top level of the response, not under `data`.",
+			},
+			{
+				specSlug: "bbps-get-operator-parameters",
+				purpose:
+					'Read the recharge fields this operator requires, using the `phone_operator_code` from the previous step as `operator_id`. Prepaid operators typically expose `utility_acc_no` labelled "Mobile Number" plus a "Recharge Type" list — send every returned `param_name` to the payment step.',
+			},
+			{
+				specSlug: "bbps-recharge-plans",
+				purpose:
+					"List the plans for this operator and circle, and let the customer choose one. Mind the rename: pass the previous `circle_area` value as `circleid` here. Plans arrive under `dependent_params` → the `req_list` entry's `value` array.",
+				branches: [
+					{
+						onResponseTypeId: 1805,
+						goto: "bbps-pay-bill",
+						note: "Plans unavailable (status is still 0) — take the amount from the customer and continue.",
+					},
+				],
+			},
+			{
+				specSlug: "bbps-pay-bill",
+				purpose:
+					"Submit the recharge. Map the fields: `phone_operator_code` from step 1, `utility_acc_no` = the customer's mobile number, `category` = the Mobile Prepaid / DTH id from Get Categories, and `amount` = the chosen plan's `amount` (or the agent-entered amount when plans were unavailable). `confirmation_mobile_no` and `sender_name` come from agent-entered customer detail. Omit `utilitycustomername` — it is optional, and only applies to bill payments where Bill Fetch supplied it. Persist `tid` and `client_ref_id`.",
+				branches: [{ onStatus: 0, goto: "done" }],
+			},
+		],
+	},
 ];
 
 const RECIPES_BY_SLUG: Map<string, Recipe> = new Map(
