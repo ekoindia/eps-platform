@@ -249,6 +249,16 @@ unknown endpoint, so a broken recipe cannot ship.
 > or explicit edges), which would also improve the context packs and MCP, since
 > they read the same field.
 
+> **Second known gap: no conditional step.** A step that applies to only *some*
+> inputs cannot be modelled — every step renders as a mandatory sequential call.
+> Prose in `purpose` does not fix it, because the MCP and context packs read the
+> step list, not the paragraph. Nor can you route around it: a `goto` that jumps
+> *over* a step makes that step unreachable in the graph. This is why
+> `bbps-district-discome` is **not** a step in `bbps-bill-payment` — it applies
+> to operator 190 (UPPCL) only, so it stays a documented endpoint referenced
+> from the recipe `summary` and from the `district_discome` param description.
+> Same fix as above: extend the step shape (e.g. an `appliesWhen` predicate).
+
 1. Edit `src/lib/data/api-specs.ts` (endpoints) and/or
    `src/lib/data/api-recipes.ts` (recipes), or the shared
    auth/error/product/environment data.
