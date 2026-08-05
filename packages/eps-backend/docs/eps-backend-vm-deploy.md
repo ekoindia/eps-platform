@@ -495,6 +495,25 @@ takes no action.
   let the poller redeploy it. Only clear HOLD after a fix has been merged to `main`
   and CI has moved `:prod` to a good digest.
 
+**One HOLD form clears itself.** `docker compose up -d` can recreate the container
+on the target image and *still* exit non-zero. The poller used to take that at
+face value and write `deploy error <digest>` for a deploy that had in fact landed
+— pinning production to that image until a human noticed. It now verifies the
+live digest before declaring a deploy failed, and on startup clears a HOLD of
+exactly the form `deploy error <digest>` when that digest is the one running.
+
+The three fault forms above are **never** auto-cleared: each of them means the
+live image never passed the health gate, so clearing them would skip the gate
+permanently. Neither is a manual freeze — as long as its text is not
+`deploy error <digest>`, which `touch /state/HOLD` and any free-text reason
+satisfy.
+
+A HOLD that stays set now re-alerts every `HOLD_REALERT_SEC` (default 3600)
+rather than logging one line per tick, so a latched HOLD cannot go unnoticed the
+way it did between 2026-07-31 and 2026-08-05. Set `POLLER_ALERT_WEBHOOK` in
+`/data/eps-backend/.env` for those alerts to leave the container — without it the
+poller warns at boot that alerts are log-only.
+
 **To clear HOLD and resume automatic deploys:**
 
 ```sh

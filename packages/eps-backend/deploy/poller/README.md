@@ -53,6 +53,15 @@ Use eps-transact-mcp as the template — copy its two files and edit them:
 | `ALERT_SERVICE` | `<project>` | label in alert payloads |
 | `COMPOSE_PROJECT` | `<project>` | **must be unique on the VM** (namespaces all containers/networks/volumes) |
 
+Optional, defaulted, usually left alone:
+
+| Knob | Default | Notes |
+|---|---|---|
+| `POLL_INTERVAL_SEC` | `30` | seconds between ticks |
+| `HOLD_REALERT_SEC` | `3600` | how often a still-set `HOLD` re-announces itself |
+| `POLLER_ALERT_WEBHOOK` | *(unset)* | without it every alert is log-only; the poller says so at boot |
+| `REMOTE_FAIL_ALERT_THRESHOLD` | `5` | consecutive skopeo failures before a `WARN` |
+
 Leave `WATCH_TAG`, `PROJECT_DIR`, `COMPOSE_FILE`, `DEPLOY_ENV_FILE`, `STATE_DIR`
 as-is. These are **in-container** paths (`/deploy`, `/state`) backed by the bind
 mount `./:/deploy` and the named volume `<project>-poller-state:/state` — the
@@ -120,6 +129,19 @@ docker compose -p <project> --project-directory /deploy \
 - **HOLD:** on a fault the poller writes `/state/HOLD` (inside the volume) and
   stops deploying. Inspect: `docker compose -p <project> ... exec poller cat /state/HOLD`.
   Clear after fixing: `... exec poller rm -f /state/HOLD`.
+  A set HOLD re-alerts every `HOLD_REALERT_SEC` — it will not go quiet on you.
+- **Stale HOLD self-clears.** `docker compose up -d` can recreate the container on
+  the target image and *still* exit non-zero, which used to write
+  `HOLD = "deploy error <digest>"` for a deploy that had in fact landed, pinning
+  the stack to that image indefinitely. The poller now verifies the live digest
+  before reporting a deploy failure, and clears a HOLD of exactly the form
+  `deploy error <digest>` when that digest is the one running.
+  Every other HOLD form — `dependency fault …`, `first-deploy image fault …`,
+  `rollback …` — means the live image never passed the health gate and is
+  **never** auto-cleared.
+- **Freezing deploys by hand:** write any reason that is *not* `deploy error <digest>`
+  (`... exec poller sh -c 'echo "frozen for maintenance" > /state/HOLD'`, or just
+  `touch`). Free-text and empty HOLDs are always left alone.
 - Public projects need an nginx reverse proxy to `127.0.0.1:<port>` — pattern in
   the [transact VM runbook](../../../../docs/local-roadmap/how-to-deploy-eps-transact-mcp-on-vm.md).
 

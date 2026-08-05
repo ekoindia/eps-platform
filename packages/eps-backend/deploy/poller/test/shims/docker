@@ -9,6 +9,14 @@ if [ "$1" = "compose" ]; then
 		*" ps -q "*) printf '%s' "$(cat "$SHIM_STATE/ps" 2>/dev/null)"; exit 0 ;;
 		*" pull "*) [ "${SHIM_PULL_FAIL:-0}" = "1" ] && exit 1; exit 0 ;;
 		*" up -d --no-deps "*)
+			# SHIM_UP_RECREATES=1 models the real failure mode behind the poller's
+			# latched-HOLD bug: compose recreates the container onto the new image
+			# and THEN exits non-zero. Applied before SHIM_UP_FAIL so both can hold.
+			if [ "${SHIM_UP_RECREATES:-0}" = "1" ]; then
+				printf '%s' "${SHIM_NEW_CID:-cidNEW}" >"$SHIM_STATE/ps"
+				[ -n "${SHIM_REPODIGESTS_AFTER:-}" ] \
+					&& printf '%s\n' "$SHIM_REPODIGESTS_AFTER" >"$SHIM_STATE/repodigests"
+			fi
 			[ "${SHIM_UP_FAIL:-0}" = "1" ] && exit 1
 			printf '%s' "${SHIM_NEW_CID:-cidNEW}" >"$SHIM_STATE/ps"; exit 0 ;;
 		*) echo "shim docker compose: unexpected '$*'" >&2; exit 1 ;;
@@ -22,7 +30,13 @@ if [ "$1" = "inspect" ]; then
 	esac
 fi
 if [ "$1" = "image" ] && [ "$2" = "inspect" ]; then
-	printf '%s\n' "${SHIM_REPODIGESTS:-ghcr.io/ekoindia/eps-backend@sha256:remote}"
+	# A recreate may have moved the live image mid-case; that wins over the static
+	# env default so a single case can assert before-and-after digests.
+	if [ -f "$SHIM_STATE/repodigests" ]; then
+		cat "$SHIM_STATE/repodigests"
+	else
+		printf '%s\n' "${SHIM_REPODIGESTS:-ghcr.io/ekoindia/eps-backend@sha256:remote}"
+	fi
 	exit 0
 fi
 echo "shim docker: unexpected '$*'" >&2

@@ -242,6 +242,20 @@ and repeat step 5.
 Adding `POLLER_ALERT_WEBHOOK` (or any poller knob) needs the poller recreated
 too: `dc up -d --no-deps --force-recreate poller`.
 
+**Poller knobs.** None of these appear in the compose `environment:` block, so
+`env_file: .env` supplies them without touching `docker-compose.prod.yml`:
+
+| Var                    | Default   | Effect                                                                         |
+| ---------------------- | --------- | ------------------------------------------------------------------------------ |
+| `POLL_INTERVAL_SEC`    | `30`      | seconds between deploy checks — `120` polls every 2 minutes, i.e. _less_ often |
+| `HOLD_REALERT_SEC`     | `3600`    | how often a still-set HOLD re-announces itself                                 |
+| `POLLER_ALERT_WEBHOOK` | _(unset)_ | where alerts POST; unset means log-only, and the poller says so at boot        |
+
+```sh
+echo 'POLL_INTERVAL_SEC=120' >> /data/eps-backend/.env
+dc up -d --no-deps --force-recreate poller
+```
+
 **Boot-fatal variables** (`src/config.ts`, the `REQUIRED` array) — any one
 missing aborts startup:
 
@@ -331,7 +345,7 @@ prescribes the daily cron — check it exists before doing this by hand.
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | nginx returns 502                                     | `dc ps` (is the backend up?), `curl -fsS localhost:8787/healthz` (is the upstream reachable?), `dc logs --tail=100 eps-backend`, then `systemctl status nginx` + `/var/log/nginx/error.log`. Only after a _verified_ nginx config change: `nginx -t && systemctl reload nginx` — reload, never restart. |
 | container restart-looping                             | `dc logs --tail=100 eps-backend` → look for `Missing required env vars`, `fatal startup error`. `dc ps` shows `RestartCount` climbing.                                                                                                                                                                  |
-| new image never deploys                               | `dc logs --tail=100 poller`. Check `/state/HOLD` (§3), `remote_fail_count` (registry auth/connectivity), and that `.ghcr-auth.json` still has a valid GHCR token.                                                                                                                                       |
+| new image never deploys                               | `dc logs --tail=100 poller`. Check `/state/HOLD` (§3), `remote_fail_count` (registry auth/connectivity), and that `.ghcr-auth.json` still has a valid GHCR token. A HOLD blocks _every_ later deploy until cleared — check its age against what you expected to ship.                                   |
 | `/readyz` 503 but `/healthz` 200                      | Redis is down or unreachable: `dc ps redis`, `dc exec redis valkey-cli ping`.                                                                                                                                                                                                                           |
 | every client looks like one IP; rate limiter misfires | nginx must **overwrite** `X-Real-IP` (`proxy_set_header X-Real-IP $remote_addr`) — see README, [Reverse proxy requirement](../README.md#reverse-proxy-requirement).                                                                                                                                     |
 | deploy fired, then rolled itself back                 | `dc logs poller` for the health-gate failure, `/state/last_good` for the digest it reverted to. To pin a specific image by hand: [Manual rollback](./eps-backend-vm-deploy.md#manual-rollback).                                                                                                         |
