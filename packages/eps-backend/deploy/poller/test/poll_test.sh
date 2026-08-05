@@ -266,6 +266,38 @@ hooked() { grep -q "http://hook" "$SHIM_STATE/calls.log"; }
 		|| ok "clear_hold drops the stamp"
 )
 
+# --- Task 9 cases: deploy_image stdout stays the cid alone, timings on stderr ---
+# The timing/stderr logging wraps the very function whose stdout the caller
+# captures (`cid="$(deploy_image …)"`). One stray byte on stdout would be read
+# as a container id and gated against.
+di() { deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>/dev/null; }
+( setup; seed_deploy; load
+	eq "deploy_image success echoes the cid alone" "$(di)" "cidNEW"
+)
+( setup; seed_deploy; export SHIM_PULL_FAIL=1; load     # pull fails, old image still live
+	out="$(di)"; rc=$?
+	[ "$rc" -ne 0 ] && ok "pull failure → rc!=0" || no "pull failure → rc!=0" "rc0"
+	eq "pull failure echoes nothing" "$out" ""
+)
+( setup; seed_deploy; export SHIM_UP_FAIL=1; load       # genuine up failure, nothing landed
+	out="$(di)"; rc=$?
+	[ "$rc" -ne 0 ] && ok "genuine up failure → rc!=0" || no "genuine up failure → rc!=0" "rc0"
+	eq "genuine up failure echoes nothing" "$out" ""
+)
+# The recovery path must still win over a non-zero compose exit — and must not
+# leak its log line into the captured cid.
+( setup; seed_deploy
+	export SHIM_UP_FAIL=1 SHIM_UP_RECREATES=1 \
+		SHIM_REPODIGESTS_AFTER="ghcr.io/ekoindia/eps-backend@sha256:remote"; load
+	eq "up-failed-but-landed still echoes the cid alone" "$(di)" "cidNEW"
+)
+# Durations are logged, and on stderr only.
+( setup; seed_deploy; load
+	err="$(deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>&1 >/dev/null)"
+	case "$err" in *"pull ok in "*"s"*) ok "pull duration logged" ;; *) no "pull duration logged" "[$err]" ;; esac
+	case "$err" in *"up ok in "*"s"*) ok "up duration logged" ;; *) no "up duration logged" "[$err]" ;; esac
+)
+
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---
 PASS="$(grep -c '^ok' "$RESULTS" || true)"
 FAIL="$(grep -c '^no' "$RESULTS" || true)"

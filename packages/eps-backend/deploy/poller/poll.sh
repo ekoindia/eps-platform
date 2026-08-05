@@ -184,18 +184,38 @@ gate() {
 # rc 0 only when pull AND up succeed AND a container id results. On any failure
 # rc!=0 and NOTHING is echoed — the caller MUST NOT gate the previous container
 # or write last_good for an image that never came up.
+#
+# Every step is timed and its duration logged. On a vfs-storage-driver host a
+# single pull can take ~20 MINUTES (no copy-on-write: each layer is a full
+# recursive copy), and with the output discarded that is indistinguishable from
+# a hang. The elapsed numbers say which step is slow; compose's own stderr is
+# captured and echoed on failure so "deploy error <digest>" stops being the
+# whole story. Capture is via command substitution, NOT a temp file — nothing
+# to leak if this function is killed mid-pull.
 deploy_image() {
-	local cid want
+	local cid want t0 err
 	# Unchanged contract: a stale desired state is fatal. deploy.env disagreeing
 	# with the live container would be undone by the next `up`.
 	write_deploy_env "$1" || return 1
 	want="${1#*@}"
-	if dc pull "$SERVICE" >/dev/null 2>&1 && dc up -d --no-deps "$SERVICE" >/dev/null 2>&1; then
-		cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
-		[ -n "$cid" ] && {
-			printf '%s' "$cid"
-			return 0
-		}
+	log "pull $want starting"
+	t0=$SECONDS
+	if err="$(dc pull "$SERVICE" 2>&1 >/dev/null)"; then
+		log "pull ok in $((SECONDS - t0))s; recreating $SERVICE"
+		t0=$SECONDS
+		if err="$(dc up -d --no-deps "$SERVICE" 2>&1 >/dev/null)"; then
+			cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
+			if [ -n "$cid" ]; then
+				log "up ok in $((SECONDS - t0))s"
+				printf '%s' "$cid"
+				return 0
+			fi
+			log "up ok in $((SECONDS - t0))s but no container id came back"
+		else
+			log "up reported failure after $((SECONDS - t0))s: $(printf '%s' "$err" | tr '\n' ' ' | tail -c 300)"
+		fi
+	else
+		log "pull reported failure after $((SECONDS - t0))s: $(printf '%s' "$err" | tr '\n' ' ' | tail -c 300)"
 	fi
 	# pull/up/ps can each report failure AFTER compose has already recreated the
 	# container on the target image. Taking that at face value pins HOLD to an
