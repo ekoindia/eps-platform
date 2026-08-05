@@ -76,21 +76,40 @@ describe("buildOpenApiDocument", () => {
 	});
 
 	it("keeps the generic endpoint as primary over a shared-path -status poller", () => {
-		// bbps-transaction-status shares GET /tools/reference/transaction/... with
-		// the canonical transaction-inquiry. The grouping must keep the non-status
-		// spec as the operation primary and list the status one as a variant.
-		const txPath = "/tools/reference/transaction/{transaction-reference}";
-		const op = (doc.paths?.[txPath] as Record<string, unknown>).get as Record<
-			string,
-			unknown
-		>;
+		// When two specs share a path+method and one is a `-status` poller, the
+		// non-status spec must define the operation and the poller must be listed
+		// as a variant. No production pair collides this way any more (the last
+		// one, bbps-transaction-status, was retired in favour of the generic
+		// transaction-inquiry), so construct the collision to exercise the sort.
+		const base = specs[0];
+		const pollerPath = "/internal/status-primary-test";
+		const poller: ApiSpec = {
+			...base,
+			id: "generic-thing-status",
+			slug: "generic-thing-status",
+			name: "Generic Thing Status",
+			path: pollerPath,
+		};
+		const generic: ApiSpec = {
+			...base,
+			id: "generic-thing",
+			slug: "generic-thing",
+			name: "Generic Thing",
+			path: pollerPath,
+		};
+		// Poller FIRST in input order, so a passing test proves the sort ran
+		// rather than the input order happening to be right.
+		const statusDoc = buildOpenApiDocument([poller, generic]);
+		const op = (statusDoc.paths?.[pollerPath] as Record<string, unknown>)[
+			base.method.toLowerCase()
+		] as Record<string, unknown>;
 		expect(op).toBeTruthy();
-		expect(op["x-docs-slug"]).toBe("transaction-inquiry");
+		expect(op["x-docs-slug"]).toBe("generic-thing");
 		const variantSlugs = (
 			(op["x-eko-variants"] as { slug: string }[] | undefined) ?? []
 		).map((v) => v.slug);
-		expect(variantSlugs).toContain("bbps-transaction-status");
-		expect(variantSlugs).toContain("transaction-inquiry");
+		expect(variantSlugs).toContain("generic-thing-status");
+		expect(variantSlugs).toContain("generic-thing");
 	});
 
 	it("records body-discriminated variants under x-eko-variants", () => {

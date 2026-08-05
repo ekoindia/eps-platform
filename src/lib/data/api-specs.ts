@@ -3487,12 +3487,13 @@ const ALL_API_SPECS: ApiSpec[] = [
 	{
 		id: "bbps-get-categories",
 		productId: "bbps",
+		group: "Bill Payment Lookups",
 		name: "Get BBPS Categories",
 		slug: "bbps-get-categories",
 		summary:
 			"Retrieve the list of supported BBPS biller categories (electricity, gas, DTH, etc.).",
 		description:
-			"Returns all active biller categories available on the BBPS network. Use the returned category_id to filter the Get Operators call. Categories include electricity, gas, water, DTH, broadband, prepaid recharge, FASTag, insurance, EMI payments, LPG booking, credit card, and more.",
+			"Returns all BBPS biller categories. Pass an `operator_category_id` from here as the `category` filter on Get Operators, and as the `category` param on Fetch Bill and Pay Bill.\n\nCommon ids: 1 Broadband Postpaid · 2 Gas · 4 DTH · 5 Mobile Prepaid · 6 Tax · 7 Credit Card · 8 Electricity · 9 Landline Postpaid · 10 Mobile Postpaid · 11 Water · 12 Housing Society · 13 Subscription · 14 Education · 15 Municipal Taxes · 16 Clubs and Associations · 17 Cable TV · 18 LPG Cylinder · 19 Hospital · 20 Insurance · 21 Loan · 22 FASTag · 23 Municipal Services · 24 Rental Payment · 27+ eChallan, Agent Collection, EV Recharge and others.\n\n**Do not hard-code these ids** — the live response is authoritative and the list grows. The category list is returned under `param_attributes.list_elements`, not under `data`.",
 		relevance: "M",
 		bestFor:
 			"Populating a category picker UI before letting the user choose a biller.",
@@ -3502,113 +3503,102 @@ const ALL_API_SPECS: ApiSpec[] = [
 		extraRequestParams: [],
 		responseData: [
 			{
-				name: "categories",
-				type: "array",
-				description: "List of all supported BBPS biller categories.",
+				name: "param_attributes",
+				type: "object",
 				imp: true,
+				description:
+					"Wrapper for the category list — returned at the top level of the response, not under `data`.",
 				children: [
 					{
-						name: "id",
-						type: "number",
-						description:
-							"Unique category identifier (category_id). Pass as the `category` query param when filtering operators.",
+						name: "list_elements",
+						type: "array",
 						imp: true,
-						example: 5,
-					},
-					{
-						name: "category_name",
-						type: "string",
-						description: "Human-readable category label.",
-						imp: true,
-						example: "Electricity",
+						description: "One entry per BBPS biller category.",
+						children: [
+							{
+								name: "operator_category_id",
+								type: "number",
+								description:
+									"Category identifier. Pass as the `category` filter on Get Operators, and as `category` on Fetch Bill / Pay Bill.",
+								imp: true,
+								example: 8,
+							},
+							{
+								name: "operator_category_name",
+								type: "string",
+								description: "Human-readable category name.",
+								imp: true,
+								example: "Electricity",
+							},
+							{
+								name: "operator_category_group",
+								type: "string",
+								description: "Grouping code for the category.",
+								example: "0",
+							},
+							{
+								name: "status",
+								type: "string",
+								description: "`1` = active.",
+								example: "1",
+							},
+						],
 					},
 				],
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				categories: [
+			param_attributes: {
+				list_elements: [
 					{
-						id: 1,
-						category_name: "Prepaid",
+						operator_category_name: "Broadband Postpaid",
+						operator_category_id: 1,
+						operator_category_group: "0",
+						status: "1",
 					},
 					{
-						id: 2,
-						category_name: "DTH",
+						operator_category_name: "Electricity",
+						operator_category_id: 8,
+						operator_category_group: "0",
+						status: "1",
 					},
 					{
-						id: 4,
-						category_name: "Postpaid",
+						operator_category_name: "Water",
+						operator_category_id: 11,
+						operator_category_group: "0",
+						status: "1",
 					},
 					{
-						id: 5,
-						category_name: "Electricity",
-					},
-					{
-						id: 6,
-						category_name: "Gas",
-					},
-					{
-						id: 7,
-						category_name: "Water",
-					},
-					{
-						id: 8,
-						category_name: "Broadband",
-					},
-					{
-						id: 9,
-						category_name: "Landline",
-					},
-					{
-						id: 10,
-						category_name: "Insurance",
-					},
-					{
-						id: 11,
-						category_name: "FASTag",
-					},
-					{
-						id: 12,
-						category_name: "LPG Booking",
-					},
-					{
-						id: 13,
-						category_name: "EMI Payments",
-					},
-					{
-						id: 14,
-						category_name: "Credit Card",
-					},
-					{
-						id: 15,
-						category_name: "Education",
-					},
-					{
-						id: 16,
-						category_name: "Metro",
-					},
-					{
-						id: 17,
-						category_name: "Municipal Corp",
+						operator_category_name: "FASTag",
+						operator_category_id: 22,
+						operator_category_group: "0",
+						status: "1",
 					},
 				],
 			},
+			response_type_id: 2457,
+			message: "BBPS category fetch success",
+			status: 0,
 		},
+		responseTypes: [
+			{
+				id: 2457,
+				meaning: "Category list returned — pick one and list its billers.",
+				next: "bbps-get-operators",
+			},
+		],
 	},
 	{
 		id: "bbps-get-locations",
 		productId: "bbps",
+		group: "Bill Payment Lookups",
 		name: "Get BBPS Locations",
 		slug: "bbps-get-locations",
 		summary:
 			"Retrieve the list of supported state/location IDs for filtering BBPS operators.",
 		description:
-			"Returns all supported location (state) identifiers. Pass the returned location_id as the `location` query parameter in the Get Operators call to narrow results to a specific state or circle.",
+			'Returns every operating location (state / UT). Pass an `operator_location_id` from here as the `location` filter on Get Operators to narrow the biller list to one state.\n\n`operator_location_id` is a **zero-padded string** (`"06"`, `"35"`), not a number — keep it as a string when you pass it back. The list is returned under `param_attributes.list_elements`, not under `data`.',
 		relevance: "M",
 		bestFor:
 			"Populating a state filter when displaying biller lists to end users.",
@@ -3618,90 +3608,91 @@ const ALL_API_SPECS: ApiSpec[] = [
 		extraRequestParams: [],
 		responseData: [
 			{
-				name: "locations",
-				type: "array",
-				description: "List of supported state/location entries.",
+				name: "param_attributes",
+				type: "object",
+				imp: true,
+				description:
+					"Wrapper for the location list — returned at the top level of the response, not under `data`.",
 				children: [
 					{
-						name: "id",
-						type: "number",
-						description:
-							"Location identifier to use as the `location` filter when querying operators.",
+						name: "list_elements",
+						type: "array",
 						imp: true,
-						example: 7,
-					},
-					{
-						name: "location_name",
-						type: "string",
-						description: "State or circle name.",
-						example: "Delhi",
+						description: "One entry per operating state / UT.",
+						children: [
+							{
+								name: "operator_location_id",
+								type: "string",
+								description:
+									"Zero-padded location identifier. Pass as the `location` filter on Get Operators.",
+								imp: true,
+								example: "06",
+							},
+							{
+								name: "operator_location_name",
+								type: "string",
+								description: "State / UT name.",
+								imp: true,
+								example: "Haryana",
+							},
+							{
+								name: "abbreviation",
+								type: "string",
+								description: "Two-letter state code.",
+								example: "HR",
+							},
+						],
 					},
 				],
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				locations: [
+			param_attributes: {
+				list_elements: [
 					{
-						id: 1,
-						location_name: "Andhra Pradesh",
+						operator_location_name: "Haryana",
+						operator_location_id: "06",
+						abbreviation: "HR",
 					},
 					{
-						id: 2,
-						location_name: "Bihar",
+						operator_location_name: "Madhya Pradesh",
+						operator_location_id: "23",
+						abbreviation: "MP",
 					},
 					{
-						id: 3,
-						location_name: "Gujarat",
-					},
-					{
-						id: 4,
-						location_name: "Karnataka",
-					},
-					{
-						id: 5,
-						location_name: "Maharashtra",
-					},
-					{
-						id: 6,
-						location_name: "Rajasthan",
-					},
-					{
-						id: 7,
-						location_name: "Delhi",
-					},
-					{
-						id: 8,
-						location_name: "Tamil Nadu",
-					},
-					{
-						id: 9,
-						location_name: "Uttar Pradesh",
-					},
-					{
-						id: 10,
-						location_name: "West Bengal",
+						operator_location_name: "Andaman and Nicobar",
+						operator_location_id: "35",
+						abbreviation: "AN",
 					},
 				],
 			},
+			response_type_id: 2459,
+			message: "BBPS location fetch success",
+			status: 0,
 		},
+		responseTypes: [
+			{
+				id: 2459,
+				meaning:
+					"Location list returned — use one as the `location` filter on Get Operators.",
+				next: "bbps-get-operators",
+			},
+		],
 	},
 	{
 		id: "bbps-get-operators",
 		productId: "bbps",
+		group: "Bill Payment Lookups",
 		name: "Get BBPS Operators",
 		slug: "bbps-get-operators",
 		summary:
 			"List all active BBPS billers, optionally filtered by category and/or state.",
 		description:
-			"Returns every currently active BBPS biller. Use `category` and `location` query parameters to narrow results. The `billFetchResponse` flag on each operator tells you whether the Fetch Bill step is mandatory before payment. Operators that are temporarily disabled are excluded from the response — poll this endpoint periodically to keep your list fresh.",
+			"Returns the list of billers. Filter by `category`, `location`, or both, using the identifiers from Get Categories and Get Locations; omit both to list every biller.\n\nThe `operator_id` returned here is what you pass as **`phone_operator_code`** to Fetch Bill and Pay Bill — the names differ. `billFetchResponse` tells you whether the biller supports a live bill fetch. The list is returned under `param_attributes.list_elements`, not under `data`.",
 		relevance: "M",
 		bestFor:
-			"Building a biller selection UI and determining which operators require a bill fetch before payment.",
+			"Building a biller selection UI and determining which operators support a live bill fetch.",
 		method: "GET",
 		path: "/customer/payment/bbps/operators",
 		docsUrl: "https://developers.eko.in/reference/bbps-get-operators",
@@ -3710,104 +3701,150 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "category",
 				type: "number",
 				required: false,
-				description: "Filter by category — use the `id` from Get Categories.",
-				example: 5,
+				description:
+					"Filter by category — the `operator_category_id` from Get Categories.",
+				example: 11,
 			},
 			{
 				name: "location",
 				type: "number",
 				required: false,
 				description:
-					"Filter by state/circle — use the `id` from Get Locations.",
-				example: 7,
+					"Filter by state / UT — the `operator_location_id` from Get Locations.",
+				example: 35,
 			},
 		],
 		responseData: [
 			{
-				name: "operators",
-				type: "array",
-				description: "List of active BBPS billers matching the filters.",
+				name: "param_attributes",
+				type: "object",
+				imp: true,
+				description:
+					"Wrapper for the biller list — returned at the top level of the response, not under `data`.",
 				children: [
 					{
-						name: "operator_id",
-						type: "number",
-						description:
-							"Unique operator identifier. Pass this value in Fetch Bill and Pay Bill requests.",
+						name: "list_elements",
+						type: "array",
 						imp: true,
-						example: 83,
-					},
-					{
-						name: "operator_name",
-						type: "string",
-						description: "Display name of the biller.",
-						imp: true,
-						example: "BSES Rajdhani",
-					},
-					{
-						name: "category_id",
-						type: "number",
-						description: "Category this operator belongs to.",
-						example: 5,
-					},
-					{
-						name: "billFetchResponse",
-						type: "number",
-						description:
-							"1 = must call Fetch Bill API before Pay Bill; 0 = can pay directly.",
-						imp: true,
-						example: 1,
-					},
-					{
-						name: "high_commission_channel",
-						type: "number",
-						description:
-							"0 = instant settlement (default); 1 = delayed channel with higher commissions.",
-						example: 0,
+						description: "One entry per biller matching the filters.",
+						children: [
+							{
+								name: "operator_id",
+								type: "number",
+								description:
+									"Biller identifier. Pass as `phone_operator_code` to Fetch Bill and Pay Bill.",
+								imp: true,
+								example: 541,
+							},
+							{
+								name: "name",
+								type: "string",
+								description: "Biller name.",
+								imp: true,
+								example: "Port Blair Municipal Council - Water",
+							},
+							{
+								name: "operator_category",
+								type: "number",
+								description: "Category this operator belongs to.",
+								example: 11,
+							},
+							{
+								name: "location_id",
+								type: "number",
+								description: "Location this operator serves; `0` = pan-India.",
+								example: 35,
+							},
+							{
+								name: "kyc_required",
+								type: "number",
+								description:
+									"Whether customer KYC is required for this operator.",
+								example: 0,
+							},
+							{
+								name: "billFetchResponse",
+								type: "number",
+								description:
+									"Whether the operator supports live bill fetch (`1` = yes).",
+								imp: true,
+								example: 0,
+							},
+							{
+								name: "high_commission_channel",
+								type: "number",
+								description:
+									"Whether the biller is available on the higher-commission channel.",
+								example: 0,
+							},
+						],
 					},
 				],
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				operators: [
+			param_attributes: {
+				list_elements: [
 					{
-						operator_id: 83,
-						operator_name: "BSES Rajdhani",
-						category_id: 5,
-						billFetchResponse: 1,
-						high_commission_channel: 0,
-					},
-					{
-						operator_id: 84,
-						operator_name: "BSES Yamuna",
-						category_id: 5,
-						billFetchResponse: 1,
-						high_commission_channel: 0,
-					},
-					{
-						operator_id: 87,
-						operator_name: "Tata Power Delhi Distribution",
-						category_id: 5,
+						operator_id: 159,
+						name: "ACT Fibernet",
 						billFetchResponse: 0,
 						high_commission_channel: 0,
+						kyc_required: 1,
+						operator_category: 1,
+						location_id: 0,
+					},
+					{
+						operator_id: 541,
+						name: "Port Blair Municipal Council - Water",
+						billFetchResponse: 0,
+						high_commission_channel: 0,
+						kyc_required: 0,
+						operator_category: 11,
+						location_id: 35,
 					},
 				],
 			},
+			response_type_id: 2461,
+			message: "BBPS operators fetch success",
+			status: 0,
 		},
+		errorScenarios: [
+			{
+				scenario: "Invalid or missing initiator_id",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					invalid_params: {
+						initiator_id: "Merchant does not exist in system.",
+					},
+					data: { csp_id: "7042769385" },
+					response_type_id: -1,
+					message: "Invalid Sender/Initiator",
+					status: 319,
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 2461,
+				meaning:
+					"Biller list returned — read the chosen operator's input fields next.",
+				next: "bbps-get-operator-parameters",
+			},
+		],
 	},
 	{
 		id: "bbps-get-operator-parameters",
 		productId: "bbps",
+		group: "Bill Payment Lookups",
 		name: "Get Operator Parameters",
 		slug: "bbps-get-operator-parameters",
 		summary:
 			"Fetch the custom input fields required by a specific biller before payment.",
 		description:
-			"Returns the operator-specific parameter schema — field names, labels, data types, and validation regex — needed to build a dynamic payment form. Also returns `fetchBill` (1 = mandatory Fetch Bill step) and `BBPS` (1 = show Bharat BillPay branding). Call this once per operator and cache the result.",
+			"Returns the input fields the chosen operator requires — field names, labels, types and validation regex — so you can render the bill-entry form dynamically.\n\n**`list_elements` is the source of truth for this operator's fields.** The documented parameters on Fetch Bill and Pay Bill are only the common set; every `param_name` returned here must also be sent to **both** calls, with identical values. Call this once per operator and cache the result.\n\nThe payload is returned under `param_attributes`, not under `data`.",
 		relevance: "M",
 		bestFor:
 			"Rendering a dynamic bill payment form with correct validation for each biller.",
@@ -3819,87 +3856,452 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "operator_id",
 				type: "number",
 				required: true,
-				description: "The operator/biller ID from the Get Operators response.",
-				example: 83,
+				description: "The `operator_id` from the Get Operators response.",
+				example: 5,
 			},
 		],
 		responseData: [
 			{
-				name: "fetchBill",
-				type: "number",
-				description:
-					"1 = Fetch Bill API must be called before Pay Bill; 0 = direct payment allowed.",
+				name: "param_attributes",
+				type: "object",
 				imp: true,
-				example: 1,
-			},
-			{
-				name: "BBPS",
-				type: "number",
 				description:
-					"1 = biller is on the BBPS network; display the Bharat BillPay logo per NPCI guidelines.",
-				example: 1,
-			},
-			{
-				name: "data",
-				type: "array",
-				description: "List of input parameters required by this biller.",
+					"Wrapper for the operator's parameter schema — returned at the top level of the response, not under `data`.",
 				children: [
 					{
-						name: "param_name",
+						name: "operator_name",
 						type: "string",
-						description:
-							"API field name to send in the Fetch Bill / Pay Bill request.",
+						description: "Display name of the operator.",
 						imp: true,
-						example: "utility_acc_no",
+						example: "BSNL  Prepaid",
 					},
 					{
-						name: "param_label",
-						type: "string",
-						description: "UI label to display to the end user.",
-						example: "Consumer Number",
+						name: "operator_id",
+						type: "number",
+						description: "The operator this schema belongs to.",
+						example: 5,
 					},
 					{
-						name: "param_type",
-						type: "string",
-						description: "Input type: Numeric, Decimal, AlphaNumeric, or List.",
-						example: "Numeric",
+						name: "fetchBill",
+						type: "number",
+						description: "Whether live bill fetch is supported (`1` = yes).",
+						imp: true,
+						example: 0,
 					},
 					{
-						name: "regex",
-						type: "string",
+						name: "BBPS",
+						type: "number",
 						description:
-							"Regular expression to validate the user's input before submission.",
-						example: "^[0-9]{10,12}$",
+							"Whether the biller is on the BBPS network; display Bharat BillPay branding per NPCI guidelines.",
+						example: 0,
 					},
 					{
-						name: "error_message",
-						type: "string",
+						name: "list_elements",
+						type: "array",
+						imp: true,
 						description:
-							"Validation error message to show when the regex does not match.",
-						example: "Please enter a valid 10-12 digit consumer number.",
+							"The input fields this operator requires. Send every `param_name` to BOTH Fetch Bill and Pay Bill.",
+						children: [
+							{
+								name: "param_name",
+								type: "string",
+								description: "Field name to submit at bill-fetch / pay time.",
+								imp: true,
+								example: "utility_acc_no",
+							},
+							{
+								name: "param_label",
+								type: "string",
+								description: "Label to show the agent.",
+								example: "Mobile Number",
+							},
+							{
+								name: "param_id",
+								type: "string",
+								description: "Identifier for this field.",
+								example: "1",
+							},
+							{
+								name: "param_type",
+								type: "string",
+								description: "Field type — e.g. `Numeric`, `List`.",
+								example: "Numeric",
+							},
+							{
+								name: "regex",
+								type: "string",
+								description: "Client-side validation pattern.",
+								example: "^[0-9]{10}$",
+							},
+							{
+								name: "error_message",
+								type: "string",
+								description:
+									"Validation message to show when the regex does not match.",
+								example:
+									"Please enter a valid 10 digit Mobile Number (eg. 0940763946)",
+							},
+						],
 					},
 				],
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Success",
-			response_type_id: 1388,
-			data: {
-				fetchBill: 1,
-				BBPS: 1,
-				data: [
+			param_attributes: {
+				operator_name: "BSNL  Prepaid",
+				list_elements: [
 					{
+						param_label: "Mobile Number",
 						param_name: "utility_acc_no",
-						param_label: "Consumer Number",
+						param_id: "1",
 						param_type: "Numeric",
-						regex: "^[0-9]{10,12}$",
-						error_message: "Please enter a valid 10-12 digit consumer number.",
+						regex: "^[0-9]{10}$",
+						error_message:
+							"Please enter a valid 10 digit Mobile Number (eg. 0940763946)",
+					},
+					{
+						param_label: "Recharge Type",
+						param_name: "Recharge Type",
+						param_id: "99",
+						param_type: "List",
+						regex: "1|3",
+						error_message: "Please enter valid Recharge Type",
+					},
+				],
+				operator_id: 5,
+				fetchBill: 0,
+				BBPS: 0,
+			},
+			response_type_id: 2463,
+			message: "BBPS operator parameters fetch success",
+			status: 0,
+		},
+		responseTypes: [
+			{
+				id: 2463,
+				meaning:
+					"Parameter schema returned — collect these fields, then fetch the bill.",
+				next: "bbps-fetch-bill",
+			},
+		],
+	},
+	{
+		id: "bbps-district-discome",
+		productId: "bbps",
+		group: "Bill Payment Lookups",
+		name: "Get District Discome (UPPCL)",
+		slug: "bbps-district-discome",
+		summary:
+			"Resolve the district-level distribution company code required by UPPCL (operator 190).",
+		description:
+			"Some electricity billers require a district-level distribution company (discome) code. This applies to **operator 190 (UPPCL) only** — no other biller needs it, and the path is fixed to `190` rather than parameterised.\n\nShow the agent each `label` and send the matching `value` as `district_discome` on both Fetch Bill and Pay Bill.\n\nThe list is returned under `param_attributes.list_elements`, not under `data`.",
+		relevance: "L",
+		bestFor:
+			"Populating the district picker for UPPCL electricity bill payments.",
+		method: "GET",
+		path: "/customer/payment/bbps/operators/190/district-discome",
+		docsUrl: "https://developers.eko.in/reference/bbps-district-discome",
+		extraRequestParams: [],
+		responseData: [
+			{
+				name: "param_attributes",
+				type: "object",
+				imp: true,
+				description:
+					"Wrapper for the district list — returned at the top level of the response, not under `data`.",
+				children: [
+					{
+						name: "list_elements",
+						type: "array",
+						imp: true,
+						description: "One entry per UPPCL district.",
+						children: [
+							{
+								name: "label",
+								type: "string",
+								description: "District name to show the agent.",
+								imp: true,
+								example: "Lucknow",
+							},
+							{
+								name: "value",
+								type: "string",
+								description:
+									"The `district_discome` value to pass to Fetch Bill and Pay Bill for operator 190.",
+								imp: true,
+								example: "Lucknow-MVVNL",
+							},
+						],
 					},
 				],
 			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			param_attributes: {
+				list_elements: [
+					{ label: "Agra", value: "Agra-DVVNL" },
+					{ label: "Lucknow", value: "Lucknow-MVVNL" },
+					{ label: "Kanpur Nagar", value: "Kanpur Nagar-KESCO" },
+					{ label: "Varanasi", value: "Varanasi-PUVNL" },
+				],
+			},
+			response_type_id: 2110,
+			message: "Success",
+			status: 0,
 		},
+		errorScenarios: [
+			{
+				scenario:
+					"Districts unavailable — note this still returns status 0, so branch on response_type_id",
+				statusCode: 200,
+				example: {
+					response_status_id: 0,
+					response_type_id: 2434,
+					message: "Failed to fetch districts",
+					status: 0,
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 2110,
+				meaning:
+					"District list returned — pass the chosen `value` as `district_discome` when fetching the bill.",
+				next: "bbps-fetch-bill",
+			},
+			{
+				id: 2434,
+				meaning:
+					"Districts could not be fetched. The envelope still carries `status: 0`, so branch on this id rather than on `status`.",
+			},
+		],
+	},
+	{
+		id: "bbps-operator-code-circle",
+		productId: "bbps",
+		group: "Recharge Lookups",
+		name: "Get Operator Code and Circle",
+		slug: "bbps-operator-code-circle",
+		summary:
+			"Auto-detect a mobile number's recharge operator code and telecom circle.",
+		description:
+			"Detects the telecom operator and circle for a customer mobile number, returned as name/value pairs under `dependent_params` at the top level of the response (not under `data`).\n\n**Watch the rename:** this endpoint returns `circle_area`, but Get Recharge Plans expects that value as the **`circleid`** query parameter. The `phone_operator_code` value carries over under the same name.",
+		relevance: "M",
+		bestFor: "Resolving operator and circle before fetching recharge plans.",
+		method: "GET",
+		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator",
+		docsUrl: "https://developers.eko.in/reference/operator-and-circle-area",
+		extraRequestParams: [
+			{
+				name: "customer_mobile",
+				type: "string",
+				required: true,
+				description: "Customer's mobile number.",
+				example: "9876543210",
+			},
+		],
+		responseData: [
+			{
+				name: "dependent_params",
+				type: "array",
+				imp: true,
+				description:
+					"Resolved operator/circle as name-value pairs (`phone_operator_code`, `circle_area`) — returned at the top level, not under `data`.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						description:
+							"Parameter name (`phone_operator_code` or `circle_area`).",
+						example: "phone_operator_code",
+					},
+					{
+						name: "value",
+						type: "number",
+						description:
+							"Parameter value. Pass `circle_area`'s value on as `circleid` to Get Recharge Plans.",
+						example: 400,
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			dependent_params: [
+				{ name: "phone_operator_code", value: 1 },
+				{ name: "circle_area", value: "23" },
+			],
+			data: { updates: "" },
+			response_type_id: 1804,
+			message: "success",
+			status: 0,
+		},
+		responseTypes: [
+			{
+				id: 1804,
+				meaning:
+					"Operator and circle detected — list the plans available for them.",
+				next: "bbps-recharge-plans",
+			},
+		],
+	},
+	{
+		id: "bbps-recharge-plans",
+		productId: "bbps",
+		group: "Recharge Lookups",
+		name: "Get Recharge Plans",
+		slug: "bbps-recharge-plans",
+		summary:
+			"List the prepaid mobile / DTH recharge plans available for an operator and circle.",
+		description:
+			"Lists available recharge plans for an operator and circle. Plans arrive under `dependent_params` at the top level (not under `data`): the `req_list` entry's `value` array holds the plans, and its `type_metadata[].headers` describe which field is the price, the validity and the description.\n\n**`circleid` is the `circle_area` value** returned by Get Operator Code and Circle — the parameter is renamed between the two calls. Once the customer picks a plan, submit its `amount` through Pay Bill.",
+		relevance: "M",
+		bestFor:
+			"Showing the customer the available recharge packs before submitting the recharge.",
+		method: "GET",
+		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator/plans",
+		docsUrl: "https://developers.eko.in/reference/bbps-recharge-plans",
+		extraRequestParams: [
+			{
+				name: "customer_mobile",
+				type: "string",
+				required: true,
+				description: "Customer's mobile number.",
+				example: "9876543210",
+			},
+			{
+				name: "phone_operator_code",
+				type: "string",
+				required: true,
+				description:
+					"Operator code from the Get Operator Code and Circle response.",
+				example: "400",
+			},
+			{
+				name: "circleid",
+				type: "string",
+				required: true,
+				description:
+					"Circle identifier — the value returned as `circle_area` by Get Operator Code and Circle. Note the name differs between the two endpoints.",
+				example: "5",
+			},
+		],
+		responseData: [
+			{
+				name: "dependent_params",
+				type: "array",
+				imp: true,
+				description:
+					"Plan groups — returned at the top level, not under `data`. The entry named `req_list` carries the plans.",
+				children: [
+					{
+						name: "name",
+						type: "string",
+						description: "Group name; `req_list` holds the plan list.",
+						example: "req_list",
+					},
+					{
+						name: "value",
+						type: "array",
+						imp: true,
+						description: "The available plans.",
+						children: [
+							{
+								name: "amount",
+								type: "string",
+								description:
+									"Plan price in rupees. Send this as `amount` to Pay Bill.",
+								imp: true,
+								example: "349",
+							},
+							{
+								name: "validity",
+								type: "string",
+								description: "How long the plan is valid for.",
+								imp: true,
+								example: "28 Days",
+							},
+							{
+								name: "plan_description",
+								type: "string",
+								description: "What the plan includes.",
+								imp: true,
+								example: "1.5 GB/day + Unlimited Calls ...",
+							},
+						],
+					},
+					{
+						name: "type_metadata",
+						type: "array",
+						description:
+							"Column metadata describing which plan field is the price, the validity and the description.",
+					},
+				],
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			dependent_params: [
+				{
+					type_metadata: [
+						{
+							headers: [
+								{ name: "amount", value: "price" },
+								{ name: "validity", value: "validity" },
+								{ name: "plan_description", value: "plan_description" },
+							],
+							dependent_params: [{ name: "amount", value: "amount" }],
+						},
+					],
+					name: "req_list",
+					value: [
+						{
+							amount: "224",
+							validity: "30 Days",
+							plan_description: "Unlimited Calls + 4GB data ...",
+						},
+						{
+							amount: "349",
+							validity: "28 Days",
+							plan_description: "1.5 GB/day + Unlimited Calls ...",
+						},
+					],
+				},
+			],
+			response_type_id: 1804,
+			message: "success",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario:
+					"Plans unavailable — note this still returns status 0, so branch on response_type_id",
+				statusCode: 200,
+				example: {
+					response_status_id: 0,
+					data: { message: "Unable to fetch plans" },
+					response_type_id: 1805,
+					message: "fail to fetch details",
+					status: 0,
+				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 1804,
+				meaning:
+					"Plans returned — let the customer pick one, then submit its `amount` as the recharge.",
+				next: "bbps-pay-bill",
+			},
+			{
+				id: 1805,
+				meaning:
+					"Plans could not be fetched. The envelope still carries `status: 0`, so branch on this id. The recharge can still proceed with an amount entered by the agent.",
+				next: "bbps-pay-bill",
+			},
+		],
 	},
 	{
 		id: "bbps-fetch-bill",
@@ -3909,7 +4311,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Retrieve outstanding bill details from a biller before processing payment.",
 		description:
-			"Fetches the live bill for a customer from the biller's system. Required for operators where `billFetchResponse = 1`. The response includes the outstanding amount, due date, and a `billfetchresponse` token that must be forwarded verbatim in the subsequent Pay Bill call. Pass `hc_channel=1` to use the higher-commission delayed channel.",
+			"Retrieves the live bill amount and customer name for a biller. Call this before Pay Bill so the agent can confirm the amount with the customer.\n\n**Carry `amount` and `utilitycustomername` from this response into Pay Bill**, and use the same `client_ref_id` for the matching Pay Bill call. Paying anything other than the fetched amount is rejected with status `208`.\n\n**Parameters vary by operator.** The fields listed below are the common set — call Get Operator Parameters first and treat its `list_elements` as the source of truth. Every additional `param_name` it returns must be sent here **and** to Pay Bill, with the same values in both.\n\nNote that `response_status_id` is `-1` on success for this endpoint. Branch on `status` and `response_type_id`, never on `response_status_id`.",
 		relevance: "H",
 		bestFor:
 			"Showing the customer their outstanding bill amount and due date before confirming payment.",
@@ -3918,161 +4320,198 @@ const ALL_API_SPECS: ApiSpec[] = [
 		docsUrl: "https://developers.eko.in/reference/bbps-fetch-bill",
 		extraRequestParams: [
 			{
+				name: "phone_operator_code",
+				type: "string",
+				required: true,
+				description:
+					"Biller identifier — the `operator_id` from the Get Operators response.",
+				example: "53",
+			},
+			{
 				name: "utility_acc_no",
 				type: "string",
 				required: true,
-				description: "Customer's account / consumer number with the biller.",
-				example: "1234567890",
+				description: "Bill / account number for the biller.",
+				example: "3287820071",
 			},
 			{
 				name: "confirmation_mobile_no",
 				type: "string",
 				required: true,
-				description: "Customer's mobile number for transaction confirmation.",
-				example: "9999988888",
+				description: "Customer mobile number linked with the bill.",
+				example: "9903457748",
 			},
 			{
 				name: "sender_name",
 				type: "string",
 				required: true,
-				description: "Customer's full name.",
-				example: "Ramesh Kumar",
+				description: "Customer name.",
+				example: "Asaad",
 			},
 			{
-				name: "operator_id",
+				name: "category",
+				type: "number",
+				required: true,
+				description:
+					"The `operator_category_id` from Get Categories (e.g. `8` = Electricity).",
+				example: 8,
+			},
+			{
+				name: "client_ref_id",
 				type: "string",
 				required: true,
-				description: "Biller identifier from the Get Operators response.",
-				example: "83",
+				description:
+					"Unique partner reference for this request. Reuse the same value on the matching Pay Bill call; use a fresh one for every new payment attempt.",
+				example: "2026010100123456789",
 			},
 			{
 				name: "source_ip",
 				type: "string",
 				required: true,
-				description: "IP address of the agent or retailer making this request.",
+				description: "Originating client IP address.",
 				example: "192.168.1.1",
 			},
 			{
-				name: "latlong",
-				type: "string",
-				required: true,
-				description:
-					"Agent's GPS coordinates as `latitude,longitude`. Mandatory for agent activation compliance.",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "hc_channel",
-				type: "number",
-				required: false,
-				description:
-					"Payment channel: 0 = Instant (default), 1 = Delayed (higher commissions).",
-				example: 0,
-			},
-			{
-				name: "dob",
+				name: "district_discome",
 				type: "string",
 				required: false,
 				description:
-					"Date of birth of the policy holder in DD/MM/YYYY format. Required for LIC policies.",
-				example: "15/08/1985",
+					"District-level distribution company code. Required for **operator 190 (UPPCL) only** — resolve it via the District Discome endpoint.",
+				example: "Lucknow-MVVNL",
 			},
 			{
-				name: "cycle_number",
+				name: "state",
 				type: "string",
 				required: false,
-				description:
-					"Electricity bill cycle number. Required for MSEB billers.",
-				example: "202406",
-			},
-			{
-				name: "authenticator",
-				type: "string",
-				required: false,
-				description:
-					"MSEB portal password. Required for certain MSEB accounts.",
-				example: "mypassword123",
+				description: "State code, where the operator requires it.",
+				example: "1",
 			},
 		],
 		responseData: [
 			{
-				name: "bill_amount",
+				name: "amount",
 				type: "string",
 				description:
-					"Outstanding bill amount in paise (divide by 100 for rupees).",
+					"Bill amount due, in rupees. Present this to the customer and send the exact same value to Pay Bill.",
 				imp: true,
-				example: "135000",
+				example: "2870.0",
 			},
 			{
-				name: "due_date",
-				type: "string",
-				description: "Bill due date returned by the biller.",
-				imp: true,
-				example: "30/06/2024",
-			},
-			{
-				name: "bill_number",
-				type: "string",
-				description: "Biller-assigned bill or reference number.",
-				imp: true,
-				example: "BN20240601XYZ",
-			},
-			{
-				name: "bill_date",
-				type: "string",
-				description: "Date the bill was generated.",
-				example: "01/06/2024",
-			},
-			{
-				name: "customer_name",
-				type: "string",
-				description: "Customer name as registered with the biller.",
-				imp: true,
-				example: "Ramesh Kumar",
-			},
-			{
-				name: "billfetchresponse",
+				name: "utilitycustomername",
 				type: "string",
 				description:
-					"Opaque token from the biller's system. Must be passed as-is in the Pay Bill request body when the operator requires it.",
+					"Customer name on the bill. Echo this back as `utilitycustomername` on Pay Bill.",
 				imp: true,
-				example: "eyJhbGciOiJSUzI1NiJ9...",
+				example: "Amit Kumar",
+			},
+			{
+				name: "billDueDate",
+				type: "string",
+				description: "Due date in `YYYYMMDD` format.",
+				imp: true,
+				example: "20260728",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				description: "Account / consumer number resolved by the biller.",
+				imp: true,
+				example: "3287820071",
+			},
+			{
+				name: "billdate",
+				type: "string",
+				description:
+					"Date the bill was generated, where the biller returns it.",
+				example: "null",
+			},
+			{
+				name: "billername",
+				type: "string",
+				description: "Biller name, where provided.",
+				example: "",
+			},
+			{
+				name: "bbpstrxnrefid",
+				type: "string",
+				description: "BBPS transaction reference, where provided.",
+				example: "",
+			},
+			{
+				name: "billDetailsList",
+				type: "array",
+				description:
+					"Additional bill line items, where the biller returns them.",
+				example: [],
+			},
+			{
+				name: "ifsc_status",
+				type: "number",
+				description: "Biller-side status flag.",
+				example: 1,
+			},
+			{
+				name: "user_code",
+				type: "string",
+				description: "Agent's user code.",
+				example: "35739001",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Bill fetched successfully",
-			response_type_id: 1388,
+			response_status_id: -1,
 			data: {
-				bill_amount: "135000",
-				due_date: "30/06/2024",
-				bill_number: "BN20240601XYZ",
-				bill_date: "01/06/2024",
-				customer_name: "Ramesh Kumar",
-				billfetchresponse: "eyJhbGciOiJSUzI1NiJ9...",
+				amount: "2870.0",
+				utilitycustomername: "Amit Kumar",
+				ifsc_status: 1,
+				user_code: "35739001",
+				customer_id: "3287820071",
+				billDueDate: "20260728",
+				billdate: "null",
+				billDetailsList: [],
+				bbpstrxnrefid: "",
+				billername: "",
 			},
+			response_type_id: 1052,
+			message: "Due Bill Amount For utility",
+			status: 0,
 		},
 		errorScenarios: [
 			{
-				scenario: "Invalid consumer number — biller returns no bill",
+				scenario: "Required field missing",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 131,
-					message: "Invalid account number. Please check and retry.",
-					data: {},
+					response_status_id: 1,
+					invalid_params: {
+						utility_acc_no: "Please provide the value of the field {2} {3}",
+					},
+					response_type_id: -1,
+					message: "Please provide the value of the field",
+					status: 97,
 				},
 			},
 			{
-				scenario: "Biller system unavailable",
+				scenario: "Bill fetch failed at the biller",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 151,
-					message:
-						"Biller system is temporarily unavailable. Please try again later.",
-					data: {},
+					response_status_id: 1,
+					data: { reason: "Please try again after some time." },
+					response_type_id: 1468,
+					message: "Unable to fetch bill",
+					status: 1468,
 				},
+			},
+		],
+		responseTypes: [
+			{
+				id: 1052,
+				meaning:
+					"Bill fetched — confirm the amount with the customer, then pay it.",
+				next: "bbps-pay-bill",
+			},
+			{
+				id: 1468,
+				meaning:
+					"Bill fetch failed. Verify the account details and retry after some time — do not proceed to payment.",
 			},
 		],
 	},
@@ -4084,7 +4523,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Process a bill payment or recharge for any BBPS-connected biller.",
 		description:
-			"The core money-debit API that executes a bill payment or prepaid recharge on the BBPS network. For operators where `billFetchResponse = 1`, the `billfetchresponse` token returned by the Fetch Bill API must be included. Parameter names sent here must exactly match the `param_name` values from Get Operator Parameters. Pass `hc_channel=1` to route through the high-commission channel, which can take up to 6 hours to settle on the biller side.",
+			"The money-debit call that pays a bill or submits a recharge on the BBPS network. For a bill payment, send the `amount` confirmed at Fetch Bill and the `utilitycustomername` it returned. A prepaid recharge skips Fetch Bill, so it sends the chosen plan's amount and omits `utilitycustomername`.\n\n**Pay the exact amount returned by Fetch Bill** — a mismatch is rejected with status `208`. On `208`, re-fetch the bill and retry with a **fresh** `client_ref_id`; a `client_ref_id` identifies one payment attempt and must never be reused across retries. Persist `tid` and your `client_ref_id` before any retry — status `208` still returns a `tid`.\n\n**Parameters vary by operator.** The fields below are the common set; pass every `param_name` returned by Get Operator Parameters as well. The parameter set sent here must match the set sent to Fetch Bill for the same operator.",
 		relevance: "H",
 		bestFor:
 			"Executing utility bill payments and prepaid recharges for end customers.",
@@ -4094,78 +4533,81 @@ const ALL_API_SPECS: ApiSpec[] = [
 		financial: true,
 		extraRequestParams: [
 			{
+				name: "phone_operator_code",
+				type: "string",
+				required: true,
+				description:
+					"Biller identifier — the `operator_id` from the Get Operators response.",
+				example: "53",
+			},
+			{
 				name: "utility_acc_no",
 				type: "string",
 				required: true,
-				description: "Customer's account or consumer number with the biller.",
-				example: "1234567890",
+				description:
+					"Bill / account number. For a prepaid recharge, the customer's mobile number.",
+				example: "3287820071",
 			},
 			{
 				name: "confirmation_mobile_no",
 				type: "string",
 				required: true,
-				description: "Customer's mobile number for payment confirmation.",
-				example: "9999988888",
+				description: "Customer mobile number.",
+				example: "9903457748",
 			},
 			{
 				name: "sender_name",
 				type: "string",
 				required: true,
-				description: "Customer's full name.",
-				example: "Ramesh Kumar",
+				description: "Customer name.",
+				example: "Asaad",
 			},
 			{
-				name: "operator_id",
-				type: "string",
+				name: "category",
+				type: "number",
 				required: true,
-				description: "Biller identifier from the Get Operators response.",
-				example: "83",
+				description:
+					"The `operator_category_id` from Get Categories (e.g. `8` = Electricity).",
+				example: 8,
 			},
 			{
 				name: "amount",
+				type: "number",
+				required: true,
+				description:
+					"Amount to pay, in rupees. Must equal the `amount` returned by Fetch Bill.",
+				example: 2870,
+			},
+			{
+				name: "utilitycustomername",
+				type: "string",
+				required: false,
+				description:
+					"Customer name as returned by Fetch Bill. Mandatory for bill payments where Bill Fetch is done. Not applicable to prepaid recharges, which skip Bill Fetch.",
+				example: "Amit Kumar",
+			},
+			{
+				name: "client_ref_id",
 				type: "string",
 				required: true,
-				description: "Payment amount in rupees (e.g. '1350' for ₹1,350).",
-				example: "1350",
+				description:
+					"Unique partner reference for this payment attempt. Reuse the value sent to the matching Fetch Bill call; generate a fresh one for every retry.",
+				example: "2026010100123456789",
 			},
 			{
 				name: "source_ip",
 				type: "string",
 				required: true,
-				description: "IP address of the agent or retailer making this request.",
+				description: "Originating client IP address.",
 				example: "192.168.1.1",
 			},
 			{
-				name: "latlong",
-				type: "string",
-				required: true,
-				description:
-					"Agent's GPS coordinates as `latitude,longitude`. Mandatory for agent activation compliance.",
-				example: "28.6139,77.2090",
-			},
-			{
-				name: "billfetchresponse",
+				name: "district_discome",
 				type: "string",
 				required: false,
 				description:
-					"The opaque token returned by the Fetch Bill API. Required when the operator's `billFetchResponse = 1`.",
-				example: "eyJhbGciOiJSUzI1NiJ9...",
-			},
-			{
-				name: "dob",
-				type: "string",
-				required: false,
-				description:
-					"Date of birth of the policy holder in DD/MM/YYYY format. Required for LIC policy payments.",
-				example: "15/08/1985",
-			},
-			{
-				name: "postalcode",
-				type: "number",
-				required: false,
-				description:
-					"6-digit PIN code of the customer. Required for MSEB electricity payments.",
-				example: 400001,
+					"District-level distribution company code. Required for **operator 190 (UPPCL) only** — pass the same value used at Fetch Bill.",
+				example: "Lucknow-MVVNL",
 			},
 		],
 		responseData: [
@@ -4173,101 +4615,187 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "tid",
 				type: "string",
 				description:
-					"Eko's unique transaction identifier. Use this for status enquiry and dispute resolution.",
+					"Eko transaction ID. Store it for reconciliation and dispute resolution — returned on failures too.",
 				imp: true,
-				example: "1734567890",
+				example: "3570553488",
 			},
 			{
-				name: "operator_ref_id",
+				name: "tx_status",
 				type: "string",
-				description:
-					"Reference number issued by the biller / BBPS network confirming receipt of payment.",
+				description: "Transaction status (`0` = success).",
 				imp: true,
-				example: "BBPS202406011234",
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
+				name: "status_text",
+				type: "string",
+				description: "Status label from the biller.",
+				example: "SUCCESS",
 			},
 			{
 				name: "amount",
 				type: "string",
-				description: "Amount debited for this transaction.",
+				description: "Amount paid.",
 				imp: true,
-				example: "1350",
+				example: "2870.0",
+			},
+			{
+				name: "totalamount",
+				type: "string",
+				description: "Total amount debited, including any fee.",
+				example: "2870.0",
+			},
+			{
+				name: "fee",
+				type: "string",
+				description: "Fee charged for this transaction.",
+				example: "0.0",
+			},
+			{
+				name: "tds",
+				type: "string",
+				description: "TDS deducted on the commission.",
+				example: "0.024",
+			},
+			{
+				name: "commission",
+				type: "string",
+				description: "Agent commission earned on this payment.",
+				example: "1.2",
 			},
 			{
 				name: "balance",
 				type: "string",
-				description:
-					"Remaining wallet balance of the agent after this transaction.",
-				example: "4820.50",
+				description: "Agent wallet balance after the payment.",
+				imp: true,
+				example: "46537.3",
 			},
 			{
-				name: "utility_acc_no",
+				name: "operator_name",
 				type: "string",
-				description:
-					"Consumer/account number against which the payment was made.",
-				example: "1234567890",
+				description: "Biller the payment was made to.",
+				example: "B.E.S.T Mumbai",
 			},
 			{
-				name: "client_ref_id",
+				name: "utilitycustomername",
 				type: "string",
-				description: "Your reference ID echoed back.",
-				example: "BBPS-20240601-001",
+				description: "Customer name on the bill.",
+				example: "Amit Kumar",
+			},
+			{
+				name: "customermobilenumber",
+				type: "string",
+				description: "Customer mobile number.",
+				example: "9903457748",
+			},
+			{
+				name: "account",
+				type: "string",
+				description: "Account / consumer number that was paid.",
+				example: "3287820071",
+			},
+			{
+				name: "approvalreferencenumber",
+				type: "string",
+				description: "Biller approval reference, where provided.",
+				example: "",
+			},
+			{
+				name: "payment_mode_desc",
+				type: "string",
+				description: "Payment mode used.",
+				example: "CASH",
+			},
+			{
+				name: "user_code",
+				type: "string",
+				description: "Agent's user code.",
+				example: "35739001",
+			},
+			{
+				name: "last_used_okekey",
+				type: "string",
+				description: "Last used OkeKey.",
+				example: "203",
+			},
+			{
+				name: "timestamp",
+				type: "string",
+				description: "Transaction timestamp.",
+				example: "2026-07-25T09:52:57.428Z",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
 			response_status_id: 0,
-			message: "Bill payment successful",
-			response_type_id: 333,
-			tx_status: "0",
-			txstatus_desc: "Success",
 			data: {
-				tid: "1734567890",
-				operator_ref_id: "BBPS202406011234",
-				amount: "1350",
-				balance: "4820.50",
-				utility_acc_no: "1234567890",
-				client_ref_id: "BBPS-20240601-001",
+				tx_status: "0",
+				txstatus_desc: "Success",
+				status_text: "SUCCESS",
+				tid: "3570553488",
+				amount: "2870.0",
+				totalamount: "2870.0",
+				fee: "0.0",
+				tds: "0.024",
+				commission: "1.2",
+				balance: "46537.3",
+				user_code: "35739001",
+				operator_name: "B.E.S.T Mumbai",
+				utilitycustomername: "Amit Kumar",
+				customermobilenumber: "9903457748",
+				payment_mode_desc: "CASH",
+				last_used_okekey: "203",
+				account: "3287820071",
+				timestamp: "2026-07-25T09:52:57.428Z",
 			},
+			response_type_id: 333,
+			message: "Success Last_used_OkeyKey: 203",
+			status: 0,
 		},
 		errorScenarios: [
 			{
-				scenario: "Insufficient agent wallet balance",
+				scenario:
+					"Amount mismatch — the amount paid differs from the fetched bill",
 				statusCode: 200,
 				example: {
-					status: 1,
-					response_status_id: 347,
-					message: "Insufficient balance.",
-					tx_status: "1",
-					txstatus_desc: "Fail",
-					data: {},
+					response_status_id: 1,
+					data: { last_used_okekey: "", tid: "3571183956" },
+					response_type_id: 208,
+					message:
+						"utility.payment.failed  Amount entered does not match with bill amount. Please try again",
+					status: 208,
 				},
 			},
 			{
-				scenario: "Transaction awaited — biller not confirmed yet",
+				scenario: "Required field missing",
 				statusCode: 200,
 				example: {
-					status: 0,
-					response_status_id: 0,
-					message: "Transaction is being processed.",
-					tx_status: "2",
-					txstatus_desc: "Response Awaited",
-					data: {
-						tid: "1734567891",
-						amount: "1350",
+					response_status_id: 1,
+					invalid_params: {
+						amount: "Please provide the value of the field {2} {3}",
 					},
+					response_type_id: -1,
+					message: "Please provide the value of the field",
+					status: 97,
 				},
 			},
+		],
+		responseTypes: [
 			{
-				scenario: "Amount mismatch — pay amount differs from fetched bill",
-				statusCode: 200,
-				example: {
-					status: 1,
-					response_status_id: 148,
-					message: "Amount mismatch. Please fetch the bill again and retry.",
-					tx_status: "1",
-					txstatus_desc: "Fail",
-					data: {},
-				},
+				id: 333,
+				meaning:
+					"Payment successful — persist `tid` and `client_ref_id` for reconciliation.",
+			},
+			{
+				id: 208,
+				meaning:
+					"Amount does not match the bill. Re-fetch the bill and retry with a fresh `client_ref_id`; a `tid` is still returned, so persist it first.",
+				next: "bbps-fetch-bill",
 			},
 		],
 	},
@@ -4276,8 +4804,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		productId: "bbps",
 		name: "BBPS Transaction Status",
 		slug: "bbps-transaction-status",
+		// Retired: this only ever aliased the generic `transaction-inquiry`
+		// endpoint (same path, same contract). BBPS flows now point at that spec
+		// directly — see the `bbps-bill-payment` recipe.
+		disabled: true,
 		summary:
 			"Check the current status of a BBPS bill payment by Eko TID or your client reference ID.",
+		description:
+			"This is the generic **Transaction Inquiry** endpoint, listed here for convenience within BBPS — the path, request and response contract are that endpoint's, not a BBPS-specific one. Use it to reconcile a Pay Bill whose response timed out or came back awaited.\n\nA timeout is never an automatic failure: always inquire by `tid`, or by your `client_ref_id` if the response never reached you.",
 		descriptionFile: "transaction-inquiry.md",
 		relevance: "M",
 		bestFor:
@@ -4292,51 +4826,79 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"Eko TID or your `client_ref_id` that identifies the transaction. Pass a TID as-is; to look up by `client_ref_id`, prefix it — e.g. `client_ref_id:567890`.",
-				example: "1734567890",
+				example: "3570553488",
 			},
 		],
 		responseData: [
 			{
+				name: "tx_status",
+				type: "string",
+				imp: true,
+				description:
+					"Transaction status (0 Success, 1 Fail, 2 Awaited, 3 Refund Pending, 4 Refunded, 5 Hold).",
+				example: "0",
+			},
+			{
+				name: "txstatus_desc",
+				type: "string",
+				imp: true,
+				description: "Human-readable transaction status.",
+				example: "Success",
+			},
+			{
 				name: "tid",
 				type: "string",
-				description: "Eko's transaction ID.",
 				imp: true,
-				example: "1734567890",
+				description: "Eko transaction ID.",
+				example: "3570553488",
+			},
+			{
+				name: "client_ref_id",
+				type: "string",
+				imp: true,
+				description: "Your reference id for the transaction.",
+				example: "2026010100123456789",
 			},
 			{
 				name: "amount",
 				type: "string",
-				description: "Transaction amount in rupees.",
-				imp: true,
-				example: "1350",
+				description: "Transaction amount (INR).",
+				example: "2870.0",
 			},
 			{
-				name: "operator_ref_id",
+				name: "fee",
 				type: "string",
-				description: "Biller or BBPS network reference number.",
-				imp: true,
-				example: "BBPS202406011234",
+				description: "Fee charged for the transaction.",
+				example: "0.0",
 			},
 			{
-				name: "utility_acc_no",
+				name: "account",
 				type: "string",
-				description: "Consumer/account number for which the bill was paid.",
-				example: "1234567890",
+				description: "Account / consumer number that was paid.",
+				example: "3287820071",
+			},
+			{
+				name: "timestamp",
+				type: "string",
+				description: "Transaction timestamp.",
+				example: "2026-07-25 09:52:57",
 			},
 		],
 		sampleSuccessResponse: {
-			status: 0,
-			response_status_id: 0,
-			message: "Transaction found",
-			response_type_id: 1388,
+			response_type_id: 1472,
 			data: {
-				tid: "1734567890",
 				tx_status: "0",
 				txstatus_desc: "Success",
-				amount: "1350",
-				operator_ref_id: "BBPS202406011234",
-				utility_acc_no: "1234567890",
+				tid: "3570553488",
+				client_ref_id: "2026010100123456789",
+				amount: "2870.0",
+				fee: "0.0",
+				account: "3287820071",
+				timestamp: "2026-07-25 09:52:57",
 			},
+			message: "Sucess! Enquiry success.",
+			status: 0,
+			response_status_id: 0,
 		},
 		errorScenarios: [
 			{
@@ -4356,6 +4918,10 @@ const ALL_API_SPECS: ApiSpec[] = [
 		productId: "bbps",
 		name: "Activate BBPS Service",
 		slug: "bbps-activate-service",
+		// Retired: agent onboarding is covered by the generic
+		// `activate-user-service` endpoint (same PUT /user/service/activate),
+		// which takes the BBPS service_code like any other service.
+		disabled: true,
 		summary:
 			"Onboard an agent/retailer for BBPS bill payment services using service code 53.",
 		description:
@@ -10428,64 +10994,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			response_type_id: 414,
 			message: "Success ! Found bank Details for given Ifsc",
-			status: 0,
-		},
-	},
-	{
-		id: "bbps-operator-code-circle",
-		productId: "bbps",
-		name: "Get Operator Code and Circle",
-		slug: "bbps-operator-code-circle",
-		summary:
-			"Auto-detect a mobile number's recharge operator code and telecom circle.",
-		description:
-			"Returns the `phone_operator_code` and `circle_area` for a customer mobile number — returned under `dependent_params`. Pass these into Get Recharge Plans.",
-		relevance: "M",
-		bestFor: "Resolving operator and circle before fetching recharge plans.",
-		method: "GET",
-		path: "/customer/payment/bbps/recharge/{customer_mobile}/operator",
-		docsUrl: "https://developers.eko.in/reference/operator-and-circle-area",
-		extraRequestParams: [
-			{
-				name: "customer_mobile",
-				type: "string",
-				required: true,
-				description: "Customer's mobile number.",
-				example: "9876543210",
-			},
-		],
-		responseData: [
-			{
-				name: "dependent_params",
-				type: "array",
-				imp: true,
-				description:
-					"Resolved operator/circle as name-value pairs (phone_operator_code, circle_area) — returned at the top level, not under data.",
-				children: [
-					{
-						name: "name",
-						type: "string",
-						description: "Parameter name (phone_operator_code or circle_area).",
-						example: "phone_operator_code",
-					},
-					{
-						name: "value",
-						type: "number",
-						description: "Parameter value.",
-						example: 400,
-					},
-				],
-			},
-		],
-		sampleSuccessResponse: {
-			response_status_id: 0,
-			dependent_params: [
-				{ name: "phone_operator_code", value: 400 },
-				{ name: "circle_area", value: "5" },
-			],
-			data: { updates: "" },
-			response_type_id: 1804,
-			message: "success",
 			status: 0,
 		},
 	},
