@@ -15,14 +15,14 @@
     "semantic_hash": "a7f8f64d921429688c7729fe0f74d792"
   },
   "packages/eps-backend/deploy/poller/poll.sh": {
-    "mtime": 1782992125.6021302,
-    "ast_hash": "fd8fe8924fa4e3a3088e71c823726b0c",
-    "semantic_hash": "fd8fe8924fa4e3a3088e71c823726b0c"
+    "mtime": 1785932225.2741666,
+    "ast_hash": "504b593e3708f931367082003c8a00c1",
+    "semantic_hash": ""
   },
   "packages/eps-backend/deploy/poller/test/poll_test.sh": {
-    "mtime": 1782992177.0358398,
-    "ast_hash": "1498d2b903584cf871f04d095524a98d",
-    "semantic_hash": "1498d2b903584cf871f04d095524a98d"
+    "mtime": 1785932249.8664925,
+    "ast_hash": "5bf3a37a0d99ed1c3a8b899766781a77",
+    "semantic_hash": ""
   },
   "packages/eps-backend/deploy/poller/test/run.sh": {
     "mtime": 1782724834.5962727,
@@ -40,9 +40,9 @@
     "semantic_hash": "c386bd11e6a72f0eb1aa045585bffb30"
   },
   "packages/eps-backend/deploy/poller/test/shims/docker": {
-    "mtime": 1782992149.6653116,
-    "ast_hash": "b1a07607e1387c2f8bb59611b5bf3498",
-    "semantic_hash": "b1a07607e1387c2f8bb59611b5bf3498"
+    "mtime": 1785931449.8261237,
+    "ast_hash": "5bb664f4cce53594bc7bd573535eb18c",
+    "semantic_hash": ""
   },
   "packages/eps-backend/deploy/poller/test/shims/flock": {
     "mtime": 1782724834.5979578,
@@ -3120,9 +3120,9 @@
     "semantic_hash": "2f0c305370ed04cf87e2413c9dcf3339"
   },
   "docs/local-roadmap/how-to-deploy-eps-transact-mcp-on-vm.md": {
-    "mtime": 1783670833.2522292,
-    "ast_hash": "95d5e1d15f79cbde33454ed4aeb32b36",
-    "semantic_hash": "95d5e1d15f79cbde33454ed4aeb32b36"
+    "mtime": 1785932424.618593,
+    "ast_hash": "880eea60576830a9295ff41d00438bc0",
+    "semantic_hash": ""
   },
   "docs/local-roadmap/pitch-deck-plan.md": {
     "mtime": 1782200435.8370082,
@@ -3270,9 +3270,9 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/deploy/poller/README.md": {
-    "mtime": 1785462198.036166,
-    "ast_hash": "d0a24a0836c89f064ec0fb9b7e9774e8",
-    "semantic_hash": "d0a24a0836c89f064ec0fb9b7e9774e8"
+    "mtime": 1785932340.3782659,
+    "ast_hash": "d8c421b603a4d445e1142c698abd501f",
+    "semantic_hash": ""
   },
   "packages/eps-backend/deploy/poller/alternatives-evaluated.md": {
     "mtime": 1785462198.0364037,
@@ -3295,8 +3295,8 @@
     "semantic_hash": "d6c46b76e019466c9c4764679c4f5e98"
   },
   "packages/eps-backend/docs/eps-backend-vm-deploy.md": {
-    "mtime": 1785924372.3248544,
-    "ast_hash": "7216d0fdbd2e201d55ff017cf5e85a68",
+    "mtime": 1785931591.505318,
+    "ast_hash": "e70db9bbc04ed7d2063f96b97ea88b36",
     "semantic_hash": ""
   },
   "packages/eps-context-mcp/README.md": {
@@ -3635,8 +3635,13 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/docs/eps-backend-docker-ops.md": {
-    "mtime": 1785924351.977501,
-    "ast_hash": "75d84a8e6f38cc8248af2698eb775d17",
+    "mtime": 1785932332.3933682,
+    "ast_hash": "1cd5c5479b839e665ddd5f42ca1443ae",
+    "semantic_hash": ""
+  },
+  "docs/local-roadmap/overlay2-migration-runbook.md": {
+    "mtime": 1785932412.461553,
+    "ast_hash": "3a42864669f63483aa1f9167dad4f5ba",
     "semantic_hash": ""
   }
 }
