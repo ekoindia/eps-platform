@@ -226,10 +226,10 @@ describe("dashboard route input", () => {
 	it("never lets the browser choose the client_ref_id", async () => {
 		const { app, interactJson } = harness();
 		await load(app, { preset: "today", client_ref_id: "replayed" });
-		expect(interactJson.mock.calls[0][1].client_ref_id).not.toBe("replayed");
-		expect(String(interactJson.mock.calls[0][1].client_ref_id)).toMatch(
-			/^\d{20}$/,
-		);
+		// The route forwards no ref at all — the connect client generates one per
+		// call (clients/connect.test.ts covers that), so a browser-sent value has
+		// nowhere to land and cannot be replayed.
+		expect(interactJson.mock.calls[0][1]).not.toHaveProperty("client_ref_id");
 	});
 });
 

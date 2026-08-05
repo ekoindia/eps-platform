@@ -1,7 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Mock } from "vitest";
-import { createEkoClient, identityOf, mapTransactionRows } from "./eko";
+import {
+	createEkoClient,
+	identityOf,
+	mapTransactionRows,
+	type EkoClient,
+} from "./eko";
 import { INTERACTION_154_SAMPLE } from "./transactions.sample";
+
+/** The one shape `clientRefId()` emits — 10 chars, legal on every endpoint. */
+const CLIENT_REF_ID = /^[0-9a-z]{10}$/;
 
 const ekoCfg = {
 	scheme: "https",
@@ -53,6 +61,43 @@ describe("EkoClient.sendOtp", () => {
 		await eko.sendOtp({ mobile: "9990000001", xRealIp: "1.2.3.4" });
 		const init = (f as unknown as Mock).mock.calls[0][1];
 		expect(init.headers["X-Real-IP"]).toBe("1.2.3.4");
+	});
+});
+
+describe("EkoClient client_ref_id", () => {
+	// The transport supplies it for every interaction, so no call site can omit
+	// it — the omission that made connect-api reject /authentication/login.
+	// sendOtp and verifyOtp used to send an EMPTY one; these prove they no longer
+	// can.
+	function refOf(f: typeof fetch, call = 0): string | null {
+		const init = (f as unknown as Mock).mock.calls[call][1];
+		return new URLSearchParams(init.body as string).get("client_ref_id");
+	}
+
+	it.each([
+		["sendOtp", (eko: EkoClient) => eko.sendOtp({ mobile: "9990000001" })],
+		[
+			"verifyOtp",
+			(eko: EkoClient) => eko.verifyOtp({ mobile: "9990000001", otp: "1234" }),
+		],
+		[
+			"getProfile",
+			(eko: EkoClient) => eko.getProfile({ mobile: "9990000001" }),
+		],
+	])("%s sends one", async (_name, call) => {
+		const f = mockFetch(200, { response_status_id: 0 });
+		await call(createEkoClient(ekoCfg, f));
+		expect(refOf(f)).toMatch(CLIENT_REF_ID);
+	});
+
+	it("is distinct per call", async () => {
+		const f = mockFetch(200, { response_status_id: 0 });
+		const eko = createEkoClient(ekoCfg, f);
+		await Promise.all([
+			eko.sendOtp({ mobile: "9990000001" }),
+			eko.sendOtp({ mobile: "9990000001" }),
+		]);
+		expect(refOf(f, 0)).not.toBe(refOf(f, 1));
 	});
 });
 
@@ -522,7 +567,7 @@ describe("onboarding interactions", () => {
 		expect(fields.get("user_code")).toBe("20810001");
 		expect(fields.get("org_id")).toBe("1");
 		// A client_ref_id is always generated, matching sendOtp/verifyOtp.
-		expect(fields.get("client_ref_id")).toBeTruthy();
+		expect(fields.get("client_ref_id")).toMatch(CLIENT_REF_ID);
 	});
 
 	it("verifyPan generates a distinct client_ref_id per call", async () => {
@@ -642,7 +687,7 @@ describe("onboarding interactions", () => {
 		expect(body.get("org_id")).toBe("1");
 		expect(body.get("source")).toBe("EPS");
 		expect(body.get("latlong")).toBe("27.176670,78.008075,7787");
-		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
+		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
 		expect(body.get("name")).toBe("Acme Retail");
 		expect(body.get("current_address_state")).toBe("Karnataka");
 	});
@@ -738,7 +783,7 @@ describe("sign agreement interactions", () => {
 		expect(body.get("agreement_id")).toBe("5");
 		expect(body.get("esign_completed")).toBe("true");
 		expect(body.get("initiator_id")).toBe("9990000001");
-		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
+		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
 	});
 
 	it("submitSignAgreement reports the upstream message on failure", async () => {
@@ -810,7 +855,7 @@ describe("getWalletBalance", () => {
 		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("user_code")).toBe("20810001");
 		expect(body.get("org_id")).toBe("1");
-		expect(body.get("client_ref_id")).toMatch(/^[0-9a-f-]{36}$/);
+		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
 	});
 
 	it("returns 0, not null, for a genuinely empty wallet", async () => {

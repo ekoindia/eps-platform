@@ -1,6 +1,6 @@
 import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { createHash, randomInt } from "node:crypto";
+import { createHash } from "node:crypto";
 import type { AuthProvider, UpstreamSession } from "../auth/provider";
 import type { SessionClaim, Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
@@ -47,17 +47,6 @@ const TTL_SERVICES_SEC = 3600;
 
 /** Shape of a `tx_typeid` filter, before it is checked against the master list. */
 const TYPE_ID = /^\d{1,10}$/;
-
-/**
- * A fresh 20-digit `client_ref_id`, in the shape connect-api's samples use.
- *
- * Built here and never accepted from the browser, so one caller cannot replay or
- * collide with another's reference. Mirrors `kycClientRefId` in `connect.ts`.
- */
-function clientRefId(): string {
-	const stamp = String(Date.now()).slice(-13).padStart(13, "0");
-	return `${stamp}${String(randomInt(0, 10_000_000)).padStart(7, "0")}`;
-}
 
 /**
  * A short, stable tag for the upstream this deployment talks to.
@@ -207,7 +196,6 @@ export function mountDashboard(
 				upstream.accessToken,
 				{
 					interaction_type_id: SERVICE_LIST_INTERACTION,
-					client_ref_id: clientRefId(),
 					source: "EPS",
 				},
 				{ xRealIp },
@@ -297,7 +285,8 @@ export function mountDashboard(
 				upstream.accessToken,
 				{
 					source: "EPS",
-					client_ref_id: clientRefId(),
+					// client_ref_id is added by the connect client, so a browser-sent
+					// one can never be replayed here.
 					interaction_type_id: DASHBOARD_INTERACTION,
 					requestPayload: {
 						[dataset.request]: dataset.perService ? filtered : range,

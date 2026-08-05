@@ -4,6 +4,7 @@ import {
 	createConnectClient,
 	mapConnectLogin,
 	tokensOf,
+	type ConnectClient,
 	type ConnectLoginEnvelope,
 } from "./connect";
 
@@ -12,6 +13,9 @@ const cfg = {
 	orgId: 1,
 	timeoutMs: 5000,
 };
+
+/** The one shape `clientRefId()` emits — 10 chars, legal on every endpoint. */
+const CLIENT_REF_ID = /^[0-9a-z]{10}$/;
 
 /** A minimal `auth_details` for a fully-onboarded EPS business partner. */
 function foundDetails(over: Record<string, unknown> = {}) {
@@ -221,6 +225,7 @@ describe("createConnectClient", () => {
 			id_token: "123456",
 			platform: "web",
 			org_id: 1,
+			client_ref_id: expect.stringMatching(CLIENT_REF_ID),
 		});
 	});
 
@@ -231,16 +236,74 @@ describe("createConnectClient", () => {
 		expect((init as RequestInit).headers).not.toHaveProperty("X-Real-IP");
 	});
 
-	it("sends a client_ref_id within connect-api's 1..10 character limit", async () => {
-		// connect-api validates this field on /authentication/sendotp and answers
-		// response_status_id 1 ("Client reference Id length should be in between 1
-		// and 10") when it is missing or too long — which surfaced as a blanket
-		// 502 OTP_SEND_FAILED in production.
-		const f = fetchReturning({ response_status_id: 0 });
-		await createConnectClient(cfg, f).sendOtp({ mobile: "9990000001" });
-		const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
-		const body = JSON.parse((init as RequestInit).body as string);
-		expect(body.client_ref_id).toMatch(/^[0-9a-f]{5,20}$/);
+	// connect-api validates this field on every endpoint and answers
+	// response_status_id 1 ("Client reference Id length should be in between 1
+	// and 10") when it is missing or too long. Missing on /authentication/sendotp
+	// surfaced as a blanket 502 OTP_SEND_FAILED; missing on
+	// /authentication/login, one fix later, as a blanket 401 on OTP verify. Hence
+	// the transport supplies it and each endpoint is checked here.
+	describe("client_ref_id", () => {
+		/** Every ref, on every endpoint: exactly 10 characters of [0-9a-z]. */
+		function refOfCall(f: typeof fetch, index = 0): string {
+			const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[
+				index
+			];
+			return JSON.parse((init as RequestInit).body as string).client_ref_id;
+		}
+
+		it.each([
+			["sendOtp", (c: ConnectClient) => c.sendOtp({ mobile: "9990000001" })],
+			["login", (c: ConnectClient) => c.login({ mobile: "9", otp: "1" })],
+			["refreshTokens", (c: ConnectClient) => c.refreshTokens("r")],
+			["revoke", (c: ConnectClient) => c.revoke("r")],
+			["interactions", (c: ConnectClient) => c.interactions("t")],
+			["interact", (c: ConnectClient) => c.interact("t", { a: "1" })],
+			["interactJson", (c: ConnectClient) => c.interactJson("t", { a: "1" })],
+		])("%s sends one", async (_name, call) => {
+			const f = fetchReturning({ response_status_id: 0 });
+			await call(createConnectClient(cfg, f));
+			expect(refOfCall(f)).toMatch(CLIENT_REF_ID);
+		});
+
+		it("uploadInteraction sends one inside the formdata part", async () => {
+			const f = fetchReturning({ response_status_id: 0 });
+			await createConnectClient(cfg, f).uploadInteraction(
+				"t",
+				{ interaction_type_id: "523" },
+				[{ name: "file1", file: new File(["x"], "a.png") }],
+			);
+			const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+			const form = (init as RequestInit).body as FormData;
+			const fields = new URLSearchParams(form.get("formdata") as string);
+			expect(fields.get("client_ref_id")).toMatch(CLIENT_REF_ID);
+		});
+
+		it("overrides any ref a caller supplied, so none can be replayed", async () => {
+			const f = fetchReturning({ response_status_id: 0 });
+			await createConnectClient(cfg, f).interact("t", {
+				client_ref_id: "replayed",
+			});
+			expect(refOfCall(f)).not.toBe("replayed");
+			expect(refOfCall(f)).toMatch(CLIENT_REF_ID);
+		});
+
+		it("is distinct per call, including back-to-back ones", async () => {
+			const f = fetchReturning({ response_status_id: 0 });
+			const c = createConnectClient(cfg, f);
+			await Promise.all([c.interact("t", {}), c.interact("t", {})]);
+			expect(refOfCall(f, 0)).not.toBe(refOfCall(f, 1));
+		});
+
+		it("logs the ref it actually sent", async () => {
+			// The log line is how a 107 gets diagnosed; it must not drift from
+			// the wire body.
+			const entries: EkoLogEntry[] = [];
+			const f = fetchReturning({ response_status_id: 0 });
+			await createConnectClient(cfg, f, {
+				log: (e: EkoLogEntry) => entries.push(e),
+			}).login({ mobile: "9", otp: "1" });
+			expect(entries[0].fields?.client_ref_id).toBe(refOfCall(f));
+		});
 	});
 
 	it("does not send api_partner_signup", async () => {

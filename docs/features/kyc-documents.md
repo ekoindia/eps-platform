@@ -124,8 +124,10 @@ review, too many blocks the upload outright.
   second time, and send it empty when permission was denied.
 - **`user_id` and `client_ref_id`** are never accepted from the browser.
   `user_id` comes from the sealed session claim, so a caller cannot upload
-  against someone else's account; `client_ref_id` is minted server-side as 20
-  digits (13-digit timestamp + 7 random, `node:crypto`).
+  against someone else's account; `client_ref_id` is minted by the connect
+  client for every upstream call it makes — 10 characters, base36 timestamp +
+  random tail (`clientRefId()` in `clients/http.ts`). Ten because connect-api
+  rejects a longer one on `/authentication/*`.
 
 ## Status semantics
 

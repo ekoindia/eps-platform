@@ -6,7 +6,7 @@ import {
 	selectEvalueAccountId,
 	type AccountDetail,
 } from "./accounts";
-import { withTimeout } from "./http";
+import { clientRefId, withTimeout } from "./http";
 
 /**
  * The response envelope `/authentication/login` and `/authentication/token`
@@ -423,13 +423,21 @@ export function createConnectClient(
 		// upstream anti-abuse see the real caller rather than this server.
 		if (opts.xRealIp) headers["X-Real-IP"] = opts.xRealIp;
 		if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`;
+		// EVERY connect-api endpoint wants a client_ref_id — /authentication/login
+		// and /authentication/sendotp reject the call outright without one
+		// (response_status_id 1, "Client reference Id length should be in between
+		// 1 and 10"). Injected here rather than at each call site because that is
+		// how a sibling endpoint stays fixed: sendotp was patched alone once, and
+		// login broke next. The generated value always wins, so nothing a caller
+		// (least of all the browser) supplies can be replayed.
+		const payload = { ...body, client_ref_id: clientRefId() };
 		// The body goes to the logger as-is; redaction there is recursive, so a
 		// credential nested inside an interaction payload is caught too.
-		const { res, parsed, parseError } = await callUpstream(path, body, () =>
+		const { res, parsed, parseError } = await callUpstream(path, payload, () =>
 			doFetch(`${base}${path}`, {
 				method: "POST",
 				headers,
-				body: JSON.stringify(body),
+				body: JSON.stringify(payload),
 			}),
 		);
 		// Non-JSON wins over status here: a proxy's HTML error page is more
@@ -482,8 +490,17 @@ export function createConnectClient(
 	): Promise<Record<string, unknown>> {
 		const form = new FormData();
 		// One `formdata` part carrying every field URL-encoded — how connect-api's
-		// upload endpoint expects them, not a part per field.
-		form.append("formdata", new URLSearchParams(fields).toString());
+		// upload endpoint expects them, not a part per field. The ref is injected
+		// into the fields BEFORE encoding — this part, not the multipart envelope,
+		// is where connect-api reads it, and `postMultipart` sees only opaque
+		// `FormData`.
+		form.append(
+			"formdata",
+			new URLSearchParams({
+				...fields,
+				client_ref_id: clientRefId(),
+			}).toString(),
+		);
 		for (const { name, file } of files) form.append(name, file, file.name);
 
 		const raw = await postMultipart("/transactions/upload", form, {
@@ -504,11 +521,7 @@ export function createConnectClient(
 					platform: "web",
 					app: "EPS",
 					org_id: cfg.orgId,
-					// REQUIRED, and connect-api caps it at 10 characters — longer or
-					// absent and it answers response_status_id 1 without dispatching the
-					// SMS. The other endpoints here take the 20-digit form; this one
-					// does not, so it gets its own short ref rather than clientRefId().
-					client_ref_id: crypto.randomUUID().replace(/-/g, "").slice(0, 10),
+					// client_ref_id comes from `post` — see the note there.
 				},
 				{ xRealIp },
 			)) as { response_status_id?: number; data?: { otp?: string } };
@@ -545,10 +558,11 @@ export function createConnectClient(
 
 		async interactions(accessToken, opts = {}) {
 			// `source: "WLC"` and a `client_ref_id` are what Eloka's shared fetcher
-			// adds to every connect-api call; the endpoint expects both.
+			// adds to every connect-api call; the endpoint expects both. The ref
+			// comes from `post`.
 			const raw = await post(
 				"/transactions/wlc",
-				{ source: "WLC", client_ref_id: `eps-${Date.now()}` },
+				{ source: "WLC" },
 				{ bearer: accessToken, xRealIp: opts.xRealIp },
 			);
 			// Shape varies across connect-api versions: a bare array in some, wrapped

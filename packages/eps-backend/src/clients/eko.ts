@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
@@ -7,7 +6,7 @@ import {
 	selectEvalueAccountId,
 	type AccountDetail,
 } from "./accounts";
-import { withTimeout } from "./http";
+import { clientRefId, withTimeout } from "./http";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -15,7 +14,6 @@ export interface EkoClient {
 		orgId?: number;
 		platform?: string;
 		app?: string;
-		clientRefId?: string;
 		source?: string;
 		xRealIp?: string;
 	}): Promise<{ ok: boolean; raw: unknown }>;
@@ -23,7 +21,6 @@ export interface EkoClient {
 		mobile: string;
 		otp: string;
 		orgId?: number;
-		clientRefId?: string;
 		source?: string;
 		xRealIp?: string;
 	}): Promise<{ ok: boolean; raw: unknown }>;
@@ -306,35 +303,44 @@ export function createEkoClient(
 		xRealIp?: string,
 		target: string = url,
 	): Promise<unknown> {
-		const body = new URLSearchParams(fields).toString();
+		// Every interaction carries a client_ref_id, injected here rather than at
+		// each call site so no future one can forget it — that omission is what
+		// broke /authentication/login upstream. Generated, never caller-supplied,
+		// so one request cannot replay another's reference.
+		const withRef = { ...fields, client_ref_id: clientRefId() };
+		const body = new URLSearchParams(withRef).toString();
 		const headers: Record<string, string> = {
 			"Content-Type": "application/x-www-form-urlencoded",
 			developer_key: cfg.developerKey,
 		};
-		return sendForm(body, headers, fields, xRealIp, target);
+		return sendForm(body, headers, withRef, xRealIp, target);
 	}
 
 	/**
 	 * POSTs a single `multipart/form-data` part named `form-data`, whose value
-	 * is the given URL-encoded field string. Interaction 523 (PAN verification)
-	 * is the one onboarding call the upstream expects wrapped this way instead
-	 * of plain urlencoded — see the design spec's "PAN (523)" section.
+	 * is the URL-encoded field string. Interaction 523 (PAN verification) is the
+	 * one onboarding call the upstream expects wrapped this way instead of plain
+	 * urlencoded — see the design spec's "PAN (523)" section.
+	 *
+	 * Takes the fields unencoded, like `post()`: the ref is injected before
+	 * encoding, and the logged fields are the exact object that was serialized
+	 * rather than a reparse of it.
 	 *
 	 * `Content-Type` is deliberately left unset: `fetch` fills in the multipart
 	 * boundary itself once it sees a `FormData` body, and setting it manually
 	 * would omit that boundary and break the upload.
 	 */
 	async function postMultipart(
-		formDataString: string,
+		fields: Record<string, string>,
 		xRealIp?: string,
 	): Promise<unknown> {
+		const withRef = { ...fields, client_ref_id: clientRefId() };
 		const body = new FormData();
-		body.append("form-data", formDataString);
+		body.append("form-data", new URLSearchParams(withRef).toString());
 		const headers: Record<string, string> = { developer_key: cfg.developerKey };
-		// Logged fields must mirror the actual wire values so redaction and the
+		// Logged fields mirror the actual wire values, so redaction and the
 		// `basic`-level summary keep working exactly as they do for `post()`.
-		const fields = Object.fromEntries(new URLSearchParams(formDataString));
-		return sendForm(body, headers, fields, xRealIp);
+		return sendForm(body, headers, withRef, xRealIp);
 	}
 
 	function base(orgId?: number): Record<string, string> {
@@ -379,7 +385,6 @@ export function createEkoClient(
 					intent_id: "0",
 					user_identity: input.mobile,
 					user_identity_type: "mobile_number",
-					client_ref_id: input.clientRefId ?? "",
 				},
 				input.xRealIp,
 			)) as { response_status_id?: number };
@@ -397,7 +402,6 @@ export function createEkoClient(
 					verification_type: "2",
 					user_identity: input.mobile,
 					user_identity_type: "mobile_number",
-					client_ref_id: input.clientRefId ?? "",
 				},
 				input.xRealIp,
 			)) as { response_status_id?: number };
@@ -520,20 +524,18 @@ export function createEkoClient(
 			// Unlike every other onboarding interaction, 523 (document upload) is
 			// NOT sent as a flat urlencoded body: the reference connect-api
 			// implementation wraps it in one multipart part, literally named
-			// `form-data`, whose value is this same URL-encoded field string. See
-			// the design spec's "PAN (523)" section.
-			const fields = {
-				client_ref_id: randomUUID(),
-				interaction_type_id: "523",
-				intent_id: "3",
-				doc_type: "2",
-				doc_id: input.pan,
-				source: "EPS",
-				latlong: ONBOARDING_LATLONG,
-				...actor(input.identity),
-			};
+			// `form-data`, whose value is the URL-encoded field string. See the
+			// design spec's "PAN (523)" section.
 			const raw = await postMultipart(
-				new URLSearchParams(fields).toString(),
+				{
+					interaction_type_id: "523",
+					intent_id: "3",
+					doc_type: "2",
+					doc_id: input.pan,
+					source: "EPS",
+					latlong: ONBOARDING_LATLONG,
+					...actor(input.identity),
+				},
 				input.xRealIp,
 			);
 			return stepResult(raw, PAN_VERIFICATION_OK);
@@ -541,15 +543,14 @@ export function createEkoClient(
 		async submitBusiness(input) {
 			// Eloka always sends a client_ref_id on this interaction — its
 			// apiHelper injects one when absent (helpers/apiHelper.js:103) and its
-			// pipeline sets one explicitly (executePipeline.ts:289). Match that.
+			// pipeline sets one explicitly (executePipeline.ts:289). `post` does
+			// the same for every interaction here.
 			const raw = await post(
 				{
 					// `details` is spread FIRST so none of its keys can override the
-					// system fields below (actor identity, client_ref_id,
-					// interaction_type_id).
+					// system fields below (actor identity, interaction_type_id).
 					...input.details,
 					...actor(input.identity),
-					client_ref_id: randomUUID(),
 					interaction_type_id: "522",
 					latlong: ONBOARDING_LATLONG,
 					source: "EPS",
@@ -673,7 +674,6 @@ export function createEkoClient(
 					esign_completed: "true",
 					completion_timestamp: new Date().toISOString(),
 					latlong: ONBOARDING_LATLONG,
-					client_ref_id: randomUUID(),
 				},
 				input.xRealIp,
 			);
@@ -684,7 +684,6 @@ export function createEkoClient(
 				{
 					...actor(input.identity),
 					interaction_type_id: "9",
-					client_ref_id: randomUUID(),
 					source: "EPS",
 				},
 				input.xRealIp,
@@ -718,7 +717,6 @@ export function createEkoClient(
 					...input.filters,
 					...actor(input.identity),
 					interaction_type_id: "154",
-					client_ref_id: randomUUID(),
 					source: "EPS",
 					isNetworkTransactionHistory: "0",
 					start_index: String(input.startIndex),
