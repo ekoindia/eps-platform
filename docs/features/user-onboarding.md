@@ -312,8 +312,7 @@ and otherwise surfacing the upstream `message` as `EkoStepResult`.
 plain urlencoded: the reference `connect-api` implementation wraps its 523
 call in a single multipart part, literally named `form-data`, whose value is
 the same URL-encoded field string every other interaction sends as its body
-directly — plus a generated `client_ref_id`, which 523 did not previously
-send. No file part is included (`eko.ts` `verifyPan`; confirmed by
+directly — plus the `client_ref_id` the transport adds to every interaction. No file part is included (`eko.ts` `verifyPan`; confirmed by
 `clients/eko.test.ts`, `"verifyPan sends 523 as multipart with one
 'form-data' part and no file"`). The design's original "no file part"
 question is settled: it is genuinely not sent. **This multipart contract is

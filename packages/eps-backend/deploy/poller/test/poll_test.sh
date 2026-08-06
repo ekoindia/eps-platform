@@ -20,7 +20,8 @@ setup() {
 	export READYZ_RETRIES=4 READYZ_DELAY_SEC=0 POLLER_ALERT_WEBHOOK=""
 	unset SHIM_SKOPEO_FAIL SHIM_SKOPEO_DIGEST SHIM_READYZ_DEFAULT SHIM_REDIS_DEFAULT \
 		SHIM_CTR_DEFAULT SHIM_REPODIGESTS SHIM_NEW_CID SHIM_IMGID \
-		SHIM_PULL_FAIL SHIM_UP_FAIL 2>/dev/null || true
+		SHIM_PULL_FAIL SHIM_UP_FAIL SHIM_UP_RECREATES SHIM_REPODIGESTS_AFTER \
+		HOLD_REALERT_SEC 2>/dev/null || true
 	: >"$SHIM_STATE/calls.log"
 }
 ok() { printf 'ok\t%s\n' "$1" >>"$RESULTS"; }
@@ -166,6 +167,135 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 	reconcile_once
 	grep -q 'up -d --no-deps eps-transact-mcp' "$SHIM_STATE/calls.log" \
 		&& ok "SERVICE knob targets overridden service" || no "SERVICE knob targets overridden service" "wrong service"
+)
+
+# --- Task 6 cases: a deploy that landed must not latch HOLD ---
+# compose recreates the container onto the target image and THEN exits non-zero.
+# Taking that at face value is what pinned production to a stale image for five days.
+( setup; seed_deploy
+	export SHIM_UP_FAIL=1 SHIM_UP_RECREATES=1 \
+		SHIM_REPODIGESTS_AFTER="ghcr.io/ekoindia/eps-backend@sha256:remote"; load
+	reconcile_once
+	is_hold && no "up-failed-but-landed does not HOLD" "held" || ok "up-failed-but-landed does not HOLD"
+	eq "up-failed-but-landed still commits last_good" "$(lg)" "sha256:remote"
+)
+# Regression guard for the above: a genuine up failure leaves the OLD image live,
+# so it must still HOLD.
+( setup; seed_deploy; export SHIM_UP_FAIL=1; load
+	reconcile_once
+	is_hold && ok "genuine up failure still HOLDs" || no "genuine up failure still HOLDs" "not held"
+	eq "genuine up failure writes no last_good" "$(lg)" ""
+)
+
+# --- Task 7 cases: stale-HOLD auto-clear, narrowly ---
+hold_txt() { cat "$SHIM_STATE/HOLD" 2>/dev/null || true; }
+# "deploy error <live digest>" is self-contradictory: that image IS running.
+( setup; seed_deploy; load
+	set_hold "deploy error sha256:LIVE"
+	reconcile_once
+	is_hold && no "falsified HOLD is cleared" "still held: $(hold_txt)" || ok "falsified HOLD is cleared"
+	eq "cleared HOLD resumes deploying" "$(lg)" "sha256:remote"
+)
+# Same prefix, different digest — the deploy really did fail. Must survive.
+( setup; seed_deploy; load
+	set_hold "deploy error sha256:OTHER"
+	reconcile_once
+	is_hold && ok "HOLD naming another digest survives" || no "HOLD naming another digest survives" "cleared"
+	eq "surviving HOLD deploys nothing" "$(lg)" ""
+)
+# The dangerous false positives: these forms mean the live image NEVER passed the
+# health gate. Clearing them would skip the gate forever.
+( setup; seed_deploy; load
+	set_hold "dependency fault deploying sha256:LIVE"
+	reconcile_once
+	is_hold && ok "dependency-fault HOLD survives" || no "dependency-fault HOLD survives" "cleared"
+)
+( setup; seed_deploy; load
+	set_hold "first-deploy image fault sha256:LIVE"
+	reconcile_once
+	is_hold && ok "first-deploy-fault HOLD survives" || no "first-deploy-fault HOLD survives" "cleared"
+)
+( setup; seed_deploy; load
+	set_hold "rollback to sha256:LIVE failed"
+	reconcile_once
+	is_hold && ok "failed-rollback HOLD survives" || no "failed-rollback HOLD survives" "cleared"
+)
+# An operator freeze carries no digest and is never touched.
+( setup; seed_deploy; load
+	set_hold "frozen for the maintenance window"
+	reconcile_once
+	is_hold && ok "operator freeze survives" || no "operator freeze survives" "cleared"
+)
+
+# --- Task 8 cases: a latched HOLD keeps nagging ---
+hooked() { grep -q "http://hook" "$SHIM_STATE/calls.log"; }
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=9999; load
+	set_hold "deploy error sha256:OTHER"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && no "re-alert suppressed inside the window" "alerted" || ok "re-alert suppressed inside the window"
+)
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=0; load
+	set_hold "deploy error sha256:OTHER"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && ok "re-alert fires once the window elapses" || no "re-alert fires once the window elapses" "silent"
+)
+# A corrupt or future stamp must neither mute the alert nor abort the poller.
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=9999; load
+	set_hold "deploy error sha256:OTHER"
+	printf 'not-a-number\n' >"$SHIM_STATE/hold_alerted_at"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && ok "corrupt stamp still re-alerts" || no "corrupt stamp still re-alerts" "silent"
+)
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=9999; load
+	set_hold "deploy error sha256:OTHER"
+	printf '%s\n' "$(( $(date -u +%s) + 86400 ))" >"$SHIM_STATE/hold_alerted_at"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && ok "future stamp does not mute re-alerts" || no "future stamp does not mute re-alerts" "silent"
+)
+# Clearing HOLD drops the throttle stamp with it, so the next incident starts fresh.
+( setup; load
+	set_hold "deploy error sha256:OTHER"
+	[ -f "$SHIM_STATE/hold_alerted_at" ] && ok "set_hold stamps the re-alert clock" \
+		|| no "set_hold stamps the re-alert clock" "no stamp"
+	clear_hold
+	[ -f "$SHIM_STATE/hold_alerted_at" ] && no "clear_hold drops the stamp" "stamp survived" \
+		|| ok "clear_hold drops the stamp"
+)
+
+# --- Task 9 cases: deploy_image stdout stays the cid alone, timings on stderr ---
+# The timing/stderr logging wraps the very function whose stdout the caller
+# captures (`cid="$(deploy_image …)"`). One stray byte on stdout would be read
+# as a container id and gated against.
+di() { deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>/dev/null; }
+( setup; seed_deploy; load
+	eq "deploy_image success echoes the cid alone" "$(di)" "cidNEW"
+)
+( setup; seed_deploy; export SHIM_PULL_FAIL=1; load     # pull fails, old image still live
+	out="$(di)"; rc=$?
+	[ "$rc" -ne 0 ] && ok "pull failure → rc!=0" || no "pull failure → rc!=0" "rc0"
+	eq "pull failure echoes nothing" "$out" ""
+)
+( setup; seed_deploy; export SHIM_UP_FAIL=1; load       # genuine up failure, nothing landed
+	out="$(di)"; rc=$?
+	[ "$rc" -ne 0 ] && ok "genuine up failure → rc!=0" || no "genuine up failure → rc!=0" "rc0"
+	eq "genuine up failure echoes nothing" "$out" ""
+)
+# The recovery path must still win over a non-zero compose exit — and must not
+# leak its log line into the captured cid.
+( setup; seed_deploy
+	export SHIM_UP_FAIL=1 SHIM_UP_RECREATES=1 \
+		SHIM_REPODIGESTS_AFTER="ghcr.io/ekoindia/eps-backend@sha256:remote"; load
+	eq "up-failed-but-landed still echoes the cid alone" "$(di)" "cidNEW"
+)
+# Durations are logged, and on stderr only.
+( setup; seed_deploy; load
+	err="$(deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>&1 >/dev/null)"
+	case "$err" in *"pull ok in "*"s"*) ok "pull duration logged" ;; *) no "pull duration logged" "[$err]" ;; esac
+	case "$err" in *"up ok in "*"s"*) ok "up duration logged" ;; *) no "up duration logged" "[$err]" ;; esac
 )
 
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---

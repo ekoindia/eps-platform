@@ -1,7 +1,7 @@
-# Graph Report - eko-eps-website  (2026-08-06)
+# Graph Report - eko-eps-website  (2026-08-05)
 
 ## Corpus Check
-- 683 files · ~840,192 words
+- 683 files · ~840,092 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5532cebc`
+- Built from commit: `0cd500b8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -854,7 +854,7 @@ Nodes (3): In-memory abuse throttling, Path-namespaced nginx reverse proxy (/tra
   docs/console-roadmap.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **1068 isolated node(s):** `here`, `repoRoot`, `Pin`, `PINS`, `cfg` (+1063 more)
+- **1068 isolated node(s):** `cfg`, `ConnectTokens`, `ekoCfg`, `TransactionHistoryInput`, `NOT_FOUND_CODES` (+1063 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **26 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -870,8 +870,8 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `app()` connect `http/transactions.test.ts` to `main.tsx`?**
   _High betweenness centrality (0.140) - this node is a cross-community bridge._
 - **Why does `requestId()` connect `http/transactions.test.ts` to `app.ts`, `app.test.ts`?**
-  _High betweenness centrality (0.114) - this node is a cross-community bridge._
-- **What connects `here`, `repoRoot`, `Pin` to the rest of the system?**
+  _High betweenness centrality (0.116) - this node is a cross-community bridge._
+- **What connects `cfg`, `ConnectTokens`, `ekoCfg` to the rest of the system?**
   _1068 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `build-agent-bundle.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.051587301587301584 - nodes in this community are weakly interconnected._

@@ -1,6 +1,5 @@
 import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { randomInt } from "node:crypto";
 import type { AuthProvider, UpstreamSession } from "../auth/provider";
 import type { SessionClaim, Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
@@ -101,21 +100,6 @@ function isAllowedKycFile(file: File): boolean {
 	return (
 		KYC_TYPES.has(file.type.toLowerCase()) && KYC_EXTENSIONS.has(extension)
 	);
-}
-
-/**
- * A fresh 20-digit `client_ref_id`, matching the shape connect-api's own samples
- * use for these interactions.
- *
- * Built here and never accepted from the browser, so one caller cannot replay or
- * collide with another's reference. The timestamp is explicitly sliced and
- * padded to 13 digits rather than assumed to be that long, and the random tail
- * keeps its full width so two uploads in the same millisecond stay distinct.
- * @returns Exactly 20 digits.
- */
-function kycClientRefId(): string {
-	const stamp = String(Date.now()).slice(-13).padStart(13, "0");
-	return `${stamp}${String(randomInt(0, 10_000_000)).padStart(7, "0")}`;
 }
 
 /**
@@ -306,7 +290,6 @@ export function mountConnect(
 			upstream.accessToken,
 			{
 				interaction_type_id: KYC_LIST_INTERACTION,
-				client_ref_id: kycClientRefId(),
 				locale: "en",
 				// From the sealed session, never the browser: this is whose KYC pack
 				// gets listed.
@@ -405,9 +388,9 @@ export function mountConnect(
 			upstream.accessToken,
 			{
 				// Every field URL-encodes into one `formdata` part, so they are all
-				// strings by the time they leave here.
+				// strings by the time they leave here. `client_ref_id` is added by
+				// the client transport, never accepted from the browser.
 				interaction_type_id: String(KYC_UPLOAD_INTERACTION),
-				client_ref_id: kycClientRefId(),
 				locale: "en",
 				user_id: claim.sub,
 				doc_type: docType,

@@ -8,6 +8,10 @@ running image every 30 seconds, with a health gate and automatic rollback.
 > [poller README](../deploy/poller/README.md) — it reuses this same sidecar for
 > any project.
 
+> Already bootstrapped and just need to operate the stack? The
+> [Docker ops cheatsheet](./eps-backend-docker-ops.md) has the day-2 one-liners:
+> status, logs, restarts, `.env` changes, Redis, capacity, triage.
+
 ---
 
 ## Contents
@@ -267,7 +271,7 @@ substitute your own hostname.
 
 **Pick the hostname before anything else** — it is load-bearing for cookies. The
 backend issues `SameSite=Lax` session cookies, which a browser only sends on
-requests to the same registrable domain as the page. A backend on a *different*
+requests to the same registrable domain as the page. A backend on a _different_
 domain (say `eps-backend.example.net` while the site is `eps.eko.in`) makes those
 cookies third-party and auth silently breaks. Use a subdomain of the site's own
 domain.
@@ -332,7 +336,7 @@ silently start returning 403s after a reallocation.
 
 The website reads its backend base from `VITE_EPS_BACKEND_URL`, defaulting to the
 same-origin path `/api` (`src/lib/auth/client.ts`). That default only works where
-something actually *serves* `/api`: in development the Vite dev server proxies it
+something actually _serves_ `/api`: in development the Vite dev server proxies it
 (`vite.config.ts`), and in production the host must. With neither, `/api/me` falls
 through to the SPA fallback and returns `index.html` with a **200**, which is how
 `/console` once rendered a "signed-in" user built from the site's own HTML.
@@ -349,13 +353,13 @@ repository:
 
 ```json
 {
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "${EPS_BACKEND_ORIGIN}/$1",
-      "env": ["EPS_BACKEND_ORIGIN"]
-    }
-  ]
+	"routes": [
+		{
+			"src": "/api/(.*)",
+			"dest": "${EPS_BACKEND_ORIGIN}/$1",
+			"env": ["EPS_BACKEND_ORIGIN"]
+		}
+	]
 }
 ```
 
@@ -491,6 +495,25 @@ takes no action.
   let the poller redeploy it. Only clear HOLD after a fix has been merged to `main`
   and CI has moved `:prod` to a good digest.
 
+**One HOLD form clears itself.** `docker compose up -d` can recreate the container
+on the target image and *still* exit non-zero. The poller used to take that at
+face value and write `deploy error <digest>` for a deploy that had in fact landed
+— pinning production to that image until a human noticed. It now verifies the
+live digest before declaring a deploy failed, and on startup clears a HOLD of
+exactly the form `deploy error <digest>` when that digest is the one running.
+
+The three fault forms above are **never** auto-cleared: each of them means the
+live image never passed the health gate, so clearing them would skip the gate
+permanently. Neither is a manual freeze — as long as its text is not
+`deploy error <digest>`, which `touch /state/HOLD` and any free-text reason
+satisfy.
+
+A HOLD that stays set now re-alerts every `HOLD_REALERT_SEC` (default 3600)
+rather than logging one line per tick, so a latched HOLD cannot go unnoticed the
+way it did between 2026-07-31 and 2026-08-05. Set `POLLER_ALERT_WEBHOOK` in
+`/data/eps-backend/.env` for those alerts to leave the container — without it the
+poller warns at boot that alerts are log-only.
+
 **To clear HOLD and resume automatic deploys:**
 
 ```sh
@@ -539,6 +562,10 @@ docker logs -f <poller-container-id>
 ---
 
 ## Ongoing ops
+
+Policy and background below; the day-to-day commands (status, logs, restarts,
+`.env` changes, Redis inspection, capacity, triage) are in the
+[Docker ops cheatsheet](./eps-backend-docker-ops.md).
 
 ### KV store tiers (Valkey / no-KV degraded mode / managed)
 

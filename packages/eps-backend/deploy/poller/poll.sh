@@ -23,6 +23,10 @@ set -euo pipefail
 : "${STATE_DIR:=/state}"
 : "${POLLER_ALERT_WEBHOOK:=}"
 : "${REMOTE_FAIL_ALERT_THRESHOLD:=5}"
+# How often a still-set HOLD re-announces itself. A HOLD nobody is told about is
+# indistinguishable from no auto-deploy at all: one CRIT at latch time was once
+# missed for five days while six merged commits sat undeployed.
+: "${HOLD_REALERT_SEC:=3600}"
 
 # The ONE invariant compose invocation (see Global Constraints).
 dc() {
@@ -85,10 +89,63 @@ write_deploy_env() {
 }
 
 hold_path() { printf '%s/HOLD' "$STATE_DIR"; }
+hold_stamp_path() { printf '%s/hold_alerted_at' "$STATE_DIR"; }
 is_hold() { [ -f "$(hold_path)" ]; }
+hold_reason() { head -n1 "$(hold_path)" 2>/dev/null || printf ''; }
 # HOLD is the safety stop; if it cannot be written, say so loudly (do not swallow).
-set_hold() { printf '%s\n' "$*" >"$(hold_path)" || log "FATAL: cannot write HOLD sentinel: $*"; }
-clear_hold() { rm -f "$(hold_path)"; }
+# Every caller alerts immediately before setting it, so stamp the re-alert clock
+# now — a fresh incident must not inherit the previous one's throttle window, and
+# must not double-alert on the very next tick either.
+set_hold() {
+	printf '%s\n' "$*" >"$(hold_path)" || log "FATAL: cannot write HOLD sentinel: $*"
+	date -u +%s >"$(hold_stamp_path)" 2>/dev/null || :
+}
+clear_hold() { rm -f "$(hold_path)" "$(hold_stamp_path)"; }
+
+# Epoch seconds of the last HOLD alert. 0 when missing, unreadable, or not a
+# plain integer — a corrupt stamp must never abort the poller under errexit.
+hold_alerted_at() {
+	local v
+	v="$(cat "$(hold_stamp_path)" 2>/dev/null || printf '')"
+	case "$v" in
+		'' | *[!0-9]*) printf '0' ;;
+		*) printf '%s' "$v" ;;
+	esac
+}
+
+# Re-announce a still-set HOLD at most once per HOLD_REALERT_SEC. Deliberately
+# independent of the registry: a HOLD must keep nagging even while skopeo is
+# failing, which is exactly when it is most likely to be ignored.
+maybe_realert_hold() {
+	local now last elapsed
+	now="$(date -u +%s)"
+	last="$(hold_alerted_at)"
+	# A stamp in the future (clock stepped back) would otherwise mute alerts forever.
+	[ "$last" -le "$now" ] || last=0
+	elapsed=$((now - last))
+	[ "$elapsed" -ge "$HOLD_REALERT_SEC" ] || return 0
+	alert CRIT "HOLD still set after ${elapsed}s ($(hold_reason)) — nothing has deployed since"
+	printf '%s\n' "$now" >"$(hold_stamp_path)" 2>/dev/null || log "could not persist hold_alerted_at"
+}
+
+# True when HOLD blames a deploy that demonstrably DID land: the pull/up-error
+# branch reports failure whenever compose exits non-zero, including after it has
+# already recreated the container on the target image. Such a HOLD pins the very
+# image it claims failed and blocks every later deploy.
+#
+# Matched by EXACT format — the "deploy error <digest>" prefix, and a digest that
+# equals the live one. Never a substring search. Every other HOLD form
+# (dependency fault / first-deploy image fault / rollback …) means the live image
+# never passed the health gate, so clearing those would silently skip the gate
+# forever; an operator's free-text freeze has no such prefix and is left alone.
+hold_is_falsified() {
+	local reason want
+	reason="$(hold_reason)"
+	want="${reason#deploy error }"
+	[ "$want" != "$reason" ] || return 1
+	case "$want" in sha256:*) ;; *) return 1 ;; esac
+	[ "$want" = "$(running_repo_digest)" ]
+}
 
 # Single-instance guard. A second poller fails the non-blocking flock and exits 0.
 acquire_lock() {
@@ -127,20 +184,63 @@ gate() {
 # rc 0 only when pull AND up succeed AND a container id results. On any failure
 # rc!=0 and NOTHING is echoed — the caller MUST NOT gate the previous container
 # or write last_good for an image that never came up.
+#
+# Every step is timed and its duration logged. On a vfs-storage-driver host a
+# single pull can take ~20 MINUTES (no copy-on-write: each layer is a full
+# recursive copy), and with the output discarded that is indistinguishable from
+# a hang. The elapsed numbers say which step is slow; compose's own stderr is
+# captured and echoed on failure so "deploy error <digest>" stops being the
+# whole story. Capture is via command substitution, NOT a temp file — nothing
+# to leak if this function is killed mid-pull.
 deploy_image() {
-	local cid
+	local cid want t0 err
+	# Unchanged contract: a stale desired state is fatal. deploy.env disagreeing
+	# with the live container would be undone by the next `up`.
 	write_deploy_env "$1" || return 1
-	dc pull "$SERVICE" >/dev/null 2>&1 || return 1
-	dc up -d --no-deps "$SERVICE" >/dev/null 2>&1 || return 1
+	want="${1#*@}"
+	log "pull $want starting"
+	t0=$SECONDS
+	if err="$(dc pull "$SERVICE" 2>&1 >/dev/null)"; then
+		log "pull ok in $((SECONDS - t0))s; recreating $SERVICE"
+		t0=$SECONDS
+		if err="$(dc up -d --no-deps "$SERVICE" 2>&1 >/dev/null)"; then
+			cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
+			if [ -n "$cid" ]; then
+				log "up ok in $((SECONDS - t0))s"
+				printf '%s' "$cid"
+				return 0
+			fi
+			log "up ok in $((SECONDS - t0))s but no container id came back"
+		else
+			log "up reported failure after $((SECONDS - t0))s: $(printf '%s' "$err" | tr '\n' ' ' | tail -c 300)"
+		fi
+	else
+		log "pull reported failure after $((SECONDS - t0))s: $(printf '%s' "$err" | tr '\n' ' ' | tail -c 300)"
+	fi
+	# pull/up/ps can each report failure AFTER compose has already recreated the
+	# container on the target image. Taking that at face value pins HOLD to an
+	# image that is in fact live and blocks every later deploy — observed in
+	# production, five days of silent staleness. Check reality before giving up.
+	[ "$(running_repo_digest)" = "$want" ] || return 1
 	cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
 	[ -n "$cid" ] || return 1
+	log "deploy of $want reported failure but the container is running it — continuing to the health gate"
 	printf '%s' "$cid"
 }
 
 # One full decide-and-act pass. Always rc 0; outcomes via side effects.
 reconcile_once() {
-	if is_hold; then log "HOLD set ($(cat "$(hold_path)" 2>/dev/null)); skipping"; return 0; fi
 	local remote running prev cid rcid n
+	if is_hold; then
+		if hold_is_falsified; then
+			alert INFO "clearing stale HOLD ($(hold_reason)) — that image is live, so the deploy had in fact landed"
+			clear_hold
+		else
+			maybe_realert_hold
+			log "HOLD set ($(hold_reason)); skipping"
+			return 0
+		fi
+	fi
 	if ! remote="$(remote_digest)"; then
 		n=$(( $(cat "$STATE_DIR/remote_fail_count" 2>/dev/null || printf '0') + 1 ))
 		printf '%s\n' "$n" >"$STATE_DIR/remote_fail_count"
@@ -198,6 +298,9 @@ main() {
 	mkdir -p "$STATE_DIR"
 	acquire_lock
 	log "poller starting: IMAGE=$IMAGE:$WATCH_TAG interval=${POLL_INTERVAL_SEC}s project=$COMPOSE_PROJECT"
+	# Say it out loud rather than let the operator assume alerts are wired.
+	[ -n "$POLLER_ALERT_WEBHOOK" ] \
+		|| alert WARN "POLLER_ALERT_WEBHOOK unset — alerts are log-only; nobody is paged when a deploy holds"
 	if [ "${POLLER_ONESHOT:-0}" = "1" ]; then
 		reconcile_once
 		return 0

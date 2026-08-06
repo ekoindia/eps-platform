@@ -94,7 +94,7 @@ transport:
 POST {connect-api}/transactions/dojson     Authorization: Bearer <FULL upstream token>
 {
   "source": "EPS",
-  "client_ref_id": "<20 digits, minted server-side>",
+  "client_ref_id": "<10 chars, minted by the connect client>",
   "interaction_type_id": 682,
   "requestPayload": {
     "verification_trends": { "datefrom": "...", "dateto": "..." }
@@ -360,7 +360,8 @@ surface.
    calls.
 4. **`source: "EPS"` and `client_ref_id`.** Eloka's dashboard calls send
    neither; connect-api defaults `source` to `NEWCONNECT`. Both are sent here for
-   consistency with the rest of this backend. Untested on this interaction.
+   consistency with the rest of this backend — `client_ref_id` by the connect
+   client itself, for every call it makes. Untested on this interaction.
 5. **Bucket granularity of `verification_trends`.** Upstream chooses it and does
    not announce it; `isHourlyRange` infers it from the first bucket's own span.
 

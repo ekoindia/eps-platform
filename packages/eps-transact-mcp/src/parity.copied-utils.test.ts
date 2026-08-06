@@ -40,8 +40,12 @@ const PINS: Pin[] = [
 		localSha:
 			"249ed7367a5ad9dca179b155f7b84961e7266d9e6abcee2a340127deea1516bc",
 		source: "packages/eps-backend/src/clients/http.ts",
+		// Re-acked 2026-08-06: http.ts gained `clientRefId()`, which belongs to
+		// connect-api/Eko request bodies, not to the fetch-timeout util copied
+		// here — and this server is pass-through, so it never mints a
+		// client_ref_id of its own. Nothing to port.
 		sourceSha:
-			"0327d83e0dcf107d4a8cff6493992e984ae97bd7b63bd5d2f1f6426b97492cfe",
+			"cb0b1489255b7d75d071c35fb4e753865843706ed5304faa98f702d5ff7daf4f",
 	},
 	{
 		local: "packages/eps-transact-mcp/src/requestId.ts",
@@ -110,8 +114,15 @@ describe("copied-utils sync-ack pins", () => {
 			);
 			const start = src.indexOf(marker);
 			expect(start, `${marker} missing in ${repoRelative}`).toBeGreaterThan(-1);
+			const lineEnd = src.indexOf("\n", start);
+			// A one-line `const … ;` ends at its own newline; only a multi-line
+			// declaration runs to a closing brace. Slicing blindly to the next
+			// "\n}" swallowed every export declared after the marker — which is
+			// exactly what http.ts is allowed to grow (it did, with clientRefId).
+			if (src.slice(start, lineEnd).endsWith(";"))
+				return src.slice(start, lineEnd);
 			const end = src.indexOf("\n}", start);
-			return src.slice(start, end === -1 ? src.indexOf("\n", start) : end + 2);
+			return src.slice(start, end === -1 ? lineEnd : end + 2);
 		};
 		for (const marker of [
 			"export const DEFAULT_FETCH_TIMEOUT_MS",

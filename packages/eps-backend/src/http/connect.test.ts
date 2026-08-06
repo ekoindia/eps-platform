@@ -264,7 +264,9 @@ describe("POST /connect/kyc/documents", () => {
 		expect(token).toBe("ca_full");
 		expect(fields.user_id).toBe("9990000001");
 		expect(fields.interaction_type_id).toBe(539);
-		expect(String(fields.client_ref_id)).toMatch(/^\d{20}$/);
+		// The ref is the connect client's job now (see clients/connect.test.ts);
+		// the route must not invent or forward one.
+		expect(fields).not.toHaveProperty("client_ref_id");
 	});
 
 	it("marks the response no-store", async () => {
@@ -400,9 +402,10 @@ describe("POST /connect/kyc/upload", () => {
 			Array<{ name: string; file: File }>,
 		];
 		expect(token).toBe("ca_full");
+		// No client_ref_id here: `uploadInteraction` adds it while encoding the
+		// `formdata` part, so the browser can never supply one.
 		expect(fields).toEqual({
 			interaction_type_id: "523",
-			client_ref_id: expect.stringMatching(/^\d{20}$/),
 			locale: "en",
 			user_id: "9990000001",
 			doc_type: "1",
