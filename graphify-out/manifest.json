@@ -105,14 +105,14 @@
     "semantic_hash": "480b2074d8dc9f198215d77b97a14c07"
   },
   "packages/eps-backend/src/audit/ekoLog.test.ts": {
-    "mtime": 1785560186.9726312,
-    "ast_hash": "3aa5406fb69fe171c3c770da39c1b1d3",
-    "semantic_hash": "3aa5406fb69fe171c3c770da39c1b1d3"
+    "mtime": 1786004549.7652297,
+    "ast_hash": "fd6a51316c9a4903d5222879b3884efc",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/audit/ekoLog.ts": {
-    "mtime": 1785560161.6002774,
-    "ast_hash": "823b517efd0ce2ad45d1470a34f2fc0a",
-    "semantic_hash": "823b517efd0ce2ad45d1470a34f2fc0a"
+    "mtime": 1786004531.1040058,
+    "ast_hash": "73ed3d33b402d3fc4d1b3d517582ee3c",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/audit/securityLog.test.ts": {
     "mtime": 1782796528.236726,
@@ -190,8 +190,8 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/src/clients/eko.ts": {
-    "mtime": 1785994098.2403107,
-    "ast_hash": "97f05fcf3dccc08a51ed84ceae3288b0",
+    "mtime": 1786004518.1752973,
+    "ast_hash": "fd43cf11de29de73d43a165fde4bd7bb",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/clients/github.test.ts": {
@@ -695,7 +695,7 @@
     "semantic_hash": "57b3a7ee23625832bfd0fa8964337d5b"
   },
   "packages/eps-transact-mcp/src/parity.copied-utils.test.ts": {
-    "mtime": 1785995172.9612463,
+    "mtime": 1785995285.642778,
     "ast_hash": "fa07678fb096aa799486e6d4b6abcf0f",
     "semantic_hash": ""
   },
@@ -1165,9 +1165,9 @@
     "semantic_hash": "b347a5791bf72f1aca2f358b262c86a3"
   },
   "src/components/console/LifecycleCard.tsx": {
-    "mtime": 1785495672.0866961,
-    "ast_hash": "12272b224cf5c13b2415fbd75424ec0e",
-    "semantic_hash": "12272b224cf5c13b2415fbd75424ec0e"
+    "mtime": 1786007670.6720073,
+    "ast_hash": "c9ddfe2e42ad7e62ffd77bf203508412",
+    "semantic_hash": ""
   },
   "src/components/console/WalletBalance.connect.test.tsx": {
     "mtime": 1785150003.5531204,
@@ -1195,9 +1195,9 @@
     "semantic_hash": "c6e90a979c73b1812bde6edb084d6d52"
   },
   "src/components/console/dashboard/DashboardDateFilter.tsx": {
-    "mtime": 1785324759.40535,
-    "ast_hash": "fe31eb900f5b9a987cbde9bda221bc72",
-    "semantic_hash": "fe31eb900f5b9a987cbde9bda221bc72"
+    "mtime": 1786007689.0096323,
+    "ast_hash": "e791707cbcdac839169441a562bf4b54",
+    "semantic_hash": ""
   },
   "src/components/console/dashboard/MostUsedServicesWidget.tsx": {
     "mtime": 1785324714.7431548,
@@ -2010,9 +2010,9 @@
     "semantic_hash": "071b505b3521272d1a253a30f03864f0"
   },
   "src/lib/config/features.ts": {
-    "mtime": 1785148581.265718,
-    "ast_hash": "0b0dfcd7bd23d1cca08fea9d5242d0d2",
-    "semantic_hash": "0b0dfcd7bd23d1cca08fea9d5242d0d2"
+    "mtime": 1786007615.8329294,
+    "ast_hash": "02ad3188d7ee80a0bc9e918b01cb5b29",
+    "semantic_hash": ""
   },
   "src/lib/config/nav.ts": {
     "mtime": 1783420947.4578385,
@@ -2785,14 +2785,14 @@
     "semantic_hash": "ad4ff61b10b0aadd1be655884332804d"
   },
   "src/pages/console/ConsoleHome.test.tsx": {
-    "mtime": 1785324982.0993893,
-    "ast_hash": "595140ea074c8dbd59a97fad0695c94b",
-    "semantic_hash": "595140ea074c8dbd59a97fad0695c94b"
+    "mtime": 1786007707.2580252,
+    "ast_hash": "7a0aed0791d152392f4456149c5aa538",
+    "semantic_hash": ""
   },
   "src/pages/console/ConsoleHome.tsx": {
-    "mtime": 1785324982.1000676,
-    "ast_hash": "98d0ef5c8ae8f53fe4fa6c55a103afd4",
-    "semantic_hash": "98d0ef5c8ae8f53fe4fa6c55a103afd4"
+    "mtime": 1786007659.0550764,
+    "ast_hash": "19242bbe44f54d7acac00b1c841297aa",
+    "semantic_hash": ""
   },
   "src/pages/console/Credentials.test.tsx": {
     "mtime": 1784222726.400513,
@@ -2895,9 +2895,9 @@
     "semantic_hash": "8c78c1febe829891fd8d2929957e150d"
   },
   "src/vite-env.d.ts": {
-    "mtime": 1785148418.859258,
-    "ast_hash": "ec6fac03898df886e8eeaed3a6890a3f",
-    "semantic_hash": "ec6fac03898df886e8eeaed3a6890a3f"
+    "mtime": 1786007618.0647595,
+    "ast_hash": "21046daa30b25368b0555d5d3794d062",
+    "semantic_hash": ""
   },
   "src/vite-imagetools.d.ts": {
     "mtime": 1780018841.3034513,
@@ -3025,9 +3025,9 @@
     "semantic_hash": "0fc1b9c084a36c40020950001bee88d3"
   },
   "docs/console-roadmap.md": {
-    "mtime": 1785496345.0882487,
-    "ast_hash": "2f16c247eb2908c1b86356cbcff64457",
-    "semantic_hash": "2f16c247eb2908c1b86356cbcff64457"
+    "mtime": 1786008918.0404966,
+    "ast_hash": "f0be9ec07fd22ffbadb879d052ed990d",
+    "semantic_hash": ""
   },
   "docs/developer-docs/README.md": {
     "mtime": 1781633722.7395544,
@@ -3075,8 +3075,8 @@
     "semantic_hash": "c0ad494c6528ed760a780436ff72a85a"
   },
   "docs/features/business-dashboard.md": {
-    "mtime": 1785994098.2375789,
-    "ast_hash": "5d454c5fb8407770e453cd896ddf7802",
+    "mtime": 1786008916.7916517,
+    "ast_hash": "af858485ba9e945bf83603d0b47fbdab",
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
@@ -3635,13 +3635,38 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/docs/eps-backend-docker-ops.md": {
-    "mtime": 1785994098.4930894,
-    "ast_hash": "1cd5c5479b839e665ddd5f42ca1443ae",
+    "mtime": 1786004595.1504416,
+    "ast_hash": "ee89adad2fefe0e03d666d9efbdc9c31",
     "semantic_hash": ""
   },
   "docs/local-roadmap/overlay2-migration-runbook.md": {
     "mtime": 1785932412.461553,
     "ast_hash": "3a42864669f63483aa1f9167dad4f5ba",
+    "semantic_hash": ""
+  },
+  "src/components/console/NextStepsCard.test.tsx": {
+    "mtime": 1786008876.801007,
+    "ast_hash": "baa4b2d68b3540773567ced1022aa524",
+    "semantic_hash": ""
+  },
+  "src/components/console/NextStepsCard.tsx": {
+    "mtime": 1786008849.1013732,
+    "ast_hash": "d933f13a7654eb46cb8ebdf926a16a3a",
+    "semantic_hash": ""
+  },
+  "src/components/console/dashboard/DashboardDateFilter.last365.test.tsx": {
+    "mtime": 1786007757.3965595,
+    "ast_hash": "7e77683b20b31a2db7753ea261fb99f9",
+    "semantic_hash": ""
+  },
+  "src/components/console/dashboard/DashboardDateFilter.test.tsx": {
+    "mtime": 1786007757.1779103,
+    "ast_hash": "3d37a3e52db7f501527b3c661d01c823",
+    "semantic_hash": ""
+  },
+  "src/pages/console/ConsoleHome.flags.test.tsx": {
+    "mtime": 1786007742.007635,
+    "ast_hash": "80ee0cb987b40964a6cb558ffedc1b0e",
     "semantic_hash": ""
   }
 }
