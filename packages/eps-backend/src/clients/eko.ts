@@ -265,6 +265,7 @@ export function createEkoClient(
 			// Transport failure (timeout / connection refused): still log, then rethrow.
 			logger.log({
 				fields,
+				path: target,
 				error: e instanceof Error ? e.message : String(e),
 				durMs: Math.round(performance.now() - start),
 			});
@@ -283,6 +284,11 @@ export function createEkoClient(
 		}
 		logger.log({
 			fields,
+			// The target, not just the interaction id: interaction 154 posts to its
+			// own host and API version, so a misconfigured SIMPLIBANK_HISTORY_API_*
+			// is otherwise invisible in the log — the id says which call it was, the
+			// URL says where it actually went.
+			path: target,
 			status: res.status,
 			response: parseError ? { nonJson: text.slice(0, 500) } : parsed,
 			error: parseError ? "non-JSON response body" : undefined,

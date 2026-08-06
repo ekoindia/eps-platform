@@ -27,8 +27,10 @@ export interface EkoLogEntry {
 	 */
 	fields: Record<string, unknown>;
 	/**
-	 * Endpoint path, for transports with no `interaction_type_id` to identify the
-	 * call by (connect-api).
+	 * Where the call went: an endpoint path for transports with no
+	 * `interaction_type_id` to identify the call by (connect-api), or the full
+	 * target URL where one interaction can be routed to its own upstream (the
+	 * direct Eko transport, whose interaction 154 has its own host and version).
 	 */
 	path?: string;
 	/** HTTP status of the upstream response; undefined on a transport failure. */
@@ -70,6 +72,12 @@ function responseSummary(response: unknown): Record<string, unknown> {
 	]) {
 		if (k in r) out[k] = r[k];
 	}
+	// An unparseable body has none of those keys, so `basic` would otherwise log a
+	// bare `{}` for the one class of failure that carries no status id at all. The
+	// body itself stays behind `full`: it is an error page of unknown provenance
+	// and may echo request values, which `basic` promises never to emit. Its size
+	// is enough to tell an empty reply from a gateway page without quoting either.
+	if (typeof r.nonJson === "string") out.nonJsonBytes = r.nonJson.length;
 	return out;
 }
 
