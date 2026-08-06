@@ -39,3 +39,32 @@ export const SHOW_CONNECT_WIDGET: boolean =
  */
 export const CONNECT_WIDGET_URL: string =
 	import.meta.env.VITE_CONNECT_WIDGET_URL ?? "";
+
+/**
+ * When true, `/console` renders the Business Dashboard below the Next Steps
+ * card — the window picker and every widget under it. When false (the default),
+ * Home is the Next Steps card plus the lifecycle state, and nothing calls
+ * `/dashboard` at all.
+ *
+ * Flip to `true` (`VITE_SHOW_BUSINESS_DASHBOARD=true`) only once the numbers on
+ * that page have been reconciled against Eloka for a real account — see the
+ * status banner in `docs/features/business-dashboard.md`, which still records a
+ * blank Usage Analytics dataset. A partner reads these totals as their own
+ * revenue, so a wrong one is worse than none.
+ */
+export const SHOW_BUSINESS_DASHBOARD: boolean =
+	import.meta.env.VITE_SHOW_BUSINESS_DASHBOARD === "true";
+
+/**
+ * When true, the dashboard's window picker offers "Last 365 Days" beside the
+ * shorter windows. When false (the default), 30 days is the widest window a
+ * partner can ask for.
+ *
+ * Local testing only (`VITE_SHOW_DASHBOARD_LAST_365=true`). A year of upstream
+ * aggregation is a slow, expensive query for interaction 682, and production
+ * caps the range deliberately. This hides the control and nothing else: the
+ * backend still accepts `last365` and `dashboardRange.ts` still computes it, so
+ * the range maths and its tests are untouched by the cap.
+ */
+export const SHOW_DASHBOARD_LAST_365: boolean =
+	import.meta.env.VITE_SHOW_DASHBOARD_LAST_365 === "true";

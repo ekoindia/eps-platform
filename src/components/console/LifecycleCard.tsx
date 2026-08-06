@@ -65,11 +65,13 @@ export const lifecycleBadge = (state: Lifecycle): string =>
  *
  * Two shapes, because the state matters at very different volumes. For an
  * account that still has something to do — a lead, a half-finished onboarding,
- * a deactivation — the state IS the page, so it renders as the full card with
- * its call to action. For an active account it is a one-line banner above the
- * dashboard: still there, no longer the headline.
+ * a deactivation — it renders as the full card with its call to action. For an
+ * active account it is a one-line strip: still there, no longer the headline.
+ *
+ * Neither shape carries the page heading; Home owns its own `<h2>`, the way
+ * every other console page does.
  * @param me - The session view.
- * @param variant - `card` for the full state page, `banner` for the strip.
+ * @param variant - `card` for the full state block, `banner` for the strip.
  */
 export default function LifecycleCard({
 	me,
@@ -86,7 +88,6 @@ export default function LifecycleCard({
 	if (variant === "banner") {
 		return (
 			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-				<h2 className="text-lg font-semibold text-eko-navy">Dashboard</h2>
 				<Badge variant="secondary">{copy.badge}</Badge>
 				<p className="text-muted-foreground">Signed in as {who}</p>
 			</div>

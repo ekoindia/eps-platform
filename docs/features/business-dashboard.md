@@ -1,8 +1,17 @@
 # Feature: Business Dashboard
 
-The signed-in partner's own API usage and business numbers, at `/console` — the
-page you land on after signing in. Ported from Eloka's (`wlc-webapp`) Admin
-Business Dashboard, `page-components/Admin/Dashboard/BusinessDashboard/`.
+The signed-in partner's own API usage and business numbers, on **Home**
+(`/console`). The page itself is not the dashboard — it leads with the Next
+Steps card and the lifecycle state, and the widgets are the block below them.
+Ported from Eloka's (`wlc-webapp`) Admin Business Dashboard,
+`page-components/Admin/Dashboard/BusinessDashboard/`.
+
+> **Flags — both off by default.** `VITE_SHOW_BUSINESS_DASHBOARD` renders the
+> widget block at all; `VITE_SHOW_DASHBOARD_LAST_365` adds the year window to the
+> picker and is for local testing only. Both are module constants in
+> `src/lib/config/features.ts`, so tests mock the module rather than stubbing
+> `import.meta.env`. Do not flip the first until the numbers below are reconciled
+> against Eloka for a real account.
 
 > **Status: live; Usage Analytics still blank on at least one account.** A
 > multi-key `requestPayload` returned only two of the four datasets, so the route
@@ -23,7 +32,9 @@ Business Dashboard, `page-components/Admin/Dashboard/BusinessDashboard/`.
 | Piece | File |
 |---|---|
 | Types, cache and all pure logic | `src/lib/console/dashboard.ts` |
-| Page | `src/pages/console/ConsoleHome.tsx` |
+| Page (Home — owns both gates) | `src/pages/console/ConsoleHome.tsx` |
+| Next Steps card | `src/components/console/NextStepsCard.tsx` |
+| Flags | `SHOW_BUSINESS_DASHBOARD` · `SHOW_DASHBOARD_LAST_365` in `src/lib/config/features.ts` |
 | Container (window state + fetch) | `src/components/console/dashboard/BusinessDashboard.tsx` |
 | Widgets | `OverviewWidget` · `SuccessRatesWidget` · `MostUsedServicesWidget` · `UsageAnalyticsWidget` in the same folder |
 | Window picker | `src/components/console/dashboard/DashboardDateFilter.tsx` |
@@ -36,9 +47,16 @@ Business Dashboard, `page-components/Admin/Dashboard/BusinessDashboard/`.
 | Synthetic payload fixture | `packages/eps-backend/src/http/dashboard.sample.ts` |
 | Live UAT probe (skipped) | `packages/eps-backend/src/clients/connect.uat-dashboard.test.ts` |
 
-Layout: Business Overview (full width) → Most Used Services (2 col) + Success
-Rates (1 col) → Usage Analytics (full width). One column on mobile, same order,
-so the primary metric is first on every screen.
+Page layout: `Home` heading → Next Steps card → lifecycle state → the dashboard.
+Within the dashboard: Business Overview (full width) → Most Used Services (2 col)
++ Success Rates (1 col) → Usage Analytics (full width). One column on mobile,
+same order, so the primary metric is the first number on every screen.
+
+The widget gate lives in `ConsoleHome`, on the `<BusinessDashboard />` element
+rather than inside the component. The flagged-off boundary is then exactly the
+requested one — the date-filter row and everything under it — and
+`BusinessDashboard.test.tsx` stays a test of the widgets instead of a test of a
+flag.
 
 ## What an EPS partner sees, and what Eloka's version showed
 
@@ -194,7 +212,7 @@ at the **top level** — not under `data` like the dashboard payload. Every
 | Yesterday | all of yesterday |
 | Last 7 Days | start of `today − 7` → yesterday 23:59:59 |
 | Last 30 Days | start of `today − 30` → yesterday 23:59:59 |
-| Last 365 Days | start of `today − 365` → yesterday 23:59:59 |
+| Last 365 Days | start of `today − 365` → yesterday 23:59:59 — **hidden unless `VITE_SHOW_DASHBOARD_LAST_365=true`** |
 
 **Every window except Today ends yesterday** — ported from Eloka, so the numbers
 agree with what a partner sees there. The "Showing stats from … to …" line names
@@ -203,6 +221,14 @@ the actual dates precisely because that rule is the part people misread.
 Eloka calls the last one **"Year Till Yesterday"**, which is a lie: it is
 `today − 365`, not the calendar year to date. Renamed here to **Last 365 Days**;
 the maths is identical, only the label is honest.
+
+That window is also **capped out of production**: a year of upstream aggregation
+is a slow, expensive 682 query, and 30 days answers the question a partner
+actually asks. The cap is a client-side filter in `DashboardDateFilter.tsx`, not
+a removal — `last365` stays in `DASHBOARD_PRESETS`, in the `DatePreset` union and
+in `dashboardRange.ts`, so the list still mirrors the backend's `DATE_PRESETS`
+and the range maths keeps its tests. Nothing can select a hidden preset: the
+default is `last7` and the window is not read from the URL or persisted.
 
 ### Why the range is computed server-side, in IST
 
@@ -246,13 +272,49 @@ degraded `Service <id>` labels in place for an hour.
 | Sealed upstream session aged out | 401 `CONNECT_SESSION_EXPIRED`; the client retries once via `/auth/refresh` first |
 | Upstream envelope `status !== 0` | 502 `DASHBOARD_FAILED`, carrying upstream's message |
 | Interaction 1044 fails | **Non-fatal.** The page renders with `Service <id>` labels; a `typeId` filter is still accepted on the regex alone, because refusing it would turn a cosmetic outage into a broken filter |
-| Account is not `active` | No dashboard and no fetch — the lifecycle card, exactly as before |
+| `VITE_SHOW_BUSINESS_DASHBOARD` unset | No widgets and **no fetch** — Home is the Next Steps card plus the lifecycle state. The gate is on the element, so the request is never issued rather than issued and discarded |
+| Account is not `active` | No dashboard and no fetch — the Next Steps card, then the full lifecycle card below it |
 | Everything is zero | The zeros are **rendered**, plus a line pointing at `/console/transactions` |
 
 Unlike the Connect-widget routes, `/dashboard` is mounted unconditionally and
 answers 501 rather than being absent. Those routes hand out *credentials*, so not
 existing is right there; this one hands out aggregate counts, and a named 501
 lets the console say "not on this deployment" instead of guessing at a 404.
+`VITE_SHOW_BUSINESS_DASHBOARD` does not change that: it is a **client** flag that
+decides whether anything asks, and the route stays mounted and answerable either
+way — which is what keeps the backend tests and the UAT probe meaningful while
+the widgets are hidden.
+
+## Next Steps card
+
+`NextStepsCard.tsx` is what Home leads with, in every lifecycle state. Four
+steps: finish KYC, integrate against UAT credentials, receive production
+credentials, pay the one-time integration fee.
+
+Only the **KYC step carries a status** — Done once `me.state === "active"`, else
+Pending — because it is the only one this session can answer. Note what that
+status actually means: upstream accepted the account, not that any specific
+document was verified. `/console/documents` knows the per-document truth and can
+disagree. The other steps are a route, not a checklist; nothing here knows
+whether a partner has finished integrating, and a step that reads "Pending"
+forever is worse than one that reads nothing.
+
+The KYC step links to `/console/documents` only when `useKycEnabled()` says so,
+mirroring the rail — never link at a page the rail is hiding. The hook returns
+`null` while the entitlement is loading, so the step is plain text for a tick and
+then becomes a link, exactly as the rail's own item appears late.
+
+The **fee step is shown to everyone**, with no link and no action.
+
+> **Known imprecision, accepted deliberately.** The step was first gated on
+> `me.profile.dateOfJoining >= 2026-08-03`, so only post-cutover accounts saw it.
+> That gate came out: `dateOfJoining` has **no format contract and no other
+> consumer** — it reaches the client as a bare `String(date_of_joining)`
+> (`clients/eko.ts`) — so a non-ISO shape made the gate hide the step from every
+> account, including the ones that do owe the fee. Ungated is the lesser error
+> while the field is untrusted, but it does mean **a partner who joined before
+> 2026-08-03 is shown a fee that does not apply to them**. Re-gate as soon as
+> upstream offers a join date, or an eligibility flag, in a shape worth trusting.
 
 ### Zero versus absent
 

@@ -10,6 +10,14 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	dashboardClient: { load: vi.fn() },
 }));
 
+// Module constant read at import, so it has to be mocked rather than stubbed
+// through import.meta.env. On here, so this file stays about ConsoleHome's
+// routing; the flag-off default has its own file, ConsoleHome.flags.test.tsx.
+vi.mock("@/lib/config/features", async (orig) => ({
+	...(await orig<typeof import("@/lib/config/features")>()),
+	SHOW_BUSINESS_DASHBOARD: true,
+}));
+
 const { dashboardClient } = await import("@/lib/auth/client");
 const load = vi.mocked(dashboardClient.load);
 
@@ -37,6 +45,13 @@ describe("ConsoleHome", () => {
 	it("shows the lead onboarding CTA for a lead developer", () => {
 		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
 		expect(screen.getByText(/start onboarding/i)).toBeInTheDocument();
+	});
+
+	it("still shows the next steps for a lead, above the state card", () => {
+		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
+		expect(screen.getByText("Next Steps")).toBeInTheDocument();
+		expect(screen.getByText(/finish your kyc/i)).toBeInTheDocument();
+		expect(screen.getByText(/ready to onboard/i)).toBeInTheDocument();
 	});
 
 	it("does not load a dashboard for an account that cannot have one", () => {

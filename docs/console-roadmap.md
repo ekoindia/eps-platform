@@ -36,11 +36,16 @@ nothing rather than an empty caption. An `API Docs ↗` link closes the rail. Or
 within a group is entitlement-independent and pinned by
 `ConsoleLayout.nav.test.tsx`, which also guards the single-`h1`/`<main>` contract.
 
-The console's index page (`/console`) is the **Business Dashboard** — call
-volume, success rates, most-used services and usage over time, from upstream
-interaction 682. The lifecycle-state card that used to be the whole page now
-renders in full only for an account that still has something to finish; an
-active account gets it as a one-line banner above the widgets. See
+The console's index page (`/console`) is **Home**. It leads with the Next Steps
+card — KYC, UAT credentials, production credentials and the one-time integration
+fee — for every lifecycle state. Below it the lifecycle-state card renders in full only for an
+account that still has something to finish; an active account gets it as a
+one-line strip.
+
+Last comes the **Business Dashboard** — call volume, success rates, most-used
+services and usage over time, from upstream interaction 682 — behind
+`VITE_SHOW_BUSINESS_DASHBOARD`, **off by default** until its numbers are
+reconciled. With the flag off nothing on Home calls `/dashboard` at all. See
 `docs/features/business-dashboard.md`, whose status banner is worth reading
 before trusting a number on that page.
 
@@ -218,10 +223,13 @@ EPS is a payments API — event-driven integration is the primary pattern for
 partners. `Table` + `Dialog` form; needs a backend registration endpoint.
 _Pattern: PandaDoc webhooks, Klaviyo webhook events._
 
-### API usage / request metrics — **DONE** (as the Business Dashboard)
+### API usage / request metrics — **BUILT, flag-gated off** (as the Business Dashboard)
 Shipped at `/console` from upstream interaction 682, not from a telemetry
 pipeline: call volume, per-service counts, success rates and usage over time,
-across five preset windows. What is still missing is the *per-endpoint* and
+across four preset windows (the fifth, Last 365 Days, is local-testing only —
+production caps the range at 30 days). Hidden behind
+`VITE_SHOW_BUSINESS_DASHBOARD` until the numbers are reconciled against Eloka
+for a real account. What is still missing is the *per-endpoint* and
 error-rate view this line originally asked for — 682 aggregates by product
 (`tx_typeid`), not by HTTP endpoint, and nothing upstream reports a 4xx/5xx rate.
 That remains an **L** and still needs a telemetry pipeline.
