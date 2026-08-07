@@ -38,7 +38,8 @@ Ported from Eloka's (`wlc-webapp`) Admin Business Dashboard,
 | Container (window state + fetch) | `src/components/console/dashboard/BusinessDashboard.tsx` |
 | Widgets | `OverviewWidget` · `SuccessRatesWidget` · `MostUsedServicesWidget` · `UsageAnalyticsWidget` in the same folder |
 | Window picker | `src/components/console/dashboard/DashboardDateFilter.tsx` |
-| Lifecycle card (extracted) | `src/components/console/LifecycleCard.tsx` |
+| Profile card (identity + state badge) | `src/components/console/ProfileCard.tsx` |
+| Lifecycle badge labels | `src/lib/console/lifecycle.ts` |
 | Client method | `dashboardClient.load` in `src/lib/auth/client.ts` |
 | BFF route | `packages/eps-backend/src/http/dashboard.ts` |
 | Upstream normalizer | `packages/eps-backend/src/http/dashboardView.ts` |
@@ -272,9 +273,9 @@ degraded `Service <id>` labels in place for an hour.
 | Sealed upstream session aged out | 401 `CONNECT_SESSION_EXPIRED`; the client retries once via `/auth/refresh` first |
 | Upstream envelope `status !== 0` | 502 `DASHBOARD_FAILED`, carrying upstream's message |
 | Interaction 1044 fails | **Non-fatal.** The page renders with `Service <id>` labels; a `typeId` filter is still accepted on the regex alone, because refusing it would turn a cosmetic outage into a broken filter |
-| `VITE_SHOW_BUSINESS_DASHBOARD` unset | No widgets and **no fetch** — Home is the Next Steps card plus the lifecycle state. The gate is on the element, so the request is never issued rather than issued and discarded |
-| Account is not provisioned (`isProvisioned` — neither `active` nor `kyc-pending`) | No dashboard and no fetch — the Next Steps card, then the full lifecycle card below it |
-| Account is `kyc-pending` | **Dashboard still loads** — it is a post-onboarding account that can have transacted. The lifecycle block stays the full card, not the banner, because its KYC is still outstanding. The two gates on Home answer different questions and are deliberately not merged |
+| `VITE_SHOW_BUSINESS_DASHBOARD` unset | No widgets and **no fetch** — Home is the profile card beside the Next Steps card. The gate is on the element, so the request is never issued rather than issued and discarded |
+| Account is not provisioned (`isProvisioned` — neither `active` nor `kyc-pending`) | No dashboard and no fetch — the profile card and Next Steps card alone |
+| Account is `kyc-pending` | **Dashboard still loads** — it is a post-onboarding account that can have transacted. The state itself reads only as the profile card's badge |
 | Everything is zero | The zeros are **rendered**, plus a line pointing at `/console/transactions` |
 
 Unlike the Connect-widget routes, `/dashboard` is mounted unconditionally and

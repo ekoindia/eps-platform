@@ -24,7 +24,8 @@ slate panel and border drop away). Its caption — `DEVELOPER CONSOLE` in the sm
 uppercase style `DocsLayout` uses — **is** the page's `<h1>`; there is no separate
 page title above the grid, and sub-pages start at `<h2>`. Where docs puts its
 theme toggle, the console puts the account's lifecycle badge, reading the same
-copy as `LifecycleCard` through its exported `lifecycleBadge()`. Only the
+copy as Home's profile card through `lifecycleBadge()` in
+`src/lib/console/lifecycle.ts`. Only the
 developer branch is full-bleed; the anon/admin/loading cards keep the old
 container and their own `<h1>`.
 
