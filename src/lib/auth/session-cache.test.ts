@@ -8,6 +8,15 @@ import {
 
 const KEY = "eps.session.me";
 
+/**
+ * The envelope version this build writes. Spelled out rather than imported, for
+ * the same reason `KEY` is: a test that reads the constant it is checking cannot
+ * notice the constant changing. Used by the tests below that are about a view's
+ * SHAPE — they need a current envelope, or they would pass because the version
+ * was stale and never reach the check they exist for.
+ */
+const CURRENT_VERSION = 2;
+
 const ME: MeView = {
 	state: "active",
 	mobile: "9990000079",
@@ -83,7 +92,10 @@ describe("session cache rejects what it cannot trust", () => {
 	it("discards a developer view with no state or mobile", () => {
 		sessionStorage.setItem(
 			KEY,
-			JSON.stringify({ v: 1, me: { profile: null, zohoId: null } }),
+			JSON.stringify({
+				v: CURRENT_VERSION,
+				me: { profile: null, zohoId: null },
+			}),
 		);
 		expect(readCachedSession()).toBeNull();
 	});
@@ -91,7 +103,10 @@ describe("session cache rejects what it cannot trust", () => {
 	it("discards an admin view with no subject", () => {
 		sessionStorage.setItem(
 			KEY,
-			JSON.stringify({ v: 1, me: { role: "admin", login: "octocat" } }),
+			JSON.stringify({
+				v: CURRENT_VERSION,
+				me: { role: "admin", login: "octocat" },
+			}),
 		);
 		expect(readCachedSession()).toBeNull();
 	});

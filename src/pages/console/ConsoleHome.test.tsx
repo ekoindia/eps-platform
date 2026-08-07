@@ -78,6 +78,22 @@ describe("ConsoleHome", () => {
 		expect(screen.getByText(/signed in as 999/i)).toBeInTheDocument();
 	});
 
+	// The two gates on this page answer different questions, and a KYC-pending
+	// account is the only state that separates them: it can have transacted (so
+	// it keeps the dashboard it had before this state existed) while still having
+	// something outstanding (so the state stays a full card, not a banner).
+	it("keeps both the dashboard and the full state card while KYC is pending", () => {
+		renderHome({
+			state: "kyc-pending",
+			mobile: "999",
+			profile: null,
+			zohoId: null,
+		});
+		expect(screen.getByTestId("dashboard-loading")).toBeInTheDocument();
+		expect(load).toHaveBeenCalled();
+		expect(screen.getByText("Finish your KYC")).toBeInTheDocument();
+	});
+
 	it("keeps the full state card for an inactive account", () => {
 		renderHome({
 			state: "inactive",

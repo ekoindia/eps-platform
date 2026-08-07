@@ -80,6 +80,19 @@ describe("Credentials", () => {
 		).toHaveAttribute("href", "/signup");
 	});
 
+	// This partner has already finished onboarding, so the lead copy's
+	// "continue onboarding → /signup" would send them round a loop.
+	it("tells a KYC-pending account to upload documents, not to onboard again", () => {
+		renderCredentials({ ...ACTIVE, state: "kyc-pending" });
+		expect(
+			screen.getByText(/once your kyc documents have been verified/i),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/finish onboarding/i)).toBeNull();
+		expect(
+			screen.getByRole("link", { name: /upload documents/i }),
+		).toHaveAttribute("href", "/console/documents");
+	});
+
 	it("tells an inactive account to contact support", () => {
 		renderCredentials({ ...ACTIVE, state: "inactive" });
 		expect(screen.getByText(/account is inactive/i)).toBeInTheDocument();

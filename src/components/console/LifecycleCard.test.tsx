@@ -35,6 +35,15 @@ describe("LifecycleCard", () => {
 		expect(screen.getByText("Pending")).toBeInTheDocument();
 	});
 
+	it("sends a KYC-pending account at the upload page, not back at signup", () => {
+		show({ ...ACTIVE, state: "kyc-pending" });
+		expect(screen.getByText("Finish your KYC")).toBeInTheDocument();
+		expect(screen.getByText("KYC Pending")).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: "Upload documents" }),
+		).toHaveAttribute("href", "/console/documents");
+	});
+
 	it("names the account when neither profile nor mobile is present", () => {
 		show({ ...ACTIVE, mobile: "" });
 		expect(screen.getByText(/your account/)).toBeInTheDocument();

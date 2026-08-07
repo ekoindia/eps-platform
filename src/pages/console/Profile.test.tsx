@@ -36,6 +36,8 @@ const PROFILE: ProfileData = {
 	accounts: [],
 	evalueAccountId: null,
 	detailBlocks: {},
+	accountStateId: 16,
+	userDetail: {},
 };
 
 const ACTIVE: MeView = {

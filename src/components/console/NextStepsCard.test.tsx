@@ -49,6 +49,18 @@ describe("NextStepsCard", () => {
 		expect(screen.getByText("Pending")).toBeInTheDocument();
 	});
 
+	// The state that exists to say exactly this. Nothing in the component tests
+	// for it by name — it falls out of "not active" — so this guards that.
+	it("marks KYC pending, and offers the upload, for a kyc-pending account", () => {
+		kycEnabled.mockReturnValue(true);
+		renderCard({ state: "kyc-pending" });
+		expect(screen.getByText("Pending")).toBeInTheDocument();
+		expect(screen.queryByText("Done")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: /uploading documents/i }),
+		).toHaveAttribute("href", "/console/documents");
+	});
+
 	it("marks KYC done once the account is active, and strikes it out", () => {
 		renderCard({ state: "active" });
 		expect(screen.getByText("Done")).toBeInTheDocument();

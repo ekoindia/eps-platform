@@ -59,8 +59,9 @@ const FINISH_ONBOARDING = {
 } as const;
 
 /**
- * Production-key copy per lifecycle state. `Lifecycle` has exactly these five
- * members, so the map is total and needs no fallback branch.
+ * Production-key copy per lifecycle state. The map is keyed on `Lifecycle`
+ * itself, so it is total by construction and needs no fallback branch — a state
+ * added upstream fails the build here rather than rendering blank.
  */
 const PRODUCTION_COPY: Record<
 	Lifecycle,
@@ -69,6 +70,12 @@ const PRODUCTION_COPY: Record<
 	active: {
 		body: "Production keys are issued separately from the UAT pair, once your account is provisioned.",
 		cta: { label: "Contact your account manager", href: "/grievance" },
+	},
+	// Not `FINISH_ONBOARDING`: this partner HAS finished onboarding, so pointing
+	// them back at /signup would send them round a loop they have already run.
+	"kyc-pending": {
+		body: "Production keys are issued once your KYC documents have been verified.",
+		cta: { label: "Upload documents", href: "/console/documents" },
 	},
 	lead: FINISH_ONBOARDING,
 	onboarded: FINISH_ONBOARDING,

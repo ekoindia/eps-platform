@@ -37,6 +37,12 @@ const STATE_COPY: Record<
 		body: "Your account is active. Explore the docs and APIs to integrate.",
 		cta: { label: "Browse API docs", href: "/docs" },
 	},
+	"kyc-pending": {
+		badge: "KYC Pending",
+		title: "Finish your KYC",
+		body: "Your account is created. Upload your KYC documents to finish activating it.",
+		cta: { label: "Upload documents", href: "/console/documents" },
+	},
 	inactive: {
 		badge: "Inactive",
 		title: "Account inactive",

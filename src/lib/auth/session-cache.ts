@@ -19,7 +19,7 @@ const KEY = "eps.session.me";
  * simply not be in it, and a half-populated profile on screen is worse than the
  * skeleton this cache exists to skip.
  */
-const VERSION = 1;
+const VERSION = 2;
 
 interface Envelope {
 	v: number;
