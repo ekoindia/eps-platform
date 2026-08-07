@@ -273,7 +273,8 @@ degraded `Service <id>` labels in place for an hour.
 | Upstream envelope `status !== 0` | 502 `DASHBOARD_FAILED`, carrying upstream's message |
 | Interaction 1044 fails | **Non-fatal.** The page renders with `Service <id>` labels; a `typeId` filter is still accepted on the regex alone, because refusing it would turn a cosmetic outage into a broken filter |
 | `VITE_SHOW_BUSINESS_DASHBOARD` unset | No widgets and **no fetch** — Home is the Next Steps card plus the lifecycle state. The gate is on the element, so the request is never issued rather than issued and discarded |
-| Account is not `active` | No dashboard and no fetch — the Next Steps card, then the full lifecycle card below it |
+| Account is not provisioned (`isProvisioned` — neither `active` nor `kyc-pending`) | No dashboard and no fetch — the Next Steps card, then the full lifecycle card below it |
+| Account is `kyc-pending` | **Dashboard still loads** — it is a post-onboarding account that can have transacted. The lifecycle block stays the full card, not the banner, because its KYC is still outstanding. The two gates on Home answer different questions and are deliberately not merged |
 | Everything is zero | The zeros are **rendered**, plus a line pointing at `/console/transactions` |
 
 Unlike the Connect-widget routes, `/dashboard` is mounted unconditionally and
@@ -292,10 +293,12 @@ steps: finish KYC, integrate against UAT credentials, receive production
 credentials, pay the one-time integration fee.
 
 Only the **KYC step carries a status** — Done once `me.state === "active"`, else
-Pending — because it is the only one this session can answer. Note what that
-status actually means: upstream accepted the account, not that any specific
-document was verified. `/console/documents` knows the per-document truth and can
-disagree. The other steps are a route, not a checklist; nothing here knows
+Pending — because it is the only one this session can answer. This is the one
+place that must test for `active` alone rather than `isProvisioned`: the state it
+exists to report is precisely `kyc-pending`, which the helper folds in with
+`active` everywhere else. Note what the status actually means: upstream accepted
+the account, not that any specific document was verified. `/console/documents`
+knows the per-document truth and can disagree. The other steps are a route, not a checklist; nothing here knows
 whether a partner has finished integrating, and a step that reads "Pending"
 forever is worse than one that reads nothing.
 

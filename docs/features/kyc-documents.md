@@ -5,6 +5,18 @@ Onboarding creates the account; KYC activates it. A user who has finished
 scans, PDFs or a photo taken there and then. This feature puts that pack in the
 console at `/console/documents` instead of over email.
 
+**The session says whether that pack is still owed.** Upstream reports it as
+`user_detail.account_state_id` — `48` while KYC is outstanding, `16` once the
+account is live — and the backend turns it into the `kyc-pending` lifecycle
+state (see
+[`user-onboarding.md` § Lifecycle state](./user-onboarding.md#lifecycle-state-meviewstate)).
+That is what makes the Next Steps card's "Finish your KYC" row read Pending.
+
+It is a coarse signal, not a per-document one: it says upstream is still waiting
+on this partner, not which file is missing. This page owns that detail. It can
+also disagree — the state is `kyc-pending` until upstream flips the account
+itself, which can lag a successful upload.
+
 ## The two upstream transactions
 
 Both are connect-api interactions, reached only from the backend (they need the

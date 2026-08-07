@@ -167,6 +167,61 @@ on this:
 | `not_allowed`       | 403 `NOT_ALLOWED`                                      |
 | `error`             | 502 `PROFILE_UNAVAILABLE`                              |
 
+### Lifecycle state (`MeView.state`)
+
+`deriveStateFromProfile` (`packages/eps-backend/src/identity/me.ts`) turns that
+`ProfileResult` into the string the console renders as
+`useAuth().state.me.state`. The frontend never computes it — it only checks the
+value against `LIFECYCLES` (`src/lib/auth/client.ts`) and fails closed to `anon`
+on anything unrecognised.
+
+| `ProfileResult`                                | `MeView.state` |
+| ---------------------------------------------- | -------------- |
+| `inactive`                                      | `inactive`     |
+| `error` / `not_allowed`                         | `unknown`      |
+| `not_found` (+ Zoho lead lookup, else `unknown`)| `lead`         |
+| `onboarding`                                    | `onboarded`    |
+| `found`, `onboarding === 1`                     | `onboarded`    |
+| `found`, `account_state_id === 48`              | `kyc-pending`  |
+| `found`, anything else (16, unmapped, absent)   | `active`       |
+
+Two properties of that last pair are deliberate:
+
+- **`onboarding` is tested for `1`, not "not 0".** A third value appearing
+  upstream is not a reason to tell a finished partner their onboarding is
+  unfinished.
+- **The account-state branch fails OPEN.** Only 48 is pending; 16, an id this
+  build has not mapped, and `null` all read as `active`. The connect-api provider
+  never reports an id at all (its `auth_details` has no such field), so reading an
+  unknown id as pending would have put a blocking KYC step in front of every
+  partner on that provider. `toStateId` rejects blanks rather than coercing them,
+  because `Number("")` is `0` and a blank field must not become a real-looking id.
+
+### What `/me` forwards about the user
+
+`EkoProfile` carries the typed fields the console has always read, plus two
+additions:
+
+- `accountStateId` — the id above, typed because the state machine branches on it.
+- `userDetail` — upstream's **whole** `user_detail`, filtered by a denylist
+  (`clients/profile-fields.ts`), so the console can read the long tail of profile
+  fields (PAN, current plan, alternate mobiles, profile picture,
+  primary-mobile metadata) without a backend release per field.
+
+That is a **denylist**, unlike the `detailBlocks` block-name allowlist beside it,
+and the trade is explicit: everything in it reaches browser JavaScript and
+`sessionStorage`, so it is PII sitting where an injected script could read it,
+and the filter cannot know about a credential upstream adds under a new name.
+`stripSensitive` recurses into nested objects and arrays, drops keys matching
+`token|secret|password|passwd|otp|_key$|^key$|^[mtu]?pin$`, and deliberately
+keeps `pincode`/`pin_code` (postal codes) and `is_pin_not_set` (a flag, not a
+PIN). Widen it the moment 151 grows a credential-shaped field.
+
+The whole `MeView` is parked in `sessionStorage` by `session-cache.ts` so a
+reload paints the signed-in shell immediately. Its envelope `VERSION` is bumped
+whenever this shape changes — currently **2** — so a blob written by an older
+build is discarded rather than rendered half-populated.
+
 **`DEV_ALLOW_ANY_USER_TYPE=true` (DEV/UAT only)** skips the business-partner
 gate in both classifiers (`clients/eko.ts`, `clients/connect.ts`), org check
 included, so any authenticated Eloka user — retailer, distributor, agent — gets
