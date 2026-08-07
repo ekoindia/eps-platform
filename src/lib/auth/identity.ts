@@ -1,5 +1,6 @@
 import type { AuthState } from "@/lib/auth/AuthProvider";
 import type { Profile } from "@/lib/auth/client";
+import { formatMobile } from "@/lib/utils";
 
 /** Display identity for the logged-in user, ready to render in a profile menu. */
 export interface AccountIdentity {
@@ -54,13 +55,18 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 	const fromName = personName ? nameInitials(personName) : "";
 	const code = profile?.code;
 	return {
-		name: personName || state.me.mobile,
+		// Every rendered mobile goes through `formatMobile`, here and in
+		// `ProfileCard`, so the menu and the card never disagree on spacing.
+		name: personName || formatMobile(state.me.mobile),
 		// Mobile-derived fallback (last two digits) when no name exists.
 		initials: fromName || `#${state.me.mobile.slice(-2)}`,
 		detail: state.role === "signup" ? "Finishing setup" : "EPS Admin",
 		// Mobile is skipped when it already serves as the primary name.
 		meta:
-			[personName ? state.me.mobile : "", code ? `Code ${code}` : ""]
+			[
+				personName ? formatMobile(state.me.mobile) : "",
+				code ? `EkoCode ${code}` : "",
+			]
 				.filter(Boolean)
 				.join(" · ") || undefined,
 	};

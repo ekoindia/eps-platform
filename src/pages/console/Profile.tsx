@@ -7,7 +7,7 @@ import {
 } from "@/lib/auth/identity";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { groupChildren } from "@/lib/connect/interactions";
-import { cn } from "@/lib/utils";
+import { cn, formatMobile } from "@/lib/utils";
 import { ChevronRight, Phone, SquarePen } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -42,13 +42,6 @@ function meterColor(percent: number): string {
 	if (percent >= 60) return "text-eko-success";
 	if (percent > 40) return "text-eko-gold";
 	return "text-destructive";
-}
-
-/** Formats a 10-digit Indian mobile as `+91 12345 67890`; passes anything else through. */
-function formatMobile(mobile: string): string {
-	const digits = mobile.replace(/\D/g, "");
-	if (digits.length !== 10) return mobile;
-	return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
 }
 
 /** The blue identity card: who you are, and how far through onboarding. */

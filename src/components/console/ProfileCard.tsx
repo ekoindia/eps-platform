@@ -4,7 +4,8 @@ import type { MeView } from "@/lib/auth/client";
 import { nameInitials } from "@/lib/auth/identity";
 import { lifecycleBadge } from "@/lib/console/lifecycle";
 import { formatMobile } from "@/lib/utils";
-import { Mail, Phone } from "lucide-react";
+import { CopyButton } from "@/pages/ai/CommandBlock";
+import { Hash, Mail, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /**
@@ -31,6 +32,8 @@ export default function ProfileCard({ me }: { me: MeView }) {
 	// Trimmed before the fallback: upstream defaults missing fields to "", and a
 	// whitespace-only mobile would otherwise beat the one the session came in on.
 	const mobile = me.profile?.mobile?.trim() || me.mobile;
+	// Numeric upstream, so stringified before render and before copy.
+	const code = me.profile?.code ? String(me.profile.code) : "";
 
 	return (
 		// Half the avatar hangs above the card, so the wrapper reserves that half
@@ -73,6 +76,19 @@ export default function ProfileCard({ me }: { me: MeView }) {
 								aria-hidden="true"
 							/>
 							<span className="min-w-0 break-all">{email}</span>
+						</p>
+					) : null}
+					{code ? (
+						<p className="flex items-center gap-2">
+							<Hash
+								className="h-4 w-4 shrink-0 text-eko-gold"
+								aria-hidden="true"
+							/>
+							EkoCode {code}
+							{/* Negative vertical margin: the button's padding is its tap
+							    target, and letting it set the row height would space this
+							    line apart from the two above it. */}
+							<CopyButton text={code} label="Copy EkoCode" className="-my-2" />
 						</p>
 					) : null}
 				</div>

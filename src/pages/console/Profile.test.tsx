@@ -77,7 +77,7 @@ describe("Profile identity card", () => {
 		expect(screen.getByText("Kumar Abhishek")).toBeInTheDocument();
 		expect(screen.getByText("Enterprise Partner")).toBeInTheDocument();
 		expect(screen.getByText("18120001")).toBeInTheDocument();
-		expect(screen.getByText("+91 67100 00002")).toBeInTheDocument();
+		expect(screen.getByText("+91 671 000 0002")).toBeInTheDocument();
 	});
 
 	it("reports 100% for a fully onboarded profile", () => {
@@ -114,7 +114,8 @@ describe("Profile identity card", () => {
 	it("falls back to the mobile when the session carries no profile", () => {
 		// A lead has no Eko profile; the card must still render rather than crash.
 		renderProfile({ ...ACTIVE, state: "lead", profile: null });
-		expect(screen.getByText("+91 67100 00002")).toBeInTheDocument();
+		// Twice: with no profile name, the mobile is also the heading.
+		expect(screen.getAllByText("+91 671 000 0002")).toHaveLength(2);
 		expect(screen.getByRole("progressbar")).toHaveAttribute(
 			"aria-valuenow",
 			"0",

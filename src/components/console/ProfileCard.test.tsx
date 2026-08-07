@@ -11,6 +11,8 @@ const ME: MeView = {
 		name: "Asha Kumari",
 		email: "asha@example.com",
 		mobile: "9998887777",
+		// Numeric upstream, as the API sends it.
+		code: 18120001,
 	} as never,
 	zohoId: null,
 };
@@ -31,6 +33,19 @@ describe("ProfileCard", () => {
 		expect(screen.getByText("+91 999 888 7777")).toBeInTheDocument();
 		expect(screen.getByText("asha@example.com")).toBeInTheDocument();
 		expect(screen.getByText("AK")).toBeInTheDocument();
+	});
+
+	it("shows the EkoCode with a copy button", () => {
+		show(ME);
+		expect(screen.getByText(/EkoCode 18120001/)).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Copy EkoCode" }),
+		).toBeInTheDocument();
+	});
+
+	it("drops the EkoCode row when the profile has no code", () => {
+		show({ ...ME, profile: { ...ME.profile, code: "" } as never });
+		expect(screen.queryByText(/EkoCode/)).not.toBeInTheDocument();
 	});
 
 	it("links through to the full profile page", () => {
