@@ -37,11 +37,18 @@ nothing rather than an empty caption. An `API Docs ↗` link closes the rail. Or
 within a group is entitlement-independent and pinned by
 `ConsoleLayout.nav.test.tsx`, which also guards the single-`h1`/`<main>` contract.
 
-The console's index page (`/console`) is **Home**. It leads with the Next Steps
-card — KYC, UAT credentials, production credentials and the one-time integration
-fee — for every lifecycle state. Below it the lifecycle-state card renders in full only for an
-account that still has something to finish; an active account gets it as a
-one-line strip.
+The console's index page (`/console`) is **Home**. It leads with the profile card
+(`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT
+credentials, production credentials and the one-time integration fee — for every
+lifecycle state. The profile card carries name, lifecycle badge, mobile, email and
+**EkoCode** (with a click-to-copy button, `CopyButton` from `pages/ai/CommandBlock`),
+and links through to `/console/profile`.
+
+Every rendered mobile — the card, the header account menu (`accountIdentity()`)
+and the `/console/profile` identity card — goes through the one `formatMobile()`
+in `src/lib/utils.ts`, which renders `+91 ### ### ####`. The support-chat visitor
+identity (`chatIdentity()`) deliberately keeps the raw digits: it is data, not
+display.
 
 Last comes the **Business Dashboard** — call volume, success rates, most-used
 services and usage over time, from upstream interaction 682 — behind
@@ -135,7 +142,8 @@ fetched, via `useConsoleMe()`. Three blocks:
 
 - **Identity card** — name, user type, user code and mobile, over the brand
   gradient. Initials come from `accountIdentity()`, the same derivation the
-  header menu uses, so a session with no profile still renders.
+  header menu uses, so a session with no profile still renders; the mobile goes
+  through the shared `formatMobile()`.
 - **Profile completeness** — onboarding progress, NOT Eloka's shop+personal field
   checklist (those fields are opaque to us, and Eloka's own count treats an
   absent key as complete). `profileCompleteness()` in `lib/auth/identity.ts`
