@@ -2,6 +2,8 @@ export type LifecycleState =
 	| "lead"
 	| "onboarded"
 	| "active"
+	/** Onboarded, but the KYC documents are still outstanding. */
+	| "kyc-pending"
 	| "inactive"
 	| "unknown";
 
@@ -54,6 +56,30 @@ export interface EkoProfile {
 	 * rather than forwarded automatically. Empty when 151 sent none of them.
 	 */
 	detailBlocks: Record<string, unknown>;
+	/**
+	 * `user_detail.account_state_id` — 16 is a live account, 48 one whose KYC is
+	 * still pending. Null when upstream sent no id, or sent one that is not a
+	 * whole number (`toStateId`).
+	 *
+	 * Also present inside `userDetail` below, and typed here anyway: it is the
+	 * one field of that bag the lifecycle state machine branches on
+	 * (`deriveStateFromProfile`), and a state machine reading an untyped record
+	 * is how a renamed upstream key becomes a silent misclassification.
+	 */
+	accountStateId: number | null;
+	/**
+	 * The whole upstream `user_detail`, minus keys that look like credentials
+	 * (`stripSensitive`).
+	 *
+	 * Unlike `detailBlocks` above this is a DENYLIST, not a reviewed allowlist:
+	 * the console reads a long tail of profile fields — PAN, current plan,
+	 * alternate mobiles, profile picture, primary-mobile metadata — and gating
+	 * each one on a backend release was costing more than it bought. The trade is
+	 * explicit: everything here reaches browser JavaScript and `sessionStorage`,
+	 * so it is PII sitting where an injected script could read it, and the
+	 * denylist cannot know about a credential upstream adds under a new name.
+	 */
+	userDetail: Record<string, unknown>;
 }
 
 export type ProfileResult =

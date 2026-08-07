@@ -39,6 +39,8 @@ const FOUND_PROFILE = {
 		accounts: [],
 		evalueAccountId: null,
 		detailBlocks: {},
+		accountStateId: 16,
+		userDetail: {},
 	},
 };
 

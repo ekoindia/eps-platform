@@ -7,6 +7,7 @@ import {
 	type AccountDetail,
 } from "./accounts";
 import { clientRefId, withTimeout } from "./http";
+import { stripSensitive, toStateId } from "./profile-fields";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -821,6 +822,8 @@ const PROFILE_DETAIL_BLOCKS = [
 	"shop_details",
 	"business_detail",
 	"business_details",
+	"business_address_detail",
+	"business_address_details",
 ] as const;
 
 /**
@@ -853,6 +856,8 @@ function mapProfile(
 		accounts: mapAccounts(accountDetail),
 		evalueAccountId: selectEvalueAccountId(accountDetail),
 		detailBlocks: pickDetailBlocks(data),
+		accountStateId: toStateId(d.account_state_id),
+		userDetail: stripSensitive(d),
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),

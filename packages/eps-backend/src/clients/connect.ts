@@ -7,6 +7,7 @@ import {
 	type AccountDetail,
 } from "./accounts";
 import { clientRefId, withTimeout } from "./http";
+import { stripSensitive, toStateId } from "./profile-fields";
 
 /**
  * The response envelope `/authentication/login` and `/authentication/token`
@@ -212,6 +213,12 @@ function mapConnectProfile(
 		// the interaction-151 path in `eko.ts` — so this stays `{}` rather than
 		// growing a second, differently-shaped extractor.
 		detailBlocks: {},
+		// Null on this path, always: connect-api's `auth_details` carries no
+		// account state id (`routes/authentication.js`). `deriveStateFromProfile`
+		// resolves that to `active`, which is what this provider reported before
+		// the id existed at all.
+		accountStateId: toStateId(d.account_state_id),
+		userDetail: stripSensitive(d),
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),

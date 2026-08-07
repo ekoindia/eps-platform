@@ -18,12 +18,29 @@ export interface SignupView {
 	mobile: string;
 }
 
+/**
+ * `user_detail.account_state_id` for an account that has finished onboarding but
+ * whose KYC documents are still outstanding. Its sibling, 16, is a live account.
+ */
+const KYC_PENDING_STATE_ID = 48;
+
 export function deriveStateFromProfile(r: ProfileResult): LifecycleState {
 	if (r.kind === "inactive") return "inactive";
 	if (r.kind === "error" || r.kind === "not_allowed") return "unknown";
 	if (r.kind === "not_found") return "lead";
 	if (r.kind === "onboarding") return "onboarded";
-	return r.profile.onboarding === 0 ? "active" : "onboarded";
+	// Tests for 1 rather than "not 0": 1 is the value upstream documents as
+	// in-progress, and a third value appearing later is not a reason to tell a
+	// finished partner their onboarding is unfinished.
+	if (r.profile.onboarding === 1) return "onboarded";
+	// Deliberately fail-open on the id. 16 is live, and so is every id we have
+	// not mapped — including `null`, which is what the connect-api provider
+	// always reports (its envelope has no such field). Reading an unknown id as
+	// pending would put a blocking KYC step in front of every partner on that
+	// provider the day this ships.
+	return r.profile.accountStateId === KYC_PENDING_STATE_ID
+		? "kyc-pending"
+		: "active";
 }
 
 export async function buildMeView(
