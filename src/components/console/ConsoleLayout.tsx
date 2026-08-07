@@ -388,11 +388,11 @@ export default function ConsoleLayout() {
 								{/* The page's only h1: the rail caption names the section, as
 								    `DocsLayout` does, and carries the lifecycle state where
 								    docs puts its theme toggle. */}
-								<div className="mb-2 flex items-center justify-between gap-2 px-3">
-									<h1 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-										Developer Console
+								<div className="mb-3 flex items-center justify-center gap-2 px-3">
+									<h1 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+										EPS Developer Console
 									</h1>
-									<LifecycleBadge state={developer.state} />
+									{/* <LifecycleBadge state={developer.state} /> */}
 								</div>
 								<WalletBalance />
 								<div className="lg:hidden">
