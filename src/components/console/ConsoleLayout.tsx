@@ -1,7 +1,7 @@
 import { Footer } from "@/components/Footer";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { ConnectDialogProvider } from "@/components/connect/DialogHost";
-import { lifecycleBadge } from "@/components/console/LifecycleCard";
+import { lifecycleBadge } from "@/lib/console/lifecycle";
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
 import {
