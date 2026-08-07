@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786084038.088151,
-    "ast_hash": "8e79da3d263ceb509c4c679dd56b16df",
+    "mtime": 1786085467.0156255,
+    "ast_hash": "12756268d256e4c120093da265da2479",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -1158,16 +1158,6 @@
     "mtime": 1785493094.0438178,
     "ast_hash": "1b25dcb2365304ad0049da0afa88dae8",
     "semantic_hash": "1b25dcb2365304ad0049da0afa88dae8"
-  },
-  "src/components/console/LifecycleCard.test.tsx": {
-    "mtime": 1786078856.2209246,
-    "ast_hash": "ced6e1989b9d19cda840e21c22a48ec1",
-    "semantic_hash": ""
-  },
-  "src/components/console/LifecycleCard.tsx": {
-    "mtime": 1786078643.087812,
-    "ast_hash": "70c0aaa24870878065e5cc2d95175180",
-    "semantic_hash": ""
   },
   "src/components/console/WalletBalance.connect.test.tsx": {
     "mtime": 1785150003.5531204,
@@ -1990,9 +1980,9 @@
     "semantic_hash": "a90235f734654c8d10879dcbf2fb4212"
   },
   "src/lib/auth/identity.ts": {
-    "mtime": 1785495996.7292995,
-    "ast_hash": "667b248f6fe25d2e8d2c19e3ccd9b47f",
-    "semantic_hash": "667b248f6fe25d2e8d2c19e3ccd9b47f"
+    "mtime": 1786085468.4902534,
+    "ast_hash": "67f97434e036a375fd068ac1ef84dcbb",
+    "semantic_hash": ""
   },
   "src/lib/auth/session-cache.test.ts": {
     "mtime": 1786078758.1986918,
@@ -2785,13 +2775,13 @@
     "semantic_hash": "ad4ff61b10b0aadd1be655884332804d"
   },
   "src/pages/console/ConsoleHome.test.tsx": {
-    "mtime": 1786079007.669433,
-    "ast_hash": "dc261a494ec91559a024f6e01a1e6428",
+    "mtime": 1786085585.9471684,
+    "ast_hash": "914c2ba1df1ee3c09cb38c3f29d178fb",
     "semantic_hash": ""
   },
   "src/pages/console/ConsoleHome.tsx": {
-    "mtime": 1786078983.1162605,
-    "ast_hash": "8ec2b0bfc6d78b9e0127121eb1033ca8",
+    "mtime": 1786085521.1126218,
+    "ast_hash": "56821be30e5e2c479343294df9ace9bd",
     "semantic_hash": ""
   },
   "src/pages/console/Credentials.test.tsx": {
@@ -3025,8 +3015,8 @@
     "semantic_hash": "0fc1b9c084a36c40020950001bee88d3"
   },
   "docs/console-roadmap.md": {
-    "mtime": 1786008918.0404966,
-    "ast_hash": "f0be9ec07fd22ffbadb879d052ed990d",
+    "mtime": 1786085635.2683904,
+    "ast_hash": "e7f93d4544ba36173a4916933f67e42a",
     "semantic_hash": ""
   },
   "docs/developer-docs/README.md": {
@@ -3075,8 +3065,8 @@
     "semantic_hash": "c0ad494c6528ed760a780436ff72a85a"
   },
   "docs/features/business-dashboard.md": {
-    "mtime": 1786079050.0880733,
-    "ast_hash": "423129a285e23bec45f2d56f552e85db",
+    "mtime": 1786085646.2282152,
+    "ast_hash": "67471dd06efecd345a3eab6d29863b90",
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
@@ -3677,6 +3667,26 @@
   "packages/eps-backend/src/clients/profile-fields.ts": {
     "mtime": 1786078555.379992,
     "ast_hash": "b7009391bd19dea70e084614386ed038",
+    "semantic_hash": ""
+  },
+  "src/components/console/ProfileCard.test.tsx": {
+    "mtime": 1786085539.2663567,
+    "ast_hash": "04dfa95b82040b265f19ef52758409b8",
+    "semantic_hash": ""
+  },
+  "src/components/console/ProfileCard.tsx": {
+    "mtime": 1786085987.4879851,
+    "ast_hash": "e49b7768e391b38a298c9d52db9124b2",
+    "semantic_hash": ""
+  },
+  "src/lib/console/lifecycle.test.ts": {
+    "mtime": 1786085460.1876533,
+    "ast_hash": "865cf665e53d1057f375f6cb997bc483",
+    "semantic_hash": ""
+  },
+  "src/lib/console/lifecycle.ts": {
+    "mtime": 1786085456.7144594,
+    "ast_hash": "7e9f6dbfe9a431e401b38ea7fddebe4f",
     "semantic_hash": ""
   }
 }
