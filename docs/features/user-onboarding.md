@@ -54,9 +54,25 @@ cookies, and the classification table below is unchanged — `mapConnectLogin`
 envelope onto the same `ProfileResult` union `getProfile` returns, in the same
 branch order. See "Auth providers" in `packages/eps-backend/README.md`.
 
-Only _login_ is delegated. Every onboarding interaction below (521, 523, 522,
-170, 10005, 5) still goes straight to SimpliBank with the `developer_key`
-header under both providers, and so does the `/signup/state` profile refresh.
+Only the _OTP exchange_ is delegated. Every onboarding interaction below (521,
+523, 522, 170, 10005, 5) still goes straight to SimpliBank with the
+`developer_key` header under both providers, and so does the `/signup/state`
+profile refresh.
+
+**The profile is read from 151 under both providers, login included.**
+`mapConnectLogin` classifies the envelope — that is what decides whether a
+session is minted at all — but for a `found` result `connectProvider.enrich`
+then replaces the profile with a real `eko.getProfile` read. Without it the two
+views of one account disagreed: connect-api's `auth_details` is a profile it
+assembles field by field, so anything it does not name is simply absent, and
+`account_state_id` is not named. A login therefore reported `accountStateId:
+null` → `active` for an account whose KYC was outstanding, and the next `/me`
+silently corrected it — the bug reads as "the badge is wrong until I reload".
+
+The re-read may only add fields, never change the verdict: a 151 that fails or
+returns some other kind leaves the envelope's profile untouched, because the OTP
+has already been consumed and a transient upstream blip must not turn a good
+login into a refusal.
 
 ## Why there is no Eko access token
 

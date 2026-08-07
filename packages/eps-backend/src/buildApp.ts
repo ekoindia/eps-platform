@@ -87,7 +87,7 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		? createConnectClient(cfg.connectApi, fetch, connectLogger)
 		: undefined;
 	const auth = connect
-		? createConnectAuthProvider(connect, { kv, secretbox, cfg })
+		? createConnectAuthProvider(connect, { kv, secretbox, cfg, eko })
 		: createEkoAuthProvider(eko);
 	console.log(`[eps-backend] auth provider: ${auth.name}`);
 
