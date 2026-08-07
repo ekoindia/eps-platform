@@ -1080,9 +1080,9 @@
     "semantic_hash": "fcd8a014e3d2f6e24f19cb37b151bf6e"
   },
   "src/components/auth/UserMenu.test.tsx": {
-    "mtime": 1785496247.122203,
-    "ast_hash": "b57f457ccbd10f89af7cc1afc56a44a9",
-    "semantic_hash": "b57f457ccbd10f89af7cc1afc56a44a9"
+    "mtime": 1786096339.4983616,
+    "ast_hash": "12248e24335006c04a337ab1ea0baef3",
+    "semantic_hash": ""
   },
   "src/components/auth/UserMenu.tsx": {
     "mtime": 1785496076.7187586,
@@ -1975,13 +1975,13 @@
     "semantic_hash": ""
   },
   "src/lib/auth/identity.test.ts": {
-    "mtime": 1785496178.5022557,
-    "ast_hash": "a90235f734654c8d10879dcbf2fb4212",
-    "semantic_hash": "a90235f734654c8d10879dcbf2fb4212"
+    "mtime": 1786096321.3696823,
+    "ast_hash": "7d406ed989f9ec3aa574e8a66cabe842",
+    "semantic_hash": ""
   },
   "src/lib/auth/identity.ts": {
-    "mtime": 1786085468.4902534,
-    "ast_hash": "67f97434e036a375fd068ac1ef84dcbb",
+    "mtime": 1786096248.9432833,
+    "ast_hash": "2e86b8ec58803378ff0da3d8c6e366e1",
     "semantic_hash": ""
   },
   "src/lib/auth/session-cache.test.ts": {
@@ -2805,14 +2805,14 @@
     "semantic_hash": "28ea15136dfaa30913fbf21511b97fb9"
   },
   "src/pages/console/Profile.test.tsx": {
-    "mtime": 1786078685.4259462,
-    "ast_hash": "655abd66f63c27e7070d6ac163e8fbcc",
+    "mtime": 1786096467.18934,
+    "ast_hash": "bde542bb547db31806c3012e1841cc0d",
     "semantic_hash": ""
   },
   "src/pages/console/Profile.tsx": {
-    "mtime": 1785496387.298439,
-    "ast_hash": "3ab7137613331620cf43daae9288d2ba",
-    "semantic_hash": "3ab7137613331620cf43daae9288d2ba"
+    "mtime": 1786096438.5269449,
+    "ast_hash": "c1136c4129da2b73bfa7c9c7f00e9d93",
+    "semantic_hash": ""
   },
   "src/pages/console/TestDialogs.tsx": {
     "mtime": 1785324982.1008902,
@@ -3015,8 +3015,8 @@
     "semantic_hash": "0fc1b9c084a36c40020950001bee88d3"
   },
   "docs/console-roadmap.md": {
-    "mtime": 1786085635.2683904,
-    "ast_hash": "e7f93d4544ba36173a4916933f67e42a",
+    "mtime": 1786096514.7644372,
+    "ast_hash": "83864215b02342816535c854dcd1f37c",
     "semantic_hash": ""
   },
   "docs/developer-docs/README.md": {
@@ -3670,13 +3670,13 @@
     "semantic_hash": ""
   },
   "src/components/console/ProfileCard.test.tsx": {
-    "mtime": 1786085539.2663567,
-    "ast_hash": "04dfa95b82040b265f19ef52758409b8",
+    "mtime": 1786096357.8886359,
+    "ast_hash": "c9039e55a87066b3f43f36bff10bfc66",
     "semantic_hash": ""
   },
   "src/components/console/ProfileCard.tsx": {
-    "mtime": 1786085510.245368,
-    "ast_hash": "1edc434cad57c1c0a82bfd0862082b60",
+    "mtime": 1786096294.5659044,
+    "ast_hash": "4de05d66ae511434aa38bd924dba096c",
     "semantic_hash": ""
   },
   "src/lib/console/lifecycle.test.ts": {
