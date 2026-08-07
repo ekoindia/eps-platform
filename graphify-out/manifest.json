@@ -125,14 +125,14 @@
     "semantic_hash": "fb5ce7df01713dc2f4dce94b71140b60"
   },
   "packages/eps-backend/src/auth/connectProvider.test.ts": {
-    "mtime": 1785324982.0941496,
-    "ast_hash": "cf79cf3e46b691e75262299f05da37c3",
-    "semantic_hash": "cf79cf3e46b691e75262299f05da37c3"
+    "mtime": 1786084402.4422832,
+    "ast_hash": "d657868f6d18707f55d4c1bbfb78d3cf",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/connectProvider.ts": {
-    "mtime": 1785223933.3035557,
-    "ast_hash": "53912df81d72887aee9cbab1f7720c90",
-    "semantic_hash": "53912df81d72887aee9cbab1f7720c90"
+    "mtime": 1786084350.2487388,
+    "ast_hash": "e43298213729cf61c91972e8b5cc92a0",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/ekoProvider.ts": {
     "mtime": 1785048822.1206217,
@@ -140,9 +140,9 @@
     "semantic_hash": "f7524bd9940d1c39d05619cd2a0aa40d"
   },
   "packages/eps-backend/src/auth/provider.ts": {
-    "mtime": 1785148138.1922827,
-    "ast_hash": "5f358698b4c6fddadea156ed5153130a",
-    "semantic_hash": "5f358698b4c6fddadea156ed5153130a"
+    "mtime": 1786084428.401704,
+    "ast_hash": "c8b5211536593b2164cbf15a269aea65",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/session.test.ts": {
     "mtime": 1784136965.8070498,
@@ -155,9 +155,9 @@
     "semantic_hash": "52e819f1d1382d274c8a980b8a73ffe9"
   },
   "packages/eps-backend/src/buildApp.ts": {
-    "mtime": 1785560286.2986062,
-    "ast_hash": "f15e5742c5a245e4d12eb4102d46f1b5",
-    "semantic_hash": "f15e5742c5a245e4d12eb4102d46f1b5"
+    "mtime": 1786084362.5420735,
+    "ast_hash": "b32557b396f0ecda2028409f6bba96bc",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/clients/accounts.test.ts": {
     "mtime": 1785052682.7740262,
@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786009181.016865,
-    "ast_hash": "8a2cce05e998c38a21fe3be011819985",
+    "mtime": 1786084038.088151,
+    "ast_hash": "8e79da3d263ceb509c4c679dd56b16df",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -3095,8 +3095,8 @@
     "semantic_hash": ""
   },
   "docs/features/user-onboarding.md": {
-    "mtime": 1786079076.280067,
-    "ast_hash": "7aa34cb0fed7a979566f3b4fbff038b7",
+    "mtime": 1786084442.9064217,
+    "ast_hash": "063be0d2d489e2236e4c02368789cd60",
     "semantic_hash": ""
   },
   "docs/industry-and-packs-plan.md": {
