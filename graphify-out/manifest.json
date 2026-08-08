@@ -1135,9 +1135,9 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1785495804.180169,
-    "ast_hash": "fa52c7821ba35a866eaab73d1bd3cb9e",
-    "semantic_hash": "fa52c7821ba35a866eaab73d1bd3cb9e"
+    "mtime": 1786160281.7100353,
+    "ast_hash": "b216712319f10a9231ae873a22868c1b",
+    "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
     "mtime": 1784256779.5454838,
@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786085467.0156255,
-    "ast_hash": "12756268d256e4c120093da265da2479",
+    "mtime": 1786160302.3594286,
+    "ast_hash": "d7555d7cabbc498f55bff3ae36ee7e6d",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
