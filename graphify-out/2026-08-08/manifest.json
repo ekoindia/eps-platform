@@ -2065,13 +2065,13 @@
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.test.ts": {
-    "mtime": 1786164929.631626,
-    "ast_hash": "e2b9b42d4bd17b868e2708a79b943c55",
+    "mtime": 1786166092.5008144,
+    "ast_hash": "6688cd9abb2dde65d10309661174d157",
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.ts": {
-    "mtime": 1786164912.2443023,
-    "ast_hash": "9cf05fed6a270e15e995b5f322aaaea3",
+    "mtime": 1786166055.5714726,
+    "ast_hash": "07b0b426b97f4d6f09f5d1b68c488b3f",
     "semantic_hash": ""
   },
   "src/lib/connect/runtime.ts": {
@@ -2795,13 +2795,13 @@
     "semantic_hash": ""
   },
   "src/pages/console/Documents.test.tsx": {
-    "mtime": 1786164932.2082934,
-    "ast_hash": "f708816f2c09269b28116b534369914d",
+    "mtime": 1786165463.9780803,
+    "ast_hash": "b7826d834862a6609811aa280940b992",
     "semantic_hash": ""
   },
   "src/pages/console/Documents.tsx": {
-    "mtime": 1786163404.6590614,
-    "ast_hash": "810244b05d34ba24c439d45d903e7aa1",
+    "mtime": 1786165453.8932335,
+    "ast_hash": "48638d43ed95bcf463b723e2c08e7eed",
     "semantic_hash": ""
   },
   "src/pages/console/Profile.test.tsx": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": "c6d1b449c59cc677e79721e2adbb6db8"
   },
   "docs/features/kyc-documents.md": {
-    "mtime": 1786164961.6168492,
-    "ast_hash": "828196b40cbd84cb2add96eee3020a58",
+    "mtime": 1786166104.9059718,
+    "ast_hash": "9f895d7648a0f5688e972f3c2bfb8dae",
     "semantic_hash": ""
   },
   "docs/features/transaction-history.md": {

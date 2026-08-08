@@ -10436,7 +10436,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_ctx",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "ctx.ts"
     },
     {
@@ -10447,7 +10447,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_ctx_transactctx",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "transactctx"
     },
     {
@@ -10457,7 +10457,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_ctx_parseenvironment",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "parseenvironment()"
     },
@@ -10468,7 +10468,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_ctx_parseallowed",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "parseallowed()"
     },
@@ -10480,7 +10480,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_ctx_isallowed",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "isallowed()"
     },
     {
@@ -10491,7 +10491,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_ctx_hascredentials",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "hascredentials()"
     },
     {
@@ -10501,7 +10501,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_fetchtimeout",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "fetchtimeout.ts"
     },
@@ -10512,7 +10512,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_fetchtimeout_default_fetch_timeout_ms",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "default_fetch_timeout_ms"
     },
@@ -10523,7 +10523,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_fetchtimeout_withtimeout",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "withtimeout()"
     },
@@ -10732,8 +10732,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_load_bundle",
-      "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community": 125,
+      "community_name": "stdio.ts",
       "norm_label": "eps-transact-mcp/src/load-bundle.ts"
     },
     {
@@ -10743,8 +10743,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_load_bundle_here",
-      "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community": 125,
+      "community_name": "stdio.ts",
       "norm_label": "here"
     },
     {
@@ -10754,8 +10754,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_load_bundle_baked_path",
-      "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community": 125,
+      "community_name": "stdio.ts",
       "norm_label": "baked_path"
     },
     {
@@ -10765,8 +10765,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_load_bundle_loadbundle",
-      "community": 48,
-      "community_name": "eps-transact-mcp/src/http.ts",
+      "community": 125,
+      "community_name": "stdio.ts",
       "norm_label": "loadbundle()"
     },
     {
@@ -10865,7 +10865,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_parity_sdk_surface_test",
       "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community_name": "parity.sdk-surface.test.ts",
       "norm_label": "parity.sdk-surface.test.ts"
     },
     {
@@ -10876,7 +10876,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_parity_sdk_surface_test_here",
       "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community_name": "parity.sdk-surface.test.ts",
       "norm_label": "here"
     },
     {
@@ -10887,7 +10887,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_parity_sdk_surface_test_surface",
       "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community_name": "parity.sdk-surface.test.ts",
       "norm_label": "surface"
     },
     {
@@ -10898,7 +10898,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_parity_sdk_surface_test_tools",
       "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community_name": "parity.sdk-surface.test.ts",
       "norm_label": "tools"
     },
     {
@@ -10909,7 +10909,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_parity_sdk_surface_test_surfacebyslug",
       "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community_name": "parity.sdk-surface.test.ts",
       "norm_label": "surfacebyslug"
     },
     {
@@ -10920,7 +10920,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_parity_sdk_surface_test_apibyslug",
       "community": 130,
-      "community_name": "eps-transact-mcp/src/load-bundle.ts",
+      "community_name": "parity.sdk-surface.test.ts",
       "norm_label": "apibyslug"
     },
     {
@@ -10974,8 +10974,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_test",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "eps-transact-mcp/src/server.test.ts"
     },
     {
@@ -10985,8 +10985,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_test_tools",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "tools"
     },
     {
@@ -10996,8 +10996,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_test_mockfetch",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "mockfetch()"
     },
     {
@@ -11007,8 +11007,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_test_connect",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "connect()"
     },
     {
@@ -11018,8 +11018,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_test_argsfor",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "argsfor()"
     },
     {
@@ -11029,8 +11029,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_test_panlite",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "panlite"
     },
     {
@@ -11041,7 +11041,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "eps-transact-mcp/src/server.ts"
     },
     {
@@ -11052,7 +11052,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_safe_message_patterns",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "safe_message_patterns"
     },
     {
@@ -11063,7 +11063,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_sanitizeerror",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "sanitizeerror()"
     },
     {
@@ -11074,7 +11074,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_errorresult",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "errorresult()"
     },
     {
@@ -11085,7 +11085,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_server_createtransactserver",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "createtransactserver()"
     },
     {
@@ -11095,7 +11095,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_stdio",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "stdio.ts"
     },
@@ -11106,7 +11106,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_stdio_version_own_version",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "{ version: own_version }"
     },
@@ -11117,7 +11117,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_stdio_main",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "main()"
     },
@@ -11161,8 +11161,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_tools_tooldef",
-      "community": 71,
-      "community_name": "tools.ts",
+      "community": 73,
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "tooldef"
     },
     {
@@ -11184,7 +11184,7 @@
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_tools_identity_params",
       "community": 73,
-      "community_name": "stdio.ts",
+      "community_name": "eps-transact-mcp/src/server.test.ts",
       "norm_label": "identity_params"
     },
     {
@@ -11293,7 +11293,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_uat_smoke_test",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "uat-smoke.test.ts"
     },
@@ -11304,7 +11304,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "packages_eps_transact_mcp_src_uat_smoke_test_enabled",
-      "community": 73,
+      "community": 125,
       "community_name": "stdio.ts",
       "norm_label": "enabled"
     },
@@ -14241,8 +14241,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_eps",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "eps.tsx"
     },
     {
@@ -14252,8 +14252,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_eps_eps",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "eps()"
     },
     {
@@ -15132,8 +15132,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_languageselector",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "languageselector.tsx"
     },
     {
@@ -15143,8 +15143,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_languageselector_languageselector",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "languageselector()"
     },
     {
@@ -16001,8 +16001,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_auth_usermenu",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "usermenu.tsx"
     },
     {
@@ -17640,8 +17640,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_console_dashboard_overviewwidget",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "overviewwidget.tsx"
     },
     {
@@ -17651,8 +17651,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_console_dashboard_overviewwidget_delta",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "delta()"
     },
     {
@@ -17662,8 +17662,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_components_console_dashboard_overviewwidget_tile",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "tile()"
     },
     {
@@ -17673,8 +17673,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "src_components_console_dashboard_overviewwidget_overviewwidget",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "overviewwidget()"
     },
     {
@@ -18223,7 +18223,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_docs_markdowncodeblock",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "markdowncodeblock.tsx"
     },
@@ -18234,7 +18234,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_docs_markdowncodeblock_mdcodetheme",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "mdcodetheme"
     },
@@ -18245,7 +18245,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "src_components_docs_markdowncodeblock_lang_alias",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "lang_alias"
     },
@@ -18256,7 +18256,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "src_components_docs_markdowncodeblock_prismlang",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "prismlang()"
     },
@@ -18267,7 +18267,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_components_docs_markdowncodeblock_copybutton",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "copybutton()"
     },
@@ -18278,7 +18278,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "src_components_docs_markdowncodeblock_markdowncodeblock",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "markdowncodeblock()"
     },
@@ -19334,8 +19334,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_icons_mcpicon",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "mcpicon.tsx"
     },
     {
@@ -19345,8 +19345,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_icons_mcpicon_mcpicon",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "mcpicon()"
     },
     {
@@ -19730,7 +19730,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_pricing_apipicker",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "apipicker.tsx"
     },
@@ -19741,7 +19741,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_pricing_apipicker_apipickerprops",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "apipickerprops"
     },
@@ -19752,7 +19752,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_pricing_apipicker_apipicker",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "apipicker()"
     },
@@ -19829,7 +19829,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_pricing_pricingcalculator",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "pricingcalculator.tsx"
     },
@@ -19840,7 +19840,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_components_pricing_pricingcalculator_selectionentry",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "selectionentry"
     },
@@ -19851,7 +19851,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_pricing_pricingcalculator_sanitizevolume",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "sanitizevolume()"
     },
@@ -19862,7 +19862,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_components_pricing_pricingcalculator_parseselectionfromparams",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "parseselectionfromparams()"
     },
@@ -19873,7 +19873,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_components_pricing_pricingcalculator_serializeselection",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "serializeselection()"
     },
@@ -19884,7 +19884,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_components_pricing_pricingcalculator_pricingcalculator",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "pricingcalculator()"
     },
@@ -19906,7 +19906,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_pricing_pricingtable_add_api_event",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "add_api_event"
     },
@@ -20533,7 +20533,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "recipeflowchart.test.tsx"
     },
@@ -20544,7 +20544,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_dmt",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "dmt"
     },
@@ -20555,7 +20555,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_aeps",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "aeps"
     },
@@ -20566,7 +20566,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_skipping",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "skipping"
     },
@@ -20577,7 +20577,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_figureof",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "figureof()"
     },
@@ -20588,7 +20588,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_svgof",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "svgof()"
     },
@@ -20599,7 +20599,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_viewwidth",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "viewwidth()"
     },
@@ -20610,7 +20610,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_nodewidth",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "nodewidth()"
     },
@@ -20621,7 +20621,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_textsof",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "textsof()"
     },
@@ -20632,7 +20632,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_components_recipe_recipeflowchart_test_arclanes",
-      "community": 214,
+      "community": 149,
       "community_name": "RecipeFlowchart.test.tsx",
       "norm_label": "arclanes()"
     },
@@ -21556,7 +21556,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "badge.tsx"
     },
@@ -21567,7 +21567,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_ui_badge_badgevariants",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "badgevariants"
     },
@@ -21578,7 +21578,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_components_ui_badge_badgeprops",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "badgeprops"
     },
@@ -21589,7 +21589,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "badge()"
     },
@@ -22084,8 +22084,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdown-menu.tsx"
     },
     {
@@ -22095,8 +22095,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenusubtrigger",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenusubtrigger"
     },
     {
@@ -22106,8 +22106,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenusubcontent",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenusubcontent"
     },
     {
@@ -22117,8 +22117,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenucontent",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenucontent"
     },
     {
@@ -22128,8 +22128,8 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenuitem",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenuitem"
     },
     {
@@ -22139,8 +22139,8 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenucheckboxitem",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenucheckboxitem"
     },
     {
@@ -22150,8 +22150,8 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenuradioitem",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenuradioitem"
     },
     {
@@ -22161,8 +22161,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenulabel",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenulabel"
     },
     {
@@ -22172,8 +22172,8 @@
       "source_location": "L157",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenuseparator",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenuseparator"
     },
     {
@@ -22183,8 +22183,8 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "src_components_ui_dropdown_menu_dropdownmenushortcut",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "dropdownmenushortcut()"
     },
     {
@@ -24042,7 +24042,7 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "src_hooks_use_tracking_params_savecalculatorcontext",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "savecalculatorcontext()"
     },
@@ -24295,7 +24295,7 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "src_lib_agent_agent_bundle_types_agentbundle",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "agentbundle"
     },
@@ -24471,7 +24471,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_test",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "build-context-pack.test.ts"
     },
@@ -24482,7 +24482,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_test_bundle",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "bundle"
     },
@@ -24493,7 +24493,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_test_body",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "body"
     },
@@ -24504,7 +24504,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "build-context-pack.ts"
     },
@@ -24515,7 +24515,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_buildcontextpackbody",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "buildcontextpackbody()"
     },
@@ -24526,7 +24526,7 @@
       "source_location": "L192",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_contextpackfile",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "contextpackfile"
     },
@@ -24537,7 +24537,7 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_withheading",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "withheading()"
     },
@@ -24548,7 +24548,7 @@
       "source_location": "L201",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_context_pack_files",
-      "community": 218,
+      "community": 151,
       "community_name": "build-context-pack.ts",
       "norm_label": "context_pack_files"
     },
@@ -25791,8 +25791,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_config_site_site_org_name",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "site_org_name"
     },
     {
@@ -26657,7 +26657,7 @@
       "label": "parseDocumentList()",
       "file_type": "code",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L209",
+      "source_location": "L212",
       "_origin": "ast",
       "id": "src_lib_connect_kyc_parsedocumentlist",
       "community": 109,
@@ -26668,7 +26668,7 @@
       "label": "sortRank()",
       "file_type": "code",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L239",
+      "source_location": "L244",
       "_origin": "ast",
       "id": "src_lib_connect_kyc_sortrank",
       "community": 109,
@@ -26679,7 +26679,7 @@
       "label": "statusOfDocument()",
       "file_type": "code",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L270",
+      "source_location": "L275",
       "_origin": "ast",
       "id": "src_lib_connect_kyc_statusofdocument",
       "community": 6,
@@ -27210,8 +27210,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_console_dashboard_dashboardmetric",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "dashboardmetric"
     },
     {
@@ -27265,8 +27265,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_lib_console_dashboard_serviceref",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "serviceref"
     },
     {
@@ -27397,8 +27397,8 @@
       "source_location": "L200",
       "_origin": "ast",
       "id": "src_lib_console_dashboard_deltaof",
-      "community": 9,
-      "community_name": "card.tsx",
+      "community": 15,
+      "community_name": "console/dashboard.ts",
       "norm_label": "deltaof()"
     },
     {
@@ -28145,7 +28145,7 @@
       "source_location": "L187",
       "_origin": "ast",
       "id": "src_lib_data_api_pricing_default_volume",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "default_volume"
     },
@@ -28189,7 +28189,7 @@
       "source_location": "L481",
       "_origin": "ast",
       "id": "src_lib_data_api_pricing_priced_apis_map",
-      "community": 149,
+      "community": 79,
       "community_name": "PricingCalculator.tsx",
       "norm_label": "priced_apis_map"
     },
@@ -28574,8 +28574,8 @@
       "source_location": "L299",
       "_origin": "ast",
       "id": "src_lib_data_api_products_api_products",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "api_products"
     },
     {
@@ -28794,8 +28794,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_test",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "api-spec-previews.test.ts"
     },
     {
@@ -28805,8 +28805,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "api-spec-previews.ts"
     },
     {
@@ -28816,8 +28816,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_isstatusspec",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "isstatusspec()"
     },
     {
@@ -28827,8 +28827,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_getdisplayspecsforproduct",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "getdisplayspecsforproduct()"
     },
     {
@@ -28838,8 +28838,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_humanizelabel",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "humanizelabel()"
     },
     {
@@ -28849,8 +28849,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_todisplay",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "todisplay()"
     },
     {
@@ -28860,8 +28860,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_requestinputs",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "requestinputs()"
     },
     {
@@ -28871,8 +28871,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_collectimpoutputs",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "collectimpoutputs()"
     },
     {
@@ -28882,8 +28882,8 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_toplevelscalaroutputs",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "toplevelscalaroutputs()"
     },
     {
@@ -28893,8 +28893,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_spectopreview",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "spectopreview()"
     },
     {
@@ -28904,8 +28904,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_specstopreviews",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "specstopreviews()"
     },
     {
@@ -28915,8 +28915,8 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_primarydochref",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "primarydochref()"
     },
     {
@@ -28937,8 +28937,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_getapipreviewsforproduct",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "getapipreviewsforproduct()"
     },
     {
@@ -28948,8 +28948,8 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_getproductdochref",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "getproductdochref()"
     },
     {
@@ -28970,8 +28970,8 @@
       "source_location": "L160",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_collectimpfields",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "collectimpfields()"
     },
     {
@@ -28981,8 +28981,8 @@
       "source_location": "L182",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_specstoverifiablefields",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "specstoverifiablefields()"
     },
     {
@@ -28992,8 +28992,8 @@
       "source_location": "L202",
       "_origin": "ast",
       "id": "src_lib_data_api_spec_previews_getverifiablefieldsforproduct",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "getverifiablefieldsforproduct()"
     },
     {
@@ -29399,8 +29399,8 @@
       "source_location": "L16318",
       "_origin": "ast",
       "id": "src_lib_data_api_specs_getspecsforproduct",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "getspecsforproduct()"
     },
     {
@@ -29872,8 +29872,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_lib_data_docs_registry_doccategory",
-      "community": 4,
-      "community_name": "build-openapi.ts",
+      "community": 14,
+      "community_name": "docs-registry.ts",
       "norm_label": "doccategory"
     },
     {
@@ -29938,8 +29938,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "src_lib_data_docs_registry_endpointslug",
-      "community": 14,
-      "community_name": "docs-registry.ts",
+      "community": 4,
+      "community_name": "build-openapi.ts",
       "norm_label": "endpointslug()"
     },
     {
@@ -30048,7 +30048,7 @@
       "source_location": "L162",
       "_origin": "ast",
       "id": "src_lib_data_docs_registry_getalldocnodes",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "getalldocnodes()"
     },
@@ -31907,7 +31907,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_docs_prism_global",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "prism-global.ts"
     },
@@ -31951,7 +31951,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_docs_prism_setup",
-      "community": 220,
+      "community": 213,
       "community_name": "MarkdownCodeBlock.tsx",
       "norm_label": "prism-setup.ts"
     },
@@ -32457,8 +32457,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_google_translate",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "google-translate.ts"
     },
     {
@@ -32468,8 +32468,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_lib_google_translate_languages",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "languages"
     },
     {
@@ -32479,8 +32479,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_lib_google_translate_window",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "window"
     },
     {
@@ -32490,8 +32490,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_lib_google_translate_translateselect",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "translateselect()"
     },
     {
@@ -32501,8 +32501,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_lib_google_translate_ensuregoogletranslateloaded",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "ensuregoogletranslateloaded()"
     },
     {
@@ -32512,8 +32512,8 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "src_lib_google_translate_uselanguage",
-      "community": 91,
-      "community_name": "UserMenu.tsx",
+      "community": 30,
+      "community_name": "HeaderDropdownPanels.tsx",
       "norm_label": "uselanguage()"
     },
     {
@@ -34789,7 +34789,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_test",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "pdf-ops.test.ts"
     },
@@ -34800,7 +34800,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_test_pagesizes",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "pagesizes()"
     },
@@ -34822,7 +34822,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_a4_points",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "a4_points"
     },
@@ -34866,7 +34866,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_loaddocument",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "loaddocument()"
     },
@@ -34877,7 +34877,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_getpagecount",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "getpagecount()"
     },
@@ -34888,7 +34888,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_mergepdfs",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "mergepdfs()"
     },
@@ -34899,7 +34899,7 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_embed",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "embed()"
     },
@@ -34910,7 +34910,7 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_imagestopdf",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "imagestopdf()"
     },
@@ -34921,7 +34921,7 @@
       "source_location": "L190",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_ops_pdffromrasterpages",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "pdffromrasterpages()"
     },
@@ -35108,7 +35108,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_worker_test",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "pdf-worker.test.ts"
     },
@@ -35163,7 +35163,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_worker_runpdfop",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "runpdfop()"
     },
@@ -35196,7 +35196,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_fixture",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "pdf.fixture.ts"
     },
@@ -35207,7 +35207,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_fixture_decode",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "decode()"
     },
@@ -35218,7 +35218,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_fixture_portraitjpeg",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "portraitjpeg()"
     },
@@ -35229,7 +35229,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_fixture_landscapejpeg",
-      "community": 213,
+      "community": 97,
       "community_name": "pdf-ops.test.ts",
       "norm_label": "landscapejpeg()"
     },
@@ -35900,7 +35900,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_search_index",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "search-index.ts"
     },
@@ -35933,7 +35933,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_lib_search_index_type_weight",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "type_weight"
     },
@@ -35955,7 +35955,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "src_lib_search_index_searchitemid",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "searchitemid()"
     },
@@ -35966,7 +35966,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "src_lib_search_index_api_category_icons",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "api_category_icons"
     },
@@ -35977,7 +35977,7 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "src_lib_search_index_suggested_api_ids",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "suggested_api_ids"
     },
@@ -35988,7 +35988,7 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_lib_search_index_splitseokeywords",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "splitseokeywords()"
     },
@@ -35999,7 +35999,7 @@
       "source_location": "L116",
       "_origin": "ast",
       "id": "src_lib_search_index_buildapiitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildapiitems()"
     },
@@ -36010,7 +36010,7 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "src_lib_search_index_buildendpointitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildendpointitems()"
     },
@@ -36021,7 +36021,7 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "src_lib_search_index_buildguideitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildguideitems()"
     },
@@ -36032,7 +36032,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "src_lib_search_index_buildindustryitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildindustryitems()"
     },
@@ -36043,7 +36043,7 @@
       "source_location": "L196",
       "_origin": "ast",
       "id": "src_lib_search_index_buildsolutionitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildsolutionitems()"
     },
@@ -36054,7 +36054,7 @@
       "source_location": "L211",
       "_origin": "ast",
       "id": "src_lib_search_index_page_items",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "page_items"
     },
@@ -36065,7 +36065,7 @@
       "source_location": "L367",
       "_origin": "ast",
       "id": "src_lib_search_index_buildpageitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildpageitems()"
     },
@@ -36076,7 +36076,7 @@
       "source_location": "L371",
       "_origin": "ast",
       "id": "src_lib_search_index_slugifyquestion",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "slugifyquestion()"
     },
@@ -36087,7 +36087,7 @@
       "source_location": "L383",
       "_origin": "ast",
       "id": "src_lib_search_index_buildfaqitems",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildfaqitems()"
     },
@@ -36098,7 +36098,7 @@
       "source_location": "L406",
       "_origin": "ast",
       "id": "src_lib_search_index_buildsearchindex",
-      "community": 151,
+      "community": 91,
       "community_name": "search-index.ts",
       "norm_label": "buildsearchindex()"
     },
@@ -36340,8 +36340,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_generateproductjsonld",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "generateproductjsonld()"
     },
     {
@@ -36725,8 +36725,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_admin",
-      "community": 30,
-      "community_name": "HeaderDropdownPanels.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "admin.tsx"
     },
     {
@@ -36736,8 +36736,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_pages_admin_admin",
-      "community": 30,
-      "community_name": "HeaderDropdownPanels.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "admin()"
     },
     {
@@ -36747,8 +36747,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agentspage",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "agentspage.tsx"
     },
     {
@@ -36769,8 +36769,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "src_pages_agentspage_pains",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "pains"
     },
     {
@@ -36780,8 +36780,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_pages_agentspage_how",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "how"
     },
     {
@@ -36791,8 +36791,8 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_pages_agentspage_agentspage",
-      "community": 26,
-      "community_name": "AiPage.tsx",
+      "community": 45,
+      "community_name": "AppServer.tsx",
       "norm_label": "agentspage()"
     },
     {
@@ -38837,8 +38837,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_products_productdetailpage",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "productdetailpage.tsx"
     },
     {
@@ -38848,8 +38848,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_pages_products_productdetailpage_productdetailpage",
-      "community": 125,
-      "community_name": "api-spec-previews.ts",
+      "community": 24,
+      "community_name": "ProductPageLayout.tsx",
       "norm_label": "productdetailpage()"
     },
     {
@@ -40713,9 +40713,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 108,
+      "community": 140,
       "norm_label": "admin config console v1 (in-browser gitops editor)",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_admin_console_admin_config_console"
     },
     {
@@ -40728,9 +40728,9 @@
       "author": null,
       "contributor": null,
       "rationale": "All edits land as pull requests so code review and deploy previews gate production changes.",
-      "community": 108,
+      "community": 140,
       "norm_label": "edit flow (flow a) \u2014 propose changes as a pr",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_admin_console_edit_flow_a"
     },
     {
@@ -40743,9 +40743,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The host's git integration builds production on push to main, so no separate deploy GitHub Action exists.",
-      "community": 108,
+      "community": 140,
       "norm_label": "deploy flow (flow b) \u2014 dev to main pr",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_admin_console_deploy_flow_b"
     },
     {
@@ -40760,7 +40760,7 @@
       "rationale": "Only .md/.mdx under the docs content paths are writable; traversal and control characters are rejected so an admin session cannot rewrite arbitrary repo files.",
       "community": 108,
       "norm_label": "editable file allowlist + path sanitization",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_admin_console_editable_file_allowlist"
     },
     {
@@ -40773,9 +40773,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Commits are authored by the admin, not a bot, for accountability; token scoping to a session prevents cross-user misuse and revocation degrades writes only (401 NO_GH_TOKEN), never reads.",
-      "community": 108,
+      "community": 140,
       "norm_label": "persisted admin github token keyed by session id",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_admin_console_persisted_admin_token_model"
     },
     {
@@ -40788,9 +40788,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Backend content differing from the editor's version rejects the write rather than silently clobbering a concurrent edit.",
-      "community": 108,
+      "community": 140,
       "norm_label": "409 stale_content concurrent-edit guard",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_admin_console_stale_content_guard"
     },
     {
@@ -41426,7 +41426,7 @@
       "rationale": "File-first for the docs HTML page, inline-first for text sinks, so one spec can carry a rich descriptionFile and a short inline description without either sink getting the wrong one.",
       "community": 108,
       "norm_label": "resolvedescription / resolveshortdescription",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_api_specs_resolvedescription"
     },
     {
@@ -41440,7 +41440,7 @@
       "contributor": null,
       "community": 108,
       "norm_label": "remark-callout (hand-rolled github-alert mdast transform)",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_api_specs_remark_callout"
     },
     {
@@ -41586,7 +41586,7 @@
       "author": null,
       "contributor": null,
       "rationale": "searchMounted starts false and the index touches no window at module scope, so dist/index.html carries the pill but no cmdk markup.",
-      "community": 97,
+      "community": 108,
       "norm_label": "palette ssg safety (never renders during prerender)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_command_palette_search_ssg_safety"
@@ -41675,9 +41675,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Each platform reads only its own file so they cannot conflict; /console and /admin are noindexed at three layers.",
-      "community": 57,
+      "community": 140,
       "norm_label": "per-platform deploy/rewrite configs",
-      "community_name": "Business Dashboard (/console)",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_configuration_deploy_platform_configs"
     },
     {
@@ -41689,9 +41689,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 57,
+      "community": 140,
       "norm_label": "developer console (/console)",
-      "community_name": "Business Dashboard (/console)",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_console_roadmap_developer_console"
     },
     {
@@ -41852,9 +41852,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Today it lives only in /docs behind a CORS proxy; the console should own it, pre-authenticated with the developer's UAT key.",
-      "community": 97,
+      "community": 75,
       "norm_label": "console sandbox / api playground (planned)",
-      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
+      "community_name": "EndpointDetail (centre pane)",
       "id": "docs_console_roadmap_sandbox_playground"
     },
     {
@@ -42532,9 +42532,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Replaced a hand-rolled TryItPanel that did a direct fetch and hit CORS; the lower-level createApiClientModal is used because the React wrapper does not forward plugins and the client does not run x-pre-request scripts.",
-      "community": 97,
+      "community": 75,
       "norm_label": "scalar \"try it\" console",
-      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
+      "community_name": "EndpointDetail (centre pane)",
       "id": "docs_developer_docs_try_it_now_try_it_console"
     },
     {
@@ -42576,7 +42576,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Loaded only via a dynamic import inside useTryIt's callback so the Vue app and the 342 KB spec layer stay out of the server module graph and the initial docs bundle.",
-      "community": 97,
+      "community": 108,
       "norm_label": "tryit-client.ts (client-only scalar modal singleton)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_tryit_client"
@@ -42593,7 +42593,7 @@
       "rationale": "The public openapi.json stays pristine and byte-stable; only the modal's variant adds apiKey security schemes and drops the signing headers the schemes and plugin supply.",
       "community": 108,
       "norm_label": "interactive openapi document ({ interactive: true })",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_interactive_openapi"
     },
     {
@@ -42606,7 +42606,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Honest framing: with the hosted proxy the developer_key, computed secret-key and bodies transit a third party \u2014 acceptable for sandbox traffic, and the raw access_key is never transmitted. Blank the var for zero third-party transit.",
-      "community": 97,
+      "community": 108,
       "norm_label": "try-it cors proxy (vite_scalar_proxy_url)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_cors_proxy"
@@ -42623,7 +42623,7 @@
       "rationale": "Gated by import.meta.env.DEV, which is false during the Node prerender and in production, so credentials never reach static output.",
       "community": 108,
       "norm_label": "dev-only credential prefill",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_dev_only_creds"
     },
     {
@@ -42756,9 +42756,9 @@
       "author": null,
       "contributor": null,
       "rationale": "eps-backend holds admin GitHub OAuth tokens with GitOps deploy rights; compose co-location is ops convenience, the container is the security boundary.",
-      "community": 108,
+      "community": 140,
       "norm_label": "separate container from eps-backend",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "Stale-chunk auto-reload",
       "id": "docs_eps_transact_mcp_process_isolation"
     },
     {
@@ -43011,7 +43011,7 @@
       "rationale": "AppServer imports ConsoleHome eagerly for the static build, so a plain import would drag ~250KB of charting into the SSG bundle; each chart also renders a text summary because an SVG is invisible to a screen reader and jsdom measures zero.",
       "community": 108,
       "norm_label": "react.lazy recharts widgets",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_business_dashboard_lazy_charts"
     },
     {
@@ -43100,7 +43100,7 @@
       "rationale": "Zoho-Desk formatting lives server-side so the console never learns the ticket schema and cannot claim to be a different user; caps on attachments, fields and free text are enforced at the trust boundary, the browser check being only a courtesy.",
       "community": 108,
       "norm_label": "server-side support-ticket assembly",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_support_ticket"
     },
     {
@@ -43115,7 +43115,7 @@
       "rationale": "Replaces Eloka's 571-line pub/sub loader, whose indirection existed only because it was mounted in a Next.js layout that could not see its callers; every dialog is React.lazy so webcam/crop/MediaPipe stay out of the initial bundle.",
       "community": 108,
       "norm_label": "connectdialogprovider (promise-per-dialog stack)",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_dialog_provider"
     },
     {
@@ -43130,7 +43130,7 @@
       "rationale": "Every image routes through the editor before the caller sees it, so a form receives a cropped, size-capped JPEG instead of a 4 MB photo of a desk.",
       "community": 108,
       "norm_label": "<fileupload> control",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_fileupload"
     },
     {
@@ -43145,7 +43145,7 @@
       "rationale": "A KYC photo is evidence and evidence without provenance can be re-used for another customer; coordinates can be spoofed on a rooted phone while an observed IP cannot, so the line carries both, resolved on mount so a late prompt cannot stamp a blank location.",
       "community": 108,
       "norm_label": "watermark provenance stamping",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_watermark"
     },
     {
@@ -43188,7 +43188,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Every widget request is cross-origin and cannot be fixed from this repo, so VITE_SHOW_CONNECT_WIDGET stays false until connect-api allowlists the console origin.",
-      "community": 97,
+      "community": 108,
       "norm_label": "connect-api cors allowlist blocker",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_cors_blocker"
@@ -43205,7 +43205,7 @@
       "rationale": "Dialogs are hard to reach through a real flow, so a DEV-only bench opens each directly; route and rail item sit behind import.meta.env.DEV with the import inside the guard so no chunk ships in production.",
       "community": 108,
       "norm_label": "/console/test dev dialog bench",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_dev_bench"
     },
     {
@@ -43220,7 +43220,7 @@
       "rationale": "Long/rich descriptions live as real markdown files to keep api-specs.ts lean; MDX is excluded from that folder so the files load as raw text, not compiled components.",
       "community": 108,
       "norm_label": "descriptionfile endpoint notes (src/content/docs/endpoints/*.md)",
-      "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
+      "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_api_specs_descriptionfile_endpoint_notes"
     },
     {
@@ -43518,9 +43518,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Omitting account_id makes upstream fall back to the default account \u2014 quietly reporting somebody else's history. Refusing with 502 NO_ACCOUNT is the honest answer. Negative synthetic ids (-500000 'Response Awaited') are always filtered out.",
-      "community": 79,
+      "community": 122,
       "norm_label": "selectevalueaccountid (e-value account resolution)",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Interaction 154 \u2014 transaction history upstream",
       "id": "docs_features_transaction_history_selectevalueaccountid"
     },
     {
@@ -43533,9 +43533,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Only known keys are copied out and shape-checked so no extra interaction field (org_id, interaction_type_id) can be smuggled upstream. Mirrors parseBusiness in signup.ts.",
-      "community": 79,
+      "community": 122,
       "norm_label": "parsefilters allow-list (trust boundary)",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Interaction 154 \u2014 transaction history upstream",
       "id": "docs_features_transaction_history_parsefilters"
     },
     {
@@ -43548,9 +43548,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Filters carry mobile numbers, account numbers, TIDs and amounts; a query string would put all of them into browser history, proxy logs, and this app's own access log.",
-      "community": 79,
+      "community": 122,
       "norm_label": "post /transactions/search (post, not get)",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Interaction 154 \u2014 transaction history upstream",
       "id": "docs_features_transaction_history_post_search_route"
     },
     {
@@ -43713,9 +43713,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The ten field names are unverified against real upstream \u2014 every test only asserts our own assumptions back to us; a response_type_id other than 1567 with a field-specific message means a key name is wrong.",
-      "community": 79,
+      "community": 122,
       "norm_label": "interaction 522 \u2014 submitbusiness / business_fields",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Interaction 154 \u2014 transaction history upstream",
       "id": "docs_features_user_onboarding_interaction_522"
     },
     {
@@ -43743,9 +43743,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Confirmed against real UAT; its quirks (\"PondiCherry\" casing, Delhi with a (UT) suffix, \"Andhra Pradesh (New)\" sorted last, no Ladakh) are load-bearing because interaction 522 matches on the exact string.",
-      "community": 79,
+      "community": 122,
       "norm_label": "indian_states (probed from interaction 387)",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Interaction 154 \u2014 transaction history upstream",
       "id": "docs_features_user_onboarding_indian_states"
     },
     {
@@ -44103,9 +44103,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Backend-only by design \u2014 secret-key/secret-key-timestamp must never be generated in a frontend app, so access_key is never exposed. HMAC baked in is what generic OpenAPI codegen gets wrong.",
-      "community": 79,
+      "community": 101,
       "norm_label": "backend-only signed sdks (@ekoindia/eps-sdk, ekoindia/eps-sdk php)",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Agent packages release runbook",
       "id": "docs_local_roadmap_ai_agent_platform_status_eps_sdk"
     },
     {
@@ -44658,9 +44658,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Signs at the moment of send (a stale timestamp 403s) and deletes access_key so it is never transmitted; user-supplied UAT creds only, no bundled secrets, DEV-gated prefill so production builds never reference it.",
-      "community": 79,
+      "community": 101,
       "norm_label": "eko-signing.ts in-browser hmac signing (web crypto)",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Agent packages release runbook",
       "id": "docs_local_roadmap_temp_project_progress_updates_eko_signing"
     },
     {
@@ -44973,9 +44973,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Composer cannot install a package living in a monorepo subdirectory, so the release subtree-splits packages/sdk-php into a read-only mirror. The gitignored sdk-surface.json must be committed into the ephemeral checkout before splitting or the mirror ships without its runtime asset.",
-      "community": 79,
+      "community": 101,
       "norm_label": "php-split subtree mirror \u2192 packagist",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Agent packages release runbook",
       "id": "docs_releasing_agent_packages_php_split"
     },
     {
@@ -45003,9 +45003,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Cross-language conformance fixture \u2014 base64(HMAC-SHA256(message = timestamp, key = base64(access_key))) \u2014 that every SDK core must reproduce so signing cannot drift between languages.",
-      "community": 79,
+      "community": 101,
       "norm_label": "sdk golden signing vector",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Agent packages release runbook",
       "id": "docs_sdk_golden_vector_golden_vector"
     },
     {
@@ -45018,9 +45018,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Validation happens BEFORE signing or sending, and fails fast sending nothing; params are baked into sdk-surface.json from the API spec so the check derives from the same source of truth.",
-      "community": 79,
+      "community": 101,
       "norm_label": "required-param validation conformance",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Agent packages release runbook",
       "id": "docs_sdk_golden_vector_required_param_conformance"
     },
     {
@@ -45033,9 +45033,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Coercion-aware because the wire sends everything as strings; type-only with no format/range/enum semantics, and the regexes are intentionally narrow (no +, whitespace, trailing dot or scientific notation) and MUST be identical in JS and PHP.",
-      "community": 79,
+      "community": 101,
       "norm_label": "lenient type-validation conformance",
-      "community_name": "Backend-only signed SDKs (@ekoindia/eps-sdk, ekoindia/eps-sdk PHP)",
+      "community_name": "Agent packages release runbook",
       "id": "docs_sdk_golden_vector_type_validation_conformance"
     },
     {
@@ -120463,7 +120463,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L218",
+      "source_location": "L221",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_connect_kyc_parsedocumentlist",
@@ -120739,7 +120739,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L209",
+      "source_location": "L212",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_connect_kyc",
@@ -120761,7 +120761,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L239",
+      "source_location": "L244",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_connect_kyc",
@@ -120772,7 +120772,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L270",
+      "source_location": "L275",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_connect_kyc",
@@ -120901,7 +120901,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L222",
+      "source_location": "L225",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_connect_kyc_parsedocumentlist",
@@ -120913,7 +120913,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/connect/kyc.ts",
-      "source_location": "L233",
+      "source_location": "L237",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_lib_connect_kyc_parsedocumentlist",
@@ -162984,5 +162984,5 @@
       "source_file": "src/content/docs/how-auth-works.mdx"
     }
   ],
-  "built_at_commit": "2ae38f95acd2140a5de16add11397df21633e78c"
+  "built_at_commit": "fbe0e44082081ad2d7d76db7ed4127160f15b540"
 }
