@@ -62,38 +62,52 @@ describe("parseDocumentList", () => {
 			statusDesc: "",
 			error: "",
 		});
-		// Every sample row is status 0, so this is the `docType` tiebreak alone —
-		// numeric, not lexicographic: "13" before "15", both after "7".
+		// Every sample row is status 0, so this is the label tiebreak alone:
+		// Aadhaar Card, Bank statement, Blank Check, Company Registration
+		// certificate, Director PAN Card.
 		expect(documents.map((d) => d.docType)).toEqual([
 			"1",
 			"7",
-			"12",
 			"13",
+			"12",
 			"15",
 		]);
 	});
 
 	it("puts the documents that need action above the ones that don't", () => {
+		// Doc types outside `kyc-docs`, so the names are the "Document N" fallback
+		// and no override can reorder what this test is actually checking.
 		const documents = parseDocumentList([
-			{ doc_type: "1", status: 2 },
-			{ doc_type: "2", status: 1 },
-			{ doc_type: "3", status: 4 },
-			{ doc_type: "4", status: 0 },
-			{ doc_type: "5", status: 3 },
-			{ doc_type: "6", status: 99 },
+			{ doc_type: "90", status: 2 },
+			{ doc_type: "91", status: 1 },
+			{ doc_type: "92", status: 4 },
+			{ doc_type: "93", status: 0 },
+			{ doc_type: "94", status: 3 },
+			{ doc_type: "95", status: 99 },
 		]);
 
 		// Resubmission, then pending — an unknown status included, since it offers
 		// an Upload button and so belongs with the rows that want one — then
 		// rejected, awaiting approval, and finally the ones already done.
 		expect(documents.map((d) => d.docType)).toEqual([
-			"5",
-			"4",
-			"6",
-			"3",
-			"2",
-			"1",
+			"94",
+			"93",
+			"95",
+			"92",
+			"91",
+			"90",
 		]);
+	});
+
+	it("sorts by the label the row shows, not the one upstream sent", () => {
+		// `withDocConfig` renames doc type 4 to "Memorandum of Association (MOA)",
+		// which files after "Bank statement" — upstream's own "Zzz" would not.
+		const documents = parseDocumentList([
+			{ doc_type: "4", name: "Zzz" },
+			{ doc_type: "7", name: "Bank statement" },
+		]);
+
+		expect(documents.map((d) => d.docType)).toEqual(["7", "4"]);
 	});
 
 	it("overlays this console's own overrides", async () => {

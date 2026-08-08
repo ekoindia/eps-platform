@@ -168,8 +168,10 @@ therefore wear a terse upstream label and still explain what happens next. Statu
 
 ### `order` — where the row sits in the list
 
-The checklist is sorted by `order`, then by `docType` (numeric-aware, so "7"
-comes before "13"). Upstream's own order carries no meaning, and a list whose
+The checklist is sorted by `order`, then alphabetically by the row's **label** —
+the one after `withDocConfig`, so an overridden name sorts where the partner
+actually reads it, not where upstream's string would. `docType` only breaks a tie
+between two documents that somehow share a name. Upstream's own order carries no meaning, and a list whose
 actionable rows sit under a run of approved ones reads as finished when it is
 not. So the sequence runs by what the row asks of the partner: **resubmission
 needed → pending → rejected → approval pending → uploaded**. An unrecognised

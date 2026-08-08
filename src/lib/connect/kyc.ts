@@ -199,10 +199,13 @@ function str(value: unknown): string {
  * — see `kyc-docs.ts`.
  *
  * Rows come back sorted by what they ask of the partner — `DOCUMENT_STATUS.order`
- * — then by `docType`. Upstream's own order carries no meaning, and a checklist
- * whose actionable rows sit under a run of approved ones reads as finished when
- * it isn't. Sorting here rather than at render time means the list only reorders
- * on a fetch: a row cannot jump out from under a click.
+ * — then alphabetically by name. Upstream's own order carries no meaning, and a
+ * checklist whose actionable rows sit under a run of approved ones reads as
+ * finished when it isn't. Sorting here rather than at render time means the list
+ * only reorders on a fetch: a row cannot jump out from under a click.
+ *
+ * The name is sorted *after* `withDocConfig`, so it is the label the row shows,
+ * override included, not upstream's.
  * @param raw - The `document_list` array, of unknown shape.
  * @returns The documents, most actionable first.
  */
@@ -226,11 +229,13 @@ export function parseDocumentList(raw: unknown): KycDocument[] {
 			}),
 		);
 	}
-	// Numeric-aware on `docType`, which is a numeric string upstream: plain string
-	// order would file "10" before "2".
+	// By the label the partner actually reads, not `docType` — an id is upstream's
+	// filing order, and a checklist is scanned by name. `docType` only breaks a
+	// tie between two documents that somehow share a name.
 	return documents.sort(
 		(a, b) =>
 			sortRank(a) - sortRank(b) ||
+			a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) ||
 			a.docType.localeCompare(b.docType, undefined, { numeric: true }),
 	);
 }
