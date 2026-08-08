@@ -1,6 +1,6 @@
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import Documents from "@/pages/console/Documents";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked at the module boundary, per repo convention — never `fetch`.
@@ -145,11 +145,11 @@ describe("Documents", () => {
 		);
 	});
 
-	it("keeps showing Replace when the post-upload refetch lands stale", async () => {
+	it("keeps the row locked when the post-upload refetch lands stale", async () => {
 		// The refetch a successful upload triggers is not guaranteed to already
-		// reflect the write it's chasing — upstream may still report `status: 1`
+		// reflect the write it's chasing — upstream may still report `status: 0`
 		// for a moment. `uploadedNow` must survive that redraw rather than let a
-		// stale read flip the row back to "Upload".
+		// stale read hand the Upload button back.
 		fetchDocuments.mockResolvedValueOnce({
 			documents: [...KYC_DOCUMENTS_SAMPLE.data.document_list],
 		});
@@ -164,12 +164,12 @@ describe("Documents", () => {
 		screen.getByText("simulate-upload-success").click();
 
 		await waitFor(() => expect(fetchDocuments).toHaveBeenCalledTimes(2));
-		expect(
-			await screen.findByRole("button", { name: "Replace" }),
-		).toBeVisible();
+		expect(await screen.findByText("Approval Pending")).toBeVisible();
+		// One row less to act on: the uploaded one no longer offers a button.
+		expect(screen.getAllByRole("button", { name: "Upload" })).toHaveLength(4);
 	});
 
-	it("shows Replace once the refetch itself reports status 2", async () => {
+	it("locks the row once the refetch itself reports an approved status", async () => {
 		fetchDocuments.mockResolvedValueOnce({
 			documents: [...KYC_DOCUMENTS_SAMPLE.data.document_list],
 		});
@@ -186,7 +186,27 @@ describe("Documents", () => {
 		screen.getByText("simulate-upload-success").click();
 
 		await waitFor(() => expect(fetchDocuments).toHaveBeenCalledTimes(2));
-		expect(screen.getAllByRole("button", { name: "Replace" })).toHaveLength(1);
+		expect(await screen.findByText("Uploaded")).toBeVisible();
+		expect(screen.getAllByRole("button", { name: "Upload" })).toHaveLength(4);
+	});
+
+	it("explains an uploaded document's status in a tooltip", async () => {
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) =>
+				d.doc_type === "1" ? { ...d, status: 1 } : d,
+			),
+		});
+
+		render(<Documents />);
+		const pill = await screen.findByText("Approval Pending");
+
+		// Radix opens on focus as well as hover, which is the path a keyboard user
+		// takes and the one jsdom can actually drive.
+		fireEvent.focus(pill.closest("[data-state]")!);
+
+		expect(await screen.findByRole("tooltip")).toHaveTextContent(
+			"Document uploaded, waiting for review",
+		);
 	});
 
 	it("offers Retry, not Upload, once upstream reports resubmission needed", async () => {

@@ -1135,9 +1135,9 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1785495804.180169,
-    "ast_hash": "fa52c7821ba35a866eaab73d1bd3cb9e",
-    "semantic_hash": "fa52c7821ba35a866eaab73d1bd3cb9e"
+    "mtime": 1786160281.7100353,
+    "ast_hash": "b216712319f10a9231ae873a22868c1b",
+    "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
     "mtime": 1784256779.5454838,
@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786085467.0156255,
-    "ast_hash": "12756268d256e4c120093da265da2479",
+    "mtime": 1786160302.3594286,
+    "ast_hash": "d7555d7cabbc498f55bff3ae36ee7e6d",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -2060,19 +2060,19 @@
     "semantic_hash": "bebc3b4a6e9ed450f7165c2da7402791"
   },
   "src/lib/connect/kyc.fixture.ts": {
-    "mtime": 1785219590.2832294,
-    "ast_hash": "f1065a8b8c91be6d088a1b581cdcf107",
-    "semantic_hash": "f1065a8b8c91be6d088a1b581cdcf107"
+    "mtime": 1786162261.8300025,
+    "ast_hash": "6112a82e0fcdcc923870e23ece20cba0",
+    "semantic_hash": ""
   },
   "src/lib/connect/kyc.test.ts": {
-    "mtime": 1785462198.0143092,
-    "ast_hash": "c43ad00bc909653df24533d65d346c2c",
-    "semantic_hash": "c43ad00bc909653df24533d65d346c2c"
+    "mtime": 1786162390.1427813,
+    "ast_hash": "bf1f62566e1c8d5c214839913bb06230",
+    "semantic_hash": ""
   },
   "src/lib/connect/kyc.ts": {
-    "mtime": 1786111993.6745782,
-    "ast_hash": "135d2a189ddf18511ca92fb8e5818386",
-    "semantic_hash": "135d2a189ddf18511ca92fb8e5818386"
+    "mtime": 1786162251.26128,
+    "ast_hash": "e648317c0644448d4d65a4045c9ef486",
+    "semantic_hash": ""
   },
   "src/lib/connect/runtime.ts": {
     "mtime": 1785148520.3886647,
@@ -2795,14 +2795,14 @@
     "semantic_hash": ""
   },
   "src/pages/console/Documents.test.tsx": {
-    "mtime": 1785462198.014738,
-    "ast_hash": "a6671d679f54beaded5c693591827e5f",
-    "semantic_hash": "a6671d679f54beaded5c693591827e5f"
+    "mtime": 1786162429.4728172,
+    "ast_hash": "b5ff2c095a7cac51a5b8cd294081c420",
+    "semantic_hash": ""
   },
   "src/pages/console/Documents.tsx": {
-    "mtime": 1785462198.0149593,
-    "ast_hash": "28ea15136dfaa30913fbf21511b97fb9",
-    "semantic_hash": "28ea15136dfaa30913fbf21511b97fb9"
+    "mtime": 1786162337.797931,
+    "ast_hash": "6305aef5e98b1e745dd89834995e44ac",
+    "semantic_hash": ""
   },
   "src/pages/console/Profile.test.tsx": {
     "mtime": 1786096467.18934,
@@ -3065,8 +3065,8 @@
     "semantic_hash": "c0ad494c6528ed760a780436ff72a85a"
   },
   "docs/features/business-dashboard.md": {
-    "mtime": 1786085646.2282152,
-    "ast_hash": "67471dd06efecd345a3eab6d29863b90",
+    "mtime": 1786162450.3956168,
+    "ast_hash": "16f91cec82ae3a877d2802faa7e99d7d",
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": "c6d1b449c59cc677e79721e2adbb6db8"
   },
   "docs/features/kyc-documents.md": {
-    "mtime": 1786079087.2609923,
-    "ast_hash": "011979dc47fd4754db5097c204b72c8a",
+    "mtime": 1786162482.9562557,
+    "ast_hash": "b66319d904351d45e99df1590ee4b864",
     "semantic_hash": ""
   },
   "docs/features/transaction-history.md": {
@@ -3640,8 +3640,8 @@
     "semantic_hash": ""
   },
   "src/components/console/NextStepsCard.tsx": {
-    "mtime": 1786008849.1013732,
-    "ast_hash": "d933f13a7654eb46cb8ebdf926a16a3a",
+    "mtime": 1786162353.9179199,
+    "ast_hash": "8410401b68b0ea5e65c9048c5caf9abe",
     "semantic_hash": ""
   },
   "src/components/console/dashboard/DashboardDateFilter.last365.test.tsx": {

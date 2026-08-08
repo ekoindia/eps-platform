@@ -2,6 +2,12 @@ import { KycUploadDialog } from "@/components/console/KycUploadDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ApiError, authClient } from "@/lib/auth/client";
 import {
 	parseDocumentList,
@@ -42,6 +48,17 @@ function DocumentRow({
 	onUpload: () => void;
 }) {
 	const status = statusOfDocument(doc, justUploaded);
+	// A green tick only for a document upstream has actually approved; anything
+	// else with something to say wears its own Badge variant — an "Approval
+	// Pending" row is uploaded, not done, and a tick would say otherwise.
+	const pill = !status.label ? null : status.variant === "default" ? (
+		<span className="flex items-center gap-1.5 text-sm text-eko-success">
+			<CheckCircle2 className="h-4 w-4" />
+			{status.label}
+		</span>
+	) : (
+		<Badge variant={status.variant}>{status.label}</Badge>
+	);
 	return (
 		<div className="flex items-start gap-3 p-4">
 			<div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-eko-gold-light">
@@ -54,17 +71,29 @@ function DocumentRow({
 				) : null}
 			</div>
 			<div className="flex shrink-0 items-center gap-3">
-				{status.uploaded ? (
-					<span className="flex items-center gap-1.5 text-sm text-eko-success">
-						<CheckCircle2 className="h-4 w-4" />
-						{status.label}
-					</span>
-				) : status.label ? (
-					<Badge variant={status.variant}>{status.label}</Badge>
+				{pill && status.desc ? (
+					<Tooltip>
+						{/* Focusable, so the explanation is reachable without a pointer. */}
+						<TooltipTrigger asChild>
+							<span tabIndex={0}>{pill}</span>
+						</TooltipTrigger>
+						<TooltipContent>{status.desc}</TooltipContent>
+					</Tooltip>
+				) : (
+					pill
+				)}
+				{/* No button at all on a status that forbids it — a document under
+				    review is not something to replace, and a disabled button invites
+				    the click anyway. The pill's tooltip carries the reason. */}
+				{status.canUpload ? (
+					<Button size="sm" onClick={onUpload}>
+						{status.uploaded
+							? "Replace"
+							: status.variant === "destructive"
+								? "Retry"
+								: "Upload"}
+					</Button>
 				) : null}
-				<Button size="sm" onClick={onUpload}>
-					{status.uploaded ? "Replace" : doc.status === 3 ? "Retry" : "Upload"}
-				</Button>
 			</div>
 		</div>
 	);
@@ -87,8 +116,8 @@ export default function Documents() {
 	 *
 	 * Each entry is an upstream success envelope, read ahead of the refetch it
 	 * triggers — there's no guarantee that refetch already reflects the write
-	 * it's chasing. Bridges that gap only; the refetched `status: 2` takes over
-	 * from here. See `kyc.ts`.
+	 * it's chasing. Bridges that gap only; the refetched `status: 1` — awaiting
+	 * approval — takes over from here. See `kyc.ts`.
 	 */
 	const [uploadedNow, setUploadedNow] = useState<ReadonlySet<string>>(
 		new Set(),
@@ -136,60 +165,64 @@ export default function Documents() {
 	const resolving = enabled === null || loading;
 
 	return (
-		<div className="flex max-w-3xl flex-col gap-6">
-			<Header />
+		// Its own provider, not the app's: this page is rendered on its own in
+		// tests, and Radix throws if a Tooltip finds no provider above it.
+		<TooltipProvider delayDuration={150}>
+			<div className="flex max-w-3xl flex-col gap-6">
+				<Header />
 
-			{error ? (
-				<div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-					{error}
-				</div>
-			) : null}
+				{error ? (
+					<div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+						{error}
+					</div>
+				) : null}
 
-			{resolving ? (
-				<div className="flex flex-col gap-2" data-testid="documents-loading">
-					{Array.from({ length: 4 }, (_, i) => (
-						<Skeleton key={i} className="h-16 w-full" />
-					))}
-				</div>
-			) : null}
-
-			{!resolving && !error && documents.length === 0 ? (
-				<div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-					No pending documents at this time. If you have already uploaded your
-					documents, it is pending verification.
-				</div>
-			) : null}
-
-			{!resolving && !error && documents.length > 0 ? (
-				<>
-					<p className="text-sm text-muted-foreground">
-						{`${documents.length} document${documents.length > 1 ? "s" : ""} pending`}
-					</p>
-					<div className="divide-y rounded-lg border">
-						{documents.map((doc) => (
-							<DocumentRow
-								key={doc.docType}
-								doc={doc}
-								justUploaded={uploadedNow.has(doc.docType)}
-								onUpload={() => setUploading(doc)}
-							/>
+				{resolving ? (
+					<div className="flex flex-col gap-2" data-testid="documents-loading">
+						{Array.from({ length: 4 }, (_, i) => (
+							<Skeleton key={i} className="h-16 w-full" />
 						))}
 					</div>
-				</>
-			) : null}
+				) : null}
 
-			<KycUploadDialog
-				doc={uploading}
-				onClose={(result) => {
-					setUploading(null);
-					if (!result) return;
-					toast.success(result.message);
-					setUploadedNow((prev) => new Set(prev).add(result.docType));
-					// Upstream stays the source of truth for everything else on the row,
-					// including a rejection it decides on straight away.
-					void load();
-				}}
-			/>
-		</div>
+				{!resolving && !error && documents.length === 0 ? (
+					<div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+						No pending documents at this time. If you have already uploaded your
+						documents, it is pending verification.
+					</div>
+				) : null}
+
+				{!resolving && !error && documents.length > 0 ? (
+					<>
+						<p className="text-sm text-muted-foreground">
+							{`${documents.length} document${documents.length > 1 ? "s" : ""} pending`}
+						</p>
+						<div className="divide-y rounded-lg border">
+							{documents.map((doc) => (
+								<DocumentRow
+									key={doc.docType}
+									doc={doc}
+									justUploaded={uploadedNow.has(doc.docType)}
+									onUpload={() => setUploading(doc)}
+								/>
+							))}
+						</div>
+					</>
+				) : null}
+
+				<KycUploadDialog
+					doc={uploading}
+					onClose={(result) => {
+						setUploading(null);
+						if (!result) return;
+						toast.success(result.message);
+						setUploadedNow((prev) => new Set(prev).add(result.docType));
+						// Upstream stays the source of truth for everything else on the
+						// row, including a rejection it decides on straight away.
+						void load();
+					}}
+				/>
+			</div>
+		</TooltipProvider>
 	);
 }

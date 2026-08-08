@@ -15,8 +15,14 @@ import { Link } from "react-router-dom";
 
 interface Step {
 	label: string;
-	/** Right-hand action. Omitted for a step there is nothing to click through to. */
-	cta?: { label: string; to: string };
+	/**
+	 * Right-hand action. Omitted for a step there is nothing to click through to.
+	 *
+	 * `primary` marks the one action the partner is actually being asked to take
+	 * now; every other CTA stays outline. Two filled buttons in one card is two
+	 * next steps, which is none.
+	 */
+	cta?: { label: string; to: string; primary?: boolean };
 	/** Only set on a step whose completion this session can actually answer. */
 	done?: boolean;
 }
@@ -75,7 +81,7 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 			label: "Finish your KYC by uploading documents",
 			cta:
 				kycEnabled && !kycDone
-					? { label: "Upload", to: "/console/documents" }
+					? { label: "Upload", to: "/console/documents", primary: true }
 					: undefined,
 			done: kycDone,
 		},
@@ -131,7 +137,7 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 								<Button
 									asChild
 									size="sm"
-									variant="outline"
+									variant={step.cta.primary ? "default" : "outline"}
 									className="shrink-0"
 								>
 									{/* Two of these read "View". Named after their own step so a

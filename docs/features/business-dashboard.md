@@ -308,6 +308,11 @@ mirroring the rail — never link at a page the rail is hiding. The hook returns
 `null` while the entitlement is loading, so the step is plain text for a tick and
 then becomes a link, exactly as the rail's own item appears late.
 
+**Only the KYC step's button is primary-coloured** (`cta.primary`); the rest stay
+outline. Two filled buttons in one card is two next steps, which is none — and
+the KYC one is the only thing the partner is actually being asked to do now. The
+others are references they can reach whenever they want.
+
 The **fee step is shown to everyone**, with no link and no action.
 
 > **Known imprecision, accepted deliberately.** The step was first gated on
