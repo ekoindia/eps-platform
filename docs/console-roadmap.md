@@ -57,6 +57,14 @@ reconciled. With the flag off nothing on Home calls `/dashboard` at all. See
 `docs/features/business-dashboard.md`, whose status banner is worth reading
 before trusting a number on that page.
 
+**Notifications** sit beside it, behind `VITE_SHOW_NOTIFICATIONS`, also **off by
+default**: a header bell with an unread count, a toast for the newest fresh
+unread item, and a card on Home, all fed by one ten-minute poll of upstream
+interaction 10010. With the flag off nothing calls `/notifications` at all. The
+gate on turning it on is editorial rather than technical — the feed is Eko's
+shared EMS, whose copy today is written for Eloka's retailers. See
+`docs/features/notifications.md`.
+
 Pinned above the rail links is `WalletBalance`
 (`src/components/console/WalletBalance.tsx`) — the developer's E-value balance,
 mirroring Eloka's always-visible `StatusCard`. It sits outside `<nav>`: it is
