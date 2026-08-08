@@ -1,37 +1,15 @@
+import { LANGUAGES, useLanguage } from "@/lib/google-translate";
 import { cn } from "@/lib/utils";
 import { Check, Globe } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const languages = [
-	{ code: "en", label: "English" },
-	{ code: "hi", label: "हिन्दी" },
-	{ code: "bn", label: "বাংলা" },
-	{ code: "te", label: "తెలుగు" },
-	{ code: "mr", label: "मराठी" },
-	{ code: "ta", label: "தமிழ்" },
-	{ code: "gu", label: "ગુજરાતી" },
-	{ code: "kn", label: "ಕನ್ನಡ" },
-	{ code: "ml", label: "മലയാളം" },
-	{ code: "pa", label: "ਪੰਜਾਬੀ" },
-	{ code: "or", label: "ଓଡ଼ିଆ" },
-	{ code: "as", label: "অসমীয়া" },
-	{ code: "ur", label: "اردو" },
-];
-
-declare global {
-	interface Window {
-		google?: {
-			translate: {
-				TranslateElement: new (
-					config: Record<string, unknown>,
-					id: string,
-				) => void;
-			};
-		};
-		googleTranslateElementInit?: () => void;
-	}
-}
-
+/**
+ * The standalone language button: a globe that opens a list.
+ *
+ * The Translate wiring lives in `@/lib/google-translate`, shared with the
+ * account menu's language submenu — a signed-in header moves the control in
+ * there, and both must agree about the current language.
+ */
 export const LanguageSelector = ({
 	isLight = true,
 	showLabel = false,
@@ -47,7 +25,7 @@ export const LanguageSelector = ({
 	placement?: "bottom-right" | "top-left";
 }) => {
 	const [open, setOpen] = useState(false);
-	const [selected, setSelected] = useState("en");
+	const { selected, changeLanguage } = useLanguage();
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
 	// Close on outside click
@@ -64,80 +42,7 @@ export const LanguageSelector = ({
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	const ensureGoogleTranslateLoaded = (): Promise<void> => {
-		return new Promise((resolve) => {
-			// If already initialized, resolve immediately
-			const selectEl = document.querySelector<HTMLSelectElement>(
-				"#google_translate_element select",
-			);
-			if (selectEl) {
-				resolve();
-				return;
-			}
-
-			// Create hidden container for Google Translate
-			let container = document.getElementById("google_translate_element");
-			if (!container) {
-				container = document.createElement("div");
-				container.id = "google_translate_element";
-				container.style.display = "none";
-				document.body.appendChild(container);
-			}
-
-			window.googleTranslateElementInit = () => {
-				new window.google.translate.TranslateElement(
-					{
-						pageLanguage: "en",
-						includedLanguages: languages.map((l) => l.code).join(","),
-						layout: 0, // SIMPLE layout
-						autoDisplay: false,
-					},
-					"google_translate_element",
-				);
-				// Wait briefly for the select element to render
-				setTimeout(resolve, 300);
-			};
-
-			if (!document.getElementById("google-translate-script")) {
-				const script = document.createElement("script");
-				script.id = "google-translate-script";
-				script.src =
-					"//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-				script.defer = true;
-				document.head.appendChild(script);
-			}
-		});
-	};
-
-	const changeLanguage = async (langCode: string) => {
-		setSelected(langCode);
-		setOpen(false);
-
-		if (langCode === "en") {
-			// Reset to English by removing the translate cookie and reloading
-			const selectEl = document.querySelector<HTMLSelectElement>(
-				"#google_translate_element select",
-			);
-			if (selectEl) {
-				selectEl.value = langCode;
-				selectEl.dispatchEvent(new Event("change"));
-			}
-			return;
-		}
-
-		// Lazy-load Google Translate on first non-English selection
-		await ensureGoogleTranslateLoaded();
-
-		const selectEl = document.querySelector<HTMLSelectElement>(
-			"#google_translate_element select",
-		);
-		if (selectEl) {
-			selectEl.value = langCode;
-			selectEl.dispatchEvent(new Event("change"));
-		}
-	};
-
-	const selectedLang = languages.find((l) => l.code === selected);
+	const selectedLang = LANGUAGES.find((l) => l.code === selected);
 
 	return (
 		<div className="relative notranslate" ref={dropdownRef}>
@@ -167,10 +72,13 @@ export const LanguageSelector = ({
 							: "top-full right-0 mt-2",
 					)}
 				>
-					{languages.map((lang) => (
+					{LANGUAGES.map((lang) => (
 						<button
 							key={lang.code}
-							onClick={() => changeLanguage(lang.code)}
+							onClick={() => {
+								setOpen(false);
+								void changeLanguage(lang.code);
+							}}
 							className={cn(
 								"w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-muted transition-colors cursor-pointer",
 								selected === lang.code
