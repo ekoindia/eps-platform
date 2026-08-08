@@ -47,7 +47,7 @@ const MS_PER_DAY = 86_400_000;
  * partner's window 5h30m late and close it 5h30m early, so they would see an
  * empty dashboard every morning and a truncated one every night.
  */
-const IST_OFFSET_MS = 5.5 * 3_600_000;
+export const IST_OFFSET_MS = 5.5 * 3_600_000;
 
 /**
  * Formats an instant as `yyyy-MM-dd HH:mm:ss` in IST.

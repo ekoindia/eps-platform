@@ -1,9 +1,13 @@
 import { useConsoleMe } from "@/components/console/ConsoleLayout";
 import BusinessDashboard from "@/components/console/dashboard/BusinessDashboard";
 import NextStepsCard from "@/components/console/NextStepsCard";
+import NotificationsCard from "@/components/console/NotificationsCard";
 import ProfileCard from "@/components/console/ProfileCard";
 import { isProvisioned } from "@/lib/auth/client";
-import { SHOW_BUSINESS_DASHBOARD } from "@/lib/config/features";
+import {
+	SHOW_BUSINESS_DASHBOARD,
+	SHOW_NOTIFICATIONS,
+} from "@/lib/config/features";
 
 /**
  * Console Home.
@@ -30,6 +34,10 @@ export default function ConsoleHome() {
 				<ProfileCard me={me} />
 				<NextStepsCard me={me} />
 			</div>
+			{/* Reads the same store the header bell does, and renders nothing when
+			    there is nothing to show — so an account with no notifications sees
+			    exactly the page it saw before. */}
+			{SHOW_NOTIFICATIONS ? <NotificationsCard /> : null}
 			{isProvisioned(me.state) && SHOW_BUSINESS_DASHBOARD ? (
 				<BusinessDashboard />
 			) : null}

@@ -19,6 +19,11 @@ import {
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { clearConnectTokens } from "@/lib/connect/token";
 import { resetDashboardCache } from "@/lib/console/dashboard";
+import { SHOW_NOTIFICATIONS } from "@/lib/config/features";
+import {
+	resetNotificationsCache,
+	startNotificationsPolling,
+} from "@/lib/notifications";
 import { resetWalletBalanceCache } from "@/lib/wallet-balance";
 import { chatIdentity } from "@/lib/auth/identity";
 import {
@@ -224,7 +229,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// Same hazard as the balance: the dashboard's numbers are one partner's
 		// business data, cached in module scope for the same remount reason.
 		resetDashboardCache();
+		// Same hazard again, and this one also STOPS THE POLL — a timer left
+		// running after sign-out would keep calling /notifications with no session.
+		resetNotificationsCache();
 	}, [state.status]);
+
+	// The notification poll runs once per tab and is owned here rather than by a
+	// component: three surfaces read the list (the header bell twice over, and the
+	// console card), and each mounting its own interval would multiply the
+	// requests. `startNotificationsPolling` is idempotent, and re-keys itself when
+	// the signed-in identity changes — which an OTP verify can do without ever
+	// passing through `anon`.
+	useEffect(() => {
+		if (!SHOW_NOTIFICATIONS) return;
+		if (state.status !== "authed" || state.role !== "developer") return;
+		startNotificationsPolling(state.me.profile?.ekoUserId || state.me.mobile);
+	}, [state]);
 
 	return (
 		<AuthContext.Provider value={{ state, refresh, adopt, logout }}>

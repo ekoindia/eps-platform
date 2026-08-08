@@ -27,4 +27,9 @@ interface ImportMetaEnv {
 	 * only — production caps the range at 30 days.
 	 */
 	readonly VITE_SHOW_DASHBOARD_LAST_365?: string;
+	/**
+	 * Poll `/notifications` for signed-in developers and show the header bell.
+	 * Off by default — the shared EMS feed is authored for Eloka's retailers.
+	 */
+	readonly VITE_SHOW_NOTIFICATIONS?: string;
 }

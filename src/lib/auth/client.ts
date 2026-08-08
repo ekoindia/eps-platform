@@ -3,6 +3,7 @@ import type {
 	TransactionFilters,
 	TransactionPage,
 } from "@/lib/console/transactions";
+import type { NotificationView } from "@/lib/notifications";
 
 const BASE: string = import.meta.env.VITE_EPS_BACKEND_URL ?? "/api";
 
@@ -342,6 +343,24 @@ export const authClient = {
 	/** The signed-in developer's E-value wallet balance, in rupees. */
 	walletBalance: (): Promise<WalletBalanceView> =>
 		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
+	/**
+	 * The developer's notifications, already filtered to NORMAL items,
+	 * normalized, deduped and capped by the backend.
+	 *
+	 * POST, not GET, because serving the list also marks the new items delivered
+	 * upstream — a prefetcher must not be able to trigger that. A deployment
+	 * without connect-api answers 501 `NOTIFICATIONS_UNAVAILABLE`; treat that as
+	 * "not on this deployment" and stop asking.
+	 */
+	notifications: (): Promise<{ notifications: NotificationView[] }> =>
+		request("/notifications", { method: "POST" }) as Promise<{
+			notifications: NotificationView[];
+		}>,
+	/** Marks one notification read upstream. Fire-and-forget at the call site. */
+	markNotificationRead: (id: number): Promise<{ ok: true }> =>
+		request(`/notifications/${id}/read`, { method: "POST" }) as Promise<{
+			ok: true;
+		}>,
 	/**
 	 * Reduced-scope connect-api tokens for the embedded Connect widget.
 	 *

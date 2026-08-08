@@ -68,3 +68,19 @@ export const SHOW_BUSINESS_DASHBOARD: boolean =
  */
 export const SHOW_DASHBOARD_LAST_365: boolean =
 	import.meta.env.VITE_SHOW_DASHBOARD_LAST_365 === "true";
+
+/**
+ * When true, a signed-in developer's session polls `/notifications` every ten
+ * minutes and the header grows a bell; `/console` also gets a notifications
+ * card. When false (the default), nothing calls the endpoint at all.
+ *
+ * Flip to `true` (`VITE_SHOW_NOTIFICATIONS=true`) only once interaction 10010
+ * has been checked on production connect-api FOR A REAL DEVELOPER ACCOUNT. The
+ * notification feed this reads is Eko's shared EMS, and the content authored
+ * there today is aimed at Eloka's retailers ("Earn with AePS", cashout promos).
+ * The backend serves only `notification_type: 0` and drops every ad, but a
+ * retailer-flavoured announcement can still be published as a plain one — so
+ * what needs confirming is the CONTENT, not just that the call succeeds.
+ */
+export const SHOW_NOTIFICATIONS: boolean =
+	import.meta.env.VITE_SHOW_NOTIFICATIONS === "true";
