@@ -76,6 +76,11 @@ type StatusVariant = "default" | "secondary" | "destructive" | "outline";
  * rejected document is not uploaded *and* must be re-sent, while one waiting on
  * review is uploaded and must be left alone. Replacing a file mid-review sends
  * the reviewer a second document against a decision they have already started.
+ *
+ * `order` is where the status sorts in the list — see `parseDocumentList`. It
+ * runs "what needs you now" first and "nothing to do here" last, which is not
+ * the numeric order of the codes themselves. It never leaves this module:
+ * `statusOfDocument` strips it, since it is a list concern, not a row's.
  */
 const DOCUMENT_STATUS: Record<
 	number,
@@ -84,6 +89,7 @@ const DOCUMENT_STATUS: Record<
 		variant: StatusVariant;
 		uploaded: boolean;
 		canUpload: boolean;
+		order: number;
 		desc?: string;
 	}
 > = {
@@ -92,6 +98,7 @@ const DOCUMENT_STATUS: Record<
 		variant: "outline",
 		uploaded: false,
 		canUpload: true,
+		order: 1,
 		desc: "Please upload the document",
 	},
 	1: {
@@ -99,6 +106,7 @@ const DOCUMENT_STATUS: Record<
 		variant: "secondary",
 		uploaded: true,
 		canUpload: false,
+		order: 3,
 		desc: "Document uploaded, waiting for review",
 	},
 	2: {
@@ -106,6 +114,7 @@ const DOCUMENT_STATUS: Record<
 		variant: "default",
 		uploaded: true,
 		canUpload: false,
+		order: 4,
 		desc: "Document uploaded and approved",
 	},
 	3: {
@@ -113,6 +122,7 @@ const DOCUMENT_STATUS: Record<
 		variant: "destructive",
 		uploaded: false,
 		canUpload: true,
+		order: 0,
 		desc: "Document rejected, requires resubmission",
 	},
 	4: {
@@ -120,6 +130,7 @@ const DOCUMENT_STATUS: Record<
 		variant: "destructive",
 		uploaded: false,
 		canUpload: true,
+		order: 2,
 		desc: "Document rejected",
 	},
 };
@@ -134,6 +145,7 @@ const UNKNOWN_STATUS = {
 	variant: "outline" as StatusVariant,
 	uploaded: false,
 	canUpload: true,
+	order: DOCUMENT_STATUS[0].order,
 };
 
 /**
@@ -185,8 +197,14 @@ function str(value: unknown): string {
  * overrides for the document types it knows about. Merging here rather than at
  * each call site is what stops the dev bench and the console from drifting apart
  * — see `kyc-docs.ts`.
+ *
+ * Rows come back sorted by what they ask of the partner — `DOCUMENT_STATUS.order`
+ * — then by `docType`. Upstream's own order carries no meaning, and a checklist
+ * whose actionable rows sit under a run of approved ones reads as finished when
+ * it isn't. Sorting here rather than at render time means the list only reorders
+ * on a fetch: a row cannot jump out from under a click.
  * @param raw - The `document_list` array, of unknown shape.
- * @returns The documents, in upstream's order.
+ * @returns The documents, most actionable first.
  */
 export function parseDocumentList(raw: unknown): KycDocument[] {
 	if (!Array.isArray(raw)) return [];
@@ -208,7 +226,18 @@ export function parseDocumentList(raw: unknown): KycDocument[] {
 			}),
 		);
 	}
-	return documents;
+	// Numeric-aware on `docType`, which is a numeric string upstream: plain string
+	// order would file "10" before "2".
+	return documents.sort(
+		(a, b) =>
+			sortRank(a) - sortRank(b) ||
+			a.docType.localeCompare(b.docType, undefined, { numeric: true }),
+	);
+}
+
+/** Where a document's status places it in the list. See `DOCUMENT_STATUS.order`. */
+function sortRank(doc: KycDocument): number {
+	return (DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS).order;
 }
 
 /**
@@ -248,11 +277,17 @@ export function statusOfDocument(
 	canUpload: boolean;
 	desc?: string;
 } {
-	const mapped = DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS;
+	// `order` is dropped on the way out: it sorts the list, and a row has no use
+	// for it.
+	const { order: _order, ...mapped } =
+		DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS;
 	// The overlay only fills a gap: once the refetch itself reports the document
 	// as uploaded, upstream's own status is the better answer — it may already
 	// have been approved, and a stale "Approval Pending" would hide that.
-	if (justUploaded && !mapped.uploaded) return { ...DOCUMENT_STATUS[1] };
+	if (justUploaded && !mapped.uploaded) {
+		const { order: _pendingOrder, ...pending } = DOCUMENT_STATUS[1];
+		return pending;
+	}
 	const label =
 		mapped.variant === "destructive"
 			? doc.error || doc.statusDesc || mapped.label

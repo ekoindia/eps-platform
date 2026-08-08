@@ -84,9 +84,29 @@ describe("Documents", () => {
 	});
 
 	it("counts what is still outstanding, not what is done", async () => {
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) =>
+				d.doc_type === "1" ? { ...d, status: 2 } : d,
+			),
+		});
+
 		render(<Documents />);
 
-		expect(await screen.findByText("5 documents pending")).toBeVisible();
+		// The approved one is listed but not owed.
+		expect(await screen.findByText("4 of 5 documents pending")).toBeVisible();
+	});
+
+	it("says so plainly when nothing is left to upload", async () => {
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) => ({
+				...d,
+				status: 2,
+			})),
+		});
+
+		render(<Documents />);
+
+		expect(await screen.findByText("All documents uploaded")).toBeVisible();
 	});
 
 	it("refuses the page, and fires no request, without the entitlement", async () => {
@@ -136,11 +156,13 @@ describe("Documents", () => {
 		render(<Documents />);
 		await screen.findByText("Aadhaar Card");
 
+		// Second row by the list's own order — every sample row is status 0, so
+		// that is `doc_type` 7, not upstream's second entry. See `parseDocumentList`.
 		screen.getAllByRole("button", { name: "Upload" })[1].click();
 
 		await waitFor(() =>
 			expect(screen.getByTestId("upload-dialog")).toHaveTextContent(
-				"Director PAN Card",
+				"Bank statement",
 			),
 		);
 	});

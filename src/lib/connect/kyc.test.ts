@@ -62,12 +62,37 @@ describe("parseDocumentList", () => {
 			statusDesc: "",
 			error: "",
 		});
+		// Every sample row is status 0, so this is the `docType` tiebreak alone —
+		// numeric, not lexicographic: "13" before "15", both after "7".
 		expect(documents.map((d) => d.docType)).toEqual([
 			"1",
-			"15",
-			"12",
 			"7",
+			"12",
 			"13",
+			"15",
+		]);
+	});
+
+	it("puts the documents that need action above the ones that don't", () => {
+		const documents = parseDocumentList([
+			{ doc_type: "1", status: 2 },
+			{ doc_type: "2", status: 1 },
+			{ doc_type: "3", status: 4 },
+			{ doc_type: "4", status: 0 },
+			{ doc_type: "5", status: 3 },
+			{ doc_type: "6", status: 99 },
+		]);
+
+		// Resubmission, then pending — an unknown status included, since it offers
+		// an Upload button and so belongs with the rows that want one — then
+		// rejected, awaiting approval, and finally the ones already done.
+		expect(documents.map((d) => d.docType)).toEqual([
+			"5",
+			"4",
+			"6",
+			"3",
+			"2",
+			"1",
 		]);
 	});
 

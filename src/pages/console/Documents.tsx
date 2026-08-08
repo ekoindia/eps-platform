@@ -164,6 +164,17 @@ export default function Documents() {
 
 	const resolving = enabled === null || loading;
 
+	// Counted through `statusOfDocument`, not `documents.length`: a pack whose
+	// approved rows still counted as pending would tell a partner they owe work
+	// they have already done. `uploadedNow` counts too, for the same reason the
+	// rows honour it — see `kyc.ts`.
+	const pending = documents.filter(
+		(doc) => !statusOfDocument(doc, uploadedNow.has(doc.docType)).uploaded,
+	).length;
+	const summary = !pending
+		? "All documents uploaded"
+		: `${pending} of ${documents.length} document${documents.length > 1 ? "s" : ""} pending`;
+
 	return (
 		// Its own provider, not the app's: this page is rendered on its own in
 		// tests, and Radix throws if a Tooltip finds no provider above it.
@@ -194,9 +205,7 @@ export default function Documents() {
 
 				{!resolving && !error && documents.length > 0 ? (
 					<>
-						<p className="text-sm text-muted-foreground">
-							{`${documents.length} document${documents.length > 1 ? "s" : ""} pending`}
-						</p>
+						<p className="text-sm text-muted-foreground">{summary}</p>
 						<div className="divide-y rounded-lg border">
 							{documents.map((doc) => (
 								<DocumentRow

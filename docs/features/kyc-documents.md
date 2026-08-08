@@ -144,13 +144,13 @@ review, too many blocks the upload outright.
 
 ## Status semantics
 
-| `status` | Pill | Tooltip (`desc`) | Uploaded | Can upload |
-| --- | --- | --- | --- | --- |
-| 0 | Pending | Please upload the document | no | yes |
-| 1 | Approval Pending | Document uploaded, waiting for review | yes | **no** |
-| 2 | Uploaded | Document uploaded and approved | yes | **no** |
-| 3 | Resubmission needed | Document rejected, requires resubmission | no | yes |
-| 4 | Rejected | Document rejected | no | yes |
+| `status` | Pill | Tooltip (`desc`) | Uploaded | Can upload | `order` |
+| --- | --- | --- | --- | --- | --- |
+| 0 | Pending | Please upload the document | no | yes | 1 |
+| 1 | Approval Pending | Document uploaded, waiting for review | yes | **no** | 3 |
+| 2 | Uploaded | Document uploaded and approved | yes | **no** | 4 |
+| 3 | Resubmission needed | Document rejected, requires resubmission | no | yes | 0 |
+| 4 | Rejected | Document rejected | no | yes | 2 |
 
 `DOCUMENT_STATUS` (`src/lib/connect/kyc.ts`) encodes exactly this, and
 `statusOfDocument` treats any other code the way an unknown one has always been
@@ -165,6 +165,19 @@ other status prefers `status_desc` over the map.
 The **tooltip is always the mapped `desc`**, never upstream's string. A row can
 therefore wear a terse upstream label and still explain what happens next. Status
 0 has no `desc` because it has no pill.
+
+### `order` — where the row sits in the list
+
+The checklist is sorted by `order`, then by `docType` (numeric-aware, so "7"
+comes before "13"). Upstream's own order carries no meaning, and a list whose
+actionable rows sit under a run of approved ones reads as finished when it is
+not. So the sequence runs by what the row asks of the partner: **resubmission
+needed → pending → rejected → approval pending → uploaded**. An unrecognised
+status sorts with pending, the same place its `canUpload: true` puts it.
+
+`parseDocumentList` sorts, not the page: the list then only reorders on a fetch,
+so a row cannot jump out from under a click. `order` never leaves `kyc.ts` —
+`statusOfDocument` strips it, since it is a list concern, not a row's.
 
 ### `canUpload` — when the row offers no button at all
 
@@ -241,16 +254,22 @@ bodies at a few MB regardless of what the handler checks.
 
 `/console/documents` — titled **Upload Documents**, in the rail and on the page
 — is a single-column checklist (`max-w-3xl`): the standard two-line console
-header, an "N documents pending" line, then one row per document showing its
+header, an "N of M documents pending" line, then one row per document showing its
 icon, name, upstream's note and a primary-coloured action button (Upload / Retry
 / Replace). States render in the console's usual order — error, skeletons, dashed
 empty state, content.
 
+The count is the number of rows whose status does **not** count as uploaded —
+`statusOfDocument().uploaded`, `uploadedNow` included — over the length of the
+list, not the length alone: upstream keeps approved documents in the list, and
+counting them as outstanding tells a partner they owe work they have already
+done. At zero the line reads **"All documents uploaded"** rather than "0 of 11".
+
 Three things the row deliberately does **not** show:
 
-- **A progress bar.** The list is refetched after every upload and comes back
-  without the document just sent, so "0 of 6" would count against a total that
-  shrinks under it. The outstanding count is the honest number.
+- **A progress bar.** The line above the list already carries the ratio, and a
+  bar would give a pack of eleven documents a milestone it does not have — the
+  KYC either clears review or it does not.
 - **The page count.** It tells the user nothing until they open the dialog,
   which is where the slots make it obvious.
 - **A pill for a status that has nothing to say.** Only an unrecognised code is
