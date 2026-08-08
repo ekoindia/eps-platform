@@ -50,7 +50,7 @@ describe("UserMenu", () => {
 		fireEvent.keyDown(screen.getByRole("button", { name: /account menu/i }), {
 			key: "Enter",
 		});
-		expect(await screen.findByText("9990000079")).toBeInTheDocument();
+		expect(await screen.findByText("+91 999 000 0079")).toBeInTheDocument();
 		expect(
 			screen.getByRole("menuitem", { name: /console/i }),
 		).toBeInTheDocument();

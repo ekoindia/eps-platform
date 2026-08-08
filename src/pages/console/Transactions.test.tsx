@@ -186,6 +186,14 @@ describe("Transactions", () => {
 		expect(search).not.toHaveBeenCalled();
 	});
 
+	// A KYC-pending account is provisioned and read as `active` before that state
+	// existed, so it must keep its history rather than lose it to the new state.
+	it("still fetches for an account whose only outstanding item is KYC", async () => {
+		renderPage({ ...activeMe, state: "kyc-pending" });
+		await screen.findByText("Digi Khata Load Wallet");
+		expect(search).toHaveBeenCalled();
+	});
+
 	it("pages forward and back", async () => {
 		search.mockResolvedValue(page({ hasNext: true }));
 		renderPage();

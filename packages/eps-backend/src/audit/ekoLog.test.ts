@@ -61,6 +61,26 @@ describe("createEkoLogger", () => {
 		expect(rec.response.data).toBeUndefined();
 	});
 
+	it("basic sizes an unparseable body without quoting it", () => {
+		const { sink, lines } = capture();
+		createEkoLogger({ level: "basic", sink }).log({
+			fields: FIELDS,
+			path: "https://history.example:8080/ekoicici/v1/request",
+			status: 400,
+			// An upstream error page echoing a request value back at us.
+			response: { nonJson: "<html>400 Bad Request: otp=123456</html>" },
+			error: "non-JSON response body",
+			durMs: 5,
+		});
+		const rec = JSON.parse(lines[0]);
+		// The target is what identifies a misrouted interaction, and it is config,
+		// not caller data — so it logs where the body cannot.
+		expect(rec.path).toBe("https://history.example:8080/ekoicici/v1/request");
+		expect(rec.response).toEqual({ nonJsonBytes: 40 });
+		expect(lines[0]).not.toContain("123456");
+		expect(lines[0]).not.toContain("<html>");
+	});
+
 	it("full logs the complete request (incl OTP) and full response", () => {
 		const { sink, lines } = capture();
 		createEkoLogger({ level: "full", sink }).log({

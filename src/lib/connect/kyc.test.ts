@@ -18,7 +18,7 @@ function doc(overrides: Partial<KycDocument> = {}): KycDocument {
 		name: "Aadhaar Card",
 		info: "",
 		pages: 1,
-		status: 1,
+		status: 0,
 		statusDesc: "",
 		error: "",
 		...overrides,
@@ -58,17 +58,56 @@ describe("parseDocumentList", () => {
 			name: "Aadhaar Card",
 			info: "Director's Aadhaar Card",
 			pages: 2,
-			status: 1,
+			status: 0,
 			statusDesc: "",
 			error: "",
 		});
+		// Every sample row is status 0, so this is the label tiebreak alone:
+		// Aadhaar Card, Bank statement, Blank Check, Company Registration
+		// certificate, Director PAN Card.
 		expect(documents.map((d) => d.docType)).toEqual([
 			"1",
-			"15",
-			"12",
 			"7",
 			"13",
+			"12",
+			"15",
 		]);
+	});
+
+	it("puts the documents that need action above the ones that don't", () => {
+		// Doc types outside `kyc-docs`, so the names are the "Document N" fallback
+		// and no override can reorder what this test is actually checking.
+		const documents = parseDocumentList([
+			{ doc_type: "90", status: 2 },
+			{ doc_type: "91", status: 1 },
+			{ doc_type: "92", status: 4 },
+			{ doc_type: "93", status: 0 },
+			{ doc_type: "94", status: 3 },
+			{ doc_type: "95", status: 99 },
+		]);
+
+		// Resubmission, then pending — an unknown status included, since it offers
+		// an Upload button and so belongs with the rows that want one — then
+		// rejected, awaiting approval, and finally the ones already done.
+		expect(documents.map((d) => d.docType)).toEqual([
+			"94",
+			"93",
+			"95",
+			"92",
+			"91",
+			"90",
+		]);
+	});
+
+	it("sorts by the label the row shows, not the one upstream sent", () => {
+		// `withDocConfig` renames doc type 4 to "Memorandum of Association (MOA)",
+		// which files after "Bank statement" — upstream's own "Zzz" would not.
+		const documents = parseDocumentList([
+			{ doc_type: "4", name: "Zzz" },
+			{ doc_type: "7", name: "Bank statement" },
+		]);
+
+		expect(documents.map((d) => d.docType)).toEqual(["7", "4"]);
 	});
 
 	it("overlays this console's own overrides", async () => {
@@ -146,22 +185,22 @@ describe("parseDocumentList", () => {
 });
 
 describe("statusOfDocument", () => {
-	it("does not claim a document is uploaded on an unconfirmed status", () => {
-		// Every row in the sample carries status 1 while still needing an upload,
-		// so 1 must never read as done.
-		expect(statusOfDocument(doc({ status: 1 })).uploaded).toBe(false);
+	it("does not claim a document is uploaded at status 0", () => {
+		// Every row in the sample carries status 0 while still needing an upload,
+		// so 0 must never read as done.
+		expect(statusOfDocument(doc({ status: 0 })).uploaded).toBe(false);
 	});
 
-	it("treats an unrecognised status as not uploaded", () => {
+	it("treats an unrecognised status as not uploaded, and still uploadable", () => {
 		const status = statusOfDocument(doc({ status: 42 }));
 
 		expect(status.uploaded).toBe(false);
 		expect(status.variant).toBe("outline");
-	});
-
-	it("says nothing at all when upstream has nothing to report", () => {
+		expect(status.desc).toBeUndefined();
 		// An empty label is the signal to render no pill.
-		expect(statusOfDocument(doc({ status: 1 })).label).toBe("");
+		expect(status.label).toBe("");
+		// An unknown code must not strand a partner on a row they cannot act on.
+		expect(status.canUpload).toBe(true);
 	});
 
 	it("prefers upstream's own wording", () => {
@@ -170,12 +209,39 @@ describe("statusOfDocument", () => {
 		);
 	});
 
-	it("reads status 2 as uploaded and approved", () => {
+	it("keeps the mapped tooltip even when the label is upstream's", () => {
+		// The pill can wear a terse upstream string; the tooltip still has to say
+		// what happens next.
+		const status = statusOfDocument(doc({ status: 1, statusDesc: "In queue" }));
+
+		expect(status.label).toBe("In queue");
+		expect(status.desc).toBe("Document uploaded, waiting for review");
+	});
+
+	it("reads status 1 as uploaded, awaiting approval, and not re-uploadable", () => {
+		// Replacing a file mid-review sends the reviewer a second document
+		// against a decision they have already started.
+		expect(statusOfDocument(doc({ status: 1 }))).toEqual({
+			label: "Approval Pending",
+			variant: "secondary",
+			uploaded: true,
+			canUpload: false,
+			desc: "Document uploaded, waiting for review",
+		});
+	});
+
+	it("reads status 2 as uploaded, approved, and not re-uploadable", () => {
 		expect(statusOfDocument(doc({ status: 2 }))).toEqual({
 			label: "Uploaded",
 			variant: "default",
 			uploaded: true,
+			canUpload: false,
+			desc: "Document uploaded and approved",
 		});
+	});
+
+	it("keeps a pending document uploadable", () => {
+		expect(statusOfDocument(doc({ status: 0 })).canUpload).toBe(true);
 	});
 
 	it("surfaces a rejection reason, in red, at status 3", () => {
@@ -185,6 +251,8 @@ describe("statusOfDocument", () => {
 			label: "Blurred scan",
 			variant: "destructive",
 			uploaded: false,
+			canUpload: true,
+			desc: "Document rejected, requires resubmission",
 		});
 	});
 
@@ -204,21 +272,50 @@ describe("statusOfDocument", () => {
 			label: "Resubmission needed",
 			variant: "destructive",
 			uploaded: false,
+			canUpload: true,
+			desc: "Document rejected, requires resubmission",
 		});
 	});
 
-	it("does not read a stray error as a rejection outside status 3", () => {
-		// error only means something once status says resubmission is needed.
+	it("surfaces a rejection reason at status 4 too", () => {
+		// 4 is refused outright rather than resubmittable, and reads the same way:
+		// upstream's own reason first, in red.
+		const status = statusOfDocument(
+			doc({ status: 4, error: "Not a director" }),
+		);
+
+		expect(status).toEqual({
+			label: "Not a director",
+			variant: "destructive",
+			uploaded: false,
+			canUpload: true,
+			desc: "Document rejected",
+		});
+	});
+
+	it("does not read a stray error as a rejection on an accepted status", () => {
+		// error only means something once the status itself says refused.
 		const status = statusOfDocument(doc({ status: 1, error: "Blurred scan" }));
 
 		expect(status.variant).not.toBe("destructive");
+		expect(status.label).toBe("Approval Pending");
 	});
 
-	it("shows a document uploaded in this session as done, ahead of a refetch", () => {
-		expect(statusOfDocument(doc({ status: 1 }), true)).toEqual({
-			label: "Uploaded",
-			variant: "default",
+	it("shows a document uploaded in this session as awaiting approval", () => {
+		// The optimistic overlay reads as 1, not 2: this console handed the file
+		// over, it did not approve it.
+		expect(statusOfDocument(doc({ status: 0 }), true)).toEqual({
+			label: "Approval Pending",
+			variant: "secondary",
 			uploaded: true,
+			canUpload: false,
+			desc: "Document uploaded, waiting for review",
 		});
+	});
+
+	it("yields to a refetch that already reports the document approved", () => {
+		// The overlay only fills the gap before upstream catches up; once it has,
+		// a stale "Approval Pending" would hide an approval that already happened.
+		expect(statusOfDocument(doc({ status: 2 }), true).label).toBe("Uploaded");
 	});
 });

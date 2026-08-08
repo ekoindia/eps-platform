@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createConnectAuthProvider } from "./connectProvider";
 import type { ConnectClient } from "../clients/connect";
+import type { EkoClient } from "../clients/eko";
 import { loadConfig, type Config } from "../config";
 import { createInMemoryKV, type KV } from "../store/kv";
 import { passThroughSecretBox } from "../store/secretbox";
@@ -18,7 +19,20 @@ const cfg: Config = loadConfig({
 	CONNECT_API_BASE_URL: "https://api.beta.ekoconnect.in",
 });
 
-function setup(over: Partial<ConnectClient> = {}, kv: KV = createInMemoryKV()) {
+/**
+ * The 151 re-read `verify` makes for a `found` login. Defaults to a failure, so
+ * every test that does not care about it exercises the fall-back-to-envelope
+ * path rather than silently depending on a stub profile.
+ */
+function setup(
+	over: Partial<ConnectClient> = {},
+	kv: KV = createInMemoryKV(),
+	getProfile: EkoClient["getProfile"] = vi.fn(async () => ({
+		kind: "error" as const,
+		responseTypeId: 0,
+	})),
+) {
+	const eko = { getProfile } as unknown as EkoClient;
 	const connect: ConnectClient = {
 		sendOtp: vi.fn(async () => ({ ok: true })),
 		login: vi.fn(async () => ({})),
@@ -35,8 +49,9 @@ function setup(over: Partial<ConnectClient> = {}, kv: KV = createInMemoryKV()) {
 		kv,
 		secretbox: passThroughSecretBox,
 		cfg,
+		eko,
 	});
-	return { provider, connect, kv };
+	return { provider, connect, kv, getProfile };
 }
 
 const LOGIN_OK = {
@@ -93,6 +108,61 @@ describe("connect auth provider — verify", () => {
 		if (!r.ok) return;
 		expect(r.upstream?.accessTokenLite).toBe("ca_lite");
 		expect(r.upstream?.accessTokenCrm).toBe("ca_crm");
+	});
+
+	// The bug this re-read exists for: connect-api's `auth_details` names its
+	// fields one by one and `account_state_id` is not among them, so a login view
+	// built from it reported `accountStateId: null` — and therefore `active` — for
+	// an account whose KYC was outstanding. `GET /me` reads 151 and disagreed, so
+	// the state silently corrected itself on the next page load.
+	it("takes the profile from interaction 151, not from the login envelope", async () => {
+		const fresh = {
+			kind: "found" as const,
+			responseTypeId: 369,
+			profile: { accountStateId: 48, name: "From 151" },
+		};
+		const { provider, getProfile } = setup(
+			{ login: vi.fn(async () => LOGIN_OK) },
+			createInMemoryKV(),
+			vi.fn(async () => fresh) as never,
+		);
+		const r = await provider.verify({
+			mobile: "9990000001",
+			otp: "123456",
+			xRealIp: "1.2.3.4",
+		});
+		expect(r.ok).toBe(true);
+		if (!r.ok || r.profile.kind !== "found") throw new Error("expected found");
+		expect(r.profile.profile.accountStateId).toBe(48);
+		expect(getProfile).toHaveBeenCalledWith({
+			mobile: "9990000001",
+			orgId: 1,
+			xRealIp: "1.2.3.4",
+		});
+	});
+
+	// The re-read may only ADD fields. `mapConnectLogin` is what decides whether a
+	// session is minted, and a 151 blip must not turn a good login into a refusal.
+	it("keeps the envelope's profile when the 151 re-read fails", async () => {
+		const { provider } = setup(
+			{ login: vi.fn(async () => LOGIN_OK) },
+			createInMemoryKV(),
+			vi.fn(async () => {
+				throw new Error("151 down");
+			}) as never,
+		);
+		const r = await provider.verify({ mobile: "9990000001", otp: "123456" });
+		expect(r.ok).toBe(true);
+		if (!r.ok || r.profile.kind !== "found") throw new Error("expected found");
+		expect(r.profile.profile.name).toBe("Dev");
+	});
+
+	it("does not re-read 151 for a login that minted no developer session", async () => {
+		const { provider, getProfile } = setup({
+			login: vi.fn(async () => ({ accountInactive: true })),
+		});
+		await provider.verify({ mobile: "9", otp: "1" });
+		expect(getProfile).not.toHaveBeenCalled();
 	});
 
 	it("classifies without upstream tokens when connect-api minted no session", async () => {

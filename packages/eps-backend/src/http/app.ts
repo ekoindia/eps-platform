@@ -23,6 +23,7 @@ import { mountAdmin } from "./admin";
 import { mountConnect } from "./connect";
 import { mountDashboard } from "./dashboard";
 import { AppError, errorBody } from "./errors";
+import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
 import {
@@ -523,6 +524,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		kv,
 		connectBaseUrl: cfg.connectApi?.baseUrl,
 	});
+
+	// Same reasoning, same shape: mounted everywhere, 501 where there is no
+	// upstream to ask, so the console can simply not render a bell.
+	mountNotifications(app, { sessions, auth, connect: deps.connect, kv });
 
 	// Connect-widget routes exist only where they can work: they need a provider
 	// that stores upstream credentials AND a client to spend them. Under the `eko`

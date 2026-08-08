@@ -290,7 +290,7 @@ describe("AuthProvider session cache", () => {
 	};
 
 	/** Parks a view in the cache the way a previous page load would have. */
-	function seed(me: unknown, version = 1) {
+	function seed(me: unknown, version = 2) {
 		sessionStorage.setItem(KEY, JSON.stringify({ v: version, me }));
 	}
 
@@ -303,9 +303,7 @@ describe("AuthProvider session cache", () => {
 
 		const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
-		await waitFor(() =>
-			expect(result.current.state.status).toBe("authed"),
-		);
+		await waitFor(() => expect(result.current.state.status).toBe("authed"));
 		expect(result.current.state).toEqual({
 			status: "authed",
 			role: "developer",
@@ -348,7 +346,7 @@ describe("AuthProvider session cache", () => {
 
 		await waitFor(() => expect(result.current.state.status).toBe("authed"));
 		expect(JSON.parse(sessionStorage.getItem(KEY) ?? "null")).toEqual({
-			v: 1,
+			v: 2,
 			me: CACHED,
 		});
 	});

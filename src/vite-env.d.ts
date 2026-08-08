@@ -20,4 +20,16 @@ interface ImportMetaEnv {
 	readonly VITE_CONNECT_WIDGET_URL?: string;
 	/** Enable the embedded Connect transaction-flow widget in the console. */
 	readonly VITE_SHOW_CONNECT_WIDGET?: string;
+	/** Render the Business Dashboard widgets on `/console`. Off by default. */
+	readonly VITE_SHOW_BUSINESS_DASHBOARD?: string;
+	/**
+	 * Offer the "Last 365 Days" window in the dashboard's picker. Local testing
+	 * only — production caps the range at 30 days.
+	 */
+	readonly VITE_SHOW_DASHBOARD_LAST_365?: string;
+	/**
+	 * Poll `/notifications` for signed-in developers and show the header bell.
+	 * Off by default — the shared EMS feed is authored for Eloka's retailers.
+	 */
+	readonly VITE_SHOW_NOTIFICATIONS?: string;
 }

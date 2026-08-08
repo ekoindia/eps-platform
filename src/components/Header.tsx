@@ -1,9 +1,10 @@
 import { UserMenu } from "@/components/auth/UserMenu";
 import { EkoLogo } from "@/components/EkoLogo";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { SHOW_USER_LOGIN } from "@/lib/config/features";
+import { SHOW_NOTIFICATIONS, SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -434,17 +435,33 @@ export const Header = () => {
 							</button>
 
 							{/*
-                MARK: Language
+                MARK: Notifications
+                Takes the globe's slot for a signed-in user, who reaches the
+                language list from the account menu instead. Renders null until
+                the first poll returns something, so an account with nothing
+                waiting sees the header it saw before.
                */}
-							{lazyChunksReady ? (
-								<Suspense
-									fallback={<LanguageSelectorFallback isLight={useWhiteText} />}
-								>
-									<LanguageSelector isLight={useWhiteText} />
-								</Suspense>
-							) : (
-								<LanguageSelectorFallback isLight={useWhiteText} />
+							{SHOW_USER_LOGIN && SHOW_NOTIFICATIONS && (
+								<NotificationBell isLight={useWhiteText} />
 							)}
+
+							{/*
+                MARK: Language
+                Signed out only. For a signed-in user this control moves into
+                `UserMenu`, below — see the submenu there.
+               */}
+							{!isAuthed &&
+								(lazyChunksReady ? (
+									<Suspense
+										fallback={
+											<LanguageSelectorFallback isLight={useWhiteText} />
+										}
+									>
+										<LanguageSelector isLight={useWhiteText} />
+									</Suspense>
+								) : (
+									<LanguageSelectorFallback isLight={useWhiteText} />
+								))}
 
 							{/* <a
                 id="lnk-sales-phone-header-desktop"
@@ -480,6 +497,18 @@ export const Header = () => {
 						</div>
 
 						<div className="lg:hidden flex items-center gap-1">
+							{/*
+                MARK: Mobile Notifications
+                A second mount rather than one shared with the desktop cluster:
+                the two clusters are separate DOM branches, and the bell has to
+                sit BETWEEN the search and the account menu on desktop. Radix
+                portals the panel only while it is open, so the inactive copy
+                costs one hidden button.
+              */}
+							{SHOW_USER_LOGIN && SHOW_NOTIFICATIONS && (
+								<NotificationBell isLight={useWhiteText} />
+							)}
+
 							{/*
                 MARK: Mobile Search
               */}

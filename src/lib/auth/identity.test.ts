@@ -34,14 +34,14 @@ describe("accountIdentity", () => {
 				name: "Rahul Sharma",
 				initials: "RS",
 				detail: "EPS Admin",
-				meta: "9990000079 · Code 20810",
+				meta: "+91 999 000 0079 · EkoCode 20810",
 			},
 		);
 	});
 
 	it("omits the code from meta when the profile has none", () => {
 		expect(accountIdentity(dev("9990000079", "Rahul Sharma"))?.meta).toBe(
-			"9990000079",
+			"+91 999 000 0079",
 		);
 	});
 
@@ -51,7 +51,7 @@ describe("accountIdentity", () => {
 
 	it("falls back to mobile name + last-2-digit initials when nameless", () => {
 		expect(accountIdentity(dev("9990000079", null))).toEqual({
-			name: "9990000079",
+			name: "+91 999 000 0079",
 			initials: "#79",
 			detail: "EPS Admin",
 			meta: undefined,
@@ -91,7 +91,7 @@ describe("accountIdentity", () => {
 			me: { role: "signup", mobile: "9990000079" },
 		};
 		expect(accountIdentity(state)).toEqual({
-			name: "9990000079",
+			name: "+91 999 000 0079",
 			initials: "#79",
 			detail: "Finishing setup",
 			meta: undefined,
@@ -246,7 +246,11 @@ describe("detailField", () => {
 	it("accepts the plural spelling of the block name", () => {
 		// Upstream is inconsistent; the backend allowlists both.
 		expect(
-			detailField({ personal_details: { gender: "Female" } }, "personal", "gender"),
+			detailField(
+				{ personal_details: { gender: "Female" } },
+				"personal",
+				"gender",
+			),
 		).toBe("Female");
 	});
 

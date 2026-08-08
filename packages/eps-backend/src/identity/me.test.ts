@@ -14,23 +14,60 @@ const profile: EkoProfile = {
 	onboarding: 0,
 	zohoId: "ZCRM_9",
 	onboardingSteps: [],
-		accounts: [],
-		evalueAccountId: null,
-		detailBlocks: {},
+	accounts: [],
+	evalueAccountId: null,
+	detailBlocks: {},
+	accountStateId: 16,
+	userDetail: {},
 };
 
 describe("deriveStateFromProfile", () => {
+	/** A `found` result carrying whichever profile overrides the case needs. */
+	const found = (over: Partial<EkoProfile> = {}): ProfileResult => ({
+		kind: "found",
+		responseTypeId: 369,
+		profile: { ...profile, ...over },
+	});
+
 	it("active when onboarding 0", () => {
-		const r: ProfileResult = { kind: "found", responseTypeId: 369, profile };
-		expect(deriveStateFromProfile(r)).toBe("active");
+		expect(deriveStateFromProfile(found())).toBe("active");
 	});
 	it("onboarded when onboarding 1", () => {
-		const r: ProfileResult = {
-			kind: "found",
-			responseTypeId: 369,
-			profile: { ...profile, onboarding: 1 },
-		};
-		expect(deriveStateFromProfile(r)).toBe("onboarded");
+		expect(deriveStateFromProfile(found({ onboarding: 1 }))).toBe("onboarded");
+	});
+	// Onboarding is checked first: a half-onboarded account has nothing to say
+	// about KYC yet, whatever state id happens to be sitting on it.
+	it("onboarded when onboarding 1 even with the KYC-pending state id", () => {
+		expect(
+			deriveStateFromProfile(found({ onboarding: 1, accountStateId: 48 })),
+		).toBe("onboarded");
+	});
+	it("kyc-pending when the account state id is 48", () => {
+		expect(deriveStateFromProfile(found({ accountStateId: 48 }))).toBe(
+			"kyc-pending",
+		);
+	});
+	it("active when the account state id is 16", () => {
+		expect(deriveStateFromProfile(found({ accountStateId: 16 }))).toBe(
+			"active",
+		);
+	});
+	// Fail-open, and load-bearing: the connect-api provider never reports an id,
+	// so `null` reading as anything else would gate every partner on that path.
+	it("active when there is no account state id", () => {
+		expect(deriveStateFromProfile(found({ accountStateId: null }))).toBe(
+			"active",
+		);
+	});
+	it("active for an account state id this build does not know", () => {
+		expect(deriveStateFromProfile(found({ accountStateId: 99 }))).toBe(
+			"active",
+		);
+	});
+	// `onboarding` reaches here as a number (both mappers coerce it), so the only
+	// way to see a third value is upstream inventing one. It is not "unfinished".
+	it("active for an onboarding value that is neither 0 nor 1", () => {
+		expect(deriveStateFromProfile(found({ onboarding: 2 }))).toBe("active");
 	});
 	it("inactive", () => {
 		expect(

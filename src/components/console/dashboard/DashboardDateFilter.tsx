@@ -1,4 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SHOW_DASHBOARD_LAST_365 } from "@/lib/config/features";
 import { DASHBOARD_PRESETS, type DatePreset } from "@/lib/console/dashboard";
 
 /**
@@ -29,7 +30,13 @@ export default function DashboardDateFilter({
 				onValueChange={(value) => onChange(value as DatePreset)}
 			>
 				<TabsList className="max-w-full snap-x overflow-x-auto">
-					{DASHBOARD_PRESETS.map((option) => (
+					{/* `last365` stays in `DASHBOARD_PRESETS` — the backend still serves
+					    it and the list mirrors its `DATE_PRESETS`. Hidden here rather
+					    than removed there: a year of upstream aggregation is slow, so
+					    production caps the widest window at 30 days. */}
+					{DASHBOARD_PRESETS.filter(
+						(option) => option.value !== "last365" || SHOW_DASHBOARD_LAST_365,
+					).map((option) => (
 						<TabsTrigger
 							key={option.value}
 							value={option.value}

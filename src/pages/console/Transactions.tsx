@@ -21,7 +21,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { ApiError, transactionsClient } from "@/lib/auth/client";
+import { ApiError, isProvisioned, transactionsClient } from "@/lib/auth/client";
 import {
 	creditOf,
 	debitOf,
@@ -194,7 +194,7 @@ function RowDetails({ row }: { row: TransactionRow }) {
  */
 export default function Transactions() {
 	const me = useConsoleMe();
-	const isActive = me.state === "active";
+	const isActive = isProvisioned(me.state);
 
 	const [rows, setRows] = useState<TransactionRow[]>([]);
 	const [hasNext, setHasNext] = useState(false);

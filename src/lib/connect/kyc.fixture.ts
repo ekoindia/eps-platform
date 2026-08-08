@@ -19,7 +19,7 @@ export const KYC_DOCUMENTS_SAMPLE = {
 				name: "Aadhaar Card",
 				doc_type: "1",
 				error: "",
-				status: 1,
+				status: 0,
 				info: "Director's Aadhaar Card",
 			},
 			{
@@ -29,7 +29,7 @@ export const KYC_DOCUMENTS_SAMPLE = {
 				name: "Director PAN Card",
 				doc_type: "15",
 				error: "",
-				status: 1,
+				status: 0,
 				info: "",
 			},
 			{
@@ -39,7 +39,7 @@ export const KYC_DOCUMENTS_SAMPLE = {
 				name: "Company Registration certificate",
 				doc_type: "12",
 				error: "",
-				status: 1,
+				status: 0,
 				info: "",
 			},
 			{
@@ -49,7 +49,7 @@ export const KYC_DOCUMENTS_SAMPLE = {
 				name: "Bank statement",
 				doc_type: "7",
 				error: "",
-				status: 1,
+				status: 0,
 				info: "",
 			},
 			{
@@ -59,7 +59,7 @@ export const KYC_DOCUMENTS_SAMPLE = {
 				name: "Blank Check",
 				doc_type: "13",
 				error: "",
-				status: 1,
+				status: 0,
 				info: "",
 			},
 		],

@@ -1,7 +1,6 @@
 import { Footer } from "@/components/Footer";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { ConnectDialogProvider } from "@/components/connect/DialogHost";
-import { lifecycleBadge } from "@/components/console/LifecycleCard";
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import type { Lifecycle, MeView } from "@/lib/auth/client";
+import type { MeView } from "@/lib/auth/client";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
@@ -246,27 +245,6 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	);
 }
 
-/**
- * The account's lifecycle state, as the rail caption's badge. Green only when
- * the account is live; every other state (including one this build doesn't
- * know) reads as neutral rather than as an alarm.
- * @param state - The session's lifecycle state.
- */
-function LifecycleBadge({ state }: { state: Lifecycle }) {
-	return (
-		<span
-			className={cn(
-				"rounded-full px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider",
-				state === "active"
-					? "bg-emerald-50 text-emerald-700"
-					: "bg-muted text-muted-foreground",
-			)}
-		>
-			{lifecycleBadge(state)}
-		</span>
-	);
-}
-
 /** Placeholder card shown while the session resolves (or a redirect is in flight). */
 function ConsoleLoading() {
 	return (
@@ -386,13 +364,12 @@ export default function ConsoleLayout() {
 						<aside className="px-4 pb-8 pt-28 lg:border-r lg:border-border/60 lg:bg-slate-50 lg:px-3 lg:pb-16 print:hidden">
 							<div className="lg:sticky lg:top-28">
 								{/* The page's only h1: the rail caption names the section, as
-								    `DocsLayout` does, and carries the lifecycle state where
-								    docs puts its theme toggle. */}
-								<div className="mb-2 flex items-center justify-between gap-2 px-3">
-									<h1 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-										Developer Console
+								    `DocsLayout` does. The lifecycle state lives on the Home
+								    profile card, not here. */}
+								<div className="mb-3 flex items-center justify-center gap-2 px-3">
+									<h1 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+										EPS Developer Console
 									</h1>
-									<LifecycleBadge state={developer.state} />
 								</div>
 								<WalletBalance />
 								<div className="lg:hidden">

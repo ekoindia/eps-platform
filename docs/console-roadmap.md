@@ -24,7 +24,8 @@ slate panel and border drop away). Its caption — `DEVELOPER CONSOLE` in the sm
 uppercase style `DocsLayout` uses — **is** the page's `<h1>`; there is no separate
 page title above the grid, and sub-pages start at `<h2>`. Where docs puts its
 theme toggle, the console puts the account's lifecycle badge, reading the same
-copy as `LifecycleCard` through its exported `lifecycleBadge()`. Only the
+copy as Home's profile card through `lifecycleBadge()` in
+`src/lib/console/lifecycle.ts`. Only the
 developer branch is full-bleed; the anon/admin/loading cards keep the old
 container and their own `<h1>`.
 
@@ -36,13 +37,33 @@ nothing rather than an empty caption. An `API Docs ↗` link closes the rail. Or
 within a group is entitlement-independent and pinned by
 `ConsoleLayout.nav.test.tsx`, which also guards the single-`h1`/`<main>` contract.
 
-The console's index page (`/console`) is the **Business Dashboard** — call
-volume, success rates, most-used services and usage over time, from upstream
-interaction 682. The lifecycle-state card that used to be the whole page now
-renders in full only for an account that still has something to finish; an
-active account gets it as a one-line banner above the widgets. See
+The console's index page (`/console`) is **Home**. It leads with the profile card
+(`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT
+credentials, production credentials and the one-time integration fee — for every
+lifecycle state. The profile card carries name, lifecycle badge, mobile, email and
+**EkoCode** (with a click-to-copy button, `CopyButton` from `pages/ai/CommandBlock`),
+and links through to `/console/profile`.
+
+Every rendered mobile — the card, the header account menu (`accountIdentity()`)
+and the `/console/profile` identity card — goes through the one `formatMobile()`
+in `src/lib/utils.ts`, which renders `+91 ### ### ####`. The support-chat visitor
+identity (`chatIdentity()`) deliberately keeps the raw digits: it is data, not
+display.
+
+Last comes the **Business Dashboard** — call volume, success rates, most-used
+services and usage over time, from upstream interaction 682 — behind
+`VITE_SHOW_BUSINESS_DASHBOARD`, **off by default** until its numbers are
+reconciled. With the flag off nothing on Home calls `/dashboard` at all. See
 `docs/features/business-dashboard.md`, whose status banner is worth reading
 before trusting a number on that page.
+
+**Notifications** sit beside it, behind `VITE_SHOW_NOTIFICATIONS`, also **off by
+default**: a header bell with an unread count, a toast for the newest fresh
+unread item, and a card on Home, all fed by one ten-minute poll of upstream
+interaction 10010. With the flag off nothing calls `/notifications` at all. The
+gate on turning it on is editorial rather than technical — the feed is Eko's
+shared EMS, whose copy today is written for Eloka's retailers. See
+`docs/features/notifications.md`.
 
 Pinned above the rail links is `WalletBalance`
 (`src/components/console/WalletBalance.tsx`) — the developer's E-value balance,
@@ -129,7 +150,8 @@ fetched, via `useConsoleMe()`. Three blocks:
 
 - **Identity card** — name, user type, user code and mobile, over the brand
   gradient. Initials come from `accountIdentity()`, the same derivation the
-  header menu uses, so a session with no profile still renders.
+  header menu uses, so a session with no profile still renders; the mobile goes
+  through the shared `formatMobile()`.
 - **Profile completeness** — onboarding progress, NOT Eloka's shop+personal field
   checklist (those fields are opaque to us, and Eloka's own count treats an
   absent key as complete). `profileCompleteness()` in `lib/auth/identity.ts`
@@ -218,10 +240,13 @@ EPS is a payments API — event-driven integration is the primary pattern for
 partners. `Table` + `Dialog` form; needs a backend registration endpoint.
 _Pattern: PandaDoc webhooks, Klaviyo webhook events._
 
-### API usage / request metrics — **DONE** (as the Business Dashboard)
+### API usage / request metrics — **BUILT, flag-gated off** (as the Business Dashboard)
 Shipped at `/console` from upstream interaction 682, not from a telemetry
 pipeline: call volume, per-service counts, success rates and usage over time,
-across five preset windows. What is still missing is the *per-endpoint* and
+across four preset windows (the fifth, Last 365 Days, is local-testing only —
+production caps the range at 30 days). Hidden behind
+`VITE_SHOW_BUSINESS_DASHBOARD` until the numbers are reconciled against Eloka
+for a real account. What is still missing is the *per-endpoint* and
 error-rate view this line originally asked for — 682 aggregates by product
 (`tx_typeid`), not by HTTP endpoint, and nothing upstream reports a 4xx/5xx rate.
 That remains an **L** and still needs a telemetry pipeline.

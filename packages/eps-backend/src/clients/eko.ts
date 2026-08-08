@@ -7,6 +7,7 @@ import {
 	type AccountDetail,
 } from "./accounts";
 import { clientRefId, withTimeout } from "./http";
+import { stripSensitive, toStateId } from "./profile-fields";
 
 export interface EkoClient {
 	sendOtp(input: {
@@ -265,6 +266,7 @@ export function createEkoClient(
 			// Transport failure (timeout / connection refused): still log, then rethrow.
 			logger.log({
 				fields,
+				path: target,
 				error: e instanceof Error ? e.message : String(e),
 				durMs: Math.round(performance.now() - start),
 			});
@@ -283,6 +285,11 @@ export function createEkoClient(
 		}
 		logger.log({
 			fields,
+			// The target, not just the interaction id: interaction 154 posts to its
+			// own host and API version, so a misconfigured SIMPLIBANK_HISTORY_API_*
+			// is otherwise invisible in the log — the id says which call it was, the
+			// URL says where it actually went.
+			path: target,
 			status: res.status,
 			response: parseError ? { nonJson: text.slice(0, 500) } : parsed,
 			error: parseError ? "non-JSON response body" : undefined,
@@ -815,6 +822,8 @@ const PROFILE_DETAIL_BLOCKS = [
 	"shop_details",
 	"business_detail",
 	"business_details",
+	"business_address_detail",
+	"business_address_details",
 ] as const;
 
 /**
@@ -847,6 +856,8 @@ function mapProfile(
 		accounts: mapAccounts(accountDetail),
 		evalueAccountId: selectEvalueAccountId(accountDetail),
 		detailBlocks: pickDetailBlocks(data),
+		accountStateId: toStateId(d.account_state_id),
+		userDetail: stripSensitive(d),
 		name: String(d.name ?? ""),
 		email: String(d.email ?? ""),
 		mobile: String(d.mobile ?? ""),

@@ -127,6 +127,18 @@ export function useConnectDialogs(): ConnectDialogs {
 }
 
 /**
+ * The same host, for components that merely *offer* a dialog and must still
+ * render without one — the notification bell sits in the site header, on pages
+ * that never mount a provider, and must not crash them.
+ *
+ * Mirrors `useOptionalAuth`.
+ * @returns The dialog openers, or null when there is no host.
+ */
+export function useOptionalConnectDialogs(): ConnectDialogs | null {
+	return useContext(DialogContext);
+}
+
+/**
  * Hosts the dialogs the Eko Connect widget drives — file viewing today, camera,
  * image editing and raise-issue as they land.
  *
@@ -250,7 +262,7 @@ function HostedDialog({
 					</Suspense>
 					{chrome.closeButton ? (
 						<DialogPrimitive.Close
-							className="fixed right-2.5 top-1.5 rounded-full bg-gray-100 p-1.5 opacity-90 shadow-lg hover:bg-destructive hover:text-white md:p-3"
+							className="fixed right-2.5 top-1.5 cursor-pointer rounded-full bg-gray-100 p-1.5 opacity-90 shadow-lg hover:bg-destructive hover:text-white md:p-3"
 							aria-label="Close"
 						>
 							<X className="h-4 w-4" />

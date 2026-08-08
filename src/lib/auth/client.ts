@@ -3,6 +3,7 @@ import type {
 	TransactionFilters,
 	TransactionPage,
 } from "@/lib/console/transactions";
+import type { NotificationView } from "@/lib/notifications";
 
 const BASE: string = import.meta.env.VITE_EPS_BACKEND_URL ?? "/api";
 
@@ -15,11 +16,30 @@ export const LIFECYCLES = [
 	"lead",
 	"onboarded",
 	"active",
+	"kyc-pending",
 	"inactive",
 	"unknown",
 ] as const;
 
 export type Lifecycle = (typeof LIFECYCLES)[number];
+
+/**
+ * Whether upstream has provisioned this account — it exists, onboarding is
+ * finished, and it can therefore have transacted.
+ *
+ * Both `active` and `kyc-pending` are post-onboarding account states (upstream
+ * `account_state_id` 16 and 48). Before `kyc-pending` existed BOTH read as
+ * `active`, so anything that gates on "is this a real account" must ask this
+ * rather than test for `active` alone — otherwise adding the state would have
+ * taken the transaction history and the dashboard away from every partner whose
+ * KYC is outstanding.
+ *
+ * Not for gating on KYC itself: `NextStepsCard` tests for `active` exactly
+ * because it is asking the opposite question.
+ * @param state - The session's lifecycle state.
+ */
+export const isProvisioned = (state: Lifecycle): boolean =>
+	state === "active" || state === "kyc-pending";
 
 /** One account from the profile's `account_detail` block. */
 export interface Account {
@@ -64,6 +84,18 @@ export interface Profile {
 	 * `detailField` (`@/lib/auth/identity`) rather than casting.
 	 */
 	detailBlocks: Record<string, unknown>;
+	/**
+	 * Upstream's account state — 16 live, 48 KYC pending — or null when it sent
+	 * none. Drives `MeView.state`; branch on that rather than on this.
+	 */
+	accountStateId: number | null;
+	/**
+	 * Upstream's whole `user_detail`, minus anything credential-shaped. Untyped
+	 * for the same reason as `detailBlocks`: the fields are upstream's and vary by
+	 * user type. Everything typed above appears in here too, under its upstream
+	 * name (`pancardnumber`, `current_plan`, `alternate_mobiles`, …).
+	 */
+	userDetail: Record<string, unknown>;
 }
 
 export interface MeView {
@@ -311,6 +343,24 @@ export const authClient = {
 	/** The signed-in developer's E-value wallet balance, in rupees. */
 	walletBalance: (): Promise<WalletBalanceView> =>
 		request("/wallet/balance", { method: "GET" }) as Promise<WalletBalanceView>,
+	/**
+	 * The developer's notifications, already filtered to NORMAL items,
+	 * normalized, deduped and capped by the backend.
+	 *
+	 * POST, not GET, because serving the list also marks the new items delivered
+	 * upstream — a prefetcher must not be able to trigger that. A deployment
+	 * without connect-api answers 501 `NOTIFICATIONS_UNAVAILABLE`; treat that as
+	 * "not on this deployment" and stop asking.
+	 */
+	notifications: (): Promise<{ notifications: NotificationView[] }> =>
+		request("/notifications", { method: "POST" }) as Promise<{
+			notifications: NotificationView[];
+		}>,
+	/** Marks one notification read upstream. Fire-and-forget at the call site. */
+	markNotificationRead: (id: number): Promise<{ ok: true }> =>
+		request(`/notifications/${id}/read`, { method: "POST" }) as Promise<{
+			ok: true;
+		}>,
 	/**
 	 * Reduced-scope connect-api tokens for the embedded Connect widget.
 	 *

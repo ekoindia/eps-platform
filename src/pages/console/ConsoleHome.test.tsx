@@ -10,6 +10,14 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	dashboardClient: { load: vi.fn() },
 }));
 
+// Module constant read at import, so it has to be mocked rather than stubbed
+// through import.meta.env. On here, so this file stays about ConsoleHome's
+// routing; the flag-off default has its own file, ConsoleHome.flags.test.tsx.
+vi.mock("@/lib/config/features", async (orig) => ({
+	...(await orig<typeof import("@/lib/config/features")>()),
+	SHOW_BUSINESS_DASHBOARD: true,
+}));
+
 const { dashboardClient } = await import("@/lib/auth/client");
 const load = vi.mocked(dashboardClient.load);
 
@@ -34,9 +42,18 @@ function renderHome(me: MeView) {
 }
 
 describe("ConsoleHome", () => {
-	it("shows the lead onboarding CTA for a lead developer", () => {
+	it("shows the lifecycle state on the profile card for a lead developer", () => {
 		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
-		expect(screen.getByText(/start onboarding/i)).toBeInTheDocument();
+		expect(screen.getByText("Lead")).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: "View Profile" }),
+		).toBeInTheDocument();
+	});
+
+	it("still shows the next steps for a lead, beside the profile card", () => {
+		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
+		expect(screen.getByText("Next Steps")).toBeInTheDocument();
+		expect(screen.getByText(/finish your kyc/i)).toBeInTheDocument();
 	});
 
 	it("does not load a dashboard for an account that cannot have one", () => {
@@ -45,35 +62,52 @@ describe("ConsoleHome", () => {
 		expect(screen.queryByTestId("dashboard-loading")).not.toBeInTheDocument();
 	});
 
-	it("shows the dashboard, with the state as a banner, for an active developer", () => {
+	it("shows the dashboard, with the state on the profile card, for an active developer", () => {
 		renderHome({
 			state: "active",
 			mobile: "999",
 			profile: { name: "Asha" } as never,
 			zohoId: null,
 		});
-		expect(screen.getByText(/signed in as asha/i)).toBeInTheDocument();
+		expect(screen.getByText("Asha")).toBeInTheDocument();
 		expect(screen.getByText("Active")).toBeInTheDocument();
 		expect(screen.getByTestId("dashboard-loading")).toBeInTheDocument();
 		expect(load).toHaveBeenCalledWith({ preset: "last7", typeId: undefined });
 	});
 
 	it("falls back to the mobile number when there is no profile", () => {
-		renderHome({ state: "active", mobile: "999", profile: null, zohoId: null });
-		expect(screen.getByText(/signed in as 999/i)).toBeInTheDocument();
+		renderHome({
+			state: "active",
+			mobile: "9990000079",
+			profile: null,
+			zohoId: null,
+		});
+		expect(screen.getByText("9990000079")).toBeInTheDocument();
+		expect(screen.getByText("+91 999 000 0079")).toBeInTheDocument();
 	});
 
-	it("keeps the full state card for an inactive account", () => {
+	// A KYC-pending account can have transacted, so it keeps the dashboard it had
+	// before this state existed — the state itself only ever reads as a badge.
+	it("keeps the dashboard while KYC is pending", () => {
+		renderHome({
+			state: "kyc-pending",
+			mobile: "999",
+			profile: null,
+			zohoId: null,
+		});
+		expect(screen.getByTestId("dashboard-loading")).toBeInTheDocument();
+		expect(load).toHaveBeenCalled();
+		expect(screen.getByText("KYC Pending")).toBeInTheDocument();
+	});
+
+	it("shows the state, and no dashboard, for an inactive account", () => {
 		renderHome({
 			state: "inactive",
 			mobile: "999",
 			profile: null,
 			zohoId: null,
 		});
-		expect(screen.getByText(/account inactive/i)).toBeInTheDocument();
-		expect(
-			screen.getByRole("link", { name: /contact support/i }),
-		).toBeInTheDocument();
+		expect(screen.getByText("Inactive")).toBeInTheDocument();
 		expect(load).not.toHaveBeenCalled();
 	});
 });

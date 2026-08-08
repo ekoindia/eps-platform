@@ -5,6 +5,18 @@ Onboarding creates the account; KYC activates it. A user who has finished
 scans, PDFs or a photo taken there and then. This feature puts that pack in the
 console at `/console/documents` instead of over email.
 
+**The session says whether that pack is still owed.** Upstream reports it as
+`user_detail.account_state_id` — `48` while KYC is outstanding, `16` once the
+account is live — and the backend turns it into the `kyc-pending` lifecycle
+state (see
+[`user-onboarding.md` § Lifecycle state](./user-onboarding.md#lifecycle-state-meviewstate)).
+That is what makes the Next Steps card's "Finish your KYC" row read Pending.
+
+It is a coarse signal, not a per-document one: it says upstream is still waiting
+on this partner, not which file is missing. This page owns that detail. It can
+also disagree — the state is `kyc-pending` until upstream flips the account
+itself, which can lag a successful upload.
+
 ## The two upstream transactions
 
 Both are connect-api interactions, reached only from the backend (they need the
@@ -31,7 +43,7 @@ reason — every composite interaction reports `interaction_type_id: 0`.
     "user_code": "39300001",
     "document_list": [
       { "doc_type": "1", "name": "Aadhaar Card", "info": "Director's Aadhaar Card",
-        "pages": "2", "is_required": 1, "status": 1, "status_desc": "", "error": "" }
+        "pages": "2", "is_required": 1, "status": 0, "status_desc": "", "error": "" }
     ]
   },
   "response_type_id": 1564,
@@ -40,8 +52,9 @@ reason — every composite interaction reports `interaction_type_id: 0`.
 }
 ```
 
-The verbatim sample lives in `src/lib/connect/kyc.fixture.ts` and is shared by
-the unit tests and the dev-only bench, so both look at the same bytes.
+The sample lives in `src/lib/connect/kyc.fixture.ts` and is shared by the unit
+tests and the dev-only bench, so both look at the same bytes. Only the `status`
+values differ from the capture — see [Status semantics](#status-semantics).
 
 ### 587 — the upload
 
@@ -131,27 +144,83 @@ review, too many blocks the upload outright.
 
 ## Status semantics
 
-Confirmed against a live UAT account:
-
-| `status` | Meaning |
-| --- | --- |
-| 1 | Pending upload |
-| 2 | Success — uploaded and approved |
-| 3 | Resubmission needed — `error` carries the rejection reason |
+| `status` | Pill | Tooltip (`desc`) | Uploaded | Can upload | `order` |
+| --- | --- | --- | --- | --- | --- |
+| 0 | Pending | Please upload the document | no | yes | 1 |
+| 1 | Approval Pending | Document uploaded, waiting for review | yes | **no** | 3 |
+| 2 | Uploaded | Document uploaded and approved | yes | **no** | 4 |
+| 3 | Resubmission needed | Document rejected, requires resubmission | no | yes | 0 |
+| 4 | Rejected | Document rejected | no | yes | 2 |
 
 `DOCUMENT_STATUS` (`src/lib/connect/kyc.ts`) encodes exactly this, and
-`statusOfDocument` treats any other code the same as unconfirmed ones always
-were: not-yet-uploaded, never a false "done". At status 3 the label prefers
-upstream's own `error`, then `status_desc`, before falling back to a generic
-"Resubmission needed".
+`statusOfDocument` treats any other code the way an unknown one has always been
+treated: not-yet-uploaded, never a false "done".
+
+Two of these read **destructive** — 3 and 4 — and on those the label prefers
+upstream's own `error`, then `status_desc`, before the map's generic wording; a
+rejection reason is the most useful thing a row can say. The preference keys off
+the *variant*, not a hard-coded 3, so a future refused code inherits it. Every
+other status prefers `status_desc` over the map.
+
+The **tooltip is always the mapped `desc`**, never upstream's string. A row can
+therefore wear a terse upstream label and still explain what happens next. Status
+0 has no `desc` because it has no pill.
+
+### `order` — where the row sits in the list
+
+The checklist is sorted by `order`, then alphabetically by the row's **label** —
+the one after `withDocConfig`, so an overridden name sorts where the partner
+actually reads it, not where upstream's string would. `docType` only breaks a tie
+between two documents that somehow share a name. Upstream's own order carries no meaning, and a list whose
+actionable rows sit under a run of approved ones reads as finished when it is
+not. So the sequence runs by what the row asks of the partner: **resubmission
+needed → pending → rejected → approval pending → uploaded**. An unrecognised
+status sorts with pending, the same place its `canUpload: true` puts it.
+
+`parseDocumentList` sorts, not the page: the list then only reorders on a fetch,
+so a row cannot jump out from under a click. `order` never leaves `kyc.ts` —
+`statusOfDocument` strips it, since it is a list concern, not a row's.
+
+### `canUpload` — when the row offers no button at all
+
+A status whose `canUpload` is false renders **no button**, not a disabled one: a
+document under review is not something to replace, and a greyed-out button
+invites the click anyway. The pill's tooltip is what says why.
+
+It is its own flag rather than `!uploaded` because the two answer different
+questions — a rejected document is *not* uploaded **and** must be re-sent, while
+one awaiting review *is* uploaded and must be left alone. Replacing a file
+mid-review hands the reviewer a second document against a decision they have
+already started.
+
+An unrecognised status keeps `canUpload: true`. A code we have never seen is not
+grounds to strand a partner on a row they cannot act on.
+
+When the button does show, its label follows the other two signals: **Replace**
+when the status counts as uploaded, **Retry** on a destructive one, **Upload**
+otherwise. Today no status is both uploaded and uploadable, so "Replace" is
+unreachable — it stays because `canUpload` is the switch, and a future status
+may want exactly that pairing.
 
 A successful upload is still also remembered for the session (`uploadedNow`
-in `Documents.tsx`), read ahead of the mapped status. This is no longer a
-workaround for an unknown code — the list is refetched after every upload,
-and there is no guarantee that refetch already reflects the write it is
-chasing. `uploadedNow` bridges exactly that gap; it drops away on reload,
-and every fetch after the first is upstream's own `status: 2` doing the same
-job.
+in `Documents.tsx`), read ahead of the mapped status. This is not a workaround
+for an unknown code — the list is refetched after every upload, and there is no
+guarantee that refetch already reflects the write it is chasing. `uploadedNow`
+bridges exactly that gap; it drops away on reload, and every fetch after the
+first is upstream's own status doing the same job. It reads as **status 1, not
+2**: this console handed the file over, and nothing has approved it — claiming
+"approved" for the second between the envelope and the refetch would be a
+promise the console cannot make.
+
+The overlay **yields the moment upstream agrees**: it applies only while the
+fetched status does not already count as uploaded. Otherwise a row upstream had
+already approved would keep reading "Approval Pending" until the next reload,
+hiding a decision that has already been made.
+
+> The sample in `kyc.fixture.ts` was captured under the previous numbering,
+> where a not-yet-uploaded document reported `1`. Its rows now carry `0` so the
+> fixture means under this scheme what it meant when it was recorded — a pack
+> with nothing uploaded. Re-record it from UAT when convenient.
 
 ## File rules
 
@@ -187,21 +256,36 @@ bodies at a few MB regardless of what the handler checks.
 
 `/console/documents` — titled **Upload Documents**, in the rail and on the page
 — is a single-column checklist (`max-w-3xl`): the standard two-line console
-header, an "N documents pending" line, then one row per document showing its
+header, an "N of M documents pending" line, then one row per document showing its
 icon, name, upstream's note and a primary-coloured action button (Upload / Retry
 / Replace). States render in the console's usual order — error, skeletons, dashed
 empty state, content.
 
+The count is the number of rows whose status does **not** count as uploaded —
+`statusOfDocument().uploaded`, `uploadedNow` included — over the length of the
+list, not the length alone: upstream keeps approved documents in the list, and
+counting them as outstanding tells a partner they owe work they have already
+done. At zero the line reads **"All documents uploaded"** rather than "0 of 11".
+
 Three things the row deliberately does **not** show:
 
-- **A progress bar.** The list is refetched after every upload and comes back
-  without the document just sent, so "0 of 6" would count against a total that
-  shrinks under it. The outstanding count is the honest number.
+- **A progress bar.** The line above the list already carries the ratio, and a
+  bar would give a pack of eleven documents a milestone it does not have — the
+  KYC either clears review or it does not.
 - **The page count.** It tells the user nothing until they open the dialog,
   which is where the slots make it obvious.
-- **A "Not uploaded" pill.** An Upload button next to a listed document already
-  says that. The pill appears only when upstream has something to add — a
-  `status_desc`, a rejection reason (in red), or this session's "Uploaded".
+- **A pill for a status that has nothing to say.** Only an unrecognised code is
+  silent; every mapped status wears its own pill, in red when it is a rejection.
+
+The pill carries its status's `desc` as a **tooltip**, on hover and on focus —
+the trigger is a `tabIndex={0}` span, so the explanation is reachable without a
+pointer. `Documents.tsx` mounts its own `TooltipProvider` rather than leaning on
+the app's: the page is rendered on its own in tests, and Radix throws when a
+`Tooltip` finds no provider above it.
+
+A green tick is reserved for the approved status alone. "Approval Pending" is
+uploaded but not done, so it wears an outline Badge — a tick there would say the
+document had cleared review when it has not.
 
 Selecting a document opens `KycUploadDialog`, a plain shadcn `Dialog` holding
 one `FileUpload` per page. It is *not* an entry on `DialogHost`: the camera,

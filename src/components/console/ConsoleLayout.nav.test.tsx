@@ -173,16 +173,6 @@ describe("ConsoleLayout — rail shell", () => {
 			screen.getByText("home-page"),
 		);
 	});
-
-	it("shows the lifecycle state beside the caption", () => {
-		connectInteractions.mockResolvedValue({ interactions: [] });
-
-		renderRail();
-
-		// DEVELOPER is `state: "active"`; an unknown state falls back to "Pending"
-		// through `lifecycleBadge`, which LifecycleCard.test.tsx pins.
-		expect(screen.getByText("Active")).toBeVisible();
-	});
 });
 
 describe("ConsoleLayout — Documents rail item", () => {

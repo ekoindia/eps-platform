@@ -54,9 +54,25 @@ cookies, and the classification table below is unchanged — `mapConnectLogin`
 envelope onto the same `ProfileResult` union `getProfile` returns, in the same
 branch order. See "Auth providers" in `packages/eps-backend/README.md`.
 
-Only _login_ is delegated. Every onboarding interaction below (521, 523, 522,
-170, 10005, 5) still goes straight to SimpliBank with the `developer_key`
-header under both providers, and so does the `/signup/state` profile refresh.
+Only the _OTP exchange_ is delegated. Every onboarding interaction below (521,
+523, 522, 170, 10005, 5) still goes straight to SimpliBank with the
+`developer_key` header under both providers, and so does the `/signup/state`
+profile refresh.
+
+**The profile is read from 151 under both providers, login included.**
+`mapConnectLogin` classifies the envelope — that is what decides whether a
+session is minted at all — but for a `found` result `connectProvider.enrich`
+then replaces the profile with a real `eko.getProfile` read. Without it the two
+views of one account disagreed: connect-api's `auth_details` is a profile it
+assembles field by field, so anything it does not name is simply absent, and
+`account_state_id` is not named. A login therefore reported `accountStateId:
+null` → `active` for an account whose KYC was outstanding, and the next `/me`
+silently corrected it — the bug reads as "the badge is wrong until I reload".
+
+The re-read may only add fields, never change the verdict: a 151 that fails or
+returns some other kind leaves the envelope's profile untouched, because the OTP
+has already been consumed and a transient upstream blip must not turn a good
+login into a refusal.
 
 ## Why there is no Eko access token
 
@@ -166,6 +182,61 @@ on this:
 | `inactive`          | 403 `ACCOUNT_INACTIVE`                                 |
 | `not_allowed`       | 403 `NOT_ALLOWED`                                      |
 | `error`             | 502 `PROFILE_UNAVAILABLE`                              |
+
+### Lifecycle state (`MeView.state`)
+
+`deriveStateFromProfile` (`packages/eps-backend/src/identity/me.ts`) turns that
+`ProfileResult` into the string the console renders as
+`useAuth().state.me.state`. The frontend never computes it — it only checks the
+value against `LIFECYCLES` (`src/lib/auth/client.ts`) and fails closed to `anon`
+on anything unrecognised.
+
+| `ProfileResult`                                | `MeView.state` |
+| ---------------------------------------------- | -------------- |
+| `inactive`                                      | `inactive`     |
+| `error` / `not_allowed`                         | `unknown`      |
+| `not_found` (+ Zoho lead lookup, else `unknown`)| `lead`         |
+| `onboarding`                                    | `onboarded`    |
+| `found`, `onboarding === 1`                     | `onboarded`    |
+| `found`, `account_state_id === 48`              | `kyc-pending`  |
+| `found`, anything else (16, unmapped, absent)   | `active`       |
+
+Two properties of that last pair are deliberate:
+
+- **`onboarding` is tested for `1`, not "not 0".** A third value appearing
+  upstream is not a reason to tell a finished partner their onboarding is
+  unfinished.
+- **The account-state branch fails OPEN.** Only 48 is pending; 16, an id this
+  build has not mapped, and `null` all read as `active`. The connect-api provider
+  never reports an id at all (its `auth_details` has no such field), so reading an
+  unknown id as pending would have put a blocking KYC step in front of every
+  partner on that provider. `toStateId` rejects blanks rather than coercing them,
+  because `Number("")` is `0` and a blank field must not become a real-looking id.
+
+### What `/me` forwards about the user
+
+`EkoProfile` carries the typed fields the console has always read, plus two
+additions:
+
+- `accountStateId` — the id above, typed because the state machine branches on it.
+- `userDetail` — upstream's **whole** `user_detail`, filtered by a denylist
+  (`clients/profile-fields.ts`), so the console can read the long tail of profile
+  fields (PAN, current plan, alternate mobiles, profile picture,
+  primary-mobile metadata) without a backend release per field.
+
+That is a **denylist**, unlike the `detailBlocks` block-name allowlist beside it,
+and the trade is explicit: everything in it reaches browser JavaScript and
+`sessionStorage`, so it is PII sitting where an injected script could read it,
+and the filter cannot know about a credential upstream adds under a new name.
+`stripSensitive` recurses into nested objects and arrays, drops keys matching
+`token|secret|password|passwd|otp|_key$|^key$|^[mtu]?pin$`, and deliberately
+keeps `pincode`/`pin_code` (postal codes) and `is_pin_not_set` (a flag, not a
+PIN). Widen it the moment 151 grows a credential-shaped field.
+
+The whole `MeView` is parked in `sessionStorage` by `session-cache.ts` so a
+reload paints the signed-in shell immediately. Its envelope `VERSION` is bumped
+whenever this shape changes — currently **2** — so a blob written by an older
+build is discarded rather than rendered half-populated.
 
 **`DEV_ALLOW_ANY_USER_TYPE=true` (DEV/UAT only)** skips the business-partner
 gate in both classifiers (`clients/eko.ts`, `clients/connect.ts`), org check

@@ -1,8 +1,10 @@
 import type { ConnectClient } from "../clients/connect";
 import { mapConnectLogin, tokensOf } from "../clients/connect";
+import type { EkoClient } from "../clients/eko";
 import type { Config } from "../config";
 import type { KV } from "../store/kv";
 import type { SecretBox } from "../store/secretbox";
+import type { ProfileResult } from "../types";
 import type { AuthProvider, UpstreamSession } from "./provider";
 
 /**
@@ -23,9 +25,9 @@ const REFRESH_SKEW_MS = 60_000;
  */
 export function createConnectAuthProvider(
 	connect: ConnectClient,
-	deps: { kv: KV; secretbox: SecretBox; cfg: Config },
+	deps: { kv: KV; secretbox: SecretBox; cfg: Config; eko: EkoClient },
 ): AuthProvider {
-	const { kv, secretbox, cfg } = deps;
+	const { kv, secretbox, cfg, eko } = deps;
 	const orgId = cfg.connectApi?.orgId ?? cfg.eko.defaultOrgId;
 	const key = (sid: string) => `ca:${sid}`;
 
@@ -55,6 +57,42 @@ export function createConnectAuthProvider(
 		await kv.set(key(sid), secretbox.encrypt(JSON.stringify(session)), ttlSec);
 	}
 
+	/**
+	 * Replaces a login-derived profile with the interaction-151 one.
+	 *
+	 * connect-api's login envelope carries `auth_details` — a profile it builds
+	 * field by field (`routes/authentication.js`), NOT upstream's `user_detail`.
+	 * Fields it does not name are simply absent, `account_state_id` among them,
+	 * so a login view built from it says `accountStateId: null` and reads as
+	 * `active` for an account whose KYC is outstanding. `GET /me` calls
+	 * `eko.getProfile` under either provider and gets the real thing, so the
+	 * session silently corrected itself on the next page load — the login view
+	 * and the `/me` view disagreed about the same account.
+	 *
+	 * This is the same 151 read the direct provider already does after its OTP
+	 * check (`ekoProvider.ts`), so the cost is one call the other path pays too,
+	 * and both providers now hand the route a profile from one source.
+	 *
+	 * Only a `found` profile is enriched, and only a `found` re-read replaces it:
+	 * `mapConnectLogin` is what decides whether a session is minted at all, and
+	 * this must be able to add fields, never to change that verdict. A 151 that
+	 * fails or disagrees leaves the envelope's profile exactly as it was —
+	 * degrading to the previous behaviour beats refusing a login that succeeded.
+	 */
+	async function enrich(
+		profile: ProfileResult,
+		mobile: string,
+		xRealIp?: string,
+	): Promise<ProfileResult> {
+		if (profile.kind !== "found") return profile;
+		try {
+			const fresh = await eko.getProfile({ mobile, orgId, xRealIp });
+			return fresh.kind === "found" ? fresh : profile;
+		} catch {
+			return profile;
+		}
+	}
+
 	return {
 		name: "connect",
 
@@ -66,7 +104,11 @@ export function createConnectAuthProvider(
 			// code alone would mint a session for any six digits.
 			if (env.otpFailed) return { ok: false };
 
-			const profile = mapConnectLogin(env, orgId, cfg.eko.devAllowAnyUserType);
+			const profile = await enrich(
+				mapConnectLogin(env, orgId, cfg.eko.devAllowAnyUserType),
+				mobile,
+				xRealIp,
+			);
 			const tokens = tokensOf(env);
 			const now = Date.now();
 			return {

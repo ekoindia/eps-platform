@@ -39,3 +39,48 @@ export const SHOW_CONNECT_WIDGET: boolean =
  */
 export const CONNECT_WIDGET_URL: string =
 	import.meta.env.VITE_CONNECT_WIDGET_URL ?? "";
+
+/**
+ * When true, `/console` renders the Business Dashboard below the Next Steps
+ * card — the window picker and every widget under it. When false (the default),
+ * Home is the Next Steps card plus the lifecycle state, and nothing calls
+ * `/dashboard` at all.
+ *
+ * Flip to `true` (`VITE_SHOW_BUSINESS_DASHBOARD=true`) only once the numbers on
+ * that page have been reconciled against Eloka for a real account — see the
+ * status banner in `docs/features/business-dashboard.md`, which still records a
+ * blank Usage Analytics dataset. A partner reads these totals as their own
+ * revenue, so a wrong one is worse than none.
+ */
+export const SHOW_BUSINESS_DASHBOARD: boolean =
+	import.meta.env.VITE_SHOW_BUSINESS_DASHBOARD === "true";
+
+/**
+ * When true, the dashboard's window picker offers "Last 365 Days" beside the
+ * shorter windows. When false (the default), 30 days is the widest window a
+ * partner can ask for.
+ *
+ * Local testing only (`VITE_SHOW_DASHBOARD_LAST_365=true`). A year of upstream
+ * aggregation is a slow, expensive query for interaction 682, and production
+ * caps the range deliberately. This hides the control and nothing else: the
+ * backend still accepts `last365` and `dashboardRange.ts` still computes it, so
+ * the range maths and its tests are untouched by the cap.
+ */
+export const SHOW_DASHBOARD_LAST_365: boolean =
+	import.meta.env.VITE_SHOW_DASHBOARD_LAST_365 === "true";
+
+/**
+ * When true, a signed-in developer's session polls `/notifications` every ten
+ * minutes and the header grows a bell; `/console` also gets a notifications
+ * card. When false (the default), nothing calls the endpoint at all.
+ *
+ * Flip to `true` (`VITE_SHOW_NOTIFICATIONS=true`) only once interaction 10010
+ * has been checked on production connect-api FOR A REAL DEVELOPER ACCOUNT. The
+ * notification feed this reads is Eko's shared EMS, and the content authored
+ * there today is aimed at Eloka's retailers ("Earn with AePS", cashout promos).
+ * The backend serves only `notification_type: 0` and drops every ad, but a
+ * retailer-flavoured announcement can still be published as a plain one — so
+ * what needs confirming is the CONTENT, not just that the call succeeds.
+ */
+export const SHOW_NOTIFICATIONS: boolean =
+	import.meta.env.VITE_SHOW_NOTIFICATIONS === "true";

@@ -57,7 +57,13 @@ export type VerifyResult =
  * Profile *reads* deliberately stay outside this interface — `/me`,
  * `/wallet/balance`, `/signup/*` and `/transactions/search` keep calling
  * `eko.getProfile` under either provider, because both providers ultimately
- * read the same interaction 151. Only login is delegated.
+ * read the same interaction 151. Only the OTP exchange is delegated.
+ *
+ * That applies to the profile a `verify` hands back, too: it must be the 151
+ * profile, not whatever the provider's own login response happened to carry.
+ * connect-api answers with `auth_details`, a profile it assembles field by
+ * field, and a view built from that disagreed with the very next `/me` — see
+ * `connectProvider.enrich`.
  */
 export interface AuthProvider {
 	readonly name: "eko" | "connect";

@@ -339,7 +339,7 @@ describe("mapProfile onboarding_steps", () => {
 	});
 });
 
-describe("mapProfile detailBlocks", () => {
+describe("mapProfile passthrough fields", () => {
 	const activeDetail = {
 		name: "Test User",
 		mobile: "9990000001",
@@ -392,8 +392,9 @@ describe("mapProfile detailBlocks", () => {
 		});
 	});
 
-	// Both are mapped into dedicated fields already; duplicating them here would
-	// ship the whole user_detail a second time, unredacted.
+	// `user_detail` has its own field (`userDetail`, denylist-filtered) and
+	// `account_detail` is mapped into `accounts`; copying either here would ship
+	// it a second time, through the branch that does no filtering at all.
 	it("never copies user_detail or account_detail into detailBlocks", async () => {
 		const profile = await profileFrom({
 			account_detail: { account_list: [] },
@@ -414,6 +415,55 @@ describe("mapProfile detailBlocks", () => {
 	it("is an empty object when 151 sent no detail blocks", async () => {
 		const profile = await profileFrom({});
 		expect(profile.detailBlocks).toEqual({});
+	});
+
+	/** Runs getProfile against a 369 whose `user_detail` carries extra fields. */
+	async function profileFromDetail(extra: Record<string, unknown>) {
+		const f = mockFetch(200, {
+			response_type_id: 369,
+			data: { user_detail: { ...activeDetail, ...extra } },
+		});
+		const r = await createEkoClient(ekoCfg, f).getProfile({
+			mobile: "9990000001",
+		});
+		if (r.kind !== "found") throw new Error(`expected found, got ${r.kind}`);
+		return r.profile;
+	}
+
+	it("forwards the whole user_detail under userDetail", async () => {
+		const profile = await profileFromDetail({
+			pancardnumber: "ABCDE1234F",
+			current_plan: "Gold",
+			alternate_mobiles: ["9990000002"],
+		});
+		expect(profile.userDetail).toMatchObject({
+			name: "Test User",
+			pancardnumber: "ABCDE1234F",
+			current_plan: "Gold",
+			alternate_mobiles: ["9990000002"],
+		});
+	});
+
+	// userDetail reaches browser JavaScript and sessionStorage, so this is the
+	// boundary that keeps a credential out of both.
+	it("keeps credential-shaped fields out of userDetail", async () => {
+		const profile = await profileFromDetail({
+			access_token: "eyJ...",
+			secret_key: "s",
+			pin: "1234",
+			device: { auth_token: "t", model: "Pixel" },
+		});
+		expect(profile.userDetail).not.toHaveProperty("access_token");
+		expect(profile.userDetail).not.toHaveProperty("secret_key");
+		expect(profile.userDetail).not.toHaveProperty("pin");
+		expect(profile.userDetail.device).toEqual({ model: "Pixel" });
+	});
+
+	it("reads account_state_id, and null when it is absent", async () => {
+		expect(
+			(await profileFromDetail({ account_state_id: 48 })).accountStateId,
+		).toBe(48);
+		expect((await profileFromDetail({})).accountStateId).toBeNull();
 	});
 });
 
@@ -821,6 +871,8 @@ describe("identityOf", () => {
 			accounts: [],
 			evalueAccountId: null,
 			detailBlocks: {},
+			accountStateId: 16,
+			userDetail: {},
 		};
 		expect(identityOf(profile)).toEqual({
 			initiatorId: "9990000001",

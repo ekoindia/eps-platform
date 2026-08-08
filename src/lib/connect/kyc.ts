@@ -46,7 +46,7 @@ export interface KycDocument {
 	info: string;
 	/** How many files this document takes. Always >= 1; see `parseDocumentList`. */
 	pages: number;
-	/** Confirmed against a live UAT account: 1 pending, 2 uploaded/approved, 3 needs resubmission. */
+	/** 0 pending upload, 1 awaiting approval, 2 approved, 3 resubmission, 4 rejected. */
 	status: number;
 	/** Upstream's own wording for `status`. Usually "". */
 	statusDesc: string;
@@ -58,28 +58,94 @@ export interface KycDocument {
 type StatusVariant = "default" | "secondary" | "destructive" | "outline";
 
 /**
- * `status` → how the row should read. Confirmed against a live UAT account:
- * 1 pending upload, 2 uploaded and approved, 3 needs resubmission.
+ * `status` → how the row should read: 0 pending upload, 1 uploaded and awaiting
+ * approval, 2 approved, 3 needs resubmission, 4 rejected.
  *
- * 1 keeps an empty label — the Upload button next to a pending row already
- * says "not uploaded", so a matching pill would be redundant. 3's label here
- * is only the fallback; `statusOfDocument` prefers upstream's own `error` or
- * `status_desc` text when either is present.
+ * 0 keeps an empty label — the Upload button next to a pending row already
+ * says "not uploaded", so a matching pill would be redundant. The labels at 3
+ * and 4 are only fallbacks; `statusOfDocument` prefers upstream's own `error`
+ * or `status_desc` text when either is present.
+ *
+ * `desc` is the pill's tooltip: the label is a pill's worth of words, the
+ * description is the sentence that says what the partner should expect next.
+ * It is ours, not upstream's — a row wearing upstream's own `status_desc` as
+ * its label still explains itself through the mapped `desc`.
+ *
+ * `canUpload` says whether the row still offers a button at all. It is its own
+ * flag rather than `!uploaded` because the two answer different questions: a
+ * rejected document is not uploaded *and* must be re-sent, while one waiting on
+ * review is uploaded and must be left alone. Replacing a file mid-review sends
+ * the reviewer a second document against a decision they have already started.
+ *
+ * `order` is where the status sorts in the list — see `parseDocumentList`. It
+ * runs "what needs you now" first and "nothing to do here" last, which is not
+ * the numeric order of the codes themselves. It never leaves this module:
+ * `statusOfDocument` strips it, since it is a list concern, not a row's.
  */
 const DOCUMENT_STATUS: Record<
 	number,
-	{ label: string; variant: StatusVariant; uploaded: boolean }
+	{
+		label: string;
+		variant: StatusVariant;
+		uploaded: boolean;
+		canUpload: boolean;
+		order: number;
+		desc?: string;
+	}
 > = {
-	1: { label: "", variant: "outline", uploaded: false },
-	2: { label: "Uploaded", variant: "default", uploaded: true },
-	3: { label: "Resubmission needed", variant: "destructive", uploaded: false },
+	0: {
+		label: "Pending", // Pending Upload
+		variant: "outline",
+		uploaded: false,
+		canUpload: true,
+		order: 1,
+		desc: "Please upload the document",
+	},
+	1: {
+		label: "Approval Pending",
+		variant: "secondary",
+		uploaded: true,
+		canUpload: false,
+		order: 3,
+		desc: "Document uploaded, waiting for review",
+	},
+	2: {
+		label: "Uploaded", // Success
+		variant: "default",
+		uploaded: true,
+		canUpload: false,
+		order: 4,
+		desc: "Document uploaded and approved",
+	},
+	3: {
+		label: "Resubmission needed",
+		variant: "destructive",
+		uploaded: false,
+		canUpload: true,
+		order: 0,
+		desc: "Document rejected, requires resubmission",
+	},
+	4: {
+		label: "Rejected",
+		variant: "destructive",
+		uploaded: false,
+		canUpload: true,
+		order: 2,
+		desc: "Document rejected",
+	},
 };
 
-/** How an unrecognised `status` reads. Deliberately the same as "nothing yet". */
+/**
+ * How an unrecognised `status` reads. Deliberately the same as "nothing yet",
+ * upload button included: an unknown code is not grounds to strand a partner on
+ * a row they cannot act on.
+ */
 const UNKNOWN_STATUS = {
 	label: "",
 	variant: "outline" as StatusVariant,
 	uploaded: false,
+	canUpload: true,
+	order: DOCUMENT_STATUS[0].order,
 };
 
 /**
@@ -131,8 +197,17 @@ function str(value: unknown): string {
  * overrides for the document types it knows about. Merging here rather than at
  * each call site is what stops the dev bench and the console from drifting apart
  * — see `kyc-docs.ts`.
+ *
+ * Rows come back sorted by what they ask of the partner — `DOCUMENT_STATUS.order`
+ * — then alphabetically by name. Upstream's own order carries no meaning, and a
+ * checklist whose actionable rows sit under a run of approved ones reads as
+ * finished when it isn't. Sorting here rather than at render time means the list
+ * only reorders on a fetch: a row cannot jump out from under a click.
+ *
+ * The name is sorted *after* `withDocConfig`, so it is the label the row shows,
+ * override included, not upstream's.
  * @param raw - The `document_list` array, of unknown shape.
- * @returns The documents, in upstream's order.
+ * @returns The documents, most actionable first.
  */
 export function parseDocumentList(raw: unknown): KycDocument[] {
 	if (!Array.isArray(raw)) return [];
@@ -154,39 +229,72 @@ export function parseDocumentList(raw: unknown): KycDocument[] {
 			}),
 		);
 	}
-	return documents;
+	// By the label the partner actually reads, not `docType` — an id is upstream's
+	// filing order, and a checklist is scanned by name. `docType` only breaks a
+	// tie between two documents that somehow share a name.
+	return documents.sort(
+		(a, b) =>
+			sortRank(a) - sortRank(b) ||
+			a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) ||
+			a.docType.localeCompare(b.docType, undefined, { numeric: true }),
+	);
+}
+
+/** Where a document's status places it in the list. See `DOCUMENT_STATUS.order`. */
+function sortRank(doc: KycDocument): number {
+	return (DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS).order;
 }
 
 /**
  * How one document's status should read.
  *
- * At status 3 (needs resubmission), the label prefers upstream's own
- * wording — `error` first, since a rejection reason is the most useful thing
- * a row can say, then `status_desc` — and falls back to the map's generic
- * "Resubmission needed". Every other status prefers `status_desc` over the
- * map. Same idiom as `statusOf` in `lib/console/transactions.ts`, and for the
- * same reason: one status code spans several upstream wordings.
+ * On a refused document — 3 and 4, the two statuses that read destructive —
+ * the label prefers upstream's own wording: `error` first, since a rejection
+ * reason is the most useful thing a row can say, then `status_desc`, then the
+ * map's generic label. Every other status prefers `status_desc` over the map.
+ * Same idiom as `statusOf` in `lib/console/transactions.ts`, and for the same
+ * reason: one status code spans several upstream wordings.
+ *
+ * The label can therefore be upstream's, but `desc` — the pill's tooltip — is
+ * always the mapped one, so a row wearing a terse upstream string still
+ * explains what happens next.
  * @param doc - The document row.
  * @param justUploaded - Whether this session has uploaded it successfully since
  *   the list was fetched. Set from an upstream success envelope; it is an
  *   optimistic overlay for the gap between that envelope and the refetch that
  *   follows it, not a stand-in for `status` — it drops away on the next fetch,
- *   by which point upstream's own `status: 2` reports the same thing.
- * @returns The label to show, the Badge variant to show it in, and whether the
- *   document counts as done. An empty label means upstream has nothing to say
- *   about this document yet — the row shows no pill, since "not uploaded" is
- *   already what an Upload button next to a listed document means.
+ *   by which point upstream's own `status: 1` reports the same thing. It reads
+ *   as 1 (awaiting approval), not 2: a file this console has just handed over
+ *   is uploaded, and nothing has approved it.
+ * @returns The label to show, the Badge variant to show it in, its tooltip when
+ *   the status has one, whether the document counts as uploaded, and whether the
+ *   row still offers an upload button. An empty label means upstream has nothing
+ *   to say about this document yet — the row shows no pill, since "not uploaded"
+ *   is already what an Upload button next to a listed document means.
  */
 export function statusOfDocument(
 	doc: KycDocument,
 	justUploaded = false,
-): { label: string; variant: StatusVariant; uploaded: boolean } {
-	if (justUploaded) {
-		return { label: "Uploaded", variant: "default", uploaded: true };
+): {
+	label: string;
+	variant: StatusVariant;
+	uploaded: boolean;
+	canUpload: boolean;
+	desc?: string;
+} {
+	// `order` is dropped on the way out: it sorts the list, and a row has no use
+	// for it.
+	const { order: _order, ...mapped } =
+		DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS;
+	// The overlay only fills a gap: once the refetch itself reports the document
+	// as uploaded, upstream's own status is the better answer — it may already
+	// have been approved, and a stale "Approval Pending" would hide that.
+	if (justUploaded && !mapped.uploaded) {
+		const { order: _pendingOrder, ...pending } = DOCUMENT_STATUS[1];
+		return pending;
 	}
-	const mapped = DOCUMENT_STATUS[doc.status] ?? UNKNOWN_STATUS;
 	const label =
-		doc.status === 3
+		mapped.variant === "destructive"
 			? doc.error || doc.statusDesc || mapped.label
 			: doc.statusDesc || mapped.label;
 	return { ...mapped, label };
