@@ -6324,14 +6324,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "email",
 				type: "string",
 				description:
-					"Email address associated with the PAN. Fill rate is approximately 5–10% due to data-source availability.",
+					"Masked email address associated with the PAN. Fill rate is approximately 5–10% due to data-source availability.",
 				example: "rajesh.kumar@example.com",
 			},
 			{
 				name: "mobile_number",
 				type: "string",
 				description:
-					"Mobile number associated with the PAN. Fill rate is approximately 5–10% due to data-source availability.",
+					"Masked mobile number associated with the PAN. Fill rate is approximately 5–10% due to data-source availability.",
 				example: "9876543210",
 			},
 			{
