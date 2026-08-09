@@ -11,11 +11,12 @@ vi.mock("sonner", () => ({
 	},
 }));
 
-const blurScoreFromSource = vi.fn();
+const blurScoreFromImageFile = vi.fn();
 const setBlurScore = vi.fn();
 vi.mock("@/lib/connect/blur", () => ({
 	DEFAULT_BLUR_THRESHOLD: 30,
-	blurScoreFromSource: (...args: unknown[]) => blurScoreFromSource(...args),
+	blurScoreFromImageFile: (...args: unknown[]) =>
+		blurScoreFromImageFile(...args),
 	setBlurScore: (...args: unknown[]) => setBlurScore(...args),
 }));
 
@@ -58,14 +59,14 @@ describe("ImageEditorDialog blur check", () => {
 		clickAccept();
 		await flush();
 
-		expect(blurScoreFromSource).not.toHaveBeenCalled();
+		expect(blurScoreFromImageFile).not.toHaveBeenCalled();
 		expect(onClose).toHaveBeenCalledWith(
 			expect.objectContaining({ accepted: true }),
 		);
 	});
 
 	it("keeps the editor open for a blurry capture in block mode", async () => {
-		blurScoreFromSource.mockReturnValue(10);
+		blurScoreFromImageFile.mockResolvedValue(10);
 		const onClose = renderEditor({ blurCheck: "block" });
 		clickAccept();
 		await flush();
@@ -77,7 +78,7 @@ describe("ImageEditorDialog blur check", () => {
 	});
 
 	it("accepts a sharp capture in block mode and stamps its score", async () => {
-		blurScoreFromSource.mockReturnValue(75);
+		blurScoreFromImageFile.mockResolvedValue(75);
 		const onClose = renderEditor({ blurCheck: "block" });
 		clickAccept();
 		await flush();
@@ -89,7 +90,7 @@ describe("ImageEditorDialog blur check", () => {
 	});
 
 	it("warns about a blurry capture but accepts it in warn mode", async () => {
-		blurScoreFromSource.mockReturnValue(10);
+		blurScoreFromImageFile.mockResolvedValue(10);
 		const onClose = renderEditor({ blurCheck: "warn" });
 		clickAccept();
 		await flush();
@@ -103,7 +104,7 @@ describe("ImageEditorDialog blur check", () => {
 	});
 
 	it("accepts silently in measure mode, keeping only the score", async () => {
-		blurScoreFromSource.mockReturnValue(10);
+		blurScoreFromImageFile.mockResolvedValue(10);
 		const onClose = renderEditor({ blurCheck: "measure" });
 		clickAccept();
 		await flush();
@@ -117,7 +118,7 @@ describe("ImageEditorDialog blur check", () => {
 	});
 
 	it("accepts when the scorer cannot judge (fail open)", async () => {
-		blurScoreFromSource.mockReturnValue(null);
+		blurScoreFromImageFile.mockResolvedValue(null);
 		const onClose = renderEditor({ blurCheck: "block" });
 		clickAccept();
 		await flush();

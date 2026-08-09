@@ -1,6 +1,12 @@
 import { KycUploadDialog } from "@/components/console/KycUploadDialog";
+import { setBlurScore } from "@/lib/connect/blur";
 import type { KycDocument } from "@/lib/connect/kyc";
-import { configOf, KYC_MAX_FILE_BYTES } from "@/lib/connect/kyc-docs";
+import {
+	configOf,
+	KYC_BLUR_CHECK,
+	KYC_BLUR_THRESHOLD,
+	KYC_MAX_FILE_BYTES,
+} from "@/lib/connect/kyc-docs";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,6 +23,7 @@ vi.mock("@/components/FileUpload", () => ({
 		multiple,
 		combinedFileName,
 		watermark,
+		options,
 		onFileChange,
 	}: {
 		label?: string;
@@ -26,6 +33,7 @@ vi.mock("@/components/FileUpload", () => ({
 		multiple?: boolean;
 		combinedFileName?: string;
 		watermark?: boolean | string | Record<string, string>;
+		options?: { blurCheck?: string; blurThreshold?: number };
 		onFileChange: (file: File | null) => void;
 	}) => (
 		<button
@@ -37,6 +45,8 @@ vi.mock("@/components/FileUpload", () => ({
 			data-multiple={String(Boolean(multiple))}
 			data-combined-name={combinedFileName}
 			data-watermark={String(watermark)}
+			data-blur-check={options?.blurCheck}
+			data-blur-threshold={String(options?.blurThreshold)}
 			onClick={() => onFileChange(pick())}
 		>
 			{label}
@@ -276,6 +286,59 @@ describe("KycUploadDialog", () => {
 		expect(onClose).toHaveBeenCalledWith({
 			docType: "999",
 			message: "Received",
+		});
+	});
+
+	describe("blur check", () => {
+		it("applies one legibility rule to every slot", () => {
+			render(<KycUploadDialog doc={doc({ pages: 2 })} onClose={vi.fn()} />);
+
+			for (const slot of screen.getAllByTestId("file-upload")) {
+				expect(slot.dataset.blurCheck).toBe(KYC_BLUR_CHECK);
+				expect(slot.dataset.blurThreshold).toBe(String(KYC_BLUR_THRESHOLD));
+			}
+		});
+
+		it("cannot be opted out of by a document config", () => {
+			// The type already forbids it; this pins the runtime order too, since a
+			// spread the wrong way round would silently reinstate per-doc rules.
+			vi.mocked(configOf).mockReturnValue({
+				options: { blurCheck: "off" } as never,
+			});
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			expect(screen.getByTestId("file-upload").dataset.blurCheck).toBe(
+				KYC_BLUR_CHECK,
+			);
+		});
+
+		it("writes the score into the uploaded file name and a form field", async () => {
+			const scanned = fileOf("scan.pdf", 1024);
+			setBlurScore(scanned, 18);
+			pick = () => scanned;
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			fireEvent.click(screen.getByTestId("file-upload"));
+			fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+
+			await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+			const form = upload.mock.calls[0][0];
+			// The name is the channel that survives upstream; the field is the one
+			// to keep once upstream records it.
+			expect((form.get("file1") as File).name).toBe("scan_blur_score18.pdf");
+			expect(form.get("blur_score1")).toBe("18");
+		});
+
+		it("leaves the name alone when nothing scored the file", async () => {
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			fireEvent.click(screen.getByTestId("file-upload"));
+			fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+
+			await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+			const form = upload.mock.calls[0][0];
+			expect((form.get("file1") as File).name).toBe("scan.pdf");
+			expect(form.get("blur_score1")).toBeNull();
 		});
 	});
 

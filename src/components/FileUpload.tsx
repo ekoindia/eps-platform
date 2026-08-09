@@ -7,6 +7,7 @@ import {
 	blurScoreFromImageFile,
 	DEFAULT_BLUR_THRESHOLD,
 	getBlurScore,
+	lowestBlurScore,
 	setBlurScore,
 } from "@/lib/connect/blur";
 import { blurScorePdf } from "@/lib/pdf/pdf-client";
@@ -25,6 +26,7 @@ import {
 	FileText,
 	FolderOpen,
 	ImageIcon,
+	RefreshCw,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -191,9 +193,17 @@ export function acceptsOnlyImagesAndPdfs(accept: string): boolean {
 const BLUR_PDF_DEADLINE_MS = 4000;
 
 /**
+ * How long a step must run before it is worth naming.
+ *
+ * Below this, a label would flash and vanish, which reads as a glitch rather
+ * than as progress. Above it, silence reads as a hang.
+ */
+const SLOW_STEP_MS = 1000;
+
+/**
  * Runs the configured blur check on a file the image editor never sees —
  * PDFs, and images on the `disableImageConfirm` paths. Images that go
- * through the editor are checked there instead, against the user's crop.
+ * through the editor are checked there instead, on the processed file.
  *
  * Fail-open by contract: a score of `null`, a decode failure or a timeout
  * all return `ok`, so the check can only ever degrade to today's behaviour.
@@ -288,6 +298,9 @@ export function FileUpload({
 	const [dragState, setDragState] = useState<"none" | "valid" | "invalid">(
 		"none",
 	);
+	// What the component is doing right now, once it has been doing it long
+	// enough to be worth saying. Null the rest of the time. See `withStatus`.
+	const [status, setStatus] = useState<string | null>(null);
 
 	// Previews of unedited files are object URLs; the editor's are data URLs.
 	// Track and release the former, or a long form leaks every image the user
@@ -348,6 +361,33 @@ export function FileUpload({
 	}
 
 	/**
+	 * Runs a step, naming it in the UI once it has been running for a second.
+	 *
+	 * Compressing a 20-page scan or quality-checking a big photo are the two
+	 * steps that can visibly stall a pick, and an unexplained stall reads as a
+	 * broken button. Fast steps stay silent.
+	 *
+	 * ponytail: one label at a time — the steps this wraps are sequential, so
+	 * nesting cannot arise. Give `status` a counter if that ever changes.
+	 *
+	 * @param label - What to show, e.g. `Checking quality…`.
+	 * @param run - The step.
+	 * @returns Whatever the step returns.
+	 */
+	async function withStatus<T>(
+		label: string,
+		run: () => Promise<T>,
+	): Promise<T> {
+		const timer = setTimeout(() => setStatus(label), SLOW_STEP_MS);
+		try {
+			return await run();
+		} finally {
+			clearTimeout(timer);
+			setStatus(null);
+		}
+	}
+
+	/**
 	 * Hands a file to the caller and shows its preview, unless it is too large.
 	 *
 	 * @returns False when the file was refused for its size.
@@ -382,7 +422,10 @@ export function FileUpload({
 
 		if (!isImageType(picked.type)) {
 			// PDFs never reach the editor, so their blur check happens here.
-			if (!(await checkBlurOrExplain(picked, options))) {
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(picked, options),
+			);
+			if (!ok) {
 				resetInput();
 				return;
 			}
@@ -394,7 +437,10 @@ export function FileUpload({
 
 		if (options.disableImageConfirm) {
 			// Skips the editor, so it also skips the editor's blur check.
-			if (!(await checkBlurOrExplain(picked, options))) {
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(picked, options),
+			);
+			if (!ok) {
 				URL.revokeObjectURL(objectUrl);
 				resetInput();
 				return;
@@ -438,7 +484,10 @@ export function FileUpload({
 			// instead would mean tracking a revoke per row for a thumbnail.
 			if (options.disableImageConfirm) {
 				// No editor for this image, so no editor blur check either.
-				if (!(await checkBlurOrExplain(candidate, options))) return null;
+				const ok = await withStatus("Checking quality…", () =>
+					checkBlurOrExplain(candidate, options),
+				);
+				if (!ok) return null;
 				return { id: nextItemId(), file: candidate, thumbnail: null };
 			}
 			const objectUrl = URL.createObjectURL(candidate);
@@ -461,13 +510,15 @@ export function FileUpload({
 		}
 
 		try {
-			const compressed = await compressIfLarge(
-				candidate,
-				compressThresholdBytes,
+			const compressed = await withStatus("Compressing PDF…", () =>
+				compressIfLarge(candidate, compressThresholdBytes),
 			);
 			// Checked after compression, so the verdict — and the telemetry score —
 			// belong to the bytes that are actually uploaded.
-			if (!(await checkBlurOrExplain(compressed, options))) return null;
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(compressed, options),
+			);
+			if (!ok) return null;
 			return { id: nextItemId(), file: compressed, thumbnail: null };
 		} catch (error) {
 			// A PDF we cannot even read — encrypted or corrupt. Say so and skip it;
@@ -525,18 +576,18 @@ export function FileUpload({
 			}
 			if (token !== rebuildTokenRef.current) return;
 
-			const merged = await combinePdfParts(parts, combinedFileName);
-			const combined = await shrinkToFit(merged, maxBytes);
+			const combined = await withStatus("Combining pages…", async () => {
+				const merged = await combinePdfParts(parts, combinedFileName);
+				return shrinkToFit(merged, maxBytes);
+			});
 			if (token !== rebuildTokenRef.current) return;
 
-			// The combined PDF is a new File, which loses the parts' scores — carry
-			// the worst one over, since the worst page is what review rejects.
-			const partScores = next
-				.map((item) => getBlurScore(item.file))
-				.filter((score): score is number => score !== undefined);
-			if (partScores.length > 0) {
-				setBlurScore(combined, Math.min(...partScores));
-			}
+			// The combined PDF is a new File, which loses the parts' scores. Carry
+			// the worst one over: the pack is only as good as its worst page.
+			const worst = lowestBlurScore(
+				next.map((item) => getBlurScore(item.file)),
+			);
+			if (worst !== null) setBlurScore(combined, worst);
 
 			if (!attach(combined, null)) onFileChange(null);
 		} catch (error) {
@@ -659,11 +710,12 @@ export function FileUpload({
 
 		// With the confirm step on, the editor has already judged the capture;
 		// without it the file arrives unchecked.
-		if (
-			options.disableImageConfirm &&
-			!(await checkBlurOrExplain(result.file, options))
-		) {
-			return;
+		if (options.disableImageConfirm) {
+			const ok = await withStatus("Checking quality…", () =>
+				// Non-null by the guard above; narrowing does not survive the closure.
+				checkBlurOrExplain(result.file as File, options),
+			);
+			if (!ok) return;
 		}
 
 		if (!multiEnabled) {
@@ -787,6 +839,32 @@ export function FileUpload({
 			</div>
 		</>
 	);
+
+	// A named step that has outlasted `SLOW_STEP_MS`. Rendered in every layout,
+	// so the zone explains itself whether or not a file is already attached.
+	const statusLine = status ? (
+		<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+			<RefreshCw className="h-3 w-3 shrink-0 animate-spin" />
+			{status}
+		</p>
+	) : null;
+
+	// Sharpness, in development only: the numbers behind an accept or a warning,
+	// so a threshold can be judged against real captures rather than guessed at.
+	// The combined file carries the worst of its parts — see `lowestBlurScore`.
+	const devScore = import.meta.env.DEV && file ? getBlurScore(file) : undefined;
+	const devPartScores = import.meta.env.DEV
+		? items.map((item) => getBlurScore(item.file))
+		: [];
+	const devScoreLine =
+		import.meta.env.DEV && devScore !== undefined ? (
+			<p className="select-none font-mono text-[10px] text-muted-foreground/70">
+				blur score: {devScore}
+				{devPartScores.length > 1
+					? ` (pages: ${devPartScores.map((score) => score ?? "—").join(", ")})`
+					: null}
+			</p>
+		) : null;
 
 	/** One row of the pending batch. */
 	function renderItemRow(item: PendingItem, index: number) {
@@ -960,6 +1038,11 @@ export function FileUpload({
 						)}
 					</>
 				)}
+
+				{/* Outside the layout branches, so a slow step or a score explains
+				    itself whether or not a file is already attached. */}
+				{statusLine}
+				{devScoreLine}
 			</div>
 		</div>
 	);

@@ -4,7 +4,16 @@ import {
 	acceptsType,
 } from "@/components/FileUpload";
 import { ConnectDialogProvider } from "@/components/connect/DialogHost";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
+
+/** Mirrors `SLOW_STEP_MS` in the component — the delay before a step is named. */
+const SLOW_STEP_MS = 1000;
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastError = vi.fn();
@@ -285,6 +294,40 @@ describe("FileUpload", () => {
 				expect.stringContaining("soft.pdf looks blurry"),
 			);
 			expect(toastError).not.toHaveBeenCalled();
+		});
+
+		it("names the step once it has been running for a second", async () => {
+			// Nothing to show while the check is quick, and an explanation once it
+			// is slow enough that silence would read as a hang.
+			let finish!: (score: number | null) => void;
+			blurScorePdfMock.mockReturnValue(
+				new Promise<number | null>((resolve) => {
+					finish = resolve;
+				}),
+			);
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "measure" },
+				onFileChange: vi.fn(),
+			});
+
+			vi.useFakeTimers({ shouldAdvanceTime: true });
+			try {
+				pickFile(container, fileOf("slow.pdf", 1024));
+				expect(screen.queryByText("Checking quality…")).toBeNull();
+
+				await act(async () => {
+					await vi.advanceTimersByTimeAsync(SLOW_STEP_MS);
+				});
+				expect(screen.getByText("Checking quality…")).toBeInTheDocument();
+
+				await act(async () => {
+					finish(80);
+				});
+				expect(screen.queryByText("Checking quality…")).toBeNull();
+			} finally {
+				vi.useRealTimers();
+			}
 		});
 
 		it("scores silently in measure mode, stamping the file for telemetry", async () => {

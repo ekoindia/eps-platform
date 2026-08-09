@@ -9,10 +9,13 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError, authClient } from "@/lib/auth/client";
-import { getBlurScore } from "@/lib/connect/blur";
+import { getBlurScore, withBlurScoreInName } from "@/lib/connect/blur";
 import {
 	configOf,
 	KYC_ACCEPT,
+	KYC_BLUR_CHECK,
+	KYC_BLUR_STAMP_FILENAME,
+	KYC_BLUR_THRESHOLD,
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
 import type { KycDocument } from "@/lib/connect/kyc";
@@ -90,11 +93,16 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 			files.forEach((file, index) => {
 				// Non-null by `complete`; the loop is what names the parts.
 				if (!file) return;
-				form.append(`file${index + 1}`, file, file.name);
-				// Sharpness telemetry for threshold calibration. The backend reads
-				// only the fields it names, so an extra part is safely ignored until
-				// it learns to record these.
 				const sharpness = getBlurScore(file);
+				// Two channels for the same number, because only one of them
+				// currently arrives: upstream keeps the file name but drops fields it
+				// does not know, so the name is what a reviewer actually sees. The
+				// field is the one to keep once upstream records it.
+				const name =
+					KYC_BLUR_STAMP_FILENAME && sharpness !== undefined
+						? withBlurScoreInName(file.name, sharpness)
+						: file.name;
+				form.append(`file${index + 1}`, file, name);
 				if (sharpness !== undefined) {
 					form.append(`blur_score${index + 1}`, String(sharpness));
 				}
@@ -201,11 +209,14 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 								// the upload can tell which side of the card they are looking
 								// at instead of two files both called "combined-documents".
 								combinedFileName={`${slugify(label)}.pdf`}
-								// `measure` scores every attachment for `blur_scoreN` telemetry
-								// without warning or blocking anyone; a doc type opts into
-								// enforcement via its own `options.blurCheck` once thresholds
-								// are calibrated against that telemetry.
-								options={{ blurCheck: "measure", ...config.options }}
+								// One legibility rule for the whole checklist — see
+								// `KYC_BLUR_CHECK`. Spread last so a document config cannot
+								// quietly opt itself out; its type excludes these keys too.
+								options={{
+									...config.options,
+									blurCheck: KYC_BLUR_CHECK,
+									blurThreshold: KYC_BLUR_THRESHOLD,
+								}}
 								file={file}
 								disabled={busy}
 								// Provenance burnt into the pixels — who, where and when —

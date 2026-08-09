@@ -19,6 +19,7 @@
  */
 
 import type { FileUploadOptions } from "@/components/FileUpload";
+import { DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
 import type { WatermarkSpec } from "@/hooks/use-watermark";
 import type { KycDocument } from "@/lib/connect/kyc";
 
@@ -43,6 +44,41 @@ export const KYC_MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 /** The backend's per-document file-count ceiling. Above it, every upload 400s. */
 export const KYC_MAX_PAGES = 6;
+
+/**
+ * What a blurry scan costs the partner, across **every** KYC document.
+ *
+ * Deliberately one setting rather than a per-document one: "is this scan
+ * legible" is a property of the capture, not of which document it depicts, and
+ * a rule that varies by row is a rule nobody can predict. {@link KycDocConfig}
+ * excludes `blurCheck` from its `options` so this cannot be overridden.
+ *
+ * `warn` toasts and lets the upload through. Not `block`: {@link
+ * KYC_BLUR_THRESHOLD} has not been calibrated against real captures yet, and a
+ * false positive on a legible scan is a partner who cannot finish KYC at all.
+ * Move to `block` once the scores coming back say where the line sits.
+ */
+export const KYC_BLUR_CHECK = "warn" as const;
+
+/**
+ * The 0–100 sharpness floor for every KYC document. See `blur.ts`.
+ *
+ * Left at the library default on purpose — this constant exists so the number
+ * has one home to be tuned in once there is evidence, not because a KYC-
+ * specific value is known.
+ */
+export const KYC_BLUR_THRESHOLD = DEFAULT_BLUR_THRESHOLD;
+
+/**
+ * Whether the score is written into the uploaded file's name, before the
+ * extension — `aadhaar-front_blur_score18.pdf`.
+ *
+ * On, because it is the only channel that currently reaches a reviewer:
+ * upstream keeps the file name but drops the `blur_scoreN` form fields. Turn
+ * it off once upstream records the scores properly, at which point the names
+ * are just noise.
+ */
+export const KYC_BLUR_STAMP_FILENAME = true;
 
 /**
  * What this console knows about one document type, over and above upstream.
@@ -139,8 +175,14 @@ export interface KycDocConfig {
 	 * Never set `disableImageConfirm` on a document that needs provenance. It
 	 * skips the editor, and the editor is where the watermark is burnt into the
 	 * pixels — the capture would arrive unstamped.
+	 *
+	 * The blur knobs are excluded too: legibility is one rule for the whole
+	 * checklist, held in {@link KYC_BLUR_CHECK}.
 	 */
-	options?: Omit<FileUploadOptions, "fileName" | "watermark">;
+	options?: Omit<
+		FileUploadOptions,
+		"fileName" | "watermark" | "blurCheck" | "blurThreshold"
+	>;
 	/**
 	 * A tighter per-file size limit than {@link KYC_MAX_FILE_BYTES}.
 	 *

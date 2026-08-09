@@ -3,8 +3,10 @@ import {
 	blurScore,
 	DEFAULT_BLUR_THRESHOLD,
 	getBlurScore,
+	lowestBlurScore,
 	setBlurScore,
 	toGrayscale,
+	withBlurScoreInName,
 } from "./blur";
 
 const SIZE = 128;
@@ -125,6 +127,43 @@ describe("toGrayscale", () => {
 		expect(gray[1]).toBeCloseTo(149.685, 1);
 		expect(gray[2]).toBeCloseTo(29.07, 1);
 		expect(gray[3]).toBeCloseTo(255, 1);
+	});
+});
+
+describe("lowestBlurScore", () => {
+	it("takes the worst page, not the average", () => {
+		// The whole point: a pack averaging 50 but hiding an unreadable page is
+		// still a pack review will bounce.
+		expect(lowestBlurScore([80, 12, 76])).toBe(12);
+	});
+
+	it("ignores pages that could not be judged", () => {
+		expect(lowestBlurScore([null, 40, undefined, 55])).toBe(40);
+	});
+
+	it("cannot judge when nothing could be judged", () => {
+		expect(lowestBlurScore([])).toBeNull();
+		expect(lowestBlurScore([null, undefined])).toBeNull();
+	});
+});
+
+describe("withBlurScoreInName", () => {
+	it("inserts the score before the extension", () => {
+		expect(withBlurScoreInName("aadhaar-front.pdf", 18)).toBe(
+			"aadhaar-front_blur_score18.pdf",
+		);
+	});
+
+	it("keeps only the last dot as the extension", () => {
+		expect(withBlurScoreInName("scan.v2.jpg", 61)).toBe(
+			"scan.v2_blur_score61.jpg",
+		);
+	});
+
+	it("appends when there is no extension to sit before", () => {
+		expect(withBlurScoreInName("scan", 5)).toBe("scan_blur_score5");
+		// A leading dot is a stem, not a suffix — do not split on it.
+		expect(withBlurScoreInName(".hidden", 5)).toBe(".hidden_blur_score5");
 	});
 });
 

@@ -268,46 +268,78 @@ blank page is judged by its ink, not its margins. Scores are normalized to
 human-tweakable. Pure typed-array math, no dependencies, single-digit
 milliseconds at analysis resolution.
 
-**Configuration.** Two fields on `ImageEditorOptions`, so they thread through
-`FileUploadOptions` and `KYC_DOC_CONFIG[docType].options` like every other
-capture rule:
+**One rule for the whole checklist.** Legibility is a property of the capture,
+not of which document it depicts, so KYC does not configure this per document.
+Three constants in `kyc-docs.ts` decide it for every row:
 
-| Field | Values | Meaning |
+| Constant | Value | Meaning |
 | --- | --- | --- |
-| `blurCheck` | `off` (default) · `measure` · `warn` · `block` | What a below-threshold verdict does |
-| `blurThreshold` | 0–100, default 30 | The sharpness floor |
+| `KYC_BLUR_CHECK` | `warn` | Toast, but let the upload through |
+| `KYC_BLUR_THRESHOLD` | 30 | The 0–100 sharpness floor |
+| `KYC_BLUR_STAMP_FILENAME` | `true` | Write the score into the uploaded file name |
 
-`measure` scores silently, `warn` toasts but attaches, `block` refuses — in
-the editor that keeps the dialog open for a retake (the face-count precedent),
-elsewhere it drops the file with a toast.
+`KycDocConfig.options` **excludes** `blurCheck` and `blurThreshold` from its
+type, and `KycUploadDialog` spreads them after the document's own options, so
+a row cannot opt itself out either way. Underneath, the generic component still
+takes `blurCheck: 'off' | 'measure' | 'warn' | 'block'` and `blurThreshold` on
+`ImageEditorOptions` — `measure` scores silently, `warn` toasts and attaches,
+`block` refuses (in the editor that keeps the dialog open for a retake, the
+face-count precedent; elsewhere it drops the file with a toast).
 
-**Where it runs.** Images that go through the editor are judged there, on the
-user's crop — the crop is what uploads, and a sharp card cropped out of a
-blurry desk must pass. The paths that skip the editor (`disableImageConfirm`,
-PDFs) are checked in `FileUpload`'s `checkBlurOrExplain`. PDFs are judged after
-compression — the verdict belongs to the bytes actually uploaded — via
-`blurScorePdf` (`pdf-client.ts` → `pdf-render.ts`): only pure image scans are
-eligible (any text or vector op means born-digital, sharp by construction —
-the same conservative test compression uses, so an OCR-overlaid scan is
-skipped rather than misjudged), at most the first 3 pages are rasterized, a
-soft 4s deadline stops the check early, and the *worst* judged page decides,
-because review reads every page.
+`warn` rather than `block` deliberately: the threshold has not been calibrated
+against real captures, and a false positive on a legible scan is a partner who
+cannot finish KYC at all.
+
+**Where it runs — always after compression.** The check is fed the bytes that
+will actually be uploaded, never the original. This matters: a soft 4000px
+phone photo resized to 1200px is genuinely legible, because the blur kernel
+shrinks below a pixel on the way down, and the resized file is what the
+reviewer opens. Scoring the original would refuse captures that are fine.
+
+- Images through the editor: scored in `onAccept` on the processed file, after
+  crop, resize, watermark and re-encode.
+- Images that skip the editor (`disableImageConfirm`) and PDFs: scored in
+  `FileUpload`'s `checkBlurOrExplain`, PDFs after `compressIfLarge`.
+- PDFs go through `blurScorePdf` (`pdf-client.ts` → `pdf-render.ts`): only pure
+  image scans are eligible (any text or vector op means born-digital, sharp by
+  construction — the same conservative test compression uses, so an
+  OCR-overlaid scan is skipped rather than misjudged), at most the first 3
+  pages are rasterized, and a soft 4s deadline stops the check early.
+
+**Several pages: the lowest wins.** `lowestBlurScore` is the single home for
+that rule — not the average. Review reads every page, so a pack whose middle
+page is unreadable is rejected however crisp the others are, and averaging
+would hide exactly the page that gets it bounced. It applies to PDF pages and
+to the images combined into one; the combined PDF is a new `File`, so it is
+re-stamped with the worst of its parts.
 
 **Fail-open, everywhere.** A `null` score always means "could not judge" —
 blank page, digital PDF, decode failure, timeout, encrypted — and always
 passes. The check can only ever degrade to the pre-existing behaviour, never
 below it.
 
-**Rollout and telemetry.** Every KYC document currently runs in `measure`
-mode (the default `KycUploadDialog` passes; a doc type overrides via its own
-`options.blurCheck`). Scores travel on the `File` object (a `WeakMap` in
-`blur.ts` — rebuilt files are re-stamped: a combined PDF carries the minimum
-of its parts) and are appended to the upload as `blur_score1..N` form fields.
-The backend reads only the fields it names, so the extra parts are ignored
-until it learns to record them — **recording them is the follow-up that makes
-the threshold calibratable**; until then the default 30 is a paper value, and
-no doc type should be flipped to `warn`/`block` without looking at real score
-distributions first.
+**Slow steps explain themselves.** Compressing a big scan or quality-checking a
+large photo can stall a pick, and an unexplained stall reads as a broken
+button. `FileUpload.withStatus` names the running step ("Checking quality…",
+"Compressing PDF…", "Combining pages…") as fine text with a spinner, but only
+once it has run for a second — below that a label would flash and read as a
+glitch. In development the component also prints the resulting score under the
+zone, so a threshold can be judged against real captures.
+
+**Getting the score to review.** Two channels carry the same number, because
+only one of them currently arrives:
+
+- **The file name** — `aadhaar-front_blur_score18.pdf`, via
+  `withBlurScoreInName`. Upstream keeps the name, so this is what a reviewer
+  actually sees. A stopgap.
+- **`blur_score1..N` form fields** — the right channel, ignored today. The
+  backend reads only the fields it names, so the extra parts are harmless.
+
+**Recording those fields is the follow-up that makes the threshold
+calibratable.** Until then 30 is a paper value; look at real score
+distributions before moving `KYC_BLUR_CHECK` to `block`, and turn
+`KYC_BLUR_STAMP_FILENAME` off once upstream records the scores properly, at
+which point the names are just noise.
 
 ## UI
 

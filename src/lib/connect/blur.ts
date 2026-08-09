@@ -153,67 +153,18 @@ export function blurScore(
 	return Math.max(0, Math.min(100, Math.round(20 * Math.log10(1 + picked))));
 }
 
-/** A source-pixel region to analyse, e.g. the crop the user selected. */
-export interface BlurRegion {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
-
 /**
- * Scores a drawable source, downscaling to the analysis resolution first.
+ * Scores an image file, downscaling to the analysis resolution first.
  *
- * @param source - Anything `drawImage` accepts, e.g. a loaded `<img>`.
- * @param sourceWidth - The source's natural width in pixels.
- * @param sourceHeight - The source's natural height in pixels.
- * @param region - Sub-rectangle to analyse, in natural pixels. Whole image
- * when absent.
- * @param options - Passed through to {@link blurScore}.
- * @returns The 0–100 score, or null when it cannot be computed — fail open.
- */
-export function blurScoreFromSource(
-	source: CanvasImageSource,
-	sourceWidth: number,
-	sourceHeight: number,
-	region?: BlurRegion,
-	options?: BlurScoreOptions,
-): number | null {
-	if (typeof document === "undefined") return null;
-	const sx = region?.x ?? 0;
-	const sy = region?.y ?? 0;
-	const sw = region?.width ?? sourceWidth;
-	const sh = region?.height ?? sourceHeight;
-	if (!(sw > 0) || !(sh > 0)) return null;
-
-	const scale = Math.min(1, BLUR_ANALYSIS_MAX_LENGTH / Math.max(sw, sh));
-	const width = Math.max(1, Math.round(sw * scale));
-	const height = Math.max(1, Math.round(sh * scale));
-
-	const canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
-	try {
-		const context = canvas.getContext("2d", { willReadFrequently: true });
-		if (!context) return null;
-		context.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
-		const { data } = context.getImageData(0, 0, width, height);
-		return blurScore(toGrayscale(data, width, height), width, height, options);
-	} catch {
-		// Tainted canvas, decode failure — we cannot judge, so we do not block.
-		return null;
-	} finally {
-		canvas.width = 0;
-		canvas.height = 0;
-	}
-}
-
-/**
- * Scores an image file the editor never sees (`disableImageConfirm` paths).
+ * Always fed the bytes that will actually be uploaded — after any crop,
+ * resize and re-encode. Scoring the original instead would fail decent
+ * captures: a soft 4000px phone photo resized to 1200px is genuinely legible,
+ * because the blur kernel shrinks below a pixel on the way down, and it is the
+ * resized file the reviewer opens.
  *
- * @param file - A picked or captured image.
+ * @param file - The image as it will be uploaded.
  * @param options - Passed through to {@link blurScore}.
- * @returns The 0–100 score, or null when the image cannot be decoded.
+ * @returns The 0–100 score, or null when the image cannot be judged.
  */
 export async function blurScoreFromImageFile(
 	file: Blob,
@@ -221,6 +172,7 @@ export async function blurScoreFromImageFile(
 ): Promise<number | null> {
 	if (typeof document === "undefined") return null;
 	const url = URL.createObjectURL(file);
+	const canvas = document.createElement("canvas");
 	try {
 		const element = await new Promise<HTMLImageElement>((resolve, reject) => {
 			const loaded = new Image();
@@ -228,18 +180,72 @@ export async function blurScoreFromImageFile(
 			loaded.onerror = () => reject(new Error("Could not decode that image."));
 			loaded.src = url;
 		});
-		return blurScoreFromSource(
-			element,
-			element.naturalWidth,
-			element.naturalHeight,
-			undefined,
-			options,
+
+		const { naturalWidth: sourceWidth, naturalHeight: sourceHeight } = element;
+		if (!(sourceWidth > 0) || !(sourceHeight > 0)) return null;
+		const scale = Math.min(
+			1,
+			BLUR_ANALYSIS_MAX_LENGTH / Math.max(sourceWidth, sourceHeight),
 		);
+		const width = Math.max(1, Math.round(sourceWidth * scale));
+		const height = Math.max(1, Math.round(sourceHeight * scale));
+
+		canvas.width = width;
+		canvas.height = height;
+		const context = canvas.getContext("2d", { willReadFrequently: true });
+		if (!context) return null;
+		context.drawImage(element, 0, 0, width, height);
+		const { data } = context.getImageData(0, 0, width, height);
+		return blurScore(toGrayscale(data, width, height), width, height, options);
 	} catch {
+		// Undecodable, tainted canvas — we cannot judge, so we do not block.
 		return null;
 	} finally {
 		URL.revokeObjectURL(url);
+		canvas.width = 0;
+		canvas.height = 0;
 	}
+}
+
+/**
+ * Writes a sharpness score into a file name, before the extension.
+ *
+ * The reviewer opening `aadhaar-front_blur_score18.pdf` can see at a glance
+ * that the scan was soft. A stopgap with a purpose: upstream stores the file
+ * name but not our `blur_scoreN` form fields, so until it records them the
+ * name is the only channel that reaches review.
+ *
+ * @param fileName - The name as it would otherwise be uploaded.
+ * @param score - The 0–100 score to record.
+ * @returns The name with `_blur_score<n>` inserted before the extension.
+ */
+export function withBlurScoreInName(fileName: string, score: number): string {
+	const suffix = `_blur_score${score}`;
+	const dot = fileName.lastIndexOf(".");
+	// `dot <= 0` covers both "no extension" and a leading-dot name, where
+	// everything after the dot is the stem rather than a suffix.
+	if (dot <= 0) return `${fileName}${suffix}`;
+	return `${fileName.slice(0, dot)}${suffix}${fileName.slice(dot)}`;
+}
+
+/**
+ * The score for something made of several images or pages: the lowest.
+ *
+ * Not the average. Review reads every page, so a three-page pack whose middle
+ * page is unreadable is rejected however crisp the other two are — averaging
+ * would hide exactly the page that gets it bounced. The same rule holds for
+ * PDF pages and for the images combined into one.
+ *
+ * @param scores - Per-page or per-image scores; `null`/absent ones are ignored.
+ * @returns The worst score, or null when nothing could be judged.
+ */
+export function lowestBlurScore(
+	scores: Array<number | null | undefined>,
+): number | null {
+	const judged = scores.filter(
+		(score): score is number => typeof score === "number",
+	);
+	return judged.length > 0 ? Math.min(...judged) : null;
 }
 
 /**
