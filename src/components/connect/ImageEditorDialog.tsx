@@ -1,4 +1,10 @@
 import {
+	blurScoreFromSource,
+	DEFAULT_BLUR_THRESHOLD,
+	setBlurScore,
+	type BlurCheckMode,
+} from "@/lib/connect/blur";
+import {
 	clampBoxToBounds,
 	getCompositeFaceBound,
 	getDefaultCrop,
@@ -39,6 +45,16 @@ export interface ImageEditorOptions {
 	disableImageEdit?: boolean;
 	/** Text burnt into the bottom-left of the result. */
 	watermark?: string;
+	/**
+	 * What to do about a capture that scores below {@link blurThreshold}.
+	 *
+	 * `measure` scores silently (telemetry only), `warn` toasts but accepts,
+	 * `block` refuses the capture and keeps the editor open for a retake.
+	 * Scoring always fails open: an image we cannot judge is never refused.
+	 */
+	blurCheck?: BlurCheckMode;
+	/** 0–100 sharpness floor; see `blur.ts`. Default 30. */
+	blurThreshold?: number;
 }
 
 /** The editor's answer. `accepted: false` means the user rejected the image. */
@@ -119,6 +135,8 @@ export function ImageEditorDialog({
 		disableRotate = false,
 		disableImageEdit = false,
 		watermark,
+		blurCheck = "off",
+		blurThreshold = DEFAULT_BLUR_THRESHOLD,
 	} = options;
 
 	const [sourceImage, setSourceImage] = useState(image);
@@ -263,6 +281,42 @@ export function ImageEditorDialog({
 			return;
 		}
 
+		// Judged on the crop the user selected — that is what gets uploaded, and
+		// a sharp document cropped out of a blurry desk must pass. Same fail-open
+		// contract as face detection above: `null` means "cannot judge", not
+		// "blurry", so it never gates.
+		let sharpness: number | null = null;
+		if (blurCheck !== "off") {
+			const scaleX = element.naturalWidth / element.width;
+			const scaleY = element.naturalHeight / element.height;
+			sharpness = blurScoreFromSource(
+				element,
+				element.naturalWidth,
+				element.naturalHeight,
+				cropEnabled && crop
+					? {
+							x: crop.x * scaleX,
+							y: crop.y * scaleY,
+							width: crop.width * scaleX,
+							height: crop.height * scaleY,
+						}
+					: undefined,
+			);
+			if (sharpness !== null && sharpness < blurThreshold) {
+				if (blurCheck === "block") {
+					toast.error(
+						"This image looks blurry or out of focus. Please retake it or pick a sharper one.",
+					);
+					return;
+				}
+				if (blurCheck === "warn") {
+					toast.warning(
+						"This image looks blurry or out of focus. Consider retaking it.",
+					);
+				}
+			}
+		}
+
 		try {
 			const processed = getProcessedImage({
 				image: element,
@@ -271,9 +325,11 @@ export function ImageEditorDialog({
 				maxLength,
 				watermark,
 			});
+			const file = await dataUrlToFile(processed, fileName);
+			if (sharpness !== null && file) setBlurScore(file, sharpness);
 			onClose({
 				image: processed || sourceImage || image,
-				file: await dataUrlToFile(processed, fileName),
+				file,
 				accepted: true,
 			});
 		} catch {

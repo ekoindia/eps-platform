@@ -9,6 +9,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError, authClient } from "@/lib/auth/client";
+import { getBlurScore } from "@/lib/connect/blur";
 import {
 	configOf,
 	KYC_ACCEPT,
@@ -88,7 +89,15 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 			form.append("pages", String(doc.pages));
 			files.forEach((file, index) => {
 				// Non-null by `complete`; the loop is what names the parts.
-				if (file) form.append(`file${index + 1}`, file, file.name);
+				if (!file) return;
+				form.append(`file${index + 1}`, file, file.name);
+				// Sharpness telemetry for threshold calibration. The backend reads
+				// only the fields it names, so an extra part is safely ignored until
+				// it learns to record these.
+				const sharpness = getBlurScore(file);
+				if (sharpness !== undefined) {
+					form.append(`blur_score${index + 1}`, String(sharpness));
+				}
 			});
 			const { message } = await authClient.connectKyc.upload(form);
 			onClose({ docType: doc.docType, message });
@@ -192,7 +201,11 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 								// the upload can tell which side of the card they are looking
 								// at instead of two files both called "combined-documents".
 								combinedFileName={`${slugify(label)}.pdf`}
-								options={config.options}
+								// `measure` scores every attachment for `blur_scoreN` telemetry
+								// without warning or blocking anyone; a doc type opts into
+								// enforcement via its own `options.blurCheck` once thresholds
+								// are calibrated against that telemetry.
+								options={{ blurCheck: "measure", ...config.options }}
 								file={file}
 								disabled={busy}
 								// Provenance burnt into the pixels — who, where and when —

@@ -252,6 +252,63 @@ Both ceilings are only real if the hops in front of the app allow them: nginx
 defaults `client_max_body_size` to 1 MB, and a serverless deploy caps request
 bodies at a few MB regardless of what the handler checks.
 
+## Blur detection
+
+Badly scanned documents — blurred, out of focus — sail through every rule above
+and come back a week later as a review rejection. `src/lib/connect/blur.ts`
+scores every capture's sharpness on-device before it is attached, from any
+source: picker, drag-and-drop, camera, and scanned PDFs.
+
+**The metric.** Tile-based variance of a 3×3 Laplacian on 0–255 luma, image
+downscaled to ≤1024px first. The image is split into an 8×8 grid; near-blank
+tiles (luma σ < 4) are dropped, and the p90 of the surviving tiles' variances
+becomes the score — so a document with *any* crisp region passes, and a mostly
+blank page is judged by its ink, not its margins. Scores are normalized to
+0–100 (log scale; crisp scans ~60–80, soft focus ~10–30) so thresholds are
+human-tweakable. Pure typed-array math, no dependencies, single-digit
+milliseconds at analysis resolution.
+
+**Configuration.** Two fields on `ImageEditorOptions`, so they thread through
+`FileUploadOptions` and `KYC_DOC_CONFIG[docType].options` like every other
+capture rule:
+
+| Field | Values | Meaning |
+| --- | --- | --- |
+| `blurCheck` | `off` (default) · `measure` · `warn` · `block` | What a below-threshold verdict does |
+| `blurThreshold` | 0–100, default 30 | The sharpness floor |
+
+`measure` scores silently, `warn` toasts but attaches, `block` refuses — in
+the editor that keeps the dialog open for a retake (the face-count precedent),
+elsewhere it drops the file with a toast.
+
+**Where it runs.** Images that go through the editor are judged there, on the
+user's crop — the crop is what uploads, and a sharp card cropped out of a
+blurry desk must pass. The paths that skip the editor (`disableImageConfirm`,
+PDFs) are checked in `FileUpload`'s `checkBlurOrExplain`. PDFs are judged after
+compression — the verdict belongs to the bytes actually uploaded — via
+`blurScorePdf` (`pdf-client.ts` → `pdf-render.ts`): only pure image scans are
+eligible (any text or vector op means born-digital, sharp by construction —
+the same conservative test compression uses, so an OCR-overlaid scan is
+skipped rather than misjudged), at most the first 3 pages are rasterized, a
+soft 4s deadline stops the check early, and the *worst* judged page decides,
+because review reads every page.
+
+**Fail-open, everywhere.** A `null` score always means "could not judge" —
+blank page, digital PDF, decode failure, timeout, encrypted — and always
+passes. The check can only ever degrade to the pre-existing behaviour, never
+below it.
+
+**Rollout and telemetry.** Every KYC document currently runs in `measure`
+mode (the default `KycUploadDialog` passes; a doc type overrides via its own
+`options.blurCheck`). Scores travel on the `File` object (a `WeakMap` in
+`blur.ts` — rebuilt files are re-stamped: a combined PDF carries the minimum
+of its parts) and are appended to the upload as `blur_score1..N` form fields.
+The backend reads only the fields it names, so the extra parts are ignored
+until it learns to record them — **recording them is the follow-up that makes
+the threshold calibratable**; until then the default 30 is a paper value, and
+no doc type should be flipped to `warn`/`block` without looking at real score
+distributions first.
+
 ## UI
 
 `/console/documents` — titled **Upload Documents**, in the rail and on the page

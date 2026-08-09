@@ -8,8 +8,18 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastError = vi.fn();
+const toastWarning = vi.fn();
 vi.mock("sonner", () => ({
-	toast: { error: (...args: unknown[]) => toastError(...args) },
+	toast: {
+		error: (...args: unknown[]) => toastError(...args),
+		warning: (...args: unknown[]) => toastWarning(...args),
+	},
+}));
+
+const blurScorePdfMock = vi.fn();
+vi.mock("@/lib/pdf/pdf-client", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/pdf/pdf-client")>()),
+	blurScorePdf: (...args: unknown[]) => blurScorePdfMock(...args),
 }));
 
 /** Renders the control inside the provider its dialogs need. */
@@ -171,6 +181,129 @@ describe("FileUpload", () => {
 				expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview"),
 			);
 			expect(onFileChange).not.toHaveBeenCalled();
+		});
+	});
+
+	// The blur check must only ever degrade to today's behaviour: everything
+	// short of "confidently blurry in block mode" attaches the file.
+	describe("blur check", () => {
+		beforeEach(() => {
+			vi.clearAllMocks();
+		});
+
+		it("never runs when the mode is off (the default)", async () => {
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				onFileChange,
+			});
+
+			pickFile(container, fileOf("scan.pdf", 1024));
+
+			await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+			expect(blurScorePdfMock).not.toHaveBeenCalled();
+		});
+
+		it("blocks a blurry PDF in block mode", async () => {
+			blurScorePdfMock.mockResolvedValue(10);
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "block" },
+				onFileChange,
+			});
+
+			pickFile(container, fileOf("blurry.pdf", 1024));
+
+			await waitFor(() =>
+				expect(toastError).toHaveBeenCalledWith(
+					expect.stringContaining("blurry.pdf looks blurry"),
+				),
+			);
+			expect(onFileChange).not.toHaveBeenCalled();
+		});
+
+		it("attaches a sharp PDF in block mode", async () => {
+			blurScorePdfMock.mockResolvedValue(80);
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "block" },
+				onFileChange,
+			});
+
+			pickFile(container, fileOf("sharp.pdf", 1024));
+
+			await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+			expect(toastError).not.toHaveBeenCalled();
+		});
+
+		it("attaches when the scorer cannot judge (null)", async () => {
+			// A born-digital PDF, a blank page, a timed-out check.
+			blurScorePdfMock.mockResolvedValue(null);
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "block" },
+				onFileChange,
+			});
+
+			pickFile(container, fileOf("digital.pdf", 1024));
+
+			await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+			expect(toastError).not.toHaveBeenCalled();
+		});
+
+		it("attaches when the scorer throws (fail open)", async () => {
+			blurScorePdfMock.mockRejectedValue(new Error("encrypted"));
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "block" },
+				onFileChange,
+			});
+
+			pickFile(container, fileOf("locked.pdf", 1024));
+
+			await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+			expect(toastError).not.toHaveBeenCalled();
+		});
+
+		it("warns about a blurry file but still attaches it in warn mode", async () => {
+			blurScorePdfMock.mockResolvedValue(10);
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "warn" },
+				onFileChange,
+			});
+
+			pickFile(container, fileOf("soft.pdf", 1024));
+
+			await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+			expect(toastWarning).toHaveBeenCalledWith(
+				expect.stringContaining("soft.pdf looks blurry"),
+			);
+			expect(toastError).not.toHaveBeenCalled();
+		});
+
+		it("scores silently in measure mode, stamping the file for telemetry", async () => {
+			blurScorePdfMock.mockResolvedValue(10);
+			const onFileChange = vi.fn();
+			const { container } = renderUpload({
+				accept: "application/pdf",
+				options: { blurCheck: "measure" },
+				onFileChange,
+			});
+
+			const picked = fileOf("soft.pdf", 1024);
+			pickFile(container, picked);
+
+			await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+			expect(toastWarning).not.toHaveBeenCalled();
+			expect(toastError).not.toHaveBeenCalled();
+			const { getBlurScore } = await import("@/lib/connect/blur");
+			expect(getBlurScore(picked)).toBe(10);
 		});
 	});
 

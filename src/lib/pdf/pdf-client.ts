@@ -358,6 +358,29 @@ export async function compressPdf(
 }
 
 /**
+ * Blur score for a scanned PDF, 0–100 (higher = sharper). Loads `pdf.js` on
+ * first use.
+ *
+ * `null` means "could not judge" — a born-digital document, a blank scan, or
+ * a check that ran out of time — and callers must treat it as a pass. See
+ * `blurScorePdfPages` in `pdf-render.ts` for the page limit and eligibility
+ * rules.
+ *
+ * @param source - The PDF.
+ * @param deadlineMs - Soft time budget for the whole check.
+ * @returns Minimum judged-page score, or null when nothing could be judged.
+ * @throws {EncryptedPdfError} If the document is password-protected.
+ */
+export async function blurScorePdf(
+	source: PdfSource,
+	deadlineMs?: number,
+): Promise<number | null> {
+	const bytes = await toBytes(source);
+	const { blurScorePdfPages } = await import("./pdf-render");
+	return blurScorePdfPages(bytes, deadlineMs);
+}
+
+/**
  * Pulls the embedded images out of a PDF. Loads `pdf.js` on first use.
  *
  * @param source - The PDF.

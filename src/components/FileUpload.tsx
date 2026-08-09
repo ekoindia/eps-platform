@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useWatermarkText, type WatermarkSpec } from "@/hooks/use-watermark";
 import {
+	blurScoreFromImageFile,
+	DEFAULT_BLUR_THRESHOLD,
+	getBlurScore,
+	setBlurScore,
+} from "@/lib/connect/blur";
+import { blurScorePdf } from "@/lib/pdf/pdf-client";
+import {
 	combinePdfParts,
 	compressIfLarge,
 	DEFAULT_COMPRESS_THRESHOLD_BYTES,
@@ -177,6 +184,60 @@ export function acceptsOnlyImagesAndPdfs(accept: string): boolean {
 }
 
 /**
+ * Ceiling on how long a PDF blur check may run. Rasterizing pages is the
+ * expensive part; past this the scorer stops early and whatever it has
+ * judged so far decides — or nothing does. Never a gate on the upload.
+ */
+const BLUR_PDF_DEADLINE_MS = 4000;
+
+/**
+ * Runs the configured blur check on a file the image editor never sees —
+ * PDFs, and images on the `disableImageConfirm` paths. Images that go
+ * through the editor are checked there instead, against the user's crop.
+ *
+ * Fail-open by contract: a score of `null`, a decode failure or a timeout
+ * all return `ok`, so the check can only ever degrade to today's behaviour.
+ *
+ * @param picked - The file as it will be attached.
+ * @param options - The upload's option set, carrying `blurCheck`/`blurThreshold`.
+ * @returns False only in `block` mode for a file that scored below threshold.
+ */
+async function checkBlurOrExplain(
+	picked: File,
+	options: FileUploadOptions,
+): Promise<boolean> {
+	const mode = options.blurCheck ?? "off";
+	if (mode === "off") return true;
+
+	let score: number | null = null;
+	try {
+		if (isImageType(picked.type)) {
+			score = await blurScoreFromImageFile(picked);
+		} else if (picked.type.toLowerCase() === "application/pdf") {
+			score = await blurScorePdf(picked, BLUR_PDF_DEADLINE_MS);
+		}
+	} catch {
+		// Cannot judge — encrypted, corrupt, undecodable. Never a reason to block.
+	}
+	if (score === null) return true;
+
+	setBlurScore(picked, score);
+	if (score >= (options.blurThreshold ?? DEFAULT_BLUR_THRESHOLD)) return true;
+	if (mode === "block") {
+		toast.error(
+			`${picked.name} looks blurry or out of focus. Please upload a sharper scan.`,
+		);
+		return false;
+	}
+	if (mode === "warn") {
+		toast.warning(
+			`${picked.name} looks blurry or out of focus. Consider replacing it with a sharper scan.`,
+		);
+	}
+	return true;
+}
+
+/**
  * File input with a camera, an image editor and a preview.
  *
  * An attachment is rarely usable as it leaves the phone: it is 4 MB, rotated, and shows the whole desk around the document.
@@ -320,6 +381,11 @@ export function FileUpload({
 		if (!picked || disabled) return;
 
 		if (!isImageType(picked.type)) {
+			// PDFs never reach the editor, so their blur check happens here.
+			if (!(await checkBlurOrExplain(picked, options))) {
+				resetInput();
+				return;
+			}
 			attach(picked, null);
 			return;
 		}
@@ -327,6 +393,12 @@ export function FileUpload({
 		const objectUrl = URL.createObjectURL(picked);
 
 		if (options.disableImageConfirm) {
+			// Skips the editor, so it also skips the editor's blur check.
+			if (!(await checkBlurOrExplain(picked, options))) {
+				URL.revokeObjectURL(objectUrl);
+				resetInput();
+				return;
+			}
 			// Taken as-is, but still previewed — the URL now belongs to the preview.
 			attach(picked, objectUrl, true);
 			return;
@@ -365,6 +437,8 @@ export function FileUpload({
 			// show, so the row falls back to the file name. Keeping the object URL
 			// instead would mean tracking a revoke per row for a thumbnail.
 			if (options.disableImageConfirm) {
+				// No editor for this image, so no editor blur check either.
+				if (!(await checkBlurOrExplain(candidate, options))) return null;
 				return { id: nextItemId(), file: candidate, thumbnail: null };
 			}
 			const objectUrl = URL.createObjectURL(candidate);
@@ -391,6 +465,9 @@ export function FileUpload({
 				candidate,
 				compressThresholdBytes,
 			);
+			// Checked after compression, so the verdict — and the telemetry score —
+			// belong to the bytes that are actually uploaded.
+			if (!(await checkBlurOrExplain(compressed, options))) return null;
 			return { id: nextItemId(), file: compressed, thumbnail: null };
 		} catch (error) {
 			// A PDF we cannot even read — encrypted or corrupt. Say so and skip it;
@@ -451,6 +528,15 @@ export function FileUpload({
 			const merged = await combinePdfParts(parts, combinedFileName);
 			const combined = await shrinkToFit(merged, maxBytes);
 			if (token !== rebuildTokenRef.current) return;
+
+			// The combined PDF is a new File, which loses the parts' scores — carry
+			// the worst one over, since the worst page is what review rejects.
+			const partScores = next
+				.map((item) => getBlurScore(item.file))
+				.filter((score): score is number => score !== undefined);
+			if (partScores.length > 0) {
+				setBlurScore(combined, Math.min(...partScores));
+			}
 
 			if (!attach(combined, null)) onFileChange(null);
 		} catch (error) {
@@ -570,6 +656,15 @@ export function FileUpload({
 		if (multiEnabled && addingRef.current) return;
 		const result = await openCamera(editorOptions);
 		if (!result.accepted || !result.file) return;
+
+		// With the confirm step on, the editor has already judged the capture;
+		// without it the file arrives unchecked.
+		if (
+			options.disableImageConfirm &&
+			!(await checkBlurOrExplain(result.file, options))
+		) {
+			return;
+		}
 
 		if (!multiEnabled) {
 			attach(result.file, result.image ?? null);
