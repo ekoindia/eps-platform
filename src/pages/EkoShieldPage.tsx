@@ -1,46 +1,46 @@
-import { useState } from "react";
-import { FadeIn } from "@/components/FadeIn";
-import { Helmet } from "react-helmet-async";
-import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { openZohoChat } from "@/lib/zoho-chat";
-import { ZohoSignupForm } from "@/components/ZohoSignupForm";
-import {
-	ArrowRight,
-	Shield,
-	Zap,
-	ShieldCheck,
-	Eye,
-	TrendingDown,
-	Landmark,
-	CreditCard,
-	Users,
-	Truck,
-	ShoppingBag,
-	Plane,
-	Leaf,
-	Building2,
-	X,
-	CheckCircle,
-	AlertTriangle,
-	Sparkles,
-	MapPin,
-	Mail,
-	IdCard,
-	FileText,
-	BadgeCheck,
-	FileCheck,
-	FolderCheck,
-	Building,
-	Smartphone,
-	Briefcase,
-	Car,
-	Globe,
-	Stethoscope,
-	Receipt,
-} from "lucide-react";
-import { Picture } from "@/components/Picture";
 import heroDashboard from "@/assets/ekoshield/ekoshield-mockup-01.png?w=400;800;1075&format=avif;webp&as=picture";
+import { FadeIn } from "@/components/FadeIn";
+import { Footer } from "@/components/Footer";
+import { Picture } from "@/components/Picture";
+import { Button } from "@/components/ui/button";
+import { ZohoSignupForm } from "@/components/ZohoSignupForm";
+import { openZohoChat } from "@/lib/zoho-chat";
+import {
+	AlertTriangle,
+	ArrowRight,
+	BadgeCheck,
+	Briefcase,
+	Building,
+	Building2,
+	Car,
+	CheckCircle,
+	CreditCard,
+	Eye,
+	FileCheck,
+	FileText,
+	FolderCheck,
+	Globe,
+	IdCard,
+	Landmark,
+	Leaf,
+	Mail,
+	MapPin,
+	Plane,
+	Receipt,
+	Shield,
+	ShieldCheck,
+	ShoppingBag,
+	Smartphone,
+	Sparkles,
+	Stethoscope,
+	TrendingDown,
+	Truck,
+	Users,
+	X,
+	Zap,
+} from "lucide-react";
+import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 // import ekoShieldLogo from "@/assets/eko-shield-logo.png";
 
 /* ─── Data ─── */
@@ -237,7 +237,7 @@ const identityProducts = [
 	},
 	{
 		icon: BadgeCheck,
-		name: "PAN Comprehensive",
+		name: "PAN Advanced",
 		description: "Complete PAN verification with detailed compliance insights.",
 	},
 	{
