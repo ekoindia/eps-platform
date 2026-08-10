@@ -925,13 +925,13 @@
     "semantic_hash": "37730103b25a051ff6fb12e00af8f336"
   },
   "src/components/FileUpload.test.tsx": {
-    "mtime": 1786350193.331259,
-    "ast_hash": "c5eacbf29772ef67d032c7e1bc0c961f",
+    "mtime": 1786350458.0524845,
+    "ast_hash": "e66184b24284f418ddc3760c5bf8263c",
     "semantic_hash": ""
   },
   "src/components/FileUpload.tsx": {
-    "mtime": 1786350162.2332003,
-    "ast_hash": "2113471fc29a20bc35766e6e03a741c9",
+    "mtime": 1786350435.8631904,
+    "ast_hash": "cc14da7cffa909d77db131c6149c643b",
     "semantic_hash": ""
   },
   "src/components/Footer.auth.test.tsx": {
@@ -1090,8 +1090,8 @@
     "semantic_hash": ""
   },
   "src/components/connect/CameraDialog.tsx": {
-    "mtime": 1786348182.4717681,
-    "ast_hash": "32e4719e0e5c5797e18696993760e9ee",
+    "mtime": 1786350771.7129278,
+    "ast_hash": "dcef43caaeb9d067e47e1ee27bc92878",
     "semantic_hash": ""
   },
   "src/components/connect/ConnectWidget.test.tsx": {
