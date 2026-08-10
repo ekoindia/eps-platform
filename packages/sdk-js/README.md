@@ -57,15 +57,17 @@ console.log(result);
 
 ### File uploads
 
-Endpoints with file params (e.g. `aeps-activate-fingpay`) are sent as `multipart/form-data` automatically. Pass each file param as a local file path (read from disk, filename = basename) or a `Blob`/`File`:
+Endpoints with file params (e.g. `activate-aeps-fingpay`) are sent as `multipart/form-data` automatically. Pass each file param as a local file path (read from disk, filename = basename) or a `Blob`/`File`:
 
 ```js
 import { openAsBlob } from "node:fs"; // only needed for the Blob variant
 
-const result = await client.call("aeps-activate-fingpay", {
+const result = await client.call("activate-aeps-fingpay", {
 	user_code: "20810200",
 	modelname: "Morpho 1300E3",
 	devicenumber: "SN1234567890",
+	account: "38759149196",
+	ifsc: "SBIN0007515",
 	office_address: { line: "Shop 5", city: "Patna", state: "Bihar", pincode: "800001" },
 	address_as_per_proof: { line: "Shop 5", city: "Patna", state: "Bihar", pincode: "800001" },
 	pan_card: "/path/to/pan_card.jpg", // path string…
@@ -74,7 +76,7 @@ const result = await client.call("aeps-activate-fingpay", {
 });
 ```
 
-Object params (like `office_address`) are serialized as JSON form fields; the `content-type` header (and multipart boundary) is set by `fetch` itself.
+You still pass every parameter flat, as above. On the wire the SDK packs them the way the API expects: **one form field named `form-data` holding all the non-file params as a single JSON object** (objects like `office_address` stay nested), plus one part per upload. A `null` param is dropped — a form field has no null encoding — while a `null` inside an object value is preserved. The `content-type` header (and multipart boundary) is set by `fetch` itself.
 
 `initiatorId` / `userCode` are near-constant per developer, so set them once on the client. They are injected into every call as the wire params `initiator_id` / `user_code` (note the snake_case wire names) — override either for a single call by passing it in `params`.
 

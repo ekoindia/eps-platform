@@ -1329,7 +1329,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Enable AePS Fingpay service for your agent by submitting their biometric device details and KYC documents.",
 		description:
-			"This API enables an agent (identified by their `user_code`) to use the AePS Fingpay service. It accepts the agent's biometric device model, serial number, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.\n\n> [!NOTE]\n> This API must be called after onboarding your agent using the [**Onboard User API**](/docs/onboard-user).\n\n> [!WARNING]\n> The approval may take 1-2 business days.",
+			"This API enables an agent (identified by their `user_code`) to use the AePS Fingpay service. It accepts the agent's biometric device model, serial number, settlement account, address proofs, and KYC documents (PAN card, Aadhaar front and back) as a multipart form submission. After submission, the activation enters a 'pending' state and is approved within 2–3 business days. Only activated agents can perform AePS transactions. File uploads must be JPEG/JPG/PDF format, each under 1 MB; PNG is not accepted.\n\n> [!IMPORTANT]\n> This is **not** a form field per parameter. Every non-file field below travels together as one JSON object in a single form field named `form-data`, and each document is its own file part (`pan_card`, `aadhar_front`, `aadhar_back`).\n\n> [!NOTE]\n> This API must be called after onboarding your agent using the [**Onboard User API**](/docs/onboard-user).\n\n> [!WARNING]\n> The approval may take 1-2 business days.",
 		relevance: "M",
 		bestFor:
 			"Platforms onboarding BC agents and CSPs to offer AePS services for the first time",
@@ -1362,25 +1362,43 @@ const ALL_API_SPECS: ApiSpec[] = [
 				example: "SN1234567890",
 			},
 			{
-				name: "shop_type",
-				type: "number",
+				name: "account",
+				label: "Settlement Account Number",
+				type: "string",
 				required: true,
 				description:
-					"The shop-type ID of the Agent. Use `Get Shop Types` API for a list of shop-types and corresponding IDs",
-				example: 4215,
+					"Bank account number in which the agent's AePS earnings are settled.",
+				example: "38759149196",
+			},
+			{
+				name: "ifsc",
+				label: "Settlement Account IFSC",
+				type: "string",
+				required: true,
+				description:
+					"IFSC of the branch holding the settlement `account`. 11 characters.",
+				example: "SBIN0007515",
+			},
+			{
+				name: "shop_type",
+				type: "string",
+				required: true,
+				description:
+					"The shop-type ID of the Agent, sent as a string. Use `Get Shop Types` API for a list of shop-types and corresponding IDs",
+				example: "4215",
 			},
 			{
 				name: "office_address",
 				type: "object",
 				required: true,
 				description:
-					"Agent's current office/operating address as a JSON object with keys: line, city, state, state_id, pincode. To get state_id, see the `Get States` API",
+					"Agent's current office/operating address, as a nested JSON object inside `form-data` with keys: line, city, state, state_id, pincode. To get state_id, see the `Get States` API",
 				example: {
-					line: "Shop No. 5, Gandhi Market",
-					city: "Gurgaon",
-					state: "Haryana",
-					state_id: 23,
-					pincode: "122003",
+					line: "Middle Tarku Near Secondary School",
+					city: "Singtam",
+					state: "Sikkim",
+					pincode: "122002",
+					state_id: "23",
 				},
 			},
 			{
@@ -1388,22 +1406,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "object",
 				required: true,
 				description:
-					"Agent's address exactly as it appears on the submitted address proof document. JSON object with keys: line, city, state, sate_id, pincode. To get state_id, see the `Get States` API",
+					"Agent's address exactly as it appears on the submitted address proof document. Nested JSON object inside `form-data` with keys: line, city, state, state_id, pincode. To get state_id, see the `Get States` API",
 				example: {
-					line: "Shop No. 5, Gandhi Market",
+					line: "Temi Tarku Secondary",
 					city: "Gurgaon",
 					state: "Haryana",
-					state_id: 23,
-					pincode: "122003",
+					pincode: "122002",
+					state_id: "23",
 				},
-			},
-			{
-				name: "pan_card",
-				type: "file",
-				required: true,
-				description:
-					"PAN card document upload (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB. PNG not accepted.",
-				example: "<binary file>",
 			},
 			{
 				name: "aadhar",
@@ -1414,12 +1424,21 @@ const ALL_API_SPECS: ApiSpec[] = [
 				example: "123456789012",
 			},
 			{
+				name: "pan_card",
+				label: "PAN Card Image",
+				type: "file",
+				required: true,
+				description:
+					"PAN card document, sent as its own file part. Accepted formats: JPEG, JPG, PDF. Max size: 1 MB. PNG not accepted.",
+				example: "<binary file>",
+			},
+			{
 				name: "aadhar_front",
 				label: "Aadhaar Front Image",
 				type: "file",
 				required: true,
 				description:
-					"Front side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
+					"Front side of the Aadhaar card, sent as its own file part. Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
 				example: "<binary file>",
 			},
 			{
@@ -1428,7 +1447,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "file",
 				required: true,
 				description:
-					"Back side of the Aadhaar card (multipart/form-data). Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
+					"Back side of the Aadhaar card, sent as its own file part. Accepted formats: JPEG, JPG, PDF. Max size: 1 MB.",
 				example: "<binary file>",
 			},
 			{
@@ -6230,14 +6249,6 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Individual's name per PAN information, used for match scoring.",
 				example: "Rajesh Kumar",
 			},
-			{
-				name: "dob",
-				label: "Date of Birth",
-				type: "string",
-				required: true,
-				description: "Date of birth in YYYY-MM-DD format.",
-				example: "1994-08-29",
-			},
 		],
 		responseData: [
 			{
@@ -6325,14 +6336,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				description:
 					"Masked email address associated with the PAN. Fill rate is approximately 5–10% due to data-source availability.",
-				example: "rajesh.kumar@example.com",
+				example: "ra******ar@example.com",
 			},
 			{
 				name: "mobile_number",
 				type: "string",
 				description:
 					"Masked mobile number associated with the PAN. Fill rate is approximately 5–10% due to data-source availability.",
-				example: "9876543210",
+				example: "98******10",
 			},
 			{
 				name: "address",
@@ -6397,8 +6408,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				date_of_birth: "1994-08-29",
 				masked_aadhaar_number: "XXXX XXXX 1234",
 				aadhaar_linked: true,
-				email: "rajesh.kumar@example.com",
-				mobile_number: "9876543210",
+				email: "ra******ar@example.com",
+				mobile_number: "98******10",
 				address: {
 					full_address:
 						"Woodland Heights, Ghatkopar, Mumbai, Maharashtra 400072",
@@ -9873,10 +9884,18 @@ const ALL_API_SPECS: ApiSpec[] = [
 			},
 			{
 				name: "residence_address",
-				type: "array",
+				type: "object",
 				required: true,
-				description: "Residence address of the agent as an array of strings.",
-				example: ["123 MG Road", "Bangalore", "Karnataka", "560001"],
+				description:
+					"Residence address of the agent as an object with following fields: line, city, state, pincode, district, area.",
+				example: {
+					line: "Eko India",
+					city: "Gurgaon",
+					state: "Haryana",
+					pincode: "122002",
+					district: "Banswara",
+					area: "Mongol",
+				},
 			},
 			{
 				name: "dob",

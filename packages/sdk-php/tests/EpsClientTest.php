@@ -112,7 +112,7 @@ final class EpsClientTest extends TestCase
         $this->assertStringContainsString('user_code=20810200', $target['url']); // default still used
     }
 
-    public function testMultipartEndpointBuildsArrayBodyWithCurlFiles(): void
+    public function testMultipartEndpointBuildsJsonEnvelopeWithCurlFiles(): void
     {
         $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
         $address = ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'];
@@ -121,6 +121,8 @@ final class EpsClientTest extends TestCase
             'user_code' => '20810200',
             'modelname' => 'Morpho 1300E3',
             'devicenumber' => 'SN1234567890',
+            'account' => '38759149196',
+            'ifsc' => 'SBIN0007515',
             'shop_type' => 4215,
             'office_address' => $address,
             'address_as_per_proof' => $address,
@@ -136,9 +138,69 @@ final class EpsClientTest extends TestCase
         $this->assertIsArray($target['body']);
         $this->assertInstanceOf(\CURLFile::class, $target['body']['pan_card']);
         $this->assertInstanceOf(\CURLFile::class, $target['body']['aadhar_front']);
-        // Array fields become JSON-string form fields.
-        $this->assertSame(json_encode($address), $target['body']['office_address']);
-        $this->assertSame('Morpho 1300E3', $target['body']['modelname']);
+        // Every non-file value rides in ONE `form-data` JSON field, never a form
+        // field of its own; arrays stay nested rather than being stringified.
+        $this->assertArrayNotHasKey('modelname', $target['body']);
+        $this->assertArrayNotHasKey('office_address', $target['body']);
+        $payload = json_decode($target['body'][EpsClient::MULTIPART_JSON_FIELD], true);
+        $this->assertSame('Morpho 1300E3', $payload['modelname']);
+        $this->assertSame('38759149196', $payload['account']);
+        $this->assertSame($address, $payload['office_address']);
+        $this->assertArrayNotHasKey('pan_card', $payload);
+        $this->assertArrayNotHasKey('user_code', $payload); // filled the path
+    }
+
+    public function testMultipartOmitsNullParamsButKeepsNestedNulls(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $target = $client->resolveTarget('activate-aeps-fingpay', [
+            'initiator_id' => '9962981729',
+            'user_code' => '20810200',
+            'modelname' => 'Morpho 1300E3',
+            'devicenumber' => 'SN1234567890',
+            'account' => '38759149196',
+            'ifsc' => 'SBIN0007515',
+            'shop_type' => 4215,
+            // Not a declared param, so it exercises the top-level-null rule
+            // without inventing an optional field on a spec that has none.
+            'extra_note' => null,
+            'office_address' => ['line' => 'Shop 5', 'state' => null],
+            'address_as_per_proof' => [],
+            'pan_card' => __FILE__,
+            'aadhar' => '123456789012',
+            'aadhar_front' => __FILE__,
+            'aadhar_back' => __FILE__,
+            'latlong' => '28.6139,77.2090',
+        ]);
+        $payload = json_decode($target['body'][EpsClient::MULTIPART_JSON_FIELD], true);
+        // A null param has no form encoding, so it is dropped entirely...
+        $this->assertArrayNotHasKey('extra_note', $payload);
+        // ...but a null INSIDE an array value is real data JSON preserves.
+        $this->assertSame(['line' => 'Shop 5', 'state' => null], $payload['office_address']);
+    }
+
+    public function testMultipartThrowsWhenTheEnvelopeCannotBeEncoded(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $this->expectException(\JsonException::class);
+        $client->resolveTarget('activate-aeps-fingpay', [
+            'initiator_id' => '9962981729',
+            'user_code' => '20810200',
+            'modelname' => 'Morpho 1300E3',
+            'devicenumber' => 'SN1234567890',
+            'account' => '38759149196',
+            'ifsc' => 'SBIN0007515',
+            'shop_type' => 4215,
+            // Invalid UTF-8 cannot be JSON-encoded; without JSON_THROW_ON_ERROR
+            // this would silently blank the whole non-file payload.
+            'office_address' => ['line' => "\xB1\x31"],
+            'address_as_per_proof' => [],
+            'pan_card' => __FILE__,
+            'aadhar' => '123456789012',
+            'aadhar_front' => __FILE__,
+            'aadhar_back' => __FILE__,
+            'latlong' => '28.6139,77.2090',
+        ]);
     }
 
     public function testMultipartHeadersOmitContentType(): void

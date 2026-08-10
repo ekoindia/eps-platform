@@ -561,8 +561,11 @@ const DocsIndexPage = () => {
 							<p className="mt-2 text-xs text-muted-foreground">
 								Requests accept both <InlineCode>application/json</InlineCode>{" "}
 								and <InlineCode>application/x-www-form-urlencoded</InlineCode>{" "}
-								bodies. Use <InlineCode>multipart/form-data</InlineCode> for
-								file uploads.
+								bodies. File uploads use{" "}
+								<InlineCode>multipart/form-data</InlineCode>, where every
+								non-file field travels as one JSON object in a single{" "}
+								<InlineCode>form-data</InlineCode> field and each document is
+								its own part.
 							</p>
 						</div>
 						<p className="mt-3 text-sm text-muted-foreground">

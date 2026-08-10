@@ -70,6 +70,16 @@ file1: <binary>
 file2: <binary>
 ```
 
+**Not to be confused with the Eko public API's upload convention.** That one also
+wraps everything in a single part, but the part is named `form-data` (hyphenated)
+and its value is a **JSON object**, not a URL-encoded string — see
+`MULTIPART_JSON_FIELD` in `src/lib/data/api-specs-common.ts`, which the published
+SDKs and the `/docs` samples are built on. Same shape, different name and encoding,
+and a different host and auth scheme. `interaction_type_id` 523 appears in both
+(the Eko-side PAN verification in `clients/eko.ts` uses it too), so it is plausible
+connect-api follows the JSON change later — but confirm with Eko before touching
+`uploadInteraction`, because every partner's KYC upload runs through it.
+
 ### "No Records Found" is an empty state, not an error
 
 An account with nothing outstanding does **not** get a success envelope carrying

@@ -4,6 +4,13 @@ namespace Eko\Eps;
 /** Backend-only EPS client. Never expose access_key in a frontend. */
 final class EpsClient
 {
+    /**
+     * Name of the single form field carrying every non-file value as one JSON
+     * object. Eko's upload APIs do not take a form field per parameter. Mirrors
+     * `MULTIPART_JSON_FIELD` in the website's `src/lib/data/api-specs-common.ts`.
+     */
+    public const MULTIPART_JSON_FIELD = 'form-data';
+
     private array $surface;
     private string $baseUrl;
 
@@ -88,11 +95,13 @@ final class EpsClient
     /**
      * Resolve a slug + params into the wire target: the final URL (path tokens
      * filled, query string appended for GET) and the body — a JSON string for
-     * regular non-GET endpoints, or an array (multipart/form-data with CURLFile
-     * values) for file-upload endpoints. Exposed for testing; `call()` builds
-     * on it.
+     * regular non-GET endpoints, or an array (multipart/form-data: one
+     * `form-data` JSON field plus CURLFile values) for file-upload endpoints.
+     * Exposed for testing; `call()` builds on it.
      *
      * @return array{url: string, body: string|array|null, method: string, multipart: bool}
+     * @throws \InvalidArgumentException On an unknown slug, a missing required param or a type mismatch.
+     * @throws \JsonException When a multipart endpoint's non-file params cannot be JSON-encoded.
      */
     public function resolveTarget(string $slug, array $params = []): array
     {
@@ -159,22 +168,33 @@ final class EpsClient
             if (!empty($rest)) $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($rest);
         } elseif ($multipart) {
             // Array body → cURL sends multipart/form-data with its own boundary.
-            // File params accept a CURLFile or a path string (wrapped here);
-            // arrays become JSON-string fields; null values are omitted (a form
-            // field has no null encoding).
-            $body = [];
+            // Every non-file value rides in ONE `form-data` field as JSON; file
+            // params accept a CURLFile or a path string (wrapped here). Top-level
+            // nulls are dropped (a form field has no null encoding); nulls nested
+            // inside an array value survive json_encode.
+            $payload = [];
+            $uploads = [];
             foreach ($rest as $k => $v) {
                 if ($v === null) continue;
-                if (isset($fileParams[$k])) $body[$k] = $v instanceof \CURLFile ? $v : new \CURLFile((string) $v);
-                elseif (is_array($v)) $body[$k] = json_encode($v);
-                else $body[$k] = (string) $v;
+                if (isset($fileParams[$k])) $uploads[$k] = $v instanceof \CURLFile ? $v : new \CURLFile((string) $v);
+                else $payload[$k] = $v;
             }
+            // Envelope first, then the uploads — the order the API documents.
+            // JSON_THROW_ON_ERROR: a silent false here would blank the whole
+            // non-file payload and the request would fail far from its cause.
+            $body = [self::MULTIPART_JSON_FIELD => json_encode($payload, JSON_THROW_ON_ERROR)] + $uploads;
         } else {
             $body = json_encode($rest);
         }
         return ['url' => $url, 'body' => $body, 'method' => $endpoint['method'], 'multipart' => $multipart];
     }
 
+    /**
+     * Sign and send one endpoint call, returning the decoded response envelope.
+     *
+     * @throws \InvalidArgumentException On an unknown slug, a missing required param or a type mismatch.
+     * @throws \JsonException When a multipart endpoint's non-file params cannot be JSON-encoded.
+     */
     public function call(string $slug, array $params = []): array
     {
         $target = $this->resolveTarget($slug, $params);

@@ -4,6 +4,10 @@
  * from collection variables. For LOCAL/testing use — do not commit real secrets.
  */
 import type { AgentBundle } from "@/lib/agent/agent-bundle-types";
+import {
+	MULTIPART_JSON_FIELD,
+	multipartPayloadFrom,
+} from "@/lib/data/api-specs-common";
 
 /** Postman pre-request: compute secret-key via the bundled CryptoJS. */
 export const PRE_REQUEST_SIGNING_SCRIPT = [
@@ -58,28 +62,34 @@ export const buildPostmanCollection = (
 			: `${baseUrl}${a.path}`;
 		// File-upload endpoints use Postman formdata (Postman generates the
 		// multipart content-type + boundary itself, so the header is omitted).
+		// Every non-file field rides in one `form-data` text part, built from the
+		// same request body the docs show so the two cannot drift.
 		const bodyParams = a.requestParams.filter((p) => p.in === "body");
-		const multipart = bodyParams.some((p) => p.type === "file");
+		const fileParams = bodyParams.filter((p) => p.type === "file");
+		const multipart = fileParams.length > 0;
 		const body =
 			a.method === "GET"
 				? undefined
 				: multipart
 					? {
 							mode: "formdata",
-							formdata: bodyParams.map((p) =>
-								p.type === "file"
-									? { key: p.name, type: "file", src: "" }
-									: {
-											key: p.name,
-											type: "text",
-											value:
-												p.example != null && typeof p.example === "object"
-													? JSON.stringify(p.example)
-													: p.example != null
-														? String(p.example)
-														: "",
-										},
-							),
+							formdata: [
+								{
+									key: MULTIPART_JSON_FIELD,
+									type: "text",
+									value: JSON.stringify(
+										multipartPayloadFrom(
+											a.sampleRequest ?? {},
+											fileParams.map((p) => p.name),
+										),
+									),
+								},
+								...fileParams.map((p) => ({
+									key: p.name,
+									type: "file",
+									src: "",
+								})),
+							],
 						}
 					: { mode: "raw", raw: JSON.stringify(a.sampleRequest, null, 2) };
 		const item: PostmanRequest = {

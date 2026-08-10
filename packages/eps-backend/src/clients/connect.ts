@@ -501,6 +501,12 @@ export function createConnectClient(
 		// into the fields BEFORE encoding — this part, not the multipart envelope,
 		// is where connect-api reads it, and `postMultipart` sees only opaque
 		// `FormData`.
+		//
+		// Note the name: `formdata`, connect-api's. The Eko public API's upload
+		// convention is a `form-data` part (hyphenated) holding JSON — see
+		// `MULTIPART_JSON_FIELD` in `src/lib/data/api-specs-common.ts`. Different
+		// host, different auth, different encoding: do not align one to the other
+		// without confirming with Eko. KYC for every partner runs through here.
 		form.append(
 			"formdata",
 			new URLSearchParams({

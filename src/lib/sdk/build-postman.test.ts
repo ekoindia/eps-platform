@@ -31,7 +31,7 @@ describe("buildPostmanCollection", () => {
 });
 
 describe("multipart endpoints", () => {
-	it("uses formdata with file fields and no content-type header", () => {
+	it("uses formdata with one form-data envelope, file fields and no content-type header", () => {
 		const flat = collection.item.flatMap((f) => f.item);
 		const req = flat.find((i) =>
 			String((i.request.url as { raw: string }).raw).includes(
@@ -41,11 +41,21 @@ describe("multipart endpoints", () => {
 		expect(req).toBeDefined();
 		const body = req?.request.body as {
 			mode: string;
-			formdata: { key: string; type: string }[];
+			formdata: { key: string; type: string; value?: string }[];
 		};
 		expect(body.mode).toBe("formdata");
 		expect(body.formdata.find((f) => f.key === "pan_card")?.type).toBe("file");
-		expect(body.formdata.find((f) => f.key === "modelname")?.type).toBe("text");
+		// Non-file params get no field of their own — they ride in the envelope.
+		expect(body.formdata.find((f) => f.key === "modelname")).toBeUndefined();
+		const envelope = body.formdata.find((f) => f.key === "form-data");
+		expect(envelope?.type).toBe("text");
+		const payload = JSON.parse(envelope?.value ?? "{}");
+		expect(payload).toMatchObject({
+			modelname: "Morpho 1300E3",
+			account: "38759149196",
+			office_address: { state_id: "23" },
+		});
+		expect(payload).not.toHaveProperty("pan_card");
 		const headers = req?.request.header as { key: string }[];
 		expect(headers.some((h) => h.key === "content-type")).toBe(false);
 	});

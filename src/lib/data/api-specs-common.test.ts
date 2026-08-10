@@ -2,14 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { ApiParam, ApiSpec } from "./api-specs-common";
 import {
 	assertResponseTypeSlugs,
+	buildMultipartPayload,
 	buildSampleRequest,
 	COMMON_REQUEST_PARAMS,
 	enabledSpecs,
 	isMultipart,
+	multipartPayloadFrom,
 	resolveContentType,
 	resolveHeaders,
 	resolveRequestParams,
 	responseTypeFor,
+	splitMultipartBody,
 } from "./api-specs-common";
 
 /** Minimal spec covering only the fields the resolvers read. */
@@ -219,6 +222,57 @@ describe("resolveHeaders / content-type derivation", () => {
 		expect(contentType?.example).toBe("multipart/form-data");
 		// The description must warn that the client sets the boundary.
 		expect(contentType?.description).toContain("boundary");
+	});
+
+	it("splits a multipart body into uploads and envelope fields", () => {
+		const s = spec({
+			method: "PUT",
+			extraRequestParams: [
+				fileParam,
+				{
+					name: "modelname",
+					type: "string",
+					required: true,
+					example: "Morpho",
+				},
+			],
+		});
+		const { files, fields } = splitMultipartBody(resolveRequestParams(s));
+		expect(files.map((f) => f.name)).toEqual(["pan_card"]);
+		expect(fields.map((f) => f.name)).toContain("modelname");
+		expect(fields.map((f) => f.name)).not.toContain("pan_card");
+	});
+
+	it("builds the form-data payload from the body, minus the uploads", () => {
+		const s = spec({
+			method: "PUT",
+			extraRequestParams: [
+				fileParam,
+				{
+					name: "office_address",
+					type: "object",
+					required: true,
+					example: { line: "Shop 5", state_id: "23" },
+				},
+			],
+		});
+		const payload = buildMultipartPayload(s);
+		expect(payload).not.toHaveProperty("pan_card");
+		// Objects stay objects — they are nested JSON, not stringified fields.
+		expect(payload.office_address).toEqual({ line: "Shop 5", state_id: "23" });
+	});
+
+	it("keeps a sampleRequest override authoritative, stripping only known file keys", () => {
+		const s = spec({
+			method: "PUT",
+			extraRequestParams: [fileParam],
+			sampleRequest: { pan_card: "<binary file>", custom_only_here: 7 },
+		});
+		expect(buildMultipartPayload(s)).toEqual({ custom_only_here: 7 });
+	});
+
+	it("multipartPayloadFrom leaves a non-multipart body untouched", () => {
+		expect(multipartPayloadFrom({ a: 1, b: 2 }, [])).toEqual({ a: 1, b: 2 });
 	});
 
 	it("merges per-spec header overrides by name and appends new ones", () => {

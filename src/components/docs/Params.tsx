@@ -43,7 +43,12 @@ const ParamTable = ({ params }: { params: ApiParam[] }) => (
 							{p.description}
 							{p.example !== undefined && (
 								<span className="mt-1 block font-mono text-xs text-foreground/70">
-									e.g. {String(p.example)}
+									e.g.{" "}
+									{/* Object examples (nested address blocks) render as JSON —
+									    String() would print "[object Object]". */}
+									{typeof p.example === "object" && p.example !== null
+										? JSON.stringify(p.example)
+										: String(p.example)}
 								</span>
 							)}
 						</td>

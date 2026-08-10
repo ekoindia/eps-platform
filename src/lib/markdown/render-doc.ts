@@ -22,7 +22,9 @@ import type {
 	ResponseField,
 } from "@/lib/data/api-specs-common";
 import {
+	buildMultipartPayload,
 	buildSampleRequest,
+	isMultipart,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
@@ -132,6 +134,7 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 	const bodyParams = requestParams.filter((p) => p.in === "body");
 	const sampleRequest = buildSampleRequest(spec);
 	const hasSampleRequest = Object.keys(sampleRequest).length > 0;
+	const multipart = isMultipart(spec);
 	const product = ACTIVE_PRODUCTS_MAP[spec.productId];
 
 	return joinBlocks([
@@ -175,8 +178,18 @@ export function renderEndpointMarkdown(spec: ApiSpec): string {
 					]),
 				)
 			: undefined,
-		hasSampleRequest ? h2("Example request") : undefined,
-		hasSampleRequest ? jsonFence(sampleRequest) : undefined,
+		hasSampleRequest
+			? h2(multipart ? "Example request (`form-data` part)" : "Example request")
+			: undefined,
+		hasSampleRequest && multipart
+			? `Sent as \`multipart/form-data\`: this JSON is the value of a single form field named \`form-data\`, and each upload (${bodyParams
+					.filter((p) => p.type === "file")
+					.map((p) => `\`${p.name}\``)
+					.join(", ")}) is its own file part.`
+			: undefined,
+		hasSampleRequest
+			? jsonFence(multipart ? buildMultipartPayload(spec) : sampleRequest)
+			: undefined,
 		h2("Example response"),
 		responseTypeLine(spec, spec.sampleSuccessResponse),
 		jsonFence(spec.sampleSuccessResponse),

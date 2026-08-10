@@ -176,41 +176,88 @@ function phpArrayProbe(body: Record<string, unknown>): string {
 describe("multipart endpoints (file uploads)", () => {
 	const multipart = API_SPECS_MAP["activate-aeps-fingpay"];
 
-	it("curl uses --form (client-generated boundary), never --data or a content-type header", () => {
+	/** The JSON inside the sample's `form-data=…` field, parsed back. */
+	const envelopeFromCurl = (curl: string): Record<string, unknown> => {
+		const match = curl.match(/--form-string 'form-data=(.*)'/);
+		if (!match) throw new Error("no form-data part in:\n" + curl);
+		return JSON.parse(match[1].replace(/'\\''/g, "'"));
+	};
+
+	it("curl sends one form-data envelope plus a part per file, never --data or a content-type header", () => {
 		const curl = toCurl(multipart);
 		expect(curl).toContain("--form 'pan_card=@/path/to/pan_card.jpg'");
-		expect(curl).toContain("--form 'modelname=");
+		expect(curl).toContain("--form 'aadhar_front=@/path/to/aadhar_front.jpg'");
+		// No form field of its own for a non-file param.
+		expect(curl).not.toContain("--form 'modelname=");
 		expect(curl).not.toContain("--data");
 		expect(curl).not.toContain("content-type");
 		expect(curl).toContain("secret-key: <computed_secret_key>");
 	});
 
-	it("JS fetch builds a FormData body without a manual content-type header", () => {
+	it("the envelope carries every non-file field, objects staying nested", () => {
+		const payload = envelopeFromCurl(toCurl(multipart));
+		expect(payload).toMatchObject({
+			initiator_id: expect.any(String),
+			modelname: "Morpho 1300E3",
+			account: "38759149196",
+			ifsc: "SBIN0007515",
+			office_address: { line: expect.any(String), state_id: "23" },
+		});
+		expect(payload).not.toHaveProperty("pan_card");
+		expect(payload).not.toHaveProperty("user_code"); // path param
+	});
+
+	it("curl escapes shell quotes and uses --form-string so curl cannot read the JSON as a file reference", () => {
+		const quoted = {
+			...multipart,
+			sampleRequest: { note: "d'Souza @file <in ;type=x", pan_card: "x" },
+		};
+		const curl = toCurl(quoted);
+		// `'` closed and reopened, so the argument survives the shell...
+		expect(curl).toContain(`'\\''`);
+		// ...and the value goes through --form-string, where @ / < / ;type= are literal.
+		expect(curl).toContain("--form-string 'form-data=");
+		expect(envelopeFromCurl(curl).note).toBe("d'Souza @file <in ;type=x");
+	});
+
+	it("JS fetch appends one JSON form-data field plus the file parts", () => {
 		const js = toJsFetch(multipart);
 		expect(js).toContain("new FormData()");
-		expect(js).toContain('form.append("pan_card"');
+		expect(js).toContain('form.append("form-data", JSON.stringify({');
+		expect(js).toContain('form.append("pan_card", await openAsBlob(');
+		expect(js).not.toContain('form.append("modelname"');
 		expect(js).toContain('"body": form');
 		expect(js).not.toContain("content-type");
 	});
 
-	it("python sends data + files (requests sets the multipart header)", () => {
+	it("python json.dumps-es the envelope and passes files separately", () => {
 		const py = toPython(multipart);
+		expect(py).toContain("import json");
+		expect(py).toContain('data = {"form-data": json.dumps(payload)}');
 		expect(py).toContain("files = {");
 		expect(py).toContain('open("/path/to/pan_card.jpg", "rb")');
 		expect(py).toContain("data=data, files=files");
 		expect(py).not.toContain("content-type");
 	});
 
-	it("php posts an array payload with CURLFile (curl sets the multipart header)", () => {
+	it("php json_encodes the envelope alongside CURLFile parts", () => {
 		const php = toPhp(multipart);
+		expect(php).toContain("'form-data' => json_encode($payload),");
 		expect(php).toContain("new CURLFile('/path/to/pan_card.jpg')");
-		expect(php).not.toContain("json_encode");
+		expect(php).toContain("CURLOPT_POSTFIELDS, $fields");
 		expect(php).not.toContain("content-type");
 	});
+});
 
-	it("object fields are serialized as JSON strings in form fields", () => {
-		const curl = toCurl(multipart);
-		expect(curl).toContain(`--form 'office_address={"line"`);
+describe("JSON endpoints are untouched by the multipart envelope", () => {
+	it("never wrap a non-multipart body in a form-data field", () => {
+		expect(toCurl(panLite)).toContain("--data");
+		expect(toCurl(panLite)).not.toContain("form-data");
+		expect(toJsFetch(panLite)).toContain("JSON.stringify(");
+		expect(toJsFetch(panLite)).not.toContain("form-data");
+		expect(toPython(panLite)).toContain("json=payload");
+		expect(toPython(panLite)).not.toContain("form-data");
+		expect(toPhp(panLite)).not.toContain("form-data");
 	});
 });
 
