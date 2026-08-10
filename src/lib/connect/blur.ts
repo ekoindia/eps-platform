@@ -3,15 +3,20 @@
  *
  * The metric is tile-based variance of a 3×3 Laplacian: blur suppresses the
  * second derivative everywhere, so a low variance means no sharp edges
- * anywhere. Scoring per tile and taking a high percentile means a document
- * with *any* crisp region passes — a form that is half signature and half
- * blank refuses to be judged by its blank half.
+ * anywhere. The image is split into tiles, tiles with no ink are dropped, and
+ * a LOW percentile of what remains becomes the score — the document is only
+ * as legible as its worst inked region.
  *
  * Every score is normalized to 0–100 (higher = sharper) so thresholds in
  * config are human-tweakable and independent of image resolution. The math is
  * pure (arrays in, number out) so it unit-tests without a canvas; the DOM
  * wrappers below feed it and fail open — `null` always means "could not
  * judge", never "blurry".
+ *
+ * Rough calibration against synthetic text pages at analysis resolution:
+ * a crisp page scores ~80, one soft edge or a mild defocus ~45–60, visibly
+ * blurred ~15, unreadable below 10. See `docs/features/kyc-documents.md` for
+ * the measurements and for what this metric does *not* catch.
  */
 
 /** What a blur check may do with its verdict. */
@@ -20,19 +25,30 @@ export type BlurCheckMode = "off" | "measure" | "warn" | "block";
 /**
  * Default floor on the 0–100 sharpness scale.
  *
- * ponytail: a paper value, not a calibrated one. Every KYC document currently
- * runs in `measure` mode to collect real `blur_scoreN` telemetry; calibrate
- * against that distribution before flipping any doc type to `warn`/`block`.
+ * ponytail: fitted to synthetic text pages, not to real captures — it is the
+ * only cut that separated every "should pass" case from every "should fail"
+ * one, but the margin was 3 points (46 vs 43), which is tight. Re-fit against
+ * real `blur_scoreN` telemetry before moving KYC from `warn` to `block`.
  */
-export const DEFAULT_BLUR_THRESHOLD = 30;
+export const DEFAULT_BLUR_THRESHOLD = 45;
 
 /** Longest side, in pixels, at which images are analysed. */
 export const BLUR_ANALYSIS_MAX_LENGTH = 1024;
 
 /** Tiles per side of the analysis grid. */
 const TILE_GRID = 8;
-/** Which tile's variance becomes the score — p90 ≈ "the sharpest region". */
-const TILE_PERCENTILE = 0.9;
+/**
+ * Which tile's variance becomes the score, as a percentile over the inked
+ * tiles. p10 ≈ "one of the worst inked regions".
+ *
+ * Low, not high. A high percentile reads only the sharpest patch, which makes
+ * the metric blind to the most common phone-camera failure there is: a page
+ * shot at an angle, crisp at the near edge and unreadable at the far one. Such
+ * a capture measured 85 at p90 — indistinguishable from a perfect scan — and
+ * 43 at p10. The blank-tile guard below is what makes a low percentile safe;
+ * without it, empty margins would decide every verdict.
+ */
+const TILE_PERCENTILE = 0.1;
 /** Tiles with less luma spread than this (0–255) carry no ink to judge. */
 const MIN_TILE_STDDEV = 4;
 /** Below this many judgeable tiles the image is essentially blank. */
@@ -42,7 +58,10 @@ const MIN_USABLE_TILES = 4;
 export interface BlurScoreOptions {
 	/** Tiles per side. Default 8. */
 	grid?: number;
-	/** Percentile of per-tile variances used as the score, 0–1. Default 0.9. */
+	/**
+	 * Percentile of per-tile variances used as the score, 0–1. Default 0.1.
+	 * See {@link TILE_PERCENTILE} for why it is low.
+	 */
 	percentile?: number;
 }
 

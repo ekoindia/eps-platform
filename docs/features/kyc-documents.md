@@ -261,12 +261,76 @@ source: picker, drag-and-drop, camera, and scanned PDFs.
 
 **The metric.** Tile-based variance of a 3×3 Laplacian on 0–255 luma, image
 downscaled to ≤1024px first. The image is split into an 8×8 grid; near-blank
-tiles (luma σ < 4) are dropped, and the p90 of the surviving tiles' variances
-becomes the score — so a document with *any* crisp region passes, and a mostly
-blank page is judged by its ink, not its margins. Scores are normalized to
-0–100 (log scale; crisp scans ~60–80, soft focus ~10–30) so thresholds are
-human-tweakable. Pure typed-array math, no dependencies, single-digit
-milliseconds at analysis resolution.
+tiles (luma σ < 4) are dropped so empty margins cannot decide the verdict, and
+the **10th percentile** of the surviving tiles' variances becomes the score —
+a document is only as legible as its worst inked region. Pure typed-array
+math, no dependencies, single-digit milliseconds at analysis resolution.
+
+**The scale: 0–100, higher is sharper.** The score is
+`20 × log₁₀(1 + variance)` — a decibel-like log scale, because raw Laplacian
+variance spans roughly 1 (mush) to 10,000 (crisp print) and a linear scale
+would be unusable as a config knob. So 70 is a *good* score. Measured against
+synthetic text pages at analysis resolution:
+
+| Capture | Score |
+| --- | --- |
+| Crisp, dense text | 80 |
+| Crisp, sparse text (20% inked) | 70 |
+| Crisp, with one soft region (a photo, a fold shadow) | 62 |
+| Very mild softness | 60 |
+| Mild softness — the edge of acceptable | 46 |
+| Page shot at an angle, far edge unreadable | 43 |
+| Soft | 34 |
+| Clearly blurred | 14 |
+| Badly blurred | 5 |
+
+Treat the ordering as reliable and the absolute values as provisional: these
+are synthetic pages, not real phone captures.
+
+### Why the percentile is low
+
+The first version scored the **90th** percentile, on the reasoning that a
+document with any crisp region is readable. That was wrong for the captures
+this feature exists to catch, and the measurements say so plainly:
+
+| Capture | p90 | p50 | p25 | p10 |
+| --- | --- | --- | --- | --- |
+| Crisp, dense text | 91 | 91 | 81 | 80 |
+| Crisp, sparse text | 91 | 80 | 70 | 70 |
+| Clearly blurred (2px) | 23 | 23 | 14 | 14 |
+| **Angled page, far edge unreadable** | **85** | 74 | 62 | **43** |
+
+At p90 a page shot at an angle scored **85** — indistinguishable from a perfect
+scan — because the crisp near edge carried the whole verdict, and the number
+did not move however badly the far edge degraded. That is the single most
+common way a phone capture of a document fails.
+
+The blank-tile guard is what makes a low percentile safe: the empty-margin
+problem p90 was protecting against is already solved one step earlier, so the
+high percentile was redundant cover that bought a blind spot. p10 keeps a
+useful margin over legitimately awkward documents — one soft patch on a sparse
+page still scores 62 — while the angled page drops to 43.
+
+**Threshold 45** is the only cut that classified every synthetic case
+correctly, but the margin is 3 points (46 passes, 43 fails), which is tight.
+Re-fit it against real telemetry before enforcing.
+
+### What this metric does not catch
+
+Worth knowing before trusting it, since two of the three common causes of a bad
+scan are outside what Laplacian variance measures:
+
+- **Out of focus, and motion blur — caught well.** This is exactly what the
+  metric measures.
+- **Poor lighting — essentially not caught.** An in-focus page with contrast
+  crushed to 5% of normal, near-invisible to a human, still scores 39. Low
+  contrast lowers the score, but nowhere near enough to gate on. Arguably
+  correct — a dim but focused scan recovers with auto-levels, unlike true blur
+  — but do not expect this check to refuse a badly-lit capture.
+- **Skew and perspective — not caught at all, by design.** A sharply focused
+  page photographed at 45° scores like any other sharp page. Only the *defocus*
+  that often accompanies a bad angle registers; the geometry does not.
+- **Cropped, upside-down, or wrong document — not caught.** Out of scope.
 
 **One rule for the whole checklist.** Legibility is a property of the capture,
 not of which document it depicts, so KYC does not configure this per document.
@@ -275,7 +339,7 @@ Three constants in `kyc-docs.ts` decide it for every row:
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `KYC_BLUR_CHECK` | `warn` | Toast, but let the upload through |
-| `KYC_BLUR_THRESHOLD` | 30 | The 0–100 sharpness floor |
+| `KYC_BLUR_THRESHOLD` | 45 | The 0–100 sharpness floor |
 | `KYC_BLUR_STAMP_FILENAME` | `true` | Write the score into the uploaded file name |
 
 `KycDocConfig.options` **excludes** `blurCheck` and `blurThreshold` from its
@@ -336,10 +400,41 @@ only one of them currently arrives:
   backend reads only the fields it names, so the extra parts are harmless.
 
 **Recording those fields is the follow-up that makes the threshold
-calibratable.** Until then 30 is a paper value; look at real score
+calibratable.** Until then 45 is fitted to synthetic pages; look at real score
 distributions before moving `KYC_BLUR_CHECK` to `block`, and turn
 `KYC_BLUR_STAMP_FILENAME` off once upstream records the scores properly, at
 which point the names are just noise.
+
+### Where to take this next
+
+Roughly in order of value per unit of work:
+
+1. **Record `blur_scoreN` upstream, then re-fit the threshold.** Everything
+   else is guesswork until the real distribution exists. The 3-point margin
+   between pass and fail on synthetic data is too tight to trust.
+2. **A separate exposure check.** Mean luma plus dynamic range over the inked
+   tiles — both already computed inside `blurScore`, so this is cheap. Keep it
+   as its own signal with its own message ("too dark to read") rather than
+   folding it into the blur score: conflating two defects makes both harder to
+   tune, and the useful advice differs ("move to better light" vs "hold still").
+3. **A uniformity signal for skew.** The spread between a high and a low
+   percentile separates an angled page from an evenly sharp one better than any
+   single number does — measured spread was 42 points for the angled page
+   against ≤21 for every other case. Worth adding if angled captures survive
+   the p10 change in practice.
+4. **Score before the user commits.** Today the verdict lands on Accept. Live
+   scoring of the camera preview would let the shutter itself say "hold
+   steady", which is a far better experience than rejecting a photo after the
+   fact. Costs a rAF loop over a downscaled frame.
+5. **Deskew and auto-levels instead of refusing.** The genuinely lazy end
+   state: fix what can be fixed on-device rather than asking for a retake.
+   Perspective correction and contrast normalisation are well-trodden, and both
+   would raise the scores this metric reports rather than merely reporting
+   them.
+6. **Content checks** — is the whole document in frame, is it the right way up,
+   is it even the document that was asked for. Different problem, likely wants
+   a model rather than a kernel, and only worth it if review says framing
+   rejections outnumber blur rejections.
 
 ## UI
 

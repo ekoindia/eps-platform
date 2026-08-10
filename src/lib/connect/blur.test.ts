@@ -98,6 +98,42 @@ describe("blurScore", () => {
 		expect(blurScore(new Float32Array(4), 2, 2)).toBeNull();
 	});
 
+	it("fails a page that is sharp at one edge and blurred at the other", () => {
+		// The regression this metric's low percentile exists for: a page shot at
+		// an angle. Under a high percentile the crisp near edge carried the whole
+		// verdict and this scored like a perfect scan.
+		const sharp = checkerboard();
+		// Sampled from progressively blurrier renders rather than blended with a
+		// sharp copy: a blend leaves a fraction of the original edge everywhere,
+		// which optical defocus does not, and that residue alone was enough to
+		// keep the far edge scoring as if it were legible.
+		const stages = [
+			sharp,
+			blurredCheckerboard(1, 2),
+			blurredCheckerboard(2, 3),
+			blurredCheckerboard(3, 4),
+			blurredCheckerboard(3, 6),
+		];
+		const tilted = new Float32Array(SIZE * SIZE);
+		for (let y = 0; y < SIZE; y += 1) {
+			for (let x = 0; x < SIZE; x += 1) {
+				const index = y * SIZE + x;
+				const stage = Math.min(
+					stages.length - 1,
+					Math.floor((x / SIZE) * stages.length),
+				);
+				tilted[index] = stages[stage][index];
+			}
+		}
+
+		const score = blurScore(tilted, SIZE, SIZE);
+		expect(score).not.toBeNull();
+		expect(score!).toBeLessThan(DEFAULT_BLUR_THRESHOLD);
+		// And it must still read as worse than an evenly sharp page, not merely
+		// below a threshold that happens to sit high.
+		expect(score!).toBeLessThan(blurScore(sharp, SIZE, SIZE)!);
+	});
+
 	it("scores a mostly blank page by its sharp region", () => {
 		// Blank except a sharp checkerboard patch covering ~a quarter of the
 		// page — enough tiles to judge, and the percentile must let the sharp
