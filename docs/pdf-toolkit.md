@@ -149,6 +149,10 @@ Behaviour:
   only a PDF we cannot read at all (encrypted, corrupt) reports and is skipped.
 - Attachments accumulate: pick again, capture from the camera, drag more in.
   Each row can be removed or reordered, and page order follows the list.
+- A row's thumbnail and name are one button that opens that attachment in the
+  hosted viewer (`showFile`, via an object URL revoked when it closes) — the
+  same viewer the combined PDF's **View** opens. Checking what was captured
+  should not mean removing the row and taking it again.
 - Each attachment's PDF form is cached by row id, so reordering re-merges cached
   bytes instead of re-editing and re-compressing the batch.
 - If the combined document busts `maxBytes`, it gets one compression pass before

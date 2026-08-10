@@ -692,12 +692,21 @@ export function FileUpload({
 		resetInput();
 	}
 
-	/** Opens the combined PDF in the viewer, releasing the URL when it closes. */
-	async function viewCombined() {
-		if (!file) return;
-		const url = URL.createObjectURL(file);
+	/**
+	 * Opens one attached file in the viewer, releasing the URL when it closes.
+	 *
+	 * The type is passed rather than sniffed: the viewer reads an extension off
+	 * the URL, and an object URL has none. Only the two kinds this component
+	 * accepts, images and PDFs, ever reach here.
+	 * @param target - The file to show — a pending row, or the combined PDF.
+	 */
+	async function viewFile(target: File) {
+		const url = URL.createObjectURL(target);
 		try {
-			await showFile(url, { type: "pdf" });
+			await showFile(url, {
+				type: target.type === "application/pdf" ? "pdf" : "image",
+				label: target.name,
+			});
 		} finally {
 			URL.revokeObjectURL(url);
 		}
@@ -876,21 +885,29 @@ export function FileUpload({
 				<span className="w-4 shrink-0 text-center text-[10px] text-muted-foreground">
 					{index + 1}
 				</span>
-				{item.thumbnail ? (
-					<img
-						src={item.thumbnail}
-						alt=""
-						className="h-9 w-9 shrink-0 rounded-sm object-cover"
-					/>
-				) : (
-					<FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-				)}
-				<span
-					className="min-w-0 flex-1 truncate text-xs"
+				{/* The thumbnail and the name are one control: a 9×9 image is a small
+				    target, and the row already spends its right half on buttons. A
+				    PDF has no thumbnail and opens just the same. */}
+				<button
+					type="button"
+					aria-label={`View ${item.file.name}`}
 					title={item.file.name}
+					onClick={() => void viewFile(item.file)}
+					className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded text-left"
 				>
-					{item.file.name}
-				</span>
+					{item.thumbnail ? (
+						<img
+							src={item.thumbnail}
+							alt=""
+							className="h-9 w-9 shrink-0 rounded-sm object-cover"
+						/>
+					) : (
+						<FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+					)}
+					<span className="min-w-0 flex-1 truncate text-xs">
+						{item.file.name}
+					</span>
+				</button>
 				<span className="shrink-0 text-[10px] text-muted-foreground">
 					{formatBytes(item.file.size)}
 				</span>
@@ -979,7 +996,7 @@ export function FileUpload({
 									type="button"
 									variant="outline"
 									size="sm"
-									onClick={() => void viewCombined()}
+									onClick={() => void viewFile(file)}
 								>
 									View
 								</Button>

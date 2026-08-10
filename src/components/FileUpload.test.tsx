@@ -432,4 +432,33 @@ describe("FileUpload multi-file mode", () => {
 
 		expect(container.textContent).toContain("drag and drop files here");
 	});
+
+	it("opens an attached row in the viewer when its thumbnail is clicked", async () => {
+		// jsdom has neither, and the viewer is handed an object URL.
+		const original = {
+			create: URL.createObjectURL,
+			revoke: URL.revokeObjectURL,
+		};
+		URL.createObjectURL = vi.fn(() => "blob:row");
+		URL.revokeObjectURL = vi.fn();
+		try {
+			const { container } = renderUpload({
+				multiple: true,
+				accept: "image/*,application/pdf",
+			});
+			pickFile(container, fileOf("statement.pdf", 1024));
+
+			const view = await screen.findByRole("button", {
+				name: "View statement.pdf",
+			});
+			fireEvent.click(view);
+
+			// The hosted viewer, not a new tab: the file never leaves the page.
+			await screen.findByRole("dialog");
+			expect(URL.createObjectURL).toHaveBeenCalled();
+		} finally {
+			URL.createObjectURL = original.create;
+			URL.revokeObjectURL = original.revoke;
+		}
+	});
 });
