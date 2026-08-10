@@ -332,9 +332,9 @@ scan are outside what Laplacian variance measures:
   that often accompanies a bad angle registers; the geometry does not.
 - **Cropped, upside-down, or wrong document — not caught.** Out of scope.
 
-**One rule for the whole checklist.** Legibility is a property of the capture,
-not of which document it depicts, so KYC does not configure this per document.
-Three constants in `kyc-docs.ts` decide it for every row:
+**One rule for the whole checklist, with one door out.** Legibility is a
+property of the capture for almost every row, so three constants in
+`kyc-docs.ts` decide it by default:
 
 | Constant | Value | Meaning |
 | --- | --- | --- |
@@ -342,10 +342,22 @@ Three constants in `kyc-docs.ts` decide it for every row:
 | `KYC_BLUR_THRESHOLD` | 45 | The 0–100 sharpness floor |
 | `KYC_BLUR_STAMP_FILENAME` | `true` | Write the score into the uploaded file name |
 
-`KycDocConfig.options` **excludes** `blurCheck` and `blurThreshold` from its
-type, and `KycUploadDialog` spreads them after the document's own options, so
-a row cannot opt itself out either way. Underneath, the generic component still
-takes `blurCheck: 'off' | 'measure' | 'warn' | 'block'` and `blurThreshold` on
+A document type may name its own **mode** — and only the mode — via
+`KycDocConfig.blurCheck`. `doc_type` 24, the directors' live photograph, sets
+`measure`: it is a person in a room rather than inked text, so a floor fitted
+to document scans is judging the wrong thing, and a wide-framed photo against a
+plain wall would toast at a partner who did exactly what review asked for. The
+score is still taken and still stamped into the file name, so the evidence for
+a photograph-specific threshold keeps accumulating.
+
+The threshold stays global on purpose: a floor that moved by row would make the
+collected scores incomparable, which is the only reason to collect them.
+
+`KycDocConfig.options` still **excludes** `blurCheck` and `blurThreshold` from its
+type, and `KycUploadDialog` spreads the resolved values after the document's own
+options, so `options` cannot smuggle a mode in — `config.blurCheck` is the
+sanctioned way. Underneath, the generic component takes
+`blurCheck: 'off' | 'measure' | 'warn' | 'block'` and `blurThreshold` on
 `ImageEditorOptions` — `measure` scores silently, `warn` toasts and attaches,
 `block` refuses (in the editor that keeps the dialog open for a retake, the
 face-count precedent; elsewhere it drops the file with a toast).

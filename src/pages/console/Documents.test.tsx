@@ -244,4 +244,36 @@ describe("Documents", () => {
 		expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
 		expect(screen.getByText("Blurred scan")).toBeVisible();
 	});
+
+	it("says Capture on a camera-only document, never Upload", async () => {
+		// doc_type 24 is the live photograph: `cameraOnly` in `kyc-docs.ts`, so
+		// there is no file to "upload" and the button says what the tap does.
+		const [first, ...rest] = KYC_DOCUMENTS_SAMPLE.data.document_list;
+		fetchDocuments.mockResolvedValue({
+			documents: [{ ...first, doc_type: "24" }, ...rest],
+		});
+
+		render(<Documents />);
+
+		expect(
+			await screen.findByRole("button", { name: "Capture" }),
+		).toBeVisible();
+	});
+
+	it("says Capture Again once a camera-only document was rejected", async () => {
+		const [first, ...rest] = KYC_DOCUMENTS_SAMPLE.data.document_list;
+		fetchDocuments.mockResolvedValue({
+			documents: [
+				{ ...first, doc_type: "24", status: 3, error: "Too dark" },
+				...rest,
+			],
+		});
+
+		render(<Documents />);
+
+		expect(
+			await screen.findByRole("button", { name: "Capture Again" }),
+		).toBeVisible();
+		expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+	});
 });

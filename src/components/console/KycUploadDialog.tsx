@@ -69,7 +69,6 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 	// A fresh set of empty slots per document, so reopening the dialog on another
 	// row never inherits the previous one's attachments.
 	useEffect(() => {
-		// Hard code the file upload array to 1 page because we now support adding multiple files in a single file-upload field. The `multiple` property on the `FileUpload` component will handle multiple files for a single page.
 		setFiles(doc ? Array.from({ length: doc.pages }, () => null) : []);
 		setBusy(false);
 	}, [doc]);
@@ -211,11 +210,13 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 								// at instead of two files both called "combined-documents".
 								combinedFileName={`${slugify(label)}.pdf`}
 								// One legibility rule for the whole checklist — see
-								// `KYC_BLUR_CHECK`. Spread last so a document config cannot
-								// quietly opt itself out; its type excludes these keys too.
+								// `KYC_BLUR_CHECK` — unless the document type names its own
+								// mode, as a live photograph does. Spread last so `options`
+								// cannot quietly opt a document out; its type excludes these
+								// keys, and `config.blurCheck` is the sanctioned way in.
 								options={{
 									...config.options,
-									blurCheck: KYC_BLUR_CHECK,
+									blurCheck: config.blurCheck ?? KYC_BLUR_CHECK,
 									blurThreshold: KYC_BLUR_THRESHOLD,
 								}}
 								file={file}

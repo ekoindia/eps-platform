@@ -302,7 +302,17 @@ describe("KycUploadDialog", () => {
 			}
 		});
 
-		it("cannot be opted out of by a document config", () => {
+		it("lets a document config name its own mode", () => {
+			vi.mocked(configOf).mockReturnValue({ blurCheck: "measure" });
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			const slot = screen.getByTestId("file-upload");
+			expect(slot.dataset.blurCheck).toBe("measure");
+			// The threshold stays global, so the scores remain comparable.
+			expect(slot.dataset.blurThreshold).toBe(String(KYC_BLUR_THRESHOLD));
+		});
+
+		it("cannot be opted out of through `options`", () => {
 			// The type already forbids it; this pins the runtime order too, since a
 			// spread the wrong way round would silently reinstate per-doc rules.
 			vi.mocked(configOf).mockReturnValue({

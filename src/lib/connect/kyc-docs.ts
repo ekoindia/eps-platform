@@ -20,7 +20,7 @@
 
 import type { FileUploadOptions } from "@/components/FileUpload";
 import type { WatermarkSpec } from "@/hooks/use-watermark";
-import { DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
+import { type BlurCheckMode, DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
 import type { KycDocument } from "@/lib/connect/kyc";
 
 /**
@@ -46,12 +46,13 @@ export const KYC_MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const KYC_MAX_PAGES = 6;
 
 /**
- * What a blurry scan costs the partner, across **every** KYC document.
+ * What a blurry scan costs the partner, for every KYC document that does not
+ * say otherwise via {@link KycDocConfig.blurCheck}.
  *
- * Deliberately one setting rather than a per-document one: "is this scan
- * legible" is a property of the capture, not of which document it depicts, and
- * a rule that varies by row is a rule nobody can predict. {@link KycDocConfig}
- * excludes `blurCheck` from its `options` so this cannot be overridden.
+ * The default rather than the rule: "is this legible" is a property of the
+ * capture for almost every row, so one number is what a partner can predict.
+ * The exception is a document that is not a scan at all — a live photograph of
+ * a person, where the metric is measuring a face and a room rather than ink.
  *
  * `warn` toasts and lets the upload through. Not `block`: {@link
  * KYC_BLUR_THRESHOLD} has not been calibrated against real captures yet, and a
@@ -176,13 +177,27 @@ export interface KycDocConfig {
 	 * skips the editor, and the editor is where the watermark is burnt into the
 	 * pixels — the capture would arrive unstamped.
 	 *
-	 * The blur knobs are excluded too: legibility is one rule for the whole
-	 * checklist, held in {@link KYC_BLUR_CHECK}.
+	 * The blur knobs are excluded: the mode has its own field, {@link
+	 * blurCheck}, and the threshold stays one number for the whole checklist.
 	 */
 	options?: Omit<
 		FileUploadOptions,
 		"fileName" | "watermark" | "blurCheck" | "blurThreshold"
 	>;
+	/**
+	 * Replaces {@link KYC_BLUR_CHECK} for this document type.
+	 *
+	 * For a row where sharpness means something different, or nothing: a live
+	 * photograph is a person and their surroundings, not inked text, so a
+	 * Laplacian floor fitted to document scans is judging the wrong thing.
+	 * `"measure"` keeps the score (and its file-name stamp) without ever
+	 * stopping the partner; `"off"` scores nothing at all.
+	 *
+	 * Only the mode is per-document. {@link KYC_BLUR_THRESHOLD} stays global —
+	 * a floor that moved by row would make the scores incomparable, which is
+	 * the whole point of collecting them.
+	 */
+	blurCheck?: BlurCheckMode;
 	/**
 	 * A tighter per-file size limit than {@link KYC_MAX_FILE_BYTES}.
 	 *
@@ -317,12 +332,21 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// but the narrowed `accept` is what makes that a rule rather than a UI
 	// choice. Several frames may be captured — the surroundings rarely fit one —
 	// and they are combined into a single PDF, which the backend accepts.
+	//
+	// `measure` rather than the checklist's `warn`: this is a person in a room,
+	// not inked text, so the sharpness floor is judging something it was not
+	// fitted to — a photograph framed wide, or with a plain wall behind it,
+	// scores low while being exactly what review asked for. The score is still
+	// taken and still stamped into the file name, so the evidence for a
+	// photograph-specific threshold accumulates either way.
 	"24": {
 		name: "Directors' Live Photograph",
 		accept: "image/jpeg,image/png",
+		pageLabels: ["Capture Selfie"],
 		cameraOnly: true,
 		multiple: true,
 		watermark: true,
+		blurCheck: "off",
 		info: "Capture the live photographs of all your directors",
 		instructions:
 			"- If you represent a company, capture the live photographs of **all directors**.\n  - Start with capturing the first photograph\n  - then, you will get option to add more.",
