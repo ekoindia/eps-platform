@@ -768,10 +768,15 @@ describe("sign agreement interactions", () => {
 		return new URLSearchParams(init.body as string);
 	}
 
-	it("getAgreementUrl posts 287 (mobile as csp_id/user_id) and maps a 1613 URL", async () => {
+	it("getAgreementUrl posts 287 (mobile as csp_id/user_id) and maps a status-0 URL", async () => {
+		// The live success shape: `status: 0` with response_type_id 1043 and the
+		// message "Document Id From Digio" — success is NOT a fixed type id.
 		const f = mockFetch(200, {
-			response_type_id: 1613,
-			data: { short_url: "https://sign/x", document_id: "DOC9", pipe: 3 },
+			response_status_id: -1,
+			response_type_id: 1043,
+			status: 0,
+			message: "Document Id From Digio",
+			data: { short_url: "https://sign/x", document_id: "DOC9", pipe: 1 },
 		});
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
@@ -779,12 +784,12 @@ describe("sign agreement interactions", () => {
 			ok: true,
 			shortUrl: "https://sign/x",
 			documentId: "DOC9",
-			pipe: 3,
+			pipe: 1,
 			alreadySigned: false,
 		});
 		const body = bodyOf(f);
 		expect(body.get("interaction_type_id")).toBe("287");
-		expect(body.get("agreement_id")).toBe("5");
+		expect(body.get("agreement_id")).toBe("4");
 		expect(body.get("csp_id")).toBe("9990000001");
 		expect(body.get("user_id")).toBe("9990000001");
 		expect(body.get("initiator_id")).toBe("9990000001");
@@ -810,41 +815,115 @@ describe("sign agreement interactions", () => {
 		},
 	);
 
-	it("getAgreementUrl fails on an unexpected type, ignoring a stray short_url", async () => {
-		// Strict: a partial short_url on a non-1613 response must NOT read as success.
+	it("getAgreementUrl treats an already-signed id with a non-zero status as failed", async () => {
+		// 1069 is "already signed" on 287 but an error id elsewhere — the status
+		// decides, so a failed reply carrying it must not read as already-signed.
 		const f = mockFetch(200, {
-			response_type_id: 1500,
-			message: "Nope",
+			response_type_id: 1069,
+			status: 1070,
+			message: "Document not verified successfully",
+			data: { document_id: "DOC9" },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		expect(r).toEqual({
+			ok: false,
+			message: "Document not verified successfully",
+			responseTypeId: 1069,
+		});
+	});
+
+	it("getAgreementUrl fails on a non-zero status, ignoring a stray short_url", async () => {
+		// Strict: a partial short_url on an error response must NOT read as success.
+		const f = mockFetch(200, {
+			response_status_id: 1,
+			response_type_id: 1083,
+			status: 1083,
+			message: "Invalid agreement id.",
 			data: { short_url: "https://stale" },
 		});
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
-		expect(r).toEqual({ ok: false, message: "Nope", responseTypeId: 1500 });
+		expect(r).toEqual({
+			ok: false,
+			message: "Invalid agreement id.",
+			responseTypeId: 1083,
+		});
+	});
+
+	it.each([
+		["missing", undefined],
+		["blank", "   "],
+		["non-http", "javascript:alert(1)"],
+	])(
+		"getAgreementUrl fails when status 0 carries a %s short_url",
+		async (_label, short_url) => {
+			const f = mockFetch(200, {
+				response_type_id: 1043,
+				status: 0,
+				message: "Document Id From Digio",
+				data: { short_url, document_id: "DOC9" },
+			});
+			const eko = createEkoClient(ekoCfg, f);
+			const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+			expect(r.ok).toBe(false);
+		},
+	);
+
+	it("getAgreementUrl accepts a string status and trims the URL", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1043,
+			status: "0",
+			data: { short_url: " https://sign/x ", document_id: "DOC9", pipe: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		expect(r).toMatchObject({ ok: true, shortUrl: "https://sign/x" });
 	});
 
 	it("submitSignAgreement posts 293 with the document id, agreement id and a client_ref_id", async () => {
-		const f = mockFetch(200, { response_type_id: 1615 });
+		// Live success: status 0 with response_type_id 1069, not a fixed id.
+		const f = mockFetch(200, {
+			response_status_id: -1,
+			response_type_id: 1069,
+			status: 0,
+			message: "You have successfully signed the agreement.",
+		});
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
 		expect(r.ok).toBe(true);
 		const body = bodyOf(f);
 		expect(body.get("interaction_type_id")).toBe("293");
 		expect(body.get("document_id")).toBe("DOC9");
-		expect(body.get("agreement_id")).toBe("5");
+		expect(body.get("agreement_id")).toBe("4");
 		expect(body.get("esign_completed")).toBe("true");
 		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
 	});
 
 	it("submitSignAgreement reports the upstream message on failure", async () => {
-		const f = mockFetch(200, { response_type_id: 1500, message: "Not signed" });
+		const f = mockFetch(200, {
+			response_status_id: 1,
+			response_type_id: 1070,
+			status: 1070,
+			message: "Document not verified successfully",
+		});
 		const eko = createEkoClient(ekoCfg, f);
 		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
 		expect(r).toEqual({
 			ok: false,
-			message: "Not signed",
-			responseTypeId: 1500,
+			message: "Document not verified successfully",
+			responseTypeId: 1070,
 		});
+	});
+
+	it("submitSignAgreement fails when the reply carries no status at all", async () => {
+		// Unlike 287 there is no payload to corroborate a missing status, and
+		// passing here would advance the user past an unsigned agreement.
+		const f = mockFetch(200, { response_type_id: 1615, message: "Hmm" });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		expect(r).toEqual({ ok: false, message: "Hmm", responseTypeId: 1615 });
 	});
 });
 
