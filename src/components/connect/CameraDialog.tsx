@@ -9,7 +9,7 @@ import {
 	takeFullResolutionPhoto,
 } from "@/lib/connect/camera";
 import { dataUrlToFile, timestampedFileName } from "@/lib/connect/image";
-import { Camera, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
+import { Camera, RefreshCw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 
@@ -96,12 +96,14 @@ function IconButton({
 	label,
 	onClick,
 	isMain = false,
+	disabled = false,
 	className = "",
 	children,
 }: {
 	label: string;
 	onClick: () => void;
 	isMain?: boolean;
+	disabled?: boolean;
 	className?: string;
 	children: React.ReactNode;
 }) {
@@ -111,7 +113,8 @@ function IconButton({
 			onClick={onClick}
 			aria-label={label}
 			title={label}
-			className={`flex cursor-pointer items-center justify-center rounded-full p-2.5 shadow-md hover:brightness-90 ${
+			disabled={disabled}
+			className={`flex cursor-pointer items-center justify-center rounded-full p-2.5 shadow-md hover:brightness-90 disabled:cursor-default disabled:opacity-60 disabled:hover:brightness-100 ${
 				isMain
 					? "h-15 w-15 outline-2 outline-offset-2 outline-white"
 					: "h-12 w-12"
@@ -326,18 +329,37 @@ export function CameraDialog({
 				}}
 				className="max-h-[calc(100vh-80px)] max-w-full rounded-md"
 			/>
-			{status === "ready" && liveCheckEnabled && liveSharpness !== null ? (
+			{status === "ready" && capturing ? (
+				// The focus hunt can take a few seconds and looks like nothing is
+				// happening — which reads as "the button didn't work". Name what the
+				// camera is doing, and animate a focus bracket over the frame so the
+				// stillness is visibly deliberate.
+				<div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+					<div className="h-28 w-28 animate-ping rounded-xl border-2 border-white/70 [animation-duration:1.5s]" />
+					<div className="absolute h-28 w-28 rounded-xl border-2 border-white/90" />
+				</div>
+			) : null}
+			{status === "ready" &&
+			(capturing || (liveCheckEnabled && liveSharpness !== null)) ? (
 				// Over the preview's top edge, where the eye already is while
-				// framing. Says what to DO, not what the number is.
+				// framing. Says what to DO, not what the number is. While a capture
+				// is in flight that instruction is "Hold still…", whatever the last
+				// sharpness verdict said.
 				<p
 					className={`pointer-events-none absolute left-1/2 top-2.5 z-10 -translate-x-1/2 select-none rounded-full px-3 py-1 text-xs font-medium text-white shadow-md ${
-						liveSharpness >= liveThreshold
-							? "bg-emerald-600/90"
-							: "bg-amber-600/90"
+						capturing
+							? "bg-sky-600/90"
+							: liveSharpness !== null && liveSharpness >= liveThreshold
+								? "bg-emerald-600/90"
+								: "bg-amber-600/90"
 					}`}
 				>
-					{liveSharpness >= liveThreshold ? "Sharp" : "Blurry — hold steady"}
-					{import.meta.env.DEV ? ` · ${liveSharpness}` : null}
+					{capturing
+						? "Hold still…"
+						: liveSharpness !== null && liveSharpness >= liveThreshold
+							? "Sharp"
+							: "Blurry — hold steady"}
+					{!capturing && import.meta.env.DEV ? ` · ${liveSharpness}` : null}
 				</p>
 			) : null}
 			{status === "ready" ? (
@@ -347,18 +369,28 @@ export function CameraDialog({
 					<IconButton
 						label={capturing ? "Capturing…" : "Capture image"}
 						isMain
+						disabled={capturing}
 						onClick={() => void onCapture()}
 					>
-						<Camera className={`h-7 w-7 ${capturing ? "animate-pulse" : ""}`} />
+						{capturing ? (
+							<RefreshCw className="h-7 w-7 animate-spin" />
+						) : (
+							<Camera className="h-7 w-7" />
+						)}
 					</IconButton>
 					{devices.length > 1 ? (
-						<IconButton label="Switch camera" onClick={switchCamera}>
+						<IconButton
+							label="Switch camera"
+							disabled={capturing}
+							onClick={switchCamera}
+						>
 							<SwitchCamera className="h-6 w-6" />
 						</IconButton>
 					) : null}
 					{torchAvailable ? (
 						<IconButton
 							label={torchOn ? "Turn light off" : "Turn light on"}
+							disabled={capturing}
 							onClick={() => void toggleTorch()}
 							className={torchOn ? "bg-amber-400 text-black" : ""}
 						>
