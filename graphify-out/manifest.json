@@ -1090,9 +1090,9 @@
     "semantic_hash": ""
   },
   "src/components/connect/CameraDialog.tsx": {
-    "mtime": 1785170439.9277637,
-    "ast_hash": "dac0849455a4718e6e42318a6c60a728",
-    "semantic_hash": "dac0849455a4718e6e42318a6c60a728"
+    "mtime": 1786348182.4717681,
+    "ast_hash": "32e4719e0e5c5797e18696993760e9ee",
+    "semantic_hash": ""
   },
   "src/components/connect/ConnectWidget.test.tsx": {
     "mtime": 1785154720.4733875,
@@ -1150,13 +1150,13 @@
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
-    "mtime": 1786298212.6617494,
-    "ast_hash": "c1f17a2786177de8af5a4801a7ce2db9",
+    "mtime": 1786348085.2017508,
+    "ast_hash": "e1f4ee6e95e02dba1a5f2ed9094ee5b3",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.tsx": {
-    "mtime": 1786298102.1170745,
-    "ast_hash": "9d3e6893c2dfca451349af6c131dfc5d",
+    "mtime": 1786346461.283592,
+    "ast_hash": "b494c25184fcef9981552c919c7811c1",
     "semantic_hash": ""
   },
   "src/components/console/WalletBalance.connect.test.tsx": {
@@ -2055,8 +2055,8 @@
     "semantic_hash": "731f1086f8e39f84c54f2bef8a2b8cff"
   },
   "src/lib/connect/kyc-docs.ts": {
-    "mtime": 1786298080.0115707,
-    "ast_hash": "3b2bf4dd49fd73f920373f3f8f3c471a",
+    "mtime": 1786347094.788659,
+    "ast_hash": "6558f92075de1fa8d514ee7b5a70887d",
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.fixture.ts": {
@@ -2065,8 +2065,8 @@
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.test.ts": {
-    "mtime": 1786166092.5008144,
-    "ast_hash": "6688cd9abb2dde65d10309661174d157",
+    "mtime": 1786348103.0714958,
+    "ast_hash": "8a0bd6095bffdb0ab23843db92747283",
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.ts": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": "c6d1b449c59cc677e79721e2adbb6db8"
   },
   "docs/features/kyc-documents.md": {
-    "mtime": 1786344203.2152965,
-    "ast_hash": "bf81c5478bdc600f65bd9ac266e810be",
+    "mtime": 1786347976.6757727,
+    "ast_hash": "64b5b9c07433bb53ac16f7eadb8bbc41",
     "semantic_hash": ""
   },
   "docs/features/transaction-history.md": {
@@ -3770,8 +3770,18 @@
     "semantic_hash": ""
   },
   "src/lib/connect/blur.ts": {
-    "mtime": 1786344068.617262,
-    "ast_hash": "b9f5d6a81faf11c614897b0eca550bf1",
+    "mtime": 1786348025.8614237,
+    "ast_hash": "863f849eaaeccda1a3ab6d0ef39d81f3",
+    "semantic_hash": ""
+  },
+  "src/lib/connect/camera.test.ts": {
+    "mtime": 1786348235.9662828,
+    "ast_hash": "02a38214fe00ee9b12029a73d41510d4",
+    "semantic_hash": ""
+  },
+  "src/lib/connect/camera.ts": {
+    "mtime": 1786348008.6753633,
+    "ast_hash": "663369ca1a67ee2f5667cd0cb96afa4a",
     "semantic_hash": ""
   }
 }
