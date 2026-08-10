@@ -925,13 +925,13 @@
     "semantic_hash": "37730103b25a051ff6fb12e00af8f336"
   },
   "src/components/FileUpload.test.tsx": {
-    "mtime": 1786298264.7771494,
-    "ast_hash": "d776b63836db719a8b46d54b4d316c5f",
+    "mtime": 1786350193.331259,
+    "ast_hash": "c5eacbf29772ef67d032c7e1bc0c961f",
     "semantic_hash": ""
   },
   "src/components/FileUpload.tsx": {
-    "mtime": 1786298054.2519073,
-    "ast_hash": "4893781b422718ab531f70ca552d8e05",
+    "mtime": 1786350162.2332003,
+    "ast_hash": "2113471fc29a20bc35766e6e03a741c9",
     "semantic_hash": ""
   },
   "src/components/Footer.auth.test.tsx": {
@@ -3150,9 +3150,9 @@
     "semantic_hash": "51ca33f506c4d6f95a1b799fa2bebd5c"
   },
   "docs/pdf-toolkit.md": {
-    "mtime": 1785323033.453182,
-    "ast_hash": "e5865f95a1f7dd2c37eacd13fce4a260",
-    "semantic_hash": "e5865f95a1f7dd2c37eacd13fce4a260"
+    "mtime": 1786350225.928493,
+    "ast_hash": "2d2c7d8b3bb8fd8f38760e00b2a670c9",
+    "semantic_hash": ""
   },
   "docs/pricing-calculator.md": {
     "mtime": 1785747632.846224,

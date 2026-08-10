@@ -13494,7 +13494,7 @@
       "_origin": "ast",
       "id": "src_components_aihint",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "aihint.tsx"
     },
     {
@@ -13505,7 +13505,7 @@
       "_origin": "ast",
       "id": "src_components_aihint_aihint",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "aihint()"
     },
     {
@@ -13900,8 +13900,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_codeblock",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "codeblock.tsx"
     },
     {
@@ -13911,8 +13911,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_codeblock_codeblockprops",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "codeblockprops"
     },
     {
@@ -13922,8 +13922,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_codeblock_codeblock",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "codeblock()"
     },
     {
@@ -13933,8 +13933,8 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "src_components_codeblock_exampleapicode",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "exampleapicode"
     },
     {
@@ -13944,8 +13944,8 @@
       "source_location": "L194",
       "_origin": "ast",
       "id": "src_components_codeblock_examplepaymentcode",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "examplepaymentcode"
     },
     {
@@ -13955,8 +13955,8 @@
       "source_location": "L214",
       "_origin": "ast",
       "id": "src_components_codeblock_exampleintegrationsteps",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "exampleintegrationsteps"
     },
     {
@@ -14098,7 +14098,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_defaultmeta",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "defaultmeta.tsx"
     },
@@ -14626,8 +14626,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_footer_auth_test",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "footer.auth.test.tsx"
     },
     {
@@ -14637,8 +14637,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_footer_auth_test_state",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "state"
     },
     {
@@ -14648,8 +14648,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_footer_auth_test_renderfooter",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "renderfooter()"
     },
     {
@@ -14659,8 +14659,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_footer",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "footer.tsx"
     },
     {
@@ -14670,8 +14670,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_components_footer_footerlinks",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "footerlinks"
     },
     {
@@ -14681,8 +14681,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "src_components_footer_footerlinkitem",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "footerlinkitem"
     },
     {
@@ -14692,8 +14692,8 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "src_components_footer_footerlink",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "footerlink()"
     },
     {
@@ -14703,8 +14703,8 @@
       "source_location": "L144",
       "_origin": "ast",
       "id": "src_components_footer_footercolumn",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "footercolumn()"
     },
     {
@@ -14714,8 +14714,8 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "src_components_footer_sociallinks",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "sociallinks"
     },
     {
@@ -15155,7 +15155,7 @@
       "_origin": "ast",
       "id": "src_components_industrypagelayout_industrypagelayout",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "industrypagelayout()"
     },
     {
@@ -17475,7 +17475,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_connect_test",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "walletbalance.connect.test.tsx"
     },
@@ -17486,7 +17486,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_connect_test_walletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "walletbalance"
     },
@@ -17497,7 +17497,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_connect_test_connectinteractions",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "connectinteractions"
     },
@@ -17508,7 +17508,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_connect_test_rendercard",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "rendercard()"
     },
@@ -17519,7 +17519,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_test",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "walletbalance.test.tsx"
     },
@@ -17530,7 +17530,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_test_walletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "walletbalance"
     },
@@ -17541,7 +17541,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_console_walletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "walletbalance.tsx"
     },
@@ -17552,7 +17552,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_status",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "status"
     },
@@ -17563,7 +17563,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_components_console_walletbalance_walletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "walletbalance()"
     },
@@ -18729,8 +18729,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_docs_responseaccordion",
-      "community": 43,
-      "community_name": "render-doc.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "responseaccordion.tsx"
     },
     {
@@ -18740,8 +18740,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_docs_responseaccordion_row",
-      "community": 43,
-      "community_name": "render-doc.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "row"
     },
     {
@@ -18751,8 +18751,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_docs_responseaccordion_codecolor",
-      "community": 43,
-      "community_name": "render-doc.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "codecolor()"
     },
     {
@@ -18762,8 +18762,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_components_docs_responseaccordion_jsonbody",
-      "community": 43,
-      "community_name": "render-doc.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "jsonbody()"
     },
     {
@@ -18773,8 +18773,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "src_components_docs_responseaccordion_responseaccordion",
-      "community": 43,
-      "community_name": "render-doc.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "responseaccordion()"
     },
     {
@@ -21006,8 +21006,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sections_ctasection",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "ctasection.tsx"
     },
     {
@@ -21017,8 +21017,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_components_sections_ctasection_ctasection",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "ctasection()"
     },
     {
@@ -21105,8 +21105,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sections_developersection",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "developersection.tsx"
     },
     {
@@ -21116,8 +21116,8 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_components_sections_developersection_stepicons",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "stepicons"
     },
     {
@@ -21127,8 +21127,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_sections_developersection_developersection",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "developersection()"
     },
     {
@@ -21138,8 +21138,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_test",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqsection.test.tsx"
     },
     {
@@ -21149,8 +21149,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_test_renderfaqs",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "renderfaqs()"
     },
     {
@@ -21160,8 +21160,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sections_faqsection",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqsection.tsx"
     },
     {
@@ -21171,8 +21171,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqlink",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqlink"
     },
     {
@@ -21182,8 +21182,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqitem",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqitem"
     },
     {
@@ -21193,8 +21193,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_isinternalhref",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "isinternalhref()"
     },
     {
@@ -21204,8 +21204,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqcrosslink",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqcrosslink()"
     },
     {
@@ -21215,8 +21215,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_answercomponents",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "answercomponents"
     },
     {
@@ -21226,8 +21226,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqanswer",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqanswer()"
     },
     {
@@ -21237,8 +21237,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqaccordionprops",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqaccordionprops"
     },
     {
@@ -21248,8 +21248,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_normalizefaqs",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "normalizefaqs()"
     },
     {
@@ -21259,8 +21259,8 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqaccordion",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqaccordion()"
     },
     {
@@ -21270,8 +21270,8 @@
       "source_location": "L164",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqsectionprops",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqsectionprops"
     },
     {
@@ -21281,8 +21281,8 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "src_components_sections_faqsection_faqsection",
-      "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community": 70,
+      "community_name": "FaqSection.tsx",
       "norm_label": "faqsection()"
     },
     {
@@ -21292,8 +21292,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sections_herosection",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "herosection.tsx"
     },
     {
@@ -21303,8 +21303,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sections_herosection_herosection",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "herosection()"
     },
     {
@@ -21425,7 +21425,7 @@
       "_origin": "ast",
       "id": "src_components_sections_pagehero",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "pagehero.tsx"
     },
     {
@@ -21436,7 +21436,7 @@
       "_origin": "ast",
       "id": "src_components_sections_pagehero_pageheroprops",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "pageheroprops"
     },
     {
@@ -21447,7 +21447,7 @@
       "_origin": "ast",
       "id": "src_components_sections_pagehero_pagehero",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "pagehero()"
     },
     {
@@ -21567,8 +21567,8 @@
       "source_location": "L186",
       "_origin": "ast",
       "id": "src_components_sections_productssection_productssection",
-      "community": 7,
-      "community_name": "cn",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "productssection()"
     },
     {
@@ -21578,8 +21578,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_sections_truststrip",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "truststrip.tsx"
     },
     {
@@ -21589,8 +21589,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_components_sections_truststrip_trustbadge",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "trustbadge"
     },
     {
@@ -21600,8 +21600,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_components_sections_truststrip_truststripprops",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "truststripprops"
     },
     {
@@ -21611,8 +21611,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_components_sections_truststrip_truststrip",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "truststrip()"
     },
     {
@@ -21677,8 +21677,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_components_sections_whyekosection_whyekosection",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "whyekosection()"
     },
     {
@@ -24603,7 +24603,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_test",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "build-context-pack.test.ts"
     },
@@ -24614,7 +24614,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_test_bundle",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "bundle"
     },
@@ -24625,7 +24625,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_test_body",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "body"
     },
@@ -24636,7 +24636,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "build-context-pack.ts"
     },
@@ -24647,7 +24647,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_buildcontextpackbody",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "buildcontextpackbody()"
     },
@@ -24658,7 +24658,7 @@
       "source_location": "L192",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_contextpackfile",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "contextpackfile"
     },
@@ -24669,7 +24669,7 @@
       "source_location": "L198",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_withheading",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "withheading()"
     },
@@ -24680,7 +24680,7 @@
       "source_location": "L201",
       "_origin": "ast",
       "id": "src_lib_agent_build_context_pack_context_pack_files",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "context_pack_files"
     },
@@ -25868,7 +25868,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_config_site",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "site.ts"
     },
@@ -25890,8 +25890,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_lib_config_site_sales_mobile",
-      "community": 50,
-      "community_name": "site.ts",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "sales_mobile"
     },
     {
@@ -25901,7 +25901,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_lib_config_site_signup_page",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "signup_page"
     },
@@ -25935,7 +25935,7 @@
       "_origin": "ast",
       "id": "src_lib_config_site_site_logo_url",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "site_logo_url"
     },
     {
@@ -25956,7 +25956,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_config_site_eps_mcp_pkg",
-      "community": 109,
+      "community": 111,
       "community_name": "build-context-pack.ts",
       "norm_label": "eps_mcp_pkg"
     },
@@ -25978,7 +25978,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_lib_config_site_eps_transact_mcp_pkg",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "eps_transact_mcp_pkg"
     },
@@ -25989,7 +25989,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "src_lib_config_site_eps_transact_mcp_cmd",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "eps_transact_mcp_cmd"
     },
@@ -26000,7 +26000,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_lib_config_site_eps_transact_mcp_url",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "eps_transact_mcp_url"
     },
@@ -26023,7 +26023,7 @@
       "_origin": "ast",
       "id": "src_lib_config_site_parent_site_name",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "parent_site_name"
     },
     {
@@ -26033,7 +26033,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_lib_config_site_site_title",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "site_title"
     },
@@ -26044,7 +26044,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "src_lib_config_site_site_description",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "site_description"
     },
@@ -26055,7 +26055,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_lib_config_site_site_keywords",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "site_keywords"
     },
@@ -26066,7 +26066,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "src_lib_config_site_site_og_title",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "site_og_title"
     },
@@ -26077,7 +26077,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_lib_config_site_site_og_image",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "site_og_image"
     },
@@ -26099,7 +26099,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_lib_config_site_social_twitter_handle",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "social_twitter_handle"
     },
@@ -26143,7 +26143,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_connect_blur_test",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blur.test.ts"
     },
@@ -26154,7 +26154,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_lib_connect_blur_test_checkerboard",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "checkerboard()"
     },
@@ -26165,7 +26165,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_lib_connect_blur_test_boxblur",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "boxblur()"
     },
@@ -26176,7 +26176,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_lib_connect_blur_test_blurredcheckerboard",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blurredcheckerboard()"
     },
@@ -26187,7 +26187,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_connect_blur",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blur.ts"
     },
@@ -26220,7 +26220,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_lib_connect_blur_blur_analysis_max_length",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blur_analysis_max_length"
     },
@@ -26231,7 +26231,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_lib_connect_blur_blurscoreoptions",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blurscoreoptions"
     },
@@ -26242,7 +26242,7 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "src_lib_connect_blur_tograyscale",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "tograyscale()"
     },
@@ -26253,7 +26253,7 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "src_lib_connect_blur_blurscore",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blurscore()"
     },
@@ -26264,7 +26264,7 @@
       "source_location": "L188",
       "_origin": "ast",
       "id": "src_lib_connect_blur_blurscorefromimagefile",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blurscorefromimagefile()"
     },
@@ -26275,7 +26275,7 @@
       "source_location": "L255",
       "_origin": "ast",
       "id": "src_lib_connect_blur_blurscorefromvideo",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blurscorefromvideo()"
     },
@@ -26286,7 +26286,7 @@
       "source_location": "L296",
       "_origin": "ast",
       "id": "src_lib_connect_blur_withblurscoreinname",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "withblurscoreinname()"
     },
@@ -26297,7 +26297,7 @@
       "source_location": "L316",
       "_origin": "ast",
       "id": "src_lib_connect_blur_lowestblurscore",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "lowestblurscore()"
     },
@@ -26308,7 +26308,7 @@
       "source_location": "L331",
       "_origin": "ast",
       "id": "src_lib_connect_blur_scoresbyfile",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "scoresbyfile"
     },
@@ -26748,7 +26748,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_lib_connect_interactions_load_wallet_interaction_ids",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "load_wallet_interaction_ids"
     },
@@ -26781,7 +26781,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "src_lib_connect_interactions_resetroletransactioncache",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "resetroletransactioncache()"
     },
@@ -26814,7 +26814,7 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "src_lib_connect_interactions_loadwalletinteractionid",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "loadwalletinteractionid()"
     },
@@ -27529,7 +27529,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_connect_use_load_wallet_flow",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "use-load-wallet-flow.ts"
     },
@@ -27540,7 +27540,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_lib_connect_use_load_wallet_flow_useloadwalletflowid",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "useloadwalletflowid()"
     },
@@ -28288,8 +28288,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_data_api_auth_api_auth_docs_url",
-      "community": 0,
-      "community_name": "api-specs-common.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "api_auth_docs_url"
     },
     {
@@ -29861,8 +29861,8 @@
       "source_location": "L486",
       "_origin": "ast",
       "id": "src_lib_data_api_specs_common_resolveresponsefields",
-      "community": 43,
-      "community_name": "render-doc.ts",
+      "community": 79,
+      "community_name": "EndpointDetail.tsx",
       "norm_label": "resolveresponsefields()"
     },
     {
@@ -30170,7 +30170,7 @@
       "_origin": "ast",
       "id": "src_lib_data_connected_banking_pricing_cb_setup_fee",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "cb_setup_fee"
     },
     {
@@ -31732,7 +31732,7 @@
       "_origin": "ast",
       "id": "src_lib_data_solutions_solutions_map",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "solutions_map"
     },
     {
@@ -33084,7 +33084,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_markdown_render_agents_test",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "render-agents.test.ts"
     },
@@ -34151,7 +34151,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_markdown_render_transact",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "render-transact.ts"
     },
@@ -34162,7 +34162,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_lib_markdown_render_transact_rendertransactagentsmarkdown",
-      "community": 50,
+      "community": 29,
       "community_name": "site.ts",
       "norm_label": "rendertransactagentsmarkdown()"
     },
@@ -35460,7 +35460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_page_content_test",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "pdf-page-content.test.ts"
     },
@@ -35471,7 +35471,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_page_content_test_non_image_ops",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "non_image_ops"
     },
@@ -35482,7 +35482,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_page_content",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "pdf-page-content.ts"
     },
@@ -35493,7 +35493,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_page_content_non_image_op_names",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "non_image_op_names"
     },
@@ -35504,7 +35504,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_page_content_findnonimageop",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "findnonimageop()"
     },
@@ -35515,7 +35515,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_page_content_ispageimageonly",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "ispageimageonly()"
     },
@@ -35526,7 +35526,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "pdf-render.ts"
     },
@@ -35537,7 +35537,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_non_image_ops",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "non_image_ops"
     },
@@ -35559,7 +35559,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_open",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "open()"
     },
@@ -35570,7 +35570,7 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_rasterizepage",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "rasterizepage()"
     },
@@ -35581,7 +35581,7 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_rasterizeforcompression",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "rasterizeforcompression()"
     },
@@ -35592,7 +35592,7 @@
       "source_location": "L180",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_pageblurscore",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "pageblurscore()"
     },
@@ -35603,7 +35603,7 @@
       "source_location": "L228",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_blurscorepdfpages",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "blurscorepdfpages()"
     },
@@ -35614,7 +35614,7 @@
       "source_location": "L266",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_imageobjecttoblob",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "imageobjecttoblob()"
     },
@@ -35625,7 +35625,7 @@
       "source_location": "L293",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_drawtoblob",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "drawtoblob()"
     },
@@ -35636,7 +35636,7 @@
       "source_location": "L361",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_forceimagedecode",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "forceimagedecode()"
     },
@@ -35647,7 +35647,7 @@
       "source_location": "L390",
       "_origin": "ast",
       "id": "src_lib_pdf_pdf_render_extractimages",
-      "community": 70,
+      "community": 6,
       "community_name": "pdf-render.ts",
       "norm_label": "extractimages()"
     },
@@ -36770,7 +36770,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_stripmarkdown",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "stripmarkdown()"
     },
     {
@@ -36836,7 +36836,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_test",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "json-ld.test.ts"
     },
     {
@@ -36847,7 +36847,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_test_faqpagenode",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "faqpagenode"
     },
     {
@@ -36858,7 +36858,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_test_answersof",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "answersof()"
     },
     {
@@ -36869,7 +36869,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "json-ld.ts"
     },
     {
@@ -36880,7 +36880,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_faqpagejsonld",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "faqpagejsonld()"
     },
     {
@@ -36902,7 +36902,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_generatepricingjsonld",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "generatepricingjsonld()"
     },
     {
@@ -36913,7 +36913,7 @@
       "_origin": "ast",
       "id": "src_lib_utils_json_ld_generatefaqjsonld",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "generatefaqjsonld()"
     },
     {
@@ -36956,7 +36956,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_wallet_balance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "wallet-balance.ts"
     },
@@ -36967,7 +36967,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_fresh_for_ms",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "fresh_for_ms"
     },
@@ -36978,7 +36978,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_cachedbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "cachedbalance"
     },
@@ -36989,7 +36989,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_listeners",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "listeners"
     },
@@ -37000,7 +37000,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_resetwalletbalancecache",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "resetwalletbalancecache()"
     },
@@ -37011,7 +37011,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_subscribewalletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "subscribewalletbalance()"
     },
@@ -37022,7 +37022,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_setwalletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "setwalletbalance()"
     },
@@ -37033,7 +37033,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_fetchwalletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "fetchwalletbalance()"
     },
@@ -37044,7 +37044,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "src_lib_wallet_balance_freshwalletbalance",
-      "community": 6,
+      "community": 50,
       "community_name": "wallet-balance.ts",
       "norm_label": "freshwalletbalance()"
     },
@@ -37727,7 +37727,7 @@
       "_origin": "ast",
       "id": "src_pages_faqpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "faqpage.tsx"
     },
     {
@@ -37738,7 +37738,7 @@
       "_origin": "ast",
       "id": "src_pages_faqpage_faqpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "faqpage()"
     },
     {
@@ -37836,8 +37836,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_index",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "index.tsx"
     },
     {
@@ -37847,8 +37847,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_index_index",
-      "community": 81,
-      "community_name": "IndustryPageLayout.tsx",
+      "community": 121,
+      "community_name": "Footer.tsx",
       "norm_label": "index()"
     },
     {
@@ -37881,7 +37881,7 @@
       "_origin": "ast",
       "id": "src_pages_industrydetailpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "industrydetailpage.tsx"
     },
     {
@@ -37892,7 +37892,7 @@
       "_origin": "ast",
       "id": "src_pages_industrydetailpage_industrydetailpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "industrydetailpage()"
     },
     {
@@ -38002,7 +38002,7 @@
       "_origin": "ast",
       "id": "src_pages_pricingpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "pricingpage.tsx"
     },
     {
@@ -38013,7 +38013,7 @@
       "_origin": "ast",
       "id": "src_pages_pricingpage_trust_chips",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "trust_chips"
     },
     {
@@ -38024,7 +38024,7 @@
       "_origin": "ast",
       "id": "src_pages_pricingpage_all_faqs",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "all_faqs"
     },
     {
@@ -38035,7 +38035,7 @@
       "_origin": "ast",
       "id": "src_pages_pricingpage_pricingpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "pricingpage()"
     },
     {
@@ -38233,7 +38233,7 @@
       "_origin": "ast",
       "id": "src_pages_solutiondetailpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "solutiondetailpage.tsx"
     },
     {
@@ -38244,7 +38244,7 @@
       "_origin": "ast",
       "id": "src_pages_solutiondetailpage_solutiondetailpage",
       "community": 29,
-      "community_name": "PricingPage.tsx",
+      "community_name": "site.ts",
       "norm_label": "solutiondetailpage()"
     },
     {
@@ -41134,9 +41134,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 87,
+      "community": 146,
       "norm_label": "@ekoindia/eps-context-mcp package",
-      "community_name": "EPS transactional MCP server",
+      "community_name": "@ekoindia/eps-context-mcp package",
       "id": "readme_eps_context_mcp"
     },
     {
@@ -41204,9 +41204,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 87,
+      "community": 146,
       "norm_label": "eps agent plugin (claude-plugin-eps)",
-      "community_name": "EPS transactional MCP server",
+      "community_name": "@ekoindia/eps-context-mcp package",
       "id": "readme_claude_plugin_eps"
     },
     {
@@ -41263,7 +41263,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 89,
+      "community": 109,
       "norm_label": "admin config console v1 (in-browser gitops editor)",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_admin_console_admin_config_console"
@@ -41278,7 +41278,7 @@
       "author": null,
       "contributor": null,
       "rationale": "All edits land as pull requests so code review and deploy previews gate production changes.",
-      "community": 89,
+      "community": 109,
       "norm_label": "edit flow (flow a) \u2014 propose changes as a pr",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_admin_console_edit_flow_a"
@@ -41293,7 +41293,7 @@
       "author": null,
       "contributor": null,
       "rationale": "The host's git integration builds production on push to main, so no separate deploy GitHub Action exists.",
-      "community": 89,
+      "community": 109,
       "norm_label": "deploy flow (flow b) \u2014 dev to main pr",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_admin_console_deploy_flow_b"
@@ -41308,7 +41308,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Only .md/.mdx under the docs content paths are writable; traversal and control characters are rejected so an admin session cannot rewrite arbitrary repo files.",
-      "community": 89,
+      "community": 109,
       "norm_label": "editable file allowlist + path sanitization",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_admin_console_editable_file_allowlist"
@@ -41323,7 +41323,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Commits are authored by the admin, not a bot, for accountability; token scoping to a session prevents cross-user misuse and revocation degrades writes only (401 NO_GH_TOKEN), never reads.",
-      "community": 89,
+      "community": 109,
       "norm_label": "persisted admin github token keyed by session id",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_admin_console_persisted_admin_token_model"
@@ -41338,7 +41338,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Backend content differing from the editor's version rejects the write rather than silently clobbering a concurrent edit.",
-      "community": 89,
+      "community": 109,
       "norm_label": "409 stale_content concurrent-edit guard",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_admin_console_stale_content_guard"
@@ -41642,9 +41642,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The transactional MCP is deliberately kept out of the coding marketplace: a developer's coding agent has no partner credentials, so installing it yields MISSING_CREDENTIALS \u2014 wrong audience.",
-      "community": 87,
+      "community": 146,
       "norm_label": "eps plugin distribution (marketplace + per-agent install)",
-      "community_name": "EPS transactional MCP server",
+      "community_name": "@ekoindia/eps-context-mcp package",
       "id": "docs_ai_agent_platform_plugin_distribution"
     },
     {
@@ -41657,9 +41657,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Shipping machine-readable artifacts earns 'agent-ready'; 'AI-native' requires agents to act, verify and self-correct with a measured success rate.",
-      "community": 53,
+      "community": 87,
       "norm_label": "ai-native vs ai-friendly distinction",
-      "community_name": "API technical specification layer (api-specs.ts)",
+      "community_name": "EPS transactional MCP server",
       "id": "docs_ai_native_gap_analysis_ai_native_definition"
     },
     {
@@ -41672,9 +41672,9 @@
       "author": null,
       "contributor": null,
       "rationale": "MCP is read-only today; adding action tools closes the loop while keeping the backend-only/no-secrets discipline.",
-      "community": 53,
+      "community": 87,
       "norm_label": "guarded action tools (run_call_in_sandbox, scaffold_integration, validate_signature, run_conformance)",
-      "community_name": "API technical specification layer (api-specs.ts)",
+      "community_name": "EPS transactional MCP server",
       "id": "docs_ai_native_gap_analysis_guarded_action_tools"
     },
     {
@@ -41701,9 +41701,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Without evals the AI-native claim is marketing; with them it is true and defensible.",
-      "community": 53,
+      "community": 87,
       "norm_label": "cross-harness agent evals",
-      "community_name": "API technical specification layer (api-specs.ts)",
+      "community_name": "EPS transactional MCP server",
       "id": "docs_ai_native_gap_analysis_evals"
     },
     {
@@ -41730,9 +41730,9 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 87,
+      "community": 146,
       "norm_label": "live freshness (version + changelog, eps_bundle_url remote refresh)",
-      "community_name": "EPS transactional MCP server",
+      "community_name": "@ekoindia/eps-context-mcp package",
       "id": "docs_ai_native_gap_analysis_live_freshness"
     },
     {
@@ -41974,7 +41974,7 @@
       "author": null,
       "contributor": null,
       "rationale": "File-first for the docs HTML page, inline-first for text sinks, so one spec can carry a rich descriptionFile and a short inline description without either sink getting the wrong one.",
-      "community": 146,
+      "community": 89,
       "norm_label": "resolvedescription / resolveshortdescription",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_api_specs_resolvedescription"
@@ -41988,7 +41988,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 146,
+      "community": 89,
       "norm_label": "remark-callout (hand-rolled github-alert mdast transform)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_api_specs_remark_callout"
@@ -42136,7 +42136,7 @@
       "author": null,
       "contributor": null,
       "rationale": "searchMounted starts false and the index touches no window at module scope, so dist/index.html carries the pill but no cmdk markup.",
-      "community": 146,
+      "community": 89,
       "norm_label": "palette ssg safety (never renders during prerender)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_command_palette_search_ssg_safety"
@@ -42359,9 +42359,9 @@
       "author": null,
       "contributor": null,
       "rationale": "The core reason a developer logs in, but blocked on the Eko credential-issuance API contract; the Credentials page ships a production empty state with no request button until it lands.",
-      "community": 53,
+      "community": 87,
       "norm_label": "api keys management (blocked on issuance contract)",
-      "community_name": "API technical specification layer (api-specs.ts)",
+      "community_name": "EPS transactional MCP server",
       "id": "docs_console_roadmap_api_keys_management"
     },
     {
@@ -42402,7 +42402,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Today it lives only in /docs behind a CORS proxy; the console should own it, pre-authenticated with the developer's UAT key.",
-      "community": 146,
+      "community": 89,
       "norm_label": "console sandbox / api playground (planned)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_console_roadmap_sandbox_playground"
@@ -42603,9 +42603,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Nav tree and theme toggle are injected as props/children rather than hard-wired, so guides render without a right pane and endpoints render with one.",
-      "community": 57,
+      "community": 68,
       "norm_label": "docslayout 3-pane grid",
-      "community_name": "Business Dashboard (/console)",
+      "community_name": "docs-registry.ts (guides + endpoints unifier)",
       "id": "docs_developer_docs_layout_ssg_theming_docslayout"
     },
     {
@@ -43082,7 +43082,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Replaced a hand-rolled TryItPanel that did a direct fetch and hit CORS; the lower-level createApiClientModal is used because the React wrapper does not forward plugins and the client does not run x-pre-request scripts.",
-      "community": 146,
+      "community": 89,
       "norm_label": "scalar \"try it\" console",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_try_it_console"
@@ -43126,7 +43126,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Loaded only via a dynamic import inside useTryIt's callback so the Vue app and the 342 KB spec layer stay out of the server module graph and the initial docs bundle.",
-      "community": 146,
+      "community": 89,
       "norm_label": "tryit-client.ts (client-only scalar modal singleton)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_tryit_client"
@@ -43141,7 +43141,7 @@
       "author": null,
       "contributor": null,
       "rationale": "The public openapi.json stays pristine and byte-stable; only the modal's variant adds apiKey security schemes and drops the signing headers the schemes and plugin supply.",
-      "community": 146,
+      "community": 89,
       "norm_label": "interactive openapi document ({ interactive: true })",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_interactive_openapi"
@@ -43156,7 +43156,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Honest framing: with the hosted proxy the developer_key, computed secret-key and bodies transit a third party \u2014 acceptable for sandbox traffic, and the raw access_key is never transmitted. Blank the var for zero third-party transit.",
-      "community": 146,
+      "community": 89,
       "norm_label": "try-it cors proxy (vite_scalar_proxy_url)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_cors_proxy"
@@ -43171,7 +43171,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Gated by import.meta.env.DEV, which is false during the Node prerender and in production, so credentials never reach static output.",
-      "community": 146,
+      "community": 89,
       "norm_label": "dev-only credential prefill",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_developer_docs_try_it_now_dev_only_creds"
@@ -43201,9 +43201,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Filters to verification and non-financial specs and emits one eps_<slug> tool each; editing api-specs.ts and rebuilding is all it takes to add a tool, and a startup assertion fails the build if a spec needs a header the executor cannot send.",
-      "community": 53,
+      "community": 87,
       "norm_label": "tool generation from the baked bundle (src/tools.ts)",
-      "community_name": "API technical specification layer (api-specs.ts)",
+      "community_name": "EPS transactional MCP server",
       "id": "docs_eps_transact_mcp_tool_generation"
     },
     {
@@ -43306,7 +43306,7 @@
       "author": null,
       "contributor": null,
       "rationale": "eps-backend holds admin GitHub OAuth tokens with GitOps deploy rights; compose co-location is ops convenience, the container is the security boundary.",
-      "community": 89,
+      "community": 109,
       "norm_label": "separate container from eps-backend",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_eps_transact_mcp_process_isolation"
@@ -43336,9 +43336,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Retagging :prod on every green main plus a poller that recreates the service on a digest change makes 'update the tools' mean 'merge the spec change'; a distinct volume keeps its lock/HOLD state separate from the backend's.",
-      "community": 87,
+      "community": 146,
       "norm_label": "auto-pull poller (image digest watcher)",
-      "community_name": "EPS transactional MCP server",
+      "community_name": "@ekoindia/eps-context-mcp package",
       "id": "docs_eps_transact_mcp_poller_auto_pull"
     },
     {
@@ -43366,9 +43366,9 @@
       "author": null,
       "contributor": null,
       "rationale": "Under vfs every layer is copied in full, so an auto-redeploying stack fills the disk; the tell is 'no space left on device' while df shows free space. Switching to overlay2 orphans existing images, so save them first.",
-      "community": 87,
+      "community": 146,
       "norm_label": "docker vfs storage-driver trap",
-      "community_name": "EPS transactional MCP server",
+      "community_name": "@ekoindia/eps-context-mcp package",
       "id": "docs_eps_transact_mcp_vfs_storage_trap"
     },
     {
@@ -43648,7 +43648,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Zoho-Desk formatting lives server-side so the console never learns the ticket schema and cannot claim to be a different user; caps on attachments, fields and free text are enforced at the trust boundary, the browser check being only a courtesy.",
-      "community": 89,
+      "community": 109,
       "norm_label": "server-side support-ticket assembly",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_features_connect_widget_support_ticket"
@@ -43678,7 +43678,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Every image routes through the editor before the caller sees it, so a form receives a cropped, size-capped JPEG instead of a 4 MB photo of a desk.",
-      "community": 89,
+      "community": 109,
       "norm_label": "<fileupload> control",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_features_connect_widget_fileupload"
@@ -43693,7 +43693,7 @@
       "author": null,
       "contributor": null,
       "rationale": "A KYC photo is evidence and evidence without provenance can be re-used for another customer; coordinates can be spoofed on a rooted phone while an observed IP cannot, so the line carries both, resolved on mount so a late prompt cannot stamp a blank location.",
-      "community": 89,
+      "community": 109,
       "norm_label": "watermark provenance stamping",
       "community_name": "Edit Flow (Flow A) \u2014 propose changes as a PR",
       "id": "docs_features_connect_widget_watermark"
@@ -43738,7 +43738,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Every widget request is cross-origin and cannot be fixed from this repo, so VITE_SHOW_CONNECT_WIDGET stays false until connect-api allowlists the console origin.",
-      "community": 146,
+      "community": 89,
       "norm_label": "connect-api cors allowlist blocker",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_cors_blocker"
@@ -43753,7 +43753,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Dialogs are hard to reach through a real flow, so a DEV-only bench opens each directly; route and rail item sit behind import.meta.env.DEV with the import inside the guard so no chunk ships in production.",
-      "community": 146,
+      "community": 89,
       "norm_label": "/console/test dev dialog bench",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_features_connect_widget_dev_bench"
@@ -43768,7 +43768,7 @@
       "author": null,
       "contributor": null,
       "rationale": "Long/rich descriptions live as real markdown files to keep api-specs.ts lean; MDX is excluded from that folder so the files load as raw text, not compiled components.",
-      "community": 146,
+      "community": 89,
       "norm_label": "descriptionfile endpoint notes (src/content/docs/endpoints/*.md)",
       "community_name": "tryit-client.ts (client-only Scalar modal singleton)",
       "id": "docs_api_specs_descriptionfile_endpoint_notes"
@@ -80405,7 +80405,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/components/FileUpload.tsx",
-      "source_location": "L994",
+      "source_location": "L1004",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_fileupload_fileupload",
@@ -80514,7 +80514,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/FileUpload.tsx",
-      "source_location": "L864",
+      "source_location": "L860",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_fileupload_fileupload",
@@ -80526,7 +80526,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/FileUpload.tsx",
-      "source_location": "L946",
+      "source_location": "L942",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_components_fileupload_fileupload",
@@ -165086,5 +165086,5 @@
       "source_file": "src/content/docs/how-auth-works.mdx"
     }
   ],
-  "built_at_commit": "2bfef20acb55a04d4b6b5d2ff7f405d2ad05204e"
+  "built_at_commit": "11b170207e9a79937ec5cd6a9d2fe44c98da92f4"
 }

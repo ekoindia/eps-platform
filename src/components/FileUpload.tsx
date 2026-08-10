@@ -823,12 +823,8 @@ export function FileUpload({
 						) : (
 							<ImageIcon className="h-4 w-4" />
 						)}
-						{multiEnabled && items.length > 0 ? "Add more" : null}
-						{multiEnabled && items.length === 0
-							? `Select ${nonImageAllowed ? "files" : "photos"}`
-							: null}
 						{multiEnabled
-							? null
+							? `Select ${nonImageAllowed ? "files" : "photos"}`
 							: `Select ${nonImageAllowed ? "file" : "photo"}`}
 					</Button>
 				)}
@@ -970,7 +966,21 @@ export function FileUpload({
 							</ul>
 						) : null}
 
-						{items.length < maxFiles ? sourceButtons : null}
+						{items.length < maxFiles ? (
+							<>
+								{/* Says what the buttons below do to a batch that already has
+								    rows. It belongs here rather than on the picker's label
+								    because a camera-only field has no picker: "Open camera" on
+								    its own does not say whether the next shot joins the list
+								    or replaces it. */}
+								{items.length > 0 ? (
+									<p className="select-none text-xs text-muted-foreground">
+										Add more
+									</p>
+								) : null}
+								{sourceButtons}
+							</>
+						) : null}
 
 						{busy && progress ? (
 							<p className="text-xs text-muted-foreground">

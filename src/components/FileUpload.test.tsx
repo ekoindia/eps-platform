@@ -433,6 +433,23 @@ describe("FileUpload multi-file mode", () => {
 		expect(container.textContent).toContain("drag and drop files here");
 	});
 
+	it("says Add more above the sources once a row exists", async () => {
+		// Not on the picker's label: a camera-only field has no picker, and
+		// "Open camera" alone does not say whether the shot joins or replaces.
+		const { container } = renderUpload({
+			multiple: true,
+			accept: "image/*,application/pdf",
+		});
+		expect(screen.queryByText("Add more")).toBeNull();
+
+		pickFile(container, fileOf("statement.pdf", 1024));
+
+		expect(await screen.findByText("Add more")).toBeVisible();
+		expect(
+			screen.getByRole("button", { name: /select files/i }),
+		).toBeInTheDocument();
+	});
+
 	it("opens an attached row in the viewer when its thumbnail is clicked", async () => {
 		// jsdom has neither, and the viewer is handed an object URL.
 		const original = {
