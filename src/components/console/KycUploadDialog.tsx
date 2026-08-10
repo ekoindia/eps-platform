@@ -128,7 +128,10 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 				if (!open && !busy) onClose(null);
 			}}
 		>
-			<DialogContent className="max-h-[85vh] overflow-y-auto">
+			{/* Wider than the shadcn default: a row carries a thumbnail, a file
+			    name, a size and four buttons, and at `max-w-lg` the name is
+			    truncated to a few characters. */}
+			<DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
 				<DialogHeader>
 					<DialogTitle>{doc?.name}</DialogTitle>
 					<DialogDescription>

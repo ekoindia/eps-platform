@@ -876,7 +876,7 @@ export function FileUpload({
 		return (
 			<li
 				key={item.id}
-				className="flex w-full items-center gap-2 rounded-md border bg-background p-2"
+				className="flex w-full min-w-0 items-center gap-2 rounded-md border bg-background p-2"
 			>
 				<span className="w-4 shrink-0 text-center text-[10px] text-muted-foreground">
 					{index + 1}
@@ -900,9 +900,12 @@ export function FileUpload({
 					) : (
 						<FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
 					)}
-					<span className="min-w-0 flex-1 truncate text-xs">
-						{item.file.name}
-					</span>
+					{/* `w-0`, not just `min-w-0`: a nowrap name still contributes its
+					    full width to the intrinsic size of every ancestor, which is
+					    what pushed the dialog's grid track past `max-w-lg`. A zero
+					    base width plus `flex-1` gives it whatever the row has left
+					    and nothing it asks for. */}
+					<span className="w-0 flex-1 truncate text-xs">{item.file.name}</span>
 				</button>
 				<span className="shrink-0 text-[10px] text-muted-foreground">
 					{formatBytes(item.file.size)}
@@ -939,7 +942,7 @@ export function FileUpload({
 	}
 
 	return (
-		<div className={cn("flex flex-col gap-1.5", className)}>
+		<div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
 			{label ? (
 				<Label>
 					{label}
@@ -974,7 +977,7 @@ export function FileUpload({
 								    its own does not say whether the next shot joins the list
 								    or replaces it. */}
 								{items.length > 0 ? (
-									<p className="select-none text-xs text-muted-foreground">
+									<p className="w-full select-none text-center text-xs text-muted-foreground">
 										Add more
 									</p>
 								) : null}
