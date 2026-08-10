@@ -1,8 +1,16 @@
 import { useConnectDialogs } from "@/components/connect/DialogHost";
 import type { ImageEditorOptions } from "@/components/connect/ImageEditorDialog";
+import { blurScoreFromVideo, DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
+import {
+	blobToDataUrl,
+	hasTorch,
+	requestContinuousFocus,
+	setTorch,
+	takeFullResolutionPhoto,
+} from "@/lib/connect/camera";
 import { dataUrlToFile, timestampedFileName } from "@/lib/connect/image";
-import { Camera, SwitchCamera, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { Camera, RefreshCw, SwitchCamera, X, Zap, ZapOff } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 
 /** Device labels are all we get to tell cameras apart with. */
@@ -88,12 +96,14 @@ function IconButton({
 	label,
 	onClick,
 	isMain = false,
+	disabled = false,
 	className = "",
 	children,
 }: {
 	label: string;
 	onClick: () => void;
 	isMain?: boolean;
+	disabled?: boolean;
 	className?: string;
 	children: React.ReactNode;
 }) {
@@ -103,7 +113,8 @@ function IconButton({
 			onClick={onClick}
 			aria-label={label}
 			title={label}
-			className={`flex cursor-pointer items-center justify-center rounded-full p-2.5 shadow-md hover:brightness-90 ${
+			disabled={disabled}
+			className={`flex cursor-pointer items-center justify-center rounded-full p-2.5 shadow-md hover:brightness-90 disabled:cursor-default disabled:opacity-60 disabled:hover:brightness-100 ${
 				isMain
 					? "h-15 w-15 outline-2 outline-offset-2 outline-white"
 					: "h-12 w-12"
@@ -144,6 +155,41 @@ export function CameraDialog({
 		useState<MediaTrackConstraints>(RESOLUTION);
 	const [status, setStatus] = useState<"init" | "ready" | "error">("init");
 	const [errorMessage, setErrorMessage] = useState("");
+	// `takePhoto` hunts for focus for up to a few seconds; a second tap during
+	// that window would race two captures into one dialog.
+	const [capturing, setCapturing] = useState(false);
+	const [torchAvailable, setTorchAvailable] = useState(false);
+	const [torchOn, setTorchOn] = useState(false);
+
+	// Live sharpness of the preview, smoothed. Null until there is a frame to
+	// judge, and whenever the check is off for this capture.
+	const [liveSharpness, setLiveSharpness] = useState<number | null>(null);
+	const smoothedRef = useRef<number | null>(null);
+	const liveCheckEnabled = (editorOptions.blurCheck ?? "off") !== "off";
+	const liveThreshold = editorOptions.blurThreshold ?? DEFAULT_BLUR_THRESHOLD;
+
+	// Score the preview a few times a second so the UI can say "hold steady"
+	// BEFORE the shot — far kinder than rejecting the photo after. An interval,
+	// not rAF: four frames a second is plenty for a hand to react to, and a
+	// phone mid-preview has better uses for its frame budget.
+	useEffect(() => {
+		if (!liveCheckEnabled || status !== "ready") return;
+		const timer = setInterval(() => {
+			const video = webcamRef.current?.video;
+			// Frozen preview (editor open) keeps the last verdict rather than
+			// re-judging a still.
+			if (!video || video.paused) return;
+			const frame = blurScoreFromVideo(video);
+			if (frame === null) return;
+			// Light smoothing so the badge does not flicker on the hand's jitter.
+			smoothedRef.current =
+				smoothedRef.current === null
+					? frame
+					: Math.round(smoothedRef.current * 0.6 + frame * 0.4);
+			setLiveSharpness(smoothedRef.current);
+		}, 250);
+		return () => clearInterval(timer);
+	}, [liveCheckEnabled, status]);
 
 	/** Reads the device list once permission has been granted and labels exist. */
 	const loadDevices = useCallback(
@@ -166,39 +212,91 @@ export function CameraDialog({
 		const next = deviceIndex < devices.length - 1 ? deviceIndex + 1 : 0;
 		setDeviceIndex(next);
 		setVideoConstraints({ ...RESOLUTION, deviceId: devices[next].deviceId });
+		// The new track starts torch-off and may not have one at all.
+		setTorchOn(false);
+		setTorchAvailable(false);
+	}
+
+	async function toggleTorch() {
+		const next = !torchOn;
+		if (await setTorch(webcamRef.current?.stream ?? null, next)) {
+			setTorchOn(next);
+		}
+	}
+
+	/**
+	 * The best still this browser can produce: a real photograph at sensor
+	 * resolution where `ImageCapture` exists, the 1080p video-frame screenshot
+	 * everywhere else. The screenshot also covers `takePhoto()` failing or
+	 * timing out mid-focus-hunt.
+	 */
+	async function bestCapture(): Promise<{
+		/** URL for the editor/preview — object URL for a photo, data URL for a screenshot. */
+		src: string;
+		isObjectUrl: boolean;
+		photo: Blob | null;
+	} | null> {
+		const photo = await takeFullResolutionPhoto(
+			webcamRef.current?.stream ?? null,
+		);
+		if (photo) {
+			return { src: URL.createObjectURL(photo), isObjectUrl: true, photo };
+		}
+		const imageSrc = webcamRef.current?.getScreenshot();
+		return imageSrc ? { src: imageSrc, isObjectUrl: false, photo: null } : null;
 	}
 
 	async function onCapture() {
-		const imageSrc = webcamRef.current?.getScreenshot();
-		if (!imageSrc) return;
+		if (capturing) return;
+		setCapturing(true);
+		try {
+			const captured = await bestCapture();
+			if (!captured) return;
 
-		if (disableImageConfirm) {
-			onClose({
-				image: imageSrc,
-				file: await dataUrlToFile(
-					imageSrc,
-					timestampedFileName("Cam", "image/jpeg"),
-				),
-				accepted: true,
-			});
-			return;
-		}
+			if (disableImageConfirm) {
+				// Callers own `image` as a never-revoked preview string, so it must
+				// be a data URL — an object URL handed over here would leak.
+				const image = captured.photo
+					? ((await blobToDataUrl(captured.photo)) ??
+						webcamRef.current?.getScreenshot())
+					: captured.src;
+				if (captured.isObjectUrl) URL.revokeObjectURL(captured.src);
+				if (!image) return;
+				onClose({
+					image,
+					file: await dataUrlToFile(
+						image,
+						timestampedFileName("Cam", "image/jpeg"),
+					),
+					accepted: true,
+				});
+				return;
+			}
 
-		// Freeze the preview while the editor is up, so the live feed does not
-		// keep running behind a still of itself.
-		const video = webcamRef.current?.video;
-		video?.pause();
-		const result = await editImage(imageSrc, editorOptions);
-		if (result.accepted) {
-			onClose(result as CameraResult);
-			return;
+			// Freeze the preview while the editor is up, so the live feed does not
+			// keep running behind a still of itself.
+			const video = webcamRef.current?.video;
+			video?.pause();
+			try {
+				const result = await editImage(captured.src, editorOptions);
+				if (result.accepted) {
+					onClose(result as CameraResult);
+					return;
+				}
+				// Rejected: back to the camera rather than out of it.
+				void video?.play();
+			} finally {
+				// The editor re-encodes into its own data URL, so the source can go.
+				if (captured.isObjectUrl) URL.revokeObjectURL(captured.src);
+			}
+		} finally {
+			setCapturing(false);
 		}
-		// Rejected: back to the camera rather than out of it.
-		void video?.play();
 	}
 
 	return (
-		<div className="flex flex-col items-center">
+		// `relative`: the sharpness badge anchors to the preview's top edge.
+		<div className="relative flex flex-col items-center">
 			<Webcam
 				ref={webcamRef}
 				audio={false}
@@ -210,7 +308,7 @@ export function CameraDialog({
 				imageSmoothing
 				mirrored={devices[deviceIndex]?.mirrored ?? false}
 				videoConstraints={videoConstraints}
-				onUserMedia={() => {
+				onUserMedia={(stream) => {
 					// Only after permission is granted do device labels arrive — before
 					// that every camera is an unnamed "other" and cannot be classified.
 					if (!devices.length) {
@@ -219,6 +317,10 @@ export function CameraDialog({
 							.then(loadDevices)
 							.catch(() => undefined);
 					}
+					// Both are progressive: a camera without focus control or a torch
+					// simply ignores us.
+					requestContinuousFocus(stream);
+					setTorchAvailable(hasTorch(stream));
 					setStatus("ready");
 				}}
 				onUserMediaError={(error) => {
@@ -227,16 +329,76 @@ export function CameraDialog({
 				}}
 				className="max-h-[calc(100vh-80px)] max-w-full rounded-md"
 			/>
+			{status === "ready" && capturing ? (
+				// The focus hunt can take a few seconds and looks like nothing is
+				// happening — which reads as "the button didn't work". Name what the
+				// camera is doing, and animate a focus bracket over the frame so the
+				// stillness is visibly deliberate.
+				<div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+					<div className="h-28 w-28 animate-ping rounded-xl border-2 border-white/70 [animation-duration:1.5s]" />
+					<div className="absolute h-28 w-28 rounded-xl border-2 border-white/90" />
+				</div>
+			) : null}
+			{status === "ready" &&
+			(capturing || (liveCheckEnabled && liveSharpness !== null)) ? (
+				// Over the preview's top edge, where the eye already is while
+				// framing. Says what to DO, not what the number is. While a capture
+				// is in flight that instruction is "Hold still…", whatever the last
+				// sharpness verdict said.
+				<p
+					className={`pointer-events-none absolute left-1/2 top-2.5 z-10 -translate-x-1/2 select-none rounded-full px-3 py-1 text-xs font-medium text-white shadow-md ${
+						capturing
+							? "bg-sky-600/90"
+							: liveSharpness !== null && liveSharpness >= liveThreshold
+								? "bg-emerald-600/90"
+								: "bg-amber-600/90"
+					}`}
+				>
+					{capturing
+						? "Hold still…"
+						: liveSharpness !== null && liveSharpness >= liveThreshold
+							? "Sharp"
+							: "Blurry — hold steady"}
+					{!capturing && import.meta.env.DEV ? ` · ${liveSharpness}` : null}
+				</p>
+			) : null}
 			{status === "ready" ? (
 				// Under the preview, not over it: a fixed bar hides whatever the user
 				// is trying to frame at the bottom of the shot.
 				<div className="flex h-20 w-full shrink-0 flex-row-reverse items-center justify-center gap-2.5 rounded-b-md bg-black/60 md:gap-6">
-					<IconButton label="Capture image" isMain onClick={onCapture}>
-						<Camera className="h-7 w-7" />
+					<IconButton
+						label={capturing ? "Capturing…" : "Capture image"}
+						isMain
+						disabled={capturing}
+						onClick={() => void onCapture()}
+					>
+						{capturing ? (
+							<RefreshCw className="h-7 w-7 animate-spin" />
+						) : (
+							<Camera className="h-7 w-7" />
+						)}
 					</IconButton>
 					{devices.length > 1 ? (
-						<IconButton label="Switch camera" onClick={switchCamera}>
+						<IconButton
+							label="Switch camera"
+							disabled={capturing}
+							onClick={switchCamera}
+						>
 							<SwitchCamera className="h-6 w-6" />
+						</IconButton>
+					) : null}
+					{torchAvailable ? (
+						<IconButton
+							label={torchOn ? "Turn light off" : "Turn light on"}
+							disabled={capturing}
+							onClick={() => void toggleTorch()}
+							className={torchOn ? "bg-amber-400 text-black" : ""}
+						>
+							{torchOn ? (
+								<Zap className="h-6 w-6" />
+							) : (
+								<ZapOff className="h-6 w-6" />
+							)}
 						</IconButton>
 					) : null}
 				</div>

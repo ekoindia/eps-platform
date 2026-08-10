@@ -4,6 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useWatermarkText, type WatermarkSpec } from "@/hooks/use-watermark";
 import {
+	blurScoreFromImageFile,
+	DEFAULT_BLUR_THRESHOLD,
+	getBlurScore,
+	lowestBlurScore,
+	setBlurScore,
+} from "@/lib/connect/blur";
+import { blurScorePdf } from "@/lib/pdf/pdf-client";
+import {
 	combinePdfParts,
 	compressIfLarge,
 	DEFAULT_COMPRESS_THRESHOLD_BYTES,
@@ -18,6 +26,7 @@ import {
 	FileText,
 	FolderOpen,
 	ImageIcon,
+	RefreshCw,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -177,6 +186,68 @@ export function acceptsOnlyImagesAndPdfs(accept: string): boolean {
 }
 
 /**
+ * Ceiling on how long a PDF blur check may run. Rasterizing pages is the
+ * expensive part; past this the scorer stops early and whatever it has
+ * judged so far decides — or nothing does. Never a gate on the upload.
+ */
+const BLUR_PDF_DEADLINE_MS = 4000;
+
+/**
+ * How long a step must run before it is worth naming.
+ *
+ * Below this, a label would flash and vanish, which reads as a glitch rather
+ * than as progress. Above it, silence reads as a hang.
+ */
+const SLOW_STEP_MS = 1000;
+
+/**
+ * Runs the configured blur check on a file the image editor never sees —
+ * PDFs, and images on the `disableImageConfirm` paths. Images that go
+ * through the editor are checked there instead, on the processed file.
+ *
+ * Fail-open by contract: a score of `null`, a decode failure or a timeout
+ * all return `ok`, so the check can only ever degrade to today's behaviour.
+ *
+ * @param picked - The file as it will be attached.
+ * @param options - The upload's option set, carrying `blurCheck`/`blurThreshold`.
+ * @returns False only in `block` mode for a file that scored below threshold.
+ */
+async function checkBlurOrExplain(
+	picked: File,
+	options: FileUploadOptions,
+): Promise<boolean> {
+	const mode = options.blurCheck ?? "off";
+	if (mode === "off") return true;
+
+	let score: number | null = null;
+	try {
+		if (isImageType(picked.type)) {
+			score = await blurScoreFromImageFile(picked);
+		} else if (picked.type.toLowerCase() === "application/pdf") {
+			score = await blurScorePdf(picked, BLUR_PDF_DEADLINE_MS);
+		}
+	} catch {
+		// Cannot judge — encrypted, corrupt, undecodable. Never a reason to block.
+	}
+	if (score === null) return true;
+
+	setBlurScore(picked, score);
+	if (score >= (options.blurThreshold ?? DEFAULT_BLUR_THRESHOLD)) return true;
+	if (mode === "block") {
+		toast.error(
+			`${picked.name} looks blurry or out of focus. Please upload a sharper scan.`,
+		);
+		return false;
+	}
+	if (mode === "warn") {
+		toast.warning(
+			`${picked.name} looks blurry or out of focus. Consider replacing it with a sharper scan.`,
+		);
+	}
+	return true;
+}
+
+/**
  * File input with a camera, an image editor and a preview.
  *
  * An attachment is rarely usable as it leaves the phone: it is 4 MB, rotated, and shows the whole desk around the document.
@@ -227,6 +298,9 @@ export function FileUpload({
 	const [dragState, setDragState] = useState<"none" | "valid" | "invalid">(
 		"none",
 	);
+	// What the component is doing right now, once it has been doing it long
+	// enough to be worth saying. Null the rest of the time. See `withStatus`.
+	const [status, setStatus] = useState<string | null>(null);
 
 	// Previews of unedited files are object URLs; the editor's are data URLs.
 	// Track and release the former, or a long form leaks every image the user
@@ -287,6 +361,33 @@ export function FileUpload({
 	}
 
 	/**
+	 * Runs a step, naming it in the UI once it has been running for a second.
+	 *
+	 * Compressing a 20-page scan or quality-checking a big photo are the two
+	 * steps that can visibly stall a pick, and an unexplained stall reads as a
+	 * broken button. Fast steps stay silent.
+	 *
+	 * ponytail: one label at a time — the steps this wraps are sequential, so
+	 * nesting cannot arise. Give `status` a counter if that ever changes.
+	 *
+	 * @param label - What to show, e.g. `Checking quality…`.
+	 * @param run - The step.
+	 * @returns Whatever the step returns.
+	 */
+	async function withStatus<T>(
+		label: string,
+		run: () => Promise<T>,
+	): Promise<T> {
+		const timer = setTimeout(() => setStatus(label), SLOW_STEP_MS);
+		try {
+			return await run();
+		} finally {
+			clearTimeout(timer);
+			setStatus(null);
+		}
+	}
+
+	/**
 	 * Hands a file to the caller and shows its preview, unless it is too large.
 	 *
 	 * @returns False when the file was refused for its size.
@@ -320,6 +421,14 @@ export function FileUpload({
 		if (!picked || disabled) return;
 
 		if (!isImageType(picked.type)) {
+			// PDFs never reach the editor, so their blur check happens here.
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(picked, options),
+			);
+			if (!ok) {
+				resetInput();
+				return;
+			}
 			attach(picked, null);
 			return;
 		}
@@ -327,6 +436,15 @@ export function FileUpload({
 		const objectUrl = URL.createObjectURL(picked);
 
 		if (options.disableImageConfirm) {
+			// Skips the editor, so it also skips the editor's blur check.
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(picked, options),
+			);
+			if (!ok) {
+				URL.revokeObjectURL(objectUrl);
+				resetInput();
+				return;
+			}
 			// Taken as-is, but still previewed — the URL now belongs to the preview.
 			attach(picked, objectUrl, true);
 			return;
@@ -365,6 +483,11 @@ export function FileUpload({
 			// show, so the row falls back to the file name. Keeping the object URL
 			// instead would mean tracking a revoke per row for a thumbnail.
 			if (options.disableImageConfirm) {
+				// No editor for this image, so no editor blur check either.
+				const ok = await withStatus("Checking quality…", () =>
+					checkBlurOrExplain(candidate, options),
+				);
+				if (!ok) return null;
 				return { id: nextItemId(), file: candidate, thumbnail: null };
 			}
 			const objectUrl = URL.createObjectURL(candidate);
@@ -387,10 +510,15 @@ export function FileUpload({
 		}
 
 		try {
-			const compressed = await compressIfLarge(
-				candidate,
-				compressThresholdBytes,
+			const compressed = await withStatus("Compressing PDF…", () =>
+				compressIfLarge(candidate, compressThresholdBytes),
 			);
+			// Checked after compression, so the verdict — and the telemetry score —
+			// belong to the bytes that are actually uploaded.
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(compressed, options),
+			);
+			if (!ok) return null;
 			return { id: nextItemId(), file: compressed, thumbnail: null };
 		} catch (error) {
 			// A PDF we cannot even read — encrypted or corrupt. Say so and skip it;
@@ -448,9 +576,18 @@ export function FileUpload({
 			}
 			if (token !== rebuildTokenRef.current) return;
 
-			const merged = await combinePdfParts(parts, combinedFileName);
-			const combined = await shrinkToFit(merged, maxBytes);
+			const combined = await withStatus("Combining pages…", async () => {
+				const merged = await combinePdfParts(parts, combinedFileName);
+				return shrinkToFit(merged, maxBytes);
+			});
 			if (token !== rebuildTokenRef.current) return;
+
+			// The combined PDF is a new File, which loses the parts' scores. Carry
+			// the worst one over: the pack is only as good as its worst page.
+			const worst = lowestBlurScore(
+				next.map((item) => getBlurScore(item.file)),
+			);
+			if (worst !== null) setBlurScore(combined, worst);
 
 			if (!attach(combined, null)) onFileChange(null);
 		} catch (error) {
@@ -555,12 +692,21 @@ export function FileUpload({
 		resetInput();
 	}
 
-	/** Opens the combined PDF in the viewer, releasing the URL when it closes. */
-	async function viewCombined() {
-		if (!file) return;
-		const url = URL.createObjectURL(file);
+	/**
+	 * Opens one attached file in the viewer, releasing the URL when it closes.
+	 *
+	 * The type is passed rather than sniffed: the viewer reads an extension off
+	 * the URL, and an object URL has none. Only the two kinds this component
+	 * accepts, images and PDFs, ever reach here.
+	 * @param target - The file to show — a pending row, or the combined PDF.
+	 */
+	async function viewFile(target: File) {
+		const url = URL.createObjectURL(target);
 		try {
-			await showFile(url, { type: "pdf" });
+			await showFile(url, {
+				type: target.type === "application/pdf" ? "pdf" : "image",
+				label: target.name,
+			});
 		} finally {
 			URL.revokeObjectURL(url);
 		}
@@ -570,6 +716,16 @@ export function FileUpload({
 		if (multiEnabled && addingRef.current) return;
 		const result = await openCamera(editorOptions);
 		if (!result.accepted || !result.file) return;
+
+		// With the confirm step on, the editor has already judged the capture;
+		// without it the file arrives unchecked.
+		if (options.disableImageConfirm) {
+			const ok = await withStatus("Checking quality…", () =>
+				// Non-null by the guard above; narrowing does not survive the closure.
+				checkBlurOrExplain(result.file as File, options),
+			);
+			if (!ok) return;
+		}
 
 		if (!multiEnabled) {
 			attach(result.file, result.image ?? null);
@@ -667,12 +823,8 @@ export function FileUpload({
 						) : (
 							<ImageIcon className="h-4 w-4" />
 						)}
-						{multiEnabled && items.length > 0 ? "Add more" : null}
-						{multiEnabled && items.length === 0
-							? `Select ${nonImageAllowed ? "files" : "photos"}`
-							: null}
 						{multiEnabled
-							? null
+							? `Select ${nonImageAllowed ? "files" : "photos"}`
 							: `Select ${nonImageAllowed ? "file" : "photo"}`}
 					</Button>
 				)}
@@ -693,31 +845,68 @@ export function FileUpload({
 		</>
 	);
 
+	// A named step that has outlasted `SLOW_STEP_MS`. Rendered in every layout,
+	// so the zone explains itself whether or not a file is already attached.
+	const statusLine = status ? (
+		<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+			<RefreshCw className="h-3 w-3 shrink-0 animate-spin" />
+			{status}
+		</p>
+	) : null;
+
+	// Sharpness, in development only: the numbers behind an accept or a warning,
+	// so a threshold can be judged against real captures rather than guessed at.
+	// The combined file carries the worst of its parts — see `lowestBlurScore`.
+	const devScore = import.meta.env.DEV && file ? getBlurScore(file) : undefined;
+	const devPartScores = import.meta.env.DEV
+		? items.map((item) => getBlurScore(item.file))
+		: [];
+	const devScoreLine =
+		import.meta.env.DEV && devScore !== undefined ? (
+			<p className="select-none font-mono text-[10px] text-muted-foreground/70">
+				blur score: {devScore}
+				{devPartScores.length > 1
+					? ` (pages: ${devPartScores.map((score) => score ?? "—").join(", ")})`
+					: null}
+			</p>
+		) : null;
+
 	/** One row of the pending batch. */
 	function renderItemRow(item: PendingItem, index: number) {
 		return (
 			<li
 				key={item.id}
-				className="flex w-full items-center gap-2 rounded-md border bg-background p-2"
+				className="flex w-full min-w-0 items-center gap-2 rounded-md border bg-background p-2"
 			>
 				<span className="w-4 shrink-0 text-center text-[10px] text-muted-foreground">
 					{index + 1}
 				</span>
-				{item.thumbnail ? (
-					<img
-						src={item.thumbnail}
-						alt=""
-						className="h-9 w-9 shrink-0 rounded-sm object-cover"
-					/>
-				) : (
-					<FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-				)}
-				<span
-					className="min-w-0 flex-1 truncate text-xs"
+				{/* The thumbnail and the name are one control: a 9×9 image is a small
+				    target, and the row already spends its right half on buttons. A
+				    PDF has no thumbnail and opens just the same. */}
+				<button
+					type="button"
+					aria-label={`View ${item.file.name}`}
 					title={item.file.name}
+					onClick={() => void viewFile(item.file)}
+					className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded text-left"
 				>
-					{item.file.name}
-				</span>
+					{item.thumbnail ? (
+						<img
+							src={item.thumbnail}
+							alt=""
+							className="h-9 w-9 shrink-0 rounded-sm object-cover"
+						/>
+					) : (
+						<FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+					)}
+					{/* `w-0`, not just `min-w-0`: a nowrap name still contributes its
+					    full width to the intrinsic size of every ancestor, which is
+					    what pushed the dialog's grid track past `max-w-lg`. A zero
+					    base width plus `flex-1` gives it whatever the row has left
+					    and nothing it asks for. */}
+					<span className="w-0 flex-1 truncate text-xs">{item.file.name}</span>
+				</button>
 				<span className="shrink-0 text-[10px] text-muted-foreground">
 					{formatBytes(item.file.size)}
 				</span>
@@ -753,7 +942,7 @@ export function FileUpload({
 	}
 
 	return (
-		<div className={cn("flex flex-col gap-1.5", className)}>
+		<div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
 			{label ? (
 				<Label>
 					{label}
@@ -780,7 +969,21 @@ export function FileUpload({
 							</ul>
 						) : null}
 
-						{items.length < maxFiles ? sourceButtons : null}
+						{items.length < maxFiles ? (
+							<>
+								{/* Says what the buttons below do to a batch that already has
+								    rows. It belongs here rather than on the picker's label
+								    because a camera-only field has no picker: "Open camera" on
+								    its own does not say whether the next shot joins the list
+								    or replaces it. */}
+								{items.length > 0 ? (
+									<p className="w-full select-none text-center text-xs text-muted-foreground">
+										Add more
+									</p>
+								) : null}
+								{sourceButtons}
+							</>
+						) : null}
 
 						{busy && progress ? (
 							<p className="text-xs text-muted-foreground">
@@ -806,7 +1009,7 @@ export function FileUpload({
 									type="button"
 									variant="outline"
 									size="sm"
-									onClick={() => void viewCombined()}
+									onClick={() => void viewFile(file)}
 								>
 									View
 								</Button>
@@ -865,6 +1068,11 @@ export function FileUpload({
 						)}
 					</>
 				)}
+
+				{/* Outside the layout branches, so a slow step or a score explains
+				    itself whether or not a file is already attached. */}
+				{statusLine}
+				{devScoreLine}
 			</div>
 		</div>
 	);

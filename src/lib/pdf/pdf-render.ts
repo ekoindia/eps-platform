@@ -23,6 +23,11 @@ import {
 	type PDFPageProxy,
 } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import {
+	BLUR_ANALYSIS_MAX_LENGTH,
+	blurScore,
+	toGrayscale,
+} from "@/lib/connect/blur";
 import { EncryptedPdfError, NotCompressibleError } from "./pdf-errors";
 import { findNonImageOp, NON_IMAGE_OP_NAMES } from "./pdf-page-content";
 import type { RasterPage } from "./pdf-ops";
@@ -156,6 +161,94 @@ export async function rasterizeForCompression(
 			}
 		}
 		return pages;
+	} finally {
+		await document_.loadingTask.destroy();
+	}
+}
+
+/** How many pages of a PDF the blur check inspects. A deliberate cost cap:
+ * page 4 onwards of a blurry scan is almost always as blurry as page 1, and
+ * rasterizing a 20-page statement would stall the pick for seconds. */
+const BLUR_PAGE_LIMIT = 3;
+
+/**
+ * Renders one page at analysis resolution and scores its sharpness.
+ *
+ * @param page - The page to judge.
+ * @returns The 0–100 score, or null when the page cannot be judged.
+ */
+async function pageBlurScore(page: PDFPageProxy): Promise<number | null> {
+	const base = page.getViewport({ scale: 1 });
+	const scale = Math.min(
+		4,
+		BLUR_ANALYSIS_MAX_LENGTH / Math.max(base.width, base.height),
+	);
+	const viewport = page.getViewport({ scale: Math.max(scale, 0.1) });
+
+	const canvas = document.createElement("canvas");
+	canvas.width = Math.max(1, Math.round(viewport.width));
+	canvas.height = Math.max(1, Math.round(viewport.height));
+	try {
+		const context = canvas.getContext("2d", { willReadFrequently: true });
+		if (!context) return null;
+		context.fillStyle = "#ffffff";
+		context.fillRect(0, 0, canvas.width, canvas.height);
+		await page.render({ canvas, viewport }).promise;
+		const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+		return blurScore(
+			toGrayscale(data, canvas.width, canvas.height),
+			canvas.width,
+			canvas.height,
+		);
+	} finally {
+		canvas.width = 0;
+		canvas.height = 0;
+	}
+}
+
+/**
+ * Blur score for a scanned PDF: the sharpness of its blurriest judged page.
+ *
+ * Only pure image scans are judged. Any text or vector op on an inspected
+ * page means the document is born-digital — sharp by construction — and the
+ * answer is `null` (cannot judge, fail open). This reuses the same
+ * conservative eligibility test as compression, so a scan with an OCR text
+ * overlay is *skipped*, not scored; that trades missed detections for never
+ * misjudging a digital document.
+ *
+ * Inspects at most {@link BLUR_PAGE_LIMIT} pages, and stops early past the
+ * deadline with whatever it has — rasterization is the expensive part, and a
+ * blur check must never noticeably delay an upload.
+ *
+ * @param bytes - Raw PDF bytes.
+ * @param deadlineMs - Soft time budget for the whole check.
+ * @returns Minimum page score 0–100, or null when nothing could be judged.
+ * @throws {EncryptedPdfError} If the document is password-protected.
+ */
+export async function blurScorePdfPages(
+	bytes: Uint8Array,
+	deadlineMs = 4000,
+): Promise<number | null> {
+	const deadline = Date.now() + deadlineMs;
+	const document_ = await open(bytes);
+	try {
+		const scores: number[] = [];
+		const limit = Math.min(BLUR_PAGE_LIMIT, document_.numPages);
+		for (let pageNumber = 1; pageNumber <= limit; pageNumber += 1) {
+			if (Date.now() > deadline) break;
+			const page = await document_.getPage(pageNumber);
+			try {
+				const { fnArray } = await page.getOperatorList();
+				if (findNonImageOp(fnArray, NON_IMAGE_OPS) !== -1) return null;
+				const score = await pageBlurScore(page);
+				if (score !== null) scores.push(score);
+			} finally {
+				page.cleanup();
+			}
+		}
+		// The worst page decides: review reads every page, and a statement whose
+		// page 2 is unreadable gets rejected however crisp pages 1 and 3 are.
+		return scores.length > 0 ? Math.min(...scores) : null;
 	} finally {
 		await document_.loadingTask.destroy();
 	}

@@ -57,7 +57,9 @@ describe("parseDocumentList", () => {
 			docType: "1",
 			name: "Aadhaar Card",
 			info: "Director's Aadhaar Card",
-			pages: 2,
+			// Upstream says 2; KYC_DOC_CONFIG overrides to a single multi-capture
+			// slot that combines front and back into one PDF.
+			pages: 1,
 			status: 0,
 			statusDesc: "",
 			error: "",
@@ -160,7 +162,9 @@ describe("parseDocumentList", () => {
 	});
 
 	it("accepts a numeric page count", () => {
-		expect(parseDocumentList([{ doc_type: "1", pages: 3 }])[0].pages).toBe(3);
+		// An unconfigured doc_type, so KYC_DOC_CONFIG cannot override the count
+		// this test exists to parse.
+		expect(parseDocumentList([{ doc_type: "999", pages: 3 }])[0].pages).toBe(3);
 	});
 
 	it("drops rows with no doc_type, which could never be uploaded", () => {

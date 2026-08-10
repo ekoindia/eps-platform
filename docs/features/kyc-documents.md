@@ -252,6 +252,241 @@ Both ceilings are only real if the hops in front of the app allow them: nginx
 defaults `client_max_body_size` to 1 MB, and a serverless deploy caps request
 bodies at a few MB regardless of what the handler checks.
 
+## Blur detection
+
+Badly scanned documents — blurred, out of focus — sail through every rule above
+and come back a week later as a review rejection. `src/lib/connect/blur.ts`
+scores every capture's sharpness on-device before it is attached, from any
+source: picker, drag-and-drop, camera, and scanned PDFs.
+
+**The metric.** Tile-based variance of a 3×3 Laplacian on 0–255 luma, image
+downscaled to ≤1024px first. The image is split into an 8×8 grid; near-blank
+tiles (luma σ < 4) are dropped so empty margins cannot decide the verdict, and
+the **10th percentile** of the surviving tiles' variances becomes the score —
+a document is only as legible as its worst inked region. Pure typed-array
+math, no dependencies, single-digit milliseconds at analysis resolution.
+
+**The scale: 0–100, higher is sharper.** The score is
+`20 × log₁₀(1 + variance)` — a decibel-like log scale, because raw Laplacian
+variance spans roughly 1 (mush) to 10,000 (crisp print) and a linear scale
+would be unusable as a config knob. So 70 is a *good* score. Measured against
+synthetic text pages at analysis resolution:
+
+| Capture | Score |
+| --- | --- |
+| Crisp, dense text | 80 |
+| Crisp, sparse text (20% inked) | 70 |
+| Crisp, with one soft region (a photo, a fold shadow) | 62 |
+| Very mild softness | 60 |
+| Mild softness — the edge of acceptable | 46 |
+| Page shot at an angle, far edge unreadable | 43 |
+| Soft | 34 |
+| Clearly blurred | 14 |
+| Badly blurred | 5 |
+
+Treat the ordering as reliable and the absolute values as provisional: these
+are synthetic pages, not real phone captures.
+
+### Why the percentile is low
+
+The first version scored the **90th** percentile, on the reasoning that a
+document with any crisp region is readable. That was wrong for the captures
+this feature exists to catch, and the measurements say so plainly:
+
+| Capture | p90 | p50 | p25 | p10 |
+| --- | --- | --- | --- | --- |
+| Crisp, dense text | 91 | 91 | 81 | 80 |
+| Crisp, sparse text | 91 | 80 | 70 | 70 |
+| Clearly blurred (2px) | 23 | 23 | 14 | 14 |
+| **Angled page, far edge unreadable** | **85** | 74 | 62 | **43** |
+
+At p90 a page shot at an angle scored **85** — indistinguishable from a perfect
+scan — because the crisp near edge carried the whole verdict, and the number
+did not move however badly the far edge degraded. That is the single most
+common way a phone capture of a document fails.
+
+The blank-tile guard is what makes a low percentile safe: the empty-margin
+problem p90 was protecting against is already solved one step earlier, so the
+high percentile was redundant cover that bought a blind spot. p10 keeps a
+useful margin over legitimately awkward documents — one soft patch on a sparse
+page still scores 62 — while the angled page drops to 43.
+
+**Threshold 45** is the only cut that classified every synthetic case
+correctly, but the margin is 3 points (46 passes, 43 fails), which is tight.
+Re-fit it against real telemetry before enforcing.
+
+### What this metric does not catch
+
+Worth knowing before trusting it, since two of the three common causes of a bad
+scan are outside what Laplacian variance measures:
+
+- **Out of focus, and motion blur — caught well.** This is exactly what the
+  metric measures.
+- **Poor lighting — essentially not caught.** An in-focus page with contrast
+  crushed to 5% of normal, near-invisible to a human, still scores 39. Low
+  contrast lowers the score, but nowhere near enough to gate on. Arguably
+  correct — a dim but focused scan recovers with auto-levels, unlike true blur
+  — but do not expect this check to refuse a badly-lit capture.
+- **Skew and perspective — not caught at all, by design.** A sharply focused
+  page photographed at 45° scores like any other sharp page. Only the *defocus*
+  that often accompanies a bad angle registers; the geometry does not.
+- **Cropped, upside-down, or wrong document — not caught.** Out of scope.
+
+**One rule for the whole checklist, with one door out.** Legibility is a
+property of the capture for almost every row, so three constants in
+`kyc-docs.ts` decide it by default:
+
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `KYC_BLUR_CHECK` | `warn` | Toast, but let the upload through |
+| `KYC_BLUR_THRESHOLD` | 45 | The 0–100 sharpness floor |
+| `KYC_BLUR_STAMP_FILENAME` | `true` | Write the score into the uploaded file name |
+
+A document type may name its own **mode** — and only the mode — via
+`KycDocConfig.blurCheck`. `doc_type` 24, the directors' live photograph, sets
+`measure`: it is a person in a room rather than inked text, so a floor fitted
+to document scans is judging the wrong thing, and a wide-framed photo against a
+plain wall would toast at a partner who did exactly what review asked for. The
+score is still taken and still stamped into the file name, so the evidence for
+a photograph-specific threshold keeps accumulating.
+
+The threshold stays global on purpose: a floor that moved by row would make the
+collected scores incomparable, which is the only reason to collect them.
+
+`KycDocConfig.options` still **excludes** `blurCheck` and `blurThreshold` from its
+type, and `KycUploadDialog` spreads the resolved values after the document's own
+options, so `options` cannot smuggle a mode in — `config.blurCheck` is the
+sanctioned way. Underneath, the generic component takes
+`blurCheck: 'off' | 'measure' | 'warn' | 'block'` and `blurThreshold` on
+`ImageEditorOptions` — `measure` scores silently, `warn` toasts and attaches,
+`block` refuses (in the editor that keeps the dialog open for a retake, the
+face-count precedent; elsewhere it drops the file with a toast).
+
+`warn` rather than `block` deliberately: the threshold has not been calibrated
+against real captures, and a false positive on a legible scan is a partner who
+cannot finish KYC at all.
+
+**Where it runs — always after compression.** The check is fed the bytes that
+will actually be uploaded, never the original. This matters: a soft 4000px
+phone photo resized to 1200px is genuinely legible, because the blur kernel
+shrinks below a pixel on the way down, and the resized file is what the
+reviewer opens. Scoring the original would refuse captures that are fine.
+
+- Images through the editor: scored in `onAccept` on the processed file, after
+  crop, resize, watermark and re-encode.
+- Images that skip the editor (`disableImageConfirm`) and PDFs: scored in
+  `FileUpload`'s `checkBlurOrExplain`, PDFs after `compressIfLarge`.
+- PDFs go through `blurScorePdf` (`pdf-client.ts` → `pdf-render.ts`): only pure
+  image scans are eligible (any text or vector op means born-digital, sharp by
+  construction — the same conservative test compression uses, so an
+  OCR-overlaid scan is skipped rather than misjudged), at most the first 3
+  pages are rasterized, and a soft 4s deadline stops the check early.
+
+**Several pages: the lowest wins.** `lowestBlurScore` is the single home for
+that rule — not the average. Review reads every page, so a pack whose middle
+page is unreadable is rejected however crisp the others are, and averaging
+would hide exactly the page that gets it bounced. It applies to PDF pages and
+to the images combined into one; the combined PDF is a new `File`, so it is
+re-stamped with the worst of its parts.
+
+**Fail-open, everywhere.** A `null` score always means "could not judge" —
+blank page, digital PDF, decode failure, timeout, encrypted — and always
+passes. The check can only ever degrade to the pre-existing behaviour, never
+below it.
+
+**Slow steps explain themselves.** Compressing a big scan or quality-checking a
+large photo can stall a pick, and an unexplained stall reads as a broken
+button. `FileUpload.withStatus` names the running step ("Checking quality…",
+"Compressing PDF…", "Combining pages…") as fine text with a spinner, but only
+once it has run for a second — below that a label would flash and read as a
+glitch. In development the component also prints the resulting score under the
+zone, so a threshold can be judged against real captures.
+
+**Getting the score to review.** Two channels carry the same number, because
+only one of them currently arrives:
+
+- **The file name** — `aadhaar-front_blur_score18.pdf`, via
+  `withBlurScoreInName`. Upstream keeps the name, so this is what a reviewer
+  actually sees. A stopgap.
+- **`blur_score1..N` form fields** — the right channel, ignored today. The
+  backend reads only the fields it names, so the extra parts are harmless.
+
+**Recording those fields is the follow-up that makes the threshold
+calibratable.** Until then 45 is fitted to synthetic pages; look at real score
+distributions before moving `KYC_BLUR_CHECK` to `block`, and turn
+`KYC_BLUR_STAMP_FILENAME` off once upstream records the scores properly, at
+which point the names are just noise.
+
+### Capture-quality roadmap
+
+The organising idea: detection is the weakest link in the chain. **Prevent**
+bad captures at the shutter, **repair** what is fixable on-device, **validate**
+content where a document carries its own ground truth, and only then fall back
+to **detecting** what is left. Everything below is progressive enhancement —
+each stage feature-detects and degrades to today's behaviour, so coverage
+gaps cost nothing.
+
+Ranked by value per unit of cost:
+
+1. **Capture at full sensor resolution — `ImageCapture.takePhoto()`.** ✅ Built.
+   The camera previously uploaded a 1920×1080 *screenshot of the video stream*:
+   compressed video frames, grabbed without waiting for autofocus. Much of the
+   blur this feature detects was manufactured right there. `takePhoto()` uses
+   the full sensor with real autofocus convergence; a torch button attacks the
+   poor-lighting failure mode at the source. Coverage: Chrome/Android — the
+   bulk of an India-heavy funnel; everyone else keeps the screenshot path.
+   Zero dependencies. See `src/lib/connect/camera.ts`.
+2. **Live sharpness in the viewfinder.** ✅ Built. `blurScore` costs single-digit
+   milliseconds on a small frame, so the preview scores itself a few times a
+   second and the UI says "Hold steady" *before* the shot instead of rejecting
+   it after. Zero dependencies, works everywhere the camera does.
+3. **Record `blur_scoreN` upstream, then re-fit the threshold.** The gating
+   step for everything tunable. The 3-point synthetic margin between pass and
+   fail is too tight to trust; only the real distribution can set the line.
+4. **Exposure check + auto-levels repair.** Blur variance will never catch dim
+   captures (measured: a near-invisible 5%-contrast page scores 39). Mean luma
+   and dynamic range over inked tiles are already computed inside `blurScore`
+   — surfacing an exposure verdict is ~50 lines. Then repair rather than
+   refuse: histogram-stretch on canvas before upload. Keep it a separate
+   signal with its own message — "move to better light" is different advice
+   from "hold still".
+5. **QR validation for Aadhaar and PAN — `BarcodeDetector`.** Both carry QR
+   codes (PAN since 2017; Aadhaar's secure QR). A decoded QR proves the capture
+   is legible, is the right document type, and carries demographics that can be
+   cross-checked against the applicant — catching wrong-document uploads no
+   blur metric can see. Native on Chrome/Android, zero payload; `zxing-wasm`
+   (~300 KB) as optional fallback. Readable QR → skip blur gating (kills false
+   positives); unreadable QR on a known-QR doc at good resolution → soft
+   negative.
+6. **Tiered OCR as the legibility tiebreaker — Tesseract.js.** OCR confidence
+   is the ground-truth answer to "can review read this", but only worth its
+   ~5 MB and 2–8 s in the ambiguous band: score ≥ 60 passes silently, ≤ 25
+   warns immediately, and only the grey middle gets OCR'd in a worker after
+   attach. The sleeper win is field validation — PAN format `ABCDE1234F`,
+   12-digit Aadhaar, name match against the application — a class of review
+   rejection entirely outside "blurry". Native routes are not ready: 
+   `TextDetector` never shipped unflagged; Chrome's built-in model is
+   desktop-only with a download gate — wrong shape for a mobile-heavy funnel.
+7. **Document-quad detection + perspective correction.** The angle failure
+   mode solved rather than scored: a "fill the frame" overlay at capture, a
+   perspective warp after. The good implementations ride on OpenCV.js
+   (~8 MB wasm, lazy-loaded only when the camera opens) — defensible once
+   telemetry shows how much angle-failure survives items 1–6, not before.
+8. **Content checks** — whole document in frame, right way up, the document
+   that was asked for. Wants a model, not a kernel; only worth it if review
+   data says framing rejections outnumber blur rejections.
+
+Rejected for now: document-quality CNNs via ONNX/transformers.js (the tiered
+blur + OCR pipeline buys most of the accuracy for a fraction of the 10–20 MB),
+WebGPU compute (the metric already runs in milliseconds), and worklets (paint/
+audio-scoped; the PDF worker already covers threading).
+
+The architecture all of this slots into: one cheapest-first pipeline —
+blur + exposure always, QR when the doc type carries one, OCR only in the grey
+band — each stage feature-detected, each emitting its own verdict and its own
+telemetry field, so each threshold is independently tunable. The blur-vs-
+lighting lesson generalises: never fold two defects into one number.
+
 ## UI
 
 `/console/documents` — titled **Upload Documents**, in the rail and on the page

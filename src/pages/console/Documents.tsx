@@ -14,6 +14,7 @@ import {
 	statusOfDocument,
 	type KycDocument,
 } from "@/lib/connect/kyc";
+import { configOf } from "@/lib/connect/kyc-docs";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { CheckCircle2, FileText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -48,6 +49,21 @@ function DocumentRow({
 	onUpload: () => void;
 }) {
 	const status = statusOfDocument(doc, justUploaded);
+	// A camera-only document has no "upload" to speak of — the file picker is
+	// hidden and the only way in is the viewfinder, so the button says what the
+	// next tap actually does. Replace and rejected collapse to one label there:
+	// the action is identical, and "Retry" reads as retrying a failed upload
+	// rather than taking the photograph again.
+	const again = status.uploaded || status.variant === "destructive";
+	const cta = configOf(doc.docType).cameraOnly
+		? again
+			? "Capture Again"
+			: "Capture"
+		: status.uploaded
+			? "Replace"
+			: status.variant === "destructive"
+				? "Retry"
+				: "Upload";
 	// A green tick only for a document upstream has actually approved; anything
 	// else with something to say wears its own Badge variant — an "Approval
 	// Pending" row is uploaded, not done, and a tick would say otherwise.
@@ -87,11 +103,7 @@ function DocumentRow({
 				    the click anyway. The pill's tooltip carries the reason. */}
 				{status.canUpload ? (
 					<Button size="sm" onClick={onUpload}>
-						{status.uploaded
-							? "Replace"
-							: status.variant === "destructive"
-								? "Retry"
-								: "Upload"}
+						{cta}
 					</Button>
 				) : null}
 			</div>

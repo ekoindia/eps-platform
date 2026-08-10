@@ -925,13 +925,13 @@
     "semantic_hash": "37730103b25a051ff6fb12e00af8f336"
   },
   "src/components/FileUpload.test.tsx": {
-    "mtime": 1786350458.0524845,
-    "ast_hash": "e66184b24284f418ddc3760c5bf8263c",
+    "mtime": 1786298264.7771494,
+    "ast_hash": "d776b63836db719a8b46d54b4d316c5f",
     "semantic_hash": ""
   },
   "src/components/FileUpload.tsx": {
-    "mtime": 1786351091.923864,
-    "ast_hash": "421086ec288d76a03360e541e751bc75",
+    "mtime": 1786298054.2519073,
+    "ast_hash": "4893781b422718ab531f70ca552d8e05",
     "semantic_hash": ""
   },
   "src/components/Footer.auth.test.tsx": {
@@ -1090,9 +1090,9 @@
     "semantic_hash": ""
   },
   "src/components/connect/CameraDialog.tsx": {
-    "mtime": 1786350771.7129278,
-    "ast_hash": "dcef43caaeb9d067e47e1ee27bc92878",
-    "semantic_hash": ""
+    "mtime": 1785170439.9277637,
+    "ast_hash": "dac0849455a4718e6e42318a6c60a728",
+    "semantic_hash": "dac0849455a4718e6e42318a6c60a728"
   },
   "src/components/connect/ConnectWidget.test.tsx": {
     "mtime": 1785154720.4733875,
@@ -1150,13 +1150,13 @@
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
-    "mtime": 1786349179.2864678,
-    "ast_hash": "ef0bd5ae0ffd18ddd49abfc1ea455c4c",
+    "mtime": 1786298212.6617494,
+    "ast_hash": "c1f17a2786177de8af5a4801a7ce2db9",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.tsx": {
-    "mtime": 1786351049.7516062,
-    "ast_hash": "7452829791d74cbe2e8c76d48ea8361f",
+    "mtime": 1786298102.1170745,
+    "ast_hash": "9d3e6893c2dfca451349af6c131dfc5d",
     "semantic_hash": ""
   },
   "src/components/console/WalletBalance.connect.test.tsx": {
@@ -2055,8 +2055,8 @@
     "semantic_hash": "731f1086f8e39f84c54f2bef8a2b8cff"
   },
   "src/lib/connect/kyc-docs.ts": {
-    "mtime": 1786349482.8094351,
-    "ast_hash": "c7a5c5caeae7c2776fc5bed1216ad003",
+    "mtime": 1786298080.0115707,
+    "ast_hash": "3b2bf4dd49fd73f920373f3f8f3c471a",
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.fixture.ts": {
@@ -2065,8 +2065,8 @@
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.test.ts": {
-    "mtime": 1786348103.0714958,
-    "ast_hash": "8a0bd6095bffdb0ab23843db92747283",
+    "mtime": 1786166092.5008144,
+    "ast_hash": "6688cd9abb2dde65d10309661174d157",
     "semantic_hash": ""
   },
   "src/lib/connect/kyc.ts": {
@@ -2795,13 +2795,13 @@
     "semantic_hash": ""
   },
   "src/pages/console/Documents.test.tsx": {
-    "mtime": 1786349664.7389045,
-    "ast_hash": "ae4813ecc68e3db2d48cf7415ab450f3",
+    "mtime": 1786165463.9780803,
+    "ast_hash": "b7826d834862a6609811aa280940b992",
     "semantic_hash": ""
   },
   "src/pages/console/Documents.tsx": {
-    "mtime": 1786349651.7996883,
-    "ast_hash": "ad51b2f513cc638173edcfaf25768675",
+    "mtime": 1786165453.8932335,
+    "ast_hash": "48638d43ed95bcf463b723e2c08e7eed",
     "semantic_hash": ""
   },
   "src/pages/console/Profile.test.tsx": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": "c6d1b449c59cc677e79721e2adbb6db8"
   },
   "docs/features/kyc-documents.md": {
-    "mtime": 1786349213.6913197,
-    "ast_hash": "573f6956fd6dec9033fc9ddb275b9f46",
+    "mtime": 1786298333.1757612,
+    "ast_hash": "fecd1384b47ce732ae6fca0b4fca6e0d",
     "semantic_hash": ""
   },
   "docs/features/transaction-history.md": {
@@ -3150,9 +3150,9 @@
     "semantic_hash": "51ca33f506c4d6f95a1b799fa2bebd5c"
   },
   "docs/pdf-toolkit.md": {
-    "mtime": 1786350225.928493,
-    "ast_hash": "2d2c7d8b3bb8fd8f38760e00b2a670c9",
-    "semantic_hash": ""
+    "mtime": 1785323033.453182,
+    "ast_hash": "e5865f95a1f7dd2c37eacd13fce4a260",
+    "semantic_hash": "e5865f95a1f7dd2c37eacd13fce4a260"
   },
   "docs/pricing-calculator.md": {
     "mtime": 1785747632.846224,
@@ -3765,23 +3765,13 @@
     "semantic_hash": ""
   },
   "src/lib/connect/blur.test.ts": {
-    "mtime": 1786344112.7890246,
-    "ast_hash": "945b8d0edaa34a9609370164df2154de",
+    "mtime": 1786298163.2971976,
+    "ast_hash": "1ce363d7b6d2c1c747ae73df65105141",
     "semantic_hash": ""
   },
   "src/lib/connect/blur.ts": {
-    "mtime": 1786348025.8614237,
-    "ast_hash": "863f849eaaeccda1a3ab6d0ef39d81f3",
-    "semantic_hash": ""
-  },
-  "src/lib/connect/camera.test.ts": {
-    "mtime": 1786348235.9662828,
-    "ast_hash": "02a38214fe00ee9b12029a73d41510d4",
-    "semantic_hash": ""
-  },
-  "src/lib/connect/camera.ts": {
-    "mtime": 1786348008.6753633,
-    "ast_hash": "663369ca1a67ee2f5667cd0cb96afa4a",
+    "mtime": 1786297903.7010162,
+    "ast_hash": "76e0f5e545dc72e6470bb7dccb617158",
     "semantic_hash": ""
   }
 }

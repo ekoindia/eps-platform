@@ -20,6 +20,7 @@
 
 import type { FileUploadOptions } from "@/components/FileUpload";
 import type { WatermarkSpec } from "@/hooks/use-watermark";
+import { type BlurCheckMode, DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
 import type { KycDocument } from "@/lib/connect/kyc";
 
 /**
@@ -43,6 +44,42 @@ export const KYC_MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 /** The backend's per-document file-count ceiling. Above it, every upload 400s. */
 export const KYC_MAX_PAGES = 6;
+
+/**
+ * What a blurry scan costs the partner, for every KYC document that does not
+ * say otherwise via {@link KycDocConfig.blurCheck}.
+ *
+ * The default rather than the rule: "is this legible" is a property of the
+ * capture for almost every row, so one number is what a partner can predict.
+ * The exception is a document that is not a scan at all — a live photograph of
+ * a person, where the metric is measuring a face and a room rather than ink.
+ *
+ * `warn` toasts and lets the upload through. Not `block`: {@link
+ * KYC_BLUR_THRESHOLD} has not been calibrated against real captures yet, and a
+ * false positive on a legible scan is a partner who cannot finish KYC at all.
+ * Move to `block` once the scores coming back say where the line sits.
+ */
+export const KYC_BLUR_CHECK = "warn" as const;
+
+/**
+ * The 0–100 sharpness floor for every KYC document. See `blur.ts`.
+ *
+ * Left at the library default on purpose — this constant exists so the number
+ * has one home to be tuned in once there is evidence, not because a KYC-
+ * specific value is known.
+ */
+export const KYC_BLUR_THRESHOLD = DEFAULT_BLUR_THRESHOLD;
+
+/**
+ * Whether the score is written into the uploaded file's name, before the
+ * extension — `aadhaar-front_blur_score18.pdf`.
+ *
+ * On, because it is the only channel that currently reaches a reviewer:
+ * upstream keeps the file name but drops the `blur_scoreN` form fields. Turn
+ * it off once upstream records the scores properly, at which point the names
+ * are just noise.
+ */
+export const KYC_BLUR_STAMP_FILENAME = true;
 
 /**
  * What this console knows about one document type, over and above upstream.
@@ -139,8 +176,28 @@ export interface KycDocConfig {
 	 * Never set `disableImageConfirm` on a document that needs provenance. It
 	 * skips the editor, and the editor is where the watermark is burnt into the
 	 * pixels — the capture would arrive unstamped.
+	 *
+	 * The blur knobs are excluded: the mode has its own field, {@link
+	 * blurCheck}, and the threshold stays one number for the whole checklist.
 	 */
-	options?: Omit<FileUploadOptions, "fileName" | "watermark">;
+	options?: Omit<
+		FileUploadOptions,
+		"fileName" | "watermark" | "blurCheck" | "blurThreshold"
+	>;
+	/**
+	 * Replaces {@link KYC_BLUR_CHECK} for this document type.
+	 *
+	 * For a row where sharpness means something different, or nothing: a live
+	 * photograph is a person and their surroundings, not inked text, so a
+	 * Laplacian floor fitted to document scans is judging the wrong thing.
+	 * `"measure"` keeps the score (and its file-name stamp) without ever
+	 * stopping the partner; `"off"` scores nothing at all.
+	 *
+	 * Only the mode is per-document. {@link KYC_BLUR_THRESHOLD} stays global —
+	 * a floor that moved by row would make the scores incomparable, which is
+	 * the whole point of collecting them.
+	 */
+	blurCheck?: BlurCheckMode;
 	/**
 	 * A tighter per-file size limit than {@link KYC_MAX_FILE_BYTES}.
 	 *
@@ -161,17 +218,12 @@ export interface KycDocConfig {
  */
 export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// Aadhaar Card
-	// Two identical "Page 1 / Page 2" slots is how a user ends up attaching the
-	// front twice and hearing about it a week later, at review.
-	//
-	// Photographed far more often than scanned, and a phone rarely gets a whole
-	// card square in one frame — so each side may take several shots, combined
-	// into one PDF per side.
 	"1": {
-		pageLabels: ["Aadhaar front", "Aadhaar back"],
+		pages: 1,
+		pageLabels: ["Aadhaar card(s) (both front and back)"], // "Aadhaar back"
 		multiple: true,
 		instructions:
-			"- The Aadhaar copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the Aadhaar copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.",
+			"- The Aadhaar copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the Aadhaar copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.\n- Upload both the front and the back of the Aadhaar card.\n- If you are uploading multiple Aadhaar cards, please ensure that you upload both the front and back of each Aadhaar card.",
 	},
 
 	// PAN Card (2 = Personal, 15 = Director's)
@@ -193,6 +245,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// MOA - Memorandum of Association
 	"4": {
 		name: "Memorandum of Association (MOA)",
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
@@ -200,18 +253,21 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// AOA - Company articles of association
 	"5": {
 		name: "Company Articles of Association (AOA)",
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Certificate of Incorporation (COI)
 	"6": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Bank Statement (of company)
 	"7": {
+		multiple: true,
 		instructions:
 			"Company bank statement must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
@@ -223,21 +279,30 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	},
 
 	// 9: Address Proof (Electricity Bill, Rent Agreement, or Lease Agreement)
+	9: {
+		multiple: true,
+		pageLabels: ["Electricity Bill, Rent Agreement, or Lease Agreement"],
+		instructions:
+			"No need to sign or stamp these documents. Please ensure that the document is valid and not expired.",
+	},
 
 	// LLP Agreement
 	"10": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Partnership Deed
 	"11": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Company Registration Certificate
 	"12": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
@@ -245,6 +310,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// BR-Board Resolution - Show a sample file
 	"14": {
 		name: "Board Resolution (BR)",
+		multiple: true,
 		sampleUrl: "/kyc-samples/Board_Resolution_Format.docx",
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
@@ -266,12 +332,21 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// but the narrowed `accept` is what makes that a rule rather than a UI
 	// choice. Several frames may be captured — the surroundings rarely fit one —
 	// and they are combined into a single PDF, which the backend accepts.
+	//
+	// `measure` rather than the checklist's `warn`: this is a person in a room,
+	// not inked text, so the sharpness floor is judging something it was not
+	// fitted to — a photograph framed wide, or with a plain wall behind it,
+	// scores low while being exactly what review asked for. The score is still
+	// taken and still stamped into the file name, so the evidence for a
+	// photograph-specific threshold accumulates either way.
 	"24": {
 		name: "Directors' Live Photograph",
 		accept: "image/jpeg,image/png",
+		pageLabels: ["Capture Selfie"],
 		cameraOnly: true,
 		multiple: true,
 		watermark: true,
+		blurCheck: "off",
 		info: "Capture the live photographs of all your directors",
 		instructions:
 			"- If you represent a company, capture the live photographs of **all directors**.\n  - Start with capturing the first photograph\n  - then, you will get option to add more.",

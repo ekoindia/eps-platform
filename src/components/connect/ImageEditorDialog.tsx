@@ -1,4 +1,10 @@
 import {
+	blurScoreFromImageFile,
+	DEFAULT_BLUR_THRESHOLD,
+	setBlurScore,
+	type BlurCheckMode,
+} from "@/lib/connect/blur";
+import {
 	clampBoxToBounds,
 	getCompositeFaceBound,
 	getDefaultCrop,
@@ -39,6 +45,16 @@ export interface ImageEditorOptions {
 	disableImageEdit?: boolean;
 	/** Text burnt into the bottom-left of the result. */
 	watermark?: string;
+	/**
+	 * What to do about a capture that scores below {@link blurThreshold}.
+	 *
+	 * `measure` scores silently (telemetry only), `warn` toasts but accepts,
+	 * `block` refuses the capture and keeps the editor open for a retake.
+	 * Scoring always fails open: an image we cannot judge is never refused.
+	 */
+	blurCheck?: BlurCheckMode;
+	/** 0–100 sharpness floor; see `blur.ts`. Default 30. */
+	blurThreshold?: number;
 }
 
 /** The editor's answer. `accepted: false` means the user rejected the image. */
@@ -119,6 +135,8 @@ export function ImageEditorDialog({
 		disableRotate = false,
 		disableImageEdit = false,
 		watermark,
+		blurCheck = "off",
+		blurThreshold = DEFAULT_BLUR_THRESHOLD,
 	} = options;
 
 	const [sourceImage, setSourceImage] = useState(image);
@@ -271,9 +289,35 @@ export function ImageEditorDialog({
 				maxLength,
 				watermark,
 			});
+			const file = await dataUrlToFile(processed, fileName);
+
+			// Judged last, on the processed file rather than the source bitmap:
+			// crop, resize and re-encode all change how readable the result is,
+			// and the processed file is what uploads. Same fail-open contract as
+			// face detection above — `null` means "cannot judge", not "blurry".
+			if (blurCheck !== "off" && file) {
+				const sharpness = await blurScoreFromImageFile(file);
+				if (sharpness !== null) {
+					setBlurScore(file, sharpness);
+					if (sharpness < blurThreshold) {
+						if (blurCheck === "block") {
+							toast.error(
+								"This image looks blurry or out of focus. Please retake it or pick a sharper one.",
+							);
+							return;
+						}
+						if (blurCheck === "warn") {
+							toast.warning(
+								"This image looks blurry or out of focus. Consider retaking it.",
+							);
+						}
+					}
+				}
+			}
+
 			onClose({
 				image: processed || sourceImage || image,
-				file: await dataUrlToFile(processed, fileName),
+				file,
 				accepted: true,
 			});
 		} catch {
