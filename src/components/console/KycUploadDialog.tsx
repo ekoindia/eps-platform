@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { ApiError, authClient } from "@/lib/auth/client";
 import { getBlurScore, withBlurScoreInName } from "@/lib/connect/blur";
+import type { KycDocument } from "@/lib/connect/kyc";
 import {
 	configOf,
 	KYC_ACCEPT,
@@ -18,7 +19,6 @@ import {
 	KYC_BLUR_THRESHOLD,
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
-import type { KycDocument } from "@/lib/connect/kyc";
 import { Download, Info, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
@@ -69,6 +69,7 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 	// A fresh set of empty slots per document, so reopening the dialog on another
 	// row never inherits the previous one's attachments.
 	useEffect(() => {
+		// Hard code the file upload array to 1 page because we now support adding multiple files in a single file-upload field. The `multiple` property on the `FileUpload` component will handle multiple files for a single page.
 		setFiles(doc ? Array.from({ length: doc.pages }, () => null) : []);
 		setBusy(false);
 	}, [doc]);

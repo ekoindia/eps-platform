@@ -129,7 +129,8 @@ describe("KycUploadDialog", () => {
 	});
 
 	it("names each page from the local config", () => {
-		// doc_type 1 is the Aadhaar seed in KYC_DOC_CONFIG.
+		// doc_type 1 is the Aadhaar seed in KYC_DOC_CONFIG: one configured label,
+		// so a second slot exercises the "Page N" fallback alongside it.
 		render(
 			<KycUploadDialog
 				doc={doc({ docType: "1", pages: 2 })}
@@ -137,8 +138,10 @@ describe("KycUploadDialog", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Aadhaar front")).toBeVisible();
-		expect(screen.getByText("Aadhaar back")).toBeVisible();
+		expect(
+			screen.getByText("Aadhaar card(s) (both front and back)"),
+		).toBeVisible();
+		expect(screen.getByText("Page 2")).toBeVisible();
 	});
 
 	it("takes the live photograph from the camera or not at all", () => {
@@ -399,12 +402,12 @@ describe("KycUploadDialog", () => {
 			);
 
 			// Two files both called "combined-documents.pdf" tell a reviewer
-			// nothing about which side of the card they are looking at.
+			// nothing about which slot they came from.
 			expect(
 				screen
 					.getAllByTestId("file-upload")
 					.map((slot) => slot.dataset.combinedName),
-			).toEqual(["aadhaar-front.pdf", "aadhaar-back.pdf"]);
+			).toEqual(["aadhaar-card-s-both-front-and-back.pdf", "page-2.pdf"]);
 		});
 	});
 });

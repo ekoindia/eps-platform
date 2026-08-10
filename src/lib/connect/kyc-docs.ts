@@ -19,8 +19,8 @@
  */
 
 import type { FileUploadOptions } from "@/components/FileUpload";
-import { DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
 import type { WatermarkSpec } from "@/hooks/use-watermark";
+import { DEFAULT_BLUR_THRESHOLD } from "@/lib/connect/blur";
 import type { KycDocument } from "@/lib/connect/kyc";
 
 /**
@@ -203,17 +203,12 @@ export interface KycDocConfig {
  */
 export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// Aadhaar Card
-	// Two identical "Page 1 / Page 2" slots is how a user ends up attaching the
-	// front twice and hearing about it a week later, at review.
-	//
-	// Photographed far more often than scanned, and a phone rarely gets a whole
-	// card square in one frame — so each side may take several shots, combined
-	// into one PDF per side.
 	"1": {
-		pageLabels: ["Aadhaar front", "Aadhaar back"],
+		pages: 1,
+		pageLabels: ["Aadhaar card(s) (both front and back)"], // "Aadhaar back"
 		multiple: true,
 		instructions:
-			"- The Aadhaar copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the Aadhaar copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.",
+			"- The Aadhaar copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the Aadhaar copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.\n- Upload both the front and the back of the Aadhaar card.\n- If you are uploading multiple Aadhaar cards, please ensure that you upload both the front and back of each Aadhaar card.",
 	},
 
 	// PAN Card (2 = Personal, 15 = Director's)
@@ -235,6 +230,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// MOA - Memorandum of Association
 	"4": {
 		name: "Memorandum of Association (MOA)",
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
@@ -242,18 +238,21 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// AOA - Company articles of association
 	"5": {
 		name: "Company Articles of Association (AOA)",
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Certificate of Incorporation (COI)
 	"6": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Bank Statement (of company)
 	"7": {
+		multiple: true,
 		instructions:
 			"Company bank statement must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
@@ -265,21 +264,30 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	},
 
 	// 9: Address Proof (Electricity Bill, Rent Agreement, or Lease Agreement)
+	9: {
+		multiple: true,
+		pageLabels: ["Electricity Bill, Rent Agreement, or Lease Agreement"],
+		instructions:
+			"No need to sign or stamp these documents. Please ensure that the document is valid and not expired.",
+	},
 
 	// LLP Agreement
 	"10": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Partnership Deed
 	"11": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Company Registration Certificate
 	"12": {
+		multiple: true,
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
@@ -287,6 +295,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	// BR-Board Resolution - Show a sample file
 	"14": {
 		name: "Board Resolution (BR)",
+		multiple: true,
 		sampleUrl: "/kyc-samples/Board_Resolution_Format.docx",
 		instructions:
 			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
