@@ -227,6 +227,61 @@ export async function blurScoreFromImageFile(
 }
 
 /**
+ * Longest side for scoring live preview frames. Smaller than the upload
+ * analysis size on purpose: the loop runs several times a second, and at
+ * 320px a frame costs well under a millisecond — cheap enough for a phone
+ * that is simultaneously encoding the preview.
+ */
+const LIVE_ANALYSIS_MAX_LENGTH = 320;
+
+// One canvas reused across the whole preview loop, not one per frame — at a
+// few frames a second, per-call canvases are pure GC churn.
+// ponytail: module-level singleton; fine while only one camera can be open.
+let liveFrameCanvas: HTMLCanvasElement | null = null;
+
+/**
+ * Scores one frame of a live camera preview.
+ *
+ * The viewfinder companion to {@link blurScoreFromImageFile}: same metric,
+ * smaller frame, built for a loop. Lets the UI say "hold steady" *before* the
+ * shot instead of rejecting the photo after.
+ *
+ * The absolute value reads slightly lower than the same scene scored at
+ * upload resolution — compare trends and thresholds, not exact numbers.
+ *
+ * @param video - The `<video>` element playing the preview.
+ * @returns The 0–100 score, or null while there is no frame to judge.
+ */
+export function blurScoreFromVideo(video: HTMLVideoElement): number | null {
+	if (typeof document === "undefined") return null;
+	if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+		return null;
+	}
+
+	const scale = Math.min(
+		1,
+		LIVE_ANALYSIS_MAX_LENGTH / Math.max(video.videoWidth, video.videoHeight),
+	);
+	const width = Math.max(1, Math.round(video.videoWidth * scale));
+	const height = Math.max(1, Math.round(video.videoHeight * scale));
+
+	try {
+		liveFrameCanvas ??= document.createElement("canvas");
+		if (liveFrameCanvas.width !== width) liveFrameCanvas.width = width;
+		if (liveFrameCanvas.height !== height) liveFrameCanvas.height = height;
+		const context = liveFrameCanvas.getContext("2d", {
+			willReadFrequently: true,
+		});
+		if (!context) return null;
+		context.drawImage(video, 0, 0, width, height);
+		const { data } = context.getImageData(0, 0, width, height);
+		return blurScore(toGrayscale(data, width, height), width, height);
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Writes a sharpness score into a file name, before the extension.
  *
  * The reviewer opening `aadhaar-front_blur_score18.pdf` can see at a glance

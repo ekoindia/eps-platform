@@ -405,36 +405,75 @@ distributions before moving `KYC_BLUR_CHECK` to `block`, and turn
 `KYC_BLUR_STAMP_FILENAME` off once upstream records the scores properly, at
 which point the names are just noise.
 
-### Where to take this next
+### Capture-quality roadmap
 
-Roughly in order of value per unit of work:
+The organising idea: detection is the weakest link in the chain. **Prevent**
+bad captures at the shutter, **repair** what is fixable on-device, **validate**
+content where a document carries its own ground truth, and only then fall back
+to **detecting** what is left. Everything below is progressive enhancement —
+each stage feature-detects and degrades to today's behaviour, so coverage
+gaps cost nothing.
 
-1. **Record `blur_scoreN` upstream, then re-fit the threshold.** Everything
-   else is guesswork until the real distribution exists. The 3-point margin
-   between pass and fail on synthetic data is too tight to trust.
-2. **A separate exposure check.** Mean luma plus dynamic range over the inked
-   tiles — both already computed inside `blurScore`, so this is cheap. Keep it
-   as its own signal with its own message ("too dark to read") rather than
-   folding it into the blur score: conflating two defects makes both harder to
-   tune, and the useful advice differs ("move to better light" vs "hold still").
-3. **A uniformity signal for skew.** The spread between a high and a low
-   percentile separates an angled page from an evenly sharp one better than any
-   single number does — measured spread was 42 points for the angled page
-   against ≤21 for every other case. Worth adding if angled captures survive
-   the p10 change in practice.
-4. **Score before the user commits.** Today the verdict lands on Accept. Live
-   scoring of the camera preview would let the shutter itself say "hold
-   steady", which is a far better experience than rejecting a photo after the
-   fact. Costs a rAF loop over a downscaled frame.
-5. **Deskew and auto-levels instead of refusing.** The genuinely lazy end
-   state: fix what can be fixed on-device rather than asking for a retake.
-   Perspective correction and contrast normalisation are well-trodden, and both
-   would raise the scores this metric reports rather than merely reporting
-   them.
-6. **Content checks** — is the whole document in frame, is it the right way up,
-   is it even the document that was asked for. Different problem, likely wants
-   a model rather than a kernel, and only worth it if review says framing
-   rejections outnumber blur rejections.
+Ranked by value per unit of cost:
+
+1. **Capture at full sensor resolution — `ImageCapture.takePhoto()`.** ✅ Built.
+   The camera previously uploaded a 1920×1080 *screenshot of the video stream*:
+   compressed video frames, grabbed without waiting for autofocus. Much of the
+   blur this feature detects was manufactured right there. `takePhoto()` uses
+   the full sensor with real autofocus convergence; a torch button attacks the
+   poor-lighting failure mode at the source. Coverage: Chrome/Android — the
+   bulk of an India-heavy funnel; everyone else keeps the screenshot path.
+   Zero dependencies. See `src/lib/connect/camera.ts`.
+2. **Live sharpness in the viewfinder.** ✅ Built. `blurScore` costs single-digit
+   milliseconds on a small frame, so the preview scores itself a few times a
+   second and the UI says "Hold steady" *before* the shot instead of rejecting
+   it after. Zero dependencies, works everywhere the camera does.
+3. **Record `blur_scoreN` upstream, then re-fit the threshold.** The gating
+   step for everything tunable. The 3-point synthetic margin between pass and
+   fail is too tight to trust; only the real distribution can set the line.
+4. **Exposure check + auto-levels repair.** Blur variance will never catch dim
+   captures (measured: a near-invisible 5%-contrast page scores 39). Mean luma
+   and dynamic range over inked tiles are already computed inside `blurScore`
+   — surfacing an exposure verdict is ~50 lines. Then repair rather than
+   refuse: histogram-stretch on canvas before upload. Keep it a separate
+   signal with its own message — "move to better light" is different advice
+   from "hold still".
+5. **QR validation for Aadhaar and PAN — `BarcodeDetector`.** Both carry QR
+   codes (PAN since 2017; Aadhaar's secure QR). A decoded QR proves the capture
+   is legible, is the right document type, and carries demographics that can be
+   cross-checked against the applicant — catching wrong-document uploads no
+   blur metric can see. Native on Chrome/Android, zero payload; `zxing-wasm`
+   (~300 KB) as optional fallback. Readable QR → skip blur gating (kills false
+   positives); unreadable QR on a known-QR doc at good resolution → soft
+   negative.
+6. **Tiered OCR as the legibility tiebreaker — Tesseract.js.** OCR confidence
+   is the ground-truth answer to "can review read this", but only worth its
+   ~5 MB and 2–8 s in the ambiguous band: score ≥ 60 passes silently, ≤ 25
+   warns immediately, and only the grey middle gets OCR'd in a worker after
+   attach. The sleeper win is field validation — PAN format `ABCDE1234F`,
+   12-digit Aadhaar, name match against the application — a class of review
+   rejection entirely outside "blurry". Native routes are not ready: 
+   `TextDetector` never shipped unflagged; Chrome's built-in model is
+   desktop-only with a download gate — wrong shape for a mobile-heavy funnel.
+7. **Document-quad detection + perspective correction.** The angle failure
+   mode solved rather than scored: a "fill the frame" overlay at capture, a
+   perspective warp after. The good implementations ride on OpenCV.js
+   (~8 MB wasm, lazy-loaded only when the camera opens) — defensible once
+   telemetry shows how much angle-failure survives items 1–6, not before.
+8. **Content checks** — whole document in frame, right way up, the document
+   that was asked for. Wants a model, not a kernel; only worth it if review
+   data says framing rejections outnumber blur rejections.
+
+Rejected for now: document-quality CNNs via ONNX/transformers.js (the tiered
+blur + OCR pipeline buys most of the accuracy for a fraction of the 10–20 MB),
+WebGPU compute (the metric already runs in milliseconds), and worklets (paint/
+audio-scoped; the PDF worker already covers threading).
+
+The architecture all of this slots into: one cheapest-first pipeline —
+blur + exposure always, QR when the doc type carries one, OCR only in the grey
+band — each stage feature-detected, each emitting its own verdict and its own
+telemetry field, so each threshold is independently tunable. The blur-vs-
+lighting lesson generalises: never fold two defects into one number.
 
 ## UI
 
