@@ -151,7 +151,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message), err.status as 400);
+			return c.json(
+				errorBody(err.code, err.message, err.details),
+				err.status as 400,
+			);
 		}
 		if (err instanceof StoreUnavailableError) {
 			return c.json(

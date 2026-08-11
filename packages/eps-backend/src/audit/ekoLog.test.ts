@@ -61,6 +61,31 @@ describe("createEkoLogger", () => {
 		expect(rec.response.data).toBeUndefined();
 	});
 
+	it("basic keeps the field-level diagnostics but still drops data", () => {
+		const { sink, lines } = capture();
+		createEkoLogger({ level: "basic", sink }).log({
+			fields: FIELDS,
+			status: 200,
+			response: {
+				response_status_id: 1,
+				response_type_id: -1,
+				status: 97,
+				message: "Please provide the value of the field",
+				invalid_params: { agreement_status: "Please provide the value" },
+				data: { user_code: "43060001" },
+			},
+			durMs: 5,
+		});
+		const rec = JSON.parse(lines[0]);
+		// Why it failed, not just that it did — these name fields, not values.
+		expect(rec.response.invalid_params).toEqual({
+			agreement_status: "Please provide the value",
+		});
+		expect(rec.response.status).toBe(97);
+		expect(rec.response.data).toBeUndefined();
+		expect(lines[0]).not.toContain("43060001");
+	});
+
 	it("basic sizes an unparseable body without quoting it", () => {
 		const { sink, lines } = capture();
 		createEkoLogger({ level: "basic", sink }).log({

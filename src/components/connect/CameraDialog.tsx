@@ -327,7 +327,10 @@ export function CameraDialog({
 					setStatus("error");
 					setErrorMessage(String(error));
 				}}
-				className="max-h-[calc(100vh-80px)] max-w-full rounded-md"
+				// dvh, not vh: on a mobile browser 100vh includes the space under the
+				// URL bar, which would push the control strip out of reach. 5rem is
+				// that strip's height.
+				className="max-h-[calc(100dvh-5rem)] max-w-full rounded-md"
 			/>
 			{status === "ready" && capturing ? (
 				// The focus hunt can take a few seconds and looks like nothing is

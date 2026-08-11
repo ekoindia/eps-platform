@@ -48,12 +48,16 @@ function harness(
 	} = {},
 ) {
 	const app = new Hono<AppEnv>();
-	// Mirrors app.ts's onError: AppError maps to its own status/code/message;
-	// anything else is an unhandled 500. errorBody takes (code, message), not
-	// the error itself — the status always travels as c.json's 2nd argument.
+	// Mirrors app.ts's onError: AppError maps to its own status/code/message
+	// (plus any upstream `details`); anything else is an unhandled 500.
+	// errorBody takes (code, message, details), not the error itself — the
+	// status always travels as c.json's 2nd argument.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message), err.status as never);
+			return c.json(
+				errorBody(err.code, err.message, err.details),
+				err.status as never,
+			);
 		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
 	});
@@ -217,6 +221,38 @@ describe("signup endpoints", () => {
 		};
 		expect(errBody.error.code).toBe("STEP_FAILED");
 		expect(errBody.error.message).toBe("PAN already in use");
+	});
+
+	it("forwards a step error's upstream details to the client", async () => {
+		const details = { invalid_params: { agreement_status: "Required" } };
+		const app = harness("signup", {
+			submitPan: vi
+				.fn()
+				.mockRejectedValue(new SignupStepError("Nope", 97, details)),
+		});
+		const res = await app.request("/signup/pan", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pan: "ABCDE1234F" }),
+		});
+		expect(res.status).toBe(400);
+		expect(await res.json()).toEqual({
+			error: { code: "STEP_FAILED", message: "Nope", details },
+		});
+	});
+
+	it("omits details entirely when the step error carries none", async () => {
+		const app = harness("signup", {
+			submitPan: vi.fn().mockRejectedValue(new SignupStepError("Nope", 97)),
+		});
+		const res = await app.request("/signup/pan", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pan: "ABCDE1234F" }),
+		});
+		expect(await res.json()).toEqual({
+			error: { code: "STEP_FAILED", message: "Nope" },
+		});
 	});
 });
 

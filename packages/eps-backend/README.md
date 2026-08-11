@@ -420,7 +420,7 @@ by `EKO_LOG_LEVEL` so it can differ between dev and prod:
 | level               | what it logs                                                                                                                                                                                                                                            |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `off`               | nothing                                                                                                                                                                                                                                                 |
-| `basic` _(default)_ | `interaction_type_id`, **masked** mobile, `org_id`, `http_status`, `durMs`, and a response summary (`response_status_id` / `response_type_id` / `response_code` / `status` / `message`). No OTP, no merchant credentials, no full body — **prod-safe.** |
+| `basic` _(default)_ | `interaction_type_id`, **masked** mobile, `org_id`, `http_status`, `durMs`, and a response summary (`response_status_id` / `response_type_id` / `response_code` / `status` / `message`, plus the field-level diagnostics `invalid_params` / `dependent_params` / `list_items`). No OTP, no merchant credentials, no `data`, no full body — **prod-safe.** |
 | `full`              | the complete request form-fields (**including the OTP**) and the full response body. **Dev debugging only.**                                                                                                                                            |
 
 The `developer_key` / `secret-key` auth headers are never part of the logged
@@ -442,6 +442,14 @@ answers HTTP 200 with a non-zero `response_status_id` for business-level
 failures, which the BFF deliberately collapses into a uniform `502
 OTP_SEND_FAILED` (no per-mobile detail, no enumeration). The upstream `message`
 in this log is therefore the **only** place the real reason appears.
+
+`message` alone is often a template — a missing field answers `"Please provide
+the value of the field"` and names it only under `invalid_params`. That is why
+`basic` keeps `invalid_params` / `dependent_params` / `list_items`: they carry
+field **names** and framework message templates, never user values. Signup step
+failures forward the same object to the browser as `error.details` on the 400,
+so a field-level rejection is diagnosable from either end. Everything else —
+`data` above all — stays behind `full`.
 
 **Reading the logs in dev.** The raw JSON lines are hard to scan. Run
 `npm run dev:pretty` instead of `npm run dev` — it pipes stdout through

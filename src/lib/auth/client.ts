@@ -192,12 +192,24 @@ export interface ConnectTokenView {
 export class ApiError extends Error {
 	public code: string;
 	public httpStatus: number;
+	/**
+	 * Upstream diagnostics qualifying `message`, when the backend forwarded any:
+	 * `invalid_params` (field name → why it was rejected), `dependent_params`,
+	 * `list_items`. Absent on errors that carry no field-level detail.
+	 */
+	public details?: Record<string, unknown>;
 
-	constructor(code: string, message: string, httpStatus: number) {
+	constructor(
+		code: string,
+		message: string,
+		httpStatus: number,
+		details?: Record<string, unknown>,
+	) {
 		super(message);
 		this.name = "ApiError";
 		this.code = code;
 		this.httpStatus = httpStatus;
+		this.details = details;
 	}
 }
 
@@ -219,11 +231,18 @@ async function parse(res: Response): Promise<unknown> {
 		}
 	}
 	if (!res.ok) {
-		const body = json as { error?: { code?: string; message?: string } };
+		const body = json as {
+			error?: {
+				code?: string;
+				message?: string;
+				details?: Record<string, unknown>;
+			};
+		};
 		throw new ApiError(
 			body.error?.code ?? "HTTP_ERROR",
 			body.error?.message ?? `HTTP ${res.status}`,
 			res.status,
+			body.error?.details,
 		);
 	}
 	return json;

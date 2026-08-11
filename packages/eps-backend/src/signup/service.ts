@@ -1,4 +1,8 @@
-import type { BusinessDetails, EkoClient } from "../clients/eko";
+import type {
+	BusinessDetails,
+	EkoClient,
+	EkoErrorDetails,
+} from "../clients/eko";
 import { identityOf } from "../clients/eko";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
@@ -73,10 +77,21 @@ export type { BusinessDetails } from "../clients/eko";
 /** A step that failed upstream, carrying the upstream's own message for the user. */
 export class SignupStepError extends Error {
 	readonly responseTypeId: number;
+	/**
+	 * Upstream's diagnostic sub-objects (`invalid_params`, …), forwarded to the
+	 * client. Without them a field-validation failure reaches the user as a bare
+	 * "Please provide the value of the field" naming no field.
+	 */
+	readonly details?: EkoErrorDetails;
 
-	constructor(message: string, responseTypeId: number) {
+	constructor(
+		message: string,
+		responseTypeId: number,
+		details?: EkoErrorDetails,
+	) {
 		super(message);
 		this.responseTypeId = responseTypeId;
+		this.details = details;
 		this.name = "SignupStepError";
 	}
 }
@@ -159,7 +174,11 @@ export function createSignupService(deps: {
 		async createProfile(mobile, xRealIp) {
 			const result = await eko.createPartialAccount({ mobile, xRealIp });
 			if (!result.ok) {
-				throw new SignupStepError(result.message, result.responseTypeId);
+				throw new SignupStepError(
+					result.message,
+					result.responseTypeId,
+					result.details,
+				);
 			}
 			return refresh(mobile, xRealIp);
 		},
@@ -172,7 +191,11 @@ export function createSignupService(deps: {
 				xRealIp,
 			});
 			if (!result.ok) {
-				throw new SignupStepError(result.message, result.responseTypeId);
+				throw new SignupStepError(
+					result.message,
+					result.responseTypeId,
+					result.details,
+				);
 			}
 			return refresh(mobile, xRealIp);
 		},
@@ -185,7 +208,11 @@ export function createSignupService(deps: {
 				xRealIp,
 			});
 			if (!result.ok) {
-				throw new SignupStepError(result.message, result.responseTypeId);
+				throw new SignupStepError(
+					result.message,
+					result.responseTypeId,
+					result.details,
+				);
 			}
 			return refresh(mobile, xRealIp);
 		},
@@ -228,7 +255,11 @@ export function createSignupService(deps: {
 				xRealIp,
 			});
 			if (!result.ok) {
-				throw new SignupStepError(result.message, result.responseTypeId);
+				throw new SignupStepError(
+					result.message,
+					result.responseTypeId,
+					result.details,
+				);
 			}
 			return refresh(mobile, xRealIp);
 		},
@@ -241,7 +272,11 @@ export function createSignupService(deps: {
 				xRealIp,
 			});
 			if (!result.ok) {
-				throw new SignupStepError(result.message, result.responseTypeId);
+				throw new SignupStepError(
+					result.message,
+					result.responseTypeId,
+					result.details,
+				);
 			}
 			return {
 				shortUrl: result.shortUrl,
@@ -259,7 +294,11 @@ export function createSignupService(deps: {
 				xRealIp,
 			});
 			if (!result.ok) {
-				throw new SignupStepError(result.message, result.responseTypeId);
+				throw new SignupStepError(
+					result.message,
+					result.responseTypeId,
+					result.details,
+				);
 			}
 			return refresh(mobile, xRealIp);
 		},

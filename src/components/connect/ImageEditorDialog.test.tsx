@@ -49,6 +49,25 @@ async function flush() {
 	await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+describe("ImageEditorDialog layout", () => {
+	// react-image-crop's stylesheet forces
+	// `.ReactCrop__child-wrapper > img { max-height: inherit }`, so a cap on the
+	// img is dead and the image grows until the toolbar is off-screen. The cap has
+	// to sit on the ReactCrop root, which the img inherits from.
+	// ponytail: jsdom does no layout, so this guards the cap's *location*, not the
+	// resulting geometry. Measuring the toolbar's box needs a real browser.
+	it("caps the height on the ReactCrop root, not on the image", () => {
+		renderEditor();
+
+		const root = document.querySelector(".ReactCrop");
+		expect(root?.className).toMatch(/max-h-\[calc\(100dvh-3\.75rem\)\]/);
+		expect(root?.className).toContain("overflow-hidden");
+
+		const image = screen.getByAltText(/capture being edited/i);
+		expect(image.className).not.toMatch(/max-h-/);
+	});
+});
+
 describe("ImageEditorDialog blur check", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
