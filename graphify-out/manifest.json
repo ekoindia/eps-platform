@@ -475,8 +475,8 @@
     "semantic_hash": "4a65b13dc641205b63098ac1c512129c"
   },
   "packages/eps-context-mcp/data/eps.json": {
-    "mtime": 1786363738.6044557,
-    "ast_hash": "d3f035ba00ec43702fca6d31e562fa2b",
+    "mtime": 1786453831.2745702,
+    "ast_hash": "9e68b6017e9126d5a4c2bedbaae353fe",
     "semantic_hash": ""
   },
   "packages/eps-context-mcp/package.json": {
@@ -590,8 +590,8 @@
     "semantic_hash": "831273f94632386a00bdf554f0110bcc"
   },
   "packages/eps-mock-server/data/fixtures.json": {
-    "mtime": 1786363738.6849363,
-    "ast_hash": "8bedaae590aeb8dde9947e5532df9332",
+    "mtime": 1786453831.3534677,
+    "ast_hash": "f292f777e4227564490b863fd8ba38e9",
     "semantic_hash": ""
   },
   "packages/eps-mock-server/package.json": {
@@ -640,8 +640,8 @@
     "semantic_hash": "fb254e9913c634ddfe82a8e2857c68a7"
   },
   "packages/eps-transact-mcp/data/eps.json": {
-    "mtime": 1786363738.7151341,
-    "ast_hash": "d3f035ba00ec43702fca6d31e562fa2b",
+    "mtime": 1786453831.3839607,
+    "ast_hash": "9e68b6017e9126d5a4c2bedbaae353fe",
     "semantic_hash": ""
   },
   "packages/eps-transact-mcp/package.json": {
@@ -765,8 +765,8 @@
     "semantic_hash": "2d1e6d8186e22c9681e2051a062760bb"
   },
   "packages/sdk-js/data/sdk-surface.json": {
-    "mtime": 1786363738.631215,
-    "ast_hash": "e90df8ca4c1788cc622da1f9e77b5980",
+    "mtime": 1786453831.301415,
+    "ast_hash": "489d559d37fa8d195f9bc0c24d08aedf",
     "semantic_hash": ""
   },
   "packages/sdk-js/package.json": {
@@ -815,8 +815,8 @@
     "semantic_hash": "ff71a5fd5a1d1afa820a70dbd321d2e7"
   },
   "packages/sdk-php/data/sdk-surface.json": {
-    "mtime": 1786363738.6578362,
-    "ast_hash": "e90df8ca4c1788cc622da1f9e77b5980",
+    "mtime": 1786453831.326823,
+    "ast_hash": "489d559d37fa8d195f9bc0c24d08aedf",
     "semantic_hash": ""
   },
   "packages/sdk-php/scripts/bake-surface.mjs": {
@@ -2205,8 +2205,8 @@
     "semantic_hash": ""
   },
   "src/lib/data/api-specs.ts": {
-    "mtime": 1786362965.2610083,
-    "ast_hash": "48dacc0d61a0010d3e0921ca1c552201",
+    "mtime": 1786453756.4094796,
+    "ast_hash": "f4ae72ee6503888e6b86e472374eba3c",
     "semantic_hash": ""
   },
   "src/lib/data/bbps-operators.ts": {
@@ -2990,8 +2990,8 @@
     "semantic_hash": "6d9bcb372eec09fba06a139fde760861"
   },
   "docs/api-coverage-roadmap.md": {
-    "mtime": 1785915275.0790372,
-    "ast_hash": "3c445cf61a012a888930f74803f38a4d",
+    "mtime": 1786453766.4626129,
+    "ast_hash": "a6c99b39e320274d8e217527e3d9cc89",
     "semantic_hash": ""
   },
   "docs/api-specs.md": {

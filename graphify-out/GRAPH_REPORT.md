@@ -1,7 +1,7 @@
 # Graph Report - eko-eps-website  (2026-08-11)
 
 ## Corpus Check
-- 711 files · ~880,560 words
+- 711 files · ~882,091 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `11fe3f8c`
+- Built from commit: `ebcea812`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -249,8 +249,8 @@
   docs/superpowers/specs/2026-07-15-user-onboarding-design.md → packages/eps-backend/README.md
 
 ## Import Cycles
-- 3-file cycle: `src/components/ProductPageLayout.tsx -> src/lib/data/solutions.ts -> src/lib/data/api-product-pages.ts -> src/components/ProductPageLayout.tsx`
 - 3-file cycle: `src/components/FileUpload.tsx -> src/components/connect/DialogHost.tsx -> src/components/connect/RaiseIssueDialog.tsx -> src/components/FileUpload.tsx`
+- 3-file cycle: `src/components/ProductPageLayout.tsx -> src/lib/data/solutions.ts -> src/lib/data/api-product-pages.ts -> src/components/ProductPageLayout.tsx`
 - 4-file cycle: `src/components/ProductPageLayout.tsx -> src/components/SolutionCard.tsx -> src/lib/data/solutions.ts -> src/lib/data/api-product-pages.ts -> src/components/ProductPageLayout.tsx`
 
 ## Hyperedges (group relationships)
@@ -1008,7 +1008,7 @@ Nodes (5): ALERT_TYPES, MdNode, remarkCallout(), toCallout(), walk()
   docs/console-roadmap.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **1101 isolated node(s):** `KycUploadDialogProps`, `RESOLUTION`, `CameraDevice`, `FileViewDialog`, `ImageEditorDialog` (+1096 more)
+- **1101 isolated node(s):** `ALL_API_SPECS`, `KycUploadDialogProps`, `RESOLUTION`, `CameraDevice`, `FileViewDialog` (+1096 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **25 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -1020,12 +1020,12 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `AI-native vs AI-friendly distinction` and `API keys management (blocked on issuance contract)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **Why does `doHydrate()` connect `ErrorBoundary.tsx` to `app.ts`?**
-  _High betweenness centrality (0.138) - this node is a cross-community bridge._
+  _High betweenness centrality (0.137) - this node is a cross-community bridge._
 - **Why does `app()` connect `app.ts` to `ErrorBoundary.tsx`?**
-  _High betweenness centrality (0.138) - this node is a cross-community bridge._
+  _High betweenness centrality (0.137) - this node is a cross-community bridge._
 - **Why does `requestId()` connect `app.ts` to `app.test.ts`, `buildApp.ts`?**
-  _High betweenness centrality (0.120) - this node is a cross-community bridge._
-- **What connects `KycUploadDialogProps`, `RESOLUTION`, `CameraDevice` to the rest of the system?**
+  _High betweenness centrality (0.121) - this node is a cross-community bridge._
+- **What connects `ALL_API_SPECS`, `KycUploadDialogProps`, `RESOLUTION` to the rest of the system?**
   _1101 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `build-agent-bundle.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.05928614640048397 - nodes in this community are weakly interconnected._
