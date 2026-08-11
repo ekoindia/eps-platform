@@ -240,6 +240,8 @@ describe("EpsClient.call", () => {
 			user_code: "20810200",
 			modelname: "Morpho 1300E3",
 			devicenumber: "SN1234567890",
+			account: "38759149196",
+			ifsc: "SBIN0007515",
 			shop_type: 4215,
 			office_address: address,
 			address_as_per_proof: address,
@@ -258,14 +260,63 @@ describe("EpsClient.call", () => {
 		expect(headers["secret-key"]).toBe(GOLDEN); // still signed
 		const body = init!.body as FormData;
 		expect(body).toBeInstanceOf(FormData);
-		expect(body.get("modelname")).toBe("Morpho 1300E3");
-		// Object fields become JSON-string form fields.
-		expect(body.get("office_address")).toBe(JSON.stringify(address));
+		// Every non-file value rides in ONE `form-data` JSON field, never a form
+		// field of its own; objects stay nested rather than being stringified.
+		expect(body.get("modelname")).toBeNull();
+		expect(body.get("office_address")).toBeNull();
+		const payload = JSON.parse(String(body.get("form-data")));
+		expect(payload).toMatchObject({
+			modelname: "Morpho 1300E3",
+			shop_type: 4215,
+			office_address: address,
+			latlong: "28.6139,77.2090",
+		});
+		expect(payload).not.toHaveProperty("pan_card");
+		expect(payload).not.toHaveProperty("user_code"); // filled the path
 		// Blob without a name falls back to the param name; a path string keeps
 		// its basename.
 		expect((body.get("pan_card") as File).name).toBe("pan_card");
 		expect((body.get("aadhar_front") as File).name).toBe("client.test.ts");
 		expect(body.get("aadhar_back") as File).toBeInstanceOf(Blob);
+	});
+
+	it("omits a null param from the envelope but keeps nulls nested inside a value", async () => {
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		const client = new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as unknown as typeof fetch,
+			now: () => 1700000000000,
+		});
+		await client.call("activate-aeps-fingpay", {
+			initiator_id: "9962981729",
+			user_code: "20810200",
+			modelname: "Morpho 1300E3",
+			devicenumber: "SN1234567890",
+			account: "38759149196",
+			ifsc: "SBIN0007515",
+			shop_type: 4215,
+			// Not a declared param, so it exercises the top-level-null rule without
+			// inventing an optional field on a spec that has none.
+			extra_note: null,
+			office_address: { line: "Shop 5", state: null },
+			address_as_per_proof: {},
+			pan_card: new Blob(["pan"]),
+			aadhar: "123456789012",
+			aadhar_front: new Blob(["a"]),
+			aadhar_back: new Blob(["b"]),
+			latlong: "28.6139,77.2090",
+		});
+		const body = fetchMock.mock.calls[0][1]!.body as FormData;
+		const payload = JSON.parse(String(body.get("form-data")));
+		// A null param has no form encoding, so it is dropped entirely...
+		expect(payload).not.toHaveProperty("extra_note");
+		// ...but a null INSIDE an object value is real data JSON preserves.
+		expect(payload.office_address).toEqual({ line: "Shop 5", state: null });
 	});
 
 	it("rejects a non-file value for a file param and sends nothing", async () => {
@@ -286,6 +337,8 @@ describe("EpsClient.call", () => {
 				user_code: "20810200",
 				modelname: "Morpho 1300E3",
 				devicenumber: "SN1234567890",
+				account: "38759149196",
+				ifsc: "SBIN0007515",
 				shop_type: 4215,
 				office_address: {},
 				address_as_per_proof: {},

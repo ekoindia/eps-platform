@@ -57,15 +57,17 @@ file-upload endpoints), and returns the decoded JSON response as an associative 
 
 ### File uploads
 
-Endpoints with file params (e.g. `aeps-activate-fingpay`) are sent as `multipart/form-data`
+Endpoints with file params (e.g. `activate-aeps-fingpay`) are sent as `multipart/form-data`
 automatically. Pass each file param as a path to an existing file (wrapped in a `CURLFile`
 for you) or a `CURLFile` directly:
 
 ```php
-$result = $client->call('aeps-activate-fingpay', [
+$result = $client->call('activate-aeps-fingpay', [
     'user_code' => '20810200',
     'modelname' => 'Morpho 1300E3',
     'devicenumber' => 'SN1234567890',
+    'account' => '38759149196',
+    'ifsc' => 'SBIN0007515',
     'office_address' => ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'],
     'address_as_per_proof' => ['line' => 'Shop 5', 'city' => 'Patna', 'state' => 'Bihar', 'pincode' => '800001'],
     'pan_card' => '/path/to/pan_card.jpg',                  // path string…
@@ -74,8 +76,13 @@ $result = $client->call('aeps-activate-fingpay', [
 ]);
 ```
 
-Array params (like `office_address`) are serialized as JSON form fields; cURL sets the
-`content-type` header (and multipart boundary) itself.
+You still pass every parameter flat, as above. On the wire the SDK packs them the way the
+API expects: **one form field named `form-data` holding all the non-file params as a single
+JSON object** (arrays like `office_address` stay nested), plus one part per upload. A `null`
+param is dropped — a form field has no null encoding — while a `null` inside an array value
+is preserved. A value that cannot be JSON-encoded raises a `\JsonException` rather than
+silently blanking the payload. cURL sets the `content-type` header (and multipart boundary)
+itself.
 
 A static `EpsClient::signSecretKey($accessKey, $timestamp)` helper is also available if you
 need to sign requests yourself.

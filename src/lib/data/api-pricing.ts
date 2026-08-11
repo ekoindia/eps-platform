@@ -8,7 +8,7 @@
  * All rates are in INR per transaction, EXCLUSIVE of GST @ 18%.
  *
  * A single product (e.g. PAN Verification, id "pan" in api-products.ts) can
- * map to multiple priced APIs (PAN Lite, Bulk PAN, PAN Comprehensive, …) via
+ * map to multiple priced APIs (PAN Lite, Bulk PAN, PAN Advanced, …) via
  * the optional `productId` field. Priced APIs without a product page (e.g.
  * CKYC Download) simply omit `productId`.
  */
@@ -206,7 +206,7 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "pan-fetch",
 		name: "Fetch PAN Details",
-		shortName: "Fetch",
+		shortName: "Fetch PAN",
 		productId: "pan",
 		group: "PAN",
 		tiers: [{ upTo: null, rate: 1.3 }],
@@ -214,16 +214,16 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "pan-lite",
 		name: "PAN Verification (Lite)",
-		shortName: "Lite",
+		shortName: "PAN Lite",
 		productId: "pan",
 		group: "PAN",
 		tiers: [{ upTo: null, rate: 1.2 }],
 		popular: true,
 	},
 	{
-		id: "pan-comprehensive",
-		name: "PAN Comprehensive",
-		shortName: "Comprehensive",
+		id: "pan-advanced",
+		name: "PAN Verification (Advanced)",
+		shortName: "PAN Advanced",
 		productId: "pan",
 		group: "PAN",
 		tiers: [{ upTo: null, rate: 2.04 }],
@@ -231,7 +231,7 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "pan-bulk",
 		name: "Bulk PAN Verification",
-		shortName: "Bulk",
+		shortName: "Bulk PAN",
 		productId: "pan",
 		group: "PAN",
 		tiers: [{ upTo: null, rate: 1.2 }],
@@ -240,7 +240,6 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "pan-bulk-status",
 		name: "Bulk PAN Status",
-		shortName: "Bulk Status",
 		productId: "pan",
 		group: "PAN",
 		tiers: [{ upTo: null, rate: 1.2 }],
@@ -277,7 +276,7 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "bank-bulk",
 		name: "Bulk Bank Account Verification",
-		shortName: "Bulk",
+		shortName: "Bulk Account Verification",
 		productId: "bank",
 		group: "Bank Account",
 		tiers: [{ upTo: null, rate: 2.04 }],
@@ -297,7 +296,6 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "upi-mobile-to-vpa",
 		name: "Mobile to VPA",
-		shortName: "Mobile to VPA",
 		productId: "upi",
 		group: "UPI",
 		tiers: [{ upTo: null, rate: 1.44 }],
@@ -308,7 +306,7 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "gst-basic",
 		name: "GST Verification (Basic)",
-		shortName: "Basic",
+		shortName: "GST Basic",
 		productId: "gst",
 		group: "GST & Business",
 		tiers: [{ upTo: null, rate: 0.72 }],
@@ -316,15 +314,14 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "gst-fetch-by-pan",
 		name: "Fetch GST with PAN",
-		shortName: "Fetch by PAN",
+		shortName: "GST by PAN",
 		productId: "gst",
 		group: "GST & Business",
 		tiers: [{ upTo: null, rate: 2.04 }],
 	},
 	{
 		id: "gst-advance",
-		name: "Advance GST",
-		shortName: "Advance",
+		name: "Advanced GST",
 		productId: "gst",
 		group: "GST & Business",
 		tiers: [{ upTo: null, rate: 4.2 }],
@@ -425,7 +422,6 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "epfo-passbook",
 		name: "EPFO Passbook",
-		shortName: "EPFO Passbook",
 		productId: "employee",
 		group: "Employment",
 		tiers: [{ upTo: null, rate: 7.2 }],
@@ -434,7 +430,6 @@ export const PRICED_APIS: PricedApi[] = [
 	{
 		id: "employee-detail",
 		name: "Employee Detail",
-		shortName: "Employee Detail",
 		productId: "employee",
 		group: "Employment",
 		tiers: [{ upTo: null, rate: 6.0 }],

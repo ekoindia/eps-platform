@@ -78,6 +78,19 @@ Supporting primitives (same file, lines ~19–53):
   (path string, or Blob/File in JS / CURLFile in PHP) trigger a multipart body with the
   content-type header left to the HTTP client.
 
+**The multipart envelope.** A multipart request is *not* a form field per parameter.
+Every non-file param travels together as one JSON object in a single form field named
+`form-data` (`MULTIPART_JSON_FIELD` in `api-specs-common.ts`), and each upload is its own
+part. Specs still declare parameters flat — `buildMultipartPayload(spec)` /
+`splitMultipartBody(params)` are the one place that shape is derived, and every generator
+(curl/JS/Python/PHP samples, OpenAPI, Postman) plus both SDK runtimes wraps at wire time.
+Callers, including SDK users, keep passing flat params.
+
+Two lookalikes in `packages/eps-backend` are deliberately *not* this convention: interaction
+523's `form-data` part (`clients/eko.ts`) and connect-api's `formdata` part
+(`clients/connect.ts`) both carry URL-encoded strings. See
+[kyc-documents.md](../features/kyc-documents.md).
+
 **Environments** (`api-auth.ts`, `API_ENVIRONMENTS`):
 
 ```typescript

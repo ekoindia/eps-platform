@@ -390,6 +390,13 @@ question is settled: it is genuinely not sent. **This multipart contract is
 unverified against the real upstream — a UAT gate**, same caveat as the
 `latlong` constant below.
 
+Eko's *documented* file-upload APIs now put a **JSON object** in that same
+`form-data` part (`MULTIPART_JSON_FIELD` in `src/lib/data/api-specs-common.ts`,
+which the published SDKs and `/docs` samples follow). 523 still sends the
+URL-encoded string above and is deliberately left alone: it carries no files, and
+flipping it unverified would break PAN verification for every new signup. Settle
+it with the same UAT question.
+
 ## Pintwin (170 → 10005 → 5)
 
 Pintwin is **digit substitution, not encryption**. The 10005 response hands

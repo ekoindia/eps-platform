@@ -35,13 +35,16 @@ import type {
 	ResponseField,
 } from "@/lib/data/api-specs-common";
 import {
+	buildMultipartPayload,
 	buildSampleRequest,
 	categoryForSpec,
-	resolveContentType,
+	isMultipart,
+	MULTIPART_JSON_FIELD,
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
 	responseTypeFor,
+	splitMultipartBody,
 } from "@/lib/data/api-specs-common";
 import {
 	CATEGORY_ORDER,
@@ -169,6 +172,9 @@ const buildOperationParams = (
 
 	if (!hasBody) return { parameters };
 
+	if (isMultipart(spec))
+		return { parameters, requestBody: multipartBody(spec) };
+
 	const schema: Json = { type: "object", properties: bodyProps };
 	if (bodyRequired.length) schema.required = bodyRequired;
 
@@ -177,10 +183,51 @@ const buildOperationParams = (
 		requestBody: {
 			required: true,
 			content: {
-				// File-upload endpoints are multipart; file fields carry format:binary.
-				[resolveContentType(spec)]: {
-					schema,
-					example: buildSampleRequest(spec),
+				"application/json": { schema, example: buildSampleRequest(spec) },
+			},
+		},
+	};
+};
+
+/**
+ * The multipart request body: ONE `form-data` part holding every non-file field
+ * as JSON, plus a binary part per upload.
+ *
+ * `form-data` is modelled as a plain string, not an object, so the try-it client
+ * sends it the way Eko documents it — a text part whose content happens to be
+ * JSON. An object property would make OpenAPI label that part
+ * `application/json`, which is a different request on the wire. The cost is that
+ * the per-field schemas live only in the endpoint's own body-param table.
+ */
+const multipartBody = (spec: ApiSpec): Json => {
+	const { files, fields } = splitMultipartBody(resolveRequestParams(spec));
+	const payload = buildMultipartPayload(spec);
+	const properties: Json = {
+		[MULTIPART_JSON_FIELD]: {
+			type: "string",
+			description: `JSON object carrying every non-file field: ${fields
+				.map((f) => `\`${f.name}\``)
+				.join(", ")}.`,
+			example: JSON.stringify(payload),
+		},
+	};
+	for (const file of files) properties[file.name] = paramSchema(file);
+
+	return {
+		required: true,
+		content: {
+			"multipart/form-data": {
+				schema: {
+					type: "object",
+					properties,
+					required: [
+						MULTIPART_JSON_FIELD,
+						...files.filter((f) => f.required).map((f) => f.name),
+					],
+				},
+				example: {
+					[MULTIPART_JSON_FIELD]: JSON.stringify(payload),
+					...Object.fromEntries(files.map((f) => [f.name, f.example])),
 				},
 			},
 		},

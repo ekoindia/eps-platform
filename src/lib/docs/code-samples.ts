@@ -10,12 +10,15 @@
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
+	buildMultipartPayload,
 	buildSampleRequest,
 	isMultipart,
+	MULTIPART_JSON_FIELD,
 	pathTokens,
 	resolveHeaders,
 	resolveRequestParams,
 	type ResolvedApiParam,
+	splitMultipartBody,
 } from "@/lib/data/api-specs-common";
 
 export type SampleLang = "curl" | "javascript" | "python" | "php";
@@ -39,27 +42,22 @@ const HEADER_PLACEHOLDER: Record<string, string> = {
 const headerValue = (h: ApiParam): string =>
 	HEADER_PLACEHOLDER[h.name] ?? (h.example != null ? String(h.example) : "");
 
-/** Body params split for multipart rendering: file uploads vs regular fields. */
+/** Body params split for multipart rendering: file uploads vs the fields that
+ * ride inside the `form-data` JSON envelope. */
 const bodyParts = (
 	spec: ApiSpec,
-): { files: ResolvedApiParam[]; fields: ResolvedApiParam[] } => {
-	const body = resolveRequestParams(spec).filter((p) => p.in === "body");
-	return {
-		files: body.filter((p) => p.type === "file"),
-		fields: body.filter((p) => p.type !== "file"),
-	};
-};
-
-/** Render a multipart form-field value: objects as a JSON string, else text. */
-const formValue = (p: ApiParam): string =>
-	p.example == null
-		? `<${p.name}>`
-		: typeof p.example === "object"
-			? JSON.stringify(p.example)
-			: String(p.example);
+): { files: ResolvedApiParam[]; fields: ResolvedApiParam[] } =>
+	splitMultipartBody(resolveRequestParams(spec));
 
 /** Placeholder local file path for a `type:"file"` upload param. */
 const filePlaceholder = (p: ApiParam): string => `/path/to/${p.name}.jpg`;
+
+/**
+ * Wrap a value as a POSIX single-quoted shell word, so an apostrophe inside the
+ * envelope JSON cannot end the argument early (`'` → `'\''`).
+ */
+const shellQuote = (value: string): string =>
+	`'${value.replace(/'/g, `'\\''`)}'`;
 
 /** Headers for a code sample. Multipart drops `content-type`: the HTTP client
  * must set it itself so the generated boundary is included. */
@@ -119,15 +117,20 @@ export const toCurl = (spec: ApiSpec): string => {
 		lines.push(`  --header '${h.name}: ${headerValue(h)}'${last ? "" : " \\"}`);
 	});
 	if (multipart) {
-		// curl -F sends multipart/form-data and generates the boundary itself.
-		const { files, fields } = bodyParts(spec);
+		// curl sends multipart/form-data and generates the boundary itself. The
+		// envelope goes through --form-string, not --form: a JSON value starting
+		// with `@` or `<` would otherwise be read as a file reference, and a
+		// `;type=` inside it as a part parameter.
+		const { files } = bodyParts(spec);
 		const parts = [
-			...fields.map((p) => `${p.name}=${formValue(p)}`),
-			...files.map((p) => `${p.name}=@${filePlaceholder(p)}`),
+			`--form-string ${shellQuote(`${MULTIPART_JSON_FIELD}=${JSON.stringify(buildMultipartPayload(spec))}`)}`,
+			...files.map(
+				(p) => `--form ${shellQuote(`${p.name}=@${filePlaceholder(p)}`)}`,
+			),
 		];
 		parts.forEach((part, i) => {
 			const last = i === parts.length - 1;
-			lines.push(`  --form '${part}'${last ? "" : " \\"}`);
+			lines.push(`  ${part}${last ? "" : " \\"}`);
 		});
 	} else if (hasBody(spec)) {
 		lines.push(
@@ -148,15 +151,17 @@ export const toJsFetch = (spec: ApiSpec): string => {
 	};
 	if (isMultipart(spec)) {
 		// fetch sets the multipart content-type (with boundary) from FormData.
-		const { files, fields } = bodyParts(spec);
+		// Every non-file field goes in one JSON `form-data` part.
+		const { files } = bodyParts(spec);
 		const formLines = [
 			'import { openAsBlob } from "node:fs";',
 			"",
 			"const form = new FormData();",
-			...fields.map(
-				(p) =>
-					`form.append(${JSON.stringify(p.name)}, ${JSON.stringify(formValue(p))});`,
-			),
+			`form.append(${JSON.stringify(MULTIPART_JSON_FIELD)}, JSON.stringify(${JSON.stringify(
+				buildMultipartPayload(spec),
+				null,
+				2,
+			)}));`,
 			...files.map(
 				(p) =>
 					`form.append(${JSON.stringify(p.name)}, await openAsBlob(${JSON.stringify(filePlaceholder(p))}), ${JSON.stringify(`${p.name}.jpg`)});`,
@@ -191,9 +196,12 @@ export const toPython = (spec: ApiSpec): string => {
 	];
 	if (isMultipart(spec)) {
 		// `files=` makes requests send multipart/form-data with its own boundary.
-		const { files, fields } = bodyParts(spec);
+		// Every non-file field goes in one JSON `form-data` part.
+		const { files } = bodyParts(spec);
+		lines.splice(1, 0, "import json");
+		lines.push(`payload = ${pyDict(buildMultipartPayload(spec))}`);
 		lines.push(
-			`data = ${pyDict(Object.fromEntries(fields.map((p) => [p.name, formValue(p)])))}`,
+			`data = {${JSON.stringify(MULTIPART_JSON_FIELD)}: json.dumps(payload)}`,
 		);
 		lines.push(
 			"files = {",
@@ -238,17 +246,20 @@ export const toPhp = (spec: ApiSpec): string => {
 	];
 	if (isMultipart(spec)) {
 		// An array payload makes curl send multipart/form-data with its boundary.
-		const { files, fields } = bodyParts(spec);
-		lines.push("$payload = [");
+		// Every non-file field goes in one JSON `form-data` part.
+		const { files } = bodyParts(spec);
+		lines.push(`$payload = ${phpArray(buildMultipartPayload(spec))};`);
+		lines.push("");
+		lines.push("$fields = [");
 		lines.push(
-			...fields.map((p) => `    ${phpStr(p.name)} => ${phpStr(formValue(p))},`),
+			`    ${phpStr(MULTIPART_JSON_FIELD)} => json_encode($payload),`,
 			...files.map(
 				(p) =>
 					`    ${phpStr(p.name)} => new CURLFile(${phpStr(filePlaceholder(p))}),`,
 			),
 		);
 		lines.push("];");
-		lines.push("curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);");
+		lines.push("curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);");
 	} else if (hasBody(spec)) {
 		lines.push(
 			`$payload = json_encode(${phpArray(buildSampleRequest(spec))});`,

@@ -33,7 +33,10 @@ export type ParamLocation = "path" | "query" | "header" | "body";
  *
  * `type` is freeform ("string", "number", "object", …); the special value
  * `"file"` marks a binary upload field, which flips the whole request to
- * `multipart/form-data` (see {@link resolveContentType}). */
+ * `multipart/form-data` (see {@link resolveContentType}). On such a request the
+ * NON-file params do not become form fields of their own — they travel together
+ * as one JSON object in a single `form-data` part (see
+ * {@link MULTIPART_JSON_FIELD}). */
 export interface ApiParam {
 	name: string;
 	label?: string;
@@ -343,7 +346,8 @@ export const resolveContentType = (
  * Full auth header set for an API. The `content-type` value derives from the
  * spec via {@link resolveContentType}; for multipart endpoints the description
  * warns that HTTP clients must set the header themselves (the boundary is
- * client-generated). A spec's rare {@link ApiSpec.headers} entries are merged
+ * client-generated) and names the {@link MULTIPART_JSON_FIELD} envelope. A
+ * spec's rare {@link ApiSpec.headers} entries are merged
  * by name (spec wins) and appended when new. Call with no spec for the
  * generic, endpoint-independent set (auth docs).
  */
@@ -354,7 +358,7 @@ export const resolveHeaders = (spec?: ApiSpec): ApiParam[] => {
 			? {
 					...h,
 					description:
-						"multipart/form-data — let your HTTP client set this header itself (it generates the required boundary); do not hardcode the value.",
+						"multipart/form-data — let your HTTP client set this header itself (it generates the required boundary); do not hardcode the value. Every non-file field travels as one JSON object in a single `form-data` part; each upload is its own part.",
 					example: contentType,
 				}
 			: h,
@@ -432,6 +436,62 @@ export const buildSampleRequest = (spec: ApiSpec): Record<string, unknown> => {
 	}
 	return body;
 };
+
+/**
+ * Name of the single form field that carries every non-file value on a
+ * multipart endpoint, as one JSON object.
+ *
+ * Eko's file-upload APIs do NOT take a form field per parameter: the whole
+ * non-file payload rides in this one part, and each upload is a sibling part
+ * named after its own param. Mirrored (it cannot be imported) as
+ * `EpsClient::MULTIPART_JSON_FIELD` in `packages/sdk-php`.
+ */
+export const MULTIPART_JSON_FIELD = "form-data";
+
+/**
+ * Split resolved body params into the binary uploads (their own multipart
+ * parts) and the fields that travel inside the {@link MULTIPART_JSON_FIELD}
+ * envelope.
+ *
+ * Takes params rather than a spec so the generators that only ever see a baked
+ * bundle (Postman) share this one definition instead of re-deriving it.
+ */
+export const splitMultipartBody = (
+	params: ResolvedApiParam[],
+): { files: ResolvedApiParam[]; fields: ResolvedApiParam[] } => {
+	const body = params.filter((p) => p.in === "body");
+	return {
+		files: body.filter((p) => p.type === "file"),
+		fields: body.filter((p) => p.type !== "file"),
+	};
+};
+
+/**
+ * The JSON object sent as the {@link MULTIPART_JSON_FIELD} value: a request
+ * body with the binary upload keys removed.
+ *
+ * Data-in/data-out (not spec-in) for the same reason as
+ * {@link splitMultipartBody}. Keys the caller did not declare as files are kept
+ * verbatim — a spec's `sampleRequest` override stays authoritative over what
+ * the envelope shows.
+ */
+export const multipartPayloadFrom = (
+	body: Record<string, unknown>,
+	fileNames: Iterable<string>,
+): Record<string, unknown> => {
+	const files = new Set(fileNames);
+	return Object.fromEntries(
+		Object.entries(body).filter(([name]) => !files.has(name)),
+	);
+};
+
+/** The {@link MULTIPART_JSON_FIELD} payload for a spec — its request body
+ * ({@link buildSampleRequest}, so an override still wins) minus the uploads. */
+export const buildMultipartPayload = (spec: ApiSpec): Record<string, unknown> =>
+	multipartPayloadFrom(
+		buildSampleRequest(spec),
+		splitMultipartBody(resolveRequestParams(spec)).files.map((p) => p.name),
+	);
 
 /**
  * The documented {@link ApiResponseType} matching a sample payload's

@@ -1,4 +1,4 @@
-import { type EkoLogger, noopEkoLogger } from "../audit/ekoLog";
+import { noopEkoLogger, type EkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
 import {
@@ -118,30 +118,22 @@ const BOOKLET_OK = 1646;
 const SECRET_PIN_OK = 9;
 const BUSINESS_DETAILS_OK = 1567;
 
-/** Interaction 287 (fetch e-sign URL): `response_type_id` meaning a URL was issued. */
-const GET_AGREEMENT_URL_OK = 1613;
 /**
  * Interaction 287: `response_type_id`s meaning the agreement is already signed —
  * skip the provider popup and go straight to the submit step (293).
+ *
+ * These carry no `short_url`, so they need their own branch. Success for the
+ * agreement interactions is NOT a fixed `response_type_id`: a live 287 answers
+ * `1043` ("Document Id From Digio") with a perfectly good Leegality URL, and 293
+ * has answered both 1043 and 1069. `status` is the stable signal — 0 on success,
+ * the error id otherwise (1083 "Invalid agreement id.", 1070 "Document not
+ * verified successfully").
  */
 const AGREEMENT_ALREADY_SIGNED = new Set([1615, 1069]);
 /**
- * Interaction 293 (submit signed agreement): success `response_type_id`.
- *
- * PROVISIONAL. The wlc step config declares 1615 for this step, but its pipeline
- * executor actually accepts `status === 0`. This repo's `stepResult` matches on a
- * single id, so confirm the real value against a UAT 293 response before relying
- * on it — adjust here if upstream returns a different id.
+ * Agreement id sent to interactions 287/293. This is '4' in case of API (EPS) Partners.
  */
-const SIGN_AGREEMENT_OK = 1615;
-/**
- * Agreement id sent to interactions 287/293.
- *
- * ponytail: a fixed constant for the single EPS vertical (matches the wlc
- * `config.agreementId ?? 5` default). Lift to `cfg.eko.agreementId` if it ever
- * varies per org.
- */
-const AGREEMENT_ID = "5";
+const AGREEMENT_ID = "4";
 
 /**
  * Identity of the acting user on an interaction.
@@ -336,6 +328,12 @@ export function createEkoClient(
 	 * `Content-Type` is deliberately left unset: `fetch` fills in the multipart
 	 * boundary itself once it sees a `FormData` body, and setting it manually
 	 * would omit that boundary and break the upload.
+	 *
+	 * NOT the same convention as the documented file-upload APIs (see
+	 * `MULTIPART_JSON_FIELD` in `src/lib/data/api-specs-common.ts`), which put a
+	 * JSON object in this field. This one is URL-encoded and carries no files.
+	 * Do not "align" them without confirming with Eko that 523 accepts JSON —
+	 * PAN verification on every new signup runs through here.
 	 */
 	async function postMultipart(
 		fields: Record<string, string>,
@@ -639,13 +637,18 @@ export function createEkoClient(
 				input.xRealIp,
 			)) as {
 				response_type_id?: number;
+				status?: number | string;
 				message?: string;
 				data?: { short_url?: string; document_id?: string; pipe?: number };
 			};
 			const code = Number(raw?.response_type_id ?? -1);
 			const documentId = String(raw?.data?.document_id ?? "");
 			const pipe = Number(raw?.data?.pipe ?? 0);
-			if (AGREEMENT_ALREADY_SIGNED.has(code)) {
+			// An absent `status` reads as 0: every observed reply carries it, and an
+			// error one always carries it non-zero, so treating "missing" as an error
+			// would only ever reject an otherwise-good payload.
+			const ok = Number(raw?.status ?? 0) === 0;
+			if (ok && AGREEMENT_ALREADY_SIGNED.has(code)) {
 				return {
 					ok: true,
 					shortUrl: "",
@@ -654,12 +657,15 @@ export function createEkoClient(
 					alreadySigned: true,
 				};
 			}
-			// Classify strictly by the success id — a partial `short_url` on an
-			// otherwise-error response must NOT be treated as success.
-			if (code === GET_AGREEMENT_URL_OK) {
+			// Success is `status: 0` plus a usable signing URL — nothing to sign
+			// without one, and a stray `short_url` on an error reply must not pass.
+			// The scheme check keeps a non-http(s) URL out of `window.open` / the
+			// provider SDK on the client.
+			const shortUrl = String(raw?.data?.short_url ?? "").trim();
+			if (ok && /^https?:\/\//i.test(shortUrl)) {
 				return {
 					ok: true,
-					shortUrl: String(raw?.data?.short_url ?? ""),
+					shortUrl,
 					documentId,
 					pipe,
 					alreadySigned: false,
@@ -684,7 +690,21 @@ export function createEkoClient(
 				},
 				input.xRealIp,
 			);
-			return stepResult(raw, SIGN_AGREEMENT_OK);
+			// Not `stepResult`: 293 has no single success id (1043 and 1069 both
+			// observed), so classify on `status` like 287. Absent `status` fails
+			// here — unlike 287 there is no payload to corroborate it, and passing
+			// an unsigned agreement would advance the user past the step.
+			const r = raw as {
+				status?: number | string;
+				response_type_id?: number;
+				message?: string;
+			};
+			if (Number(r?.status ?? -1) === 0) return { ok: true };
+			return {
+				ok: false,
+				message: r?.message ?? "The request could not be completed.",
+				responseTypeId: Number(r?.response_type_id ?? -1),
+			};
 		},
 		async getWalletBalance(input) {
 			const raw = (await post(

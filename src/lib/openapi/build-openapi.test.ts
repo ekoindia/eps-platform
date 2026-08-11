@@ -277,3 +277,68 @@ describe("buildOpenApiDocument({ interactive: true })", () => {
 		}
 	});
 });
+
+describe("multipart request bodies", () => {
+	const operation = () => {
+		const path = doc.paths?.[
+			"/admin/network/agent/{user_code}/aeps-fingpay/activate"
+		] as Record<string, OpenAPIV3_1.OperationObject> | undefined;
+		const op = path?.put;
+		if (!op) throw new Error("activate-aeps-fingpay operation not found");
+		return op;
+	};
+
+	const media = () => {
+		const body = operation().requestBody as OpenAPIV3_1.RequestBodyObject;
+		const content = body.content["multipart/form-data"];
+		expect(content).toBeDefined();
+		return content as OpenAPIV3_1.MediaTypeObject;
+	};
+
+	it("keys the body as multipart/form-data, not JSON", () => {
+		const body = operation().requestBody as OpenAPIV3_1.RequestBodyObject;
+		expect(Object.keys(body.content)).toEqual(["multipart/form-data"]);
+	});
+
+	it("exposes one form-data field plus a binary part per upload", () => {
+		const schema = media().schema as OpenAPIV3_1.SchemaObject;
+		const properties = schema.properties ?? {};
+		expect(Object.keys(properties)).toEqual([
+			"form-data",
+			"pan_card",
+			"aadhar_front",
+			"aadhar_back",
+		]);
+		for (const file of ["pan_card", "aadhar_front", "aadhar_back"]) {
+			expect(properties[file]).toMatchObject({
+				type: "string",
+				format: "binary",
+			});
+		}
+		expect(schema.required).toContain("form-data");
+		expect(schema.required).toContain("pan_card");
+	});
+
+	it("carries the envelope as a JSON string holding every non-file field", () => {
+		const schema = media().schema as OpenAPIV3_1.SchemaObject;
+		const envelope = (schema.properties ?? {})[
+			"form-data"
+		] as OpenAPIV3_1.SchemaObject;
+		// A string, NOT an object: an object property would make the part
+		// application/json, which is a different request than Eko documents.
+		expect(envelope.type).toBe("string");
+		const payload = JSON.parse(String(envelope.example));
+		expect(payload).toMatchObject({
+			account: "38759149196",
+			ifsc: "SBIN0007515",
+			office_address: { state_id: "23" },
+		});
+		expect(payload).not.toHaveProperty("pan_card");
+	});
+
+	it("shows the wire shape as the media-type example", () => {
+		const example = media().example as Record<string, unknown>;
+		expect(typeof example["form-data"]).toBe("string");
+		expect(example).toHaveProperty("pan_card");
+	});
+});

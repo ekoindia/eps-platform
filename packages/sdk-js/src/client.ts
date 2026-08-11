@@ -52,16 +52,27 @@ const matchesType = (type: string, value: unknown): boolean => {
 	}
 };
 /**
- * Multipart body for a file-upload endpoint. File params accept a local file
- * path (read here, filename = basename) or a Blob/File (a File keeps its own
- * name). Other values become text parts — objects as JSON strings. null /
- * undefined values are omitted: a form field has no null encoding.
+ * Name of the single form field carrying every non-file value as one JSON
+ * object. Eko's upload APIs do not take a form field per parameter. Mirrors
+ * `MULTIPART_JSON_FIELD` in the website's `src/lib/data/api-specs-common.ts`.
+ */
+const MULTIPART_JSON_FIELD = "form-data";
+
+/**
+ * Multipart body for a file-upload endpoint: one `form-data` part holding every
+ * non-file value as JSON, plus a part per upload. File params accept a local
+ * file path (read here, filename = basename) or a Blob/File (a File keeps its
+ * own name). null / undefined values are dropped before serialization — a form
+ * field has no null encoding — while nulls nested inside an object value are
+ * preserved by JSON.
  */
 const buildFormData = (
 	values: Record<string, unknown>,
 	fileParams: Set<string>,
 ): FormData => {
 	const form = new FormData();
+	const payload: Record<string, unknown> = {};
+	const uploads: Array<[string, Blob, string]> = [];
 	for (const [name, value] of Object.entries(values)) {
 		if (value == null) continue;
 		if (fileParams.has(name)) {
@@ -71,14 +82,15 @@ const buildFormData = (
 			const filename = isBlob(value)
 				? ((value as File).name ?? name)
 				: path.basename(String(value));
-			form.append(name, blob, filename);
+			uploads.push([name, blob, filename]);
 		} else {
-			form.append(
-				name,
-				typeof value === "object" ? JSON.stringify(value) : String(value),
-			);
+			payload[name] = value;
 		}
 	}
+	// Envelope first, then the uploads — the order the API documents.
+	form.append(MULTIPART_JSON_FIELD, JSON.stringify(payload));
+	for (const [name, blob, filename] of uploads)
+		form.append(name, blob, filename);
 	return form;
 };
 
