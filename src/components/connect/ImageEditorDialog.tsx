@@ -329,8 +329,24 @@ export function ImageEditorDialog({
 	const canRotate = !(disableRotate || disableImageEdit);
 
 	return (
-		<div className="flex max-h-screen flex-col items-center">
+		<div className="flex max-h-[100dvh] flex-col items-center">
+			{/* The height budget belongs HERE, on the ReactCrop root — not on the img.
+			    react-image-crop's stylesheet sets
+			    `.ReactCrop__child-wrapper > img { max-height: inherit }`, which beats
+			    any utility class on the img (higher specificity, and unlayered CSS
+			    outranks Tailwind's `@layer utilities` outright). A cap on the img
+			    therefore resolves to `inherit` → no cap, the image renders at its
+			    natural height, and the toolbar below is pushed off-screen where a
+			    fixed, centered dialog can never be scrolled to. Capping the root
+			    instead feeds the same value down the inherit chain.
+			    `3.75rem` is the toolbar's `h-15`, in rem so the reserve tracks it if
+			    the root font size is not 16px. `min-h-0` + `overflow-hidden` are the
+			    backstop: any residual overflow clips the image, never the toolbar.
+			    ponytail: a `flex-1 min-h-0` + `max-h-full` layout would drop the
+			    literal, but a percentage max-height inheriting into the child-wrapper
+			    of an indefinite-height flex item is not reliable. */}
 			<ReactCrop
+				className="max-h-[calc(100dvh-3.75rem)] min-h-0 overflow-hidden"
 				keepSelection
 				aspect={aspectRatio && aspectRatio > 0 ? aspectRatio : undefined}
 				crop={crop ?? undefined}
@@ -348,7 +364,9 @@ export function ImageEditorDialog({
 					ref={imageRef}
 					alt="Capture being edited"
 					onLoad={onImageLoad}
-					className="block max-h-[calc(100vh-60px)] max-w-screen"
+					// Sized by the ReactCrop root above; the stylesheet overrides any
+					// max-width/max-height set here.
+					className="block"
 				/>
 			</ReactCrop>
 			{/* In flow, under the image: fixed to the viewport it covered the bottom

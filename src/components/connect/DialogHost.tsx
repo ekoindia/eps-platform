@@ -244,7 +244,7 @@ function HostedDialog({
 					// and are hand-rolled rather than the shadcn `DialogContent`, so they
 					// need the same guard it applies.
 					onInteractOutside={ignoreNestedDialogInteraction}
-					className={`fixed left-1/2 top-1/2 z-50 flex max-h-screen max-w-[100vw] -translate-x-1/2 -translate-y-1/2 items-center justify-center focus:outline-hidden ${chrome.className} ${hiddenClass}`}
+					className={`fixed left-1/2 top-1/2 z-50 flex max-h-[100dvh] max-w-[100vw] -translate-x-1/2 -translate-y-1/2 items-center justify-center focus:outline-hidden ${chrome.className} ${hiddenClass}`}
 				>
 					{/* Radix requires a title; these dialogs carry their own visible chrome. */}
 					<DialogPrimitive.Title className="sr-only">

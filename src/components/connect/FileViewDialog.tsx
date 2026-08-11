@@ -184,7 +184,7 @@ function ImageView({
 	}, [zoom]);
 
 	return (
-		<div ref={scroller} className="flex h-screen w-screen overflow-auto">
+		<div ref={scroller} className="flex h-[100dvh] w-screen overflow-auto">
 			<img
 				src={file}
 				alt="Attachment"
@@ -203,7 +203,7 @@ function ImageView({
 				// have to come off, or they would clamp the zoom back to the viewport.
 				// ponytail: the fit is not re-measured on resize or rotation; the
 				// dialog is opened, read and closed. Recompute here if that changes.
-				className={`m-auto rounded-md ${fitted ? "max-w-none" : "max-h-screen max-w-screen"}`}
+				className={`m-auto rounded-md ${fitted ? "max-w-none" : "max-h-[100dvh] max-w-screen"}`}
 				style={
 					fitted
 						? { width: fitted.width * zoom, height: fitted.height * zoom }
@@ -302,14 +302,14 @@ export function FileViewDialog({
 				controls
 				autoFocus
 				onLoadedData={done}
-				className="max-h-[90vh] max-w-[90vw] rounded-md"
+				className="max-h-[90dvh] max-w-[90vw] rounded-md"
 			/>
 		);
 	}
 
 	// pdf | html | url | youtube — everything else is framed.
 	return (
-		<div className="relative flex h-screen w-screen flex-col">
+		<div className="relative flex h-[100dvh] w-screen flex-col">
 			{label ? (
 				<div className="flex h-[42px] shrink-0 items-center bg-eko-navy px-4 text-lg font-bold text-white md:h-[50px]">
 					{label}
