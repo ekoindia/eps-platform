@@ -1090,8 +1090,8 @@
     "semantic_hash": ""
   },
   "src/components/connect/CameraDialog.tsx": {
-    "mtime": 1786350771.7129278,
-    "ast_hash": "dcef43caaeb9d067e47e1ee27bc92878",
+    "mtime": 1786443771.4707897,
+    "ast_hash": "b6a847681d866d76a0e88709d61ec3ba",
     "semantic_hash": ""
   },
   "src/components/connect/ConnectWidget.test.tsx": {
@@ -1105,8 +1105,8 @@
     "semantic_hash": "f7e52556ca009615382183bddbb875c5"
   },
   "src/components/connect/DialogHost.tsx": {
-    "mtime": 1786157323.070888,
-    "ast_hash": "41d2914b8f760ffb47015f1a727ce047",
+    "mtime": 1786443766.3717341,
+    "ast_hash": "766c3e6d079c7e0fa2483cdf16d78ec6",
     "semantic_hash": ""
   },
   "src/components/connect/FileViewDialog.test.tsx": {
@@ -1115,13 +1115,13 @@
     "semantic_hash": "3344e568c8e1a12f9eff2292bba7cdc1"
   },
   "src/components/connect/FileViewDialog.tsx": {
-    "mtime": 1785295877.0156176,
-    "ast_hash": "1f8a798ad20342fe1b797dd9fc560941",
-    "semantic_hash": "1f8a798ad20342fe1b797dd9fc560941"
+    "mtime": 1786443804.7245243,
+    "ast_hash": "9231f3df0912a00858be7c7ab8823284",
+    "semantic_hash": ""
   },
   "src/components/connect/ImageEditorDialog.tsx": {
-    "mtime": 1786297924.6617591,
-    "ast_hash": "1e4ecf43899c454605d3ba91a712aca8",
+    "mtime": 1786443751.4244232,
+    "ast_hash": "15ef8864b0d8bad928a3b76317edb7c3",
     "semantic_hash": ""
   },
   "src/components/connect/PrintReceipt.tsx": {
@@ -1155,8 +1155,8 @@
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.tsx": {
-    "mtime": 1786351049.7516062,
-    "ast_hash": "7452829791d74cbe2e8c76d48ea8361f",
+    "mtime": 1786444484.0716894,
+    "ast_hash": "a57663c127b8a3de8800e1ed089932fa",
     "semantic_hash": ""
   },
   "src/components/console/WalletBalance.connect.test.tsx": {
@@ -3760,8 +3760,8 @@
     "semantic_hash": ""
   },
   "src/components/connect/ImageEditorDialog.test.tsx": {
-    "mtime": 1786298135.7795057,
-    "ast_hash": "77f19100b381fda8c07743cc2e586dc5",
+    "mtime": 1786443821.9934006,
+    "ast_hash": "32473f1af3481d1e9fc3d6083494e0d2",
     "semantic_hash": ""
   },
   "src/lib/connect/blur.test.ts": {
