@@ -223,6 +223,10 @@ final class EpsClientTest extends TestCase
             'user_code' => '20810200',
             'modelname' => 'Morpho 1300E3',
             'devicenumber' => 'SN1234567890',
+            // Every required param must be present, or the missing-param guard
+            // fires first and this never reaches the type guard under test.
+            'account' => '38759149196',
+            'ifsc' => 'SBIN0007515',
             'shop_type' => 4215,
             'office_address' => [],
             'address_as_per_proof' => [],
