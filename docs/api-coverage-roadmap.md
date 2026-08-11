@@ -173,7 +173,7 @@ Utilities product added. Some "extras" already existed pre-Phase-6 (`pan-bulk-st
 | Get District Discome (UPPCL) | `bbps-district-discome` | GET | `…/bbps/operators/190/district-discome` | `bbps` | ✅ |
 | PAN Comprehensive | `pan-comprehensive` | POST | `/tools/kyc/touras/pan-verification` | `pan` | ⛔ response pending |
 | Bank Verification — Pennydrop | `bank-pennydrop` | POST | `/tools/kyc/touras/bank-acc-verify-pennydrop` | `bank` | ⛔ response pending |
-| Bank Verification — Pennyless | `bank-pennyless` | POST | `/tools/kyc/touras/bank-acc-verify-pennyless` | `bank` | ⛔ response pending |
+| Bank Verification — Pennyless | `bank-account-verification-pennyless` | POST | `/tools/kyc/bank-acc-verify-pennyless` | `bank` | ✅ |
 | Advance GST | `advance-gst` | POST | `/tools/kyc/touras/advance-gst` | `gst` | ⛔ response pending |
 
 All ⛔ rows have **request side captured**; awaiting user-pasted responses to author without fabrication.
@@ -181,7 +181,7 @@ All ⛔ rows have **request side captured**; awaiting user-pasted responses to a
 ## Outstanding (blocked on user-pasted responses; request side captured)
 - **Phase 3:** Activate / Deactivate Service for User; Get Agent Network (GET — confirm it exists).
 - **Phase 5:** Transaction Status Callback (webhook → guide page, not an `ApiSpec`).
-- **Phase 6:** Send/Verify OTP, Get Banks, PAN Comprehensive, Bank Pennydrop/Pennyless, Advance GST.
+- **Phase 6:** Send/Verify OTP, Get Banks, PAN Comprehensive, Bank Pennydrop, Advance GST.
   (Get Recharge Plans is done — the 2026-08 BBPS reference supplied the response.)
 
 ---

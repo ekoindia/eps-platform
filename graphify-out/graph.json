@@ -201,15 +201,103 @@
   },
   "nodes": [
     {
+      "label": "api-specs.ts",
+      "file_type": "code",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "api-specs.ts"
+    },
+    {
+      "label": "ALL_API_SPECS",
+      "file_type": "code",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_all_api_specs",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "all_api_specs"
+    },
+    {
+      "label": "API_SPECS",
+      "file_type": "code",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L16416",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_api_specs",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "api_specs"
+    },
+    {
+      "label": "API_SPECS_MAP",
+      "file_type": "code",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L16419",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_api_specs_map",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "api_specs_map"
+    },
+    {
+      "label": "getSpecsForProduct()",
+      "file_type": "code",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L16424",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_getspecsforproduct",
+      "community": 17,
+      "community_name": "api-spec-previews.ts",
+      "norm_label": "getspecsforproduct()"
+    },
+    {
+      "label": "NOTE: This file is generated/assembled from developer-portal data. Some",
+      "file_type": "rationale",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_rationale_18",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "note: this file is generated/assembled from developer-portal data. some"
+    },
+    {
+      "label": "TODO: confirm real response payload with Eko (response pending) \u2014 placeholder\u2026",
+      "file_type": "rationale",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L9973",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_rationale_9973",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder..."
+    },
+    {
+      "label": "TODO: confirm real response payload with Eko (response pending) \u2014 placeholder\u2026",
+      "file_type": "rationale",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L10016",
+      "_origin": "ast",
+      "id": "src_lib_data_api_specs_rationale_10016",
+      "community": 118,
+      "community_name": "api-specs.ts",
+      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder..."
+    },
+    {
       "label": "KycUploadDialog.tsx",
       "file_type": "code",
       "source_file": "src/components/console/KycUploadDialog.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "src_components_console_kycuploaddialog",
       "community": 90,
       "community_name": "KycUploadDialog.tsx",
-      "norm_label": "kycuploaddialog.tsx"
+      "norm_label": "kycuploaddialog.tsx",
+      "id": "src_components_console_kycuploaddialog"
     },
     {
       "label": "slugify()",
@@ -217,10 +305,10 @@
       "source_file": "src/components/console/KycUploadDialog.tsx",
       "source_location": "L33",
       "_origin": "ast",
-      "id": "src_components_console_kycuploaddialog_slugify",
       "community": 90,
       "community_name": "KycUploadDialog.tsx",
-      "norm_label": "slugify()"
+      "norm_label": "slugify()",
+      "id": "src_components_console_kycuploaddialog_slugify"
     },
     {
       "label": "KycUploadDialogProps",
@@ -228,10 +316,10 @@
       "source_file": "src/components/console/KycUploadDialog.tsx",
       "source_location": "L42",
       "_origin": "ast",
-      "id": "src_components_console_kycuploaddialog_kycuploaddialogprops",
       "community": 90,
       "community_name": "KycUploadDialog.tsx",
-      "norm_label": "kycuploaddialogprops"
+      "norm_label": "kycuploaddialogprops",
+      "id": "src_components_console_kycuploaddialog_kycuploaddialogprops"
     },
     {
       "label": "KycUploadDialog()",
@@ -239,10 +327,10 @@
       "source_file": "src/components/console/KycUploadDialog.tsx",
       "source_location": "L65",
       "_origin": "ast",
-      "id": "src_components_console_kycuploaddialog_kycuploaddialog",
       "community": 90,
       "community_name": "KycUploadDialog.tsx",
-      "norm_label": "kycuploaddialog()"
+      "norm_label": "kycuploaddialog()",
+      "id": "src_components_console_kycuploaddialog_kycuploaddialog"
     },
     {
       "label": "CameraDialog.tsx",
@@ -29965,94 +30053,6 @@
       "id": "src_lib_data_api_specs_common_resolveresponsefields"
     },
     {
-      "label": "api-specs.ts",
-      "file_type": "code",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "api-specs.ts",
-      "id": "src_lib_data_api_specs"
-    },
-    {
-      "label": "ALL_API_SPECS",
-      "file_type": "code",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L31",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "all_api_specs",
-      "id": "src_lib_data_api_specs_all_api_specs"
-    },
-    {
-      "label": "API_SPECS",
-      "file_type": "code",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L16329",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "api_specs",
-      "id": "src_lib_data_api_specs_api_specs"
-    },
-    {
-      "label": "API_SPECS_MAP",
-      "file_type": "code",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L16332",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "api_specs_map",
-      "id": "src_lib_data_api_specs_api_specs_map"
-    },
-    {
-      "label": "getSpecsForProduct()",
-      "file_type": "code",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L16337",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "api-spec-previews.ts",
-      "norm_label": "getspecsforproduct()",
-      "id": "src_lib_data_api_specs_getspecsforproduct"
-    },
-    {
-      "label": "NOTE: This file is generated/assembled from developer-portal data. Some",
-      "file_type": "rationale",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L18",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "note: this file is generated/assembled from developer-portal data. some",
-      "id": "src_lib_data_api_specs_rationale_18"
-    },
-    {
-      "label": "TODO: confirm real response payload with Eko (response pending) \u2014 placeholder\u2026",
-      "file_type": "rationale",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L9973",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder...",
-      "id": "src_lib_data_api_specs_rationale_9973"
-    },
-    {
-      "label": "TODO: confirm real response payload with Eko (response pending) \u2014 placeholder\u2026",
-      "file_type": "rationale",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L10016",
-      "_origin": "ast",
-      "community": 118,
-      "community_name": "api-specs.ts",
-      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder...",
-      "id": "src_lib_data_api_specs_rationale_10016"
-    },
-    {
       "label": "bbps-operators.ts",
       "file_type": "code",
       "source_file": "src/lib/data/bbps-operators.ts",
@@ -49156,15 +49156,368 @@
   ],
   "links": [
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-recipes.test.ts",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_recipes_test",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-spec-previews.ts",
+      "source_location": "L15",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_spec_previews",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-spec-previews.test.ts",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_spec_previews_test",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L31",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_all_api_specs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L16416",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_api_specs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L16419",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_api_specs_map",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_common",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_common_apispec",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_common_enabledspecs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L16424",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs",
+      "target": "src_lib_data_api_specs_getspecsforproduct",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L10016",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs_rationale_10016",
+      "target": "src_lib_data_api_specs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L18",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs_rationale_18",
+      "target": "src_lib_data_api_specs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-specs.ts",
+      "source_location": "L9973",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_lib_data_api_specs_rationale_9973",
+      "target": "src_lib_data_api_specs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/docs-registry.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_docs_registry",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/docs-registry.test.ts",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_docs_registry_test",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/docs/code-samples.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_docs_code_samples_test",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/markdown/render-product.ts",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_markdown_render_product",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/markdown/render-products-index.ts",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_markdown_render_products_index",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/docs/DocsIndexPage.tsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_pages_docs_docsindexpage",
+      "target": "src_lib_data_api_specs"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-recipes.test.ts",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_recipes_test",
+      "target": "src_lib_data_api_specs_api_specs"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/docs-registry.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_docs_registry",
+      "target": "src_lib_data_api_specs_api_specs"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/docs-registry.test.ts",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_docs_registry_test",
+      "target": "src_lib_data_api_specs_api_specs"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/docs/code-samples.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_docs_code_samples_test",
+      "target": "src_lib_data_api_specs_api_specs_map"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/docs/DocsIndexPage.tsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_pages_docs_docsindexpage",
+      "target": "src_lib_data_api_specs_api_specs_map"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-spec-previews.ts",
+      "source_location": "L15",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_spec_previews",
+      "target": "src_lib_data_api_specs_getspecsforproduct"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-spec-previews.ts",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_spec_previews_getdisplayspecsforproduct",
+      "target": "src_lib_data_api_specs_getspecsforproduct"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/data/api-spec-previews.test.ts",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_data_api_spec_previews_test",
+      "target": "src_lib_data_api_specs_getspecsforproduct"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/markdown/render-product.ts",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_markdown_render_product",
+      "target": "src_lib_data_api_specs_getspecsforproduct"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/markdown/render-products-index.ts",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_markdown_render_products_index",
+      "target": "src_lib_data_api_specs_getspecsforproduct"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/markdown/render-products-index.ts",
+      "source_location": "L474",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_lib_markdown_render_products_index_renderproductsindex",
+      "target": "src_lib_data_api_specs_getspecsforproduct"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/console/KycUploadDialog.tsx",
       "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_console_kycuploaddialog_kycuploaddialog",
-      "confidence_score": 1.0
+      "target": "src_components_console_kycuploaddialog_kycuploaddialog"
     },
     {
       "relation": "contains",
@@ -49173,9 +49526,9 @@
       "source_location": "L42",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_console_kycuploaddialog_kycuploaddialogprops",
-      "confidence_score": 1.0
+      "target": "src_components_console_kycuploaddialog_kycuploaddialogprops"
     },
     {
       "relation": "contains",
@@ -49184,9 +49537,9 @@
       "source_location": "L33",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_console_kycuploaddialog_slugify",
-      "confidence_score": 1.0
+      "target": "src_components_console_kycuploaddialog_slugify"
     },
     {
       "relation": "imports_from",
@@ -49196,9 +49549,9 @@
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_fileupload",
-      "confidence_score": 1.0
+      "target": "src_components_fileupload"
     },
     {
       "relation": "imports",
@@ -49208,9 +49561,9 @@
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_fileupload_fileupload",
-      "confidence_score": 1.0
+      "target": "src_components_fileupload_fileupload"
     },
     {
       "relation": "imports_from",
@@ -49220,9 +49573,9 @@
       "source_location": "L2",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_button",
-      "confidence_score": 1.0
+      "target": "src_components_ui_button"
     },
     {
       "relation": "imports",
@@ -49232,9 +49585,9 @@
       "source_location": "L2",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_button_button",
-      "confidence_score": 1.0
+      "target": "src_components_ui_button_button"
     },
     {
       "relation": "imports_from",
@@ -49244,9 +49597,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_dialog",
-      "confidence_score": 1.0
+      "target": "src_components_ui_dialog"
     },
     {
       "relation": "imports",
@@ -49256,9 +49609,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_dialog_dialogcontent",
-      "confidence_score": 1.0
+      "target": "src_components_ui_dialog_dialogcontent"
     },
     {
       "relation": "imports",
@@ -49268,9 +49621,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_dialog_dialogdescription",
-      "confidence_score": 1.0
+      "target": "src_components_ui_dialog_dialogdescription"
     },
     {
       "relation": "imports",
@@ -49280,9 +49633,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_dialog_dialogfooter",
-      "confidence_score": 1.0
+      "target": "src_components_ui_dialog_dialogfooter"
     },
     {
       "relation": "imports",
@@ -49292,9 +49645,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_dialog_dialogheader",
-      "confidence_score": 1.0
+      "target": "src_components_ui_dialog_dialogheader"
     },
     {
       "relation": "imports",
@@ -49304,9 +49657,9 @@
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_components_ui_dialog_dialogtitle",
-      "confidence_score": 1.0
+      "target": "src_components_ui_dialog_dialogtitle"
     },
     {
       "relation": "imports_from",
@@ -49316,9 +49669,9 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_auth_client",
-      "confidence_score": 1.0
+      "target": "src_lib_auth_client"
     },
     {
       "relation": "imports",
@@ -49328,9 +49681,9 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_auth_client_apierror",
-      "confidence_score": 1.0
+      "target": "src_lib_auth_client_apierror"
     },
     {
       "relation": "imports",
@@ -49340,9 +49693,9 @@
       "source_location": "L11",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_auth_client_authclient",
-      "confidence_score": 1.0
+      "target": "src_lib_auth_client_authclient"
     },
     {
       "relation": "imports_from",
@@ -49352,9 +49705,9 @@
       "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_blur",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_blur"
     },
     {
       "relation": "imports",
@@ -49364,9 +49717,9 @@
       "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_blur_getblurscore",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_blur_getblurscore"
     },
     {
       "relation": "imports",
@@ -49376,9 +49729,9 @@
       "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_blur_withblurscoreinname",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_blur_withblurscoreinname"
     },
     {
       "relation": "imports_from",
@@ -49388,9 +49741,9 @@
       "source_location": "L13",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc"
     },
     {
       "relation": "imports_from",
@@ -49400,9 +49753,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs"
     },
     {
       "relation": "imports",
@@ -49412,9 +49765,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs_configof",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs_configof"
     },
     {
       "relation": "imports",
@@ -49424,9 +49777,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs_kyc_accept",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs_kyc_accept"
     },
     {
       "relation": "imports",
@@ -49436,9 +49789,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs_kyc_blur_check",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs_kyc_blur_check"
     },
     {
       "relation": "imports",
@@ -49448,9 +49801,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs_kyc_blur_stamp_filename",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs_kyc_blur_stamp_filename"
     },
     {
       "relation": "imports",
@@ -49460,9 +49813,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs_kyc_blur_threshold",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs_kyc_blur_threshold"
     },
     {
       "relation": "imports",
@@ -49472,9 +49825,9 @@
       "source_location": "L14",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_docs_kyc_max_file_bytes",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_docs_kyc_max_file_bytes"
     },
     {
       "relation": "imports",
@@ -49484,9 +49837,9 @@
       "source_location": "L13",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog",
-      "target": "src_lib_connect_kyc_kycdocument",
-      "confidence_score": 1.0
+      "target": "src_lib_connect_kyc_kycdocument"
     },
     {
       "relation": "imports_from",
@@ -49532,9 +49885,9 @@
       "source_location": "L215",
       "weight": 1.0,
       "_origin": "ast",
+      "confidence_score": 1.0,
       "source": "src_components_console_kycuploaddialog_kycuploaddialog",
-      "target": "src_components_console_kycuploaddialog_slugify",
-      "confidence_score": 1.0
+      "target": "src_components_console_kycuploaddialog_slugify"
     },
     {
       "relation": "imports",
@@ -128882,30 +129235,6 @@
       "target": "src_lib_data_api_recipes_recipesforspec"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-recipes.test.ts",
-      "source_location": "L10",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_recipes_test",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-recipes.test.ts",
-      "source_location": "L10",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_recipes_test",
-      "target": "src_lib_data_api_specs_api_specs"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/data/api-recipes.ts",
@@ -129708,30 +130037,6 @@
       "target": "src_lib_data_api_spec_previews_specstoverifiablefields"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-spec-previews.test.ts",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_spec_previews_test",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-spec-previews.test.ts",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_spec_previews_test",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/data/api-spec-previews.ts",
@@ -129934,18 +130239,6 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/data/api-spec-previews.ts",
-      "source_location": "L15",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_spec_previews",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-spec-previews.ts",
       "source_location": "L17",
       "weight": 1.0,
       "_origin": "ast",
@@ -129988,18 +130281,6 @@
       "confidence_score": 1.0,
       "source": "src_lib_data_api_spec_previews",
       "target": "src_lib_data_api_specs_common_responsefield"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-spec-previews.ts",
-      "source_location": "L15",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_spec_previews",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
     },
     {
       "relation": "imports_from",
@@ -130096,18 +130377,6 @@
       "confidence_score": 1.0,
       "source": "src_lib_data_api_spec_previews_getapipreviewsforproduct",
       "target": "src_lib_data_api_spec_previews_getdisplayspecsforproduct"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-spec-previews.ts",
-      "source_location": "L30",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_spec_previews_getdisplayspecsforproduct",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
     },
     {
       "relation": "calls",
@@ -130827,18 +131096,6 @@
       "target": "src_lib_data_api_specs_common_test_spec"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L23",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_common"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/data/api-specs-common.ts",
@@ -131436,18 +131693,6 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L22",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_common_apispec"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/lib/data/docs-registry.ts",
       "source_location": "L22",
       "weight": 1.0,
@@ -131683,18 +131928,6 @@
       "confidence_score": 1.0,
       "source": "src_lib_openapi_build_openapi_buildtagging",
       "target": "src_lib_data_api_specs_common_categoryforspec"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L23",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_common_enabledspecs"
     },
     {
       "relation": "calls",
@@ -132631,239 +132864,6 @@
       "confidence_score": 1.0,
       "source": "src_lib_openapi_build_openapi_buildresponses",
       "target": "src_lib_data_api_specs_common_resolveresponsefields"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L31",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_all_api_specs"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L16329",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_api_specs"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L16332",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_api_specs_map"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L16337",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L10016",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs_rationale_10016",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L18",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs_rationale_18",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/api-specs.ts",
-      "source_location": "L9973",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_api_specs_rationale_9973",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/docs-registry.ts",
-      "source_location": "L21",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_docs_registry",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/docs-registry.test.ts",
-      "source_location": "L20",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_docs_registry_test",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/docs/code-samples.test.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_docs_code_samples_test",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/markdown/render-product.ts",
-      "source_location": "L10",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_markdown_render_product",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/markdown/render-products-index.ts",
-      "source_location": "L19",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_markdown_render_products_index",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/docs/DocsIndexPage.tsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_pages_docs_docsindexpage",
-      "target": "src_lib_data_api_specs"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/docs-registry.ts",
-      "source_location": "L21",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_docs_registry",
-      "target": "src_lib_data_api_specs_api_specs"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/data/docs-registry.test.ts",
-      "source_location": "L20",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_data_docs_registry_test",
-      "target": "src_lib_data_api_specs_api_specs"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/docs/code-samples.test.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_docs_code_samples_test",
-      "target": "src_lib_data_api_specs_api_specs_map"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/docs/DocsIndexPage.tsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_pages_docs_docsindexpage",
-      "target": "src_lib_data_api_specs_api_specs_map"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/markdown/render-product.ts",
-      "source_location": "L10",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_markdown_render_product",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/markdown/render-products-index.ts",
-      "source_location": "L19",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_markdown_render_products_index",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/lib/markdown/render-products-index.ts",
-      "source_location": "L474",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_lib_markdown_render_products_index_renderproductsindex",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
     },
     {
       "relation": "contains",
@@ -165522,5 +165522,5 @@
       "source_file": "src/content/docs/how-auth-works.mdx"
     }
   ],
-  "built_at_commit": "11fe3f8cb21f852fe3a655db9a7e6e7ef710cbe1"
+  "built_at_commit": "ebcea812ebfa38d1278211fa1a47a066d9fcadc6"
 }

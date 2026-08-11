@@ -11623,6 +11623,93 @@ const ALL_API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "bank-account-verification-pennyless",
+		productId: "bank",
+		name: "Bank Account Verification (Pennyless)",
+		slug: "bank-account-verification-pennyless",
+		summary:
+			"Confirm an account number + IFSC and fetch the registered beneficiary name without transferring any money.",
+		description:
+			"Validates a bank account and returns the beneficiary name registered with the bank, without performing a ₹1 penny-drop transfer. Because no money moves, there is no stray credit to reverse if the account details turn out to be wrong. Use the penny-drop API instead when you need proof that a real credit reached the account (a UTR).",
+		relevance: "M",
+		bestFor:
+			"Onboarding and payout pre-checks that need the registered account holder name without debiting ₹1.",
+		method: "POST",
+		path: "/tools/kyc/bank-acc-verify-pennyless",
+		docsUrl:
+			"https://developers.eko.in/reference/bank-account-verification-pennyless",
+		extraRequestParams: [
+			{
+				name: "account",
+				label: "Bank Account Number",
+				type: "string",
+				required: true,
+				description: "Complete bank account number to be verified.",
+				example: "38759149196",
+			},
+			{
+				name: "ifsc",
+				label: "IFSC Code",
+				type: "string",
+				required: true,
+				description:
+					"IFSC code of the bank account to be verified (11-character alphanumeric).",
+				example: "SBIN0007515",
+			},
+		],
+		responseData: [
+			{
+				name: "verified_beneficiary_name",
+				label: "Account Holder's Name",
+				type: "string",
+				description:
+					"Account holder name as registered with the bank. Use for name matching against the details you hold.",
+				imp: true,
+				example: "Master YASHWANT  BASNETT",
+			},
+			{
+				name: "status",
+				label: "Verification Status",
+				type: "string",
+				description: "Verification outcome for the account, e.g. success.",
+				imp: true,
+				example: "success",
+			},
+			{
+				name: "bank_account_no",
+				label: "Bank Account Number",
+				type: "string",
+				description: "Bank account number echoed back from the request.",
+				example: "38759149196",
+			},
+			{
+				name: "bank_ifsc",
+				label: "IFSC Code",
+				type: "string",
+				description: "IFSC code echoed back from the request.",
+				example: "SBIN0007515",
+			},
+			{
+				name: "message",
+				type: "string",
+				description: "Human-readable outcome of the verification.",
+				example: "Bank account verification successful",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: {
+				bank_ifsc: "SBIN0007515",
+				bank_account_no: "38759149196",
+				verified_beneficiary_name: "Master YASHWANT  BASNETT",
+				message: "Bank account verification successful",
+				status: "success",
+			},
+			response_type_id: 0,
+			status: 0,
+		},
+	},
+	{
 		id: "bulk-bank-account-verification",
 		productId: "bank",
 		name: "Bulk Bank Account Verification",
