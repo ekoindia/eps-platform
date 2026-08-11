@@ -191,15 +191,15 @@ on this:
 value against `LIFECYCLES` (`src/lib/auth/client.ts`) and fails closed to `anon`
 on anything unrecognised.
 
-| `ProfileResult`                                | `MeView.state` |
-| ---------------------------------------------- | -------------- |
-| `inactive`                                      | `inactive`     |
-| `error` / `not_allowed`                         | `unknown`      |
-| `not_found` (+ Zoho lead lookup, else `unknown`)| `lead`         |
-| `onboarding`                                    | `onboarded`    |
-| `found`, `onboarding === 1`                     | `onboarded`    |
-| `found`, `account_state_id === 48`              | `kyc-pending`  |
-| `found`, anything else (16, unmapped, absent)   | `active`       |
+| `ProfileResult`                                  | `MeView.state` |
+| ------------------------------------------------ | -------------- |
+| `inactive`                                       | `inactive`     |
+| `error` / `not_allowed`                          | `unknown`      |
+| `not_found` (+ Zoho lead lookup, else `unknown`) | `lead`         |
+| `onboarding`                                     | `onboarded`    |
+| `found`, `onboarding === 1`                      | `onboarded`    |
+| `found`, `account_state_id === 48`               | `kyc-pending`  |
+| `found`, anything else (16, unmapped, absent)    | `active`       |
 
 Two properties of that last pair are deliberate:
 
@@ -358,26 +358,48 @@ role: "developer" }`, and `SignupPage`'s redirect condition
 
 ## Interaction reference table
 
-All six onboarding interactions post to the same `cfg.eko` SimpliBank path
-with the `developer_key` header. Five of the six (521, 522, 170, 10005, 5) go
-through the shared `post()` helper, form-urlencoded; 523 goes through the
+All eight onboarding interactions post to the same `cfg.eko` SimpliBank path
+with the `developer_key` header. Seven of the eight (521, 522, 170, 10005, 5,
+287, 293) go through the shared `post()` helper, form-urlencoded; 523 goes through the
 sibling `postMultipart()` helper instead — see "PAN (523)" above. Both
 helpers share one send/log/error pipeline (`sendForm()` in `eko.ts`), so
 logging and error semantics are identical either way. Success is judged
 per-interaction — there is no single convention:
 
-| #     | Interaction            | Method (`eko.ts`)                              | Identity used                 | Success condition                                                                                                                                                                          |
-| ----- | ---------------------- | ---------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 521   | Create partial account | `createPartialAccount`                         | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`)                                                                                                                                  |
-| 523   | Verify PAN             | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`)        | `response_type_id === 1569` (`PAN_VERIFICATION_OK`)                                                                                                                                        |
-| 522   | Business details       | `submitBusiness` (398-414)                     | user's own (`actor()`)        | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`)                                                                                                                                        |
-| 170   | Get booklet number     | `getBooklet` (326-351)                         | user's own                    | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
-| 10005 | Fetch pintwin key      | `fetchPintwinKey` (352-365)                    | user's own                    | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id`                                                                                     |
-| 5     | Set secret PIN         | `setSecretPin` (366-382)                       | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
+| #     | Interaction             | Method (`eko.ts`)                              | Identity used                 | Success condition                                                                                                                                                                          |
+| ----- | ----------------------- | ---------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 521   | Create partial account  | `createPartialAccount`                         | configured default (`base()`) | `response_type_id === 1566` (`CREATE_PARTIAL_ACCOUNT_OK`)                                                                                                                                  |
+| 523   | Verify PAN              | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`)        | `response_type_id === 1569` (`PAN_VERIFICATION_OK`)                                                                                                                                        |
+| 522   | Business details        | `submitBusiness` (398-414)                     | user's own (`actor()`)        | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`)                                                                                                                                        |
+| 170   | Get booklet number      | `getBooklet` (326-351)                         | user's own                    | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
+| 10005 | Fetch pintwin key       | `fetchPintwinKey` (352-365)                    | user's own                    | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id`                                                                                     |
+| 5     | Set secret PIN          | `setSecretPin` (366-382)                       | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
+| 287   | Fetch e-sign URL        | `getAgreementUrl`                              | user's own                    | `status === 0` **and** a `data.short_url` with an `http(s)` scheme — **not** a fixed `response_type_id` (see below). `response_type_id` 1615/1069 with `status` 0 means already signed     |
+| 293   | Submit signed agreement | `submitSignAgreement`                          | user's own                    | `status === 0`. An absent `status` fails, unlike 287                                                                                                                                       |
 
-`stepResult()` (`eko.ts:251-260`) is the shared classifier for 521/523/522/5,
+`stepResult()` (`eko.ts`) is the shared classifier for 521/523/522/5,
 comparing `response_type_id` against the interaction's own success constant
 and otherwise surfacing the upstream `message` as `EkoStepResult`.
+
+**287/293 are the exception: they classify on `status`, not on an id.** The
+documented esign ids were stale — a live 287 success answers `response_type_id:
+1043` with the message `"Document Id From Digio"`, and 293 has answered both
+1043 and 1069. Error replies put the error id in `status` (1083 "Invalid
+agreement id.", 1070 "Document not verified successfully"), so `status === 0`
+discriminates where an id allowlist did not. 293 also requires an
+`agreement_status` field (upstream parameter 638, context `[API Self
+Onboarding]`); omitting it answers `invalid_params: {agreement_status: …}`.
+The BFF sends `"success"` — it is only ever called once the signing provider
+reported success. 287 returns the `document_id` under `data` when it issues a
+URL but at the **top level** on the already-signed replies; reading only `data`
+yields `""`, which then rides into 293 as an empty `document_id`. Its `esign_completed` / `completion_timestamp` fields have no
+upstream parameter definition at all and are kept purely for Eloka parity.
+
+On failure, every step forwards upstream's `invalid_params` /
+`dependent_params` / `list_items` to the client as `error.details` on the 400
+(`EkoStepResult.details` → `SignupStepError.details` → `AppError.details` →
+`errorBody`). Upstream's `message` is often a template that names no field, so
+without them a validation failure is undiagnosable from the browser.
 
 523 is the one onboarding interaction sent as `multipart/form-data` instead of
 plain urlencoded: the reference `connect-api` implementation wraps its 523
@@ -390,7 +412,7 @@ question is settled: it is genuinely not sent. **This multipart contract is
 unverified against the real upstream — a UAT gate**, same caveat as the
 `latlong` constant below.
 
-Eko's *documented* file-upload APIs now put a **JSON object** in that same
+Eko's _documented_ file-upload APIs now put a **JSON object** in that same
 `form-data` part (`MULTIPART_JSON_FIELD` in `src/lib/data/api-specs-common.ts`,
 which the published SDKs and `/docs` samples follow). 523 still sends the
 URL-encoded string above and is deliberately left alone: it carries no files, and

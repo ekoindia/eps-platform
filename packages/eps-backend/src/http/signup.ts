@@ -140,7 +140,7 @@ export function mountSignup(
 	/** Maps a step failure to a 400 carrying the upstream's own message. */
 	function toAppError(e: unknown): never {
 		if (e instanceof SignupStepError) {
-			throw new AppError(400, "STEP_FAILED", e.message);
+			throw new AppError(400, "STEP_FAILED", e.message, e.details);
 		}
 		throw e;
 	}

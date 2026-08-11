@@ -194,10 +194,43 @@ export interface EkoPintwinKey {
 	keyId: number | string;
 }
 
+/**
+ * The diagnostic sub-objects an upstream failure can carry beyond `message`.
+ *
+ * `message` alone is often useless — a missing field answers "Please provide
+ * the value of the field" and names it only in `invalid_params`. Kept as an
+ * open bag: the transaction framework adds keys (`dependent_params`,
+ * `list_items`) without notice, and this layer only forwards them.
+ */
+export type EkoErrorDetails = Record<string, unknown>;
+
+/** Upstream keys worth forwarding to the caller (and the log) on a failure. */
+const DETAIL_KEYS = ["invalid_params", "dependent_params", "list_items"];
+
+/** Picks the diagnostic sub-objects off an upstream reply, or undefined if none. */
+export function errorDetails(raw: unknown): EkoErrorDetails | undefined {
+	if (!raw || typeof raw !== "object") return undefined;
+	const r = raw as Record<string, unknown>;
+	const out: EkoErrorDetails = {};
+	for (const k of DETAIL_KEYS) {
+		const v = r[k];
+		// Upstream sends `{}` / `[]` for "none" as often as it omits the key.
+		if (v == null) continue;
+		if (typeof v === "object" && Object.keys(v).length === 0) continue;
+		out[k] = v;
+	}
+	return Object.keys(out).length > 0 ? out : undefined;
+}
+
 /** Outcome of an onboarding interaction, carrying the upstream message on failure. */
 export type EkoStepResult =
 	| { ok: true }
-	| { ok: false; message: string; responseTypeId: number };
+	| {
+			ok: false;
+			message: string;
+			responseTypeId: number;
+			details?: EkoErrorDetails;
+	  };
 
 /**
  * Outcome of fetching the e-sign URL (interaction 287).
@@ -213,7 +246,12 @@ export type SignUrlResult =
 			pipe: number;
 			alreadySigned: boolean;
 	  }
-	| { ok: false; message: string; responseTypeId: number };
+	| {
+			ok: false;
+			message: string;
+			responseTypeId: number;
+			details?: EkoErrorDetails;
+	  };
 
 export function createEkoClient(
 	cfg: Config["eko"],
@@ -374,6 +412,7 @@ export function createEkoClient(
 			ok: false,
 			message: r?.message ?? "The request could not be completed.",
 			responseTypeId: code,
+			details: errorDetails(raw),
 		};
 	}
 
@@ -639,10 +678,17 @@ export function createEkoClient(
 				response_type_id?: number;
 				status?: number | string;
 				message?: string;
+				document_id?: string;
 				data?: { short_url?: string; document_id?: string; pipe?: number };
 			};
 			const code = Number(raw?.response_type_id ?? -1);
-			const documentId = String(raw?.data?.document_id ?? "");
+			// Upstream puts the id under `data` when it issues a URL, but at the TOP
+			// LEVEL on the already-signed replies. Reading only `data` there yields
+			// "", which then rides into 293 as an empty document_id. Eloka carries
+			// the same fallback (esignService.ts) for exactly this reason.
+			const documentId = String(
+				raw?.data?.document_id || raw?.document_id || "",
+			);
 			const pipe = Number(raw?.data?.pipe ?? 0);
 			// An absent `status` reads as 0: every observed reply carries it, and an
 			// error one always carries it non-zero, so treating "missing" as an error
@@ -675,6 +721,7 @@ export function createEkoClient(
 				ok: false,
 				message: raw?.message ?? "Couldn't start the agreement signing.",
 				responseTypeId: code,
+				details: errorDetails(raw),
 			};
 		},
 		async submitSignAgreement(input) {
@@ -684,6 +731,16 @@ export function createEkoClient(
 					interaction_type_id: "293",
 					document_id: input.documentId,
 					agreement_id: AGREEMENT_ID,
+					// The field upstream actually requires — omitting it answers
+					// `invalid_params: {agreement_status: ...}`. It is the provider's
+					// own outcome, relayed: the transaction framework's e-sign chain
+					// maps the SDK result into it (`"output": {"agreement_status":
+					// "agreement_status"}`) and Eloka's Android bridge compares it to
+					// "success". This client is only ever called once the signing
+					// provider reported success, so that is what it reports.
+					agreement_status: "success",
+					// Not upstream parameters (no definition exists for either), but
+					// Eloka posts them and upstream ignores them. Kept for parity.
 					esign_completed: "true",
 					completion_timestamp: new Date().toISOString(),
 					latlong: ONBOARDING_LATLONG,
@@ -704,6 +761,7 @@ export function createEkoClient(
 				ok: false,
 				message: r?.message ?? "The request could not be completed.",
 				responseTypeId: Number(r?.response_type_id ?? -1),
+				details: errorDetails(raw),
 			};
 		},
 		async getWalletBalance(input) {

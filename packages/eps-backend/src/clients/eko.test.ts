@@ -815,6 +815,37 @@ describe("sign agreement interactions", () => {
 		},
 	);
 
+	it("getAgreementUrl reads a top-level document_id when data has none", async () => {
+		// The already-signed replies put the id at the top level. Reading only
+		// `data` yields "", which then rides into 293 as an empty document_id.
+		const f = mockFetch(200, {
+			response_type_id: 1615,
+			document_id: "DOC-TOP",
+			data: { user_code: "43060001" },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		expect(r).toEqual({
+			ok: true,
+			shortUrl: "",
+			documentId: "DOC-TOP",
+			pipe: 0,
+			alreadySigned: true,
+		});
+	});
+
+	it("getAgreementUrl prefers data.document_id over the top-level one", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1043,
+			status: 0,
+			document_id: "DOC-TOP",
+			data: { short_url: "https://sign/x", document_id: "DOC-DATA", pipe: 1 },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		expect(r).toMatchObject({ ok: true, documentId: "DOC-DATA" });
+	});
+
 	it("getAgreementUrl treats an already-signed id with a non-zero status as failed", async () => {
 		// 1069 is "already signed" on 287 but an error id elsewhere — the status
 		// decides, so a failed reply carrying it must not read as already-signed.
@@ -896,6 +927,8 @@ describe("sign agreement interactions", () => {
 		expect(body.get("interaction_type_id")).toBe("293");
 		expect(body.get("document_id")).toBe("DOC9");
 		expect(body.get("agreement_id")).toBe("4");
+		// Required upstream: without it 293 answers invalid_params.agreement_status.
+		expect(body.get("agreement_status")).toBe("success");
 		expect(body.get("esign_completed")).toBe("true");
 		expect(body.get("initiator_id")).toBe("9990000001");
 		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
@@ -914,6 +947,50 @@ describe("sign agreement interactions", () => {
 			ok: false,
 			message: "Document not verified successfully",
 			responseTypeId: 1070,
+		});
+	});
+
+	it("submitSignAgreement forwards invalid_params as failure details", async () => {
+		// The live failure from omitting agreement_status: the message alone names
+		// no field, so the caller needs invalid_params to say anything useful.
+		const f = mockFetch(200, {
+			response_status_id: 1,
+			response_type_id: -1,
+			status: 97,
+			message: "Please provide the value of the field",
+			invalid_params: {
+				agreement_status: "Please provide the value of the field {2} {3}",
+			},
+			data: { user_code: "43060001" },
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		expect(r).toEqual({
+			ok: false,
+			message: "Please provide the value of the field",
+			responseTypeId: -1,
+			details: {
+				invalid_params: {
+					agreement_status: "Please provide the value of the field {2} {3}",
+				},
+			},
+		});
+	});
+
+	it("submitSignAgreement omits details when upstream sends none", async () => {
+		const f = mockFetch(200, {
+			response_type_id: 1070,
+			status: 1070,
+			message: "Document not verified successfully",
+			invalid_params: {},
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		expect(r).toEqual({
+			ok: false,
+			message: "Document not verified successfully",
+			responseTypeId: 1070,
+			details: undefined,
 		});
 	});
 

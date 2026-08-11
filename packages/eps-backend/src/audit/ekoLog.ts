@@ -69,6 +69,14 @@ function responseSummary(response: unknown): Record<string, unknown> {
 		"response_code",
 		"status",
 		"message",
+		// Why a failure happened, not just that it did: `message` is frequently
+		// a template ("Please provide the value of the field") whose subject
+		// lives only in `invalid_params`. These name FIELDS and carry framework
+		// message templates, not user values, so they stay safe at `basic` —
+		// unlike `data`, which holds the profile and stays behind `full`.
+		"invalid_params",
+		"dependent_params",
+		"list_items",
 	]) {
 		if (k in r) out[k] = r[k];
 	}
