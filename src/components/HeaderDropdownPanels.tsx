@@ -38,10 +38,10 @@ import {
 	Sparkles,
 } from "lucide-react";
 import {
-	type ComponentType,
 	Fragment,
 	lazy,
 	Suspense,
+	type ComponentType,
 	type HTMLAttributes,
 	type ReactNode,
 } from "react";
@@ -433,12 +433,13 @@ export const HeaderDropdownPanels = ({
 	const identity = SHOW_USER_LOGIN ? accountIdentity(state) : null;
 	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
 		? [
-				...developerLinks,
 				{
-					label: state.status === "authed" ? "Console" : "Log in",
+					label:
+						state.status === "authed" ? "Open Console" : "Log into Console",
 					href: "/console",
 					icon: state.status === "authed" ? LayoutDashboard : LogIn,
 				},
+				...developerLinks,
 			]
 		: developerLinks;
 

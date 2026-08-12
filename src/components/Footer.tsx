@@ -172,12 +172,13 @@ export const Footer = () => {
 	const { state } = useAuth();
 	const developersLinks: FooterLinkItem[] = SHOW_USER_LOGIN
 		? [
-				...footerLinks.developers,
 				{
-					label: state.status === "authed" ? "Console" : "Log in",
+					label:
+						state.status === "authed" ? "Open Console" : "Log into Console",
 					href: "/console",
 					internal: true,
 				},
+				...footerLinks.developers,
 			]
 		: footerLinks.developers;
 	return (
