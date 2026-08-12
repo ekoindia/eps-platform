@@ -201,48 +201,15 @@
   },
   "nodes": [
     {
-      "label": "UseCasesSection.tsx",
-      "file_type": "code",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "src_components_sections_usecasessection",
-      "community": 81,
-      "community_name": "PricingPage.tsx",
-      "norm_label": "usecasessection.tsx"
-    },
-    {
-      "label": "useCases",
-      "file_type": "code",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L13",
-      "_origin": "ast",
-      "id": "src_components_sections_usecasessection_usecases",
-      "community": 81,
-      "community_name": "PricingPage.tsx",
-      "norm_label": "usecases"
-    },
-    {
-      "label": "UseCasesSection()",
-      "file_type": "code",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L52",
-      "_origin": "ast",
-      "id": "src_components_sections_usecasessection_usecasessection",
-      "community": 45,
-      "community_name": "Index.tsx",
-      "norm_label": "usecasessection()"
-    },
-    {
       "label": "api-specs.ts",
       "file_type": "code",
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L1",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "api-specs.ts",
-      "id": "src_lib_data_api_specs"
+      "norm_label": "api-specs.ts"
     },
     {
       "label": "ALL_API_SPECS",
@@ -250,10 +217,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L31",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_all_api_specs",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "all_api_specs",
-      "id": "src_lib_data_api_specs_all_api_specs"
+      "norm_label": "all_api_specs"
     },
     {
       "label": "API_SPECS",
@@ -261,10 +228,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L16416",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_api_specs",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "api_specs",
-      "id": "src_lib_data_api_specs_api_specs"
+      "norm_label": "api_specs"
     },
     {
       "label": "API_SPECS_MAP",
@@ -272,10 +239,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L16419",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_api_specs_map",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "api_specs_map",
-      "id": "src_lib_data_api_specs_api_specs_map"
+      "norm_label": "api_specs_map"
     },
     {
       "label": "getSpecsForProduct()",
@@ -283,10 +250,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L16424",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_getspecsforproduct",
       "community": 17,
       "community_name": "api-spec-previews.ts",
-      "norm_label": "getspecsforproduct()",
-      "id": "src_lib_data_api_specs_getspecsforproduct"
+      "norm_label": "getspecsforproduct()"
     },
     {
       "label": "NOTE: This file is generated/assembled from developer-portal data. Some",
@@ -294,10 +261,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L18",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_rationale_18",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "note: this file is generated/assembled from developer-portal data. some",
-      "id": "src_lib_data_api_specs_rationale_18"
+      "norm_label": "note: this file is generated/assembled from developer-portal data. some"
     },
     {
       "label": "TODO: confirm real response payload with Eko (response pending) \u2014 placeholder\u2026",
@@ -305,10 +272,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L9973",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_rationale_9973",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder...",
-      "id": "src_lib_data_api_specs_rationale_9973"
+      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder..."
     },
     {
       "label": "TODO: confirm real response payload with Eko (response pending) \u2014 placeholder\u2026",
@@ -316,10 +283,10 @@
       "source_file": "src/lib/data/api-specs.ts",
       "source_location": "L10016",
       "_origin": "ast",
+      "id": "src_lib_data_api_specs_rationale_10016",
       "community": 118,
       "community_name": "api-specs.ts",
-      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder...",
-      "id": "src_lib_data_api_specs_rationale_10016"
+      "norm_label": "todo: confirm real response payload with eko (response pending) \u2014 placeholder..."
     },
     {
       "label": "KycUploadDialog.tsx",
@@ -21790,6 +21757,39 @@
       "community_name": "PricingPage.tsx",
       "norm_label": "truststrip()",
       "id": "src_components_sections_truststrip_truststrip"
+    },
+    {
+      "label": "UseCasesSection.tsx",
+      "file_type": "code",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 81,
+      "community_name": "PricingPage.tsx",
+      "norm_label": "usecasessection.tsx",
+      "id": "src_components_sections_usecasessection"
+    },
+    {
+      "label": "useCases",
+      "file_type": "code",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 81,
+      "community_name": "PricingPage.tsx",
+      "norm_label": "usecases",
+      "id": "src_components_sections_usecasessection_usecases"
+    },
+    {
+      "label": "UseCasesSection()",
+      "file_type": "code",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L52",
+      "_origin": "ast",
+      "community": 45,
+      "community_name": "Index.tsx",
+      "norm_label": "usecasessection()",
+      "id": "src_components_sections_usecasessection_usecasessection"
     },
     {
       "label": "WhyEkoSection.tsx",
@@ -49159,136 +49159,6 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_cards",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_cards_usecasecard",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_fadein",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_fadein_fadein",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_sectioncontainer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_sectioncontainer_sectioncontainer",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_sectioncontainer_sectionheader",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L13",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_sections_usecasessection_usecases",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/sections/UseCasesSection.tsx",
-      "source_location": "L52",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "src_components_sections_usecasessection",
-      "target": "src_components_sections_usecasessection_usecasessection",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/Index.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_pages_index",
-      "target": "src_components_sections_usecasessection"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/Index.tsx",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_origin": "ast",
-      "confidence_score": 1.0,
-      "source": "src_pages_index",
-      "target": "src_components_sections_usecasessection_usecasessection"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/lib/data/api-recipes.test.ts",
       "source_location": "L10",
       "weight": 1.0,
@@ -49328,9 +49198,9 @@
       "source_location": "L31",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_all_api_specs"
+      "target": "src_lib_data_api_specs_all_api_specs",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -49339,9 +49209,9 @@
       "source_location": "L16416",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_api_specs"
+      "target": "src_lib_data_api_specs_api_specs",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -49350,9 +49220,9 @@
       "source_location": "L16419",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_api_specs_map"
+      "target": "src_lib_data_api_specs_api_specs_map",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -49362,9 +49232,9 @@
       "source_location": "L23",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_common"
+      "target": "src_lib_data_api_specs_common",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -49374,9 +49244,9 @@
       "source_location": "L22",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_common_apispec"
+      "target": "src_lib_data_api_specs_common_apispec",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -49386,9 +49256,9 @@
       "source_location": "L23",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_common_enabledspecs"
+      "target": "src_lib_data_api_specs_common_enabledspecs",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -49397,9 +49267,9 @@
       "source_location": "L16424",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs",
-      "target": "src_lib_data_api_specs_getspecsforproduct"
+      "target": "src_lib_data_api_specs_getspecsforproduct",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -49408,9 +49278,9 @@
       "source_location": "L10016",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs_rationale_10016",
-      "target": "src_lib_data_api_specs"
+      "target": "src_lib_data_api_specs",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -49419,9 +49289,9 @@
       "source_location": "L18",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs_rationale_18",
-      "target": "src_lib_data_api_specs"
+      "target": "src_lib_data_api_specs",
+      "confidence_score": 1.0
     },
     {
       "relation": "rationale_for",
@@ -49430,9 +49300,9 @@
       "source_location": "L9973",
       "weight": 1.0,
       "_origin": "ast",
-      "confidence_score": 1.0,
       "source": "src_lib_data_api_specs_rationale_9973",
-      "target": "src_lib_data_api_specs"
+      "target": "src_lib_data_api_specs",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -80110,6 +79980,18 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_cards"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/UseCasesHubPage.tsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -80189,6 +80071,18 @@
       "_origin": "ast",
       "source": "src_components_cards_usecasecard",
       "target": "src_lib_utils_cn"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_cards_usecasecard"
     },
     {
       "relation": "contains",
@@ -81814,6 +81708,18 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_fadein"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/components/sections/WhyEkoSection.tsx",
       "source_location": "L1",
       "weight": 1.0,
@@ -82181,6 +82087,18 @@
       "_origin": "ast",
       "confidence_score": 1.0,
       "source": "src_components_sections_productssection",
+      "target": "src_components_fadein_fadein"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
       "target": "src_components_fadein_fadein"
     },
     {
@@ -87619,6 +87537,18 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_sectioncontainer"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/components/sections/WhyEkoSection.tsx",
       "source_location": "L2",
       "weight": 1.0,
@@ -87835,6 +87765,18 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_sectioncontainer_sectioncontainer"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/components/sections/WhyEkoSection.tsx",
       "source_location": "L2",
       "weight": 1.0,
@@ -87985,6 +87927,18 @@
       "_origin": "ast",
       "confidence_score": 1.0,
       "source": "src_components_sections_productssection",
+      "target": "src_components_sectioncontainer_sectionheader"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
       "target": "src_components_sectioncontainer_sectionheader"
     },
     {
@@ -108611,6 +108565,52 @@
       "confidence_score": 1.0,
       "source": "src_components_sections_truststrip",
       "target": "src_components_sections_truststrip_truststripprops"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_sections_usecasessection_usecases"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/sections/UseCasesSection.tsx",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_components_sections_usecasessection",
+      "target": "src_components_sections_usecasessection_usecasessection"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/Index.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_pages_index",
+      "target": "src_components_sections_usecasessection"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/Index.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "confidence_score": 1.0,
+      "source": "src_pages_index",
+      "target": "src_components_sections_usecasessection_usecasessection"
     },
     {
       "relation": "contains",
@@ -165522,5 +165522,5 @@
       "source_file": "src/content/docs/how-auth-works.mdx"
     }
   ],
-  "built_at_commit": "cb09391cc5043c831363e973534bbf521acbcace"
+  "built_at_commit": "ebcea812ebfa38d1278211fa1a47a066d9fcadc6"
 }
