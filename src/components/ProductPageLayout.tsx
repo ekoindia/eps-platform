@@ -1,5 +1,5 @@
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { useMemo, useRef, useState } from "react";
 
 import type {
@@ -29,7 +29,6 @@ import {
 } from "@/lib/data/api-spec-previews";
 import { getSolutionPacksForApi } from "@/lib/data/solutions";
 import { formatINRRate, normalizeApiLabel } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-chat";
 import type { LucideIcon } from "lucide-react";
 import {
 	ArrowRight,
@@ -242,16 +241,9 @@ export const ProductPageLayout = ({
 							</FadeIn>
 							<FadeIn onView={false} delay={300}>
 								<div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-									<Button
-										variant="gold"
-										size="lg"
-										asChild
-										onClick={() => openZohoChat()}
-									>
-										<span>
-											Get Sandbox Access <ArrowRight className="w-4 h-4" />
-										</span>
-									</Button>
+									<GetStartedButton variant="gold" size="lg">
+										Get Sandbox Access <ArrowRight className="w-4 h-4" />
+									</GetStartedButton>
 									{docHref && (
 										<Link
 											to={docHref}

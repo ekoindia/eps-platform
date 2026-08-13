@@ -1,11 +1,12 @@
 import pingoBot from "@/assets/pingo/pingo-3d.png?w=192;384&format=avif;webp&as=picture";
 import { CodeBlock, exampleApiCode } from "@/components/CodeBlock";
 import { FadeIn } from "@/components/FadeIn";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { Picture } from "@/components/Picture";
 import { TrustStrip } from "@/components/sections/TrustStrip";
 import { Button } from "@/components/ui/button";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
 	return (
@@ -119,27 +120,22 @@ export const HeroSection = () => {
 
 						<FadeIn onView={false} delay={300}>
 							<div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-								<Button
-									id="btn-explore-apis-section-hero"
+								<GetStartedButton
+									id="btn-get-started-section-hero"
 									variant="gold"
 									size="xl"
 									className="group"
-									onClick={() =>
-										document
-											.getElementById("products")
-											?.scrollIntoView({ behavior: "smooth" })
-									}
 								>
-									Explore APIs
+									Get Started
 									<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-								</Button>
+								</GetStartedButton>
 								<Button
-									id="btn-chat-section-hero"
+									id="btn-explore-apis-section-hero"
 									variant="hero-outline"
 									size="xl"
-									onClick={() => openZohoChat()}
+									asChild
 								>
-									Talk to Sales
+									<Link to="/docs">Explore APIs</Link>
 								</Button>
 							</div>
 						</FadeIn>

@@ -12,7 +12,6 @@
  * subset that is flattened back to plain text for JSON-LD and search.
  */
 
-import { SIGNUP_URL } from "@/lib/config/site";
 import { API_ENVIRONMENTS } from "./api-auth";
 
 /**
@@ -85,11 +84,11 @@ export const parseFaqTags = (input: string): FaqTag[] => {
 export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "How do I get started?",
-		a: `Four steps: **sign up** at [ekostore.app/eps](${SIGNUP_URL}), verify your identity with PAN and address details, load your wallet to test the APIs live, then integrate and go live. Sandbox credentials are issued immediately — you can call your first endpoint before any paperwork clears.`,
+		a: `Four steps: **sign up** at the [developer console page](/console), verify your identity with PAN and address details, load your wallet to test the APIs live, then integrate and go live. Sandbox credentials are issued immediately — you can call your first endpoint before any paperwork clears.`,
 		tag: "getting-started",
 		links: [
 			{ label: "Developer docs", href: "/docs" },
-			{ label: "Sign up", href: SIGNUP_URL },
+			{ label: "Sign up", href: "/console" },
 		],
 	},
 	{

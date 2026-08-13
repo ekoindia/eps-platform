@@ -1,3 +1,4 @@
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { MobileEstimateBar } from "@/components/pricing/MobileSummaryBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,6 @@ import {
 	type CbInput,
 } from "@/lib/data/connected-banking-pricing";
 import { formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, Landmark, Link2, Minus, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -203,9 +203,9 @@ export const ConnectedBankingCalculator = () => {
 				</div>
 
 				<div className="flex flex-col gap-2.5 mt-5">
-					<Button variant="gold" size="lg" onClick={() => openZohoChat()}>
+					<GetStartedButton variant="gold" size="lg">
 						Get Started <ArrowRight className="w-4 h-4" />
-					</Button>
+					</GetStartedButton>
 					<Button
 						variant="ghost"
 						size="sm"

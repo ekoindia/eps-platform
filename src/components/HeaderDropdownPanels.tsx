@@ -5,6 +5,7 @@
  */
 import { DropdownColumnHeader, DropdownGrid } from "@/components/DropdownGrid";
 import { EkoLogo } from "@/components/EkoLogo";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { ClaudeCodeIcon } from "@/components/icons/ClaudeCodeIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -24,24 +25,22 @@ import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { cn } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-chat";
 import {
 	ArrowRight,
 	BookOpen,
 	Bot,
 	Briefcase,
 	HelpCircle,
-	LayoutDashboard,
-	LogIn,
 	LogOut,
 	Package,
 	Sparkles,
+	SquareCode,
 } from "lucide-react";
 import {
-	type ComponentType,
 	Fragment,
 	lazy,
 	Suspense,
+	type ComponentType,
 	type HTMLAttributes,
 	type ReactNode,
 } from "react";
@@ -433,12 +432,12 @@ export const HeaderDropdownPanels = ({
 	const identity = SHOW_USER_LOGIN ? accountIdentity(state) : null;
 	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
 		? [
-				...developerLinks,
 				{
-					label: state.status === "authed" ? "Console" : "Log in",
+					label: "Developer Console",
 					href: "/console",
-					icon: state.status === "authed" ? LayoutDashboard : LogIn,
+					icon: SquareCode,
 				},
+				...developerLinks,
 			]
 		: developerLinks;
 
@@ -896,18 +895,16 @@ export const HeaderDropdownPanels = ({
 								</Button>
 							</div>
 						) : (
-							<Button
+							<GetStartedButton
 								id="btn-get-started-header-mobile"
 								variant="gold"
 								size="sm"
-								onClick={() => {
-									setMobileMenuOpen(false);
-									openZohoChat();
-								}}
+								onClick={() => setMobileMenuOpen(false)}
 								className="cursor-pointer self-start min-w-[140px]"
+								consoleLabel="Log in / Sign up"
 							>
 								Get Started
-							</Button>
+							</GetStartedButton>
 						)}
 					</div>
 				</SheetContent>

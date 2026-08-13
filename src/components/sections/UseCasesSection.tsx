@@ -1,12 +1,12 @@
-import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { UseCaseCard } from "@/components/Cards";
 import { FadeIn } from "@/components/FadeIn";
+import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import {
-	Store,
-	Smartphone,
+	Building,
 	CreditCard,
 	Plane,
-	Building,
+	Smartphone,
+	Store,
 	Users,
 } from "lucide-react";
 
@@ -39,7 +39,7 @@ const useCases = [
 		icon: Plane,
 		title: "Travel Agents & Distributors",
 		description:
-			"Launch your own Travel portal with a ready-to-use Platform for all travel booking need Like Hotel, Fights, Bus and Train.",
+			"Launch your own Travel portal with a ready-to-use Platform for all travel booking need Like Hotel, Flights, Bus and Train.",
 	},
 	{
 		icon: CreditCard,

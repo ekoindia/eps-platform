@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { MenuItemLink, DropdownColumnHeader } from "@/components/DropdownGrid";
-import { openZohoChat } from "@/lib/zoho-chat";
 
 interface NavApiItem {
 	label: string;
@@ -94,17 +93,14 @@ export const ProductsMegaPanel = ({
 				<p className="text-xs text-white/70 mt-0.5">
 					Go live with Eko APIs in days, not months.
 				</p>
-				<Button
+				<GetStartedButton
 					variant="gold"
 					size="sm"
 					className="mt-3 w-full cursor-pointer"
-					onClick={() => {
-						onItemClick();
-						openZohoChat();
-					}}
+					onClick={() => onItemClick()}
 				>
 					Get Started
-				</Button>
+				</GetStartedButton>
 			</div>
 		</div>
 	</div>

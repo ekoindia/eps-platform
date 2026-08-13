@@ -13,9 +13,9 @@ import { SITE_URL } from "@/lib/config/site";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import {
 	branchCondition,
-	RECIPES,
 	type Recipe,
 	recipeHref,
+	RECIPES,
 	STEP_FREQUENCY_LABEL,
 } from "@/lib/data/api-recipes";
 import { docsHref } from "@/lib/data/docs-registry";
@@ -163,7 +163,7 @@ export function renderRecipesIndexMarkdown(): string {
 		}),
 		canonicalNotice(canonical),
 		h1("API Recipes"),
-		"Each recipe is a complete, multi-call workflow across several Eko endpoints — the order to call them in, and the conditional jumps to make based on each response. The per-endpoint references tell you how to call one API; these tell you how to combine them.",
+		"Each recipe is a complete, multi-call workflow across several EPS API endpoints — the order to call them in, and the conditional jumps to make based on each response. The per-endpoint references tell you how to call one API; these tell you how to combine them.",
 		h2("Available recipes"),
 		bulletList(
 			RECIPES.map((recipe) => {

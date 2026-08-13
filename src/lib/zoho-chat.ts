@@ -9,8 +9,12 @@ import {
 import type { ChatIdentity } from "@/lib/auth/identity";
 
 interface ZohoSalesIQ {
+	ready?: () => void;
+	floatbutton?: {
+		visible?: (mode: "show" | "hide") => void;
+	};
 	chatwindow?: {
-		visible?: (mode: "show") => void;
+		visible?: (mode: "show" | "hide") => void;
 	};
 	chat?: {
 		start?: () => void;
@@ -56,6 +60,92 @@ interface ZohoGlobal {
 	salesiq?: ZohoSalesIQ;
 }
 
+declare global {
+	interface Window {
+		$zoho?: ZohoGlobal;
+		/**
+		 * Loader exposed by the inline widget bootstrap in `index.html`. Present
+		 * even on routes where that bootstrap declines to auto-load, so a later
+		 * navigation to a chat-enabled route can pull the widget in. Idempotent.
+		 */
+		__loadZohoWidget?: () => void;
+	}
+}
+
+function getSalesIQ(): ZohoSalesIQ | undefined {
+	return window.$zoho?.salesiq;
+}
+
+/**
+ * True on the routes that must not show the chat bubble: the signup form and the
+ * console work surfaces. `/console` itself (the partner home) keeps chat.
+ *
+ * Duplicated — deliberately — by the inline bootstrap in `index.html`, which
+ * runs before any module can load and therefore cannot import this. Keep both in
+ * sync; `zoho-chat.test.ts` pins the cases.
+ */
+export function isChatHiddenPath(pathname: string): boolean {
+	const path = pathname.replace(/\/+$/, "") || "/";
+	return path === "/signup" || path.startsWith("/console/");
+}
+
+/** Route-derived intent, re-applied whenever the widget (re)becomes available. */
+let hiddenForRoute = false;
+/** An open was requested before the widget existed; honour it once it loads. */
+let pendingOpen = false;
+/** The `salesiq` object whose `ready` we already chained onto. */
+let hookedSalesIQ: ZohoSalesIQ | undefined;
+
+/**
+ * Chains our state onto SalesIQ's `ready` callback, seeding the `$zoho.salesiq`
+ * stub if the bootstrap has not run. Without this, a route change that lands on
+ * a hidden page while the widget is still downloading would be a no-op and the
+ * bubble would appear as soon as it finished.
+ */
+function hookReady(): void {
+	const zoho = (window.$zoho ??= {});
+	const salesiq = (zoho.salesiq ??= {});
+	if (hookedSalesIQ === salesiq) return;
+	hookedSalesIQ = salesiq;
+	const previous = salesiq.ready;
+	salesiq.ready = () => {
+		try {
+			previous?.();
+		} finally {
+			applyState();
+		}
+	};
+}
+
+/** Pushes `hiddenForRoute` / `pendingOpen` to the widget. No-op until it loads. */
+function applyState(): void {
+	const salesiq = getSalesIQ();
+	if (!salesiq?.floatbutton && !salesiq?.chat) return;
+	try {
+		salesiq.floatbutton?.visible?.(hiddenForRoute ? "hide" : "show");
+		if (hiddenForRoute) salesiq.chatwindow?.visible?.("hide");
+	} catch {
+		// Widget API shape changed or unavailable — ignore
+	}
+	if (pendingOpen && salesiq.chat?.start) {
+		pendingOpen = false;
+		startChat(salesiq);
+	}
+}
+
+/**
+ * Hides or restores the chat bubble for the current route. Safe to call before
+ * the widget loads; the intent is replayed from SalesIQ's `ready` callback.
+ */
+export function setZohoChatHidden(hidden: boolean): void {
+	hiddenForRoute = hidden;
+	hookReady();
+	// The bootstrap skips loading entirely on hidden routes, so a navigation
+	// away from one has to ask for the widget itself.
+	if (!hidden) window.__loadZohoWidget?.();
+	applyState();
+}
+
 /**
  * Pushes lead context (ad/UTM attribution + pricing-calculator selection)
  * to SalesIQ as visitor info so chat-created leads carry it even when the
@@ -76,19 +166,33 @@ function pushVisitorInfo(salesiq: ZohoSalesIQ) {
 	}
 }
 
-export function openZohoChat() {
-	const zoho = (window as Window & { $zoho?: ZohoGlobal }).$zoho;
-	if (!zoho?.salesiq) return;
-
-	pushVisitorIdentity(zoho.salesiq);
-	pushVisitorInfo(zoho.salesiq);
+function startChat(salesiq: ZohoSalesIQ) {
+	pushVisitorIdentity(salesiq);
+	pushVisitorInfo(salesiq);
 
 	// Show the chat window first (works even after close)
-	if (zoho.salesiq.chatwindow?.visible) {
-		zoho.salesiq.chatwindow.visible("show");
+	if (salesiq.chatwindow?.visible) {
+		salesiq.chatwindow.visible("show");
 	}
 	// Then start a new chat conversation
-	if (zoho.salesiq.chat?.start) {
-		zoho.salesiq.chat.start();
+	if (salesiq.chat?.start) {
+		salesiq.chat.start();
 	}
+}
+
+export function openZohoChat() {
+	// An explicit CTA outranks the route rule until the next navigation — the
+	// Footer's chat links render on hidden routes too.
+	hiddenForRoute = false;
+	const salesiq = getSalesIQ();
+	if (!salesiq?.chat?.start) {
+		// Widget absent (hidden route, or still downloading): pull it in and open
+		// from the ready callback instead of dropping the click.
+		pendingOpen = true;
+		hookReady();
+		window.__loadZohoWidget?.();
+		return;
+	}
+	salesiq.floatbutton?.visible?.("show");
+	startChat(salesiq);
 }

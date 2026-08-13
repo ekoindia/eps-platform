@@ -1,5 +1,5 @@
 import { Footer } from "@/components/Footer";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { SignInSplit } from "@/components/auth/SignInSplit";
 import { ConnectDialogProvider } from "@/components/connect/DialogHost";
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
 	Menu,
 	PlusCircle,
 	ReceiptText,
+	ShieldCheck,
 	UserCog,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -53,14 +54,23 @@ import {
  * entries once entitlements resolve — past the point a flat list reads.
  */
 type NavItem = {
+	/** Router path, or an absolute URL when `external`. */
 	to: string;
 	label: string;
 	icon: typeof LayoutDashboard;
 	end: boolean;
+	/** Leaves the site: renders as `<a target="_blank">`, never active. */
+	external?: boolean;
 };
 
 /** A captioned block of rail links. A group with no items renders nothing. */
 type NavGroup = { title: string; items: readonly NavItem[] };
+
+/** Shared by both link shapes, so the external item can't drift from the rest. */
+const NAV_LINK_BASE =
+	"flex items-center gap-2 rounded-md px-3 py-2 transition-colors";
+const NAV_LINK_IDLE =
+	"text-muted-foreground hover:bg-muted hover:text-foreground";
 
 const HOME_ITEM: NavItem = {
 	to: "/console",
@@ -139,6 +149,20 @@ const MANAGE_ACCOUNT: Flow = {
 };
 
 /**
+ * ekostore's KYC & verification sandbox. Entitled the same way as any flow — by
+ * the id turning up in the interaction list — but the page itself is off-site,
+ * so this is a plain external item rather than a `Flow`.
+ */
+const EKOSTORE_KYC_ID = 9995;
+const EKOSTORE_KYC_ITEM: NavItem = {
+	to: "https://ekostore.app/products/kyc-verification",
+	label: "Test KYC & Verification APIs",
+	icon: ShieldCheck,
+	end: false,
+	external: true,
+};
+
+/**
  * The rail item for a flow, when this user is entitled to run it.
  * @param list - The caller's interaction list, or null while unresolved.
  * @param flow - The flow to link to.
@@ -189,28 +213,47 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 				...flowItem(interactions, MANAGE_ACCOUNT),
 			],
 		},
-		{ title: "Build & Monitor", items: [TRANSACTIONS_ITEM, ...DEV_ITEMS] },
+		{
+			title: "Build & Monitor",
+			items: [
+				TRANSACTIONS_ITEM,
+				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
+				...DEV_ITEMS,
+			],
+		},
 	];
 
-	const link = (item: NavItem) => (
-		<NavLink
-			key={item.to}
-			to={item.to}
-			end={item.end}
-			onClick={onNavigate}
-			className={({ isActive }) =>
-				cn(
-					"flex items-center gap-2 rounded-md px-3 py-2 transition-colors",
-					isActive
-						? "bg-slate-300 font-medium text-eko-navy"
-						: "text-muted-foreground hover:bg-muted hover:text-foreground",
-				)
-			}
-		>
-			<item.icon className="h-4 w-4 shrink-0" />
-			<span>{item.label}</span>
-		</NavLink>
-	);
+	const link = (item: NavItem) =>
+		item.external ? (
+			<a
+				key={item.to}
+				href={item.to}
+				target="_blank"
+				rel="noopener noreferrer"
+				onClick={onNavigate}
+				className={cn(NAV_LINK_BASE, NAV_LINK_IDLE)}
+			>
+				<item.icon className="h-4 w-4 shrink-0" />
+				<span>{item.label}</span>
+				<ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+			</a>
+		) : (
+			<NavLink
+				key={item.to}
+				to={item.to}
+				end={item.end}
+				onClick={onNavigate}
+				className={({ isActive }) =>
+					cn(
+						NAV_LINK_BASE,
+						isActive ? "bg-slate-300 font-medium text-eko-navy" : NAV_LINK_IDLE,
+					)
+				}
+			>
+				<item.icon className="h-4 w-4 shrink-0" />
+				<span>{item.label}</span>
+			</NavLink>
+		);
 
 	return (
 		<nav className="text-sm" aria-label="Console">
@@ -299,37 +342,32 @@ export default function ConsoleLayout() {
 				<title>Developer Console — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
-			{/* Everything but a signed-in developer is a single card on a plain
-			    page: same container, same title as before the rail was rebuilt. */}
-			{developer ? null : (
+			{/* An anonymous visitor gets the full-bleed sign-in pitch, which needs
+			    the whole width — so it sits outside the container the other
+			    logged-out states share, and outside their top padding too:
+			    `SignInSplit` runs to the top edge and clears the fixed header
+			    internally, so its two-tone columns paint behind the header instead
+			    of leaving a strip of page background above them. */}
+			{state.status === "anon" ? (
+				<main>
+					{/* Warm the dashboard's chunk while the user reads the SMS.
+					    `ConsoleHome` is lazy, so without this its request only starts
+					    once the session lands — a round-trip bolted onto the screen the
+					    user is already waiting for. Must resolve to the same module
+					    App.tsx lazy-loads — the `@/` alias and its relative path do, and
+					    share one chunk — or this warms a second copy instead of the one
+					    that gets rendered. */}
+					<SignInSplit prefetch={() => import("@/pages/console/ConsoleHome")} />
+				</main>
+			) : null}
+			{/* Loading and admin are a single card on a plain page: same container,
+			    same title as before the rail was rebuilt. */}
+			{developer || state.status === "anon" ? null : (
 				<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh]">
 					<h1 className="text-2xl font-bold text-eko-navy mb-8">
 						Developer Console
 					</h1>
 					{showLoading ? <ConsoleLoading /> : null}
-					{state.status === "anon" ? (
-						<Card className="max-w-md">
-							<CardHeader>
-								<CardTitle>Log in</CardTitle>
-								<CardDescription>
-									Sign in with your mobile number to access your EPS Developer
-									Console.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{/* Warm the dashboard's chunk while the user reads the SMS.
-							    `ConsoleHome` is lazy, so without this its request only
-							    starts once the session lands — a round-trip bolted onto
-							    the screen the user is already waiting for. Must resolve to
-							    the same module App.tsx lazy-loads — the `@/` alias and its
-							    relative path do, and share one chunk — or this warms a
-							    second copy instead of the one that gets rendered. */}
-								<LoginForm
-									prefetch={() => import("@/pages/console/ConsoleHome")}
-								/>
-							</CardContent>
-						</Card>
-					) : null}
 					{state.status === "authed" && state.role === "admin" ? (
 						<Card className="max-w-md">
 							<CardHeader>
@@ -367,7 +405,7 @@ export default function ConsoleLayout() {
 								    `DocsLayout` does. The lifecycle state lives on the Home
 								    profile card, not here. */}
 								<div className="mb-3 flex items-center justify-center gap-2 px-3">
-									<h1 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+									<h1 className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-eko-gold-ink">
 										EPS Developer Console
 									</h1>
 								</div>

@@ -120,9 +120,14 @@ export const MiniToc = ({
 		};
 	}, [entries.length, align, scopeSelector]);
 
-	// Scroll-spy: active = last heading whose top has passed the header offset.
+	// Scroll-spy (active heading) + vertical placement, both driven by one
+	// rAF-batched scroll pass.
 	useEffect(() => {
 		if (entries.length < 2) return;
+		const strip = stripRef.current;
+		// Fixed for this entry set — measured once rather than every frame.
+		const half = (strip?.offsetHeight ?? 0) / 2;
+		const footer = document.querySelector("footer");
 		let frame = 0;
 		const update = () => {
 			frame = 0;
@@ -136,14 +141,34 @@ export const MiniToc = ({
 				} else break;
 			}
 			setActive(idx);
+
+			// Ride above the footer once it scrolls in, instead of over it.
+			if (strip) {
+				const footerTop = footer?.getBoundingClientRect().top ?? Infinity;
+				const centre = Math.min(
+					window.innerHeight / 2,
+					footerTop - EDGE_MARGIN - half,
+				);
+				// ponytail: on a viewport too short to fit the strip between header
+				// and footer, staying clear of the header wins and the footer overlap
+				// comes back. Hide it instead if that ever shows up in practice.
+				strip.style.top = `${Math.max(HEADER_OFFSET + half, centre)}px`;
+			}
 		};
 		const onScroll = () => {
 			if (!frame) frame = requestAnimationFrame(update);
 		};
 		update();
 		window.addEventListener("scroll", onScroll, { passive: true });
+		window.addEventListener("resize", onScroll);
+		// Late layout shifts (fonts, images, expanding content) move the footer
+		// without a scroll event.
+		const ro = new ResizeObserver(onScroll);
+		ro.observe(document.body);
 		return () => {
 			window.removeEventListener("scroll", onScroll);
+			window.removeEventListener("resize", onScroll);
+			ro.disconnect();
 			cancelAnimationFrame(frame);
 		};
 	}, [entries]);
@@ -163,10 +188,15 @@ export const MiniToc = ({
 			ref={stripRef}
 			aria-label="On this page"
 			className="group fixed z-40 hidden -translate-y-1/2 lg:block"
-			style={{ left: left ?? -9999, top: "50%" }}
+			// `top` is owned by the scroll effect (viewport centre, clamped above
+			// the footer); `left` stays offscreen until measured.
+			style={{ left: left ?? -9999 }}
 		>
 			{/* Dash strip (decorative; the popup carries the real controls) */}
-			<div aria-hidden="true" className="flex flex-col items-end gap-1.5 py-2">
+			<div
+				aria-hidden="true"
+				className="flex flex-col items-end gap-1.5 py-2 cursor-pointer"
+			>
 				{entries.map((entry, i) => (
 					<span
 						key={i}
@@ -205,7 +235,7 @@ export const MiniToc = ({
 									onClick={() => scrollTo(entry.el)}
 									style={{ paddingLeft: 8 + (entry.level - 2) * 14 }}
 									className={cn(
-										"block w-full truncate rounded-md py-1.5 pr-3 text-left text-sm transition-colors",
+										"block w-full truncate rounded-md py-1.5 pr-3 text-left text-sm transition-colors cursor-pointer",
 										i === active
 											? "font-medium text-primary"
 											: "text-muted-foreground hover:bg-muted hover:text-foreground",

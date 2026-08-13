@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { openZohoChat, setChatIdentity } from "./zoho-chat";
+import {
+	isChatHiddenPath,
+	openZohoChat,
+	setChatIdentity,
+	setZohoChatHidden,
+} from "./zoho-chat";
 
 vi.mock("@/hooks/use-tracking-params", () => ({
 	getStoredTrackingParams: vi.fn(() => ({})),
@@ -38,6 +43,7 @@ beforeEach(() => {
 afterEach(() => {
 	vi.clearAllMocks();
 	delete (window as unknown as { $zoho?: unknown }).$zoho;
+	delete (window as unknown as { __loadZohoWidget?: unknown }).__loadZohoWidget;
 });
 
 describe("openZohoChat visitor identity", () => {
@@ -144,5 +150,119 @@ describe("openZohoChat window handling", () => {
 
 		expect(salesiq.chatwindow.visible).toHaveBeenCalledWith("show");
 		expect(salesiq.chat.start).toHaveBeenCalled();
+	});
+});
+
+/**
+ * Completes the stub `$zoho.salesiq` that the bootstrap (or `hookReady`) seeded
+ * with the real widget APIs and fires `ready`, the way the SalesIQ script does.
+ */
+function finishWidgetLoad() {
+	const salesiq = (
+		window as unknown as {
+			$zoho: { salesiq: Record<string, unknown> & { ready: () => void } };
+		}
+	).$zoho.salesiq;
+	Object.assign(salesiq, {
+		visitor: {
+			info: vi.fn(),
+			name: vi.fn(),
+			email: vi.fn(),
+			contactnumber: vi.fn(),
+		},
+		floatbutton: { visible: vi.fn() },
+		chatwindow: { visible: vi.fn() },
+		chat: { start: vi.fn() },
+	});
+	salesiq.ready();
+	return salesiq as unknown as {
+		floatbutton: { visible: ReturnType<typeof vi.fn> };
+		chatwindow: { visible: ReturnType<typeof vi.fn> };
+		chat: { start: ReturnType<typeof vi.fn> };
+	};
+}
+
+describe("isChatHiddenPath", () => {
+	it("hides chat on the signup form and console subpages", () => {
+		expect(isChatHiddenPath("/signup")).toBe(true);
+		expect(isChatHiddenPath("/signup/")).toBe(true);
+		expect(isChatHiddenPath("/console/profile")).toBe(true);
+		expect(isChatHiddenPath("/console/transaction/abc/step")).toBe(true);
+	});
+
+	it("keeps chat on the console home and everywhere else", () => {
+		expect(isChatHiddenPath("/console")).toBe(false);
+		expect(isChatHiddenPath("/console/")).toBe(false);
+		expect(isChatHiddenPath("/")).toBe(false);
+		expect(isChatHiddenPath("/products/aeps")).toBe(false);
+		// Not a console subpath despite the shared prefix.
+		expect(isChatHiddenPath("/consoles-are-fun")).toBe(false);
+	});
+});
+
+describe("setZohoChatHidden", () => {
+	it("hides the bubble and any open window on a chat-free route", () => {
+		const { salesiq } = mockWidget();
+		const floatbutton = { visible: vi.fn() };
+		Object.assign(salesiq, { floatbutton });
+
+		setZohoChatHidden(true);
+
+		expect(floatbutton.visible).toHaveBeenCalledWith("hide");
+		expect(salesiq.chatwindow.visible).toHaveBeenCalledWith("hide");
+	});
+
+	it("restores the bubble without opening a chat", () => {
+		const { salesiq } = mockWidget();
+		const floatbutton = { visible: vi.fn() };
+		Object.assign(salesiq, { floatbutton });
+
+		setZohoChatHidden(false);
+
+		expect(floatbutton.visible).toHaveBeenCalledWith("show");
+		expect(salesiq.chat.start).not.toHaveBeenCalled();
+	});
+
+	it("pulls in a widget the bootstrap skipped when chat becomes allowed", () => {
+		const load = vi.fn();
+		(window as unknown as { __loadZohoWidget?: () => void }).__loadZohoWidget =
+			load;
+
+		setZohoChatHidden(false);
+
+		expect(load).toHaveBeenCalled();
+	});
+
+	it("does not throw before the widget exists", () => {
+		expect(() => setZohoChatHidden(true)).not.toThrow();
+	});
+
+	it("stays hidden when the route changed while the widget was still loading", () => {
+		// Visible hard load: the bootstrap's 1s timer is in flight.
+		setZohoChatHidden(false);
+		// Visitor navigates to /console/profile before the script lands.
+		setZohoChatHidden(true);
+
+		const salesiq = finishWidgetLoad();
+
+		expect(salesiq.floatbutton.visible).toHaveBeenLastCalledWith("hide");
+	});
+});
+
+describe("openZohoChat before the widget loads", () => {
+	it("loads the widget and opens the chat once it is ready", () => {
+		const load = vi.fn();
+		(window as unknown as { __loadZohoWidget?: () => void }).__loadZohoWidget =
+			load;
+		setZohoChatHidden(true);
+
+		openZohoChat();
+
+		expect(load).toHaveBeenCalled();
+
+		const salesiq = finishWidgetLoad();
+
+		expect(salesiq.chat.start).toHaveBeenCalled();
+		expect(salesiq.floatbutton.visible).toHaveBeenCalledWith("show");
 	});
 });

@@ -3,7 +3,7 @@ import type {
 	EkoClient,
 	EkoErrorDetails,
 } from "../clients/eko";
-import { identityOf } from "../clients/eko";
+import { agreementIdOf, identityOf } from "../clients/eko";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult } from "../types";
 import { encodePin } from "./pintwin";
@@ -158,6 +158,25 @@ export function createSignupService(deps: {
 		return r.profile;
 	}
 
+	/**
+	 * Reads the user's agreement id off the profile, or refuses the step.
+	 *
+	 * Deliberately has no fallback: the id used to be hardcoded to the API (EPS)
+	 * partner's '4', and substituting a guess for a missing one is exactly the bug
+	 * this replaced — it either fails upstream as 1083 or signs the wrong
+	 * agreement. `-1` marks a locally-raised failure, as elsewhere in this file.
+	 */
+	function requireAgreementId(profile: EkoProfile, step: string): string {
+		const agreementId = agreementIdOf(profile);
+		if (!agreementId) {
+			throw new SignupStepError(
+				`Couldn't ${step} right now. Please try again.`,
+				-1,
+			);
+		}
+		return agreementId;
+	}
+
 	/** Re-reads state from upstream after a step, so progress is never inferred. */
 	async function refresh(
 		mobile: string,
@@ -269,6 +288,7 @@ export function createSignupService(deps: {
 			const result = await eko.getAgreementUrl({
 				mobile,
 				identity: identityOf(profile),
+				agreementId: requireAgreementId(profile, "start the agreement signing"),
 				xRealIp,
 			});
 			if (!result.ok) {
@@ -291,6 +311,16 @@ export function createSignupService(deps: {
 			const result = await eko.submitSignAgreement({
 				documentId,
 				identity: identityOf(profile),
+				// Re-read, not carried over from 287: this is a separate request with
+				// its own profile fetch, and there is nowhere server-side holding the
+				// id the document was created with. Upstream treats the agreement id
+				// as a property of the user, so the two reads agree in practice — if
+				// that ever stops being true, bind the id to `documentId` in the KV
+				// store at 287 and read it back here.
+				agreementId: requireAgreementId(
+					profile,
+					"complete the agreement signing",
+				),
 				xRealIp,
 			});
 			if (!result.ok) {

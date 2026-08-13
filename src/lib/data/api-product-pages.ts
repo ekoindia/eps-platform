@@ -51,7 +51,6 @@ import {
 } from "lucide-react";
 
 import type { ProductPageContent } from "@/components/ProductPageLayout";
-import { SIGNUP_URL } from "@/lib/config/site";
 import { COMMON_API_FAQS } from "./common-faqs";
 
 // ---------------------------------------------------------------------------
@@ -97,7 +96,7 @@ const VERIFICATION_STEPS_BASE = [
 	{
 		title: "Sign Up",
 		desc: "Sign up in minutes with your mobile number (OTP verify).",
-		href: SIGNUP_URL,
+		href: "/console",
 	},
 	{
 		title: "Verify Identity",

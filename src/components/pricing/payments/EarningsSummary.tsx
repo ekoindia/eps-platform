@@ -1,10 +1,10 @@
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { SetupFeeLine } from "@/components/pricing/SetupFeeLine";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/sonner";
 import { TDS_RATE, type EarningsQuote } from "@/lib/data/payments-pricing";
 import { formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, FileSpreadsheet, Link2 } from "lucide-react";
 
 interface EarningsSummaryProps {
@@ -123,9 +123,9 @@ export const EarningsSummary = ({
 				)}
 
 				<div className="flex flex-col gap-2.5 mt-5">
-					<Button variant="gold" size="lg" onClick={() => openZohoChat()}>
+					<GetStartedButton variant="gold" size="lg">
 						Get Started <ArrowRight className="w-4 h-4" />
-					</Button>
+					</GetStartedButton>
 					{!isEmpty && (
 						<Button
 							variant="ghost"

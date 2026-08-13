@@ -1,19 +1,11 @@
 // src/components/Footer.auth.test.tsx
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-const state = { value: { status: "anon" as string } };
-vi.mock("@/lib/auth/AuthProvider", () => ({
-	useAuth: () => ({ state: state.value, refresh: vi.fn(), logout: vi.fn() }),
-}));
 vi.mock("@/lib/config/features", () => ({ SHOW_USER_LOGIN: true }));
 
 import { Footer } from "@/components/Footer";
-
-afterEach(() => {
-	state.value = { status: "anon" };
-});
 
 function renderFooter() {
 	return render(
@@ -23,22 +15,14 @@ function renderFooter() {
 	);
 }
 
-describe("Footer auth entry", () => {
-	it("shows Log in when anon and flag on", () => {
-		state.value = { status: "anon" };
+describe("Footer console entry", () => {
+	// The label used to switch on the auth state ("Open Console" / "Log into
+	// Console"). It is deliberately one label now — /console handles logging an
+	// anonymous visitor in — so the footer reads no auth state at all.
+	it("links to the console with one label, whatever the auth state", () => {
 		renderFooter();
-		expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
-			"href",
-			"/console",
-		);
-	});
-
-	it("shows Console when authed", () => {
-		state.value = { status: "authed" };
-		renderFooter();
-		expect(screen.getByRole("link", { name: "Console" })).toHaveAttribute(
-			"href",
-			"/console",
-		);
+		expect(
+			screen.getByRole("link", { name: "Developer Console" }),
+		).toHaveAttribute("href", "/console");
 	});
 });

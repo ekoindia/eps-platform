@@ -1,12 +1,12 @@
-import { ArrowRight } from "lucide-react";
-import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
 import { AiHint } from "@/components/AiHint";
 import { DocsLayout } from "@/components/docs/DocsLayout";
 import { SITE_TITLE_SUFFIX } from "@/components/docs/docs-meta";
 import { SITE_URL } from "@/lib/config/site";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
+import { ArrowRight } from "lucide-react";
+import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 
 const TITLE = "API Recipes";
 const DESCRIPTION =
@@ -41,7 +41,7 @@ const RecipesIndexPage = () => (
 				{TITLE}
 			</h1>
 			<p className="mt-3 text-muted-foreground">
-				Each recipe is a complete workflow across several Eko endpoints — the
+				Each recipe is a complete workflow across several API endpoints — the
 				order to call them in, and the conditional jumps to make based on each
 				response.
 			</p>

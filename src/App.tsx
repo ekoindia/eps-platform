@@ -7,10 +7,11 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { isChatHiddenPath, setZohoChatHidden } from "@/lib/zoho-chat";
 import { useCaptureTrackingParams } from "@/hooks/use-tracking-params";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { HelmetProvider } from "react-helmet-async";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 // Route-based code splitting: each page is loaded on demand
 const Index = lazy(() => import("./pages/Index"));
@@ -63,6 +64,18 @@ function TrackingParamCapture() {
 	return null;
 }
 
+/**
+ * Keeps the SalesIQ bubble off the signup form and the console work surfaces on
+ * client-side navigation. The bootstrap in `index.html` covers hard loads.
+ */
+function ZohoChatVisibility() {
+	const { pathname } = useLocation();
+	useEffect(() => {
+		setZohoChatHidden(isChatHiddenPath(pathname));
+	}, [pathname]);
+	return null;
+}
+
 const App = ({
 	helmetContext,
 }: {
@@ -73,6 +86,7 @@ const App = ({
 		<TooltipProvider>
 			<Sonner />
 			<TrackingParamCapture />
+			<ZohoChatVisibility />
 			<ScrollToTop />
 			{/* App-level, like <Sonner />: the header's notification detail opens the
           full-screen file viewer from it, and the header renders on every page.

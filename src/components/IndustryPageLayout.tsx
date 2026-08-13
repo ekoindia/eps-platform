@@ -2,6 +2,7 @@ import { ApiChip } from "@/components/ApiChip";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { IndustryCard } from "@/components/IndustryCard";
 import { MiniToc } from "@/components/MiniToc";
 import { FaqSection } from "@/components/sections/FaqSection";
@@ -15,7 +16,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { docsHref } from "@/lib/data/docs-registry";
@@ -59,16 +59,9 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
 							</FadeIn>
 							<FadeIn onView={false} delay={300}>
 								<div className="flex flex-wrap gap-4">
-									<Button
-										variant="gold"
-										size="lg"
-										asChild
-										onClick={() => openZohoChat()}
-									>
-										<span>
-											Get Sandbox Access <ArrowRight className="w-4 h-4" />
-										</span>
-									</Button>
+									<GetStartedButton variant="gold" size="lg">
+										Get Sandbox Access <ArrowRight className="w-4 h-4" />
+									</GetStartedButton>
 									<Button
 										variant="hero-outline"
 										size="lg"

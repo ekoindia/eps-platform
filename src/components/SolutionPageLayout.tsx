@@ -1,6 +1,7 @@
 import { ApiChip } from "@/components/ApiChip";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { Footer } from "@/components/Footer";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { IndustryCard } from "@/components/IndustryCard";
 import { MiniToc } from "@/components/MiniToc";
 import { FaqSection } from "@/components/sections/FaqSection";
@@ -13,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import type { SolutionData } from "@/lib/data/solutions";
 import { SOLUTIONS_MAP, resolvePackApi } from "@/lib/data/solutions";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { ArrowRight } from "lucide-react";
 import { docsHref } from "@/lib/data/docs-registry";
 import { useState } from "react";
@@ -74,16 +74,9 @@ export const SolutionPageLayout = ({ data }: SolutionPageLayoutProps) => {
 							<TrustStrip items={data.trustStrip} />
 
 							<div className="flex flex-wrap gap-4">
-								<Button
-									variant="gold"
-									size="lg"
-									asChild
-									onClick={() => openZohoChat()}
-								>
-									<span>
-										Get Sandbox Access <ArrowRight className="w-4 h-4" />
-									</span>
-								</Button>
+								<GetStartedButton variant="gold" size="lg">
+									Get Sandbox Access <ArrowRight className="w-4 h-4" />
+								</GetStartedButton>
 								<Button variant="hero-outline" size="lg" asChild>
 									<Link to={docsHref()}>
 										View Documentation <ArrowRight className="w-4 h-4" />

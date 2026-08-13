@@ -1,6 +1,5 @@
 import { EkoLogo } from "@/components/EkoLogo";
 import { XIcon } from "@/components/icons/XIcon";
-import { useAuth } from "@/lib/auth/AuthProvider";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { GITHUB_ORG_URL, SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
@@ -29,6 +28,8 @@ const footerLinks = {
 		// { label: "Eko Shield", href: "/products/eko-shield", internal: true },
 		// { label: "All APIs", href: "/products", internal: true },
 		{ label: "API Pricing", href: "/pricing", internal: true },
+		{ label: "Solutions Packs", href: "/solutions", internal: true },
+		{ label: "By Industry", href: "/industries", internal: true },
 	],
 	developers: [
 		// {
@@ -43,62 +44,73 @@ const footerLinks = {
 			// external: true,
 		},
 		{ label: "SDKs & Libraries", href: "/docs" },
-		{ label: "Sandbox", href: "/docs" },
+		// { label: "Sandbox", href: "/docs" },
 		{ label: "Integrate with AI", href: "/ai" },
 		{ label: "FAQs", href: "/faq", internal: true },
 		{ label: "Open Source", href: GITHUB_ORG_URL, external: true },
 		// { label: "Sandbox", href: "https://developers.eko.in", external: true },
+	],
+	guides: [
+		{ label: "Getting Started", href: "/docs/getting-started" },
+		{ label: "Transaction Flows (Recipes)", href: "/recipe" },
+		{ label: "How Auth Works", href: "/docs/how-auth-works" },
+		{ label: "Status/Error Codes", href: "/docs/error-codes" },
+		{ label: "Pricing Calculator", href: "/pricing" },
 	],
 	company: [
 		{ label: "About Us", href: "/about-us", internal: true },
 		{ label: "Grievance", href: "/grievance", internal: true },
 		// { label: "Blogs & Media", href: "/blogs-media", internal: true },
 		{ label: "Signup", href: "/signup", internal: true },
-	],
-	legal: [
 		{ label: "Privacy Policy", href: "/privacy-policy", internal: true },
 		{ label: "Terms & Conditions", href: "/tnc", internal: true },
 		{ label: "Refund Policy", href: "/refund-policy", internal: true },
 		// { label: "Compliance", href: "#compliance" },
 	],
-	industries: [
-		{
-			label: "Lending & NBFCs",
-			href: "/industries/lending-nbfc",
-			internal: true,
-		},
-		{ label: "Microfinance", href: "/industries/microfinance", internal: true },
-		{ label: "Insurance", href: "/industries/insurance", internal: true },
-		{
-			label: "Agent Networks",
-			href: "/industries/agent-networks-csp",
-			internal: true,
-		},
-		{ label: "All Industries", href: "/industries", internal: true },
-	],
-	solutions: [
-		{
-			label: "Assisted Banking Pack",
-			href: "/solutions/assisted-banking-agent-pack",
-			internal: true,
-		},
-		{
-			label: "Lending KYC Pack",
-			href: "/solutions/lending-kyc-pack",
-			internal: true,
-		},
-		{
-			label: "Merchant Onboarding",
-			href: "/solutions/merchant-onboarding-pack",
-			internal: true,
-		},
-		{
-			label: "MFI Operations",
-			href: "/solutions/mfi-field-operations-pack",
-			internal: true,
-		},
-		{ label: "All Solutions", href: "/solutions", internal: true },
-	],
+	// legal: [
+	// 	{ label: "Privacy Policy", href: "/privacy-policy", internal: true },
+	// 	{ label: "Terms & Conditions", href: "/tnc", internal: true },
+	// 	{ label: "Refund Policy", href: "/refund-policy", internal: true },
+	// 	// { label: "Compliance", href: "#compliance" },
+	// ],
+	// industries: [
+	// 	{
+	// 		label: "Lending & NBFCs",
+	// 		href: "/industries/lending-nbfc",
+	// 		internal: true,
+	// 	},
+	// 	{ label: "Microfinance", href: "/industries/microfinance", internal: true },
+	// 	{ label: "Insurance", href: "/industries/insurance", internal: true },
+	// 	{
+	// 		label: "Agent Networks",
+	// 		href: "/industries/agent-networks-csp",
+	// 		internal: true,
+	// 	},
+	// 	{ label: "All Industries", href: "/industries", internal: true },
+	// ],
+	// solutions: [
+	// 	{
+	// 		label: "Assisted Banking Pack",
+	// 		href: "/solutions/assisted-banking-agent-pack",
+	// 		internal: true,
+	// 	},
+	// 	{
+	// 		label: "Lending KYC Pack",
+	// 		href: "/solutions/lending-kyc-pack",
+	// 		internal: true,
+	// 	},
+	// 	{
+	// 		label: "Merchant Onboarding",
+	// 		href: "/solutions/merchant-onboarding-pack",
+	// 		internal: true,
+	// 	},
+	// 	{
+	// 		label: "MFI Operations",
+	// 		href: "/solutions/mfi-field-operations-pack",
+	// 		internal: true,
+	// 	},
+	// 	{ label: "All Solutions", href: "/solutions", internal: true },
+	// ],
 };
 
 /**
@@ -169,26 +181,27 @@ const socialLinks = [
 ];
 
 export const Footer = () => {
-	const { state } = useAuth();
+	// One label for everyone: the console link no longer reads the auth state —
+	// /console sends an anonymous visitor to log in by itself.
 	const developersLinks: FooterLinkItem[] = SHOW_USER_LOGIN
 		? [
-				...footerLinks.developers,
 				{
-					label: state.status === "authed" ? "Console" : "Log in",
+					label: "Developer Console",
 					href: "/console",
 					internal: true,
 				},
+				...footerLinks.developers,
 			]
 		: footerLinks.developers;
 	return (
 		<footer className="bg-eko-navy text-white print:hidden">
 			{/* Main Footer */}
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-				<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 lg:gap-6">
+				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
 					{/*
-            MARK: About Eko
-          */}
-					<div className="col-span-2 md:col-span-3 lg:col-span-2">
+						MARK: About Eko
+					*/}
+					<div className="col-span-2">
 						<div className="mb-3">
 							<EkoLogo className="h-16 w-auto" />
 						</div>
@@ -251,19 +264,21 @@ export const Footer = () => {
 					</div>
 
 					{/*
-            MARK: Columns
-          */}
+						MARK: Columns
+					*/}
 					<FooterColumn title="Products" links={footerLinks.products} />
 
-					<FooterColumn title="Solutions" links={footerLinks.solutions} />
+					{/* <FooterColumn title="Solutions" links={footerLinks.solutions} /> */}
 
-					<FooterColumn title="Industries" links={footerLinks.industries} />
+					{/* <FooterColumn title="Industries" links={footerLinks.industries} /> */}
 
 					<FooterColumn title="Developers" links={developersLinks} />
 
-					<FooterColumn title="Legal" links={footerLinks.legal} />
+					<FooterColumn title="Guides" links={footerLinks.guides} />
 
-					<FooterColumn title="Company" links={footerLinks.company} />
+					{/* <FooterColumn title="Legal" links={footerLinks.legal} /> */}
+
+					<FooterColumn title="Company & Legal" links={footerLinks.company} />
 				</div>
 			</div>
 

@@ -14,7 +14,7 @@ import type {
 	AgentTopicId,
 	AgentTopics,
 } from "@/lib/agent/agent-bundle-types";
-import { API_DEFAULT_VERSION, SIGNUP_URL, SITE_URL } from "@/lib/config/site";
+import { API_DEFAULT_VERSION, SITE_URL } from "@/lib/config/site";
 import { API_AUTH_INFO, API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
@@ -120,11 +120,11 @@ const buildTopics = (): AgentTopics => ({
 			{
 				title: "Sign up",
 				detail: "Sign up with your mobile number (OTP verified).",
-				url: SIGNUP_URL,
+				url: `${SITE_URL}/console`,
 			},
 			{
 				title: "Verify identity",
-				detail: "Submit your PAN.",
+				detail: "Submit your PAN and address details.",
 			},
 			{
 				title: "Test live",
@@ -143,7 +143,7 @@ const buildTopics = (): AgentTopics => ({
 			},
 		],
 		links: [
-			{ label: "Sign up", url: SIGNUP_URL },
+			{ label: "Sign up", url: `${SITE_URL}/console` },
 			{ label: "AI integration hub", url: `${SITE_URL}/ai` },
 		],
 	},

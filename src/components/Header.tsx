@@ -1,13 +1,12 @@
 import { UserMenu } from "@/components/auth/UserMenu";
 import { EkoLogo } from "@/components/EkoLogo";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { Button } from "@/components/ui/button";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { SHOW_NOTIFICATIONS, SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { cn } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-chat";
 import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -484,15 +483,15 @@ export const Header = () => {
                 MARK: Desktop CTA — hidden once signed in
               */}
 							{!isAuthed && (
-								<Button
+								<GetStartedButton
 									id="btn-get-started-header-desktop"
 									variant="gold"
 									size="sm"
-									onClick={() => openZohoChat()}
 									className="cursor-pointer"
+									consoleLabel="Log in / Sign up"
 								>
 									Get Started
-								</Button>
+								</GetStartedButton>
 							)}
 						</div>
 
