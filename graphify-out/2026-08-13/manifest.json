@@ -940,8 +940,8 @@
     "semantic_hash": ""
   },
   "src/components/Footer.tsx": {
-    "mtime": 1786524408.8961854,
-    "ast_hash": "1185e555495bcf700b881a007cab0508",
+    "mtime": 1786611539.3297393,
+    "ast_hash": "785db83f9538ecbeea6368593a070ca2",
     "semantic_hash": ""
   },
   "src/components/Header.tsx": {
@@ -950,8 +950,8 @@
     "semantic_hash": ""
   },
   "src/components/HeaderDropdownPanels.tsx": {
-    "mtime": 1786537168.1161416,
-    "ast_hash": "c2edef491792e88459f515f0ea6bbe73",
+    "mtime": 1786611487.186092,
+    "ast_hash": "d4d69009aa274a5f427d459529750899",
     "semantic_hash": ""
   },
   "src/components/IndustryCard.tsx": {
