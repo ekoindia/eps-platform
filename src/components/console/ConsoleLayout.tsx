@@ -1,5 +1,5 @@
 import { Footer } from "@/components/Footer";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { SignInSplit } from "@/components/auth/SignInSplit";
 import { ConnectDialogProvider } from "@/components/connect/DialogHost";
 import { WalletBalance } from "@/components/console/WalletBalance";
 import { Button } from "@/components/ui/button";
@@ -299,37 +299,32 @@ export default function ConsoleLayout() {
 				<title>Developer Console — EPS</title>
 				<meta name="robots" content="noindex,nofollow" />
 			</Helmet>
-			{/* Everything but a signed-in developer is a single card on a plain
-			    page: same container, same title as before the rail was rebuilt. */}
-			{developer ? null : (
+			{/* An anonymous visitor gets the full-bleed sign-in pitch, which needs
+			    the whole width — so it sits outside the container the other
+			    logged-out states share, and outside their top padding too:
+			    `SignInSplit` runs to the top edge and clears the fixed header
+			    internally, so its two-tone columns paint behind the header instead
+			    of leaving a strip of page background above them. */}
+			{state.status === "anon" ? (
+				<main>
+					{/* Warm the dashboard's chunk while the user reads the SMS.
+					    `ConsoleHome` is lazy, so without this its request only starts
+					    once the session lands — a round-trip bolted onto the screen the
+					    user is already waiting for. Must resolve to the same module
+					    App.tsx lazy-loads — the `@/` alias and its relative path do, and
+					    share one chunk — or this warms a second copy instead of the one
+					    that gets rendered. */}
+					<SignInSplit prefetch={() => import("@/pages/console/ConsoleHome")} />
+				</main>
+			) : null}
+			{/* Loading and admin are a single card on a plain page: same container,
+			    same title as before the rail was rebuilt. */}
+			{developer || state.status === "anon" ? null : (
 				<main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 min-h-[60vh]">
 					<h1 className="text-2xl font-bold text-eko-navy mb-8">
 						Developer Console
 					</h1>
 					{showLoading ? <ConsoleLoading /> : null}
-					{state.status === "anon" ? (
-						<Card className="max-w-md">
-							<CardHeader>
-								<CardTitle>Log in</CardTitle>
-								<CardDescription>
-									Sign in with your mobile number to access your EPS Developer
-									Console.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{/* Warm the dashboard's chunk while the user reads the SMS.
-							    `ConsoleHome` is lazy, so without this its request only
-							    starts once the session lands — a round-trip bolted onto
-							    the screen the user is already waiting for. Must resolve to
-							    the same module App.tsx lazy-loads — the `@/` alias and its
-							    relative path do, and share one chunk — or this warms a
-							    second copy instead of the one that gets rendered. */}
-								<LoginForm
-									prefetch={() => import("@/pages/console/ConsoleHome")}
-								/>
-							</CardContent>
-						</Card>
-					) : null}
 					{state.status === "authed" && state.role === "admin" ? (
 						<Card className="max-w-md">
 							<CardHeader>

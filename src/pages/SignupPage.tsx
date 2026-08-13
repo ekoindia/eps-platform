@@ -1,6 +1,6 @@
-import { LoginForm } from "@/components/auth/LoginForm";
+import { SignInSplit } from "@/components/auth/SignInSplit";
 import { Footer } from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignupWizard } from "@/features/signup/SignupWizard";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -41,28 +41,30 @@ const SignupPage = () => {
 				/>
 			</Helmet>
 
-			<main className="pt-24 lg:pt-28">
-				<section className="py-4 md:py-6">
-					<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-						<div
-							className={`mx-auto w-full ${isWizard ? "max-w-3xl" : "max-w-md"}`}
-						>
-							{isWizard ? (
-								<>
-									<h1 className="mb-6 text-2xl font-semibold tracking-tight">
-										Complete your setup
-									</h1>
-									<SignupWizard />
-								</>
-							) : (
-								<Card>
-									<CardHeader>
-										<CardTitle>
-											{state.status === "anon" ? "Create your account" : ""}
-										</CardTitle>
-									</CardHeader>
-									<CardContent>
-										{state.status !== "anon" && (
+			{/* Anonymous visitors get the same full-bleed sign-in pitch as `/console`,
+			    so the two entry points into one OTP flow look like one product. It
+			    needs the whole width and the whole height: no container, and no top
+			    padding to clear the fixed header — `SignInSplit` clears it internally
+			    so its two-tone columns paint behind it. */}
+			<main className={state.status === "anon" ? undefined : "pt-24 lg:pt-28"}>
+				{state.status === "anon" ? (
+					<SignInSplit />
+				) : (
+					<section className="py-4 md:py-6">
+						<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+							<div
+								className={`mx-auto w-full ${isWizard ? "max-w-3xl" : "max-w-md"}`}
+							>
+								{isWizard ? (
+									<>
+										<h1 className="mb-6 text-2xl font-semibold tracking-tight">
+											Complete your setup
+										</h1>
+										<SignupWizard />
+									</>
+								) : (
+									<Card>
+										<CardContent className="pt-6">
 											<div
 												data-testid="signup-loading"
 												className="flex flex-col gap-3"
@@ -70,14 +72,13 @@ const SignupPage = () => {
 												<Skeleton className="h-8 w-full" />
 												<Skeleton className="h-8 w-2/3" />
 											</div>
-										)}
-										{state.status === "anon" && <LoginForm />}
-									</CardContent>
-								</Card>
-							)}
+										</CardContent>
+									</Card>
+								)}
+							</div>
 						</div>
-					</div>
-				</section>
+					</section>
+				)}
 			</main>
 
 			<Footer />

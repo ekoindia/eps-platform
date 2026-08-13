@@ -87,6 +87,19 @@ describe("LoginForm", () => {
 		expect(await screen.findByLabelText(/digit 1/i)).toBeInTheDocument();
 	});
 
+	it("labels the mobile submit 'Send OTP' by default and honours submitLabel", () => {
+		const { unmount } = render(<LoginForm />);
+		expect(
+			screen.getByRole("button", { name: "Send OTP" }),
+		).toBeInTheDocument();
+		unmount();
+
+		render(<LoginForm submitLabel="Continue with mobile OTP" />);
+		expect(
+			screen.getByRole("button", { name: "Continue with mobile OTP" }),
+		).toBeInTheDocument();
+	});
+
 	it("submits the mobile step on Enter, but only once the number is complete", async () => {
 		(authClient.startOtp as ReturnType<typeof vi.fn>).mockResolvedValue({
 			ok: true,

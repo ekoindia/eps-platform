@@ -41,13 +41,18 @@ const LAST_MOBILE_KEY = "eko-last-mobile";
  *   next lazy route. The caller supplies it rather than this component naming a
  *   page, because the two call sites go to different places: the console lands
  *   on the dashboard, `/signup` on the wizard.
+ * @param submitLabel - Label for the mobile-step submit button. Defaults to
+ *   "Send OTP"; the sign-in split names the whole method instead, because there
+ *   it is the page's only call to action rather than one control on a card.
  */
 export function LoginForm({
 	onSuccess,
 	prefetch,
+	submitLabel = "Send OTP",
 }: {
 	onSuccess?: () => void;
 	prefetch?: () => Promise<unknown>;
+	submitLabel?: string;
 }) {
 	const { adopt } = useAuth();
 	const [step, setStep] = useState<"mobile" | "otp">("mobile");
@@ -219,7 +224,7 @@ export function LoginForm({
 							placeholder="10-digit mobile"
 						/>
 						<Button type="submit" disabled={busy || mobile.length < 10}>
-							{busy ? "Sending…" : "Send OTP"}
+							{busy ? "Sending…" : submitLabel}
 						</Button>
 					</div>
 				) : (

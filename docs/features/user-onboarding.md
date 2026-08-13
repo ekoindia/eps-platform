@@ -14,7 +14,7 @@ document wins and the disagreement is called out explicitly.
 
 ```mermaid
 flowchart TD
-    A["/signup (anon)"] --> B["LoginForm: mobile + OTP"]
+    A["/signup or /console (anon)\nSignInSplit"] --> B["LoginForm: mobile + OTP"]
     B -->|"POST /auth/otp/verify"| C{"getProfile (151)"}
     C -->|"not_found, or onboarding===1"| D["signup session minted\n(role: signup)"]
     C -->|"found: onboarding===0, EPS business partner"| Z["developer session\n→ /console"]
@@ -303,6 +303,38 @@ naming a page: the two call sites go to different places (`/console` → the
 dashboard, `/signup` → the wizard, which is not wired up yet and could be). A
 prefetch that rejects is swallowed — the real `import()` retries on render, and a
 cold cache must never fail a login.
+
+`LoginForm` also takes an optional **`submitLabel`** for the mobile-step button,
+defaulting to `"Send OTP"`. `SignInSplit` passes `"Continue with mobile OTP"`,
+because there the button is the page's only call to action rather than one
+control on a card.
+
+### The anonymous entry screen
+
+`src/components/auth/SignInSplit.tsx` is what an anonymous visitor sees at
+**both** `/console` and `/signup`: a full-bleed two-tone split pairing a
+five-step onboarding pitch (signup → try APIs → build → KYC → dashboard) with
+the mobile-OTP form. It holds no auth logic — `ConsoleLayout` and `SignupPage`
+still own their auth branches and forward `onSuccess` / `prefetch` straight
+through to `LoginForm`.
+
+Two consequences worth knowing before editing either page:
+
+- The split needs the full width, so it renders **outside** the
+  `container mx-auto` wrapper the other logged-out states share. In
+  `ConsoleLayout` the anon branch is therefore its own `<main>`, and the
+  "Developer Console" `h1` that wraps the loading/admin cards is not in it —
+  the split's hero is that page's only `h1`.
+- It also renders outside those states' `pt-24 lg:pt-28`. The site header is
+  `position: fixed` and 88px tall; clearing it with padding on `<main>` would
+  strand a strip of page background above the split. Instead the section starts
+  at `y=0` and the two columns that touch the top edge carry `--header-h`
+  (5.5rem) in their own top padding, so each paints its own background behind
+  the header. Change that variable, not the page, if the header ever resizes.
+- Mobile OTP is the only method offered. The source design also drew "Continue
+  with Google" / "Continue with GitHub"; there is no OAuth backend, so those are
+  deliberately absent and `SignInSplit.test.tsx` guards against them coming
+  back by accident.
 
 `AuthProvider.classify()` (`src/lib/auth/AuthProvider.tsx:34-44`) maps this
 onto a typed `AuthState` variant, `{ status: "authed"; role: "signup"; me:
