@@ -80,6 +80,16 @@
 					g.src = "https://forms.zoho.in/js/zf_gclid.js";
 					document.body.appendChild(g);
 				}
+				// Let the app pull the widget in after a client-side navigation away
+				// from a chat-free route (see setZohoChatHidden in src/lib/zoho-chat.ts).
+				window.__loadZohoWidget = loadZoho;
+
+				// Chat stays off the signup form and the console work surfaces —
+				// /console itself keeps it. Mirrors isChatHiddenPath() in
+				// src/lib/zoho-chat.ts; keep the two in sync.
+				var path = location.pathname.replace(/\/+$/, "") || "/";
+				if (path === "/signup" || path.indexOf("/console/") === 0) return;
+
 				var events = ["scroll", "click", "mouseover", "touchstart", "keydown"];
 				events.forEach(function (e) {
 					document.addEventListener(e, loadZoho, { once: true, passive: true });

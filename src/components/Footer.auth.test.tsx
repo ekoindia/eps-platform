@@ -27,16 +27,15 @@ describe("Footer auth entry", () => {
 	it("shows Log in when anon and flag on", () => {
 		state.value = { status: "anon" };
 		renderFooter();
-		expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
-			"href",
-			"/console",
-		);
+		expect(
+			screen.getByRole("link", { name: "Log into Console" }),
+		).toHaveAttribute("href", "/console");
 	});
 
 	it("shows Console when authed", () => {
 		state.value = { status: "authed" };
 		renderFooter();
-		expect(screen.getByRole("link", { name: "Console" })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: "Open Console" })).toHaveAttribute(
 			"href",
 			"/console",
 		);

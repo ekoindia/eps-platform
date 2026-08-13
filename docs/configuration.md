@@ -20,6 +20,16 @@ the build files, or the per-platform deploy files.
 
 Canonical links, AI-hint text, and JSON-LD all read `SITE_URL` from here — change it in one place.
 
+### Where the chat bubble shows
+
+The SalesIQ widget is bootstrapped by the inline script at the bottom of
+[`index.html`](../index.html) and controlled at runtime by
+[`src/lib/zoho-chat.ts`](../src/lib/zoho-chat.ts). It is **hidden on `/signup`
+and on every `/console/…` subpage**; `/console` itself keeps it. To change that
+rule, edit `isChatHiddenPath()` **and** the matching path check in the
+`index.html` bootstrap — the bootstrap runs before any module loads, so the two
+are duplicated on purpose.
+
 ## 2. Content data (products, industries, solutions)
 
 Data-driven pages are generated from these — edit data here, not page components.
