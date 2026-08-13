@@ -31,11 +31,10 @@ import {
 	Bot,
 	Briefcase,
 	HelpCircle,
-	LayoutDashboard,
-	LogIn,
 	LogOut,
 	Package,
 	Sparkles,
+	SquareCode,
 } from "lucide-react";
 import {
 	Fragment,
@@ -434,10 +433,9 @@ export const HeaderDropdownPanels = ({
 	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
 		? [
 				{
-					label:
-						state.status === "authed" ? "Open Console" : "Log into Console",
+					label: "Developer Console",
 					href: "/console",
-					icon: state.status === "authed" ? LayoutDashboard : LogIn,
+					icon: SquareCode,
 				},
 				...developerLinks,
 			]

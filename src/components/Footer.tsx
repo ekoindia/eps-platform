@@ -173,8 +173,7 @@ export const Footer = () => {
 	const developersLinks: FooterLinkItem[] = SHOW_USER_LOGIN
 		? [
 				{
-					label:
-						state.status === "authed" ? "Open Console" : "Log into Console",
+					label: "Developer Console",
 					href: "/console",
 					internal: true,
 				},
