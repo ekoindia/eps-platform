@@ -63,11 +63,15 @@ export interface EkoClient {
 	getAgreementUrl(input: {
 		mobile: string;
 		identity: EkoIdentity;
+		/** The user's own agreement id — see `agreementIdOf`. */
+		agreementId: string;
 		xRealIp?: string;
 	}): Promise<SignUrlResult>;
 	submitSignAgreement(input: {
 		documentId: string;
 		identity: EkoIdentity;
+		/** The SAME id 287 was called with — see `agreementIdOf`. */
+		agreementId: string;
 		xRealIp?: string;
 	}): Promise<EkoStepResult>;
 	getWalletBalance(input: {
@@ -130,10 +134,6 @@ const BUSINESS_DETAILS_OK = 1567;
  * verified successfully").
  */
 const AGREEMENT_ALREADY_SIGNED = new Set([1615, 1069]);
-/**
- * Agreement id sent to interactions 287/293. This is '4' in case of API (EPS) Partners.
- */
-const AGREEMENT_ID = "4";
 
 /**
  * Identity of the acting user on an interaction.
@@ -154,6 +154,30 @@ export interface EkoIdentity {
 	initiatorId: string;
 	userCode: string;
 	orgId: number;
+}
+
+/**
+ * The user's own agreement id for interactions 287/293, off the 151 profile.
+ *
+ * Per-user, NOT a constant: this was hardcoded to '4' — the API (EPS) partner
+ * agreement — until it was noticed upstream sends the right one on the profile.
+ * Returns null when absent or unusable so the caller refuses the step: a guessed
+ * id either earns 1083 "Invalid agreement id." or signs the wrong agreement.
+ *
+ * Only a scalar is accepted, and only a FINITE number — `Number.NaN` and
+ * `Infinity` stringify into perfectly plausible-looking `agreement_id=NaN`
+ * fields otherwise.
+ * @param profile - The mapped 151 profile.
+ * @returns The id as the string the interaction expects, or null.
+ */
+export function agreementIdOf(profile: EkoProfile): string | null {
+	const raw = profile.userDetail?.agreement_id;
+	if (typeof raw === "number") {
+		return Number.isFinite(raw) ? String(raw) : null;
+	}
+	if (typeof raw !== "string") return null;
+	const id = raw.trim();
+	return id === "" ? null : id;
 }
 
 /** The user's own identity, valid once the partial account exists. */
@@ -668,7 +692,7 @@ export function createEkoClient(
 					...actor(input.identity),
 					interaction_type_id: "287",
 					document_id: "",
-					agreement_id: AGREEMENT_ID,
+					agreement_id: input.agreementId,
 					latlong: ONBOARDING_LATLONG,
 					csp_id: input.mobile,
 					user_id: input.mobile,
@@ -730,7 +754,7 @@ export function createEkoClient(
 					...actor(input.identity),
 					interaction_type_id: "293",
 					document_id: input.documentId,
-					agreement_id: AGREEMENT_ID,
+					agreement_id: input.agreementId,
 					// The field upstream actually requires — omitting it answers
 					// `invalid_params: {agreement_status: ...}`. It is the provider's
 					// own outcome, relayed: the transaction framework's e-sign chain

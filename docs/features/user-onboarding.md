@@ -422,7 +422,20 @@ discriminates where an id allowlist did not. 293 also requires an
 `agreement_status` field (upstream parameter 638, context `[API Self
 Onboarding]`); omitting it answers `invalid_params: {agreement_status: …}`.
 The BFF sends `"success"` — it is only ever called once the signing provider
-reported success. 287 returns the `document_id` under `data` when it issues a
+reported success.
+
+**`agreement_id` is per-user, read from the profile.** Both interactions send
+`user_detail.agreement_id` off the caller's own interaction-151 profile, via
+`agreementIdOf()` (`eko.ts`). It was hardcoded to `"4"` — the API (EPS) partner
+agreement — until it was noticed upstream carries the right one per user. There
+is deliberately **no fallback**: when the profile has no usable id, the signup
+service throws `SignupStepError` before any upstream call, because a guessed id
+either fails as 1083 "Invalid agreement id." or signs the wrong agreement. The
+id is re-read from the profile on 293 rather than carried over from 287 —
+upstream treats it as a property of the user, so the two reads agree; if that
+stops holding, bind the id to the `document_id` in KV at 287 instead.
+
+287 returns the `document_id` under `data` when it issues a
 URL but at the **top level** on the already-signed replies; reading only `data`
 yields `""`, which then rides into 293 as an empty `document_id`. Its `esign_completed` / `completion_timestamp` fields have no
 upstream parameter definition at all and are kept purely for Eloka parity.

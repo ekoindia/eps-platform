@@ -26,6 +26,9 @@ const onboardingProfile = {
 			{ role: 13000, label: "PAN Details" },
 			{ role: 12600, label: "Set Secret PIN" },
 		],
+		// The user's own e-sign agreement id (interactions 287/293). NOT "4":
+		// that was the hardcoded API (EPS) partner id these tests must not pass on.
+		userDetail: { agreement_id: "7" },
 	},
 };
 
@@ -332,7 +335,11 @@ describe("submitPin", () => {
 });
 
 describe("getAgreementUrl", () => {
-	const identity = { initiatorId: "9990000001", userCode: "20810001", orgId: 1 };
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
 
 	it("fetches the URL with the user's own identity", async () => {
 		const getAgreementUrl = vi.fn().mockResolvedValue({
@@ -353,6 +360,7 @@ describe("getAgreementUrl", () => {
 		expect(getAgreementUrl).toHaveBeenCalledWith({
 			mobile: "9990000001",
 			identity,
+			agreementId: "7",
 			xRealIp: undefined,
 		});
 		expect(r).toEqual({
@@ -377,10 +385,35 @@ describe("getAgreementUrl", () => {
 		});
 		await expect(svc.getAgreementUrl("9990000001")).rejects.toThrow("no url");
 	});
+
+	// REGRESSION: the id was hardcoded to the API (EPS) partner's "4". With no
+	// id on the profile there is nothing safe to send, so the step must refuse
+	// BEFORE touching upstream rather than fall back to a guess.
+	it("refuses without calling upstream when the profile carries no agreement id", async () => {
+		const getAgreementUrl = vi.fn();
+		const svc = createSignupService({
+			eko: ekoStub({
+				getAgreementUrl,
+				getProfile: vi.fn().mockResolvedValue({
+					...onboardingProfile,
+					profile: { ...onboardingProfile.profile, userDetail: {} },
+				}),
+			}),
+			cfg,
+		});
+		await expect(svc.getAgreementUrl("9990000001")).rejects.toThrow(
+			SignupStepError,
+		);
+		expect(getAgreementUrl).not.toHaveBeenCalled();
+	});
 });
 
 describe("submitSignAgreement", () => {
-	const identity = { initiatorId: "9990000001", userCode: "20810001", orgId: 1 };
+	const identity = {
+		initiatorId: "9990000001",
+		userCode: "20810001",
+		orgId: 1,
+	};
 
 	it("submits the document id with the user's identity and returns refreshed state", async () => {
 		const submitSignAgreement = vi.fn().mockResolvedValue({ ok: true });
@@ -395,6 +428,7 @@ describe("submitSignAgreement", () => {
 		expect(submitSignAgreement).toHaveBeenCalledWith({
 			documentId: "DOC9",
 			identity,
+			agreementId: "7",
 			xRealIp: undefined,
 		});
 		expect(state.status).toBe("in_progress");
@@ -415,5 +449,25 @@ describe("submitSignAgreement", () => {
 		await expect(svc.submitSignAgreement("9990000001", "DOC9")).rejects.toThrow(
 			"not signed",
 		);
+	});
+
+	// Same refusal as 287: submitting a guessed id would report the wrong
+	// agreement as signed.
+	it("refuses without calling upstream when the profile carries no agreement id", async () => {
+		const submitSignAgreement = vi.fn();
+		const svc = createSignupService({
+			eko: ekoStub({
+				submitSignAgreement,
+				getProfile: vi.fn().mockResolvedValue({
+					...onboardingProfile,
+					profile: { ...onboardingProfile.profile, userDetail: {} },
+				}),
+			}),
+			cfg,
+		});
+		await expect(svc.submitSignAgreement("9990000001", "DOC9")).rejects.toThrow(
+			SignupStepError,
+		);
+		expect(submitSignAgreement).not.toHaveBeenCalled();
 	});
 });

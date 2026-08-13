@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Mock } from "vitest";
+import type { EkoProfile } from "../types";
 import {
+	agreementIdOf,
 	createEkoClient,
 	identityOf,
 	mapTransactionRows,
@@ -763,6 +765,9 @@ describe("sign agreement interactions", () => {
 		userCode: "20810001",
 		orgId: 1,
 	};
+	// Deliberately NOT "4": that was the hardcoded API (EPS) partner id, so a
+	// test using it would still pass if the value ever regressed to a constant.
+	const AGREEMENT_ID = "7";
 	function bodyOf(f: typeof fetch, call = 0): URLSearchParams {
 		const init = (f as unknown as Mock).mock.calls[call][1];
 		return new URLSearchParams(init.body as string);
@@ -779,7 +784,11 @@ describe("sign agreement interactions", () => {
 			data: { short_url: "https://sign/x", document_id: "DOC9", pipe: 1 },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		const r = await eko.getAgreementUrl({
+			mobile: "9990000001",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: true,
 			shortUrl: "https://sign/x",
@@ -789,7 +798,7 @@ describe("sign agreement interactions", () => {
 		});
 		const body = bodyOf(f);
 		expect(body.get("interaction_type_id")).toBe("287");
-		expect(body.get("agreement_id")).toBe("4");
+		expect(body.get("agreement_id")).toBe(AGREEMENT_ID);
 		expect(body.get("csp_id")).toBe("9990000001");
 		expect(body.get("user_id")).toBe("9990000001");
 		expect(body.get("initiator_id")).toBe("9990000001");
@@ -804,7 +813,11 @@ describe("sign agreement interactions", () => {
 				data: { document_id: "DOC9", pipe: 0 },
 			});
 			const eko = createEkoClient(ekoCfg, f);
-			const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+			const r = await eko.getAgreementUrl({
+				mobile: "9990000001",
+				identity,
+				agreementId: AGREEMENT_ID,
+			});
 			expect(r).toEqual({
 				ok: true,
 				shortUrl: "",
@@ -824,7 +837,11 @@ describe("sign agreement interactions", () => {
 			data: { user_code: "43060001" },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		const r = await eko.getAgreementUrl({
+			mobile: "9990000001",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: true,
 			shortUrl: "",
@@ -842,7 +859,11 @@ describe("sign agreement interactions", () => {
 			data: { short_url: "https://sign/x", document_id: "DOC-DATA", pipe: 1 },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		const r = await eko.getAgreementUrl({
+			mobile: "9990000001",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toMatchObject({ ok: true, documentId: "DOC-DATA" });
 	});
 
@@ -856,7 +877,11 @@ describe("sign agreement interactions", () => {
 			data: { document_id: "DOC9" },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		const r = await eko.getAgreementUrl({
+			mobile: "9990000001",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: false,
 			message: "Document not verified successfully",
@@ -874,7 +899,11 @@ describe("sign agreement interactions", () => {
 			data: { short_url: "https://stale" },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		const r = await eko.getAgreementUrl({
+			mobile: "9990000001",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: false,
 			message: "Invalid agreement id.",
@@ -896,7 +925,11 @@ describe("sign agreement interactions", () => {
 				data: { short_url, document_id: "DOC9" },
 			});
 			const eko = createEkoClient(ekoCfg, f);
-			const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+			const r = await eko.getAgreementUrl({
+				mobile: "9990000001",
+				identity,
+				agreementId: AGREEMENT_ID,
+			});
 			expect(r.ok).toBe(false);
 		},
 	);
@@ -908,7 +941,11 @@ describe("sign agreement interactions", () => {
 			data: { short_url: " https://sign/x ", document_id: "DOC9", pipe: 1 },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.getAgreementUrl({ mobile: "9990000001", identity });
+		const r = await eko.getAgreementUrl({
+			mobile: "9990000001",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toMatchObject({ ok: true, shortUrl: "https://sign/x" });
 	});
 
@@ -921,12 +958,16 @@ describe("sign agreement interactions", () => {
 			message: "You have successfully signed the agreement.",
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		const r = await eko.submitSignAgreement({
+			documentId: "DOC9",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r.ok).toBe(true);
 		const body = bodyOf(f);
 		expect(body.get("interaction_type_id")).toBe("293");
 		expect(body.get("document_id")).toBe("DOC9");
-		expect(body.get("agreement_id")).toBe("4");
+		expect(body.get("agreement_id")).toBe(AGREEMENT_ID);
 		// Required upstream: without it 293 answers invalid_params.agreement_status.
 		expect(body.get("agreement_status")).toBe("success");
 		expect(body.get("esign_completed")).toBe("true");
@@ -942,7 +983,11 @@ describe("sign agreement interactions", () => {
 			message: "Document not verified successfully",
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		const r = await eko.submitSignAgreement({
+			documentId: "DOC9",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: false,
 			message: "Document not verified successfully",
@@ -964,7 +1009,11 @@ describe("sign agreement interactions", () => {
 			data: { user_code: "43060001" },
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		const r = await eko.submitSignAgreement({
+			documentId: "DOC9",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: false,
 			message: "Please provide the value of the field",
@@ -985,7 +1034,11 @@ describe("sign agreement interactions", () => {
 			invalid_params: {},
 		});
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		const r = await eko.submitSignAgreement({
+			documentId: "DOC9",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({
 			ok: false,
 			message: "Document not verified successfully",
@@ -999,7 +1052,11 @@ describe("sign agreement interactions", () => {
 		// passing here would advance the user past an unsigned agreement.
 		const f = mockFetch(200, { response_type_id: 1615, message: "Hmm" });
 		const eko = createEkoClient(ekoCfg, f);
-		const r = await eko.submitSignAgreement({ documentId: "DOC9", identity });
+		const r = await eko.submitSignAgreement({
+			documentId: "DOC9",
+			identity,
+			agreementId: AGREEMENT_ID,
+		});
 		expect(r).toEqual({ ok: false, message: "Hmm", responseTypeId: 1615 });
 	});
 });
@@ -1035,6 +1092,51 @@ describe("identityOf", () => {
 			userCode: "20810001",
 			orgId: 1,
 		});
+	});
+});
+
+describe("agreementIdOf", () => {
+	/** A profile carrying whatever `user_detail.agreement_id` the case needs. */
+	function profileWith(userDetail: Record<string, unknown>): EkoProfile {
+		return {
+			name: "Dev",
+			email: "d@e.in",
+			mobile: "9990000001",
+			code: "20810001",
+			userType: "23",
+			ekoUserId: "55501",
+			roleList: [],
+			orgId: 1,
+			onboarding: 1,
+			zohoId: "",
+			onboardingSteps: [],
+			accounts: [],
+			evalueAccountId: null,
+			detailBlocks: {},
+			accountStateId: 16,
+			userDetail,
+		};
+	}
+
+	it.each([
+		["a string id", "7", "7"],
+		["a numeric id", 7, "7"],
+		["a padded string id", "  7  ", "7"],
+	])("reads %s off the profile", (_label, agreement_id, expected) => {
+		expect(agreementIdOf(profileWith({ agreement_id }))).toBe(expected);
+	});
+
+	// REGRESSION: this used to be a hardcoded "4". Anything unusable must refuse
+	// the step, never fall back — a guessed id signs the wrong agreement.
+	it.each([
+		["missing", {}],
+		["blank", { agreement_id: "   " }],
+		["null", { agreement_id: null }],
+		["an object", { agreement_id: { id: 7 } }],
+		["NaN", { agreement_id: Number.NaN }],
+		["Infinity", { agreement_id: Number.POSITIVE_INFINITY }],
+	])("returns null when the id is %s", (_label, userDetail) => {
+		expect(agreementIdOf(profileWith(userDetail))).toBeNull();
 	});
 });
 
