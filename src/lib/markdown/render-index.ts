@@ -1,5 +1,5 @@
 import { SHOW_TRANSACT_MCP } from "@/lib/config/features";
-import { SIGNUP_URL, SITE_URL } from "@/lib/config/site";
+import { SITE_URL } from "@/lib/config/site";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
 import { recipeHref } from "@/lib/data/api-recipes";
 import type { IndustryData } from "@/lib/data/industries";
@@ -193,7 +193,7 @@ export function renderLlmsTxt(
 
 	lines.push("## Getting started for developers");
 	lines.push(
-		`- Sign up at ${SIGNUP_URL} — verify identity (with your PAN), load your wallet, and test the verification APIs live before integrating.`,
+		`- Sign up at ${SITE_URL}/console — verify identity (with your PAN), load your wallet, and test the verification APIs live before integrating.`,
 	);
 	lines.push(
 		`- Ready to build? Free AI plugins, MCP & SDKs at ${SITE_URL}/ai.`,

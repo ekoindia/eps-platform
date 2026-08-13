@@ -4,12 +4,6 @@
 export const SITE_URL = "https://eps.eko.in";
 export const SALES_MOBILE = "9513181707";
 export const SIGNUP_PAGE = "/signup";
-/**
- * The developer console signup page. Users land here to sign up,
- * verify identity, and start testing. Will move in-house later — change here.
- * (The `?mobile=` merge-field param is Zoho-CRM/email-only and not added on-site.)
- */
-export const SIGNUP_URL = "https://eps.eko.in/console";
 
 export const SITE_ORG_NAME = "Eko Platform Services";
 export const SITE_LOGO_URL = `${SITE_URL}/eps-logo-color.svg`;
