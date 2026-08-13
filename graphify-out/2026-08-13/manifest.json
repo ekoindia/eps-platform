@@ -1075,8 +1075,8 @@
     "semantic_hash": ""
   },
   "src/components/auth/LoginForm.tsx": {
-    "mtime": 1786592665.289824,
-    "ast_hash": "302532f76944ed801a66fee1e75e75aa",
+    "mtime": 1786604227.6120844,
+    "ast_hash": "26e214d4f8413b018537ebdd8028aceb",
     "semantic_hash": ""
   },
   "src/components/auth/UserMenu.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786599607.238419,
-    "ast_hash": "7c4e8c85df3d4d4051214f7a635c4661",
+    "mtime": 1786604837.1025944,
+    "ast_hash": "6c2c63b2c1b1c0d60a02cdb7ca8d35e2",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -2365,9 +2365,9 @@
     "semantic_hash": "5baaf95185cfb6cb09393371e059ee3e"
   },
   "src/lib/docs/use-docs-mode.ts": {
-    "mtime": 1781804847.535682,
-    "ast_hash": "e6a5249fff66cf454f03693daa0f022d",
-    "semantic_hash": "e6a5249fff66cf454f03693daa0f022d"
+    "mtime": 1786611217.6183636,
+    "ast_hash": "b91aed3e904f7cb0b1fdad8cde9101cb",
+    "semantic_hash": ""
   },
   "src/lib/docs/use-preferred-lang.ts": {
     "mtime": 1781782532.566999,
@@ -2835,8 +2835,8 @@
     "semantic_hash": "f19625554bb632ae5a51ac5fb4181b38"
   },
   "src/pages/docs/DocsIndexPage.tsx": {
-    "mtime": 1786363560.6471214,
-    "ast_hash": "131fafe7b1b823fa7eaa50e67d1e5c21",
+    "mtime": 1786611158.9994366,
+    "ast_hash": "6f3eacddd87fc20faad1000a15ee6c27",
     "semantic_hash": ""
   },
   "src/pages/products/ProductDetailPage.tsx": {
@@ -3800,8 +3800,13 @@
     "semantic_hash": ""
   },
   "src/components/auth/SignInSplit.tsx": {
-    "mtime": 1786599761.592074,
-    "ast_hash": "f65ce08935a02c614414463cb7b0252c",
+    "mtime": 1786604246.5495043,
+    "ast_hash": "709fef3caece330878b00e03687e8c8b",
+    "semantic_hash": ""
+  },
+  "src/pages/docs/DocsIndexPage.test.tsx": {
+    "mtime": 1786611201.1135142,
+    "ast_hash": "a6ce87cec85c23e874dad1a7f6e8581f",
     "semantic_hash": ""
   }
 }
