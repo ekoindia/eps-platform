@@ -1,7 +1,7 @@
 # Graph Report - eko-eps-website  (2026-08-13)
 
 ## Corpus Check
-- 715 files · ~885,216 words
+- 715 files · ~885,212 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `36ac5e8a`
+- Built from commit: `517abb52`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -235,8 +235,8 @@
   docs/superpowers/specs/2026-07-15-user-onboarding-design.md → packages/eps-backend/README.md
 
 ## Import Cycles
-- 3-file cycle: `src/components/ProductPageLayout.tsx -> src/lib/data/solutions.ts -> src/lib/data/api-product-pages.ts -> src/components/ProductPageLayout.tsx`
 - 3-file cycle: `src/components/FileUpload.tsx -> src/components/connect/DialogHost.tsx -> src/components/connect/RaiseIssueDialog.tsx -> src/components/FileUpload.tsx`
+- 3-file cycle: `src/components/ProductPageLayout.tsx -> src/lib/data/solutions.ts -> src/lib/data/api-product-pages.ts -> src/components/ProductPageLayout.tsx`
 - 4-file cycle: `src/components/ProductPageLayout.tsx -> src/components/SolutionCard.tsx -> src/lib/data/solutions.ts -> src/lib/data/api-product-pages.ts -> src/components/ProductPageLayout.tsx`
 
 ## Hyperedges (group relationships)
@@ -942,7 +942,7 @@ Nodes (6): ProfileResult 'onboarding' variant, eps-backend is the connect-api BF
   docs/console-roadmap.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **1110 isolated node(s):** `STEPS`, `NavItem`, `NavGroup`, `HOME_ITEM`, `CREDENTIALS_ITEM` (+1105 more)
+- **1110 isolated node(s):** `ENVIRONMENTS`, `EPS_TRANSACT_MCP_PKG`, `SITE_KEYWORDS`, `ProductPageSeo`, `VERIFICATION_STEPS_BASE` (+1105 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -959,7 +959,7 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.142) - this node is a cross-community bridge._
 - **Why does `requestId()` connect `app.ts` to `app.test.ts`, `buildApp.ts`?**
   _High betweenness centrality (0.127) - this node is a cross-community bridge._
-- **What connects `STEPS`, `NavItem`, `NavGroup` to the rest of the system?**
+- **What connects `ENVIRONMENTS`, `EPS_TRANSACT_MCP_PKG`, `SITE_KEYWORDS` to the rest of the system?**
   _1110 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `build-agent-bundle.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.06359189378057302 - nodes in this community are weakly interconnected._

@@ -1075,8 +1075,8 @@
     "semantic_hash": ""
   },
   "src/components/auth/LoginForm.tsx": {
-    "mtime": 1786604227.6120844,
-    "ast_hash": "26e214d4f8413b018537ebdd8028aceb",
+    "mtime": 1786592665.289824,
+    "ast_hash": "302532f76944ed801a66fee1e75e75aa",
     "semantic_hash": ""
   },
   "src/components/auth/UserMenu.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786604837.1025944,
-    "ast_hash": "6c2c63b2c1b1c0d60a02cdb7ca8d35e2",
+    "mtime": 1786599607.238419,
+    "ast_hash": "7c4e8c85df3d4d4051214f7a635c4661",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -3800,8 +3800,8 @@
     "semantic_hash": ""
   },
   "src/components/auth/SignInSplit.tsx": {
-    "mtime": 1786604246.5495043,
-    "ast_hash": "709fef3caece330878b00e03687e8c8b",
+    "mtime": 1786599761.592074,
+    "ast_hash": "f65ce08935a02c614414463cb7b0252c",
     "semantic_hash": ""
   }
 }
