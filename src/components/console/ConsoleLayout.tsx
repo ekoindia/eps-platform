@@ -362,7 +362,7 @@ export default function ConsoleLayout() {
 								    `DocsLayout` does. The lifecycle state lives on the Home
 								    profile card, not here. */}
 								<div className="mb-3 flex items-center justify-center gap-2 px-3">
-									<h1 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+									<h1 className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-eko-gold-ink">
 										EPS Developer Console
 									</h1>
 								</div>

@@ -223,7 +223,11 @@ export function LoginForm({
 							onChange={(e) => setMobile(e.target.value)}
 							placeholder="10-digit mobile"
 						/>
-						<Button type="submit" disabled={busy || mobile.length < 10}>
+						<Button
+							type="submit"
+							disabled={busy || mobile.length < 10}
+							className="mt-4"
+						>
 							{busy ? "Sending…" : submitLabel}
 						</Button>
 					</div>
@@ -254,7 +258,11 @@ export function LoginForm({
 								/>
 							))}
 						</div>
-						<Button type="submit" disabled={busy || otp.length < OTP_LENGTH}>
+						<Button
+							type="submit"
+							disabled={busy || otp.length < OTP_LENGTH}
+							className="mt-4"
+						>
 							{busy ? "Verifying…" : "Verify & sign in"}
 						</Button>
 						{/* Redundant while a code is already being verified — hide, don't

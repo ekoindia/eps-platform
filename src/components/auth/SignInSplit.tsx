@@ -162,7 +162,7 @@ export function SignInSplit({
 							submitLabel="Continue with mobile OTP"
 						/>
 					</div>
-					<p className="mt-5 text-[0.71875rem] leading-relaxed text-muted-foreground">
+					<p className="mt-8 text-[0.71875rem] leading-relaxed text-muted-foreground">
 						By continuing, you agree to Eko's{" "}
 						<Link to="/tnc" className="text-eko-navy underline">
 							Terms &amp; Conditions
