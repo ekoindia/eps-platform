@@ -183,7 +183,18 @@ flag to keep in sync.
 ### Self-serve funnel
 
 No "Talk to Sales" buttons in the calculators — the only CTAs are
-"Get Started" (Zoho chat), "Copy estimate link" and the Excel download.
+"Get Started", "Copy estimate link" and the Excel download.
+
+"Get Started" is `GetStartedButton` (`src/components/GetStartedButton.tsx`),
+the shared primary CTA also used by the header and the Products mega-menu.
+Where it goes depends on `VITE_SHOW_USER_LOGIN`:
+
+- **off** (prod default) — opens the Zoho chat, as before.
+- **on** — links to `/console`, so a returning developer logs in and a new one
+  starts onboarding. Those clicks then create no Zoho lead and push no
+  `apis_interested` context; self-serve console signup replaces that path.
+  Carrying calculator context into the console onboarding record is a known
+  follow-up.
 
 ### How to update rates
 

@@ -5,6 +5,7 @@
  */
 import { DropdownColumnHeader, DropdownGrid } from "@/components/DropdownGrid";
 import { EkoLogo } from "@/components/EkoLogo";
+import { GetStartedButton } from "@/components/GetStartedButton";
 import { ClaudeCodeIcon } from "@/components/icons/ClaudeCodeIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -24,7 +25,6 @@ import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { cn } from "@/lib/utils";
-import { openZohoChat } from "@/lib/zoho-chat";
 import {
 	ArrowRight,
 	BookOpen,
@@ -897,18 +897,16 @@ export const HeaderDropdownPanels = ({
 								</Button>
 							</div>
 						) : (
-							<Button
+							<GetStartedButton
 								id="btn-get-started-header-mobile"
 								variant="gold"
 								size="sm"
-								onClick={() => {
-									setMobileMenuOpen(false);
-									openZohoChat();
-								}}
+								onClick={() => setMobileMenuOpen(false)}
 								className="cursor-pointer self-start min-w-[140px]"
+								consoleLabel="Log in / Sign up"
 							>
 								Get Started
-							</Button>
+							</GetStartedButton>
 						)}
 					</div>
 				</SheetContent>
