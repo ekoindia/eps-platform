@@ -10,14 +10,15 @@
  *
  * Default is `sdk`: the signed SDKs are the headline integration path.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type DocsMode = "api" | "sdk" | "ai";
 
 const MODE_KEY = "eko-docs-mode";
 const DEFAULT_MODE: DocsMode = "sdk";
 
-const isDocsMode = (value: unknown): value is DocsMode =>
+/** Narrows an unknown value (saved preference, URL hash) to a {@link DocsMode}. */
+export const isDocsMode = (value: unknown): value is DocsMode =>
 	value === "api" || value === "sdk" || value === "ai";
 
 /**
@@ -37,14 +38,17 @@ export const useDocsMode = (): [DocsMode, (mode: DocsMode) => void] => {
 		}
 	}, []);
 
-	const choose = (next: DocsMode) => {
+	// Stable identity: callers use it as an effect dependency, and an unstable
+	// setter re-runs those effects on every render (that is how /docs#sdk used to
+	// re-apply itself and lock the chooser to the SDK path).
+	const choose = useCallback((next: DocsMode) => {
 		setMode(next);
 		try {
 			localStorage.setItem(MODE_KEY, next);
 		} catch {
 			/* ignore */
 		}
-	};
+	}, []);
 
 	return [mode, choose];
 };

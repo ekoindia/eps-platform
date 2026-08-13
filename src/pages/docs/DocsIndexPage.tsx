@@ -18,7 +18,7 @@ import {
 	sdkSampleFor,
 	toSdkLang,
 } from "@/lib/docs/code-samples";
-import { useDocsMode } from "@/lib/docs/use-docs-mode";
+import { isDocsMode, useDocsMode } from "@/lib/docs/use-docs-mode";
 import { usePreferredLang } from "@/lib/docs/use-preferred-lang";
 import { cn } from "@/lib/utils";
 import { openZohoChat } from "@/lib/zoho-chat";
@@ -227,11 +227,13 @@ const DocsIndexPage = () => {
 	const { hash } = useLocation();
 	const canonical = `${SITE_URL}/docs`;
 
-	// Deep-link from the header "Developers → SDKs & Libraries" entry: /docs#sdk
-	// preselects the "Use an SDK" integration mode. Runs after the localStorage
-	// reconcile in useDocsMode, so the hash wins for this visit.
+	// Deep-link support: /docs#sdk (the header "Developers → SDKs & Libraries"
+	// entry), #api or #ai preselects that integration mode. Runs after the
+	// localStorage reconcile in useDocsMode, so the hash wins for this visit —
+	// but only while the hash itself changes, so a later card click sticks.
 	useEffect(() => {
-		if (hash === "#sdk") setMode("sdk");
+		const fromHash = hash.slice(1);
+		if (isDocsMode(fromHash)) setMode(fromHash);
 	}, [hash, setMode]);
 
 	const isAi = mode === "ai";
