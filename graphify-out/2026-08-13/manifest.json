@@ -940,8 +940,8 @@
     "semantic_hash": ""
   },
   "src/components/Footer.tsx": {
-    "mtime": 1786611539.3297393,
-    "ast_hash": "785db83f9538ecbeea6368593a070ca2",
+    "mtime": 1786614919.0666485,
+    "ast_hash": "c85b1f0695f09bcd6d821a7a310779cd",
     "semantic_hash": ""
   },
   "src/components/Header.tsx": {
@@ -975,9 +975,9 @@
     "semantic_hash": "96a7a0003ff01e08ebc5973199a1273c"
   },
   "src/components/MiniToc.tsx": {
-    "mtime": 1784895578.7021544,
-    "ast_hash": "ffe939563103dc2c760f7691d27088be",
-    "semantic_hash": "ffe939563103dc2c760f7691d27088be"
+    "mtime": 1786617363.10511,
+    "ast_hash": "e34971dbeb630996a5e3fc0a0ddf3b17",
+    "semantic_hash": ""
   },
   "src/components/NavLink.tsx": {
     "mtime": 1782510588.9098272,
@@ -2445,9 +2445,9 @@
     "semantic_hash": "26ad39f9b525695cad662148600e1c28"
   },
   "src/lib/markdown/render-recipe.ts": {
-    "mtime": 1785316606.0996952,
-    "ast_hash": "17966c44849f6791f8054fd847873ea4",
-    "semantic_hash": "17966c44849f6791f8054fd847873ea4"
+    "mtime": 1786615641.0628657,
+    "ast_hash": "3b32dbfd77796d76f557e7f8f80fbaf4",
+    "semantic_hash": ""
   },
   "src/lib/markdown/render-solution.ts": {
     "mtime": 1781513058.4860206,
@@ -2850,9 +2850,9 @@
     "semantic_hash": "5a142dc9b25cf42c99d34d6e0df8993d"
   },
   "src/pages/recipe/RecipesIndexPage.tsx": {
-    "mtime": 1784090463.9092152,
-    "ast_hash": "42a184683af5d09f0dd0b9be0cd64243",
-    "semantic_hash": "42a184683af5d09f0dd0b9be0cd64243"
+    "mtime": 1786615645.983595,
+    "ast_hash": "6fb3604f81009bd2a8ddc9eae51a2fca",
+    "semantic_hash": ""
   },
   "src/test/example.test.ts": {
     "mtime": 1781513058.6267867,
@@ -2865,9 +2865,9 @@
     "semantic_hash": "f89ee1ce0c89c2c4415d5e873a683db4"
   },
   "src/test/mini-toc.test.tsx": {
-    "mtime": 1784895211.4018168,
-    "ast_hash": "01cdbff0e95118e5a02b14cf97e7e6fa",
-    "semantic_hash": "01cdbff0e95118e5a02b14cf97e7e6fa"
+    "mtime": 1786617404.0147364,
+    "ast_hash": "2a14d5f2d1675dc42610d8c1a975af84",
+    "semantic_hash": ""
   },
   "src/test/plugin-marketplace.test.ts": {
     "mtime": 1783428918.498805,
