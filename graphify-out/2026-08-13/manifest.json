@@ -975,8 +975,8 @@
     "semantic_hash": "96a7a0003ff01e08ebc5973199a1273c"
   },
   "src/components/MiniToc.tsx": {
-    "mtime": 1786617363.10511,
-    "ast_hash": "e34971dbeb630996a5e3fc0a0ddf3b17",
+    "mtime": 1786617545.6428363,
+    "ast_hash": "3e394dcb4dcbf8b46107c55548be09bf",
     "semantic_hash": ""
   },
   "src/components/NavLink.tsx": {
