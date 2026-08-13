@@ -13,7 +13,6 @@ import {
 } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
 import { recipeHref } from "@/lib/data/api-recipes";
-import { faqsByTag, GLOBAL_FAQS, parseFaqTags } from "@/lib/data/common-faqs";
 import type {
 	ApiErrorScenario,
 	ApiParam,
@@ -30,6 +29,7 @@ import {
 	resolveResponseFields,
 	responseTypeFor,
 } from "@/lib/data/api-specs-common";
+import { faqsByTag, GLOBAL_FAQS, parseFaqTags } from "@/lib/data/common-faqs";
 import {
 	buildNavTree,
 	docHrefForSlug,
@@ -40,6 +40,7 @@ import {
 } from "@/lib/data/docs-registry";
 import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 import { defaultSnippet } from "@/lib/docs/code-snippet-sets";
+import { faqBlocks } from "./render-faq";
 import {
 	aiGettingStartedNotice,
 	bulletList,
@@ -52,7 +53,6 @@ import {
 	link,
 	markdownTable,
 } from "./shared";
-import { faqBlocks } from "./render-faq";
 
 const paramRows = (params: ApiParam[]): string[][] =>
 	params.map((p) => [
@@ -421,7 +421,7 @@ export function renderDocsIndexMarkdown(): string {
 
 		h2("Getting Started for Developers"),
 		bulletList([
-			`**Get credentials** — Eko's UAT / sandbox is self-serve. Sign up at ${SIGNUP_URL} with your mobile number, verify with your PAN, and test our verification APIs live. Once you are satisfied, goto ${SITE_URL}/ai to integrate quickly with our free AI tools (MCP servers, plugins, skills, etc for your coding agent). ${API_ENVIRONMENTS.production.note}`,
+			`**Get credentials** — Eko's UAT/sandbox is self-serve. Sign up at ${SIGNUP_URL} with your mobile number, verify with your PAN, and test our verification APIs live. Once you are satisfied, goto ${SITE_URL}/ai to integrate quickly with our free AI tools (MCP servers, plugins, skills, etc for your coding agent). ${API_ENVIRONMENTS.production.note}`,
 			`**Know your environments** — ${API_ENVIRONMENTS.sandbox.label}: \`${API_ENVIRONMENTS.sandbox.baseUrl}\`, ${API_ENVIRONMENTS.production.label}: \`${API_ENVIRONMENTS.production.baseUrl}\`. The full endpoint URL is always \`baseUrl + path\`.`,
 			`**Sign every request** — send these headers on every call: ${AUTH_HEADERS.map((h) => `\`${h.name}\``).join(", ")}. The \`secret-key\` is a per-request HMAC signature — see ${link("How Auth Works", `${SITE_URL}${docsHref("how-auth-works")}`, "md")}.`,
 			"**Make your first call** — pick an endpoint below (start with PAN Lite), drop in your credentials, and send it.",

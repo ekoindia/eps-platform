@@ -124,7 +124,7 @@ const buildTopics = (): AgentTopics => ({
 			},
 			{
 				title: "Verify identity",
-				detail: "Submit your PAN.",
+				detail: "Submit your PAN and address details.",
 			},
 			{
 				title: "Test live",

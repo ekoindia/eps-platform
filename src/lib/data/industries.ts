@@ -6,28 +6,6 @@ import {
 } from "@/lib/data/api-pricing";
 import { API_PRODUCTS, API_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { BC_SETUP_FEE } from "@/lib/data/payments-pricing";
-
-/**
- * "Is there a per-seat or platform fee?" — the setup-fee half of the answer,
- * in the three discount states. Unlike the generic `SETUP_FEE_CLAUSE` this
- * spells out the actual fee, so it needs its own state-specific wording (a
- * bare "No setup fee." after "a setup fee applies" would contradict itself).
- * The volume-commitment waiver is a standing commercial term, not campaign
- * copy, so it holds at 0% too.
- * @param raw - Discount percentage
- */
-const industrySetupFeeAnswer = (raw: number): string => {
-	const percent = clampDiscountPercent(raw);
-	const standard = `A one-time setup fee applies per API — ₹${VERIFICATION_SETUP_FEE.toLocaleString("en-IN")} for a verification API and ₹${BC_SETUP_FEE.toLocaleString("en-IN")} per BC/Payments API family, excl. GST.`;
-	if (percent >= 100) {
-		return `${standard} It is fully waived right now as a limited-time offer.`;
-	}
-	const commitment =
-		"A full waiver is available against a higher monthly volume commitment.";
-	return percent > 0
-		? `${standard} It is currently ${percent}% off as a limited-time offer. ${commitment}`
-		: `${standard} ${commitment}`;
-};
 import type { LucideIcon } from "lucide-react";
 import {
 	Banknote,
@@ -56,6 +34,28 @@ import {
 	Users,
 	Zap,
 } from "lucide-react";
+
+/**
+ * "Is there a per-seat or platform fee?" — the setup-fee half of the answer,
+ * in the three discount states. Unlike the generic `SETUP_FEE_CLAUSE` this
+ * spells out the actual fee, so it needs its own state-specific wording (a
+ * bare "No setup fee." after "a setup fee applies" would contradict itself).
+ * The volume-commitment waiver is a standing commercial term, not campaign
+ * copy, so it holds at 0% too.
+ * @param raw - Discount percentage
+ */
+const industrySetupFeeAnswer = (raw: number): string => {
+	const percent = clampDiscountPercent(raw);
+	const standard = `A one-time setup fee applies per API — ₹${VERIFICATION_SETUP_FEE.toLocaleString("en-IN")} for a verification API and ₹${BC_SETUP_FEE.toLocaleString("en-IN")} per BC/Payments API family, excl. GST.`;
+	if (percent >= 100) {
+		return `${standard} It is fully waived right now as a limited-time offer.`;
+	}
+	const commitment =
+		"A full waiver is available against a higher monthly volume commitment.";
+	return percent > 0
+		? `${standard} It is currently ${percent}% off as a limited-time offer. ${commitment}`
+		: `${standard} ${commitment}`;
+};
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  TYPES                                                          */
@@ -148,7 +148,7 @@ const DEFAULT_INTEGRATION_STEPS = [
 		step: 1,
 		title: "Sign Up",
 		description:
-			"Sign up in minutes at ekostore.app/eps with your mobile number (OTP verify).",
+			"Sign up in minutes at Developer Console page with your mobile number (OTP verify).",
 	},
 	{
 		step: 2,

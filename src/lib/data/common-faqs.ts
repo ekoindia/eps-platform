@@ -85,7 +85,7 @@ export const parseFaqTags = (input: string): FaqTag[] => {
 export const COMMON_API_FAQS: FAQ[] = [
 	{
 		q: "How do I get started?",
-		a: `Four steps: **sign up** at [ekostore.app/eps](${SIGNUP_URL}), verify your identity with PAN and address details, load your wallet to test the APIs live, then integrate and go live. Sandbox credentials are issued immediately — you can call your first endpoint before any paperwork clears.`,
+		a: `Four steps: **sign up** at the [developer console page](${SIGNUP_URL}), verify your identity with PAN and address details, load your wallet to test the APIs live, then integrate and go live. Sandbox credentials are issued immediately — you can call your first endpoint before any paperwork clears.`,
 		tag: "getting-started",
 		links: [
 			{ label: "Developer docs", href: "/docs" },
