@@ -185,13 +185,13 @@
     "semantic_hash": "e37ea731be638780e0a952a6a46aad41"
   },
   "packages/eps-backend/src/clients/eko.test.ts": {
-    "mtime": 1786431694.6057434,
-    "ast_hash": "86a5bf097672c355b7b3b25c592f3a81",
+    "mtime": 1786624211.174131,
+    "ast_hash": "e0c16b264d18059f4e0b5cea75f827fc",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/clients/eko.ts": {
-    "mtime": 1786431675.2899292,
-    "ast_hash": "43e730be96ad89c77782fb319b3e2bd5",
+    "mtime": 1786624127.7247114,
+    "ast_hash": "942f40c4a669d8cfaf919efee963bf54",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/clients/github.test.ts": {
@@ -385,13 +385,13 @@
     "semantic_hash": "d8e7995f2684db76b2d08f0b9d7b3022"
   },
   "packages/eps-backend/src/signup/service.test.ts": {
-    "mtime": 1785052707.861517,
-    "ast_hash": "9f66594378d53df6fab31bdd53544de4",
-    "semantic_hash": "9f66594378d53df6fab31bdd53544de4"
+    "mtime": 1786624245.1005094,
+    "ast_hash": "a004aa2fbcb0481972eb145830656eb1",
+    "semantic_hash": ""
   },
   "packages/eps-backend/src/signup/service.ts": {
-    "mtime": 1786429638.8296142,
-    "ast_hash": "dc2e49d223e005b41f51e1cb34d53a08",
+    "mtime": 1786624152.66928,
+    "ast_hash": "3c509789443e47a6c0571f40a69d4d26",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/smoke.test.ts": {
@@ -935,13 +935,13 @@
     "semantic_hash": ""
   },
   "src/components/Footer.auth.test.tsx": {
-    "mtime": 1786535847.8607683,
-    "ast_hash": "828ba6e4b5300dc8677d996bc53a00b1",
+    "mtime": 1786624758.0150447,
+    "ast_hash": "3ebebb0441fce1bacdddf6b5bef88ad3",
     "semantic_hash": ""
   },
   "src/components/Footer.tsx": {
-    "mtime": 1786614919.0666485,
-    "ast_hash": "c85b1f0695f09bcd6d821a7a310779cd",
+    "mtime": 1786624751.0634522,
+    "ast_hash": "190728cf7ec77a8c6c3965242ecc8e45",
     "semantic_hash": ""
   },
   "src/components/Header.tsx": {
@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1786160281.7100353,
-    "ast_hash": "b216712319f10a9231ae873a22868c1b",
+    "mtime": 1786623431.352118,
+    "ast_hash": "c4a94f2095b51cf0bc80ec089deee58e",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": "82a19b802b836b933dcb60256c56b053"
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786604837.1025944,
-    "ast_hash": "6c2c63b2c1b1c0d60a02cdb7ca8d35e2",
+    "mtime": 1786623412.0430908,
+    "ast_hash": "037772dcca3007889e5334b3d1c4bec6",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -2620,7 +2620,7 @@
     "semantic_hash": ""
   },
   "src/lib/zoho-chat.ts": {
-    "mtime": 1786535782.0691752,
+    "mtime": 1786622248.5821843,
     "ast_hash": "60c1fe835bb53b0918a18bd072efb5df",
     "semantic_hash": ""
   },
@@ -3015,8 +3015,8 @@
     "semantic_hash": ""
   },
   "docs/console-roadmap.md": {
-    "mtime": 1786104133.9089694,
-    "ast_hash": "5a7ccdbe14730d6af1dde3d812b3bd00",
+    "mtime": 1786623463.2931175,
+    "ast_hash": "abb3b3eff6c016196a65a3bd6769e05f",
     "semantic_hash": ""
   },
   "docs/developer-docs/README.md": {
@@ -3085,8 +3085,8 @@
     "semantic_hash": ""
   },
   "docs/features/user-onboarding.md": {
-    "mtime": 1786599808.6470463,
-    "ast_hash": "2284d5cd017711000952036d9f0c9ff3",
+    "mtime": 1786624270.4724307,
+    "ast_hash": "66514b37b9a1bc2d0791339875825b01",
     "semantic_hash": ""
   },
   "docs/industry-and-packs-plan.md": {
