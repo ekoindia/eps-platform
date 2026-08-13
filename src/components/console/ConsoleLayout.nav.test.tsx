@@ -143,6 +143,56 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 	});
 });
 
+describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
+	const NAME = "Test KYC & Verification APIs";
+
+	it("leaves the site in a new tab, directly behind Transactions", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 9995 }] });
+
+		renderRail();
+
+		const link = await screen.findByRole("link", { name: NAME });
+		expect(link).toHaveAttribute(
+			"href",
+			"https://ekostore.app/products/kyc-verification",
+		);
+		expect(link).toHaveAttribute("target", "_blank");
+		// Without noopener the opened tab can reach back through window.opener.
+		expect(link).toHaveAttribute("rel", "noopener noreferrer");
+
+		// Adjacency, not absolute position: the DEV-only bench follows this item
+		// and the API Docs link closes the rail, so a whole-list compare would
+		// break on nothing.
+		const labels = screen
+			.getAllByRole("link")
+			.map((a) => a.textContent?.trim());
+		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Transactions") + 1);
+	});
+
+	it("stays hidden without the entitlement", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+
+		renderRail();
+
+		expect(await screen.findByRole("link", { name: "Home" })).toBeVisible();
+		await waitFor(() =>
+			expect(screen.queryByRole("link", { name: NAME })).toBeNull(),
+		);
+	});
+
+	it("stays hidden when the entitlement list cannot be read", async () => {
+		// Fail closed: an entitlement we could not read is not an entitlement.
+		connectInteractions.mockRejectedValue(new Error("upstream down"));
+
+		renderRail();
+
+		expect(await screen.findByRole("link", { name: "Home" })).toBeVisible();
+		await waitFor(() =>
+			expect(screen.queryByRole("link", { name: NAME })).toBeNull(),
+		);
+	});
+});
+
 describe("ConsoleLayout — rail shell", () => {
 	it("captions the groups and closes with a link back to the docs", async () => {
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });

@@ -32,10 +32,19 @@ container and their own `<h1>`.
 Links are grouped under the docs rail's uppercase captions rather than flat:
 **Home** alone at the top, then **Account** (Upload Documents, Load Wallet, Sign
 Agreement, Credentials, Manage My Account) and **Build & Monitor** (Transactions,
-plus the DEV-only Test bench). A group whose items are all unentitled renders
-nothing rather than an empty caption. An `API Docs ↗` link closes the rail. Order
+`Test KYC & Verification APIs ↗`, plus the DEV-only Test bench). A group whose
+items are all unentitled renders nothing rather than an empty caption. An
+`API Docs ↗` link closes the rail. Order
 within a group is entitlement-independent and pinned by
 `ConsoleLayout.nav.test.tsx`, which also guards the single-`h1`/`<main>` contract.
+
+`Test KYC & Verification APIs` is the one rail item that leaves the site: it
+opens `https://ekostore.app/products/kyc-verification` in a new tab
+(`target="_blank" rel="noopener noreferrer"`), and shows only for accounts whose
+interaction list carries id **9995** — same presence-of-the-id gate as every
+other entitled item, and fail-closed the same way (no list, no link). It is the
+reason `NavItem` has an `external` flag; external items never take the active
+state, since no route matches them.
 
 The console's index page (`/console`) is **Home**. It leads with the profile card
 (`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT

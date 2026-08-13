@@ -34,6 +34,7 @@ import {
 	Menu,
 	PlusCircle,
 	ReceiptText,
+	ShieldCheck,
 	UserCog,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -53,14 +54,23 @@ import {
  * entries once entitlements resolve — past the point a flat list reads.
  */
 type NavItem = {
+	/** Router path, or an absolute URL when `external`. */
 	to: string;
 	label: string;
 	icon: typeof LayoutDashboard;
 	end: boolean;
+	/** Leaves the site: renders as `<a target="_blank">`, never active. */
+	external?: boolean;
 };
 
 /** A captioned block of rail links. A group with no items renders nothing. */
 type NavGroup = { title: string; items: readonly NavItem[] };
+
+/** Shared by both link shapes, so the external item can't drift from the rest. */
+const NAV_LINK_BASE =
+	"flex items-center gap-2 rounded-md px-3 py-2 transition-colors";
+const NAV_LINK_IDLE =
+	"text-muted-foreground hover:bg-muted hover:text-foreground";
 
 const HOME_ITEM: NavItem = {
 	to: "/console",
@@ -139,6 +149,20 @@ const MANAGE_ACCOUNT: Flow = {
 };
 
 /**
+ * ekostore's KYC & verification sandbox. Entitled the same way as any flow — by
+ * the id turning up in the interaction list — but the page itself is off-site,
+ * so this is a plain external item rather than a `Flow`.
+ */
+const EKOSTORE_KYC_ID = 9995;
+const EKOSTORE_KYC_ITEM: NavItem = {
+	to: "https://ekostore.app/products/kyc-verification",
+	label: "Test KYC & Verification APIs",
+	icon: ShieldCheck,
+	end: false,
+	external: true,
+};
+
+/**
  * The rail item for a flow, when this user is entitled to run it.
  * @param list - The caller's interaction list, or null while unresolved.
  * @param flow - The flow to link to.
@@ -189,28 +213,47 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 				...flowItem(interactions, MANAGE_ACCOUNT),
 			],
 		},
-		{ title: "Build & Monitor", items: [TRANSACTIONS_ITEM, ...DEV_ITEMS] },
+		{
+			title: "Build & Monitor",
+			items: [
+				TRANSACTIONS_ITEM,
+				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
+				...DEV_ITEMS,
+			],
+		},
 	];
 
-	const link = (item: NavItem) => (
-		<NavLink
-			key={item.to}
-			to={item.to}
-			end={item.end}
-			onClick={onNavigate}
-			className={({ isActive }) =>
-				cn(
-					"flex items-center gap-2 rounded-md px-3 py-2 transition-colors",
-					isActive
-						? "bg-slate-300 font-medium text-eko-navy"
-						: "text-muted-foreground hover:bg-muted hover:text-foreground",
-				)
-			}
-		>
-			<item.icon className="h-4 w-4 shrink-0" />
-			<span>{item.label}</span>
-		</NavLink>
-	);
+	const link = (item: NavItem) =>
+		item.external ? (
+			<a
+				key={item.to}
+				href={item.to}
+				target="_blank"
+				rel="noopener noreferrer"
+				onClick={onNavigate}
+				className={cn(NAV_LINK_BASE, NAV_LINK_IDLE)}
+			>
+				<item.icon className="h-4 w-4 shrink-0" />
+				<span>{item.label}</span>
+				<ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+			</a>
+		) : (
+			<NavLink
+				key={item.to}
+				to={item.to}
+				end={item.end}
+				onClick={onNavigate}
+				className={({ isActive }) =>
+					cn(
+						NAV_LINK_BASE,
+						isActive ? "bg-slate-300 font-medium text-eko-navy" : NAV_LINK_IDLE,
+					)
+				}
+			>
+				<item.icon className="h-4 w-4 shrink-0" />
+				<span>{item.label}</span>
+			</NavLink>
+		);
 
 	return (
 		<nav className="text-sm" aria-label="Console">
