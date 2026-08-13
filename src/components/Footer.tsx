@@ -1,6 +1,5 @@
 import { EkoLogo } from "@/components/EkoLogo";
 import { XIcon } from "@/components/icons/XIcon";
-import { useAuth } from "@/lib/auth/AuthProvider";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { GITHUB_ORG_URL, SALES_MOBILE, SOCIAL_LINKS } from "@/lib/config/site";
 import { formatMobile } from "@/lib/utils";
@@ -182,7 +181,8 @@ const socialLinks = [
 ];
 
 export const Footer = () => {
-	const { state } = useAuth();
+	// One label for everyone: the console link no longer reads the auth state —
+	// /console sends an anonymous visitor to log in by itself.
 	const developersLinks: FooterLinkItem[] = SHOW_USER_LOGIN
 		? [
 				{
