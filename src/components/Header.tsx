@@ -69,6 +69,7 @@ const NavDropdownButton = ({
 }) => (
 	<button
 		onClick={onClick}
+		aria-expanded={isOpen}
 		className={cn(
 			"text-sm font-medium tracking-tight transition-colors duration-200 flex items-center gap-1 cursor-pointer",
 			useWhiteText
@@ -109,14 +110,11 @@ export const Header = () => {
 	const developersDropdownRef = useRef<HTMLDivElement>(null);
 	/** Shared close timer — fires only when mouse leaves the entire header or a panel. */
 	const closeTimerRef = useRef<number | undefined>(undefined);
-	/** Per-trigger open timers (80ms open delay). */
-	const openTimersRef = useRef<Record<string, number | undefined>>({});
 	const location = useLocation();
 	const { state: authState } = useAuth();
 	// Once signed in, the avatar menu replaces the sales CTA in the header.
 	const isAuthed = SHOW_USER_LOGIN && authState.status === "authed";
 
-	const HOVER_OPEN_DELAY = 80;
 	const HOVER_CLOSE_DELAY = 150;
 
 	/** Cancel any pending close — called when mouse re-enters the header or a panel. */
@@ -137,17 +135,13 @@ export const Header = () => {
 	};
 
 	/**
-	 * Returns an onMouseEnter handler for a trigger button.
-	 * Cancels any pending close and schedules opening the given dropdown after a short delay.
+	 * Returns an onMouseEnter handler for a trigger button. Hover never opens a
+	 * panel from a closed state — opening is click-only. Once a panel is open,
+	 * hovering a sibling trigger swaps to it (standard menubar behaviour).
 	 */
 	const getTriggerEnterHandler = (key: DropdownKey) => () => {
 		cancelClose();
-		if (openTimersRef.current[key] === undefined) {
-			openTimersRef.current[key] = window.setTimeout(() => {
-				setActiveDesktopDropdown(key);
-				openTimersRef.current[key] = undefined;
-			}, HOVER_OPEN_DELAY);
-		}
+		if (activeDesktopDropdown !== null) setActiveDesktopDropdown(key);
 	};
 
 	/** Hover handlers spread on every dropdown panel — keeps the dropdown open while mouse is in the panel. */
@@ -233,9 +227,6 @@ export const Header = () => {
 		return () => {
 			if (closeTimerRef.current !== undefined)
 				window.clearTimeout(closeTimerRef.current);
-			Object.values(openTimersRef.current).forEach((t) => {
-				if (t !== undefined) window.clearTimeout(t);
-			});
 		};
 	}, []);
 
@@ -299,9 +290,10 @@ export const Header = () => {
 		};
 	}, []);
 
-	// Trigger enter handlers — onMouseLeave is intentionally absent; closing is handled by
-	// onMouseLeave on the <header> element so the dropdown stays open while the mouse moves
-	// anywhere within the header bar.
+	// Trigger enter handlers — these only swap between already-open panels; they never
+	// open one from a closed state (click does that). onMouseLeave is intentionally absent:
+	// closing is scheduled by onMouseLeave on the <header> element and on each panel, so the
+	// dropdown stays open while the mouse moves anywhere within the header bar or the panel.
 	const productsEnterHandler = getTriggerEnterHandler("products");
 	const useCasesEnterHandler = getTriggerEnterHandler("useCases");
 	const aiEnterHandler = getTriggerEnterHandler("ai");
