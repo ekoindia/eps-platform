@@ -10,12 +10,16 @@ import {
 import { Link } from "react-router-dom";
 
 /**
- * The onboarding journey shown beside the sign-in form. Copy is deliberately
- * outcome-first ("in hours, not weeks"), because this is the only pitch an
- * anonymous developer sees before handing over a mobile number.
+ * The four required steps of the onboarding journey shown beside the sign-in
+ * form. Copy is deliberately outcome-first ("in hours, not weeks"), because
+ * this is the only pitch an anonymous developer sees before handing over a
+ * mobile number.
+ *
+ * Trying the verification APIs from the console is *not* one of these — it is
+ * an optional detour off step 1, rendered as its own card by {@link Journey}.
  *
  * The pastel `tint`s are one-off illustration colours, not semantic tokens —
- * they exist to separate five adjacent icons, and nothing else in the app
+ * they exist to separate four adjacent icons, and nothing else in the app
  * consumes them.
  */
 const STEPS: ReadonlyArray<{
@@ -28,13 +32,7 @@ const STEPS: ReadonlyArray<{
 		Icon: UserPlus,
 		tint: "bg-[#fdf1d7]",
 		title: "Finish your quick signup to get started",
-		body: "Fully digital, takes minutes — receive your UAT credentials immediately.",
-	},
-	{
-		Icon: FlaskConical,
-		tint: "bg-[#fdeee2]",
-		title: "Try verification APIs live before you build",
-		body: "Run live PAN, Aadhaar, bank-account and UPI checks with zero code.",
+		body: "Fully digital, takes minutes — receive your UAT credentials immediately after signup.",
 	},
 	{
 		Icon: Code2,
@@ -58,17 +56,63 @@ const STEPS: ReadonlyArray<{
 
 const EYEBROW = "text-[0.6875rem] font-bold uppercase tracking-[0.12em]";
 
-/** The five-step journey, rendered with a dashed connector between items. */
+/** The dashed segment of timeline that runs into the next row of the journey. */
+const CONNECTOR = (
+	<div className="ml-[1.3125rem] h-5 border-l-2 border-dashed border-[#e3dcc9]" />
+);
+
+/**
+ * The API trial, hung off step 1 on the same timeline but drawn as a card with
+ * a dashed outline and no step number — everything about it says "you may skip
+ * this". It lives inside step 1's `<li>` so the list still counts four steps;
+ * the `<aside>` keeps it from reading as more of step 1 to a screen reader.
+ */
+function OptionalTrial() {
+	return (
+		<>
+			{CONNECTOR}
+			<aside
+				className="flex items-start gap-4"
+				aria-label="Optional: try the verification APIs"
+			>
+				<div className="flex size-11 flex-none items-center justify-center rounded-[0.8125rem] border-2 border-dashed border-[#e3dcc9] bg-[#faf9f5]">
+					<FlaskConical className="size-5 text-eko-slate" strokeWidth={1.8} />
+				</div>
+				<div className="max-w-[29.5rem] flex-1 rounded-xl border border-dashed border-[#e3dcc9] bg-[#f7f3ea] p-4 pb-2">
+					<div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+						<span
+							className={`${EYEBROW} rounded-full border border-[#e6d6a8] bg-white px-2.5 py-0.5 text-eko-navy`}
+						>
+							Optional
+						</span>
+						<span className="text-[0.8125rem] text-eko-slate">
+							{/* Desktop has room for the full qualifier; mobile does not. */}
+							<span className="hidden lg:inline">available right </span>after
+							signup
+						</span>
+					</div>
+					<h3 className="mt-2 text-[0.95rem] font-bold text-eko-navy">
+						Try verification APIs live before you build
+					</h3>
+					<div className="mt-0.5 text-[0.8125rem] leading-relaxed text-muted-foreground">
+						Run live PAN, Aadhaar, bank-account and UPI checks from the console
+						UI — zero code.
+					</div>
+				</div>
+			</aside>
+		</>
+	);
+}
+
+/** The four-step journey, rendered with a dashed connector between items. */
 function Journey() {
 	return (
 		<ol className="flex flex-col">
 			{STEPS.map(({ Icon, tint, title, body }, i) => (
 				<li key={title}>
 					{/* Connector, not a separate list item: it belongs to the step it
-					    leads into, so the list still has exactly five entries. */}
-					{i > 0 ? (
-						<div className="ml-[1.3125rem] h-5 border-l-2 border-dashed border-[#e3dcc9]" />
-					) : null}
+					    leads into, so the list still has exactly four entries. */}
+					{i > 0 ? CONNECTOR : null}
 					<div className="flex items-start gap-4">
 						<div
 							className={`flex size-11 flex-none items-center justify-center rounded-[0.8125rem] ${tint}`}
@@ -82,11 +126,12 @@ function Journey() {
 							<h3 className="mt-0.5 text-[0.95rem] font-bold text-eko-navy">
 								{title}
 							</h3>
-							<p className="mt-0.5 max-w-[27.5rem] text-[0.8125rem] leading-relaxed text-muted-foreground">
+							<div className="mt-0.5 max-w-[27.5rem] text-[0.8125rem] leading-relaxed text-muted-foreground">
 								{body}
-							</p>
+							</div>
 						</div>
 					</div>
+					{i === 0 ? <OptionalTrial /> : null}
 				</li>
 			))}
 		</ol>
@@ -176,7 +221,7 @@ export function SignInSplit({
 				</div>
 			</div>
 
-			<div className="order-3 px-5 pb-8 pt-6 sm:px-8 lg:col-start-1 lg:row-start-2 lg:px-14 lg:pb-12 lg:pt-8">
+			<div className="order-3 px-5 pb-8 pt-4 sm:px-8 lg:col-start-1 lg:row-start-2 lg:px-14 lg:pb-12 lg:pt-6">
 				{/* Desktop gets the lead paragraph above instead; on mobile the journey
 				    is far enough from the hero to need its own label. */}
 				<div className={`${EYEBROW} mb-4 text-eko-gold-ink lg:hidden`}>
