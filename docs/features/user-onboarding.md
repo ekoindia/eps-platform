@@ -309,6 +309,41 @@ defaulting to `"Send OTP"`. `SignInSplit` passes `"Continue with mobile OTP"`,
 because there the button is the page's only call to action rather than one
 control on a card.
 
+### Link parameters: `?mobile=` and `?next=`
+
+Both entry points (`/console` and `/signup`) read two query params, so a
+campaign or hand-off link can drop someone straight where they belong.
+
+**`?mobile=`** pre-fills the OTP form. Handled in `LoginForm`'s mount effect,
+because both pages reach the field through it and `SignInSplit` holds no state.
+The value is stripped to digits and cut to the **last 10**
+(`raw.replace(/\D/g, "").slice(-10)`), the same rule `Input`'s paste handler
+uses, so `+91 (999) 000-0001` and `09990000001` both land as `9990000001`; a
+value that isn't 10 digits after that is ignored. It wins over the remembered
+`eko-last-mobile` number — a link that carries a number was aimed at this
+visitor — but still uses `setMobile((cur) => cur || …)`, so a fast typist is
+never clobbered. Read after mount, like every other URL/storage read on the
+prerendered `/signup`.
+
+**`?next=`** is a post-login destination, parsed by `readNextParam()` in
+`src/lib/auth/next-param.ts`. It accepts rooted in-app paths only: `//evil.com`,
+`/\evil.com` and absolute URLs are rejected, because a redirect target taken
+from a URL is an open redirect otherwise. It is applied in two places, both of
+which are the moment the console would otherwise render:
+
+- `ConsoleLayout` — as soon as a **developer** session exists, whether from a
+  fresh login or an already-signed-in visitor opening the link. The `replace`
+  drops `next` from the URL, so the effect no-ops on re-run.
+- `SignupPage` — on its existing `role !== "signup"` redirect, i.e. after the
+  wizard finishes and the backend swaps in a developer session. Developer only:
+  an admin has no console pages to deep-link into, so it still goes to
+  `/console`.
+
+Never mid-onboarding. The wizard never navigates, so `/signup?next=…` keeps the
+param the whole way through; and `ConsoleLayout`'s signup bounce carries the
+query string (`navigate({ pathname: "/signup", search }, …)`) so a
+`/console?next=…` link hit by a half-onboarded session doesn't lose it either.
+
 ### The anonymous entry screen
 
 `src/components/auth/SignInSplit.tsx` is what an anonymous visitor sees at

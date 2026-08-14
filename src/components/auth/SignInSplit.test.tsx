@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { SignInSplit } from "@/components/auth/SignInSplit";
@@ -35,20 +35,47 @@ describe("SignInSplit", () => {
 		});
 	});
 
-	it("renders the five onboarding steps under one h1", () => {
+	it("numbers the four required steps under one h1", () => {
 		renderSplit();
 
 		expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-		for (const title of [
+
+		const steps = screen.getAllByRole("listitem");
+		expect(steps).toHaveLength(4);
+		const titles = [
 			"Finish your quick signup to get started",
-			"Try verification APIs live before you build",
 			"Build your integration in hours, not weeks",
 			"Finish your KYC to receive production credentials",
 			"Run your business from the dashboard",
-		]) {
-			expect(screen.getByText(title)).toBeInTheDocument();
-		}
-		expect(screen.getAllByRole("listitem")).toHaveLength(5);
+		];
+		// Label and title have to be in the same item, or the renumbering is a lie.
+		titles.forEach((title, i) => {
+			const step = within(steps[i]);
+			expect(step.getByText(title)).toBeInTheDocument();
+			expect(
+				step.getByText(`Step ${String(i + 1).padStart(2, "0")}`),
+			).toBeInTheDocument();
+		});
+		expect(
+			screen.getByText(/receive your UAT credentials/),
+		).toBeInTheDocument();
+	});
+
+	// The API trial is a detour off step 1, not a step: no number, and inside the
+	// first list item so the journey still reads as four steps.
+	it("renders the API trial as an optional card on step 1", () => {
+		renderSplit();
+
+		const trial = within(
+			screen.getByRole("complementary", { name: /optional/i }),
+		);
+		expect(trial.getByText("Optional")).toBeInTheDocument();
+		expect(trial.getByText(/after\s*signup/)).toBeInTheDocument();
+		expect(
+			trial.getByText("Try verification APIs live before you build"),
+		).toBeInTheDocument();
+		expect(trial.getByText(/zero code\./)).toBeInTheDocument();
+		expect(screen.queryByText("05")).toBeNull();
 	});
 
 	it("links the legal line at the real policy routes", () => {

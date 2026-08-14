@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthState } from "@/lib/auth/AuthProvider";
 import SignupPage from "./SignupPage";
 
@@ -23,17 +23,25 @@ vi.mock("react-router-dom", async (orig) => ({
 	useNavigate: () => mockNavigate,
 }));
 
-function renderPage() {
+function renderPage(path = "/signup") {
 	return render(
 		<HelmetProvider>
-			<MemoryRouter>
+			<MemoryRouter initialEntries={[path]}>
 				<SignupPage />
 			</MemoryRouter>
 		</HelmetProvider>,
 	);
 }
 
+const DEVELOPER: AuthState = {
+	status: "authed",
+	role: "developer",
+	me: { state: "active", mobile: "9990000001", profile: null, zohoId: null },
+};
+
 describe("SignupPage", () => {
+	beforeEach(() => mockNavigate.mockClear());
+
 	it("shows the login form when anonymous", () => {
 		mockState = { status: "anon" };
 		renderPage();
@@ -51,12 +59,34 @@ describe("SignupPage", () => {
 	});
 
 	it("redirects a fully onboarded user to the console", () => {
+		mockState = DEVELOPER;
+		renderPage();
+		expect(mockNavigate).toHaveBeenCalledWith("/console", { replace: true });
+	});
+
+	// The `?next=` on the signup link survives the whole wizard — the URL never
+	// changes while it runs — and is spent here, on the hop to the console.
+	it("sends a newly onboarded developer to ?next= instead of the console", () => {
+		mockState = DEVELOPER;
+		renderPage("/signup?next=/console/credentials");
+		expect(mockNavigate).toHaveBeenCalledWith("/console/credentials", {
+			replace: true,
+		});
+	});
+
+	it("falls back to the console for a ?next= that points off-site", () => {
+		mockState = DEVELOPER;
+		renderPage("/signup?next=https://evil.com");
+		expect(mockNavigate).toHaveBeenCalledWith("/console", { replace: true });
+	});
+
+	it("ignores ?next= for an admin, who has no console pages to land on", () => {
 		mockState = {
 			status: "authed",
-			role: "developer",
-			me: { state: "active", mobile: "9990000001", profile: null, zohoId: null },
+			role: "admin",
+			me: { role: "admin", login: "octo", sub: "gh:octo" },
 		};
-		renderPage();
+		renderPage("/signup?next=/console/credentials");
 		expect(mockNavigate).toHaveBeenCalledWith("/console", { replace: true });
 	});
 

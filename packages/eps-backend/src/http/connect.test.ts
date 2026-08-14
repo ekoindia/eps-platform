@@ -406,11 +406,15 @@ describe("POST /connect/kyc/upload", () => {
 		// `formdata` part, so the browser can never supply one.
 		expect(fields).toEqual({
 			interaction_type_id: "523",
+			intent_id: "3",
 			locale: "en",
 			user_id: "9990000001",
 			doc_type: "1",
 			pages: "2",
 		});
+		// Fixed server-side, never accepted from the browser: upstream wants it on
+		// every 523, and no caller has a reason to vary it.
+		expect(fields.intent_id).toBe("3");
 		// The upload transport URL-encodes these into one part, so every value has
 		// to already be a string.
 		expect(Object.values(fields).every((v) => typeof v === "string")).toBe(
@@ -418,9 +422,8 @@ describe("POST /connect/kyc/upload", () => {
 		);
 		expect(files.map((f) => f.name)).toEqual(["file1", "file2"]);
 		expect(files.map((f) => f.file.name)).toEqual(["front.jpg", "back.jpg"]);
-		// `doc_id` and `intent_id` are deliberately not sent.
+		// `doc_id` is deliberately not sent.
 		expect(fields).not.toHaveProperty("doc_id");
-		expect(fields).not.toHaveProperty("intent_id");
 	});
 
 	it("refuses a short pack rather than half-uploading a document", async () => {

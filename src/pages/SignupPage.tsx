@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignupWizard } from "@/features/signup/SignupWizard";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { readNextParam } from "@/lib/auth/next-param";
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 /**
  * Self-serve signup.
@@ -18,13 +19,19 @@ import { useNavigate } from "react-router-dom";
 const SignupPage = () => {
 	const { state } = useAuth();
 	const navigate = useNavigate();
+	const { search } = useLocation();
 
-	// A fully onboarded user has no business here.
+	// A fully onboarded user has no business here. A `?next=` on the link is
+	// honoured at exactly this point — the wizard is done, the backend has
+	// swapped in a developer session, and the console is what would render
+	// next. Only for a developer: an admin has no console pages to deep-link
+	// into.
 	useEffect(() => {
 		if (state.status === "authed" && state.role !== "signup") {
-			navigate("/console", { replace: true });
+			const next = state.role === "developer" ? readNextParam(search) : null;
+			navigate(next ?? "/console", { replace: true });
 		}
-	}, [state, navigate]);
+	}, [state, search, navigate]);
 
 	// The wizard needs room for its step rail beside the form; the login form
 	// does not. The wizard also brings its own card, since only it knows the

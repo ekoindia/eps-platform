@@ -286,6 +286,9 @@ describe("KycUploadDialog", () => {
 		expect(form.get("pages")).toBe("2");
 		expect(form.get("file1")).toBeInstanceOf(File);
 		expect(form.get("file2")).toBeInstanceOf(File);
+		// `intent_id` is the backend's to set, not the browser's. A value sent from
+		// here would be dropped by the proxy anyway, so shipping one is a lie.
+		expect(form.get("intent_id")).toBeNull();
 		expect(onClose).toHaveBeenCalledWith({
 			docType: "999",
 			message: "Received",

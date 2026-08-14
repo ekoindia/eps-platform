@@ -108,10 +108,23 @@ export function LoginForm({
 		focusBox(Math.min(text.length, OTP_LENGTH - 1));
 	}
 
-	// Prefill the last verified number. Read after mount (never during SSR /
-	// pre-render, so the server's empty field hydrates cleanly), and only into a
-	// still-empty field so a fast typist is never clobbered.
+	// Prefill the mobile field: a `?mobile=` link wins over the last verified
+	// number, because a link that carries a number was aimed at this visitor.
+	// Read after mount (never during SSR / pre-render, so the server's empty
+	// field hydrates cleanly), and only into a still-empty field so a fast
+	// typist is never clobbered.
 	useEffect(() => {
+		// Strip and take the last 10 digits, the same rule the Input's paste
+		// handler uses, so "+91 (999) 000-0001" and "09990000001" both land as
+		// "9990000001".
+		const fromUrl = new URLSearchParams(window.location.search)
+			.get("mobile")
+			?.replace(/\D/g, "")
+			.slice(-10);
+		if (fromUrl && /^\d{10}$/.test(fromUrl)) {
+			setMobile((cur) => cur || fromUrl);
+			return;
+		}
 		try {
 			const saved = localStorage.getItem(LAST_MOBILE_KEY);
 			if (saved && /^\d{10}$/.test(saved)) setMobile((cur) => cur || saved);

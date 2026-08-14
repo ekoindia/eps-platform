@@ -20,7 +20,11 @@ vi.mock("sonner", () => ({
 }));
 import { authClient, ApiError } from "@/lib/auth/client";
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+	localStorage.clear();
+	// The prefill reads the URL, so no test may inherit another's query string.
+	window.history.replaceState({}, "", "/");
+});
 afterEach(() => vi.clearAllMocks());
 
 describe("LoginForm", () => {
@@ -211,6 +215,30 @@ describe("LoginForm", () => {
 		// digitGroups formats the display; the button gate reads the raw value.
 		expect(await screen.findByDisplayValue("999 000 0001")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /send otp/i })).toBeEnabled();
+	});
+
+	it("prefills the mobile field from a ?mobile= link, digits only", async () => {
+		// A campaign link may carry any human formatting; the last 10 digits win,
+		// so a country prefix or a leading zero is dropped rather than truncating
+		// the number itself.
+		window.history.replaceState({}, "", "/console?mobile=%2B91+(999)+000-0001");
+		render(<LoginForm />);
+		expect(await screen.findByDisplayValue("999 000 0001")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /send otp/i })).toBeEnabled();
+	});
+
+	it("prefers the ?mobile= link over the remembered number", async () => {
+		localStorage.setItem("eko-last-mobile", "8880000002");
+		window.history.replaceState({}, "", "/console?mobile=09990000001");
+		render(<LoginForm />);
+		expect(await screen.findByDisplayValue("999 000 0001")).toBeInTheDocument();
+	});
+
+	it("falls back to the remembered number for an unusable ?mobile=", async () => {
+		localStorage.setItem("eko-last-mobile", "8880000002");
+		window.history.replaceState({}, "", "/console?mobile=12345");
+		render(<LoginForm />);
+		expect(await screen.findByDisplayValue("888 000 0002")).toBeInTheDocument();
 	});
 
 	it("does not remember a number whose OTP failed", async () => {

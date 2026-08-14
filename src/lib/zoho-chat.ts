@@ -24,8 +24,19 @@ interface ZohoSalesIQ {
 		name?: (value: string) => void;
 		email?: (value: string) => void;
 		contactnumber?: (value: string) => void;
+		/** Fires when the visitor initiates a chat. */
+		chat?: (handler: VisitorHandler) => void;
+		/** Fires when the visitor submits a message with all operators offline. */
+		offlineMessage?: (handler: VisitorHandler) => void;
 	};
 }
+
+/**
+ * SalesIQ's documented shape is `{ name, email, question, visitid }`, but the
+ * widget is free to send more — hence the open record. Logged verbatim so we can
+ * see whether a mobile number or a Zoho Lead/Contact id ever arrives.
+ */
+type VisitorHandler = (visitid: string, data: Record<string, unknown>) => void;
 
 /**
  * Last known logged-in identity, or `null` when anonymous. Written by
@@ -112,9 +123,35 @@ function hookReady(): void {
 		try {
 			previous?.();
 		} finally {
+			logVisitorEvents(salesiq);
 			applyState();
 		}
 	};
+}
+
+/** Guards against re-registering when `ready` fires more than once. */
+let visitorLoggingBound = false;
+
+/**
+ * Logs what SalesIQ hands back when a visitor starts a chat or leaves an offline
+ * message. Observation only — we want to see whether the payload carries a mobile
+ * number or a Zoho Lead/Contact id before deciding what to do with it.
+ */
+function logVisitorEvents(salesiq: ZohoSalesIQ): void {
+	if (visitorLoggingBound) return;
+	const visitor = salesiq.visitor;
+	if (!visitor?.chat && !visitor?.offlineMessage) return;
+	visitorLoggingBound = true;
+	try {
+		visitor.chat?.((visitid, data) => {
+			console.log("[SalesIQ] visitor.chat", { visitid, data });
+		});
+		visitor.offlineMessage?.((visitid, data) => {
+			console.log("[SalesIQ] visitor.offlineMessage", { visitid, data });
+		});
+	} catch {
+		// Widget API shape changed or unavailable — ignore
+	}
 }
 
 /** Pushes `hiddenForRoute` / `pendingOpen` to the widget. No-op until it loads. */
