@@ -98,10 +98,42 @@ describe("ConsoleLayout", () => {
 			role: "signup",
 			me: { role: "signup", mobile: "9990000001" },
 		});
-		expect(mockNavigate).toHaveBeenCalledWith("/signup", { replace: true });
+		// Query string rides along so a `?next=` survives the wizard detour.
+		expect(mockNavigate).toHaveBeenCalledWith(
+			{ pathname: "/signup", search: "" },
+			{ replace: true },
+		);
 		// Not blank: shows the same loading skeleton the `loading` state shows,
 		// rather than an empty body while the redirect is in flight.
 		expect(screen.getByTestId("console-loading")).toBeInTheDocument();
+	});
+
+	it("carries the query string into the /signup redirect", () => {
+		renderLayout(
+			{
+				status: "authed",
+				role: "signup",
+				me: { role: "signup", mobile: "9990000001" },
+			},
+			"/console?next=/console/credentials",
+		);
+		expect(mockNavigate).toHaveBeenCalledWith(
+			{ pathname: "/signup", search: "?next=/console/credentials" },
+			{ replace: true },
+		);
+	});
+
+	it("sends a developer to ?next= once the session lands", () => {
+		renderLayout(DEVELOPER, "/console?next=/console/credentials");
+		expect(mockNavigate).toHaveBeenCalledWith("/console/credentials", {
+			replace: true,
+		});
+	});
+
+	it("ignores a ?next= that points off-site", () => {
+		renderLayout(DEVELOPER, "/console?next=//evil.com");
+		expect(mockNavigate).not.toHaveBeenCalled();
+		expect(screen.getByText("home-page")).toBeInTheDocument();
 	});
 
 	it("renders the rail and the child route for a developer", () => {

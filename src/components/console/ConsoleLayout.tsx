@@ -19,6 +19,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
+import { readNextParam } from "@/lib/auth/next-param";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
@@ -43,6 +44,7 @@ import {
 	Link,
 	NavLink,
 	Outlet,
+	useLocation,
 	useNavigate,
 	useOutletContext,
 } from "react-router-dom";
@@ -313,18 +315,33 @@ function ConsoleLoading() {
 export default function ConsoleLayout() {
 	const { state } = useAuth();
 	const navigate = useNavigate();
+	const { search } = useLocation();
 	const [open, setOpen] = useState(false);
 
 	// A signup session hasn't finished onboarding — it has no console to show.
 	// Send it back to `/signup` to resume the wizard. Mirror of the redirect
 	// SignupPage.tsx already does in the other direction (`role !== "signup"`
 	// → `/console`); the two conditions are disjoint by construction, so
-	// neither page can bounce a session straight back to the other.
+	// neither page can bounce a session straight back to the other. The query
+	// string rides along so a `?next=` on the link survives the detour through
+	// the wizard.
 	useEffect(() => {
 		if (state.status === "authed" && state.role === "signup") {
-			navigate("/signup", { replace: true });
+			navigate({ pathname: "/signup", search }, { replace: true });
 		}
-	}, [state, navigate]);
+	}, [state, search, navigate]);
+
+	// `?next=` is a deep link into the console: honour it the moment a developer
+	// session exists, which is the moment the console home would otherwise
+	// render — after a fresh login, or straight away for a session that was
+	// already signed in. Terminates because the replace drops `next` from the
+	// URL, so a re-run finds nothing. A signup session never reaches here; the
+	// redirect above claims it first.
+	useEffect(() => {
+		if (state.status !== "authed" || state.role !== "developer") return;
+		const next = readNextParam(search);
+		if (next) navigate(next, { replace: true });
+	}, [state, search, navigate]);
 
 	// While the redirect above is in flight (or on the loading state that also
 	// has nothing to render yet), show the loading skeleton instead of a blank
