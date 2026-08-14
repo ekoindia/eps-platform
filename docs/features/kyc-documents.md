@@ -65,10 +65,16 @@ already backs support-ticket attachments, so both go through one
 `uploadInteraction` in `packages/eps-backend/src/clients/connect.ts`.
 
 ```
-formdata: client_ref_id=…&locale=en&user_id=…&interaction_type_id=523&doc_type=1&pages=2
+formdata: client_ref_id=…&locale=en&user_id=…&interaction_type_id=523&intent_id=3&doc_type=1&pages=2
 file1: <binary>
 file2: <binary>
 ```
+
+`intent_id` is a fixed `3` (`KYC_UPLOAD_INTENT` in `http/connect.ts`), set
+backend-side and never accepted from the browser — same posture as `user_id`.
+It does not vary per document or per page, so there is nothing for a caller to
+choose. The Eko-side PAN verification in `clients/eko.ts` sends the same `3` on
+the same 523.
 
 **Not to be confused with the Eko public API's upload convention.** That one also
 wraps everything in a single part, but the part is named `form-data` (hyphenated)
@@ -137,9 +143,11 @@ review, too many blocks the upload outright.
 
 ## What is deliberately not sent
 
-- **`doc_id` and `intent_id`** appear in connect-api's sample upload params and
-  are omitted. Nothing in the 586 response supplies them, and the upload is
-  already identified by `doc_type` plus the session.
+- **`doc_id`** appears in connect-api's sample upload params and is omitted.
+  Nothing in the 586 response supplies it, and the upload is already identified
+  by `doc_type` plus the session. (`intent_id` was omitted on the same reasoning
+  until upstream asked for it — it is now sent as a fixed `3`, see
+  [587 — the upload](#587--the-upload).)
 - **`latlong`** appears in both sample requests and is omitted. A document
   checklist is the wrong place to raise a geolocation permission prompt. If
   upstream turns out to need it, the position is *already* resolved for the

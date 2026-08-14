@@ -48,6 +48,9 @@ const KYC_LIST_INTERACTION = 539;
 /** `interaction_type_id` for "upload a document". */
 const KYC_UPLOAD_INTERACTION = 523;
 
+/** `intent_id` for a KYC document upload. Upstream wants it on every 523. */
+const KYC_UPLOAD_INTENT = 3;
+
 /**
  * Per-file ceiling for a KYC document. Deliberately its OWN constant rather
  * than the support desk's `MAX_FILE_BYTES`: a passport scan is not a screenshot,
@@ -391,6 +394,7 @@ export function mountConnect(
 				// strings by the time they leave here. `client_ref_id` is added by
 				// the client transport, never accepted from the browser.
 				interaction_type_id: String(KYC_UPLOAD_INTERACTION),
+				intent_id: String(KYC_UPLOAD_INTENT),
 				locale: "en",
 				user_id: claim.sub,
 				doc_type: docType,

@@ -88,7 +88,6 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 		setBusy(true);
 		try {
 			const form = new FormData();
-			form.append("intent_id", "4");
 			form.append("doc_type", doc.docType);
 			form.append("pages", String(doc.pages));
 			files.forEach((file, index) => {
