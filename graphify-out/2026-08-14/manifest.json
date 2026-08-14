@@ -265,13 +265,13 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/connect.test.ts": {
-    "mtime": 1785994098.241146,
-    "ast_hash": "319f1483cf056b5c50ceee3780ba577f",
+    "mtime": 1786695711.0499346,
+    "ast_hash": "336d4b98d05dfd9c81e5c1dc8f526c5b",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/connect.ts": {
-    "mtime": 1785994098.2414978,
-    "ast_hash": "68c10b87f1efa610e080ce0b418f79db",
+    "mtime": 1786695694.6189997,
+    "ast_hash": "ed415dc4115e304b16bcc552f242b788",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/dashboard.sample.ts": {
@@ -945,8 +945,8 @@
     "semantic_hash": ""
   },
   "src/components/Header.tsx": {
-    "mtime": 1786687180.714261,
-    "ast_hash": "3c576363a862bbfb098599d3f837ce42",
+    "mtime": 1786694155.3141315,
+    "ast_hash": "18933943f743c0c6f02d6223a4e03700",
     "semantic_hash": ""
   },
   "src/components/HeaderDropdownPanels.tsx": {
@@ -1150,13 +1150,13 @@
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
-    "mtime": 1786349179.2864678,
-    "ast_hash": "ef0bd5ae0ffd18ddd49abfc1ea455c4c",
+    "mtime": 1786695718.8639917,
+    "ast_hash": "f2718875b11e2e4690efd164284e6f3f",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.tsx": {
-    "mtime": 1786444484.0716894,
-    "ast_hash": "a57663c127b8a3de8800e1ed089932fa",
+    "mtime": 1786695699.2132895,
+    "ast_hash": "7452829791d74cbe2e8c76d48ea8361f",
     "semantic_hash": ""
   },
   "src/components/console/WalletBalance.connect.test.tsx": {
@@ -3075,8 +3075,8 @@
     "semantic_hash": "c6d1b449c59cc677e79721e2adbb6db8"
   },
   "docs/features/kyc-documents.md": {
-    "mtime": 1786363516.6969903,
-    "ast_hash": "2dff7a8e40274661a9e50af0fc862b27",
+    "mtime": 1786695729.8071504,
+    "ast_hash": "a696370e6fe58503cef25976f50a14d7",
     "semantic_hash": ""
   },
   "docs/features/transaction-history.md": {
@@ -3810,8 +3810,8 @@
     "semantic_hash": ""
   },
   "src/components/Header.dropdown.test.tsx": {
-    "mtime": 1786687224.6561623,
-    "ast_hash": "ea847c2bfdbc32a1cb5a8263cbdf9d4e",
+    "mtime": 1786694142.51203,
+    "ast_hash": "8855b70f0880bc5dc3d69f3d81fa2bf3",
     "semantic_hash": ""
   },
   "src/lib/auth/next-param.test.ts": {
