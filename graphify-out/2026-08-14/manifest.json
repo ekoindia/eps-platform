@@ -945,8 +945,8 @@
     "semantic_hash": ""
   },
   "src/components/Header.tsx": {
-    "mtime": 1786694155.3141315,
-    "ast_hash": "18933943f743c0c6f02d6223a4e03700",
+    "mtime": 1786687180.714261,
+    "ast_hash": "3c576363a862bbfb098599d3f837ce42",
     "semantic_hash": ""
   },
   "src/components/HeaderDropdownPanels.tsx": {
@@ -3810,8 +3810,8 @@
     "semantic_hash": ""
   },
   "src/components/Header.dropdown.test.tsx": {
-    "mtime": 1786694142.51203,
-    "ast_hash": "8855b70f0880bc5dc3d69f3d81fa2bf3",
+    "mtime": 1786687224.6561623,
+    "ast_hash": "ea847c2bfdbc32a1cb5a8263cbdf9d4e",
     "semantic_hash": ""
   },
   "src/lib/auth/next-param.test.ts": {
