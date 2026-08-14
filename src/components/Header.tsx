@@ -269,7 +269,11 @@ export const Header = () => {
 				import("@/components/HeaderDropdownPanels"),
 				import("@/components/CommandPalette"),
 				import("@/components/LanguageSelector"),
-			]).then(() => setLazyChunksReady(true));
+			])
+				.then(() => setLazyChunksReady(true))
+				// Prefetch is best-effort: a failed chunk load must not surface as an
+				// unhandled rejection — the panels still load on demand via Suspense.
+				.catch(() => {});
 		if (typeof requestIdleCallback !== "undefined") {
 			const handle = requestIdleCallback(load, { timeout: 2000 });
 			return () => cancelIdleCallback(handle);
