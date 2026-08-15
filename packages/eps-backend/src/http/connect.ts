@@ -49,7 +49,7 @@ const KYC_LIST_INTERACTION = 539;
 const KYC_UPLOAD_INTERACTION = 523;
 
 /** `intent_id` for a KYC document upload. Upstream wants it on every 523. */
-const KYC_UPLOAD_INTENT = 3;
+const KYC_UPLOAD_INTENT = 4;
 
 /**
  * Per-file ceiling for a KYC document. Deliberately its OWN constant rather

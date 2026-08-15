@@ -406,15 +406,17 @@ describe("POST /connect/kyc/upload", () => {
 		// `formdata` part, so the browser can never supply one.
 		expect(fields).toEqual({
 			interaction_type_id: "523",
-			intent_id: "3",
+			intent_id: "4",
 			locale: "en",
 			user_id: "9990000001",
 			doc_type: "1",
 			pages: "2",
 		});
 		// Fixed server-side, never accepted from the browser: upstream wants it on
-		// every 523, and no caller has a reason to vary it.
-		expect(fields.intent_id).toBe("3");
+		// every 523, and no caller has a reason to vary it. Not the same `3` the
+		// Eko-side PAN verification sends on 523 — a document upload is its own
+		// intent, so this is pinned rather than shared.
+		expect(fields.intent_id).toBe("4");
 		// The upload transport URL-encodes these into one part, so every value has
 		// to already be a string.
 		expect(Object.values(fields).every((v) => typeof v === "string")).toBe(
