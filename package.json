@@ -33,6 +33,7 @@
 		"transact:dev": "npm run dev -w @ekoindia/eps-transact-mcp",
 		"transact:build": "npm run build -w @ekoindia/eps-sdk && npm run build -w @ekoindia/eps-transact-mcp",
 		"transact:test": "npm run build -w @ekoindia/eps-sdk && npm run typecheck -w @ekoindia/eps-transact-mcp && npm run test -w @ekoindia/eps-transact-mcp",
+		"test:all": "npm test && npm run backend:test && npm run transact:test",
 		"transact:typecheck": "npm run typecheck -w @ekoindia/eps-transact-mcp"
 	},
 	"dependencies": {
