@@ -7,9 +7,13 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const connectInteractions = vi.fn();
+const connectEkostoreToken = vi.fn();
 vi.mock("@/lib/auth/client", async (orig) => ({
 	...(await orig<typeof import("@/lib/auth/client")>()),
-	authClient: { connectInteractions: () => connectInteractions() },
+	authClient: {
+		connectInteractions: () => connectInteractions(),
+		connectEkostoreToken: () => connectEkostoreToken(),
+	},
 }));
 
 // Module constant read at import, so it has to be mocked rather than stubbed
@@ -50,6 +54,12 @@ function renderRail() {
 
 beforeEach(() => {
 	connectInteractions.mockReset();
+	connectEkostoreToken.mockReset();
+	// Entitled by default; the ekostore block overrides where the token matters.
+	connectEkostoreToken.mockResolvedValue({
+		accessToken: "ca_full",
+		expiresAt: Date.now() + 3_600_000,
+	});
 	resetRoleTransactionCache();
 });
 
@@ -152,10 +162,13 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 		renderRail();
 
 		const link = await screen.findByRole("link", { name: NAME });
-		expect(link).toHaveAttribute(
-			"href",
+		// The token rides on the URL, so match the page and the param rather than
+		// the whole string.
+		const href = new URL(link.getAttribute("href") ?? "");
+		expect(`${href.origin}${href.pathname}`).toBe(
 			"https://ekostore.app/products/kyc-verification",
 		);
+		expect(href.searchParams.get("access_token")).toBe("ca_full");
 		expect(link).toHaveAttribute("target", "_blank");
 		// Without noopener the opened tab can reach back through window.opener.
 		expect(link).toHaveAttribute("rel", "noopener noreferrer");
@@ -167,6 +180,20 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 			.getAllByRole("link")
 			.map((a) => a.textContent?.trim());
 		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Transactions") + 1);
+	});
+
+	it("stays hidden when the backend refuses the handoff", async () => {
+		// Entitled by the list the rail read, but the backend re-checks and says no.
+		// A link with no token would land the user on a sign-in form.
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 9995 }] });
+		connectEkostoreToken.mockRejectedValue(new Error("EKOSTORE_NOT_ENTITLED"));
+
+		renderRail();
+
+		expect(await screen.findByRole("link", { name: "Home" })).toBeVisible();
+		await waitFor(() =>
+			expect(screen.queryByRole("link", { name: NAME })).toBeNull(),
+		);
 	});
 
 	it("stays hidden without the entitlement", async () => {

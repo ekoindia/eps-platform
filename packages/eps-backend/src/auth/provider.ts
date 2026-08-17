@@ -10,13 +10,18 @@ import type { ProfileResult } from "../types";
  * token belongs to.
  */
 export interface UpstreamSession {
+	/**
+	 * Full-scope token. Published to a browser by exactly one route —
+	 * `GET /connect/ekostore-token`, gated on entitlement to interaction 9995 —
+	 * so that the console's ekostore link can carry a credential. Every other
+	 * route uses it only to call upstream from this process.
+	 */
 	accessToken: string;
+	/** Never leaves this process: it is rotated here, and a second holder would break that. */
 	refreshToken: string;
 	/**
 	 * Reduced-scope token the browser-side Connect widget reads from
-	 * `sessionStorage`. This is the ONLY field here that is ever handed to a
-	 * browser, and only via `GET /connect/token`; `accessToken` and
-	 * `refreshToken` never leave this process.
+	 * `sessionStorage`, via `GET /connect/token`.
 	 */
 	accessTokenLite?: string;
 	/** CRM-scoped token, likewise browser-visible via `GET /connect/token`. */
