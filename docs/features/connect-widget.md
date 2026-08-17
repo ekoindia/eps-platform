@@ -55,11 +55,27 @@ on session expiry (`AuthProvider`).
 
 ## ekostore handoff
 
-The console rail links to ekostore's KYC sandbox
-(`https://ekostore.app/products/kyc-verification`) for accounts entitled to
+The console rail links to ekostore's KYC sandbox for accounts entitled to
 interaction **9995**. ekostore talks to the same connect-api, so the link carries
-the user's access token as an `access_token` query param and they are not asked
-to sign in twice.
+the user's access token and they are not asked to sign in twice.
+
+The link points at ekostore's **root**, not at the sandbox page — ekostore seats
+the session first and then forwards to whatever `next` holds:
+
+```
+https://ekostore.app/?mobile=9876543210&next=%2Fproducts%2Fkyc-verification&access_token=…
+```
+
+| Param | What it carries |
+| --- | --- |
+| `mobile` | The session mobile (`me.mobile`) — the identity the token belongs to, not the Eko profile's contact number, which can differ. Omitted when the session has none (admin). |
+| `next` | The page to continue to after the handover, percent-encoded by `URLSearchParams`. |
+| `access_token` | The connect-api access token from `GET /connect/ekostore-token`. |
+
+The origin comes from `EKOSTORE_URL` (`src/lib/config/features.ts`), set by
+`VITE_EKOSTORE_URL` and defaulting to `https://ekostore.app`. Point it at a beta
+ekostore **only** when that deployment is backed by the same connect-api as this
+environment: a token minted here is worthless at a different backend.
 
 **The access token, not the refresh token.** `connectProvider.refresh` rotates
 the refresh token and connect-api consumes the old one, so two holders collide —
@@ -71,7 +87,8 @@ the upstream interaction list and 403s without 9995. The rail runs the same chec
 only to decide what to draw; a browser can skip that one.
 
 **Accepted trade-off:** a token in a URL reaches browser history, the `Referer`
-sent to third parties ekostore loads, and ekostore's access logs. Bounded by the
+sent to third parties ekostore loads, and ekostore's access logs — and since the
+link also carries `mobile`, so does the user's phone number. Bounded by the
 5h cap and by the refresh token staying server-side, so a leaked URL cannot be
 renewed into a persistent session. Do not extend this to anything longer-lived.
 The token is held in React state for as long as the link is rendered and is
@@ -83,6 +100,7 @@ The token is held in React state for as long as the link is rendered and is
 | --- | --- |
 | Token endpoint | `packages/eps-backend/src/http/connect.ts` |
 | ekostore link URL | `src/lib/connect/use-ekostore.ts` |
+| ekostore origin (`VITE_EKOSTORE_URL`) | `src/lib/config/features.ts` |
 | Upstream read seam | `AuthProvider.getUpstream` (`src/auth/provider.ts`) |
 | Token storage | `src/lib/connect/token.ts` |
 | Interaction list → `role_trxn_list` | `src/lib/connect/interactions.ts` |

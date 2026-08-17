@@ -20,6 +20,13 @@ interface ImportMetaEnv {
 	readonly VITE_CONNECT_WIDGET_URL?: string;
 	/** Enable the embedded Connect transaction-flow widget in the console. */
 	readonly VITE_SHOW_CONNECT_WIDGET?: string;
+	/**
+	 * Origin of the ekostore app the console rail links to for the KYC sandbox,
+	 * e.g. `https://ekostore.app`. Unset or blank → `https://ekostore.app`. Must
+	 * be backed by the same connect-api as this environment — the link carries a
+	 * live access token.
+	 */
+	readonly VITE_EKOSTORE_URL?: string;
 	/** Render the Business Dashboard widgets on `/console`. Off by default. */
 	readonly VITE_SHOW_BUSINESS_DASHBOARD?: string;
 	/**

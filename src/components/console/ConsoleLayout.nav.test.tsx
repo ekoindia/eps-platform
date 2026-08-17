@@ -162,12 +162,13 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 		renderRail();
 
 		const link = await screen.findByRole("link", { name: NAME });
-		// The token rides on the URL, so match the page and the param rather than
-		// the whole string.
+		// The handover rides on the URL, so match the root and the params rather
+		// than the whole string.
 		const href = new URL(link.getAttribute("href") ?? "");
-		expect(`${href.origin}${href.pathname}`).toBe(
-			"https://ekostore.app/products/kyc-verification",
-		);
+		expect(`${href.origin}${href.pathname}`).toBe("https://ekostore.app/");
+		expect(href.searchParams.get("next")).toBe("/products/kyc-verification");
+		// The session mobile from the developer fixture, not a profile number.
+		expect(href.searchParams.get("mobile")).toBe("999");
 		expect(href.searchParams.get("access_token")).toBe("ca_full");
 		expect(link).toHaveAttribute("target", "_blank");
 		// Without noopener the opened tab can reach back through window.opener.

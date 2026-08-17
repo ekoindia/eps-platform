@@ -41,6 +41,18 @@ export const CONNECT_WIDGET_URL: string =
 	import.meta.env.VITE_CONNECT_WIDGET_URL ?? "";
 
 /**
+ * Origin of the ekostore app the console rail hands the user off to, for the KYC
+ * & verification sandbox. Must be the ekostore deployment backed by the same
+ * connect-api as this environment: the link carries a live access token, and a
+ * token minted here is worthless — or worse, spent — at a different backend.
+ *
+ * `||` rather than `??`: a blank `VITE_EKOSTORE_URL=` in a `.env` file reaches
+ * here as `""`, which `new URL()` would throw on.
+ */
+export const EKOSTORE_URL: string =
+	import.meta.env.VITE_EKOSTORE_URL || "https://ekostore.app";
+
+/**
  * When true, `/console` renders the Business Dashboard below the Next Steps
  * card — the window picker and every widget under it. When false (the default),
  * Home is the Next Steps card plus the lifecycle state, and nothing calls
