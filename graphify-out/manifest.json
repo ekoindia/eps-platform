@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1786876676.5049071,
-    "ast_hash": "89bcfbed24d6b63577989a2f849eb624",
+    "mtime": 1786949379.1128628,
+    "ast_hash": "92b0047464ef200aa927d417c5d094a8",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786876609.2088625,
-    "ast_hash": "e9b334158b3f7d310410d4aab37b568e",
+    "mtime": 1786949341.3089688,
+    "ast_hash": "05cd02590f77b16d835cafda179cbb90",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -2000,8 +2000,8 @@
     "semantic_hash": "071b505b3521272d1a253a30f03864f0"
   },
   "src/lib/config/features.ts": {
-    "mtime": 1786103756.3354046,
-    "ast_hash": "3e5d1ddeb7c51ef2a889308c4cf38e52",
+    "mtime": 1786949295.7320533,
+    "ast_hash": "dcc36d4db5b53943d3255d3c3ae2611a",
     "semantic_hash": ""
   },
   "src/lib/config/nav.ts": {
@@ -2885,8 +2885,8 @@
     "semantic_hash": "8c78c1febe829891fd8d2929957e150d"
   },
   "src/vite-env.d.ts": {
-    "mtime": 1786103761.7546077,
-    "ast_hash": "1aca65f877dcf5063ed7d662d2c64660",
+    "mtime": 1786949298.0335193,
+    "ast_hash": "8cec033686f93f450ec934b9133cecb8",
     "semantic_hash": ""
   },
   "src/vite-imagetools.d.ts": {
@@ -3070,8 +3070,8 @@
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
-    "mtime": 1786876702.4165123,
-    "ast_hash": "771e0abc487ce27baff9594344758ae7",
+    "mtime": 1786949396.865286,
+    "ast_hash": "9a187c3a9e42acb911bba358494ac711",
     "semantic_hash": ""
   },
   "docs/features/kyc-documents.md": {
@@ -3825,13 +3825,13 @@
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.test.ts": {
-    "mtime": 1786876670.5632238,
-    "ast_hash": "2843ecce8e5af17aefb0c084129d4bec",
+    "mtime": 1786949367.171842,
+    "ast_hash": "de0e83bbcf64c2d9dce8ee684e9be186",
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.ts": {
-    "mtime": 1786876905.3595989,
-    "ast_hash": "470d188fb3f0a0ceab3f89237ecc0729",
+    "mtime": 1786949327.0440397,
+    "ast_hash": "5fcba17b266e94432aa5a74152c34308",
     "semantic_hash": ""
   }
 }
