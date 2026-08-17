@@ -140,8 +140,8 @@
     "semantic_hash": "f7524bd9940d1c39d05619cd2a0aa40d"
   },
   "packages/eps-backend/src/auth/provider.ts": {
-    "mtime": 1786876494.3962235,
-    "ast_hash": "88c68c31841c47d5f9044c16ed1577dc",
+    "mtime": 1786084428.401704,
+    "ast_hash": "c8b5211536593b2164cbf15a269aea65",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/session.test.ts": {
@@ -265,13 +265,13 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/connect.test.ts": {
-    "mtime": 1786876524.0970533,
-    "ast_hash": "693a255f39fd0ea5b9290773f124cd4f",
+    "mtime": 1786754686.5137243,
+    "ast_hash": "043df8088347a7a932b364dd9c3c8599",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/connect.ts": {
-    "mtime": 1786876483.8554485,
-    "ast_hash": "789e059ecbf0b181abca4e3f126bac5e",
+    "mtime": 1786752748.1250408,
+    "ast_hash": "d81e883fc9e1cee1954576c5efac1cf7",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/dashboard.sample.ts": {
@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1786876676.5049071,
-    "ast_hash": "89bcfbed24d6b63577989a2f849eb624",
+    "mtime": 1786623431.352118,
+    "ast_hash": "c4a94f2095b51cf0bc80ec089deee58e",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786876609.2088625,
-    "ast_hash": "e9b334158b3f7d310410d4aab37b568e",
+    "mtime": 1786696503.8154902,
+    "ast_hash": "606d67b8a2669f16e047dc8986348abc",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -1970,8 +1970,8 @@
     "semantic_hash": "8d463131bcda1eca34ef5cf9a85750b3"
   },
   "src/lib/auth/client.ts": {
-    "mtime": 1786876544.872662,
-    "ast_hash": "a02bf8f47f0c05cb9fc2a373a10fbd44",
+    "mtime": 1786429689.7150764,
+    "ast_hash": "b7e8c1a7ff77d02fcfb315084a865b4f",
     "semantic_hash": ""
   },
   "src/lib/auth/identity.test.ts": {
@@ -3070,12 +3070,12 @@
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
-    "mtime": 1786876702.4165123,
-    "ast_hash": "771e0abc487ce27baff9594344758ae7",
-    "semantic_hash": ""
+    "mtime": 1785313804.755576,
+    "ast_hash": "c6d1b449c59cc677e79721e2adbb6db8",
+    "semantic_hash": "c6d1b449c59cc677e79721e2adbb6db8"
   },
   "docs/features/kyc-documents.md": {
-    "mtime": 1786755584.7742422,
+    "mtime": 1786754706.4255888,
     "ast_hash": "8254cb2af04d3a3c8e5316d46db39dd8",
     "semantic_hash": ""
   },
@@ -3822,16 +3822,6 @@
   "src/lib/auth/next-param.ts": {
     "mtime": 1786696503.8157992,
     "ast_hash": "cd36ec2fcd1a1d9a24c130e364559bc8",
-    "semantic_hash": ""
-  },
-  "src/lib/connect/use-ekostore.test.ts": {
-    "mtime": 1786876670.5632238,
-    "ast_hash": "2843ecce8e5af17aefb0c084129d4bec",
-    "semantic_hash": ""
-  },
-  "src/lib/connect/use-ekostore.ts": {
-    "mtime": 1786876905.3595989,
-    "ast_hash": "470d188fb3f0a0ceab3f89237ecc0729",
     "semantic_hash": ""
   }
 }
