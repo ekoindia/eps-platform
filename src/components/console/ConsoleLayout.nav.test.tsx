@@ -1,5 +1,6 @@
 import ConsoleLayout from "@/components/console/ConsoleLayout";
 import type { AuthState } from "@/lib/auth/AuthProvider";
+import { EKOSTORE_URL } from "@/lib/config/features";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { render, screen, waitFor } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
@@ -165,7 +166,12 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 		// The handover rides on the URL, so match the root and the params rather
 		// than the whole string.
 		const href = new URL(link.getAttribute("href") ?? "");
-		expect(`${href.origin}${href.pathname}`).toBe("https://ekostore.app/");
+		// The configured origin, not a literal: `VITE_EKOSTORE_URL` differs per
+		// environment, so a hardcoded host fails on any `.env` that sets it.
+		const root = new URL(EKOSTORE_URL);
+		expect(`${href.origin}${href.pathname}`).toBe(
+			`${root.origin}${root.pathname}`,
+		);
 		expect(href.searchParams.get("next")).toBe("/products/kyc-verification");
 		// The session mobile from the developer fixture, not a profile number.
 		expect(href.searchParams.get("mobile")).toBe("999");

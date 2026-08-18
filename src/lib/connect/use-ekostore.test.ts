@@ -1,3 +1,4 @@
+import { EKOSTORE_URL } from "@/lib/config/features";
 import { useEkostoreUrl } from "@/lib/connect/use-ekostore";
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,7 +9,10 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	authClient: { connectEkostoreToken: () => connectEkostoreToken() },
 }));
 
-const ROOT = "https://ekostore.app/";
+// Derived from the configured origin, not hardcoded: `VITE_EKOSTORE_URL` points
+// at a different ekostore per environment, and a literal here fails on any
+// `.env` that sets it.
+const ROOT = new URL(EKOSTORE_URL).origin + new URL(EKOSTORE_URL).pathname;
 const KYC_PATH = "/products/kyc-verification";
 const MOBILE = "9876543210";
 
