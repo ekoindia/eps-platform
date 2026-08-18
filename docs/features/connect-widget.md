@@ -55,27 +55,46 @@ on session expiry (`AuthProvider`).
 
 ## ekostore handoff
 
-The console rail links to ekostore's KYC sandbox for accounts entitled to
-interaction **9995**. ekostore talks to the same connect-api, so the link carries
-the user's access token and they are not asked to sign in twice.
-
-The link points at ekostore's **root**, not at the sandbox page — ekostore seats
-the session first and then forwards to whatever `next` holds:
+Accounts entitled to interaction **9995** get a console page,
+`/console/kyc-verification`, that **frames** ekostore's KYC & verification
+sandbox. ekostore serves a gateway rendering of it — the same UI with their
+branding, header, footer and rail stripped — precisely so it can be embedded,
+and it talks to the same connect-api, so the frame URL carries the user's access
+token and they are not asked to sign in twice:
 
 ```
-https://ekostore.app/?mobile=9876543210&next=%2Fproducts%2Fkyc-verification&access_token=…
+https://ekostore.app/gateway/products/kyc-verification?access_token=…
 ```
-
-| Param | What it carries |
-| --- | --- |
-| `mobile` | The session mobile (`me.mobile`) — the identity the token belongs to, not the Eko profile's contact number, which can differ. Omitted when the session has none (admin). |
-| `next` | The page to continue to after the handover, percent-encoded by `URLSearchParams`. |
-| `access_token` | The connect-api access token from `GET /connect/ekostore-token`. |
 
 The origin comes from `EKOSTORE_URL` (`src/lib/config/features.ts`), set by
 `VITE_EKOSTORE_URL` and defaulting to `https://ekostore.app`. Point it at a beta
 ekostore **only** when that deployment is backed by the same connect-api as this
 environment: a token minted here is worthless at a different backend.
+
+**The rail no longer mints a token.** It draws a plain internal link from the
+interaction list; `GET /connect/ekostore-token` is called by the page itself, so
+opening `/console` no longer produces a full-scope credential nobody uses.
+
+**The iframe carries `allow="camera"`** — a cross-origin frame inherits no camera
+and document capture needs one — and `referrerPolicy="no-referrer"`, which keeps
+the console URL out of ekostore's logs. No microphone: nothing here records
+audio.
+
+**Framing works because neither side sets a CSP.** This repo sends no
+`frame-src`, and ekostore sends no `X-Frame-Options` or `frame-ancestors`. That
+is their deploy config, not ours, and it can change without notice — the symptom
+is the browser's own "refused to connect" panel, which fires no event we can
+catch cross-origin. **UAT (`eko.elokademo.in`) refuses framing today**:
+`X-Frame-Options: SAMEORIGIN` plus `frame-ancestors 'none'`. Fixing it is on
+ekostore — drop `X-Frame-Options` for `/gateway/*` and allow our origins in
+`frame-ancestors`, and widen their `Permissions-Policy: camera=(self)` to name
+us, or the frame loads with no camera. Because none of that is detectable from
+here, the page always renders an "Open in a new tab" link beside the frame: the
+same URL as a top-level navigation, which is never refused.
+Third-party storage is the other standing risk: in Safari (ITP) and in Chrome
+with third-party cookies blocked, the gateway's own storage is partitioned or
+refused, so a flow that depends on it fails inside the frame while working in a
+plain tab.
 
 **The access token, not the refresh token.** `connectProvider.refresh` rotates
 the refresh token and connect-api consumes the old one, so two holders collide —
@@ -83,23 +102,24 @@ whichever side rotates second loses its session. An access token is not consumed
 when used, and dies within `MAX_ACCESS_TTL_SEC` (5h) rather than in 8h–30d.
 
 **Entitlement is checked server-side.** `GET /connect/ekostore-token` re-reads
-the upstream interaction list and 403s without 9995. The rail runs the same check
-only to decide what to draw; a browser can skip that one.
+the upstream interaction list and 403s without 9995. The rail and the page run
+the same check only to decide what to draw — a browser can skip either. A refused
+handoff renders a message on the page, never an empty frame.
 
-**Accepted trade-off:** a token in a URL reaches browser history, the `Referer`
-sent to third parties ekostore loads, and ekostore's access logs — and since the
-link also carries `mobile`, so does the user's phone number. Bounded by the
-5h cap and by the refresh token staying server-side, so a leaked URL cannot be
-renewed into a persistent session. Do not extend this to anything longer-lived.
-The token is held in React state for as long as the link is rendered and is
-**never** written to `sessionStorage` — unlike the widget's lite/crm tokens.
+**Accepted trade-off:** a token in a frame URL reaches ekostore's access logs and
+anything ekostore loads. Bounded by the 5h cap and by the refresh token staying
+server-side, so a leaked URL cannot be renewed into a persistent session. Do not
+extend this to anything longer-lived. The token is held in React state for as
+long as the page is open and is **never** written to `sessionStorage` — unlike
+the widget's lite/crm tokens.
 
 ## Moving parts
 
 | Piece | File |
 | --- | --- |
 | Token endpoint | `packages/eps-backend/src/http/connect.ts` |
-| ekostore link URL | `src/lib/connect/use-ekostore.ts` |
+| ekostore gateway URL + interaction id | `src/lib/connect/use-ekostore.ts` |
+| The framed page | `src/pages/console/KycVerification.tsx` |
 | ekostore origin (`VITE_EKOSTORE_URL`) | `src/lib/config/features.ts` |
 | Upstream read seam | `AuthProvider.getUpstream` (`src/auth/provider.ts`) |
 | Token storage | `src/lib/connect/token.ts` |

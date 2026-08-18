@@ -3,47 +3,52 @@ import { EKOSTORE_URL } from "@/lib/config/features";
 import { useEffect, useState } from "react";
 
 /**
- * ekostore's KYC & verification sandbox — handed over as a path in `next` rather
- * than linked directly, so ekostore's root can seat the session before it lands.
+ * The interaction that entitles an account to the ekostore KYC sandbox. Lives
+ * here rather than in the rail: the rail decides whether to draw the link, the
+ * page decides whether to embed anything, and both must agree.
  */
-const EKOSTORE_KYC_PATH = "/products/kyc-verification";
+export const EKOSTORE_KYC_ID = 9995;
 
 /**
- * The query params ekostore reads the handover from: the credential, the page to
- * continue to, and the mobile the credential belongs to.
+ * ekostore's gateway rendering of the KYC & verification sandbox — the same UI
+ * with ekostore's own branding, header, footer and rail stripped, so it can be
+ * framed inside the console.
  *
- * A contract with someone else's site, so they live as named constants: if
- * ekostore renames one, this is the one line to change.
+ * The path and the credential param are a contract with someone else's site, so
+ * they live as named constants: if ekostore renames one, this is the one line to
+ * change.
  */
+const EKOSTORE_GATEWAY_PATH = "/gateway/products/kyc-verification";
 const EKOSTORE_TOKEN_PARAM = "access_token";
-const EKOSTORE_NEXT_PARAM = "next";
-const EKOSTORE_MOBILE_PARAM = "mobile";
+
+/** What the console page needs to decide between a frame and a message. */
+export interface EkostoreGateway {
+	/** The gateway URL to frame, or null while unresolved, refused or disabled. */
+	url: string | null;
+	/** True once the token fetch has been refused — a URL that will never come. */
+	failed: boolean;
+}
 
 /**
- * The ekostore link for this user: ekostore's root, carrying their connect-api
- * access token so they are not asked to sign in again on a site backed by the
- * same connect-api, the mobile that token belongs to, and the sandbox page to
- * continue to in `next`.
+ * The ekostore gateway URL for this user, carrying their connect-api access
+ * token so they are not asked to sign in again on a site backed by the same
+ * connect-api.
  *
- * Returns null — and the rail then renders nothing — while the token is in
- * flight, when the fetch failed, and whenever `enabled` is false. Fail-closed
- * throughout: a link without a working credential is worse than no link, since
- * it lands the user on a sign-in form they were promised they would skip.
+ * `url` stays null while the token is in flight, when the fetch failed, and
+ * whenever `enabled` is false. Fail-closed throughout: a frame without a working
+ * credential is worse than no frame, since it lands the user on a sign-in form
+ * they were promised they would skip. `failed` separates "refused" from "still
+ * loading" so the page can say so instead of spinning forever.
  *
  * `enabled` is not authorization. The backend re-checks entitlement to
  * interaction 9995 and answers 403 otherwise; this flag only avoids fetching a
  * credential for a user who has nowhere to spend it.
  * @param enabled - Whether this user is entitled to the ekostore sandbox.
- * @param mobile - The session mobile the token belongs to, or "" when there is
- *   none (an admin session). Left off the URL when blank rather than sent empty:
- *   the token is what authenticates, so a missing mobile must not drop the link.
- * @returns The URL to link to, or null.
+ * @returns The gateway URL and whether the handoff was refused.
  */
-export function useEkostoreUrl(
-	enabled: boolean,
-	mobile: string,
-): string | null {
+export function useEkostoreUrl(enabled: boolean): EkostoreGateway {
 	const [token, setToken] = useState<string | null>(null);
+	const [failed, setFailed] = useState(false);
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -54,7 +59,7 @@ export function useEkostoreUrl(
 				if (alive) setToken(accessToken);
 			})
 			.catch(() => {
-				if (alive) setToken(null);
+				if (alive) setFailed(true);
 			});
 		// Drops the token when the entitlement goes away, not just on unmount.
 		// Without this a true → false → true flip would render the previous
@@ -62,15 +67,16 @@ export function useEkostoreUrl(
 		return () => {
 			alive = false;
 			setToken(null);
+			setFailed(false);
 		};
 	}, [enabled]);
 
-	// Derived rather than stored, so `enabled` and the rendered URL cannot
-	// disagree even for one render.
-	if (!enabled || !token) return null;
-	const url = new URL(EKOSTORE_URL);
-	if (mobile) url.searchParams.set(EKOSTORE_MOBILE_PARAM, mobile);
-	url.searchParams.set(EKOSTORE_NEXT_PARAM, EKOSTORE_KYC_PATH);
+	// Derived rather than stored, so `enabled` and the framed URL cannot disagree
+	// even for one render.
+	if (!enabled || !token) return { url: null, failed };
+	// Concatenated rather than `new URL(path, base)`: that form drops any path on
+	// the configured origin, so an ekostore served under a sub-path would lose it.
+	const url = new URL(EKOSTORE_URL.replace(/\/+$/, "") + EKOSTORE_GATEWAY_PATH);
 	url.searchParams.set(EKOSTORE_TOKEN_PARAM, token);
-	return url.toString();
+	return { url: url.toString(), failed: false };
 }

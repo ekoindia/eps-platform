@@ -21,7 +21,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
 import { readNextParam } from "@/lib/auth/next-param";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
-import { useEkostoreUrl } from "@/lib/connect/use-ekostore";
+import { EKOSTORE_KYC_ID } from "@/lib/connect/use-ekostore";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
@@ -57,19 +57,16 @@ import {
  * entries once entitlements resolve — past the point a flat list reads.
  */
 type NavItem = {
-	/** Router path, or an absolute URL when `external`. */
+	/** Router path. Every rail item is in-app. */
 	to: string;
 	label: string;
 	icon: typeof LayoutDashboard;
 	end: boolean;
-	/** Leaves the site: renders as `<a target="_blank">`, never active. */
-	external?: boolean;
 };
 
 /** A captioned block of rail links. A group with no items renders nothing. */
 type NavGroup = { title: string; items: readonly NavItem[] };
 
-/** Shared by both link shapes, so the external item can't drift from the rest. */
 const NAV_LINK_BASE =
 	"flex items-center gap-2 rounded-md px-3 py-2 transition-colors";
 const NAV_LINK_IDLE =
@@ -153,16 +150,17 @@ const MANAGE_ACCOUNT: Flow = {
 
 /**
  * ekostore's KYC & verification sandbox. Entitled the same way as any flow — by
- * the id turning up in the interaction list — but the page itself is off-site,
- * so this is a plain external item rather than a `Flow`.
- *
- * Unlike every other item here it cannot be a module constant: its `to` carries
- * the caller's connect-api access token and mobile, so ekostore can sign them in
- * rather than asking for credentials a second time, plus the sandbox page in
- * `next`. `useEkostoreUrl` builds it, and the item is omitted entirely until
- * that URL resolves.
+ * the id turning up in the interaction list — but hosted by ekostore, so the
+ * page behind this link frames their gateway rendering of it rather than
+ * rendering a Connect flow. A plain internal item: the access token is minted by
+ * that page, not here, so the console no longer asks for one just to draw a rail.
  */
-const EKOSTORE_KYC_ID = 9995;
+const EKOSTORE_KYC_ITEM: NavItem = {
+	to: "/console/kyc-verification",
+	label: "Test KYC & Verification APIs",
+	icon: ShieldCheck,
+	end: false,
+};
 
 /**
  * The rail item for a flow, when this user is entitled to run it.
@@ -192,18 +190,6 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	const loadFlowId = useLoadWalletFlowId();
 	const kycEnabled = useKycEnabled();
 	const interactions = useRoleTransactionList();
-	// The session mobile, not the Eko profile's contact number: it is the identity
-	// the handed-over token belongs to, so ekostore's session and the mobile on the
-	// link cannot disagree. Admin sessions carry none.
-	const { state } = useAuth();
-	const mobile =
-		state.status === "authed" && state.role !== "admin" ? state.me.mobile : "";
-	// Fetched only for an entitled user, and null until the token lands — see
-	// `useEkostoreUrl`. The backend re-checks the same entitlement.
-	const ekostoreUrl = useEkostoreUrl(
-		Boolean(interactions?.[String(EKOSTORE_KYC_ID)]),
-		mobile,
-	);
 	// Whatever this user is entitled to, in place. Built as a flat spread per
 	// group rather than spliced: two independent entitlements land in here, and a
 	// nested ternary per item is how the order quietly goes wrong.
@@ -231,53 +217,29 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			title: "Build & Monitor",
 			items: [
 				TRANSACTIONS_ITEM,
-				...(ekostoreUrl
-					? [
-							{
-								to: ekostoreUrl,
-								label: "Test KYC & Verification APIs",
-								icon: ShieldCheck,
-								end: false,
-								external: true,
-							},
-						]
-					: []),
+				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
 				...DEV_ITEMS,
 			],
 		},
 	];
 
-	const link = (item: NavItem) =>
-		item.external ? (
-			<a
-				key={item.to}
-				href={item.to}
-				target="_blank"
-				rel="noopener noreferrer"
-				onClick={onNavigate}
-				className={cn(NAV_LINK_BASE, NAV_LINK_IDLE)}
-			>
-				<item.icon className="h-4 w-4 shrink-0" />
-				<span>{item.label}</span>
-				<ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-			</a>
-		) : (
-			<NavLink
-				key={item.to}
-				to={item.to}
-				end={item.end}
-				onClick={onNavigate}
-				className={({ isActive }) =>
-					cn(
-						NAV_LINK_BASE,
-						isActive ? "bg-slate-300 font-medium text-eko-navy" : NAV_LINK_IDLE,
-					)
-				}
-			>
-				<item.icon className="h-4 w-4 shrink-0" />
-				<span>{item.label}</span>
-			</NavLink>
-		);
+	const link = (item: NavItem) => (
+		<NavLink
+			key={item.to}
+			to={item.to}
+			end={item.end}
+			onClick={onNavigate}
+			className={({ isActive }) =>
+				cn(
+					NAV_LINK_BASE,
+					isActive ? "bg-slate-300 font-medium text-eko-navy" : NAV_LINK_IDLE,
+				)
+			}
+		>
+			<item.icon className="h-4 w-4 shrink-0" />
+			<span>{item.label}</span>
+		</NavLink>
+	);
 
 	return (
 		<nav className="text-sm" aria-label="Console">
