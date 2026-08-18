@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
+import type { AuthProvider } from "../auth/provider";
 import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
@@ -36,7 +37,13 @@ const foundProfile = {
 
 const cfgStub = { eko: { defaultOrgId: 1 } } as unknown as Config;
 
-/** Builds an app with a session double that returns `role` for any cookie. */
+/**
+ * Builds an app with a session double that returns `role` for any cookie.
+ *
+ * The claim carries a `sid` by default, matching what the connect provider mints
+ * at OTP verify — the upgrade has to carry it across, so the default has to have
+ * one. Pass `sessions.verifyAccess` to model the sid-less direct `eko` provider.
+ */
 function harness(
 	role: string | null,
 	signup: Partial<SignupService>,
@@ -45,6 +52,7 @@ function harness(
 		zoho?: Partial<ZohoClient>;
 		cfg?: Config;
 		sessions?: Partial<Sessions>;
+		auth?: Partial<AuthProvider>;
 	} = {},
 ) {
 	const app = new Hono<AppEnv>();
@@ -64,7 +72,9 @@ function harness(
 	const sessions = {
 		verifyAccess: vi
 			.fn()
-			.mockResolvedValue(role ? { sub: "9990000001", role, orgId: 1 } : null),
+			.mockResolvedValue(
+				role ? { sub: "9990000001", role, orgId: 1, sid: "sid-1" } : null,
+			),
 		mintAccess: vi.fn().mockResolvedValue("access-token"),
 		issueRefresh: vi.fn().mockResolvedValue("refresh-token"),
 		accessCookie: vi.fn().mockReturnValue("eps_at=access-token; HttpOnly"),
@@ -84,12 +94,18 @@ function harness(
 		...overrides.zoho,
 	} as unknown as ZohoClient;
 	const cfg = overrides.cfg ?? cfgStub;
+	const auth = {
+		name: "connect",
+		refreshEntitlements: vi.fn().mockResolvedValue(undefined),
+		...overrides.auth,
+	} as unknown as AuthProvider;
 	mountSignup(app, {
 		sessions,
 		signup: signup as SignupService,
 		eko,
 		zoho,
 		cfg,
+		auth,
 	});
 	return app;
 }
@@ -429,6 +445,117 @@ describe("session upgrade on completion", () => {
 		expect(mintAccess).toHaveBeenCalledWith(
 			expect.objectContaining({ role: "developer" }),
 		);
+	});
+
+	// The regression this whole block exists for: the upgraded claim used to drop
+	// the sid, orphaning the upstream session sealed at `ca:<sid>` and leaving the
+	// new developer cookie unable to reach /connect/*, /dashboard or
+	// /notifications — the console rendered without its entitlement-gated nav
+	// (Upload Documents among it) until the user logged out and back in.
+	it("carries the signup session's sid into the developer session", async () => {
+		const submitPin = vi.fn().mockResolvedValue(done);
+		const mintAccess = vi.fn().mockResolvedValue("dev-access");
+		const issueRefresh = vi.fn().mockResolvedValue("dev-refresh");
+		const app = harness(
+			"signup",
+			{ submitPin },
+			{ sessions: { mintAccess, issueRefresh } },
+		);
+		const res = await app.request("/signup/pin", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(mintAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ role: "developer", sid: "sid-1" }),
+		);
+		// Both cookies, or the next /auth/refresh replays a sid-less claim and
+		// undoes the fix on the first rotation.
+		expect(issueRefresh).toHaveBeenCalledWith(
+			expect.objectContaining({ role: "developer", sid: "sid-1" }),
+		);
+	});
+
+	it("rotates the upstream session so the new roles are visible", async () => {
+		const submitPin = vi.fn().mockResolvedValue(done);
+		const refreshEntitlements = vi.fn().mockResolvedValue(undefined);
+		const app = harness(
+			"signup",
+			{ submitPin },
+			{ auth: { refreshEntitlements } },
+		);
+		const res = await app.request("/signup/pin", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(refreshEntitlements).toHaveBeenCalledWith("sid-1");
+	});
+
+	it("still upgrades when the upstream rotation fails", async () => {
+		const consoleError = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+		const rotateError = new Error("connect-api down");
+		const submitPin = vi.fn().mockResolvedValue(done);
+		const mintAccess = vi.fn().mockResolvedValue("dev-access");
+		const app = harness(
+			"signup",
+			{ submitPin },
+			{
+				sessions: { mintAccess },
+				auth: { refreshEntitlements: vi.fn().mockRejectedValue(rotateError) },
+			},
+		);
+		const res = await app.request("/signup/pin", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+		});
+		// Stale entitlements are recoverable; a wizard that never upgrades is not.
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual(done);
+		expect(mintAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ role: "developer" }),
+		);
+		expect(consoleError).toHaveBeenCalledWith(
+			"[signup] upstream entitlement refresh failed",
+			rotateError,
+		);
+		consoleError.mockRestore();
+	});
+
+	// The direct `eko` provider holds no upstream session, so its claims have no
+	// sid and there is nothing to rotate.
+	it("upgrades without rotating when the session has no sid", async () => {
+		const submitPin = vi.fn().mockResolvedValue(done);
+		const mintAccess = vi.fn().mockResolvedValue("dev-access");
+		const refreshEntitlements = vi.fn();
+		const app = harness(
+			"signup",
+			{ submitPin },
+			{
+				sessions: {
+					mintAccess,
+					verifyAccess: vi
+						.fn()
+						.mockResolvedValue({ sub: "9990000001", role: "signup", orgId: 1 }),
+				},
+				auth: { refreshEntitlements },
+			},
+		);
+		const res = await app.request("/signup/pin", {
+			method: "POST",
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ pin1: "1234", pin2: "1234" }),
+		});
+		expect(res.status).toBe(200);
+		expect(mintAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ role: "developer", sid: undefined }),
+		);
+		expect(refreshEntitlements).not.toHaveBeenCalled();
 	});
 
 	it("does not upgrade an in_progress state", async () => {

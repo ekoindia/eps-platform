@@ -398,8 +398,12 @@ The upgrade flow (`signup.ts`, inside `respond()`):
    `POST /auth/otp/verify` "found" branch exactly.
 4. Mint a developer claim with `role: "developer"`, `orgId` taken directly
    from the `found` profile (never `cfg.eko.defaultOrgId` — a `found` profile
-   always carries a real `orgId`), and the same `sub` (mobile).
+   always carries a real `orgId`), the same `sub` (mobile), **and the signup
+   claim's `sid`** (see below).
 5. Mint fresh access and refresh tokens and set them as cookies.
+6. Ask the auth provider to rotate the upstream session
+   (`auth.refreshEntitlements(sid)`), so the token stops speaking for the roles
+   the user had at login.
 
 All five routes (`/signup/state`, `/signup/profile`, `/signup/pan`,
 `/signup/business`, `/signup/pin`) funnel responses through `respond()`. The inclusion of
@@ -422,6 +426,37 @@ Once the cookies are set, the frontend's next `/me` call arrives with a
 developer role, `AuthProvider` re-classifies it to `{ status: "authed";
 role: "developer" }`, and `SignupPage`'s redirect condition
 (`state.role !== "signup"`) fires, routing to `/console`.
+
+#### Why the upgrade carries the `sid`, and rotates upstream
+
+Under the `connect` provider, `POST /auth/otp/verify` mints a `sid` and seals
+connect-api's tokens in KV at `ca:<sid>`. The upgraded claim **must** carry that
+same `sid` across: every Connect-backed route fails closed on a missing one
+(`/connect/*` → 501 `CONNECT_UNAVAILABLE`, likewise `/dashboard` and
+`/notifications`). A sid-less upgrade orphans the sealed session, and the console
+loses everything gated on the interaction list — Upload Documents, Load Wallet,
+Sign Agreement, Manage My Account — with no way to recover short of signing out
+and back in, since the replacement cookie is what a reload replays.
+
+The sealed token itself is also stale by construction: it was minted while this
+user was still mid-onboarding, so the roles baked into it predate the account
+they now have. `auth.refreshEntitlements(sid)` exchanges it through
+`POST /authentication/token` so `/transactions/wlc` reports the new
+entitlements. It is deliberately weaker than `refresh`:
+
+- It ignores the token's remaining lifetime — age is not the question being asked.
+- Its failure is logged, not fatal, and only **after** the cookies are set. Stale
+  entitlements are recoverable; an upgrade that never happens strands the wizard
+  on its final card forever, because the client only re-checks `/me` when the
+  signup status changes and it cannot change again.
+- It skips a session rotated within the last minute
+  (`ENTITLEMENT_ROTATE_MIN_INTERVAL_MS` in `connectProvider.ts`). connect-api's
+  refresh token is single-use, and every completed `/signup/*` response asks for
+  a rotation, so a repeated or double-submitted request would otherwise race two
+  rotations against one stored session.
+
+Under the direct `eko` provider there is no upstream session, so claims have no
+`sid` and nothing is rotated.
 
 ## Interaction reference table
 

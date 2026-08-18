@@ -15,6 +15,20 @@ import type { AuthProvider, UpstreamSession } from "./provider";
 const REFRESH_SKEW_MS = 60_000;
 
 /**
+ * How recently a rotation counts as "already done" for `refreshEntitlements`.
+ *
+ * Every completed `/signup/*` response asks for one, and connect-api's refresh
+ * grant is single-use — two rotations racing on the same stored session would
+ * leave the loser's refresh token dead. This collapses a burst into one.
+ *
+ * ponytail: a time window, not a lock. It closes the realistic gap (a repeated
+ * or double-submitted request) without a KV round-trip; two calls landing in the
+ * same millisecond can still both rotate. Move to an atomic KV flag if entitlement
+ * refreshes ever become something more than a once-per-signup event.
+ */
+const ENTITLEMENT_ROTATE_MIN_INTERVAL_MS = 60_000;
+
+/**
  * Delegates login to Eloka's connect-api so both products share one identity
  * and one upstream session, while this service keeps issuing its own HttpOnly
  * cookies to the browser.
@@ -55,6 +69,34 @@ export function createConnectAuthProvider(
 			throw new Error("connect-api session already expired");
 		}
 		await kv.set(key(sid), secretbox.encrypt(JSON.stringify(session)), ttlSec);
+	}
+
+	/**
+	 * Exchanges the stored refresh token for a fresh set and saves the result.
+	 *
+	 * The two callers differ only in when they decide to call it: `refresh` on
+	 * imminent expiry, `refreshEntitlements` on a role change.
+	 * @throws When connect-api declines to rotate — the session is gone.
+	 */
+	async function rotate(sid: string, current: UpstreamSession): Promise<void> {
+		const next = await connect.refreshTokens(current.refreshToken);
+		if (!next) {
+			throw new Error("connect-api refused to rotate the session");
+		}
+		const now = Date.now();
+		await save(sid, {
+			accessToken: next.accessToken,
+			refreshToken: next.refreshToken,
+			// Keep the previous lite/crm tokens when a rotation omits them, rather
+			// than blanking a widget session that was working: `/authentication/token`
+			// is not guaranteed to re-mint every tier. They share the access token's
+			// lifetime, so a stale one simply fails and triggers `login-again`.
+			accessTokenLite: next.accessTokenLite ?? current.accessTokenLite,
+			accessTokenCrm: next.accessTokenCrm ?? current.accessTokenCrm,
+			accessExpiresAt: now + next.accessTtlSec * 1000,
+			sessionExpiresAt: now + next.sessionTtlSec * 1000,
+			rotatedAt: now,
+		});
 	}
 
 	/**
@@ -138,23 +180,23 @@ export function createConnectAuthProvider(
 			// EPS refresh fires every 15 minutes, connect-api's token lasts hours.
 			if (current.accessExpiresAt - Date.now() > REFRESH_SKEW_MS) return;
 
-			const next = await connect.refreshTokens(current.refreshToken);
-			if (!next) {
-				throw new Error("connect-api refused to rotate the session");
+			await rotate(sid, current);
+		},
+
+		async refreshEntitlements(sid) {
+			const current = await load(sid);
+			// Nothing stored means the session is already gone. `refresh` throws here
+			// because a live cookie over dead credentials must fail closed; this one
+			// returns, because its callers hold a session that is valid either way and
+			// every Connect route will 401 on its own next call.
+			if (!current) return;
+			if (
+				current.rotatedAt &&
+				Date.now() - current.rotatedAt < ENTITLEMENT_ROTATE_MIN_INTERVAL_MS
+			) {
+				return;
 			}
-			const now = Date.now();
-			await save(sid, {
-				accessToken: next.accessToken,
-				refreshToken: next.refreshToken,
-				// Keep the previous lite/crm tokens when a rotation omits them, rather
-				// than blanking a widget session that was working: `/authentication/token`
-				// is not guaranteed to re-mint every tier. They share the access token's
-				// lifetime, so a stale one simply fails and triggers `login-again`.
-				accessTokenLite: next.accessTokenLite ?? current.accessTokenLite,
-				accessTokenCrm: next.accessTokenCrm ?? current.accessTokenCrm,
-				accessExpiresAt: now + next.accessTtlSec * 1000,
-				sessionExpiresAt: now + next.sessionTtlSec * 1000,
-			});
+			await rotate(sid, current);
 		},
 
 		getUpstream: load,
