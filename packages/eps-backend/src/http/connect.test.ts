@@ -183,6 +183,118 @@ describe("GET /connect/token", () => {
 	});
 });
 
+describe("GET /connect/ekostore-token", () => {
+	/** An interaction list that does entitle the caller to the ekostore sandbox. */
+	const entitled = {
+		interactions: vi.fn(async () => [
+			{ id: 491, label: "Load E-value" },
+			{ id: 9995, label: "Test KYC & Verification APIs" },
+		]),
+	};
+
+	it("returns the full access token to an entitled caller", async () => {
+		const { app } = harness(developer, { connect: entitled });
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			accessToken: "ca_full",
+			expiresAt: NOW + 3_600_000,
+		});
+	});
+
+	it("never exposes the refresh token", async () => {
+		const { app } = harness(developer, { connect: entitled });
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		// The full token is the point of this route; the refresh token never is.
+		expect(await res.text()).not.toContain("ca_refresh");
+	});
+
+	it("marks the response no-store", async () => {
+		const { app } = harness(developer, { connect: entitled });
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+	});
+
+	it("403s a developer session not entitled to 9995", async () => {
+		// The default harness list is 491 only — a valid widget session that must
+		// still not receive a full-scope token.
+		const { app } = harness(developer);
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(403);
+		// One read: the body is a stream, and both assertions want it.
+		const body = await res.text();
+		expect(JSON.parse(body).error.code).toBe("EKOSTORE_NOT_ENTITLED");
+		expect(body).not.toContain("ca_full");
+	});
+
+	it("matches the id as a string, as the rail does", async () => {
+		// Upstream has been seen sending ids as strings; `buildRoleTransactionList`
+		// keys by `String(id)`, so this route must agree or the two disagree about
+		// who is entitled.
+		const { app } = harness(developer, {
+			connect: { interactions: vi.fn(async () => [{ id: "9995" }]) },
+		});
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(200);
+	});
+
+	it("403s on an empty interaction list rather than failing open", async () => {
+		const { app } = harness(developer, {
+			connect: { interactions: vi.fn(async () => []) },
+		});
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(403);
+	});
+
+	it("401s without a session", async () => {
+		const { app } = harness(null, { connect: entitled });
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(401);
+		expect((await errorOf(res)).code).toBe("NO_SESSION");
+	});
+
+	it("403s a non-developer session", async () => {
+		const { app } = harness(
+			{ ...developer, role: "admin" },
+			{ connect: entitled },
+		);
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(403);
+		expect((await errorOf(res)).code).toBe("NOT_DEVELOPER_SESSION");
+	});
+
+	it("401s CONNECT_SESSION_EXPIRED once the sealed session is gone", async () => {
+		const { app } = harness(developer, {
+			session: null,
+			connect: entitled,
+		});
+		const res = await app.request("/connect/ekostore-token", withCookie);
+
+		expect(res.status).toBe(401);
+		expect((await errorOf(res)).code).toBe("CONNECT_SESSION_EXPIRED");
+	});
+
+	it("rate-limits per session", async () => {
+		const { app } = harness(developer, { connect: entitled });
+		let last: Response | undefined;
+		// The cap is 10 per window; the 11th must be refused.
+		for (let i = 0; i < 11; i++) {
+			last = await app.request("/connect/ekostore-token", withCookie);
+		}
+
+		expect(last!.status).toBe(429);
+		expect((await errorOf(last!)).code).toBe("RATE_LIMITED");
+	});
+});
+
 describe("GET /connect/interactions", () => {
 	it("returns the role-scoped interaction list", async () => {
 		const { app } = harness(developer);

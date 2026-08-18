@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
 import { readNextParam } from "@/lib/auth/next-param";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
+import { useEkostoreUrl } from "@/lib/connect/use-ekostore";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
@@ -154,15 +155,14 @@ const MANAGE_ACCOUNT: Flow = {
  * ekostore's KYC & verification sandbox. Entitled the same way as any flow — by
  * the id turning up in the interaction list — but the page itself is off-site,
  * so this is a plain external item rather than a `Flow`.
+ *
+ * Unlike every other item here it cannot be a module constant: its `to` carries
+ * the caller's connect-api access token and mobile, so ekostore can sign them in
+ * rather than asking for credentials a second time, plus the sandbox page in
+ * `next`. `useEkostoreUrl` builds it, and the item is omitted entirely until
+ * that URL resolves.
  */
 const EKOSTORE_KYC_ID = 9995;
-const EKOSTORE_KYC_ITEM: NavItem = {
-	to: "https://ekostore.app/products/kyc-verification",
-	label: "Test KYC & Verification APIs",
-	icon: ShieldCheck,
-	end: false,
-	external: true,
-};
 
 /**
  * The rail item for a flow, when this user is entitled to run it.
@@ -192,6 +192,18 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	const loadFlowId = useLoadWalletFlowId();
 	const kycEnabled = useKycEnabled();
 	const interactions = useRoleTransactionList();
+	// The session mobile, not the Eko profile's contact number: it is the identity
+	// the handed-over token belongs to, so ekostore's session and the mobile on the
+	// link cannot disagree. Admin sessions carry none.
+	const { state } = useAuth();
+	const mobile =
+		state.status === "authed" && state.role !== "admin" ? state.me.mobile : "";
+	// Fetched only for an entitled user, and null until the token lands — see
+	// `useEkostoreUrl`. The backend re-checks the same entitlement.
+	const ekostoreUrl = useEkostoreUrl(
+		Boolean(interactions?.[String(EKOSTORE_KYC_ID)]),
+		mobile,
+	);
 	// Whatever this user is entitled to, in place. Built as a flat spread per
 	// group rather than spliced: two independent entitlements land in here, and a
 	// nested ternary per item is how the order quietly goes wrong.
@@ -219,7 +231,17 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			title: "Build & Monitor",
 			items: [
 				TRANSACTIONS_ITEM,
-				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
+				...(ekostoreUrl
+					? [
+							{
+								to: ekostoreUrl,
+								label: "Test KYC & Verification APIs",
+								icon: ShieldCheck,
+								end: false,
+								external: true,
+							},
+						]
+					: []),
 				...DEV_ITEMS,
 			],
 		},

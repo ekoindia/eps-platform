@@ -513,7 +513,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json({ balance });
 	});
 
-	mountSignup(app, { sessions, signup, eko, zoho, cfg });
+	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });
 
 	// Mounted unconditionally, unlike the Connect-widget routes below: it serves

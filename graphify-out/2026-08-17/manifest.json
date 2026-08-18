@@ -125,13 +125,13 @@
     "semantic_hash": "fb5ce7df01713dc2f4dce94b71140b60"
   },
   "packages/eps-backend/src/auth/connectProvider.test.ts": {
-    "mtime": 1787042142.8386388,
-    "ast_hash": "cb2b099139bf9d073846f0d7169c9447",
+    "mtime": 1786084402.4422832,
+    "ast_hash": "d657868f6d18707f55d4c1bbfb78d3cf",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/connectProvider.ts": {
-    "mtime": 1787042063.689665,
-    "ast_hash": "a3f2a8ed24270728068ac7fdba5ec48c",
+    "mtime": 1786084350.2487388,
+    "ast_hash": "e43298213729cf61c91972e8b5cc92a0",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/ekoProvider.ts": {
@@ -140,8 +140,8 @@
     "semantic_hash": "f7524bd9940d1c39d05619cd2a0aa40d"
   },
   "packages/eps-backend/src/auth/provider.ts": {
-    "mtime": 1787042037.047781,
-    "ast_hash": "2354539003d22ad02b01e25094fa476e",
+    "mtime": 1786876494.3962235,
+    "ast_hash": "88c68c31841c47d5f9044c16ed1577dc",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/auth/session.test.ts": {
@@ -260,8 +260,8 @@
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/app.ts": {
-    "mtime": 1787042070.418634,
-    "ast_hash": "0ced0faa1d95ea45231480d01bbaff24",
+    "mtime": 1786429664.9540367,
+    "ast_hash": "e5ec171ca4687efa283ca4c2e4061fa0",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/connect.test.ts": {
@@ -335,13 +335,13 @@
     "semantic_hash": "b63aa4b34877746b771763470f29c286"
   },
   "packages/eps-backend/src/http/signup.test.ts": {
-    "mtime": 1787042127.214158,
-    "ast_hash": "5127b7918369dbff113baab392b71313",
+    "mtime": 1786429748.8352273,
+    "ast_hash": "a4843d2c04baa017d8e75a748cc058c2",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/signup.ts": {
-    "mtime": 1787042158.8776872,
-    "ast_hash": "221af957ee4b397a7f972a4148f565a6",
+    "mtime": 1786429657.7563176,
+    "ast_hash": "cfa3841a4c7c96b664154ef02f1dd8ea",
     "semantic_hash": ""
   },
   "packages/eps-backend/src/http/support-ticket.ts": {
@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1787043007.919788,
-    "ast_hash": "6b43286bad431be38b501cbc93614a4c",
+    "mtime": 1786949379.1128628,
+    "ast_hash": "92b0047464ef200aa927d417c5d094a8",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -2785,13 +2785,13 @@
     "semantic_hash": ""
   },
   "src/pages/console/Credentials.test.tsx": {
-    "mtime": 1787042271.148709,
-    "ast_hash": "402b909a2c29df8c1da9fd0b75a02ac0",
+    "mtime": 1786078874.7972498,
+    "ast_hash": "b1091e8b538a8a45420400b0bf217690",
     "semantic_hash": ""
   },
   "src/pages/console/Credentials.tsx": {
-    "mtime": 1787041719.6121337,
-    "ast_hash": "58bd027305e5ec3d57b2f5b12885c22a",
+    "mtime": 1786078652.7599325,
+    "ast_hash": "0b3ebe45a1c20247238cd71f15112e07",
     "semantic_hash": ""
   },
   "src/pages/console/Documents.test.tsx": {
@@ -3085,8 +3085,8 @@
     "semantic_hash": ""
   },
   "docs/features/user-onboarding.md": {
-    "mtime": 1787042204.277499,
-    "ast_hash": "aa1df9f4d835937ef2e2b39f008f961d",
+    "mtime": 1786696503.812996,
+    "ast_hash": "e48f40e01de14dcae51e5df625c30cbb",
     "semantic_hash": ""
   },
   "docs/industry-and-packs-plan.md": {
@@ -3825,8 +3825,8 @@
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.test.ts": {
-    "mtime": 1787042984.2149405,
-    "ast_hash": "840879fa713fdb3381e8880eff28fa0a",
+    "mtime": 1786949367.171842,
+    "ast_hash": "de0e83bbcf64c2d9dce8ee684e9be186",
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.ts": {

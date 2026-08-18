@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import type { Sessions } from "../auth/session";
+import type { AuthProvider } from "../auth/provider";
+import type { SessionClaim, Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { ZohoClient } from "../clients/zoho";
@@ -114,16 +115,24 @@ export function mountSignup(
 		eko: EkoClient;
 		zoho: ZohoClient;
 		cfg: Config;
+		auth: AuthProvider;
 	},
 ): void {
 	// `cfg` is accepted for interface parity with the rest of the BFF's mount
 	// functions but no longer read here: the session upgrade below only mints
 	// on a `found` profile, which always carries its own `orgId` (no
 	// `cfg.eko.defaultOrgId` fallback needed).
-	const { sessions, signup, eko, zoho } = deps;
+	const { sessions, signup, eko, zoho, auth } = deps;
 
-	/** Resolves the caller's mobile, or throws unless this is a signup session. */
-	async function requireSignupSession(c: Context<AppEnv>): Promise<string> {
+	/**
+	 * Resolves the caller's claim, or throws unless this is a signup session.
+	 *
+	 * Returns the whole claim rather than just the mobile because the upgrade in
+	 * `respond` has to carry the `sid` across — see the comment there.
+	 */
+	async function requireSignupSession(
+		c: Context<AppEnv>,
+	): Promise<SessionClaim> {
 		const token = getCookie(c, ACCESS_COOKIE);
 		const claim = token ? await sessions.verifyAccess(token) : null;
 		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
@@ -134,7 +143,7 @@ export function mountSignup(
 				"This account has already completed signup.",
 			);
 		}
-		return claim.sub;
+		return claim;
 	}
 
 	/** Maps a step failure to a 400 carrying the upstream's own message. */
@@ -166,11 +175,14 @@ export function mountSignup(
 	 * the (unupgraded) `done` state — onboarding itself already succeeded
 	 * upstream, and the user can retry the upgrade on their next
 	 * `/signup/state` call rather than seeing this request fail.
+	 * @param sid - The signup claim's session id, when it has one. Carried into
+	 *   the developer claim; see the comment at the claim itself.
 	 */
 	async function respond(
 		c: Context<AppEnv>,
 		mobile: string,
 		state: SignupState,
+		sid?: string,
 	): Promise<Response> {
 		if (state.status === "done") {
 			try {
@@ -199,6 +211,15 @@ export function mountSignup(
 					// fallback needed (unlike the `unknown`/`inactive` kinds above).
 					orgId: profile.profile.orgId,
 					zohoId: view.zohoId ?? undefined,
+					// The upstream session material sealed at `ca:<sid>` when this user
+					// verified their OTP belongs to the person, not to the claim that
+					// happened to be minted first. Dropping the sid here orphaned it: the
+					// replacement cookie could no longer reach `/connect/*`, `/dashboard`
+					// or `/notifications` (all of which fail closed on a missing sid), so
+					// a user who had just finished onboarding lost the entitlement-gated
+					// half of the console — Upload Documents among it — until they logged
+					// out and back in.
+					sid,
 				};
 				const access = await sessions.mintAccess(claim);
 				const refresh = await sessions.issueRefresh(claim);
@@ -206,6 +227,23 @@ export function mountSignup(
 				c.header("Set-Cookie", sessions.refreshCookie(refresh), {
 					append: true,
 				});
+				// The upstream access token was minted at OTP verify, while this user
+				// was still mid-onboarding, so the roles baked into it predate the
+				// account they now have. Rotate it here or `/transactions/wlc` keeps
+				// answering with the old entitlements for the life of the token.
+				//
+				// Deliberately after the cookies and in its own catch: a rotation that
+				// fails leaves credentials that are stale but working, whereas failing
+				// the upgrade would strand the wizard on its final card forever — the
+				// client only re-checks `/me` when the signup status changes, and it
+				// cannot change again.
+				if (sid && auth.refreshEntitlements) {
+					try {
+						await auth.refreshEntitlements(sid);
+					} catch (err) {
+						console.error("[signup] upstream entitlement refresh failed", err);
+					}
+				}
 			} catch (err) {
 				// ponytail: onboarding already succeeded upstream — never fail this
 				// request over the upgrade. The signup cookie stays valid and the
@@ -220,12 +258,13 @@ export function mountSignup(
 	}
 
 	app.get("/signup/state", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		try {
 			return await respond(
 				c,
 				mobile,
 				await signup.getState(mobile, c.req.header("x-real-ip")),
+				sid,
 			);
 		} catch (e) {
 			toAppError(e);
@@ -233,12 +272,13 @@ export function mountSignup(
 	});
 
 	app.post("/signup/profile", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		try {
 			return await respond(
 				c,
 				mobile,
 				await signup.createProfile(mobile, c.req.header("x-real-ip")),
+				sid,
 			);
 		} catch (e) {
 			toAppError(e);
@@ -246,7 +286,7 @@ export function mountSignup(
 	});
 
 	app.post("/signup/pan", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		const { pan } = await c.req.json().catch(() => ({}));
 		// Validate at the trust boundary; the client's check is only for feedback.
 		const normalized = String(pan ?? "").toUpperCase();
@@ -262,6 +302,7 @@ export function mountSignup(
 				c,
 				mobile,
 				await signup.submitPan(mobile, normalized, c.req.header("x-real-ip")),
+				sid,
 			);
 		} catch (e) {
 			toAppError(e);
@@ -269,13 +310,14 @@ export function mountSignup(
 	});
 
 	app.post("/signup/business", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		const details = parseBusiness(await c.req.json().catch(() => ({})));
 		try {
 			return await respond(
 				c,
 				mobile,
 				await signup.submitBusiness(mobile, details, c.req.header("x-real-ip")),
+				sid,
 			);
 		} catch (e) {
 			toAppError(e);
@@ -283,7 +325,7 @@ export function mountSignup(
 	});
 
 	app.post("/signup/pin", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		const { pin1, pin2 } = await c.req.json().catch(() => ({}));
 		if (!pin1 || !pin2) {
 			throw new AppError(400, "INVALID_INPUT", "Both PIN fields are required.");
@@ -298,6 +340,7 @@ export function mountSignup(
 					String(pin2),
 					c.req.header("x-real-ip"),
 				),
+				sid,
 			);
 		} catch (e) {
 			toAppError(e);
@@ -308,7 +351,7 @@ export function mountSignup(
 	// it doesn't change signup status, so it returns the URL directly rather
 	// than routing through `respond()`.
 	app.get("/signup/agreement/url", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile } = await requireSignupSession(c);
 		try {
 			return c.json(
 				await signup.getAgreementUrl(mobile, c.req.header("x-real-ip")),
@@ -319,7 +362,7 @@ export function mountSignup(
 	});
 
 	app.post("/signup/agreement", async (c) => {
-		const mobile = await requireSignupSession(c);
+		const { sub: mobile, sid } = await requireSignupSession(c);
 		const { document_id } = await c.req.json().catch(() => ({}));
 		// `document_id` comes from this user's own /signup/agreement/url response
 		// and is forwarded verbatim to upstream 293 (the authority on it). It is
@@ -333,6 +376,7 @@ export function mountSignup(
 					String(document_id ?? ""),
 					c.req.header("x-real-ip"),
 				),
+				sid,
 			);
 		} catch (e) {
 			toAppError(e);

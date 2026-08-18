@@ -263,6 +263,63 @@ describe("connect auth provider — refresh", () => {
 		expect(stored.refreshToken).toBe("r2");
 	});
 
+	it("rotates on refreshEntitlements even when the token is nowhere near expiry", async () => {
+		// The point of the method: the token is healthy, but its roles predate the
+		// account the user now has, so age is not the question being asked.
+		const { provider, connect, kv } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 60 * 60_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refreshEntitlements!("sid1");
+		expect(connect.refreshTokens).toHaveBeenCalledWith("r1");
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessToken).toBe("a2");
+		expect(stored.rotatedAt).toBeGreaterThan(0);
+	});
+
+	it("does not rotate twice in quick succession", async () => {
+		// connect-api's refresh token is single-use, so a repeated or replayed
+		// completed-signup response must not race a second rotation against the
+		// first one's result.
+		const { provider, connect } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 60 * 60_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refreshEntitlements!("sid1");
+		await provider.refreshEntitlements!("sid1");
+		expect(connect.refreshTokens).toHaveBeenCalledTimes(1);
+	});
+
+	it("returns quietly from refreshEntitlements when no session is stored", async () => {
+		// Unlike `refresh`, this is best-effort: its caller holds a session that is
+		// valid either way, so a missing upstream entry is not its problem to raise.
+		const { provider, connect } = setup();
+		await expect(
+			provider.refreshEntitlements!("missing"),
+		).resolves.toBeUndefined();
+		expect(connect.refreshTokens).not.toHaveBeenCalled();
+	});
+
 	it("keeps the previous lite/crm tokens when a rotation omits them", async () => {
 		// `/authentication/token` is not guaranteed to re-mint every tier. Blanking
 		// them would break a widget session that was working; a stale one merely

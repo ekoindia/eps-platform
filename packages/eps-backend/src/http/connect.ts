@@ -24,6 +24,22 @@ const TOKEN_LIMIT = 60;
 /** Interaction-list reads per session per window. The console caches it. */
 const INTERACTIONS_LIMIT = 30;
 
+/**
+ * ekostore handoffs per session per window. The console fetches one per rail
+ * render and caches it for the tab, so this only bites a scripted client — which
+ * is the one that matters here, since the response is a full-scope token.
+ */
+const EKOSTORE_LIMIT = 10;
+
+/**
+ * The interaction `id` entitling an account to ekostore's KYC sandbox.
+ *
+ * Mirrors `EKOSTORE_KYC_ID` in `src/components/console/ConsoleLayout.tsx`, but
+ * this is the copy that decides: the rail's check only chooses whether to draw a
+ * link, and a browser can skip it.
+ */
+const EKOSTORE_KYC_ID = 9995;
+
 /** Query-type reads per session per window — one per raise-issue dialog opened. */
 const QUERY_TYPES_LIMIT = 30;
 
@@ -131,9 +147,11 @@ function text(value: unknown, max = 200): string {
  *   fallback never fires.
  * - `access_token_crm` — one fire-and-forget `/crm/updateProdDeal` ping.
  *
- * The full `accessToken` and the `refreshToken` therefore never leave this
- * process. `/connect/interactions` proves the point: it needs the full token, so
- * it runs here rather than in the browser.
+ * The `refreshToken` therefore never leaves this process, and the full
+ * `accessToken` leaves by exactly one door: `/connect/ekostore-token`, which is
+ * entitlement-gated and exists so the console's ekostore link can carry a
+ * credential. `/connect/interactions` shows the default the rest of this module
+ * keeps: it needs the full token, so it runs here rather than in the browser.
  *
  * Mounted only when the connect provider is configured, so under the `eko`
  * provider these routes do not exist at all rather than answering 501.
@@ -235,6 +253,64 @@ export function mountConnect(
 		return c.json({
 			accessTokenLite: upstream.accessTokenLite,
 			accessTokenCrm: upstream.accessTokenCrm ?? null,
+			expiresAt: upstream.accessExpiresAt,
+		});
+	});
+
+	/**
+	 * GET /connect/ekostore-token → { accessToken, expiresAt }
+	 *
+	 * The one place the FULL upstream access token is published, so that the
+	 * console's ekostore link can carry it and the user is not asked to sign in a
+	 * second time on a site that talks to the same connect-api.
+	 *
+	 * Three things keep this narrow, and all three are load-bearing:
+	 *
+	 * - It is a route of its own rather than another field on `/connect/token`.
+	 *   That route answers every widget session; this one must not.
+	 * - Entitlement to interaction 9995 is checked HERE, against the upstream
+	 *   list. The rail does the same check to decide what to draw, but that is a
+	 *   rendering decision in a browser, not authorization.
+	 * - The access token, never the refresh token. An access token is not consumed
+	 *   when used, so ekostore holding a copy cannot invalidate this session's;
+	 *   a shared refresh token would, since `connectProvider.refresh` rotates it.
+	 *   It also dies within `MAX_ACCESS_TTL_SEC` rather than in 8h-to-30d.
+	 *
+	 * The caller puts this in a URL, so treat its lifetime as the blast radius:
+	 * do not widen this response to anything longer-lived.
+	 */
+	app.get("/connect/ekostore-token", async (c) => {
+		const claim = await requireWidgetSession(c);
+		await enforceRateLimit(
+			kv,
+			`rl:cxeko:${claim.sid}`,
+			EKOSTORE_LIMIT,
+			RL_WINDOW_SEC,
+		);
+		const upstream = await requireUpstream(claim);
+
+		// Keyed by the row's `id`, matching `buildRoleTransactionList` in
+		// `src/lib/connect/interactions.ts` — NOT `interaction_type_id`, which is 0
+		// for every composite interaction.
+		const interactions = await connect.interactions(upstream.accessToken, {
+			xRealIp: c.req.header("x-real-ip"),
+		});
+		const entitled = interactions.some(
+			(row) =>
+				String((row as { id?: unknown } | null)?.id) ===
+				String(EKOSTORE_KYC_ID),
+		);
+		if (!entitled) {
+			throw new AppError(
+				403,
+				"EKOSTORE_NOT_ENTITLED",
+				"This account can't use the ekostore sandbox.",
+			);
+		}
+
+		c.header("Cache-Control", "no-store");
+		return c.json({
+			accessToken: upstream.accessToken,
 			expiresAt: upstream.accessExpiresAt,
 		});
 	});

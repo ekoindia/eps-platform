@@ -10,13 +10,18 @@ import type { ProfileResult } from "../types";
  * token belongs to.
  */
 export interface UpstreamSession {
+	/**
+	 * Full-scope token. Published to a browser by exactly one route —
+	 * `GET /connect/ekostore-token`, gated on entitlement to interaction 9995 —
+	 * so that the console's ekostore link can carry a credential. Every other
+	 * route uses it only to call upstream from this process.
+	 */
 	accessToken: string;
+	/** Never leaves this process: it is rotated here, and a second holder would break that. */
 	refreshToken: string;
 	/**
 	 * Reduced-scope token the browser-side Connect widget reads from
-	 * `sessionStorage`. This is the ONLY field here that is ever handed to a
-	 * browser, and only via `GET /connect/token`; `accessToken` and
-	 * `refreshToken` never leave this process.
+	 * `sessionStorage`, via `GET /connect/token`.
 	 */
 	accessTokenLite?: string;
 	/** CRM-scoped token, likewise browser-visible via `GET /connect/token`. */
@@ -25,6 +30,12 @@ export interface UpstreamSession {
 	accessExpiresAt: number;
 	/** Epoch ms after which `refreshToken` is dead and the user must log in again. */
 	sessionExpiresAt: number;
+	/**
+	 * Epoch ms of the last rotation, absent on a session straight from login.
+	 * Read only by `refreshEntitlements`, to keep repeated calls from rotating the
+	 * same session over and over.
+	 */
+	rotatedAt?: number;
 }
 
 /**
@@ -99,6 +110,22 @@ export interface AuthProvider {
 	 * force a fresh login rather than serve a session with dead credentials.
 	 */
 	refresh?(sid: string): Promise<void>;
+
+	/**
+	 * Rotates the upstream session because the *user* changed, not because the
+	 * token aged — a token minted before onboarding finished still speaks for the
+	 * roles its holder had at login, so the entitlement list it fetches is the old
+	 * one no matter how much life it has left.
+	 *
+	 * Distinct from `refresh` on both counts that matter. It ignores the remaining
+	 * lifetime, and its failure is NOT session-fatal: the stored credentials are
+	 * stale, not dead, so the caller logs and carries on rather than forcing a
+	 * fresh login. Callers that merely want to keep a session alive want `refresh`.
+	 *
+	 * Implementations must be cheap to call redundantly — see the rotation
+	 * interval in `connectProvider`.
+	 */
+	refreshEntitlements?(sid: string): Promise<void>;
 
 	/** Best-effort upstream logout. Must not throw. */
 	revoke?(sid: string): Promise<void>;

@@ -180,6 +180,17 @@ export interface DeployResult {
 	prNumber: number;
 }
 
+/**
+ * The full-scope connect-api token, handed over for the ekostore sign-in
+ * handoff. Only `GET /connect/ekostore-token` returns this, and only to an
+ * account entitled to interaction 9995.
+ */
+export interface EkostoreTokenView {
+	accessToken: string;
+	/** Epoch ms the token stops being accepted upstream. */
+	expiresAt: number;
+}
+
 /** Browser-visible connect-api tokens. Never carries the full access token. */
 export interface ConnectTokenView {
 	accessTokenLite: string;
@@ -389,6 +400,18 @@ export const authClient = {
 	 */
 	connectToken: (): Promise<ConnectTokenView> =>
 		request("/connect/token", { method: "GET" }) as Promise<ConnectTokenView>,
+	/**
+	 * The FULL connect-api access token, for the ekostore handoff only.
+	 *
+	 * Separate from `connectToken` because the backend gates it on entitlement to
+	 * interaction 9995 and answers 403 otherwise. Unlike the lite token this must
+	 * never be written to `sessionStorage`: it goes straight into the outbound
+	 * ekostore URL and is held in memory for as long as that link is rendered.
+	 */
+	connectEkostoreToken: (): Promise<EkostoreTokenView> =>
+		request("/connect/ekostore-token", {
+			method: "GET",
+		}) as Promise<EkostoreTokenView>,
 	/** The role-scoped interaction list backing `role_trxn_list`. */
 	connectInteractions: (): Promise<{ interactions: unknown[] }> =>
 		request("/connect/interactions", { method: "GET" }) as Promise<{
