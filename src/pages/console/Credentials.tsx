@@ -65,16 +65,16 @@ const FINISH_ONBOARDING = {
  */
 const PRODUCTION_COPY: Record<
 	Lifecycle,
-	{ body: string; cta: { label: string; href: string } }
+	{ body: string; cta?: { label: string; href: string } }
 > = {
 	active: {
-		body: "Production keys are issued separately from the UAT pair, once your account is provisioned.",
-		cta: { label: "Contact your account manager", href: "/grievance" },
+		body: "Production keys are generated and emailed to your registered email address once your account is approved. Please check your inbox and spam folder for email from `eps.support@eko.co.in`. If you haven't received it within a day, contact us.",
+		// cta: { label: "Contact your account manager", href: "/grievance" },
 	},
 	// Not `FINISH_ONBOARDING`: this partner HAS finished onboarding, so pointing
 	// them back at /signup would send them round a loop they have already run.
 	"kyc-pending": {
-		body: "Production keys are issued once your KYC documents have been verified.",
+		body: "Production keys are issued once your KYC documents have been uploaded and verified by our team. Please wait for an email from `eps.support@eko.co.in`, once your documents have been approved.",
 		cta: { label: "Upload documents", href: "/console/documents" },
 	},
 	lead: FINISH_ONBOARDING,
@@ -101,12 +101,14 @@ function ProductionCredentials() {
 				<p className="text-sm font-medium">Production API credentials</p>
 				<p className="text-sm text-muted-foreground">{copy.body}</p>
 			</div>
-			<Link
-				to={copy.cta.href}
-				className="self-start text-sm font-medium text-eko-navy underline underline-offset-4 hover:no-underline"
-			>
-				{copy.cta.label}
-			</Link>
+			{copy.cta ? (
+				<Link
+					to={copy.cta.href}
+					className="self-start text-sm font-medium text-eko-navy underline underline-offset-4 hover:no-underline"
+				>
+					{copy.cta.label}
+				</Link>
+			) : null}
 		</div>
 	);
 }
