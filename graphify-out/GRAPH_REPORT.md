@@ -1,16 +1,16 @@
 # Graph Report - eko-eps-website  (2026-08-18)
 
 ## Corpus Check
-- 721 files · ~894,189 words
+- 721 files · ~894,264 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4298 nodes · 10107 edges · 225 communities (201 shown, 24 thin omitted)
+- 4298 nodes · 10108 edges · 221 communities (196 shown, 25 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 218 edges (avg confidence: 0.76)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bbcfbd63`
+- Built from commit: `c8918da2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,7 +23,7 @@
 - render-recipe.ts
 - DialogHost.tsx
 - industries.ts
-- ConsoleLayout.tsx
+- interactions.ts
 - api-pricing.ts
 - xlsx/shared.ts
 - cn
@@ -31,7 +31,7 @@
 - markdown/shared.ts
 - docs-registry.ts
 - console/dashboard.ts
-- ApiPicker.tsx
+- wallet-balance.ts
 - api-spec-previews.ts
 - eps-transact-mcp/package.json
 - KycUploadDialog.tsx
@@ -41,9 +41,9 @@
 - ConnectClient
 - ZohoSignupForm.tsx
 - eps-context-mcp/package.json
-- ConnectedBankingCalculator.tsx
+- render-pricing.ts
 - ConnectWidget.tsx
-- button.tsx
+- PricingPage.tsx
 - dialog.tsx
 - HeaderDropdownPanels.tsx
 - EndpointDetail.tsx
@@ -55,22 +55,22 @@
 - zoho-chat.ts
 - sdk-js/package.json
 - eps-mock-server/package.json
-- render-product.ts
-- Footer.tsx
+- Header.tsx
+- EkoShieldPage.tsx
 - render-products-index.ts
-- MobileSummaryBar.tsx
+- resolveSteps.ts
 - code-samples.ts
 - MarkdownProse.tsx
 - pdf-client.ts
 - http/dashboard.ts
 - eps-transact-mcp/src/http.ts
-- site.ts
-- Profile.tsx
+- AppServer.tsx
+- button.tsx
 - ProductPageLayout.tsx
 - buildFiles (vite-plugin-generate-agent-bundle emitter)
 - API technical specification layer (api-specs.ts)
 - prerender.ts
-- CameraDialog.tsx
+- PinStep.tsx
 - Pingo Mascot
 - Business Dashboard (/console)
 - app.test.ts
@@ -78,14 +78,14 @@
 - BusinessStep.tsx
 - Static page generation pipeline (ssg/)
 - EpsClientTest
-- ApiError
-- PaymentsRateTable.tsx
+- ConsoleLayout.tsx
+- ConnectedBankingCalculator.tsx
 - stdio.ts
 - TestDialogs.tsx
 - EkoClient
 - docs-registry.ts (guides + endpoints unifier)
 - eps-transact-mcp/src/bundle-types.ts
-- NotificationList.tsx
+- BusinessStep.test.tsx
 - tools.ts
 - http/connect.test.ts
 - AiPage.tsx
@@ -96,12 +96,12 @@
 - SignupWizard.tsx
 - render-doc.ts
 - Eko EPS Partner Ecosystem
-- Index.tsx
+- pdf-ops.ts
 - compilerOptions
 - src/client.ts
 - eko-signing.ts
 - tryit-client.ts
-- HarnessIcon.tsx
+- SignAgreementStep.test.tsx
 - EPS transactional MCP server
 - auto-release.mjs
 - tryit-client.ts (client-only Scalar modal singleton)
@@ -123,7 +123,7 @@
 - compilerOptions
 - compilerOptions
 - PUD-ConnectProd1 — migrating Docker from `vfs` to `overlay2`
-- Header.tsx
+- CameraDialog.tsx
 - UserMenu.tsx
 - @ekoindia/eps-context-mcp (local stdio MCP, 9 tiered tools)
 - eko.ts
@@ -133,18 +133,18 @@
 - extract-body.ts
 - eps-backend — Docker Ops Cheatsheet
 - Pull-based auto-deploy poller
-- markdownTable
+- recipeHref
 - Aadhaar Biometric Authentication with RDService
 - RdServiceTester.tsx
 - Eko Payment Services (EPS) API Platform
 - Interaction 154 — transaction history upstream
 - `onboarding === 1` classification gate in getProfile
 - eps-context-mcp/vercel.json
-- AppServer.tsx
+- GrievancePage.tsx
 - EPS agent plugin (eps)
 - Auto-deploy poller (poll.sh sidecar)
 - poll_test.sh
-- SecretKeyTester.tsx
+- NotificationList.tsx
 - eps-transact-mcp/src/load-bundle.ts
 - eps-transact-mcp/src/update-check.ts
 - Stale-chunk auto-reload
@@ -160,13 +160,13 @@
 - eps-backend Production VM Deploy Runbook
 - FileUpload.tsx
 - plugin-marketplace.test.ts
-- EkoShield Product (Fraud Prevention & KYC)
+- Eko Platform Services (EPS) Brand
 - buildApp.ts
 - eps-context-mcp http.ts stateless Hono transport
 - bundle-types.parity.test.ts
-- pdf-ops.ts
+- api-product-pages.ts
 - lib/notifications.ts
-- FaqSection.tsx
+- SecretKeyTester.tsx
 - Eko EPS Website UI/UX improvement plan
 - _pop.sh
 - deploy-artifacts.test.ts
@@ -201,20 +201,16 @@
 - Phase 5 — transaction lifecycle & refunds
 - Spec data provenance caveat
 - UAT/Production environment toggle
-- features.ts
+- SecretKeyTester.test.tsx
 - api-specs-common.ts
 - AnimatedRoutes.tsx
 - build-postman.ts
 - AdminConsole.tsx
-- DropdownGrid.tsx
-- use-app-link.ts
-- ErrorBoundary.tsx
-- EkoLogo.tsx
-- eko vs connect auth provider seam
-- SecretKeyTester.test.tsx
-- Interaction 522 USER_ONBOARDING_BUSINESS
-- LanguageSelector.tsx
 - NotificationsCard.test.tsx
+- ErrorBoundary.tsx
+- client.signup.test.ts
+- eko vs connect auth provider seam
+- Interaction 522 USER_ONBOARDING_BUSINESS
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 158 edges
@@ -259,7 +255,7 @@
 - **One API registry feeds docs, SDKs, and both MCP servers** — packages_eps_transact_mcp_readme_registry_driven_tools, packages_eps_context_mcp_readme_eps_bundle_url, packages_sdk_php_readme_sdk_surface_catalog, packages_sdk_js_readme_epsclient, packages_eps_context_mcp_readme_eps_context_mcp [EXTRACTED 1.00]
 - **Backend-only secret boundary across signing surfaces** — src_content_docs_how_auth_works_hmac_secret_key, packages_eps_context_mcp_readme_backend_only_signing, packages_eps_context_mcp_readme_debug_auth, packages_eps_transact_mcp_readme_stateless_passthrough_signer, packages_sdk_js_readme_epsclient, packages_sdk_php_readme_epsclient, src_content_docs_how_auth_works_secret_key_playground [INFERRED 0.85]
 
-## Communities (225 total, 24 thin omitted)
+## Communities (221 total, 25 thin omitted)
 
 ### Community 0 - "build-agent-bundle.ts"
 Cohesion: 0.06
@@ -278,56 +274,56 @@ Cohesion: 0.24
 Nodes (12): TrackingParamCapture(), TrackingParamCapture(), NavLink, NavLinkCompatProps, appendTrackingParams(), buildLeadWebsiteUrl(), getCalculatorContext(), getStoredTrackingParams() (+4 more)
 
 ### Community 4 - "AuthProvider.tsx"
-Cohesion: 0.14
-Nodes (21): AuthContext, AuthContextValue, AuthProvider(), classify(), registeredHandler(), renderAuthed(), AdminView, LIFECYCLES (+13 more)
+Cohesion: 0.15
+Nodes (21): AuthContext, AuthContextValue, AuthProvider(), classify(), Probe(), registeredHandler(), renderAuthed(), useAuth() (+13 more)
 
 ### Community 5 - "render-recipe.ts"
 Cohesion: 0.06
-Nodes (55): branch(), ARC_TINTS, assignLanes(), edgeLabel(), FREQUENCY_FILL, FREQUENCY_TEXT, METHOD_FILL, METHOD_TEXT (+47 more)
+Nodes (53): branch(), ARC_TINTS, assignLanes(), edgeLabel(), FREQUENCY_FILL, FREQUENCY_TEXT, METHOD_FILL, METHOD_TEXT (+45 more)
 
 ### Community 6 - "DialogHost.tsx"
 Cohesion: 0.06
 Nodes (43): CameraOptions, CameraResult, CameraDialog, CHROME, ConnectDialogs, DialogContext, DialogRequest, DialogResult (+35 more)
 
 ### Community 7 - "industries.ts"
-Cohesion: 0.08
-Nodes (25): API_PRODUCTS_MAP, STALE_DISPLAY_CHIPS, ACTIVE_INDUSTRIES_LIST, ApiGridItem, ComplianceItem, DEFAULT_INTEGRATION_STEPS, DISABLED_PRODUCT_NAMES, INDUSTRIES_LIST (+17 more)
+Cohesion: 0.09
+Nodes (24): API_PRODUCTS_MAP, STALE_DISPLAY_CHIPS, ACTIVE_INDUSTRIES_LIST, ApiGridItem, ComplianceItem, DEFAULT_INTEGRATION_STEPS, DISABLED_PRODUCT_NAMES, INDUSTRIES_LIST (+16 more)
 
-### Community 8 - "ConsoleLayout.tsx"
-Cohesion: 0.06
-Nodes (31): ConnectDialogProvider(), ConsoleLayout(), ConsoleNav(), CREDENTIALS_ITEM, DOCUMENTS_ITEM, Flow, flowItem(), HOME_ITEM (+23 more)
+### Community 8 - "interactions.ts"
+Cohesion: 0.09
+Nodes (31): HeaderDropdownPanels(), Profile, accountIdentity, chatIdentity, detailField(), nameInitials(), profileCompleteness(), SHOW_CONNECT_WIDGET (+23 more)
 
 ### Community 9 - "api-pricing.ts"
 Cohesion: 0.09
-Nodes (42): MobileSummaryBar(), parseSelectionFromParams(), PricingCalculator(), sanitizeVolume(), SelectionEntry, serializeSelection(), ADD_API_EVENT, nearestStepIndex() (+34 more)
+Nodes (43): MobileSummaryBar(), parseSelectionFromParams(), PricingCalculator(), sanitizeVolume(), SelectionEntry, serializeSelection(), ADD_API_EVENT, nearestStepIndex() (+35 more)
 
 ### Community 10 - "xlsx/shared.ts"
 Cohesion: 0.15
 Nodes (48): BBPS_OPERATORS, BbpsOperator, OperatorRow, ROWS, AmountSlab, BbpsCategory, DmtSlab, ExcelJS (+40 more)
 
 ### Community 11 - "cn"
-Cohesion: 0.07
+Cohesion: 0.06
 Nodes (35): TerminalHeader(), FeatureCard(), FeatureCardProps, ProductCard(), ProductCardProps, StatCard(), StatCardProps, UseCaseCard() (+27 more)
 
 ### Community 12 - "payments-pricing.ts"
-Cohesion: 0.12
-Nodes (35): HAS_VOLUME_DISCOUNTS, PRICING_FAQS, PRICING_GROUPS, SETUP_FEE_DISCOUNT_PERCENT, SETUP_FEE_DISCOUNTED, CB_FAQS, AEPS_CASHOUT_SLABS, AEPS_MINI_STATEMENT_COMMISSION (+27 more)
+Cohesion: 0.10
+Nodes (38): MobileEstimateBar(), EarningsProductRow(), EarningsProductRowProps, nearestStepIndex(), TICK_LABELS, TXN_STEPS, parseSelectionFromParams(), PaymentsCalculator() (+30 more)
 
 ### Community 13 - "markdown/shared.ts"
-Cohesion: 0.21
-Nodes (33): SIGNUP_PAGE, productHref(), recipeHref(), renderDocsIndexMarkdown(), FaqMarkdownItem, renderFaqMarkdown(), renderLlmsTxt(), renderSiteIndexMarkdown() (+25 more)
+Cohesion: 0.20
+Nodes (35): SIGNUP_PAGE, productHref(), renderDocsIndexMarkdown(), FaqMarkdownItem, renderFaqMarkdown(), renderLlmsTxt(), renderSiteIndexMarkdown(), renderUseCasesHubMarkdown() (+27 more)
 
 ### Community 14 - "docs-registry.ts"
-Cohesion: 0.08
-Nodes (40): collectActiveBranchIds(), DocsNavTree(), normalizePath(), soleBranchChain(), findSoleChildBranch(), GuideMeta, GUIDES, API_PRODUCTS (+32 more)
+Cohesion: 0.06
+Nodes (59): ApiChipProps, collectActiveBranchIds(), DocsNavTree(), normalizePath(), soleBranchChain(), findSoleChildBranch(), buildRelatedLinks(), NextSteps() (+51 more)
 
 ### Community 15 - "console/dashboard.ts"
 Cohesion: 0.07
-Nodes (44): BusinessDashboard(), isEmpty(), MostUsedServicesWidget, SuccessRatesWidget, load, view(), withServices(), UsageAnalyticsWidget (+36 more)
+Nodes (40): BusinessDashboard(), isEmpty(), MostUsedServicesWidget, SuccessRatesWidget, load, view(), withServices(), UsageAnalyticsWidget (+32 more)
 
-### Community 16 - "ApiPicker.tsx"
-Cohesion: 0.15
-Nodes (13): ApiPicker(), ApiPickerProps, PickerRow(), PaymentsPicker(), PaymentsPickerProps, PickerRow(), Badge(), BadgeProps (+5 more)
+### Community 16 - "wallet-balance.ts"
+Cohesion: 0.19
+Nodes (14): connectInteractions, walletBalance, Status, walletBalance, WalletBalance(), resetRoleTransactionCache(), CachedBalance, fetchWalletBalance() (+6 more)
 
 ### Community 17 - "api-spec-previews.ts"
 Cohesion: 0.16
@@ -346,8 +342,8 @@ Cohesion: 0.04
 Nodes (45): jose, bin, eps-backend, dependencies, hono, @hono/node-server, jose, redis (+37 more)
 
 ### Community 21 - "auth/client.ts"
-Cohesion: 0.07
-Nodes (22): NextStepsCard(), kycEnabled, ME, Account, ConnectTokenView, DeployResult, DocContent, EkostoreTokenView (+14 more)
+Cohesion: 0.04
+Nodes (34): LoginForm(), maskMobile(), adopt, refresh, toastInfo, NextStepsCard(), kycEnabled, ME (+26 more)
 
 ### Community 22 - "signup.ts"
 Cohesion: 0.06
@@ -365,25 +361,25 @@ Nodes (6): buildSrc(), ZohoSignupForm(), ZOHO_SIGNUP_EMBED_URL, isBrowser(), saf
 Cohesion: 0.05
 Nodes (40): bin, eps-context-mcp, dependencies, hono, @hono/node-server, @modelcontextprotocol/sdk, zod, description (+32 more)
 
-### Community 26 - "ConnectedBankingCalculator.tsx"
-Cohesion: 0.18
-Nodes (18): ConnectedBankingCalculator(), DEFAULT_INPUT, nearestStepIndex(), parseInputFromParams(), TICK_LABELS, TXN_STEPS, GST_RATE, PricingFaq (+10 more)
+### Community 26 - "render-pricing.ts"
+Cohesion: 0.14
+Nodes (22): PRICING_FAQS, PRICING_GROUPS, PricingFaq, SETUP_FEE_DISCOUNTED, calcCbQuote(), CB_FAQS, CB_MAX_BANK_USERS, CB_MAX_TXN_AMOUNT (+14 more)
 
 ### Community 27 - "ConnectWidget.tsx"
-Cohesion: 0.06
-Nodes (51): ConnectWidget(), ConnectWidgetProps, IntrinsicElements, JSX, react, Status, syncWidgetProps(), LOAD_EVALUE (+43 more)
+Cohesion: 0.08
+Nodes (31): ConnectWidget(), ConnectWidgetProps, IntrinsicElements, JSX, react, Status, syncWidgetProps(), LOAD_EVALUE (+23 more)
 
-### Community 28 - "button.tsx"
-Cohesion: 0.09
-Nodes (44): ApiChip(), relevanceColors, BreadcrumbItem, BreadcrumbNav(), BreadcrumbNavProps, BreadcrumbVariant, VARIANT_STYLES, FadeIn() (+36 more)
+### Community 28 - "PricingPage.tsx"
+Cohesion: 0.08
+Nodes (50): ApiChip(), relevanceColors, BreadcrumbItem, BreadcrumbNav(), BreadcrumbNavProps, BreadcrumbVariant, VARIANT_STYLES, FadeIn() (+42 more)
 
 ### Community 29 - "dialog.tsx"
 Cohesion: 0.21
 Nodes (12): DeployToProduction(), production, TalkToSalesDialogProps, DialogContent, DialogDescription, DialogFooter(), DialogHeader(), DialogOverlay (+4 more)
 
 ### Community 30 - "HeaderDropdownPanels.tsx"
-Cohesion: 0.07
-Nodes (26): AI_ASK_PROMPT, aiClientLinks, AiLinkItem, aiLinks, apiColumns, bcApis, companyLinks, companySocialLinks (+18 more)
+Cohesion: 0.05
+Nodes (37): DropdownColumnHeader(), DropdownGrid(), DropdownGridColumn, DropdownGridProps, MenuItemLink(), MenuItemLinkProps, pastelColors, FooterLinkItem (+29 more)
 
 ### Community 31 - "EndpointDetail.tsx"
 Cohesion: 0.15
@@ -421,21 +417,21 @@ Nodes (32): description, devDependencies, tsup, typescript, vitest, engines, nod
 Cohesion: 0.06
 Nodes (31): bin, eps-mock-server, description, devDependencies, tsup, typescript, vitest, engines (+23 more)
 
-### Community 40 - "render-product.ts"
-Cohesion: 0.09
-Nodes (26): ApiChipProps, API_PRODUCTS_DATA, ApiProductId, ApiProductRef, ApiProductRelevance, PRODUCTS_SECTION_SLUG, ApiSpec, ProductPageDataShape (+18 more)
+### Community 40 - "Header.tsx"
+Cohesion: 0.08
+Nodes (26): connectEkostoreToken, connectInteractions, DEVELOPER, CommandPalette, ANON, hover(), isOpen(), trigger() (+18 more)
 
-### Community 41 - "Footer.tsx"
-Cohesion: 0.07
-Nodes (27): ProfileCard(), FooterLinkItem, footerLinks, socialLinks, CTASection(), LeadCaptureSection(), handleChat(), TalkToSalesDialog() (+19 more)
+### Community 41 - "EkoShieldPage.tsx"
+Cohesion: 0.06
+Nodes (34): CodeBlock(), CodeBlockProps, exampleApiCode, exampleIntegrationSteps, examplePaymentCode, Picture(), PictureProps, complianceItems (+26 more)
 
 ### Community 42 - "render-products-index.ts"
-Cohesion: 0.18
-Nodes (26): verifyHeading(), aepsPricing(), bbpsCommissionInline(), bbpsPricing(), benefitsBlock(), dmtPricing(), dmtSenderNotes, faqBullets() (+18 more)
+Cohesion: 0.07
+Nodes (44): ApiProductRef, verifyHeading(), ProductPageDataShape, page, product, related, specs, aepsPricing() (+36 more)
 
-### Community 43 - "MobileSummaryBar.tsx"
-Cohesion: 0.19
-Nodes (12): MobileEstimateBar(), MobileEstimateBarProps, MobileSummaryBarProps, QuoteSummaryProps, Drawer(), DrawerContent, DrawerDescription, DrawerFooter() (+4 more)
+### Community 43 - "resolveSteps.ts"
+Cohesion: 0.17
+Nodes (8): ResolvedStep, StepDefinition, StepStatus, StepSubmit, registry, STATUS_LABEL, StepRail(), SignupState
 
 ### Community 44 - "code-samples.ts"
 Cohesion: 0.18
@@ -457,17 +453,17 @@ Nodes (46): DatasetResult, echoOf(), mountDashboard(), SAMPLE_DASHBOARD_OBJECT, 
 Cohesion: 0.12
 Nodes (22): AccessLogger, AccessRecord, createAccessLogger(), noopAccessLogger, createApp(), extractToolName(), HttpDeps, RL_LIMIT (+14 more)
 
-### Community 49 - "site.ts"
+### Community 49 - "AppServer.tsx"
 Cohesion: 0.09
-Nodes (35): AiHint(), SITE_TITLE_SUFFIX, DocsLayout(), buildLlmPrompt(), copyText(), PageActions(), useTryIt(), IndustryPageLayout() (+27 more)
+Nodes (41): AiHint(), DefaultMeta(), SITE_TITLE_SUFFIX, DocsLayout(), buildLlmPrompt(), copyText(), PageActions(), useTryIt() (+33 more)
 
-### Community 50 - "Profile.tsx"
-Cohesion: 0.10
-Nodes (21): HeaderDropdownPanels(), AuthState, Probe(), useAuth(), Profile, accountIdentity, detailField(), nameInitials() (+13 more)
+### Community 50 - "button.tsx"
+Cohesion: 0.13
+Nodes (18): ProfileCard(), GetStartedButtonProps, importWithFlag(), openZohoChat, caseStudies, CTASection(), LeadCaptureSection(), TalkToSalesDialog() (+10 more)
 
 ### Community 51 - "ProductPageLayout.tsx"
-Cohesion: 0.07
-Nodes (44): ApiField, ApiInputOutputPreview(), ApiInputOutputPreviewProps, ApiPreviewItem, ApiSampleJson, MultiApiPreview(), SectionHeader(), FaqList() (+36 more)
+Cohesion: 0.08
+Nodes (37): ApiField, ApiInputOutputPreview(), ApiInputOutputPreviewProps, ApiPreviewItem, ApiSampleJson, MultiApiPreview(), SectionHeader(), PictureSource (+29 more)
 
 ### Community 52 - "buildFiles (vite-plugin-generate-agent-bundle emitter)"
 Cohesion: 0.09
@@ -481,9 +477,9 @@ Nodes (27): AI-native agent platform layer, buildAgentBundle (pure deterministic
 Cohesion: 0.13
 Nodes (23): AppServer(), renderPage(), RenderResult, addFetchPriorityLow(), buildImageContentHashMap(), buildMaps(), fetchImagetoolsBuffer(), IMAGE_EXTENSIONS (+15 more)
 
-### Community 55 - "CameraDialog.tsx"
-Cohesion: 0.19
-Nodes (14): CameraDevice, CameraDialog(), classifyDevices(), pickDeviceIndex(), RESOLUTION, blobToDataUrl(), hasTorch(), ImageCaptureConstructor (+6 more)
+### Community 55 - "PinStep.tsx"
+Cohesion: 0.25
+Nodes (5): InputOTP, InputOTPGroup, InputOTPSlot, PinStep(), StepProps
 
 ### Community 56 - "Pingo Mascot"
 Cohesion: 0.08
@@ -502,8 +498,8 @@ Cohesion: 0.12
 Nodes (18): ImageEditorDialog(), blurScoreFromImageFile, processedFile, setBlurScore, toastError, toastWarning, BoundingBox, Box (+10 more)
 
 ### Community 60 - "BusinessStep.tsx"
-Cohesion: 0.16
-Nodes (15): BUSINESS_FIELDS, BUSINESS_GROUPS, BusinessField, COMPANY_TYPES, INDIAN_STATES, field(), validateField(), BusinessStep() (+7 more)
+Cohesion: 0.32
+Nodes (10): BUSINESS_FIELDS, BUSINESS_GROUPS, BusinessField, COMPANY_TYPES, INDIAN_STATES, field(), validateField(), BusinessStep() (+2 more)
 
 ### Community 61 - "Static page generation pipeline (ssg/)"
 Cohesion: 0.11
@@ -513,13 +509,13 @@ Nodes (25): Cross-linking model (Industry ↔ Pack ↔ Product), Per-page SEO es
 Cohesion: 0.09
 Nodes (3): EpsClient, EpsClientTest, PHPUnit\Framework\TestCase
 
-### Community 63 - "ApiError"
-Cohesion: 0.11
-Nodes (9): LoginForm(), maskMobile(), adopt, refresh, toastInfo, SignInSplit(), STEPS, loginFormProps (+1 more)
+### Community 63 - "ConsoleLayout.tsx"
+Cohesion: 0.07
+Nodes (26): SignInSplit(), STEPS, loginFormProps, ConsoleLayout(), ConsoleNav(), CREDENTIALS_ITEM, DOCUMENTS_ITEM, Flow (+18 more)
 
-### Community 64 - "PaymentsRateTable.tsx"
-Cohesion: 0.17
-Nodes (17): ADD_EARNINGS_EVENT, AddButton(), addProductToEstimate(), PaymentsRateTable(), slabRange(), slabValue(), addApiToEstimate(), PricingTable() (+9 more)
+### Community 64 - "ConnectedBankingCalculator.tsx"
+Cohesion: 0.14
+Nodes (25): ConnectedBankingCalculator(), DEFAULT_INPUT, nearestStepIndex(), parseInputFromParams(), TICK_LABELS, TXN_STEPS, AddButton(), addProductToEstimate() (+17 more)
 
 ### Community 65 - "stdio.ts"
 Cohesion: 0.22
@@ -541,9 +537,9 @@ Nodes (23): assertRecipeSlugs build guard, RecipeStep.branches success-path data
 Cohesion: 0.09
 Nodes (22): AgentApiDetail, AgentApiIndexEntry, AgentAuthTopic, AgentBundleMeta, AgentEnvironment, AgentEnvironmentsTopic, AgentErrorsTopic, AgentGettingStartedTopic (+14 more)
 
-### Community 70 - "NotificationList.tsx"
-Cohesion: 0.15
-Nodes (14): useOptionalConnectDialogs(), NotificationBell(), items, markReadMock, formatNotifyTime(), hasRichMedia(), NotificationDetail(), NotificationList() (+6 more)
+### Community 70 - "BusinessStep.test.tsx"
+Cohesion: 0.27
+Nodes (5): SignupProfile, SignupProfileContext, SignupProfileProvider(), Probe(), useSignupProfile()
 
 ### Community 71 - "tools.ts"
 Cohesion: 0.19
@@ -554,12 +550,12 @@ Cohesion: 0.12
 Nodes (7): AuthProvider, developer, harness(), NOW, uploadHarness(), upstream(), withCookie
 
 ### Community 73 - "AiPage.tsx"
-Cohesion: 0.08
-Nodes (36): Eps(), McpIcon(), IconComponent, isTabId(), PricingTabId, PricingTabs(), PricingTabsProps, TAB_DEFS (+28 more)
+Cohesion: 0.06
+Nodes (43): Eps(), AntigravityIcon(), ClaudeCodeIcon(), CodexIcon(), CursorIcon(), HarnessIcon(), HarnessIconProps, ICON_MAP (+35 more)
 
 ### Community 74 - "input.tsx"
-Cohesion: 0.10
-Nodes (12): groupDigits(), Input, InputProps, InputOTP, InputOTPGroup, InputOTPSlot, Label, labelVariants (+4 more)
+Cohesion: 0.12
+Nodes (12): ApiPicker(), ApiPickerProps, PickerRow(), Badge(), BadgeProps, badgeVariants, groupDigits(), Input (+4 more)
 
 ### Community 75 - "EndpointDetail (centre pane)"
 Cohesion: 0.10
@@ -574,20 +570,20 @@ Cohesion: 0.16
 Nodes (15): acquire_lock(), alert(), clear_hold(), deploy_image(), gate(), hold_is_falsified(), is_hold(), log() (+7 more)
 
 ### Community 78 - "SignupWizard.tsx"
-Cohesion: 0.08
-Nodes (28): Step, StepMark(), Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle (+20 more)
+Cohesion: 0.12
+Nodes (21): Delta(), OverviewWidget(), Step, StepMark(), Card, CardContent, CardDescription, CardFooter (+13 more)
 
 ### Community 79 - "render-doc.ts"
-Cohesion: 0.09
-Nodes (39): buildRelatedLinks(), NextSteps(), ResolvedLink, resolveRelatedLink(), NextStepLink(), ResponseTypeNote(), ResponseTypes(), ACTIVE_PRODUCTS_MAP (+31 more)
+Cohesion: 0.20
+Nodes (19): docsHref(), defaultSnippet(), collectLeaves(), errorScenarioTypeCell(), expandCallouts(), expandCodeSnippets(), expandFaqList(), expandRdServiceTester() (+11 more)
 
 ### Community 80 - "Eko EPS Partner Ecosystem"
 Cohesion: 0.12
 Nodes (18): AePS / Biometric Authentication Service, Assisted Banking / Business Correspondent Service, Eko EPS Partner Ecosystem, Money Transfer / Remittance Service, Payment Gateway / Online Payment Processing, Payments Bank (RBI-Licensed), FingPay Logo, FingPay (+10 more)
 
-### Community 81 - "Index.tsx"
-Cohesion: 0.08
-Nodes (25): CodeBlock(), CodeBlockProps, exampleApiCode, exampleIntegrationSteps, examplePaymentCode, GetStartedButton(), GetStartedButtonProps, importWithFlag() (+17 more)
+### Community 81 - "pdf-ops.ts"
+Cohesion: 0.18
+Nodes (17): decode(), landscapeJpeg(), portraitJpeg(), A4_POINTS, embed(), getPageCount(), imagesToPdf(), loadDocument() (+9 more)
 
 ### Community 82 - "compilerOptions"
 Cohesion: 0.11
@@ -605,9 +601,9 @@ Nodes (8): base64Bytes(), base64Utf8(), buildSignedHeaders(), computeSecretKey()
 Cohesion: 0.29
 Nodes (10): createModal(), getTryItModal(), HIDDEN_SECTION_LABELS, markHiddenSections(), observeHiddenSections(), openTryIt(), IMPORTANT: this module pulls in the Vue-based client and its CSS, so it must be, uatAuthentication() (+2 more)
 
-### Community 86 - "HarnessIcon.tsx"
-Cohesion: 0.18
-Nodes (11): AntigravityIcon(), ClaudeCodeIcon(), CodexIcon(), CursorIcon(), HarnessIcon(), HarnessIconProps, ICON_MAP, KiroIcon() (+3 more)
+### Community 86 - "SignAgreementStep.test.tsx"
+Cohesion: 0.29
+Nodes (4): ApiError, getAgreementUrl, openEsign, submitAgreement
 
 ### Community 87 - "EPS transactional MCP server"
 Cohesion: 0.12
@@ -622,12 +618,12 @@ Cohesion: 0.10
 Nodes (22): Admin Config Console v1 (in-browser GitOps editor), Deploy Flow (Flow B) — dev to main PR, Edit Flow (Flow A) — propose changes as a PR, Editable file allowlist + path sanitization, Persisted admin GitHub token keyed by session id, 409 STALE_CONTENT concurrent-edit guard, descriptionFile endpoint notes (src/content/docs/endpoints/*.md), remark-callout (hand-rolled GitHub-alert mdast transform) (+14 more)
 
 ### Community 90 - "MdxGuide.tsx"
-Cohesion: 0.22
-Nodes (9): CodeSnippets(), CopyButton(), prismLang(), MDX_COMPONENTS, MdxGuide(), LangId, GUIDE_COMPONENTS, codeBlockTheme (+1 more)
+Cohesion: 0.14
+Nodes (14): CodeSnippets(), CopyButton(), prismLang(), MDX_COMPONENTS, MdxGuide(), LangId, GUIDE_COMPONENTS, codeBlockTheme (+6 more)
 
 ### Community 91 - "QuoteSummary.tsx"
-Cohesion: 0.12
-Nodes (27): EarningsProductRow(), EarningsProductRowProps, nearestStepIndex(), TICK_LABELS, TXN_STEPS, EarningsSummary(), EarningsSummaryProps, QUICK_ADD_PRODUCTS (+19 more)
+Cohesion: 0.09
+Nodes (29): MobileEstimateBarProps, MobileSummaryBarProps, EarningsSummary(), EarningsSummaryProps, QUICK_ADD_PRODUCTS, QUICK_ADD_APIS, QuoteSummary(), QuoteSummaryProps (+21 more)
 
 ### Community 92 - "compilerOptions"
 Cohesion: 0.12
@@ -654,8 +650,8 @@ Cohesion: 0.27
 Nodes (9): GeolocationState, IDLE, useGeolocation(), formatLocation(), joinWatermark(), FIX, useWatermarkText(), WatermarkFields (+1 more)
 
 ### Community 98 - "SignAgreementStep.tsx"
-Cohesion: 0.16
-Nodes (14): esignOrigin(), EsignOutcome, LEEGALITY_PIPES, loadLeegality(), openEsign(), usesLeegality(), Window, Phase (+6 more)
+Cohesion: 0.19
+Nodes (12): esignOrigin(), EsignOutcome, LEEGALITY_PIPES, loadLeegality(), openEsign(), usesLeegality(), Window, PanStep() (+4 more)
 
 ### Community 99 - "@ekoindia/eps-backend BFF"
 Cohesion: 0.18
@@ -693,13 +689,13 @@ Nodes (12): compilerOptions, esModuleInterop, module, moduleResolution, noEmit, 
 Cohesion: 0.14
 Nodes (13): 1. Preflight — all of it days BEFORE the window, none of it during, 1a. Does `/data` actually support overlay2?, 1b. Space gate — the host must hold three copies at once, 1c. Prove every image is re-pullable BEFORE taking anything down, 1d. Full inventory, 2. Capture `ems` and snapshot volume data, 3. The window, 4. Verify — all of it, before declaring the window closed (+5 more)
 
-### Community 108 - "Header.tsx"
-Cohesion: 0.14
-Nodes (14): CommandPalette, ANON, hover(), isOpen(), trigger(), Header(), HeaderDropdownPanels, LanguageSelector (+6 more)
+### Community 108 - "CameraDialog.tsx"
+Cohesion: 0.19
+Nodes (14): CameraDevice, CameraDialog(), classifyDevices(), pickDeviceIndex(), RESOLUTION, blobToDataUrl(), hasTorch(), ImageCaptureConstructor (+6 more)
 
 ### Community 109 - "UserMenu.tsx"
-Cohesion: 0.16
-Nodes (13): developer, logout, mockState, UserMenu(), DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel (+5 more)
+Cohesion: 0.14
+Nodes (19): developer, logout, mockState, UserMenu(), LanguageSelector(), DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem (+11 more)
 
 ### Community 110 - "@ekoindia/eps-context-mcp (local stdio MCP, 9 tiered tools)"
 Cohesion: 0.17
@@ -729,9 +725,9 @@ Nodes (13): 10. Local dev, 1. The invariant command, 2. Where everything lives, 
 Cohesion: 0.20
 Nodes (11): Deterministic GHCR authfile (.ghcr-auth.json), Health gate and automatic rollback, HOLD sentinel file, KV_ENCRYPTION_KEY is a stable secret, KV store redundancy tiers (Valkey / in-memory / Upstash), Merge gate IS the deploy gate, Pull-based auto-deploy poller, Seed deploy.env with the tag, not a digest (+3 more)
 
-### Community 118 - "markdownTable"
-Cohesion: 0.11
-Nodes (19): buildContextPackBody(), CONTEXT_PACK_FILES, body, bundle, withHeading(), buildInstallMatrix(), HARNESSES, HarnessInstall (+11 more)
+### Community 118 - "recipeHref"
+Cohesion: 0.10
+Nodes (23): buildContextPackBody(), CONTEXT_PACK_FILES, body, bundle, withHeading(), buildInstallMatrix(), HARNESSES, HarnessInstall (+15 more)
 
 ### Community 119 - "Aadhaar Biometric Authentication with RDService"
 Cohesion: 0.25
@@ -757,9 +753,9 @@ Nodes (10): connect-api login delegation (CONNECT_API_BASE_URL), `onboarding ===
 Cohesion: 0.20
 Nodes (9): maxDuration, buildCommand, functions, api/index.ts, bom1, outputDirectory, regions, rewrites (+1 more)
 
-### Community 125 - "AppServer.tsx"
-Cohesion: 0.09
-Nodes (17): DefaultMeta(), LegalPageLayout(), LegalPageLayoutProps, SectionDivider(), PARENT_SITE_URL, AboutPage(), roles, values (+9 more)
+### Community 125 - "GrievancePage.tsx"
+Cohesion: 0.14
+Nodes (6): LegalPageLayout(), LegalPageLayoutProps, SectionDivider(), GrievancePage(), PrivacyPolicyPage(), RefundPolicyPage()
 
 ### Community 126 - "EPS agent plugin (eps)"
 Cohesion: 0.31
@@ -773,9 +769,9 @@ Nodes (9): eps-context-mcp remote server decision record, mcp.eko.in path-namesp
 Cohesion: 0.30
 Nodes (8): eq(), hooked(), load(), no(), ok(), seed_deploy(), setup(), poll_test.sh script
 
-### Community 129 - "SecretKeyTester.tsx"
-Cohesion: 0.29
-Nodes (7): CopyBtn(), CopyState, localTime(), OutputRow(), SecretKeyTester(), uatCredentials, ApiCredentials()
+### Community 129 - "NotificationList.tsx"
+Cohesion: 0.15
+Nodes (14): useOptionalConnectDialogs(), NotificationBell(), items, markReadMock, formatNotifyTime(), hasRichMedia(), NotificationDetail(), NotificationList() (+6 more)
 
 ### Community 130 - "eps-transact-mcp/src/load-bundle.ts"
 Cohesion: 0.22
@@ -837,9 +833,9 @@ Nodes (26): acceptsImages(), acceptsNonImages(), acceptsOnlyImagesAndPdfs(), acc
 Cohesion: 0.29
 Nodes (6): marketplace, MarketplaceEntry, McpConfig, pluginDirs, PluginManifest, ROOT
 
-### Community 145 - "EkoShield Product (Fraud Prevention & KYC)"
-Cohesion: 0.47
-Nodes (6): EkoShield Product (Fraud Prevention & KYC), Employee Verification / Background Check, KYC & Identity Verification, EkoShield Logo (shield, fingerprint, 'Your Armor Against Fraud'), EkoShield KYC & Verification Dashboard Mockup, Employee Verification Illustration
+### Community 145 - "Eko Platform Services (EPS) Brand"
+Cohesion: 0.31
+Nodes (10): EkoShield Product (Fraud Prevention & KYC), Employee Verification / Background Check, Eko Platform Services (EPS) Brand, KYC & Identity Verification, Eko Platform Services Logo (gold icon, white text), EkoShield Logo (shield, fingerprint, 'Your Armor Against Fraud'), EkoShield KYC & Verification Dashboard Mockup, Employee Verification Illustration (+2 more)
 
 ### Community 146 - "buildApp.ts"
 Cohesion: 0.10
@@ -853,17 +849,17 @@ Nodes (6): packages/eps-agent-core zero-dep bundle accessors, Anonymous edge hos
 Cohesion: 0.33
 Nodes (4): here, localSrc, NAMES, siteSrc
 
-### Community 149 - "pdf-ops.ts"
-Cohesion: 0.18
-Nodes (17): decode(), landscapeJpeg(), portraitJpeg(), A4_POINTS, embed(), getPageCount(), imagesToPdf(), loadDocument() (+9 more)
+### Community 149 - "api-product-pages.ts"
+Cohesion: 0.20
+Nodes (15): FaqList(), ProductPageContent, API_PRODUCT_PAGES, ProductPageData, ProductPageSeo, VERIFICATION_STEPS_BASE, COMMON_API_FAQS, FAQ_TAGS (+7 more)
 
 ### Community 150 - "lib/notifications.ts"
 Cohesion: 0.14
 Nodes (22): announce(), emit(), EMPTY, listeners, markNotificationRead(), notificationsSnapshot(), onVisibilityChange(), panelListeners (+14 more)
 
-### Community 151 - "FaqSection.tsx"
-Cohesion: 0.22
-Nodes (10): answerComponents, FaqAccordion(), FaqAccordionProps, FaqAnswer(), FaqCrossLink(), FaqItem, FaqLink, FaqSectionProps (+2 more)
+### Community 151 - "SecretKeyTester.tsx"
+Cohesion: 0.33
+Nodes (6): CopyBtn(), CopyState, localTime(), OutputRow(), SecretKeyTester(), uatCredentials
 
 ### Community 152 - "Eko EPS Website UI/UX improvement plan"
 Cohesion: 0.50
@@ -909,9 +905,9 @@ Nodes (4): Android RDService integration via UIDAI Intents, RdServiceTester in-b
 Cohesion: 1.00
 Nodes (3): In-memory abuse throttling, Path-namespaced nginx reverse proxy (/transact/, /context/ reserved), Stateless streamable HTTP transport
 
-### Community 210 - "features.ts"
-Cohesion: 0.22
-Nodes (8): isProvisioned(), CONNECT_WIDGET_URL, SHOW_BUSINESS_DASHBOARD, SHOW_NOTIFICATIONS, ConsoleHome(), ACTIVE, load, load
+### Community 210 - "SecretKeyTester.test.tsx"
+Cohesion: 0.32
+Nodes (5): accessKeyInput(), enterGoldenInputs(), GOLDEN, realCompute, timestampInput()
 
 ### Community 211 - "api-specs-common.ts"
 Cohesion: 0.10
@@ -926,44 +922,24 @@ Cohesion: 0.23
 Nodes (10): MULTIPART_JSON_FIELD, multipartPayloadFrom(), buildPostmanCollection(), PostmanCollection, PostmanFolder, PostmanRequest, PostmanScript, PRE_REQUEST_SIGNING_SCRIPT (+2 more)
 
 ### Community 214 - "AdminConsole.tsx"
-Cohesion: 0.17
-Nodes (8): AdminConsole(), AdminDocEditor(), getContent, propose, AdminDocsList(), DocItem, Admin(), mockState
+Cohesion: 0.11
+Nodes (13): AdminConsole(), AdminDocEditor(), getContent, propose, AdminDocsList(), AuthState, DocItem, Admin() (+5 more)
 
-### Community 215 - "DropdownGrid.tsx"
-Cohesion: 0.20
-Nodes (10): DropdownColumnHeader(), DropdownGrid(), DropdownGridColumn, DropdownGridProps, MenuItemLink(), MenuItemLinkProps, pastelColors, NavApiItem (+2 more)
-
-### Community 216 - "use-app-link.ts"
-Cohesion: 0.70
-Nodes (3): isInternalPath(), normalizeWidgetUrl(), useAppLink()
+### Community 215 - "NotificationsCard.test.tsx"
+Cohesion: 0.33
+Nodes (4): NotificationsCard(), items, markReadMock, panelMock
 
 ### Community 217 - "ErrorBoundary.tsx"
 Cohesion: 0.16
 Nodes (9): App(), ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryState, installChunkErrorReload(), isChunkLoadError(), reloadOnceForStaleChunk(), doHydrate() (+1 more)
 
-### Community 218 - "EkoLogo.tsx"
-Cohesion: 0.33
-Nodes (7): Eko Platform Services (EPS) Brand, Eko Platform Services Logo (gold icon, white text), EPS Logo (gold icon, gold wordmark), EPS Logo (gold icon, white wordmark), PrintReceipt(), EkoLogo(), EkoLogoProps
-
 ### Community 219 - "eko vs connect auth provider seam"
 Cohesion: 0.33
 Nodes (6): ProfileResult 'onboarding' variant, eps-backend is the connect-api BFF equivalent, onboarding===1 checked before the user_type gate, eko vs connect auth provider seam, EPS business-partner gate stays in this service, Persist upstream creds before setting cookies
 
-### Community 220 - "SecretKeyTester.test.tsx"
-Cohesion: 0.32
-Nodes (5): accessKeyInput(), enterGoldenInputs(), GOLDEN, realCompute, timestampInput()
-
 ### Community 221 - "Interaction 522 USER_ONBOARDING_BUSINESS"
 Cohesion: 0.40
 Nodes (5): Eko client onboarding interactions (521/523/170/10005/5), Deliberate client+BFF validation duplication, 36 Indian states inlined verbatim instead of fetched, Interaction 522 USER_ONBOARDING_BUSINESS, Native <select> over Radix Select
-
-### Community 222 - "LanguageSelector.tsx"
-Cohesion: 0.50
-Nodes (6): LanguageSelector(), ensureGoogleTranslateLoaded(), LANGUAGES, translateSelect(), useLanguage(), Window
-
-### Community 224 - "NotificationsCard.test.tsx"
-Cohesion: 0.33
-Nodes (4): NotificationsCard(), items, markReadMock, panelMock
 
 ## Ambiguous Edges - Review These
 - `Editable file allowlist + path sanitization` → `descriptionFile endpoint notes (src/content/docs/endpoints/*.md)`  [AMBIGUOUS]
@@ -972,9 +948,9 @@ Nodes (4): NotificationsCard(), items, markReadMock, panelMock
   docs/console-roadmap.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **1109 isolated node(s):** `cfg`, `LOGIN_OK`, `VerifyResult`, `inProgress`, `foundProfile` (+1104 more)
+- **1109 isolated node(s):** `ACTIVE`, `FINISH_ONBOARDING`, `PRODUCTION_COPY`, `connectInteractions`, `connectEkostoreToken` (+1104 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **25 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -984,12 +960,12 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `AI-native vs AI-friendly distinction` and `API keys management (blocked on issuance contract)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **Why does `doHydrate()` connect `ErrorBoundary.tsx` to `app.test.ts`?**
-  _High betweenness centrality (0.137) - this node is a cross-community bridge._
+  _High betweenness centrality (0.143) - this node is a cross-community bridge._
 - **Why does `app()` connect `app.test.ts` to `ErrorBoundary.tsx`?**
-  _High betweenness centrality (0.137) - this node is a cross-community bridge._
+  _High betweenness centrality (0.143) - this node is a cross-community bridge._
 - **Why does `requestId()` connect `app.test.ts` to `app.ts`?**
-  _High betweenness centrality (0.117) - this node is a cross-community bridge._
-- **What connects `cfg`, `LOGIN_OK`, `VerifyResult` to the rest of the system?**
+  _High betweenness centrality (0.126) - this node is a cross-community bridge._
+- **What connects `ACTIVE`, `FINISH_ONBOARDING`, `PRODUCTION_COPY` to the rest of the system?**
   _1109 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `build-agent-bundle.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.0632996632996633 - nodes in this community are weakly interconnected._

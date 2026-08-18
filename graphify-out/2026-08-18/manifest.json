@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1787041865.5285082,
-    "ast_hash": "92b0047464ef200aa927d417c5d094a8",
+    "mtime": 1787043007.919788,
+    "ast_hash": "6b43286bad431be38b501cbc93614a4c",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -2785,8 +2785,8 @@
     "semantic_hash": ""
   },
   "src/pages/console/Credentials.test.tsx": {
-    "mtime": 1787041338.7735846,
-    "ast_hash": "82f83114c1fbd2cf999a1848702a1696",
+    "mtime": 1787042271.148709,
+    "ast_hash": "402b909a2c29df8c1da9fd0b75a02ac0",
     "semantic_hash": ""
   },
   "src/pages/console/Credentials.tsx": {
@@ -3825,8 +3825,8 @@
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.test.ts": {
-    "mtime": 1786949367.171842,
-    "ast_hash": "de0e83bbcf64c2d9dce8ee684e9be186",
+    "mtime": 1787042984.2149405,
+    "ast_hash": "840879fa713fdb3381e8880eff28fa0a",
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.ts": {
