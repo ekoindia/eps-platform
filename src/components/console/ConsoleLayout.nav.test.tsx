@@ -144,7 +144,7 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 });
 
 describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
-	const NAME = "Test KYC & Verification APIs";
+	const NAME = "Try KYC & Verification APIs Live";
 
 	it("links to the in-app sandbox page, directly behind Transactions", async () => {
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 9995 }] });

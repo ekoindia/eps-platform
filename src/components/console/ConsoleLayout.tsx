@@ -157,7 +157,7 @@ const MANAGE_ACCOUNT: Flow = {
  */
 const EKOSTORE_KYC_ITEM: NavItem = {
 	to: "/console/kyc-verification",
-	label: "Test KYC & Verification APIs",
+	label: "Try KYC & Verification APIs Live",
 	icon: ShieldCheck,
 	end: false,
 };

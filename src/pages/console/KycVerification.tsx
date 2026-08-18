@@ -71,23 +71,6 @@ const KycVerification = () => {
 			<div className="-mx-4 -mb-16 flex h-[80dvh] flex-col sm:-mx-6 lg:-mx-8 lg:h-[calc(100dvh-7rem)]">
 				{url ? (
 					<>
-						{/* A frame ekostore refuses to be embedded in (`X-Frame-Options`,
-						    `frame-ancestors`) renders as the browser's own "refused to
-						    connect" panel, and no `onError` fires cross-origin for us to
-						    catch. So the way out is offered up front rather than in
-						    response to a failure we cannot detect. Same URL, same token:
-						    a top-level navigation is never refused. */}
-						<p className="shrink-0 px-4 py-1.5 text-right text-xs text-muted-foreground sm:px-6 lg:px-8">
-							Not loading?{" "}
-							<a
-								href={url}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="underline underline-offset-4 hover:text-foreground"
-							>
-								Open in a new tab
-							</a>
-						</p>
 						<iframe
 							// Camera is not inherited by a cross-origin frame, and document
 							// capture needs it. No microphone: nothing here records audio.
@@ -99,6 +82,22 @@ const KycVerification = () => {
 							title="KYC & Verification sandbox"
 							className="min-h-0 w-full grow border-0 bg-white"
 						/>
+						{/* A frame ekostore refuses to be embedded in (`X-Frame-Options`,
+						    `frame-ancestors`) renders as the browser's own "refused to
+						    connect" panel, and no `onError` fires cross-origin for us to
+						    catch. So the way out is always offered rather than shown in
+						    response to a failure we cannot detect. Same URL, same token:
+						    a top-level navigation is never refused. */}
+						<p className="shrink-0 px-4 py-1.5 text-right text-xs sm:px-6 lg:px-8">
+							<a
+								href={url}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-muted-foreground underline underline-offset-4 hover:text-foreground"
+							>
+								Open in new tab
+							</a>
+						</p>
 					</>
 				) : (
 					<div className="flex h-full items-center justify-center text-sm text-muted-foreground">

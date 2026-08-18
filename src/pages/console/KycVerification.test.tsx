@@ -66,7 +66,7 @@ describe("KycVerification", () => {
 		renderPage();
 
 		const link = await screen.findByRole("link", {
-			name: /open in a new tab/i,
+			name: /open in new tab/i,
 		});
 		expect(link).toHaveAttribute("href", frame()!.getAttribute("src"));
 		expect(link).toHaveAttribute("target", "_blank");
