@@ -840,13 +840,13 @@
     "semantic_hash": "b550d993920e82a09d962d70082c6ada"
   },
   "src/App.tsx": {
-    "mtime": 1786535754.6661916,
-    "ast_hash": "530bc8d1d834f66cd3df75d198f74f59",
+    "mtime": 1787047103.679419,
+    "ast_hash": "b64be14b4fa23c7c35ff02ff5bec3121",
     "semantic_hash": ""
   },
   "src/AppServer.tsx": {
-    "mtime": 1786157438.807863,
-    "ast_hash": "31a62864965e5188190dcdb8473051e9",
+    "mtime": 1787047103.6800935,
+    "ast_hash": "de3589cfeab76afbe0c81141fa39832b",
     "semantic_hash": ""
   },
   "src/components/AiHint.tsx": {
@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1787043007.919788,
-    "ast_hash": "6b43286bad431be38b501cbc93614a4c",
+    "mtime": 1787047139.272352,
+    "ast_hash": "c44a2da6a5613bee80978b9f36888f6e",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1786949341.3089688,
-    "ast_hash": "05cd02590f77b16d835cafda179cbb90",
+    "mtime": 1787047074.1417518,
+    "ast_hash": "f8e8521b23b3963959f1c9b8a00df1c1",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -3070,8 +3070,8 @@
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
-    "mtime": 1786949396.865286,
-    "ast_hash": "9a187c3a9e42acb911bba358494ac711",
+    "mtime": 1787048273.8392625,
+    "ast_hash": "4d3ab8774d5f5ff600dc58721a9743fa",
     "semantic_hash": ""
   },
   "docs/features/kyc-documents.md": {
@@ -3825,13 +3825,23 @@
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.test.ts": {
-    "mtime": 1787042984.2149405,
-    "ast_hash": "840879fa713fdb3381e8880eff28fa0a",
+    "mtime": 1787047119.0949085,
+    "ast_hash": "721adfe5eb21bbd44580d9c37efac92f",
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.ts": {
-    "mtime": 1786949327.0440397,
-    "ast_hash": "5fcba17b266e94432aa5a74152c34308",
+    "mtime": 1787047012.5604763,
+    "ast_hash": "49871fb70858388de000b93cb9686639",
+    "semantic_hash": ""
+  },
+  "src/pages/console/KycVerification.test.tsx": {
+    "mtime": 1787048261.2351081,
+    "ast_hash": "ea1cd34f5ef79a3044d48fbbd3c9d938",
+    "semantic_hash": ""
+  },
+  "src/pages/console/KycVerification.tsx": {
+    "mtime": 1787048250.4380078,
+    "ast_hash": "b036a6507cc621f46a572ac7dd67d906",
     "semantic_hash": ""
   }
 }
