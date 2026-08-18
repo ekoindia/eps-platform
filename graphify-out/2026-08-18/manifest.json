@@ -840,12 +840,12 @@
     "semantic_hash": "b550d993920e82a09d962d70082c6ada"
   },
   "src/App.tsx": {
-    "mtime": 1787047103.679419,
+    "mtime": 1787049699.6579056,
     "ast_hash": "b64be14b4fa23c7c35ff02ff5bec3121",
     "semantic_hash": ""
   },
   "src/AppServer.tsx": {
-    "mtime": 1787047103.6800935,
+    "mtime": 1787049699.6582232,
     "ast_hash": "de3589cfeab76afbe0c81141fa39832b",
     "semantic_hash": ""
   },
@@ -1135,8 +1135,8 @@
     "semantic_hash": "0a3e26bd76f55afdbe132f56ec012b16"
   },
   "src/components/console/ConsoleLayout.nav.test.tsx": {
-    "mtime": 1787047139.272352,
-    "ast_hash": "c44a2da6a5613bee80978b9f36888f6e",
+    "mtime": 1787051793.0909169,
+    "ast_hash": "d8a888ec8cb04e89b54a95f147c73599",
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.test.tsx": {
@@ -1145,8 +1145,8 @@
     "semantic_hash": ""
   },
   "src/components/console/ConsoleLayout.tsx": {
-    "mtime": 1787047074.1417518,
-    "ast_hash": "f8e8521b23b3963959f1c9b8a00df1c1",
+    "mtime": 1787051793.087166,
+    "ast_hash": "f0d2b9f1ae0a48ea5c246fe9e82debbf",
     "semantic_hash": ""
   },
   "src/components/console/KycUploadDialog.test.tsx": {
@@ -3070,7 +3070,7 @@
     "semantic_hash": ""
   },
   "docs/features/connect-widget.md": {
-    "mtime": 1787048273.8392625,
+    "mtime": 1787049699.657573,
     "ast_hash": "4d3ab8774d5f5ff600dc58721a9743fa",
     "semantic_hash": ""
   },
@@ -3825,23 +3825,23 @@
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.test.ts": {
-    "mtime": 1787047119.0949085,
+    "mtime": 1787049699.6591337,
     "ast_hash": "721adfe5eb21bbd44580d9c37efac92f",
     "semantic_hash": ""
   },
   "src/lib/connect/use-ekostore.ts": {
-    "mtime": 1787047012.5604763,
+    "mtime": 1787049699.6592934,
     "ast_hash": "49871fb70858388de000b93cb9686639",
     "semantic_hash": ""
   },
   "src/pages/console/KycVerification.test.tsx": {
-    "mtime": 1787048261.2351081,
-    "ast_hash": "ea1cd34f5ef79a3044d48fbbd3c9d938",
+    "mtime": 1787051707.3317285,
+    "ast_hash": "0ed607a8e2fde73b79b3a082a41796bf",
     "semantic_hash": ""
   },
   "src/pages/console/KycVerification.tsx": {
-    "mtime": 1787048250.4380078,
-    "ast_hash": "b036a6507cc621f46a572ac7dd67d906",
+    "mtime": 1787051695.672238,
+    "ast_hash": "e581dfe0d0108ca3bf653226352889cd",
     "semantic_hash": ""
   }
 }
