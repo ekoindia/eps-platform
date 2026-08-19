@@ -522,7 +522,7 @@ describe("session upgrade on completion", () => {
 		);
 		expect(consoleError).toHaveBeenCalledWith(
 			"[signup] upstream entitlement refresh failed",
-			rotateError,
+			expect.objectContaining({ err: rotateError }),
 		);
 		consoleError.mockRestore();
 	});

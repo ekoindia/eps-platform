@@ -83,6 +83,16 @@ export function createConnectAuthProvider(
 		if (!next) {
 			throw new Error("connect-api refused to rotate the session");
 		}
+		// The identity check for the post-onboarding entitlement refresh: if the
+		// rotated token still says anonymous (`-1`), `/authentication/token` cannot
+		// rebind a session minted pre-onboarding and rotating is pointless — the
+		// stale-entitlements fix has to happen some other way. `userType` absent
+		// means the endpoint sent no details block and this log proves nothing.
+		console.log("[connect-auth] rotated", {
+			sid: sid.slice(0, 8),
+			userType: next.userType ?? "<absent>",
+			anonymousUser: next.anonymousUser ?? "<unknown>",
+		});
 		const now = Date.now();
 		await save(sid, {
 			accessToken: next.accessToken,
@@ -152,6 +162,15 @@ export function createConnectAuthProvider(
 				xRealIp,
 			);
 			const tokens = tokensOf(env);
+			// Baseline for the rotation log above: a brand-new signup legitimately
+			// logs `anonymousUser: true` here — connect-api mints an anonymous
+			// session for a mobile it has no EPS account for.
+			console.log("[connect-auth] login", {
+				profileKind: profile.kind,
+				hasTokens: Boolean(tokens),
+				userType: tokens?.userType ?? "<absent>",
+				anonymousUser: tokens?.anonymousUser ?? "<unknown>",
+			});
 			const now = Date.now();
 			return {
 				ok: true,
@@ -189,11 +208,23 @@ export function createConnectAuthProvider(
 			// because a live cookie over dead credentials must fail closed; this one
 			// returns, because its callers hold a session that is valid either way and
 			// every Connect route will 401 on its own next call.
-			if (!current) return;
+			if (!current) {
+				console.warn("[connect-auth] entitlement refresh: no stored session", {
+					sid: sid.slice(0, 8),
+				});
+				return;
+			}
 			if (
 				current.rotatedAt &&
 				Date.now() - current.rotatedAt < ENTITLEMENT_ROTATE_MIN_INTERVAL_MS
 			) {
+				// A collapsed refresh at the moment of signup completion means the
+				// upgrade rode a rotation that happened BEFORE the roles changed — the
+				// exact silent-staleness path being hunted in prod, so it must be loud.
+				console.warn("[connect-auth] entitlement refresh collapsed", {
+					sid: sid.slice(0, 8),
+					rotatedAgoMs: Date.now() - current.rotatedAt,
+				});
 				return;
 			}
 			await rotate(sid, current);

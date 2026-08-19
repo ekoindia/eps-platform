@@ -10,6 +10,11 @@ import type { AuthState } from "@/lib/auth/AuthProvider";
 let mockState: AuthState = { status: "loading" };
 vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({ state: mockState, refresh: vi.fn(), logout: vi.fn() }),
+	useOptionalAuth: () => ({
+		state: mockState,
+		refresh: vi.fn(),
+		logout: vi.fn(),
+	}),
 }));
 vi.mock("@/components/auth/LoginForm", () => ({
 	LoginForm: () => <div>login-form</div>,

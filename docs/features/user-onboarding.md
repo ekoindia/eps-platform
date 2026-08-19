@@ -473,6 +473,57 @@ entitlements. It is deliberately weaker than `refresh`:
 Under the direct `eko` provider there is no upstream session, so claims have no
 `sid` and nothing is rotated.
 
+#### Troubleshooting stale entitlements after signup
+
+Symptom: onboarding completes, the console loads, but the entitlement-gated
+nav (Upload Documents, Load Wallet, Sign Agreement, Manage My Account) is
+missing — and stays missing across reloads, while a fresh login in another
+browser shows it. The diagnostic logs below are **always on** (no
+`EKO_LOG_LEVEL` needed) precisely because this failure was silent twice.
+
+A completed signup emits this backend sequence (grep prod with
+`./deploy/health.sh logs 500 | grep -E '\[signup\]|\[connect'`, dev with
+`npm run dev:pretty`):
+
+| Log line | Emitted by | What it tells you |
+| --- | --- | --- |
+| `[connect-auth] login { profileKind, userType, anonymousUser }` | OTP verify | The identity connect-api minted at login. A brand-new signup correctly says `anonymousUser: true` here. |
+| `[signup] upgrade { sid, profileKind }` | every `done` `/signup/*` response | The upgrade ran; `profileKind !== "found"` means it bailed before minting. |
+| `[signup] entitlement refresh requested` / `failed` / `unavailable` | same | Whether the rotation was even asked for. |
+| `[connect-auth] entitlement refresh collapsed { rotatedAgoMs }` | provider | The 60s guard swallowed it — the upgrade rode an *earlier* rotation, from before the roles changed. |
+| `[connect-auth] rotated { sid, userType, anonymousUser }` | provider | **The H1 test.** The identity on the token `POST /authentication/token` handed back. |
+| `[connect] wlc { sid, count, kycEntitled }` | `/connect/interactions` | What upstream actually served for this sealed token (586+587 = Upload Documents). |
+
+Browser side, the same request logs `[connect] interaction list fetched
+{ count, kycEntitled }` (`console.debug` — enable Verbose in devtools) and a
+`console.warn` when the fetch failed, which the UI otherwise renders
+indistinguishably from "not entitled".
+
+Verdict table for a repro:
+
+- `[connect-auth] rotated` fires after the upgrade but still shows
+  `anonymousUser: true` (or `wlc` stays `kycEntitled: false` right after a
+  successful rotation) → **`POST /authentication/token` cannot rebind the
+  pre-onboarding session to the new partner user.** Rotating harder will not
+  fix it; the session must be re-minted via a fresh login (or an upstream
+  session-upgrade API — connect-api owner question). `userType: "<absent>"`
+  means the token endpoint sent no details block and the `wlc` line is the
+  only evidence.
+- `entitlement refresh collapsed` / `failed` / `unavailable` at the moment of
+  completion → the one-shot rotation was skipped; the stored token is the
+  login-time one until it nears expiry hours later.
+- Backend `wlc` says `kycEntitled: true` but the menu is missing → frontend.
+  The signup→developer upgrade resets the tab's module caches synchronously in
+  `AuthProvider.accept()` (interaction list, widget tokens, dashboard,
+  balance), and `useKycEnabled` re-fetches when the role changes — check the
+  `[connect] signup→developer upgrade` debug line fired.
+
+Local repro: fresh mobile on UAT → complete the wizard → watch the sequence
+above in order. The whole point of the ordering is that `login`,
+`rotated`, and `wlc` each carry the identity/entitlement snapshot at their
+step, so the first line where the new roles *should* appear and don't names
+the failing layer.
+
 ## Interaction reference table
 
 All eight onboarding interactions post to the same `cfg.eko` SimpliBank path

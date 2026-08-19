@@ -200,6 +200,10 @@ export function mountSignup(
 				// upstream flake (`error`): without this guard it would upgrade an
 				// unverified profile. No upgrade here just means the next
 				// /signup/state call retries it.
+				console.log("[signup] upgrade", {
+					sid: sid?.slice(0, 8) ?? "<none>",
+					profileKind: profile.kind,
+				});
 				if (profile.kind !== "found") return c.json(state);
 				const view = await buildMeView(mobile, profile, (m) =>
 					zoho.findLead(m),
@@ -240,9 +244,25 @@ export function mountSignup(
 				if (sid && auth.refreshEntitlements) {
 					try {
 						await auth.refreshEntitlements(sid);
+						// "requested", not "done": the provider logs its own outcome
+						// (`[connect-auth] rotated` / `collapsed` / `no stored session`).
+						console.log("[signup] entitlement refresh requested", {
+							sid: sid.slice(0, 8),
+						});
 					} catch (err) {
-						console.error("[signup] upstream entitlement refresh failed", err);
+						console.error("[signup] upstream entitlement refresh failed", {
+							sid: sid.slice(0, 8),
+							err,
+						});
 					}
+				} else {
+					// A completed signup that CANNOT refresh entitlements ships a stale
+					// upstream token for the life of the session — the exact symptom
+					// being hunted in prod, so the skip must be visible.
+					console.warn("[signup] entitlement refresh unavailable", {
+						hasSid: Boolean(sid),
+						provider: auth.name,
+					});
 				}
 			} catch (err) {
 				// ponytail: onboarding already succeeded upstream — never fail this
