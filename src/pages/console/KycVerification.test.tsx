@@ -16,6 +16,15 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	},
 }));
 
+// The flag is a module constant read at import, so it has to be mocked rather
+// than set through import.meta.env — CI has no `.env.local`, and without it
+// `useRoleTransactionList` never fetches, so the page never leaves its
+// unresolved state.
+vi.mock("@/lib/config/features", async (orig) => ({
+	...(await orig<typeof import("@/lib/config/features")>()),
+	SHOW_CONNECT_WIDGET: true,
+}));
+
 // Derived from the configured origin: `VITE_EKOSTORE_URL` differs per
 // environment, so a literal here fails on any `.env` that sets it.
 const GATEWAY =
