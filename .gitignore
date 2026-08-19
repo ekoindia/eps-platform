@@ -37,9 +37,19 @@ docs/local-roadmap/
 !docs/superpowers/
 
 # Graphify (https://github.com/Graphify-Labs/graphify)
-graphify-out/cost.json
-graphify-out/**/cost.json
-graphify-out/cache/
+# graphify-out/ is regenerated on every `graphify update .` — ignore it wholesale.
+# Two exceptions are LLM-derived and expensive to recreate, so the team shares them:
+#   .graphify_labels.json(+.sig) — community names + membership signatures
+#   cache/semantic/              — extraction results, content-addressed and portable
+# With both committed, a fresh clone rebuilds the full graph via `graphify .` at no API cost.
+# Each level must be re-included before its children are re-excluded: git will not
+# descend into an excluded directory.
+graphify-out/*
+!graphify-out/.graphify_labels.json
+!graphify-out/.graphify_labels.json.sig
+!graphify-out/cache/
+graphify-out/cache/*
+!graphify-out/cache/semantic/
 .rebuild.lock
 
 
@@ -68,6 +78,3 @@ ds-bundle/
 
 # graphify settings backup written by `graphify claude install`
 .claude/settings.json.graphify-bak
-# machine-local interpreter/scan-root pointers
-graphify-out/.graphify_python
-graphify-out/.graphify_root
