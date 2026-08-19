@@ -1,6 +1,5 @@
 import ConsoleLayout from "@/components/console/ConsoleLayout";
 import type { AuthState } from "@/lib/auth/AuthProvider";
-import { EKOSTORE_URL } from "@/lib/config/features";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { render, screen, waitFor } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
@@ -8,13 +7,9 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const connectInteractions = vi.fn();
-const connectEkostoreToken = vi.fn();
 vi.mock("@/lib/auth/client", async (orig) => ({
 	...(await orig<typeof import("@/lib/auth/client")>()),
-	authClient: {
-		connectInteractions: () => connectInteractions(),
-		connectEkostoreToken: () => connectEkostoreToken(),
-	},
+	authClient: { connectInteractions: () => connectInteractions() },
 }));
 
 // Module constant read at import, so it has to be mocked rather than stubbed
@@ -55,12 +50,6 @@ function renderRail() {
 
 beforeEach(() => {
 	connectInteractions.mockReset();
-	connectEkostoreToken.mockReset();
-	// Entitled by default; the ekostore block overrides where the token matters.
-	connectEkostoreToken.mockResolvedValue({
-		accessToken: "ca_full",
-		expiresAt: Date.now() + 3_600_000,
-	});
 	resetRoleTransactionCache();
 });
 
@@ -155,30 +144,18 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 });
 
 describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
-	const NAME = "Test KYC & Verification APIs";
+	const NAME = "Try KYC & Verification APIs Live";
 
-	it("leaves the site in a new tab, directly behind Transactions", async () => {
+	it("links to the in-app sandbox page, directly behind Transactions", async () => {
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 9995 }] });
 
 		renderRail();
 
+		// An internal route now: the gateway is framed by that page, which is also
+		// where the access token is minted.
 		const link = await screen.findByRole("link", { name: NAME });
-		// The handover rides on the URL, so match the root and the params rather
-		// than the whole string.
-		const href = new URL(link.getAttribute("href") ?? "");
-		// The configured origin, not a literal: `VITE_EKOSTORE_URL` differs per
-		// environment, so a hardcoded host fails on any `.env` that sets it.
-		const root = new URL(EKOSTORE_URL);
-		expect(`${href.origin}${href.pathname}`).toBe(
-			`${root.origin}${root.pathname}`,
-		);
-		expect(href.searchParams.get("next")).toBe("/products/kyc-verification");
-		// The session mobile from the developer fixture, not a profile number.
-		expect(href.searchParams.get("mobile")).toBe("999");
-		expect(href.searchParams.get("access_token")).toBe("ca_full");
-		expect(link).toHaveAttribute("target", "_blank");
-		// Without noopener the opened tab can reach back through window.opener.
-		expect(link).toHaveAttribute("rel", "noopener noreferrer");
+		expect(link).toHaveAttribute("href", "/console/kyc-verification");
+		expect(link).not.toHaveAttribute("target");
 
 		// Adjacency, not absolute position: the DEV-only bench follows this item
 		// and the API Docs link closes the rail, so a whole-list compare would
@@ -187,20 +164,6 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 			.getAllByRole("link")
 			.map((a) => a.textContent?.trim());
 		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Transactions") + 1);
-	});
-
-	it("stays hidden when the backend refuses the handoff", async () => {
-		// Entitled by the list the rail read, but the backend re-checks and says no.
-		// A link with no token would land the user on a sign-in form.
-		connectInteractions.mockResolvedValue({ interactions: [{ id: 9995 }] });
-		connectEkostoreToken.mockRejectedValue(new Error("EKOSTORE_NOT_ENTITLED"));
-
-		renderRail();
-
-		expect(await screen.findByRole("link", { name: "Home" })).toBeVisible();
-		await waitFor(() =>
-			expect(screen.queryByRole("link", { name: NAME })).toBeNull(),
-		);
 	});
 
 	it("stays hidden without the entitlement", async () => {

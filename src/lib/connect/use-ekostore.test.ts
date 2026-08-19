@@ -12,9 +12,8 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 // Derived from the configured origin, not hardcoded: `VITE_EKOSTORE_URL` points
 // at a different ekostore per environment, and a literal here fails on any
 // `.env` that sets it.
-const ROOT = new URL(EKOSTORE_URL).origin + new URL(EKOSTORE_URL).pathname;
-const KYC_PATH = "/products/kyc-verification";
-const MOBILE = "9876543210";
+const GATEWAY =
+	EKOSTORE_URL.replace(/\/+$/, "") + "/gateway/products/kyc-verification";
 
 beforeEach(() => {
 	connectEkostoreToken.mockReset();
@@ -25,59 +24,49 @@ beforeEach(() => {
 });
 
 describe("useEkostoreUrl", () => {
-	it("hands the token, the mobile and the page over at ekostore's root", async () => {
-		const { result } = renderHook(() => useEkostoreUrl(true, MOBILE));
+	it("frames the gateway page with the token on it", async () => {
+		const { result } = renderHook(() => useEkostoreUrl(true));
 
-		await waitFor(() => expect(result.current).not.toBeNull());
-		const url = new URL(result.current!);
-		// The root, with the sandbox page in `next` — ekostore seats the session
-		// before forwarding, so linking the page directly would skip the handover.
-		expect(`${url.origin}${url.pathname}`).toBe(ROOT);
-		expect(url.searchParams.get("next")).toBe(KYC_PATH);
-		expect(url.searchParams.get("mobile")).toBe(MOBILE);
+		await waitFor(() => expect(result.current.url).not.toBeNull());
+		const url = new URL(result.current.url!);
+		// The gateway rendering, not the branded page: it is the one ekostore
+		// serves without its own header, footer and rail so it can be embedded.
+		expect(`${url.origin}${url.pathname}`).toBe(GATEWAY);
 		expect(url.searchParams.get("access_token")).toBe("ca_full");
-	});
-
-	it("leaves the mobile off when the session has none", async () => {
-		// An admin session carries no mobile. The token is what authenticates, so a
-		// missing mobile drops the param, not the link.
-		const { result } = renderHook(() => useEkostoreUrl(true, ""));
-
-		await waitFor(() => expect(result.current).not.toBeNull());
-		const url = new URL(result.current!);
-		expect(url.searchParams.has("mobile")).toBe(false);
-		expect(url.searchParams.get("access_token")).toBe("ca_full");
+		expect(result.current.failed).toBe(false);
 	});
 
 	it("fetches nothing for a user with no entitlement", async () => {
-		const { result } = renderHook(() => useEkostoreUrl(false, MOBILE));
+		const { result } = renderHook(() => useEkostoreUrl(false));
 
 		await waitFor(() => expect(connectEkostoreToken).not.toHaveBeenCalled());
-		expect(result.current).toBeNull();
+		expect(result.current.url).toBeNull();
 	});
 
 	it("drops the link when the entitlement goes away", async () => {
 		// The URL carries a credential, so losing the entitlement has to take the
 		// link with it — not leave the last one it resolved on screen.
 		const { result, rerender } = renderHook(
-			({ enabled }) => useEkostoreUrl(enabled, MOBILE),
+			({ enabled }) => useEkostoreUrl(enabled),
 			{ initialProps: { enabled: true } },
 		);
 		await waitFor(() => expect(result.current).not.toBeNull());
 
 		rerender({ enabled: false });
 
-		expect(result.current).toBeNull();
+		expect(result.current.url).toBeNull();
 	});
 
 	it("stays null when the handoff is refused", async () => {
 		// A 403 from the entitlement gate, or any upstream failure: no link beats a
 		// link that drops the user on a sign-in form.
 		connectEkostoreToken.mockRejectedValue(new Error("EKOSTORE_NOT_ENTITLED"));
-		const { result } = renderHook(() => useEkostoreUrl(true, MOBILE));
+		const { result } = renderHook(() => useEkostoreUrl(true));
 
-		await waitFor(() => expect(connectEkostoreToken).toHaveBeenCalled());
-		expect(result.current).toBeNull();
+		await waitFor(() => expect(result.current.failed).toBe(true));
+		// `failed`, not just a null URL: the page has to tell a refused handoff
+		// from one still in flight, or an entitled user spins forever.
+		expect(result.current.url).toBeNull();
 	});
 
 	it("does not set state after unmount", async () => {
@@ -94,7 +83,7 @@ describe("useEkostoreUrl", () => {
 		);
 		const warn = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-		const { unmount } = renderHook(() => useEkostoreUrl(true, MOBILE));
+		const { unmount } = renderHook(() => useEkostoreUrl(true));
 		unmount();
 		settle({ accessToken: "ca_full", expiresAt: Date.now() + 1000 });
 		await Promise.resolve();

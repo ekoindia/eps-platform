@@ -66,6 +66,7 @@ import ConsoleProfile from "./pages/console/Profile";
 import ConsoleDocuments from "./pages/console/Documents";
 import ConsoleTransactions from "./pages/console/Transactions";
 import ConsoleConnectTransaction from "./pages/console/ConnectTransaction";
+import ConsoleKycVerification from "./pages/console/KycVerification";
 import Admin from "./pages/Admin";
 
 function TrackingParamCapture() {
@@ -176,6 +177,10 @@ const AppServer = ({
 										<Route
 											path="transaction/:startId/*"
 											element={<ConsoleConnectTransaction />}
+										/>
+										<Route
+											path="kyc-verification"
+											element={<ConsoleKycVerification />}
 										/>
 									</Route>
 									<Route path="/admin" element={<Admin />} />
