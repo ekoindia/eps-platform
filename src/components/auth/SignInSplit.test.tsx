@@ -1,15 +1,20 @@
 import { render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { SignInSplit } from "@/components/auth/SignInSplit";
 
 // Echo the props back so the forwarding — the only behaviour this component has
-// — is observable. `prefetch` is a thunk, so its identity is what matters.
+// — is observable. `prefetch` is a thunk, so its identity is what matters. The
+// mock renders `mobileStepFooter` where the real form would, so the cards the
+// split owns are still assertable here.
 const loginFormProps = vi.fn();
 vi.mock("@/components/auth/LoginForm", () => ({
 	LoginForm: (props: Record<string, unknown>) => {
 		loginFormProps(props);
-		return <div data-testid="login-form" />;
+		return (
+			<div data-testid="login-form">{props.mobileStepFooter as ReactNode}</div>
+		);
 	},
 }));
 
@@ -31,8 +36,26 @@ describe("SignInSplit", () => {
 		expect(loginFormProps).toHaveBeenCalledWith({
 			onSuccess,
 			prefetch,
-			submitLabel: "Continue with mobile OTP",
+			submitLabel: "Send OTP to my mobile",
+			mobileStepFooter: expect.anything(),
 		});
+	});
+
+	// The widget is one door for two audiences: the heading has to say so, and
+	// the old "same flow logs you in" footnote it replaces must be gone.
+	it("addresses returning users and first-timers in the widget itself", () => {
+		renderSplit();
+
+		expect(
+			screen.getByRole("heading", { level: 2, name: "Log in or sign up" }),
+		).toBeInTheDocument();
+		expect(screen.getByText("Have an account?")).toBeInTheDocument();
+		expect(
+			screen.getByText("We will take you straight to your dashboard."),
+		).toBeInTheDocument();
+		expect(screen.getByText("First time?")).toBeInTheDocument();
+		expect(screen.getByText(/Takes 2 minutes\./)).toBeInTheDocument();
+		expect(screen.queryByText(/same flow logs you in/i)).toBeNull();
 	});
 
 	it("numbers the four required steps under one h1", () => {

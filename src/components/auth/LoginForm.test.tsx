@@ -98,10 +98,28 @@ describe("LoginForm", () => {
 		).toBeInTheDocument();
 		unmount();
 
-		render(<LoginForm submitLabel="Continue with mobile OTP" />);
+		render(<LoginForm submitLabel="Send OTP to my mobile" />);
 		expect(
-			screen.getByRole("button", { name: "Continue with mobile OTP" }),
+			screen.getByRole("button", { name: "Send OTP to my mobile" }),
 		).toBeInTheDocument();
+	});
+
+	// The footer explains what happens once the number is submitted, so it has
+	// no business still being on screen at the OTP step.
+	it("shows mobileStepFooter on the mobile step only", async () => {
+		(authClient.startOtp as ReturnType<typeof vi.fn>).mockResolvedValue({
+			ok: true,
+		});
+		render(<LoginForm mobileStepFooter={<p>after the OTP</p>} />);
+		expect(screen.getByText("after the OTP")).toBeInTheDocument();
+
+		fireEvent.change(screen.getByLabelText(/mobile/i), {
+			target: { value: "9990000001" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /send otp/i }));
+
+		expect(await screen.findByLabelText(/digit 1/i)).toBeInTheDocument();
+		expect(screen.queryByText("after the OTP")).toBeNull();
 	});
 
 	it("submits the mobile step on Enter, but only once the number is complete", async () => {

@@ -305,9 +305,15 @@ prefetch that rejects is swallowed — the real `import()` retries on render, an
 cold cache must never fail a login.
 
 `LoginForm` also takes an optional **`submitLabel`** for the mobile-step button,
-defaulting to `"Send OTP"`. `SignInSplit` passes `"Continue with mobile OTP"`,
+defaulting to `"Send OTP"`. `SignInSplit` passes `"Send OTP to my mobile"`,
 because there the button is the page's only call to action rather than one
 control on a card.
+
+Finally, an optional **`mobileStepFooter`** node renders under that button —
+inside the `step === "mobile"` branch, so it goes away when the OTP boxes take
+over. `SignInSplit` passes its two audience cards through it (see below); the
+form itself holds no copy, and `/signup`-style callers that omit the prop render
+exactly as before.
 
 ### Link parameters: `?mobile=` and `?next=`
 
@@ -370,6 +376,15 @@ Two consequences worth knowing before editing either page:
   with Google" / "Continue with GitHub"; there is no OAuth backend, so those are
   deliberately absent and `SignInSplit.test.tsx` guards against them coming
   back by accident.
+- **One door, two audiences.** The same number + OTP both logs in a returning
+  developer and starts a new signup, but the widget used to be headed "Create
+  your developer account", so returning users assumed they were on the wrong
+  screen. The heading is now "Log in or sign up", and two cards under the submit
+  button — "Have an account?" / "First time?" — say what happens either way.
+  They ride in on `LoginForm`'s `mobileStepFooter`, so they vanish at the OTP
+  step, where the question is already settled. The footnote that used to carry
+  this ("Already have an account? The same flow logs you in.", tacked onto the
+  legal line) is gone.
 
 `AuthProvider.classify()` (`src/lib/auth/AuthProvider.tsx:34-44`) maps this
 onto a typed `AuthState` variant, `{ status: "authed"; role: "signup"; me:
