@@ -1,10 +1,12 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 import {
 	BarChart3,
+	Check,
 	Code2,
 	FlaskConical,
 	IdCard,
 	type LucideIcon,
+	Sparkles,
 	UserPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -104,6 +106,69 @@ function OptionalTrial() {
 	);
 }
 
+/**
+ * What happens after the number is submitted, one card per audience. The widget
+ * serves returning developers and first-timers through the same OTP, and a
+ * heading alone was not saying so — returning users read "create your account"
+ * and assumed they were on the wrong screen.
+ *
+ * Brand tokens at low alpha rather than raw palette colours: the two cards have
+ * to read as a pair of tints under the gold submit button, not as status
+ * banners.
+ */
+const REASSURANCE: ReadonlyArray<{
+	Icon: LucideIcon;
+	dot: string;
+	card: string;
+	title: string;
+	body: string;
+}> = [
+	{
+		Icon: Check,
+		dot: "bg-eko-success",
+		card: "border-eko-success/25 bg-eko-success/5",
+		title: "Have an account?",
+		body: "We will take you straight to your dashboard.",
+	},
+	{
+		Icon: Sparkles,
+		dot: "bg-eko-gold",
+		card: "border-eko-gold/40 bg-eko-gold-light",
+		title: "First time?",
+		body: "We set up your account next. Free to start. Takes 2 minutes.",
+	},
+];
+
+/**
+ * The pair of audience cards shown under the mobile-step button. Handed to
+ * {@link LoginForm} as `mobileStepFooter` so it disappears with that step — by
+ * the time the OTP boxes are up, the question it answers has been answered.
+ */
+function Reassurance() {
+	return (
+		<div className="mt-5 grid gap-3 sm:grid-cols-2">
+			{REASSURANCE.map(({ Icon, dot, card, title, body }) => (
+				<div key={title} className={`flex gap-2 rounded-xl border p-3 ${card}`}>
+					<span
+						className={`mt-0.5 flex size-[1.125rem] flex-none items-center justify-center rounded-full ${dot}`}
+						aria-hidden="true"
+					>
+						<Icon className="size-3 text-white" strokeWidth={3} />
+					</span>
+					<div>
+						<h3 className="text-[0.8125rem] font-bold text-eko-navy">
+							{title}
+						</h3>
+						<div className="mt-0.5 text-[0.8125rem] leading-relaxed text-eko-slate">
+							{body}
+						</div>
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
 /** The four-step journey, rendered with a dashed connector between items. */
 function Journey() {
 	return (
@@ -195,7 +260,7 @@ export function SignInSplit({
 				    only the chrome differs between the two. */}
 				<div className="rounded-2xl border border-[#eee9dd] bg-white p-6 shadow-card lg:w-[24.75rem] lg:rounded-none lg:border-0 lg:p-0 lg:shadow-none">
 					<h2 className="text-lg font-extrabold text-eko-navy lg:text-[1.375rem]">
-						Create your developer account
+						Log in or sign up
 					</h2>
 					<p className="mt-1.5 text-[0.84375rem] leading-relaxed text-eko-slate">
 						Free to start. No credit card required.
@@ -204,11 +269,12 @@ export function SignInSplit({
 						<LoginForm
 							onSuccess={onSuccess}
 							prefetch={prefetch}
-							submitLabel="Continue with mobile OTP"
+							submitLabel="Send OTP to my mobile"
+							mobileStepFooter={<Reassurance />}
 						/>
 					</div>
-					<p className="mt-8 text-[0.71875rem] leading-relaxed text-muted-foreground">
-						By continuing, you agree to Eko's{" "}
+					<p className="mt-6 text-[0.71875rem] leading-relaxed text-muted-foreground">
+						By continuing you agree to Eko's{" "}
 						<Link to="/tnc" className="text-eko-navy underline">
 							Terms &amp; Conditions
 						</Link>{" "}
@@ -216,7 +282,7 @@ export function SignInSplit({
 						<Link to="/privacy-policy" className="text-eko-navy underline">
 							Privacy Policy
 						</Link>
-						. Already have an account? The same flow logs you in.
+						.
 					</p>
 				</div>
 			</div>

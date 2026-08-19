@@ -6,6 +6,7 @@ import { ApiError, authClient } from "@/lib/auth/client";
 import {
 	type ClipboardEvent,
 	type KeyboardEvent,
+	type ReactNode,
 	useEffect,
 	useRef,
 	useState,
@@ -44,15 +45,21 @@ const LAST_MOBILE_KEY = "eko-last-mobile";
  * @param submitLabel - Label for the mobile-step submit button. Defaults to
  *   "Send OTP"; the sign-in split names the whole method instead, because there
  *   it is the page's only call to action rather than one control on a card.
+ * @param mobileStepFooter - Rendered under the submit button on the mobile step
+ *   only, so anything that explains what happens *after* the number is entered
+ *   disappears once the OTP boxes replace that step. The caller owns the copy;
+ *   this form holds none.
  */
 export function LoginForm({
 	onSuccess,
 	prefetch,
 	submitLabel = "Send OTP",
+	mobileStepFooter,
 }: {
 	onSuccess?: () => void;
 	prefetch?: () => Promise<unknown>;
 	submitLabel?: string;
+	mobileStepFooter?: ReactNode;
 }) {
 	const { adopt } = useAuth();
 	const [step, setStep] = useState<"mobile" | "otp">("mobile");
@@ -243,6 +250,7 @@ export function LoginForm({
 						>
 							{busy ? "Sending…" : submitLabel}
 						</Button>
+						{mobileStepFooter}
 					</div>
 				) : (
 					<div className="flex flex-col gap-2">
