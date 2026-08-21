@@ -337,6 +337,21 @@ export function mountConnect(
 			xRealIp: c.req.header("x-real-ip"),
 		});
 
+		// One line per call, deliberately always-on: "did upstream serve a list
+		// without the KYC entitlements" is the question every stale-roles report
+		// starts with, and `EKO_LOG_LEVEL=full` (whole response bodies) is too
+		// heavy to run in prod waiting for it. 586/587 are the interaction ids
+		// that gate the console's Upload Documents flow — `KYC_LIST_ID` /
+		// `KYC_UPLOAD_ID` in `src/lib/connect/kyc.ts`.
+		const ids = new Set(
+			interactions.map((i) => String((i as { id?: unknown } | null)?.id)),
+		);
+		console.log("[connect] wlc", {
+			sid: claim.sid?.slice(0, 8),
+			count: interactions.length,
+			kycEntitled: ids.has("586") && ids.has("587"),
+		});
+
 		// Entitlements, not public data — same reasoning as the token route.
 		c.header("Cache-Control", "no-store");
 		return c.json({ interactions });

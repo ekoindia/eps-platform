@@ -14,7 +14,7 @@ there and is linked from here, not repeated.
 
 1. [The invariant command](#1-the-invariant-command)
 2. [Where everything lives](#2-where-everything-lives)
-3. [Status & health](#3-status--health)
+3. [Status & health](#3-status--health) — incl. the `health.sh` one-shot sweep
 4. [Logs](#4-logs)
 5. [Restart & recreate](#5-restart--recreate)
 6. [Changing `.env` safely](#6-changing-env-safely)
@@ -58,6 +58,7 @@ this doc using a bare `.env` path means `/data/eps-backend/.env`.
 | Path / name                                       | What                                                                            |
 | ------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `/data/eps-backend/docker-compose.prod.yml`       | stack definition (3 services)                                                   |
+| `/data/eps-backend/health.sh`                     | read-only health sweep + log shortcuts (§3); copied from the repo, not in the image |
 | `/data/eps-backend/.env` (`chmod 600`)            | operator secrets — `env_file` for **both** `eps-backend` and `poller`           |
 | `/data/eps-backend/deploy.env`                    | only `EPS_BACKEND_IMAGE=…`, rewritten atomically by the poller each deploy      |
 | `/data/eps-backend/.ghcr-auth.json` (`chmod 600`) | GHCR creds, mounted read-only into the poller                                   |
@@ -75,6 +76,55 @@ ever scaled or renamed.
 ---
 
 ## 3. Status & health
+
+### `health.sh` — the whole sweep in one command
+
+Everything in this section, run in order, with a pass/fail line per check:
+
+```sh
+/data/eps-backend/health.sh              # usage guide (no arguments = help)
+/data/eps-backend/health.sh full         # every check; exit 1 if anything FAILed
+/data/eps-backend/health.sh logs         # follow the app log
+/data/eps-backend/health.sh poller       # follow the poller log
+```
+
+A bare invocation prints the usage guide rather than running anything — the
+mode is always explicit, so nothing starts by accident on a prod box. The help
+text lists every env override with its *resolved* value, which doubles as a
+config dump.
+
+It covers: service states and restart counts, running digest vs `deploy.env`
+(and the commit behind it), poller `HOLD`/`last_good`/`remote_fail_count`,
+`/healthz` + `/readyz`, Valkey `PING`, whether `REDIS_URL` is even set, how
+many access lines the app has logged, and the storage driver / disk. It is
+**read-only** — it never restarts, pulls, or writes to `/state`; when a `HOLD`
+is latched it prints the clearing command rather than running it.
+
+Source of truth is `packages/eps-backend/deploy/health.sh` in the repo. It is
+not baked into the image — install it the same way as the compose file:
+
+```sh
+scp packages/eps-backend/deploy/health.sh <vm>:/data/eps-backend/
+ssh <vm> chmod +x /data/eps-backend/health.sh
+```
+
+Every stack-specific value is an env override, so the transact stack reuses the
+same file:
+
+```sh
+PROJECT=eps-transact-mcp DIR=/data/eps-mcp SERVICE=eps-transact-mcp PORT=8788 \
+STATE_VOL=eps-transact-mcp_transact-poller-state \
+IMAGE_ENV_KEY=EPS_TRANSACT_MCP_IMAGE /data/eps-backend/health.sh full
+```
+
+Set `PUBLIC_HEALTH_URL=https://api.eps.eko.in/healthz` to also probe the public
+path through nginx — that is what separates "the app is down" from "nginx is
+not forwarding".
+
+The rest of this section is what the script runs, for when you need one check
+on its own.
+
+### By hand
 
 ```sh
 dc ps                          # what's up, health status, uptime
@@ -123,6 +173,19 @@ See [Clearing HOLD](./eps-backend-vm-deploy.md#clearing-hold).
 dc logs -f --tail=100 eps-backend   # application
 dc logs -f --tail=100 poller        # deploy loop, lines prefixed "<ISO> [poller]"
 dc logs --tail=50 redis
+```
+
+The first two are also `health.sh logs` / `health.sh poller` (§3).
+
+**An almost-empty app log is normal, not a broken logger.** A container that
+has served no traffic since it started shows only its three boot lines —
+`/healthz` and `/readyz` are excluded from access logging (below), and the
+Compose healthcheck hits nothing else. Confirm logging works by making a
+request that *is* logged:
+
+```sh
+curl -s localhost:8787/nope >/dev/null   # 404
+dc logs --tail=5 eps-backend             # must now show a {"type":"access",...} line
 ```
 
 App logs are **structured JSON on stdout** — there are no log files inside the

@@ -54,12 +54,30 @@ export function buildRoleTransactionList(raw: unknown[]): RoleTransactionList {
  * callers and caching the result for the session.
  */
 export function fetchRoleTransactionList(): Promise<RoleTransactionList> {
-	if (cache) return Promise.resolve(cache);
+	if (cache) {
+		console.debug("[connect] interaction list: cache hit");
+		return Promise.resolve(cache);
+	}
 	inflight ??= authClient
 		.connectInteractions()
 		.then(({ interactions }) => {
 			cache = buildRoleTransactionList(interactions);
+			// 586/587 gate Upload Documents (`KYC_LIST_ID`/`KYC_UPLOAD_ID` in
+			// kyc.ts — not imported: a diagnostic must not couple this generic
+			// module to one feature). Mirrors the backend's `[connect] wlc` line
+			// so browser and server can be compared for the same request.
+			console.debug("[connect] interaction list fetched", {
+				count: interactions.length,
+				kycEntitled: Boolean(cache["586"] && cache["587"]),
+			});
 			return cache;
+		})
+		.catch((err) => {
+			// Loud on purpose: every consumer of this list treats a failed fetch
+			// as "not entitled" and hides nav silently — a network blip and a
+			// genuinely missing entitlement look identical without this line.
+			console.warn("[connect] interaction list fetch failed", err);
+			throw err;
 		})
 		.finally(() => {
 			inflight = null;

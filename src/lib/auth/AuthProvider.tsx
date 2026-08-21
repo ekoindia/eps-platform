@@ -91,6 +91,12 @@ function classify(me: MeView | AdminView | SignupView): AuthState {
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [state, setState] = useState<AuthState>({ status: "loading" });
 
+	// The role of the last view `accept()` classified, for spotting the
+	// signup→developer upgrade below. A ref, not derived from `state`: the
+	// reset must run before `setState` publishes the new role, and `stateRef`
+	// further down is only updated in an effect — after render, too late.
+	const lastRole = useRef<"developer" | "admin" | "signup" | null>(null);
+
 	/**
 	 * Accepts a session view and remembers it for this tab's next reload.
 	 *
@@ -101,6 +107,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	 */
 	const accept = useCallback((me: MeView | AdminView | SignupView) => {
 		const next = classify(me);
+		// Completing onboarding swaps the signup session for a developer one
+		// WITHOUT passing through `anon`, so the module caches below — all
+		// entitlement-derived — would keep serving data fetched under the
+		// pre-upgrade roles for the life of the tab. Reset them synchronously,
+		// before the new state is published: in an effect, the console would
+		// already have rendered its nav from the stale interaction list.
+		if (
+			lastRole.current === "signup" &&
+			next.status === "authed" &&
+			next.role === "developer"
+		) {
+			console.debug(
+				"[connect] signup→developer upgrade: resetting entitlement caches",
+			);
+			resetRoleTransactionCache();
+			clearConnectTokens();
+			resetDashboardCache();
+			resetWalletBalanceCache();
+		}
+		lastRole.current = next.status === "authed" ? next.role : null;
 		setState(next);
 		if (next.status === "authed") writeCachedSession(me);
 	}, []);

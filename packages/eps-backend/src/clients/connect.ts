@@ -51,6 +51,15 @@ export interface ConnectTokens {
 	accessTtlSec: number;
 	/** Refresh-window lifetime in seconds, derived from `long_session`. */
 	sessionTtlSec: number;
+	/**
+	 * `auth_details.user_type` when the envelope carried a details block, else
+	 * undefined. Diagnostic only — nothing authorizes off it. It exists to answer
+	 * one production question: does `/authentication/token` re-mint the session
+	 * against the caller's CURRENT identity, or replay the one from login time?
+	 */
+	userType?: string;
+	/** True when the envelope's identity is connect-api's anonymous `-1` user. */
+	anonymousUser?: boolean;
 }
 
 export interface ConnectClient {
@@ -176,6 +185,7 @@ export function tokensOf(env: ConnectLoginEnvelope): ConnectTokens | null {
 	const accessToken = env.access_token;
 	const refreshToken = env.refresh_token;
 	if (!accessToken || !refreshToken) return null;
+	const d = env.details;
 	return {
 		accessToken,
 		refreshToken,
@@ -186,6 +196,11 @@ export function tokensOf(env: ConnectLoginEnvelope): ConnectTokens | null {
 		accessTokenCrm: env.access_token_crm,
 		accessTtlSec: accessTtlOf(env),
 		sessionTtlSec: env.long_session ? LONG_SESSION_TTL_SEC : SESSION_TTL_SEC,
+		userType: d ? String(d.user_type ?? "") : undefined,
+		anonymousUser: d
+			? String(d.user_type ?? "") === NEW_USER_TYPE ||
+				String(d.user_id ?? "") === NEW_USER_TYPE
+			: undefined,
 	};
 }
 

@@ -27,6 +27,11 @@ const DEVELOPER: AuthState = {
 
 vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({ state: DEVELOPER, refresh: vi.fn(), logout: vi.fn() }),
+	useOptionalAuth: () => ({
+		state: DEVELOPER,
+		refresh: vi.fn(),
+		logout: vi.fn(),
+	}),
 }));
 vi.mock("@/components/Footer", () => ({ Footer: () => <footer /> }));
 // The rail's own wallet card is covered by WalletBalance.connect.test.tsx.
