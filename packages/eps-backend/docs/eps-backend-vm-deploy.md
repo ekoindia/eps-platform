@@ -141,6 +141,14 @@ invariant compose command can find them:
 
     /data/eps-backend/docker-compose.prod.yml
     /data/eps-backend/.env.example
+    /data/eps-backend/health.sh            # from deploy/health.sh; chmod +x
+
+`health.sh` is the read-only day-2 health sweep (service states, running digest
+vs `deploy.env`, poller `HOLD`, probes, store, logs, disk) plus `logs` /
+`poller` log shortcuts. Run it with no arguments for the full usage guide;
+`health.sh full` runs the sweep. Like the compose file it is copied here by
+hand, not baked into the image — re-copy it when it changes upstream. Details:
+[Docker ops §3](./eps-backend-docker-ops.md#3-status--health).
 
 The poller is NOT built on the VM — the compose file pulls the shared
 `ghcr.io/ekoindia/eps-poller:prod` image (same image as the eps-transact-mcp

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
@@ -122,5 +123,76 @@ describe("deploy-eps-backend.yml", () => {
 		expect(w).toContain("ghcr.io/ekoindia/eps-backend");
 		// retag must reference the digest the push step produced, not a tag
 		expect(w).toContain("steps.build.outputs.digest");
+	});
+});
+
+const healthScript = () =>
+	readFileSync(resolve(root, "deploy/health.sh"), "utf8");
+
+describe("deploy/health.sh", () => {
+	it("drives Compose through the invariant 4-flag form", () => {
+		const s = healthScript();
+		expect(s).toContain('docker compose -p "$PROJECT"');
+		expect(s).toContain('--project-directory "$DIR"');
+		expect(s).toContain('--env-file "$DIR/deploy.env"');
+		expect(s).toContain('-f "$DIR/docker-compose.prod.yml"');
+	});
+	// The whole value of this script is that an operator can run it on prod
+	// without thinking. A mutating verb sneaking in would break that contract.
+	it("stays read-only — no mutating compose or docker verb", () => {
+		const s = healthScript();
+		for (const verb of [
+			"dc up",
+			"dc down",
+			"dc restart",
+			"dc rm",
+			"dc stop",
+			"dc pull",
+			"docker rm",
+			"docker rmi",
+			"docker volume rm",
+			"system prune",
+			"image prune",
+		]) {
+			expect(s).not.toContain(verb);
+		}
+		// It may PRINT the HOLD-clearing command, but must never run one.
+		expect(s).not.toMatch(/^\s*docker run .*rm -f \/state/m);
+	});
+	// Behavioural, not textual: the help path must not touch docker, so this is
+	// safe to run anywhere — including a CI box with no stack.
+	it("prints the usage guide and exits 0 when run with no arguments", () => {
+		const run = spawnSync("bash", [resolve(root, "deploy/health.sh")], {
+			encoding: "utf8",
+		});
+		expect(run.status).toBe(0);
+		expect(run.stdout).toContain("USAGE");
+		for (const mode of ["full", "logs", "poller", "help"]) {
+			expect(run.stdout).toContain(`health.sh ${mode}`);
+		}
+		// Documents every knob an operator can override.
+		for (const knob of ["PROJECT", "DIR", "SERVICE", "PORT", "STATE_VOL"]) {
+			expect(run.stdout).toContain(knob);
+		}
+	});
+	it("rejects an unknown mode with exit 2", () => {
+		const run = spawnSync("bash", [resolve(root, "deploy/health.sh"), "bogus"], {
+			encoding: "utf8",
+		});
+		expect(run.status).toBe(2);
+		expect(run.stderr).toContain("unknown mode");
+	});
+	it("parameterizes every stack-specific value so the transact stack reuses it", () => {
+		const s = healthScript();
+		for (const knob of [
+			"PROJECT",
+			"DIR",
+			"SERVICE",
+			"PORT",
+			"STATE_VOL",
+			"IMAGE_ENV_KEY",
+		]) {
+			expect(s).toContain(`${knob}="\${${knob}:-`);
+		}
 	});
 });
