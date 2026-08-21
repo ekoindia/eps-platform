@@ -42,19 +42,30 @@ describe("validateField", () => {
 		expect(validateField(field("email"), "not-an-email")).toBeTruthy();
 	});
 
-	it("offers the five upstream company types with their exact codes", () => {
+	it("offers the six upstream company types with their exact codes", () => {
 		const companyType = field("company_type");
 		expect(companyType.options?.map((o) => o.value)).toEqual([
 			"1",
+			"3",
 			"4",
 			"2",
 			"5",
-			"3",
+			"7",
 		]);
-		// LLP is 4, not 2 — the codes are not sequential by label.
-		expect(companyType.options?.find((o) => o.label === "LLP")?.value).toBe(
-			"4",
-		);
+		// LLP is 4, not 2 — the codes are not sequential by label. Matched on the
+		// prefix so rewording the parenthetical does not break the code assertion.
+		expect(
+			companyType.options?.find((o) => o.label.startsWith("LLP"))?.value,
+		).toBe("4");
+		// Sole Proprietorship (3) and Individual (7) are distinct upstream codes,
+		// not one combined option.
+		expect(
+			companyType.options?.find((o) => o.label === "Sole Proprietorship")
+				?.value,
+		).toBe("3");
+		expect(
+			companyType.options?.find((o) => o.label === "Individual")?.value,
+		).toBe("7");
 	});
 
 	it("requires a 6-digit pincode", () => {
