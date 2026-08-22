@@ -12645,8 +12645,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "dl_number",
 				type: "string",
 				required: true,
-				description: "Driving license number to verify (e.g. MH0220190001234).",
-				example: "MH0220190001234",
+				description: "Driving license number to verify (e.g. KA0120198900984).",
+				example: "KA0120198900984",
 			},
 			{
 				name: "dob",
@@ -12654,7 +12654,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"Date of birth of the DL holder in YYYY-MM-DD format. Used to cross-validate the license.",
-				example: "1994-08-29",
+				example: "1994-08-05",
 			},
 		],
 		responseData: [
@@ -12664,7 +12664,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				description: "The driving license number that was verified.",
 				imp: true,
-				example: "MH0220190001234",
+				example: "KA0120198900984",
 			},
 			{
 				name: "dob",
@@ -12673,7 +12673,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"Date of birth of the DL holder as returned by the authority.",
 				imp: true,
-				example: "1994-08-29",
+				example: "1994-08-05",
 			},
 			{
 				name: "status",
