@@ -1,5 +1,5 @@
 /** Discriminator for the kind of security event recorded. */
-export type SecurityEvent = "admin_login" | "admin_mutation";
+export type SecurityEvent = "admin_login" | "admin_mutation" | "chat_denied";
 
 /** Whether the recorded attempt was allowed or refused. */
 export type SecurityOutcome = "granted" | "denied";
@@ -14,7 +14,12 @@ export interface SecurityRecord {
 	event: SecurityEvent;
 	outcome: SecurityOutcome;
 	action: "propose" | "deploy" | null;
-	actor: string;
+	/**
+	 * Nullable: a chat denial can happen before any session is resolved (no
+	 * cookie, expired token), and there is genuinely no actor to name. Writing
+	 * "unknown" there would be a fact we did not establish.
+	 */
+	actor: string | null;
 	reason: string | null;
 	ip: string;
 	sid: string | null;
@@ -38,6 +43,16 @@ export interface SecurityLogger {
 	mutationDenied(input: {
 		action: "propose" | "deploy";
 		actor: string;
+		ip: string;
+		reason: string;
+		rid: string;
+	}): void;
+	/**
+	 * A refused docs-chat request. `reason` is the AppError code only — message
+	 * content never reaches this log, by design, on any path.
+	 */
+	chatDenied(input: {
+		actor: string | null;
 		ip: string;
 		reason: string;
 		rid: string;
@@ -111,6 +126,20 @@ export function createSecurityLogger(
 				rid,
 			}));
 		},
+		chatDenied({ actor, ip, reason, rid }) {
+			emit(() => ({
+				type: "security_audit",
+				ts: now().toISOString(),
+				event: "chat_denied",
+				outcome: "denied",
+				action: null,
+				actor,
+				reason,
+				ip,
+				sid: null,
+				rid,
+			}));
+		},
 	};
 }
 
@@ -119,4 +148,5 @@ export const noopSecurityLogger: SecurityLogger = {
 	loginGranted() {},
 	loginDenied() {},
 	mutationDenied() {},
+	chatDenied() {},
 };
