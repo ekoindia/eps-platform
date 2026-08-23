@@ -1,5 +1,5 @@
-import { Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Search, Sparkles } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -22,6 +22,8 @@ import {
 	type SearchCategory,
 	type SearchItem,
 } from "@/lib/search-index";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { SHOW_AI_CHAT } from "@/lib/config/features";
 import { cn } from "@/lib/utils";
 
 interface CommandPaletteProps {
@@ -198,6 +200,14 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
 );
 
 /**
+ * The assistant is its own chunk: it pulls in react-markdown, and only a
+ * signed-in developer who actually asks something ever needs it.
+ */
+const AskAiDialog = lazy(() =>
+	import("@/components/AskAiDialog").then((m) => ({ default: m.AskAiDialog })),
+);
+
+/**
  * Global ⌘K / Ctrl+K command palette. Lazy-loaded — never part of the
  * initial bundle or the pre-rendered HTML (see Header.tsx).
  */
@@ -211,6 +221,18 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const previousPathRef = useRef(location.pathname);
+	const auth = useAuth();
+	const [askQuery, setAskQuery] = useState("");
+	// Set when the backend reports the assistant is off for this deployment.
+	// Build-time flag + backend config can disagree; this hides the row for the
+	// rest of the session rather than offering something that always fails.
+	const [chatDisabled, setChatDisabled] = useState(false);
+	// Only developers and admins can call /chat/ask, so only they are offered it.
+	const canAskAi =
+		SHOW_AI_CHAT &&
+		!chatDisabled &&
+		auth.status === "authed" &&
+		(auth.role === "developer" || auth.role === "admin");
 
 	// Long-form page prose is a separate ~160 KB payload. Fetched once when the
 	// palette first mounts — which only happens on first open, so the user has
@@ -277,104 +299,139 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				aria-describedby={undefined}
-				className="top-[12%] translate-y-0 sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden [--tw-enter-translate-x:0]! [--tw-enter-translate-y:0]! [--tw-exit-translate-x:0]! [--tw-exit-translate-y:0]!"
-			>
-				<DialogTitle className="sr-only">Search</DialogTitle>
-				{/* shouldFilter={false}: search-engine.ts ranks and filters; cmdk is
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent
+					aria-describedby={undefined}
+					className="top-[12%] translate-y-0 sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden [--tw-enter-translate-x:0]! [--tw-enter-translate-y:0]! [--tw-exit-translate-x:0]! [--tw-exit-translate-y:0]!"
+				>
+					<DialogTitle className="sr-only">Search</DialogTitle>
+					{/* shouldFilter={false}: search-engine.ts ranks and filters; cmdk is
 				    left to do rendering and keyboard navigation only. */}
-				<Command loop shouldFilter={false}>
-					<CommandInput
-						placeholder="Search APIs, endpoints, guides, solutions…"
-						value={query}
-						onValueChange={handleQueryChange}
-					/>
-					<div className="flex items-center gap-1 overflow-x-auto border-b border-border px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-						{SCOPES.map(({ id, label }) => (
-							<button
-								key={id}
-								type="button"
-								onClick={() => setScope(id)}
-								aria-pressed={scope === id}
-								className={cn(
-									"shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-									scope === id
-										? "bg-primary text-primary-foreground"
-										: "text-muted-foreground hover:bg-muted hover:text-foreground",
-								)}
-							>
-								{label}
-							</button>
-						))}
-					</div>
-					<CommandList className="max-h-[min(60vh,420px)] overscroll-contain">
-						{/* Rendered directly rather than via <CommandEmpty>, whose
+					<Command loop shouldFilter={false}>
+						<CommandInput
+							placeholder="Search APIs, endpoints, guides, solutions…"
+							value={query}
+							onValueChange={handleQueryChange}
+						/>
+						<div className="flex items-center gap-1 overflow-x-auto border-b border-border px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+							{SCOPES.map(({ id, label }) => (
+								<button
+									key={id}
+									type="button"
+									onClick={() => setScope(id)}
+									aria-pressed={scope === id}
+									className={cn(
+										"shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+										scope === id
+											? "bg-primary text-primary-foreground"
+											: "text-muted-foreground hover:bg-muted hover:text-foreground",
+									)}
+								>
+									{label}
+								</button>
+							))}
+						</div>
+						<CommandList className="max-h-[min(60vh,420px)] overscroll-contain">
+							{canAskAi && query.trim() && (
+								<CommandItem
+									value={`ask-ai-${query}`}
+									onSelect={() => {
+										onOpenChange(false);
+										setAskQuery(query.trim());
+									}}
+									className="gap-2"
+								>
+									<Sparkles
+										className="h-4 w-4 shrink-0 text-primary"
+										aria-hidden="true"
+									/>
+									<span className="truncate">
+										Ask AI:{" "}
+										<span className="font-medium text-foreground">
+											&ldquo;{query.trim()}&rdquo;
+										</span>
+									</span>
+								</CommandItem>
+							)}
+							{/* Rendered directly rather than via <CommandEmpty>, whose
 						    internal count is derived from cmdk's own filtering — which
 						    is switched off here. */}
-						{query && results.length === 0 && (
-							<div className="flex flex-col items-center gap-2 py-6">
-								<Search className="h-5 w-5 text-muted-foreground/60" />
-								<p className="text-sm text-muted-foreground">
-									No results for{" "}
-									<span className="font-medium text-foreground">
-										&ldquo;{query}&rdquo;
-									</span>
-								</p>
-								<p className="text-xs text-muted-foreground/70">
-									Try &ldquo;UPI&rdquo;, &ldquo;KYC&rdquo; or
-									&ldquo;lending&rdquo;
-								</p>
-							</div>
-						)}
-						{query
-							? // Searching → flat list, already ranked globally by relevance
-								results.map(({ item, terms }) => (
-									<ResultRow
-										key={item.id}
-										item={item}
-										showCategory
-										terms={terms}
-										onSelect={handleSelect}
-									/>
-								))
-							: // Empty query → curated "suggested" items, grouped
-								GROUPS.map(({ category, heading }) => {
-									const groupItems = SUGGESTED_ITEMS.filter(
-										(item) => item.category === category,
-									);
-									if (groupItems.length === 0) return null;
-									return (
-										<CommandGroup key={category} heading={heading}>
-											{groupItems.map((item) => (
-												<ResultRow
-													key={item.id}
-													item={item}
-													onSelect={handleSelect}
-												/>
-											))}
-										</CommandGroup>
-									);
-								})}
-					</CommandList>
-					<div className="flex items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-						<span className="flex items-center gap-1.5">
-							<Kbd>↑</Kbd>
-							<Kbd>↓</Kbd>
-							Navigate
-						</span>
-						<span className="flex items-center gap-1.5">
-							<Kbd>↵</Kbd>
-							Open
-						</span>
-						<span className="ml-auto flex items-center gap-1.5">
-							<Kbd>esc</Kbd>
-							Close
-						</span>
-					</div>
-				</Command>
-			</DialogContent>
-		</Dialog>
+							{query && results.length === 0 && (
+								<div className="flex flex-col items-center gap-2 py-6">
+									<Search className="h-5 w-5 text-muted-foreground/60" />
+									<p className="text-sm text-muted-foreground">
+										No results for{" "}
+										<span className="font-medium text-foreground">
+											&ldquo;{query}&rdquo;
+										</span>
+									</p>
+									<p className="text-xs text-muted-foreground/70">
+										Try &ldquo;UPI&rdquo;, &ldquo;KYC&rdquo; or
+										&ldquo;lending&rdquo;
+									</p>
+								</div>
+							)}
+							{query
+								? // Searching → flat list, already ranked globally by relevance
+									results.map(({ item, terms }) => (
+										<ResultRow
+											key={item.id}
+											item={item}
+											showCategory
+											terms={terms}
+											onSelect={handleSelect}
+										/>
+									))
+								: // Empty query → curated "suggested" items, grouped
+									GROUPS.map(({ category, heading }) => {
+										const groupItems = SUGGESTED_ITEMS.filter(
+											(item) => item.category === category,
+										);
+										if (groupItems.length === 0) return null;
+										return (
+											<CommandGroup key={category} heading={heading}>
+												{groupItems.map((item) => (
+													<ResultRow
+														key={item.id}
+														item={item}
+														onSelect={handleSelect}
+													/>
+												))}
+											</CommandGroup>
+										);
+									})}
+						</CommandList>
+						<div className="flex items-center gap-4 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+							<span className="flex items-center gap-1.5">
+								<Kbd>↑</Kbd>
+								<Kbd>↓</Kbd>
+								Navigate
+							</span>
+							<span className="flex items-center gap-1.5">
+								<Kbd>↵</Kbd>
+								Open
+							</span>
+							<span className="ml-auto flex items-center gap-1.5">
+								<Kbd>esc</Kbd>
+								Close
+							</span>
+						</div>
+					</Command>
+				</DialogContent>
+			</Dialog>
+			{askQuery && (
+				<Suspense fallback={null}>
+					<AskAiDialog
+						open
+						seedQuery={askQuery}
+						onOpenChange={(next) => {
+							if (!next) setAskQuery("");
+						}}
+						onDisabled={() => setChatDisabled(true)}
+					/>
+				</Suspense>
+			)}
+		</>
 	);
 };

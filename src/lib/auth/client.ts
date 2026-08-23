@@ -3,6 +3,7 @@ import type {
 	TransactionFilters,
 	TransactionPage,
 } from "@/lib/console/transactions";
+import type { ChatAnswer, ChatMessage } from "@/lib/chat";
 import type { NotificationView } from "@/lib/notifications";
 
 const BASE: string = import.meta.env.VITE_EPS_BACKEND_URL ?? "/api";
@@ -367,6 +368,20 @@ export const authClient = {
 		request("/me", { method: "GET" }) as Promise<
 			MeView | AdminView | SignupView
 		>,
+	/**
+	 * Asks the grounded docs assistant. The backend looks EPS facts up through
+	 * its own tools; nothing is answered from model memory.
+	 *
+	 * Reuses `request` for the 401-refresh replay and `ApiError` mapping, so a
+	 * session that expires mid-conversation recovers instead of dropping the
+	 * user's question. Callers must handle `CHAT_DISABLED`,
+	 * `CHAT_BUDGET_EXHAUSTED` and `CHAT_BUNDLE_UNAVAILABLE` (all 503).
+	 */
+	ask: (messages: ChatMessage[]): Promise<ChatAnswer> =>
+		request("/chat/ask", {
+			method: "POST",
+			body: JSON.stringify({ messages }),
+		}) as Promise<ChatAnswer>,
 	/** The caller's public IP, as the proxy saw it. Used for KYC watermarks. */
 	myIp: (): Promise<{ ip: string }> =>
 		request("/me/ip", { method: "GET" }) as Promise<{ ip: string }>,
