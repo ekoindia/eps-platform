@@ -6,8 +6,13 @@ COPY package.json package-lock.json ./
 # the file must exist or node throws "Cannot find module". Copy just the script.
 COPY .githooks/setup.mjs .githooks/setup.mjs
 COPY packages/eps-backend/package.json packages/eps-backend/package.json
+# eps-context-mcp is a devDependency, bundled into dist by tsup and never
+# shipped as a runtime dep: npm needs its manifest to link the workspace,
+# esbuild needs its src/. Neither survives into the runtime stage.
+COPY packages/eps-context-mcp/package.json packages/eps-context-mcp/package.json
 RUN npm ci --workspace @ekoindia/eps-backend --include-workspace-root
 COPY packages/eps-backend packages/eps-backend
+COPY packages/eps-context-mcp/src packages/eps-context-mcp/src
 RUN npm run build -w @ekoindia/eps-backend
 
 # Runtime dependencies only, resolved fresh from the lockfile rather than pruned

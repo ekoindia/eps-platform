@@ -21,6 +21,11 @@ import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
 import { mountConnect } from "./connect";
+import {
+	CONTEXT_PREFIX,
+	contextMcpErrorBody,
+	mountContextMcp,
+} from "./contextMcp";
 import { mountDashboard } from "./dashboard";
 import { AppError, errorBody } from "./errors";
 import { mountNotifications } from "./notifications";
@@ -63,6 +68,8 @@ export interface Deps {
 	accessLog?: AccessLogger;
 	/** Signup orchestration; defaults to one built over the injected Eko client. */
 	signup?: SignupService;
+	/** Fetch used to pull the context-MCP bundle; test seam, defaults to global. */
+	contextFetch?: typeof fetch;
 }
 
 const OTP_START_LIMIT = 5;
@@ -128,7 +135,11 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			await next();
 		} finally {
 			const path = c.req.path;
-			if (path !== "/healthz" && path !== "/readyz") {
+			if (
+				path !== "/healthz" &&
+				path !== "/readyz" &&
+				path !== "/context/healthz"
+			) {
 				accessLog.log({
 					rid: c.get("rid"),
 					method: c.req.method,
@@ -140,16 +151,46 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			}
 		}
 	});
-	app.use(
-		"*",
-		cors({
-			origin: cfg.corsOrigins,
-			credentials: true,
-			exposeHeaders: ["x-request-id"],
-		}),
+	const corsSite = cors({
+		origin: cfg.corsOrigins,
+		credentials: true,
+		exposeHeaders: ["x-request-id"],
+	});
+	/**
+	 * The MCP server at /context/* is anonymous and called from arbitrary
+	 * origins, including in-browser agents. Wildcard origin WITHOUT credentials
+	 * is the only combination a browser accepts — and it is also the guarantee
+	 * that a visitor's session cookie can never ride along to a public endpoint.
+	 */
+	const corsContext = cors({
+		origin: "*",
+		allowMethods: ["POST", "GET", "OPTIONS"],
+		allowHeaders: [
+			"content-type",
+			"accept",
+			"mcp-protocol-version",
+			"mcp-session-id",
+		],
+		exposeHeaders: ["mcp-protocol-version", "mcp-session-id", "x-request-id"],
+		maxAge: 86_400,
+	});
+	// One cors instance per request, picked by path: registering both as "*"
+	// middlewares would emit two conflicting sets of headers.
+	app.use("*", (c, next) =>
+		(c.req.path.startsWith("/context/") ? corsContext : corsSite)(c, next),
 	);
 
 	app.onError((err, c) => {
+		// The public MCP endpoint speaks JSON-RPC; the BFF error envelope below
+		// would be unparseable to every MCP client, so contain it here (Hono
+		// routes thrown handler errors straight to onError).
+		if (c.req.path.startsWith(CONTEXT_PREFIX)) {
+			console.error("[eps-backend] context mcp error", {
+				rid: c.get("rid"),
+				err,
+			});
+			return c.json(contextMcpErrorBody(), 500);
+		}
 		if (err instanceof AppError) {
 			return c.json(
 				errorBody(err.code, err.message, err.details),
@@ -512,6 +553,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		}
 		return c.json({ balance });
 	});
+
+	if (cfg.contextMcp) {
+		mountContextMcp(app, { ...cfg.contextMcp, fetchImpl: deps.contextFetch });
+	}
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });

@@ -36,6 +36,7 @@ function deps(
 		accessSink?: (l: string) => void;
 		kv?: KV;
 		cfg?: typeof cfg;
+		contextFetch?: typeof fetch;
 	} = {},
 ) {
 	const appCfg = opts.cfg ?? cfg;
@@ -89,7 +90,15 @@ function deps(
 		? createAccessLogger({ sink: opts.accessSink })
 		: undefined;
 	return {
-		app: createApp({ cfg: appCfg, eko, zoho, sessions, kv, accessLog }),
+		app: createApp({
+			cfg: appCfg,
+			eko,
+			zoho,
+			sessions,
+			kv,
+			accessLog,
+			contextFetch: opts.contextFetch,
+		}),
 		eko,
 		zoho,
 		sessions,
@@ -1652,5 +1661,120 @@ describe("wallet/balance", () => {
 		const cookie = await login(app);
 		const res = await app.request("/wallet/balance", { headers: { cookie } });
 		expect(res.status).toBe(502);
+	});
+});
+
+describe("context MCP mount", () => {
+	const contextCfg = loadConfig({
+		JWT_SECRET: "x".repeat(32),
+		SIMPLIBANK_API_HOST: "h",
+		SIMPLIBANK_API_PORT: "1",
+		SIMPLIBANK_API_PATH: "/p",
+		EKO_DEVELOPER_KEY: "k",
+		GITHUB_CLIENT_ID: "g",
+		GITHUB_CLIENT_SECRET: "s",
+		GITHUB_CALLBACK_URL: "https://x/cb",
+		GITHUB_REPO: "o/r",
+		COOKIE_SECURE: "false",
+		CONTEXT_BUNDLE_URL: "https://eps.example/agent/eps.json",
+	});
+
+	const bundleBody = {
+		meta: {
+			org: "ekoindia",
+			apiVersion: "v3",
+			bundleVersion: "abc123",
+			environments: [],
+		},
+		topics: {},
+		apis: [
+			{
+				slug: "pan",
+				name: "PAN",
+				method: "POST",
+				path: "/pan",
+				docsUrl: "https://eps.eko.in/docs/pan",
+			},
+		],
+		recipes: [],
+	};
+
+	const contextFetch = (() =>
+		Promise.resolve(
+			new Response(JSON.stringify(bundleBody), {
+				headers: { "content-type": "application/json" },
+			}),
+		)) as unknown as typeof fetch;
+
+	const settle = () => new Promise((r) => setTimeout(r, 0));
+
+	it("is absent unless CONTEXT_BUNDLE_URL is configured", async () => {
+		const { app } = deps();
+		const res = await app.request("/context/healthz");
+		expect(res.status).toBe(404);
+	});
+
+	it("serves the bundle anonymously, with wildcard CORS and no cookies", async () => {
+		const { app } = deps({}, { cfg: contextCfg, contextFetch });
+		await settle();
+
+		const res = await app.request("/context/healthz", {
+			headers: { origin: "https://some-agent.example" },
+		});
+		expect(res.status).toBe(200);
+		expect(await res.json()).toMatchObject({
+			ok: true,
+			bundleVersion: "abc123",
+			source: "remote",
+		});
+		expect(res.headers.get("access-control-allow-origin")).toBe("*");
+		// A public endpoint must never invite a browser to attach session cookies.
+		expect(res.headers.get("access-control-allow-credentials")).toBeNull();
+		expect(res.headers.get("set-cookie")).toBeNull();
+		expect(res.headers.get("x-request-id")).toBeTruthy();
+	});
+
+	it("keeps credentialed CORS on the console routes", async () => {
+		const { app } = deps({}, { cfg: contextCfg, contextFetch });
+		const res = await app.request("/me", {
+			headers: { origin: "https://eps.eko.in" },
+		});
+		expect(res.headers.get("access-control-allow-origin")).toBe(
+			"https://eps.eko.in",
+		);
+		expect(res.headers.get("access-control-allow-credentials")).toBe("true");
+	});
+
+	it("answers an anonymous MCP initialize and rejects GET", async () => {
+		const { app } = deps({}, { cfg: contextCfg, contextFetch });
+		await settle();
+
+		const post = await app.request("/context/mcp", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				accept: "application/json, text/event-stream",
+				// With an Origin present, cors rebuilds the response and drops the
+				// no-store the MCP app set — the regression this asserts against.
+				origin: "https://some-agent.example",
+			},
+			body: JSON.stringify({
+				jsonrpc: "2.0",
+				id: 1,
+				method: "initialize",
+				params: {
+					protocolVersion: "2024-11-05",
+					capabilities: {},
+					clientInfo: { name: "t", version: "0" },
+				},
+			}),
+		});
+		expect(post.status).toBe(200);
+		expect(post.headers.get("cache-control")).toBe("no-store");
+		expect(post.headers.get("set-cookie")).toBeNull();
+
+		const get = await app.request("/context/mcp");
+		expect(get.status).toBe(405);
+		expect(get.headers.get("allow")).toBe("POST");
 	});
 });

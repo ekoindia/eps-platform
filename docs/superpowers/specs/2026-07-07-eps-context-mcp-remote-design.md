@@ -1,6 +1,6 @@
 # eps-context-mcp remote server — design decision record
 
-**Date:** 2026-07-07 · **Status:** Phase 0 executed (URL contract); **Phase 1 build code landed 2026-07-08** (adapter + Vercel handler + tests green) — remaining = Vercel project + nginx wiring + pre-launch validation. Decision on domain wiring: **(b) VM nginx proxy**.
+**Date:** 2026-07-07 · **Revised 2026-08-23** · **Status:** Phase 0 executed (URL contract); Phase 1 build code landed 2026-07-08; **hosting decision REVERSED 2026-08-23 — served in-process by eps-backend on the VM, not Vercel** (see the revision section at the end, which supersedes "Why anonymous + edge" and the "Remaining (ops)" list). Code for the new path landed on `dev`; remaining = merge to `main`, VM env var, nginx `/context/` block, claude.ai probe.
 
 ## Decision
 
@@ -56,3 +56,44 @@ stdio/npm publishing stays first-class for CLI agents (Claude Code, Cursor).
 - `src/lib/config/site.ts` `EPS_TRANSACT_MCP_URL` → `https://mcp.eko.in/transact/mcp` (flows to AgentsPage + `/agents.md`; page still gated behind `VITE_SHOW_TRANSACT_MCP`).
 - `packages/eps-transact-mcp/README.md` connect snippet → new URL.
 - `docs/eps-transact-mcp.md` §Deployment step 4 → path-namespaced proxy contract; poller-image "public" claim corrected to private-in-practice (verified on first VM deploy).
+
+---
+
+## Revision 2026-08-23 — hosting moves from Vercel to eps-backend
+
+**What changed.** The MCP app (`packages/eps-context-mcp/src/http.ts`) is unchanged and still
+anonymous; only the thing that runs it moved. It is now mounted by `eps-backend` at `/context/*`
+(`packages/eps-backend/src/http/contextMcp.ts`), and nginx proxies
+`https://mcp.eko.in/context/` → `127.0.0.1:8787` with the prefix **preserved**.
+
+**Why the "VM co-hosting rejected" call was reweighted.** The original rejection was about blast
+radius, and that concern was real — but by August the picture had two new facts: eps-backend was
+already live on that VM with a proven poller/CD chain, and the Vercel path had accumulated four
+deploy-only bug fixes (`e173d07`, `bd40e2a`, `419bf24`, `ad2808e`) for a project nobody was
+operating. Choosing Vercel meant a second CD chain, a second vendor surface, and a second place to
+debug, in exchange for isolation that a rate limit plus a kill switch mostly buys anyway. What the
+in-process path adds, which neither the edge nor the npm package had: the bundle is re-validated
+against the live site on a TTL, so a docs change reaches agents with **no redeploy of anything**.
+
+**How the original blast-radius objection is answered** (all implemented, not aspirational):
+
+- nginx `limit_req` 10r/s burst 20 on `/context/`, plus `client_max_body_size 1m` — the abuse
+  control the spec flagged as unfinished, now written down and required at rollout.
+- `CONTEXT_BUNDLE_URL` presence *is* the mount switch: unset it and the routes cease to exist.
+- `/context/*` gets wildcard CORS **without** credentials, and touches no session, KV or secretbox.
+- `/readyz` deliberately ignores the bundle, so a site outage cannot fail an auth deploy.
+- `app.onError` returns a JSON-RPC error for the prefix; the BFF envelope never reaches an MCP client.
+- Failed or malformed refreshes keep the last good bundle; every *attempt* stamps the TTL clock, so
+  a dead origin cannot hot-loop one fetch per request.
+
+**Residual risk, accepted in writing:** an unhandled fatal (OOM, a crash outside the request chain)
+in this code takes the auth service down with it. Bounded by the container's `mem_limit`/restart
+policy and by the fact that every tool is a read-only lookup over an in-memory object.
+
+**Consequences for the Vercel work.** `packages/eps-context-mcp/api/index.ts` + `vercel.json` are
+kept for now as the rollback, and the Vercel project is parked (not deleted) until the hosted
+endpoint has a week of green. The npm/stdio package is untouched — `load-bundle.ts`, the baked
+bundle and the startup update-check all still serve CLI agents.
+
+**Still open:** the claude.ai connector no-auth probe (which doubles as the eps-transact OAuth
+spike) and the shared-adapter extraction between the two `http.ts` files (still deferred).

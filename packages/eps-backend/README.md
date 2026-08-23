@@ -23,6 +23,8 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET    | /auth/admin/github/callback | none           | Complete admin OAuth                                    |
 | GET    | /healthz                    | none           | Liveness                                                |
 | GET    | /readyz                     | none           | Readiness; PINGs Redis when configured, else always 200 |
+| POST   | /context/mcp                | none (public)  | Anonymous MCP server (docs lookups); only when `CONTEXT_BUNDLE_URL` is set |
+| GET    | /context/healthz            | none (public)  | Served bundle version + source                          |
 
 ## Auth providers
 
@@ -162,6 +164,36 @@ encryption differ. Before restarting with the old binary:
 
 On a dedicated instance you can use `FLUSHDB` instead. All affected users will
 need to re-authenticate.
+
+## Hosted context MCP server (`/context/*`)
+
+Setting `CONTEXT_BUNDLE_URL` mounts the `@ekoindia/eps-context-mcp` server on this
+process, published as `https://mcp.eko.in/context/mcp`. It is **anonymous by
+design** — every tool is a read-only lookup over the public agent bundle, with no
+credentials, no PII and no billable upstream call. Unset the variable and the
+routes cease to exist; that is the kill switch.
+
+| Env                     | Default | Meaning                                                      |
+| ----------------------- | ------- | ------------------------------------------------------------ |
+| `CONTEXT_BUNDLE_URL`    | unset   | Live bundle, e.g. `https://eps.eko.in/agent/eps.json`         |
+| `CONTEXT_BUNDLE_TTL_SEC`| `900`   | Re-validation window (conditional GET with `If-None-Match`)   |
+
+What the mount deliberately does **not** share with the rest of the BFF:
+
+- **No cookies, ever.** `/context/*` gets wildcard CORS *without* credentials, so
+  a browser will not attach a session cookie to a public endpoint.
+- **No session, KV or secretbox access**, and no contribution to `/readyz` — a
+  site outage must never fail the deploy health gate for auth.
+- **JSON-RPC errors only.** `app.onError` returns an MCP-shaped error body for
+  this prefix instead of the BFF's `{error:{code:"UPSTREAM_ERROR"}}` envelope.
+
+The bundle is fetched once at boot (never awaited) and then re-validated lazily
+behind the response once `CONTEXT_BUNDLE_TTL_SEC` has lapsed, so a docs change on
+the site reaches agents without redeploying anything. A failed or malformed fetch
+keeps the last good bundle; before the first success the routes answer `503`.
+
+Abuse protection is the proxy's job — see the `limit_req` block in
+[`docs/eps-backend-vm-deploy.md`](docs/eps-backend-vm-deploy.md).
 
 ## Reverse proxy requirement
 

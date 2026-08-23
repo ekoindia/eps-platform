@@ -88,7 +88,7 @@ docker info 2>/dev/null | grep -iE "storage driver|docker root dir"
    docker compose -p eps-transact-mcp --project-directory /deploy \
      --env-file /deploy/deploy.env -f /deploy/docker-compose.prod.yml up -d
    ```
-4. **Reverse proxy**: expose `https://mcp.eko.in/transact/mcp` (TLS) → `127.0.0.1:8788`. The domain is **path-namespaced per MCP server** — nginx `location /transact/` with a trailing-slash `proxy_pass http://127.0.0.1:8788/` strips the prefix, so the app still serves bare `/mcp` + `/healthz` unchanged (the transport emits no absolute URLs/redirects, so prefix-stripping is safe). `/context/` is **reserved** for the future remote eps-context-mcp (see `docs/superpowers/specs/2026-07-07-eps-context-mcp-remote-design.md`); bare `/` 404s. The proxy **must set/overwrite `x-real-ip`** (rate-limit fallback trusts it), must not expose :8788 directly, and must disable response *and* request buffering on `/transact/`. Full recipe below.
+4. **Reverse proxy**: expose `https://mcp.eko.in/transact/mcp` (TLS) → `127.0.0.1:8788`. The domain is **path-namespaced per MCP server** — nginx `location /transact/` with a trailing-slash `proxy_pass http://127.0.0.1:8788/` strips the prefix, so the app still serves bare `/mcp` + `/healthz` unchanged (the transport emits no absolute URLs/redirects, so prefix-stripping is safe). `/context/` on the same vhost serves the anonymous **eps-context-mcp**, hosted in-process by eps-backend on `127.0.0.1:8787` — note it **preserves** its prefix (no trailing slash on `proxy_pass`) and carries a `limit_req`, unlike `/transact/`; see `packages/eps-backend/docs/eps-backend-vm-deploy.md` Step 9b. Bare `/` 404s. The proxy **must set/overwrite `x-real-ip`** (rate-limit fallback trusts it), must not expose :8788 directly, and must disable response *and* request buffering on `/transact/`. Full recipe below.
 
 ### Reverse proxy, TLS & auto-renewal
 
@@ -101,7 +101,7 @@ dig +short mcp.example.com          # must equal:
 curl -s ifconfig.me; echo           # the VM's own public IP
 ```
 
-**2. Path-namespaced server block.** The trailing slash on `proxy_pass` strips the `/transact/` prefix (so the app sees `/mcp`, `/healthz`). `/context/` is reserved for a future second MCP server on the same domain; bare `/` 404s.
+**2. Path-namespaced server block.** The trailing slash on `proxy_pass` strips the `/transact/` prefix (so the app sees `/mcp`, `/healthz`). `/context/` on the same domain is the anonymous eps-context-mcp, proxied to eps-backend on `:8787` with its prefix preserved (Step 9b of the eps-backend VM runbook); bare `/` 404s.
 
 ```nginx
 # /etc/nginx/conf.d/eps-transact-mcp.conf
