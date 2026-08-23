@@ -94,11 +94,12 @@ export function generatePricingXlsxPlugin(): Plugin {
 async function loadPricingData(
 	server: Pick<ViteDevServer, "ssrLoadModule">,
 ): Promise<PricingXlsxData> {
-	const [pricingMod, siteMod, paymentsMod, cbMod, operatorsMod] =
+	const [pricingMod, siteMod, paymentsMod, dmtMod, cbMod, operatorsMod] =
 		await Promise.all([
 			server.ssrLoadModule("/src/lib/data/api-pricing.ts"),
 			server.ssrLoadModule("/src/lib/config/site.ts"),
 			server.ssrLoadModule("/src/lib/data/payments-pricing.ts"),
+			server.ssrLoadModule("/src/lib/data/dmt-pricing.ts"),
 			server.ssrLoadModule("/src/lib/data/connected-banking-pricing.ts"),
 			server.ssrLoadModule("/src/lib/data/bbps-operators.ts"),
 		]);
@@ -109,17 +110,23 @@ async function loadPricingData(
 		setupFeeDiscountPercent: pricingMod.SETUP_FEE_DISCOUNT_PERCENT,
 		verificationSetupFee: pricingMod.VERIFICATION_SETUP_FEE,
 		bcSetupFee: paymentsMod.BC_SETUP_FEE,
+		tdsRate: paymentsMod.TDS_RATE,
 		hasVolumeDiscounts: pricingMod.HAS_VOLUME_DISCOUNTS,
 		maxVolume: pricingMod.MAX_VOLUME,
 		siteUrl: siteMod.SITE_URL,
 		displayName: pricingMod.displayName,
 		dmt: {
-			slabs: paymentsMod.DMT_SLABS,
-			senderKycFee: paymentsMod.DMT_SENDER_KYC_FEE,
-			customerFeePct: paymentsMod.DMT_CUSTOMER_FEE_PCT,
-			customerFeeMin: paymentsMod.DMT_CUSTOMER_FEE_MIN,
-			maxTxnAmount: paymentsMod.DMT_MAX_TXN_AMOUNT,
-			tdsRate: paymentsMod.TDS_RATE,
+			rows: dmtMod.dmtRateCardRows(),
+			senderKycFee: dmtMod.DMT_SENDER_KYC_FEE,
+			senderKycInclGst: dmtMod.dmtSenderKycInclGst(),
+			recipientVerifyFee: dmtMod.DMT_RECIPIENT_VERIFY_FEE,
+			customerFeePct: dmtMod.DMT_CUSTOMER_FEE_PCT,
+			customerFeeMin: dmtMod.DMT_CUSTOMER_FEE_MIN,
+			ekoCharge: dmtMod.EKO_DMT_CHARGE,
+			minTxnAmount: dmtMod.DMT_MIN_TXN_AMOUNT,
+			maxTxnAmount: dmtMod.DMT_MAX_TXN_AMOUNT,
+			defaultAmount: dmtMod.DMT_DEFAULT_AMOUNT,
+			defaultMonthlyTxns: dmtMod.DMT_DEFAULT_MONTHLY_TXNS,
 		},
 		aeps: {
 			cashoutSlabs: paymentsMod.AEPS_CASHOUT_SLABS,

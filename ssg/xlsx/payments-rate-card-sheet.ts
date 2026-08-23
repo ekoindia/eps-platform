@@ -17,16 +17,13 @@ import {
 } from "./shared";
 
 /**
- * Build the static "Payments Rate Card" sheet (DMT slabs, AePS, BBPS
- * categories). The DMT slab table doubles as the VLOOKUP source for the
- * Payments Earnings sheet — its first column is the ascending slab lower
- * bound. Returns the absolute range reference of that table (columns A–D:
- * From | Up to | Eko pricing | Commission).
+ * Build the static "Payments Rate Card" sheet (AePS and BBPS categories).
+ * DMT lives on its own sheet — see `dmt-sheet.ts`.
  */
 export async function buildPaymentsRateCardSheet(
 	ws: Worksheet,
 	data: PricingXlsxData,
-): Promise<{ dmtLookupRange: string }> {
+): Promise<void> {
 	ws.columns = [
 		{ width: 18 },
 		{ width: 18 },
@@ -36,8 +33,8 @@ export async function buildPaymentsRateCardSheet(
 		{ width: 52 },
 	];
 
-	const { dmt, aeps, bbps } = data;
-	const tdsPct = Math.round(dmt.tdsRate * 100);
+	const { aeps, bbps } = data;
+	const tdsPct = Math.round(data.tdsRate * 100);
 
 	let row = 1;
 	brandedTitle(
@@ -53,58 +50,7 @@ export async function buildPaymentsRateCardSheet(
 		ws,
 		row,
 		"F",
-		`DMT, AePS and BBPS pay YOU a commission per transaction. All values in INR, exclusive of GST @ ${gstPct}%. TDS @ ${tdsPct}% applies on payouts.`,
-	);
-	row++;
-
-	row++; // spacer
-
-	// -- DMT slab table (VLOOKUP source) ------------------------------------
-	groupBandRow(ws, row, "F", "DMT — Commission by transaction amount");
-	row++;
-
-	// Sub-header (not frozen — header freeze is reserved for long tables)
-	[
-		"From (₹)",
-		"Up to (₹)",
-		"Eko pricing (₹)",
-		"Your commission (₹)",
-		`After TDS @ ${tdsPct}% (₹)`,
-		"",
-	].forEach((header, i) => {
-		const cell = ws.getCell(row, i + 1);
-		cell.value = header;
-		cell.font = { bold: true, size: 10 };
-		cell.fill = solidFill(HEADER_FILL);
-		cell.border = { bottom: { style: "thin", color: { argb: NAVY } } };
-	});
-	row++;
-
-	const dmtFirstRow = row;
-	for (const slab of dmt.slabs) {
-		ws.getCell(`A${row}`).value = slab.from;
-		ws.getCell(`A${row}`).numFmt = "#,##0";
-		ws.getCell(`B${row}`).value = slab.upTo;
-		ws.getCell(`B${row}`).numFmt = "#,##0";
-		const eko = ws.getCell(`C${row}`);
-		eko.value = slab.ekoPricing;
-		eko.numFmt = RATE_FORMAT;
-		const commission = ws.getCell(`D${row}`);
-		commission.value = slab.commission;
-		commission.numFmt = RATE_FORMAT;
-		const afterTds = ws.getCell(`E${row}`);
-		afterTds.value =
-			Math.round(slab.commission * (1 - dmt.tdsRate) * 100) / 100;
-		afterTds.numFmt = RATE_FORMAT;
-		row++;
-	}
-	const dmtLastRow = row - 1;
-
-	footnoteRow(
-		ws,
-		row,
-		"F",
-		`Sender transaction fee: ${dmt.customerFeePct * 100}% of the amount, minimum ₹${dmt.customerFeeMin} — paid by the sender. One-time sender KYC: ₹${dmt.senderKycFee} (excl. GST). Maximum transaction amount: ₹${dmt.maxTxnAmount.toLocaleString("en-IN")}.`,
+		`AePS and BBPS pay YOU a commission per transaction. All values in INR, exclusive of GST @ ${gstPct}%. TDS @ ${tdsPct}% applies on payouts. DMT is on its own sheet.`,
 	);
 	row++;
 
@@ -179,8 +125,4 @@ export async function buildPaymentsRateCardSheet(
 	row++;
 
 	await protectSheet(ws);
-
-	return {
-		dmtLookupRange: `'${SHEETS.paymentsRateCard}'!$A$${dmtFirstRow}:$D$${dmtLastRow}`,
-	};
 }

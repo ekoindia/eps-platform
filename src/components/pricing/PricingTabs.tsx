@@ -1,10 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Banknote, Landmark, ShieldCheck } from "lucide-react";
+import { Banknote, Landmark, Send, ShieldCheck } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 /** Tab ids — URL-stable (used in the ?tab= query param) */
-export type PricingTabId = "verification" | "payments" | "banking";
+export type PricingTabId = "verification" | "dmt" | "payments" | "banking";
 
 /** The calculator tabs' own URL key (absent = "verification") */
 const TAB_PARAM = "tab";
@@ -15,7 +15,8 @@ const TAB_DEFS: {
 	icon: typeof ShieldCheck;
 }[] = [
 	{ id: "verification", label: "Verification APIs", icon: ShieldCheck },
-	{ id: "payments", label: "Payments & BC APIs", icon: Banknote },
+	{ id: "dmt", label: "Money Transfer (DMT)", icon: Send },
+	{ id: "payments", label: "AePS & BBPS", icon: Banknote },
 	{ id: "banking", label: "Connected Banking", icon: Landmark },
 ];
 
@@ -25,26 +26,29 @@ const isTabId = (value: string | null): value is PricingTabId =>
 interface PricingTabsProps {
 	/** Tab 1 — Verification APIs (cost calculator + rate card) */
 	verification: ReactNode;
-	/** Tab 2 — Payments & BC APIs (DMT/AePS/BBPS earnings calculator) */
+	/** Tab 2 — DMT (per-transaction ledger + RCM explainer + rate card) */
+	dmt: ReactNode;
+	/** Tab 3 — AePS & BBPS (earnings calculator + rate card) */
 	payments: ReactNode;
-	/** Tab 3 — Connected Banking (cost calculator) */
+	/** Tab 4 — Connected Banking (cost calculator) */
 	banking: ReactNode;
 }
 
 /**
  * Client-side tab shell for the /pricing page.
  *
- * All three panels stay mounted (`forceMount`) and are hidden via CSS so the
+ * All four panels stay mounted (`forceMount`) and are hidden via CSS so the
  * prerendered HTML carries every product's tables (SEO) and calculator state
  * survives tab switches. `display:none` also hides each inactive panel's
  * position:fixed mobile summary bar.
  *
  * The active tab is mirrored to `?tab=` ("verification" is the canonical
  * default and never written). Only the `tab` key is touched — `sel`, `gst`,
- * `pay`, `cb` and UTM/tracking params are preserved.
+ * `dmt`, `pay`, `cb` and UTM/tracking params are preserved.
  */
 export const PricingTabs = ({
 	verification,
+	dmt,
 	payments,
 	banking,
 }: PricingTabsProps) => {
@@ -70,6 +74,7 @@ export const PricingTabs = ({
 
 	const panels: { id: PricingTabId; content: ReactNode }[] = [
 		{ id: "verification", content: verification },
+		{ id: "dmt", content: dmt },
 		{ id: "payments", content: payments },
 		{ id: "banking", content: banking },
 	];

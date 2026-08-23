@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { buildBbpsOperatorsSheet } from "./xlsx/bbps-operators-sheet";
 import { buildConnectedBankingSheet } from "./xlsx/connected-banking-sheet";
+import { buildDmtSheet } from "./xlsx/dmt-sheet";
 import { buildIndexSheet } from "./xlsx/index-sheet";
 import { buildPaymentsEarningsSheet } from "./xlsx/payments-earnings-sheet";
 import { buildPaymentsRateCardSheet } from "./xlsx/payments-rate-card-sheet";
@@ -18,17 +19,17 @@ const ExcelJS: typeof import("exceljs") = nodeRequire("exceljs");
 
 /**
  * Render `/eps-pricing-calculator.xlsx` — the offline companion to the
- * interactive `/pricing` calculators. Seven sheets, in tab order:
+ * interactive `/pricing` calculators. Eight sheets, in tab order:
  *
  * 1. "Index" — what's inside + internal hyperlinks to every sheet.
  * 2. "Verification Calculator" — monthly COST estimate for verification APIs.
- * 3. "Payments Earnings" — monthly EARNINGS estimate for DMT/AePS/BBPS
- *    (commission products); DMT commission resolves via VLOOKUP against the
- *    slab table on the Payments Rate Card sheet.
- * 4. "Connected Banking" — one-time setup + monthly transaction costs.
- * 5. "Verification Rate Card" — static verification rate reference.
- * 6. "Payments Rate Card" — static DMT/AePS/BBPS commission reference.
- * 7. "BBPS Operator Rates" — full operator-wise BBPS commission list.
+ * 3. "DMT Calculator" — per-transaction ledger + monthly earnings, entirely
+ *    live formulas (DMT commission is closed-form, so no lookup table).
+ * 4. "Payments Earnings" — monthly EARNINGS estimate for AePS/BBPS.
+ * 5. "Connected Banking" — one-time setup + monthly transaction costs.
+ * 6. "Verification Rate Card" — static verification rate reference.
+ * 7. "Payments Rate Card" — static AePS/BBPS commission reference.
+ * 8. "BBPS Operator Rates" — full operator-wise BBPS commission list.
  *
  * Pure function — no filesystem or network access — so it can be unit-tested.
  */
@@ -41,13 +42,12 @@ export async function renderPricingXlsx(
 	workbook.title =
 		"Eko Platform Services — API Pricing & Commission Calculator";
 
-	// Create worksheets up-front so tab order is independent of build order
-	// (the Payments Rate Card must be BUILT before the earnings sheet to hand
-	// over its DMT VLOOKUP range, but appears later in the tab order).
+	// Create worksheets up-front so tab order is independent of build order.
 	const wsIndex = workbook.addWorksheet(SHEETS.index);
 	const wsVerificationCalc = workbook.addWorksheet(
 		SHEETS.verificationCalculator,
 	);
+	const wsDmt = workbook.addWorksheet(SHEETS.dmt);
 	const wsPaymentsEarnings = workbook.addWorksheet(SHEETS.paymentsEarnings);
 	const wsConnectedBanking = workbook.addWorksheet(SHEETS.connectedBanking);
 	const wsVerificationRate = workbook.addWorksheet(SHEETS.verificationRateCard);
@@ -56,11 +56,9 @@ export async function renderPricingXlsx(
 
 	await buildIndexSheet(wsIndex, data);
 	await buildVerificationCalculatorSheet(wsVerificationCalc, data);
-	const { dmtLookupRange } = await buildPaymentsRateCardSheet(
-		wsPaymentsRate,
-		data,
-	);
-	await buildPaymentsEarningsSheet(wsPaymentsEarnings, data, dmtLookupRange);
+	await buildDmtSheet(wsDmt, data);
+	await buildPaymentsRateCardSheet(wsPaymentsRate, data);
+	await buildPaymentsEarningsSheet(wsPaymentsEarnings, data);
 	await buildConnectedBankingSheet(wsConnectedBanking, data);
 	await buildVerificationRateCardSheet(wsVerificationRate, data);
 	await buildBbpsOperatorsSheet(wsBbpsOperators, data);

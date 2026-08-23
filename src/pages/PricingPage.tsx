@@ -3,6 +3,8 @@ import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { ConnectedBankingCalculator } from "@/components/pricing/banking/ConnectedBankingCalculator";
+import { DmtCalculator } from "@/components/pricing/dmt/DmtCalculator";
+import { DmtRateTable } from "@/components/pricing/dmt/DmtRateTable";
 import { PaymentsCalculator } from "@/components/pricing/payments/PaymentsCalculator";
 import { PaymentsRateTable } from "@/components/pricing/payments/PaymentsRateTable";
 import { PricingCalculator } from "@/components/pricing/PricingCalculator";
@@ -21,6 +23,7 @@ import {
 	SETUP_FEE_OFFER_LABEL,
 } from "@/lib/data/api-pricing";
 import { CB_FAQS } from "@/lib/data/connected-banking-pricing";
+import { DMT_FAQS } from "@/lib/data/dmt-pricing";
 import { PAYMENTS_FAQS } from "@/lib/data/payments-pricing";
 import { generatePricingJsonLd } from "@/lib/utils/json-ld";
 import {
@@ -41,8 +44,8 @@ const TRUST_CHIPS = [
 	{ icon: BadgeCheck, label: "Only successful calls billed" },
 ];
 
-/** All pricing FAQs — verification, payments & BC, connected banking */
-const ALL_FAQS = [...PRICING_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS];
+/** All pricing FAQs — verification, DMT, AePS & BBPS, connected banking */
+const ALL_FAQS = [...PRICING_FAQS, ...DMT_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS];
 
 const PricingPage = () => {
 	const jsonLdSchemas = generatePricingJsonLd(ALL_FAQS);
@@ -137,6 +140,31 @@ const PricingPage = () => {
 								</SectionContainer>
 							</>
 						}
+						dmt={
+							<>
+								{/* DMT ledger calculator */}
+								<SectionContainer
+									id="dmt-calculator"
+									className="scroll-mt-24 pt-10 lg:pt-14"
+								>
+									<SectionHeader
+										badge="DMT Calculator"
+										title="See exactly what you earn per transfer"
+										subtitle="The sender's 1% fee already includes GST. Follow it all the way down to your take-home — and see who pays the GST under reverse charge."
+									/>
+									<DmtCalculator />
+								</SectionContainer>
+
+								{/* DMT rate card */}
+								<SectionContainer variant="muted" id="dmt-rates">
+									<SectionHeader
+										title="DMT rate card"
+										subtitle="Commission at representative transfer amounts — the full ledger, from the sender's fee to your net."
+									/>
+									<DmtRateTable />
+								</SectionContainer>
+							</>
+						}
 						payments={
 							<>
 								{/* Earnings calculator */}
@@ -147,7 +175,7 @@ const PricingPage = () => {
 									<SectionHeader
 										badge="Earnings Calculator"
 										title="Estimate your monthly earnings"
-										subtitle="DMT, AePS and BBPS pay you a commission per transaction. Set your volumes and average amounts to see your estimated monthly earnings."
+										subtitle="AePS and BBPS pay you a commission per transaction. Set your volumes and average amounts to see your estimated monthly earnings."
 									/>
 									<PaymentsCalculator />
 								</SectionContainer>
@@ -156,7 +184,7 @@ const PricingPage = () => {
 								<SectionContainer variant="muted" id="payments-rates">
 									<SectionHeader
 										title="Commission rate card"
-										subtitle="DMT, AePS and BBPS commissions at a glance — per transaction, exclusive of GST @ 18%."
+										subtitle="AePS and BBPS commissions at a glance — per transaction, exclusive of GST @ 18%."
 									/>
 									<PaymentsRateTable />
 								</SectionContainer>

@@ -20,9 +20,14 @@ const TOC: { sheet: string; purpose: string }[] = [
 			"Estimate your monthly COST for verification APIs (PAN, bank, GST, UPI…) — enter monthly volumes.",
 	},
 	{
+		sheet: SHEETS.dmt,
+		purpose:
+			"Estimate your DMT earnings — full per-transaction ledger (sender fee, GST, Eko charge, TDS) plus monthly take-home.",
+	},
+	{
 		sheet: SHEETS.paymentsEarnings,
 		purpose:
-			"Estimate your monthly EARNINGS from DMT, AePS and BBPS — these products pay you a commission per transaction.",
+			"Estimate your monthly EARNINGS from AePS and BBPS — these products pay you a commission per transaction.",
 	},
 	{
 		sheet: SHEETS.connectedBanking,
@@ -36,7 +41,7 @@ const TOC: { sheet: string; purpose: string }[] = [
 	{
 		sheet: SHEETS.paymentsRateCard,
 		purpose:
-			"Static reference: DMT commission slabs, AePS commissions and BBPS category rates.",
+			"Static reference: AePS commissions and BBPS category rates.",
 	},
 	{
 		sheet: SHEETS.bbpsOperators,

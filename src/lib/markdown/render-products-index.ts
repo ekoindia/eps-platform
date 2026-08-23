@@ -24,13 +24,19 @@ import {
 	AEPS_CASHOUT_SLABS,
 	AEPS_MINI_STATEMENT_COMMISSION,
 	BBPS_CATEGORIES,
+	TDS_RATE,
+} from "@/lib/data/payments-pricing";
+import {
 	DMT_CUSTOMER_FEE_MIN,
 	DMT_CUSTOMER_FEE_PCT,
 	DMT_MAX_TXN_AMOUNT,
+	DMT_RECIPIENT_VERIFY_FEE,
 	DMT_SENDER_KYC_FEE,
-	DMT_SLABS,
-	TDS_RATE,
-} from "@/lib/data/payments-pricing";
+	EKO_DMT_CHARGE,
+	calcDmtTxn,
+	dmtRateCardRows,
+	dmtSenderKycInclGst,
+} from "@/lib/data/dmt-pricing";
 import type { ProductPageDataShape } from "./render-product";
 import {
 	aiGettingStartedNotice,
@@ -174,34 +180,39 @@ const verificationPricing = (
 };
 
 const dmtSenderNotes = [
-	`Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — paid by the sender.`,
-	`One-time sender KYC charge: ${formatAmount(DMT_SENDER_KYC_FEE)} (excl. GST), paid by the sender at registration.`,
+	`Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — INCLUSIVE of GST; nothing is added on top.`,
+	`Eko charge: ${formatRate(EKO_DMT_CHARGE)} per transaction, deducted from the fee's taxable value.`,
+	`Reverse Charge Mechanism applies: Eko pays the GST on your commission. Invoice Eko with RCM = "YES" and no GST line.`,
+	`Sender KYC: ${formatAmount(DMT_SENDER_KYC_FEE)} + GST (${formatRate(dmtSenderKycInclGst())}) once per new sender; recipient account verification ${formatRate(DMT_RECIPIENT_VERIFY_FEE)} (incl. GST) once per new recipient. Both debited from your wallet.`,
 	`Maximum transaction amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)}.`,
 ];
 
-/** DMT commission pricing — full slab table plus sender-fee notes. */
+/** DMT commission pricing — derived ledger rows plus charge notes. */
 const dmtPricing = (fmt: MarkdownFormat): string => {
+	const rows = dmtRateCardRows();
 	if (fmt === "txt") {
-		// Inline numbered slabs: "range: eko pricing (Commission: x, After TDS: y)".
-		const lines = DMT_SLABS.map((slab, i) => {
-			const afterTds = formatRate(slab.commission * (1 - TDS_RATE));
-			return `  ${i + 1}. ${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}: ${formatRate(slab.ekoPricing)} (Commission: ${formatRate(slab.commission)}, After TDS: ${afterTds})`;
+		// Inline: "amount: fee (Commission: x, After TDS: y)".
+		const lines = rows.map((row, i) => {
+			const afterTds = formatRate(row.netCommission);
+			return `  ${i + 1}. ${formatAmount(row.amount)}: fee ${formatRate(row.customerFee)} incl. GST (Commission: ${formatRate(row.grossCommission)}, After TDS: ${afterTds})`;
 		});
 		return [lines.join("\n"), bulletList(dmtSenderNotes)].join("\n\n");
 	}
 	return [
 		table(
 			[
-				"Txn amount (INR)",
-				"Eko pricing (excl. GST)",
-				"Your commission (excl. GST)",
+				"Transfer amount (INR)",
+				"Sender fee (incl. GST)",
+				"Taxable value",
+				"Your commission",
 				`After TDS @ ${Math.round(TDS_RATE * 100)}%`,
 			],
-			DMT_SLABS.map((slab) => [
-				`${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}`,
-				formatRate(slab.ekoPricing),
-				formatRate(slab.commission),
-				formatRate(slab.commission * (1 - TDS_RATE)),
+			rows.map((row) => [
+				formatAmount(row.amount),
+				formatRate(row.customerFee),
+				formatRate(row.feeExGst),
+				formatRate(row.grossCommission),
+				formatRate(row.netCommission),
 			]),
 			fmt,
 		),
@@ -301,7 +312,7 @@ const productSection = (
 		product.id === "bbps"
 			? "**Pricing (commission, excl. GST):**"
 			: product.id === "dmt"
-				? `**Pricing (excl. GST, TDS @ ${Math.round(TDS_RATE * 100)}%):**`
+				? `**Pricing (fee incl. GST; commission before TDS @ ${Math.round(TDS_RATE * 100)}%):**`
 				: product.id === "aeps"
 					? "**Pricing (commission):**"
 					: "**Pricing:**";

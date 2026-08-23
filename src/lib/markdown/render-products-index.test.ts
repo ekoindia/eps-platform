@@ -356,7 +356,7 @@ describe("renderProductsIndexText", () => {
 		expect(txt).not.toMatch(/^\| /m);
 		// Pricing content parity with the markdown variant.
 		expect(txt).toMatch(/₹\d/);
-		expect(txt).toContain("After TDS: ₹2.81");
+		expect(txt).toContain("After TDS: ₹5.56");
 		expect(txt).toContain("Mini statement: ₹0.75 per transaction.");
 		expect(txt).toContain("eps-pricing-calculator.xlsx");
 		expect(txt).toMatch(/Operator-level commission for \d+\+ BBPS billers/);
@@ -368,13 +368,17 @@ describe("renderProductsIndexText", () => {
 		expect(txt).toContain("Mini statement: ₹0.75 per transaction.");
 	});
 
-	it("renders DMT slabs as an inline numbered list with commission/after-TDS", () => {
-		expect(txt).toContain("Pricing (excl. GST, TDS @ 2%):");
-		expect(txt).toMatch(
-			/ {2}1\. ₹100 – ₹1,000: ₹5\.67 \(Commission: ₹2\.87, After TDS: ₹2\.81\)/,
+	it("renders the DMT ledger as an inline numbered list", () => {
+		expect(txt).toContain(
+			"Pricing (fee incl. GST; commission before TDS @ 2%):",
 		);
-		// sender notes still follow as bullets
+		// ₹100 transfer: fee floors at ₹10 incl. GST → ₹5.67 gross → ₹5.56 net
+		expect(txt).toMatch(
+			/ {2}1\. ₹100: fee ₹10\.00 incl\. GST \(Commission: ₹5\.67, After TDS: ₹5\.56\)/,
+		);
+		// charge notes still follow as bullets
 		expect(txt).toContain("Maximum transaction amount: ₹5,000.");
+		expect(txt).toContain('RCM = "YES"');
 	});
 
 	it("renders BBPS commission as an inline numbered list with [bracketed] notes", () => {

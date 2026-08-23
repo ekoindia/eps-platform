@@ -4,7 +4,6 @@ import { Slider } from "@/components/ui/slider";
 import {
 	DEFAULT_MAX_TXN_AMOUNT,
 	MAX_TXNS,
-	dmtSlabForAmount,
 	type EarningsLine,
 } from "@/lib/data/payments-pricing";
 import { formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
@@ -69,10 +68,6 @@ export const EarningsProductRow = ({
 		);
 	};
 
-	// For DMT, surface the matched commission slab so the estimate is legible
-	const dmtSlab =
-		product.id === "dmt" ? dmtSlabForAmount(line.avgAmount) : null;
-
 	return (
 		<div className="rounded-2xl border border-border/60 bg-card shadow-card p-4 sm:p-5">
 			<div className="flex items-start justify-between gap-3 mb-4">
@@ -81,9 +76,7 @@ export const EarningsProductRow = ({
 						{product.name}
 					</h4>
 					<p className="text-xs text-muted-foreground mt-0.5">
-						{dmtSlab
-							? `₹${dmtSlab.from.toLocaleString("en-IN")}–₹${dmtSlab.upTo.toLocaleString("en-IN")} slab → ${formatINRRate(line.perTxn)}/txn`
-							: `${formatINRRate(line.perTxn)} per transaction`}
+						{`${formatINRRate(line.perTxn)} per transaction`}
 						{product.notes && (
 							<span className="text-muted-foreground/70">
 								{" "}

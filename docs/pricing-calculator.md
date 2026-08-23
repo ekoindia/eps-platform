@@ -1,13 +1,17 @@
 # Pricing Calculator (`/pricing`)
 
-One page, three client-side tabs:
+One page, four client-side tabs:
 
 1. **Verification APIs** — interactive COST calculator + crawlable rate card
    (you pay per call).
-2. **Payments & BC APIs** — interactive EARNINGS calculator + commission rate
-   card for DMT, AePS and BBPS (these products pay the partner a commission
-   per transaction — inverted semantics vs. verification).
-3. **Connected Banking** — COST calculator (one-time setup per bank per user
+2. **Money Transfer (DMT)** — per-transaction LEDGER calculator + RCM
+   explainer + crawlable rate card. DMT does not fit the slab-commission
+   model: the customer fee is GST-*inclusive*, GST is carved back *out* of
+   it, Eko's flat ₹2.80 comes off the taxable value, then TDS.
+3. **AePS & BBPS** — interactive EARNINGS calculator + commission rate card
+   (these products pay the partner a commission per transaction — inverted
+   semantics vs. verification).
+4. **Connected Banking** — COST calculator (one-time setup per bank per user
    + per-transaction charges).
 
 DigiKhata is intentionally out of scope.
@@ -16,7 +20,9 @@ DigiKhata is intentionally out of scope.
 
 ```
 src/lib/data/api-pricing.ts                ← verification config + pure quote math (no React)
-src/lib/data/payments-pricing.ts           ← DMT/AePS/BBPS commission config + earnings math (no React)
+src/lib/data/payments-pricing.ts           ← AePS/BBPS commission config + earnings math (no React)
+src/lib/data/dmt-pricing.ts                ← DMT ledger config + per-txn/monthly math (no React)
+src/lib/data/product-earnings.ts           ← getEarningsHighlight() — spans both, so it lives in neither
 src/lib/data/connected-banking-pricing.ts  ← Connected Banking config + cost math (no React)
 src/lib/data/bbps-operators.ts             ← full BBPS operator list (Excel-ONLY — never imported client-side)
 src/pages/PricingPage.tsx                  ← page assembly, SEO, tabs, combined FAQ
@@ -30,10 +36,14 @@ src/components/pricing/
   PricingTable.tsx                         ← static SSG-rendered verification rate card (SEO)
   payments/
     PaymentsCalculator.tsx                 ← earnings orchestrator: state + ?pay= URL sync
-    PaymentsPicker.tsx                     ← grouped multi-select (DMT / AePS / BBPS)
+    PaymentsPicker.tsx                     ← grouped multi-select (AePS / BBPS)
     EarningsProductRow.tsx                 ← txn-count slider + avg-amount input per product
     EarningsSummary.tsx                    ← live earnings estimate (gross + after-TDS)
-    PaymentsRateTable.tsx                  ← static commission tables (DMT slabs, AePS, BBPS categories)
+    PaymentsRateTable.tsx                  ← static commission tables (AePS, BBPS categories)
+  dmt/
+    DmtCalculator.tsx                      ← DMT ledger orchestrator: state + ?dmt= URL sync
+    RcmExplainer.tsx                       ← forward-charge vs reverse-charge comparison (live figures)
+    DmtRateTable.tsx                       ← static DMT rate card, DERIVED from calcDmtTxn (SEO)
   banking/
     ConnectedBankingCalculator.tsx         ← inputs + setup/monthly blocks + ?cb= URL sync + static rate card
 src/lib/utils/json-ld.ts                   ← generatePricingJsonLd() (OfferCatalogs + FAQPage)
@@ -83,10 +93,6 @@ Money math runs in integer paise to avoid float drift (`calcQuote`, `calcLineCos
 
 Commission products keyed on **transaction amount** (not monthly volume):
 
-- `DMT_SLABS` — 17 contiguous `DmtSlab` rows (`from`/`upTo`/`ekoPricing`/
-  `commission`). The ascending `from` column doubles as the Excel VLOOKUP key.
-  Constants: `DMT_SENDER_KYC_FEE` (₹11), `DMT_CUSTOMER_FEE_PCT` (1%, min
-  `DMT_CUSTOMER_FEE_MIN` ₹10 — paid by the sender), `DMT_MAX_TXN_AMOUNT` (₹5,000).
 - `AEPS_CASHOUT_SLABS` (0.40% ≤ ₹3,000; ₹13 flat ₹3,001–₹10,000),
   `AEPS_MINI_STATEMENT_COMMISSION` (₹0.75), `AEPS_SETTLEMENT_CHARGES`
   (₹5/₹10 + GST — informational cost, never netted into earnings).
@@ -196,10 +202,40 @@ Where it goes depends on `VITE_SHOW_USER_LOGIN`:
   Carrying calculator context into the console onboarding record is a known
   follow-up.
 
+### DMT (`src/lib/data/dmt-pricing.ts`)
+
+DMT is a closed-form **ledger**, not a slab table:
+
+```
+fee = max(₹10, 1% × amount)          ← GST-INCLUSIVE; nothing is added on top
+taxable = round(fee ÷ 1.18)          ← round HERE, before the next step
+gross   = taxable − ₹2.80            ← EKO_DMT_CHARGE, deducted exactly ONCE
+tds     = round(gross × 2%)
+```
+
+- `calcDmtTxn(amount)` → `DmtTxnBreakdown`. `rcmGst` (18% of `gross`) is what
+  Eko pays under reverse charge; `ekoGst` takes the rounding residual so
+  `rcmGst + ekoGst === gstInFee` exactly.
+- `calcDmtQuote(input)` → monthly projection. **TDS is withheld on the monthly
+  aggregate**, not per transaction (₹367.80 vs ₹370.00 at 1,000 × ₹2,500).
+- Add-ons are debited from the partner's wallet: `DMT_SENDER_KYC_FEE` (₹11 +
+  GST = ₹12.98, per new sender), `DMT_RECIPIENT_VERIFY_FEE` (₹3.25 incl. GST,
+  per new **recipient**, not per transfer). `recoverChargesFromCustomer` adds
+  an **offsetting credit** — it never zeroes the debit, because the wallet is
+  debited either way.
+- `dmtRateCardRows()` derives the rate card from `calcDmtTxn`, so the table,
+  `/pricing.md` and the Excel sheet cannot drift.
+
+> Superseded 2026-08-22: the old `DMT_SLABS` table deducted the ₹2.80 Eko
+> charge **twice** (its `ekoPricing` column was in fact the correct gross
+> commission) and resolved every amount to its slab's upper bound. The
+> formula fixes both; the published "Earn up to" figure moved ₹36.77 → ₹39.57.
+
 ### How to update rates
 
-1. Verification: edit `tiers` in `PRICED_APIS`. Payments: edit `DMT_SLABS`,
-   `AEPS_*`, `BBPS_CATEGORIES` (and `bbps-operators.ts` for the Excel list).
+1. Verification: edit `tiers` in `PRICED_APIS`. DMT: edit the constants in
+   `dmt-pricing.ts` (the ledger derives). AePS/BBPS: edit `AEPS_*`,
+   `BBPS_CATEGORIES` (and `bbps-operators.ts` for the Excel list).
    Connected Banking: edit `CB_*` constants.
 2. No other file changes needed — calculators, rate cards, JSON-LD,
    `/pricing.md` and the Excel workbook all derive from these configs.
@@ -215,11 +251,12 @@ APIs (e.g. `ip`) automatically show neither.
 
 | Param | Owner | Example | Meaning |
 |---|---|---|---|
-| `tab` | PricingTabs | `tab=payments` | Active tab (`payments` / `banking`). Absent = verification (never written). |
+| `tab` | PricingTabs | `tab=dmt` | Active tab (`dmt` / `payments` / `banking`). Absent = verification (never written). |
 | `sel` | PricingCalculator | `sel=pan-lite:50000,bank-pennydrop:10000` | Verification state — `apiId:volume` pairs. |
 | `apis` | PricingCalculator | `apis=pan` | Deep-link entry. Accepts priced-API ids OR product ids (expands at `DEFAULT_VOLUME`). Normalised into `sel` after load. |
 | `gst` | PricingCalculator | `gst=1` | Verification headline total includes GST |
 | `pay` | PaymentsCalculator | `pay=dmt:5000:2500,bbps-electricity:1000:1500` | Earnings state — `productId:monthlyTxns:avgAmount` (avgAmount omitted for `aeps-mini`). |
+| `dmt` | DmtCalculator | `dmt=2500:1000:50:80:0` | `amount:monthlyTxns:newSenders:newRecipients:recover` (recover = `1`/`0`). Written only after the user touches an input. |
 | `cb` | ConnectedBankingCalculator | `cb=2:5000:10000` | `bankUsers:monthlyTxns:avgAmount`. Written only after the user touches an input. |
 
 Every writer uses the **functional `setSearchParams` updater** (debounced
@@ -292,16 +329,17 @@ into `/pricing.md` automatically.
 ## Offline Excel calculator (`/eps-pricing-calculator.xlsx`)
 
 A downloadable companion workbook generated at build time from the same data
-modules. **Seven sheets, in tab order:**
+modules. **Eight sheets, in tab order:**
 
 | Sheet | Purpose |
 |---|---|
 | `Index` | First tab: what's inside + internal hyperlinks (`{ text, hyperlink: "#'Sheet Name'!A1" }`) to every sheet |
 | `Verification Calculator` | Monthly COST estimate — usage inputs, line/subtotal/GST formulas |
-| `Payments Earnings` | Monthly EARNINGS estimate — avg-amount + txn inputs; gross / TDS / net payout summary |
+| `DMT Calculator` | Per-txn ledger + monthly take-home — **all live formulas** (closed-form, no lookup table) |
+| `Payments Earnings` | Monthly EARNINGS estimate for AePS/BBPS — avg-amount + txn inputs; gross / TDS / net payout summary |
 | `Connected Banking` | Setup (₹75,000 × banks + GST) and monthly (per-txn slab IF + GST) blocks |
 | `Verification Rate Card` | Static verification reference |
-| `Payments Rate Card` | Static DMT slab table (the VLOOKUP source), AePS, BBPS categories |
+| `Payments Rate Card` | Static AePS and BBPS category reference |
 | `BBPS Operator Rates` | Full operator list, frozen header + auto-filter |
 
 - **Renderer**: `ssg/render-pricing-xlsx.ts` — pure `renderPricingXlsx(data)`
@@ -309,13 +347,13 @@ modules. **Seven sheets, in tab order:**
   orchestrates per-sheet builders in `ssg/xlsx/` (`shared.ts` holds brand
   styling, the `PricingXlsxData` contract and the `SHEETS` name constants).
   Worksheets are created up-front so **tab order is independent of build
-  order** — the Payments Rate Card is BUILT before the earnings sheet to hand
-  over its DMT VLOOKUP range (`buildPaymentsRateCardSheet` returns
-  `dmtLookupRange`), but appears later in the tabs.
-- **DMT formula**: `IF(C="","",VLOOKUP(C, 'Payments Rate Card'!$A$x:$D$y, 4,
-  TRUE))` — approximate match over the ascending `From (₹)` column; input
-  validation (₹100–₹5,000) keeps the lookup in range. AePS/BBPS slab products
-  use nested `IF`s generated from their `AmountSlab[]`.
+  order**.
+- **DMT formulas**: fully closed-form, so there is no VLOOKUP and no
+  cross-sheet range threading. `ROUND` must sit at the SAME points as
+  `calcDmtTxn` — `ROUND(MAX(10,amt*1%),2)` → `ROUND(fee/(1+0.18),2)` →
+  `−2.8` → `−ROUND(gross*0.02,2)` — or the workbook and the site disagree.
+  AePS/BBPS slab products use nested `IF`s generated from their
+  `AmountSlab[]`.
 - **Plugin**: `vite-plugin-generate-xlsx.ts` (registered in `vite.config.ts`)
   mirrors the markdown plugin — `closeBundle` writes
   `dist/eps-pricing-calculator.xlsx`; dev middleware serves the route on the
