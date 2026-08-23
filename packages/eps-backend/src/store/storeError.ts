@@ -60,5 +60,12 @@ export function withStoreErrors(kv: KV): KV {
 				throw new StoreUnavailableError(e);
 			}
 		},
+		async incrBy(key, delta, ttlSec) {
+			try {
+				return await kv.incrBy(key, delta, ttlSec);
+			} catch (e) {
+				throw new StoreUnavailableError(e);
+			}
+		},
 	};
 }

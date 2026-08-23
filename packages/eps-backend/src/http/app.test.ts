@@ -113,7 +113,9 @@ function deps(
  * only a later method.
  */
 function failingKv(
-	failOn: Partial<Record<"get" | "set" | "del" | "getdel" | "incr", true>>,
+	failOn: Partial<
+		Record<"get" | "set" | "del" | "getdel" | "incr" | "incrBy", true>
+	>,
 	base = createInMemoryKV(),
 ): KV {
 	const down = async () => {
@@ -125,6 +127,7 @@ function failingKv(
 		del: failOn.del ? (down as KV["del"]) : base.del,
 		getdel: failOn.getdel ? (down as KV["getdel"]) : base.getdel,
 		incr: failOn.incr ? (down as KV["incr"]) : base.incr,
+		incrBy: failOn.incrBy ? (down as KV["incrBy"]) : base.incrBy,
 	});
 }
 
@@ -145,6 +148,7 @@ function failingKvByKey(
 		del: guard("del", base.del),
 		getdel: guard("getdel", base.getdel),
 		incr: guard("incr", base.incr),
+		incrBy: guard("incrBy", base.incrBy),
 	});
 }
 

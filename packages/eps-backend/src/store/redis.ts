@@ -10,6 +10,19 @@ end
 return n`;
 
 /**
+ * Lua: atomic fixed-window INCRBY. Gates the EXPIRE on the key having no TTL
+ * rather than on `n == delta` — with an arbitrary delta the counter can land
+ * on its own step value mid-window, which would re-arm the expiry and quietly
+ * turn the fixed window into a sliding one.
+ */
+const INCRBY_FIXED_WINDOW = `
+local n = redis.call('INCRBY', KEYS[1], ARGV[1])
+if redis.call('TTL', KEYS[1]) < 0 then
+  redis.call('EXPIRE', KEYS[1], ARGV[2])
+end
+return n`;
+
+/**
  * Creates a Redis-backed KV. Connects before returning; throws on connect
  * failure (startup-fatal by design). `disableOfflineQueue` makes commands
  * reject immediately when disconnected, so callers fail closed.
@@ -53,6 +66,13 @@ export async function createRedisKV(
 			const n = await client.eval(INCR_FIXED_WINDOW, {
 				keys: [key],
 				arguments: [String(ttlSec)],
+			});
+			return Number(n);
+		},
+		async incrBy(key, delta, ttlSec) {
+			const n = await client.eval(INCRBY_FIXED_WINDOW, {
+				keys: [key],
+				arguments: [String(delta), String(ttlSec)],
 			});
 			return Number(n);
 		},

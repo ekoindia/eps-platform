@@ -41,6 +41,9 @@ describe("enforceRateLimit", () => {
 			set: async () => {},
 			del: async () => {},
 			getdel: async () => null,
+			incrBy: async () => {
+				throw new Error("redis down");
+			},
 			incr: async () => {
 				throw new Error("redis down");
 			},
