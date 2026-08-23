@@ -33,6 +33,7 @@
 		"redis": "^4.7.1"
 	},
 	"devDependencies": {
+		"@ekoindia/eps-context-mcp": "*",
 		"@types/node": "^22.20.0",
 		"tsup": "^8.5.1",
 		"tsx": "^4.22.4",

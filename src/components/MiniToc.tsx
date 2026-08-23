@@ -225,7 +225,7 @@ export const MiniToc = ({
 			>
 				<div className="w-max max-w-xs rounded-xl border border-border bg-background p-2 shadow-xl">
 					<p className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60">
-						Table of contents
+						On This Page
 					</p>
 					<ul className="max-h-[70vh] overflow-y-auto">
 						{entries.map((entry, i) => (

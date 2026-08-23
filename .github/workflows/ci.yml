@@ -99,6 +99,7 @@ jobs:
               - '.github/workflows/ci.yml'
             backend:
               - 'packages/eps-backend/**'
+              - 'packages/eps-context-mcp/**'
               - '.githooks/setup.mjs'
               - 'package-lock.json'
               - '.dockerignore'

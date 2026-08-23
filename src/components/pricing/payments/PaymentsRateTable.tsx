@@ -13,11 +13,6 @@ import {
 	AEPS_MINI_STATEMENT_COMMISSION,
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
-	DMT_CUSTOMER_FEE_MIN,
-	DMT_CUSTOMER_FEE_PCT,
-	DMT_MAX_TXN_AMOUNT,
-	DMT_SENDER_KYC_FEE,
-	DMT_SLABS,
 	TDS_RATE,
 	type AmountSlab,
 } from "@/lib/data/payments-pricing";
@@ -107,58 +102,18 @@ const SectionCard = ({
 );
 
 /**
- * Static, crawlable commission tables for DMT, AePS and BBPS — rendered
+ * Static, crawlable commission tables for AePS and BBPS — rendered
  * server-side (SSG) so rates are indexable. The "+" buttons hand off to the
  * payments earnings calculator above.
  */
 export const PaymentsRateTable = () => (
 	<div className="max-w-3xl mx-auto">
-		{/* DMT commission slabs */}
-		<SectionCard
-			title="DMT — Commission by transaction amount"
-			subtitle={`Sender pays ${DMT_CUSTOMER_FEE_PCT * 100}% fee (min ${formatINRRate(DMT_CUSTOMER_FEE_MIN)}); one-time sender KYC ₹${DMT_SENDER_KYC_FEE} · Max txn ₹${DMT_MAX_TXN_AMOUNT.toLocaleString("en-IN")}`}
-			action={<AddButton productId="dmt" name="DMT" />}
-			delay={0}
-		>
-			<Table>
-				<TableHeader>
-					<TableRow>
-						<TableHead>Txn amount (₹)</TableHead>
-						<TableHead className="text-right">Eko pricing</TableHead>
-						<TableHead className="text-right">Your commission</TableHead>
-						<TableHead className="text-right">
-							After TDS @ {Math.round(TDS_RATE * 100)}%
-						</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{DMT_SLABS.map((slab) => (
-						<TableRow key={slab.from}>
-							<TableCell className="py-2.5 font-medium tabular-nums">
-								{slab.from.toLocaleString("en-IN")} –{" "}
-								{slab.upTo.toLocaleString("en-IN")}
-							</TableCell>
-							<TableCell className="text-right tabular-nums text-muted-foreground">
-								{formatINRRate(slab.ekoPricing)}
-							</TableCell>
-							<TableCell className="text-right tabular-nums font-semibold text-eko-success">
-								{formatINRRate(slab.commission)}
-							</TableCell>
-							<TableCell className="text-right tabular-nums text-muted-foreground">
-								{formatINRRate(slab.commission * (1 - TDS_RATE))}
-							</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
-		</SectionCard>
-
 		{/* AePS */}
 		<SectionCard
 			title="AePS — Cashout & mini statement"
 			subtitle={`Mini statement earns ${formatINRRate(AEPS_MINI_STATEMENT_COMMISSION)} per transaction`}
 			action={<AddButton productId="aeps-cashout" name="AePS Cashout" />}
-			delay={50}
+			delay={0}
 		>
 			<Table>
 				<TableHeader>

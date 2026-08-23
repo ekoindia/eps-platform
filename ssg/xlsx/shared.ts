@@ -3,8 +3,8 @@ import type { PricedApi } from "../../src/lib/data/api-pricing";
 import type {
 	AmountSlab,
 	BbpsCategory,
-	DmtSlab,
 } from "../../src/lib/data/payments-pricing";
+import type { DmtTxnBreakdown } from "../../src/lib/data/dmt-pricing";
 import type { BbpsOperator } from "../../src/lib/data/bbps-operators";
 
 /**
@@ -17,6 +17,7 @@ import type { BbpsOperator } from "../../src/lib/data/bbps-operators";
 export const SHEETS = {
 	index: "Index",
 	verificationCalculator: "Verification Calculator",
+	dmt: "DMT Calculator",
 	paymentsEarnings: "Payments Earnings",
 	connectedBanking: "Connected Banking",
 	verificationRateCard: "Verification Rate Card",
@@ -71,6 +72,8 @@ export interface PricingXlsxData {
 	verificationSetupFee: number;
 	/** `BC_SETUP_FEE` — one-time fee per BC/Payments API family (₹). */
 	bcSetupFee: number;
+	/** `TDS_RATE` — withheld from commission payouts, e.g. 0.02. */
+	tdsRate: number;
 	/** `HAS_VOLUME_DISCOUNTS` — any API with more than one tier. */
 	hasVolumeDiscounts: boolean;
 	/** `MAX_VOLUME` — upper bound for the usage-input validation. */
@@ -79,14 +82,23 @@ export interface PricingXlsxData {
 	siteUrl: string;
 	/** `displayName` helper from api-pricing. */
 	displayName: (api: PricedApi) => string;
-	/** DMT commission config from payments-pricing. */
+	/** DMT charge config from dmt-pricing (commission is closed-form). */
 	dmt: {
-		slabs: DmtSlab[];
+		/** `dmtRateCardRows()` — derived ledger rows for the static rate card. */
+		rows: DmtTxnBreakdown[];
 		senderKycFee: number;
+		/** `DMT_SENDER_KYC_FEE` + GST — what actually leaves the wallet. */
+		senderKycInclGst: number;
+		/** `DMT_RECIPIENT_VERIFY_FEE` — GST-inclusive, per new recipient. */
+		recipientVerifyFee: number;
 		customerFeePct: number;
 		customerFeeMin: number;
+		/** `EKO_DMT_CHARGE` — flat per transaction, excl. GST. */
+		ekoCharge: number;
+		minTxnAmount: number;
 		maxTxnAmount: number;
-		tdsRate: number;
+		defaultAmount: number;
+		defaultMonthlyTxns: number;
 	};
 	/** AePS commission config from payments-pricing. */
 	aeps: {

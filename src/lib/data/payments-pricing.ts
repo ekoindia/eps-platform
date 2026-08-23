@@ -1,6 +1,9 @@
 /**
- * Pricing configuration for Payments & Banking-Correspondent (BC) APIs:
- * DMT, AePS and BBPS.
+ * Pricing configuration for Banking-Correspondent (BC) APIs: AePS and BBPS.
+ *
+ * DMT is NOT here — see `dmt-pricing.ts`. Its economics are a per-transaction
+ * ledger (GST-inclusive customer fee, reverse charge, flat Eko charge) rather
+ * than a commission slab, so it gets its own module and its own pricing tab.
  *
  * Pure data + math module — no React or UI imports — so it can be imported
  * cheaply from the pricing page, the markdown renderer and the build-time
@@ -37,57 +40,8 @@ export interface AmountSlab {
 	pct?: number;
 }
 
-/** One DMT partner-commission slab row (commission after Eko pricing). */
-export interface DmtSlab {
-	/** Inclusive lower bound of the transaction amount (₹) */
-	from: number;
-	/** Inclusive upper bound of the transaction amount (₹) */
-	upTo: number;
-	/** Eko pricing per transaction (₹, excl. GST) — rate-card display */
-	ekoPricing: number;
-	/** Partner commission per transaction (₹, excl. GST) */
-	commission: number;
-}
-
 /** TDS rate deducted from commission payouts */
 export const TDS_RATE = 0.02;
-
-// ---------------------------------------------------------------------------
-// DMT — Domestic Money Transfer
-// ---------------------------------------------------------------------------
-
-/** One-time sender KYC charge (₹, excl. GST), paid once per new sender */
-export const DMT_SENDER_KYC_FEE = 11;
-/** Transaction fee charged to the sender: 1% of the amount… */
-export const DMT_CUSTOMER_FEE_PCT = 0.01;
-/** …with a minimum of ₹10 (i.e. flat ₹10 up to ₹1,000) */
-export const DMT_CUSTOMER_FEE_MIN = 10;
-/** Maximum DMT transaction amount (₹) */
-export const DMT_MAX_TXN_AMOUNT = 5000;
-
-/**
- * DMT commission slabs by transaction amount. Ascending and contiguous —
- * the `from` column doubles as the lookup key for the Excel VLOOKUP.
- */
-export const DMT_SLABS: DmtSlab[] = [
-	{ from: 100, upTo: 1000, ekoPricing: 5.67, commission: 2.87 },
-	{ from: 1001, upTo: 1100, ekoPricing: 6.52, commission: 3.72 },
-	{ from: 1101, upTo: 1200, ekoPricing: 7.37, commission: 4.57 },
-	{ from: 1201, upTo: 1300, ekoPricing: 8.22, commission: 5.42 },
-	{ from: 1301, upTo: 1400, ekoPricing: 9.06, commission: 6.26 },
-	{ from: 1401, upTo: 1500, ekoPricing: 9.91, commission: 7.11 },
-	{ from: 1501, upTo: 1600, ekoPricing: 10.76, commission: 7.96 },
-	{ from: 1601, upTo: 1700, ekoPricing: 11.61, commission: 8.81 },
-	{ from: 1701, upTo: 1800, ekoPricing: 12.45, commission: 9.65 },
-	{ from: 1801, upTo: 1900, ekoPricing: 13.3, commission: 10.5 },
-	{ from: 1901, upTo: 2000, ekoPricing: 14.15, commission: 11.35 },
-	{ from: 2001, upTo: 2500, ekoPricing: 18.39, commission: 15.59 },
-	{ from: 2501, upTo: 3000, ekoPricing: 22.62, commission: 19.82 },
-	{ from: 3001, upTo: 3500, ekoPricing: 26.86, commission: 24.06 },
-	{ from: 3501, upTo: 4000, ekoPricing: 31.1, commission: 28.3 },
-	{ from: 4001, upTo: 4500, ekoPricing: 35.34, commission: 32.54 },
-	{ from: 4501, upTo: 5000, ekoPricing: 39.57, commission: 36.77 },
-];
 
 // ---------------------------------------------------------------------------
 // AePS — Aadhaar-Enabled Payment System
@@ -243,7 +197,7 @@ export interface EarningsProduct {
 	/** Unique, URL-stable id, e.g. "dmt" or a BbpsCategory id */
 	id: string;
 	/** Product family — drives picker/rate-card grouping */
-	family: "DMT" | "AePS" | "BBPS";
+	family: "AePS" | "BBPS";
 	/** Display name */
 	name: string;
 	/** Whether the commission depends on the average transaction amount */
@@ -261,7 +215,8 @@ export interface EarningsProduct {
 /**
  * One-time setup fee per BC/Payments API family (INR, excl. GST). Charged
  * once per family — DMT, AePS and BBPS are one API each, however many BBPS
- * bill categories a partner enables.
+ * bill categories a partner enables. DMT charges this same fee via
+ * `calcDmtQuote` in `dmt-pricing.ts`.
  */
 export const BC_SETUP_FEE = 20_000;
 
@@ -271,16 +226,6 @@ export const MAX_TXNS = 10_000_000;
 export const DEFAULT_MAX_TXN_AMOUNT = 200_000;
 
 export const EARNINGS_PRODUCTS: EarningsProduct[] = [
-	{
-		id: "dmt",
-		family: "DMT",
-		name: "Domestic Money Transfer (DMT)",
-		needsAmount: true,
-		defaultAvgAmount: 2500,
-		defaultMonthlyTxns: 1000,
-		maxTxnAmount: DMT_MAX_TXN_AMOUNT,
-		notes: "Sender pays 1% fee (min ₹10); one-time sender KYC ₹11",
-	},
 	{
 		id: "aeps-cashout",
 		family: "AePS",
@@ -324,7 +269,7 @@ export const BBPS_CATEGORIES_MAP: Record<string, BbpsCategory> =
 
 /** Earnings products grouped by family in display order */
 export const EARNINGS_GROUPS: { label: string; products: EarningsProduct[] }[] =
-	(["DMT", "AePS", "BBPS"] as const).map((family) => ({
+	(["AePS", "BBPS"] as const).map((family) => ({
 		label: family,
 		products: EARNINGS_PRODUCTS.filter((product) => product.family === family),
 	}));
@@ -355,21 +300,6 @@ export const commissionForAmount = (
 };
 
 /**
- * Partner commission (₹ per transaction) for a DMT transaction amount.
- * Amounts are clamped to the slab table's bounds (₹100–₹5,000).
- * @param amount - Transaction amount in ₹
- */
-export const dmtCommissionForAmount = (amount: number): number => {
-	const slab =
-		DMT_SLABS.find((s) => amount <= s.upTo) ?? DMT_SLABS[DMT_SLABS.length - 1];
-	return slab.commission;
-};
-
-/** The DMT slab matched for a transaction amount (for "matched slab" UI) */
-export const dmtSlabForAmount = (amount: number): DmtSlab =>
-	DMT_SLABS.find((s) => amount <= s.upTo) ?? DMT_SLABS[DMT_SLABS.length - 1];
-
-/**
  * Commission (₹ per transaction) for any earnings product at an average
  * transaction amount. Returns 0 for unknown product ids.
  * @param productId - EarningsProduct id
@@ -380,54 +310,11 @@ export const commissionPerTxn = (
 	productId: string,
 	avgAmount: number,
 ): number => {
-	if (productId === "dmt") return dmtCommissionForAmount(avgAmount);
 	if (productId === "aeps-cashout")
 		return commissionForAmount(AEPS_CASHOUT_SLABS, avgAmount);
 	if (productId === "aeps-mini") return AEPS_MINI_STATEMENT_COMMISSION;
 	const category = BBPS_CATEGORIES_MAP[productId];
 	return category ? commissionForAmount(category.slabs, avgAmount) : 0;
-};
-
-/**
- * Headline earnings figure for a product card on /products,
- * e.g. "Earn up to ₹36.77 per transfer".
- */
-export interface EarningsHighlight {
-	/** Max commission display, e.g. "₹36.77" or "3.04%" */
-	maxLabel: string;
-	/** Unit label, e.g. "per transfer" */
-	unitLabel: string;
-}
-
-/**
- * Maximum BBPS commission rate across operators — sourced from the
- * Mobile Prepaid rangeNote (BSNL 3.04%); operator-level rates only
- * exist in notes, not slab data.
- */
-const BBPS_MAX_COMMISSION_PCT = 3.04;
-
-/**
- * Headline "Earn up to …" figure for a BC/payment product card.
- * Returns undefined for products without commission data.
- * @param productId - ApiProductRef.id from api-products.ts ("dmt" | "aeps" | "bbps")
- */
-export const getEarningsHighlight = (
-	productId: string,
-): EarningsHighlight | undefined => {
-	if (productId === "dmt") {
-		const maxCommission = Math.max(...DMT_SLABS.map((slab) => slab.commission));
-		return { maxLabel: `₹${maxCommission}`, unitLabel: "per transfer" };
-	}
-	if (productId === "aeps") {
-		const maxFlat = Math.max(
-			...AEPS_CASHOUT_SLABS.map((slab) => slab.flat ?? 0),
-		);
-		return { maxLabel: `₹${maxFlat}`, unitLabel: "per withdrawal" };
-	}
-	if (productId === "bbps") {
-		return { maxLabel: `${BBPS_MAX_COMMISSION_PCT}%`, unitLabel: "per bill" };
-	}
-	return undefined;
 };
 
 export interface EarningsSelection {
@@ -570,18 +457,6 @@ export const calcEarningsQuote = (
  * and the generated /pricing.md markdown.
  */
 export const PAYMENTS_FAQS: PricingFaq[] = [
-	{
-		q: "How do DMT commissions work?",
-		a: "Your commission per DMT transaction depends on the transaction amount slab — from ₹2.87 on transfers up to ₹1,000 to ₹36.77 on transfers of ₹4,501–₹5,000. The sender pays a 1% transaction fee (minimum ₹10); your commission is what remains after Eko's pricing, exclusive of GST.",
-	},
-	{
-		q: "Who pays the DMT customer fee and sender KYC charge?",
-		a: "Both are charged to the **sender**: a 1% transaction fee (minimum ₹10) per transfer, and a one-time ₹11 (excl. GST) KYC charge when a new sender is registered. The [DMT recipe](/recipe) shows where sender KYC fits in the transaction flow.",
-	},
-	{
-		q: "Is TDS deducted from commissions?",
-		a: "Yes. **TDS @ 2%** is deducted from every commission payout, as required by law. The [calculator](/pricing) shows both your gross commission and an indicative after-TDS figure.",
-	},
 	{
 		q: "How does AePS commission work?",
 		a: "AePS cash withdrawals earn 0.40% of the amount for transactions of ₹101–₹3,000 and a flat ₹13 for ₹3,001–₹10,000. Mini statements earn ₹0.75 per transaction. Fund settlements carry a small charge of ₹5–₹10 + GST depending on the settlement amount.",

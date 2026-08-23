@@ -53,6 +53,7 @@ jobs:
             parent="$(git rev-parse --verify --quiet "$SHA^" || true)"
             if [ -n "$parent" ] && git diff --quiet "$parent" "$SHA" -- \
               'packages/eps-backend/**' \
+              'packages/eps-context-mcp/**' \
               '.githooks/setup.mjs' \
               'package.json' \
               'package-lock.json' \

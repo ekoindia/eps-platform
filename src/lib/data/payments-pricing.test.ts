@@ -7,9 +7,6 @@ import {
 	clampAvgAmount,
 	commissionForAmount,
 	commissionPerTxn,
-	DMT_SLABS,
-	dmtCommissionForAmount,
-	dmtSlabForAmount,
 	EARNINGS_PRODUCTS,
 	EARNINGS_PRODUCTS_MAP,
 	MAX_TXNS,
@@ -21,38 +18,6 @@ import {
 	SETUP_FEE_DISCOUNT_PERCENT,
 	applySetupFeeDiscount,
 } from "@/lib/data/api-pricing";
-
-describe("DMT_SLABS", () => {
-	it("is ascending and contiguous (VLOOKUP-safe)", () => {
-		for (let i = 1; i < DMT_SLABS.length; i++) {
-			expect(DMT_SLABS[i].from).toBe(DMT_SLABS[i - 1].upTo + 1);
-			expect(DMT_SLABS[i].commission).toBeGreaterThan(
-				DMT_SLABS[i - 1].commission,
-			);
-		}
-	});
-});
-
-describe("dmtCommissionForAmount", () => {
-	it("resolves slab boundaries correctly", () => {
-		expect(dmtCommissionForAmount(100)).toBe(2.87);
-		expect(dmtCommissionForAmount(1000)).toBe(2.87);
-		expect(dmtCommissionForAmount(1001)).toBe(3.72);
-		expect(dmtCommissionForAmount(2000)).toBe(11.35);
-		expect(dmtCommissionForAmount(2001)).toBe(15.59);
-		expect(dmtCommissionForAmount(5000)).toBe(36.77);
-	});
-
-	it("clamps amounts above the table to the last slab", () => {
-		expect(dmtCommissionForAmount(99999)).toBe(36.77);
-	});
-
-	it("matches dmtSlabForAmount", () => {
-		expect(dmtSlabForAmount(2500).commission).toBe(
-			dmtCommissionForAmount(2500),
-		);
-	});
-});
 
 describe("commissionForAmount (AePS cashout)", () => {
 	it("uses 0.40% up to ₹3,000 and ₹13 flat above", () => {
@@ -94,10 +59,10 @@ describe("commissionPerTxn", () => {
 
 describe("clampAvgAmount", () => {
 	it("clamps to the product's max txn amount", () => {
-		const dmt = EARNINGS_PRODUCTS_MAP["dmt"];
-		expect(clampAvgAmount(dmt, 99999)).toBe(5000);
-		expect(clampAvgAmount(dmt, -5)).toBe(1);
-		expect(clampAvgAmount(dmt, Number.NaN)).toBe(1);
+		const cashout = EARNINGS_PRODUCTS_MAP["aeps-cashout"];
+		expect(clampAvgAmount(cashout, 99999)).toBe(10000);
+		expect(clampAvgAmount(cashout, -5)).toBe(1);
+		expect(clampAvgAmount(cashout, Number.NaN)).toBe(1);
 	});
 });
 
@@ -112,36 +77,40 @@ describe("calcEarningsQuote", () => {
 
 	it("computes line earnings and totals in exact paise", () => {
 		const quote = calcEarningsQuote([
-			{ productId: "dmt", monthlyTxns: 1000, avgAmount: 2500 },
+			{ productId: "aeps-cashout", monthlyTxns: 1000, avgAmount: 2000 },
 			{ productId: "aeps-mini", monthlyTxns: 500 },
 		]);
-		expect(quote.lines[0].perTxn).toBe(15.59);
-		expect(quote.lines[0].monthlyEarnings).toBe(15590);
+		expect(quote.lines[0].perTxn).toBe(8); // 0.40% of ₹2,000
+		expect(quote.lines[0].monthlyEarnings).toBe(8000);
 		expect(quote.lines[1].monthlyEarnings).toBe(375);
-		expect(quote.total).toBe(15965);
-		expect(quote.totalAfterTds).toBe(15645.7); // 15965 × (1 − TDS_RATE), paise-exact
+		expect(quote.total).toBe(8375);
+		expect(quote.totalAfterTds).toBe(8207.5); // 8375 × (1 − TDS_RATE), paise-exact
 		expect(quote.totalTxns).toBe(1500);
 	});
 
 	it("clamps txn counts and amounts", () => {
 		const quote = calcEarningsQuote([
-			{ productId: "dmt", monthlyTxns: MAX_TXNS * 2, avgAmount: 99999 },
+			{ productId: "aeps-cashout", monthlyTxns: MAX_TXNS * 2, avgAmount: 99999 },
 		]);
 		expect(quote.lines[0].monthlyTxns).toBe(MAX_TXNS);
-		expect(quote.lines[0].avgAmount).toBe(5000);
+		expect(quote.lines[0].avgAmount).toBe(10000);
 	});
 
 	it("falls back to the product's default avg amount", () => {
-		const quote = calcEarningsQuote([{ productId: "dmt", monthlyTxns: 10 }]);
+		const quote = calcEarningsQuote([
+			{ productId: "aeps-cashout", monthlyTxns: 10 },
+		]);
 		expect(quote.lines[0].avgAmount).toBe(
-			EARNINGS_PRODUCTS_MAP["dmt"].defaultAvgAmount,
+			EARNINGS_PRODUCTS_MAP["aeps-cashout"].defaultAvgAmount,
 		);
 	});
 });
 
 describe("EARNINGS_PRODUCTS", () => {
-	it("covers DMT, both AePS products and every BBPS category", () => {
-		expect(EARNINGS_PRODUCTS).toHaveLength(3 + BBPS_CATEGORIES.length);
+	// DMT is deliberately absent — it lives in dmt-pricing.ts / its own tab.
+	it("covers both AePS products and every BBPS category, but not DMT", () => {
+		expect(EARNINGS_PRODUCTS).toHaveLength(2 + BBPS_CATEGORIES.length);
+		expect(EARNINGS_PRODUCTS.map((p) => p.id)).not.toContain("dmt");
 		expect(
 			EARNINGS_PRODUCTS.filter((p) => !p.needsAmount).map((p) => p.id),
 		).toEqual(["aeps-mini"]);
@@ -164,9 +133,9 @@ describe("calcPaymentsSetupFee", () => {
 	});
 
 	it("adds up across families", () => {
-		expect(
-			calcPaymentsSetupFee(["dmt", "aeps-cashout", bbpsIds[0]]).amount,
-		).toBe(BC_SETUP_FEE * 3);
+		expect(calcPaymentsSetupFee(["aeps-cashout", bbpsIds[0]]).amount).toBe(
+			BC_SETUP_FEE * 2,
+		);
 	});
 
 	it("ignores unknown ids and charges nothing for an empty selection", () => {
@@ -175,7 +144,7 @@ describe("calcPaymentsSetupFee", () => {
 	});
 
 	it("applies the site-wide discount and GST", () => {
-		const quote = calcPaymentsSetupFee(["dmt"]);
+		const quote = calcPaymentsSetupFee(["aeps-cashout"]);
 		expect(quote.discountPercent).toBe(SETUP_FEE_DISCOUNT_PERCENT);
 		expect(quote.payable).toBe(
 			applySetupFeeDiscount(BC_SETUP_FEE * 100, SETUP_FEE_DISCOUNT_PERCENT),
@@ -187,14 +156,16 @@ describe("calcPaymentsSetupFee", () => {
 describe("calcEarningsQuote setup fee", () => {
 	it("only counts families with non-zero transactions", () => {
 		const quote = calcEarningsQuote([
-			{ productId: "dmt", monthlyTxns: 100 },
-			{ productId: "aeps-cashout", monthlyTxns: 0 },
+			{ productId: "aeps-cashout", monthlyTxns: 100 },
+			{ productId: "bbps-electricity", monthlyTxns: 0 },
 		]);
 		expect(quote.setupFee.amount).toBe(BC_SETUP_FEE);
 	});
 
 	it("keeps the one-time cost out of the commission totals", () => {
-		const quote = calcEarningsQuote([{ productId: "dmt", monthlyTxns: 100 }]);
+		const quote = calcEarningsQuote([
+			{ productId: "aeps-cashout", monthlyTxns: 100 },
+		]);
 		// Holds at every discount level, including a full waiver (payable 0).
 		expect(quote.setupFee.amount).toBeGreaterThan(0);
 		expect(quote.totalAfterTds).toBeLessThan(quote.total);

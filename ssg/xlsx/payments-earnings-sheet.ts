@@ -20,7 +20,6 @@ import {
 } from "./shared";
 
 /** Default avg txn amounts pre-filled in the input column */
-const DMT_DEFAULT_AVG = 2500;
 const AEPS_DEFAULT_AVG = 2000;
 
 /**
@@ -63,16 +62,13 @@ interface EarningsRowDef {
 }
 
 /**
- * Build the interactive "Payments Earnings" sheet: DMT, AePS and BBPS
- * products with avg-amount + monthly-txn inputs and live commission
- * formulas, totalled with a TDS line.
- * @param dmtLookupRange - Absolute range of the DMT slab table on the
- *   Payments Rate Card sheet (columns From | Up to | Eko pricing | Commission)
+ * Build the interactive "Payments Earnings" sheet: AePS and BBPS products
+ * with avg-amount + monthly-txn inputs and live commission formulas,
+ * totalled with a TDS line. DMT has its own sheet — see `dmt-sheet.ts`.
  */
 export async function buildPaymentsEarningsSheet(
 	ws: Worksheet,
 	data: PricingXlsxData,
-	dmtLookupRange: string,
 ): Promise<void> {
 	ws.columns = [
 		{ width: 34 },
@@ -84,9 +80,9 @@ export async function buildPaymentsEarningsSheet(
 		{ width: 52 },
 	];
 
-	const { dmt, aeps, bbps } = data;
+	const { aeps, bbps } = data;
 	const gstPct = Math.round(data.gstRate * 100);
-	const tdsPct = Math.round(dmt.tdsRate * 100);
+	const tdsPct = Math.round(data.tdsRate * 100);
 
 	let row = 1;
 	brandedTitle(
@@ -129,20 +125,6 @@ export async function buildPaymentsEarningsSheet(
 	// -- Product groups -------------------------------------------------------
 	const cashoutMax = aeps.cashoutSlabs[aeps.cashoutSlabs.length - 1].upTo ?? 0;
 	const groups: { label: string; rows: EarningsRowDef[] }[] = [
-		{
-			label: "DMT — Domestic Money Transfer",
-			rows: [
-				{
-					name: "Domestic Money Transfer (DMT)",
-					basis: "Slab by txn amount — see Payments Rate Card",
-					defaultAvg: DMT_DEFAULT_AVG,
-					avgRange: [dmt.slabs[0].from, dmt.maxTxnAmount],
-					perTxn: (avgRef) =>
-						`IF(${avgRef}="","",VLOOKUP(${avgRef},${dmtLookupRange},4,TRUE))`,
-					notes: `Sender pays ${dmt.customerFeePct * 100}% fee (min ₹${dmt.customerFeeMin}); one-time sender KYC ₹${dmt.senderKycFee}`,
-				},
-			],
-		},
 		{
 			label: "AePS — Aadhaar-Enabled Payment System",
 			rows: [
@@ -290,7 +272,7 @@ export async function buildPaymentsEarningsSheet(
 	);
 	const tdsRow = summaryRow(
 		`Less TDS @ ${tdsPct}%`,
-		`F${grossRow}*${dmt.tdsRate}`,
+		`F${grossRow}*${data.tdsRate}`,
 	);
 	summaryRow("Indicative net monthly payout", `F${grossRow}-F${tdsRow}`, {
 		gold: true,
@@ -315,7 +297,6 @@ export async function buildPaymentsEarningsSheet(
 	// -- Footnotes ----------------------------------------------------------------
 	const footnotes = [
 		"Estimates use your AVERAGE transaction amount; actual earnings depend on each transaction's slab.",
-		`DMT: sender pays a ${dmt.customerFeePct * 100}% transaction fee (min ₹${dmt.customerFeeMin}) and a one-time ₹${dmt.senderKycFee} KYC charge.`,
 		`AePS fund settlements carry a charge of ${aeps.settlementCharges.map((slab) => `₹${slab.flat} (${slab.upTo === null ? `above ₹${(slab.from - 1).toLocaleString("en-IN")}` : `up to ₹${slab.upTo.toLocaleString("en-IN")}`})`).join(" / ")} + GST.`,
 		"Where BBPS operator rates vary, the LOWEST rate is used for a conservative estimate.",
 	];

@@ -116,6 +116,11 @@ describe("deploy-eps-backend.yml", () => {
 		expect(w).toContain("git fetch origin main --depth=1");
 		expect(w).toContain("git rev-parse FETCH_HEAD");
 	});
+	it("rebuilds when the bundled eps-context-mcp package changes", () => {
+		// The image bundles that package's source; leaving it out of the guard
+		// would let a context-MCP fix land on main and never deploy.
+		expect(workflow()).toContain("'packages/eps-context-mcp/**'");
+	});
 	it("pushes :sha then retags :prod to the BUILT digest", () => {
 		const w = workflow();
 		expect(w).toContain("packages: write");

@@ -214,6 +214,17 @@ the full list and inline notes. Restrict file permissions:
 chmod 600 /data/eps-backend/.env
 ```
 
+To also serve the public context-MCP endpoint from this process, add:
+
+```sh
+CONTEXT_BUNDLE_URL=https://eps.eko.in/agent/eps.json
+# CONTEXT_BUNDLE_TTL_SEC=900   # optional; default 900
+```
+
+Setting it mounts `/context/*` (see Step 9b); unsetting it and recreating the
+container removes those routes without touching auth — that is the kill switch
+for the one public, anonymous surface on this box.
+
 ### Step 6 — Seed `/data/eps-backend/deploy.env` with the current `:prod` digest
 
 The poller will overwrite this file on every reconciliation, but it must exist
@@ -339,6 +350,66 @@ curl -s ifconfig.me     # run ON the VM
 Confirm in the cloud console that this address is static (a reserved public IP
 or a NAT gateway) before requesting the allowlist entry — a dynamic one will
 silently start returning 403s after a reallocation.
+
+### Step 9b — Publish the context MCP server on `mcp.eko.in/context/`
+
+Only when `CONTEXT_BUNDLE_URL` is set (Step 5). The `mcp.eko.in` vhost already
+exists for eps-transact-mcp and is path-namespaced; `/context/` was reserved for
+this. Edit that file — do **not** create a second vhost for the same name.
+
+The rate limit is not optional: this is an anonymous, unmetered endpoint, and
+nginx is the only thing metering it. The zone must sit at `http{}` level, i.e.
+the top of the file, above `server {`:
+
+```nginx
+# /etc/nginx/conf.d/eps-transact-mcp.conf   (the mcp.eko.in vhost)
+
+# Anonymous unmetered endpoint: the proxy is the only abuse control.
+# 10 MB tracks ~160k client IPs; mcp.eko.in resolves straight to this VM, so
+# $binary_remote_addr is the real client (re-check if a CDN is ever put in front).
+limit_req_zone $binary_remote_addr zone=mcpctx:10m rate=10r/s;
+
+server {
+    server_name mcp.eko.in;
+    # ... existing location /transact/ ...
+
+    # Prefix PRESERVED — no URI on proxy_pass, no trailing slash: the backend
+    # serves /context/mcp itself. Its own vhost (api.eps.eko.in) stays
+    # prefix-free because the GitHub OAuth callback must match byte for byte.
+    location /context/ {
+        limit_req zone=mcpctx burst=20 nodelay;
+        limit_req_status 429;
+        client_max_body_size 1m;          # JSON-RPC bodies are tiny
+
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        # MUST overwrite — the backend's rate limiter trusts X-Real-IP
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # streamable HTTP: no buffering either direction
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 120s;
+    }
+
+    location / { return 404; }
+}
+```
+
+```sh
+nginx -t && systemctl reload nginx
+
+curl -s https://mcp.eko.in/context/healthz     # {"ok":true,"bundleVersion":"…","source":"remote"}
+curl -s https://mcp.eko.in/transact/healthz    # regression: still 200
+curl -s -o /dev/null -w '%{http_code}\n' https://mcp.eko.in/   # 404, namespace stays clean
+```
+
+`/context/healthz` answers `503` until the first bundle fetch succeeds, which is
+the correct signal — but do **not** point the container healthcheck or the
+poller's gate at it: `/readyz` deliberately ignores the bundle so a site outage
+cannot fail an auth deploy.
 
 ### Step 10 — Point the frontend at it
 

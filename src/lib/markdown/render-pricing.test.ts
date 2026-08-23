@@ -7,9 +7,9 @@ import {
 } from "@/lib/data/api-pricing";
 import {
 	BBPS_CATEGORIES,
-	DMT_SLABS,
 	PAYMENTS_FAQS,
 } from "@/lib/data/payments-pricing";
+import { DMT_FAQS, dmtRateCardRows } from "@/lib/data/dmt-pricing";
 import { CB_FAQS } from "@/lib/data/connected-banking-pricing";
 
 describe("renderPricingMarkdown", () => {
@@ -44,13 +44,23 @@ describe("renderPricingMarkdown", () => {
 		expect(md).toContain("Bulk APIs are billed per individual verification");
 	});
 
-	it("renders the DMT commission slab table", () => {
-		expect(md).toContain("### Domestic Money Transfer (DMT)");
-		for (const slab of DMT_SLABS) {
-			expect(md).toContain(`₹${slab.commission.toFixed(2)}`);
+	it("renders the DMT ledger table with every derived row", () => {
+		expect(md).toContain("## Domestic Money Transfer (DMT) Charges");
+		for (const row of dmtRateCardRows()) {
+			expect(md).toContain(`₹${row.grossCommission.toFixed(2)}`);
+			expect(md).toContain(`₹${row.netCommission.toFixed(2)}`);
 		}
 		expect(md).toContain("minimum ₹10.00");
-		expect(md).toContain("₹11");
+		expect(md).toContain("₹39.57 gross commission");
+	});
+
+	it("explains the reverse charge mechanism and the other DMT charges", () => {
+		expect(md).toContain("### Reverse Charge Mechanism (RCM)");
+		expect(md).toContain('RCM option set to "YES"');
+		expect(md).toContain("₹7.12"); // 18% of the ₹39.57 commission
+		expect(md).toContain("₹12.98"); // sender KYC incl. GST
+		expect(md).toContain("₹3.25"); // recipient account verification
+		expect(md).toContain("debited from your wallet");
 	});
 
 	it("renders the AePS section with settlement charges", () => {
@@ -78,7 +88,12 @@ describe("renderPricingMarkdown", () => {
 	});
 
 	it("includes every FAQ across all product families", () => {
-		for (const faq of [...PRICING_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS]) {
+		for (const faq of [
+			...PRICING_FAQS,
+			...DMT_FAQS,
+			...PAYMENTS_FAQS,
+			...CB_FAQS,
+		]) {
 			expect(md).toContain(`### ${faq.q}`);
 			expect(md).toContain(faq.a);
 		}

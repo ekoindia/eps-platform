@@ -17,14 +17,21 @@ import {
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
 	BC_SETUP_FEE,
-	DMT_CUSTOMER_FEE_MIN,
-	DMT_CUSTOMER_FEE_PCT,
-	DMT_MAX_TXN_AMOUNT,
-	DMT_SENDER_KYC_FEE,
-	DMT_SLABS,
 	PAYMENTS_FAQS,
 	TDS_RATE,
 } from "@/lib/data/payments-pricing";
+import {
+	DMT_CUSTOMER_FEE_MIN,
+	DMT_CUSTOMER_FEE_PCT,
+	DMT_FAQS,
+	DMT_MAX_TXN_AMOUNT,
+	DMT_RECIPIENT_VERIFY_FEE,
+	DMT_SENDER_KYC_FEE,
+	EKO_DMT_CHARGE,
+	calcDmtTxn,
+	dmtRateCardRows,
+	dmtSenderKycInclGst,
+} from "@/lib/data/dmt-pricing";
 import {
 	CB_BANKS,
 	CB_FAQS,
@@ -118,31 +125,48 @@ export function renderPricingMarkdown(): string {
 		);
 	}
 
-	// ---- Payments & BC commissions (DMT, AePS, BBPS) ----
+	// ---- DMT (its own pricing tab — a per-transaction ledger, not slabs) ----
+	const dmtExample = calcDmtTxn(DMT_MAX_TXN_AMOUNT);
 	blocks.push(
-		h2("Payments & BC API Commissions (DMT, AePS, BBPS)"),
-		`Unlike verification APIs, these products **pay you a commission** per transaction. All commission figures are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts.`,
-		h3("Domestic Money Transfer (DMT)"),
+		h2("Domestic Money Transfer (DMT) Charges"),
+		`The sender pays a transaction fee of ${DMT_CUSTOMER_FEE_PCT * 100}% of the transfer amount (minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)}). That fee is **inclusive of GST @ ${Math.round(GST_RATE * 100)}%** — GST is never added on top of it. Stripping the GST out gives the taxable value; Eko's flat charge of ${formatRate(EKO_DMT_CHARGE)} per transaction comes off that, and the remainder is your commission, from which TDS @ ${Math.round(TDS_RATE * 100)}% is withheld.`,
+		`Worked example on a ${formatAmount(dmtExample.amount)} transfer: ${formatRate(dmtExample.customerFee)} fee → ${formatRate(dmtExample.feeExGst)} taxable value → less ${formatRate(dmtExample.ekoCharge)} → **${formatRate(dmtExample.grossCommission)} gross commission** → less ${formatRate(dmtExample.tds)} TDS → ${formatRate(dmtExample.netCommission)} net.`,
 		markdownTable(
 			[
-				"Txn amount (INR)",
-				"Eko pricing (excl. GST)",
-				"Your commission (excl. GST)",
+				"Transfer amount (INR)",
+				"Sender fee (incl. GST)",
+				"GST in fee",
+				"Taxable value",
+				"Eko charge",
+				"Your commission",
 				`After TDS @ ${Math.round(TDS_RATE * 100)}%`,
 			],
-			DMT_SLABS.map((slab) => [
-				`${formatAmount(slab.from)} – ${formatAmount(slab.upTo)}`,
-				formatRate(slab.ekoPricing),
-				formatRate(slab.commission),
-				formatRate(slab.commission * (1 - TDS_RATE)),
+			dmtRateCardRows().map((row) => [
+				formatAmount(row.amount),
+				formatRate(row.customerFee),
+				formatRate(row.gstInFee),
+				formatRate(row.feeExGst),
+				formatRate(row.ekoCharge),
+				formatRate(row.grossCommission),
+				formatRate(row.netCommission),
 			]),
 		),
+		`Commission scales continuously with the transfer amount — the table lists representative amounts, not bands. Below ${formatAmount(1000)} the fee floors at ${formatRate(DMT_CUSTOMER_FEE_MIN)}, so commission is flat at ${formatRate(calcDmtTxn(100).grossCommission)}.`,
+		h3("Reverse Charge Mechanism (RCM)"),
+		`DMT commission is notified under reverse charge: the GST on your commission is paid to the government by Eko, not collected and remitted by you. Raise your invoice to Eko with the **RCM option set to "YES"** and no GST line on it. On the ${formatAmount(dmtExample.amount)} example the RCM amount is ${formatRate(dmtExample.rcmGst)} (${Math.round(GST_RATE * 100)}% of ${formatRate(dmtExample.grossCommission)}). Confirm the treatment for your own registration with your accountant.`,
+		h3("Other DMT charges"),
 		bulletList([
-			`Sender transaction fee: ${DMT_CUSTOMER_FEE_PCT * 100}% of the amount, minimum ${formatRate(DMT_CUSTOMER_FEE_MIN)} — paid by the sender.`,
-			`One-time sender KYC charge: ${formatAmount(DMT_SENDER_KYC_FEE)} (excl. GST), paid by the sender at registration.`,
-			`Maximum transaction amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)}.`,
-			"Actual earnings depend on your transaction-amount mix; commission applies per the slab of each transaction.",
+			`Sender KYC: ${formatAmount(DMT_SENDER_KYC_FEE)} + GST (${formatRate(dmtSenderKycInclGst())}), charged once per newly registered sender.`,
+			`Recipient bank account verification: ${formatRate(DMT_RECIPIENT_VERIFY_FEE)} (incl. GST), charged once per new recipient — not per transfer.`,
+			"Both are debited from your wallet; you may recover them from your customer in your own app.",
+			`Maximum transfer amount: ${formatAmount(DMT_MAX_TXN_AMOUNT)} per transaction.`,
 		]),
+	);
+
+	// ---- Payments & BC commissions (AePS, BBPS) ----
+	blocks.push(
+		h2("Payments & BC API Commissions (AePS, BBPS)"),
+		`Unlike verification APIs, these products **pay you a commission** per transaction. All commission figures are in INR, exclusive of GST @ ${Math.round(GST_RATE * 100)}%. TDS @ ${Math.round(TDS_RATE * 100)}% is deducted from commission payouts.`,
 		h3("AePS — Aadhaar-Enabled Payment System"),
 		markdownTable(
 			["Transaction bracket (INR)", "Cashout commission"],
@@ -218,7 +242,7 @@ export function renderPricingMarkdown(): string {
 		h2("FAQs"),
 	);
 
-	for (const faq of [...PRICING_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS]) {
+	for (const faq of [...PRICING_FAQS, ...DMT_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS]) {
 		blocks.push(`${h3(faq.q)}\n${faq.a}`);
 	}
 

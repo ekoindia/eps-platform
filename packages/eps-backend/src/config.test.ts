@@ -253,4 +253,47 @@ describe("connect-api auth provider config", () => {
 			}),
 		).toThrow(/positive integer/);
 	});
+
+	describe("contextMcp", () => {
+		it("is absent unless CONTEXT_BUNDLE_URL is set", () => {
+			expect(loadConfig(base).contextMcp).toBeUndefined();
+		});
+
+		it("parses the bundle URL with a 15-minute default TTL", () => {
+			const cfg = loadConfig({
+				...base,
+				CONTEXT_BUNDLE_URL: "https://eps.eko.in/agent/eps.json",
+			});
+			expect(cfg.contextMcp).toEqual({
+				bundleUrl: "https://eps.eko.in/agent/eps.json",
+				ttlSec: 900,
+			});
+		});
+
+		it("rejects a malformed URL, plaintext to a remote host, or a bad TTL", () => {
+			expect(() =>
+				loadConfig({ ...base, CONTEXT_BUNDLE_URL: "eps.eko.in/agent" }),
+			).toThrowError(/not a valid URL/);
+			expect(() =>
+				loadConfig({ ...base, CONTEXT_BUNDLE_URL: "http://eps.eko.in/a.json" }),
+			).toThrowError(/must be https/);
+			expect(() =>
+				loadConfig({
+					...base,
+					CONTEXT_BUNDLE_URL: "https://eps.eko.in/a.json",
+					CONTEXT_BUNDLE_TTL_SEC: "0",
+				}),
+			).toThrowError(/positive integer/);
+		});
+
+		it("allows a loopback bundle URL over http for local dev", () => {
+			const cfg = loadConfig({
+				...base,
+				CONTEXT_BUNDLE_URL: "http://localhost:5173/agent/eps.json",
+			});
+			expect(cfg.contextMcp?.bundleUrl).toBe(
+				"http://localhost:5173/agent/eps.json",
+			);
+		});
+	});
 });

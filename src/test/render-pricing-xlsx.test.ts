@@ -18,13 +18,21 @@ import {
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
 	BC_SETUP_FEE,
-	DMT_CUSTOMER_FEE_MIN,
-	DMT_CUSTOMER_FEE_PCT,
-	DMT_MAX_TXN_AMOUNT,
-	DMT_SENDER_KYC_FEE,
-	DMT_SLABS,
 	TDS_RATE,
 } from "@/lib/data/payments-pricing";
+import {
+	DMT_CUSTOMER_FEE_MIN,
+	DMT_CUSTOMER_FEE_PCT,
+	DMT_DEFAULT_AMOUNT,
+	DMT_DEFAULT_MONTHLY_TXNS,
+	DMT_MAX_TXN_AMOUNT,
+	DMT_MIN_TXN_AMOUNT,
+	DMT_RECIPIENT_VERIFY_FEE,
+	DMT_SENDER_KYC_FEE,
+	EKO_DMT_CHARGE,
+	dmtRateCardRows,
+	dmtSenderKycInclGst,
+} from "@/lib/data/dmt-pricing";
 import {
 	CB_BANKS,
 	CB_MAX_BANK_USERS,
@@ -38,6 +46,7 @@ import { renderPricingXlsx } from "../../ssg/render-pricing-xlsx";
 const SHEET_ORDER = [
 	"Index",
 	"Verification Calculator",
+	"DMT Calculator",
 	"Payments Earnings",
 	"Connected Banking",
 	"Verification Rate Card",
@@ -60,6 +69,7 @@ describe("renderPricingXlsx", () => {
 	let workbook: Workbook;
 	let index: Worksheet;
 	let calculator: Worksheet;
+	let dmtSheet: Worksheet;
 	let earnings: Worksheet;
 	let banking: Worksheet;
 	let rateCard: Worksheet;
@@ -73,17 +83,23 @@ describe("renderPricingXlsx", () => {
 			setupFeeDiscountPercent: SETUP_FEE_DISCOUNT_PERCENT,
 			verificationSetupFee: VERIFICATION_SETUP_FEE,
 			bcSetupFee: BC_SETUP_FEE,
+			tdsRate: TDS_RATE,
 			hasVolumeDiscounts: HAS_VOLUME_DISCOUNTS,
 			maxVolume: MAX_VOLUME,
 			siteUrl: SITE_URL,
 			displayName,
 			dmt: {
-				slabs: DMT_SLABS,
+				rows: dmtRateCardRows(),
 				senderKycFee: DMT_SENDER_KYC_FEE,
+				senderKycInclGst: dmtSenderKycInclGst(),
+				recipientVerifyFee: DMT_RECIPIENT_VERIFY_FEE,
 				customerFeePct: DMT_CUSTOMER_FEE_PCT,
 				customerFeeMin: DMT_CUSTOMER_FEE_MIN,
+				ekoCharge: EKO_DMT_CHARGE,
+				minTxnAmount: DMT_MIN_TXN_AMOUNT,
 				maxTxnAmount: DMT_MAX_TXN_AMOUNT,
-				tdsRate: TDS_RATE,
+				defaultAmount: DMT_DEFAULT_AMOUNT,
+				defaultMonthlyTxns: DMT_DEFAULT_MONTHLY_TXNS,
 			},
 			aeps: {
 				cashoutSlabs: AEPS_CASHOUT_SLABS,
@@ -103,6 +119,7 @@ describe("renderPricingXlsx", () => {
 		await workbook.xlsx.load(buffer as any);
 		index = workbook.getWorksheet("Index")!;
 		calculator = workbook.getWorksheet("Verification Calculator")!;
+		dmtSheet = workbook.getWorksheet("DMT Calculator")!;
 		earnings = workbook.getWorksheet("Payments Earnings")!;
 		banking = workbook.getWorksheet("Connected Banking")!;
 		rateCard = workbook.getWorksheet("Verification Rate Card")!;
@@ -263,28 +280,17 @@ describe("renderPricingXlsx", () => {
 				const f = row.getCell(6).formula ?? "";
 				if (f.includes(`${BC_SETUP_FEE},0)`)) formula = f;
 			});
-			// DMT, AePS and BBPS — three IF terms however many BBPS categories
-			// the sheet lists.
+			// AePS and BBPS — two IF terms however many BBPS categories the
+			// sheet lists (DMT charges its family fee on its own sheet).
 			const terms = formula.match(/IF\(SUM\(/g) ?? [];
-			expect(terms).toHaveLength(3);
+			expect(terms).toHaveLength(2);
 			const netFactor = (100 - SETUP_FEE_DISCOUNT_PERCENT) / 100;
 			expect(formula).toContain(`*${netFactor}`);
 		});
 
-		it("resolves the DMT commission via VLOOKUP against the Payments Rate Card", () => {
-			let vlookup = "";
-			earnings.eachRow((row) => {
-				const formula = row.getCell(5).formula ?? "";
-				if (formula.includes("VLOOKUP")) vlookup = formula;
-			});
-			expect(vlookup).toContain("VLOOKUP(");
-			expect(vlookup).toContain("'Payments Rate Card'!");
-			expect(vlookup).toContain(",4,TRUE)");
-		});
-
-		it("lists every BBPS category plus DMT and both AePS products", () => {
+		it("lists every BBPS category and both AePS products, but not DMT", () => {
 			const texts = cellTexts(earnings);
-			expect(texts).toContain("Domestic Money Transfer (DMT)");
+			expect(texts).not.toContain("Domestic Money Transfer (DMT)");
 			expect(texts).toContain("AePS Cash Withdrawal");
 			expect(texts).toContain("AePS Mini Statement");
 			for (const category of BBPS_CATEGORIES) {
@@ -317,12 +323,12 @@ describe("renderPricingXlsx", () => {
 					}
 				});
 			});
-			// One txn input per product (DMT + 2 AePS + categories)
+			// One txn input per product (2 AePS + categories)
 			let txnInputs = 0;
 			earnings.eachRow((row) => {
 				if (row.getCell(4).protection?.locked === false) txnInputs++;
 			});
-			expect(txnInputs).toBe(3 + BBPS_CATEGORIES.length);
+			expect(txnInputs).toBe(2 + BBPS_CATEGORIES.length);
 		});
 	});
 
@@ -374,18 +380,69 @@ describe("renderPricingXlsx", () => {
 	});
 
 	describe("Payments Rate Card sheet", () => {
-		it("carries every DMT slab with its commission value", () => {
-			// Numeric cells: cell.text is the raw value (numFmt isn't applied)
+		it("no longer carries DMT — it moved to its own sheet", () => {
+			const texts = cellTexts(paymentsRateCard);
+			expect(
+				texts.some((t) => t.includes("DMT — Commission by transaction amount")),
+			).toBe(false);
+			expect(
+				texts.some((t) => t.includes("AePS — Cashout")),
+			).toBe(true);
+		});
+	});
+
+	describe("DMT Calculator sheet", () => {
+		// The ledger is live formulas, rounded at the same points as
+		// calcDmtTxn — otherwise the workbook and the website disagree.
+		it("derives the whole ledger from the transfer-amount input", () => {
+			const formulas: string[] = [];
+			dmtSheet.eachRow((row) => {
+				const f = row.getCell(2).formula;
+				if (f) formulas.push(f);
+			});
+			const joined = formulas.join(" | ");
+			expect(joined).toContain(
+				`ROUND(MAX(${DMT_CUSTOMER_FEE_MIN},`,
+			); // 1% floored at ₹10
+			expect(joined).toContain(`*${DMT_CUSTOMER_FEE_PCT})`);
+			expect(joined).toContain(`/(1+${GST_RATE})`); // strip the inclusive GST
+			expect(joined).toContain(`-${EKO_DMT_CHARGE}`); // flat Eko charge, once
+			expect(joined).toContain(`*${TDS_RATE},2)`); // TDS rounded to paise
+			expect(joined).toContain(`*${GST_RATE},2)`); // RCM GST on commission
+			// The ₹2.80 must appear exactly once as a deduction
+			expect(joined.match(new RegExp(`-${EKO_DMT_CHARGE}`, "g"))).toHaveLength(
+				1,
+			);
+			expect(joined).not.toContain("VLOOKUP");
+		});
+
+		it("offsets recovered add-ons instead of hiding the wallet debit", () => {
+			const formulas: string[] = [];
+			dmtSheet.eachRow((row) => {
+				const f = row.getCell(2).formula;
+				if (f) formulas.push(f);
+			});
+			const joined = formulas.join(" | ");
+			expect(joined).toContain(`*${dmtSenderKycInclGst()}`);
+			expect(joined).toContain(`*${DMT_RECIPIENT_VERIFY_FEE}`);
+			expect(joined).toContain('="Yes"'); // recovery toggle
+		});
+
+		it("carries the derived rate card and the RCM guidance", () => {
 			const values = new Set<number>();
-			paymentsRateCard.eachRow((row) => {
-				const value = row.getCell(4).value;
+			dmtSheet.eachRow((row) => {
+				const value = row.getCell(5).value; // "Your commission" column
 				if (typeof value === "number") values.add(value);
 			});
-			for (const slab of DMT_SLABS) {
-				expect(values, `commission ${slab.commission} missing`).toContain(
-					slab.commission,
-				);
+			for (const dmtRow of dmtRateCardRows()) {
+				expect(
+					values,
+					`commission ${dmtRow.grossCommission} missing`,
+				).toContain(dmtRow.grossCommission);
 			}
+			const texts = cellTexts(dmtSheet).join(" ");
+			expect(texts).toContain('RCM = "YES"');
+			expect(texts).toContain("accountant");
 		});
 	});
 });

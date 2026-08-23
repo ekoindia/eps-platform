@@ -99,7 +99,7 @@ only adds a format-appropriate heading.
 An npm-workspaces monorepo. All three npm packages already carry
 `"publishConfig": { "access": "public" }`. Versions are currently `0.1.0`.
 
-### `@ekoindia/eps-context-mcp` (local MCP server)
+### `@ekoindia/eps-context-mcp` (local + hosted MCP server)
 
 Local **stdio** MCP server exposing **10 tiered, secret-free** tools over the
 baked bundle: `list_apis`, `list_topics`, `list_recipes`, `search`, `get_api`,
@@ -110,6 +110,14 @@ a fresher bundle at startup. No secrets are ever required or handled.
 ```bash
 npx -y @ekoindia/eps-context-mcp@latest
 ```
+
+The same tools are served over streamable HTTP at
+**`https://mcp.eko.in/context/mcp`** (anonymous, POST-only) for agents that
+cannot spawn a local process — claude.ai connectors, Lovable and friends. That
+endpoint is hosted **in-process by eps-backend** (`src/http/contextMcp.ts`,
+mounted when `CONTEXT_BUNDLE_URL` is set), which re-validates the bundle against
+`https://eps.eko.in/agent/eps.json` on a TTL — so a docs change reaches remote
+agents without republishing the package or redeploying the server.
 
 The `@latest` tag keeps users on the newest publish (code + baked bundle)
 without editing config. The server also does a best-effort npm version check on

@@ -20,7 +20,7 @@ import {
 	getVariantLabels,
 	hasPopularApi,
 } from "@/lib/data/api-pricing";
-import { getEarningsHighlight } from "@/lib/data/payments-pricing";
+import { getEarningsHighlight } from "@/lib/data/product-earnings";
 import { formatINRRate } from "@/lib/utils";
 import { pastelColors } from "@/components/DropdownGrid";
 import { ArrowRight } from "lucide-react";

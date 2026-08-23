@@ -74,6 +74,16 @@ export interface Config {
 		orgId: number;
 		timeoutMs: number;
 	};
+	/**
+	 * Present only when `CONTEXT_BUNDLE_URL` is set, which mounts the anonymous
+	 * eps-context-mcp server at `/context/*` (public: mcp.eko.in/context/mcp).
+	 * Absent → those routes do not exist at all.
+	 */
+	contextMcp?: {
+		/** Live agent bundle, re-validated on `ttlSec` so docs edits reach agents. */
+		bundleUrl: string;
+		ttlSec: number;
+	};
 	github: {
 		clientId: string;
 		clientSecret: string;
@@ -172,6 +182,30 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			throw new Error("CONNECT_ORG_ID must be a positive integer");
 		}
 	}
+	// Setting CONTEXT_BUNDLE_URL mounts the public MCP server; a malformed or
+	// plaintext value must fail at boot rather than serve a broken endpoint.
+	let contextMcp: Config["contextMcp"];
+	const contextBundleUrl = env.CONTEXT_BUNDLE_URL || undefined;
+	if (contextBundleUrl) {
+		let parsed: URL;
+		try {
+			parsed = new URL(contextBundleUrl);
+		} catch {
+			throw new Error(
+				`CONTEXT_BUNDLE_URL is not a valid URL: "${contextBundleUrl}"`,
+			);
+		}
+		if (parsed.protocol !== "https:" && !LOOPBACK_HOSTS.has(parsed.hostname)) {
+			throw new Error(
+				`CONTEXT_BUNDLE_URL must be https for a non-loopback host; refusing plaintext to "${parsed.hostname}".`,
+			);
+		}
+		const ttlSec = Number(env.CONTEXT_BUNDLE_TTL_SEC ?? 900);
+		if (!Number.isFinite(ttlSec) || ttlSec < 1) {
+			throw new Error("CONTEXT_BUNDLE_TTL_SEC must be a positive integer");
+		}
+		contextMcp = { bundleUrl: contextBundleUrl, ttlSec };
+	}
 	const redisUrl = env.REDIS_URL || undefined;
 	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
 	if (redisUrl) {
@@ -214,6 +248,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			devAllowAnyUserType: env.DEV_ALLOW_ANY_USER_TYPE === "true",
 		},
 		connectApi,
+		contextMcp,
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
 			clientSecret: env.GITHUB_CLIENT_SECRET!,

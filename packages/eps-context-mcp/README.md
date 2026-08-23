@@ -28,6 +28,33 @@ status to **stderr** and waits for an MCP client on stdin/stdout.
 
 Requires **Node.js ≥ 18**.
 
+## Hosted (remote) server
+
+The same tools are also served over streamable HTTP, with nothing to install:
+
+```
+https://mcp.eko.in/context/mcp
+```
+
+No auth, no key, no signup — every tool is a read-only lookup over the public
+API bundle. Use it when your agent cannot spawn a local process (claude.ai
+connectors, Lovable, other hosted agents), or when you would rather not manage a
+version at all: the hosted server re-validates the bundle against the live site,
+so it always answers from current docs.
+
+```bash
+# Claude Code, as a remote server
+claude mcp add eps --transport http https://mcp.eko.in/context/mcp
+```
+
+`POST` only (per the MCP streamable-HTTP spec — the server keeps no session), and
+`GET https://mcp.eko.in/context/healthz` reports the bundle version it is serving.
+Rate-limited per IP at the proxy.
+
+**stdio is still the better fit for CLI agents** (Claude Code, Cursor, Codex):
+it starts instantly, works offline from the baked bundle, and costs no network
+round trip per tool call.
+
 ## Tools
 
 All tools are read-only and **secret-free** — none of them accept an
