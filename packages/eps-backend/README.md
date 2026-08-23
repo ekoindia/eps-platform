@@ -25,6 +25,7 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET    | /readyz                     | none           | Readiness; PINGs Redis when configured, else always 200 |
 | POST   | /context/mcp                | none (public)  | Anonymous MCP server (docs lookups); only when `CONTEXT_BUNDLE_URL` is set |
 | GET    | /context/healthz            | none (public)  | Served bundle version + source                          |
+| POST   | /chat/ask                   | cookie         | Grounded docs assistant; 503 `CHAT_DISABLED` unless `EPS_CHAT_*` is set |
 
 ## Auth providers
 
@@ -194,6 +195,72 @@ keeps the last good bundle; before the first success the routes answer `503`.
 
 Abuse protection is the proxy's job — see the `limit_req` block in
 [`docs/eps-backend-vm-deploy.md`](docs/eps-backend-vm-deploy.md).
+
+The loaded bundle is owned by `src/context/bundleManager.ts`, not by the mount.
+`POST /chat/ask` grounds its answers on the **same object**: two loaders would
+mean two fetch schedules and two chances to answer from different bundle
+versions inside one deploy.
+
+## AI docs-chat (`POST /chat/ask`)
+
+A signed-in developer asks an EPS integration question; the model answers by
+calling the same lookups the MCP server exposes, dispatched **in-process**
+against the shared bundle (`src/chat/tools.ts`). Nothing is answered from model
+memory — the system prompt says so and the tool descriptions reinforce it,
+because the thing this exists to get right (`secret-key = base64(HMAC-SHA256(
+timestamp, base64(access_key)))`) is exactly what a general-purpose assistant
+gets wrong.
+
+| Env                              | Default            | Meaning                                                        |
+| -------------------------------- | ------------------ | -------------------------------------------------------------- |
+| `EPS_CHAT_PROVIDER`              | unset              | `anthropic` \| `openai` \| `openrouter`. Unset ⇒ feature dark |
+| `EPS_CHAT_API_KEY`               | unset              | Provider key. Must be set together with the provider           |
+| `EPS_CHAT_MODEL`                 | `claude-haiku-4-5` | Model id                                                        |
+| `EPS_CHAT_BASE_URL`              | provider default   | Override for a gateway / self-host / OpenRouter                 |
+| `EPS_CHAT_MONTHLY_BUDGET_USD`    | `0` (off)          | Best-effort monthly cost guard                                  |
+| `EPS_CHAT_PRICE_INPUT_PER_MTOK`  | `0`                | USD per 1M input tokens. Required when the budget is set        |
+| `EPS_CHAT_PRICE_OUTPUT_PER_MTOK` | `0`                | USD per 1M output tokens. Required when the budget is set       |
+
+Prices are configured, never inferred: `EPS_CHAT_MODEL` and `EPS_CHAT_BASE_URL`
+can name anything, and a guessed price would silently mis-meter every request.
+Setting a budget without both prices is a **boot error** — an unenforced spend
+cap is worse than an obviously absent one.
+
+**Bounds, and why each one exists**
+
+| Bound                                    | Value      | Reason                                                             |
+| ---------------------------------------- | ---------- | ------------------------------------------------------------------ |
+| Requests per login (`enforceRateLimit`)  | 30 / 600 s | The hard abuse gate. Each request may carry up to 20 messages       |
+| Messages per request                     | 20         | Bounds one request's cost                                           |
+| Characters per message                   | 4 000      | ditto                                                               |
+| Request body                             | 32 KB      | Checked on `content-length` **and** actual bytes, before parsing    |
+| Tool rounds                              | 6          | Then one forced tool-free turn, so the reply is always prose        |
+| Whole-request deadline                   | 60 s       | One budget shared by every provider call, not 30 s × rounds         |
+| Tool result                              | 12 000 ch  | A verbose endpoint must not crowd out the conversation              |
+
+Errors: `401` no session · `403 NOT_DEVELOPER_SESSION` (a `signup`-role session
+is mid-onboarding; developers and admins may ask) · `400 BAD_REQUEST` ·
+`429 RATE_LIMITED` · `502 UPSTREAM_ERROR` · `503` for `CHAT_DISABLED`,
+`CHAT_BUNDLE_UNAVAILABLE`, `CHAT_BUDGET_EXHAUSTED`, `RATE_LIMIT_UNAVAILABLE`.
+
+**Privacy.** No conversation is stored, here or anywhere. Message content never
+reaches any log: the access log records `path` only, and a refused request emits
+a `chat_denied` security record carrying `rid`, the AppError code and an actor
+that is **null** when the denial happened before a session was resolved. A test
+asserts the user's words never appear on any denial path.
+
+**Privilege.** `src/http/chat.ts` imports nothing from `clients/github.ts` or
+`admin/*` — it is the one route a plain developer can reach that spends money
+with a third party, so it holds no privilege it does not need. A test greps the
+import list to keep it that way.
+
+**Spend guard is best-effort, by decision.** The counter (`chatspend:<YYYY-MM>`,
+weighted micro-USD, ~40-day TTL) checks before and records after, and both halves
+fail **open** — a KV outage pauses accounting rather than taking the feature
+down. Concurrency can therefore overshoot by up to `concurrency × per-request
+cost`. The per-login rate limit is what actually bounds abuse; a true ceiling
+would need conditional increments plus reserve/refund around every provider
+call, which is not worth it for a login-gated, already rate-limited feature.
 
 ## Reverse proxy requirement
 

@@ -1,7 +1,7 @@
 # EPS Backend Phase 4 — Docs-Chat Agent (design)
 
 **Date:** 2026-07-02
-**Status:** Design — approved for spec; implementation parked (do not build yet)
+**Status:** Design — approved 2026-07-02, parked. **Implemented 2026-08-23 with two architectural departures — see the revision section at the end, which supersedes §5 and the retrieve-then-answer decision in §2/§5 of this document.**
 **Package:** `packages/eps-backend` (+ thin frontend touch in web app)
 **Depends on:** AI-native agent platform (merged, PR #43) — canonical `/agent/eps.json`; developer OTP auth foundation (merged)
 
@@ -275,3 +275,94 @@ _(All Codex-flagged reuse/architecture gaps now resolved inline above. Remaining
 - Top-N slice count + exact token-budget numbers (retrieval tuning; measure against real queries).
 - System-prompt wording (refusal + HMAC guidance) — draft in plan, iterate.
 - Whether `eps-agent-core` also absorbs `signing-snippets.ts` (nice-to-have; not required for chat).
+
+
+---
+
+## Revision 2026-08-23 — implemented, with two departures from this design
+
+This design is kept as written; the two decisions below replaced parts of it and
+the reasoning is recorded here rather than edited into the body. Feature doc:
+`docs/docs-chat-agent.md`.
+
+### 1. §5 (grounding plumbing) was overtaken by events — not built
+
+§5 locked a new zero-dependency `packages/eps-agent-core`, an `exports` split on
+`eps-context-mcp`, a parameterized `loadBundleFrom({bakedPath, url})`, an
+`EPS_CHAT_BUNDLE_URL`, and baking `eps.json` into the backend image. **None of it
+was needed.** Between this design and its implementation, the context-MCP work
+(`a734cc3`, itself a reversal of that spec's Vercel decision) mounted the MCP
+server *in-process inside eps-backend* and gave it a live, TTL-refreshed bundle
+from `CONTEXT_BUNDLE_URL`. The bundle chat needed was already in the process.
+
+What was actually built: the loader was extracted out of `http/contextMcp.ts`
+into `src/context/bundleManager.ts` so it has two consumers instead of one — the
+public MCP mount and the chat route — because two independent loaders would mean
+two fetch schedules and two chances to answer from different bundle versions
+inside a single deploy. Roughly 40 lines moved; the existing `contextMcp` tests
+passed unchanged, which is what made the move safe to do.
+
+The concern §5 was written to solve was real (the accessors genuinely are not
+importable from the published package). It had simply already been solved by
+something else.
+
+### 2. Retrieve-then-answer → agentic tool use
+
+§2 and §5 locked "local search over the bundle → stuff top slices into one LLM
+call", with a ~6k-token context budget and truncation of lowest-scored slices.
+
+Built instead: the tools are exposed as ordinary provider tool-use and the model
+drives its own retrieval, with dispatch in-process (`src/chat/tools.ts`).
+
+Why the change: retrieve-then-answer makes us the owner of retrieval quality on
+a lexical scorer, and it fails on the case a chat assistant most needs to
+handle — a follow-up like *"and what goes in the timestamp?"* matches nothing
+lexically, so the second question in every conversation is grounded on noise.
+Letting the model re-query with conversational context in hand fixes that
+without a retrieval-tuning project.
+
+What this bought, beyond that: `sources` became real provenance (built from tool
+calls that returned content, so a citation cannot be fabricated), and the §5
+grounding module, the token budget and the truncation ordering all stopped
+existing. What it cost: more tokens per question than a single stuffed call, and
+new bounds that a single call did not need — iteration cap with a forced
+tool-free final turn, per-result size cap, duplicate-call suppression, and one
+end-to-end deadline instead of a per-call timeout.
+
+Also considered and rejected: Anthropic's MCP connector aimed at
+`https://mcp.eko.in/context/mcp`. Same model-driven retrieval, but every tool
+call would leave the process, cross the public internet, hit our own nginx and
+re-enter the same process — while pinning v1 to a single provider and blocking
+on the public `/context/mcp` deploy.
+
+### Carried over from this design unchanged
+
+Login-gated audience (§2), buffered JSON (§2), no chat persistence (§2),
+multi-provider via env (§6), the two-layer feature toggle (§6), privilege
+isolation with a module-boundary test (§7), no message content in any log (§7),
+per-login rate limiting reusing `enforceRateLimit` (§8), and the failure
+contract (§9).
+
+### Amended after an adversarial review pass
+
+- **The spend breaker is best-effort, not the ceiling §8 implies.** §8 wanted a
+  budget check plus a post-response counter *and* fail-open KV semantics; those
+  contradict. A real ceiling needs a conditional increment plus reserve/refund
+  around every provider call. Since the per-login rate limit is the hard gate
+  anyway (as §8 itself says), the counter is now documented as a cost guard with
+  a stated overshoot bound rather than a cap.
+- **Cost is tracked weighted, in micro-USD, at configured prices.** §8 counted
+  raw tokens; output costs 5× input on the default model, so raw tokens
+  mis-price a chat workload. Prices are explicit env values — they cannot be
+  inferred from an arbitrary model id or base URL, and a budget set without them
+  is a boot error.
+- **The session guard is not "the same guard as `/me`" (§4).** `/me` also serves
+  `admin` and `signup` sessions; a mid-onboarding user would have passed it.
+  Chat requires `role === "developer" | "admin"` explicitly.
+- **`chat_denied` carries a nullable actor.** §7 assumed every denial has one;
+  a denial before session resolution genuinely does not, and writing `"unknown"`
+  would record a fact never established.
+- **The 32 KB body limit is enforced before parsing** (§4 checked it after),
+  on `content-length` *and* actual bytes, since the header is a claim.
+- **The sliding window is 20 messages, not "10 turns"** (§3). Ten turns is up to
+  twenty messages, which would have 400'd against §4's own limit.
