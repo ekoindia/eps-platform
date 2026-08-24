@@ -1,3 +1,5 @@
+import { clamp, currentRid, recordUpstream } from "../http/trace";
+
 /**
  * Verbosity for the Eko/SimpliBank upstream request/response log.
  *
@@ -160,12 +162,37 @@ export function createEkoLogger(opts: {
 
 	return {
 		log(entry) {
+			// Tracing runs before the level check and in its own try: the browser
+			// diagnostic must not depend on how the operator set EKO_LOG_LEVEL, and
+			// a trace failure must not cost us the log line (or vice versa).
+			try {
+				const [response, truncated] = clamp(
+					entry.response == null
+						? null
+						: redact(entry.response, REDACTED_RESPONSE_FIELDS),
+				);
+				const ref = entry.fields.client_ref_id;
+				recordUpstream({
+					path: entry.path ?? null,
+					clientRefId: ref == null ? null : String(ref),
+					status: entry.status ?? null,
+					durMs: entry.durMs,
+					error: entry.error ?? null,
+					response,
+					...(truncated ? { truncated: true } : {}),
+				});
+			} catch {
+				// best-effort: tracing must never break an upstream call
+			}
 			if (level === "off") return;
 			try {
 				const f = entry.fields;
 				const base = {
 					type,
 					ts: now().toISOString(),
+					// Joins this line to the access-log line for the same request.
+					// Without it the two logs can only be correlated by timestamp.
+					rid: currentRid(),
 					interaction_type_id: f.interaction_type_id,
 					path: entry.path ?? null,
 					http_status: entry.status ?? null,

@@ -43,6 +43,7 @@ import {
 	RL_WINDOW_SEC,
 } from "./rateLimit";
 import { requestId, type AppEnv } from "./requestId";
+import { trace, traceForResponse } from "./trace";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -135,6 +136,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	}
 
 	app.use("*", requestId());
+	// Right after `requestId()`, whose `rid` the trace scope captures as its owner,
+	// and before everything else so an upstream call from any handler lands in it.
+	app.use("*", trace());
 	app.use("*", async (c, next) => {
 		const start = performance.now();
 		try {
@@ -197,17 +201,34 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			});
 			return c.json(contextMcpErrorBody(), 500);
 		}
+		/**
+		 * Adds the request's upstream trace to an error envelope, when there is
+		 * one to add. A sibling of `error` rather than a field inside it: the
+		 * trace describes the request, not the failure, and keeping it out of
+		 * `error` leaves the shape every existing client parses untouched.
+		 */
+		function withTrace<T extends object>(body: T): T & { trace?: unknown } {
+			try {
+				const calls = traceForResponse();
+				return calls.length ? { ...body, trace: calls } : body;
+			} catch {
+				// The diagnostic must never be the thing that breaks the error path.
+				return body;
+			}
+		}
 		if (err instanceof AppError) {
 			return c.json(
-				errorBody(err.code, err.message, err.details),
+				withTrace(errorBody(err.code, err.message, err.details)),
 				err.status as 400,
 			);
 		}
 		if (err instanceof StoreUnavailableError) {
 			return c.json(
-				errorBody(
-					"STORE_UNAVAILABLE",
-					"Storage temporarily unavailable — try again shortly",
+				withTrace(
+					errorBody(
+						"STORE_UNAVAILABLE",
+						"Storage temporarily unavailable — try again shortly",
+					),
 				),
 				503,
 			);
@@ -217,7 +238,10 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		} catch {
 			// logging must never escalate the error path
 		}
-		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 502);
+		return c.json(
+			withTrace(errorBody("UPSTREAM_ERROR", "Something went wrong")),
+			502,
+		);
 	});
 
 	app.get("/healthz", (c) => c.json({ status: "ok" }));

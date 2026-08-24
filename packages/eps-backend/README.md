@@ -561,6 +561,7 @@ Example (`basic`) raw line:
 {
 	"type": "eko_upstream",
 	"ts": "<ISO8601>",
+	"rid": "<correlation id>",
 	"interaction_type_id": "518",
 	"http_status": 200,
 	"durMs": 37,
@@ -570,6 +571,55 @@ Example (`basic`) raw line:
 	"response": { "response_status_id": 0, "message": "OK" }
 }
 ```
+
+### Observability: request trace on error responses
+
+The upstream log answers "what happened" for whoever can read stdout. The
+**request trace** answers it for whoever is holding the failure — a partner on a
+support call, or the developer reading a screenshot.
+
+`src/http/trace.ts` opens an `AsyncLocalStorage` scope per request (mounted in
+`createApp` immediately after `requestId()`, whose `rid` it adopts). Every
+upstream call recorded by `createEkoLogger` lands in that scope, and `onError`
+puts what it collected on the error envelope as a **sibling of `error`**:
+
+```json
+{
+	"error": { "code": "STEP_FAILED", "message": "…" },
+	"trace": [
+		{
+			"path": "/interactions",
+			"clientRefId": "m8x2k1p0aa",
+			"status": 200,
+			"durMs": 214,
+			"error": null,
+			"response": { "response_status_id": 1, "message": "…" }
+		}
+	]
+}
+```
+
+`clientRefId` is the point of the whole thing: it is the one field Eko's support
+team can look a transaction up by, and it is otherwise invisible outside our
+container logs.
+
+**Who sees what.** Metadata — `path`, `clientRefId`, `status`, `durMs`, `error` —
+goes to every caller. The `response` body is added only once a session has
+verified, which `verifyAccess` reports by calling `markAuthenticated()`. That is
+the single point every route resolves a session through, so a route added later
+is covered without opting in. Bodies are redacted (`REDACTED_RESPONSE_FIELDS`
+strips tokens and `pintwin_key`) but redaction removes credentials, not personal
+data — hence the gate.
+
+**Caps**, because a trace rides in an error response: at most 10 calls per
+request, 8 KB per body, depth 6, 20 array items, 1,000 chars per string, with
+cycles cut. Anything dropped sets `truncated: true` rather than passing a partial
+body off as complete. The whole path is best-effort: a trace failure must never
+be what breaks the error response, and `trace` is omitted entirely when nothing
+was recorded.
+
+Independent of `EKO_LOG_LEVEL` by design — a browser-side diagnostic must not
+depend on how the operator set a server log's verbosity.
 
 ## Production deploy (pull-based, private VM)
 

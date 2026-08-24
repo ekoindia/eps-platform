@@ -3,6 +3,7 @@ import { randomUUID, createHash } from "node:crypto";
 import type { Config } from "../config";
 import type { KV } from "../store/kv";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
+import { markAuthenticated } from "../http/trace";
 
 export interface SessionClaim {
 	sub: string;
@@ -83,6 +84,9 @@ export function createSessions(
 					issuer: "eps-backend",
 					algorithms: ["HS256"],
 				});
+				// The one place every route resolves a session, so the one place
+				// worth telling the request trace that this caller is known.
+				markAuthenticated();
 				return {
 					sub: String(payload.sub),
 					role: payload["role"] as SessionClaim["role"],
