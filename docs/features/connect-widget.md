@@ -152,6 +152,19 @@ the widget's lite/crm tokens.
   from the browser **because it needs the full token**.
 - `POST /connect/support/query-types` → `{ issueTypes }` (interaction 10022).
   `is_admin` is pinned to `0`; it widens the list to internal-only issue types.
+  - `502 QUERY_TYPES_FAILED` when the envelope's `status` is non-zero, or when
+    `issuetype_list` is present but is neither `null` nor an array. connect-api
+    answers 200 for business-level failures, so without the status check an
+    unentitled caller was laundered into `{ issueTypes: [] }` and a 200 — which
+    the dialog drew as a card with nothing in it.
+  - **"No records" is not an error.** Observed live on a `status: 0` envelope:
+    `response_status_id: -1`, `message: "Feedback issue list"`,
+    `data: { issuetype_list: null, trxn_detail_from_sb: {} }`. `null`, absent
+    and `[]` all mean the same thing and all pass through as an empty list,
+    which the browser answers with `FALLBACK_ISSUE`. Eloka is equally lenient
+    (`issue_list = issue_list || []`) — and equally blank-carded by it, since it
+    has no fallback. The narrow reject is reserved for a genuinely re-shaped
+    field, which a fallback would otherwise hide.
 - `POST /connect/support/ticket` (multipart) → `{ feedbackTicketId, message }`
   (interaction 10000, via `/transactions/upload` when there are attachments and
   `/transactions/do` otherwise).
@@ -305,13 +318,26 @@ page uses it, and prints only the expanded row.
 
 Deliberately skipped from Eloka's wrapper: KBar/command-bar actions and the
 Android PubSub bridge (no counterpart here), the MediaPipe text classifier that
-scored comment sentiment, `customIssueType` (it existed for the command-bar entry
-point), and the screenshot-editing branch, which was already dead behind
-`DISABLE_EDIT`. Of the 612-line Dropzone, `<FileUpload>` keeps the image →
+scored comment sentiment, the caller-supplied `customIssueType` (it existed for
+the command-bar entry point), and the screenshot-editing branch, which was
+already dead behind `DISABLE_EDIT`. What *is* kept from that path is its
+synthetic-issue idea: `FALLBACK_ISSUE` in `src/lib/connect/support.ts` is a
+single "Other query" under Others/Others with a mandatory comment, returned by
+`buildIssueCatalogue` when upstream sends an empty list, and auto-selected
+because a lone issue is not a choice. Its negative category ids never leave the
+browser — `buildTicketFields` sends category *titles*, so upstream sees
+"Others", the same string Eloka defaults to. Of the 612-line Dropzone, `<FileUpload>` keeps the image →
 editor round trip, camera capture, drag and drop, preview and discard, but not
 the IP lookup or the watermark builder.
 There is no "Raise issue" entry point on the transaction-history rows yet — the
 dialog is reached from a flow.
+
+`source: "WLC"` rides on `/transactions/do` via `interact()`, matching
+`DEFAULT_DATA` in Eloka's shared fetcher, which stamps it on every connect-api
+body. It is applied **after** the caller's fields rather than before, so it is a
+BFF invariant no caller can override — a deliberate divergence from Eloka, where
+the body wins. `interactJson()` and `uploadInteraction()` are deliberately left
+alone: those paths work as they are.
 
 Two Eloka bugs are **not** ported: `transaction_time` vs `transactionTime`
 (`RaiseIssueCard.tsx:61` vs `HistoryCard.jsx:258`, which silently killed the

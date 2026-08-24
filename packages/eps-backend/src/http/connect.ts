@@ -566,11 +566,17 @@ export function mountConnect(
 		}
 
 		const data = envelope.data as { issuetype_list?: unknown } | undefined;
-		// A success envelope that carries no list at all is a schema regression
-		// (renamed or re-shaped `issuetype_list`), not an empty catalogue. Only an
-		// explicit empty array means "nothing configured", which the browser
-		// answers with its generic fallback issue.
-		if (!Array.isArray(data?.issuetype_list)) {
+		const list = data?.issuetype_list;
+		// `null` is how connect-api says "no records" — observed alongside
+		// `response_status_id: -1` and `message: "Feedback issue list"` on an
+		// otherwise successful envelope. Eloka is equally lenient here
+		// (`issue_list = issue_list || []`). Absent is treated the same way.
+		//
+		// A value that is present but neither null nor an array IS a schema
+		// regression — a renamed or re-shaped field — and must not be laundered
+		// into "nothing configured", which the browser answers with a generic
+		// fallback issue that would then hide the regression.
+		if (list != null && !Array.isArray(list)) {
 			throw AppError.fromUpstream(
 				502,
 				"QUERY_TYPES_FAILED",
@@ -579,7 +585,7 @@ export function mountConnect(
 		}
 
 		c.header("Cache-Control", "no-store");
-		return c.json({ issueTypes: data.issuetype_list });
+		return c.json({ issueTypes: list ?? [] });
 	});
 
 	/**

@@ -1,4 +1,4 @@
-import { buildIssueCatalogue, isRaiseWindowOpen } from "@/lib/connect/support";
+import { buildIssueCatalogue, FALLBACK_ISSUE, isRaiseWindowOpen } from "@/lib/connect/support";
 import { describe, expect, it } from "vitest";
 
 const ROWS = [
@@ -45,8 +45,25 @@ describe("buildIssueCatalogue", () => {
 		expect(third.desc).toBe("Tell us what you saw");
 	});
 
-	it("survives a missing list", () => {
-		expect(buildIssueCatalogue(undefined).issues).toEqual([]);
+	// An account whose org has nothing configured must still reach support, so an
+	// absent or empty list yields the generic issue rather than an empty dialog.
+	it("offers the generic issue when there is no list", () => {
+		for (const raw of [undefined, [], null]) {
+			const catalogue = buildIssueCatalogue(raw);
+
+			expect(catalogue.issues).toHaveLength(1);
+			expect(catalogue.issues[0].label).toBe(FALLBACK_ISSUE.label);
+			// Mandatory, or the desk gets an uncategorised ticket saying nothing.
+			expect(catalogue.issues[0].comment).toBe(1);
+			expect(catalogue.categories).toEqual([{ id: -1, title: "Others" }]);
+			expect(catalogue.subCategories[-1]).toEqual([{ id: -1, title: "Others" }]);
+		}
+	});
+
+	// The dialog auto-selects a lone issue; a fallback the user cannot submit
+	// would strand them on a form with a disabled button.
+	it("leaves the generic issue immediately raisable", () => {
+		expect(isRaiseWindowOpen(FALLBACK_ISSUE, "2026-07-27T11:59:00")).toBe(true);
 	});
 });
 

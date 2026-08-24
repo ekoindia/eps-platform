@@ -299,7 +299,9 @@ export function RaiseIssueDialog({
 		GENERIC_ISSUE_TYPE.DEFAULT;
 
 	const [catalogue, setCatalogue] = useState<IssueCatalogue | null>(null);
-	const [loadError, setLoadError] = useState(false);
+	// The upstream's own words when it refused, so the user sees "not entitled"
+	// rather than a generic failure they cannot act on.
+	const [loadError, setLoadError] = useState<string | null>(null);
 	const [categoryId, setCategoryId] = useState<number | null>(null);
 	const [subCategoryId, setSubCategoryId] = useState<number | null>(null);
 	const [issue, setIssue] = useState<IssueType | null>(null);
@@ -332,8 +334,12 @@ export function RaiseIssueDialog({
 			.then((response) =>
 				setCatalogue(buildIssueCatalogue(response.issueTypes)),
 			)
-			.catch(() => {
-				if (!controller.signal.aborted) setLoadError(true);
+			.catch((error: unknown) => {
+				if (controller.signal.aborted) return;
+				setLoadError(
+					(error instanceof Error && error.message) ||
+						"Couldn't load the issue types. Please check your connection and try again.",
+				);
 			});
 		return () => controller.abort();
 		// Opened for one transaction and closed again; re-fetching mid-dialog would
@@ -353,6 +359,13 @@ export function RaiseIssueDialog({
 		const subs = catalogue?.subCategories[categoryId] ?? [];
 		if (subs.length === 1) setSubCategoryId(subs[0].id);
 	}, [categoryId, catalogue]);
+
+	// Nor is a single issue a choice. Its `ChipList` is `alwaysExpanded`, so the
+	// chip still renders — now already selected. This is what lands a user on the
+	// comment box when `FALLBACK_ISSUE` is all there is.
+	useEffect(() => {
+		if (catalogue?.issues.length === 1) setIssue(catalogue.issues[0]);
+	}, [catalogue]);
 
 	// The selected issue decides which fields exist at all.
 	useEffect(() => {
@@ -471,10 +484,7 @@ export function RaiseIssueDialog({
 	if (loadError) {
 		return (
 			<Panel onClose={close}>
-				<p className="text-sm text-destructive">
-					Couldn't load the issue types. Please check your connection and try
-					again.
-				</p>
+				<p className="text-sm text-destructive">{loadError}</p>
 			</Panel>
 		);
 	}

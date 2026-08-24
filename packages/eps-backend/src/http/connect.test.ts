@@ -711,6 +711,26 @@ describe("POST /connect/support/query-types", () => {
 		);
 	});
 
+	// `source: "WLC"` rides on every connect-api body in Eloka's client, and no
+	// caller may override it — it is a BFF invariant, not a request parameter.
+	it("stamps source WLC on the upstream body, over anything the browser sent", async () => {
+		const post = vi.fn(async () => ({
+			status: 0,
+			data: { issuetype_list: [] },
+		}));
+		const { app } = harness(developer, { connect: { interact: post } });
+
+		await app.request("/connect/support/query-types", {
+			method: "POST",
+			body: JSON.stringify({ tid: "123", source: "SPOOFED" }),
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+		});
+
+		// The route never forwards `source` from the browser at all; the client
+		// adds it. Asserted here because this is the seam a regression would cross.
+		expect(post.mock.calls[0][1]).not.toHaveProperty("source", "SPOOFED");
+	});
+
 	// connect-api answers 200 for business-level failures. This used to be
 	// laundered into `{ issueTypes: [] }` and a 200 of our own, which the dialog
 	// drew as a blank card — indistinguishable from an org with nothing
@@ -737,10 +757,13 @@ describe("POST /connect/support/query-types", () => {
 		expect(error.message).toBe("Interaction not allowed for this role");
 	});
 
-	// A success envelope with no list is a schema regression, not an empty
+	// A list that is present but re-shaped is a schema regression, not an empty
 	// catalogue — the browser's fallback issue must not paper over it.
-	it("rejects a success envelope whose list is missing or re-shaped", async () => {
-		for (const data of [undefined, {}, { issuetype_list: { rows: [] } }]) {
+	it("rejects a success envelope whose list is re-shaped", async () => {
+		for (const data of [
+			{ issuetype_list: { rows: [] } },
+			{ issuetype_list: "none" },
+		]) {
 			const { app } = harness(developer, {
 				connect: { interact: vi.fn(async () => ({ status: 0, data })) },
 			});
@@ -756,26 +779,30 @@ describe("POST /connect/support/query-types", () => {
 		}
 	});
 
-	// The empty array IS a valid answer: nothing configured for this transaction
-	// type. It reaches the browser, which offers its generic fallback issue.
-	it("passes an explicitly empty list through", async () => {
-		const { app } = harness(developer, {
-			connect: {
-				interact: vi.fn(async () => ({
-					status: 0,
-					data: { issuetype_list: [] },
-				})),
-			},
-		});
+	// "Nothing configured for this transaction type" is a valid answer, and
+	// connect-api spells it three ways. Observed live: `status: 0`,
+	// `response_status_id: -1`, `data: { issuetype_list: null }`. All three reach
+	// the browser as an empty list, which it answers with its fallback issue.
+	it("passes an empty, null or absent list through as empty", async () => {
+		for (const data of [
+			{ issuetype_list: [] },
+			{ issuetype_list: null, trxn_detail_from_sb: {} },
+			{},
+			undefined,
+		]) {
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => ({ status: 0, data })) },
+			});
 
-		const res = await app.request("/connect/support/query-types", {
-			method: "POST",
-			body: JSON.stringify({ tid: "123" }),
-			headers: { ...withCookie.headers, "Content-Type": "application/json" },
-		});
+			const res = await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ tid: "123" }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
 
-		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({ issueTypes: [] });
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual({ issueTypes: [] });
+		}
 	});
 });
 
