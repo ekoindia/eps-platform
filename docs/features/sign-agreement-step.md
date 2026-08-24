@@ -39,15 +39,30 @@ lives inside `SignAgreementStep` as a 5-value `Phase`, and only the final
 ### 1.2 State machine
 
 ```
-loading ──▶ ready ──▶ signing ──▶ signed ──▶ (submit) ──▶ wizard advances
+loading ──▶ ready ──▶ signing ──▶ signed ──▶ (auto-submit) ──▶ wizard advances
    │           ▲          │
    │           └──────────┘  provider error / popup blocked
    ▼
- error ──(Try again)──▶ loading
+ error ──(Retry)──▶ loading
 ```
 
 `alreadySigned` from 287 jumps `loading → signed` directly, skipping the
 provider entirely.
+
+`signing` means two different things depending on the provider, and the
+component derives which from `pipe` rather than tracking a sixth phase:
+
+```ts
+const popupOpen = phase === "signing" && !!signData && !usesLeegality(signData.pipe);
+```
+
+- **SDK pipes (1, 3)** — the Leegality modal is up and its callback is the only
+  way out. The Sign button is disabled and reads "Signing…".
+- **Popup pipes (0, 2)** — `window.open` has fired and *no callback will ever
+  come*. The step must not trap the user there, so `signing` renders `Continue`
+  alongside a still-enabled Sign button ("Open the signing window again"). Before
+  this, closing a popup left the step stuck until a page reload. `Continue` is
+  disabled for the first `POPUP_GRACE_SECONDS` — see §1.5.
 
 ### 1.3 Call sequence
 
@@ -151,16 +166,69 @@ replies put the id at the **top level**, not under `data`.
   and phase → `signed`.
 - Popup providers: no callback exists. The only success signal is
   `postMessage({type:"STATUS_UPDATE"})` from the signing page, accepted **only**
-  when `event.origin === esignOrigin(shortUrl)`. Listener is installed only for
-  non-Leegality pipes.
+  when `event.origin === esignOrigin(shortUrl)` **and** `popupOpen` is true. The
+  listener is mounted by the `popupOpen` effect, so it exists only while a popup
+  signing window is actually open — an unsolicited message can never advance
+  onboarding on its own, which matters now that reaching `signed` auto-submits.
 - Popup blocked → `{ error: "Please allow pop-ups to sign the agreement." }` →
   stays on `ready`.
 
 **Proceed gating**
 
-`Continue` is rendered **only** in the `signed` phase. There is no
-"you clicked Sign so you may proceed" path and no auto-advance timer — the user
-clicks `Continue`, which calls `onSubmit({ document_id })`.
+`Continue` renders when `signed || popupOpen`, and reaching `signed` submits on
+its own:
+
+```ts
+// fires at most once per mount — the manual Continue is what retries a failure,
+// so this must NOT reset when 293 fails
+useEffect(() => {
+    if (!signed || autoSubmitted.current) return;
+    autoSubmitted.current = true;
+    void submit();
+}, [signed, submit]);
+```
+
+Every completion signal — SDK callback, `STATUS_UPDATE`, or `alreadySigned` from
+287 — lands on `signed` and submits **immediately**. The provider has said the
+document is signed; making the user click Continue after that, or watch a timer,
+adds nothing.
+
+The one thing that *is* delayed is the popup-pipe `Continue`, and it is delayed
+for a different reason:
+
+```ts
+const POPUP_GRACE_SECONDS = 5;
+// in handleSign, popup pipes only:
+if (!usesLeegality(signData.pipe)) setGrace(POPUP_GRACE_SECONDS);
+// one timeout per remaining second
+useEffect(() => {
+    if (grace === 0) return;
+    const timer = setTimeout(() => setGrace(grace - 1), 1000);
+    return () => clearTimeout(timer);
+}, [grace]);
+const waiting = popupOpen && grace > 0;   // disables Continue
+```
+
+`Continue` has to exist for popup pipes (they have no callback), but a
+`window.open` tab can take a second or two to paint. A `Continue` that is live in
+that gap invites a click *before the user has even seen the signing page*, which
+submits an unsigned agreement and earns a 293 failure. So for the first five
+seconds it renders disabled under an `aria-live="polite"` line — "Opening the
+signing window… you can continue in N seconds." — and a real completion signal
+arriving mid-grace still submits at once, because the grace gates only the
+button, never the signal.
+
+Note this is **not** what Eloka's `AUTO_ADVANCE_SECONDS` does: there the 5 s is a
+countdown *after* success that auto-fires Proceed, and Proceed unlocks with no
+delay at all on the click of Sign. Same constant, opposite end of the flow.
+
+Both paths route through one `submit()` with a `submitting` re-entrancy ref:
+`busy` only arrives after the wizard re-renders, so it cannot stop a click that
+lands in the same tick as the auto-submit, and a duplicate 293 would follow.
+
+`Continue` appearing for an open popup does **not** assert the user signed — it
+is the Eloka rule, and 293 is the arbiter: an unsigned agreement fails there with
+the upstream's own message.
 
 **293 classification**
 
@@ -192,11 +260,11 @@ and the next `/signup/state` retries the upgrade.
 
 | Failure | User sees |
 | --- | --- |
-| 287 fails / network | `error` phase, upstream message, **Try again** button re-runs `initialize()` |
-| Missing `agreement_id` on profile | `SignupStepError("Couldn't start the agreement signing right now…", -1)` → same `error` phase (no fallback id is ever guessed) |
+| 287 fails / network | Row 1 flips to "Failed to prepare document" + the upstream message, with an inline **Retry** link that re-runs `initialize()`. Row 2 dims to 40%, and **neither Sign Agreement nor Continue renders** |
+| Missing `agreement_id` on profile | `SignupStepError("Couldn't start the agreement signing right now…", -1)` → same `error` state (no fallback id is ever guessed) |
 | SDK load failure / SDK missing | inline `localError`, phase back to `ready` |
-| Popup blocked | inline `localError`, phase back to `ready` |
-| 293 fails | wizard's `error` prop rendered under the step; phase stays `signed`, `Continue` stays clickable (plain retry) |
+| Popup blocked | inline `localError`, phase back to `ready` (Sign stays live) |
+| 293 fails | wizard's `error` prop rendered under the rows; phase stays `signed`, `Continue` stays clickable. `autoSubmitted` is deliberately **not** reset, so the retry is the user's click and never an auto-retry loop |
 
 Both calls are wrapped in `withRetries` (`src/lib/retry.ts`): the 287 URL fetch
 in `initialize`, and the 293 submit through the wizard's `runStep`. Two retries,
@@ -204,7 +272,29 @@ in `initialize`, and the 293 submit through the wizard's `runStep`. Two retries,
 names a bad field — or any of the deny-listed codes — still surfaces at once. See
 [`user-onboarding.md`](./user-onboarding.md#retrying-transient-failures).
 
-### 1.6 Trust boundary
+### 1.6 What the step renders
+
+One return, no separate loading/error screens — `loading` and `error` are states
+of the first checklist row:
+
+| Element | Rendered when | Content |
+| --- | --- | --- |
+| Blurb | always | "Review and digitally sign the terms and conditions to activate your account and start using our services." |
+| Row 1 — document | always | spinner "Preparing your document…" / ✗ "Failed to prepare document" + **Retry** / ✓ "Document is generated for **{name}**" with "Document ID: {id}" beneath |
+| Row 2 — e-sign | always (40% opacity on `error`) | ✓ or ○, "Document Esign", `Badge` **Completed**/**Pending** |
+| **Sign Agreement** | `!signed && !loading && !error` | disabled only while the SDK modal is up; reads "Open the signing window again" for an open popup |
+| Steps box | `!signed && !loading && !error` | the 3 numbered instructions |
+| Grace line | `popupOpen && grace > 0` | `aria-live` "Opening the signing window… you can continue in N seconds." |
+| **Continue** | `signed \|\| popupOpen` | disabled during the popup grace; "Finishing…" while `busy` |
+
+The name is `useSignupProfile().name` — the same context `BusinessStep` prefills
+from, sourced from the interaction-151 profile via `SignupState.name`. It is
+`.trim()`ed and the whole "for …" clause is dropped when absent, rather than
+substituting a placeholder: a legal agreement should not claim to be generated
+for "your business". The document id is the one already held for the 293 submit;
+it was simply never displayed before.
+
+### 1.7 Trust boundary
 
 Every signup route reads the mobile from the **session claim**
 (`requireSignupSession` → `claim.sub`), never from the body, and rejects any
@@ -498,14 +588,14 @@ stale-id trap that made us classify 287/293 on `status` instead.
 | Aspect | EPS portal | Eloka |
 | --- | --- | --- |
 | SDK callback error | inline error, back to `ready` | toast-less, `setStatus("ready")` |
-| Popup completion | `STATUS_UPDATE` **only** from `new URL(shortUrl).origin`; listener installed only for popup pipes | `STATUS_UPDATE` from **any** origin, listener always installed, gated only on `signData.document_id` |
+| Popup completion | `STATUS_UPDATE` **only** from `new URL(shortUrl).origin`, **and only while `popupOpen`** | `STATUS_UPDATE` from **any** origin, listener always installed, gated only on `signData.document_id` |
 | Android completion | n/a | pubsub `ANDROID_RESPONSE`, accepts `agreement_status`/`status`/`documentId`/`document_id` |
-| Can user proceed without signing? | **no** — `Continue` renders only in `signed` | **yes** — Proceed unlocks on the *click* of Sign; 293 rejects it and the UI resets |
-| Auto-advance | none | 5 s countdown → auto `handleProceedClick()` (once) |
-| Already-signed | phase `signed`, "Your agreement is already signed", user clicks Continue | `already_signed` status, Sign button hidden, success banner + countdown auto-proceeds |
+| Can user proceed without signing? | **yes, for popup pipes only** — `Continue` renders from `popupOpen`, since those providers have no callback, but stays disabled for `POPUP_GRACE_SECONDS` so it cannot be clicked before the signing tab paints. SDK pipes still require the callback | **yes** — Proceed unlocks on the *click* of Sign; 293 rejects it and the UI resets |
+| Auto-advance | **immediate** on any completion signal (SDK callback, `STATUS_UPDATE`, `alreadySigned`), ref-guarded to once per mount | 5 s countdown → auto `handleProceedClick()` (once) |
+| Already-signed | phase `signed`, "Your agreement is already signed", auto-submits at once | `already_signed` status, Sign button hidden, success banner + countdown auto-proceeds |
 | Retry after provider error | Sign button stays live | Sign re-enabled only via `notSignedError` from a failed pipeline, or the retry link after a load error |
-| Retry after submit failure | `Continue` still clickable, wizard shows the error | Sign re-enabled, Proceed disabled, `notSignedError` true |
-| Loading/progress UI | one line, "Preparing your agreement…" | two-row checklist (Document Preparation / Document Esign) with badges, doc id, retry link, steps box |
+| Retry after submit failure | `Continue` still clickable, wizard shows the error; no auto-retry | Sign re-enabled, Proceed disabled, `notSignedError` true |
+| Loading/progress UI | two-row checklist (document / Document Esign) with badge, doc id, inline retry, steps box | same shape (this is where it was ported from) |
 | Skip | not offered | offered when `!stepConfig.isRequired` (this step sets `isRequired: true`, so effectively off) |
 
 ### 3.6 Progression authority
@@ -539,7 +629,9 @@ stale-id trap that made us classify 287/293 on `status` instead.
 - `logo` branding option on the Leegality SDK.
 - The `1613` success-id allowlist (replaced with `status`-based classification).
 - The `agreement_id ?? 5` fallback (replaced with a hard refusal).
-- Auto-advance countdown, skip button, multi-row progress checklist.
+- The skip button, and the auto-advance **countdown** (auto-advance itself is
+  ported, but immediate). The multi-row progress checklist *was* ported — see
+  §1.6 and §3.9.
 
 ### 3.9 What Eloka does that is worth porting or fixing
 
@@ -548,10 +640,12 @@ stale-id trap that made us classify 287/293 on `status` instead.
 | `successResponseTypeIds: [1615]` on 293 | `constants.ts` | **Bug risk in Eloka** — 1043/1069 are observed successes; would report false failure |
 | Missing `agreement_status` on 293 | `constants.ts` pipeline | **Bug risk in Eloka** — upstream answers `invalid_params: {agreement_status}` |
 | `agreement_id ?? 5` | `esignService.ts` | **Bug risk in Eloka** — a guessed id signs the wrong agreement |
-| `STATUS_UPDATE` with no origin check | `useSignAgreement.ts` | **Security gap in Eloka**; ours pins to `esignOrigin(shortUrl)` |
-| Proceed unlocked by clicking Sign | `SignAgreementStep.tsx` | Deliberate UX (covers providers with no callback) at the cost of a guaranteed-fail 293 when the user abandons signing |
-| Document-id echo + doc-id display | both | Eloka shows the doc id in the UI; we only send it |
-| Auto-advance countdown | `SignAgreementStep.tsx` | Nice UX; would be cheap to port |
+| `STATUS_UPDATE` with no origin check | `useSignAgreement.ts` | **Security gap in Eloka**; ours pins to `esignOrigin(shortUrl)` and to `popupOpen` — **not ported** |
+| Proceed unlocked by clicking Sign | `SignAgreementStep.tsx` | **Ported, narrowed** — only for popup pipes, which genuinely have no callback. SDK pipes still wait for theirs |
+| Document-id echo + doc-id display | both | **Ported** — row 1 shows the id and the profile name |
+| Two-row progress checklist + Steps box | `SignAgreementStep.tsx` | **Ported** — §1.6 |
+| Inline Retry replacing both buttons on a doc-gen failure | `SignAgreementStep.tsx` | **Ported** |
+| Auto-advance countdown | `SignAgreementStep.tsx` | **Auto-advance ported, countdown not** — signals submit at once. The 5 s was repurposed as a popup-open grace on `Continue`, which is the gap that actually misleads users |
 | Dead `timeoutError` / `verifying` | `SignAgreementStep.tsx` / `types.ts` | Dead code in Eloka |
 
 ---
