@@ -160,3 +160,4 @@ in source. The API auth scheme is documented in [docs/api-specs.md](api-specs.md
 - [SSG hydration rules](ssg-hydration.md)
 - [Command palette search](command-palette-search.md)
 - [Stale-chunk auto-reload](chunk-error-auto-reload.md)
+- [Error handling & debugging without server logs](error-handling.md)

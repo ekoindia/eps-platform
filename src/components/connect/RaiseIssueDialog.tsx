@@ -40,6 +40,13 @@ export interface RaiseIssueOptions {
 	metadata?: {
 		transaction_detail?: Record<string, unknown>;
 		pre_msg_template?: string;
+		/**
+		 * Everything known about the failure that prompted this ticket — see
+		 * `errorDiagnostics`. Rides into the ticket's `technical_notes` so whoever
+		 * picks it up gets the request id and the upstream reference without
+		 * having to ask the user what they saw.
+		 */
+		diagnostics?: Record<string, unknown>;
 	};
 	/** Opaque caller context, echoed back untouched on close. */
 	context?: unknown;
@@ -405,6 +412,7 @@ export function RaiseIssueDialog({
 				txTypeId,
 				transactionDetail: options.metadata?.transaction_detail,
 				preMsgTemplate: options.metadata?.pre_msg_template,
+				diagnostics: options.metadata?.diagnostics,
 				client: {
 					useragent: navigator.userAgent,
 					screen: `${window.innerWidth}x${window.innerHeight} of ${screen.width}x${screen.height}`,

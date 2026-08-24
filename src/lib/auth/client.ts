@@ -200,6 +200,30 @@ export interface ConnectTokenView {
 	expiresAt: number;
 }
 
+/**
+ * Who produced the message the user is reading.
+ *
+ * Mirrors the backend's `ErrorSource` (`packages/eps-backend/src/http/errors.ts`)
+ * and adds `client` for failures that never reached the network. It is the
+ * first thing ops needs from a screenshot: `api` goes to Eko, `proxy` goes to
+ * the backend team, `client` goes to whoever owns the browser code — or means
+ * the user's connection dropped.
+ */
+export type ErrorSource = "api" | "proxy" | "client";
+
+/** One upstream call the backend made while serving a request. */
+export interface UpstreamCall {
+	path: string | null;
+	/** The reference Eko support can look the transaction up by. */
+	clientRefId: string | null;
+	status: number | null;
+	durMs: number;
+	error: string | null;
+	/** Redacted upstream body; withheld unless the session was verified. */
+	response?: unknown;
+	truncated?: boolean;
+}
+
 /** Error thrown when the API returns a non-2xx response, carrying the envelope code and HTTP status. */
 export class ApiError extends Error {
 	public code: string;
@@ -210,23 +234,60 @@ export class ApiError extends Error {
 	 * `list_items`. Absent on errors that carry no field-level detail.
 	 */
 	public details?: Record<string, unknown>;
+	/** See {@link ErrorSource}. Defaults to `proxy` — a server answered, badly. */
+	public source: ErrorSource;
+	/**
+	 * The backend's correlation id for this request, read from the
+	 * `x-request-id` response header (and the body, which agrees).
+	 *
+	 * Read from the HEADER rather than the body so it survives the one case
+	 * that needs it most: a response whose body never parsed.
+	 */
+	public requestId?: string;
+	/** The upstream calls the backend made, when it reported any. */
+	public trace?: UpstreamCall[];
+	/** Server clock at the failure — the browser's may disagree. */
+	public serverTime?: string;
+	/** Backend build that served the request. */
+	public version?: string;
+	/** Why an opaque 502 actually happened; present only for a verified session. */
+	public cause?: string;
 
 	constructor(
 		code: string,
 		message: string,
 		httpStatus: number,
 		details?: Record<string, unknown>,
+		diagnostics: {
+			source?: ErrorSource;
+			requestId?: string;
+			trace?: UpstreamCall[];
+			serverTime?: string;
+			version?: string;
+			cause?: string;
+		} = {},
 	) {
 		super(message);
 		this.name = "ApiError";
 		this.code = code;
 		this.httpStatus = httpStatus;
 		this.details = details;
+		this.source = diagnostics.source ?? "proxy";
+		this.requestId = diagnostics.requestId;
+		this.trace = diagnostics.trace;
+		this.serverTime = diagnostics.serverTime;
+		this.version = diagnostics.version;
+		this.cause = diagnostics.cause;
 	}
 }
 
 /** Reads and parses a Response body, throwing ApiError on non-2xx. */
 async function parse(res: Response): Promise<unknown> {
+	// Read the correlation id BEFORE the body: it is a header, so it survives a
+	// body that never parses — which is exactly the failure with least else to
+	// go on. CORS exposes it (`exposeHeaders` in the backend's cors config).
+	const requestId = res.headers?.get("x-request-id") ?? undefined;
+	const version = res.headers?.get("x-eps-version") ?? undefined;
 	const text = await res.text();
 	let json: unknown = {};
 	if (text) {
@@ -239,7 +300,19 @@ async function parse(res: Response): Promise<unknown> {
 			// 200 sail past the `res.ok` check below and reach callers as a
 			// session, which is how /console rendered an "authenticated" user
 			// built from the site's own HTML.
-			throw new ApiError("PARSE_ERROR", text.slice(0, 200), res.status);
+			//
+			// `client`, because nothing that speaks our envelope produced this.
+			throw new ApiError(
+				"PARSE_ERROR",
+				text.slice(0, 200),
+				res.status,
+				undefined,
+				{
+					source: "client",
+					requestId,
+					version,
+				},
+			);
 		}
 	}
 	if (!res.ok) {
@@ -248,13 +321,30 @@ async function parse(res: Response): Promise<unknown> {
 				code?: string;
 				message?: string;
 				details?: Record<string, unknown>;
+				source?: ErrorSource;
 			};
+			rid?: string;
+			ts?: string;
+			version?: string;
+			cause?: string;
+			trace?: UpstreamCall[];
 		};
 		throw new ApiError(
 			body.error?.code ?? "HTTP_ERROR",
 			body.error?.message ?? `HTTP ${res.status}`,
 			res.status,
 			body.error?.details,
+			{
+				// A body that broke our envelope still came from a server, so this
+				// stays `proxy` rather than `client` — the failure is not the
+				// browser's, even though the shape is unrecognised.
+				source: body.error?.source ?? "proxy",
+				requestId: body.rid ?? requestId,
+				trace: body.trace,
+				serverTime: body.ts,
+				version: body.version ?? version,
+				cause: body.cause,
+			},
 		);
 	}
 	return json;
@@ -315,23 +405,139 @@ function isSessionSignal(path: string): boolean {
 	return path !== "/auth/logout" && !path.startsWith("/auth/otp/");
 }
 
+/** One completed API call, as the ring buffer remembers it. */
+export interface CallRecord {
+	ts: string;
+	method: string;
+	path: string;
+	/** 0 when the request never reached a server. */
+	status: number;
+	/** Error code, when the call failed before a response was parsed. */
+	code?: string;
+	requestId?: string;
+	durMs: number;
+}
+
+/** How many recent calls a raised issue carries. */
+const CALL_LOG_SIZE = 20;
+
+/**
+ * The last few API calls this tab made.
+ *
+ * The failing call alone rarely explains a bug; the five before it usually do —
+ * which page loaded, whether the session refreshed, what 404'd first. Attaching
+ * them to a support ticket is the difference between reproducing an issue and
+ * asking the user what they were doing.
+ *
+ * Deliberately metadata only: no request or response bodies, so this never
+ * becomes a place PII accumulates. In memory only, never persisted, and cleared
+ * on sign-out (see `clearCallLog`) so one account's history cannot ride along on
+ * another's ticket in a shared tab.
+ */
+let callLog: CallRecord[] = [];
+
+function recordCall(record: CallRecord): void {
+	callLog.push(record);
+	if (callLog.length > CALL_LOG_SIZE) callLog.shift();
+}
+
+/** The recent-call buffer, oldest first. A copy — callers cannot mutate it. */
+export function recentCalls(): CallRecord[] {
+	return [...callLog];
+}
+
+/**
+ * Drops the recent-call buffer. Called when the session ends or changes, so a
+ * ticket raised by the next user cannot carry the previous one's activity.
+ */
+export function clearCallLog(): void {
+	callLog = [];
+}
+
+/** sessionStorage flag that turns on the backend's success-path echo. */
+const DEBUG_KEY = "eps.debug";
+
+/**
+ * Whether to ask the backend to echo its upstream trace on SUCCESSFUL
+ * responses too (`x-eps-debug: 1`).
+ *
+ * On in dev automatically; in production only when someone opts in, because it
+ * makes every response carry the upstream bodies behind it. Errors always carry
+ * their trace regardless — this is only about the success path.
+ */
+function debugEnabled(): boolean {
+	if (import.meta.env.DEV) return true;
+	try {
+		return sessionStorage.getItem(DEBUG_KEY) === "1";
+	} catch {
+		// Private mode / storage disabled — no flag is a valid answer.
+		return false;
+	}
+}
+
+/** Turns the success-path echo on or off for this tab. */
+export function setDebugEnabled(on: boolean): void {
+	try {
+		if (on) sessionStorage.setItem(DEBUG_KEY, "1");
+		else sessionStorage.removeItem(DEBUG_KEY);
+	} catch {
+		// Nothing to do: the flag is a convenience, not a requirement.
+	}
+}
+
 /** Fetches a backend endpoint, auto-refreshing once on 401 (except for /auth/refresh and /auth/otp/* paths). */
 async function request(
 	path: string,
 	init: RequestInit,
 	retry = true,
 ): Promise<unknown> {
-	const res = await fetch(`${BASE}${path}`, {
-		...init,
-		credentials: "include",
-		headers: {
-			// A FormData body must set its own content type: the boundary is part of
-			// it, and naming the type here would leave the request unparseable.
-			...(init.body instanceof FormData
-				? {}
-				: { "Content-Type": "application/json" }),
-			...(init.headers ?? {}),
-		},
+	const started = Date.now();
+	const method = init.method ?? "GET";
+	let res: Response;
+	try {
+		res = await fetch(`${BASE}${path}`, {
+			...init,
+			credentials: "include",
+			headers: {
+				// A FormData body must set its own content type: the boundary is part of
+				// it, and naming the type here would leave the request unparseable.
+				...(init.body instanceof FormData
+					? {}
+					: { "Content-Type": "application/json" }),
+				...(debugEnabled() ? { "x-eps-debug": "1" } : {}),
+				...(init.headers ?? {}),
+			},
+		});
+	} catch (e) {
+		// `fetch` rejects only when the request never got an answer: offline, DNS
+		// failure, a blocked CORS preflight, a user-aborted navigation. Callers
+		// used to receive a bare TypeError and each invented its own "Network
+		// error" string, indistinguishable from a backend fault. Naming it makes
+		// the difference visible in the UI and in a support ticket.
+		const err = new ApiError(
+			"NETWORK_ERROR",
+			"Couldn't reach the server. Check your connection and try again.",
+			0,
+			undefined,
+			{ source: "client", cause: e instanceof Error ? e.message : String(e) },
+		);
+		recordCall({
+			ts: new Date(started).toISOString(),
+			method,
+			path,
+			status: 0,
+			code: err.code,
+			durMs: Date.now() - started,
+		});
+		throw err;
+	}
+	recordCall({
+		ts: new Date(started).toISOString(),
+		method,
+		path,
+		status: res.status,
+		requestId: res.headers?.get("x-request-id") ?? undefined,
+		durMs: Date.now() - started,
 	});
 	if (res.status === 401) {
 		if (

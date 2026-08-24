@@ -63,7 +63,7 @@ function harness(
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
 			return c.json(
-				errorBody(err.code, err.message, err.details),
+				errorBody(err.code, err.message, err.details, err.source),
 				err.status as never,
 			);
 		}
@@ -252,9 +252,17 @@ describe("signup endpoints", () => {
 			body: JSON.stringify({ pan: "ABCDE1234F" }),
 		});
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({
-			error: { code: "STEP_FAILED", message: "Nope", details },
+		const body = (await res.json()) as { error: unknown };
+		// `source: "api"` is the routing signal: a step failure is upstream's
+		// rejection, so ops forwards it to Eko rather than reading our logs.
+		expect(body.error).toEqual({
+			code: "STEP_FAILED",
+			message: "Nope",
+			details,
+			source: "api",
 		});
+		// Diagnostics (rid/ts/version) are attached by createApp's onError, not by
+		// this harness — see trace.test.ts for the wired-up envelope.
 	});
 
 	it("omits details entirely when the step error carries none", async () => {
@@ -266,8 +274,12 @@ describe("signup endpoints", () => {
 			headers: { ...withCookie.headers, "Content-Type": "application/json" },
 			body: JSON.stringify({ pan: "ABCDE1234F" }),
 		});
-		expect(await res.json()).toEqual({
-			error: { code: "STEP_FAILED", message: "Nope" },
+		// `details` stays omitted rather than null, so a client can still branch
+		// on its presence alone.
+		expect(((await res.json()) as { error: unknown }).error).toEqual({
+			code: "STEP_FAILED",
+			message: "Nope",
+			source: "api",
 		});
 	});
 });

@@ -40,7 +40,7 @@ function harness(
 	// Mirrors app.ts's onError so status/code assertions match production.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message), err.status as never);
+			return c.json(errorBody(err.code, err.message, undefined, err.source), err.status as never);
 		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
 	});
@@ -83,8 +83,12 @@ const developer = {
 const withCookie = { headers: { Cookie: "eps_at=token" } };
 
 /** The parsed error envelope of a failed response. */
-async function errorOf(res: Response): Promise<{ code: string }> {
-	const body = (await res.json()) as { error: { code: string } };
+async function errorOf(
+	res: Response,
+): Promise<{ code: string; message?: string }> {
+	const body = (await res.json()) as {
+		error: { code: string; message?: string };
+	};
 	return body.error;
 }
 
@@ -682,6 +686,7 @@ describe("POST /connect/support/query-types", () => {
 		const { app, connect } = harness(developer, {
 			connect: {
 				interact: vi.fn(async () => ({
+					status: 0,
 					data: { issuetype_list: [{ label: "Money not received" }] },
 				})),
 			},
@@ -704,6 +709,73 @@ describe("POST /connect/support/query-types", () => {
 			expect.objectContaining({ interaction_type_id: 10022, is_admin: 0 }),
 			expect.anything(),
 		);
+	});
+
+	// connect-api answers 200 for business-level failures. This used to be
+	// laundered into `{ issueTypes: [] }` and a 200 of our own, which the dialog
+	// drew as a blank card — indistinguishable from an org with nothing
+	// configured.
+	it("reports an upstream refusal instead of an empty list", async () => {
+		const { app } = harness(developer, {
+			connect: {
+				interact: vi.fn(async () => ({
+					status: 1,
+					message: "Interaction not allowed for this role",
+				})),
+			},
+		});
+
+		const res = await app.request("/connect/support/query-types", {
+			method: "POST",
+			body: JSON.stringify({ tid: "123" }),
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+		});
+
+		expect(res.status).toBe(502);
+		const error = await errorOf(res);
+		expect(error.code).toBe("QUERY_TYPES_FAILED");
+		expect(error.message).toBe("Interaction not allowed for this role");
+	});
+
+	// A success envelope with no list is a schema regression, not an empty
+	// catalogue — the browser's fallback issue must not paper over it.
+	it("rejects a success envelope whose list is missing or re-shaped", async () => {
+		for (const data of [undefined, {}, { issuetype_list: { rows: [] } }]) {
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => ({ status: 0, data })) },
+			});
+
+			const res = await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ tid: "123" }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
+
+			expect(res.status).toBe(502);
+			expect((await errorOf(res)).code).toBe("QUERY_TYPES_FAILED");
+		}
+	});
+
+	// The empty array IS a valid answer: nothing configured for this transaction
+	// type. It reaches the browser, which offers its generic fallback issue.
+	it("passes an explicitly empty list through", async () => {
+		const { app } = harness(developer, {
+			connect: {
+				interact: vi.fn(async () => ({
+					status: 0,
+					data: { issuetype_list: [] },
+				})),
+			},
+		});
+
+		const res = await app.request("/connect/support/query-types", {
+			method: "POST",
+			body: JSON.stringify({ tid: "123" }),
+			headers: { ...withCookie.headers, "Content-Type": "application/json" },
+		});
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ issueTypes: [] });
 	});
 });
 

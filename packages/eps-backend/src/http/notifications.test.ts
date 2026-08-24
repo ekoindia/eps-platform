@@ -51,7 +51,7 @@ function harness(
 	// Mirrors app.ts's onError so status/code assertions match production.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message), err.status as never);
+			return c.json(errorBody(err.code, err.message, undefined, err.source), err.status as never);
 		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
 	});

@@ -100,7 +100,7 @@ function harness(over: {
 	});
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message), err.status as 400);
+			return c.json(errorBody(err.code, err.message, undefined, err.source), err.status as 400);
 		}
 		return c.json(errorBody("INTERNAL", "boom"), 500);
 	});

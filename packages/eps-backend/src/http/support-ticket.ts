@@ -30,6 +30,13 @@ export interface TicketInput {
 	transactionDetail?: unknown;
 	/** Preamble the flow wants at the end of the description. */
 	preMsgTemplate?: string;
+	/**
+	 * The console's error diagnostics for the failure being reported: request id,
+	 * error code and source, the upstream `client_ref_id`, and the recent-call
+	 * buffer. Opaque here on purpose — the console owns the shape, and this only
+	 * has to carry it through to `technical_notes`.
+	 */
+	diagnostics?: Record<string, unknown>;
 	/** Facts only the browser knows. */
 	client?: {
 		useragent?: string;
@@ -151,6 +158,9 @@ export function buildTicketFields(input: TicketInput): Record<string, string> {
 				roles: input.user?.role || "",
 			},
 			transaction_details: input.transactionDetail,
+			// The console's failure diagnostics, when the ticket was raised from an
+			// error rather than from a transaction row.
+			diagnostics: input.diagnostics,
 			useragent: input.client?.useragent || "",
 			screen: input.client?.screen || "",
 			device_time: input.client?.deviceTime || "",

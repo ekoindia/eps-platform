@@ -289,3 +289,100 @@ describe("session expiry signal", () => {
 		expect(expired).toHaveBeenCalledTimes(2);
 	});
 });
+
+/**
+ * The diagnostics an error carries. These are what a screenshot has to be able
+ * to show, so each one is a rule about what survives a failure — not a detail.
+ */
+describe("error diagnostics", () => {
+	/** A response whose headers behave like a real one's. */
+	function mockWithHeaders(
+		status: number,
+		body: unknown,
+		headers: Record<string, string>,
+	) {
+		const fn = vi.fn().mockResolvedValue({
+			ok: status >= 200 && status < 300,
+			status,
+			headers: new Headers(headers),
+			text: async () => JSON.stringify(body),
+		} as Response);
+		vi.stubGlobal("fetch", fn);
+		return fn;
+	}
+
+	it("reads the request id from the header even when the body is unparseable", async () => {
+		// The case with least else to go on: a proxy error page, no envelope. The
+		// header is the only thing left that names the request.
+		const fn = vi.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
+			headers: new Headers({ "x-request-id": "rid-header" }),
+			text: async () => "<!doctype html>",
+		} as Response);
+		vi.stubGlobal("fetch", fn);
+		await expect(authClient.me()).rejects.toMatchObject({
+			code: "PARSE_ERROR",
+			source: "client",
+			requestId: "rid-header",
+		});
+	});
+
+	it("prefers the body's rid, which agrees with the header", async () => {
+		mockWithHeaders(
+			502,
+			{ error: { code: "UPSTREAM_ERROR", message: "x", source: "proxy" } , rid: "rid-body" },
+			{ "x-request-id": "rid-body" },
+		);
+		await expect(authClient.me()).rejects.toMatchObject({
+			requestId: "rid-body",
+		});
+	});
+
+	it("carries source, trace and version off the envelope", async () => {
+		mockWithHeaders(
+			502,
+			{
+				error: { code: "KYC_LIST_FAILED", message: "nope", source: "api" },
+				rid: "rid-1",
+				ts: "2026-08-25T00:00:00.000Z",
+				version: "abc123",
+				trace: [{ path: "/p", clientRefId: "ref-9", status: 200, durMs: 3, error: null }],
+			},
+			{},
+		);
+		const err = await authClient.me().catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(ApiError);
+		const api = err as ApiError;
+		expect(api.source).toBe("api");
+		expect(api.version).toBe("abc123");
+		expect(api.serverTime).toBe("2026-08-25T00:00:00.000Z");
+		expect(api.trace?.[0].clientRefId).toBe("ref-9");
+	});
+
+	it("defaults an envelope-less error to `proxy`, not `client`", async () => {
+		// A server answered; the shape was just unrecognised. Blaming the browser
+		// would send ops to the wrong team.
+		mockWithHeaders(500, { nope: true }, {});
+		await expect(authClient.me()).rejects.toMatchObject({
+			code: "HTTP_ERROR",
+			source: "proxy",
+		});
+	});
+
+	it("turns an unreachable server into a named client error", async () => {
+		// Previously a bare TypeError reached callers and each invented its own
+		// "Network error" string, indistinguishable from a backend fault.
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+		);
+		const err = await authClient.me().catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(ApiError);
+		expect(err).toMatchObject({
+			code: "NETWORK_ERROR",
+			source: "client",
+			httpStatus: 0,
+		});
+	});
+});

@@ -215,6 +215,11 @@ export function createEkoLogger(opts: {
 									f.mobile == null ? undefined : String(f.mobile),
 								),
 								org_id: f.org_id,
+								// The reference Eko support looks a transaction up by. It is
+								// ours, not caller data, and without it at `basic` the one
+								// level production actually runs cannot answer "which upstream
+								// call was this?" — the reason the id is generated at all.
+								client_ref_id: f.client_ref_id ?? null,
 								response: responseSummary(entry.response),
 							};
 				void Promise.resolve(sink(JSON.stringify(record))).catch(() => {});

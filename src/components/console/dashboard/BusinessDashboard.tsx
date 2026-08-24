@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { ApiError } from "@/lib/auth/client";
 import {
 	type DashboardView,
@@ -135,12 +136,10 @@ export default function BusinessDashboard() {
 			/>
 
 			{error ? (
-				<div
-					role="alert"
-					className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive"
-				>
-					{error.message || "Couldn't load your dashboard right now."}
-				</div>
+				<ErrorNotice
+					error={error}
+					fallback="Couldn't load your dashboard right now."
+				/>
 			) : null}
 
 			{!view && !error ? <DashboardSkeleton /> : null}

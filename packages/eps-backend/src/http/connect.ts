@@ -406,7 +406,7 @@ export function mountConnect(
 				c.header("Cache-Control", "no-store");
 				return c.json({ documents: [] });
 			}
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"KYC_LIST_FAILED",
 				message || "Couldn't load your document list.",
@@ -500,7 +500,7 @@ export function mountConnect(
 		);
 
 		if (Number(envelope.status ?? -1) !== 0) {
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"KYC_UPLOAD_FAILED",
 				text(envelope.message, 200) || "Couldn't upload that document.",
@@ -552,13 +552,34 @@ export function mountConnect(
 			{ xRealIp: c.req.header("x-real-ip") },
 		);
 
+		// connect-api answers 200 for business-level failures, so an unentitled
+		// caller or a rejected field arrives here as an envelope with no
+		// `issuetype_list`. Without this the failure was laundered into an empty
+		// list and a 200 of our own, and the dialog drew a blank card with no way
+		// to tell "nothing configured" from "upstream said no".
+		if (Number(envelope.status ?? -1) !== 0) {
+			throw AppError.fromUpstream(
+				502,
+				"QUERY_TYPES_FAILED",
+				text(envelope.message, 200) || "Couldn't load the query types.",
+			);
+		}
+
 		const data = envelope.data as { issuetype_list?: unknown } | undefined;
-		const issueTypes = Array.isArray(data?.issuetype_list)
-			? data.issuetype_list
-			: [];
+		// A success envelope that carries no list at all is a schema regression
+		// (renamed or re-shaped `issuetype_list`), not an empty catalogue. Only an
+		// explicit empty array means "nothing configured", which the browser
+		// answers with its generic fallback issue.
+		if (!Array.isArray(data?.issuetype_list)) {
+			throw AppError.fromUpstream(
+				502,
+				"QUERY_TYPES_FAILED",
+				"Couldn't read the query types.",
+			);
+		}
 
 		c.header("Cache-Control", "no-store");
-		return c.json({ issueTypes });
+		return c.json({ issueTypes: data.issuetype_list });
 	});
 
 	/**
@@ -664,7 +685,7 @@ export function mountConnect(
 			? String(data.feedback_ticket_id)
 			: "";
 		if (Number(envelope.status ?? -1) !== 0 || !feedbackTicketId) {
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"TICKET_NOT_CREATED",
 				text(envelope.message, 200) || "Couldn't create the ticket.",

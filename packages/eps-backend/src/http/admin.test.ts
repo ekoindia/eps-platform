@@ -64,7 +64,7 @@ async function harness(
 	app.use("*", requestId());
 	app.onError((err, c) =>
 		err instanceof AppError
-			? c.json(errorBody(err.code, err.message), err.status as 400)
+			? c.json(errorBody(err.code, err.message, undefined, err.source), err.status as 400)
 			: c.json(errorBody("UPSTREAM_ERROR", "x"), 502),
 	);
 	mountAdmin(app, { cfg, sessions, kv, github, securityLog });
@@ -260,7 +260,7 @@ function encHarness(github = ghMock()) {
 	app.use("*", requestId());
 	app.onError((err, c) =>
 		err instanceof AppError
-			? c.json(errorBody(err.code, err.message), err.status as 400)
+			? c.json(errorBody(err.code, err.message, undefined, err.source), err.status as 400)
 			: c.json(errorBody("UPSTREAM_ERROR", "x"), 502),
 	);
 	mountAdmin(app, { cfg, sessions, kv, github, secretbox });
@@ -365,7 +365,7 @@ describe("admin authz freshness", () => {
 		app.use("*", requestId());
 		app.onError((err, c) =>
 			err instanceof AppError
-				? c.json(errorBody(err.code, err.message), err.status as 400)
+				? c.json(errorBody(err.code, err.message, undefined, err.source), err.status as 400)
 				: c.json(errorBody("UPSTREAM_ERROR", "x"), 502),
 		);
 		mountAdmin(app, { cfg, sessions, kv, github });

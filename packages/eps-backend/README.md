@@ -585,7 +585,10 @@ puts what it collected on the error envelope as a **sibling of `error`**:
 
 ```json
 {
-	"error": { "code": "STEP_FAILED", "message": "…" },
+	"error": { "code": "STEP_FAILED", "message": "…", "source": "api" },
+	"rid": "3f2a1b7c-…",
+	"ts": "2026-08-25T09:12:44.180Z",
+	"version": "74c5eb3",
 	"trace": [
 		{
 			"path": "/interactions",
@@ -620,6 +623,61 @@ was recorded.
 
 Independent of `EKO_LOG_LEVEL` by design — a browser-side diagnostic must not
 depend on how the operator set a server log's verbosity.
+
+### The rest of the error envelope
+
+Alongside `trace`, every error body carries `rid` (the same value as the
+`x-request-id` header — in the body too, because a screenshot shows the body and
+never the headers), `ts` (server clock, so a skewed browser clock cannot
+mislead), and `version` (the build that served it).
+
+`error.source` says **who produced the message**, which is the first thing ops
+needs from a screenshot:
+
+| `source` | Meaning | Where it goes |
+| --- | --- | --- |
+| `api` | The upstream call failed and `message` is its envelope message | Forward to Eko |
+| `proxy` | This service produced it — a guard, a validation, a failure it could not get an upstream answer for | Backend team |
+| `client` | Added by the frontend for failures that never reached the network (`NETWORK_ERROR`, `PARSE_ERROR`) | Frontend / the user's connection |
+
+Use `AppError.fromUpstream(...)` wherever the message is `envelope.message`; the
+plain constructor defaults to `proxy`, so an error is ours unless it says
+otherwise. `AppError.fromUpstream` is deliberately greppable — it finds every
+forwarded message in one search.
+
+The unhandled branch adds one more field. It still answers `502 UPSTREAM_ERROR
+"Something went wrong"`, but `cause` now carries what actually threw (`"Eko
+upstream HTTP 503"`), scrubbed of URL credentials and capped at 200 characters.
+It is withheld from anonymous callers, since it names our own hosts and paths.
+
+`errorBody` has exactly five call sites — the four `onError` branches and
+`app.notFound` — and all five carry the diagnostics. No route builds an error
+envelope itself; if one ever does, it will silently skip all of this.
+
+### Success responses: `x-eps-debug`
+
+Errors carry their trace unconditionally. Successes do not — adding upstream
+bodies to every dashboard and transaction payload would multiply response sizes
+for a diagnostic nobody is reading.
+
+Send `x-eps-debug: 1` to get it anyway, as `_diag` on the response body. Gated
+three ways: the caller must ask, must have a verified session, and the response
+must be a 2xx `application/json` object. Streaming, binary and non-JSON
+responses pass through untouched — buffering and re-serializing them would
+corrupt them. The console sets the header automatically in dev, and in
+production only when `sessionStorage["eps.debug"] === "1"`.
+
+### `x-eps-version`
+
+Every response — success or failure — carries the running build on
+`x-eps-version`, CORS-exposed so browser JS can read it. It comes from the
+`EPS_VERSION` env var, falling back to `dev`; stamp it at image build time:
+
+    docker build --build-arg EPS_VERSION=$(git rev-parse --short HEAD) …
+
+"Is production actually running this code?" is the question that precedes every
+other one during an incident, and the deploy poller can latch a stale image
+without anything else showing it.
 
 ## Production deploy (pull-based, private VM)
 
