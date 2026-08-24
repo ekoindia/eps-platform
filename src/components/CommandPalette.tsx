@@ -231,8 +231,8 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	const canAskAi =
 		SHOW_AI_CHAT &&
 		!chatDisabled &&
-		auth.status === "authed" &&
-		(auth.role === "developer" || auth.role === "admin");
+		auth.state.status === "authed" &&
+		(auth.state.role === "developer" || auth.state.role === "admin");
 
 	// Long-form page prose is a separate ~160 KB payload. Fetched once when the
 	// palette first mounts — which only happens on first open, so the user has
