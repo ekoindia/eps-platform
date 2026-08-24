@@ -73,6 +73,26 @@ export interface ConnectClient {
 		xRealIp?: string;
 	}): Promise<ConnectLoginEnvelope>;
 	refreshTokens(refreshToken: string): Promise<ConnectTokens | null>;
+	/**
+	 * Re-reads the caller's upstream profile into a brand-new token set —
+	 * `POST /authentication/refresh-profile`, the only no-OTP path back to
+	 * interaction 151. `refreshTokens` cannot do this: connect-api's token
+	 * endpoint copies the stored claim verbatim (`auth/auth.js:383`, an upstream
+	 * TODO), so a rotation re-signs whatever roles the login minted.
+	 *
+	 * Contract quirks, both verified against the reference implementation:
+	 * the response is a full LOGIN envelope (details block included) carrying a
+	 * NEW refresh token that must replace the stored one, and
+	 * `last_refresh_token` must be sent or connect-api creates a second session
+	 * document alongside the stale one instead of rewriting it in place.
+	 * @param accessToken - The caller's current FULL access token (route is
+	 *   behind bearer auth; an expired token 401s — rotate first).
+	 * @param lastRefreshToken - The stored refresh token, rotated in place.
+	 */
+	refreshProfile(
+		accessToken: string,
+		lastRefreshToken: string,
+	): Promise<ConnectLoginEnvelope>;
 	revoke(refreshToken: string): Promise<void>;
 	/**
 	 * The role-scoped interaction list backing the Connect widget's
@@ -578,6 +598,14 @@ export function createConnectClient(
 				refresh_token: refreshToken,
 			})) as ConnectLoginEnvelope;
 			return tokensOf(env);
+		},
+
+		async refreshProfile(accessToken, lastRefreshToken) {
+			return (await post(
+				"/authentication/refresh-profile",
+				{ last_refresh_token: lastRefreshToken },
+				{ bearer: accessToken },
+			)) as ConnectLoginEnvelope;
 		},
 
 		async revoke(refreshToken) {

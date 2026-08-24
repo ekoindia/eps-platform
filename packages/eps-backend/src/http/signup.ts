@@ -201,6 +201,7 @@ export function mountSignup(
 				// unverified profile. No upgrade here just means the next
 				// /signup/state call retries it.
 				console.log("[signup] upgrade", {
+					mobile,
 					sid: sid?.slice(0, 8) ?? "<none>",
 					profileKind: profile.kind,
 				});
@@ -247,10 +248,12 @@ export function mountSignup(
 						// "requested", not "done": the provider logs its own outcome
 						// (`[connect-auth] rotated` / `collapsed` / `no stored session`).
 						console.log("[signup] entitlement refresh requested", {
+							mobile,
 							sid: sid.slice(0, 8),
 						});
 					} catch (err) {
 						console.error("[signup] upstream entitlement refresh failed", {
+							mobile,
 							sid: sid.slice(0, 8),
 							err,
 						});
@@ -260,6 +263,7 @@ export function mountSignup(
 					// upstream token for the life of the session — the exact symptom
 					// being hunted in prod, so the skip must be visible.
 					console.warn("[signup] entitlement refresh unavailable", {
+						mobile,
 						hasSid: Boolean(sid),
 						provider: auth.name,
 					});

@@ -15,18 +15,24 @@ import type { AuthProvider, UpstreamSession } from "./provider";
 const REFRESH_SKEW_MS = 60_000;
 
 /**
- * How recently a rotation counts as "already done" for `refreshEntitlements`.
+ * How recently a profile refresh counts as "already done" for
+ * `refreshEntitlements`.
  *
- * Every completed `/signup/*` response asks for one, and connect-api's refresh
- * grant is single-use — two rotations racing on the same stored session would
- * leave the loser's refresh token dead. This collapses a burst into one.
+ * Every completed `/signup/*` response asks for one, connect-api's refresh
+ * grant is single-use, and each refresh costs upstream an interaction-151 read
+ * — two racing on the same stored session would leave the loser's refresh
+ * token dead. This collapses a burst into one.
+ *
+ * Compared against `profileRefreshedAt`, NOT `rotatedAt`: an expiry-driven
+ * rotation re-signs the stored claim verbatim and says nothing about roles, so
+ * it must never suppress the one profile refresh a signup gets.
  *
  * ponytail: a time window, not a lock. It closes the realistic gap (a repeated
  * or double-submitted request) without a KV round-trip; two calls landing in the
- * same millisecond can still both rotate. Move to an atomic KV flag if entitlement
+ * same millisecond can still both refresh. Move to an atomic KV flag if profile
  * refreshes ever become something more than a once-per-signup event.
  */
-const ENTITLEMENT_ROTATE_MIN_INTERVAL_MS = 60_000;
+const ENTITLEMENT_REFRESH_MIN_INTERVAL_MS = 60_000;
 
 /**
  * Delegates login to Eloka's connect-api so both products share one identity
@@ -106,6 +112,8 @@ export function createConnectAuthProvider(
 			accessExpiresAt: now + next.accessTtlSec * 1000,
 			sessionExpiresAt: now + next.sessionTtlSec * 1000,
 			rotatedAt: now,
+			// A rotation is not a profile refresh — carry the marker, don't reset it.
+			profileRefreshedAt: current.profileRefreshedAt,
 		});
 	}
 
@@ -166,6 +174,7 @@ export function createConnectAuthProvider(
 			// logs `anonymousUser: true` here — connect-api mints an anonymous
 			// session for a mobile it has no EPS account for.
 			console.log("[connect-auth] login", {
+				mobile,
 				profileKind: profile.kind,
 				hasTokens: Boolean(tokens),
 				userType: tokens?.userType ?? "<absent>",
@@ -203,7 +212,7 @@ export function createConnectAuthProvider(
 		},
 
 		async refreshEntitlements(sid) {
-			const current = await load(sid);
+			let current = await load(sid);
 			// Nothing stored means the session is already gone. `refresh` throws here
 			// because a live cookie over dead credentials must fail closed; this one
 			// returns, because its callers hold a session that is valid either way and
@@ -215,19 +224,60 @@ export function createConnectAuthProvider(
 				return;
 			}
 			if (
-				current.rotatedAt &&
-				Date.now() - current.rotatedAt < ENTITLEMENT_ROTATE_MIN_INTERVAL_MS
+				current.profileRefreshedAt &&
+				Date.now() - current.profileRefreshedAt <
+					ENTITLEMENT_REFRESH_MIN_INTERVAL_MS
 			) {
-				// A collapsed refresh at the moment of signup completion means the
-				// upgrade rode a rotation that happened BEFORE the roles changed — the
-				// exact silent-staleness path being hunted in prod, so it must be loud.
 				console.warn("[connect-auth] entitlement refresh collapsed", {
 					sid: sid.slice(0, 8),
-					rotatedAgoMs: Date.now() - current.rotatedAt,
+					refreshedAgoMs: Date.now() - current.profileRefreshedAt,
 				});
 				return;
 			}
-			await rotate(sid, current);
+			// `/authentication/refresh-profile` sits behind bearer auth, so an access
+			// token at the edge of its life would 401 there. Rotate first and pick up
+			// what `rotate` stored — the roles in it are still stale, but the token
+			// is alive enough to authenticate the profile refresh.
+			if (current.accessExpiresAt - Date.now() <= REFRESH_SKEW_MS) {
+				await rotate(sid, current);
+				current = await load(sid);
+				if (!current) return;
+			}
+			const env = await connect.refreshProfile(
+				current.accessToken,
+				current.refreshToken,
+			);
+			const next = tokensOf(env);
+			// No token pair means connect-api refused (dead grant, inactive account,
+			// unrecognized envelope). Throw rather than overwrite a stored session
+			// that still works — the caller treats stale-but-working as recoverable.
+			if (!next) {
+				throw new Error("connect-api refused to refresh the profile");
+			}
+			const now = Date.now();
+			// The identity check this whole path exists for: after onboarding this
+			// must NOT say anonymous any more — if it does, upstream's 151 still has
+			// the old view and no amount of refreshing on our side will help.
+			console.log("[connect-auth] profile refreshed", {
+				sid: sid.slice(0, 8),
+				mobile: String(env.details?.mobile ?? ""),
+				userType: next.userType ?? "<absent>",
+				anonymousUser: next.anonymousUser ?? "<unknown>",
+			});
+			await save(sid, {
+				accessToken: next.accessToken,
+				refreshToken: next.refreshToken,
+				// Unlike `rotate`, a refresh-profile response minting no lite/crm tier
+				// is unexpected (the login branch always does) — but the fallback rule
+				// is the same: a stale widget token degrades to a failed widget call,
+				// while a blanked one breaks a widget that was working.
+				accessTokenLite: next.accessTokenLite ?? current.accessTokenLite,
+				accessTokenCrm: next.accessTokenCrm ?? current.accessTokenCrm,
+				accessExpiresAt: now + next.accessTtlSec * 1000,
+				sessionExpiresAt: now + next.sessionTtlSec * 1000,
+				rotatedAt: now,
+				profileRefreshedAt: now,
+			});
 		},
 
 		getUpstream: load,
