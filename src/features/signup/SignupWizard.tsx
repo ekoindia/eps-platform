@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
+import { withRetries } from "@/lib/retry";
 import { resolveSteps } from "./resolveSteps";
 import { SignupProfileProvider } from "./SignupProfileContext";
 import { StepRail } from "./StepRail";
@@ -43,8 +44,11 @@ export function SignupWizard() {
 		started.current = true;
 		void (async () => {
 			try {
-				let next = await signupClient.state();
+				let next = await withRetries(() => signupClient.state());
 				if (next.status === "new") {
+					// Deliberately NOT wrapped in `withRetries`: this POST creates a
+					// partial account upstream, which is the very thing `started` above
+					// exists to stop happening twice.
 					next = await signupClient.createProfile();
 				}
 				setState(next);
@@ -69,7 +73,7 @@ export function SignupWizard() {
 		setBusy(true);
 		setError(null);
 		try {
-			setState(await submit());
+			setState(await withRetries(submit));
 		} catch (e) {
 			setError(
 				e instanceof ApiError

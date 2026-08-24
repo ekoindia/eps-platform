@@ -274,6 +274,13 @@ Both ceilings are only real if the hops in front of the app allow them: nginx
 defaults `client_max_body_size` to 1 MB, and a serverless deploy caps request
 bodies at a few MB regardless of what the handler checks.
 
+The upload itself is wrapped in `withRetries` (`src/lib/retry.ts`) — two retries,
+1s then 3s apart — so a flaky upstream does not read as a rejected document.
+`FILE_TOO_LARGE`, `UNSUPPORTED_FILE_TYPE`, `INVALID_INPUT` and `RATE_LIMITED` are
+never retried, so a file this section refuses still fails on the first attempt.
+Note that three attempts consume three of the route's `KYC_UPLOAD_LIMIT` budget.
+See [`user-onboarding.md`](./user-onboarding.md#retrying-transient-failures).
+
 ## Blur detection
 
 Badly scanned documents — blurred, out of focus — sail through every rule above

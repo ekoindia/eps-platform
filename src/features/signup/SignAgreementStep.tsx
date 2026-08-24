@@ -7,6 +7,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ApiError, signupClient, type SignUrlView } from "@/lib/auth/client";
+import { withRetries } from "@/lib/retry";
 import { esignOrigin, openEsign, usesLeegality } from "./esign";
 import type { StepProps } from "./resolveSteps";
 
@@ -35,7 +36,7 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 		setPhase("loading");
 		setLocalError(null);
 		try {
-			const data = await signupClient.getAgreementUrl();
+			const data = await withRetries(() => signupClient.getAgreementUrl());
 			setSignData(data);
 			setDocumentId(data.documentId);
 			setPhase(data.alreadySigned ? "signed" : "ready");
