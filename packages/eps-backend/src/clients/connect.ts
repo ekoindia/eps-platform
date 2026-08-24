@@ -629,6 +629,11 @@ export function createConnectClient(
 		},
 
 		async interact(accessToken, body, opts = {}) {
+			// No `source: "WLC"` here, though Eloka's shared fetcher stamps one on
+			// every connect-api body. Tried against UAT and it changes nothing:
+			// interaction 10022 returns the same list with it, without it, and with
+			// a JSON body rather than Eloka's form-encoded one. `interactions()`
+			// sends it because /transactions/wlc requires it, not as a convention.
 			const raw = await post("/transactions/do", body, {
 				bearer: accessToken,
 				xRealIp: opts.xRealIp,

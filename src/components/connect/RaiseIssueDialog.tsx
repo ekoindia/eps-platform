@@ -40,6 +40,13 @@ export interface RaiseIssueOptions {
 	metadata?: {
 		transaction_detail?: Record<string, unknown>;
 		pre_msg_template?: string;
+		/**
+		 * Everything known about the failure that prompted this ticket — see
+		 * `errorDiagnostics`. Rides into the ticket's `technical_notes` so whoever
+		 * picks it up gets the request id and the upstream reference without
+		 * having to ask the user what they saw.
+		 */
+		diagnostics?: Record<string, unknown>;
 	};
 	/** Opaque caller context, echoed back untouched on close. */
 	context?: unknown;
@@ -221,7 +228,7 @@ function ScreenshotField({
 	}
 
 	return (
-		<div className="mb-4 max-w-sm">
+		<div className="mb-6 max-w-sm">
 			<video
 				ref={videoRef}
 				autoPlay
@@ -292,7 +299,9 @@ export function RaiseIssueDialog({
 		GENERIC_ISSUE_TYPE.DEFAULT;
 
 	const [catalogue, setCatalogue] = useState<IssueCatalogue | null>(null);
-	const [loadError, setLoadError] = useState(false);
+	// The upstream's own words when it refused, so the user sees "not entitled"
+	// rather than a generic failure they cannot act on.
+	const [loadError, setLoadError] = useState<string | null>(null);
 	const [categoryId, setCategoryId] = useState<number | null>(null);
 	const [subCategoryId, setSubCategoryId] = useState<number | null>(null);
 	const [issue, setIssue] = useState<IssueType | null>(null);
@@ -325,8 +334,12 @@ export function RaiseIssueDialog({
 			.then((response) =>
 				setCatalogue(buildIssueCatalogue(response.issueTypes)),
 			)
-			.catch(() => {
-				if (!controller.signal.aborted) setLoadError(true);
+			.catch((error: unknown) => {
+				if (controller.signal.aborted) return;
+				setLoadError(
+					(error instanceof Error && error.message) ||
+						"Couldn't load the issue types. Please check your connection and try again.",
+				);
 			});
 		return () => controller.abort();
 		// Opened for one transaction and closed again; re-fetching mid-dialog would
@@ -346,6 +359,13 @@ export function RaiseIssueDialog({
 		const subs = catalogue?.subCategories[categoryId] ?? [];
 		if (subs.length === 1) setSubCategoryId(subs[0].id);
 	}, [categoryId, catalogue]);
+
+	// Nor is a single issue a choice. Its `ChipList` is `alwaysExpanded`, so the
+	// chip still renders — now already selected. This is what lands a user on the
+	// comment box when `FALLBACK_ISSUE` is all there is.
+	useEffect(() => {
+		if (catalogue?.issues.length === 1) setIssue(catalogue.issues[0]);
+	}, [catalogue]);
 
 	// The selected issue decides which fields exist at all.
 	useEffect(() => {
@@ -405,6 +425,7 @@ export function RaiseIssueDialog({
 				txTypeId,
 				transactionDetail: options.metadata?.transaction_detail,
 				preMsgTemplate: options.metadata?.pre_msg_template,
+				diagnostics: options.metadata?.diagnostics,
 				client: {
 					useragent: navigator.userAgent,
 					screen: `${window.innerWidth}x${window.innerHeight} of ${screen.width}x${screen.height}`,
@@ -463,10 +484,7 @@ export function RaiseIssueDialog({
 	if (loadError) {
 		return (
 			<Panel onClose={close}>
-				<p className="text-sm text-destructive">
-					Couldn't load the issue types. Please check your connection and try
-					again.
-				</p>
+				<p className="text-sm text-destructive">{loadError}</p>
 			</Panel>
 		);
 	}
@@ -576,7 +594,7 @@ export function RaiseIssueDialog({
 					{inputs.map((input, index) => (
 						<div
 							key={input.label}
-							className="mb-4 flex max-w-sm flex-col gap-1.5"
+							className="mb-6 flex max-w-sm flex-col gap-1.5"
 						>
 							<Label htmlFor={`issue-input-${index}`}>
 								{input.label}
@@ -608,7 +626,7 @@ export function RaiseIssueDialog({
 							label={file.label}
 							required={file.is_required}
 							disabled={disabled}
-							className="max-w-sm"
+							className="mb-6 max-w-sm"
 							accept={
 								file.accept ||
 								"image/jpeg,image/pjpeg,image/png,application/pdf"
@@ -640,7 +658,7 @@ export function RaiseIssueDialog({
 					{issue.type === 0 ? (
 						<>
 							{issue.comment === REQUIREMENT.DISABLED ? null : (
-								<div className="mb-4 flex max-w-sm flex-col gap-1.5">
+								<div className="mb-6 flex max-w-sm flex-col gap-1.5">
 									<Label htmlFor="issue-comment">
 										Comments
 										{issue.comment === REQUIREMENT.MANDATORY ? " *" : ""}
@@ -657,7 +675,7 @@ export function RaiseIssueDialog({
 							)}
 
 							<Button
-								className="mt-4 self-start"
+								className="mt-2 self-start"
 								disabled={disabled || !windowOpen}
 								onClick={() => void submit()}
 							>

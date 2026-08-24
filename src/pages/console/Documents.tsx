@@ -8,6 +8,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { ApiError, authClient } from "@/lib/auth/client";
 import {
 	parseDocumentList,
@@ -121,7 +122,8 @@ export default function Documents() {
 	const enabled = useKycEnabled();
 	const [documents, setDocuments] = useState<KycDocument[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	// The error OBJECT, not its message — see ErrorNotice.
+	const [error, setError] = useState<unknown>(null);
 	const [uploading, setUploading] = useState<KycDocument | null>(null);
 	/**
 	 * Doc types uploaded successfully in this session.
@@ -143,11 +145,7 @@ export default function Documents() {
 			setDocuments(parseDocumentList(raw));
 		} catch (err) {
 			if (signal?.aborted) return;
-			setError(
-				err instanceof ApiError
-					? err.message
-					: "Couldn't load your documents. Please try again.",
-			);
+			setError(err);
 		} finally {
 			if (!signal?.aborted) setLoading(false);
 		}
@@ -195,9 +193,10 @@ export default function Documents() {
 				<Header />
 
 				{error ? (
-					<div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-						{error}
-					</div>
+					<ErrorNotice
+						error={error}
+						fallback="Couldn't load your documents. Please try again."
+					/>
 				) : null}
 
 				{resolving ? (

@@ -225,7 +225,7 @@ export function mountNotifications(
 		// connect-api answers HTTP 200 for business failures, so the envelope is
 		// what decides — the rule every route in `connect.ts` follows.
 		if (Number(envelope.status ?? -1) !== 0) {
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"NOTIFICATIONS_FAILED",
 				text(envelope.message) || "Couldn't load your notifications right now.",
@@ -304,7 +304,7 @@ export function mountNotifications(
 			);
 		}
 		if (refused) {
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"NOTIFICATION_UPDATE_FAILED",
 				text(envelope.message) || "Couldn't update that notification.",

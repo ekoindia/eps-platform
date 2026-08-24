@@ -406,7 +406,7 @@ export function mountConnect(
 				c.header("Cache-Control", "no-store");
 				return c.json({ documents: [] });
 			}
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"KYC_LIST_FAILED",
 				message || "Couldn't load your document list.",
@@ -500,7 +500,7 @@ export function mountConnect(
 		);
 
 		if (Number(envelope.status ?? -1) !== 0) {
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"KYC_UPLOAD_FAILED",
 				text(envelope.message, 200) || "Couldn't upload that document.",
@@ -542,6 +542,12 @@ export function mountConnect(
 				interaction_type_id: QUERY_TYPES_INTERACTION,
 				tid: text(body.tid, 32),
 				tx_typeid: text(body.tx_typeid, 32),
+				// Forwarded verbatim. Upstream honours only Response, History,
+				// Global-Help and Command-Bar for this interaction and answers
+				// `issuetype_list: null` for anything else — including Eloka's own
+				// Other and Error-Boundary. Substituting a working value here would
+				// make the console lie about where the query came from and hide the
+				// gap; an empty list is answered by the browser's FALLBACK_ISSUE.
 				feedback_origin: text(body.feedback_origin, 64),
 				status: text(body.status, 8),
 				operator: text(body.operator, 64),
@@ -552,13 +558,42 @@ export function mountConnect(
 			{ xRealIp: c.req.header("x-real-ip") },
 		);
 
+		// connect-api answers 200 for business-level failures, so an unentitled
+		// caller or a rejected field arrives here as an envelope with no
+		// `issuetype_list`. Without this the failure was laundered into an empty
+		// list and a 200 of our own, and the dialog drew a blank card with no way
+		// to tell "nothing configured" from "upstream said no".
+		if (Number(envelope.status ?? -1) !== 0) {
+			throw AppError.fromUpstream(
+				502,
+				"QUERY_TYPES_FAILED",
+				text(envelope.message, 200) || "Couldn't load the query types.",
+			);
+		}
+
 		const data = envelope.data as { issuetype_list?: unknown } | undefined;
-		const issueTypes = Array.isArray(data?.issuetype_list)
-			? data.issuetype_list
-			: [];
+		const list = data?.issuetype_list;
+		// `null` is how connect-api says "no records" on an otherwise successful
+		// envelope. Eloka is equally lenient here (`issue_list = issue_list || []`).
+		// Absent is treated the same way.
+		//
+		// `response_status_id` is NOT the signal: it is -1 on this interaction even
+		// when the list comes back with 29 rows.
+		//
+		// A value that is present but neither null nor an array IS a schema
+		// regression — a renamed or re-shaped field — and must not be laundered
+		// into "nothing configured", which the browser answers with a generic
+		// fallback issue that would then hide the regression.
+		if (list != null && !Array.isArray(list)) {
+			throw AppError.fromUpstream(
+				502,
+				"QUERY_TYPES_FAILED",
+				"Couldn't read the query types.",
+			);
+		}
 
 		c.header("Cache-Control", "no-store");
-		return c.json({ issueTypes });
+		return c.json({ issueTypes: list ?? [] });
 	});
 
 	/**
@@ -664,7 +699,7 @@ export function mountConnect(
 			? String(data.feedback_ticket_id)
 			: "";
 		if (Number(envelope.status ?? -1) !== 0 || !feedbackTicketId) {
-			throw new AppError(
+			throw AppError.fromUpstream(
 				502,
 				"TICKET_NOT_CREATED",
 				text(envelope.message, 200) || "Couldn't create the ticket.",

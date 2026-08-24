@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { noopAccessLogger, type AccessLogger } from "../audit/accessLog";
@@ -43,7 +44,13 @@ import {
 	RL_WINDOW_SEC,
 } from "./rateLimit";
 import { requestId, type AppEnv } from "./requestId";
-import { trace, traceForResponse } from "./trace";
+import {
+	debugEcho,
+	isAuthenticated,
+	trace,
+	traceForResponse,
+} from "./trace";
+import { API_VERSION } from "../version";
 
 /**
  * Top-level dependencies for the EPS BFF application.
@@ -103,6 +110,45 @@ function normalizeMobile(raw: string): string {
 	return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
+/**
+ * Reduces a thrown error to a one-line cause safe to put in a response.
+ *
+ * Upstream messages name our own hosts ("Eko upstream HTTP 503",
+ * "connect-api returned non-JSON from /transactions/do"), which is exactly
+ * their diagnostic value — but a transport error can quote a URL, and a URL can
+ * carry credentials in its userinfo. Strip those and cap the length; an
+ * unbounded `err.message` is a payload, not a diagnostic.
+ */
+function safeCause(err: unknown): string {
+	const raw = err instanceof Error ? err.message : String(err);
+	return raw.replace(/\/\/[^/@\s]*@/g, "//[redacted]@").slice(0, 200);
+}
+
+/**
+ * Adds the request's diagnostics to an error envelope: the correlation id, the
+ * server clock, the running build, and the upstream trace.
+ *
+ * Siblings of `error` rather than fields inside it: they describe the request,
+ * not the failure, and keeping them out of `error` leaves the shape every
+ * existing client parses untouched. `rid` goes in the body as well as the
+ * header because a screenshot shows the body, never the headers.
+ */
+function withDiagnostics<T extends object>(c: Context<AppEnv>, body: T): T {
+	try {
+		const calls = traceForResponse();
+		return {
+			...body,
+			rid: c.get("rid"),
+			ts: new Date().toISOString(),
+			version: API_VERSION,
+			...(calls.length ? { trace: calls } : {}),
+		};
+	} catch {
+		// The diagnostic must never be the thing that breaks the error path.
+		return body;
+	}
+}
+
 export function createApp(deps: Deps): Hono<AppEnv> {
 	const { cfg, eko, zoho, sessions, kv, github } = deps;
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
@@ -136,9 +182,19 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	}
 
 	app.use("*", requestId());
+	// Stamped on every response, success or failure: "which build served this?"
+	// is the question that precedes every other one during an incident, and the
+	// deploy poller can latch a stale image without anything else showing it.
+	app.use("*", async (c, next) => {
+		c.header("x-eps-version", API_VERSION);
+		await next();
+	});
 	// Right after `requestId()`, whose `rid` the trace scope captures as its owner,
 	// and before everything else so an upstream call from any handler lands in it.
 	app.use("*", trace());
+	// Outside the trace scope's consumers but inside it: runs after the handler,
+	// so `isAuthenticated()` reflects whatever the route resolved.
+	app.use("*", debugEcho());
 	app.use("*", async (c, next) => {
 		const start = performance.now();
 		try {
@@ -164,7 +220,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const corsSite = cors({
 		origin: cfg.corsOrigins,
 		credentials: true,
-		exposeHeaders: ["x-request-id"],
+		exposeHeaders: ["x-request-id", "x-eps-version"],
 	});
 	/**
 	 * The MCP server at /context/* is anonymous and called from arbitrary
@@ -201,30 +257,19 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 			});
 			return c.json(contextMcpErrorBody(), 500);
 		}
-		/**
-		 * Adds the request's upstream trace to an error envelope, when there is
-		 * one to add. A sibling of `error` rather than a field inside it: the
-		 * trace describes the request, not the failure, and keeping it out of
-		 * `error` leaves the shape every existing client parses untouched.
-		 */
-		function withTrace<T extends object>(body: T): T & { trace?: unknown } {
-			try {
-				const calls = traceForResponse();
-				return calls.length ? { ...body, trace: calls } : body;
-			} catch {
-				// The diagnostic must never be the thing that breaks the error path.
-				return body;
-			}
-		}
 		if (err instanceof AppError) {
 			return c.json(
-				withTrace(errorBody(err.code, err.message, err.details)),
+				withDiagnostics(
+					c,
+					errorBody(err.code, err.message, err.details, err.source),
+				),
 				err.status as 400,
 			);
 		}
 		if (err instanceof StoreUnavailableError) {
 			return c.json(
-				withTrace(
+				withDiagnostics(
+					c,
 					errorBody(
 						"STORE_UNAVAILABLE",
 						"Storage temporarily unavailable — try again shortly",
@@ -238,8 +283,15 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		} catch {
 			// logging must never escalate the error path
 		}
+		// The user-facing message stays deliberately vague, but the reason no
+		// longer lives only in stdout: `cause` carries what actually threw. Held
+		// back from anonymous callers — it names our own hosts and paths — and
+		// scrubbed of any credentials a URL in the message might carry.
 		return c.json(
-			withTrace(errorBody("UPSTREAM_ERROR", "Something went wrong")),
+			withDiagnostics(c, {
+				...errorBody("UPSTREAM_ERROR", "Something went wrong"),
+				...(isAuthenticated() ? { cause: safeCause(err) } : {}),
+			}),
 			502,
 		);
 	});
@@ -769,7 +821,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		});
 	}
 
-	app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not found"), 404));
+	app.notFound((c) =>
+		c.json(withDiagnostics(c, errorBody("NOT_FOUND", "Not found")), 404),
+	);
 
 	return app;
 }

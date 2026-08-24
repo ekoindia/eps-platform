@@ -152,6 +152,32 @@ the widget's lite/crm tokens.
   from the browser **because it needs the full token**.
 - `POST /connect/support/query-types` → `{ issueTypes }` (interaction 10022).
   `is_admin` is pinned to `0`; it widens the list to internal-only issue types.
+  - `502 QUERY_TYPES_FAILED` when the envelope's `status` is non-zero, or when
+    `issuetype_list` is present but is neither `null` nor an array. connect-api
+    answers 200 for business-level failures, so without the status check an
+    unentitled caller was laundered into `{ issueTypes: [] }` and a 200 — which
+    the dialog drew as a card with nothing in it.
+  - **`feedback_origin` is an allowlist, and this was the blank-card bug.**
+    Upstream honours exactly `Response`, `History`, `Global-Help` and
+    `Command-Bar`. `Other`, `Error-Boundary`, empty and any unknown string come
+    back `issuetype_list: null` on an otherwise identical success envelope —
+    verified against UAT with a single token, varying only that field: those
+    four return 29 rows, everything else returns null. Eloka's `FeedbackOrigin`
+    constant offers all six, so two of its own values are silent dead ends, and
+    the dialog's `?? "Other"` default meant *any* caller that omitted an origin
+    got an empty list. The origin is nonetheless forwarded **verbatim** —
+    substituting a working one would make the console lie about where the query
+    came from and hide the gap. An empty list is answered by `FALLBACK_ISSUE`
+    instead, and the test bench offers all six values with the two dead ends
+    labelled, so the path is exercised deliberately rather than stumbled into.
+  - **"No records" is not an error.** `data: { issuetype_list: null }` on a
+    `status: 0` envelope means an empty list; `null`, absent and `[]` all pass
+    through as empty, which the browser answers with `FALLBACK_ISSUE`. Eloka is
+    equally lenient (`issue_list = issue_list || []`) — and equally
+    blank-carded by it, since it has no fallback. The narrow reject is reserved
+    for a genuinely re-shaped field, which a fallback would otherwise hide.
+    `response_status_id` is **not** the signal: it is `-1` on this interaction
+    even when 29 rows come back.
 - `POST /connect/support/ticket` (multipart) → `{ feedbackTicketId, message }`
   (interaction 10000, via `/transactions/upload` when there are attachments and
   `/transactions/do` otherwise).
@@ -305,13 +331,26 @@ page uses it, and prints only the expanded row.
 
 Deliberately skipped from Eloka's wrapper: KBar/command-bar actions and the
 Android PubSub bridge (no counterpart here), the MediaPipe text classifier that
-scored comment sentiment, `customIssueType` (it existed for the command-bar entry
-point), and the screenshot-editing branch, which was already dead behind
-`DISABLE_EDIT`. Of the 612-line Dropzone, `<FileUpload>` keeps the image →
+scored comment sentiment, the caller-supplied `customIssueType` (it existed for
+the command-bar entry point), and the screenshot-editing branch, which was
+already dead behind `DISABLE_EDIT`. What *is* kept from that path is its
+synthetic-issue idea: `FALLBACK_ISSUE` in `src/lib/connect/support.ts` is a
+single "Other query" under Others/Others with a mandatory comment, returned by
+`buildIssueCatalogue` when upstream sends an empty list, and auto-selected
+because a lone issue is not a choice. Its negative category ids never leave the
+browser — `buildTicketFields` sends category *titles*, so upstream sees
+"Others", the same string Eloka defaults to. Of the 612-line Dropzone, `<FileUpload>` keeps the image →
 editor round trip, camera capture, drag and drop, preview and discard, but not
 the IP lookup or the watermark builder.
 There is no "Raise issue" entry point on the transaction-history rows yet — the
 dialog is reached from a flow.
+
+`source: "WLC"` is **not** sent on `/transactions/do`, though Eloka's shared
+fetcher stamps one on every connect-api body. Tested against UAT: interaction
+10022 returns the same 29 rows with it, without it, and with a JSON body rather
+than Eloka's form-encoded one. `interactions()` sends it because
+`/transactions/wlc` requires it, not as a house convention. `is_admin`, `locale`
+and an empty `status` likewise make no difference.
 
 Two Eloka bugs are **not** ported: `transaction_time` vs `transactionTime`
 (`RaiseIssueCard.tsx:61` vs `HistoryCard.jsx:258`, which silently killed the

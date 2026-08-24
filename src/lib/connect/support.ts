@@ -20,7 +20,15 @@ export const GENERIC_ISSUE_TYPE = {
 	ONBOARDING: "-2",
 } as const;
 
-/** Where the dialog was opened from; the support desk filters on it. */
+/**
+ * Where the dialog was opened from; the support desk filters on it.
+ *
+ * Only `Response`, `History`, `Global-Help` and `Command-Bar` are configured
+ * upstream for the issue-type lookup — `Other` and `Error-Boundary` return no
+ * issue types at all, and the dialog answers that with `FALLBACK_ISSUE`. The
+ * origin is forwarded verbatim rather than swapped for a working one: a ticket
+ * that misreports where it came from is worse than a generic issue type.
+ */
 export type FeedbackOrigin =
 	| "Response"
 	| "History"
@@ -87,6 +95,35 @@ const DEFAULT_DESC =
 	"Please share the details of your query/issue and we will get back to you soon.";
 
 /**
+ * The issue offered when upstream returns no issue types at all.
+ *
+ * A user must always be able to reach support: an account whose org has nothing
+ * configured for this transaction type would otherwise face a dialog with
+ * nothing in it. Mirrors Eloka's `customIssueDetails` path, which builds a
+ * single synthetic issue and pre-selects it.
+ *
+ * The negative ids never leave the browser — `buildTicketFields` sends
+ * `category`/`sub_category` as their *titles*, so upstream sees "Others", the
+ * same string Eloka defaults to. `context` marks the ticket for the support
+ * desk, which cannot otherwise tell it from a properly categorised one.
+ */
+export const FALLBACK_ISSUE: IssueType = {
+	type: 0,
+	value: "Other query",
+	label: "Other query",
+	desc: DEFAULT_DESC,
+	raise_issue_after: "0d",
+	tat: "0",
+	// Mandatory: an uncategorised ticket with no words in it tells support nothing.
+	comment: REQUIREMENT.MANDATORY,
+	screenshot: REQUIREMENT.OPTIONAL,
+	context:
+		"Raised via the generic fallback issue type — upstream returned no issue types for this transaction.",
+	category: { id: -1, title: "Others" },
+	sub_category: { id: -1, title: "Others" },
+};
+
+/**
  * Fills in the defaults the upstream leaves out, and indexes the list by
  * category and sub-category.
  *
@@ -96,7 +133,11 @@ const DEFAULT_DESC =
  * @returns The issues plus their category index.
  */
 export function buildIssueCatalogue(raw: unknown): IssueCatalogue {
-	const rows = Array.isArray(raw) ? raw : [];
+	// An empty list is not an error — the org simply has nothing configured for
+	// this transaction type. Offer the generic issue rather than an empty dialog.
+	// The BFF rejects a missing or re-shaped list before it gets here, so this
+	// cannot mask a schema regression.
+	const rows = Array.isArray(raw) && raw.length ? raw : [FALLBACK_ISSUE];
 	const categories: Category[] = [];
 	const subCategories: Record<number, Category[]> = {};
 	const seenSubCategory: Record<number, Set<number>> = {};

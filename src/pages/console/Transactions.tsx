@@ -21,6 +21,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { ApiError, isProvisioned, transactionsClient } from "@/lib/auth/client";
 import {
 	creditOf,
@@ -201,7 +202,9 @@ export default function Transactions() {
 	const [startIndex, setStartIndex] = useState(0);
 	const [filters, setFilters] = useState<TransactionFilters>({});
 	const [loading, setLoading] = useState(isActive);
-	const [error, setError] = useState<string | null>(null);
+	// The error OBJECT, not its message: `code`, `details` and the request id are
+	// what make the failure actionable, and flattening here threw them away.
+	const [error, setError] = useState<unknown>(null);
 	const [expanded, setExpanded] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 	const [filterOpen, setFilterOpen] = useState(false);
@@ -224,11 +227,7 @@ export default function Transactions() {
 			})
 			.catch((err: unknown) => {
 				if (controller.signal.aborted) return;
-				setError(
-					err instanceof ApiError
-						? err.message
-						: "Couldn't load your transactions. Please try again.",
-				);
+				setError(err);
 				setRows([]);
 				setHasNext(false);
 			})
@@ -353,9 +352,10 @@ export default function Transactions() {
 			</div>
 
 			{error ? (
-				<div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-					{error}
-				</div>
+				<ErrorNotice
+					error={error}
+					fallback="Couldn't load your transactions. Please try again."
+				/>
 			) : null}
 
 			{loading ? (

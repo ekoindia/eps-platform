@@ -297,7 +297,7 @@ export function mountDashboard(
 			// connect-api answers HTTP 200 for business failures, so the envelope is
 			// what decides — same rule every route in `connect.ts` follows.
 			if (Number(envelope.status ?? -1) !== 0) {
-				throw new AppError(
+				throw AppError.fromUpstream(
 					502,
 					"DASHBOARD_FAILED",
 					text(envelope.message) || "Couldn't load your dashboard right now.",

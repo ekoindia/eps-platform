@@ -198,3 +198,61 @@ export function traceForResponse(): UpstreamCall[] {
 		return rest;
 	});
 }
+
+/**
+ * Whether this request carries a verified session.
+ *
+ * Gates diagnostics that describe our own infrastructure — upstream response
+ * bodies, and the underlying cause of an unhandled failure. Neither is secret
+ * exactly, but neither is owed to a caller who has not proved who they are.
+ */
+export function isAuthenticated(): boolean {
+	return store.getStore()?.authed === true;
+}
+
+/** Opt-in header for the success-path echo. Absent means absent — no default on. */
+export const DEBUG_HEADER = "x-eps-debug";
+
+/**
+ * Attaches the upstream trace to a *successful* response, on request.
+ *
+ * Errors carry their trace unconditionally, because an error is the thing
+ * someone screenshots. A success does not: adding the upstream body to every
+ * dashboard and transaction page would multiply payloads for a diagnostic
+ * nobody is reading. So this is opt-in, and gated three ways — the caller must
+ * ask (`x-eps-debug: 1`), must have a verified session, and the response must
+ * be JSON we produced.
+ *
+ * The content-type guard is what keeps this safe: buffering and re-serializing
+ * a streamed, compressed or binary response would corrupt it. Anything that is
+ * not `application/json` passes through untouched, as does any non-2xx (whose
+ * trace `onError` has already attached).
+ */
+export function debugEcho(): MiddlewareHandler<AppEnv> {
+	return async (c, next) => {
+		await next();
+		try {
+			if (c.req.header(DEBUG_HEADER) !== "1") return;
+			if (!isAuthenticated()) return;
+			const res = c.res;
+			if (!res || res.status < 200 || res.status >= 300) return;
+			if (!res.headers.get("content-type")?.includes("application/json")) return;
+			const calls = traceForResponse();
+			if (!calls.length) return;
+			const parsed: unknown = await res.clone().json();
+			// Only an object can take a `_diag` key; an array or scalar body would
+			// have to change shape to carry one, and no caller expects that.
+			if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
+			const body = JSON.stringify({
+				...(parsed as Record<string, unknown>),
+				_diag: { rid: currentRid(), trace: calls },
+			});
+			const headers = new Headers(res.headers);
+			// The buffered body has a new length; a stale one truncates the response.
+			headers.delete("content-length");
+			c.res = new Response(body, { status: res.status, headers });
+		} catch {
+			// A diagnostic that damages the response it rides on is worse than none.
+		}
+	};
+}

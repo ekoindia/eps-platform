@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { CopyDiagnosticsButton } from "@/components/CopyDiagnosticsButton";
 import {
 	isChunkLoadError,
 	reloadOnceForStaleChunk,
@@ -24,6 +25,8 @@ interface ErrorBoundaryState {
  * boundary: "Something went wrong" alone is unactionable for the user and
  * unreportable for support, and the message is usually the whole diagnosis.
  */
+
+
 export class ErrorBoundary extends Component<
 	ErrorBoundaryProps,
 	ErrorBoundaryState
@@ -74,6 +77,11 @@ export class ErrorBoundary extends Component<
 						<summary className="cursor-pointer py-1 text-sm font-medium">
 							Error details
 						</summary>
+						{/* A render crash is the failure a user is least able to describe
+						    and least likely to reproduce, so the whole point is getting it
+						    off their screen in one click. The component stack goes along
+						    with it — it is the part that actually names the broken code. */}
+						<CopyDiagnosticsButton error={error} componentStack={componentStack} />
 						<div className="max-h-72 overflow-auto p-2">
 							<pre className="whitespace-pre-wrap break-words text-xs">
 								{String(error)}

@@ -15,6 +15,7 @@ import {
 	type AdminView,
 	type MeView,
 	type SignupView,
+	clearCallLog,
 } from "@/lib/auth/client";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { clearConnectTokens } from "@/lib/connect/token";
@@ -258,6 +259,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// Same hazard again, and this one also STOPS THE POLL — a timer left
 		// running after sign-out would keep calling /notifications with no session.
 		resetNotificationsCache();
+		// Same hazard once more: the recent-call buffer rides into every support
+		// ticket, so one account's activity must not be attachable to the next
+		// user's ticket on a shared tab.
+		clearCallLog();
 	}, [state.status]);
 
 	// The notification poll runs once per tab and is owned here rather than by a

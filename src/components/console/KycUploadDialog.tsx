@@ -9,6 +9,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError, authClient } from "@/lib/auth/client";
+import { diagnosticsLine, errorDiagnostics } from "@/lib/console/diagnostics";
 import { withRetries } from "@/lib/retry";
 import { getBlurScore, withBlurScoreInName } from "@/lib/connect/blur";
 import type { KycDocument } from "@/lib/connect/kyc";
@@ -115,10 +116,14 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 		} catch (error) {
 			// Deliberately stays open with the files still attached: re-picking every
 			// page because the network blipped is the worst possible recovery.
+			// The identifiers go in the toast's description rather than the message:
+			// a failed KYC upload is exactly the screenshot support receives, and
+			// without the reference there is nothing to look the attempt up by.
+			const diagnostics = errorDiagnostics(error);
 			toast.error(
-				error instanceof ApiError
-					? error.message
-					: "Couldn't upload that document. Please try again.",
+				diagnostics.safeMessage ??
+					"Couldn't upload that document. Please try again.",
+				{ description: diagnosticsLine(diagnostics) },
 			);
 			setBusy(false);
 		}

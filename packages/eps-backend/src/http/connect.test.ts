@@ -40,7 +40,7 @@ function harness(
 	// Mirrors app.ts's onError so status/code assertions match production.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message), err.status as never);
+			return c.json(errorBody(err.code, err.message, undefined, err.source), err.status as never);
 		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
 	});
@@ -83,8 +83,12 @@ const developer = {
 const withCookie = { headers: { Cookie: "eps_at=token" } };
 
 /** The parsed error envelope of a failed response. */
-async function errorOf(res: Response): Promise<{ code: string }> {
-	const body = (await res.json()) as { error: { code: string } };
+async function errorOf(
+	res: Response,
+): Promise<{ code: string; message?: string }> {
+	const body = (await res.json()) as {
+		error: { code: string; message?: string };
+	};
 	return body.error;
 }
 
@@ -682,6 +686,7 @@ describe("POST /connect/support/query-types", () => {
 		const { app, connect } = harness(developer, {
 			connect: {
 				interact: vi.fn(async () => ({
+					status: 0,
 					data: { issuetype_list: [{ label: "Money not received" }] },
 				})),
 			},
@@ -704,6 +709,88 @@ describe("POST /connect/support/query-types", () => {
 			expect.objectContaining({ interaction_type_id: 10022, is_admin: 0 }),
 			expect.anything(),
 		);
+	});
+
+	// Upstream honours only Response/History/Global-Help/Command-Bar and answers
+	// `issuetype_list: null` for anything else. The route does NOT substitute a
+	// working value: that would make the console lie about where the query came
+	// from. Every origin goes up exactly as sent.
+	it("forwards the origin verbatim, honoured upstream or not", async () => {
+		for (const feedback_origin of [
+			"Response",
+			"History",
+			"Global-Help",
+			"Command-Bar",
+			"Other",
+			"Error-Boundary",
+			"",
+		]) {
+			const interact = vi.fn(async () => ({
+				status: 0,
+				data: { issuetype_list: [] },
+			}));
+			const { app } = harness(developer, { connect: { interact } });
+
+			await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ feedback_origin }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
+
+			expect(interact).toHaveBeenCalledWith(
+				"ca_full",
+				expect.objectContaining({ feedback_origin }),
+				expect.anything(),
+			);
+		}
+	});
+
+	// A list that is present but re-shaped is a schema regression, not an empty
+	// catalogue — the browser's fallback issue must not paper over it.
+	it("rejects a success envelope whose list is re-shaped", async () => {
+		for (const data of [
+			{ issuetype_list: { rows: [] } },
+			{ issuetype_list: "none" },
+		]) {
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => ({ status: 0, data })) },
+			});
+
+			const res = await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ tid: "123" }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
+
+			expect(res.status).toBe(502);
+			expect((await errorOf(res)).code).toBe("QUERY_TYPES_FAILED");
+		}
+	});
+
+	// "Nothing configured for this transaction type" is a valid answer, and
+	// connect-api spells it three ways. Observed live: `status: 0`,
+	// `response_status_id: -1`, `data: { issuetype_list: null }`. All three reach
+	// the browser as an empty list, which it answers with its fallback issue.
+	it("passes an empty, null or absent list through as empty", async () => {
+		for (const data of [
+			{ issuetype_list: [] },
+			{ issuetype_list: null, trxn_detail_from_sb: {} },
+			{},
+			undefined,
+		]) {
+			const { app } = harness(developer, {
+				connect: { interact: vi.fn(async () => ({ status: 0, data })) },
+			});
+
+			const res = await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ tid: "123" }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
+
+			expect(res.status).toBe(200);
+			expect(await res.json()).toEqual({ issueTypes: [] });
+		}
 	});
 });
 

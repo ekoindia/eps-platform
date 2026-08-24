@@ -9,6 +9,8 @@ import { requestId, type AppEnv } from "./requestId";
 import {
 	clamp,
 	currentRid,
+	debugEcho,
+	DEBUG_HEADER,
 	markAuthenticated,
 	recordUpstream,
 	trace,
@@ -255,5 +257,190 @@ describe("createApp wiring", () => {
 		});
 		expect(res.status).toBe(400);
 		expect(await res.json()).not.toHaveProperty("trace");
+	});
+});
+
+/**
+ * The envelope contract, exercised through `createApp` rather than a harness.
+ *
+ * `errorBody` has exactly five call sites — the four `onError` branches and
+ * `notFound` — and every one of them must carry the diagnostics, or a
+ * screenshot of that particular failure is the one that tells ops nothing.
+ */
+describe("error envelope diagnostics", () => {
+	const cfg = loadConfig({
+		JWT_SECRET: "x".repeat(32),
+		SIMPLIBANK_API_HOST: "h",
+		SIMPLIBANK_API_PORT: "1",
+		SIMPLIBANK_API_PATH: "/p",
+		EKO_DEVELOPER_KEY: "k",
+		GITHUB_CLIENT_ID: "g",
+		GITHUB_CLIENT_SECRET: "s",
+		GITHUB_CALLBACK_URL: "https://x/cb",
+		GITHUB_REPO: "o/r",
+		COOKIE_SECURE: "false",
+	});
+
+	function appWith(eko: Partial<EkoClient> = {}) {
+		const kv = createInMemoryKV();
+		return createApp({
+			cfg,
+			eko: {
+				sendOtp: vi.fn(async () => ({ ok: true })),
+				...eko,
+			} as unknown as EkoClient,
+			zoho: { findLead: vi.fn(async () => false) } as never,
+			sessions: createSessions(cfg, kv),
+			kv,
+		});
+	}
+
+	/** Every error body carries these, whatever produced it. */
+	function expectDiagnostics(body: Record<string, unknown>, rid: string) {
+		expect(body.rid).toBe(rid);
+		expect(body.version).toBe("dev");
+		expect(Date.parse(String(body.ts))).not.toBeNaN();
+	}
+
+	it("carries rid, ts and version on a validation error", async () => {
+		const res = await appWith().request("/auth/otp/start", {
+			method: "POST",
+			body: JSON.stringify({ mobile: "nope" }),
+			headers: { "content-type": "application/json" },
+		});
+		expect(res.status).toBe(400);
+		expectDiagnostics(
+			(await res.json()) as Record<string, unknown>,
+			res.headers.get("x-request-id") ?? "",
+		);
+	});
+
+	it("carries them on a 404, the fifth errorBody site", async () => {
+		const res = await appWith().request("/no/such/route");
+		expect(res.status).toBe(404);
+		const body = (await res.json()) as Record<string, unknown>;
+		expect((body.error as { code: string }).code).toBe("NOT_FOUND");
+		expectDiagnostics(body, res.headers.get("x-request-id") ?? "");
+	});
+
+	it("echoes the rid the caller supplied, so both sides name one request", async () => {
+		const res = await appWith().request("/no/such/route", {
+			headers: { "x-request-id": "caller-chosen-1" },
+		});
+		const body = (await res.json()) as Record<string, unknown>;
+		expect(body.rid).toBe("caller-chosen-1");
+		expect(res.headers.get("x-request-id")).toBe("caller-chosen-1");
+	});
+
+	it("stamps the build on a successful response too", async () => {
+		const res = await appWith().request("/healthz");
+		expect(res.status).toBe(200);
+		expect(res.headers.get("x-eps-version")).toBe("dev");
+	});
+
+	it("marks a proxy-authored message `proxy`", async () => {
+		const res = await appWith().request("/auth/otp/start", {
+			method: "POST",
+			body: JSON.stringify({ mobile: "nope" }),
+			headers: { "content-type": "application/json" },
+		});
+		const { error } = (await res.json()) as { error: { source: string } };
+		expect(error.source).toBe("proxy");
+	});
+
+	it("withholds `cause` from an anonymous caller but keeps the 502", async () => {
+		const res = await appWith({
+			sendOtp: vi.fn(async () => {
+				throw new Error("Eko upstream HTTP 503");
+			}),
+		}).request("/auth/otp/start", {
+			method: "POST",
+			body: JSON.stringify({ mobile: "9990000001" }),
+			headers: { "content-type": "application/json" },
+		});
+		expect(res.status).toBe(502);
+		const body = (await res.json()) as Record<string, unknown>;
+		// The generic message stays; the internal reason is not owed to a caller
+		// who has not proved who they are.
+		expect((body.error as { message: string }).message).toBe(
+			"Something went wrong",
+		);
+		expect(body.cause).toBeUndefined();
+		expectDiagnostics(body, res.headers.get("x-request-id") ?? "");
+	});
+});
+
+/**
+ * The success-path echo. Its guards matter more than its happy path: this is
+ * the one place a diagnostic rewrites a response that was already correct.
+ */
+describe("debugEcho", () => {
+	/**
+	 * An app whose `/ok` records an upstream call and returns JSON, and whose
+	 * `/blob` returns a non-JSON body. `authed` models a verified session.
+	 */
+	function app(opts: { authed: boolean }) {
+		const a = new Hono<AppEnv>();
+		a.use("*", requestId());
+		a.use("*", trace());
+		a.use("*", debugEcho());
+		a.use("*", async (c, next) => {
+			if (opts.authed) markAuthenticated();
+			await next();
+		});
+		a.get("/ok", (c) => {
+			recordUpstream(call({ response: { name: "Asha" } }));
+			return c.json({ balance: 10 });
+		});
+		a.get("/list", (c) => {
+			recordUpstream(call());
+			return c.json([1, 2, 3]);
+		});
+		a.get("/blob", (c) => {
+			recordUpstream(call());
+			return c.body("not json", 200, { "content-type": "text/csv" });
+		});
+		return a;
+	}
+
+	const on = { headers: { [DEBUG_HEADER]: "1" } };
+
+	it("attaches _diag when a verified caller asks", async () => {
+		const res = await app({ authed: true }).request("/ok", on);
+		const body = (await res.json()) as Record<string, unknown>;
+		// The original payload survives untouched alongside the diagnostic.
+		expect(body.balance).toBe(10);
+		const diag = body._diag as { rid: string; trace: UpstreamCall[] };
+		expect(diag.trace).toHaveLength(1);
+		expect(diag.rid).toBe(res.headers.get("x-request-id"));
+	});
+
+	it("stays off without the header — the default cost is zero", async () => {
+		const res = await app({ authed: true }).request("/ok");
+		expect(await res.json()).toEqual({ balance: 10 });
+	});
+
+	it("refuses an anonymous caller even when asked", async () => {
+		const res = await app({ authed: false }).request("/ok", on);
+		expect(await res.json()).toEqual({ balance: 10 });
+	});
+
+	it("leaves a non-JSON body alone rather than corrupting it", async () => {
+		const res = await app({ authed: true }).request("/blob", on);
+		expect(res.headers.get("content-type")).toContain("text/csv");
+		expect(await res.text()).toBe("not json");
+	});
+
+	it("leaves an array body alone — it has nowhere to put a key", async () => {
+		const res = await app({ authed: true }).request("/list", on);
+		expect(await res.json()).toEqual([1, 2, 3]);
+	});
+
+	it("drops content-length so the rewritten body is not truncated", async () => {
+		const res = await app({ authed: true }).request("/ok", on);
+		const text = await res.text();
+		const len = res.headers.get("content-length");
+		if (len) expect(Number(len)).toBe(new TextEncoder().encode(text).length);
+		expect(JSON.parse(text)).toHaveProperty("_diag");
 	});
 });
