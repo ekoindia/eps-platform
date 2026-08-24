@@ -31,11 +31,20 @@ export interface UpstreamSession {
 	/** Epoch ms after which `refreshToken` is dead and the user must log in again. */
 	sessionExpiresAt: number;
 	/**
-	 * Epoch ms of the last rotation, absent on a session straight from login.
-	 * Read only by `refreshEntitlements`, to keep repeated calls from rotating the
-	 * same session over and over.
+	 * Epoch ms of the last token rotation, absent on a session straight from
+	 * login. Diagnostic only since the entitlement guard moved to
+	 * `profileRefreshedAt` — an expiry-driven rotation says nothing about roles,
+	 * so it must not suppress a profile refresh.
 	 */
 	rotatedAt?: number;
+	/**
+	 * Epoch ms of the last upstream profile re-read (`refreshEntitlements`),
+	 * absent until one has run. Its own field, NOT `rotatedAt`: the two events
+	 * answer different questions, and a `/auth/refresh` rotation landing just
+	 * before signup completion would otherwise swallow the one profile refresh
+	 * this session ever gets.
+	 */
+	profileRefreshedAt?: number;
 }
 
 /**
@@ -112,17 +121,24 @@ export interface AuthProvider {
 	refresh?(sid: string): Promise<void>;
 
 	/**
-	 * Rotates the upstream session because the *user* changed, not because the
-	 * token aged — a token minted before onboarding finished still speaks for the
-	 * roles its holder had at login, so the entitlement list it fetches is the old
-	 * one no matter how much life it has left.
+	 * Re-reads the upstream profile into the session because the *user* changed,
+	 * not because the token aged — a token minted before onboarding finished
+	 * still speaks for the roles its holder had at login, so the entitlement
+	 * list it fetches is the old one no matter how much life it has left.
+	 *
+	 * A plain token rotation is NOT enough: connect-api's
+	 * `POST /authentication/token` copies the stored claim verbatim
+	 * (`auth/auth.js:383`, a literal upstream TODO) and `/transactions/wlc`
+	 * reads roles only from that claim, so rotating re-signs the stale roles for
+	 * up to 30 days. Implementations must go through a path that re-runs the
+	 * profile read — `POST /authentication/refresh-profile` under connect-api.
 	 *
 	 * Distinct from `refresh` on both counts that matter. It ignores the remaining
 	 * lifetime, and its failure is NOT session-fatal: the stored credentials are
 	 * stale, not dead, so the caller logs and carries on rather than forcing a
 	 * fresh login. Callers that merely want to keep a session alive want `refresh`.
 	 *
-	 * Implementations must be cheap to call redundantly — see the rotation
+	 * Implementations must be cheap to call redundantly — see the refresh
 	 * interval in `connectProvider`.
 	 */
 	refreshEntitlements?(sid: string): Promise<void>;

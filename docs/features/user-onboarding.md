@@ -416,7 +416,7 @@ The upgrade flow (`signup.ts`, inside `respond()`):
    always carries a real `orgId`), the same `sub` (mobile), **and the signup
    claim's `sid`** (see below).
 5. Mint fresh access and refresh tokens and set them as cookies.
-6. Ask the auth provider to rotate the upstream session
+6. Ask the auth provider to re-read the upstream profile into the session
    (`auth.refreshEntitlements(sid)`), so the token stops speaking for the roles
    the user had at login.
 
@@ -442,7 +442,7 @@ developer role, `AuthProvider` re-classifies it to `{ status: "authed";
 role: "developer" }`, and `SignupPage`'s redirect condition
 (`state.role !== "signup"`) fires, routing to `/console`.
 
-#### Why the upgrade carries the `sid`, and rotates upstream
+#### Why the upgrade carries the `sid`, and refreshes the upstream profile
 
 Under the `connect` provider, `POST /auth/otp/verify` mints a `sid` and seals
 connect-api's tokens in KV at `ca:<sid>`. The upgraded claim **must** carry that
@@ -455,23 +455,55 @@ and back in, since the replacement cookie is what a reload replays.
 
 The sealed token itself is also stale by construction: it was minted while this
 user was still mid-onboarding, so the roles baked into it predate the account
-they now have. `auth.refreshEntitlements(sid)` exchanges it through
-`POST /authentication/token` so `/transactions/wlc` reports the new
-entitlements. It is deliberately weaker than `refresh`:
+they now have. `auth.refreshEntitlements(sid)` re-reads them through
+`POST /authentication/refresh-profile` so `/transactions/wlc` reports the new
+entitlements.
 
-- It ignores the token's remaining lifetime — age is not the question being asked.
+**Why refresh-profile and not a plain token rotation.** This was learned the
+hard way (production repro 2026-08-24): the first shipped version exchanged
+the session through `POST /authentication/token`, and the entitlement-gated
+nav stayed missing across reloads until a full re-login. The connect-api
+reference implementation shows why, structurally:
+
+- `/authentication/token` copies the stored JWT claim **verbatim** out of the
+  Mongo session document and re-signs it — `connect-api/auth/auth.js:383-393`,
+  under a literal `// TODO: Get new claim from simplibank`. The stored claim is
+  never updated on rotation either (`auth.js:397` omits it). A rotation can
+  therefore never change `role_list`, no matter how often it runs.
+- `/transactions/wlc` builds `role_trxn_list` **only** from the access token's
+  `role_list` claim (`connect-api/routes/transactions.js:331`, feeding the SQL
+  in `models/SQLQueries.js`). No per-user DB read at request time.
+- OTP logins are `long_session` (30-day refresh window), so a claim frozen at
+  login could stay stale for a month.
+- `POST /authentication/refresh-profile` (`connect-api/routes/authentication.js:216,1370`)
+  is the one no-OTP path that re-runs interaction 151 and mints a fresh claim
+  with the user's CURRENT roles. Its contract has two quirks the provider
+  honors: it returns a **new refresh token** that must replace the stored one,
+  and the request must carry `last_refresh_token` so connect-api rewrites the
+  existing session document (claim included) instead of creating a second one
+  beside the stale original.
+
+`refreshEntitlements` is deliberately weaker than `refresh`:
+
+- It ignores the token's remaining lifetime — age is not the question being
+  asked. (If the access token IS at the edge of its life it rotates first,
+  because refresh-profile sits behind bearer auth, then refreshes the profile
+  with the rotated pair.)
 - Its failure is logged, not fatal, and only **after** the cookies are set. Stale
   entitlements are recoverable; an upgrade that never happens strands the wizard
   on its final card forever, because the client only re-checks `/me` when the
   signup status changes and it cannot change again.
-- It skips a session rotated within the last minute
-  (`ENTITLEMENT_ROTATE_MIN_INTERVAL_MS` in `connectProvider.ts`). connect-api's
-  refresh token is single-use, and every completed `/signup/*` response asks for
-  a rotation, so a repeated or double-submitted request would otherwise race two
-  rotations against one stored session.
+- It skips a session whose profile was refreshed within the last minute
+  (`ENTITLEMENT_REFRESH_MIN_INTERVAL_MS` in `connectProvider.ts`, tracked in
+  `profileRefreshedAt`). connect-api's refresh token is single-use, and every
+  completed `/signup/*` response asks for a refresh, so a repeated or
+  double-submitted request would otherwise race two against one stored session.
+  The guard deliberately does NOT read `rotatedAt`: an expiry-driven rotation
+  says nothing about roles, and letting it suppress the profile refresh was a
+  real silent-staleness path.
 
 Under the direct `eko` provider there is no upstream session, so claims have no
-`sid` and nothing is rotated.
+`sid` and nothing is refreshed.
 
 #### Troubleshooting stale entitlements after signup
 
@@ -481,18 +513,26 @@ missing — and stays missing across reloads, while a fresh login in another
 browser shows it. The diagnostic logs below are **always on** (no
 `EKO_LOG_LEVEL` needed) precisely because this failure was silent twice.
 
-A completed signup emits this backend sequence (grep prod with
-`./deploy/health.sh logs 500 | grep -E '\[signup\]|\[connect'`, dev with
-`npm run dev:pretty`):
+The 2026-08-24 production repro settled the original question: `/me` (served
+by the SimpliBank 151 path) showed the fresh `role_list` incl. 13500 while the
+wlc-gated nav stayed stale across reloads — the sealed connect-api token was
+the stale thing, for the structural reason in the section above. The fix is
+the switch from `/authentication/token` to `/authentication/refresh-profile`.
+
+A completed signup emits this backend sequence. Every line carries the
+`mobile`, so a single grep by the user's number surfaces all of them alongside
+the `eko_upstream` lines (prod: `./deploy/health.sh logs 2000 | grep <mobile>`;
+dev: `npm run dev:pretty`):
 
 | Log line | Emitted by | What it tells you |
 | --- | --- | --- |
-| `[connect-auth] login { profileKind, userType, anonymousUser }` | OTP verify | The identity connect-api minted at login. A brand-new signup correctly says `anonymousUser: true` here. |
-| `[signup] upgrade { sid, profileKind }` | every `done` `/signup/*` response | The upgrade ran; `profileKind !== "found"` means it bailed before minting. |
-| `[signup] entitlement refresh requested` / `failed` / `unavailable` | same | Whether the rotation was even asked for. |
-| `[connect-auth] entitlement refresh collapsed { rotatedAgoMs }` | provider | The 60s guard swallowed it — the upgrade rode an *earlier* rotation, from before the roles changed. |
-| `[connect-auth] rotated { sid, userType, anonymousUser }` | provider | **The H1 test.** The identity on the token `POST /authentication/token` handed back. |
-| `[connect] wlc { sid, count, kycEntitled }` | `/connect/interactions` | What upstream actually served for this sealed token (586+587 = Upload Documents). |
+| `[connect-auth] login { mobile, profileKind, userType, anonymousUser }` | OTP verify | The identity connect-api minted at login. A brand-new signup correctly says `anonymousUser: true` here. |
+| `[signup] upgrade { mobile, sid, profileKind }` | every `done` `/signup/*` response | The upgrade ran; `profileKind !== "found"` means it bailed before minting. |
+| `[signup] entitlement refresh requested` / `failed` / `unavailable` | same | Whether the profile refresh was even asked for. |
+| `[connect-auth] entitlement refresh collapsed { refreshedAgoMs }` | provider | The 60s guard swallowed it — another completed `/signup/*` response already refreshed within the last minute. |
+| `[connect-auth] profile refreshed { sid, mobile, userType, anonymousUser }` | provider | `POST /authentication/refresh-profile` succeeded and what identity it minted. After onboarding this must NOT say anonymous. |
+| `[connect-auth] rotated { sid, userType, anonymousUser }` | provider | A plain expiry-driven token rotation (`/authentication/token`). Cannot change roles by construction. |
+| `[connect] wlc { mobile, sid, count, kycEntitled }` | `/connect/interactions` | What upstream actually served for this sealed token (586+587 = Upload Documents). |
 
 Browser side, the same request logs `[connect] interaction list fetched
 { count, kycEntitled }` (`console.debug` — enable Verbose in devtools) and a
@@ -501,17 +541,14 @@ indistinguishably from "not entitled".
 
 Verdict table for a repro:
 
-- `[connect-auth] rotated` fires after the upgrade but still shows
-  `anonymousUser: true` (or `wlc` stays `kycEntitled: false` right after a
-  successful rotation) → **`POST /authentication/token` cannot rebind the
-  pre-onboarding session to the new partner user.** Rotating harder will not
-  fix it; the session must be re-minted via a fresh login (or an upstream
-  session-upgrade API — connect-api owner question). `userType: "<absent>"`
-  means the token endpoint sent no details block and the `wlc` line is the
-  only evidence.
+- `profile refreshed` fired with `anonymousUser: false` but `wlc` still says
+  `kycEntitled: false` → upstream's own 151 has not attached role 13500 yet,
+  or connect-api's boot-time `_mem_org_roles` MEMORY table predates the
+  role→586/587 mapping (rebuilt only on connect-api restart) — an upstream
+  problem either way.
 - `entitlement refresh collapsed` / `failed` / `unavailable` at the moment of
-  completion → the one-shot rotation was skipped; the stored token is the
-  login-time one until it nears expiry hours later.
+  completion → the one-shot refresh was skipped; the stored token keeps the
+  login-time roles until someone refreshes again.
 - Backend `wlc` says `kycEntitled: true` but the menu is missing → frontend.
   The signup→developer upgrade resets the tab's module caches synchronously in
   `AuthProvider.accept()` (interaction list, widget tokens, dashboard,
@@ -519,8 +556,8 @@ Verdict table for a repro:
   `[connect] signup→developer upgrade` debug line fired.
 
 Local repro: fresh mobile on UAT → complete the wizard → watch the sequence
-above in order. The whole point of the ordering is that `login`,
-`rotated`, and `wlc` each carry the identity/entitlement snapshot at their
+above in order. The whole point of the ordering is that `login`, `profile
+refreshed`, and `wlc` each carry the identity/entitlement snapshot at their
 step, so the first line where the new roles *should* appear and don't names
 the failing layer.
 
@@ -544,6 +581,10 @@ per-interaction — there is no single convention:
 | 5     | Set secret PIN          | `setSecretPin` (366-382)                       | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
 | 287   | Fetch e-sign URL        | `getAgreementUrl`                              | user's own                    | `status === 0` **and** a `data.short_url` with an `http(s)` scheme — **not** a fixed `response_type_id` (see below). `response_type_id` 1615/1069 with `status` 0 means already signed     |
 | 293   | Submit signed agreement | `submitSignAgreement`                          | user's own                    | `status === 0`. An absent `status` fails, unlike 287                                                                                                                                       |
+
+The Sign Agreement step (287/293) has its own end-to-end walkthrough and an
+Eloka (`wlc-webapp`) comparison in
+[`sign-agreement-step.md`](./sign-agreement-step.md).
 
 `stepResult()` (`eko.ts`) is the shared classifier for 521/523/522/5,
 comparing `response_type_id` against the interaction's own success constant

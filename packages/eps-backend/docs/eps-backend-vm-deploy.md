@@ -675,6 +675,51 @@ Redundancy tiers, in order of preference:
 The choice is deployment-time only; the backend never fails over between
 stores at runtime.
 
+### Kernel TCP settings (`tcp_tw_recycle` — fixed 2026-08-23)
+
+`net.ipv4.tcp_tw_recycle=1` was set on this host and was **silently dropping
+~30% of incoming connections** to every vhost it serves — `api.eps.eko.in`,
+`mcp.eko.in` (`/transact/` and `/context/`), and the co-hosted sites.
+
+The mechanism: with that flag, the kernel caches the last TCP timestamp seen
+*per source IP* and rejects any SYN carrying a lower one. That assumes one clock
+per IP, which is false for anything behind carrier NAT and for clients that
+randomise timestamps per connection (macOS, Linux >= 4.10). Affected SYNs are
+discarded with no RST and nothing in any log — the client just retransmits for
+~20s and gives up. Linux removed the option in 4.12 for exactly this reason.
+
+Symptoms, if it ever comes back (a reboot onto an unfixed sysctl would do it):
+
+- From outside, ~30% of requests hang the full client timeout; the rest connect
+  in ~50ms. Bimodal, at any request rate, including one request every 3 seconds.
+- `curl -w` shows `dns=0.004 tcp=0.000000` on the failures — the connection is
+  never established, so nginx and the app never see it.
+- `tcpdump -ni any 'host <client-ip> and tcp port 443 and tcp[tcpflags] & tcp-syn != 0'`
+  shows the SYN arriving and being retransmitted 6 times with **no SYN-ACK**.
+- `netstat -s`: *"passive connections rejected because of time stamp"* climbs,
+  and *"SYNs to LISTEN sockets dropped"* climbs while
+  *"times the listen queue of a socket overflowed"* stays flat. That pairing is
+  the signature — it rules out backlog exhaustion, which is the tempting
+  misdiagnosis (`somaxconn` is 128 here, and its overflow counter is large but
+  accumulated over a multi-year uptime, so read *deltas*, never totals).
+
+Fix (immediate, no restart, no downtime):
+
+```sh
+sysctl -w net.ipv4.tcp_tw_recycle=0
+echo 'net.ipv4.tcp_tw_recycle = 0' > /etc/sysctl.d/99-tcp-tw.conf
+```
+
+Leave `tcp_timestamps=1` (PAWS, window scaling) and `tcp_tw_reuse=1`
+(client-side, safe). Verified after the change: 146 requests over 180s with 0
+failures, versus 43 requests and 13 failures in the same window before.
+
+Related, still outstanding: `net.core.somaxconn` and `net.ipv4.tcp_max_syn_backlog`
+are both 128 (kernel defaults) on a host fronting several public sites — worth
+raising to 1024/4096 plus `listen ... backlog=1024` in nginx during the overlay2
+maintenance window (the backlog change needs an nginx *restart*, not a reload).
+Uptime is over 2000 days, so the kernel is unpatched; that reboot is overdue.
+
 ### Log rotation
 
 Log rotation is built into the stack. All three services (`redis`, `eps-backend`,

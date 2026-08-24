@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
+import { createContextBundleManager } from "../context/bundleManager";
 import { contextMcpErrorBody, mountContextMcp } from "./contextMcp";
 import type { AppEnv } from "./requestId";
 
@@ -38,11 +39,14 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
 
 function harness(opts: { ttlSec?: number; fetchImpl: typeof fetch }) {
 	const app = new Hono<AppEnv>();
-	mountContextMcp(app, {
-		bundleUrl: BUNDLE_URL,
-		ttlSec: opts.ttlSec ?? 900,
-		fetchImpl: opts.fetchImpl,
-	});
+	mountContextMcp(
+		app,
+		createContextBundleManager({
+			bundleUrl: BUNDLE_URL,
+			ttlSec: opts.ttlSec ?? 900,
+			fetchImpl: opts.fetchImpl,
+		}),
+	);
 	return app;
 }
 

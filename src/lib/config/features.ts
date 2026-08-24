@@ -96,3 +96,18 @@ export const SHOW_DASHBOARD_LAST_365: boolean =
  */
 export const SHOW_NOTIFICATIONS: boolean =
 	import.meta.env.VITE_SHOW_NOTIFICATIONS === "true";
+
+/**
+ * When true, a signed-in developer sees an "Ask AI" row in the command palette
+ * that opens the grounded docs assistant (`POST /chat/ask`). When false (the
+ * default), the row does not render and nothing calls the endpoint.
+ *
+ * This is a BUILD-time flag, and it is the only gate that runs before a
+ * request: SSG cannot know whether the backend has `EPS_CHAT_*` configured. The
+ * backend is the authoritative gate — it answers 503 `CHAT_DISABLED` when the
+ * provider is unset — so a flag/deploy mismatch shows the row until the first
+ * ask, which then hides it for the session. Keep the two in step at deploy time
+ * rather than relying on that fallback.
+ */
+export const SHOW_AI_CHAT: boolean =
+	import.meta.env.VITE_SHOW_AI_CHAT === "true";

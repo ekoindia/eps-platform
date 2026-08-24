@@ -6,9 +6,7 @@ Only **active, not-yet-implemented** designs are kept here in full.
 
 ## Active
 
-- `specs/2026-07-02-eps-backend-docs-chat-agent-design.md` — Phase 4 docs-chat agent
-  (server-side chat API in eps-backend + embedded frontend chat, grounded in `/agent/eps.json`).
-  Design only; not yet built.
+_(nothing — every design in this folder has shipped.)_
 
 ## Delivered (plans/specs pruned; see the merge commit + committed doc)
 
@@ -26,6 +24,8 @@ Only **active, not-yet-implemented** designs are kept here in full.
 | KV fail-open/closed matrix + STORE_UNAVAILABLE | `81991b0` | `packages/eps-backend/README.md` |
 | AI-native platform — phases 0-4 + roadmap (context packs, eps-context-mcp, SDKs, harness) | PR #43 | `docs/ai-agent-platform.md`, `docs/sdk-golden-vector.md` |
 | Production-hardening (umbrella; all items above) | — | `packages/eps-backend/README.md` |
+| Hosted context MCP (`/context/*`, in-process) | `a734cc3` | `packages/eps-backend/README.md` |
+| Phase 4 AI docs-chat (`POST /chat/ask`) | _pending_ | `docs/docs-chat-agent.md` |
 
 ## Elsewhere (not on `dev`)
 

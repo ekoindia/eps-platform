@@ -20,7 +20,11 @@ import type { KV } from "../store/kv";
 import { passThroughSecretBox, type SecretBox } from "../store/secretbox";
 import { StoreUnavailableError } from "../store/storeError";
 import { mountAdmin } from "./admin";
+import { mountChat } from "./chat";
 import { mountConnect } from "./connect";
+import { createChatProvider, type ChatProvider } from "../chat/providers";
+import { createSpendTracker } from "../chat/spend";
+import { createContextBundleManager } from "../context/bundleManager";
 import {
 	CONTEXT_PREFIX,
 	contextMcpErrorBody,
@@ -70,6 +74,8 @@ export interface Deps {
 	signup?: SignupService;
 	/** Fetch used to pull the context-MCP bundle; test seam, defaults to global. */
 	contextFetch?: typeof fetch;
+	/** Chat LLM provider; test seam, defaults to one built from `cfg.chat`. */
+	chatProvider?: ChatProvider;
 }
 
 const OTP_START_LIMIT = 5;
@@ -554,9 +560,40 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 		return c.json({ balance });
 	});
 
-	if (cfg.contextMcp) {
-		mountContextMcp(app, { ...cfg.contextMcp, fetchImpl: deps.contextFetch });
+	// One bundle manager, two consumers: the anonymous MCP server below and the
+	// docs-chat route, which grounds its tool calls on the same object.
+	const contextBundles = cfg.contextMcp
+		? createContextBundleManager({
+				...cfg.contextMcp,
+				fetchImpl: deps.contextFetch,
+			})
+		: undefined;
+
+	if (contextBundles) {
+		mountContextMcp(app, contextBundles);
 	}
+
+	// Chat needs both a provider AND the bundle: an assistant with no grounding
+	// would answer EPS questions from model memory, which is exactly the failure
+	// this feature exists to prevent. Either missing → the route reports
+	// CHAT_DISABLED rather than silently answering ungrounded.
+	mountChat(app, {
+		sessions,
+		kv,
+		securityLog,
+		engine:
+			cfg.chat && contextBundles
+				? {
+						bundles: contextBundles,
+						provider: deps.chatProvider ?? createChatProvider(cfg.chat),
+						spend: createSpendTracker(kv, {
+							monthlyBudgetUsd: cfg.chat.monthlyBudgetUsd,
+							inputPerMTok: cfg.chat.inputPerMTok,
+							outputPerMTok: cfg.chat.outputPerMTok,
+						}),
+					}
+				: undefined,
+	});
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });

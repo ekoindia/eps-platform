@@ -84,6 +84,26 @@ export interface Config {
 		bundleUrl: string;
 		ttlSec: number;
 	};
+	/**
+	 * Present only when a provider AND key are configured, which is what mounts
+	 * `POST /chat/ask`. Absent → the route answers 503 CHAT_DISABLED and the
+	 * feature is dark. Chat also needs `contextMcp` for its bundle.
+	 */
+	chat?: {
+		provider: "anthropic" | "openai" | "openrouter";
+		model: string;
+		apiKey: string;
+		/** Overrides the provider default (self-host, gateway, OpenRouter). */
+		baseUrl?: string;
+		/**
+		 * Monthly cost guard in USD; 0 disables it. Requires both prices — they
+		 * cannot be inferred from an arbitrary model id or base URL, and guessing
+		 * would silently misprice every request.
+		 */
+		monthlyBudgetUsd: number;
+		inputPerMTok: number;
+		outputPerMTok: number;
+	};
 	github: {
 		clientId: string;
 		clientSecret: string;
@@ -206,6 +226,76 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		}
 		contextMcp = { bundleUrl: contextBundleUrl, ttlSec };
 	}
+
+	// Chat is opt-in per environment: deploying the code with no EPS_CHAT_* set
+	// leaves the feature fully dark. Half-configuring it is a boot error rather
+	// than a runtime surprise on the first user question.
+	let chat: Config["chat"];
+	const chatProvider = env.EPS_CHAT_PROVIDER || undefined;
+	const chatApiKey = env.EPS_CHAT_API_KEY || undefined;
+	if (chatProvider || chatApiKey) {
+		if (!chatProvider || !chatApiKey) {
+			throw new Error(
+				"EPS_CHAT_PROVIDER and EPS_CHAT_API_KEY must be set together",
+			);
+		}
+		if (
+			chatProvider !== "anthropic" &&
+			chatProvider !== "openai" &&
+			chatProvider !== "openrouter"
+		) {
+			throw new Error(
+				`EPS_CHAT_PROVIDER must be anthropic, openai or openrouter; got "${chatProvider}"`,
+			);
+		}
+		const model = env.EPS_CHAT_MODEL || "claude-haiku-4-5";
+		const baseUrl = env.EPS_CHAT_BASE_URL || undefined;
+		if (baseUrl) {
+			let parsedBase: URL;
+			try {
+				parsedBase = new URL(baseUrl);
+			} catch {
+				throw new Error(`EPS_CHAT_BASE_URL is not a valid URL: "${baseUrl}"`);
+			}
+			if (
+				parsedBase.protocol !== "https:" &&
+				!LOOPBACK_HOSTS.has(parsedBase.hostname)
+			) {
+				throw new Error(
+					`EPS_CHAT_BASE_URL must be https for a non-loopback host; refusing plaintext to "${parsedBase.hostname}".`,
+				);
+			}
+		}
+		const monthlyBudgetUsd = Number(env.EPS_CHAT_MONTHLY_BUDGET_USD ?? 0);
+		if (!Number.isFinite(monthlyBudgetUsd) || monthlyBudgetUsd < 0) {
+			throw new Error("EPS_CHAT_MONTHLY_BUDGET_USD must be a non-negative number");
+		}
+		const inputPerMTok = Number(env.EPS_CHAT_PRICE_INPUT_PER_MTOK ?? 0);
+		const outputPerMTok = Number(env.EPS_CHAT_PRICE_OUTPUT_PER_MTOK ?? 0);
+		if (monthlyBudgetUsd > 0) {
+			// Without prices the budget cannot be enforced, and a silently
+			// unenforced spend cap is worse than an obvious absent one.
+			if (
+				!Number.isFinite(inputPerMTok) ||
+				inputPerMTok <= 0 ||
+				!Number.isFinite(outputPerMTok) ||
+				outputPerMTok <= 0
+			) {
+				throw new Error(
+					"EPS_CHAT_PRICE_INPUT_PER_MTOK and EPS_CHAT_PRICE_OUTPUT_PER_MTOK must be positive when EPS_CHAT_MONTHLY_BUDGET_USD is set",
+				);
+			}
+		}
+		chat = {
+			provider: chatProvider,
+			model,
+			apiKey: chatApiKey,
+			baseUrl,
+			monthlyBudgetUsd,
+			inputPerMTok,
+			outputPerMTok,
+		};
+	}
 	const redisUrl = env.REDIS_URL || undefined;
 	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
 	if (redisUrl) {
@@ -249,6 +339,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		},
 		connectApi,
 		contextMcp,
+		chat,
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
 			clientSecret: env.GITHUB_CLIENT_SECRET!,

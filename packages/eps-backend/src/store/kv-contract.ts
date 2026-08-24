@@ -71,4 +71,25 @@ export function runKvContract(
 		// Fixed-window ⇒ counter reset to 1. A sliding impl would return 3 here.
 		expect(await kv.incr(k("c"), 2)).toBe(1);
 	});
+
+	it("incrBy adds by delta and shares incr's fixed-window semantics", async () => {
+		const kv = await makeKv();
+		expect(await kv.incrBy(k("b"), 250, 2)).toBe(250); // window opens, TTL 2s
+		await step(1100); // advance BETWEEN increments, as the incr case does
+		expect(await kv.incrBy(k("b"), 30, 2)).toBe(280); // TTL must NOT re-arm
+		await step(1100); // +2200ms total — past the 2s window
+		// Fixed-window ⇒ the counter resets to the new delta, not 310.
+		expect(await kv.incrBy(k("b"), 7, 2)).toBe(7);
+	});
+
+	it("incrBy re-arming is gated on TTL, not on the counter equalling the delta", async () => {
+		const kv = await makeKv();
+		// Second step lands the counter exactly on its own delta (5 -> 10 with
+		// delta 5 would fool an `n == delta` guard into re-arming the window).
+		expect(await kv.incrBy(k("d"), 5, 2)).toBe(5);
+		await step(1100);
+		expect(await kv.incrBy(k("d"), 5, 2)).toBe(10);
+		await step(1100); // past the original 2s window; must have expired
+		expect(await kv.incrBy(k("d"), 1, 2)).toBe(1);
+	});
 }

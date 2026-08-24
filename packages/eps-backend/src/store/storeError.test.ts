@@ -9,6 +9,7 @@ function baseKv(over: Partial<KV> = {}): KV {
 		del: vi.fn(async () => {}),
 		getdel: vi.fn(async () => "v"),
 		incr: vi.fn(async () => 1),
+		incrBy: vi.fn(async (_k: string, d: number) => d),
 		...over,
 	};
 }

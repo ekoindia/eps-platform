@@ -347,6 +347,10 @@ export function mountConnect(
 			interactions.map((i) => String((i as { id?: unknown } | null)?.id)),
 		);
 		console.log("[connect] wlc", {
+			// `sub` is the registered mobile under both auth providers — the same
+			// value every `eko_upstream` line already carries, so one grep by
+			// mobile now surfaces this line too.
+			mobile: claim.sub,
 			sid: claim.sid?.slice(0, 8),
 			count: interactions.length,
 			kycEntitled: ids.has("586") && ids.has("587"),

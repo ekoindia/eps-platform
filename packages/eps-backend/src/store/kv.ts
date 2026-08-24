@@ -4,6 +4,16 @@ export interface KV {
 	del(key: string): Promise<void>;
 	getdel(key: string): Promise<string | null>;
 	incr(key: string, ttlSec: number): Promise<number>;
+	/**
+	 * Atomic fixed-window add-by-delta. Same window semantics as `incr` — the
+	 * TTL is set when the window opens and never extended — but steps by an
+	 * arbitrary integer, which `incr` cannot express. Used for accumulating
+	 * weighted cost (micro-USD) rather than counting events.
+	 *
+	 * `delta` must be a safe integer; fractional values would drift across a
+	 * Redis round trip, which is why cost is tracked in micro-USD, not floats.
+	 */
+	incrBy(key: string, delta: number, ttlSec: number): Promise<number>;
 }
 
 interface Entry {
@@ -75,6 +85,17 @@ export function createInMemoryKV(now: () => number = () => Date.now()): KV {
 				return 1;
 			}
 			const next = Number(e.value) + 1;
+			e.value = String(next);
+			return next;
+		},
+		async incrBy(key, delta, ttlSec) {
+			const e = live(key);
+			if (!e) {
+				// Window opens here; the TTL is fixed from this moment.
+				map.set(key, { value: String(delta), expiresAt: now() + ttlSec * 1000 });
+				return delta;
+			}
+			const next = Number(e.value) + delta;
 			e.value = String(next);
 			return next;
 		},

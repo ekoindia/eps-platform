@@ -37,6 +37,7 @@ function setup(
 		sendOtp: vi.fn(async () => ({ ok: true })),
 		login: vi.fn(async () => ({})),
 		refreshTokens: vi.fn(async () => null),
+		refreshProfile: vi.fn(async () => ({})),
 		revoke: vi.fn(async () => {}),
 		interactions: vi.fn(async () => []),
 		interact: vi.fn(async () => ({})),
@@ -63,6 +64,26 @@ const LOGIN_OK = {
 		name: "Dev",
 		mobile: "9990000001",
 		code: 20810282,
+		user_type: "23",
+		org_id: 1,
+		onboarding: 0,
+	},
+};
+
+/**
+ * A successful `/authentication/refresh-profile` envelope — the same login
+ * shape as `LOGIN_OK`, with the post-onboarding identity a real refresh would
+ * carry.
+ */
+const REFRESH_PROFILE_OK = {
+	access_token: "ca_access2",
+	refresh_token: "ca_refresh2",
+	token_expiration: 18000,
+	long_session: true,
+	details: {
+		name: "Dev",
+		mobile: "9990000001",
+		user_id: "9990000001",
 		user_type: "23",
 		org_id: 1,
 		onboarding: 0,
@@ -263,16 +284,13 @@ describe("connect auth provider — refresh", () => {
 		expect(stored.refreshToken).toBe("r2");
 	});
 
-	it("rotates on refreshEntitlements even when the token is nowhere near expiry", async () => {
+	it("re-reads the profile on refreshEntitlements even when the token is nowhere near expiry", async () => {
 		// The point of the method: the token is healthy, but its roles predate the
-		// account the user now has, so age is not the question being asked.
+		// account the user now has, so age is not the question being asked. And it
+		// must go through /authentication/refresh-profile, not /authentication/token
+		// — the latter copies the stored claim verbatim and can never change roles.
 		const { provider, connect, kv } = setup({
-			refreshTokens: vi.fn(async () => ({
-				accessToken: "a2",
-				refreshToken: "r2",
-				accessTtlSec: 18000,
-				sessionTtlSec: 28800,
-			})),
+			refreshProfile: vi.fn(async () => REFRESH_PROFILE_OK),
 		});
 		await provider.persist!("sid1", {
 			accessToken: "a1",
@@ -281,16 +299,18 @@ describe("connect auth provider — refresh", () => {
 			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
 		});
 		await provider.refreshEntitlements!("sid1");
-		expect(connect.refreshTokens).toHaveBeenCalledWith("r1");
+		expect(connect.refreshProfile).toHaveBeenCalledWith("a1", "r1");
+		expect(connect.refreshTokens).not.toHaveBeenCalled();
 		const stored = JSON.parse((await kv.get("ca:sid1"))!);
-		expect(stored.accessToken).toBe("a2");
-		expect(stored.rotatedAt).toBeGreaterThan(0);
+		expect(stored.accessToken).toBe("ca_access2");
+		expect(stored.refreshToken).toBe("ca_refresh2");
+		expect(stored.profileRefreshedAt).toBeGreaterThan(0);
 	});
 
-	it("does not rotate twice in quick succession", async () => {
-		// connect-api's refresh token is single-use, so a repeated or replayed
-		// completed-signup response must not race a second rotation against the
-		// first one's result.
+	it("rotates first when the access token is inside the skew window", async () => {
+		// refresh-profile sits behind bearer auth; a token at the edge of its life
+		// would 401 there. The rotation only revives the credential — the roles
+		// still come from the profile refresh that follows it.
 		const { provider, connect } = setup({
 			refreshTokens: vi.fn(async () => ({
 				accessToken: "a2",
@@ -298,6 +318,26 @@ describe("connect auth provider — refresh", () => {
 				accessTtlSec: 18000,
 				sessionTtlSec: 28800,
 			})),
+			refreshProfile: vi.fn(async () => REFRESH_PROFILE_OK),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 5_000, // inside REFRESH_SKEW_MS
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refreshEntitlements!("sid1");
+		expect(connect.refreshTokens).toHaveBeenCalledWith("r1");
+		// The profile refresh authenticates with the ROTATED pair, not the dead one.
+		expect(connect.refreshProfile).toHaveBeenCalledWith("a2", "r2");
+	});
+
+	it("does not refresh the profile twice in quick succession", async () => {
+		// connect-api's refresh token is single-use, so a repeated or replayed
+		// completed-signup response must not race a second refresh against the
+		// first one's result.
+		const { provider, connect } = setup({
+			refreshProfile: vi.fn(async () => REFRESH_PROFILE_OK),
 		});
 		await provider.persist!("sid1", {
 			accessToken: "a1",
@@ -307,7 +347,77 @@ describe("connect auth provider — refresh", () => {
 		});
 		await provider.refreshEntitlements!("sid1");
 		await provider.refreshEntitlements!("sid1");
-		expect(connect.refreshTokens).toHaveBeenCalledTimes(1);
+		expect(connect.refreshProfile).toHaveBeenCalledTimes(1);
+	});
+
+	it("still refreshes the profile after a recent token rotation", async () => {
+		// The collapse guard reads `profileRefreshedAt`, not `rotatedAt`: an
+		// expiry-driven /auth/refresh rotation seconds before signup completion
+		// says nothing about roles and must not swallow the one profile refresh
+		// this session gets. This was a real production silent-skip path.
+		const { provider, connect } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+			refreshProfile: vi.fn(async () => REFRESH_PROFILE_OK),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 5_000, // forces refresh() to rotate
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refresh!("sid1"); // sets rotatedAt = now
+		await provider.refreshEntitlements!("sid1");
+		expect(connect.refreshProfile).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps the stored session when refresh-profile returns no tokens", async () => {
+		// A refusal (dead grant, inactive account) must not overwrite credentials
+		// that still work — stale-but-working is recoverable, dead is not.
+		const { provider, kv } = setup({
+			refreshProfile: vi.fn(async () => ({})),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 60 * 60_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await expect(provider.refreshEntitlements!("sid1")).rejects.toThrow(
+			/refused to refresh the profile/,
+		);
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessToken).toBe("a1");
+		expect(stored.refreshToken).toBe("r1");
+	});
+
+	it("takes the refresh-profile lite/crm tokens over the stored ones", async () => {
+		// Unlike a plain rotation, refresh-profile's login branch mints every tier
+		// against the NEW claim — keeping the old lite token would keep the widget
+		// speaking for the pre-onboarding roles.
+		const { provider, kv } = setup({
+			refreshProfile: vi.fn(async () => ({
+				...REFRESH_PROFILE_OK,
+				access_token_lite: "lite2",
+				access_token_crm: "crm2",
+			})),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessTokenLite: "lite1",
+			accessTokenCrm: "crm1",
+			accessExpiresAt: Date.now() + 60 * 60_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refreshEntitlements!("sid1");
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessTokenLite).toBe("lite2");
+		expect(stored.accessTokenCrm).toBe("crm2");
 	});
 
 	it("returns quietly from refreshEntitlements when no session is stored", async () => {
@@ -317,7 +427,7 @@ describe("connect auth provider — refresh", () => {
 		await expect(
 			provider.refreshEntitlements!("missing"),
 		).resolves.toBeUndefined();
-		expect(connect.refreshTokens).not.toHaveBeenCalled();
+		expect(connect.refreshProfile).not.toHaveBeenCalled();
 	});
 
 	it("keeps the previous lite/crm tokens when a rotation omits them", async () => {

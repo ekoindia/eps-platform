@@ -255,6 +255,7 @@ describe("createConnectClient", () => {
 			["sendOtp", (c: ConnectClient) => c.sendOtp({ mobile: "9990000001" })],
 			["login", (c: ConnectClient) => c.login({ mobile: "9", otp: "1" })],
 			["refreshTokens", (c: ConnectClient) => c.refreshTokens("r")],
+			["refreshProfile", (c: ConnectClient) => c.refreshProfile("t", "r")],
 			["revoke", (c: ConnectClient) => c.revoke("r")],
 			["interactions", (c: ConnectClient) => c.interactions("t")],
 			["interact", (c: ConnectClient) => c.interact("t", { a: "1" })],
@@ -304,6 +305,30 @@ describe("createConnectClient", () => {
 			}).login({ mobile: "9", otp: "1" });
 			expect(entries[0].fields?.client_ref_id).toBe(refOfCall(f));
 		});
+	});
+
+	it("refreshProfile posts the stored refresh token under the caller's bearer", async () => {
+		// Both halves are load-bearing: the bearer is what authenticates the
+		// profile re-read, and `last_refresh_token` is what makes connect-api
+		// rotate the EXISTING session document (claim included) instead of
+		// creating a second one next to the stale original.
+		const f = fetchReturning({ access_token: "a2", refresh_token: "r2" });
+		const env = await createConnectClient(cfg, f).refreshProfile(
+			"access1",
+			"refresh1",
+		);
+		const [url, init] = (f as unknown as ReturnType<typeof vi.fn>).mock
+			.calls[0];
+		expect(url).toBe(
+			"https://api.beta.ekoconnect.in/authentication/refresh-profile",
+		);
+		expect((init as RequestInit).headers).toMatchObject({
+			Authorization: "Bearer access1",
+		});
+		expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({
+			last_refresh_token: "refresh1",
+		});
+		expect(env.access_token).toBe("a2");
 	});
 
 	it("does not send api_partner_signup", async () => {
