@@ -165,9 +165,11 @@ the widget's lite/crm tokens.
     four return 29 rows, everything else returns null. Eloka's `FeedbackOrigin`
     constant offers all six, so two of its own values are silent dead ends, and
     the dialog's `?? "Other"` default meant *any* caller that omitted an origin
-    got an empty list. `QUERY_TYPE_ORIGINS` now asks as `Global-Help` for
-    anything off the list; the ticket, posted separately, still records the true
-    origin.
+    got an empty list. The origin is nonetheless forwarded **verbatim** —
+    substituting a working one would make the console lie about where the query
+    came from and hide the gap. An empty list is answered by `FALLBACK_ISSUE`
+    instead, and the test bench offers all six values with the two dead ends
+    labelled, so the path is exercised deliberately rather than stumbled into.
   - **"No records" is not an error.** `data: { issuetype_list: null }` on a
     `status: 0` envelope means an empty list; `null`, absent and `[]` all pass
     through as empty, which the browser answers with `FALLBACK_ISSUE`. Eloka is

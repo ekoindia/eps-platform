@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import { parseDocumentList, type KycDocument } from "@/lib/connect/kyc";
+import type { FeedbackOrigin } from "@/lib/connect/support";
 import {
 	compressPdf,
 	extractPdfImages,
@@ -130,6 +131,42 @@ function Field({
 				onChange={(event) => onChange(event.target.value)}
 				className="h-8 text-xs"
 			/>
+		</div>
+	);
+}
+
+/** A labelled `<select>`, for bench options with a fixed set of values. */
+function Picker({
+	label,
+	value,
+	options,
+	onChange,
+	width = "w-40",
+}: {
+	label: string;
+	value: string;
+	options: ReadonlyArray<{ label: string; value: string }>;
+	onChange: (value: string) => void;
+	width?: string;
+}) {
+	const id = `opt-${label.replace(/\W+/g, "-").toLowerCase()}`;
+	return (
+		<div className={`flex flex-col gap-1 ${width}`}>
+			<Label htmlFor={id} className="text-[10px]">
+				{label}
+			</Label>
+			<select
+				id={id}
+				value={value}
+				onChange={(event) => onChange(event.target.value)}
+				className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+			>
+				{options.map((option) => (
+					<option key={option.value} value={option.value}>
+						{option.label}
+					</option>
+				))}
+			</select>
 		</div>
 	);
 }
@@ -286,23 +323,15 @@ function FileUploadTest() {
 					onChange={setCustomWatermark}
 					width="w-56"
 				/>
-				<div className="flex flex-col gap-1">
-					<Label htmlFor="opt-accept" className="text-[10px]">
-						accept
-					</Label>
-					<select
-						id="opt-accept"
-						value={accept}
-						onChange={(event) => setAccept(event.target.value)}
-						className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-					>
-						{ACCEPT_PRESETS.map((preset) => (
-							<option key={preset.label} value={preset.value}>
-								{preset.label}
-							</option>
-						))}
-					</select>
-				</div>
+				<Picker
+					label="accept"
+					value={accept}
+					options={ACCEPT_PRESETS.map((preset) => ({
+						label: preset.label,
+						value: preset.value,
+					}))}
+					onChange={setAccept}
+				/>
 			</div>
 			{kycWatermark && !customWatermark ? (
 				<p className="mb-3 text-xs text-muted-foreground">
@@ -502,12 +531,31 @@ function CameraTest() {
 	);
 }
 
+/**
+ * Every `FeedbackOrigin`, flagged with whether interaction 10022 returns issue
+ * types for it.
+ *
+ * Upstream honours only the first four; `Other` and `Error-Boundary` come back
+ * `issuetype_list: null`, which the dialog answers with its fallback issue.
+ * Both are on the menu on purpose — picking one is how you exercise that path,
+ * and how this bench would have caught the blank card it was pinned to.
+ */
+const FEEDBACK_ORIGINS = [
+	{ label: "Response", value: "Response" },
+	{ label: "History", value: "History" },
+	{ label: "Global-Help", value: "Global-Help" },
+	{ label: "Command-Bar", value: "Command-Bar" },
+	{ label: "Other (no issue types)", value: "Other" },
+	{ label: "Error-Boundary (no issue types)", value: "Error-Boundary" },
+] as const satisfies ReadonlyArray<{ label: string; value: FeedbackOrigin }>;
+
 /** Raise a real ticket against UAT, and show what came back to the caller. */
 function RaiseIssueTest() {
 	const { showRaiseIssue } = useConnectDialogs();
 	const [tid, setTid] = useState("");
 	const [txTypeId, setTxTypeId] = useState("");
 	const [status, setStatus] = useState("");
+	const [origin, setOrigin] = useState<FeedbackOrigin>("Global-Help");
 	const [autoCapture, setAutoCapture] = useState(false);
 	const [result, setResult] = useState<unknown>(null);
 
@@ -516,8 +564,19 @@ function RaiseIssueTest() {
 			<p className="mb-3 text-xs text-muted-foreground">
 				Files a real ticket against whichever connect-api the backend points at.
 				Non-production hosts prefix the subject with <code>[IGNORE]</code>.
+				<br />
+				<code>feedback_origin</code> decides which issue types come back at all
+				— the two marked <em>no issue types</em> return none, and land on the
+				fallback issue.
 			</p>
 			<div className="mb-3 flex flex-wrap items-end gap-3">
+				<Picker
+					label="feedback_origin"
+					value={origin}
+					options={FEEDBACK_ORIGINS}
+					onChange={(value) => setOrigin(value as FeedbackOrigin)}
+					width="w-56"
+				/>
 				<Field label="tid" value={tid} onChange={setTid} width="w-36" />
 				<Field label="tx_typeid" value={txTypeId} onChange={setTxTypeId} />
 				<Field label="status" value={status} onChange={setStatus} />
@@ -533,7 +592,7 @@ function RaiseIssueTest() {
 				onClick={async () => {
 					setResult(null);
 					const answer = await showRaiseIssue({
-						origin: "Other",
+						origin,
 						tid: tid || undefined,
 						tx_typeid: txTypeId || undefined,
 						status: status || undefined,

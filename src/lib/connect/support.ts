@@ -24,10 +24,10 @@ export const GENERIC_ISSUE_TYPE = {
  * Where the dialog was opened from; the support desk filters on it.
  *
  * Only `Response`, `History`, `Global-Help` and `Command-Bar` are configured
- * upstream for the issue-type lookup — the other two return no issue types at
- * all. The BFF asks as `Global-Help` on their behalf (`QUERY_TYPE_ORIGINS` in
- * `packages/eps-backend/src/http/connect.ts`) while the ticket still records
- * the real origin, so every value here is safe to pass.
+ * upstream for the issue-type lookup — `Other` and `Error-Boundary` return no
+ * issue types at all, and the dialog answers that with `FALLBACK_ISSUE`. The
+ * origin is forwarded verbatim rather than swapped for a working one: a ticket
+ * that misreports where it came from is worse than a generic issue type.
  */
 export type FeedbackOrigin =
 	| "Response"

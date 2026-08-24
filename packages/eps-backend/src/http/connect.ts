@@ -522,22 +522,6 @@ export function mountConnect(
 	 * `is_admin` is fixed at 0: it widens the list to internal-only issue types,
 	 * and no console session is an upstream admin.
 	 */
-	/**
-	 * The `feedback_origin` values interaction 10022 actually honours.
-	 *
-	 * Verified against connect-api UAT with one token, varying only this field:
-	 * these four return the full 29-row list, while `Other`, `Error-Boundary`,
-	 * empty and any unknown string return `issuetype_list: null` on an otherwise
-	 * identical success envelope. Eloka's `FeedbackOrigin` constant offers all
-	 * six, so the two it does not configure are silent dead ends.
-	 */
-	const QUERY_TYPE_ORIGINS = new Set([
-		"Response",
-		"History",
-		"Global-Help",
-		"Command-Bar",
-	]);
-
 	app.post("/connect/support/query-types", async (c) => {
 		const claim = await requireWidgetSession(c);
 		await enforceRateLimit(
@@ -552,21 +536,19 @@ export function mountConnect(
 			string,
 			unknown
 		>;
-		// An origin upstream does not know silently yields no issue types, so
-		// anything off the list asks as Global-Help — the generic "user wants help"
-		// entry point, which is what those origins mean. The ticket still records
-		// the TRUE origin: it is posted separately, by /connect/support/ticket, and
-		// support wants to know a query came from an error boundary.
-		const origin = text(body.feedback_origin, 64);
-		const lookupOrigin = QUERY_TYPE_ORIGINS.has(origin) ? origin : "Global-Help";
-
 		const envelope = await connect.interact(
 			upstream.accessToken,
 			{
 				interaction_type_id: QUERY_TYPES_INTERACTION,
 				tid: text(body.tid, 32),
 				tx_typeid: text(body.tx_typeid, 32),
-				feedback_origin: lookupOrigin,
+				// Forwarded verbatim. Upstream honours only Response, History,
+				// Global-Help and Command-Bar for this interaction and answers
+				// `issuetype_list: null` for anything else — including Eloka's own
+				// Other and Error-Boundary. Substituting a working value here would
+				// make the console lie about where the query came from and hide the
+				// gap; an empty list is answered by the browser's FALLBACK_ISSUE.
+				feedback_origin: text(body.feedback_origin, 64),
 				status: text(body.status, 8),
 				operator: text(body.operator, 64),
 				partner_id: text(body.partner_id, 64),

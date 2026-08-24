@@ -228,7 +228,7 @@ function ScreenshotField({
 	}
 
 	return (
-		<div className="mb-4 max-w-sm">
+		<div className="mb-6 max-w-sm">
 			<video
 				ref={videoRef}
 				autoPlay
@@ -594,7 +594,7 @@ export function RaiseIssueDialog({
 					{inputs.map((input, index) => (
 						<div
 							key={input.label}
-							className="mb-4 flex max-w-sm flex-col gap-1.5"
+							className="mb-6 flex max-w-sm flex-col gap-1.5"
 						>
 							<Label htmlFor={`issue-input-${index}`}>
 								{input.label}
@@ -626,7 +626,7 @@ export function RaiseIssueDialog({
 							label={file.label}
 							required={file.is_required}
 							disabled={disabled}
-							className="max-w-sm"
+							className="mb-6 max-w-sm"
 							accept={
 								file.accept ||
 								"image/jpeg,image/pjpeg,image/png,application/pdf"
@@ -658,7 +658,7 @@ export function RaiseIssueDialog({
 					{issue.type === 0 ? (
 						<>
 							{issue.comment === REQUIREMENT.DISABLED ? null : (
-								<div className="mb-4 flex max-w-sm flex-col gap-1.5">
+								<div className="mb-6 flex max-w-sm flex-col gap-1.5">
 									<Label htmlFor="issue-comment">
 										Comments
 										{issue.comment === REQUIREMENT.MANDATORY ? " *" : ""}
@@ -675,7 +675,7 @@ export function RaiseIssueDialog({
 							)}
 
 							<Button
-								className="mt-4 self-start"
+								className="mt-2 self-start"
 								disabled={disabled || !windowOpen}
 								onClick={() => void submit()}
 							>

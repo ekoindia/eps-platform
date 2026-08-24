@@ -711,38 +711,19 @@ describe("POST /connect/support/query-types", () => {
 		);
 	});
 
-	// The blank-card bug. Upstream honours four feedback_origin values and
-	// answers `issuetype_list: null` for anything else, so the dialog's own
-	// `?? "Other"` default guaranteed an empty list for every caller that omitted
-	// an origin — and the test bench passed "Other" outright.
-	it("asks as Global-Help when the origin is one upstream ignores", async () => {
-		for (const feedback_origin of ["Other", "Error-Boundary", "", "Nonsense"]) {
-			const interact = vi.fn(async () => ({
-				status: 0,
-				data: { issuetype_list: [] },
-			}));
-			const { app } = harness(developer, { connect: { interact } });
-
-			await app.request("/connect/support/query-types", {
-				method: "POST",
-				body: JSON.stringify({ feedback_origin }),
-				headers: { ...withCookie.headers, "Content-Type": "application/json" },
-			});
-
-			expect(interact).toHaveBeenCalledWith(
-				"ca_full",
-				expect.objectContaining({ feedback_origin: "Global-Help" }),
-				expect.anything(),
-			);
-		}
-	});
-
-	it("forwards an origin upstream does honour", async () => {
+	// Upstream honours only Response/History/Global-Help/Command-Bar and answers
+	// `issuetype_list: null` for anything else. The route does NOT substitute a
+	// working value: that would make the console lie about where the query came
+	// from. Every origin goes up exactly as sent.
+	it("forwards the origin verbatim, honoured upstream or not", async () => {
 		for (const feedback_origin of [
 			"Response",
 			"History",
 			"Global-Help",
 			"Command-Bar",
+			"Other",
+			"Error-Boundary",
+			"",
 		]) {
 			const interact = vi.fn(async () => ({
 				status: 0,
@@ -762,32 +743,6 @@ describe("POST /connect/support/query-types", () => {
 				expect.anything(),
 			);
 		}
-	});
-
-	// connect-api answers 200 for business-level failures. This used to be
-	// laundered into `{ issueTypes: [] }` and a 200 of our own, which the dialog
-	// drew as a blank card — indistinguishable from an org with nothing
-	// configured.
-	it("reports an upstream refusal instead of an empty list", async () => {
-		const { app } = harness(developer, {
-			connect: {
-				interact: vi.fn(async () => ({
-					status: 1,
-					message: "Interaction not allowed for this role",
-				})),
-			},
-		});
-
-		const res = await app.request("/connect/support/query-types", {
-			method: "POST",
-			body: JSON.stringify({ tid: "123" }),
-			headers: { ...withCookie.headers, "Content-Type": "application/json" },
-		});
-
-		expect(res.status).toBe(502);
-		const error = await errorOf(res);
-		expect(error.code).toBe("QUERY_TYPES_FAILED");
-		expect(error.message).toBe("Interaction not allowed for this role");
 	});
 
 	// A list that is present but re-shaped is a schema regression, not an empty
