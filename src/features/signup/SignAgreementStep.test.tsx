@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { RETRY_DELAYS_MS } from "@/lib/retry";
 
 const getAgreementUrl = vi.fn();
 const submitAgreement = vi.fn();
@@ -42,15 +43,34 @@ beforeEach(() => {
 });
 
 describe("SignAgreementStep", () => {
-	it("shows an error and a retry when the URL fetch fails", async () => {
-		getAgreementUrl.mockRejectedValue(
-			new ApiError("STEP_FAILED", "Couldn't prepare it", 400),
-		);
-		render(<SignAgreementStep onSubmit={noop} busy={false} error={null} />);
-		expect(await screen.findByText(/couldn't prepare it/i)).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: /try again/i }),
-		).toBeInTheDocument();
+	// A bare STEP_FAILED reads as a transient upstream blip, so `withRetries`
+	// spends all three attempts before the user is told anything. Fake timers keep
+	// that 4s of backoff out of the suite's wall clock.
+	it("retries the URL fetch, then shows an error and a retry", async () => {
+		vi.useFakeTimers();
+		try {
+			getAgreementUrl.mockRejectedValue(
+				new ApiError("STEP_FAILED", "Couldn't prepare it", 400),
+			);
+			render(<SignAgreementStep onSubmit={noop} busy={false} error={null} />);
+
+			await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[0]);
+			expect(getAgreementUrl).toHaveBeenCalledTimes(2);
+			expect(screen.queryByText(/couldn't prepare it/i)).toBeNull();
+
+			await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[1]);
+			expect(getAgreementUrl).toHaveBeenCalledTimes(3);
+
+			// One more flush: the third rejection still has to travel back out
+			// through `withRetries` before `initialize` can render it.
+			await vi.advanceTimersByTimeAsync(0);
+			expect(screen.getByText(/couldn't prepare it/i)).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: /try again/i }),
+			).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("jumps straight to Continue when the agreement is already signed", async () => {

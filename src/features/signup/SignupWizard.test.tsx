@@ -8,6 +8,7 @@ import {
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, type SignupState } from "@/lib/auth/client";
+import { RETRY_DELAYS_MS } from "@/lib/retry";
 import { SignupWizard } from "./SignupWizard";
 
 vi.mock("@/lib/auth/client", async (orig) => ({
@@ -185,23 +186,40 @@ describe("SignupWizard", () => {
 		expect(await screen.findByText("Set Secret PIN")).toBeInTheDocument();
 	});
 
-	it("shows the server error and stays on the step", async () => {
-		vi.mocked(signupClient.state).mockResolvedValue(panPending);
-		vi.mocked(signupClient.submitPan).mockRejectedValue(
-			new ApiError("STEP_FAILED", "PAN already in use", 400),
-		);
-		render(<SignupWizard />);
-		await findStepHeading("PAN Details");
-		fireEvent.change(screen.getByLabelText(/pan/i), {
-			target: { value: "ABCDE1234F" },
-		});
-		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
-		expect(await screen.findByRole("alert")).toHaveTextContent(
-			"PAN already in use",
-		);
-		expect(
-			screen.getByRole("heading", { name: "PAN Details", level: 3 }),
-		).toBeInTheDocument();
+	// A bare STEP_FAILED reads as a transient upstream blip, so `withRetries`
+	// spends all three attempts before the user is told anything. Fake timers keep
+	// that 4s of backoff out of the suite's wall clock.
+	it("retries, then shows the server error and stays on the step", async () => {
+		vi.useFakeTimers();
+		try {
+			vi.mocked(signupClient.state).mockResolvedValue(panPending);
+			vi.mocked(signupClient.submitPan).mockRejectedValue(
+				new ApiError("STEP_FAILED", "PAN already in use", 400),
+			);
+			render(<SignupWizard />);
+			await vi.advanceTimersByTimeAsync(0);
+			fireEvent.change(screen.getByLabelText(/pan/i), {
+				target: { value: "ABCDE1234F" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+			await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[0]);
+			expect(signupClient.submitPan).toHaveBeenCalledTimes(2);
+			expect(screen.queryByRole("alert")).toBeNull();
+
+			await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[1]);
+			expect(signupClient.submitPan).toHaveBeenCalledTimes(3);
+
+			// One more flush: the third rejection still has to travel back out
+			// through `withRetries` before `runStep` can render it.
+			await vi.advanceTimersByTimeAsync(0);
+			expect(screen.getByRole("alert")).toHaveTextContent("PAN already in use");
+			expect(
+				screen.getByRole("heading", { name: "PAN Details", level: 3 }),
+			).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("refreshes auth on completion so the session swaps to developer", async () => {

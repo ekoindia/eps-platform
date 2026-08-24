@@ -9,6 +9,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError, authClient } from "@/lib/auth/client";
+import { withRetries } from "@/lib/retry";
 import { getBlurScore, withBlurScoreInName } from "@/lib/connect/blur";
 import type { KycDocument } from "@/lib/connect/kyc";
 import {
@@ -107,7 +108,9 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 					form.append(`blur_score${index + 1}`, String(sharpness));
 				}
 			});
-			const { message } = await authClient.connectKyc.upload(form);
+			const { message } = await withRetries(() =>
+				authClient.connectKyc.upload(form),
+			);
 			onClose({ docType: doc.docType, message });
 		} catch (error) {
 			// Deliberately stays open with the files still attached: re-picking every

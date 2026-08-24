@@ -751,6 +751,55 @@ code; the wizard has zero knowledge of step-specific call signatures. Each
 `StepDefinition` owns its own `submit`, which is strictly less coupling than
 the spec proposed, and is what's actually shipped.
 
+## Retrying transient failures
+
+Some upstream calls fail once and succeed immediately afterwards. Left alone,
+that first failure reaches the user as a step error and strands an account that
+was never actually rejected. `withRetries` (`src/lib/retry.ts`) wraps the calls
+where that hurts most: **two retries, 1s then 3s apart**, so three attempts and
+at most 4s of extra waiting.
+
+| Wrapped call | Where |
+| --- | --- |
+| `signupClient.state()` (initial load) | `SignupWizard.tsx` mount effect |
+| Every step submit — PAN, business, PIN, agreement | `runStep`, `SignupWizard.tsx` |
+| `getAgreementUrl()` (287) | `initialize`, `SignAgreementStep.tsx` |
+| `connectKyc.upload()` | `submit`, `KycUploadDialog.tsx` |
+
+`createProfile()` is deliberately **not** wrapped: it is a non-idempotent POST
+that creates a partial account upstream, which is the same reason the `started`
+ref guards the mount effect.
+
+Retries are silent. Every one of these call sites already holds a busy state for
+the whole operation, so a retry just means the existing spinner runs longer — no
+extra props, no "attempt 2 of 3" UI.
+
+### What is not retried
+
+The BFF collapses every upstream step failure into one `400 STEP_FAILED`
+(`toAppError`, `packages/eps-backend/src/http/signup.ts`), so the HTTP status
+cannot tell a flaky upstream apart from a genuine rejection. Two things can:
+
+- **The error code.** `INVALID_INPUT`, `FILE_TOO_LARGE`, `UNSUPPORTED_FILE_TYPE`,
+  `RATE_LIMITED`, `NO_SESSION` and `NOT_SIGNUP_SESSION` are verdicts, not blips.
+  `RATE_LIMITED` is on that list for the opposite reason to the rest — the KYC
+  upload route budgets `KYC_UPLOAD_LIMIT` attempts per window, so retrying past
+  it is exactly the wrong move.
+- **`ApiError.details`.** When upstream returns `invalid_params` or
+  `dependent_params` it is naming a field the user got wrong, and no number of
+  retries will change that answer. A bare `STEP_FAILED` with no `details` is the
+  opaque failure that is worth another attempt — and is the case that motivated
+  all of this.
+
+Also never retried: HTTP 401/403/413 (`request()` has already spent its one
+refresh replay by the time a 401 surfaces here), and an `AbortError`, which means
+the caller unmounted or re-queried and no longer wants the answer.
+
+One caveat worth knowing: because a proxy 413 currently reaches the browser as
+`502 UPSTREAM_ERROR` (see [`kyc-documents.md`](./kyc-documents.md#file-rules)),
+an oversized body that slips past the picker's own check is retried three times
+before failing. The picker's 10 MB guard makes that rare.
+
 ## Known constants and their caveats
 
 `ONBOARDING_LATLONG = "27.176670,78.008075,7787"`

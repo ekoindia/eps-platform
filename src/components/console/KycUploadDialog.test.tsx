@@ -289,10 +289,12 @@ describe("KycUploadDialog", () => {
 		// `intent_id` is the backend's to set, not the browser's. A value sent from
 		// here would be dropped by the proxy anyway, so shipping one is a lie.
 		expect(form.get("intent_id")).toBeNull();
-		expect(onClose).toHaveBeenCalledWith({
-			docType: "999",
-			message: "Received",
-		});
+		await vi.waitFor(() =>
+			expect(onClose).toHaveBeenCalledWith({
+				docType: "999",
+				message: "Received",
+			}),
+		);
 	});
 
 	describe("blur check", () => {
