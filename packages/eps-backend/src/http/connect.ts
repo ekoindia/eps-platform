@@ -522,6 +522,22 @@ export function mountConnect(
 	 * `is_admin` is fixed at 0: it widens the list to internal-only issue types,
 	 * and no console session is an upstream admin.
 	 */
+	/**
+	 * The `feedback_origin` values interaction 10022 actually honours.
+	 *
+	 * Verified against connect-api UAT with one token, varying only this field:
+	 * these four return the full 29-row list, while `Other`, `Error-Boundary`,
+	 * empty and any unknown string return `issuetype_list: null` on an otherwise
+	 * identical success envelope. Eloka's `FeedbackOrigin` constant offers all
+	 * six, so the two it does not configure are silent dead ends.
+	 */
+	const QUERY_TYPE_ORIGINS = new Set([
+		"Response",
+		"History",
+		"Global-Help",
+		"Command-Bar",
+	]);
+
 	app.post("/connect/support/query-types", async (c) => {
 		const claim = await requireWidgetSession(c);
 		await enforceRateLimit(
@@ -536,13 +552,21 @@ export function mountConnect(
 			string,
 			unknown
 		>;
+		// An origin upstream does not know silently yields no issue types, so
+		// anything off the list asks as Global-Help — the generic "user wants help"
+		// entry point, which is what those origins mean. The ticket still records
+		// the TRUE origin: it is posted separately, by /connect/support/ticket, and
+		// support wants to know a query came from an error boundary.
+		const origin = text(body.feedback_origin, 64);
+		const lookupOrigin = QUERY_TYPE_ORIGINS.has(origin) ? origin : "Global-Help";
+
 		const envelope = await connect.interact(
 			upstream.accessToken,
 			{
 				interaction_type_id: QUERY_TYPES_INTERACTION,
 				tid: text(body.tid, 32),
 				tx_typeid: text(body.tx_typeid, 32),
-				feedback_origin: text(body.feedback_origin, 64),
+				feedback_origin: lookupOrigin,
 				status: text(body.status, 8),
 				operator: text(body.operator, 64),
 				partner_id: text(body.partner_id, 64),
@@ -567,10 +591,12 @@ export function mountConnect(
 
 		const data = envelope.data as { issuetype_list?: unknown } | undefined;
 		const list = data?.issuetype_list;
-		// `null` is how connect-api says "no records" — observed alongside
-		// `response_status_id: -1` and `message: "Feedback issue list"` on an
-		// otherwise successful envelope. Eloka is equally lenient here
-		// (`issue_list = issue_list || []`). Absent is treated the same way.
+		// `null` is how connect-api says "no records" on an otherwise successful
+		// envelope. Eloka is equally lenient here (`issue_list = issue_list || []`).
+		// Absent is treated the same way.
+		//
+		// `response_status_id` is NOT the signal: it is -1 on this interaction even
+		// when the list comes back with 29 rows.
 		//
 		// A value that is present but neither null nor an array IS a schema
 		// regression — a renamed or re-shaped field — and must not be laundered

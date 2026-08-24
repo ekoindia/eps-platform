@@ -20,7 +20,15 @@ export const GENERIC_ISSUE_TYPE = {
 	ONBOARDING: "-2",
 } as const;
 
-/** Where the dialog was opened from; the support desk filters on it. */
+/**
+ * Where the dialog was opened from; the support desk filters on it.
+ *
+ * Only `Response`, `History`, `Global-Help` and `Command-Bar` are configured
+ * upstream for the issue-type lookup — the other two return no issue types at
+ * all. The BFF asks as `Global-Help` on their behalf (`QUERY_TYPE_ORIGINS` in
+ * `packages/eps-backend/src/http/connect.ts`) while the ticket still records
+ * the real origin, so every value here is safe to pass.
+ */
 export type FeedbackOrigin =
 	| "Response"
 	| "History"

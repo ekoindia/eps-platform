@@ -157,14 +157,25 @@ the widget's lite/crm tokens.
     answers 200 for business-level failures, so without the status check an
     unentitled caller was laundered into `{ issueTypes: [] }` and a 200 — which
     the dialog drew as a card with nothing in it.
-  - **"No records" is not an error.** Observed live on a `status: 0` envelope:
-    `response_status_id: -1`, `message: "Feedback issue list"`,
-    `data: { issuetype_list: null, trxn_detail_from_sb: {} }`. `null`, absent
-    and `[]` all mean the same thing and all pass through as an empty list,
-    which the browser answers with `FALLBACK_ISSUE`. Eloka is equally lenient
-    (`issue_list = issue_list || []`) — and equally blank-carded by it, since it
-    has no fallback. The narrow reject is reserved for a genuinely re-shaped
-    field, which a fallback would otherwise hide.
+  - **`feedback_origin` is an allowlist, and this was the blank-card bug.**
+    Upstream honours exactly `Response`, `History`, `Global-Help` and
+    `Command-Bar`. `Other`, `Error-Boundary`, empty and any unknown string come
+    back `issuetype_list: null` on an otherwise identical success envelope —
+    verified against UAT with a single token, varying only that field: those
+    four return 29 rows, everything else returns null. Eloka's `FeedbackOrigin`
+    constant offers all six, so two of its own values are silent dead ends, and
+    the dialog's `?? "Other"` default meant *any* caller that omitted an origin
+    got an empty list. `QUERY_TYPE_ORIGINS` now asks as `Global-Help` for
+    anything off the list; the ticket, posted separately, still records the true
+    origin.
+  - **"No records" is not an error.** `data: { issuetype_list: null }` on a
+    `status: 0` envelope means an empty list; `null`, absent and `[]` all pass
+    through as empty, which the browser answers with `FALLBACK_ISSUE`. Eloka is
+    equally lenient (`issue_list = issue_list || []`) — and equally
+    blank-carded by it, since it has no fallback. The narrow reject is reserved
+    for a genuinely re-shaped field, which a fallback would otherwise hide.
+    `response_status_id` is **not** the signal: it is `-1` on this interaction
+    even when 29 rows come back.
 - `POST /connect/support/ticket` (multipart) → `{ feedbackTicketId, message }`
   (interaction 10000, via `/transactions/upload` when there are attachments and
   `/transactions/do` otherwise).
@@ -332,12 +343,12 @@ the IP lookup or the watermark builder.
 There is no "Raise issue" entry point on the transaction-history rows yet — the
 dialog is reached from a flow.
 
-`source: "WLC"` rides on `/transactions/do` via `interact()`, matching
-`DEFAULT_DATA` in Eloka's shared fetcher, which stamps it on every connect-api
-body. It is applied **after** the caller's fields rather than before, so it is a
-BFF invariant no caller can override — a deliberate divergence from Eloka, where
-the body wins. `interactJson()` and `uploadInteraction()` are deliberately left
-alone: those paths work as they are.
+`source: "WLC"` is **not** sent on `/transactions/do`, though Eloka's shared
+fetcher stamps one on every connect-api body. Tested against UAT: interaction
+10022 returns the same 29 rows with it, without it, and with a JSON body rather
+than Eloka's form-encoded one. `interactions()` sends it because
+`/transactions/wlc` requires it, not as a house convention. `is_admin`, `locale`
+and an empty `status` likewise make no difference.
 
 Two Eloka bugs are **not** ported: `transaction_time` vs `transactionTime`
 (`RaiseIssueCard.tsx:61` vs `HistoryCard.jsx:258`, which silently killed the

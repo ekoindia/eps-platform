@@ -711,24 +711,57 @@ describe("POST /connect/support/query-types", () => {
 		);
 	});
 
-	// `source: "WLC"` rides on every connect-api body in Eloka's client, and no
-	// caller may override it — it is a BFF invariant, not a request parameter.
-	it("stamps source WLC on the upstream body, over anything the browser sent", async () => {
-		const post = vi.fn(async () => ({
-			status: 0,
-			data: { issuetype_list: [] },
-		}));
-		const { app } = harness(developer, { connect: { interact: post } });
+	// The blank-card bug. Upstream honours four feedback_origin values and
+	// answers `issuetype_list: null` for anything else, so the dialog's own
+	// `?? "Other"` default guaranteed an empty list for every caller that omitted
+	// an origin — and the test bench passed "Other" outright.
+	it("asks as Global-Help when the origin is one upstream ignores", async () => {
+		for (const feedback_origin of ["Other", "Error-Boundary", "", "Nonsense"]) {
+			const interact = vi.fn(async () => ({
+				status: 0,
+				data: { issuetype_list: [] },
+			}));
+			const { app } = harness(developer, { connect: { interact } });
 
-		await app.request("/connect/support/query-types", {
-			method: "POST",
-			body: JSON.stringify({ tid: "123", source: "SPOOFED" }),
-			headers: { ...withCookie.headers, "Content-Type": "application/json" },
-		});
+			await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ feedback_origin }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
 
-		// The route never forwards `source` from the browser at all; the client
-		// adds it. Asserted here because this is the seam a regression would cross.
-		expect(post.mock.calls[0][1]).not.toHaveProperty("source", "SPOOFED");
+			expect(interact).toHaveBeenCalledWith(
+				"ca_full",
+				expect.objectContaining({ feedback_origin: "Global-Help" }),
+				expect.anything(),
+			);
+		}
+	});
+
+	it("forwards an origin upstream does honour", async () => {
+		for (const feedback_origin of [
+			"Response",
+			"History",
+			"Global-Help",
+			"Command-Bar",
+		]) {
+			const interact = vi.fn(async () => ({
+				status: 0,
+				data: { issuetype_list: [] },
+			}));
+			const { app } = harness(developer, { connect: { interact } });
+
+			await app.request("/connect/support/query-types", {
+				method: "POST",
+				body: JSON.stringify({ feedback_origin }),
+				headers: { ...withCookie.headers, "Content-Type": "application/json" },
+			});
+
+			expect(interact).toHaveBeenCalledWith(
+				"ca_full",
+				expect.objectContaining({ feedback_origin }),
+				expect.anything(),
+			);
+		}
 	});
 
 	// connect-api answers 200 for business-level failures. This used to be

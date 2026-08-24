@@ -629,23 +629,15 @@ export function createConnectClient(
 		},
 
 		async interact(accessToken, body, opts = {}) {
-			// `source: "WLC"` is what Eloka's shared fetcher puts on EVERY
-			// connect-api body (`DEFAULT_DATA` in its `helpers/apiHelper.js`), and
-			// `interactions()` above already hardcodes it for /transactions/wlc.
-			// Interaction 10022 answered `issuetype_list: null` without it; whether
-			// that is cause or coincidence, sending it matches the reference client.
-			//
-			// Last, not first: unlike Eloka — where a caller's body wins — this is a
-			// BFF invariant, and no caller may claim a different source.
-			//
-			// Deliberately NOT added to `interactJson` or `uploadInteraction`: those
-			// paths work as they are, and this is one endpoint's diagnosis, not a
-			// blanket change.
-			const raw = await post(
-				"/transactions/do",
-				{ ...body, source: "WLC" },
-				{ bearer: accessToken, xRealIp: opts.xRealIp },
-			);
+			// No `source: "WLC"` here, though Eloka's shared fetcher stamps one on
+			// every connect-api body. Tried against UAT and it changes nothing:
+			// interaction 10022 returns the same list with it, without it, and with
+			// a JSON body rather than Eloka's form-encoded one. `interactions()`
+			// sends it because /transactions/wlc requires it, not as a convention.
+			const raw = await post("/transactions/do", body, {
+				bearer: accessToken,
+				xRealIp: opts.xRealIp,
+			});
 			return (raw ?? {}) as Record<string, unknown>;
 		},
 
