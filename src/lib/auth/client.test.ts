@@ -139,6 +139,25 @@ describe("authClient", () => {
 		mockRawFetch(200, "");
 		await expect(authClient.me()).resolves.toEqual({});
 	});
+
+	// Production regression, the other half: a KYC upload of 1.5 MB was refused
+	// by nginx's `client_max_body_size` (413, text/html), the Vercel hop turned
+	// the closed connection into its own 502 text/plain page, and the user was
+	// told `client · PARSE_ERROR` — the browser blamed for a body the
+	// infrastructure never accepted. A response that arrived is never the
+	// client's doing, whatever the status.
+	it.each([
+		{ label: "a Vercel 502 text/plain page", status: 502, body: "An error occurred with your deployment" },
+		{ label: "an nginx 413 html page", status: 413, body: "<html><head><title>413 Request Entity Too Large</title>" },
+		{ label: "an SPA fallback served with 200", status: 200, body: "<!doctype html><html lang=\"en\">" },
+	])("blames the proxy, not the browser, for $label", async ({ status, body }) => {
+		mockRawFetch(status, body);
+		await expect(authClient.me()).rejects.toMatchObject({
+			code: "PARSE_ERROR",
+			source: "proxy",
+			httpStatus: status,
+		});
+	});
 });
 
 describe("session expiry signal", () => {
@@ -323,7 +342,7 @@ describe("error diagnostics", () => {
 		vi.stubGlobal("fetch", fn);
 		await expect(authClient.me()).rejects.toMatchObject({
 			code: "PARSE_ERROR",
-			source: "client",
+			source: "proxy",
 			requestId: "rid-header",
 		});
 	});

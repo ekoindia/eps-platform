@@ -108,13 +108,21 @@ export function errorDiagnostics(err: unknown): Diagnostics {
  * Empty fields are dropped rather than shown blank — `ref —` teaches nobody
  * anything and costs a line of a screenshot.
  *
+ * The HTTP status rides along for `PARSE_ERROR` alone. That is the one failure
+ * with nothing else to go on — its message is a raw error page and is withheld,
+ * its code says only "unreadable" — so the status is all that separates an
+ * oversized upload from a dead backend. Every other code names its own cause,
+ * where a status would be noise.
+ *
  * @example "api · KYC_LIST_FAILED · ref m9k2xq4b0f · EkoCode 12345 · rid 3f2a1b7c"
+ * @example "proxy · PARSE_ERROR · HTTP 502 · EkoCode 12345"
  */
 export function diagnosticsLine(d: Diagnostics): string {
 	const upstreamRef = d.trace?.find((c) => c.clientRefId)?.clientRefId;
 	return [
 		d.source,
 		d.code,
+		d.code === "PARSE_ERROR" && d.httpStatus && `HTTP ${d.httpStatus}`,
 		upstreamRef && `ref ${upstreamRef}`,
 		d.ekoCode && `EkoCode ${d.ekoCode}`,
 		d.requestId && `rid ${d.requestId}`,

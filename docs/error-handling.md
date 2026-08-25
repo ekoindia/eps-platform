@@ -50,14 +50,30 @@ If you are triaging a report right now, skip to [Reading an error](#reading-an-e
 | --- | --- | --- |
 | `api` | The upstream call failed; `message` is its envelope message | Eko |
 | `proxy` | eps-backend produced it — a guard, a validation, or no usable upstream answer | Backend team |
-| `client` | Never reached the network, or the response broke the envelope | Frontend / the user's connection |
+| `client` | Never reached the network at all | Frontend / the user's connection |
 
 Backend: `new AppError(...)` defaults to `proxy`; use `AppError.fromUpstream(...)`
 wherever the message is `envelope.message`. Frontend: `ApiError.source` mirrors
-this and adds `client` for `NETWORK_ERROR` and `PARSE_ERROR`.
+this and adds `client` for `NETWORK_ERROR` and for anything thrown before a
+request went out.
 
 An envelope-less HTTP failure stays `proxy`, not `client` — a server answered,
 it just answered badly, and blaming the browser sends ops to the wrong team.
+That includes `PARSE_ERROR`, which is what a response that is not JSON becomes:
+an nginx or Vercel error page, an SPA fallback serving `index.html`, a captive
+portal. Every one of those is an intermediary. It said `client` until a KYC
+upload refused by nginx's `client_max_body_size` reached the user as
+`client · PARSE_ERROR` and pointed the whole investigation at the browser.
+
+The imprecision that buys: a non-JSON body from eps-backend itself would be
+filed as `proxy` too. Hono's `onError` always answers JSON, so it does not
+happen — and a fourth `source` to name it would have to be threaded through
+`errors.ts` and both docs to describe nothing that occurs.
+
+Because `PARSE_ERROR` withholds its message (it is a raw error page) and its
+code says only "unreadable", `diagnosticsLine` prints the HTTP status for it
+alone: `proxy · PARSE_ERROR · HTTP 502 · EkoCode 12345`. Every other code names
+its own cause, where a status would be noise.
 
 ## Reading an error
 

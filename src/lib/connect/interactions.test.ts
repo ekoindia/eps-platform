@@ -28,6 +28,16 @@ const REQUEST_EVALUE = {
 	is_visible: "0",
 };
 
+/**
+ * The pre-activation QR/UPI load flow. Only the fields the resolver reads are
+ * fixtured — no real payload has been captured, so its `behavior` and whether it
+ * is composite are deliberately left unasserted.
+ */
+const LOAD_QR = {
+	id: 10021,
+	label: "Load E-value with QR",
+};
+
 /** A leaf interaction: real type, id unrelated to it. */
 const BANK_STATUS = {
 	id: 1025,
@@ -105,6 +115,24 @@ describe("loadWalletInteractionId", () => {
 		const list = buildRoleTransactionList([LOAD_EVALUE]);
 
 		expect(loadWalletInteractionId(list)).toBe(491);
+	});
+
+	it("falls back to the pre-activation QR flow", () => {
+		const list = buildRoleTransactionList([LOAD_QR]);
+
+		expect(loadWalletInteractionId(list)).toBe(10021);
+	});
+
+	it("prefers a full flow over the QR one once the account activates", () => {
+		// An activating account keeps 10021 while gaining 491/240.
+		expect(
+			loadWalletInteractionId(buildRoleTransactionList([LOAD_QR, LOAD_EVALUE])),
+		).toBe(491);
+		expect(
+			loadWalletInteractionId(
+				buildRoleTransactionList([LOAD_QR, REQUEST_EVALUE]),
+			),
+		).toBe(240);
 	});
 
 	it("returns null when the user may not load E-value", () => {

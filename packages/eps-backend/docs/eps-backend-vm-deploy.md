@@ -299,7 +299,27 @@ domain.
    address. On a shared box this is the same address the other sites already use;
    confirm with `dig +short <existing-host>`.
 
-2. **nginx** — a new file, never an edit of an existing site's block. On RHEL:
+2. **nginx** — two new files, never an edit of an existing site's block.
+
+   The proxy lines live in their own include so the two locations below cannot
+   drift apart. It goes **outside** `conf.d/`, which nginx auto-includes at
+   `http` scope where these directives would fail to parse. On RHEL:
+
+```nginx
+# /etc/nginx/eps-backend-proxy.inc
+proxy_pass http://127.0.0.1:8787;
+proxy_http_version 1.1;
+
+proxy_set_header Host              $host;
+# MUST overwrite, not append: the backend's rate limiter trusts X-Real-IP for
+# its per-client bucket, so a client-supplied value would let one caller spoof
+# another's quota.
+proxy_set_header X-Real-IP         $remote_addr;
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+
+proxy_read_timeout 120s;
+```
 
 ```nginx
 # /etc/nginx/conf.d/eps-backend.conf
@@ -307,19 +327,33 @@ server {
       listen 80;
       server_name api.eps.eko.in;
 
+      # Explicit, so the cap never silently falls back to nginx's 1 MB default.
+      client_max_body_size 1m;
+
+      # Leaving this to nginx's 1 MB default is not a smaller limit, it is an
+      # outage: a 1.5 MB bank statement got a 413, nginx closed the connection,
+      # the Vercel hop in front turned that into its own 502, and the browser —
+      # which cannot parse either page — showed "PARSE_ERROR". Matches the 20M
+      # the connect.eko.in vhost already uses. connect-api's own side allows
+      # 100M, so it is not the constraint.
+      #
+      # 20M is a DELIBERATE undershoot of what the app accepts: 6 pages x 10 MB
+      # (KYC_MAX_PAGES x KYC_MAX_FILE_BYTES) is 60 MB. Real scans are 1-3 MB, so
+      # this covers every document seen in practice while keeping the buffered-
+      # body exposure small — the backend reads the whole request into memory in
+      # c.req.formData() before any auth or per-file check runs. The gap only
+      # bites on a multi-page set of near-maximum files, and it now fails
+      # legibly: "proxy · PARSE_ERROR · HTTP 502". If that starts happening,
+      # raise this rather than letting users hit it, or lower
+      # KYC_MAX_FILE_BYTES to close the gap from the other end.
+      location = /connect/kyc/upload {
+            client_max_body_size 20m;
+            client_body_buffer_size 128k;
+            include /etc/nginx/eps-backend-proxy.inc;
+      }
+
       location / {
-            proxy_pass http://127.0.0.1:8787;
-            proxy_http_version 1.1;
-
-            proxy_set_header Host              $host;
-            # MUST overwrite, not append: the backend's rate limiter trusts
-            # X-Real-IP for its per-client bucket, so a client-supplied value
-            # would let one caller spoof another's quota.
-            proxy_set_header X-Real-IP         $remote_addr;
-            proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-
-            proxy_read_timeout 120s;
+            include /etc/nginx/eps-backend-proxy.inc;
       }
 }
 ```
@@ -328,9 +362,25 @@ No path prefix and no trailing slash on `proxy_pass` — the backend's routes
 (`/healthz`, `/me`, `/auth/admin/github/callback`) sit at the root, and the
 GitHub OAuth callback URL must match byte for byte.
 
+Install the include **first**, then the vhost — `nginx -t` fails on a vhost
+whose include is missing. Back up before editing an existing vhost: there is no
+git on the box, and a fixed `.bak` name loses the previous rollback point on the
+second deploy.
+
 ```sh
+ts=$(date +%Y%m%d-%H%M%S)
+cp -p /etc/nginx/conf.d/eps-backend.conf /root/eps-backend.conf.$ts.bak
+
 nginx -t && systemctl reload nginx   # reload, never restart: other sites share this nginx
+nginx -T | grep -A2 'location = /connect/kyc/upload'   # confirm what is ACTIVE
 ```
+
+Rollback: restore that `.bak`, and remove `eps-backend-proxy.inc` only after
+`grep -r eps-backend-proxy.inc /etc/nginx/` shows nothing else includes it.
+
+Certbot rewrites this file when it issues the certificate, moving the block to
+`listen 443 ssl` and adding a second `server` block that redirects :80. Only the
+443 block ever receives a body — apply any later body-size change there.
 
 3. **TLS** — `certbot --nginx -d api.eps.eko.in`. Then verify the renewal timer actually exists (it did not, the first time, on this VM):
 
