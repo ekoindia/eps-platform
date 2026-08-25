@@ -115,7 +115,11 @@ export interface Config {
 	 */
 	activationFee?: {
 		webhookUrl: string;
-		/** Mailbox list the intimation is addressed to. */
+		/**
+		 * Mailboxes the intimation is addressed to, from
+		 * `ACTIVATION_FEE_RECIPIENTS`. Required whenever the webhook is set —
+		 * there is no default, so no deployment can mail a stale team.
+		 */
 		recipients: string[];
 		timeoutMs: number;
 	};
@@ -330,18 +334,20 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 				`ACTIVATION_FEE_WEBHOOK_URL must be https for a non-loopback host; refusing plaintext to "${parsed.hostname}". Partner PAN, GST and payment references travel over this connection.`,
 			);
 		}
-		const recipients = (
-			env.ACTIVATION_FEE_RECIPIENTS ??
-			"eps@eko.in,finance@eko.co.in,amar@eko.co.in"
-		)
+		// Deliberately no baked-in default. Who gets told about a partner's payment
+		// is a deployment decision, not a source-code constant: a default would
+		// mail whoever was on the team the day this was written, from every
+		// environment that happens to set a webhook, and would keep doing so long
+		// after they moved on. Naming the mailboxes is part of arming the feature.
+		const recipients = (env.ACTIVATION_FEE_RECIPIENTS ?? "")
 			.split(",")
 			.map((s) => s.trim())
 			.filter(Boolean);
-		// An explicitly-emptied list would send the mail to nobody and report
-		// success — silently losing every payment intimation.
+		// Sending to nobody and reporting success would silently lose every
+		// payment intimation, which is worse than refusing to boot.
 		if (recipients.length === 0) {
 			throw new Error(
-				"ACTIVATION_FEE_RECIPIENTS is set but lists no addresses; unset it to use the default, or name at least one mailbox",
+				"ACTIVATION_FEE_RECIPIENTS must name at least one mailbox when ACTIVATION_FEE_WEBHOOK_URL is set",
 			);
 		}
 		const bad = recipients.filter((address) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address));

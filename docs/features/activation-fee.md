@@ -109,12 +109,19 @@ cannot drift from the payments calculator.
 | Env var | Default | Notes |
 | --- | --- | --- |
 | `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_ | https required off loopback. **Secret** — never ship to the browser |
-| `ACTIVATION_FEE_RECIPIENTS` | `eps@eko.in,finance@eko.co.in,amar@eko.co.in` | Comma-separated. Empty or malformed = boot error |
+| `ACTIVATION_FEE_RECIPIENTS` | _(none — required with the URL)_ | Comma-separated. Absent, empty or malformed = boot error |
 | `ACTIVATION_FEE_TIMEOUT_MS` | `20000` | Abort for the webhook call |
 
 Unset means the route still mounts but answers `503 ACTIVATION_FEE_DISABLED`, so
 the page a partner was linked to still renders the bank details and explains
 itself rather than 404-ing.
+
+The two vars are a pair: setting the webhook without recipients fails at boot.
+There is **no default recipient list in source** on purpose — who gets told
+about a partner's payment is a deployment decision, and a baked-in default would
+mail whoever was on the team the day this was written from every environment
+that arms the feature, long after they moved on. Naming the mailboxes is part of
+arming it.
 
 > **n8n gotcha:** a `/webhook-test/...` URL only fires while the workflow editor
 > is open and listening. Production must use the `/webhook/...` URL, or every

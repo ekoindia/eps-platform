@@ -305,15 +305,34 @@ describe("loadConfig — activation fee", () => {
 		expect(loadConfig(base).activationFee).toBeUndefined();
 	});
 
-	it("defaults the recipients and the timeout", () => {
-		const cfg = loadConfig({ ...base, ACTIVATION_FEE_WEBHOOK_URL: url });
+	/** Both halves of the pairing, for tests that are about something else. */
+	const armed = {
+		ACTIVATION_FEE_WEBHOOK_URL: url,
+		ACTIVATION_FEE_RECIPIENTS: "finance@eko.co.in",
+	};
+
+	it("takes the recipients from the env and defaults the timeout", () => {
+		const cfg = loadConfig({ ...base, ...armed });
 		expect(cfg.activationFee?.webhookUrl).toBe(url);
-		expect(cfg.activationFee?.recipients).toEqual([
-			"eps@eko.in",
-			"finance@eko.co.in",
-			"amar@eko.co.in",
-		]);
+		expect(cfg.activationFee?.recipients).toEqual(["finance@eko.co.in"]);
 		expect(cfg.activationFee?.timeoutMs).toBe(20_000);
+	});
+
+	// No baked-in default: a stale team would otherwise be mailed by every
+	// environment that sets a webhook, forever.
+	it("throws when a webhook is set with no recipients", () => {
+		expect(() =>
+			loadConfig({ ...base, ACTIVATION_FEE_WEBHOOK_URL: url }),
+		).toThrowError(/ACTIVATION_FEE_RECIPIENTS must name at least one mailbox/);
+	});
+
+	it("hardcodes no address of its own", () => {
+		const cfg = loadConfig({
+			...base,
+			...armed,
+			ACTIVATION_FEE_RECIPIENTS: "only@example.test",
+		});
+		expect(cfg.activationFee?.recipients).toEqual(["only@example.test"]);
 	});
 
 	it("throws on a malformed webhook URL", () => {
@@ -335,6 +354,7 @@ describe("loadConfig — activation fee", () => {
 		expect(
 			loadConfig({
 				...base,
+				...armed,
 				ACTIVATION_FEE_WEBHOOK_URL: "http://127.0.0.1:5678/webhook/abc",
 			}).activationFee?.webhookUrl,
 		).toBe("http://127.0.0.1:5678/webhook/abc");
@@ -357,7 +377,7 @@ describe("loadConfig — activation fee", () => {
 				ACTIVATION_FEE_WEBHOOK_URL: url,
 				ACTIVATION_FEE_RECIPIENTS: " , ",
 			}),
-		).toThrowError(/lists no addresses/);
+		).toThrowError(/must name at least one mailbox/);
 	});
 
 	it("throws on a malformed recipient address", () => {

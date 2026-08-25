@@ -750,7 +750,7 @@ a key matching `/gst/i`, and prints as `—` when the profile carries none.
 | Env var                      | Default                                        | Notes                                                            |
 | ---------------------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
 | `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_                       | https required off loopback. **Secret**; never ship to the browser |
-| `ACTIVATION_FEE_RECIPIENTS`  | `eps@eko.in,finance@eko.co.in,amar@eko.co.in`  | Comma-separated. Empty or malformed = boot error                 |
+| `ACTIVATION_FEE_RECIPIENTS`  | _(none — required with the URL)_               | Comma-separated. Absent, empty or malformed = boot error         |
 | `ACTIVATION_FEE_TIMEOUT_MS`  | `20000`                                        | Abort for the webhook call                                       |
 
 > An n8n `/webhook-test/...` URL only fires while the workflow editor is open
