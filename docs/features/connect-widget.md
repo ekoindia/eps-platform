@@ -379,6 +379,12 @@ come from `group_interaction_ids`, so a trimmed row renders an empty grid.
 Entitlement is *presence* in the list, not `is_visible`: both 491 and 240 arrive
 with `is_visible: "0"`, exactly as Eloka sees them.
 
+Three ids load E-value, and `loadWalletInteractionId` picks the first one the
+caller holds: 491 (retailer), 240 (distributor), then 10021 — the limited "Load
+E-value with QR (UPI)" an account gets after e-signing the agreement but before
+KYC activation. They overlap: an account that activates keeps 10021 and gains
+491/240, so the order is a priority, not a claim that only one arrives.
+
 ## Gotcha: React 19 sets properties, not attributes
 
 Do **not** pass the widget's inputs through JSX, and do not `JSON.stringify` them.

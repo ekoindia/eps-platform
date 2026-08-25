@@ -14,11 +14,16 @@ export type RoleTransaction = Record<string, unknown>;
 export type RoleTransactionList = Record<string, RoleTransaction>;
 
 /**
- * Interaction ids that load E-value, most-preferred first. Mirrors Eloka's
+ * Interaction ids that load E-value, most-preferred first. Extends Eloka's
  * `TransactionIds.LOAD_WALLET_TRXN_ID_LIST` — 491 is the retailer's "Load
- * E-value", 240 the distributor's "Request E-value". A user has at most one.
+ * E-value", 240 the distributor's "Request E-value", and 10021 the limited
+ * "Load E-value with QR (UPI)" granted to accounts that have e-signed the
+ * agreement but not yet activated by passing KYC.
+ *
+ * Order is priority, not exclusivity: an activating account keeps 10021 while
+ * gaining 491/240, and must be sent to the fuller flow once it has one.
  */
-export const LOAD_WALLET_INTERACTION_IDS = [491, 240] as const;
+export const LOAD_WALLET_INTERACTION_IDS = [491, 240, 10021] as const;
 
 // ponytail: same shape as the wallet-balance cache, for the same reason — the
 // console remounts on every navigation. Cleared on sign-out.

@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 
 /**
  * The Load-E-value flow this user may run, resolved from their own entitlements
- * — retailers get 491, distributors 240, and API-only accounts neither.
+ * — retailers get 491, distributors 240, accounts still awaiting KYC the limited
+ * QR/UPI flow 10021, and API-only accounts none of them.
  *
  * Safe to call from several components: the interaction list is cached for the
  * session and concurrent callers share one request.
