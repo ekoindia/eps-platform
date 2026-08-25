@@ -56,7 +56,7 @@ export interface TicketInput {
 }
 
 /** Escapes HTML so a user's comment cannot inject markup into the ticket. */
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
 	return value
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")

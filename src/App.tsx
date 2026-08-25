@@ -53,6 +53,9 @@ const ConsoleConnectTransaction = lazy(
 const ConsoleKycVerification = lazy(
 	() => import("./pages/console/KycVerification"),
 );
+const ConsolePayActivationFee = lazy(
+	() => import("./pages/console/PayActivationFee"),
+);
 // Dev-only bench for the connect dialogs. The `import()` sits INSIDE the DEV
 // check so a production build folds the whole expression away and never emits
 // the chunk — guarding only the <Route> below would still ship it, dead.
@@ -189,6 +192,10 @@ const App = ({
 										<Route
 											path="kyc-verification"
 											element={<ConsoleKycVerification />}
+										/>
+										<Route
+											path="pay-activation-fee"
+											element={<ConsolePayActivationFee />}
 										/>
 										{ConsoleTestDialogs ? (
 											<Route path="test" element={<ConsoleTestDialogs />} />

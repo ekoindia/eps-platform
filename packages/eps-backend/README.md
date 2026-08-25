@@ -26,6 +26,7 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | POST   | /context/mcp                | none (public)  | Anonymous MCP server (docs lookups); only when `CONTEXT_BUNDLE_URL` is set |
 | GET    | /context/healthz            | none (public)  | Served bundle version + source                          |
 | POST   | /chat/ask                   | cookie         | Grounded docs assistant; 503 `CHAT_DISABLED` unless `EPS_CHAT_*` is set |
+| POST   | /activation-fee/intimate    | cookie         | Partner reports paying the one-time activation fee; mails Team Eko. 503 `ACTIVATION_FEE_DISABLED` unless `ACTIVATION_FEE_WEBHOOK_URL` is set |
 
 ## Auth providers
 
@@ -727,3 +728,31 @@ see [`docs/eps-backend-docker-ops.md`](docs/eps-backend-docker-ops.md).
 
 `/credentials` (UAT/live key view/generate) — pending the Eko credential
 issuance API contract. See the design spec.
+
+## Activation-fee intimation
+
+`POST /activation-fee/intimate` backs `/console/pay-activation-fee`. Production
+credentials unlock every API on the platform, so the one-time activation fee is
+collected on trust: the partner transfers the money to Eko's bank account, tells
+us here, and finance reconciles it against the statement. **Nothing on this
+route confirms a payment** — it only carries the claim.
+
+Multipart body: a `payload` JSON part (`amount`, `date`, `mode`, `utr`,
+`products[]`, `otherProducts`) plus an optional `attachment` (JPG/PNG/PDF, 5 MB).
+
+The identity half of the mail — name, EkoCode, mobile, email, PAN, GST — is read
+from the caller's own upstream profile via `eko.getProfile` and **never** from
+the request body, so a partner cannot file an intimation in someone else's name.
+PAN comes from `user_detail.pancardnumber`; GST has no agreed upstream field
+name, so it is a best-effort scan of the allowlisted business detail blocks for
+a key matching `/gst/i`, and prints as `—` when the profile carries none.
+
+| Env var                      | Default                                        | Notes                                                            |
+| ---------------------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+| `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_                       | https required off loopback. **Secret**; never ship to the browser |
+| `ACTIVATION_FEE_RECIPIENTS`  | _(none — required with the URL)_               | Comma-separated. Absent, empty or malformed = boot error         |
+| `ACTIVATION_FEE_TIMEOUT_MS`  | `20000`                                        | Abort for the webhook call                                       |
+
+> An n8n `/webhook-test/...` URL only fires while the workflow editor is open
+> and listening. Production must use the `/webhook/...` URL, or every
+> intimation is silently dropped.

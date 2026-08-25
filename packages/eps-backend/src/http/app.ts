@@ -33,6 +33,7 @@ import {
 } from "./contextMcp";
 import { mountDashboard } from "./dashboard";
 import { AppError, errorBody } from "./errors";
+import { mountActivationFee } from "./activationFee";
 import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
@@ -673,6 +674,11 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });
+
+	// Mounted unconditionally so the console page it backs is never a 404. When
+	// `cfg.activationFee` is absent the route answers a named 503 the page can
+	// explain, which is the honest answer for a deployment that has no webhook.
+	mountActivationFee(app, { sessions, eko, kv, cfg: cfg.activationFee });
 
 	// Mounted unconditionally, unlike the Connect-widget routes below: it serves
 	// aggregate counts rather than credentials, so under the `eko` provider the

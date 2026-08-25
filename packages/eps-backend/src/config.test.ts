@@ -297,3 +297,96 @@ describe("connect-api auth provider config", () => {
 		});
 	});
 });
+
+describe("loadConfig — activation fee", () => {
+	const url = "https://automaton8n.eko.in/webhook/abc";
+
+	it("leaves the block absent when the webhook URL is unset", () => {
+		expect(loadConfig(base).activationFee).toBeUndefined();
+	});
+
+	/** Both halves of the pairing, for tests that are about something else. */
+	const armed = {
+		ACTIVATION_FEE_WEBHOOK_URL: url,
+		ACTIVATION_FEE_RECIPIENTS: "finance@eko.co.in",
+	};
+
+	it("takes the recipients from the env and defaults the timeout", () => {
+		const cfg = loadConfig({ ...base, ...armed });
+		expect(cfg.activationFee?.webhookUrl).toBe(url);
+		expect(cfg.activationFee?.recipients).toEqual(["finance@eko.co.in"]);
+		expect(cfg.activationFee?.timeoutMs).toBe(20_000);
+	});
+
+	// No baked-in default: a stale team would otherwise be mailed by every
+	// environment that sets a webhook, forever.
+	it("throws when a webhook is set with no recipients", () => {
+		expect(() =>
+			loadConfig({ ...base, ACTIVATION_FEE_WEBHOOK_URL: url }),
+		).toThrowError(/ACTIVATION_FEE_RECIPIENTS must name at least one mailbox/);
+	});
+
+	it("hardcodes no address of its own", () => {
+		const cfg = loadConfig({
+			...base,
+			...armed,
+			ACTIVATION_FEE_RECIPIENTS: "only@example.test",
+		});
+		expect(cfg.activationFee?.recipients).toEqual(["only@example.test"]);
+	});
+
+	it("throws on a malformed webhook URL", () => {
+		expect(() =>
+			loadConfig({ ...base, ACTIVATION_FEE_WEBHOOK_URL: "not-a-url" }),
+		).toThrowError(/ACTIVATION_FEE_WEBHOOK_URL is not a valid URL/);
+	});
+
+	it("refuses plaintext to a non-loopback host", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: "http://automaton8n.eko.in/webhook/abc",
+			}),
+		).toThrowError(/must be https/);
+	});
+
+	it("allows http for a loopback webhook", () => {
+		expect(
+			loadConfig({
+				...base,
+				...armed,
+				ACTIVATION_FEE_WEBHOOK_URL: "http://127.0.0.1:5678/webhook/abc",
+			}).activationFee?.webhookUrl,
+		).toBe("http://127.0.0.1:5678/webhook/abc");
+	});
+
+	it("splits and trims a configured recipient list", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: url,
+				ACTIVATION_FEE_RECIPIENTS: " a@eko.in , b@eko.in ",
+			}).activationFee?.recipients,
+		).toEqual(["a@eko.in", "b@eko.in"]);
+	});
+
+	it("throws on an explicitly emptied recipient list", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: url,
+				ACTIVATION_FEE_RECIPIENTS: " , ",
+			}),
+		).toThrowError(/must name at least one mailbox/);
+	});
+
+	it("throws on a malformed recipient address", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: url,
+				ACTIVATION_FEE_RECIPIENTS: "a@eko.in,not-an-address",
+			}),
+		).toThrowError(/invalid addresses: not-an-address/);
+	});
+});

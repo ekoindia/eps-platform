@@ -49,7 +49,9 @@ state, since no route matches them.
 The console's index page (`/console`) is **Home**. It leads with the profile card
 (`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT
 credentials, production credentials and the one-time integration fee — for every
-lifecycle state. The profile card carries name, lifecycle badge, mobile, email and
+lifecycle state. The fee step links through to `/console/pay-activation-fee`,
+where a partner reports the bank transfer that settles it; see
+[`docs/features/activation-fee.md`](./features/activation-fee.md). The profile card carries name, lifecycle badge, mobile, email and
 **EkoCode** (with a click-to-copy button, `CopyButton` from `pages/ai/CommandBlock`),
 and links through to `/console/profile`.
 

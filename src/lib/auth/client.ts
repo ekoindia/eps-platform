@@ -678,6 +678,24 @@ export const authClient = {
 			}) as Promise<{ feedbackTicketId: string; message: string }>,
 	},
 	/**
+	 * One-time API activation fee. Proxied because the webhook it mails through
+	 * is a secret, and because the partner's identity (name, EkoCode, PAN, GST)
+	 * is added server-side from their own profile — the browser states only what
+	 * it transferred, never on whose behalf.
+	 */
+	activationFee: {
+		/** `form` carries a `payload` JSON part plus an optional `attachment`. */
+		intimate: (
+			form: FormData,
+			signal?: AbortSignal,
+		): Promise<{ message: string }> =>
+			request("/activation-fee/intimate", {
+				method: "POST",
+				body: form,
+				signal,
+			}) as Promise<{ message: string }>,
+	},
+	/**
 	 * KYC document upload. Both calls are proxied because they need the full
 	 * upstream token, and the uploader's identity is added server-side — the
 	 * browser says which document, never whose.

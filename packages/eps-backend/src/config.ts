@@ -104,6 +104,25 @@ export interface Config {
 		inputPerMTok: number;
 		outputPerMTok: number;
 	};
+	/**
+	 * Present only when `ACTIVATION_FEE_WEBHOOK_URL` is set, which is what makes
+	 * `POST /activation-fee/intimate` able to send. Absent → the route still
+	 * mounts and answers 503 ACTIVATION_FEE_DISABLED, so a partner sees "we
+	 * can't take this right now" rather than a 404 on a page they were sent to.
+	 *
+	 * The URL is a secret: it is an unauthenticated webhook that mails Eko
+	 * staff, so it must never reach the browser bundle.
+	 */
+	activationFee?: {
+		webhookUrl: string;
+		/**
+		 * Mailboxes the intimation is addressed to, from
+		 * `ACTIVATION_FEE_RECIPIENTS`. Required whenever the webhook is set —
+		 * there is no default, so no deployment can mail a stale team.
+		 */
+		recipients: string[];
+		timeoutMs: number;
+	};
 	github: {
 		clientId: string;
 		clientSecret: string;
@@ -296,6 +315,53 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			outputPerMTok,
 		};
 	}
+	// Setting ACTIVATION_FEE_WEBHOOK_URL arms the activation-fee intimation mail.
+	// A malformed or plaintext value must fail at boot: this URL carries partner
+	// PAN/GST and a payment reference to an unauthenticated endpoint.
+	let activationFee: Config["activationFee"];
+	const activationFeeUrl = env.ACTIVATION_FEE_WEBHOOK_URL || undefined;
+	if (activationFeeUrl) {
+		let parsed: URL;
+		try {
+			parsed = new URL(activationFeeUrl);
+		} catch {
+			throw new Error(
+				`ACTIVATION_FEE_WEBHOOK_URL is not a valid URL: "${activationFeeUrl}"`,
+			);
+		}
+		if (parsed.protocol !== "https:" && !LOOPBACK_HOSTS.has(parsed.hostname)) {
+			throw new Error(
+				`ACTIVATION_FEE_WEBHOOK_URL must be https for a non-loopback host; refusing plaintext to "${parsed.hostname}". Partner PAN, GST and payment references travel over this connection.`,
+			);
+		}
+		// Deliberately no baked-in default. Who gets told about a partner's payment
+		// is a deployment decision, not a source-code constant: a default would
+		// mail whoever was on the team the day this was written, from every
+		// environment that happens to set a webhook, and would keep doing so long
+		// after they moved on. Naming the mailboxes is part of arming the feature.
+		const recipients = (env.ACTIVATION_FEE_RECIPIENTS ?? "")
+			.split(",")
+			.map((s) => s.trim())
+			.filter(Boolean);
+		// Sending to nobody and reporting success would silently lose every
+		// payment intimation, which is worse than refusing to boot.
+		if (recipients.length === 0) {
+			throw new Error(
+				"ACTIVATION_FEE_RECIPIENTS must name at least one mailbox when ACTIVATION_FEE_WEBHOOK_URL is set",
+			);
+		}
+		const bad = recipients.filter((address) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address));
+		if (bad.length > 0) {
+			throw new Error(
+				`ACTIVATION_FEE_RECIPIENTS contains invalid addresses: ${bad.join(", ")}`,
+			);
+		}
+		const timeoutMs = Number(env.ACTIVATION_FEE_TIMEOUT_MS ?? 20_000);
+		if (!Number.isFinite(timeoutMs) || timeoutMs < 1) {
+			throw new Error("ACTIVATION_FEE_TIMEOUT_MS must be a positive integer");
+		}
+		activationFee = { webhookUrl: activationFeeUrl, recipients, timeoutMs };
+	}
 	const redisUrl = env.REDIS_URL || undefined;
 	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
 	if (redisUrl) {
@@ -340,6 +406,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		connectApi,
 		contextMcp,
 		chat,
+		activationFee,
 		github: {
 			clientId: env.GITHUB_CLIENT_ID!,
 			clientSecret: env.GITHUB_CLIENT_SECRET!,
