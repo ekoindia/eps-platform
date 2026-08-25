@@ -66,6 +66,16 @@ describe("withRetries", () => {
 		expect(run).toHaveBeenCalledTimes(1);
 	});
 
+	// A body the infrastructure refused outright. Retrying re-uploads it in full
+	// for the same answer — and 413 arrives as an unreadable proxy page, so the
+	// status is the only thing left to decide on.
+	it("never retries a 413, whatever the code says", async () => {
+		const error = new ApiError("PARSE_ERROR", "<html>413", 413);
+		const run = failing(99, error);
+		await expect(withRetries(run, NOW)).rejects.toBe(error);
+		expect(run).toHaveBeenCalledTimes(1);
+	});
+
 	it("never retries an aborted request", async () => {
 		const error = new DOMException("aborted", "AbortError");
 		const run = failing(99, error);

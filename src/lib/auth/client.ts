@@ -301,14 +301,26 @@ async function parse(res: Response): Promise<unknown> {
 			// session, which is how /console rendered an "authenticated" user
 			// built from the site's own HTML.
 			//
-			// `client`, because nothing that speaks our envelope produced this.
+			// `proxy`, not `client`: every one of those is an intermediary that
+			// answered instead of us. This used to say `client`, which put the
+			// blame on the browser — a KYC upload refused by nginx's
+			// `client_max_body_size` reached the user as
+			// `client · PARSE_ERROR`, hiding both the responsible hop and the
+			// status. The status check below cannot help: it never runs, because
+			// the parse fails first.
+			//
+			// Accepted imprecision: a non-JSON body from our own backend would be
+			// misfiled as `proxy` too. Hono's `onError` always answers JSON, so
+			// that case does not occur — and a fourth `ErrorSource` to describe it
+			// would have to be threaded through the backend's `errors.ts` and its
+			// docs to say nothing new.
 			throw new ApiError(
 				"PARSE_ERROR",
 				text.slice(0, 200),
 				res.status,
 				undefined,
 				{
-					source: "client",
+					source: "proxy",
 					requestId,
 					version,
 				},

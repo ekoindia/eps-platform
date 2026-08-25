@@ -270,9 +270,31 @@ A single document type may ask for **less** via `maxBytes` in `KYC_DOC_CONFIG`
 (see [Per-document overrides](#per-document-overrides)); it may never ask for more,
 which `kyc-docs.test.ts` pins.
 
-Both ceilings are only real if the hops in front of the app allow them: nginx
-defaults `client_max_body_size` to 1 MB, and a serverless deploy caps request
-bodies at a few MB regardless of what the handler checks.
+Both ceilings are only real if the hops in front of the app allow them, and in
+production they were not. The `api.eps.eko.in` vhost set no
+`client_max_body_size`, so nginx's **1 MB default** applied while the app
+advertised 10 MB — a 1.5 MB bank statement was refused with a 413, the Vercel
+`/api` hop turned nginx closing the connection into its own 502, and the user
+saw `PARSE_ERROR`. Fixed by scoping `client_max_body_size 20m` to the upload
+location; see the nginx section of
+[`eps-backend-vm-deploy.md`](../../packages/eps-backend/docs/eps-backend-vm-deploy.md).
+
+**20 MB is the real production ceiling per upload, not the 60 MB the constants
+imply** (`KYC_MAX_PAGES` x `KYC_MAX_FILE_BYTES`). That undershoot is deliberate —
+real scans are 1-3 MB, and the backend buffers the whole request in
+`c.req.formData()` before any auth or per-file check runs, so a wide cap is
+memory exposure on an unauthenticated route. The gap only bites on a multi-page
+set of near-maximum files, and it no longer fails silently: the toast reads
+`proxy · PARSE_ERROR · HTTP 502`. If users start hitting it, either raise the
+nginx directive or lower `KYC_MAX_FILE_BYTES` — do not let the two drift
+further apart, because that drift is what caused the outage.
+
+Upstream is not a constraint: connect-api's own vhost allows 100M on
+`/transactions/upload`. Nor is Vercel — its ~4.5 MB body cap applies to
+functions, not to the external-target `routes` entry this path uses, which
+streams the body through (`X-Vercel-Error:
+ROUTER_EXTERNAL_TARGET_CONNECTION_ERROR_CD8` is a connection failure, not a
+rejection).
 
 The upload itself is wrapped in `withRetries` (`src/lib/retry.ts`) — two retries,
 1s then 3s apart — so a flaky upstream does not read as a rejected document.
@@ -748,6 +770,9 @@ but none should be treated as settled before this is enabled in production:
    (`intent_id` is settled: the backend team confirmed `4`.)
 3. Whether a 2-page document may be sent as a single 2-page PDF, which the
    "exactly N files" rule currently forbids.
-4. Whether 10 MB survives every hop in front of the app — nginx's
-   `client_max_body_size` and any serverless body cap — and whether upstream
-   itself accepts a file that large.
+4. Whether a genuinely 10 MB document survives the full authenticated path to
+   connect-api. The hops in front are now settled — nginx is fixed, Vercel
+   streams rather than caps, upstream allows 100M (see
+   [File rules](#file-rules)) — but no real file that large
+   has been through end to end, and it cannot be tested from production without
+   pushing junk KYC upstream under a live account. Needs UAT credentials.

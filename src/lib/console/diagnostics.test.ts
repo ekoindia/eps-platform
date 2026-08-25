@@ -127,6 +127,32 @@ describe("diagnosticsLine", () => {
 		);
 		expect(line).toBe("client · NETWORK_ERROR");
 	});
+
+	// The failure that sent us here: an oversized KYC upload came back as an
+	// unreadable proxy page. The message is withheld and the code says only
+	// "unreadable", so without the status the line named nothing actionable.
+	it("carries the HTTP status for a PARSE_ERROR, which has nothing else", () => {
+		cacheEkoCode(48060001);
+		const line = diagnosticsLine(
+			errorDiagnostics(
+				new ApiError("PARSE_ERROR", "An error occurred", 502, undefined, {
+					source: "proxy",
+				}),
+			),
+		);
+		expect(line).toBe("proxy · PARSE_ERROR · HTTP 502 · EkoCode 48060001");
+	});
+
+	it("leaves the status off every other code, which names its own cause", () => {
+		const line = diagnosticsLine(
+			errorDiagnostics(
+				new ApiError("KYC_UPLOAD_FAILED", "nope", 502, undefined, {
+					source: "api",
+				}),
+			),
+		);
+		expect(line).toBe("api · KYC_UPLOAD_FAILED");
+	});
 });
 
 describe("diagnosticsBlob", () => {

@@ -638,7 +638,11 @@ needs from a screenshot:
 | --- | --- | --- |
 | `api` | The upstream call failed and `message` is its envelope message | Forward to Eko |
 | `proxy` | This service produced it — a guard, a validation, a failure it could not get an upstream answer for | Backend team |
-| `client` | Added by the frontend for failures that never reached the network (`NETWORK_ERROR`, `PARSE_ERROR`) | Frontend / the user's connection |
+| `client` | Added by the frontend for failures that never reached the network (`NETWORK_ERROR`) | Frontend / the user's connection |
+
+The frontend also files `PARSE_ERROR` — a response that is not JSON — as
+`proxy`: an nginx or Vercel error page, or an SPA fallback, is an intermediary
+answering, never the browser. See `docs/error-handling.md`.
 
 Use `AppError.fromUpstream(...)` wherever the message is `envelope.message`; the
 plain constructor defaults to `proxy`, so an error is ours unless it says
