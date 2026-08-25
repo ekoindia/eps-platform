@@ -110,8 +110,12 @@ describe("NextStepsCard", () => {
 		}
 	});
 
-	it("never makes the fee step actionable", () => {
+	it("sends the fee step through to the payment page", () => {
 		renderCard({ state: "active" });
+		// The label itself stays plain text; the action is the button beside it.
 		expect(fee()?.closest("a")).toBeNull();
+		expect(
+			screen.getByRole("link", { name: /one-time integration fee/i }),
+		).toHaveAttribute("href", "/console/pay-activation-fee");
 	});
 });

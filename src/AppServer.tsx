@@ -67,6 +67,7 @@ import ConsoleDocuments from "./pages/console/Documents";
 import ConsoleTransactions from "./pages/console/Transactions";
 import ConsoleConnectTransaction from "./pages/console/ConnectTransaction";
 import ConsoleKycVerification from "./pages/console/KycVerification";
+import ConsolePayActivationFee from "./pages/console/PayActivationFee";
 import Admin from "./pages/Admin";
 
 function TrackingParamCapture() {
@@ -181,6 +182,10 @@ const AppServer = ({
 										<Route
 											path="kyc-verification"
 											element={<ConsoleKycVerification />}
+										/>
+										<Route
+											path="pay-activation-fee"
+											element={<ConsolePayActivationFee />}
 										/>
 									</Route>
 									<Route path="/admin" element={<Admin />} />

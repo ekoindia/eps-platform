@@ -98,7 +98,10 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 		// contract and no other consumer, so the gate silently hid the step from
 		// accounts that DO owe the fee. Shown unconditionally until a join date —
 		// or an eligibility flag — arrives from upstream in a shape worth trusting.
-		{ label: "Pay your one-time integration fee" },
+		{
+			label: "Pay your one-time integration fee",
+			cta: { label: "Pay", to: "/console/pay-activation-fee" },
+		},
 	];
 
 	return (

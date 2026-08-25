@@ -1,0 +1,382 @@
+import { Hono } from "hono";
+import { describe, expect, it, vi } from "vitest";
+import type { Sessions } from "../auth/session";
+import type { EkoClient } from "../clients/eko";
+import type { Config } from "../config";
+import { createInMemoryKV, type KV } from "../store/kv";
+import { mountActivationFee } from "./activationFee";
+import { AppError, errorBody } from "./errors";
+import type { AppEnv } from "./requestId";
+import type { EkoProfile, ProfileResult } from "../types";
+
+const ACTIVATION_CFG: Config["activationFee"] = {
+	webhookUrl: "https://automaton8n.example/webhook/abc",
+	recipients: ["eps@eko.in", "finance@eko.co.in"],
+	timeoutMs: 20_000,
+};
+
+function profile(overrides: Partial<EkoProfile> = {}): EkoProfile {
+	return {
+		name: "Acme Fintech Pvt Ltd",
+		email: "ops@acme.test",
+		mobile: "9990000001",
+		code: 20810,
+		userType: "23",
+		ekoUserId: "1",
+		roleList: [],
+		orgId: 1,
+		onboarding: 0,
+		zohoId: "z1",
+		onboardingSteps: [],
+		accounts: [],
+		evalueAccountId: "acc-1",
+		detailBlocks: { business_detail: { gst_number: "07AAACA1234A1Z5" } },
+		accountStateId: 1,
+		userDetail: { pancardnumber: "AAACA1234A" },
+		...overrides,
+	} as unknown as EkoProfile;
+}
+
+function harness(
+	opts: {
+		role?: string | null;
+		/** `null` means "this deployment has no webhook"; omit for the default. */
+		cfg?: Config["activationFee"] | null;
+		profileResult?: ProfileResult;
+		kv?: KV;
+		fetchImpl?: typeof fetch;
+	} = {},
+) {
+	const role = opts.role === undefined ? "developer" : opts.role;
+	const app = new Hono<AppEnv>();
+	// Mirrors app.ts's onError so status/code assertions match production.
+	app.onError((err, c) => {
+		if (err instanceof AppError) {
+			return c.json(
+				errorBody(err.code, err.message, undefined, err.source),
+				err.status as never,
+			);
+		}
+		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
+	});
+
+	const sessions = {
+		verifyAccess: vi
+			.fn()
+			.mockResolvedValue(role ? { sub: "9990000001", role, orgId: 1 } : null),
+	} as unknown as Sessions;
+
+	const getProfile = vi.fn().mockResolvedValue(
+		opts.profileResult ?? {
+			kind: "found",
+			responseTypeId: 1,
+			profile: profile(),
+		},
+	);
+	const eko = { getProfile } as unknown as EkoClient;
+
+	const sent: { url: string; body: FormData }[] = [];
+	const fetchImpl =
+		opts.fetchImpl ??
+		(vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+			sent.push({ url: String(url), body: init?.body as FormData });
+			return new Response("ok", { status: 200 });
+		}) as unknown as typeof fetch);
+
+	mountActivationFee(app, {
+		sessions,
+		eko,
+		kv: opts.kv ?? createInMemoryKV(),
+		cfg: opts.cfg === null ? undefined : (opts.cfg ?? ACTIVATION_CFG),
+		fetchImpl,
+	});
+	return { app, sent, getProfile };
+}
+
+const VALID = {
+	amount: "6000",
+	date: "2026-08-20",
+	mode: "NEFT",
+	utr: "N123456789",
+	products: ["PAN Verification (Lite)"],
+	otherProducts: "",
+};
+
+/** POSTs the route with the session cookie and a JSON payload part attached. */
+function intimate(
+	app: Hono<AppEnv>,
+	payload: Record<string, unknown> = VALID,
+	extra?: (form: FormData) => void,
+) {
+	const form = new FormData();
+	form.append("payload", JSON.stringify(payload));
+	extra?.(form);
+	return app.request("/activation-fee/intimate", {
+		method: "POST",
+		headers: { Cookie: "eps_at=token" },
+		body: form,
+	});
+}
+
+/** The error code an unhappy response carried. */
+async function codeOf(res: Response): Promise<string> {
+	return ((await res.json()) as { error: { code: string } }).error.code;
+}
+
+/** The `body` part of the mail the webhook received. */
+async function bodyOf(sent: { body: FormData }[]): Promise<string> {
+	return String(sent[0].body.get("body"));
+}
+
+describe("POST /activation-fee/intimate — access", () => {
+	it("401s without a session", async () => {
+		const { app } = harness({ role: null });
+		expect((await intimate(app)).status).toBe(401);
+	});
+
+	it("403s a non-developer session", async () => {
+		const { app } = harness({ role: "signup" });
+		const res = await intimate(app);
+		expect(res.status).toBe(403);
+		expect(await codeOf(res)).toBe("NOT_DEVELOPER_SESSION");
+	});
+
+	it("503s with a named code when no webhook is configured", async () => {
+		const { app, sent } = harness({ cfg: null });
+		const res = await intimate(app);
+		expect(res.status).toBe(503);
+		expect(await codeOf(res)).toBe("ACTIVATION_FEE_DISABLED");
+		expect(sent).toHaveLength(0);
+	});
+});
+
+describe("POST /activation-fee/intimate — validation", () => {
+	it.each([
+		["a missing amount", { ...VALID, amount: "" }],
+		["a zero amount", { ...VALID, amount: "0" }],
+		["a negative amount", { ...VALID, amount: "-100" }],
+		["a non-numeric amount", { ...VALID, amount: "1,200" }],
+		["an implausibly large amount", { ...VALID, amount: "999999999" }],
+		["more than two decimal places", { ...VALID, amount: "100.005" }],
+		["a non-ISO date", { ...VALID, date: "20-08-2026" }],
+		["an impossible calendar date", { ...VALID, date: "2026-02-31" }],
+		["a future date", { ...VALID, date: "2099-01-01" }],
+		["an unknown payment mode", { ...VALID, mode: "CHEQUE" }],
+		["a blank UTR", { ...VALID, utr: "   " }],
+		["no products at all", { ...VALID, products: [], otherProducts: "" }],
+	])("400s on %s", async (_label, payload) => {
+		const { app, sent } = harness();
+		const res = await intimate(app, payload);
+		expect(res.status).toBe(400);
+		expect(await codeOf(res)).toBe("INVALID_INPUT");
+		expect(sent).toHaveLength(0);
+	});
+
+	it("accepts a free-text product when nothing is ticked", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, {
+			...VALID,
+			products: [],
+			otherProducts: "Something bespoke",
+		});
+		expect(res.status).toBe(200);
+		expect(await bodyOf(sent)).toContain("Something bespoke");
+	});
+
+	it("400s on a duplicated payload part", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, VALID, (form) => {
+			form.append("payload", JSON.stringify({ ...VALID, amount: "1" }));
+		});
+		expect(res.status).toBe(400);
+		expect(sent).toHaveLength(0);
+	});
+
+	it("caps an oversized product array and each label", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, {
+			...VALID,
+			products: Array.from({ length: 200 }, () => "X".repeat(500)),
+		});
+		expect(res.status).toBe(200);
+		const body = await bodyOf(sent);
+		expect(body).not.toContain("X".repeat(121));
+	});
+});
+
+describe("POST /activation-fee/intimate — attachment", () => {
+	const slip = (name: string, type: string, bytes = 10) =>
+		new File([new Uint8Array(bytes)], name, { type });
+
+	it("forwards an allowed slip", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, VALID, (form) => {
+			form.append(
+				"attachment",
+				slip("slip.pdf", "application/pdf"),
+				"slip.pdf",
+			);
+		});
+		expect(res.status).toBe(200);
+		expect(sent[0].body.get("attachment")).toBeInstanceOf(File);
+	});
+
+	it("400s when the MIME type and the extension disagree", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, VALID, (form) => {
+			form.append("attachment", slip("evil.png", "image/svg+xml"), "evil.png");
+		});
+		expect(res.status).toBe(400);
+		expect(sent).toHaveLength(0);
+	});
+
+	it("400s on an oversized slip", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, VALID, (form) => {
+			form.append(
+				"attachment",
+				slip("big.pdf", "application/pdf", 6 * 1024 * 1024),
+				"big.pdf",
+			);
+		});
+		expect(res.status).toBe(400);
+		expect(sent).toHaveLength(0);
+	});
+
+	it("400s on more than one attachment", async () => {
+		const { app, sent } = harness();
+		const res = await intimate(app, VALID, (form) => {
+			form.append("attachment", slip("a.pdf", "application/pdf"), "a.pdf");
+			form.append("attachment", slip("b.pdf", "application/pdf"), "b.pdf");
+		});
+		expect(res.status).toBe(400);
+		expect(sent).toHaveLength(0);
+	});
+});
+
+describe("POST /activation-fee/intimate — profile", () => {
+	it("502s (retryable) when the profile lookup itself fails", async () => {
+		const { app, sent } = harness({
+			profileResult: { kind: "error", responseTypeId: 9 } as ProfileResult,
+		});
+		const res = await intimate(app);
+		expect(res.status).toBe(502);
+		expect(await codeOf(res)).toBe("PROFILE_UNAVAILABLE");
+		expect(sent).toHaveLength(0);
+	});
+
+	it.each(["onboarding", "inactive", "not_found", "not_allowed"] as const)(
+		"403s a %s profile",
+		async (kind) => {
+			const { app } = harness({
+				profileResult: { kind, responseTypeId: 9 } as ProfileResult,
+			});
+			const res = await intimate(app);
+			expect(res.status).toBe(403);
+			expect(await codeOf(res)).toBe("NO_PROFILE");
+		},
+	);
+});
+
+describe("POST /activation-fee/intimate — the mail", () => {
+	it("addresses the configured recipients with the agreed subject", async () => {
+		const { app, sent } = harness();
+		await intimate(app);
+		expect(sent[0].url).toBe(ACTIVATION_CFG?.webhookUrl);
+		expect(sent[0].body.get("to")).toBe("eps@eko.in, finance@eko.co.in");
+		expect(sent[0].body.get("subject")).toBe(
+			"EPS One-Time Payment (Activation Fee) Received",
+		);
+	});
+
+	it("takes identity from the profile, never from the request", async () => {
+		const { app, sent } = harness();
+		await intimate(app, {
+			...VALID,
+			// All spoofed. None of these may appear in the mail.
+			name: "Attacker Ltd",
+			code: "99999",
+			pan: "ZZZZZ9999Z",
+			gst: "99ZZZZZ9999Z1Z9",
+			email: "attacker@evil.test",
+		});
+		const body = await bodyOf(sent);
+		expect(body).toContain("Acme Fintech Pvt Ltd");
+		expect(body).toContain("20810");
+		expect(body).toContain("AAACA1234A");
+		expect(body).toContain("07AAACA1234A1Z5");
+		expect(body).toContain("ops@acme.test");
+		expect(body).not.toContain("Attacker Ltd");
+		expect(body).not.toContain("ZZZZZ9999Z");
+		expect(body).not.toContain("attacker@evil.test");
+	});
+
+	it("escapes partner-supplied text so it cannot inject markup", async () => {
+		const { app, sent } = harness();
+		await intimate(app, {
+			...VALID,
+			otherProducts: "<img src=x onerror=alert(1)>",
+		});
+		const body = await bodyOf(sent);
+		expect(body).not.toContain("<img");
+		expect(body).toContain("&lt;img");
+	});
+
+	it("prints an em dash for a profile with no PAN or GST", async () => {
+		const { app, sent } = harness({
+			profileResult: {
+				kind: "found",
+				responseTypeId: 1,
+				profile: profile({ detailBlocks: {}, userDetail: {} }),
+			} as ProfileResult,
+		});
+		await intimate(app);
+		expect(await bodyOf(sent)).toContain("—");
+	});
+
+	it("carries the transfer facts the partner stated", async () => {
+		const { app, sent } = harness();
+		await intimate(app);
+		const body = await bodyOf(sent);
+		expect(body).toContain("2026-08-20");
+		expect(body).toContain("NEFT");
+		expect(body).toContain("N123456789");
+		expect(body).toContain("PAN Verification (Lite)");
+		expect(body).toContain("EPS Partner");
+	});
+});
+
+describe("POST /activation-fee/intimate — webhook failures", () => {
+	it("502s when the webhook rejects", async () => {
+		const fetchImpl = vi.fn(
+			async () => new Response("nope", { status: 500 }),
+		) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl });
+		const res = await intimate(app);
+		expect(res.status).toBe(502);
+		expect(await codeOf(res)).toBe("ACTIVATION_FEE_SEND_FAILED");
+	});
+
+	it("502s rather than throwing when the webhook is unreachable", async () => {
+		const fetchImpl = vi.fn(async () => {
+			throw new Error("ECONNREFUSED");
+		}) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl });
+		const res = await intimate(app);
+		expect(res.status).toBe(502);
+		expect(await codeOf(res)).toBe("ACTIVATION_FEE_SEND_FAILED");
+	});
+});
+
+describe("POST /activation-fee/intimate — rate limit", () => {
+	it("429s once the per-partner window is spent", async () => {
+		const kv = createInMemoryKV();
+		const { app } = harness({ kv });
+		for (let i = 0; i < 10; i++) {
+			expect((await intimate(app)).status).toBe(200);
+		}
+		const res = await intimate(app);
+		expect(res.status).toBe(429);
+		expect(await codeOf(res)).toBe("RATE_LIMITED");
+	});
+});

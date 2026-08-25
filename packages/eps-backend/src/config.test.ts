@@ -297,3 +297,76 @@ describe("connect-api auth provider config", () => {
 		});
 	});
 });
+
+describe("loadConfig — activation fee", () => {
+	const url = "https://automaton8n.eko.in/webhook/abc";
+
+	it("leaves the block absent when the webhook URL is unset", () => {
+		expect(loadConfig(base).activationFee).toBeUndefined();
+	});
+
+	it("defaults the recipients and the timeout", () => {
+		const cfg = loadConfig({ ...base, ACTIVATION_FEE_WEBHOOK_URL: url });
+		expect(cfg.activationFee?.webhookUrl).toBe(url);
+		expect(cfg.activationFee?.recipients).toEqual([
+			"eps@eko.in",
+			"finance@eko.co.in",
+			"amar@eko.co.in",
+		]);
+		expect(cfg.activationFee?.timeoutMs).toBe(20_000);
+	});
+
+	it("throws on a malformed webhook URL", () => {
+		expect(() =>
+			loadConfig({ ...base, ACTIVATION_FEE_WEBHOOK_URL: "not-a-url" }),
+		).toThrowError(/ACTIVATION_FEE_WEBHOOK_URL is not a valid URL/);
+	});
+
+	it("refuses plaintext to a non-loopback host", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: "http://automaton8n.eko.in/webhook/abc",
+			}),
+		).toThrowError(/must be https/);
+	});
+
+	it("allows http for a loopback webhook", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: "http://127.0.0.1:5678/webhook/abc",
+			}).activationFee?.webhookUrl,
+		).toBe("http://127.0.0.1:5678/webhook/abc");
+	});
+
+	it("splits and trims a configured recipient list", () => {
+		expect(
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: url,
+				ACTIVATION_FEE_RECIPIENTS: " a@eko.in , b@eko.in ",
+			}).activationFee?.recipients,
+		).toEqual(["a@eko.in", "b@eko.in"]);
+	});
+
+	it("throws on an explicitly emptied recipient list", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: url,
+				ACTIVATION_FEE_RECIPIENTS: " , ",
+			}),
+		).toThrowError(/lists no addresses/);
+	});
+
+	it("throws on a malformed recipient address", () => {
+		expect(() =>
+			loadConfig({
+				...base,
+				ACTIVATION_FEE_WEBHOOK_URL: url,
+				ACTIVATION_FEE_RECIPIENTS: "a@eko.in,not-an-address",
+			}),
+		).toThrowError(/invalid addresses: not-an-address/);
+	});
+});
