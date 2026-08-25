@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/components/FileUpload", () => ({
 	FileUpload: ({
 		label,
+		required,
 		accept,
 		maxBytes,
 		cameraOnly,
@@ -27,6 +28,7 @@ vi.mock("@/components/FileUpload", () => ({
 		onFileChange,
 	}: {
 		label?: string;
+		required?: boolean;
 		accept?: string;
 		maxBytes?: number;
 		cameraOnly?: boolean;
@@ -39,6 +41,7 @@ vi.mock("@/components/FileUpload", () => ({
 		<button
 			type="button"
 			data-testid="file-upload"
+			data-required={String(Boolean(required))}
 			data-accept={accept}
 			data-max-bytes={String(maxBytes)}
 			data-camera-only={String(Boolean(cameraOnly))}
@@ -141,7 +144,19 @@ describe("KycUploadDialog", () => {
 		expect(
 			screen.getByText("Aadhaar card(s) (both front and back)"),
 		).toBeVisible();
-		expect(screen.getByText("Page 2")).toBeVisible();
+		expect(screen.getByText("Page 2 (optional)")).toBeVisible();
+	});
+
+	it("requires the first page and no other", () => {
+		render(<KycUploadDialog doc={doc({ pages: 3 })} onClose={vi.fn()} />);
+
+		expect(
+			screen
+				.getAllByTestId("file-upload")
+				.map((slot) => slot.getAttribute("data-required")),
+		).toEqual(["true", "false", "false"]);
+		expect(screen.getByText("Page 2 (optional)")).toBeVisible();
+		expect(screen.getByText("Page 3 (optional)")).toBeVisible();
 	});
 
 	it("takes the live photograph from the camera or not at all", () => {
@@ -295,6 +310,57 @@ describe("KycUploadDialog", () => {
 				message: "Received",
 			}),
 		);
+	});
+
+	it("uploads a short pack as a document of that many pages", async () => {
+		const onClose = vi.fn();
+		render(<KycUploadDialog doc={doc({ pages: 2 })} onClose={onClose} />);
+
+		// Page 1 only. The second slot is optional, so Upload is already live.
+		fireEvent.click(screen.getAllByTestId("file-upload")[0]);
+		const button = screen.getByRole("button", { name: "Upload" });
+		expect(button).toBeEnabled();
+		fireEvent.click(button);
+
+		await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+		const form = upload.mock.calls[0][0];
+		// One page, not two: the backend requires exactly `pages` parts, so a
+		// short pack has to describe itself as short.
+		expect(form.get("pages")).toBe("1");
+		expect(form.get("file1")).toBeInstanceOf(File);
+		expect(form.get("file2")).toBeNull();
+	});
+
+	it("renumbers around a skipped middle page", async () => {
+		render(<KycUploadDialog doc={doc({ pages: 3 })} onClose={vi.fn()} />);
+
+		const slots = screen.getAllByTestId("file-upload");
+		fireEvent.click(slots[0]);
+		fireEvent.click(slots[2]);
+		fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+
+		await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(1));
+		const form = upload.mock.calls[0][0];
+		// The gap closes: page 3 travels as `file2`. Upstream reviews the images,
+		// not the slot they were attached to, and a sparse `file1`/`file3` would
+		// be rejected outright by the backend's contiguous-parts rule.
+		expect(form.get("pages")).toBe("2");
+		expect(form.get("file1")).toBeInstanceOf(File);
+		expect(form.get("file2")).toBeInstanceOf(File);
+		expect(form.get("file3")).toBeNull();
+	});
+
+	it("keeps Upload shut until the first page is attached", () => {
+		render(<KycUploadDialog doc={doc({ pages: 2 })} onClose={vi.fn()} />);
+
+		expect(screen.getByRole("button", { name: "Upload" })).toBeDisabled();
+
+		// The optional second page alone is not enough.
+		fireEvent.click(screen.getAllByTestId("file-upload")[1]);
+		expect(screen.getByRole("button", { name: "Upload" })).toBeDisabled();
+
+		fireEvent.click(screen.getAllByTestId("file-upload")[0]);
+		expect(screen.getByRole("button", { name: "Upload" })).toBeEnabled();
 	});
 
 	describe("blur check", () => {

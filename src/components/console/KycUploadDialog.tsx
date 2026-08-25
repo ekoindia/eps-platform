@@ -60,8 +60,12 @@ export interface KycUploadDialogProps {
  * `DialogContent`'s job — see `ignoreNestedDialogInteraction`, without which
  * closing any of them takes this dialog, and every attached page, with it.
  *
- * All pages are required before Submit enables — upstream reviews a document as
- * a set, and a half-uploaded one can only come back as a rejection.
+ * Only the first page is required. Upstream's page count is a ceiling, not a
+ * contract — plenty of documents it lists as two pages are genuinely one sheet,
+ * and a slot that cannot be filled would otherwise block the upload outright.
+ * Whatever is attached is sent as a contiguous `file1..fileN` with `pages` set
+ * to that count, so a short pack is indistinguishable upstream from a document
+ * that only ever had that many pages.
  * @param props - See {@link KycUploadDialogProps}.
  */
 export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
@@ -75,7 +79,9 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 		setBusy(false);
 	}, [doc]);
 
-	const complete = files.length > 0 && files.every(Boolean);
+	// The first slot only: see the note on the component. Later slots are
+	// optional, so nothing about them can hold Upload back.
+	const ready = files.length > 0 && files[0] instanceof File;
 	// What this console knows about this document type over and above upstream.
 	const config = configOf(doc?.docType ?? "");
 	const maxBytes = config.maxBytes ?? KYC_MAX_FILE_BYTES;
@@ -86,15 +92,20 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 	}
 
 	async function submit() {
-		if (!doc || !complete || busy) return;
+		if (!doc || !ready || busy) return;
 		setBusy(true);
 		try {
+			// Empty slots are dropped and the rest renumbered, so the parts are
+			// always a contiguous `file1..fileN`: the backend requires exactly
+			// `pages` of them, and forwards that count upstream verbatim. A skipped
+			// middle slot therefore arrives one page earlier than it was attached —
+			// acceptable, because upstream reviews the images themselves, and the
+			// alternative is refusing an upload it would have accepted.
+			const attached = files.filter((file) => file instanceof File);
 			const form = new FormData();
 			form.append("doc_type", doc.docType);
-			form.append("pages", String(doc.pages));
-			files.forEach((file, index) => {
-				// Non-null by `complete`; the loop is what names the parts.
-				if (!file) return;
+			form.append("pages", String(attached.length));
+			attached.forEach((file, index) => {
 				const sharpness = getBlurScore(file);
 				// Two channels for the same number, because only one of them
 				// currently arrives: upstream keeps the file name but drops fields it
@@ -145,7 +156,7 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 					<DialogDescription>
 						{doc?.info ||
 							(doc && doc.pages > 1
-								? `Attach all ${doc.pages} pages.`
+								? `Attach up to ${doc.pages} pages; only the first is required.`
 								: "Attach a JPG, PNG or PDF.")}
 					</DialogDescription>
 				</DialogHeader>
@@ -203,13 +214,18 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 						const label =
 							config.pageLabels?.[index] ??
 							(files.length > 1 ? `Page ${index + 1}` : "File");
+						// Every slot past the first. Spelled out on the label rather than
+						// left to a missing asterisk: an absent mark is a weak signal, and
+						// a partner who reads it as "required" abandons an upload they
+						// could have finished.
+						const optional = index > 0;
 						return (
 							<FileUpload
 								// Slots are positional and fixed for the life of the dialog, so
 								// the index is a stable identity here.
 								key={index}
-								label={label}
-								required
+								label={optional ? `${label} (optional)` : label}
+								required={!optional}
 								accept={config.accept ?? KYC_ACCEPT}
 								maxBytes={maxBytes}
 								cameraOnly={config.cameraOnly}
@@ -252,7 +268,7 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 					<Button variant="ghost" disabled={busy} onClick={() => onClose(null)}>
 						Cancel
 					</Button>
-					<Button disabled={!complete || busy} onClick={() => void submit()}>
+					<Button disabled={!ready || busy} onClick={() => void submit()}>
 						{busy ? (
 							<>
 								<RefreshCw className="animate-spin" />

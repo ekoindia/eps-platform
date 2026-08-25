@@ -135,9 +135,23 @@ reversed — it is one line in `parseDocumentList`.
 
 ## Multi-page documents
 
-A document with `pages: "N"` needs exactly N files. Submit stays disabled until
-all N slots are filled, and the backend rejects a short pack rather than
-half-uploading a document upstream cannot review.
+A document with `pages: "N"` opens N slots, but **only the first is required** —
+N is a ceiling, not a contract. Upstream lists plenty of two-page documents that
+are genuinely one sheet (Address Proof is one electricity bill), and a slot that
+cannot be filled would otherwise block the upload outright. Slots past the first
+are labelled `Page N (optional)`; Submit enables as soon as slot 1 holds a file.
+
+What ships is what was attached. `KycUploadDialog` drops the empty slots,
+renumbers the rest to a contiguous `file1..fileN`, and sends `pages` as **that
+count** rather than the document's ceiling — so a two-page document uploaded
+with one file is indistinguishable upstream from a document that only ever had
+one page. A skipped *middle* slot closes its gap: page 3 travels as `file2`.
+Upstream reviews the images, not the slot they came from.
+
+That is why the backend's rule stays "exactly `pages` files" rather than "at
+most" (`packages/eps-backend/src/http/connect.ts`): it validates against the
+count the browser sent, which is already the honest one, and a genuinely short
+pack — `file1` and `file3` with no `file2` — is still a bug worth rejecting.
 
 `pages` arrives as a string and is parsed tolerantly: anything that is not a
 positive integer — `""`, `"0"`, `"N/A"`, an absent field — falls back to 1,
