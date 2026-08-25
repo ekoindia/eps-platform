@@ -108,6 +108,35 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 });
 
 describe("ConsoleLayout — self-service flow rail items", () => {
+	it("shows AePS Agents after Credentials, only when 36 is entitled", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 36 }] });
+
+		renderRail();
+
+		expect(
+			await screen.findByRole("link", { name: "AePS Agents" }),
+		).toHaveAttribute("href", "/console/transaction/36");
+		const labels = screen
+			.getAllByRole("link")
+			.map((a) => a.textContent?.trim());
+		expect(labels.indexOf("AePS Agents")).toBe(
+			labels.indexOf("Credentials") + 1,
+		);
+	});
+
+	it("hides AePS Agents when 36 is not entitled", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+
+		renderRail();
+
+		expect(
+			await screen.findByRole("link", { name: "Credentials" }),
+		).toBeVisible();
+		await waitFor(() =>
+			expect(screen.queryByRole("link", { name: "AePS Agents" })).toBeNull(),
+		);
+	});
+
 	it("puts Sign Agreement behind Load Wallet and Manage My Account last", async () => {
 		connectInteractions.mockResolvedValue({
 			interactions: [{ id: 491 }, { id: 898 }, { id: 536 }],

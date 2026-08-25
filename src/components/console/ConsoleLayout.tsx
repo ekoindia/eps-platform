@@ -38,6 +38,7 @@ import {
 	ReceiptText,
 	ShieldCheck,
 	UserCog,
+	Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -147,6 +148,12 @@ const MANAGE_ACCOUNT: Flow = {
 	label: "Manage My Account",
 	icon: UserCog,
 };
+/** The AePS agent network a distributor manages. Follows Credentials. */
+const AEPS_AGENTS: Flow = {
+	id: 36,
+	label: "AePS Agents",
+	icon: Users,
+};
 
 /**
  * ekostore's KYC & verification sandbox. Entitled the same way as any flow — by
@@ -210,6 +217,7 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 						]),
 				...flowItem(interactions, SIGN_AGREEMENT),
 				CREDENTIALS_ITEM,
+				...flowItem(interactions, AEPS_AGENTS),
 				...flowItem(interactions, MANAGE_ACCOUNT),
 			],
 		},
