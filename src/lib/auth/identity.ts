@@ -154,3 +154,38 @@ export function chatIdentity(state: AuthState): ChatIdentity | null {
 	if (contactNumber) identity.contactNumber = contactNumber;
 	return Object.keys(identity).length > 0 ? identity : null;
 }
+
+/**
+ * The GST number the profile carries, if any.
+ *
+ * GST has no agreed field name on the upstream profile — it turns up under
+ * different keys per user type, and many profiles have none at all — so this
+ * scans the detail blocks and the flat user detail for a key that names GST
+ * rather than pinning a name that may not exist.
+ *
+ * Mirrors `findGstNumber` in eps-backend's `activationFee.ts`, which is the
+ * authority: this copy exists only so a form can decide whether to *ask* for a
+ * GST number. If the two ever disagree the worst case is a field shown that did
+ * not need to be — the backend still prefers the profile's own value over
+ * anything typed.
+ * @param profile - The signed-in developer's profile, or null.
+ * @returns The GST number, or "" when the profile carries none.
+ */
+export function profileGstNumber(profile: Profile | null | undefined): string {
+	if (!profile) return "";
+	const sources: Record<string, unknown>[] = [profile.userDetail ?? {}];
+	for (const block of Object.values(profile.detailBlocks ?? {})) {
+		if (block && typeof block === "object" && !Array.isArray(block)) {
+			sources.push(block as Record<string, unknown>);
+		}
+	}
+	for (const source of sources) {
+		for (const [key, value] of Object.entries(source)) {
+			if (!/gst/i.test(key)) continue;
+			if (typeof value !== "string" && typeof value !== "number") continue;
+			const text = String(value).trim();
+			if (text) return text;
+		}
+	}
+	return "";
+}

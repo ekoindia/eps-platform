@@ -19,14 +19,14 @@ import type { Sessions } from "../auth/session";
 import { ACCESS_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import { withTimeout } from "../clients/http";
-import type { KV } from "../store/kv";
 import type { Config } from "../config";
+import type { KV } from "../store/kv";
 import type { EkoProfile } from "../types";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
-import { recordUpstream } from "./trace";
 import type { AppEnv } from "./requestId";
 import { escapeHtml } from "./support-ticket";
+import { recordUpstream } from "./trace";
 
 /**
  * Intimations one partner may file per {@link RL_WINDOW_SEC} window. Generous
@@ -35,14 +35,29 @@ import { escapeHtml } from "./support-ticket";
  */
 const INTIMATE_LIMIT = 10;
 
-/** The payment rails a partner can transfer over. */
-const MODES = new Set(["NEFT", "IMPS", "RTGS"]);
+/**
+ * The payment rails a partner can transfer over, keyed by their uppercased form
+ * so the browser's exact casing does not matter, and valued by the label
+ * finance reads in the mail.
+ *
+ * A map rather than a set because "Intra-Bank Transfer" is not its own
+ * uppercase: normalising the input and echoing it back would put
+ * "INTRA-BANK TRANSFER" in the table.
+ */
+const MODES = new Map([
+	["IMPS", "IMPS"],
+	["NEFT", "NEFT"],
+	["RTGS", "RTGS"],
+	["INTRA-BANK TRANSFER", "Intra-Bank Transfer"],
+]);
 
 /** Caps on the untrusted parts of the intimation. */
 const MAX_UTR = 64;
 const MAX_PRODUCTS = 60;
 const MAX_PRODUCT_LABEL = 120;
 const MAX_OTHER_PRODUCTS = 500;
+const MAX_DEPOSITOR = 120;
+const MAX_GST = 32;
 /** Above this an "activation fee" is a typo or a probe, not a fee. */
 const MAX_AMOUNT = 1_00_00_000;
 
@@ -83,10 +98,22 @@ interface PaymentClaim {
 	date: string;
 	mode: string;
 	utr: string;
+	/**
+	 * Whose bank account the money came from, as printed on it. The partner's own
+	 * name is only a default — a firm often transfers from a director's or a
+	 * parent company's account, and finance reconciles against what the statement
+	 * actually says.
+	 */
+	depositorName: string;
 	/** Display labels of the APIs the fee covers. */
 	products: string[];
 	/** Free-text for anything not in the catalogue. */
 	otherProducts: string;
+	/**
+	 * GST number the partner typed, used ONLY when their profile carries none.
+	 * A profile that has one always wins: this is a gap-filler, not an override.
+	 */
+	gst: string;
 }
 
 /**
@@ -161,13 +188,26 @@ export function parsePaymentClaim(
 		);
 	}
 
-	const mode =
-		typeof payload.mode === "string" ? payload.mode.trim().toUpperCase() : "";
-	if (!MODES.has(mode)) {
+	const mode = MODES.get(
+		typeof payload.mode === "string" ? payload.mode.trim().toUpperCase() : "",
+	);
+	if (!mode) {
 		throw new AppError(
 			400,
 			"INVALID_INPUT",
-			"Choose how you transferred the money (NEFT, IMPS or RTGS).",
+			`Choose how you transferred the money (${[...MODES.values()].join(", ")}).`,
+		);
+	}
+
+	const depositorName =
+		typeof payload.depositorName === "string"
+			? payload.depositorName.trim().slice(0, MAX_DEPOSITOR)
+			: "";
+	if (!depositorName) {
+		throw new AppError(
+			400,
+			"INVALID_INPUT",
+			"Enter the name on the bank account the money came from.",
 		);
 	}
 
@@ -203,7 +243,21 @@ export function parsePaymentClaim(
 		);
 	}
 
-	return { amount, date, mode, utr, products, otherProducts };
+	const gst =
+		typeof payload.gst === "string"
+			? payload.gst.trim().slice(0, MAX_GST)
+			: "";
+
+	return {
+		amount,
+		date,
+		mode,
+		utr,
+		depositorName,
+		products,
+		otherProducts,
+		gst,
+	};
 }
 
 /**
@@ -272,12 +326,36 @@ export function buildEmailBody(
 		row("Transaction Date", claim.date),
 		row("Mode of Payment", claim.mode),
 		row("UTR / Reference Number", claim.utr),
+		row("Name of Depositor (as per bank account)", claim.depositorName),
 		row("PAN", pan),
-		row("GST", findGstNumber(profile)),
+		// The profile always wins. The browser's value only fills a gap, so a
+		// partner cannot restate a GST number upstream already holds.
+		row("GST", findGstNumber(profile) || claim.gst),
 		row("Product List", productList),
 		row("Category", "EPS Partner"),
 		"</table>",
 	].join("\n");
+}
+
+/**
+ * Subject line for one intimation.
+ *
+ * Carries the EkoCode and the partner name so finance can triage from the inbox
+ * list without opening anything, and so a thread is searchable by code — which
+ * is the id they reconcile against.
+ * @param profile - The caller's verified upstream profile.
+ * @returns The subject, with blank identity parts simply omitted.
+ */
+export function buildEmailSubject(profile: EkoProfile): string {
+	const code =
+		profile.code === null || profile.code === undefined
+			? ""
+			: String(profile.code).trim();
+	const parts = ["EPS One-Time Activation Fee Received"];
+	if (code) parts.push(`#${code}`);
+	const name = profile.name?.trim();
+	if (name) parts.push(name);
+	return parts.join(" | ");
 }
 
 /**
@@ -404,7 +482,7 @@ export function mountActivationFee(
 		// no extra part it invented can reach the webhook.
 		const out = new FormData();
 		out.append("to", cfg.recipients.join(", "));
-		out.append("subject", "EPS One-Time Payment (Activation Fee) Received");
+		out.append("subject", buildEmailSubject(profile.profile));
 		out.append("body", buildEmailBody(profile.profile, claim));
 		if (attachment) out.append("attachment", attachment, attachment.name);
 

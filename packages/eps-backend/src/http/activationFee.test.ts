@@ -4,7 +4,7 @@ import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { Config } from "../config";
 import { createInMemoryKV, type KV } from "../store/kv";
-import { mountActivationFee } from "./activationFee";
+import { buildEmailSubject, mountActivationFee } from "./activationFee";
 import { AppError, errorBody } from "./errors";
 import type { AppEnv } from "./requestId";
 import { trace, traceForResponse } from "./trace";
@@ -104,8 +104,10 @@ const VALID = {
 	date: "2026-08-20",
 	mode: "NEFT",
 	utr: "N123456789",
+	depositorName: "Acme Fintech Pvt Ltd",
 	products: ["PAN Verification (Lite)"],
 	otherProducts: "",
+	gst: "",
 };
 
 /** POSTs the route with the session cookie and a JSON payload part attached. */
@@ -169,6 +171,8 @@ describe("POST /activation-fee/intimate — validation", () => {
 		["a future date", { ...VALID, date: "2099-01-01" }],
 		["an unknown payment mode", { ...VALID, mode: "CHEQUE" }],
 		["a blank UTR", { ...VALID, utr: "   " }],
+		["a blank depositor name", { ...VALID, depositorName: "   " }],
+		["a missing depositor name", { ...VALID, depositorName: undefined }],
 		["no products at all", { ...VALID, products: [], otherProducts: "" }],
 	])("400s on %s", async (_label, payload) => {
 		const { app, sent } = harness();
@@ -291,7 +295,7 @@ describe("POST /activation-fee/intimate — the mail", () => {
 		expect(sent[0].url).toBe(ACTIVATION_CFG?.webhookUrl);
 		expect(sent[0].body.get("to")).toBe("eps@eko.in, finance@eko.co.in");
 		expect(sent[0].body.get("subject")).toBe(
-			"EPS One-Time Payment (Activation Fee) Received",
+			"EPS One-Time Activation Fee Received | #20810 | Acme Fintech Pvt Ltd",
 		);
 	});
 
@@ -449,5 +453,100 @@ describe("POST /activation-fee/intimate — diagnosing a failed send", () => {
 		const call = body.trace.find((c) => c.path === "activation-fee webhook");
 		expect(call?.status).toBeNull();
 		expect(call?.error).toBeTruthy();
+	});
+});
+
+describe("POST /activation-fee/intimate — payment mode", () => {
+	it.each([
+		["IMPS", "IMPS"],
+		["NEFT", "NEFT"],
+		["RTGS", "RTGS"],
+		["Intra-Bank Transfer", "Intra-Bank Transfer"],
+	])("accepts %s", async (sent_, label) => {
+		const { app, sent } = harness();
+		const res = await intimate(app, { ...VALID, mode: sent_ });
+		expect(res.status).toBe(200);
+		expect(await bodyOf(sent)).toContain(label);
+	});
+
+	it("normalises casing without mangling the label finance reads", async () => {
+		const { app, sent } = harness();
+		await intimate(app, { ...VALID, mode: "intra-bank transfer" });
+		const body = await bodyOf(sent);
+		expect(body).toContain("Intra-Bank Transfer");
+		expect(body).not.toContain("INTRA-BANK TRANSFER");
+	});
+
+	it("still refuses a rail that is not on the list", async () => {
+		const { app } = harness();
+		const res = await intimate(app, { ...VALID, mode: "CHEQUE" });
+		expect(res.status).toBe(400);
+	});
+});
+
+describe("POST /activation-fee/intimate — depositor and GST", () => {
+	it("carries the depositor name into the mail", async () => {
+		const { app, sent } = harness();
+		await intimate(app, { ...VALID, depositorName: "Ramesh Kumar" });
+		const body = await bodyOf(sent);
+		expect(body).toContain("Name of Depositor (as per bank account)");
+		expect(body).toContain("Ramesh Kumar");
+	});
+
+	it("accepts a depositor who is not the partner", async () => {
+		// A firm often transfers from a director's account; finance reconciles
+		// against the statement, not against the partner name.
+		const { app, sent } = harness();
+		await intimate(app, { ...VALID, depositorName: "A Director" });
+		expect(await bodyOf(sent)).toContain("A Director");
+	});
+
+	it("uses the profile's GST and ignores whatever the browser sent", async () => {
+		const { app, sent } = harness();
+		await intimate(app, { ...VALID, gst: "99ZZZZZ9999Z1Z9" });
+		const body = await bodyOf(sent);
+		expect(body).toContain("07AAACA1234A1Z5");
+		expect(body).not.toContain("99ZZZZZ9999Z1Z9");
+	});
+
+	it("falls back to the typed GST only when the profile has none", async () => {
+		const { app, sent } = harness({
+			profileResult: {
+				kind: "found",
+				responseTypeId: 1,
+				profile: profile({ detailBlocks: {}, userDetail: {} }),
+			} as ProfileResult,
+		});
+		await intimate(app, { ...VALID, gst: "27AAACA1234A1Z5" });
+		expect(await bodyOf(sent)).toContain("27AAACA1234A1Z5");
+	});
+
+	it("prints an em dash when neither the profile nor the partner has one", async () => {
+		const { app, sent } = harness({
+			profileResult: {
+				kind: "found",
+				responseTypeId: 1,
+				profile: profile({ detailBlocks: {}, userDetail: {} }),
+			} as ProfileResult,
+		});
+		await intimate(app, { ...VALID, gst: "" });
+		expect(await bodyOf(sent)).toContain("—");
+	});
+});
+
+describe("buildEmailSubject", () => {
+	it("names the code and the partner so finance can triage from the list", () => {
+		expect(buildEmailSubject(profile())).toBe(
+			"EPS One-Time Activation Fee Received | #20810 | Acme Fintech Pvt Ltd",
+		);
+	});
+
+	it("drops an identity part it does not have rather than printing a gap", () => {
+		expect(buildEmailSubject(profile({ name: "" }))).toBe(
+			"EPS One-Time Activation Fee Received | #20810",
+		);
+		expect(
+			buildEmailSubject(profile({ code: "" } as unknown as Partial<EkoProfile>)),
+		).toBe("EPS One-Time Activation Fee Received | Acme Fintech Pvt Ltd");
 	});
 });
