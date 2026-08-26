@@ -24,6 +24,7 @@ import type { Config } from "../config";
 import type { EkoProfile } from "../types";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
+import { recordUpstream } from "./trace";
 import type { AppEnv } from "./requestId";
 import { escapeHtml } from "./support-ticket";
 
@@ -411,21 +412,50 @@ export function mountActivationFee(
 		// boundary from the FormData body, and naming it here would leave the
 		// request unparseable.
 		const doFetch = withTimeout(deps.fetchImpl ?? fetch, cfg.timeoutMs);
-		let res: Response;
+		const startedAt = Date.now();
+		let res: Response | null = null;
+		let transportError: string | null = null;
+		let bodyText = "";
 		try {
 			res = await doFetch(cfg.webhookUrl, { method: "POST", body: out });
-		} catch {
-			throw new AppError(
-				502,
-				"ACTIVATION_FEE_SEND_FAILED",
-				"Couldn't send your payment details. Please try again, or email eps@eko.in.",
-			);
+			// Read once, before any branch: an unread body keeps the socket open,
+			// and the text is the only thing that says WHY the webhook refused.
+			bodyText = await res.text().catch(() => "");
+		} catch (err) {
+			transportError = err instanceof Error ? err.message : String(err);
 		}
-		if (!res.ok) {
+
+		// The trace rides back to the browser, so the URL never enters it: this
+		// webhook is an unauthenticated endpoint that mails staff, and its address
+		// is exactly the secret the whole proxy exists to keep. A fixed label plus
+		// the status is all ops needs to tell "it refused us" from "we never
+		// reached it", and the full reason is on the server's own console.
+		recordUpstream({
+			path: "activation-fee webhook",
+			clientRefId: null,
+			status: res?.status ?? null,
+			durMs: Date.now() - startedAt,
+			error: transportError,
+		});
+
+		if (!res || !res.ok) {
+			// Server-side only. `bodyText` is the webhook's own words and routinely
+			// repeats the URL back at us ("the requested webhook is not
+			// registered"), which is why it is logged here and never returned.
+			console.error("[eps-backend] activation-fee webhook failed", {
+				rid: c.get("rid"),
+				status: res?.status ?? null,
+				transportError,
+				body: bodyText.slice(0, 500),
+			});
 			throw new AppError(
 				502,
 				"ACTIVATION_FEE_SEND_FAILED",
-				"Couldn't send your payment details. Please try again, or email eps@eko.in.",
+				// Naming the status turns "it just fails" into something the partner
+				// can quote and ops can act on without reading a log.
+				res
+					? `Couldn't send your payment details — the mail service answered ${res.status}. Please try again, or email eps@eko.in.`
+					: "Couldn't reach the mail service to send your payment details. Please try again, or email eps@eko.in.",
 			);
 		}
 

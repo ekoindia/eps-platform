@@ -7,6 +7,7 @@ import { createInMemoryKV, type KV } from "../store/kv";
 import { mountActivationFee } from "./activationFee";
 import { AppError, errorBody } from "./errors";
 import type { AppEnv } from "./requestId";
+import { trace, traceForResponse } from "./trace";
 import type { EkoProfile, ProfileResult } from "../types";
 
 const ACTIVATION_CFG: Config["activationFee"] = {
@@ -49,11 +50,16 @@ function harness(
 ) {
 	const role = opts.role === undefined ? "developer" : opts.role;
 	const app = new Hono<AppEnv>();
-	// Mirrors app.ts's onError so status/code assertions match production.
+	app.use("*", trace());
+	// Mirrors app.ts's onError so status/code assertions match production, and
+	// echoes the trace so a test sees exactly what reaches the browser.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
 			return c.json(
-				errorBody(err.code, err.message, undefined, err.source),
+				{
+					...errorBody(err.code, err.message, undefined, err.source),
+					trace: traceForResponse(),
+				},
 				err.status as never,
 			);
 		}
@@ -378,5 +384,70 @@ describe("POST /activation-fee/intimate — rate limit", () => {
 		const res = await intimate(app);
 		expect(res.status).toBe(429);
 		expect(await codeOf(res)).toBe("RATE_LIMITED");
+	});
+});
+
+describe("POST /activation-fee/intimate — diagnosing a failed send", () => {
+	/** The whole error envelope, trace included. */
+	async function envelopeOf(res: Response) {
+		return (await res.json()) as {
+			error: { message: string };
+			trace: { path: string | null; status: number | null; error: string | null }[];
+		};
+	}
+
+	it("names the status the mail service answered with", async () => {
+		// n8n answers 404 for a /webhook-test/ URL whose editor is not listening —
+		// the single most likely reason this route fails in a dev environment.
+		const fetchImpl = vi.fn(
+			async () => new Response("webhook not registered", { status: 404 }),
+		) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl });
+		const body = await envelopeOf(await intimate(app));
+		expect(body.error.message).toContain("404");
+	});
+
+	it("says it never reached the service when the transport fails", async () => {
+		const fetchImpl = vi.fn(async () => {
+			throw new Error("ECONNREFUSED");
+		}) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl });
+		const body = await envelopeOf(await intimate(app));
+		expect(body.error.message).toMatch(/couldn't reach the mail service/i);
+	});
+
+	it("puts the failed call in the trace so ops can see it", async () => {
+		const fetchImpl = vi.fn(
+			async () => new Response("nope", { status: 500 }),
+		) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl });
+		const body = await envelopeOf(await intimate(app));
+		const call = body.trace.find((c) => c.path === "activation-fee webhook");
+		expect(call?.status).toBe(500);
+	});
+
+	it("never leaks the webhook URL into the trace the browser receives", async () => {
+		const fetchImpl = vi.fn(
+			async () => new Response("The requested webhook is not registered", { status: 404 }),
+		) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl });
+		const res = await intimate(app);
+		// The whole envelope, not just the trace: the URL must not appear anywhere
+		// a partner can read, and neither must the webhook's own words about it.
+		const raw = await res.text();
+		expect(raw).not.toContain("automaton8n");
+		expect(raw).not.toContain("/webhook/abc");
+		expect(raw).not.toContain("not registered");
+	});
+
+	it("records the reached-and-refused case distinctly from never-reached", async () => {
+		const refused = vi.fn(async () => {
+			throw new Error("ECONNREFUSED");
+		}) as unknown as typeof fetch;
+		const { app } = harness({ fetchImpl: refused });
+		const body = await envelopeOf(await intimate(app));
+		const call = body.trace.find((c) => c.path === "activation-fee webhook");
+		expect(call?.status).toBeNull();
+		expect(call?.error).toBeTruthy();
 	});
 });

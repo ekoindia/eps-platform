@@ -127,6 +127,26 @@ arming it.
 > is open and listening. Production must use the `/webhook/...` URL, or every
 > intimation is silently dropped.
 
+### Diagnosing a failed send
+
+`ACTIVATION_FEE_SEND_FAILED` now names the status the webhook answered with, so
+the partner-visible message distinguishes the two failures that matter:
+
+- *"the mail service answered 404"* — we reached n8n and it refused. On a
+  `/webhook-test/` URL this almost always means the workflow editor is not
+  listening; press **Test workflow** in n8n, or move to the production
+  `/webhook/` URL.
+- *"Couldn't reach the mail service"* — transport failure: DNS, TLS, refused
+  connection, or the `ACTIVATION_FEE_TIMEOUT_MS` abort.
+
+The call is also written into the request trace as `activation-fee webhook`, so
+it shows up in **Copy diagnostics** beside the upstream profile lookup. The
+trace deliberately carries **only** the label, status and duration: the URL is
+the secret this proxy exists to keep, and n8n's own error text repeats it back
+("the requested webhook … is not registered"). The full body is logged
+server-side under `[eps-backend] activation-fee webhook failed` and never
+returned to the browser.
+
 ## Files
 
 | Path | Role |
