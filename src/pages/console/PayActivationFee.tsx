@@ -40,6 +40,9 @@ const BANK_DETAILS: { label: string; value: string }[] = [
  */
 const MODES = ["IMPS", "NEFT", "RTGS", "Intra-Bank Transfer"] as const;
 
+/** A GSTIN is a fixed-width identifier: 2 state + 10 PAN + 3 suffix. */
+const GSTIN_LENGTH = 15;
+
 /** What the attachment input accepts. Mirrors the backend's allowlist. */
 const SLIP_ACCEPT = "image/jpeg,image/png,application/pdf";
 const SLIP_MAX_BYTES = 5 * 1024 * 1024;
@@ -644,7 +647,7 @@ export default function PayActivationFee() {
 									<Input
 										id="utr"
 										value={form.utr}
-										placeholder="From your bank's confirmation"
+										placeholder="From your bank's transaction confirmation"
 										onChange={(e) => set("utr", e.target.value)}
 										onBlur={() =>
 											setTouched((prev) => ({ ...prev, utr: true }))
@@ -659,7 +662,7 @@ export default function PayActivationFee() {
 									) : null}
 								</div>
 
-								<div className="flex flex-col gap-2 sm:col-span-2">
+								<div className="flex flex-col gap-2">
 									<Label htmlFor="depositorName">
 										Name of depositor (as per bank account)
 									</Label>
@@ -706,12 +709,14 @@ export default function PayActivationFee() {
 								    carries a GST number always wins server-side, so showing
 								    the field would invite an answer nobody would read. */}
 								{profileGst ? null : (
-									<div className="flex flex-col gap-2 sm:col-span-2">
-										<Label htmlFor="gst">GST number (optional)</Label>
+									<div className="flex flex-col gap-2">
+										<Label htmlFor="gst">GSTIN (optional)</Label>
 										<Input
 											id="gst"
 											value={form.gst}
-											placeholder="22AAAAA0000A1Z5"
+											// A GSTIN is exactly 15 characters; there is nothing
+											// valid to type past it.
+											maxLength={GSTIN_LENGTH}
 											onChange={(e) => set("gst", e.target.value)}
 											aria-describedby="gst-hint"
 										/>
@@ -719,8 +724,8 @@ export default function PayActivationFee() {
 											id="gst-hint"
 											className="text-xs text-muted-foreground"
 										>
-											We don&rsquo;t have one on file. Add it and
-											we&rsquo;ll use it on your invoice.
+											We don&rsquo;t have one on file. Add your GST number
+											and we&rsquo;ll use it on your invoice.
 										</p>
 									</div>
 								)}

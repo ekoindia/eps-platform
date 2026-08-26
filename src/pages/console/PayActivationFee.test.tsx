@@ -443,7 +443,10 @@ describe("PayActivationFee — depositor and GST", () => {
 
 	it("asks for a GST number when the profile carries none", () => {
 		renderPage();
-		expect(screen.getByLabelText(/gst number/i)).toBeVisible();
+		const gstin = screen.getByLabelText(/gstin/i);
+		expect(gstin).toBeVisible();
+		// A GSTIN is exactly 15 characters; nothing valid follows.
+		expect(gstin).toHaveAttribute("maxlength", "15");
 	});
 
 	it("does not ask when the profile already has one", () => {
@@ -454,13 +457,13 @@ describe("PayActivationFee — depositor and GST", () => {
 				detailBlocks: { business_detail: { gst_number: "07AAACA1234A1Z5" } },
 			} as never,
 		});
-		expect(screen.queryByLabelText(/gst number/i)).toBeNull();
+		expect(screen.queryByLabelText(/gstin/i)).toBeNull();
 	});
 
 	it("sends a typed GST number when it was asked for", async () => {
 		renderPage();
 		fillValid();
-		type(/gst number/i, "27AAACA1234A1Z5");
+		type(/gstin/i, "27AAACA1234A1Z5");
 		send();
 		await waitFor(() => expect(intimate).toHaveBeenCalled());
 		expect(sentPayload().gst).toBe("27AAACA1234A1Z5");
