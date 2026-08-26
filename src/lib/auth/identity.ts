@@ -73,6 +73,38 @@ export function accountIdentity(state: AuthState): AccountIdentity | null {
 }
 
 /**
+ * Where this session's console lives, and how the header should label it.
+ *
+ * An admin's home is the GitOps console at `/admin`; every other authenticated
+ * role (developer, signup) belongs in the developer console. Anonymous and
+ * loading sessions never render the chip, so they fall through to `/console` —
+ * the same route `GetStartedButton` sends a signed-out visitor to.
+ * @param state - The current auth state.
+ * @returns The console route and its short header label.
+ */
+export function consoleTarget(state: AuthState): {
+	href: string;
+	label: string;
+} {
+	return state.status === "authed" && state.role === "admin"
+		? { href: "/admin", label: "Admin" }
+		: { href: "/console", label: "Console" };
+}
+
+/**
+ * Whether `pathname` is inside `href`, for marking the console chip active.
+ *
+ * Deliberately not a bare `startsWith`: that would light the chip up on
+ * `/console-old` or `/administrator`. Only the route itself and its children
+ * count.
+ * @param pathname - The current location pathname.
+ * @param href - A console route from `consoleTarget`.
+ */
+export function isInsideRoute(pathname: string, href: string): boolean {
+	return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
  * How far through onboarding this profile is, as a percentage.
  *
  * `onboardingSteps` is the ordered FULL list of steps; `roleList` carries the
