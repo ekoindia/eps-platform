@@ -199,6 +199,7 @@ on anything unrecognised.
 | `onboarding`                                     | `onboarded`    |
 | `found`, `onboarding === 1`                      | `onboarded`    |
 | `found`, `account_state_id === 48`               | `kyc-pending`  |
+| `found`, `account_state_id === 47`               | `kyc-rejected` |
 | `found`, anything else (16, unmapped, absent)    | `active`       |
 
 Two properties of that last pair are deliberate:
@@ -206,8 +207,8 @@ Two properties of that last pair are deliberate:
 - **`onboarding` is tested for `1`, not "not 0".** A third value appearing
   upstream is not a reason to tell a finished partner their onboarding is
   unfinished.
-- **The account-state branch fails OPEN.** Only 48 is pending; 16, an id this
-  build has not mapped, and `null` all read as `active`. The connect-api provider
+- **The account-state branch fails OPEN.** Only 48 is pending and only 47 is
+  rejected; 16, an id this build has not mapped, and `null` all read as `active`. The connect-api provider
   never reports an id at all (its `auth_details` has no such field), so reading an
   unknown id as pending would have put a blocking KYC step in front of every
   partner on that provider. `toStateId` rejects blanks rather than coercing them,

@@ -4,6 +4,8 @@ export type LifecycleState =
 	| "active"
 	/** Onboarded, but the KYC documents are still outstanding. */
 	| "kyc-pending"
+	/** Onboarded, but compliance refused one or more uploaded documents. */
+	| "kyc-rejected"
 	| "inactive"
 	| "unknown";
 
@@ -58,8 +60,8 @@ export interface EkoProfile {
 	detailBlocks: Record<string, unknown>;
 	/**
 	 * `user_detail.account_state_id` — 16 is a live account, 48 one whose KYC is
-	 * still pending. Null when upstream sent no id, or sent one that is not a
-	 * whole number (`toStateId`).
+	 * still pending, 47 one whose documents were refused. Null when upstream sent
+	 * no id, or sent one that is not a whole number (`toStateId`).
 	 *
 	 * Also present inside `userDetail` below, and typed here anyway: it is the
 	 * one field of that bag the lifecycle state machine branches on

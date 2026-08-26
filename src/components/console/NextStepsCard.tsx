@@ -25,6 +25,14 @@ interface Step {
 	cta?: { label: string; to: string; primary?: boolean };
 	/** Only set on a step whose completion this session can actually answer. */
 	done?: boolean;
+	/**
+	 * The pill. Stated rather than derived from `done`, because "not done" has
+	 * two readings — still owed, and refused — that need different words and a
+	 * different colour. Absent on a step whose state this session cannot answer.
+	 */
+	badge?: { label: string; variant: "secondary" | "destructive" };
+	/** Overrides the status icon's label when "Not started" would be wrong. */
+	markLabel?: string;
 }
 
 /**
@@ -36,7 +44,7 @@ interface Step {
  * text of some rows and not others.
  * @param done - `true`, `false`, or undefined when the state is unknowable.
  */
-function StepMark({ done }: { done?: boolean }) {
+function StepMark({ done, label }: { done?: boolean; label?: string }) {
 	if (done)
 		return (
 			<CircleCheck
@@ -46,7 +54,7 @@ function StepMark({ done }: { done?: boolean }) {
 		);
 	return (
 		<CircleDashed
-			aria-label={done === false ? "Not started" : "Status unknown"}
+			aria-label={label ?? (done === false ? "Not started" : "Status unknown")}
 			className={cn(
 				"mt-0.5 h-5 w-5 shrink-0",
 				done === false ? "text-primary" : "text-muted-foreground/50",
@@ -63,10 +71,10 @@ function StepMark({ done }: { done?: boolean }) {
  * need last week's totals, in either state.
  *
  * Only the KYC step carries a badge, because it is the only one this session can
- * actually answer: an active lifecycle means upstream accepted the account. The
- * rest are a route, not a checklist — nothing here knows whether a partner has
- * finished integrating, and a step that says "Pending" forever reads worse than
- * one that says nothing.
+ * actually answer: an active lifecycle means upstream accepted the account, and
+ * a rejected one means compliance refused a document. The rest are a route, not
+ * a checklist — nothing here knows whether a partner has finished integrating,
+ * and a step that says "Pending" forever reads worse than one that says nothing.
  * @param me - The session view.
  */
 export default function NextStepsCard({ me }: { me: MeView }) {
@@ -75,15 +83,31 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 	// partner at a page the rail is hiding from them.
 	const kycEnabled = useKycEnabled();
 	const kycDone = me.state === "active";
+	// Upstream reviewed the pack and refused at least one document. Distinct from
+	// `kyc-pending` in words and colour: "Pending" tells a partner to wait, which
+	// is the one thing that will never clear this state.
+	const kycRejected = me.state === "kyc-rejected";
 
 	const steps: Step[] = [
 		{
 			label: "Finish your KYC by uploading documents",
 			cta:
 				kycEnabled && !kycDone
-					? { label: "Upload", to: "/console/documents", primary: true }
+					? {
+							label: kycRejected ? "Re-upload" : "Upload",
+							to: "/console/documents",
+							primary: true,
+						}
 					: undefined,
 			done: kycDone,
+			badge: kycDone
+				? { label: "Done", variant: "secondary" }
+				: kycRejected
+					? { label: "Re-upload required", variant: "destructive" }
+					: { label: "Pending", variant: "secondary" },
+			// The reasons live per document on Upload Documents; this row only
+			// says that a mark is owed, so the icon must not read "Not started".
+			markLabel: kycRejected ? "Re-upload required" : undefined,
 		},
 		{
 			label: "Complete your integration using UAT credentials",
@@ -119,7 +143,7 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 							key={step.label}
 							className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
 						>
-							<StepMark done={step.done} />
+							<StepMark done={step.done} label={step.markLabel} />
 							<span className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 								{/* The strike is on the label alone — carrying it on the row
 								    would draw a line through the badge as well. */}
@@ -130,11 +154,9 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 								>
 									{step.label}
 								</span>
-								{step.done === undefined ? null : (
-									<Badge variant="secondary">
-										{step.done ? "Done" : "Pending"}
-									</Badge>
-								)}
+								{step.badge ? (
+									<Badge variant={step.badge.variant}>{step.badge.label}</Badge>
+								) : null}
 							</span>
 							{step.cta ? (
 								<Button

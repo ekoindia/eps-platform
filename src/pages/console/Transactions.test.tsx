@@ -194,6 +194,14 @@ describe("Transactions", () => {
 		expect(search).toHaveBeenCalled();
 	});
 
+	// Same contract for the sibling state: a refused document does not erase the
+	// history the partner already has.
+	it("still fetches for an account whose KYC pack was rejected", async () => {
+		renderPage({ ...activeMe, state: "kyc-rejected" });
+		await screen.findByText("Digi Khata Load Wallet");
+		expect(search).toHaveBeenCalled();
+	});
+
 	it("pages forward and back", async () => {
 		search.mockResolvedValue(page({ hasNext: true }));
 		renderPage();

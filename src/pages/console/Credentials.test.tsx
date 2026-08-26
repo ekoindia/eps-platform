@@ -97,6 +97,18 @@ describe("Credentials", () => {
 		).toHaveAttribute("href", "/console/documents");
 	});
 
+	// Waiting for an email is the one instruction that cannot clear this state.
+	it("tells a rejected account to re-upload, not to wait for an email", () => {
+		renderCredentials({ ...ACTIVE, state: "kyc-rejected" });
+		expect(
+			screen.getByText(/one or more of your kyc documents were not accepted/i),
+		).toBeInTheDocument();
+		expect(screen.queryByText(/finish onboarding/i)).toBeNull();
+		expect(
+			screen.getByRole("link", { name: /re-upload documents/i }),
+		).toHaveAttribute("href", "/console/documents");
+	});
+
 	it("tells an inactive account to contact support", () => {
 		renderCredentials({ ...ACTIVE, state: "inactive" });
 		expect(screen.getByText(/account is inactive/i)).toBeInTheDocument();

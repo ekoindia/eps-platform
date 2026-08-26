@@ -6,16 +6,24 @@ scans, PDFs or a photo taken there and then. This feature puts that pack in the
 console at `/console/documents` instead of over email.
 
 **The session says whether that pack is still owed.** Upstream reports it as
-`user_detail.account_state_id` — `48` while KYC is outstanding, `16` once the
-account is live — and the backend turns it into the `kyc-pending` lifecycle
-state (see
+`user_detail.account_state_id` — `48` while KYC is outstanding, `47` once
+compliance has reviewed the pack and refused at least one document (upstream
+describes it as *Ready for Resubmission*), `16` once the account is live — and
+the backend turns those into the `kyc-pending` and `kyc-rejected` lifecycle
+states (see
 [`user-onboarding.md` § Lifecycle state](./user-onboarding.md#lifecycle-state-meviewstate)).
-That is what makes the Next Steps card's "Finish your KYC" row read Pending.
+That is what makes the Next Steps card's "Finish your KYC" row read Pending, or
+a red **Re-upload required** with a *Re-upload* button for `kyc-rejected`. Both
+states are `isProvisioned`: a refused document does not take away the
+transaction history or the dashboard the partner already had.
 
 It is a coarse signal, not a per-document one: it says upstream is still waiting
-on this partner, not which file is missing. This page owns that detail. It can
-also disagree — the state is `kyc-pending` until upstream flips the account
-itself, which can lag a successful upload.
+on this partner, not which file is missing — nor, for `kyc-rejected`, which one
+was refused. This page owns that detail, and is where the Next Steps row sends
+the partner: the account-level `kyc-rejected` is the counterpart of the
+per-document status `3` rows below, which carry the actual rejection reason. The
+two can also disagree — the state does not change until upstream flips the
+account itself, which can lag a successful upload.
 
 ## The two upstream transactions
 
