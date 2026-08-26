@@ -4,6 +4,7 @@ import {
 	openZohoChat,
 	setChatIdentity,
 	setZohoChatHidden,
+	setZohoChatOverlayHidden,
 } from "./zoho-chat";
 
 vi.mock("@/hooks/use-tracking-params", () => ({
@@ -246,6 +247,33 @@ describe("setZohoChatHidden", () => {
 		const salesiq = finishWidgetLoad();
 
 		expect(salesiq.floatbutton.visible).toHaveBeenLastCalledWith("hide");
+	});
+});
+
+describe("setZohoChatOverlayHidden", () => {
+	it("hides the bubble while an overlay is open and restores it on close", () => {
+		const { salesiq } = mockWidget();
+		const floatbutton = { visible: vi.fn() };
+		Object.assign(salesiq, { floatbutton });
+		setZohoChatHidden(false);
+
+		setZohoChatOverlayHidden(true);
+		expect(floatbutton.visible).toHaveBeenLastCalledWith("hide");
+
+		setZohoChatOverlayHidden(false);
+		expect(floatbutton.visible).toHaveBeenLastCalledWith("show");
+	});
+
+	it("leaves the route rule in charge when the overlay closes", () => {
+		const { salesiq } = mockWidget();
+		const floatbutton = { visible: vi.fn() };
+		Object.assign(salesiq, { floatbutton });
+		setZohoChatHidden(true);
+
+		setZohoChatOverlayHidden(true);
+		setZohoChatOverlayHidden(false);
+
+		expect(floatbutton.visible).toHaveBeenLastCalledWith("hide");
 	});
 });
 

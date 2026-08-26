@@ -13,7 +13,7 @@ import { ProductsMegaPanel } from "@/components/ProductsMegaPanel";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { accountIdentity } from "@/lib/auth/identity";
+import { accountIdentity, consoleTarget } from "@/lib/auth/identity";
 import { SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { GITHUB_ORG_URL, SITE_URL, SOCIAL_LINKS } from "@/lib/config/site";
@@ -31,6 +31,7 @@ import {
 	Bot,
 	Briefcase,
 	HelpCircle,
+	LayoutDashboard,
 	LogOut,
 	Package,
 	Sparkles,
@@ -430,6 +431,7 @@ export const HeaderDropdownPanels = ({
 }: HeaderDropdownPanelsProps) => {
 	const { state, logout } = useAuth();
 	const identity = SHOW_USER_LOGIN ? accountIdentity(state) : null;
+	const consoleHome = consoleTarget(state);
 	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
 		? [
 				{
@@ -880,18 +882,37 @@ export const HeaderDropdownPanels = ({
 											</p>
 										)}
 									</div>
+									{/* Log out moves alongside the identity it belongs to, so the
+									    full width below is free for the one action that matters. */}
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => {
+											setMobileMenuOpen(false);
+											void logout();
+										}}
+										className="ml-auto shrink-0 cursor-pointer gap-2 px-2 text-eko-slate hover:text-eko-navy"
+									>
+										<LogOut className="w-4 h-4" />
+										Log out
+									</Button>
 								</div>
 								<Button
-									variant="ghost"
+									asChild
+									variant="gold"
 									size="sm"
-									onClick={() => {
-										setMobileMenuOpen(false);
-										void logout();
-									}}
-									className="cursor-pointer self-start justify-start gap-2 px-2 text-eko-slate hover:text-eko-navy"
+									className="w-full cursor-pointer justify-center gap-2"
 								>
-									<LogOut className="w-4 h-4" />
-									Log out
+									<Link
+										to={consoleHome.href}
+										onClick={() => setMobileMenuOpen(false)}
+									>
+										<LayoutDashboard className="w-4 h-4" />
+										Open{" "}
+										{consoleHome.label === "Admin" ? "Admin" : "Developer"}{" "}
+										Console
+										<ArrowRight className="w-4 h-4" />
+									</Link>
 								</Button>
 							</div>
 						) : (

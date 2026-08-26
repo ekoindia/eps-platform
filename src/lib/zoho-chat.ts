@@ -102,6 +102,8 @@ export function isChatHiddenPath(pathname: string): boolean {
 
 /** Route-derived intent, re-applied whenever the widget (re)becomes available. */
 let hiddenForRoute = false;
+/** An app overlay (mobile menu, command palette) is covering the page. */
+let hiddenForOverlay = false;
 /** An open was requested before the widget existed; honour it once it loads. */
 let pendingOpen = false;
 /** The `salesiq` object whose `ready` we already chained onto. */
@@ -159,7 +161,9 @@ function applyState(): void {
 	const salesiq = getSalesIQ();
 	if (!salesiq?.floatbutton && !salesiq?.chat) return;
 	try {
-		salesiq.floatbutton?.visible?.(hiddenForRoute ? "hide" : "show");
+		salesiq.floatbutton?.visible?.(
+			hiddenForRoute || hiddenForOverlay ? "hide" : "show",
+		);
 		if (hiddenForRoute) salesiq.chatwindow?.visible?.("hide");
 	} catch {
 		// Widget API shape changed or unavailable — ignore
@@ -180,6 +184,17 @@ export function setZohoChatHidden(hidden: boolean): void {
 	// The bootstrap skips loading entirely on hidden routes, so a navigation
 	// away from one has to ask for the widget itself.
 	if (!hidden) window.__loadZohoWidget?.();
+	applyState();
+}
+
+/**
+ * Hides the chat bubble while a full-screen overlay (mobile menu, command
+ * palette) is open, so it does not float over it. Separate from the route rule
+ * so closing the overlay restores whatever the route asked for.
+ */
+export function setZohoChatOverlayHidden(hidden: boolean): void {
+	hiddenForOverlay = hidden;
+	hookReady();
 	applyState();
 }
 
@@ -221,6 +236,7 @@ export function openZohoChat() {
 	// An explicit CTA outranks the route rule until the next navigation — the
 	// Footer's chat links render on hidden routes too.
 	hiddenForRoute = false;
+	hiddenForOverlay = false;
 	const salesiq = getSalesIQ();
 	if (!salesiq?.chat?.start) {
 		// Widget absent (hidden route, or still downloading): pull it in and open

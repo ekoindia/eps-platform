@@ -48,6 +48,21 @@ describe("ProfileCard", () => {
 		expect(screen.queryByText(/EkoCode/)).not.toBeInTheDocument();
 	});
 
+	it.each(["kyc-pending", "kyc-rejected"] as const)(
+		"links the %s tag to the documents page",
+		(state) => {
+			show({ ...ME, state });
+			expect(
+				screen.getByRole("link", { name: /^KYC/ }),
+			).toHaveAttribute("href", "/console/documents");
+		},
+	);
+
+	it("leaves a non-KYC tag unlinked", () => {
+		show(ME);
+		expect(screen.queryByRole("link", { name: "Active" })).toBeNull();
+	});
+
 	it("links through to the full profile page", () => {
 		show(ME);
 		expect(screen.getByRole("link", { name: "View Profile" })).toHaveAttribute(

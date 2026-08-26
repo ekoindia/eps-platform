@@ -10,10 +10,10 @@ vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({ state: mockState, refresh: vi.fn(), logout }),
 }));
 
-function renderMenu(state: AuthState) {
+function renderMenu(state: AuthState, path = "/") {
 	mockState = state;
 	return render(
-		<MemoryRouter>
+		<MemoryRouter initialEntries={[path]}>
 			<UserMenu />
 		</MemoryRouter>,
 	);
@@ -28,6 +28,12 @@ const developer: AuthState = {
 		profile: null,
 		zohoId: null,
 	},
+};
+
+const admin: AuthState = {
+	status: "authed",
+	role: "admin",
+	me: { role: "admin", login: "octocat", sub: "gh:1" },
 };
 
 afterEach(() => vi.clearAllMocks());
@@ -94,5 +100,55 @@ describe("UserMenu", () => {
 		expect(
 			await screen.findByRole("menuitem", { name: /admin console/i }),
 		).toBeInTheDocument();
+	});
+
+	it("puts a labelled console jump beside the avatar", () => {
+		renderMenu(developer);
+		const jump = screen.getByRole("link", { name: /console home/i });
+		expect(jump).toHaveAttribute("href", "/console");
+		expect(jump).toHaveTextContent("Console");
+		expect(jump).not.toHaveAttribute("aria-current");
+	});
+
+	it("points an admin's jump at the admin console", () => {
+		renderMenu(admin);
+		expect(screen.getByRole("link", { name: /admin home/i })).toHaveAttribute(
+			"href",
+			"/admin",
+		);
+	});
+
+	it("marks the jump current inside the console, but not on a lookalike route", () => {
+		renderMenu(developer, "/console/keys");
+		expect(screen.getByRole("link", { name: /console home/i })).toHaveAttribute(
+			"aria-current",
+			"page",
+		);
+		renderMenu(developer, "/console-old");
+		const [, sibling] = screen.getAllByRole("link", { name: /console home/i });
+		expect(sibling).not.toHaveAttribute("aria-current");
+	});
+
+	it("pins the console as the first menu row", async () => {
+		renderMenu(developer);
+		fireEvent.keyDown(screen.getByRole("button", { name: /account menu/i }), {
+			key: "Enter",
+		});
+		const first = (await screen.findAllByRole("menuitem"))[0];
+		expect(first).toHaveTextContent("Developer Console");
+		expect(first).toHaveAttribute("href", "/console");
+	});
+
+	it("pins the admin console first and keeps the developer one below", async () => {
+		renderMenu(admin);
+		fireEvent.keyDown(screen.getByRole("button", { name: /account menu/i }), {
+			key: "Enter",
+		});
+		const items = await screen.findAllByRole("menuitem");
+		expect(items[0]).toHaveTextContent("Admin Console");
+		expect(items[0]).toHaveAttribute("href", "/admin");
+		expect(
+			screen.getByRole("menuitem", { name: /developer console/i }),
+		).toHaveAttribute("href", "/console");
 	});
 });
