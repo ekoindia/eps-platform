@@ -199,6 +199,61 @@ describe("connect auth provider — verify", () => {
 		expect(r.profile.kind).toBe("inactive");
 		expect(r.upstream).toBeUndefined();
 	});
+
+	// The bug this refresh exists for: connect-api overwrites the role to `[-5]`
+	// on every mobile login (`routes/authentication.js:791`) and
+	// `/transactions/wlc` builds its entitlement list from the claim alone, so a
+	// session built straight from the login token saw 16 interactions where the
+	// same user saw 44 in Eloka — and the console rail hid every flow gated on the
+	// missing ids, "Manage My Account" (536) among them.
+	it("re-reads the profile at login and carries the refreshed tokens", async () => {
+		const { provider, connect } = setup({
+			login: vi.fn(async () => LOGIN_OK),
+			refreshProfile: vi.fn(async () => REFRESH_PROFILE_OK),
+		});
+		const r = await provider.verify({ mobile: "9990000001", otp: "123456" });
+		expect(connect.refreshProfile).toHaveBeenCalledWith(
+			"ca_access",
+			"ca_refresh",
+		);
+		expect(r.ok).toBe(true);
+		if (!r.ok) return;
+		// The refresh-profile grant replaces the login pair rather than joining it:
+		// connect-api retires the refresh token it was given.
+		expect(r.upstream?.accessToken).toBe("ca_access2");
+		expect(r.upstream?.refreshToken).toBe("ca_refresh2");
+		expect(r.upstream?.profileRefreshedAt).toBeGreaterThan(0);
+	});
+
+	// Best-effort by design: stale roles are a degraded console, a refused login
+	// is no console at all.
+	it("keeps the login tokens when the profile refresh fails", async () => {
+		const { provider } = setup({
+			login: vi.fn(async () => LOGIN_OK),
+			refreshProfile: vi.fn(async () => {
+				throw new Error("refresh-profile down");
+			}),
+		});
+		const r = await provider.verify({ mobile: "9990000001", otp: "123456" });
+		expect(r.ok).toBe(true);
+		if (!r.ok) return;
+		expect(r.upstream?.accessToken).toBe("ca_access");
+		expect(r.upstream?.refreshToken).toBe("ca_refresh");
+	});
+
+	it("does not re-read the profile for a mobile with no EPS account", async () => {
+		// Nothing upstream to re-read yet — `/signup/*` calls `refreshEntitlements`
+		// once the account exists.
+		const { provider, connect } = setup({
+			login: vi.fn(async () => ({
+				...LOGIN_OK,
+				details: { ...LOGIN_OK.details, user_type: "-1" },
+			})),
+		});
+		const r = await provider.verify({ mobile: "9990000001", otp: "123456" });
+		expect(r.ok && r.profile.kind).toBe("not_found");
+		expect(connect.refreshProfile).not.toHaveBeenCalled();
+	});
 });
 
 describe("connect auth provider — persist", () => {
@@ -279,6 +334,58 @@ describe("connect auth provider — refresh", () => {
 		});
 		await provider.refresh!("sid1");
 		expect(connect.refreshTokens).toHaveBeenCalledWith("r1");
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessToken).toBe("a2");
+		expect(stored.refreshToken).toBe("r2");
+	});
+
+	// A rotation re-signs the same claim, so roles granted upstream mid-session
+	// would never reach the session without this second call.
+	it("re-reads the profile after an expiry-driven rotation", async () => {
+		const { provider, connect, kv } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+			refreshProfile: vi.fn(async () => REFRESH_PROFILE_OK),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 5_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refresh!("sid1");
+		// Authenticated by the ROTATED token — the one that expired would 401.
+		expect(connect.refreshProfile).toHaveBeenCalledWith("a2", "r2");
+		const stored = JSON.parse((await kv.get("ca:sid1"))!);
+		expect(stored.accessToken).toBe("ca_access2");
+		expect(stored.profileRefreshedAt).toBeGreaterThan(0);
+	});
+
+	it("keeps the rotated session when the profile refresh fails", async () => {
+		// The rotation already stored a working pair; a session with stale roles
+		// beats one that cannot act at all.
+		const { provider, kv } = setup({
+			refreshTokens: vi.fn(async () => ({
+				accessToken: "a2",
+				refreshToken: "r2",
+				accessTtlSec: 18000,
+				sessionTtlSec: 28800,
+			})),
+			refreshProfile: vi.fn(async () => {
+				throw new Error("refresh-profile down");
+			}),
+		});
+		await provider.persist!("sid1", {
+			accessToken: "a1",
+			refreshToken: "r1",
+			accessExpiresAt: Date.now() + 5_000,
+			sessionExpiresAt: Date.now() + 8 * 60 * 60_000,
+		});
+		await provider.refresh!("sid1");
 		const stored = JSON.parse((await kv.get("ca:sid1"))!);
 		expect(stored.accessToken).toBe("a2");
 		expect(stored.refreshToken).toBe("r2");

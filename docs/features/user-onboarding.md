@@ -505,6 +505,51 @@ reference implementation shows why, structurally:
 Under the direct `eko` provider there is no upstream session, so claims have no
 `sid` and nothing is refreshed.
 
+#### Every login and every rotation re-reads the profile too
+
+Signup was never the only way to hold a stale claim. connect-api overwrites the
+role to `[-5]` on **every** mobile login (`routes/authentication.js:791`,
+discarding the `[-2]` API-partner value — the same line
+`clients/connect.ts` quotes for `mapConnectLogin`), and `/transactions/wlc`
+reads roles from the claim alone. So a session built straight from the login
+token is entitled to a fraction of what the account owns, with no signup
+involved.
+
+Measured on a live account (2026-08-26): `/connect/interactions` returned **16**
+rows, while the same user in the Connect webapp got **44**. Every console flow
+gated on one of the missing ids was invisible — "Manage My Account" (536) is the
+one that surfaced it.
+
+`connectProvider` therefore calls `/authentication/refresh-profile` in three
+places, all through the same private `profileRefreshed` helper:
+
+- **At login** (`verify`), on the pair connect-api just minted, before
+  `issueSession` persists anything — one KV write, no `sid` needed. Skipped for
+  a `not_found` mobile: there is no account to re-read yet, and `/signup/*`
+  covers that case. Eloka does the same after every login
+  (`wlc-webapp/helpers/loginHelper.js:475`).
+- **After an expiry-driven rotation** (`refresh`), on the rotated pair — a
+  rotation re-signs the same claim, so without this, roles granted upstream
+  mid-session (activation, KYC pass, a new product) would never reach a session
+  short of a re-login.
+- **At signup completion** (`refreshEntitlements`), as before.
+
+The first two are best-effort and logged, not fatal: the login pair (or the
+rotated pair, already stored) still works, and stale roles are a degraded
+console while a refused login or a dead session is no console at all.
+
+One ceiling worth knowing, noted in the code: the refresh grant is single-use,
+so a call that succeeds upstream and then fails on our side leaves us holding a
+refresh token connect-api has already retired — that session then lives only
+until its access token expires. Nothing here can undo it; both callers log
+loudly (`[connect-auth] login profile refresh failed`, `[connect-auth] rotation
+profile refresh failed`) so it is visible rather than silent.
+
+Note the browser caches the list for the tab: `cache` in
+`src/lib/connect/interactions.ts` is a module singleton cleared only on
+sign-out, and `useRoleTransactionList` has `[]` deps. Roles refreshed by a
+rotation therefore reach the rail on the next full page load, not mid-session.
+
 #### Troubleshooting stale entitlements after signup
 
 Symptom: onboarding completes, the console loads, but the entitlement-gated

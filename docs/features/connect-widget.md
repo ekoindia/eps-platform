@@ -379,6 +379,27 @@ come from `group_interaction_ids`, so a trimmed row renders an empty grid.
 Entitlement is *presence* in the list, not `is_visible`: both 491 and 240 arrive
 with `is_visible: "0"`, exactly as Eloka sees them.
 
+## Gotcha: the list is only as good as the token's claim
+
+Nothing on our side filters the list — `clients/connect.ts` unwraps
+array-or-`.data`, `http/connect.ts` returns it verbatim, and
+`buildRoleTransactionList` drops only rows with no `id`. A *short* list is
+upstream's answer, not ours.
+
+`/transactions/wlc` builds `role_trxn_list` from the access token's `role_list`
+claim alone, and connect-api stamps role `[-5]` on every mobile login. So the
+list reflects whatever claim the session is carrying: a session that has never
+been through `/authentication/refresh-profile` sees a fraction of the account's
+interactions (measured 2026-08-26: 16 rows against Eloka's 44 for the same
+user, which hid "Manage My Account" (536) from the rail). `connectProvider`
+refreshes the profile at login, after every rotation, and at signup completion
+— see *Every login and every rotation re-reads the profile too* in
+`docs/features/user-onboarding.md`.
+
+Consequence for debugging: when a flow is missing from the rail, compare the
+`[connect] wlc { count }` line against the same account in Eloka **before**
+looking at anything in this repo.
+
 Three ids load E-value, and `loadWalletInteractionId` picks the first one the
 caller holds: 491 (retailer), 240 (distributor), then 10021 — the limited "Load
 E-value with QR (UPI)" an account gets after e-signing the agreement but before
