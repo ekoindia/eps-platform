@@ -401,24 +401,18 @@ export default function ConsoleLayout() {
 				<ConnectDialogProvider>
 					<div className="grid min-h-screen lg:grid-cols-[16rem_minmax(0,1fr)] print:block">
 						{/*
-						 * One rail column at every width, so `WalletBalance` mounts once and
-						 * fetches once — a second copy inside the Sheet would double the
-						 * upstream round-trips and race the visible card to the rate limit.
-						 * Only the LINKS collapse behind the Sheet below `lg`; the balance
-						 * stays on screen, as it is in Eloka. Desktop: the docs rail's slate
-						 * panel, sticky under the fixed ~88px site header.
+						 * Below `lg` the whole rail — caption, balance and links — lives in
+						 * the Sheet, so a phone spends its vertical space on the sub-page
+						 * instead of repeating the same header on every route; only the
+						 * trigger stays outside. The balance therefore mounts twice in the
+						 * tree (rail + Sheet), which is safe because `wallet-balance.ts`
+						 * caches for 30s and dedupes in-flight fetches: the Sheet's copy
+						 * paints from the cache and the pair can never double the upstream
+						 * round-trips. Desktop: the docs rail's slate panel, sticky under
+						 * the fixed ~88px site header.
 						 */}
-						<aside className="px-4 pb-8 pt-28 lg:border-r lg:border-border/60 lg:bg-slate-50 lg:px-3 lg:pb-16 print:hidden">
+						<aside className="px-4 pb-2 pt-24 lg:border-r lg:border-border/60 lg:bg-slate-50 lg:px-3 lg:pb-16 lg:pt-28 print:hidden">
 							<div className="lg:sticky lg:top-28">
-								{/* The page's only h1: the rail caption names the section, as
-								    `DocsLayout` does. The lifecycle state lives on the Home
-								    profile card, not here. */}
-								<div className="mb-3 flex items-center justify-center gap-2 px-3">
-									<h1 className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-eko-gold-ink">
-										EPS Developer Console
-									</h1>
-								</div>
-								<WalletBalance />
 								<div className="lg:hidden">
 									<Sheet open={open} onOpenChange={setOpen}>
 										<SheetTrigger asChild>
@@ -428,12 +422,27 @@ export default function ConsoleLayout() {
 											</Button>
 										</SheetTrigger>
 										<SheetContent side="left" className="w-72 p-4 pt-10">
-											<SheetTitle className="sr-only">Console menu</SheetTitle>
+											{/* Doubles as the Sheet's required accessible title, so
+											    the caption is announced rather than duplicated as a
+											    second copy of the page's h1 below. */}
+											<SheetTitle className="mb-3 px-3 text-center text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-eko-gold-ink">
+												EPS Developer Console
+											</SheetTitle>
+											<WalletBalance />
 											<ConsoleNav onNavigate={() => setOpen(false)} />
 										</SheetContent>
 									</Sheet>
 								</div>
 								<div className="hidden lg:block">
+									{/* The page's only h1: the rail caption names the section, as
+									    `DocsLayout` does. The lifecycle state lives on the Home
+									    profile card, not here. */}
+									<div className="mb-3 flex items-center justify-center gap-2 px-3">
+										<h1 className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-eko-gold-ink">
+											EPS Developer Console
+										</h1>
+									</div>
+									<WalletBalance />
 									<ConsoleNav />
 								</div>
 							</div>
