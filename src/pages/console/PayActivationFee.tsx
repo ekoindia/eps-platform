@@ -3,7 +3,7 @@ import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { FadeIn } from "@/components/FadeIn";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { groupDigits, Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
 import { profileGstNumber } from "@/lib/auth/identity";
@@ -27,10 +27,17 @@ import { toast } from "sonner";
  * partner transferring money needs to read the same account number in UAT, in
  * production and in a screenshot from six months ago.
  */
-const BANK_DETAILS: { label: string; value: string }[] = [
+const BANK_DETAILS: { label: string; value: string; display?: string }[] = [
 	{ label: "Bank", value: "HDFC Bank" },
 	{ label: "Account Name", value: "Eko Bharat Ventures Pvt Ltd" },
-	{ label: "Account Number", value: "00032000039765" },
+	{
+		label: "Account Number",
+		value: "00032000039765",
+		// Grouped for the eye only. Fourteen unbroken digits are what a partner
+		// mistypes into their bank's payee form; the clipboard still carries the
+		// bare number, which is the one their bank will accept.
+		display: groupDigits("00032000039765", [3, 3, 4, 4]),
+	},
 	{ label: "IFSC Code", value: "HDFC0009141" },
 ];
 
@@ -146,15 +153,30 @@ const FIELDS: TouchableField[] = [
 	"products",
 ];
 
-/** One `label / value / copy` row of the bank-account block. */
-function BankRow({ label, value }: { label: string; value: string }) {
+/**
+ * One `label / value / copy` row of the bank-account block.
+ * @param label - Row caption.
+ * @param value - What lands on the clipboard, and what is shown unless
+ * `display` says otherwise.
+ * @param display - A more readable rendering of the same value, for fields that
+ * are easier to read grouped than they are to paste grouped.
+ */
+function BankRow({
+	label,
+	value,
+	display,
+}: {
+	label: string;
+	value: string;
+	display?: string;
+}) {
 	return (
 		<div className="flex items-center gap-2">
 			<span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">
 				{label}
 			</span>
 			<code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 font-mono text-xs">
-				{value}
+				{display ?? value}
 			</code>
 			<CopyButton text={value} label={`Copy ${label}`} />
 		</div>
@@ -520,7 +542,12 @@ export default function PayActivationFee() {
 					</p>
 					<div className="flex flex-col gap-2">
 						{BANK_DETAILS.map((row) => (
-							<BankRow key={row.label} label={row.label} value={row.value} />
+							<BankRow
+								key={row.label}
+								label={row.label}
+								value={row.value}
+								display={row.display}
+							/>
 						))}
 					</div>
 				</div>
@@ -757,7 +784,8 @@ export default function PayActivationFee() {
 								{busy ? "Sending…" : "Send payment details"}
 							</Button>
 							<p className="text-xs text-muted-foreground">
-								We&rsquo;ll email these to Team Eko for confirmation.
+								We&rsquo;ll send these to Team Eko for confirmation. Your
+								invoice follows between the 10th and 15th of next month.
 							</p>
 						</div>
 					</form>

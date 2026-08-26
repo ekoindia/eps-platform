@@ -103,8 +103,26 @@ describe("PayActivationFee — the standing information", () => {
 		renderPage();
 		expect(screen.getByText("HDFC Bank")).toBeInTheDocument();
 		expect(screen.getByText("Eko Bharat Ventures Pvt Ltd")).toBeInTheDocument();
-		expect(screen.getByText("00032000039765")).toBeInTheDocument();
 		expect(screen.getByText("HDFC0009141")).toBeInTheDocument();
+	});
+
+	it("groups the account number so it can be read off the screen", () => {
+		renderPage();
+		expect(screen.getByText("000 320 0003 9765")).toBeInTheDocument();
+		// The grouped form is a reading aid, not the number itself.
+		expect(screen.queryByText("00032000039765")).toBeNull();
+	});
+
+	it("copies the account number ungrouped, the way a bank wants it", async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined);
+		vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+		renderPage();
+		fireEvent.click(
+			screen.getByRole("button", { name: /copy account number/i }),
+		);
+		// Pasting "000 320 0003 9765" into a payee form is a failed transfer.
+		await waitFor(() => expect(writeText).toHaveBeenCalledWith("00032000039765"));
+		vi.unstubAllGlobals();
 	});
 
 	it("points at the pricing calculator once there is a fee to explain", () => {
