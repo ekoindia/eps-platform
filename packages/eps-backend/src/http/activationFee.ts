@@ -304,29 +304,29 @@ const rawRow = (label: string, html: string): string =>
 	`<tr><td><strong>${escapeHtml(label)}</strong></td><td>${html || "—"}</td></tr>`;
 
 /**
- * The Zoho CRM org these records live in. Not a secret — it is in the URL of
- * every record anyone at Eko opens — but it is the one part of the link that is
- * an account fact rather than a record fact, so it is named once.
- */
-const ZOHO_ORG = "org60006414357";
-
-/**
- * A link to one Zoho CRM record, or "" when there is no id to link to.
+ * A link to one Zoho CRM record, or "" when there is nothing to link to.
  *
  * The id is upstream's, so it is escaped for the attribute AND percent-encoded
  * for the path: a value carrying a quote would otherwise break out of the href,
  * and this mail is read in a client that will happily render whatever it is
  * handed.
+ * @param baseUrl - Record-URL base including the org segment; "" disables links.
  * @param tab - The CRM tab, e.g. `"Leads"`.
  * @param id - The record id from the profile, in whatever shape it arrived.
  * @param label - Link text.
- * @returns An `<a>`, or "" when the id is absent or blank.
+ * @returns An `<a>`, or "" when the base URL or the id is absent.
  */
-function zohoLink(tab: string, id: unknown, label: string): string {
+function zohoLink(
+	baseUrl: string,
+	tab: string,
+	id: unknown,
+	label: string,
+): string {
+	if (!baseUrl) return "";
 	if (typeof id !== "string" && typeof id !== "number") return "";
 	const trimmed = String(id).trim();
 	if (!trimmed) return "";
-	const href = `https://crm.zoho.in/crm/${ZOHO_ORG}/tab/${tab}/${encodeURIComponent(trimmed)}`;
+	const href = `${baseUrl}/tab/${tab}/${encodeURIComponent(trimmed)}`;
 	return `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
 }
 
@@ -343,6 +343,7 @@ function zohoLink(tab: string, id: unknown, label: string): string {
 export function buildEmailBody(
 	profile: EkoProfile,
 	claim: PaymentClaim,
+	crmRecordBaseUrl = "",
 ): string {
 	const code =
 		profile.code === null || profile.code === undefined
@@ -374,8 +375,18 @@ export function buildEmailBody(
 		rawRow(
 			"Zoho CRM",
 			[
-				zohoLink("Leads", profile.userDetail.crm_lead_id, "Lead"),
-				zohoLink("Contacts", profile.userDetail.crm_contact_id, "Contact"),
+				zohoLink(
+					crmRecordBaseUrl,
+					"Leads",
+					profile.userDetail.crm_lead_id,
+					"Lead",
+				),
+				zohoLink(
+					crmRecordBaseUrl,
+					"Contacts",
+					profile.userDetail.crm_contact_id,
+					"Contact",
+				),
 			]
 				.filter(Boolean)
 				.join(", "),
@@ -421,6 +432,8 @@ export function mountActivationFee(
 		eko: EkoClient;
 		kv: KV;
 		cfg?: Config["activationFee"];
+		/** Zoho record-URL base for the CRM links; omitted → no links. */
+		crmRecordBaseUrl?: string;
 		fetchImpl?: typeof fetch;
 	},
 ): void {
@@ -532,7 +545,10 @@ export function mountActivationFee(
 		const out = new FormData();
 		out.append("to", cfg.recipients.join(", "));
 		out.append("subject", buildEmailSubject(profile.profile));
-		out.append("body", buildEmailBody(profile.profile, claim));
+		out.append(
+			"body",
+			buildEmailBody(profile.profile, claim, deps.crmRecordBaseUrl ?? ""),
+		);
 		if (attachment) out.append("attachment", attachment, attachment.name);
 
 		// No Content-Type header: fetch derives `multipart/form-data` plus the

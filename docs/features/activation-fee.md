@@ -103,6 +103,13 @@ omitting the keys. This is the only cell built as markup rather than text, via
 `rawRow`, so escaping stays the default everywhere else; the ids are both
 percent-encoded into the path and escaped into the attribute.
 
+The link base comes from `ZOHO_CRM_RECORD_BASE_URL` (e.g.
+`https://crm.zoho.in/crm/org60006414357`), not from `ZOHO_BASE_URL` — that one
+is the REST host lead enrichment calls, and the two differ by host *and* path,
+so conflating them yields 404s. Unset, the row still renders and the links are
+simply omitted: a missing convenience link is not worth refusing to boot over,
+unlike a missing mail recipient.
+
 **Subject line**: `EPS One-Time Activation Fee Received | #<ekocode> | <partner>`
 — built by `buildEmailSubject`, so finance can triage from the inbox list and
 search a thread by the code they reconcile against. An identity part that is

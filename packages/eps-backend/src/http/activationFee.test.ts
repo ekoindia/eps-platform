@@ -47,6 +47,7 @@ function harness(
 		role?: string | null;
 		/** `null` means "this deployment has no webhook"; omit for the default. */
 		cfg?: Config["activationFee"] | null;
+		crmRecordBaseUrl?: string;
 		profileResult?: ProfileResult;
 		kv?: KV;
 		fetchImpl?: typeof fetch;
@@ -98,6 +99,10 @@ function harness(
 		eko,
 		kv: opts.kv ?? createInMemoryKV(),
 		cfg: opts.cfg === null ? undefined : (opts.cfg ?? ACTIVATION_CFG),
+		crmRecordBaseUrl:
+			opts.crmRecordBaseUrl === undefined
+				? "https://crm.zoho.in/crm/org60006414357"
+				: opts.crmRecordBaseUrl,
 		fetchImpl,
 	});
 	return { app, sent, getProfile };
@@ -609,6 +614,26 @@ describe("POST /activation-fee/intimate — the Zoho CRM row", () => {
 		const body = await bodyOf(sent);
 		expect(body).not.toContain("crm.zoho.in");
 		expect(body).toContain("Zoho CRM");
+	});
+
+	it("omits the links entirely when no record base URL is configured", async () => {
+		const { app, sent } = harness({ crmRecordBaseUrl: "" });
+		await intimate(app);
+		const body = await bodyOf(sent);
+		// The row still exists — its absence would read as "this partner has no
+		// CRM record", which is a different claim.
+		expect(body).toContain("Zoho CRM");
+		expect(body).not.toContain("<a href");
+	});
+
+	it("follows a base URL pointed at another org or datacentre", async () => {
+		const { app, sent } = harness({
+			crmRecordBaseUrl: "https://crm.zoho.com/crm/org999",
+		});
+		await intimate(app);
+		expect(await bodyOf(sent)).toContain(
+			"https://crm.zoho.com/crm/org999/tab/Leads/lead-1",
+		);
 	});
 
 	it("accepts a numeric id, which is how Zoho ids usually arrive", async () => {

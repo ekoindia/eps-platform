@@ -131,7 +131,22 @@ export interface Config {
 		editBase: string;
 		prodBase: string;
 	};
-	zoho: { enabled: boolean; baseUrl?: string; accessToken?: string };
+	zoho: {
+		enabled: boolean;
+		baseUrl?: string;
+		accessToken?: string;
+		/**
+		 * Base of a CRM **record URL** in the Zoho web app, including the org
+		 * segment — e.g. `https://crm.zoho.in/crm/org60006414357`. Deliberately
+		 * NOT `baseUrl`, which is the REST API host that lead enrichment calls:
+		 * the two differ by host AND path, so reusing one for the other produces
+		 * links that 404.
+		 *
+		 * Absent → record links are simply omitted. A missing convenience link is
+		 * not worth refusing to boot over, unlike a missing mail recipient.
+		 */
+		crmRecordBaseUrl?: string;
+	};
 }
 
 const REQUIRED = [
@@ -362,6 +377,29 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		}
 		activationFee = { webhookUrl: activationFeeUrl, recipients, timeoutMs };
 	}
+	// Base of a Zoho CRM record URL, used to link a partner's Lead/Contact from
+	// the activation-fee mail. Validated here so a typo surfaces at boot rather
+	// than as a dead link in somebody's inbox.
+	let crmRecordBaseUrl = env.ZOHO_CRM_RECORD_BASE_URL || undefined;
+	if (crmRecordBaseUrl) {
+		let parsed: URL;
+		try {
+			parsed = new URL(crmRecordBaseUrl);
+		} catch {
+			throw new Error(
+				`ZOHO_CRM_RECORD_BASE_URL is not a valid URL: "${crmRecordBaseUrl}"`,
+			);
+		}
+		if (parsed.protocol !== "https:") {
+			throw new Error(
+				`ZOHO_CRM_RECORD_BASE_URL must be https; got "${parsed.protocol}"`,
+			);
+		}
+		// Trailing slash stripped once here so every caller can append "/tab/..."
+		// without each guessing whether it needs to.
+		crmRecordBaseUrl = crmRecordBaseUrl.replace(/\/+$/, "");
+	}
+
 	const redisUrl = env.REDIS_URL || undefined;
 	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
 	if (redisUrl) {
@@ -419,6 +457,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			enabled: env.ZOHO_ENABLED === "true",
 			baseUrl: env.ZOHO_BASE_URL,
 			accessToken: env.ZOHO_ACCESS_TOKEN,
+			crmRecordBaseUrl,
 		},
 	};
 }

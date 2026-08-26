@@ -678,7 +678,13 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	// Mounted unconditionally so the console page it backs is never a 404. When
 	// `cfg.activationFee` is absent the route answers a named 503 the page can
 	// explain, which is the honest answer for a deployment that has no webhook.
-	mountActivationFee(app, { sessions, eko, kv, cfg: cfg.activationFee });
+	mountActivationFee(app, {
+		sessions,
+		eko,
+		kv,
+		cfg: cfg.activationFee,
+		crmRecordBaseUrl: cfg.zoho.crmRecordBaseUrl,
+	});
 
 	// Mounted unconditionally, unlike the Connect-widget routes below: it serves
 	// aggregate counts rather than credentials, so under the `eko` provider the

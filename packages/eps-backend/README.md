@@ -752,6 +752,7 @@ a key matching `/gst/i`, and prints as `—` when the profile carries none.
 | `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_                       | https required off loopback. **Secret**; never ship to the browser |
 | `ACTIVATION_FEE_RECIPIENTS`  | _(none — required with the URL)_               | Comma-separated. Absent, empty or malformed = boot error         |
 | `ACTIVATION_FEE_TIMEOUT_MS`  | `20000`                                        | Abort for the webhook call                                       |
+| `ZOHO_CRM_RECORD_BASE_URL`   | _(unset — links omitted)_                      | CRM record-URL base incl. org, e.g. `https://crm.zoho.in/crm/orgNNN`. Not `ZOHO_BASE_URL` (the REST host) |
 
 > An n8n `/webhook-test/...` URL only fires while the workflow editor is open
 > and listening. Production must use the `/webhook/...` URL, or every
