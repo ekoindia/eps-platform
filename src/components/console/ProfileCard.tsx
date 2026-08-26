@@ -35,6 +35,10 @@ export default function ProfileCard({ me }: { me: MeView }) {
 	// Numeric upstream, so stringified before render and before copy.
 	const code = me.profile?.code ? String(me.profile.code) : "";
 	const badge = lifecycleBadge(me.state);
+	// A KYC state is the one badge that names an action: the documents page is
+	// where it gets resolved, so the tag itself goes there rather than making
+	// the partner find Upload Documents in the rail.
+	const kycTag = me.state === "kyc-pending" || me.state === "kyc-rejected";
 
 	return (
 		// Half the avatar hangs above the card, so the wrapper reserves that half
@@ -60,7 +64,18 @@ export default function ProfileCard({ me }: { me: MeView }) {
 					<h3 className="w-full min-w-0 truncate text-lg font-semibold text-eko-gold">
 						{personName || me.mobile}
 					</h3>
-					<Badge variant={badge.variant}>{badge.label}</Badge>
+					{kycTag ? (
+						<Link
+							to="/console/documents"
+							className="rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
+						>
+							<Badge variant={badge.variant} className="cursor-pointer">
+								{badge.label}
+							</Badge>
+						</Link>
+					) : (
+						<Badge variant={badge.variant}>{badge.label}</Badge>
+					)}
 				</div>
 				<div className="flex w-full min-w-0 flex-col items-center gap-1.5 text-sm">
 					<p className="flex items-center gap-2">
