@@ -81,23 +81,66 @@ calls and 60 read calls per `RL_WINDOW_SEC` (600 s), keyed on `claim.sub` rather
 than `claim.sid` so a re-login neither resets the quota nor leaves a new key
 behind.
 
-### The status interactions do not answer like the list does
+### `status` does not mean what it means elsewhere
 
-`connect.interact` is used for all three, but the **envelope rule differs**, and
-getting this wrong made every read return 502:
+`connect.interact` is used for all three interactions, but the **envelope rule
+differs per interaction**, and getting it wrong has now broken this feature twice:
 
-| Interaction       | Rule                                                                                           |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| 10010 (list)      | `Number(status) !== 0` is a failure. It owes us data, so silence is a fault.                   |
-| 10012 (read)      | Only an **explicit non-zero** `status` is a failure. A missing `status` is an accepted update. |
-| 10023 (delivered) | Response ignored entirely.                                                                     |
+| Interaction       | Rule                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| 10010 (list)      | The **payload** decides: `data.notifications` must be an array. `status: 0` rescues a listless envelope; any other status without a list is a 502. |
+| 10012 (read)      | Only an **explicit non-zero** `status` is a failure. A missing `status` is an accepted update.    |
+| 10023 (delivered) | Response ignored entirely.                                                                        |
+
+#### 10010 answers a SUCCESSFUL list with `status: -1`
+
+This is the captured Eloka browser call to production `/transactions/do`, body
+`interaction_type_id=10010`, and it is the ground truth for the row above:
+
+```json
+{
+  "message": "Success!",
+  "response_type_id": 20000,
+  "response_status_id": -1,
+  "status": -1,
+  "data": { "notifications": [ … ] }
+}
+```
+
+`status: -1` **with** `message: "Success!"` and a full list. The route originally
+gated on `Number(status ?? -1) !== 0` — carried over from the dashboard
+interactions, where it is correct — so **every successful poll became a 502**. The
+console cannot distinguish that from an empty inbox: `poll()` treats only 501/403
+as terminal, leaves `cache` at `null`, and both the bell and the console card
+render `null` on an empty list. The symptom was a feature that silently did
+nothing while retrying every ten minutes.
+
+It stayed hidden because the route test mocked `{ status: 0, … }`, a shape upstream
+never sends here. **The test envelope now mirrors the capture above verbatim** —
+that is what keeps this fix from being undone by the next person who "normalizes"
+the mock.
+
+Why `status: 0` still rescues an envelope with no list: EMS is legacy, and a
+partner with an empty inbox may well answer `data: {}` rather than an empty array.
+502-ing every such partner is worse than the bug being fixed. Either way, an
+envelope arriving without a `notifications` array is **logged** with its
+`status`, `response_status_id`, `message` and key names — once per failed poll,
+bounded by the rate limiter rather than by any dedupe — because that shape is the
+thing this service is still guessing at.
+
+#### 10012 (read) is lenient for the opposite reason
 
 Nothing upstream ever promised a `status: 0` for a status update — Eloka's
 `updateEMS` fires 10012 and 10023 and inspects **only the transport error**, never
-the envelope. Applying the list's strict rule to 10012 therefore invented a
-failure out of an envelope that simply had no `status` field. The route now logs
-the envelope's key names whenever a read is refused _or_ answers without a status,
-so the real shape is recorded rather than guessed at.
+the envelope. Applying the list's old strict rule to 10012 invented a failure out
+of an envelope that simply had no `status` field. The route logs the envelope's
+key names whenever a read is refused _or_ answers without a status.
+
+**Open question:** 10012 has no captured live sample. If it shares 10010's
+convention and answers a successful update with a non-zero `status`, every
+read-mark still 502s — harmless on screen, since the mark is optimistic-local and
+the next poll reconciles, but the read would never stick upstream. That log line
+is the thing to read after this ships.
 
 All three also send **`source: "EPS"`**. Eloka's fetcher adds `source` to every
 interaction, and the EMS ones read it; the list call had it from the start and the

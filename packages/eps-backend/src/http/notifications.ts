@@ -223,13 +223,42 @@ export function mountNotifications(
 			{ xRealIp },
 		);
 		// connect-api answers HTTP 200 for business failures, so the envelope is
-		// what decides — the rule every route in `connect.ts` follows.
-		if (Number(envelope.status ?? -1) !== 0) {
-			throw AppError.fromUpstream(
-				502,
-				"NOTIFICATIONS_FAILED",
-				text(envelope.message) || "Couldn't load your notifications right now.",
+		// what decides — the rule every route in `connect.ts` follows. WHICH field
+		// decides is what differs here.
+		//
+		// The PAYLOAD decides, not `status`. Interaction 10010 answers a successful
+		// list with `status: -1` and `message: "Success!"` — captured from Eloka's own
+		// browser call, and the reason this route used to 502 on every good response.
+		// `Number(envelope.status ?? -1) !== 0` was an assumption carried over from the
+		// dashboard interactions and pinned by a test that mocked `status: 0`, a shape
+		// upstream never sends here.
+		//
+		// `status === 0` still rescues an envelope that has no list: EMS is legacy and
+		// a caller with nothing to show may well answer `data: {}` rather than an empty
+		// array, and 502-ing every partner with an empty inbox is a worse failure than
+		// the one being fixed. Either way an envelope without an array is logged — that
+		// shape is the thing this service is still guessing at.
+		const list = (envelope.data as { notifications?: unknown } | undefined)
+			?.notifications;
+		if (!Array.isArray(list)) {
+			// Keys and upstream's own status/message only — never a notification's
+			// contents. Once per failed poll, so a partner stuck in this branch is
+			// bounded by the rate limiter above rather than by a dedupe here.
+			console.warn(
+				`[notifications] list answered without a notifications array:` +
+					` status=${text(String(envelope.status ?? "-"), 16)}` +
+					` response_status_id=${text(String(envelope.response_status_id ?? "-"), 16)}` +
+					` message=${text(envelope.message)}` +
+					` keys=[${Object.keys(envelope).join(", ")}]`,
 			);
+			if (Number(envelope.status) !== 0) {
+				throw AppError.fromUpstream(
+					502,
+					"NOTIFICATIONS_FAILED",
+					text(envelope.message) ||
+						"Couldn't load your notifications right now.",
+				);
+			}
 		}
 
 		const notifications = normalizeNotifications(envelope, Date.now());

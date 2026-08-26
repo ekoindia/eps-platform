@@ -30,9 +30,22 @@ function item(overrides: Record<string, unknown> = {}) {
 	};
 }
 
-/** A successful interaction-10010 envelope. */
+/**
+ * A successful interaction-10010 envelope, VERBATIM in shape.
+ *
+ * `status: -1` is not a typo and not a failure: this is what Eloka's own browser
+ * call to `/transactions/do` receives for a good list, captured from production
+ * connect-api. Mocking `status: 0` here is what let the route's old gate 502 every
+ * successful poll while the suite stayed green.
+ */
 function envelope(notifications: unknown[]) {
-	return { status: 0, message: "ok", data: { notifications } };
+	return {
+		message: "Success!",
+		response_type_id: 20000,
+		response_status_id: -1,
+		status: -1,
+		data: { notifications },
+	};
 }
 
 function harness(
@@ -51,7 +64,10 @@ function harness(
 	// Mirrors app.ts's onError so status/code assertions match production.
 	app.onError((err, c) => {
 		if (err instanceof AppError) {
-			return c.json(errorBody(err.code, err.message, undefined, err.source), err.status as never);
+			return c.json(
+				errorBody(err.code, err.message, undefined, err.source),
+				err.status as never,
+			);
 		}
 		return c.json(errorBody("UPSTREAM_ERROR", "Something went wrong"), 500);
 	});
@@ -156,6 +172,24 @@ describe("notifications route gate", () => {
 		const { app } = harness({
 			connect: {
 				interact: vi.fn(async () => ({ status: 1, message: "nope" })),
+			} as Partial<ConnectClient>,
+		});
+		const res = await load(app);
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("NOTIFICATIONS_FAILED");
+	});
+
+	it("502s when a non-zero status carries no list, whatever the status is", async () => {
+		// The regression guard for the fix: -1 is upstream's SUCCESS value here, so it
+		// must not become a blanket "any envelope is fine". Without a list there is
+		// nothing to serve, and this route owes the console data.
+		const { app } = harness({
+			connect: {
+				interact: vi.fn(async () => ({
+					status: -1,
+					message: "Something went wrong",
+					data: {},
+				})),
 			} as Partial<ConnectClient>,
 		});
 		const res = await load(app);
@@ -371,12 +405,19 @@ describe("notifications normalization", () => {
 	});
 
 	it("returns an empty list when upstream sends no notifications array", async () => {
+		// `status: 0` is the one thing that rescues a listless envelope — a legacy EMS
+		// answering `data: {}` for a partner with an empty inbox must not 502.
 		const { app } = harness({
 			connect: {
 				interact: vi.fn(async () => ({ status: 0, data: {} })),
 			} as Partial<ConnectClient>,
 		});
 		expect(await listOf(await load(app))).toEqual([]);
+	});
+
+	it("serves the list upstream actually sends, status -1 and all", async () => {
+		const { app } = harness({ notifications: [item({ id: 57673181 })] });
+		expect(await listOf(await load(app))).toMatchObject([{ id: 57673181 }]);
 	});
 });
 
