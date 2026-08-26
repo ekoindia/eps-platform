@@ -784,8 +784,9 @@ export default function PayActivationFee() {
 								{busy ? "Sending…" : "Send payment details"}
 							</Button>
 							<p className="text-xs text-muted-foreground">
-								We&rsquo;ll send these to Team Eko for confirmation. Your
-								invoice follows between the 10th and 15th of next month.
+								We&rsquo;ll send these to Team Eko for confirmation. You
+								will receive your invoice between the 10th and 15th of next
+								month.
 							</p>
 						</div>
 					</form>
