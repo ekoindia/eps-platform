@@ -47,6 +47,11 @@ describe("deriveStateFromProfile", () => {
 			"kyc-pending",
 		);
 	});
+	it("kyc-rejected when the account state id is 47", () => {
+		expect(deriveStateFromProfile(found({ accountStateId: 47 }))).toBe(
+			"kyc-rejected",
+		);
+	});
 	it("active when the account state id is 16", () => {
 		expect(deriveStateFromProfile(found({ accountStateId: 16 }))).toBe(
 			"active",

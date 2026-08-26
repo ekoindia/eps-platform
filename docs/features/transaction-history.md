@@ -100,14 +100,15 @@ The route:
 count. On an exactly-full final page that costs one empty page.
 
 The page fetches only for a **provisioned** account — `isProvisioned(me.state)`,
-i.e. `active` or `kyc-pending` (`src/lib/auth/client.ts`). No other lifecycle
-state can have transactions, so those show an onboarding pointer instead of a
-call that could only fail.
+i.e. `active`, `kyc-pending` or `kyc-rejected` (`src/lib/auth/client.ts`). No
+other lifecycle state can have transactions, so those show an onboarding pointer
+instead of a call that could only fail.
 
-`kyc-pending` is in that set deliberately: it is a post-onboarding account state
-(upstream `account_state_id` 48) that read as `active` before the state existed,
-and gating on `active` alone would have taken the history away from every partner
-whose KYC is outstanding. Test for `active` only when the question really is
+`kyc-pending` and `kyc-rejected` are in that set deliberately: both are
+post-onboarding account states (upstream `account_state_id` 48 and 47) that read
+as `active` before those states existed, and gating on `active` alone would have
+taken the history away from every partner whose KYC is outstanding or whose
+documents were refused. Test for `active` only when the question really is
 "is anything still outstanding" — which is what `NextStepsCard` asks.
 
 ## Confirmed by a real response

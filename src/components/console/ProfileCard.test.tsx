@@ -83,4 +83,14 @@ describe("ProfileCard", () => {
 		show({ ...ME, state: "kyc-pending" });
 		expect(screen.getByText("KYC Pending")).toBeInTheDocument();
 	});
+
+	// 47 read as `active` before the state existed, so the one account that most
+	// needs to act was told it had nothing to do. Red, not grey, for that reason.
+	it("shows a rejected KYC in red, not as Active", () => {
+		show({ ...ME, state: "kyc-rejected" });
+		const badge = screen.getByText("KYC Rejected");
+		expect(badge).toBeInTheDocument();
+		expect(badge).toHaveClass("bg-destructive");
+		expect(screen.queryByText("Active")).toBeNull();
+	});
 });

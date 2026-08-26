@@ -100,6 +100,20 @@ describe("ConsoleHome", () => {
 		expect(screen.getByText("KYC Pending")).toBeInTheDocument();
 	});
 
+	// Same reason as the kyc-pending case above: a refused document does not
+	// unwind the transactions this partner has already run.
+	it("keeps the dashboard when the KYC pack was rejected", () => {
+		renderHome({
+			state: "kyc-rejected",
+			mobile: "999",
+			profile: null,
+			zohoId: null,
+		});
+		expect(screen.getByTestId("dashboard-loading")).toBeInTheDocument();
+		expect(load).toHaveBeenCalled();
+		expect(screen.getByText("KYC Rejected")).toBeInTheDocument();
+	});
+
 	it("shows the state, and no dashboard, for an inactive account", () => {
 		renderHome({
 			state: "inactive",

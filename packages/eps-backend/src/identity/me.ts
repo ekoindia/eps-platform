@@ -24,6 +24,14 @@ export interface SignupView {
  */
 const KYC_PENDING_STATE_ID = 48;
 
+/**
+ * `user_detail.account_state_id` for an account whose KYC pack was reviewed and
+ * refused — upstream describes it as *Ready for Resubmission*. The partner has
+ * to read the per-document rejection reason and upload the flagged documents
+ * again; the account is otherwise as provisioned as a `kyc-pending` one.
+ */
+const KYC_REJECTED_STATE_ID = 47;
+
 export function deriveStateFromProfile(r: ProfileResult): LifecycleState {
 	if (r.kind === "inactive") return "inactive";
 	if (r.kind === "error" || r.kind === "not_allowed") return "unknown";
@@ -33,14 +41,14 @@ export function deriveStateFromProfile(r: ProfileResult): LifecycleState {
 	// in-progress, and a third value appearing later is not a reason to tell a
 	// finished partner their onboarding is unfinished.
 	if (r.profile.onboarding === 1) return "onboarded";
+	if (r.profile.accountStateId === KYC_PENDING_STATE_ID) return "kyc-pending";
+	if (r.profile.accountStateId === KYC_REJECTED_STATE_ID) return "kyc-rejected";
 	// Deliberately fail-open on the id. 16 is live, and so is every id we have
 	// not mapped — including `null`, which is what the connect-api provider
 	// always reports (its envelope has no such field). Reading an unknown id as
 	// pending would put a blocking KYC step in front of every partner on that
 	// provider the day this ships.
-	return r.profile.accountStateId === KYC_PENDING_STATE_ID
-		? "kyc-pending"
-		: "active";
+	return "active";
 }
 
 export async function buildMeView(

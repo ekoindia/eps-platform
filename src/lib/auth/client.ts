@@ -18,6 +18,7 @@ export const LIFECYCLES = [
 	"onboarded",
 	"active",
 	"kyc-pending",
+	"kyc-rejected",
 	"inactive",
 	"unknown",
 ] as const;
@@ -28,19 +29,19 @@ export type Lifecycle = (typeof LIFECYCLES)[number];
  * Whether upstream has provisioned this account — it exists, onboarding is
  * finished, and it can therefore have transacted.
  *
- * Both `active` and `kyc-pending` are post-onboarding account states (upstream
- * `account_state_id` 16 and 48). Before `kyc-pending` existed BOTH read as
- * `active`, so anything that gates on "is this a real account" must ask this
- * rather than test for `active` alone — otherwise adding the state would have
- * taken the transaction history and the dashboard away from every partner whose
- * KYC is outstanding.
+ * `active`, `kyc-pending` and `kyc-rejected` are all post-onboarding account
+ * states (upstream `account_state_id` 16, 48 and 47). Before those two existed
+ * ALL of them read as `active`, so anything that gates on "is this a real
+ * account" must ask this rather than test for `active` alone — otherwise adding
+ * a state would take the transaction history and the dashboard away from every
+ * partner whose KYC is outstanding or whose documents were refused.
  *
  * Not for gating on KYC itself: `NextStepsCard` tests for `active` exactly
  * because it is asking the opposite question.
  * @param state - The session's lifecycle state.
  */
 export const isProvisioned = (state: Lifecycle): boolean =>
-	state === "active" || state === "kyc-pending";
+	state === "active" || state === "kyc-pending" || state === "kyc-rejected";
 
 /** One account from the profile's `account_detail` block. */
 export interface Account {
@@ -86,8 +87,9 @@ export interface Profile {
 	 */
 	detailBlocks: Record<string, unknown>;
 	/**
-	 * Upstream's account state — 16 live, 48 KYC pending — or null when it sent
-	 * none. Drives `MeView.state`; branch on that rather than on this.
+	 * Upstream's account state — 16 live, 48 KYC pending, 47 KYC rejected — or
+	 * null when it sent none. Drives `MeView.state`; branch on that rather than
+	 * on this.
 	 */
 	accountStateId: number | null;
 	/**

@@ -77,6 +77,13 @@ const PRODUCTION_COPY: Record<
 		body: "Production keys are issued once your KYC documents have been uploaded and verified by our team. Please wait for an email from `eps.support@eko.co.in`, once your documents have been approved.",
 		cta: { label: "Upload documents", href: "/console/documents" },
 	},
+	// Also not `FINISH_ONBOARDING`, and deliberately not the `kyc-pending` copy:
+	// telling a partner whose documents were refused to wait for an email is the
+	// one instruction that cannot resolve their state.
+	"kyc-rejected": {
+		body: "One or more of your KYC documents were not accepted. Open Upload Documents to see why each one was rejected and upload it again — production keys are issued once the re-uploaded documents are verified by our team.",
+		cta: { label: "Re-upload documents", href: "/console/documents" },
+	},
 	lead: FINISH_ONBOARDING,
 	onboarded: FINISH_ONBOARDING,
 	unknown: FINISH_ONBOARDING,

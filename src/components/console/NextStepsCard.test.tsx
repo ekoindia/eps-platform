@@ -61,6 +61,26 @@ describe("NextStepsCard", () => {
 		).toHaveAttribute("href", "/console/documents");
 	});
 
+	// The bug this state was added for: 47 read as `active`, so a partner whose
+	// documents were refused saw a struck-out KYC row and an "Active" account.
+	it("marks a rejected KYC red, and offers the re-upload", () => {
+		kycEnabled.mockReturnValue(true);
+		renderCard({ state: "kyc-rejected" });
+		const badge = screen.getByText("Re-upload required");
+		expect(badge).toBeInTheDocument();
+		// Red, not the neutral grey every other state gets.
+		expect(badge).toHaveClass("bg-destructive");
+		expect(screen.queryByText("Pending")).not.toBeInTheDocument();
+		expect(screen.queryByText("Done")).not.toBeInTheDocument();
+		expect(screen.getByText(/finish your kyc/i)).not.toHaveClass("line-through");
+		// The icon must not say "Not started" for a pack that was submitted.
+		expect(screen.queryByLabelText("Not started")).not.toBeInTheDocument();
+		expect(screen.getByLabelText("Re-upload required")).toBeInTheDocument();
+		const link = screen.getByRole("link", { name: /uploading documents/i });
+		expect(link).toHaveAttribute("href", "/console/documents");
+		expect(link).toHaveTextContent("Re-upload");
+	});
+
 	it("marks KYC done once the account is active, and strikes it out", () => {
 		renderCard({ state: "active" });
 		expect(screen.getByText("Done")).toBeInTheDocument();
@@ -77,7 +97,9 @@ describe("NextStepsCard", () => {
 			screen.getAllByLabelText(/not started|status unknown/i),
 		).toHaveLength(4);
 		expect(screen.getByLabelText("Not started")).toBeInTheDocument();
-		expect(screen.getAllByText(/^(Pending|Done)$/)).toHaveLength(1);
+		expect(
+			screen.getAllByText(/^(Pending|Done|Re-upload required)$/),
+		).toHaveLength(1);
 	});
 
 	it("does not link KYC while the entitlement says no", () => {

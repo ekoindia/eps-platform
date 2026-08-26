@@ -34,6 +34,7 @@ export default function ProfileCard({ me }: { me: MeView }) {
 	const mobile = me.profile?.mobile?.trim() || me.mobile;
 	// Numeric upstream, so stringified before render and before copy.
 	const code = me.profile?.code ? String(me.profile.code) : "";
+	const badge = lifecycleBadge(me.state);
 
 	return (
 		// Half the avatar hangs above the card, so the wrapper reserves that half
@@ -59,7 +60,7 @@ export default function ProfileCard({ me }: { me: MeView }) {
 					<h3 className="w-full min-w-0 truncate text-lg font-semibold text-eko-gold">
 						{personName || me.mobile}
 					</h3>
-					<Badge variant="secondary">{lifecycleBadge(me.state)}</Badge>
+					<Badge variant={badge.variant}>{badge.label}</Badge>
 				</div>
 				<div className="flex w-full min-w-0 flex-col items-center gap-1.5 text-sm">
 					<p className="flex items-center gap-2">

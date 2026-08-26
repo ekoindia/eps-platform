@@ -118,6 +118,68 @@ export function createConnectAuthProvider(
 	}
 
 	/**
+	 * Re-mints the claim behind a session with the account's REAL roles.
+	 *
+	 * connect-api stamps role `[-5]` on every mobile login
+	 * (`routes/authentication.js:791`) and `/authentication/token` re-signs that
+	 * claim verbatim (`auth/auth.js:383`), while `/transactions/wlc` builds its
+	 * entitlement list from the claim alone. So this call is the only thing that
+	 * makes the console see what the account actually owns: 16 interactions
+	 * against Eloka's 44 for the same user, which is what sent us here.
+	 *
+	 * Returns the material to store rather than storing it — the login path has
+	 * no `sid` yet and hands its result to `issueSession`, while the refresh
+	 * paths save it themselves.
+	 *
+	 * ponytail: the grant is single-use, so a call that succeeds upstream and
+	 * then fails here (unreadable envelope, KV write) leaves the caller holding a
+	 * refresh token connect-api has already retired — the session then lives only
+	 * until its access token expires. Nothing on our side can undo that; both
+	 * callers log loudly so it is visible rather than silent. Upgrade only if
+	 * connect-api ever makes the rotation idempotent.
+	 * @param current - Session material whose tokens authenticate the call.
+	 * @param ctx - Who this is for, for the log line: a sid, or a mobile at login.
+	 * @returns The next session material, or null when connect-api refused.
+	 */
+	async function profileRefreshed(
+		current: UpstreamSession,
+		ctx: { sid?: string; mobile?: string },
+	): Promise<UpstreamSession | null> {
+		const env = await connect.refreshProfile(
+			current.accessToken,
+			current.refreshToken,
+		);
+		const next = tokensOf(env);
+		// No token pair means connect-api refused (dead grant, inactive account,
+		// unrecognized envelope). The caller decides whether that is fatal.
+		if (!next) return null;
+		const now = Date.now();
+		// The identity check this whole path exists for: after onboarding this
+		// must NOT say anonymous any more — if it does, upstream's 151 still has
+		// the old view and no amount of refreshing on our side will help.
+		console.log("[connect-auth] profile refreshed", {
+			sid: ctx.sid?.slice(0, 8) ?? "<login>",
+			mobile: String(env.details?.mobile ?? ctx.mobile ?? ""),
+			userType: next.userType ?? "<absent>",
+			anonymousUser: next.anonymousUser ?? "<unknown>",
+		});
+		return {
+			accessToken: next.accessToken,
+			refreshToken: next.refreshToken,
+			// Unlike `rotate`, a refresh-profile response minting no lite/crm tier
+			// is unexpected (the login branch always does) — but the fallback rule
+			// is the same: a stale widget token degrades to a failed widget call,
+			// while a blanked one breaks a widget that was working.
+			accessTokenLite: next.accessTokenLite ?? current.accessTokenLite,
+			accessTokenCrm: next.accessTokenCrm ?? current.accessTokenCrm,
+			accessExpiresAt: now + next.accessTtlSec * 1000,
+			sessionExpiresAt: now + next.sessionTtlSec * 1000,
+			rotatedAt: now,
+			profileRefreshedAt: now,
+		};
+	}
+
+	/**
 	 * Replaces a login-derived profile with the interaction-151 one.
 	 *
 	 * connect-api's login envelope carries `auth_details` — a profile it builds
@@ -181,20 +243,44 @@ export function createConnectAuthProvider(
 				anonymousUser: tokens?.anonymousUser ?? "<unknown>",
 			});
 			const now = Date.now();
-			return {
-				ok: true,
-				profile,
-				upstream: tokens
-					? {
-							accessToken: tokens.accessToken,
-							refreshToken: tokens.refreshToken,
-							accessTokenLite: tokens.accessTokenLite,
-							accessTokenCrm: tokens.accessTokenCrm,
-							accessExpiresAt: now + tokens.accessTtlSec * 1000,
-							sessionExpiresAt: now + tokens.sessionTtlSec * 1000,
-						}
-					: undefined,
-			};
+			let upstream: UpstreamSession | undefined = tokens
+				? {
+						accessToken: tokens.accessToken,
+						refreshToken: tokens.refreshToken,
+						accessTokenLite: tokens.accessTokenLite,
+						accessTokenCrm: tokens.accessTokenCrm,
+						accessExpiresAt: now + tokens.accessTtlSec * 1000,
+						sessionExpiresAt: now + tokens.sessionTtlSec * 1000,
+					}
+				: undefined;
+			// The token we just minted carries connect-api's `[-5]`, not the
+			// account's roles, so a session built straight from it is entitled to a
+			// fraction of what the user owns. Re-read the profile before it is
+			// persisted — one KV write, no sid needed. Eloka does the same after
+			// every login (`wlc-webapp/helpers/loginHelper.js:475`).
+			//
+			// Skipped for `not_found`: that mobile has no EPS account to re-read,
+			// and its signup session is upgraded by `/signup/*` calling
+			// `refreshEntitlements` once the account exists.
+			//
+			// Best-effort either way — a refresh-profile outage must not take login
+			// down with it. See the ceiling noted on `profileRefreshed`.
+			if (upstream && profile.kind !== "not_found") {
+				try {
+					const refreshed = await profileRefreshed(upstream, { mobile });
+					if (refreshed) upstream = refreshed;
+					else
+						console.warn("[connect-auth] login profile refresh refused", {
+							mobile,
+						});
+				} catch (err) {
+					console.warn("[connect-auth] login profile refresh failed", {
+						mobile,
+						err,
+					});
+				}
+			}
+			return { ok: true, profile, upstream };
 		},
 
 		persist: save,
@@ -209,6 +295,29 @@ export function createConnectAuthProvider(
 			if (current.accessExpiresAt - Date.now() > REFRESH_SKEW_MS) return;
 
 			await rotate(sid, current);
+			// A rotation re-signs the same claim, so the fresh token is entitled to
+			// exactly what the dead one was. Re-read the profile behind it, so roles
+			// granted upstream mid-session (activation, KYC pass, a new product)
+			// reach the session without a re-login.
+			//
+			// After the rotation and in its own catch, deliberately: `rotate` has
+			// already stored a working pair, and a session with stale roles beats a
+			// session that cannot act — the same rule `http/signup.ts:250` applies.
+			const rotated = await load(sid);
+			if (!rotated) return;
+			try {
+				const next = await profileRefreshed(rotated, { sid });
+				if (next) await save(sid, next);
+				else
+					console.warn("[connect-auth] rotation profile refresh refused", {
+						sid: sid.slice(0, 8),
+					});
+			} catch (err) {
+				console.warn("[connect-auth] rotation profile refresh failed", {
+					sid: sid.slice(0, 8),
+					err,
+				});
+			}
 		},
 
 		async refreshEntitlements(sid) {
@@ -243,41 +352,14 @@ export function createConnectAuthProvider(
 				current = await load(sid);
 				if (!current) return;
 			}
-			const env = await connect.refreshProfile(
-				current.accessToken,
-				current.refreshToken,
-			);
-			const next = tokensOf(env);
-			// No token pair means connect-api refused (dead grant, inactive account,
-			// unrecognized envelope). Throw rather than overwrite a stored session
-			// that still works — the caller treats stale-but-working as recoverable.
+			const next = await profileRefreshed(current, { sid });
+			// No token pair means connect-api refused. Throw rather than overwrite a
+			// stored session that still works — the caller treats stale-but-working
+			// as recoverable.
 			if (!next) {
 				throw new Error("connect-api refused to refresh the profile");
 			}
-			const now = Date.now();
-			// The identity check this whole path exists for: after onboarding this
-			// must NOT say anonymous any more — if it does, upstream's 151 still has
-			// the old view and no amount of refreshing on our side will help.
-			console.log("[connect-auth] profile refreshed", {
-				sid: sid.slice(0, 8),
-				mobile: String(env.details?.mobile ?? ""),
-				userType: next.userType ?? "<absent>",
-				anonymousUser: next.anonymousUser ?? "<unknown>",
-			});
-			await save(sid, {
-				accessToken: next.accessToken,
-				refreshToken: next.refreshToken,
-				// Unlike `rotate`, a refresh-profile response minting no lite/crm tier
-				// is unexpected (the login branch always does) — but the fallback rule
-				// is the same: a stale widget token degrades to a failed widget call,
-				// while a blanked one breaks a widget that was working.
-				accessTokenLite: next.accessTokenLite ?? current.accessTokenLite,
-				accessTokenCrm: next.accessTokenCrm ?? current.accessTokenCrm,
-				accessExpiresAt: now + next.accessTtlSec * 1000,
-				sessionExpiresAt: now + next.sessionTtlSec * 1000,
-				rotatedAt: now,
-				profileRefreshedAt: now,
-			});
+			await save(sid, next);
 		},
 
 		getUpstream: load,
