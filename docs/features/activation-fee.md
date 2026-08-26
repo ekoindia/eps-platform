@@ -94,6 +94,15 @@ value is used only to fill the gap. If the two scans ever drift, the worst case
 is a field shown that did not need to be. The mail prints `—` when neither has
 one.
 
+The table also carries a **Zoho CRM** row linking straight to the records
+finance needs open to confirm anything — `Lead` from `userDetail.crm_lead_id`
+and `Contact` from `userDetail.crm_contact_id`, each rendered only when that id
+is present. A partner mid-onboarding has a lead and no contact yet, so one link
+routinely appears without the other, and upstream sends `""` rather than
+omitting the keys. This is the only cell built as markup rather than text, via
+`rawRow`, so escaping stays the default everywhere else; the ids are both
+percent-encoded into the path and escaped into the attribute.
+
 **Subject line**: `EPS One-Time Activation Fee Received | #<ekocode> | <partner>`
 — built by `buildEmailSubject`, so finance can triage from the inbox list and
 search a thread by the code they reconcile against. An identity part that is

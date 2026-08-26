@@ -33,7 +33,11 @@ function profile(overrides: Partial<EkoProfile> = {}): EkoProfile {
 		evalueAccountId: "acc-1",
 		detailBlocks: { business_detail: { gst_number: "07AAACA1234A1Z5" } },
 		accountStateId: 1,
-		userDetail: { pancardnumber: "AAACA1234A" },
+		userDetail: {
+			pancardnumber: "AAACA1234A",
+			crm_lead_id: "lead-1",
+			crm_contact_id: "contact-1",
+		},
 		...overrides,
 	} as unknown as EkoProfile;
 }
@@ -548,5 +552,82 @@ describe("buildEmailSubject", () => {
 		expect(
 			buildEmailSubject(profile({ code: "" } as unknown as Partial<EkoProfile>)),
 		).toBe("EPS One-Time Activation Fee Received | Acme Fintech Pvt Ltd");
+	});
+});
+
+describe("POST /activation-fee/intimate — the Zoho CRM row", () => {
+	const ORG = "https://crm.zoho.in/crm/org60006414357/tab";
+
+	/** A profile carrying exactly these CRM ids. */
+	const withCrm = (userDetail: Record<string, unknown>) =>
+		({
+			kind: "found",
+			responseTypeId: 1,
+			profile: profile({ userDetail }),
+		}) as ProfileResult;
+
+	it("links both records when the profile has both ids", async () => {
+		const { app, sent } = harness();
+		await intimate(app);
+		const body = await bodyOf(sent);
+		expect(body).toContain("Zoho CRM");
+		expect(body).toContain(`<a href="${ORG}/Leads/lead-1">Lead</a>`);
+		expect(body).toContain(`<a href="${ORG}/Contacts/contact-1">Contact</a>`);
+		expect(body).toContain("</a>, <a");
+	});
+
+	// A partner mid-onboarding is still a lead; the contact is created on
+	// conversion, so one link routinely exists without the other.
+	it("links only the lead when there is no contact yet", async () => {
+		const { app, sent } = harness({
+			profileResult: withCrm({ crm_lead_id: "lead-9" }),
+		});
+		await intimate(app);
+		const body = await bodyOf(sent);
+		expect(body).toContain(`${ORG}/Leads/lead-9`);
+		expect(body).not.toContain("/Contacts/");
+		expect(body).not.toContain("</a>, <a");
+	});
+
+	it("links only the contact when the lead has been converted away", async () => {
+		const { app, sent } = harness({
+			profileResult: withCrm({ crm_contact_id: "contact-9" }),
+		});
+		await intimate(app);
+		const body = await bodyOf(sent);
+		expect(body).toContain(`${ORG}/Contacts/contact-9`);
+		expect(body).not.toContain("/Leads/");
+	});
+
+	it("prints an em dash when the profile has neither", async () => {
+		// Upstream sends "" rather than omitting the keys, which is the shape this
+		// has to survive — a link to /Leads/ would be a link to nothing.
+		const { app, sent } = harness({
+			profileResult: withCrm({ crm_lead_id: "", crm_contact_id: "  " }),
+		});
+		await intimate(app);
+		const body = await bodyOf(sent);
+		expect(body).not.toContain("crm.zoho.in");
+		expect(body).toContain("Zoho CRM");
+	});
+
+	it("accepts a numeric id, which is how Zoho ids usually arrive", async () => {
+		const { app, sent } = harness({
+			profileResult: withCrm({ crm_lead_id: 123456789 }),
+		});
+		await intimate(app);
+		expect(await bodyOf(sent)).toContain(`${ORG}/Leads/123456789`);
+	});
+
+	it("cannot be made to break out of the href", async () => {
+		const { app, sent } = harness({
+			profileResult: withCrm({
+				crm_lead_id: '"><script>alert(1)</script>',
+			}),
+		});
+		await intimate(app);
+		const body = await bodyOf(sent);
+		expect(body).not.toContain("<script>");
+		expect(body).not.toContain('"><');
 	});
 });

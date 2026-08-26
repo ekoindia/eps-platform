@@ -294,6 +294,43 @@ const row = (label: string, value: string): string =>
 	`<tr><td><strong>${escapeHtml(label)}</strong></td><td>${value ? escapeHtml(value) : "—"}</td></tr>`;
 
 /**
+ * One `<tr>` whose value is markup this module built itself.
+ *
+ * Separate from {@link row} so that escaping stays the default: a caller has to
+ * name this one to opt out, and the only thing that does is the CRM row, whose
+ * cell is anchors rather than text.
+ */
+const rawRow = (label: string, html: string): string =>
+	`<tr><td><strong>${escapeHtml(label)}</strong></td><td>${html || "—"}</td></tr>`;
+
+/**
+ * The Zoho CRM org these records live in. Not a secret — it is in the URL of
+ * every record anyone at Eko opens — but it is the one part of the link that is
+ * an account fact rather than a record fact, so it is named once.
+ */
+const ZOHO_ORG = "org60006414357";
+
+/**
+ * A link to one Zoho CRM record, or "" when there is no id to link to.
+ *
+ * The id is upstream's, so it is escaped for the attribute AND percent-encoded
+ * for the path: a value carrying a quote would otherwise break out of the href,
+ * and this mail is read in a client that will happily render whatever it is
+ * handed.
+ * @param tab - The CRM tab, e.g. `"Leads"`.
+ * @param id - The record id from the profile, in whatever shape it arrived.
+ * @param label - Link text.
+ * @returns An `<a>`, or "" when the id is absent or blank.
+ */
+function zohoLink(tab: string, id: unknown, label: string): string {
+	if (typeof id !== "string" && typeof id !== "number") return "";
+	const trimmed = String(id).trim();
+	if (!trimmed) return "";
+	const href = `https://crm.zoho.in/crm/${ZOHO_ORG}/tab/${tab}/${encodeURIComponent(trimmed)}`;
+	return `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+}
+
+/**
  * Builds the HTML mail finance receives.
  *
  * Everything interpolated is escaped: the product labels and UTR are the
@@ -331,6 +368,18 @@ export function buildEmailBody(
 		// The profile always wins. The browser's value only fills a gap, so a
 		// partner cannot restate a GST number upstream already holds.
 		row("GST", findGstNumber(profile) || claim.gst),
+		// Straight into the record finance needs open to confirm anything. A
+		// partner mid-onboarding has a lead and no contact yet, so either link may
+		// simply be absent.
+		rawRow(
+			"Zoho CRM",
+			[
+				zohoLink("Leads", profile.userDetail.crm_lead_id, "Lead"),
+				zohoLink("Contacts", profile.userDetail.crm_contact_id, "Contact"),
+			]
+				.filter(Boolean)
+				.join(", "),
+		),
 		row("Product List", productList),
 		row("Category", "EPS Partner"),
 		"</table>",
