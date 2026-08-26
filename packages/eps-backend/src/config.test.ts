@@ -390,3 +390,50 @@ describe("loadConfig — activation fee", () => {
 		).toThrowError(/invalid addresses: not-an-address/);
 	});
 });
+
+describe("loadConfig — Zoho CRM record links", () => {
+	const url = "https://crm.zoho.in/crm/org60006414357";
+
+	it("leaves the base URL absent when unset, disabling the links", () => {
+		expect(loadConfig(base).zoho.crmRecordBaseUrl).toBeUndefined();
+	});
+
+	it("keeps a configured base URL", () => {
+		expect(
+			loadConfig({ ...base, ZOHO_CRM_RECORD_BASE_URL: url }).zoho
+				.crmRecordBaseUrl,
+		).toBe(url);
+	});
+
+	// Every caller appends "/tab/...", so the slash is normalised once here
+	// rather than guessed at each call site.
+	it("strips a trailing slash so callers can append a path", () => {
+		expect(
+			loadConfig({ ...base, ZOHO_CRM_RECORD_BASE_URL: `${url}///` }).zoho
+				.crmRecordBaseUrl,
+		).toBe(url);
+	});
+
+	it("throws on a malformed base URL rather than emitting dead links", () => {
+		expect(() =>
+			loadConfig({ ...base, ZOHO_CRM_RECORD_BASE_URL: "crm.zoho.in/org1" }),
+		).toThrowError(/ZOHO_CRM_RECORD_BASE_URL is not a valid URL/);
+	});
+
+	it("refuses plaintext", () => {
+		expect(() =>
+			loadConfig({ ...base, ZOHO_CRM_RECORD_BASE_URL: "http://crm.zoho.in/x" }),
+		).toThrowError(/must be https/);
+	});
+
+	// The REST host and the record host differ; conflating them yields 404s.
+	it("is independent of ZOHO_BASE_URL", () => {
+		const cfg = loadConfig({
+			...base,
+			ZOHO_BASE_URL: "https://www.zohoapis.in",
+			ZOHO_CRM_RECORD_BASE_URL: url,
+		});
+		expect(cfg.zoho.baseUrl).toBe("https://www.zohoapis.in");
+		expect(cfg.zoho.crmRecordBaseUrl).toBe(url);
+	});
+});

@@ -27,7 +27,19 @@ claim, and finance reconciles that claim against the bank statement.
    Hardcoded in `src/pages/console/PayActivationFee.tsx`: this is the one fact
    that must read identically in UAT, in production, and in an old screenshot.
 4. **Tell us about the transfer** — amount (prefilled from step 2), date, mode
-   (NEFT/IMPS/RTGS), UTR, and an optional transaction slip.
+   (IMPS / NEFT / RTGS / Intra-Bank Transfer, commonest first), UTR, the name of
+   the depositor, and an optional transaction slip.
+
+**Name of depositor** is prefilled with the partner name, but only when that
+name contains a letter: upstream defaults a missing name to the mobile number,
+so a profile routinely carries `"7200000002"` as its `name`, and prefilling that
+would put a phone number where finance expects an account holder. It is
+editable and required — a firm often transfers from a director's or a parent
+company's account, and finance reconciles against the statement.
+
+Payment modes are normalised server-side through a map keyed by the uppercased
+input, so casing from the browser does not matter while the label finance reads
+stays `Intra-Bank Transfer` rather than `INTRA-BANK TRANSFER`.
 
 ## Fee calculation
 
@@ -61,14 +73,47 @@ The mail has two halves, and they come from different places on purpose.
 
 | Half | Source | Why |
 | --- | --- | --- |
-| Name, EkoCode, mobile, email, PAN, GST | `eko.getProfile` on the backend, from the caller's own session | A partner must not be able to file an intimation in someone else's name |
-| Amount, date, mode, UTR, products, slip | The browser | These are the partner's own claims about a transfer they made |
+| Name, EkoCode, mobile, email, PAN | `eko.getProfile` on the backend, from the caller's own session | A partner must not be able to file an intimation in someone else's name |
+| Amount, date, mode, UTR, depositor, products, slip | The browser | These are the partner's own claims about a transfer they made |
+| GST | The profile, falling back to the browser | Identity where we hold it; a gap-filler where we do not |
+
+Note that **depositor name is browser-supplied on purpose**. It is not a claim
+about who the partner is — it is a claim about whose bank account the money left,
+which only they can answer and which finance verifies against the statement.
 
 PAN is read from `user_detail.pancardnumber`. **GST has no agreed upstream field
 name** — it varies by user type and many profiles carry none — so `findGstNumber`
 scans the allowlisted business detail blocks and the flat user detail for a key
-matching `/gst/i`, and the mail prints `—` when nothing is found. Pin a real
-field name here if upstream ever commits to one.
+matching `/gst/i`. Pin a real field name here if upstream ever commits to one.
+
+When the profile carries no GST number, the form shows an optional input for it,
+gated by `profileGstNumber` in `src/lib/auth/identity.ts` — a deliberate mirror
+of the backend scan whose only job is deciding whether to *ask*. The backend
+stays the authority: a profile that has a GST number always wins, and the typed
+value is used only to fill the gap. If the two scans ever drift, the worst case
+is a field shown that did not need to be. The mail prints `—` when neither has
+one.
+
+The table also carries a **Zoho CRM** row linking straight to the records
+finance needs open to confirm anything — `Lead` from `userDetail.crm_lead_id`
+and `Contact` from `userDetail.crm_contact_id`, each rendered only when that id
+is present. A partner mid-onboarding has a lead and no contact yet, so one link
+routinely appears without the other, and upstream sends `""` rather than
+omitting the keys. This is the only cell built as markup rather than text, via
+`rawRow`, so escaping stays the default everywhere else; the ids are both
+percent-encoded into the path and escaped into the attribute.
+
+The link base comes from `ZOHO_CRM_RECORD_BASE_URL` (e.g.
+`https://crm.zoho.in/crm/org60006414357`), not from `ZOHO_BASE_URL` — that one
+is the REST host lead enrichment calls, and the two differ by host *and* path,
+so conflating them yields 404s. Unset, the row still renders and the links are
+simply omitted: a missing convenience link is not worth refusing to boot over,
+unlike a missing mail recipient.
+
+**Subject line**: `EPS One-Time Activation Fee Received | #<ekocode> | <partner>`
+— built by `buildEmailSubject`, so finance can triage from the inbox list and
+search a thread by the code they reconcile against. An identity part that is
+blank is omitted rather than printed as an empty gap.
 
 Every interpolated value is escaped with `escapeHtml` (shared with
 `support-ticket.ts`) before it reaches the mail body.
@@ -126,6 +171,26 @@ arming it.
 > **n8n gotcha:** a `/webhook-test/...` URL only fires while the workflow editor
 > is open and listening. Production must use the `/webhook/...` URL, or every
 > intimation is silently dropped.
+
+### Diagnosing a failed send
+
+`ACTIVATION_FEE_SEND_FAILED` now names the status the webhook answered with, so
+the partner-visible message distinguishes the two failures that matter:
+
+- *"the mail service answered 404"* — we reached n8n and it refused. On a
+  `/webhook-test/` URL this almost always means the workflow editor is not
+  listening; press **Test workflow** in n8n, or move to the production
+  `/webhook/` URL.
+- *"Couldn't reach the mail service"* — transport failure: DNS, TLS, refused
+  connection, or the `ACTIVATION_FEE_TIMEOUT_MS` abort.
+
+The call is also written into the request trace as `activation-fee webhook`, so
+it shows up in **Copy diagnostics** beside the upstream profile lookup. The
+trace deliberately carries **only** the label, status and duration: the URL is
+the secret this proxy exists to keep, and n8n's own error text repeats it back
+("the requested webhook … is not registered"). The full body is logged
+server-side under `[eps-backend] activation-fee webhook failed` and never
+returned to the browser.
 
 ## Files
 

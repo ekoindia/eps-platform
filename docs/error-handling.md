@@ -104,6 +104,24 @@ above, plus `details`, the full `trace`, and the last 20 API calls this tab made
 **Raise issue** opens the existing dialog with all of it attached — it lands in
 the Zoho ticket's `technical_notes` under `diagnostics`.
 
+It is offered only to an account whose `profile.accountStateId` is
+`LIVE_ACCOUNT_STATE_ID` (16), via `canRaiseIssue` in
+`src/lib/console/lifecycle.ts`. A ticket is filed against the partner's Zoho
+**contact**, and the lead is converted into one only when the account goes fully
+live; before that the console holds a lead id and ticket creation fails
+upstream. Offering the button earlier promises a support channel that cannot
+exist yet.
+
+Note this is a *different* question from the `Lifecycle` value `"active"`, which
+fails OPEN — every state id except the KYC-pending one reads as active, `null`
+included, so an unmapped id never blocks a working partner. `canRaiseIssue`
+fails CLOSED for the opposite reason: a missing escape hatch is a smaller harm
+than one that errors while the partner is already looking at an error. Both
+defaults are deliberate; do not collapse them into one check.
+
+**Copy diagnostics** is never gated — it works in every state, and is the
+fallback whenever the ticket route is closed.
+
 ## Debugging without server access
 
 Ranked by how often it resolves things:

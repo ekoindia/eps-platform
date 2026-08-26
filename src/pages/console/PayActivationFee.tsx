@@ -3,9 +3,10 @@ import { ErrorNotice } from "@/components/console/ErrorNotice";
 import { FadeIn } from "@/components/FadeIn";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { groupDigits, Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
+import { profileGstNumber } from "@/lib/auth/identity";
 import {
 	calcActivationFee,
 	filterFeeProducts,
@@ -26,19 +27,47 @@ import { toast } from "sonner";
  * partner transferring money needs to read the same account number in UAT, in
  * production and in a screenshot from six months ago.
  */
-const BANK_DETAILS: { label: string; value: string }[] = [
+const BANK_DETAILS: { label: string; value: string; display?: string }[] = [
 	{ label: "Bank", value: "HDFC Bank" },
 	{ label: "Account Name", value: "Eko Bharat Ventures Pvt Ltd" },
-	{ label: "Account Number", value: "00032000039765" },
+	{
+		label: "Account Number",
+		value: "00032000039765",
+		// Grouped for the eye only. Fourteen unbroken digits are what a partner
+		// mistypes into their bank's payee form; the clipboard still carries the
+		// bare number, which is the one their bank will accept.
+		display: groupDigits("00032000039765", [3, 3, 4, 4]),
+	},
 	{ label: "IFSC Code", value: "HDFC0009141" },
 ];
 
-/** The rails a partner can transfer over. Mirrors the backend's allowlist. */
-const MODES = ["NEFT", "IMPS", "RTGS"] as const;
+/**
+ * The rails a partner can transfer over, commonest first. Mirrors the backend's
+ * allowlist, which is what actually enforces it.
+ */
+const MODES = ["IMPS", "NEFT", "RTGS", "Intra-Bank Transfer"] as const;
+
+/** A GSTIN is a fixed-width identifier: 2 state + 10 PAN + 3 suffix. */
+const GSTIN_LENGTH = 15;
 
 /** What the attachment input accepts. Mirrors the backend's allowlist. */
 const SLIP_ACCEPT = "image/jpeg,image/png,application/pdf";
 const SLIP_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * The partner name, but only when it reads as one.
+ *
+ * Upstream defaults a missing name to the mobile number, so a profile routinely
+ * carries "7200000002" as its `name`. Prefilling a depositor field with that
+ * invites the partner to leave a phone number where finance expects an account
+ * holder, so a name with no letters in it is treated as no name at all.
+ * @param name - `profile.name`, or undefined.
+ * @returns The trimmed name, or "" when it carries no letters.
+ */
+function nameOrBlank(name: string | undefined): string {
+	const trimmed = name?.trim() ?? "";
+	return /\p{L}/u.test(trimmed) ? trimmed : "";
+}
 
 /** Today in `YYYY-MM-DD`, for the date input's default and its `max`. */
 function today(): string {
@@ -56,12 +85,22 @@ interface FormState {
 	date: string;
 	mode: string;
 	utr: string;
+	/** Whose bank account the money came from, as printed on it. */
+	depositorName: string;
 	products: string[];
 	otherProducts: string;
+	/** Only collected when the profile carries no GST number of its own. */
+	gst: string;
 }
 
 /** Fields whose error is shown once the partner has left them. */
-type TouchableField = "amount" | "date" | "mode" | "utr" | "products";
+type TouchableField =
+	| "amount"
+	| "date"
+	| "mode"
+	| "utr"
+	| "depositorName"
+	| "products";
 
 /**
  * The problem with one field, or null when it is fine.
@@ -94,6 +133,10 @@ function validateField(field: TouchableField, form: FormState): string | null {
 				: "Choose how you transferred the money";
 		case "utr":
 			return form.utr.trim() ? null : "Enter the UTR / reference number";
+		case "depositorName":
+			return form.depositorName.trim()
+				? null
+				: "Enter the name on the bank account";
 		case "products":
 			return form.products.length > 0 || form.otherProducts.trim()
 				? null
@@ -101,17 +144,39 @@ function validateField(field: TouchableField, form: FormState): string | null {
 	}
 }
 
-const FIELDS: TouchableField[] = ["amount", "date", "mode", "utr", "products"];
+const FIELDS: TouchableField[] = [
+	"amount",
+	"date",
+	"mode",
+	"utr",
+	"depositorName",
+	"products",
+];
 
-/** One `label / value / copy` row of the bank-account block. */
-function BankRow({ label, value }: { label: string; value: string }) {
+/**
+ * One `label / value / copy` row of the bank-account block.
+ * @param label - Row caption.
+ * @param value - What lands on the clipboard, and what is shown unless
+ * `display` says otherwise.
+ * @param display - A more readable rendering of the same value, for fields that
+ * are easier to read grouped than they are to paste grouped.
+ */
+function BankRow({
+	label,
+	value,
+	display,
+}: {
+	label: string;
+	value: string;
+	display?: string;
+}) {
 	return (
 		<div className="flex items-center gap-2">
 			<span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">
 				{label}
 			</span>
 			<code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 font-mono text-xs">
-				{value}
+				{display ?? value}
 			</code>
 			<CopyButton text={value} label={`Copy ${label}`} />
 		</div>
@@ -239,13 +304,18 @@ function FeeSummary({
  */
 export default function PayActivationFee() {
 	const me = useConsoleMe();
+	// Whatever upstream already knows. A profile that carries a GST number is
+	// never asked for one — the backend would ignore the answer anyway.
+	const profileGst = profileGstNumber(me.profile);
 	const [form, setForm] = useState<FormState>({
 		amount: "",
 		date: today(),
 		mode: "",
 		utr: "",
+		depositorName: nameOrBlank(me.profile?.name),
 		products: [],
 		otherProducts: "",
+		gst: "",
 	});
 	const [touched, setTouched] = useState<
 		Partial<Record<TouchableField, boolean>>
@@ -310,6 +380,10 @@ export default function PayActivationFee() {
 					date: form.date,
 					mode: form.mode,
 					utr: form.utr.trim(),
+					depositorName: form.depositorName.trim(),
+					// Only ever sent when we had nothing; the backend prefers the
+					// profile's own value regardless.
+					gst: profileGst ? "" : form.gst.trim(),
 					// Ids are the form's currency; the mail wants names.
 					products: labelsForFeeProducts(form.products),
 					otherProducts: form.otherProducts.trim(),
@@ -468,7 +542,12 @@ export default function PayActivationFee() {
 					</p>
 					<div className="flex flex-col gap-2">
 						{BANK_DETAILS.map((row) => (
-							<BankRow key={row.label} label={row.label} value={row.value} />
+							<BankRow
+								key={row.label}
+								label={row.label}
+								value={row.value}
+								display={row.display}
+							/>
 						))}
 					</div>
 				</div>
@@ -595,7 +674,7 @@ export default function PayActivationFee() {
 									<Input
 										id="utr"
 										value={form.utr}
-										placeholder="From your bank's confirmation"
+										placeholder="From your bank's transaction confirmation"
 										onChange={(e) => set("utr", e.target.value)}
 										onBlur={() =>
 											setTouched((prev) => ({ ...prev, utr: true }))
@@ -609,6 +688,74 @@ export default function PayActivationFee() {
 										</p>
 									) : null}
 								</div>
+
+								<div className="flex flex-col gap-2">
+									<Label htmlFor="depositorName">
+										Name of depositor (as per bank account)
+									</Label>
+									<Input
+										id="depositorName"
+										value={form.depositorName}
+										placeholder="Account holder's name"
+										onChange={(e) => set("depositorName", e.target.value)}
+										onBlur={() =>
+											setTouched((prev) => ({
+												...prev,
+												depositorName: true,
+											}))
+										}
+										aria-invalid={
+											errorFor("depositorName") ? true : undefined
+										}
+										aria-describedby={
+											errorFor("depositorName")
+												? "depositorName-error"
+												: "depositorName-hint"
+										}
+									/>
+									{errorFor("depositorName") ? (
+										<p
+											id="depositorName-error"
+											className="text-sm text-destructive"
+										>
+											{errorFor("depositorName")}
+										</p>
+									) : (
+										<p
+											id="depositorName-hint"
+											className="text-xs text-muted-foreground"
+										>
+											Change it if the transfer came from a different
+											account — a director&rsquo;s, or a parent
+											company&rsquo;s.
+										</p>
+									)}
+								</div>
+
+								{/* Asked for only when upstream has none. A profile that
+								    carries a GST number always wins server-side, so showing
+								    the field would invite an answer nobody would read. */}
+								{profileGst ? null : (
+									<div className="flex flex-col gap-2">
+										<Label htmlFor="gst">GSTIN (optional)</Label>
+										<Input
+											id="gst"
+											value={form.gst}
+											// A GSTIN is exactly 15 characters; there is nothing
+											// valid to type past it.
+											maxLength={GSTIN_LENGTH}
+											onChange={(e) => set("gst", e.target.value)}
+											aria-describedby="gst-hint"
+										/>
+										<p
+											id="gst-hint"
+											className="text-xs text-muted-foreground"
+										>
+											We don&rsquo;t have one on file. Add your GST number
+											and we&rsquo;ll use it on your invoice.
+										</p>
+									</div>
+								)}
 							</div>
 						</fieldset>
 
@@ -637,7 +784,9 @@ export default function PayActivationFee() {
 								{busy ? "Sending…" : "Send payment details"}
 							</Button>
 							<p className="text-xs text-muted-foreground">
-								We&rsquo;ll email these to Team Eko for confirmation.
+								We&rsquo;ll send these to Team Eko for confirmation. You
+								will receive your invoice between the 10th and 15th of next
+								month.
 							</p>
 						</div>
 					</form>

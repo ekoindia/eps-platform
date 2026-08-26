@@ -103,8 +103,26 @@ describe("PayActivationFee — the standing information", () => {
 		renderPage();
 		expect(screen.getByText("HDFC Bank")).toBeInTheDocument();
 		expect(screen.getByText("Eko Bharat Ventures Pvt Ltd")).toBeInTheDocument();
-		expect(screen.getByText("00032000039765")).toBeInTheDocument();
 		expect(screen.getByText("HDFC0009141")).toBeInTheDocument();
+	});
+
+	it("groups the account number so it can be read off the screen", () => {
+		renderPage();
+		expect(screen.getByText("000 320 0003 9765")).toBeInTheDocument();
+		// The grouped form is a reading aid, not the number itself.
+		expect(screen.queryByText("00032000039765")).toBeNull();
+	});
+
+	it("copies the account number ungrouped, the way a bank wants it", async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined);
+		vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+		renderPage();
+		fireEvent.click(
+			screen.getByRole("button", { name: /copy account number/i }),
+		);
+		// Pasting "000 320 0003 9765" into a payee form is a failed transfer.
+		await waitFor(() => expect(writeText).toHaveBeenCalledWith("00032000039765"));
+		vi.unstubAllGlobals();
 	});
 
 	it("points at the pricing calculator once there is a fee to explain", () => {
@@ -188,7 +206,10 @@ describe("PayActivationFee — submission", () => {
 		// must not be the one asserting who is paying.
 		expect(payload).not.toHaveProperty("name");
 		expect(payload).not.toHaveProperty("pan");
-		expect(payload).not.toHaveProperty("gst");
+		// `gst` is the one exception, and only ever as a gap-filler: this profile
+		// carries no GST number, and the backend still prefers its own whenever
+		// there is one (asserted in activationFee.test.ts).
+		expect(payload.gst).toBe("");
 	});
 
 	it("sends product names, not the ids the form holds", async () => {
@@ -403,5 +424,87 @@ describe("PayActivationFee — searching the product list", () => {
 		send();
 		await waitFor(() => expect(intimate).toHaveBeenCalled());
 		expect(sentPayload().products).toEqual(["AePS"]);
+	});
+});
+
+describe("PayActivationFee — depositor and GST", () => {
+	it("prefills the depositor with the partner's name", () => {
+		renderPage();
+		expect(screen.getByLabelText(/name of depositor/i)).toHaveValue(
+			"Acme Fintech",
+		);
+	});
+
+	// Upstream defaults a missing name to the mobile number, so a profile often
+	// carries "7200000002" as its name. That is not an account holder.
+	it("leaves the depositor blank when the name is only digits", () => {
+		renderPage({ ...ACTIVE, profile: { name: "7200000002" } as never });
+		expect(screen.getByLabelText(/name of depositor/i)).toHaveValue("");
+	});
+
+	it("blocks submission until a depositor is named", async () => {
+		renderPage({ ...ACTIVE, profile: { name: "7200000002" } as never });
+		fillValid();
+		send();
+		expect(intimate).not.toHaveBeenCalled();
+		expect(await screen.findByText(/name on the bank account/i)).toBeVisible();
+	});
+
+	it("sends a depositor the partner corrected", async () => {
+		renderPage();
+		fillValid();
+		type(/name of depositor/i, "A Director");
+		send();
+		await waitFor(() => expect(intimate).toHaveBeenCalled());
+		expect(sentPayload().depositorName).toBe("A Director");
+	});
+
+	it("asks for a GST number when the profile carries none", () => {
+		renderPage();
+		const gstin = screen.getByLabelText(/gstin/i);
+		expect(gstin).toBeVisible();
+		// A GSTIN is exactly 15 characters; nothing valid follows.
+		expect(gstin).toHaveAttribute("maxlength", "15");
+	});
+
+	it("does not ask when the profile already has one", () => {
+		renderPage({
+			...ACTIVE,
+			profile: {
+				name: "Acme Fintech",
+				detailBlocks: { business_detail: { gst_number: "07AAACA1234A1Z5" } },
+			} as never,
+		});
+		expect(screen.queryByLabelText(/gstin/i)).toBeNull();
+	});
+
+	it("sends a typed GST number when it was asked for", async () => {
+		renderPage();
+		fillValid();
+		type(/gstin/i, "27AAACA1234A1Z5");
+		send();
+		await waitFor(() => expect(intimate).toHaveBeenCalled());
+		expect(sentPayload().gst).toBe("27AAACA1234A1Z5");
+	});
+});
+
+describe("PayActivationFee — payment modes", () => {
+	it("lists the rails commonest first", () => {
+		renderPage();
+		const options = Array.from(
+			(screen.getByLabelText(/mode of payment/i) as HTMLSelectElement).options,
+		)
+			.map((option) => option.value)
+			.filter(Boolean);
+		expect(options).toEqual(["IMPS", "NEFT", "RTGS", "Intra-Bank Transfer"]);
+	});
+
+	it("submits the intra-bank rail with its label intact", async () => {
+		renderPage();
+		fillValid();
+		type(/mode of payment/i, "Intra-Bank Transfer");
+		send();
+		await waitFor(() => expect(intimate).toHaveBeenCalled());
+		expect(sentPayload().mode).toBe("Intra-Bank Transfer");
 	});
 });

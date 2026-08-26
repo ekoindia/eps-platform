@@ -4,6 +4,7 @@ import {
 	chatIdentity,
 	detailField,
 	profileCompleteness,
+	profileGstNumber,
 } from "./identity";
 import type { AuthState } from "@/lib/auth/AuthProvider";
 import type { Profile } from "@/lib/auth/client";
@@ -274,5 +275,48 @@ describe("detailField", () => {
 		expect(detailField(blocks, "personal", "dob")).toBeNull();
 		expect(detailField(blocks, "personal", "qualification")).toBeNull();
 		expect(detailField(blocks, "personal", "marital_status")).toBeNull();
+	});
+});
+
+describe("profileGstNumber", () => {
+	const p = (over: Record<string, unknown>) =>
+		({ detailBlocks: {}, userDetail: {}, ...over }) as never;
+
+	it("finds a GST number in a business detail block", () => {
+		expect(
+			profileGstNumber(
+				p({ detailBlocks: { business_detail: { gst_number: "07AAACA1234A1Z5" } } }),
+			),
+		).toBe("07AAACA1234A1Z5");
+	});
+
+	it("finds one on the flat user detail", () => {
+		expect(profileGstNumber(p({ userDetail: { gstin: "27AAACA1234A1Z5" } }))).toBe(
+			"27AAACA1234A1Z5",
+		);
+	});
+
+	// The upstream field name is not agreed, which is the whole reason this
+	// scans rather than reading a fixed key.
+	it("matches any key that names GST, in any case", () => {
+		expect(profileGstNumber(p({ userDetail: { GST_No: "29AAACA1234A1Z5" } }))).toBe(
+			"29AAACA1234A1Z5",
+		);
+	});
+
+	it("returns blank when the profile carries none", () => {
+		expect(profileGstNumber(p({ userDetail: { pancardnumber: "AAACA1234A" } }))).toBe(
+			"",
+		);
+	});
+
+	it("ignores a GST key whose value is empty or not a scalar", () => {
+		expect(profileGstNumber(p({ userDetail: { gst_number: "  " } }))).toBe("");
+		expect(profileGstNumber(p({ userDetail: { gst_number: {} } }))).toBe("");
+	});
+
+	it("survives a null profile and missing blocks", () => {
+		expect(profileGstNumber(null)).toBe("");
+		expect(profileGstNumber({} as never)).toBe("");
 	});
 });

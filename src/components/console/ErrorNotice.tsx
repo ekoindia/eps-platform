@@ -2,11 +2,13 @@ import { Check, Copy, LifeBuoy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOptionalConnectDialogs } from "@/components/connect/DialogHost";
+import { useOptionalAuth } from "@/lib/auth/AuthProvider";
 import {
 	diagnosticsBlob,
 	diagnosticsLine,
 	errorDiagnostics,
 } from "@/lib/console/diagnostics";
+import { canRaiseIssue } from "@/lib/console/lifecycle";
 import { cn } from "@/lib/utils";
 
 interface ErrorNoticeProps {
@@ -55,6 +57,14 @@ export function ErrorNotice({
 }: ErrorNoticeProps) {
 	const [copied, setCopied] = useState(false);
 	const dialogs = useOptionalConnectDialogs();
+	// Optional on purpose: this notice also renders from the error boundary and
+	// the site header, outside any provider.
+	const auth = useOptionalAuth();
+	const accountStateId =
+		auth?.state.status === "authed" && auth.state.role === "developer"
+			? auth.state.me.profile?.accountStateId
+			: null;
+	const ticketable = canRaiseIssue(accountStateId);
 	const diagnostics = errorDiagnostics(error);
 	const line = diagnosticsLine(diagnostics);
 
@@ -123,9 +133,11 @@ export function ErrorNotice({
 					Copy diagnostics
 				</button>
 
-				{/* Only offered where a dialog host exists; the site header and the
-				    error boundary render outside one. */}
-				{dialogs ? (
+				{/* Two conditions, for two different reasons: a dialog host has to
+				    exist (the site header and the error boundary render outside one),
+				    and the account has to be one Zoho can actually file a ticket
+				    against — see `canRaiseIssue`. */}
+				{dialogs && ticketable ? (
 					<button
 						type="button"
 						className="inline-flex cursor-pointer items-center gap-1 text-xs underline underline-offset-2 hover:opacity-80"
