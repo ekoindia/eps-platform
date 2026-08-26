@@ -30,6 +30,11 @@ rule, edit `isChatHiddenPath()` **and** the matching path check in the
 `index.html` bootstrap — the bootstrap runs before any module loads, so the two
 are duplicated on purpose.
 
+The bubble is also parked while a full-screen overlay covers the page (the
+mobile menu sheet and the ⌘K command palette). `Header.tsx` calls
+`setZohoChatOverlayHidden()` for that; it is a separate flag from the route
+rule, so closing the overlay restores whatever the route asked for.
+
 ## 2. Content data (products, industries, solutions)
 
 Data-driven pages are generated from these — edit data here, not page components.
