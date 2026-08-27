@@ -34,8 +34,10 @@ import {
 	LayoutDashboard,
 	LogOut,
 	Package,
+	ShieldCheck,
 	Sparkles,
 	SquareCode,
+	UserRound,
 } from "lucide-react";
 import {
 	Fragment,
@@ -279,6 +281,14 @@ const companySocialLinks = [
 	},
 ];
 
+/**
+ * One account row in the mobile drawer footer (My Profile / language / Log out).
+ * Borrows the docs and console sidebars' subtle `bg-muted` hover rather than a
+ * brand fill, so the three nav surfaces highlight identically.
+ */
+const MOBILE_ACCOUNT_ROW =
+	"flex items-center gap-3 py-3 text-sm font-medium text-eko-slate transition-colors cursor-pointer hover:bg-muted hover:text-eko-navy focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
+
 const NAV_MAX_ITEMS = 8;
 const navIndustries = ACTIVE_INDUSTRIES_LIST.filter(
 	(i) => i.priority === 1,
@@ -432,6 +442,11 @@ export const HeaderDropdownPanels = ({
 	const { state, logout } = useAuth();
 	const identity = SHOW_USER_LOGIN ? accountIdentity(state) : null;
 	const consoleHome = consoleTarget(state);
+	// Same role split the desktop account menu makes (see `UserMenu.tsx`): only a
+	// developer session has an Eko profile page worth linking to, and an admin's
+	// drawer CTA already points at `/admin`, so their plain console row survives.
+	const isAdmin = state.status === "authed" && state.role === "admin";
+	const isDeveloper = state.status === "authed" && state.role === "developer";
 	const devLinks: DeveloperLinkItem[] = SHOW_USER_LOGIN
 		? [
 				{
@@ -800,14 +815,45 @@ export const HeaderDropdownPanels = ({
 					side="right"
 					className="w-[88vw] sm:max-w-sm sm:w-[400px] p-0 flex flex-col gap-0 lg:hidden"
 				>
-					<div className="flex items-center justify-between px-5 py-4 border-b border-eko-navy/10 shrink-0">
-						<Link
-							to="/"
-							onClick={() => setMobileMenuOpen(false)}
-							className="flex items-center"
-						>
-							<EkoLogo className="h-9 w-auto" />
-						</Link>
+					{/* The header slot carries the logo for a visitor and the account
+					    identity for a signed-in user — the drawer is short on vertical
+					    space, and the two never need to show at once. `pr-8` keeps both
+					    clear of the sheet's own close button (`ui/sheet.tsx`), and the
+					    signed-in tint sets the identity apart from the nav below it.
+					    Divs, not <p>: `index.css` styles bare `p` outside any layer, so
+					    its `margin-bottom: 1em` would beat `leading-tight` and reopen the
+					    gap this block exists to close. */}
+					<div
+						className={cn(
+							"flex items-center justify-between px-5 py-4 pr-8 border-b border-eko-navy/10 shrink-0",
+							identity && "bg-muted",
+						)}
+					>
+						{identity ? (
+							<div className="min-w-0">
+								<div className="truncate text-sm leading-tight">
+									<span className="font-semibold text-eko-navy">
+										{identity.name}
+									</span>{" "}
+									<span className="text-xs text-eko-slate">
+										{identity.detail}
+									</span>
+								</div>
+								{identity.meta && (
+									<div className="truncate text-xs leading-tight text-eko-slate">
+										{identity.meta}
+									</div>
+								)}
+							</div>
+						) : (
+							<Link
+								to="/"
+								onClick={() => setMobileMenuOpen(false)}
+								className="flex items-center"
+							>
+								<EkoLogo className="h-9 w-auto" />
+							</Link>
+						)}
 					</div>
 
 					<nav className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
@@ -849,53 +895,53 @@ export const HeaderDropdownPanels = ({
 						})}
 					</nav>
 
-					<div className="flex flex-col gap-3 px-5 py-4 border-t border-eko-navy/10 shrink-0">
-						<div className="-ml-2">
-							<LanguageSelector
-								isLight={false}
-								showLabel
-								placement="top-left"
-							/>
-						</div>
-						{/* <a
-							id="lnk-sales-phone-header-mobile"
-							href={`tel:+91${SALES_MOBILE}`}
-							className="flex items-center gap-1.5 text-sm font-medium text-eko-slate hover:text-eko-navy transition-colors cursor-pointer"
-						>
-							<Phone className="w-4 h-4" />
-							{formatMobile(SALES_MOBILE)}
-						</a> */}
+					<div className="flex flex-col gap-3 px-5 pb-4 border-t border-eko-navy/10 shrink-0">
 						{identity ? (
-							<div className="flex flex-col gap-3">
-								<div className="flex items-center gap-3">
-									<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-eko-navy/10 text-sm font-semibold text-eko-navy">
-										{identity.initials}
-									</span>
-									<div className="min-w-0">
-										<p className="truncate text-sm font-medium text-eko-navy">
-											{identity.name}
-										</p>
-										<p className="text-xs text-eko-slate">{identity.detail}</p>
-										{identity.meta && (
-											<p className="truncate text-xs text-eko-slate">
-												{identity.meta}
-											</p>
-										)}
-									</div>
-									{/* Log out moves alongside the identity it belongs to, so the
-									    full width below is free for the one action that matters. */}
-									<Button
-										variant="ghost"
-										size="sm"
+							<>
+								{/* One row per action, ruled apart — same set and same order as
+								    the desktop account menu, so the two surfaces stay at parity.
+								    The identity itself has moved to the drawer header. */}
+								<div className="flex flex-col divide-y divide-eko-navy/10 border-b border-eko-navy/10">
+									{isDeveloper && (
+										<Link
+											to="/console/profile"
+											onClick={() => setMobileMenuOpen(false)}
+											className={MOBILE_ACCOUNT_ROW}
+										>
+											<UserRound className="w-4 h-4 shrink-0" />
+											My Profile
+										</Link>
+									)}
+									{isAdmin && (
+										<Link
+											to="/console"
+											onClick={() => setMobileMenuOpen(false)}
+											className={MOBILE_ACCOUNT_ROW}
+										>
+											<ShieldCheck className="w-4 h-4 shrink-0" />
+											Developer console
+										</Link>
+									)}
+									{/* Not wired to `setMobileMenuOpen`: the trigger opens its own
+									    list inside the drawer, and closing on the first tap would
+									    take that list with it. */}
+									<LanguageSelector
+										isLight={false}
+										showLabel
+										placement="top-left"
+										className={cn(MOBILE_ACCOUNT_ROW, "w-full rounded-none px-0")}
+									/>
+									<button
+										type="button"
 										onClick={() => {
 											setMobileMenuOpen(false);
 											void logout();
 										}}
-										className="ml-auto shrink-0 cursor-pointer gap-2 px-2 text-eko-slate hover:text-eko-navy"
+										className={cn(MOBILE_ACCOUNT_ROW, "w-full")}
 									>
-										<LogOut className="w-4 h-4" />
+										<LogOut className="w-4 h-4 shrink-0" />
 										Log out
-									</Button>
+									</button>
 								</div>
 								<Button
 									asChild
@@ -909,25 +955,34 @@ export const HeaderDropdownPanels = ({
 									>
 										<LayoutDashboard className="w-4 h-4" />
 										Open{" "}
-										{consoleHome.label === "Admin" ? "Admin" : "Developer"}{" "}
-										Console
+										{consoleHome.label === "Admin" ? "Admin" : "Developer"} Console
 										<ArrowRight className="w-4 h-4" />
 									</Link>
 								</Button>
-							</div>
+							</>
 						) : (
-							<GetStartedButton
-								id="btn-get-started-header-mobile"
-								variant="gold"
-								size="sm"
-								onClick={() => setMobileMenuOpen(false)}
-								className="cursor-pointer self-start min-w-[140px]"
-								consoleLabel="Log in / Sign up"
-							>
-								Get Started
-							</GetStartedButton>
+							<>
+								<div className="-ml-2 mt-4">
+									<LanguageSelector
+										isLight={false}
+										showLabel
+										placement="top-left"
+									/>
+								</div>
+								<GetStartedButton
+									id="btn-get-started-header-mobile"
+									variant="gold"
+									size="sm"
+									onClick={() => setMobileMenuOpen(false)}
+									className="cursor-pointer self-start min-w-[140px]"
+									consoleLabel="Log in / Sign up"
+								>
+									Get Started
+								</GetStartedButton>
+							</>
 						)}
 					</div>
+
 				</SheetContent>
 			</Sheet>
 
