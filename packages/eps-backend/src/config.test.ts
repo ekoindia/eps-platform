@@ -391,6 +391,65 @@ describe("loadConfig — activation fee", () => {
 	});
 });
 
+describe("loadConfig — Zoho OAuth credentials", () => {
+	const creds = {
+		ZOHO_ENABLED: "true",
+		ZOHO_CLIENT_ID: "cid",
+		ZOHO_CLIENT_SECRET: "secret",
+		ZOHO_REFRESH_TOKEN: "rtok",
+	};
+
+	it("defaults to the India REST host and its accounts host", () => {
+		const cfg = loadConfig(base);
+		expect(cfg.zoho.baseUrl).toBe("https://www.zohoapis.in");
+		expect(cfg.zoho.accountsUrl).toBe("https://accounts.zoho.in");
+	});
+
+	it("derives the accounts host from a configured REST host", () => {
+		const cfg = loadConfig({ ...base, ZOHO_BASE_URL: "https://www.zohoapis.com/" });
+		expect(cfg.zoho.baseUrl).toBe("https://www.zohoapis.com");
+		expect(cfg.zoho.accountsUrl).toBe("https://accounts.zoho.com");
+	});
+
+	it("lets ZOHO_ACCOUNTS_URL override the guess", () => {
+		expect(
+			loadConfig({ ...base, ZOHO_ACCOUNTS_URL: "https://accounts.zoho.eu/" }).zoho
+				.accountsUrl,
+		).toBe("https://accounts.zoho.eu");
+	});
+
+	it("carries the credentials when enabled", () => {
+		const cfg = loadConfig({ ...base, ...creds });
+		expect(cfg.zoho.enabled).toBe(true);
+		expect(cfg.zoho.refreshToken).toBe("rtok");
+	});
+
+	// The predecessor validated nothing here, so a deployment with the flag on
+	// and no credentials booted fine and every CRM call failed silently forever.
+	it("throws when enabled without a complete refresh-token grant", () => {
+		expect(() =>
+			loadConfig({ ...base, ZOHO_ENABLED: "true" }),
+		).toThrowError(
+			/ZOHO_ENABLED=true but missing: ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN/,
+		);
+		expect(() =>
+			loadConfig({ ...base, ...creds, ZOHO_REFRESH_TOKEN: "" }),
+		).toThrowError(/missing: ZOHO_REFRESH_TOKEN/);
+	});
+
+	it("stays inert when disabled, however incomplete", () => {
+		expect(loadConfig({ ...base, ZOHO_CLIENT_ID: "cid" }).zoho.enabled).toBe(
+			false,
+		);
+	});
+
+	it("refuses an undeducible accounts host when enabled", () => {
+		expect(() =>
+			loadConfig({ ...base, ...creds, ZOHO_BASE_URL: "crm.example.test" }),
+		).toThrowError(/set ZOHO_ACCOUNTS_URL/);
+	});
+});
+
 describe("loadConfig — Zoho CRM record links", () => {
 	const url = "https://crm.zoho.in/crm/org60006414357";
 

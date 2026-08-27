@@ -191,7 +191,11 @@ describe("createApp wiring", () => {
 			app: createApp({
 				cfg,
 				eko,
-				zoho: { findLead: vi.fn(async () => false) },
+				zoho: {
+					findLead: vi.fn(async () => false),
+					getLead: vi.fn(async () => null),
+					updateLead: vi.fn(async () => {}),
+				},
 				sessions,
 				kv,
 			}),
@@ -289,7 +293,11 @@ describe("error envelope diagnostics", () => {
 				sendOtp: vi.fn(async () => ({ ok: true })),
 				...eko,
 			} as unknown as EkoClient,
-			zoho: { findLead: vi.fn(async () => false) } as never,
+			zoho: {
+				findLead: vi.fn(async () => false),
+				getLead: vi.fn(async () => null),
+				updateLead: vi.fn(async () => {}),
+			} as never,
 			sessions: createSessions(cfg, kv),
 			kv,
 		});

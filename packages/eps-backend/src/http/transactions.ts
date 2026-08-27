@@ -1,12 +1,11 @@
-import type { Context, Hono } from "hono";
-import { getCookie } from "hono/cookie";
+import type { Hono } from "hono";
 import type { Sessions } from "../auth/session";
-import { ACCESS_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import { identityOf } from "../clients/eko";
 import type { TransactionRow } from "../types";
 import { AppError } from "./errors";
 import type { AppEnv } from "./requestId";
+import { requireDeveloperSession } from "./session-guards";
 
 /** Rows per page. Mirrors the console's `PAGE_LIMIT`; also the upper bound. */
 const MAX_LIMIT = 25;
@@ -93,26 +92,15 @@ export function mountTransactions(
 ): void {
 	const { sessions, eko } = deps;
 
-	/** Resolves the caller's mobile, or throws unless this is a developer session. */
-	async function requireDeveloperSession(c: Context<AppEnv>): Promise<string> {
-		const token = getCookie(c, ACCESS_COOKIE);
-		const claim = token ? await sessions.verifyAccess(token) : null;
-		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
-		if (claim.role !== "developer") {
-			throw new AppError(
-				403,
-				"NOT_DEVELOPER_SESSION",
-				"This account cannot view transactions.",
-			);
-		}
-		return claim.sub;
-	}
-
 	/**
 	 * POST /transactions/search → { rows, startIndex, limit, hasNext }
 	 */
 	app.post("/transactions/search", async (c) => {
-		const mobile = await requireDeveloperSession(c);
+		const mobile = await requireDeveloperSession(
+			sessions,
+			c,
+			"This account cannot view transactions.",
+		);
 		const body = await c.req.json().catch(() => ({}));
 		const filters = parseFilters(body);
 		const { startIndex, limit } = parsePaging(body);

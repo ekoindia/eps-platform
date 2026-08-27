@@ -13,10 +13,8 @@
  * so a partner cannot file an intimation in somebody else's name. The browser
  * supplies only the facts about the transfer, which are the partner's to state.
  */
-import type { Context, Hono } from "hono";
-import { getCookie } from "hono/cookie";
+import type { Hono } from "hono";
 import type { Sessions } from "../auth/session";
-import { ACCESS_COOKIE } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import { withTimeout } from "../clients/http";
 import type { Config } from "../config";
@@ -25,6 +23,7 @@ import type { EkoProfile } from "../types";
 import { AppError } from "./errors";
 import { enforceRateLimit, RL_WINDOW_SEC } from "./rateLimit";
 import type { AppEnv } from "./requestId";
+import { requireDeveloperSession } from "./session-guards";
 import { escapeHtml } from "./support-ticket";
 import { recordUpstream } from "./trace";
 
@@ -439,28 +438,17 @@ export function mountActivationFee(
 ): void {
 	const { sessions, eko, kv, cfg } = deps;
 
-	/** The signed-in developer's mobile — the only identity this route trusts. */
-	async function requireDeveloperSession(c: Context<AppEnv>): Promise<string> {
-		const token = getCookie(c, ACCESS_COOKIE);
-		const claim = token ? await sessions.verifyAccess(token) : null;
-		if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
-		if (claim.role !== "developer") {
-			throw new AppError(
-				403,
-				"NOT_DEVELOPER_SESSION",
-				"This account cannot submit an activation-fee payment.",
-			);
-		}
-		return claim.sub;
-	}
-
 	/**
 	 * POST /activation-fee/intimate → { message }
 	 *
 	 * Multipart: a `payload` JSON part plus an optional `attachment` file.
 	 */
 	app.post("/activation-fee/intimate", async (c) => {
-		const mobile = await requireDeveloperSession(c);
+		const mobile = await requireDeveloperSession(
+			sessions,
+			c,
+			"This account cannot submit an activation-fee payment.",
+		);
 		await enforceRateLimit(
 			kv,
 			`rl:actfee:${mobile}`,

@@ -91,6 +91,8 @@ function harness(
 	} as unknown as EkoClient;
 	const zoho = {
 		findLead: vi.fn().mockResolvedValue(false),
+		getLead: vi.fn().mockResolvedValue(null),
+		updateLead: vi.fn().mockResolvedValue(undefined),
 		...overrides.zoho,
 	} as unknown as ZohoClient;
 	const cfg = overrides.cfg ?? cfgStub;

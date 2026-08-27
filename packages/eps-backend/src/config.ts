@@ -133,8 +133,21 @@ export interface Config {
 	};
 	zoho: {
 		enabled: boolean;
-		baseUrl?: string;
-		accessToken?: string;
+		/**
+		 * REST API host, e.g. `https://www.zohoapis.in`. Trailing slash stripped.
+		 * NOT `crmRecordBaseUrl` — see below.
+		 */
+		baseUrl: string;
+		/** OAuth refresh-token grant. Required when `enabled`. */
+		clientId?: string;
+		clientSecret?: string;
+		refreshToken?: string;
+		/**
+		 * Zoho's OAuth accounts host, e.g. `https://accounts.zoho.in`. Derived from
+		 * `baseUrl` when unset; set explicitly for a custom domain or a data centre
+		 * whose accounts host does not follow the `zohoapis` → `accounts.zoho` shape.
+		 */
+		accountsUrl: string;
 		/**
 		 * Base of a CRM **record URL** in the Zoho web app, including the org
 		 * segment — e.g. `https://crm.zoho.in/crm/org60006414357`. Deliberately
@@ -160,6 +173,70 @@ const REQUIRED = [
 	"GITHUB_CALLBACK_URL",
 	"GITHUB_REPO",
 ] as const;
+
+/** Default Zoho REST host — the India data centre, which is the org we use. */
+const ZOHO_DEFAULT_BASE_URL = "https://www.zohoapis.in";
+
+/**
+ * The `zoho` config block.
+ *
+ * Fails at boot when `ZOHO_ENABLED=true` without a complete OAuth refresh-token
+ * grant. The predecessor of this block validated nothing, so a deployment with
+ * the flag on and no credentials booted happily and every CRM call returned
+ * "not found" forever — a silent outage nobody could see. Disabled stays inert:
+ * an unconfigured Zoho is a normal state, a half-configured one is not.
+ * @param env - The process environment.
+ * @param crmRecordBaseUrl - Already-validated web-app record URL base.
+ * @returns The validated Zoho config.
+ */
+function zohoConfig(
+	env: NodeJS.ProcessEnv,
+	crmRecordBaseUrl: string | undefined,
+): Config["zoho"] {
+	const enabled = env.ZOHO_ENABLED === "true";
+	const baseUrl = (env.ZOHO_BASE_URL || ZOHO_DEFAULT_BASE_URL).replace(
+		/\/+$/,
+		"",
+	);
+	const clientId = env.ZOHO_CLIENT_ID || undefined;
+	const clientSecret = env.ZOHO_CLIENT_SECRET || undefined;
+	const refreshToken = env.ZOHO_REFRESH_TOKEN || undefined;
+	if (enabled) {
+		const missing = [
+			["ZOHO_CLIENT_ID", clientId],
+			["ZOHO_CLIENT_SECRET", clientSecret],
+			["ZOHO_REFRESH_TOKEN", refreshToken],
+		]
+			.filter(([, v]) => !v)
+			.map(([k]) => k);
+		if (missing.length > 0) {
+			throw new Error(
+				`ZOHO_ENABLED=true but missing: ${missing.join(", ")}`,
+			);
+		}
+	}
+	// `zohoapis.in` → `accounts.zoho.in`. Only ever a guess about Zoho's own
+	// hosting, so ZOHO_ACCOUNTS_URL overrides it for a custom domain or a data
+	// centre that breaks the pattern.
+	const accountsUrl = (
+		env.ZOHO_ACCOUNTS_URL ||
+		baseUrl.replace(/^https:\/\/(www\.)?zohoapis/, "https://accounts.zoho")
+	).replace(/\/+$/, "");
+	if (enabled && !accountsUrl.startsWith("https://")) {
+		throw new Error(
+			`Cannot derive a Zoho accounts host from ZOHO_BASE_URL="${baseUrl}" — set ZOHO_ACCOUNTS_URL`,
+		);
+	}
+	return {
+		enabled,
+		baseUrl,
+		clientId,
+		clientSecret,
+		refreshToken,
+		accountsUrl,
+		crmRecordBaseUrl,
+	};
+}
 
 export function loadConfig(env: NodeJS.ProcessEnv): Config {
 	const missing = REQUIRED.filter((k) => !env[k]);
@@ -453,11 +530,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 			editBase: env.GITHUB_EDIT_BASE ?? "dev",
 			prodBase: env.GITHUB_PROD_BASE ?? "main",
 		},
-		zoho: {
-			enabled: env.ZOHO_ENABLED === "true",
-			baseUrl: env.ZOHO_BASE_URL,
-			accessToken: env.ZOHO_ACCESS_TOKEN,
-			crmRecordBaseUrl,
-		},
+		zoho: zohoConfig(env, crmRecordBaseUrl),
 	};
 }
