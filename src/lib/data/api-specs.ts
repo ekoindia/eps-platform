@@ -13098,13 +13098,13 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description: "Number of previous owners, including the current one.",
 				example: 1,
 			},
-			{
-				name: "mobile_number",
-				type: "string",
-				description:
-					"Mobile number of the owner as registered with the RTO, if available.",
-				example: "98XXXXXXXX",
-			},
+			// {
+			// 	name: "mobile_number",
+			// 	type: "string",
+			// 	description:
+			// 		"Mobile number of the owner as registered with the RTO, if available.",
+			// 	example: "98XXXXXXXX",
+			// },
 			{
 				name: "present_address",
 				type: "string",
