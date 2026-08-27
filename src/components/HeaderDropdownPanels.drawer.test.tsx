@@ -10,6 +10,15 @@ vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({ state: mockState, refresh: vi.fn(), logout }),
 }));
 
+// `SHOW_USER_LOGIN` is a module constant read at import, so it has to be mocked
+// rather than set through import.meta.env — CI has no `.env.local`, and without
+// it the drawer renders no identity and `GetStartedButton` is a chat button
+// rather than a link. Spread keeps the other flags at their real values.
+vi.mock("@/lib/config/features", async (orig) => ({
+	...(await orig<typeof import("@/lib/config/features")>()),
+	SHOW_USER_LOGIN: true,
+}));
+
 const setMobileMenuOpen = vi.fn();
 
 function renderDrawer(state: AuthState) {
