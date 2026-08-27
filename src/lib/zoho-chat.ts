@@ -102,8 +102,6 @@ export function isChatHiddenPath(pathname: string): boolean {
 
 /** Route-derived intent, re-applied whenever the widget (re)becomes available. */
 let hiddenForRoute = false;
-/** An app overlay (mobile menu, command palette) is covering the page. */
-let hiddenForOverlay = false;
 /** An open was requested before the widget existed; honour it once it loads. */
 let pendingOpen = false;
 /** The `salesiq` object whose `ready` we already chained onto. */
@@ -161,9 +159,7 @@ function applyState(): void {
 	const salesiq = getSalesIQ();
 	if (!salesiq?.floatbutton && !salesiq?.chat) return;
 	try {
-		salesiq.floatbutton?.visible?.(
-			hiddenForRoute || hiddenForOverlay ? "hide" : "show",
-		);
+		salesiq.floatbutton?.visible?.(hiddenForRoute ? "hide" : "show");
 		if (hiddenForRoute) salesiq.chatwindow?.visible?.("hide");
 	} catch {
 		// Widget API shape changed or unavailable — ignore
@@ -188,14 +184,16 @@ export function setZohoChatHidden(hidden: boolean): void {
 }
 
 /**
- * Hides the chat bubble while a full-screen overlay (mobile menu, command
- * palette) is open, so it does not float over it. Separate from the route rule
- * so closing the overlay restores whatever the route asked for.
+ * Parks the whole widget — bubble, chat window and proactive popups — while a
+ * full-screen overlay (mobile menu, command palette) covers the page.
+ *
+ * A CSS class rather than `floatbutton.visible("hide")`: the widget re-shows
+ * itself on its own triggers, and `display: none` leaves an already-open chat
+ * untouched, so closing the overlay restores it as it was. The rule lives in
+ * `src/index.css`; it is independent of the route rule above.
  */
 export function setZohoChatOverlayHidden(hidden: boolean): void {
-	hiddenForOverlay = hidden;
-	hookReady();
-	applyState();
+	document.body.classList.toggle("chat-overlay-open", hidden);
 }
 
 /**
@@ -236,7 +234,9 @@ export function openZohoChat() {
 	// An explicit CTA outranks the route rule until the next navigation — the
 	// Footer's chat links render on hidden routes too.
 	hiddenForRoute = false;
-	hiddenForOverlay = false;
+	// An explicit CTA can fire from inside an overlay (the menu's chat link),
+	// which closes it — unpark so the window it opens is visible.
+	document.body.classList.remove("chat-overlay-open");
 	const salesiq = getSalesIQ();
 	if (!salesiq?.chat?.start) {
 		// Widget absent (hidden route, or still downloading): pull it in and open

@@ -30,10 +30,14 @@ rule, edit `isChatHiddenPath()` **and** the matching path check in the
 `index.html` bootstrap — the bootstrap runs before any module loads, so the two
 are duplicated on purpose.
 
-The bubble is also parked while a full-screen overlay covers the page (the
-mobile menu sheet and the ⌘K command palette). `Header.tsx` calls
-`setZohoChatOverlayHidden()` for that; it is a separate flag from the route
-rule, so closing the overlay restores whatever the route asked for.
+The whole widget — bubble, chat window and any proactive popup — is also
+parked while a full-screen overlay covers the page (the mobile menu sheet and
+the ⌘K command palette). `Header.tsx` calls `setZohoChatOverlayHidden()`, which
+toggles a `chat-overlay-open` class on `<body>`; the rule that hides SalesIQ's
+`.zsiq_theme1` root lives in [`src/index.css`](../src/index.css). It is CSS
+rather than the widget's `visible()` API because the widget re-shows itself on
+its own triggers, and because `display: none` leaves an open chat exactly as it
+was once the overlay closes. Independent of the route rule above.
 
 ## 2. Content data (products, industries, solutions)
 
