@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { buildBbpsOperatorsSheet } from "./xlsx/bbps-operators-sheet";
+import { CONNECTED_BANKING_ENABLED } from "../src/lib/data/connected-banking-pricing";
 import { buildConnectedBankingSheet } from "./xlsx/connected-banking-sheet";
 import { buildDmtSheet } from "./xlsx/dmt-sheet";
 import { buildIndexSheet } from "./xlsx/index-sheet";
@@ -19,7 +20,7 @@ const ExcelJS: typeof import("exceljs") = nodeRequire("exceljs");
 
 /**
  * Render `/eps-pricing-calculator.xlsx` — the offline companion to the
- * interactive `/pricing` calculators. Eight sheets, in tab order:
+ * interactive `/pricing` calculators. Sheets, in tab order:
  *
  * 1. "Index" — what's inside + internal hyperlinks to every sheet.
  * 2. "Verification Calculator" — monthly COST estimate for verification APIs.
@@ -27,6 +28,8 @@ const ExcelJS: typeof import("exceljs") = nodeRequire("exceljs");
  *    live formulas (DMT commission is closed-form, so no lookup table).
  * 4. "Payments Earnings" — monthly EARNINGS estimate for AePS/BBPS.
  * 5. "Connected Banking" — one-time setup + monthly transaction costs.
+ *    Only present when `CONNECTED_BANKING_ENABLED`; otherwise the workbook
+ *    ships seven sheets and the Index omits its row.
  * 6. "Verification Rate Card" — static verification rate reference.
  * 7. "Payments Rate Card" — static AePS/BBPS commission reference.
  * 8. "BBPS Operator Rates" — full operator-wise BBPS commission list.
@@ -49,7 +52,9 @@ export async function renderPricingXlsx(
 	);
 	const wsDmt = workbook.addWorksheet(SHEETS.dmt);
 	const wsPaymentsEarnings = workbook.addWorksheet(SHEETS.paymentsEarnings);
-	const wsConnectedBanking = workbook.addWorksheet(SHEETS.connectedBanking);
+	const wsConnectedBanking = CONNECTED_BANKING_ENABLED
+		? workbook.addWorksheet(SHEETS.connectedBanking)
+		: undefined;
 	const wsVerificationRate = workbook.addWorksheet(SHEETS.verificationRateCard);
 	const wsPaymentsRate = workbook.addWorksheet(SHEETS.paymentsRateCard);
 	const wsBbpsOperators = workbook.addWorksheet(SHEETS.bbpsOperators);
@@ -59,7 +64,9 @@ export async function renderPricingXlsx(
 	await buildDmtSheet(wsDmt, data);
 	await buildPaymentsRateCardSheet(wsPaymentsRate, data);
 	await buildPaymentsEarningsSheet(wsPaymentsEarnings, data);
-	await buildConnectedBankingSheet(wsConnectedBanking, data);
+	if (wsConnectedBanking) {
+		await buildConnectedBankingSheet(wsConnectedBanking, data);
+	}
 	await buildVerificationRateCardSheet(wsVerificationRate, data);
 	await buildBbpsOperatorsSheet(wsBbpsOperators, data);
 

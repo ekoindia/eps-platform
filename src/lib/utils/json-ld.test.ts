@@ -1,5 +1,10 @@
 import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
-import { faqPageJsonLd, generateFaqJsonLd } from "@/lib/utils/json-ld";
+import { CONNECTED_BANKING_ENABLED } from "@/lib/data/connected-banking-pricing";
+import {
+	faqPageJsonLd,
+	generateFaqJsonLd,
+	generatePricingJsonLd,
+} from "@/lib/utils/json-ld";
 import { stripMarkdown } from "@/lib/utils";
 import { describe, expect, it } from "vitest";
 
@@ -95,4 +100,31 @@ describe("generateFaqJsonLd", () => {
 	it("returns nothing for an empty FAQ list", () => {
 		expect(generateFaqJsonLd([])).toEqual([]);
 	});
+});
+
+/**
+ * The pricing graph carries a Connected Banking `OfferCatalog`. Search engines
+ * cache structured data, so a disabled product must leave no Offer behind.
+ *
+ * The FAQ argument is the caller's (PricingPage / renderPricingMarkdown) to
+ * filter — these assertions cover only the Offer nodes this function owns.
+ */
+describe("generatePricingJsonLd", () => {
+	const graphJson = () => JSON.stringify(generatePricingJsonLd([]));
+
+	it.runIf(!CONNECTED_BANKING_ENABLED)(
+		"emits no Connected Banking offers while the product is disabled",
+		() => {
+			const json = graphJson();
+			expect(json).not.toContain("#banking-offers");
+			expect(json).not.toContain("Connected Banking");
+		},
+	);
+
+	it.skipIf(!CONNECTED_BANKING_ENABLED)(
+		"emits the Connected Banking OfferCatalog while the product is enabled",
+		() => {
+			expect(graphJson()).toContain("#banking-offers");
+		},
+	);
 });

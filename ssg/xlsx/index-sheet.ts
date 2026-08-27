@@ -11,9 +11,14 @@ import {
 	solidFill,
 	type PricingXlsxData,
 } from "./shared";
+import { CONNECTED_BANKING_ENABLED } from "../../src/lib/data/connected-banking-pricing";
 
-/** TOC entries: sheet name + what it's for, in workbook tab order. */
-const TOC: { sheet: string; purpose: string }[] = [
+/**
+ * TOC entries: sheet name + what it's for, in workbook tab order. Entries for
+ * disabled products are filtered out so the TOC never links to a sheet that
+ * `renderPricingXlsx` did not create.
+ */
+const TOC: { sheet: string; purpose: string; enabled?: boolean }[] = [
 	{
 		sheet: SHEETS.verificationCalculator,
 		purpose:
@@ -33,6 +38,7 @@ const TOC: { sheet: string; purpose: string }[] = [
 		sheet: SHEETS.connectedBanking,
 		purpose:
 			"Estimate Connected Banking costs — one-time setup per bank per user plus per-transaction charges.",
+		enabled: CONNECTED_BANKING_ENABLED,
 	},
 	{
 		sheet: SHEETS.verificationRateCard,
@@ -40,8 +46,7 @@ const TOC: { sheet: string; purpose: string }[] = [
 	},
 	{
 		sheet: SHEETS.paymentsRateCard,
-		purpose:
-			"Static reference: AePS commissions and BBPS category rates.",
+		purpose: "Static reference: AePS commissions and BBPS category rates.",
 	},
 	{
 		sheet: SHEETS.bbpsOperators,
@@ -74,8 +79,9 @@ export async function buildIndexSheet(
 		ws,
 		row,
 		"B",
-		"Offline companion to the live pricing page. Covers verification APIs (a cost you pay per call), " +
-			"DMT / AePS / BBPS (which pay YOU a commission per transaction) and Connected Banking.",
+		"Offline companion to the live pricing page. Covers verification APIs (a cost you pay per call) " +
+			"and DMT / AePS / BBPS (which pay YOU a commission per transaction)" +
+			(CONNECTED_BANKING_ENABLED ? " and Connected Banking." : "."),
 	);
 	row++;
 	introRow(
@@ -106,7 +112,7 @@ export async function buildIndexSheet(
 	});
 	row++;
 
-	for (const entry of TOC) {
+	for (const entry of TOC.filter((entry) => entry.enabled !== false)) {
 		const nameCell = ws.getCell(`A${row}`);
 		// exceljs internal-link form; sheet names with spaces must be quoted.
 		nameCell.value = {

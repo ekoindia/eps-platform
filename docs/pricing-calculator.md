@@ -12,9 +12,17 @@ One page, four client-side tabs:
    (these products pay the partner a commission per transaction — inverted
    semantics vs. verification).
 4. **Connected Banking** — COST calculator (one-time setup per bank per user
-   + per-transaction charges).
+   + per-transaction charges). **Currently disabled** — see below.
 
 DigiKhata is intentionally out of scope.
+
+> **Connected Banking is switched off.** `CONNECTED_BANKING_ENABLED` in
+> `src/lib/data/connected-banking-pricing.ts` is `false`, so the tab, its
+> FAQs, the `#banking-offers` JSON-LD `OfferCatalog`, the `/pricing.md`
+> section and the workbook's "Connected Banking" sheet are all omitted, and
+> a stale `/pricing?tab=banking` link falls back to the Verification tab with
+> the parameter stripped. Everything below still describes live code — flip
+> the const to `true` to restore the whole surface in one edit.
 
 ## Architecture
 
@@ -27,7 +35,8 @@ src/lib/data/connected-banking-pricing.ts  ← Connected Banking config + cost m
 src/lib/data/bbps-operators.ts             ← full BBPS operator list (Excel-ONLY — never imported client-side)
 src/pages/PricingPage.tsx                  ← page assembly, SEO, tabs, combined FAQ
 src/components/pricing/
-  PricingTabs.tsx                          ← tab shell: ?tab= sync, forceMount panels
+  PricingTabs.tsx                          ← tab shell: ?tab= sync, forceMount panels; an
+                                             undefined panel prop drops that tab entirely
   PricingCalculator.tsx                    ← verification orchestrator: state + URL sync
   ApiPicker.tsx                            ← searchable grouped multi-select
   SelectedApiRow.tsx                       ← volume slider + numeric input per API
@@ -111,6 +120,9 @@ Commission products keyed on **transaction amount** (not monthly volume):
   /pricing.md.
 
 ### Connected Banking (`src/lib/data/connected-banking-pricing.ts`)
+
+`CONNECTED_BANKING_ENABLED` is the master switch for this product (currently
+`false`); the config and maths below are unaffected by it.
 
 `CB_SETUP_FEE` (₹75,000 + GST per bank per user), `CB_BANKS` (HDFC, IDFC
 FIRST, RBL, SLICE), `CB_TXN_SLABS` (₹8 up to ₹25,000; ₹15 up to ₹50,000).
@@ -236,7 +248,8 @@ tds     = round(gross × 2%)
 1. Verification: edit `tiers` in `PRICED_APIS`. DMT: edit the constants in
    `dmt-pricing.ts` (the ledger derives). AePS/BBPS: edit `AEPS_*`,
    `BBPS_CATEGORIES` (and `bbps-operators.ts` for the Excel list).
-   Connected Banking: edit `CB_*` constants.
+   Connected Banking: edit `CB_*` constants (and set
+   `CONNECTED_BANKING_ENABLED = true` — the product is currently disabled).
 2. No other file changes needed — calculators, rate cards, JSON-LD,
    `/pricing.md` and the Excel workbook all derive from these configs.
 

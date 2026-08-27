@@ -38,6 +38,7 @@ import {
 	CB_MAX_BANK_USERS,
 	CB_SETUP_FEE,
 	CB_TXN_SLABS,
+	CONNECTED_BANKING_ENABLED,
 } from "@/lib/data/connected-banking-pricing";
 import { BBPS_OPERATORS } from "@/lib/data/bbps-operators";
 import { SITE_URL } from "@/lib/config/site";
@@ -48,7 +49,7 @@ const SHEET_ORDER = [
 	"Verification Calculator",
 	"DMT Calculator",
 	"Payments Earnings",
-	"Connected Banking",
+	...(CONNECTED_BANKING_ENABLED ? ["Connected Banking"] : []),
 	"Verification Rate Card",
 	"Payments Rate Card",
 	"BBPS Operator Rates",
@@ -71,7 +72,8 @@ describe("renderPricingXlsx", () => {
 	let calculator: Worksheet;
 	let dmtSheet: Worksheet;
 	let earnings: Worksheet;
-	let banking: Worksheet;
+	/** Absent from the workbook while `CONNECTED_BANKING_ENABLED` is false. */
+	let banking: Worksheet | undefined;
 	let rateCard: Worksheet;
 	let paymentsRateCard: Worksheet;
 	let bbpsOperators: Worksheet;
@@ -121,15 +123,23 @@ describe("renderPricingXlsx", () => {
 		calculator = workbook.getWorksheet("Verification Calculator")!;
 		dmtSheet = workbook.getWorksheet("DMT Calculator")!;
 		earnings = workbook.getWorksheet("Payments Earnings")!;
-		banking = workbook.getWorksheet("Connected Banking")!;
+		banking = workbook.getWorksheet("Connected Banking");
 		rateCard = workbook.getWorksheet("Verification Rate Card")!;
 		paymentsRateCard = workbook.getWorksheet("Payments Rate Card")!;
 		bbpsOperators = workbook.getWorksheet("BBPS Operator Rates")!;
 	});
 
-	it("contains all seven sheets with Index first, in order", () => {
+	it("contains every enabled sheet with Index first, in order", () => {
 		expect(workbook.worksheets.map((ws) => ws.name)).toEqual(SHEET_ORDER);
 	});
+
+	it.runIf(!CONNECTED_BANKING_ENABLED)(
+		"omits the Connected Banking sheet and its Index row when disabled",
+		() => {
+			expect(workbook.getWorksheet("Connected Banking")).toBeUndefined();
+			expect(cellTexts(index).join("\n")).not.toContain("Connected Banking");
+		},
+	);
 
 	describe("Index sheet", () => {
 		it("links to every other sheet via internal hyperlinks", () => {
@@ -216,7 +226,9 @@ describe("renderPricingXlsx", () => {
 			});
 			expect(unlockedCells).toBe(PRICED_APIS.length);
 
-			for (const ws of [calculator, rateCard, earnings, banking]) {
+			for (const ws of [calculator, rateCard, earnings, banking].filter(
+				(ws) => ws !== undefined,
+			)) {
 				const protection = (
 					ws as unknown as { sheetProtection: Record<string, unknown> }
 				).sheetProtection;
@@ -332,10 +344,10 @@ describe("renderPricingXlsx", () => {
 		});
 	});
 
-	describe("Connected Banking sheet", () => {
+	describe.skipIf(!CONNECTED_BANKING_ENABLED)("Connected Banking sheet", () => {
 		it("computes the setup fee from the bank-integration input", () => {
 			let setupFound = false;
-			banking.eachRow((row) => {
+			banking!.eachRow((row) => {
 				const formula = row.getCell(2).formula ?? "";
 				if (formula.startsWith(`${CB_SETUP_FEE}*B`)) setupFound = true;
 			});
@@ -344,13 +356,13 @@ describe("renderPricingXlsx", () => {
 
 		it("switches the per-transaction charge by amount slab", () => {
 			let chargeFound = false;
-			banking.eachRow((row) => {
+			banking!.eachRow((row) => {
 				const formula = row.getCell(2).formula ?? "";
 				if (formula.startsWith("IF(B") && formula.includes("<="))
 					chargeFound = true;
 			});
 			expect(chargeFound).toBe(true);
-			const texts = cellTexts(banking).join("\n");
+			const texts = cellTexts(banking!).join("\n");
 			for (const bank of CB_BANKS) {
 				expect(texts).toContain(bank);
 			}
@@ -385,9 +397,7 @@ describe("renderPricingXlsx", () => {
 			expect(
 				texts.some((t) => t.includes("DMT — Commission by transaction amount")),
 			).toBe(false);
-			expect(
-				texts.some((t) => t.includes("AePS — Cashout")),
-			).toBe(true);
+			expect(texts.some((t) => t.includes("AePS — Cashout"))).toBe(true);
 		});
 	});
 
@@ -401,9 +411,7 @@ describe("renderPricingXlsx", () => {
 				if (f) formulas.push(f);
 			});
 			const joined = formulas.join(" | ");
-			expect(joined).toContain(
-				`ROUND(MAX(${DMT_CUSTOMER_FEE_MIN},`,
-			); // 1% floored at ₹10
+			expect(joined).toContain(`ROUND(MAX(${DMT_CUSTOMER_FEE_MIN},`); // 1% floored at ₹10
 			expect(joined).toContain(`*${DMT_CUSTOMER_FEE_PCT})`);
 			expect(joined).toContain(`/(1+${GST_RATE})`); // strip the inclusive GST
 			expect(joined).toContain(`-${EKO_DMT_CHARGE}`); // flat Eko charge, once

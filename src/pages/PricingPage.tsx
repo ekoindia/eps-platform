@@ -22,7 +22,10 @@ import {
 	SETUP_FEE_DISCOUNT_PERCENT,
 	SETUP_FEE_OFFER_LABEL,
 } from "@/lib/data/api-pricing";
-import { CB_FAQS } from "@/lib/data/connected-banking-pricing";
+import {
+	CB_FAQS,
+	CONNECTED_BANKING_ENABLED,
+} from "@/lib/data/connected-banking-pricing";
 import { DMT_FAQS } from "@/lib/data/dmt-pricing";
 import { PAYMENTS_FAQS } from "@/lib/data/payments-pricing";
 import { generatePricingJsonLd } from "@/lib/utils/json-ld";
@@ -44,7 +47,11 @@ const TRUST_CHIPS = [
 	{ icon: BadgeCheck, label: "Only successful calls billed" },
 ];
 
-/** All pricing FAQs — verification, DMT, AePS & BBPS, connected banking */
+/**
+ * All pricing FAQs — verification, DMT, AePS & BBPS, and Connected Banking when
+ * enabled (`CB_FAQS` is empty while it is not). Feeds both the visible FAQ
+ * accordion and the FAQPage JSON-LD.
+ */
 const ALL_FAQS = [...PRICING_FAQS, ...DMT_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS];
 
 const PricingPage = () => {
@@ -58,7 +65,11 @@ const PricingPage = () => {
 				</title>
 				<meta
 					name="description"
-					content="Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
+					content={
+						CONNECTED_BANKING_ENABLED
+							? "Transparent pricing for 25+ verification APIs, partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Estimate your monthly cost or earnings with our interactive calculators."
+							: "Transparent pricing for 25+ verification APIs and partner commissions for DMT, AePS and BBPS. Estimate your monthly cost or earnings with our interactive calculators."
+					}
 				/>
 				<link rel="canonical" href={`${SITE_URL}/pricing`} />
 				<link
@@ -191,17 +202,19 @@ const PricingPage = () => {
 							</>
 						}
 						banking={
-							<SectionContainer
-								id="banking-calculator"
-								className="scroll-mt-24 pt-10 lg:pt-14"
-							>
-								<SectionHeader
-									badge="Connected Banking"
-									title="Virtual accounts & BaaS pricing"
-									subtitle="One-time setup per bank per user, plus simple per-transaction charges."
-								/>
-								<ConnectedBankingCalculator />
-							</SectionContainer>
+							CONNECTED_BANKING_ENABLED ? (
+								<SectionContainer
+									id="banking-calculator"
+									className="scroll-mt-24 pt-10 lg:pt-14"
+								>
+									<SectionHeader
+										badge="Connected Banking"
+										title="Virtual accounts & BaaS pricing"
+										subtitle="One-time setup per bank per user, plus simple per-transaction charges."
+									/>
+									<ConnectedBankingCalculator />
+								</SectionContainer>
+							) : undefined
 						}
 					/>
 
