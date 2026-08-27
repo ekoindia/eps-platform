@@ -37,6 +37,7 @@ import {
 	CB_FAQS,
 	CB_SETUP_FEE,
 	CB_TXN_SLABS,
+	CONNECTED_BANKING_ENABLED,
 } from "@/lib/data/connected-banking-pricing";
 import {
 	bulletList,
@@ -78,8 +79,9 @@ const rateRow = (api: PricedApi): string[] => {
 /**
  * Render `/pricing.md` — the full rate card for ALL products, mirroring the
  * HTML `/pricing` page: verification APIs (cost), DMT/AePS/BBPS commissions
- * (earnings) and Connected Banking charges. The interactive calculators are
- * HTML-only, so this document carries the complete tables, notes and FAQs.
+ * (earnings) and — when `CONNECTED_BANKING_ENABLED` — Connected Banking
+ * charges. The interactive calculators are HTML-only, so this document carries
+ * the complete tables, notes and FAQs.
  *
  * Pure function — no filesystem or network access — so it can be unit-tested.
  */
@@ -89,10 +91,12 @@ export function renderPricingMarkdown(): string {
 	const blocks: (string | false | undefined)[] = [
 		frontMatter({
 			type: "pricing",
-			title:
-				"API Pricing & Commissions — Verification, Payments & Connected Banking | Eko Platform Services",
-			description:
-				"Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Full per-transaction rate card, exclusive of GST @ 18%.",
+			title: CONNECTED_BANKING_ENABLED
+				? "API Pricing & Commissions — Verification, Payments & Connected Banking | Eko Platform Services"
+				: "API Pricing & Commissions — Verification & Payments | Eko Platform Services",
+			description: CONNECTED_BANKING_ENABLED
+				? "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS and BBPS, and Connected Banking charges. Full per-transaction rate card, exclusive of GST @ 18%."
+				: "Transparent pricing for 25+ verification APIs plus partner commissions for DMT, AePS and BBPS. Full per-transaction rate card, exclusive of GST @ 18%.",
 			canonical,
 		}),
 		canonicalNotice(canonical),
@@ -102,7 +106,9 @@ export function renderPricingMarkdown(): string {
 			: SETUP_FEE_DISCOUNTED
 				? `Transparent, pay-per-use API pricing. ${SETUP_FEE_DISCOUNT_PERCENT}% off the one-time setup fee for a limited time. No monthly minimums. Pay only for successful verifications.`
 				: "Transparent, pay-per-use API pricing. No monthly minimums. Pay only for successful verifications.",
-		"This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Connected Banking charges.",
+		CONNECTED_BANKING_ENABLED
+			? "This page covers (1) Verification API pricing (a cost you pay per call), (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction), and (3) Connected Banking charges."
+			: "This page covers (1) Verification API pricing (a cost you pay per call) and (2) Payments & BC commissions for DMT, AePS and BBPS (which EARN you a commission per transaction).",
 		`Interactive pricing calculators (pick APIs, set monthly volumes, see your estimated cost or earnings) are available on the HTML page: ${canonical}`,
 		gettingStartedNotice(),
 		h2("Verification API Rate Card"),
@@ -200,19 +206,21 @@ export function renderPricingMarkdown(): string {
 		`Operator-wise commission for 100+ BBPS billers is available in the downloadable Excel rate card: ${SITE_URL}/eps-pricing-calculator.xlsx`,
 	);
 
-	// ---- Connected Banking ----
-	blocks.push(
-		h2("Connected Banking Pricing"),
-		"Virtual account & BaaS infrastructure. Connected Banking is a cost you pay (like verification APIs), not a commission product.",
-		bulletList([
-			`One-time setup fee: ${formatAmount(CB_SETUP_FEE)} + GST per bank per user.`,
-			`Available banks: ${CB_BANKS.join(", ")}.`,
-		]),
-		markdownTable(
-			["Transaction slab (INR)", "Charge per txn (excl. GST)"],
-			CB_TXN_SLABS.map((slab) => [slabRange(slab), slabValue(slab)]),
-		),
-	);
+	// ---- Connected Banking (omitted while the product is disabled) ----
+	if (CONNECTED_BANKING_ENABLED) {
+		blocks.push(
+			h2("Connected Banking Pricing"),
+			"Virtual account & BaaS infrastructure. Connected Banking is a cost you pay (like verification APIs), not a commission product.",
+			bulletList([
+				`One-time setup fee: ${formatAmount(CB_SETUP_FEE)} + GST per bank per user.`,
+				`Available banks: ${CB_BANKS.join(", ")}.`,
+			]),
+			markdownTable(
+				["Transaction slab (INR)", "Charge per txn (excl. GST)"],
+				CB_TXN_SLABS.map((slab) => [slabRange(slab), slabValue(slab)]),
+			),
+		);
+	}
 
 	blocks.push(
 		h2("Pricing Notes"),
@@ -242,7 +250,13 @@ export function renderPricingMarkdown(): string {
 		h2("FAQs"),
 	);
 
-	for (const faq of [...PRICING_FAQS, ...DMT_FAQS, ...PAYMENTS_FAQS, ...CB_FAQS]) {
+	// CB_FAQS is empty while Connected Banking is disabled.
+	for (const faq of [
+		...PRICING_FAQS,
+		...DMT_FAQS,
+		...PAYMENTS_FAQS,
+		...CB_FAQS,
+	]) {
 		blocks.push(`${h3(faq.q)}\n${faq.a}`);
 	}
 

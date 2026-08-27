@@ -803,3 +803,13 @@ body {
 #zcb-banner {
 	display: none !important;
 }
+
+/* Park the whole SalesIQ widget — bubble, chat window and any proactive
+   popup — while a full-screen overlay covers the page (mobile menu sheet,
+   ⌘K palette). CSS rather than the widget's own `visible()` API because the
+   widget re-shows itself on its own triggers, and because display:none
+   leaves an open chat exactly as it was once the overlay closes.
+   `.zsiq_theme1` is SalesIQ's single body-level root; see docs/configuration.md. */
+body.chat-overlay-open .zsiq_theme1 {
+	display: none !important;
+}

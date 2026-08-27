@@ -69,7 +69,11 @@ function setup(authOver: Partial<AuthProvider> = {}, opts: { kv?: KV } = {}) {
 	const eko = {
 		getProfile: vi.fn(async () => FOUND_PROFILE),
 	} as unknown as EkoClient;
-	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
+	const zoho: ZohoClient = {
+		findLead: vi.fn(async () => false),
+		getLead: vi.fn(async () => null),
+		updateLead: vi.fn(async () => {}),
+	};
 	const sessions = createSessions(cfg, kv);
 	return {
 		app: createApp({ cfg, eko, auth, zoho, sessions, kv }),

@@ -27,6 +27,8 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET    | /context/healthz            | none (public)  | Served bundle version + source                          |
 | POST   | /chat/ask                   | cookie         | Grounded docs assistant; 503 `CHAT_DISABLED` unless `EPS_CHAT_*` is set |
 | POST   | /activation-fee/intimate    | cookie         | Partner reports paying the one-time activation fee; mails Team Eko. 503 `ACTIVATION_FEE_DISABLED` unless `ACTIVATION_FEE_WEBHOOK_URL` is set |
+| GET    | /crm/lead                   | cookie         | The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` unless `ZOHO_ENABLED=true`; 404 `NO_CRM_LEAD` when the profile has no `crm_lead_id` |
+| PATCH  | /crm/lead                   | cookie         | Writes allow-listed Lead fields back to Zoho — see docs/features/crm-lead.md |
 
 ## Auth providers
 
@@ -753,6 +755,12 @@ a key matching `/gst/i`, and prints as `—` when the profile carries none.
 | `ACTIVATION_FEE_RECIPIENTS`  | _(none — required with the URL)_               | Comma-separated. Absent, empty or malformed = boot error         |
 | `ACTIVATION_FEE_TIMEOUT_MS`  | `20000`                                        | Abort for the webhook call                                       |
 | `ZOHO_CRM_RECORD_BASE_URL`   | _(unset — links omitted)_                      | CRM record-URL base incl. org, e.g. `https://crm.zoho.in/crm/orgNNN`. Not `ZOHO_BASE_URL` (the REST host) |
+| `ZOHO_ENABLED`               | `false`                                        | On = the three OAuth vars below are required; a missing one is a boot error |
+| `ZOHO_CLIENT_ID`             | _(unset)_                                      | OAuth refresh-token grant. **Secret** |
+| `ZOHO_CLIENT_SECRET`         | _(unset)_                                      | **Secret** |
+| `ZOHO_REFRESH_TOKEN`         | _(unset)_                                      | **Secret**. Needs `ZohoCRM.modules.leads.ALL` — a READ-only token 401s on `PATCH /crm/lead` |
+| `ZOHO_BASE_URL`              | `https://www.zohoapis.in`                      | REST API host for the org's data centre. Not a record URL |
+| `ZOHO_ACCOUNTS_URL`          | _(derived from `ZOHO_BASE_URL`)_               | OAuth accounts host; set for a custom domain or an undeducible DC |
 
 > An n8n `/webhook-test/...` URL only fires while the workflow editor is open
 > and listening. Production must use the `/webhook/...` URL, or every

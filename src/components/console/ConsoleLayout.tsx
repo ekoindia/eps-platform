@@ -28,6 +28,7 @@ import { useLoadWalletFlowId } from "@/lib/connect/use-load-wallet-flow";
 import { cn } from "@/lib/utils";
 import {
 	ArrowUpRight,
+	BookOpen,
 	FileCheck2,
 	FilePen,
 	FlaskConical,
@@ -36,6 +37,7 @@ import {
 	Menu,
 	PlusCircle,
 	ReceiptText,
+	Sparkles,
 	ShieldCheck,
 	UserCog,
 	Users,
@@ -53,9 +55,11 @@ import {
 
 /**
  * Console rail items, grouped under uppercase captions like the docs rail
- * (`DocsNavTree`): Home stands alone at the top, then Account (what the partner
- * owns) and Build & Monitor (what they build with). The rail carries up to eight
- * entries once entitlements resolve — past the point a flat list reads.
+ * (`DocsNavTree`): Home stands alone at the top, then three sections named for
+ * what the partner is doing — Complete your KYC (onboarding they must clear),
+ * Build (what they build with), Account & History (running the account). The
+ * rail carries up to nine entries once entitlements resolve — past the point a
+ * flat list reads.
  */
 type NavItem = {
 	/** Router path. Every rail item is in-app. */
@@ -63,6 +67,8 @@ type NavItem = {
 	label: string;
 	icon: typeof LayoutDashboard;
 	end: boolean;
+	/** Draw a trailing ↗ — this link leaves the console for the wider site. */
+	arrow?: boolean;
 };
 
 /** A captioned block of rail links. A group with no items renders nothing. */
@@ -87,9 +93,30 @@ const CREDENTIALS_ITEM: NavItem = {
 	end: false,
 };
 
+/**
+ * The docs rail this one borrows its shape from, and the AI-tooling page beside
+ * it. In-app routes like every other item — the ↗ only says they leave the
+ * console shell behind.
+ */
+const API_DOCS_ITEM: NavItem = {
+	to: "/docs",
+	label: "Integration Docs",
+	icon: BookOpen,
+	end: false,
+	arrow: true,
+};
+
+const BUILD_WITH_AI_ITEM: NavItem = {
+	to: "/ai",
+	label: "Build with AI Tools",
+	icon: Sparkles,
+	end: false,
+	arrow: true,
+};
+
 const TRANSACTIONS_ITEM: NavItem = {
 	to: "/console/transactions",
-	label: "Transactions",
+	label: "Transaction History",
 	icon: ReceiptText,
 	end: false,
 };
@@ -97,7 +124,8 @@ const TRANSACTIONS_ITEM: NavItem = {
 /**
  * Last of all, and only while developing: the bench opens the camera, image
  * editor, file viewer and raise-issue form without needing a transaction flow.
- * The route itself is registered under the same guard in App.tsx.
+ * Closes Account & History. The route itself is registered under the same guard
+ * in App.tsx.
  */
 const DEV_ITEMS: readonly NavItem[] = import.meta.env.DEV
 	? [
@@ -120,9 +148,9 @@ export function useConsoleMe(): MeView {
 }
 
 /**
- * KYC document upload. Sits directly after Home when entitled, ahead of Load
- * Wallet: an unfinished KYC pack is what blocks the account, so it outranks
- * everything else the rail offers.
+ * KYC document upload. Heads the rail's first section when entitled: an
+ * unfinished KYC pack is what blocks the account, so it outranks everything
+ * else the rail offers.
  */
 const DOCUMENTS_ITEM: NavItem = {
 	to: "/console/documents",
@@ -133,8 +161,8 @@ const DOCUMENTS_ITEM: NavItem = {
 
 /**
  * Self-service flows the rail links straight to. Each is placed by hand rather
- * than as one block: Sign Agreement follows Load Wallet, Manage My Account
- * closes the rail.
+ * than as one block: Sign Agreement closes the KYC section, Manage My Account
+ * and AePS Agents sit under Account & History.
  */
 type Flow = { id: number; label: string; icon: typeof FilePen };
 
@@ -148,7 +176,7 @@ const MANAGE_ACCOUNT: Flow = {
 	label: "Manage My Account",
 	icon: UserCog,
 };
-/** The AePS agent network a distributor manages. Follows Credentials. */
+/** The AePS agent network a distributor manages. Follows Manage My Account. */
 const AEPS_AGENTS: Flow = {
 	id: 36,
 	label: "AePS Agents",
@@ -164,7 +192,7 @@ const AEPS_AGENTS: Flow = {
  */
 const EKOSTORE_KYC_ITEM: NavItem = {
 	to: "/console/kyc-verification",
-	label: "Try KYC & Verification APIs Live",
+	label: "Live Sandbox (KYC & Verification)",
 	icon: ShieldCheck,
 	end: false,
 };
@@ -202,9 +230,25 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	// nested ternary per item is how the order quietly goes wrong.
 	const groups: readonly NavGroup[] = [
 		{
-			title: "Account",
+			// Nothing to finish, nothing to show: an empty group renders no caption.
+			title: "Complete your KYC",
 			items: [
 				...(kycEnabled ? [DOCUMENTS_ITEM] : []),
+				...flowItem(interactions, SIGN_AGREEMENT),
+			],
+		},
+		{
+			title: "Build",
+			items: [
+				CREDENTIALS_ITEM,
+				API_DOCS_ITEM,
+				BUILD_WITH_AI_ITEM,
+				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
+			],
+		},
+		{
+			title: "Account & History",
+			items: [
 				...(loadFlowId === null
 					? []
 					: [
@@ -215,17 +259,9 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 								end: false,
 							},
 						]),
-				...flowItem(interactions, SIGN_AGREEMENT),
-				CREDENTIALS_ITEM,
-				...flowItem(interactions, AEPS_AGENTS),
-				...flowItem(interactions, MANAGE_ACCOUNT),
-			],
-		},
-		{
-			title: "Build & Monitor",
-			items: [
 				TRANSACTIONS_ITEM,
-				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
+				...flowItem(interactions, MANAGE_ACCOUNT),
+				...flowItem(interactions, AEPS_AGENTS),
 				...DEV_ITEMS,
 			],
 		},
@@ -246,6 +282,9 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 		>
 			<item.icon className="h-4 w-4 shrink-0" />
 			<span>{item.label}</span>
+			{item.arrow ? (
+				<ArrowUpRight className="ml-auto h-3.5 w-3.5 shrink-0" />
+			) : null}
 		</NavLink>
 	);
 
@@ -266,18 +305,6 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 					</div>
 				),
 			)}
-
-			{/* Back to the docs rail this one borrows its shape from. */}
-			<div className="mt-6 border-t border-border/50 pt-4">
-				<Link
-					to="/docs"
-					onClick={onNavigate}
-					className="flex items-center gap-1.5 rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
-				>
-					<span>API Docs</span>
-					<ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-				</Link>
-			</div>
 		</nav>
 	);
 }

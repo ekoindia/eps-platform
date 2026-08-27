@@ -84,7 +84,11 @@ function deps(
 		getTransactionHistory: vi.fn(async () => ({ rows: [] })),
 		...over,
 	};
-	const zoho: ZohoClient = { findLead: vi.fn(async () => false) };
+	const zoho: ZohoClient = {
+		findLead: vi.fn(async () => false),
+		getLead: vi.fn(async () => null),
+		updateLead: vi.fn(async () => {}),
+	};
 	const sessions = createSessions(appCfg, kv);
 	const accessLog = opts.accessSink
 		? createAccessLogger({ sink: opts.accessSink })

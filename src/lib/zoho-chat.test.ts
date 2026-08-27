@@ -251,29 +251,21 @@ describe("setZohoChatHidden", () => {
 });
 
 describe("setZohoChatOverlayHidden", () => {
-	it("hides the bubble while an overlay is open and restores it on close", () => {
-		const { salesiq } = mockWidget();
-		const floatbutton = { visible: vi.fn() };
-		Object.assign(salesiq, { floatbutton });
-		setZohoChatHidden(false);
-
+	it("parks the widget while an overlay is open and restores it on close", () => {
 		setZohoChatOverlayHidden(true);
-		expect(floatbutton.visible).toHaveBeenLastCalledWith("hide");
+		expect(document.body.classList.contains("chat-overlay-open")).toBe(true);
 
 		setZohoChatOverlayHidden(false);
-		expect(floatbutton.visible).toHaveBeenLastCalledWith("show");
+		expect(document.body.classList.contains("chat-overlay-open")).toBe(false);
 	});
 
-	it("leaves the route rule in charge when the overlay closes", () => {
-		const { salesiq } = mockWidget();
-		const floatbutton = { visible: vi.fn() };
-		Object.assign(salesiq, { floatbutton });
-		setZohoChatHidden(true);
-
+	it("unparks when an in-overlay CTA opens the chat", () => {
+		mockWidget();
 		setZohoChatOverlayHidden(true);
-		setZohoChatOverlayHidden(false);
 
-		expect(floatbutton.visible).toHaveBeenLastCalledWith("hide");
+		openZohoChat();
+
+		expect(document.body.classList.contains("chat-overlay-open")).toBe(false);
 	});
 });
 

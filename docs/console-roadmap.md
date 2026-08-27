@@ -29,22 +29,26 @@ copy as Home's profile card through `lifecycleBadge()` in
 developer branch is full-bleed; the anon/admin/loading cards keep the old
 container and their own `<h1>`.
 
-Links are grouped under the docs rail's uppercase captions rather than flat:
-**Home** alone at the top, then **Account** (Upload Documents, Load Wallet, Sign
-Agreement, Credentials, Manage My Account) and **Build & Monitor** (Transactions,
-`Test KYC & Verification APIs ↗`, plus the DEV-only Test bench). A group whose
-items are all unentitled renders nothing rather than an empty caption. An
-`API Docs ↗` link closes the rail. Order
-within a group is entitlement-independent and pinned by
-`ConsoleLayout.nav.test.tsx`, which also guards the single-`h1`/`<main>` contract.
+Links are grouped under the docs rail's uppercase captions rather than flat, and
+the captions name what the partner is *doing*, not what the link *is*: **Home**
+alone at the top, then **Complete your KYC** (Upload Documents, Sign Agreement),
+**Build** (Credentials, `Integration Docs ↗`, `Build with AI Tools ↗`, Live
+Sandbox (KYC & Verification)) and
+**Account & History** (Load Wallet, Transaction History, Manage My Account, AePS
+Agents, plus the DEV-only Test bench). A group whose items are all unentitled
+renders nothing rather than an empty caption — which is how the KYC section
+disappears once onboarding is behind the partner. Order within a group is
+entitlement-independent and pinned by `ConsoleLayout.nav.test.tsx`, which also
+guards the single-`h1`/`<main>` contract.
 
-`Test KYC & Verification APIs` is the one rail item that leaves the site: it
-opens `https://ekostore.app/products/kyc-verification` in a new tab
-(`target="_blank" rel="noopener noreferrer"`), and shows only for accounts whose
-interaction list carries id **9995** — same presence-of-the-id gate as every
-other entitled item, and fail-closed the same way (no list, no link). It is the
-reason `NavItem` has an `external` flag; external items never take the active
-state, since no route matches them.
+Every rail item is an in-app `NavLink` with its icon on the left. `Integration
+Docs` (`/docs`) and `Build with AI Tools` (`/ai`) are the two that leave the
+console shell — same tab, and `NavItem.arrow` draws a trailing `↗` (pushed right
+with `ml-auto`) to say so.
+`Live Sandbox (KYC & Verification)` shows only for accounts whose interaction
+list carries id **9995** — same presence-of-the-id gate as every other entitled
+item, and fail-closed the same way (no list, no link). It is internal too: the
+page behind it frames ekostore's gateway and mints the access token itself.
 
 The console's index page (`/console`) is **Home**. It leads with the profile card
 (`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT

@@ -5,12 +5,12 @@ import {
 	PRICING_FAQS,
 	PRICING_GROUPS,
 } from "@/lib/data/api-pricing";
-import {
-	BBPS_CATEGORIES,
-	PAYMENTS_FAQS,
-} from "@/lib/data/payments-pricing";
+import { BBPS_CATEGORIES, PAYMENTS_FAQS } from "@/lib/data/payments-pricing";
 import { DMT_FAQS, dmtRateCardRows } from "@/lib/data/dmt-pricing";
-import { CB_FAQS } from "@/lib/data/connected-banking-pricing";
+import {
+	CB_FAQS,
+	CONNECTED_BANKING_ENABLED,
+} from "@/lib/data/connected-banking-pricing";
 
 describe("renderPricingMarkdown", () => {
 	const md = renderPricingMarkdown();
@@ -79,20 +79,33 @@ describe("renderPricingMarkdown", () => {
 		expect(md).toContain("https://eps.eko.in/eps-pricing-calculator.xlsx");
 	});
 
-	it("renders the Connected Banking section", () => {
-		expect(md).toContain("## Connected Banking Pricing");
-		expect(md).toContain("₹75,000 + GST per bank per user");
-		expect(md).toContain("HDFC, IDFC FIRST, RBL, SLICE");
-		expect(md).toContain("₹8.00");
-		expect(md).toContain("₹15.00");
-	});
+	it.skipIf(!CONNECTED_BANKING_ENABLED)(
+		"renders the Connected Banking section when the product is enabled",
+		() => {
+			expect(md).toContain("## Connected Banking Pricing");
+			expect(md).toContain("₹75,000 + GST per bank per user");
+			expect(md).toContain("HDFC, IDFC FIRST, RBL, SLICE");
+			expect(md).toContain("₹8.00");
+			expect(md).toContain("₹15.00");
+		},
+	);
+
+	it.runIf(!CONNECTED_BANKING_ENABLED)(
+		"omits Connected Banking entirely when the product is disabled",
+		() => {
+			// Covers the section, the rate table and the FAQs in one assertion —
+			// every CB string on the page carries the product name.
+			expect(md).not.toContain("Connected Banking");
+			expect(CB_FAQS).toEqual([]);
+		},
+	);
 
 	it("includes every FAQ across all product families", () => {
 		for (const faq of [
 			...PRICING_FAQS,
 			...DMT_FAQS,
 			...PAYMENTS_FAQS,
-			...CB_FAQS,
+			...(CONNECTED_BANKING_ENABLED ? CB_FAQS : []),
 		]) {
 			expect(md).toContain(`### ${faq.q}`);
 			expect(md).toContain(faq.a);

@@ -14,6 +14,7 @@ export const LanguageSelector = ({
 	isLight = true,
 	showLabel = false,
 	placement = "bottom-right",
+	className,
 }: {
 	isLight?: boolean;
 	showLabel?: boolean;
@@ -23,6 +24,8 @@ export const LanguageSelector = ({
 	 * bottom-left, e.g. the mobile drawer footer, so the menu stays on-screen.
 	 */
 	placement?: "bottom-right" | "top-left";
+	/** Extra classes for the trigger button, e.g. to render it as a full-width row. */
+	className?: string;
 }) => {
 	const [open, setOpen] = useState(false);
 	const { selected, changeLanguage } = useLanguage();
@@ -53,6 +56,7 @@ export const LanguageSelector = ({
 					isLight
 						? "text-white/90 hover:text-white"
 						: "text-eko-slate hover:text-eko-navy",
+					className,
 				)}
 				aria-label="Select language"
 				title="Select language"

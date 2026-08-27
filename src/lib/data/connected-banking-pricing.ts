@@ -14,6 +14,16 @@
 import { GST_RATE, type PricingFaq } from "./api-pricing";
 import type { AmountSlab } from "./payments-pricing";
 
+/**
+ * Master switch for the Connected Banking product surface.
+ *
+ * When false the /pricing tab, the pricing-page JSON-LD OfferCatalog, the
+ * /pricing.md section, the CB FAQs and the workbook's "Connected Banking"
+ * sheet are all omitted. The rate config and cost maths below stay intact, so
+ * flipping this back to true fully restores the product.
+ */
+export const CONNECTED_BANKING_ENABLED = false;
+
 /** One-time setup fee (₹, excl. GST) per bank per user */
 export const CB_SETUP_FEE = 75000;
 
@@ -120,11 +130,8 @@ export const calcCbQuote = (input: CbInput): CbQuote => {
 	};
 };
 
-/**
- * Connected Banking FAQs — sourced into the /pricing page, its FAQPage
- * JSON-LD and the generated /pricing.md markdown.
- */
-export const CB_FAQS: PricingFaq[] = [
+/** The authored Connected Banking FAQs. Published only via `CB_FAQS`. */
+const CB_FAQS_AUTHORED: PricingFaq[] = [
 	{
 		q: "What does the Connected Banking setup fee cover?",
 		a: "The one-time setup fee of **₹75,000 + GST** applies **per bank, per user** and covers the virtual-account and BaaS infrastructure integration with that bank.",
@@ -138,3 +145,15 @@ export const CB_FAQS: PricingFaq[] = [
 		a: "**₹8 per transaction** (excl. GST) for amounts of ₹100–₹25,000 and **₹15 per transaction** for ₹25,001–₹50,000.",
 	},
 ];
+
+/**
+ * Connected Banking FAQs — sourced into the /pricing page, its FAQPage
+ * JSON-LD and the generated /pricing.md markdown.
+ *
+ * Empty while the product is disabled. Gating here rather than at each call
+ * site means the rate text is a dead reference the bundler drops, so the
+ * ₹75,000 / ₹8 / ₹15 figures never reach a public JS chunk.
+ */
+export const CB_FAQS: PricingFaq[] = CONNECTED_BANKING_ENABLED
+	? CB_FAQS_AUTHORED
+	: [];

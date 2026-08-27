@@ -58,8 +58,16 @@ beforeEach(() => {
 	resetRoleTransactionCache();
 });
 
+/** Rail labels in render order, minus the DEV-only bench. */
+function railLabels(): (string | undefined)[] {
+	return screen
+		.getAllByRole("link")
+		.map((a) => a.textContent?.trim())
+		.filter((l) => l !== "Test bench");
+}
+
 describe("ConsoleLayout — Load Wallet rail item", () => {
-	it("links to the entitled flow, directly after Home", async () => {
+	it("links to the entitled flow, heading Account & History", async () => {
 		connectInteractions.mockResolvedValue({
 			interactions: [{ id: 491, interaction_type_id: 0, behavior: 7 }],
 		});
@@ -68,13 +76,14 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 
 		const link = await screen.findByRole("link", { name: "Load Wallet" });
 		expect(link).toHaveAttribute("href", "/console/transaction/491");
-		const labels = screen
-			.getAllByRole("link")
-			.map((a) => a.textContent?.trim());
-		expect(labels.slice(0, 2)).toEqual(["Home", "Load Wallet"]);
+		// Opens the last section, immediately ahead of Transaction History.
+		const labels = railLabels();
+		expect(labels.indexOf("Transaction History")).toBe(
+			labels.indexOf("Load Wallet") + 1,
+		);
 	});
 
-	it("keeps its slot behind Documents when both are entitled", async () => {
+	it("sits behind the KYC and Build sections when all are entitled", async () => {
 		connectInteractions.mockResolvedValue({
 			interactions: [{ id: 491 }, { id: 586 }, { id: 587 }],
 		});
@@ -82,14 +91,16 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 		renderRail();
 
 		await screen.findByRole("link", { name: "Load Wallet" });
-		const labels = screen
-			.getAllByRole("link")
-			.map((a) => a.textContent?.trim());
-		// KYC blocks the account, so it outranks Load Wallet.
-		expect(labels.slice(0, 3)).toEqual([
+		// KYC blocks the account, so it outranks everything; Build follows; the
+		// day-to-day account items close the rail.
+		expect(railLabels()).toEqual([
 			"Home",
 			"Upload Documents",
+			"Credentials",
+			"Integration Docs",
+			"Build with AI Tools",
 			"Load Wallet",
+			"Transaction History",
 		]);
 	});
 
@@ -108,19 +119,19 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 });
 
 describe("ConsoleLayout — self-service flow rail items", () => {
-	it("shows AePS Agents after Credentials, only when 36 is entitled", async () => {
-		connectInteractions.mockResolvedValue({ interactions: [{ id: 36 }] });
+	it("shows AePS Agents after Manage My Account, only when 36 is entitled", async () => {
+		connectInteractions.mockResolvedValue({
+			interactions: [{ id: 36 }, { id: 536 }],
+		});
 
 		renderRail();
 
 		expect(
 			await screen.findByRole("link", { name: "AePS Agents" }),
 		).toHaveAttribute("href", "/console/transaction/36");
-		const labels = screen
-			.getAllByRole("link")
-			.map((a) => a.textContent?.trim());
+		const labels = railLabels();
 		expect(labels.indexOf("AePS Agents")).toBe(
-			labels.indexOf("Credentials") + 1,
+			labels.indexOf("Manage My Account") + 1,
 		);
 	});
 
@@ -137,7 +148,7 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		);
 	});
 
-	it("puts Sign Agreement behind Load Wallet and Manage My Account last", async () => {
+	it("closes the KYC section with Sign Agreement and the rail with Manage My Account", async () => {
 		connectInteractions.mockResolvedValue({
 			interactions: [{ id: 491 }, { id: 898 }, { id: 536 }],
 		});
@@ -150,19 +161,18 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		expect(
 			screen.getByRole("link", { name: "Manage My Account" }),
 		).toHaveAttribute("href", "/console/transaction/536");
-		const labels = screen
-			.getAllByRole("link")
-			.map((a) => a.textContent?.trim());
-		expect(labels.slice(0, 3)).toEqual([
+		// Sign Agreement is onboarding, so it rides in the first section even
+		// without the document upload beside it.
+		expect(railLabels()).toEqual([
 			"Home",
-			"Load Wallet",
 			"Sign Agreement",
+			"Credentials",
+			"Integration Docs",
+			"Build with AI Tools",
+			"Load Wallet",
+			"Transaction History",
+			"Manage My Account",
 		]);
-		// Closes the Account group, immediately ahead of Build & Monitor. The
-		// DEV-only bench and the fixed API Docs footer link sit behind both.
-		expect(
-			labels.filter((l) => l !== "Test bench" && l !== "API Docs").slice(-2),
-		).toEqual(["Manage My Account", "Transactions"]);
 	});
 
 	it("hides a flow the user is not entitled to", async () => {
@@ -178,9 +188,9 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 });
 
 describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
-	const NAME = "Try KYC & Verification APIs Live";
+	const NAME = "Live Sandbox (KYC & Verification)";
 
-	it("links to the in-app sandbox page, directly behind Transactions", async () => {
+	it("links to the in-app sandbox page, closing the Build section", async () => {
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 9995 }] });
 
 		renderRail();
@@ -191,13 +201,11 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 		expect(link).toHaveAttribute("href", "/console/kyc-verification");
 		expect(link).not.toHaveAttribute("target");
 
-		// Adjacency, not absolute position: the DEV-only bench follows this item
-		// and the API Docs link closes the rail, so a whole-list compare would
-		// break on nothing.
-		const labels = screen
-			.getAllByRole("link")
-			.map((a) => a.textContent?.trim());
-		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Transactions") + 1);
+		// Adjacency, not absolute position: whichever account items the caller is
+		// entitled to follow this one, so a whole-list compare would break on
+		// nothing.
+		const labels = railLabels();
+		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Build with AI Tools") + 1);
 	});
 
 	it("stays hidden without the entitlement", async () => {
@@ -225,18 +233,45 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 });
 
 describe("ConsoleLayout — rail shell", () => {
-	it("captions the groups and closes with a link back to the docs", async () => {
-		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+	it("captions the groups and carries API Docs inside Build", async () => {
+		connectInteractions.mockResolvedValue({
+			interactions: [{ id: 491 }, { id: 586 }, { id: 587 }],
+		});
 
 		renderRail();
 
 		await screen.findByRole("link", { name: "Load Wallet" });
-		expect(screen.getByText("Account")).toBeVisible();
-		expect(screen.getByText("Build & Monitor")).toBeVisible();
-		expect(screen.getByRole("link", { name: /API Docs/ })).toHaveAttribute(
+		expect(screen.getByText("Complete your KYC")).toBeVisible();
+		expect(screen.getByText("Build")).toBeVisible();
+		expect(screen.getByText("Account & History")).toBeVisible();
+		expect(screen.getByRole("link", { name: /Integration Docs/ })).toHaveAttribute(
 			"href",
 			"/docs",
 		);
+		// Position, not mere presence: an API Docs link left dangling below every
+		// group would still satisfy the href assertion above.
+		const labels = railLabels();
+		const build = labels.indexOf("Credentials");
+		expect(labels.slice(build, build + 3)).toEqual([
+			"Credentials",
+			"Integration Docs",
+			"Build with AI Tools",
+		]);
+		expect(
+			screen.getByRole("link", { name: /Build with AI Tools/ }),
+		).toHaveAttribute("href", "/ai");
+	});
+
+	it("hides the KYC section when neither onboarding item is entitled", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+
+		renderRail();
+
+		// Wait for the entitlements to settle first, or the caption is absent
+		// merely because nothing has resolved yet.
+		await screen.findByRole("link", { name: "Load Wallet" });
+		expect(screen.queryByText("Complete your KYC")).toBeNull();
+		expect(screen.getByText("Build")).toBeVisible();
 	});
 
 	// The rail caption IS the page heading now — the old `<h1>Developer Console`
@@ -266,10 +301,7 @@ describe("ConsoleLayout — Documents rail item", () => {
 
 		const link = await screen.findByRole("link", { name: "Upload Documents" });
 		expect(link).toHaveAttribute("href", "/console/documents");
-		const labels = screen
-			.getAllByRole("link")
-			.map((a) => a.textContent?.trim());
-		expect(labels.slice(0, 2)).toEqual(["Home", "Upload Documents"]);
+		expect(railLabels().slice(0, 2)).toEqual(["Home", "Upload Documents"]);
 	});
 
 	it("stays hidden when the user can list documents but not upload them", async () => {

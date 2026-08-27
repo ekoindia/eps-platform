@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Banknote, Landmark, Send, ShieldCheck } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 /** Tab ids — URL-stable (used in the ?tab= query param) */
@@ -20,27 +20,35 @@ const TAB_DEFS: {
 	{ id: "banking", label: "Connected Banking", icon: Landmark },
 ];
 
-const isTabId = (value: string | null): value is PricingTabId =>
-	TAB_DEFS.some((tab) => tab.id === value);
+/** True when `value` names a tab that is currently visible (see `TAB_DEFS`). */
+const isVisibleTabId = (
+	value: string | null,
+	visible: readonly { id: PricingTabId }[],
+): value is PricingTabId => visible.some((tab) => tab.id === value);
 
-interface PricingTabsProps {
+export interface PricingTabsProps {
 	/** Tab 1 — Verification APIs (cost calculator + rate card) */
 	verification: ReactNode;
 	/** Tab 2 — DMT (per-transaction ledger + RCM explainer + rate card) */
 	dmt: ReactNode;
 	/** Tab 3 — AePS & BBPS (earnings calculator + rate card) */
 	payments: ReactNode;
-	/** Tab 4 — Connected Banking (cost calculator) */
-	banking: ReactNode;
+	/** Tab 4 — Connected Banking (cost calculator). Omit to hide the tab. */
+	banking?: ReactNode;
 }
 
 /**
  * Client-side tab shell for the /pricing page.
  *
- * All four panels stay mounted (`forceMount`) and are hidden via CSS so the
+ * Every supplied panel stays mounted (`forceMount`) and is hidden via CSS so the
  * prerendered HTML carries every product's tables (SEO) and calculator state
  * survives tab switches. `display:none` also hides each inactive panel's
  * position:fixed mobile summary bar.
+ *
+ * A panel prop left undefined drops both its content and its tab trigger — that
+ * is how a product is switched off (see `CONNECTED_BANKING_ENABLED`). A `?tab=`
+ * pointing at a hidden or unknown tab falls back to "verification" and the stale
+ * key is stripped from the URL.
  *
  * The active tab is mirrored to `?tab=` ("verification" is the canonical
  * default and never written). Only the `tab` key is touched — `sel`, `gst`,
@@ -53,13 +61,45 @@ export const PricingTabs = ({
 	banking,
 }: PricingTabsProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
+
+	// A panel prop left undefined removes both the panel and its tab trigger.
+	const panels = (
+		[
+			{ id: "verification", content: verification },
+			{ id: "dmt", content: dmt },
+			{ id: "payments", content: payments },
+			{ id: "banking", content: banking },
+		] as const
+	).filter((panel) => panel.content != null);
+	const tabs = TAB_DEFS.filter((tab) =>
+		panels.some((panel) => panel.id === tab.id),
+	);
+
 	const [activeTab, setActiveTab] = useState<PricingTabId>(() => {
 		const fromUrl = searchParams.get(TAB_PARAM);
-		return isTabId(fromUrl) ? fromUrl : "verification";
+		return isVisibleTabId(fromUrl, tabs) ? fromUrl : "verification";
 	});
 
+	// Strip a `?tab=` that names a hidden or unknown tab so the URL stops
+	// advertising it on reload/share. The predicate is computed during render so
+	// the effect depends on a boolean, not on the freshly-built `tabs` array —
+	// and it flips false after the write, so this runs exactly once.
+	const urlTab = searchParams.get(TAB_PARAM);
+	const hasStaleTabParam = urlTab !== null && !isVisibleTabId(urlTab, tabs);
+	useEffect(() => {
+		if (!hasStaleTabParam) return;
+		setSearchParams(
+			(prev) => {
+				const params = new URLSearchParams(prev);
+				params.delete(TAB_PARAM);
+				return params;
+			},
+			{ replace: true, preventScrollReset: true },
+		);
+	}, [hasStaleTabParam, setSearchParams]);
+
 	const onTabChange = (value: string) => {
-		if (!isTabId(value)) return;
+		if (!isVisibleTabId(value, tabs)) return;
 		setActiveTab(value);
 		setSearchParams(
 			(prev) => {
@@ -72,13 +112,6 @@ export const PricingTabs = ({
 		);
 	};
 
-	const panels: { id: PricingTabId; content: ReactNode }[] = [
-		{ id: "verification", content: verification },
-		{ id: "dmt", content: dmt },
-		{ id: "payments", content: payments },
-		{ id: "banking", content: banking },
-	];
-
 	return (
 		<Tabs value={activeTab} onValueChange={onTabChange}>
 			{/* Sticky below the auto-hiding fixed header (z-50): when the header
@@ -89,7 +122,7 @@ export const PricingTabs = ({
 				<div className="container mx-auto px-4">
 					{/* -mb-px lets the active underline sit on the wrapper's border */}
 					<TabsList className="h-auto w-full sm:w-auto justify-start gap-1 bg-transparent p-0 -mb-px overflow-x-auto rounded-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-						{TAB_DEFS.map((tab) => (
+						{tabs.map((tab) => (
 							<TabsTrigger
 								key={tab.id}
 								value={tab.id}
