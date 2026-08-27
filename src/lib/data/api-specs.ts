@@ -14692,14 +14692,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "passport",
-		productId: "passport",
-		name: "Passport Verification",
-		slug: "passport",
+		id: "passport-application",
+		productId: "passport-application",
+		name: "Passport Application Validation",
+		slug: "passport-application",
 		summary:
-			"Verify Indian passport application details using passport file number and date of birth.",
+			"Validate Indian passport application details using passport file number and date of birth.",
 		description:
-			"The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth. Returns holder name, DOB, application type, and application received date — suitable for KYC, employee background verification, travel compliance, and fintech onboarding workflows. Supports Indian passports only; not an OCR or MRZ scan API.",
+			"The Passport Application Validation API enables businesses to validate passport holder details using passport file number and date of birth. Returns holder name, DOB, application type, and application received date — suitable for KYC, employee background verification, travel compliance, and fintech onboarding workflows. Supports Indian passports only; not an OCR or MRZ scan API.",
 		relevance: "M",
 		bestFor:
 			"Employee BGV, travel-platform KYC, fintech onboarding, and immigration-assistance workflows that need structured passport data from the government source.",

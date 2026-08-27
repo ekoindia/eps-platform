@@ -4,9 +4,9 @@ import {
 	GST_RATE,
 	SETUP_FEE_DISCOUNTED,
 	SETUP_FEE_DISCOUNT_PERCENT,
-	sentences,
 	displayName,
 	getPricedApisForProduct,
+	sentences,
 	type PricedApi,
 } from "@/lib/data/api-pricing";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
@@ -19,13 +19,6 @@ import {
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import { BBPS_OPERATORS } from "@/lib/data/bbps-operators";
-import { docsHref } from "@/lib/data/docs-registry";
-import {
-	AEPS_CASHOUT_SLABS,
-	AEPS_MINI_STATEMENT_COMMISSION,
-	BBPS_CATEGORIES,
-	TDS_RATE,
-} from "@/lib/data/payments-pricing";
 import {
 	DMT_CUSTOMER_FEE_MIN,
 	DMT_CUSTOMER_FEE_PCT,
@@ -33,10 +26,16 @@ import {
 	DMT_RECIPIENT_VERIFY_FEE,
 	DMT_SENDER_KYC_FEE,
 	EKO_DMT_CHARGE,
-	calcDmtTxn,
 	dmtRateCardRows,
 	dmtSenderKycInclGst,
 } from "@/lib/data/dmt-pricing";
+import { docsHref } from "@/lib/data/docs-registry";
+import {
+	AEPS_CASHOUT_SLABS,
+	AEPS_MINI_STATEMENT_COMMISSION,
+	BBPS_CATEGORIES,
+	TDS_RATE,
+} from "@/lib/data/payments-pricing";
 import type { ProductPageDataShape } from "./render-product";
 import {
 	aiGettingStartedNotice,
@@ -422,7 +421,7 @@ export const PRODUCTS_TXT_PARTS: ProductsIndexPart[] = [
 			"digilocker",
 			"dl",
 			"voter-id",
-			"passport",
+			"passport-application",
 			"name-match",
 			"email",
 		],

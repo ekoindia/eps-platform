@@ -2177,22 +2177,23 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 	// -------------------------------------------------------------------------
 	passport: {
 		seo: {
-			title: "Passport Verification API India | File Number & DOB Verification",
+			title:
+				"Passport Application Validation API India | File Number & DOB Verification",
 			description:
-				"Verify Indian passport details using file number and date of birth. Eko’s Passport Verification API returns status, holder name, DOB, application type and application received date for KYC and BGV workflows.",
+				"Verify Indian passport details using file number and date of birth. Eko’s Passport Application Validation API returns status, holder name, DOB, application type and application received date for KYC and BGV workflows.",
 			keywords:
-				"Passport Verification API, Passport KYC API, Passport Validation API, Travel Document Verification API, Identity Verification API India",
+				"Passport Application Validation API, Passport KYC API, Passport Validation API, Travel Document Verification API, Identity Verification API India",
 		},
-		title: "Passport Verification API",
+		title: "Passport Application Validation API",
 		desc: "Verify Indian passport details in real time",
 		heroTitle:
-			"Passport Verification API for Indian Passport File Number Checks",
+			"Passport Application Validation API for Indian Passport File Number Checks",
 		heroSubtitle:
 			"Verify Indian passport application details using passport file number and date of birth. Retrieve verification status, holder name, date of birth, application type, and application received date for KYC, employee BGV, travel, and compliance workflows.",
 		category: "verification",
 		icon: Plane,
 		overview:
-			"The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth.",
+			"The Passport Application Validation API enables businesses to validate passport holder details using passport file number and date of birth.",
 		keyBenefits: [
 			"Instant passport detail verification",
 			"Confirms holder name and date of birth",
@@ -2242,7 +2243,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{ title: "Go Live", desc: "Start verifying passports in production." },
 		],
 		leadForm: {
-			title: "Get Passport Verification API Access",
+			title: "Get Passport Application Validation API Access",
 		},
 		faqs: [
 			{

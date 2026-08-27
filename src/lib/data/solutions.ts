@@ -1,5 +1,5 @@
-import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import { SETUP_FEE_CLAUSE, sentences } from "@/lib/data/api-pricing";
+import { API_PRODUCT_PAGES } from "@/lib/data/api-product-pages";
 import {
 	ACTIVE_PRODUCTS_MAP,
 	API_PRODUCTS_MAP,
@@ -980,8 +980,8 @@ export const SOLUTIONS_LIST: SolutionData[] = [
 				why: "An alternative government-issued ID when employees don't have PAN or Aadhaar — common for informal sector workers.",
 			},
 			{
-				apiId: "passport",
-				what: "Verify passport details for employees in international or travel roles.",
+				apiId: "passport-application",
+				what: "Validate passport application details for employees in international or travel roles.",
 				why: "Mandatory for roles involving international travel — confirms document validity and matches holder identity.",
 			},
 			{
