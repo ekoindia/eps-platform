@@ -37,6 +37,7 @@ import {
 	Menu,
 	PlusCircle,
 	ReceiptText,
+	Sparkles,
 	ShieldCheck,
 	UserCog,
 	Users,
@@ -93,13 +94,22 @@ const CREDENTIALS_ITEM: NavItem = {
 };
 
 /**
- * The docs rail this one borrows its shape from. An in-app route like every
- * other item — the ↗ only says it leaves the console shell behind.
+ * The docs rail this one borrows its shape from, and the AI-tooling page beside
+ * it. In-app routes like every other item — the ↗ only says they leave the
+ * console shell behind.
  */
 const API_DOCS_ITEM: NavItem = {
 	to: "/docs",
-	label: "API Docs",
+	label: "Integration Docs",
 	icon: BookOpen,
+	end: false,
+	arrow: true,
+};
+
+const BUILD_WITH_AI_ITEM: NavItem = {
+	to: "/ai",
+	label: "Build with AI Tools",
+	icon: Sparkles,
 	end: false,
 	arrow: true,
 };
@@ -232,6 +242,7 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			items: [
 				CREDENTIALS_ITEM,
 				API_DOCS_ITEM,
+				BUILD_WITH_AI_ITEM,
 				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),
 			],
 		},

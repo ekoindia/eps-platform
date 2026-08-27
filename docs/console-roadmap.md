@@ -32,7 +32,8 @@ container and their own `<h1>`.
 Links are grouped under the docs rail's uppercase captions rather than flat, and
 the captions name what the partner is *doing*, not what the link *is*: **Home**
 alone at the top, then **Complete your KYC** (Upload Documents, Sign Agreement),
-**Build** (Credentials, `API Docs ↗`, Live Sandbox (KYC & Verification)) and
+**Build** (Credentials, `Integration Docs ↗`, `Build with AI Tools ↗`, Live
+Sandbox (KYC & Verification)) and
 **Account & History** (Load Wallet, Transaction History, Manage My Account, AePS
 Agents, plus the DEV-only Test bench). A group whose items are all unentitled
 renders nothing rather than an empty caption — which is how the KYC section
@@ -40,9 +41,10 @@ disappears once onboarding is behind the partner. Order within a group is
 entitlement-independent and pinned by `ConsoleLayout.nav.test.tsx`, which also
 guards the single-`h1`/`<main>` contract.
 
-Every rail item is an in-app `NavLink` with its icon on the left. `API Docs` is
-the one that leaves the console shell — it routes to `/docs`, in the same tab,
-and `NavItem.arrow` draws a trailing `↗` (pushed right with `ml-auto`) to say so.
+Every rail item is an in-app `NavLink` with its icon on the left. `Integration
+Docs` (`/docs`) and `Build with AI Tools` (`/ai`) are the two that leave the
+console shell — same tab, and `NavItem.arrow` draws a trailing `↗` (pushed right
+with `ml-auto`) to say so.
 `Live Sandbox (KYC & Verification)` shows only for accounts whose interaction
 list carries id **9995** — same presence-of-the-id gate as every other entitled
 item, and fail-closed the same way (no list, no link). It is internal too: the

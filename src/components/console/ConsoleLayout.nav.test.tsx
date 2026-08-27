@@ -97,7 +97,8 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 			"Home",
 			"Upload Documents",
 			"Credentials",
-			"API Docs",
+			"Integration Docs",
+			"Build with AI Tools",
 			"Load Wallet",
 			"Transaction History",
 		]);
@@ -166,7 +167,8 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 			"Home",
 			"Sign Agreement",
 			"Credentials",
-			"API Docs",
+			"Integration Docs",
+			"Build with AI Tools",
 			"Load Wallet",
 			"Transaction History",
 			"Manage My Account",
@@ -203,7 +205,7 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 		// entitled to follow this one, so a whole-list compare would break on
 		// nothing.
 		const labels = railLabels();
-		expect(labels.indexOf(NAME)).toBe(labels.indexOf("API Docs") + 1);
+		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Build with AI Tools") + 1);
 	});
 
 	it("stays hidden without the entitlement", async () => {
@@ -242,14 +244,22 @@ describe("ConsoleLayout — rail shell", () => {
 		expect(screen.getByText("Complete your KYC")).toBeVisible();
 		expect(screen.getByText("Build")).toBeVisible();
 		expect(screen.getByText("Account & History")).toBeVisible();
-		expect(screen.getByRole("link", { name: /API Docs/ })).toHaveAttribute(
+		expect(screen.getByRole("link", { name: /Integration Docs/ })).toHaveAttribute(
 			"href",
 			"/docs",
 		);
 		// Position, not mere presence: an API Docs link left dangling below every
 		// group would still satisfy the href assertion above.
 		const labels = railLabels();
-		expect(labels.indexOf("API Docs")).toBe(labels.indexOf("Credentials") + 1);
+		const build = labels.indexOf("Credentials");
+		expect(labels.slice(build, build + 3)).toEqual([
+			"Credentials",
+			"Integration Docs",
+			"Build with AI Tools",
+		]);
+		expect(
+			screen.getByRole("link", { name: /Build with AI Tools/ }),
+		).toHaveAttribute("href", "/ai");
 	});
 
 	it("hides the KYC section when neither onboarding item is entitled", async () => {
