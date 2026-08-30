@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	AEPS_CASHOUT_SLABS,
+	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
 	BBPS_CATEGORIES_MAP,
 	calcEarningsQuote,
@@ -30,6 +31,19 @@ describe("commissionForAmount (AePS cashout)", () => {
 	it("rounds percentage commissions to whole paise", () => {
 		// 0.4% of ₹1,111 = ₹4.444 → ₹4.44
 		expect(commissionForAmount(AEPS_CASHOUT_SLABS, 1111)).toBe(4.44);
+	});
+});
+
+describe("AEPS_SETTLEMENT_CHARGES", () => {
+	it("charges ₹5 up to ₹25,000 and ₹10 above, with no upper cap", () => {
+		expect(commissionForAmount(AEPS_SETTLEMENT_CHARGES, 25000)).toBe(5);
+		expect(commissionForAmount(AEPS_SETTLEMENT_CHARGES, 25001)).toBe(10);
+		expect(commissionForAmount(AEPS_SETTLEMENT_CHARGES, 500000)).toBe(10);
+	});
+
+	it("leaves the top slab uncapped so it renders as a \"₹25,001+\" range", () => {
+		const top = AEPS_SETTLEMENT_CHARGES[AEPS_SETTLEMENT_CHARGES.length - 1];
+		expect(top.upTo).toBeNull();
 	});
 });
 

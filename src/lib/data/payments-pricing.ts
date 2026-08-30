@@ -62,7 +62,7 @@ export const AEPS_MINI_STATEMENT_COMMISSION = 0.75;
  */
 export const AEPS_SETTLEMENT_CHARGES: AmountSlab[] = [
 	{ from: 101, upTo: 25000, flat: 5 },
-	{ from: 25001, upTo: 200000, flat: 10 },
+	{ from: 25001, upTo: null, flat: 10 },
 ];
 
 // ---------------------------------------------------------------------------
