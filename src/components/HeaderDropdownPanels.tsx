@@ -113,10 +113,12 @@ type DeveloperLinkItem = {
 	external?: boolean;
 };
 
+// MARK: LINKS
+
 const developerLinks: DeveloperLinkItem[] = [
 	{ label: "API Documentation", href: "/docs", icon: BookOpen },
-	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
 	{ label: "Build with AI", href: "/ai", icon: Sparkles },
+	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
 	{ label: "FAQs", href: "/faq", icon: HelpCircle },
 	{
 		label: "Open Source",
@@ -802,7 +804,8 @@ export const HeaderDropdownPanels = ({
 										Developer Console
 									</p>
 									<p className="mt-1 text-xs text-white/70 leading-snug">
-										Keys, logs, wallet, team.
+										Your account, keys, wallet, etc. — all in one place. Manage
+										your Eko integrations and view your usage statistics.
 									</p>
 									<Button
 										asChild
