@@ -2175,7 +2175,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 	// -------------------------------------------------------------------------
 	// MARK: Passport
 	// -------------------------------------------------------------------------
-	passport: {
+	"passport-application": {
 		seo: {
 			title:
 				"Passport Application Validation API India | File Number & DOB Verification",
