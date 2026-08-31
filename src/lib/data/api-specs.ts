@@ -13050,8 +13050,8 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "vehicle_number",
 				type: "string",
 				required: true,
-				description: "Vehicle registration number to verify (e.g. HR26DA8398).",
-				example: "HR26DA8398",
+				description: "Vehicle registration number to verify (e.g. HJ01ME5678).",
+				example: "HJ01ME5678",
 			},
 		],
 		responseData: [
@@ -13060,7 +13060,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				description:
 					"Unique reference ID for this verification request returned by Eko.",
-				example: "EKO-RC-9876543210-001",
+				example: "34247643",
 			},
 			{
 				name: "status",
@@ -14432,16 +14432,16 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"Unique Electoral Photo Identity Card (EPIC) number to verify.",
-				example: "ABC1234567",
+				example: "UAI4574761",
 			},
-			{
-				name: "name",
-				type: "string",
-				required: false,
-				description:
-					"Name of the Voter ID cardholder. Optional; can be used for cross-verification against returned name.",
-				example: "Rajesh Kumar",
-			},
+			// {
+			// 	name: "name",
+			// 	type: "string",
+			// 	required: false,
+			// 	description:
+			// 		"Name of the Voter ID cardholder. Optional; can be used for cross-verification against returned name.",
+			// 	example: "Rajesh Kumar",
+			// },
 		],
 		responseData: [
 			{
