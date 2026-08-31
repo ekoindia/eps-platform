@@ -2,11 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
+	BBPS_OFFLINE_SETTLEMENT_HOURS,
 	DEFAULT_MAX_TXN_AMOUNT,
 	MAX_TXNS,
+	type BbpsMode,
 	type EarningsLine,
 } from "@/lib/data/payments-pricing";
-import { formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
+import { cn, formatINR, formatINRRate, formatIndianCompact } from "@/lib/utils";
 import { X } from "lucide-react";
 import { useId } from "react";
 
@@ -34,8 +36,52 @@ interface EarningsProductRowProps {
 	line: EarningsLine;
 	onTxnsChange: (monthlyTxns: number) => void;
 	onAvgAmountChange: (avgAmount: number) => void;
+	onModeChange: (mode: BbpsMode) => void;
 	onRemove: () => void;
 }
+
+/**
+ * Online / offline settlement-mode switch for a BBPS line. Rendered only for
+ * categories that offer the offline (higher-commission) mode.
+ */
+const ModeSwitch = ({
+	mode,
+	name,
+	onChange,
+}: {
+	mode: BbpsMode;
+	name: string;
+	onChange: (mode: BbpsMode) => void;
+}) => (
+	<div
+		role="radiogroup"
+		aria-label={`${name} settlement mode`}
+		className="inline-flex rounded-lg border border-border/60 bg-muted/40 p-0.5"
+	>
+		{(
+			[
+				["online", "Instant"],
+				["offline", `${BBPS_OFFLINE_SETTLEMENT_HOURS}-hr · higher`],
+			] as const
+		).map(([value, label]) => (
+			<button
+				key={value}
+				type="button"
+				role="radio"
+				aria-checked={mode === value}
+				onClick={() => onChange(value)}
+				className={cn(
+					"px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors",
+					mode === value
+						? "bg-card text-foreground shadow-xs"
+						: "text-muted-foreground hover:text-foreground",
+				)}
+			>
+				{label}
+			</button>
+		))}
+	</div>
+);
 
 /**
  * One selected earnings product in the Payments calculator: name +
@@ -47,6 +93,7 @@ export const EarningsProductRow = ({
 	line,
 	onTxnsChange,
 	onAvgAmountChange,
+	onModeChange,
 	onRemove,
 }: EarningsProductRowProps) => {
 	const txnsInputId = useId();
@@ -103,6 +150,16 @@ export const EarningsProductRow = ({
 					</Button>
 				</div>
 			</div>
+
+			{product.offlineAvailable && (
+				<div className="mb-4 -mt-1">
+					<ModeSwitch
+						mode={line.mode}
+						name={product.name}
+						onChange={onModeChange}
+					/>
+				</div>
+			)}
 
 			<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
 				<div className="flex-1 pt-1">

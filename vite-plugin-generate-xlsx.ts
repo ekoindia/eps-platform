@@ -135,6 +135,8 @@ async function loadPricingData(
 		},
 		bbps: {
 			categories: paymentsMod.BBPS_CATEGORIES,
+			modeParam: paymentsMod.BBPS_MODE_PARAM,
+			offlineSettlementHours: paymentsMod.BBPS_OFFLINE_SETTLEMENT_HOURS,
 			operators: operatorsMod.BBPS_OPERATORS,
 		},
 		cb: {

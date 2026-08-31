@@ -36,12 +36,7 @@ export async function buildDmtSheet(
 	const tdsPct = Math.round(data.tdsRate * 100);
 
 	let row = 1;
-	brandedTitle(
-		ws,
-		row,
-		"C",
-		"Eko Platform Services — DMT Earnings Calculator",
-	);
+	brandedTitle(ws, row, "C", "Eko Platform Services — DMT Earnings Calculator");
 	row++;
 
 	introRow(

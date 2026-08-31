@@ -6,6 +6,7 @@ import {
 	BBPS_CATEGORIES_MAP,
 	calcEarningsQuote,
 	clampAvgAmount,
+	bbpsSlabsForMode,
 	commissionForAmount,
 	commissionPerTxn,
 	EARNINGS_PRODUCTS,
@@ -41,22 +42,36 @@ describe("AEPS_SETTLEMENT_CHARGES", () => {
 		expect(commissionForAmount(AEPS_SETTLEMENT_CHARGES, 500000)).toBe(10);
 	});
 
-	it("leaves the top slab uncapped so it renders as a \"₹25,001+\" range", () => {
+	it('leaves the top slab uncapped so it renders as a "₹25,001+" range', () => {
 		const top = AEPS_SETTLEMENT_CHARGES[AEPS_SETTLEMENT_CHARGES.length - 1];
 		expect(top.upTo).toBeNull();
 	});
 });
 
-describe("BBPS electricity slabs", () => {
-	const electricity = BBPS_CATEGORIES_MAP["bbps-electricity"];
+describe("BBPS electricity offline slabs", () => {
+	const offline = BBPS_CATEGORIES_MAP["bbps-electricity"].offline!;
 
 	it("resolves all four amount slabs at their boundaries", () => {
-		expect(commissionForAmount(electricity.slabs, 5000)).toBe(1.2);
-		expect(commissionForAmount(electricity.slabs, 5001)).toBeCloseTo(26.01, 2);
-		expect(commissionForAmount(electricity.slabs, 20000)).toBe(104);
-		expect(commissionForAmount(electricity.slabs, 20001)).toBeCloseTo(120, 1);
-		expect(commissionForAmount(electricity.slabs, 100000)).toBe(600);
-		expect(commissionForAmount(electricity.slabs, 100001)).toBeCloseTo(320, 1);
+		expect(commissionForAmount(offline, 5000)).toBe(1.2);
+		expect(commissionForAmount(offline, 5001)).toBeCloseTo(26.01, 2);
+		expect(commissionForAmount(offline, 20000)).toBe(104);
+		expect(commissionForAmount(offline, 20001)).toBeCloseTo(120, 1);
+		expect(commissionForAmount(offline, 100000)).toBe(600);
+		expect(commissionForAmount(offline, 100001)).toBeCloseTo(320, 1);
+	});
+});
+
+describe("bbpsSlabsForMode", () => {
+	it("returns the mode's own slabs when the category offers it", () => {
+		const electricity = BBPS_CATEGORIES_MAP["bbps-electricity"];
+		expect(bbpsSlabsForMode(electricity, "online")).toBe(electricity.online);
+		expect(bbpsSlabsForMode(electricity, "offline")).toBe(electricity.offline);
+	});
+
+	it("falls back to online for an instant-only category", () => {
+		const metro = BBPS_CATEGORIES_MAP["bbps-metro"];
+		expect(metro.offline).toBeNull();
+		expect(bbpsSlabsForMode(metro, "offline")).toBe(metro.online);
 	});
 });
 
@@ -68,6 +83,50 @@ describe("commissionPerTxn", () => {
 
 	it("returns 0 for unknown product ids", () => {
 		expect(commissionPerTxn("nope", 1000)).toBe(0);
+	});
+
+	it("defaults to the online (instant) rate", () => {
+		expect(commissionPerTxn("bbps-electricity", 10000)).toBe(1.2);
+	});
+
+	it("pays more in the offline mode where it is offered", () => {
+		expect(commissionPerTxn("bbps-electricity", 10000, "offline")).toBe(52);
+		expect(commissionPerTxn("bbps-postpaid-landline", 600, "offline")).toBe(
+			1.2,
+		);
+	});
+
+	it("falls back to the online rate for an instant-only category", () => {
+		expect(commissionPerTxn("bbps-metro", 300, "offline")).toBe(0.8);
+	});
+});
+
+describe("calcEarningsQuote — BBPS settlement mode", () => {
+	it("keeps the requested offline mode and uses its rate", () => {
+		const [line] = calcEarningsQuote([
+			{
+				productId: "bbps-electricity",
+				monthlyTxns: 100,
+				avgAmount: 10000,
+				mode: "offline",
+			},
+		]).lines;
+		expect(line.mode).toBe("offline");
+		expect(line.perTxn).toBe(52);
+		expect(line.monthlyEarnings).toBe(5200);
+	});
+
+	it("downgrades offline to online for an instant-only category", () => {
+		const [line] = calcEarningsQuote([
+			{
+				productId: "bbps-metro",
+				monthlyTxns: 100,
+				avgAmount: 300,
+				mode: "offline",
+			},
+		]).lines;
+		expect(line.mode).toBe("online");
+		expect(line.perTxn).toBe(0.8);
 	});
 });
 
@@ -104,7 +163,11 @@ describe("calcEarningsQuote", () => {
 
 	it("clamps txn counts and amounts", () => {
 		const quote = calcEarningsQuote([
-			{ productId: "aeps-cashout", monthlyTxns: MAX_TXNS * 2, avgAmount: 99999 },
+			{
+				productId: "aeps-cashout",
+				monthlyTxns: MAX_TXNS * 2,
+				avgAmount: 99999,
+			},
 		]);
 		expect(quote.lines[0].monthlyTxns).toBe(MAX_TXNS);
 		expect(quote.lines[0].avgAmount).toBe(10000);

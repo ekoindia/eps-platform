@@ -56,10 +56,16 @@ interface EarningsRowDef {
 	defaultAvg: number | null;
 	/** Min/max for the avg-amount validation */
 	avgRange?: [number, number];
-	/** Builds the E-column value: formula string or literal number */
-	perTxn: (avgRef: string) => string | number;
+	/** Builds the commission/txn value: formula string or literal number */
+	perTxn: (avgRef: string, modeRef: string) => string | number;
+	/** BBPS only — offer the offline settlement mode in a dropdown */
+	offlineAvailable?: boolean;
 	notes?: string;
 }
+
+/** Settlement-mode dropdown labels (BBPS rows) */
+const MODE_INSTANT = "Instant";
+const modeOfflineLabel = (hours: number) => `${hours}-hour (higher)`;
 
 /**
  * Build the interactive "Payments Earnings" sheet: AePS and BBPS products
@@ -74,6 +80,7 @@ export async function buildPaymentsEarningsSheet(
 		{ width: 34 },
 		{ width: 30 },
 		{ width: 18 },
+		{ width: 18 },
 		{ width: 16 },
 		{ width: 20 },
 		{ width: 22 },
@@ -81,6 +88,7 @@ export async function buildPaymentsEarningsSheet(
 	];
 
 	const { aeps, bbps } = data;
+	const offlineLabel = modeOfflineLabel(bbps.offlineSettlementHours);
 	const gstPct = Math.round(data.gstRate * 100);
 	const tdsPct = Math.round(data.tdsRate * 100);
 
@@ -88,7 +96,7 @@ export async function buildPaymentsEarningsSheet(
 	brandedTitle(
 		ws,
 		row,
-		"G",
+		"H",
 		"Eko Platform Services — Payments & BC Earnings Calculator (DMT · AePS · BBPS)",
 	);
 	row++;
@@ -96,13 +104,13 @@ export async function buildPaymentsEarningsSheet(
 	introRow(
 		ws,
 		row,
-		"G",
+		"H",
 		`These products PAY YOU a commission per transaction. Enter your average transaction amount and expected monthly transactions in the highlighted columns. Commissions are in INR, exclusive of GST @ ${gstPct}%.`,
 	);
 	row++;
 
 	const liveUrl = `${data.siteUrl}/pricing?tab=payments`;
-	const link = fullWidthRow(ws, row, "G", {
+	const link = fullWidthRow(ws, row, "H", {
 		text: `Open the live earnings calculator: ${liveUrl}`,
 		hyperlink: liveUrl,
 	});
@@ -114,6 +122,7 @@ export async function buildPaymentsEarningsSheet(
 	headerRow(ws, row, [
 		"Product",
 		"Commission basis",
+		"Settlement mode",
 		"Avg txn amount (₹)",
 		"Monthly txns",
 		"Commission / txn (₹)",
@@ -139,7 +148,7 @@ export async function buildPaymentsEarningsSheet(
 						.join("; "),
 					defaultAvg: AEPS_DEFAULT_AVG,
 					avgRange: [aeps.cashoutSlabs[0].from, cashoutMax],
-					perTxn: (avgRef) =>
+					perTxn: (avgRef: string) =>
 						`IF(${avgRef}="","",${slabFormula(aeps.cashoutSlabs, avgRef)})`,
 				},
 				{
@@ -154,16 +163,26 @@ export async function buildPaymentsEarningsSheet(
 			label: "BBPS — Bill Payments (category-level)",
 			rows: bbps.categories.map((category) => ({
 				name: category.name,
-				basis: category.slabs.length > 1 ? "Slab by txn amount" : "Flat",
+				basis:
+					category.online.length > 1 || (category.offline?.length ?? 0) > 1
+						? "Slab by txn amount"
+						: "Flat",
 				defaultAvg: category.defaultAvgAmount,
-				avgRange: [1, 200000] as [number, number],
-				perTxn: (avgRef: string) => {
-					const expr = slabFormula(category.slabs, avgRef);
-					return typeof expr === "number"
-						? expr
-						: `IF(${avgRef}="","",${expr})`;
+				avgRange: [1, 500000] as [number, number],
+				offlineAvailable: category.offline !== null,
+				perTxn: (avgRef: string, modeRef: string) => {
+					const online = slabFormula(category.online, avgRef);
+					if (!category.offline) {
+						return typeof online === "number"
+							? online
+							: `IF(${avgRef}="","",${online})`;
+					}
+					const offline = slabFormula(category.offline, avgRef);
+					return `IF(${avgRef}="","",IF(${modeRef}="${offlineLabel}",${offline},${online}))`;
 				},
-				notes: category.rangeNote,
+				notes: [category.rangeNote, category.offlineNote]
+					.filter(Boolean)
+					.join(" · "),
 			})),
 		},
 	];
@@ -174,7 +193,7 @@ export async function buildPaymentsEarningsSheet(
 	// the one-time row needs each block's range, not just the overall extent.
 	const familyRanges: { first: number; last: number }[] = [];
 	for (const group of groups) {
-		groupBandRow(ws, row, "G", group.label);
+		groupBandRow(ws, row, "H", group.label);
 		row++;
 
 		const familyFirstRow = row;
@@ -187,8 +206,25 @@ export async function buildPaymentsEarningsSheet(
 			basisCell.value = def.basis;
 			basisCell.font = { size: 9, color: { argb: "FF64748B" } };
 
+			const modeCell = ws.getCell(`C${row}`);
+			if (def.offlineAvailable) {
+				markInputCell(ws, `C${row}`);
+				modeCell.value = MODE_INSTANT;
+				modeCell.dataValidation = {
+					type: "list",
+					allowBlank: false,
+					showErrorMessage: true,
+					formulae: [`"${MODE_INSTANT},${offlineLabel}"`],
+					errorTitle: "Invalid mode",
+					error: `Pick "${MODE_INSTANT}" or "${offlineLabel}".`,
+				};
+			} else {
+				modeCell.value = "Instant only";
+				modeCell.font = { size: 9, color: { argb: "FF64748B" } };
+			}
+
 			if (def.defaultAvg !== null) {
-				const avgCell = markInputCell(ws, `C${row}`);
+				const avgCell = markInputCell(ws, `D${row}`);
 				avgCell.value = def.defaultAvg;
 				avgCell.numFmt = "#,##0";
 				if (def.avgRange) {
@@ -204,7 +240,7 @@ export async function buildPaymentsEarningsSheet(
 				}
 			}
 
-			const txnsCell = markInputCell(ws, `D${row}`);
+			const txnsCell = markInputCell(ws, `E${row}`);
 			txnsCell.numFmt = "#,##0";
 			txnsCell.dataValidation = {
 				type: "whole",
@@ -216,21 +252,21 @@ export async function buildPaymentsEarningsSheet(
 				error: `Enter a whole number between 0 and ${data.maxVolume.toLocaleString("en-IN")}.`,
 			};
 
-			const perTxnCell = ws.getCell(`E${row}`);
-			const perTxnValue = def.perTxn(`C${row}`);
+			const perTxnCell = ws.getCell(`F${row}`);
+			const perTxnValue = def.perTxn(`D${row}`, `C${row}`);
 			perTxnCell.value =
 				typeof perTxnValue === "number"
 					? perTxnValue
 					: { formula: perTxnValue };
 			perTxnCell.numFmt = RATE_FORMAT;
 
-			const earningsCell = ws.getCell(`F${row}`);
-			earningsCell.value = { formula: `IFERROR(N(E${row})*N(D${row}),0)` };
+			const earningsCell = ws.getCell(`G${row}`);
+			earningsCell.value = { formula: `IFERROR(N(F${row})*N(E${row}),0)` };
 			earningsCell.numFmt = INR_FORMAT;
 			earningsCell.font = { color: { argb: SUCCESS } };
 
 			if (def.notes) {
-				const notesCell = ws.getCell(`G${row}`);
+				const notesCell = ws.getCell(`H${row}`);
 				notesCell.value = def.notes;
 				notesCell.font = { size: 9, color: { argb: "FF64748B" } };
 			}
@@ -248,12 +284,12 @@ export async function buildPaymentsEarningsSheet(
 		formula: string,
 		opts?: { gold?: boolean },
 	) => {
-		ws.mergeCells(`A${row}:E${row}`);
+		ws.mergeCells(`A${row}:F${row}`);
 		const labelCell = ws.getCell(`A${row}`);
 		labelCell.value = label;
 		labelCell.alignment = { horizontal: "right" };
 		labelCell.font = { bold: true, size: opts?.gold ? 12 : 10 };
-		const valueCell = ws.getCell(`F${row}`);
+		const valueCell = ws.getCell(`G${row}`);
 		valueCell.value = { formula };
 		valueCell.numFmt = INR_FORMAT;
 		valueCell.font = { bold: true, size: opts?.gold ? 12 : 10 };
@@ -268,13 +304,13 @@ export async function buildPaymentsEarningsSheet(
 
 	const grossRow = summaryRow(
 		"Gross monthly commission (excl. GST)",
-		`SUM(F${firstDataRow}:F${lastDataRow})`,
+		`SUM(G${firstDataRow}:G${lastDataRow})`,
 	);
 	const tdsRow = summaryRow(
 		`Less TDS @ ${tdsPct}%`,
-		`F${grossRow}*${data.tdsRate}`,
+		`G${grossRow}*${data.tdsRate}`,
 	);
-	summaryRow("Indicative net monthly payout", `F${grossRow}-F${tdsRow}`, {
+	summaryRow("Indicative net monthly payout", `G${grossRow}-G${tdsRow}`, {
 		gold: true,
 	});
 
@@ -284,7 +320,7 @@ export async function buildPaymentsEarningsSheet(
 	const netFactor = (100 - data.setupFeeDiscountPercent) / 100;
 	const familyFees = familyRanges
 		.map(
-			({ first, last }) => `IF(SUM(D${first}:D${last})>0,${data.bcSetupFee},0)`,
+			({ first, last }) => `IF(SUM(E${first}:E${last})>0,${data.bcSetupFee},0)`,
 		)
 		.join("+");
 	summaryRow(
@@ -299,14 +335,15 @@ export async function buildPaymentsEarningsSheet(
 		"Estimates use your AVERAGE transaction amount; actual earnings depend on each transaction's slab.",
 		`AePS fund settlements carry a charge of ${aeps.settlementCharges.map((slab) => `₹${slab.flat} (${slab.upTo === null ? `above ₹${(slab.from - 1).toLocaleString("en-IN")}` : `up to ₹${slab.upTo.toLocaleString("en-IN")}`})`).join(" / ")} + GST.`,
 		"Where BBPS operator rates vary, the LOWEST rate is used for a conservative estimate.",
+		`BBPS settlement mode is set per transaction with the "communication" parameter (${bbps.modeParam.online} = instant, ${bbps.modeParam.offline} = ${bbps.offlineSettlementHours}-hour, higher commission), sent on BOTH Fetch Bill and Pay Bill.`,
 	];
 	for (const note of footnotes) {
-		footnoteRow(ws, row, "G", note);
+		footnoteRow(ws, row, "H", note);
 		row++;
 	}
 
 	// Internal link to the full BBPS operator list
-	const opsLink = fullWidthRow(ws, row, "G", {
+	const opsLink = fullWidthRow(ws, row, "H", {
 		text: `Operator-wise BBPS rates (${bbps.operators.length} billers) → see the "${SHEETS.bbpsOperators}" sheet`,
 		hyperlink: `#'${SHEETS.bbpsOperators}'!A1`,
 	});

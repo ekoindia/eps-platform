@@ -16,6 +16,8 @@ import {
 	AEPS_MINI_STATEMENT_COMMISSION,
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
+	BBPS_MODE_PARAM,
+	BBPS_OFFLINE_SETTLEMENT_HOURS,
 	BC_SETUP_FEE,
 	PAYMENTS_FAQS,
 	TDS_RATE,
@@ -52,6 +54,7 @@ import {
 	indexPageNotice,
 	joinBlocks,
 	markdownTable,
+	bbpsModeInline,
 	slabRange,
 	slabValue,
 } from "./shared";
@@ -188,19 +191,22 @@ export function renderPricingMarkdown(): string {
 			]),
 		),
 		h3("BBPS Bill Payments (category-level)"),
+		`Every bill payment runs in one of two settlement modes, chosen per transaction with the optional \`communication\` parameter sent on BOTH Fetch Bill and Pay Bill: \`communication=${BBPS_MODE_PARAM.online}\` (default) is ONLINE — instant settlement at the standard commission; \`communication=${BBPS_MODE_PARAM.offline}\` is OFFLINE — settles in a minimum of ${BBPS_OFFLINE_SETTLEMENT_HOURS} working hours and pays a higher commission. Offline is offered on selected categories only.`,
 		"Commission per transaction by bill category. Where rates vary by operator, the lowest operator rate is shown (conservative estimate) with the range in notes.",
 		markdownTable(
-			["Category", "Commission (excl. GST)", "Notes"],
+			[
+				"Category",
+				"Online — instant (excl. GST)",
+				`Offline — ${BBPS_OFFLINE_SETTLEMENT_HOURS}-hour (excl. GST)`,
+				"Notes",
+			],
 			BBPS_CATEGORIES.map((category) => [
 				category.name,
-				category.slabs
-					.map((slab) =>
-						category.slabs.length > 1
-							? `${slabRange(slab)}: ${slabValue(slab)}`
-							: slabValue(slab),
-					)
-					.join("; "),
-				category.rangeNote ?? "—",
+				bbpsModeInline(category.online),
+				bbpsModeInline(category.offline),
+				[category.rangeNote, category.offlineNote]
+					.filter(Boolean)
+					.join(" · ") || "—",
 			]),
 		),
 		`Operator-wise commission for 100+ BBPS billers is available in the downloadable Excel rate card: ${SITE_URL}/eps-pricing-calculator.xlsx`,

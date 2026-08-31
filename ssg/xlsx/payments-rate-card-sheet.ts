@@ -2,6 +2,7 @@ import type { Worksheet } from "exceljs";
 import {
 	RATE_FORMAT,
 	SHEETS,
+	bbpsModeText,
 	brandedTitle,
 	footnoteRow,
 	groupBandRow,
@@ -25,12 +26,12 @@ export async function buildPaymentsRateCardSheet(
 	data: PricingXlsxData,
 ): Promise<void> {
 	ws.columns = [
-		{ width: 18 },
-		{ width: 18 },
+		{ width: 26 },
+		{ width: 16 },
+		{ width: 26 },
 		{ width: 20 },
-		{ width: 24 },
-		{ width: 22 },
-		{ width: 52 },
+		{ width: 30 },
+		{ width: 44 },
 	];
 
 	const { aeps, bbps } = data;
@@ -87,32 +88,52 @@ export async function buildPaymentsRateCardSheet(
 	groupBandRow(ws, row, "F", "BBPS — Commission by bill category");
 	row++;
 
-	["Category", "", "Commission (excl. GST)", "", "", "Notes"].forEach(
-		(header, i) => {
-			if (!header) return;
-			const cell = ws.getCell(row, i + 1);
-			cell.value = header;
-			cell.font = { bold: true, size: 10 };
-			cell.fill = solidFill(HEADER_FILL);
-			cell.border = { bottom: { style: "thin", color: { argb: NAVY } } };
-		},
+	introRow(
+		ws,
+		row,
+		"F",
+		`Settlement mode is chosen per transaction with the optional "communication" parameter, sent on BOTH Fetch Bill and Pay Bill: ${data.bbps.modeParam.online} (default) = online, instant settlement at the standard commission; ${data.bbps.modeParam.offline} = offline, settles in a minimum of ${data.bbps.offlineSettlementHours} working hours and pays a higher commission.`,
 	);
+	row++;
+
+	[
+		"Category",
+		"",
+		"Online — instant",
+		"",
+		`Offline — ${data.bbps.offlineSettlementHours}-hour (higher)`,
+		"Notes",
+	].forEach((header, i) => {
+		if (!header) return;
+		const cell = ws.getCell(row, i + 1);
+		cell.value = header;
+		cell.font = { bold: true, size: 10 };
+		cell.fill = solidFill(HEADER_FILL);
+		cell.border = { bottom: { style: "thin", color: { argb: NAVY } } };
+	});
 	row++;
 
 	for (const category of bbps.categories) {
 		ws.getCell(`A${row}`).value = category.name;
 		ws.mergeCells(`A${row}:B${row}`);
-		ws.getCell(`C${row}`).value = category.slabs
-			.map((slab) =>
-				category.slabs.length > 1
-					? `${slabRangeText(slab)}: ${slabValueText(slab)}`
-					: slabValueText(slab),
-			)
-			.join("; ");
-		ws.mergeCells(`C${row}:E${row}`);
+
+		const online = ws.getCell(`C${row}`);
+		online.value = bbpsModeText(category.online);
+		online.alignment = { wrapText: true, vertical: "top" };
+		ws.mergeCells(`C${row}:D${row}`);
+
+		const offline = ws.getCell(`E${row}`);
+		offline.value = bbpsModeText(category.offline);
+		offline.alignment = { wrapText: true, vertical: "top" };
+		if (!category.offline)
+			offline.font = { size: 9, color: { argb: "FF64748B" } };
+
 		const notes = ws.getCell(`F${row}`);
-		notes.value = category.rangeNote ?? "";
+		notes.value =
+			[category.rangeNote, category.offlineNote].filter(Boolean).join(" · ") ||
+			"";
 		notes.font = { size: 9, color: { argb: "FF64748B" } };
+		notes.alignment = { wrapText: true, vertical: "top" };
 		row++;
 	}
 

@@ -17,6 +17,8 @@ import {
 	AEPS_MINI_STATEMENT_COMMISSION,
 	AEPS_SETTLEMENT_CHARGES,
 	BBPS_CATEGORIES,
+	BBPS_MODE_PARAM,
+	BBPS_OFFLINE_SETTLEMENT_HOURS,
 	BC_SETUP_FEE,
 	TDS_RATE,
 } from "@/lib/data/payments-pricing";
@@ -108,7 +110,12 @@ describe("renderPricingXlsx", () => {
 				miniStatementCommission: AEPS_MINI_STATEMENT_COMMISSION,
 				settlementCharges: AEPS_SETTLEMENT_CHARGES,
 			},
-			bbps: { categories: BBPS_CATEGORIES, operators: BBPS_OPERATORS },
+			bbps: {
+				categories: BBPS_CATEGORIES,
+				operators: BBPS_OPERATORS,
+				modeParam: BBPS_MODE_PARAM,
+				offlineSettlementHours: BBPS_OFFLINE_SETTLEMENT_HOURS,
+			},
 			cb: {
 				setupFee: CB_SETUP_FEE,
 				banks: [...CB_BANKS],
@@ -289,7 +296,7 @@ describe("renderPricingXlsx", () => {
 		it("charges one setup fee per API family, not per selected row", () => {
 			let formula = "";
 			earnings.eachRow((row) => {
-				const f = row.getCell(6).formula ?? "";
+				const f = row.getCell(7).formula ?? "";
 				if (f.includes(`${BC_SETUP_FEE},0)`)) formula = f;
 			});
 			// AePS and BBPS — two IF terms however many BBPS categories the
@@ -315,10 +322,10 @@ describe("renderPricingXlsx", () => {
 			let tdsRef = "";
 			let netFound = false;
 			earnings.eachRow((row, rowNumber) => {
-				const formula = row.getCell(6).formula ?? "";
-				if (formula.startsWith("SUM(F")) grossRef = `F${rowNumber}`;
+				const formula = row.getCell(7).formula ?? "";
+				if (formula.startsWith("SUM(G")) grossRef = `G${rowNumber}`;
 				if (grossRef && formula === `${grossRef}*${TDS_RATE}`)
-					tdsRef = `F${rowNumber}`;
+					tdsRef = `G${rowNumber}`;
 				if (grossRef && tdsRef && formula === `${grossRef}-${tdsRef}`)
 					netFound = true;
 			});
@@ -327,20 +334,30 @@ describe("renderPricingXlsx", () => {
 			expect(netFound).toBe(true);
 		});
 
-		it("unlocks only the avg-amount and txn-count input columns", () => {
+		it("unlocks only the mode, avg-amount and txn-count input columns", () => {
 			earnings.eachRow((row) => {
 				row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
 					if (cell.protection?.locked === false) {
-						expect([3, 4]).toContain(colNumber);
+						expect([3, 4, 5]).toContain(colNumber);
 					}
 				});
 			});
 			// One txn input per product (2 AePS + categories)
 			let txnInputs = 0;
 			earnings.eachRow((row) => {
-				if (row.getCell(4).protection?.locked === false) txnInputs++;
+				if (row.getCell(5).protection?.locked === false) txnInputs++;
 			});
 			expect(txnInputs).toBe(2 + BBPS_CATEGORIES.length);
+		});
+
+		it("offers a settlement-mode dropdown only on BBPS categories that have one", () => {
+			let modeInputs = 0;
+			earnings.eachRow((row) => {
+				if (row.getCell(3).protection?.locked === false) modeInputs++;
+			});
+			expect(modeInputs).toBe(
+				BBPS_CATEGORIES.filter((category) => category.offline !== null).length,
+			);
 		});
 	});
 

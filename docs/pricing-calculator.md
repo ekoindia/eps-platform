@@ -105,14 +105,23 @@ Commission products keyed on **transaction amount** (not monthly volume):
 - `AEPS_CASHOUT_SLABS` (0.40% ≤ ₹3,000; ₹13 flat ₹3,001–₹10,000),
   `AEPS_MINI_STATEMENT_COMMISSION` (₹0.75), `AEPS_SETTLEMENT_CHARGES`
   (₹5/₹10 + GST — informational cost, never netted into earnings).
-- `BBPS_CATEGORIES` — ~14 `BbpsCategory` entries with `AmountSlab[]`. Where
-  operator rates vary (prepaid, DTH, municipal, FASTag general), the
-  **lowest** rate is used (conservative estimate) and `rangeNote` carries the
-  spread. The full operator table lives only in the Excel workbook.
+- `BBPS_CATEGORIES` — ~16 `BbpsCategory` entries, each carrying **two**
+  `AmountSlab[]` rate cards: `online` (instant settlement, always present)
+  and `offline` (minimum 6-working-hour settlement, higher commission;
+  `null` where the category is instant-only). The partner picks the mode per
+  transaction with the `communication` request parameter — `0` online
+  (default), `1` offline — sent on **both** Fetch Bill and Pay Bill
+  (`BBPS_MODE_PARAM`, `BBPS_OFFLINE_SETTLEMENT_HOURS`). Read the slabs with
+  `bbpsSlabsForMode(category, mode)`, which falls back to `online` for
+  instant-only categories. Where operator rates vary (prepaid, DTH, FASTag
+  general), the **lowest** rate is used (conservative estimate) and
+  `rangeNote` carries the spread. The full operator table lives only in the
+  Excel workbook.
 - `EARNINGS_PRODUCTS` / `EARNINGS_GROUPS` — the unified product list the
   calculator iterates (`dmt`, `aeps-cashout`, `aeps-mini`, `bbps-*`).
   `needsAmount: false` only for `aeps-mini`.
-- Math: `commissionPerTxn(productId, avgAmount)`, `calcEarningsQuote(sel)` →
+- Math: `commissionPerTxn(productId, avgAmount, mode = "online")`,
+  `calcEarningsQuote(sel)` (each selection may carry `mode`) →
   `{ lines, total, totalAfterTds, totalTxns }`. `TDS_RATE` (2%) is applied as
   an indicative payout line — the headline stays GROSS (excl. GST).
 - Estimates use the **average** txn amount; real earnings depend on the
@@ -247,7 +256,8 @@ tds     = round(gross × 2%)
 
 1. Verification: edit `tiers` in `PRICED_APIS`. DMT: edit the constants in
    `dmt-pricing.ts` (the ledger derives). AePS/BBPS: edit `AEPS_*`,
-   `BBPS_CATEGORIES` (and `bbps-operators.ts` for the Excel list).
+   `BBPS_CATEGORIES` (`online` and/or `offline` slabs — and
+   `bbps-operators.ts` for the Excel list).
    Connected Banking: edit `CB_*` constants (and set
    `CONNECTED_BANKING_ENABLED = true` — the product is currently disabled).
 2. No other file changes needed — calculators, rate cards, JSON-LD,
@@ -268,7 +278,7 @@ APIs (e.g. `ip`) automatically show neither.
 | `sel` | PricingCalculator | `sel=pan-lite:50000,bank-pennydrop:10000` | Verification state — `apiId:volume` pairs. |
 | `apis` | PricingCalculator | `apis=pan` | Deep-link entry. Accepts priced-API ids OR product ids (expands at `DEFAULT_VOLUME`). Normalised into `sel` after load. |
 | `gst` | PricingCalculator | `gst=1` | Verification headline total includes GST |
-| `pay` | PaymentsCalculator | `pay=dmt:5000:2500,bbps-electricity:1000:1500` | Earnings state — `productId:monthlyTxns:avgAmount` (avgAmount omitted for `aeps-mini`). |
+| `pay` | PaymentsCalculator | `pay=dmt:5000:2500,bbps-electricity:1000:1500:offline` | Earnings state — `productId:monthlyTxns:avgAmount[:offline]` (avgAmount omitted for `aeps-mini`; the `offline` suffix only on BBPS lines using the 6-hour mode). |
 | `dmt` | DmtCalculator | `dmt=2500:1000:50:80:0` | `amount:monthlyTxns:newSenders:newRecipients:recover` (recover = `1`/`0`). Written only after the user touches an input. |
 | `cb` | ConnectedBankingCalculator | `cb=2:5000:10000` | `bankUsers:monthlyTxns:avgAmount`. Written only after the user touches an input. |
 
@@ -349,10 +359,10 @@ modules. **Eight sheets, in tab order:**
 | `Index` | First tab: what's inside + internal hyperlinks (`{ text, hyperlink: "#'Sheet Name'!A1" }`) to every sheet |
 | `Verification Calculator` | Monthly COST estimate — usage inputs, line/subtotal/GST formulas |
 | `DMT Calculator` | Per-txn ledger + monthly take-home — **all live formulas** (closed-form, no lookup table) |
-| `Payments Earnings` | Monthly EARNINGS estimate for AePS/BBPS — avg-amount + txn inputs; gross / TDS / net payout summary |
+| `Payments Earnings` | Monthly EARNINGS estimate for AePS/BBPS — settlement-mode dropdown (BBPS), avg-amount + txn inputs; gross / TDS / net payout summary |
 | `Connected Banking` | Setup (₹75,000 × banks + GST) and monthly (per-txn slab IF + GST) blocks |
 | `Verification Rate Card` | Static verification reference |
-| `Payments Rate Card` | Static AePS and BBPS category reference |
+| `Payments Rate Card` | Static AePS reference + BBPS categories with both settlement modes side by side |
 | `BBPS Operator Rates` | Full operator list, frozen header + auto-filter |
 
 - **Renderer**: `ssg/render-pricing-xlsx.ts` — pure `renderPricingXlsx(data)`
