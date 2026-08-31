@@ -4,9 +4,9 @@ import {
 	GST_RATE,
 	SETUP_FEE_DISCOUNTED,
 	SETUP_FEE_DISCOUNT_PERCENT,
-	sentences,
 	displayName,
 	getPricedApisForProduct,
+	sentences,
 	type PricedApi,
 } from "@/lib/data/api-pricing";
 import { productHref, type ApiProductRef } from "@/lib/data/api-products";
@@ -19,13 +19,6 @@ import {
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
 import { BBPS_OPERATORS } from "@/lib/data/bbps-operators";
-import { docsHref } from "@/lib/data/docs-registry";
-import {
-	AEPS_CASHOUT_SLABS,
-	AEPS_MINI_STATEMENT_COMMISSION,
-	BBPS_CATEGORIES,
-	TDS_RATE,
-} from "@/lib/data/payments-pricing";
 import {
 	DMT_CUSTOMER_FEE_MIN,
 	DMT_CUSTOMER_FEE_PCT,
@@ -33,10 +26,18 @@ import {
 	DMT_RECIPIENT_VERIFY_FEE,
 	DMT_SENDER_KYC_FEE,
 	EKO_DMT_CHARGE,
-	calcDmtTxn,
 	dmtRateCardRows,
 	dmtSenderKycInclGst,
 } from "@/lib/data/dmt-pricing";
+import { docsHref } from "@/lib/data/docs-registry";
+import {
+	AEPS_CASHOUT_SLABS,
+	AEPS_MINI_STATEMENT_COMMISSION,
+	BBPS_CATEGORIES,
+	BBPS_MODE_PARAM,
+	BBPS_OFFLINE_SETTLEMENT_HOURS,
+	TDS_RATE,
+} from "@/lib/data/payments-pricing";
 import type { ProductPageDataShape } from "./render-product";
 import {
 	aiGettingStartedNotice,
@@ -49,6 +50,7 @@ import {
 	heading,
 	joinBlocks,
 	link,
+	bbpsModeInline,
 	slabRange,
 	slabValue,
 	table,
@@ -240,17 +242,16 @@ const aepsPricing = (fmt: MarkdownFormat): string => {
 	].join("\n\n");
 };
 
-/** Inline commission for one BBPS category, e.g. "₹0.72" or "slab: rate; …". */
+/** Both-mode commission for one BBPS category, e.g. "₹0.72" or "slab: rate; …". */
 const bbpsCommissionInline = (
 	category: (typeof BBPS_CATEGORIES)[number],
-): string =>
-	category.slabs
-		.map((slab) =>
-			category.slabs.length > 1
-				? `${slabRange(slab)}: ${slabValue(slab)}`
-				: slabValue(slab),
-		)
-		.join("; ");
+): [online: string, offline: string] => [
+	bbpsModeInline(category.online),
+	bbpsModeInline(category.offline),
+];
+
+/** How the `communication` parameter picks the settlement mode. */
+const bbpsModeIntro = `Settlement mode is chosen per transaction with the optional \`communication\` parameter, sent on BOTH Fetch Bill and Pay Bill: ${BBPS_MODE_PARAM.online} (default) = online, instant settlement at the standard commission; ${BBPS_MODE_PARAM.offline} = offline, settles in a minimum of ${BBPS_OFFLINE_SETTLEMENT_HOURS} working hours and pays a higher commission.`;
 
 const bbpsOperatorPointer = `Operator-level commission for ${BBPS_OPERATORS.length}+ BBPS billers: ${SITE_URL}/eps-pricing-calculator.xlsx (also summarised at ${SITE_URL}/pricing.md).`;
 
@@ -260,17 +261,26 @@ const bbpsPricing = (fmt: MarkdownFormat): string => {
 		// Inline numbered list — one line per category, range notes in [brackets].
 		const lines = BBPS_CATEGORIES.map((category, i) => {
 			const note = category.rangeNote ? ` [${category.rangeNote}]` : "";
-			return `  ${i + 1}. ${category.name}: ${bbpsCommissionInline(category)}${note}`;
+			const [online, offline] = bbpsCommissionInline(category);
+			return `  ${i + 1}. ${category.name}: online ${online}; offline ${offline}${note}`;
 		});
-		return [lines.join("\n"), bbpsOperatorPointer].join("\n\n");
+		return [bbpsModeIntro, lines.join("\n"), bbpsOperatorPointer].join("\n\n");
 	}
 	return [
+		bbpsModeIntro,
 		table(
-			["Category", "Commission (excl. GST)", "Notes"],
+			[
+				"Category",
+				"Online — instant",
+				`Offline — ${BBPS_OFFLINE_SETTLEMENT_HOURS}-hour`,
+				"Notes",
+			],
 			BBPS_CATEGORIES.map((category) => [
 				category.name,
-				bbpsCommissionInline(category),
-				category.rangeNote ?? "—",
+				...bbpsCommissionInline(category),
+				[category.rangeNote, category.offlineNote]
+					.filter(Boolean)
+					.join(" · ") || "—",
 			]),
 			fmt,
 		),
@@ -422,7 +432,7 @@ export const PRODUCTS_TXT_PARTS: ProductsIndexPart[] = [
 			"digilocker",
 			"dl",
 			"voter-id",
-			"passport",
+			"passport-application",
 			"name-match",
 			"email",
 		],

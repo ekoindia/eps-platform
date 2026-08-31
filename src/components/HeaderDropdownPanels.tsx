@@ -3,7 +3,11 @@
  * Kept separate from the header shell so this larger chunk (react-icons, data
  * arrays, DropdownGrid, Sheet) is deferred until after hydration.
  */
-import { DropdownColumnHeader, DropdownGrid } from "@/components/DropdownGrid";
+import {
+	DropdownColumnHeader,
+	DropdownGrid,
+	pastelColors,
+} from "@/components/DropdownGrid";
 import { EkoLogo } from "@/components/EkoLogo";
 import { GetStartedButton } from "@/components/GetStartedButton";
 import { ClaudeCodeIcon } from "@/components/icons/ClaudeCodeIcon";
@@ -109,10 +113,12 @@ type DeveloperLinkItem = {
 	external?: boolean;
 };
 
+// MARK: LINKS
+
 const developerLinks: DeveloperLinkItem[] = [
 	{ label: "API Documentation", href: "/docs", icon: BookOpen },
-	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
 	{ label: "Build with AI", href: "/ai", icon: Sparkles },
+	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
 	{ label: "FAQs", href: "/faq", icon: HelpCircle },
 	{
 		label: "Open Source",
@@ -574,13 +580,16 @@ export const HeaderDropdownPanels = ({
 		)),
 		developers: (
 			<>
-				{devLinks.map((item) => (
+				{/* `devLinks`, not `developerLinks`: the drawer's gold console CTA only
+				    renders for a signed-in session, so an anonymous drawer would
+				    otherwise lose the console row entirely. */}
+				{devLinks.map((item, index) => (
 					<DeveloperLink
 						key={item.href}
 						item={item}
 						onClick={() => setMobileMenuOpen(false)}
 						className="flex items-center gap-2 text-sm py-1.5 text-eko-slate cursor-pointer"
-						iconClassName="w-3.5 h-3.5 text-eko-navy/50"
+						iconClassName={`w-5 h-5 p-[3px] rounded-md shrink-0 opacity-90 ${pastelColors[index % pastelColors.length]}`}
 					/>
 				))}
 				<p className="text-xs font-semibold text-eko-navy/70 uppercase tracking-wider py-1 mt-2">
@@ -758,26 +767,83 @@ export const HeaderDropdownPanels = ({
 			{/* ── Desktop: Developers dropdown ───────────────────────────── */}
 			{activeDesktopDropdown === "developers" && (
 				<div
-					className="developers-dropdown fixed top-24 left-1/2 -translate-x-1/2 w-[460px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden"
+					className={cn(
+						"developers-dropdown fixed top-24 left-1/2 -translate-x-1/2 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-border/50 z-50 animate-menu-slide-down-in overflow-hidden",
+						SHOW_USER_LOGIN ? "w-[740px]" : "w-[460px]",
+					)}
 					data-dropdown="developers"
 					{...panelHoverHandlers}
 				>
-					<div className="grid grid-cols-2">
-						{/* Left column: developer links */}
+					<div
+						className={
+							SHOW_USER_LOGIN
+								? "grid grid-cols-[15rem_1fr_1fr]"
+								: "grid grid-cols-2"
+						}
+					>
+						{/* First column: the console, promoted out of the link list so the
+						    one entry leading into the signed-in product outweighs the
+						    reference links beside it — and doubles as a signed-in
+						    indicator. Only when the console feature is on; without it
+						    there is nowhere to send anyone. */}
+						{SHOW_USER_LOGIN && (
+							<div className="p-4 flex">
+								<div className="flex-1 flex flex-col rounded-xl bg-linear-to-br from-eko-navy to-eko-navy-light p-4">
+									<div className="flex items-center gap-2">
+										<span className="w-9 h-9 rounded-lg bg-eko-gold flex items-center justify-center shrink-0">
+											<SquareCode className="w-5 h-5 text-eko-navy" />
+										</span>
+										{identity && (
+											<span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+												<span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+												Signed in
+											</span>
+										)}
+									</div>
+									<p className="mt-3 text-base font-bold text-white">
+										Developer Console
+									</p>
+									<p className="mt-1 text-xs text-white/70 leading-snug">
+										Your account, keys, wallet, etc. — all in one place. Manage
+										your Eko integrations and view your usage statistics.
+									</p>
+									<Button
+										asChild
+										variant="gold"
+										size="sm"
+										className="mt-auto w-full cursor-pointer justify-center"
+									>
+										{/* `consoleHome`, not a literal `/console`: an admin session
+										    belongs in `/admin`, same split the drawer CTA makes. */}
+										<Link
+											to={consoleHome.href}
+											onClick={() => setActiveDesktopDropdown(null)}
+										>
+											Open Console
+										</Link>
+									</Button>
+								</div>
+							</div>
+						)}
+
+						{/* Middle column: developer links. `developerLinks`, not `devLinks` —
+						    the card above already carries the console on desktop. */}
 						<div className="p-4 flex flex-col gap-1">
 							<DropdownColumnHeader title="Developers" />
-							{devLinks.map((item) => (
+							{developerLinks.map((item, index) => (
 								<DeveloperLink
 									key={item.href}
 									item={item}
 									onClick={() => setActiveDesktopDropdown(null)}
 									className="flex items-center gap-2.5 px-3 py-2 text-sm text-eko-slate hover:text-eko-navy hover:bg-muted rounded-lg transition-colors cursor-pointer"
-									iconClassName="w-4 h-4 text-eko-navy/50 shrink-0"
+									iconClassName={`w-6 h-6 p-[5px] rounded-lg shrink-0 opacity-90 ${pastelColors[index % pastelColors.length]}`}
 								/>
 							))}
 						</div>
 
-						{/* Right column: ask a hosted AI about the site */}
+						{/* Right column: ask a hosted AI about the site. Stays monochrome
+						    on purpose — these are brand logos, and tinting them would
+						    fight the pastel chips beside them. */}
 						<div className="p-4 flex flex-col gap-1">
 							<DropdownColumnHeader title="Ask AI" />
 							{aiClientLinks.map((item) => (
@@ -929,7 +995,10 @@ export const HeaderDropdownPanels = ({
 										isLight={false}
 										showLabel
 										placement="top-left"
-										className={cn(MOBILE_ACCOUNT_ROW, "w-full rounded-none px-0")}
+										className={cn(
+											MOBILE_ACCOUNT_ROW,
+											"w-full rounded-none px-0",
+										)}
 									/>
 									<button
 										type="button"
@@ -954,8 +1023,10 @@ export const HeaderDropdownPanels = ({
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										<LayoutDashboard className="w-4 h-4" />
-										Open{" "}
-										{consoleHome.label === "Admin" ? "Admin" : "Developer"} Console
+										Open {consoleHome.label === "Admin"
+											? "Admin"
+											: "Developer"}{" "}
+										Console
 										<ArrowRight className="w-4 h-4" />
 									</Link>
 								</Button>
@@ -982,7 +1053,6 @@ export const HeaderDropdownPanels = ({
 							</>
 						)}
 					</div>
-
 				</SheetContent>
 			</Sheet>
 

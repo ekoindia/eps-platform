@@ -184,12 +184,12 @@ const API_PRODUCTS_DATA = [
 		shortDesc: "Validate voter ID (EPIC) details instantly",
 	},
 	{
-		id: "passport",
-		name: "Passport Verification",
-		slug: "passport-verification-api",
+		id: "passport-application",
+		name: "Passport Application Validation",
+		slug: "passport-application-validation-api",
 		category: "verification",
 		shortDesc:
-			"Verify Indian passport details using file number and date of birth",
+			"Validate Indian passport application details using file number and date of birth",
 	},
 	{
 		id: "cin",

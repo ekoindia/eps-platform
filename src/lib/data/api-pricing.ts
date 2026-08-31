@@ -371,9 +371,9 @@ export const PRICED_APIS: PricedApi[] = [
 		tiers: [{ upTo: null, rate: 1.8 }],
 	},
 	{
-		id: "passport",
-		name: "Passport Verification",
-		productId: "passport",
+		id: "passport-application",
+		name: "Passport Application Validation",
+		productId: "passport-application",
 		group: "Identity Documents",
 		tiers: [{ upTo: null, rate: 1.8 }],
 	},

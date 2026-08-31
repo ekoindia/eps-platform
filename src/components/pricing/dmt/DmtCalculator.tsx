@@ -36,9 +36,10 @@ const DEFAULT_INPUT: DmtInput = {
 
 /** Log-spaced txn-count steps for the slider (direct input allows any value) */
 const TXN_STEPS = [
-	0, 100, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000,
+	0, 100, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 1_00_000, 250_000,
+	500_000, 1_000_000,
 ];
-const TICK_LABELS = [0, 1_000, 10_000, 100_000];
+const TICK_LABELS = [0, 1_000, 10_000, 100_000, 1_000_000];
 
 const nearestStepIndex = (txns: number): number => {
 	let best = 0;
@@ -146,7 +147,9 @@ export const DmtCalculator = () => {
 	const [input, setInput] = useState<DmtInput>(
 		() => parseInputFromParams(searchParams) ?? DEFAULT_INPUT,
 	);
-	const [touched, setTouched] = useState(() => searchParams.get("dmt") !== null);
+	const [touched, setTouched] = useState(
+		() => searchParams.get("dmt") !== null,
+	);
 	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const recoverId = useId();
 
@@ -315,8 +318,8 @@ export const DmtCalculator = () => {
 
 				<p className="text-[11px] text-muted-foreground/80 mt-4 leading-relaxed">
 					Reverse charge applies — Eko pays the GST on your commission. Your
-					wallet is debited the transfer amount plus the fee on each transaction;
-					commission is credited back.
+					wallet is debited the transfer amount plus the fee on each
+					transaction; commission is credited back.
 				</p>
 			</div>
 		</div>
@@ -337,7 +340,12 @@ export const DmtCalculator = () => {
 							</span>
 						</div>
 						<Slider
-							value={[Math.min(Math.max(input.amount, DMT_MIN_TXN_AMOUNT), DMT_MAX_TXN_AMOUNT)]}
+							value={[
+								Math.min(
+									Math.max(input.amount, DMT_MIN_TXN_AMOUNT),
+									DMT_MAX_TXN_AMOUNT,
+								),
+							]}
 							min={DMT_MIN_TXN_AMOUNT}
 							max={DMT_MAX_TXN_AMOUNT}
 							step={100}
@@ -353,7 +361,7 @@ export const DmtCalculator = () => {
 
 					<div className="rounded-2xl border border-border/60 bg-card shadow-card p-4 sm:p-5">
 						<h4 className="font-semibold text-foreground leading-tight mb-4">
-							Transfers per month
+							Number of transfers per month
 						</h4>
 						<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
 							<div className="flex-1 pt-1">

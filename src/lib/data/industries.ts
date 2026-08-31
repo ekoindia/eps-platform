@@ -1461,11 +1461,11 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				relevance: "M",
 			},
 			{
-				apiId: "passport",
-				name: "Passport Verification",
+				apiId: "passport-application",
+				name: "Passport Application Validation",
 				description:
-					"Verify passport for employees in international or travel-related roles",
-				href: "/products/passport-verification-api",
+					"Validate passport application details for employees in international or travel-related roles",
+				href: "/products/passport-application-validation-api",
 				relevance: "M",
 			},
 			{
@@ -2872,11 +2872,11 @@ export const INDUSTRIES_LIST: IndustryData[] = [
 				relevance: "M",
 			},
 			{
-				apiId: "passport",
-				name: "Passport Verification",
+				apiId: "passport-application",
+				name: "Passport Application Validation",
 				description:
-					"Verify traveller passport details for international booking compliance",
-				href: "/products/passport-verification-api",
+					"Validate traveller passport application details for international booking compliance",
+				href: "/products/passport-application-validation-api",
 				relevance: "H",
 			},
 		],

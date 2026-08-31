@@ -110,6 +110,10 @@ export interface PricingXlsxData {
 	bbps: {
 		categories: BbpsCategory[];
 		operators: BbpsOperator[];
+		/** `BBPS_MODE_PARAM` — `communication` value per settlement mode. */
+		modeParam: { online: number; offline: number };
+		/** `BBPS_OFFLINE_SETTLEMENT_HOURS` — minimum offline settlement time. */
+		offlineSettlementHours: number;
 	};
 	/** Connected Banking config from connected-banking-pricing. */
 	cb: {
@@ -240,6 +244,19 @@ export const slabRangeText = (slab: AmountSlab): string =>
 	slab.upTo === null
 		? `₹${slab.from.toLocaleString("en-IN")}+`
 		: `₹${slab.from.toLocaleString("en-IN")} – ₹${slab.upTo.toLocaleString("en-IN")}`;
+
+/**
+ * Inline commission text for one BBPS settlement mode — a single rate, or
+ * every slab joined as "range: rate". `null` = the mode is not offered.
+ */
+export const bbpsModeText = (slabs: AmountSlab[] | null): string => {
+	if (!slabs) return "Not offered";
+	return slabs.length > 1
+		? slabs
+				.map((slab) => `${slabRangeText(slab)}: ${slabValueText(slab)}`)
+				.join("; ")
+		: slabValueText(slabs[0]);
+};
 
 /** Format a slab's value for sheet text, e.g. "₹1.20" or "0.52% of amount". */
 export const slabValueText = (slab: AmountSlab): string =>

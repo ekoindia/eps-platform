@@ -383,11 +383,18 @@ describe("renderProductsIndexText", () => {
 
 	it("renders BBPS commission as an inline numbered list with [bracketed] notes", () => {
 		expect(txt).toContain("Pricing (commission, excl. GST):");
+		// both settlement modes on one line — online first, then offline slabs
 		expect(txt).toMatch(
-			/ {2}\d+\. Electricity Bill: ₹1 – ₹5,000: ₹1\.20; ₹5,001 – ₹20,000: 0\.52% of amount/,
+			/ {2}\d+\. Electricity Bill: online ₹1\.20; offline ₹1 – ₹5,000: ₹1\.20; ₹5,001 – ₹20,000: 0\.52% of amount/,
+		);
+		// instant-only categories say so
+		expect(txt).toMatch(
+			/ {2}\d+\. Metro Card Recharge: online ₹0\.80; offline Not offered/,
 		);
 		// range notes ride inline in square brackets, not on a separate line
-		expect(txt).toMatch(/ {2}\d+\. FASTag Recharge: ₹[\d.]+ \[[^\]]+\]/);
+		expect(txt).toMatch(
+			/ {2}\d+\. FASTag Recharge: online ₹[\d.]+; offline Not offered \[[^\]]+\]/,
+		);
 		expect(txt).not.toContain("Notes: —");
 	});
 

@@ -70,6 +70,8 @@ describe("renderPricingMarkdown", () => {
 		expect(md).toContain("₹0.75 per transaction");
 		expect(md).toContain("₹5.00 + GST");
 		expect(md).toContain("₹10.00 + GST");
+		// Top settlement slab is uncapped — "₹25,001+", not a bounded range.
+		expect(md).toContain("₹25,001+");
 	});
 
 	it("renders every BBPS category and points to the Excel rate card", () => {

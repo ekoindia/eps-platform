@@ -117,6 +117,17 @@ export const slabValue = (slab: SlabLike): string =>
 		? formatRate(slab.flat)
 		: `${((slab.pct ?? 0) * 100).toFixed(2).replace(/\.?0+$/, "")}% of amount`;
 
+/**
+ * Inline commission for one BBPS settlement mode — a single rate, or every
+ * slab joined as "range: rate". `null` (mode not offered) renders an em dash.
+ */
+export const bbpsModeInline = (slabs: SlabLike[] | null): string => {
+	if (!slabs) return "Not offered";
+	return slabs.length > 1
+		? slabs.map((slab) => `${slabRange(slab)}: ${slabValue(slab)}`).join("; ")
+		: slabValue(slabs[0]);
+};
+
 /** Convenience heading helpers. */
 export const h1 = (s: string) => `# ${s}`;
 export const h2 = (s: string) => `## ${s}`;

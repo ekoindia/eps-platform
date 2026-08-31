@@ -4405,6 +4405,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description: "State code, where the operator requires it.",
 				example: "1",
 			},
+			{
+				name: "communication",
+				type: "number",
+				required: false,
+				description:
+					"Payment mode: `0` (default) = online — instant settlement, lower commission. `1` = offline — higher commission, but the bill takes a minimum of 6 working hours to settle. Pass the same value to Pay Bill.",
+				example: 0,
+			},
 		],
 		responseData: [
 			{
@@ -4627,6 +4635,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description:
 					"District-level distribution company code. Required for **operator 190 (UPPCL) only** — pass the same value used at Fetch Bill.",
 				example: "Lucknow-MVVNL",
+			},
+			{
+				name: "communication",
+				type: "number",
+				required: false,
+				description:
+					"Payment mode: `0` (default) = online — instant settlement, lower commission. `1` = offline — higher commission, but the bill takes a minimum of 6 working hours to settle. Pass the same value used at Fetch Bill.",
+				example: 0,
 			},
 		],
 		responseData: [
@@ -13098,13 +13114,13 @@ const ALL_API_SPECS: ApiSpec[] = [
 				description: "Number of previous owners, including the current one.",
 				example: 1,
 			},
-			{
-				name: "mobile_number",
-				type: "string",
-				description:
-					"Mobile number of the owner as registered with the RTO, if available.",
-				example: "98XXXXXXXX",
-			},
+			// {
+			// 	name: "mobile_number",
+			// 	type: "string",
+			// 	description:
+			// 		"Mobile number of the owner as registered with the RTO, if available.",
+			// 	example: "98XXXXXXXX",
+			// },
 			{
 				name: "present_address",
 				type: "string",
@@ -14692,14 +14708,14 @@ const ALL_API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
-		id: "passport",
-		productId: "passport",
-		name: "Passport Verification",
-		slug: "passport",
+		id: "passport-application",
+		productId: "passport-application",
+		name: "Passport Application Validation",
+		slug: "passport-application",
 		summary:
-			"Verify Indian passport application details using passport file number and date of birth.",
+			"Validate Indian passport application details using passport file number and date of birth.",
 		description:
-			"The Passport Verification API enables businesses to validate passport holder details using passport file number and date of birth. Returns holder name, DOB, application type, and application received date — suitable for KYC, employee background verification, travel compliance, and fintech onboarding workflows. Supports Indian passports only; not an OCR or MRZ scan API.",
+			"The Passport Application Validation API enables businesses to validate passport holder details using passport file number and date of birth. Returns holder name, DOB, application type, and application received date — suitable for KYC, employee background verification, travel compliance, and fintech onboarding workflows. Supports Indian passports only; not an OCR or MRZ scan API.",
 		relevance: "M",
 		bestFor:
 			"Employee BGV, travel-platform KYC, fintech onboarding, and immigration-assistance workflows that need structured passport data from the government source.",
@@ -15290,7 +15306,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Check income tax return filing and compliance status for a PAN holder in real time — ideal for lending, credit assessment, and financial due-diligence workflows.",
 		description:
-			"The ITR Compliance Check API verifies whether a given PAN holder has filed income tax returns and returns their compliance status, ITR filing flag, and the relevant assessment year. Built on the Eko TOURAS network, it gives lenders, NBFCs, and compliance teams an instant signal of a borrower's or vendor's tax-filing behaviour without requiring manual document collection. A single PAN input is all that is needed — no document uploads or consent flows.",
+			"The ITR Compliance Check API verifies whether a given PAN holder has filed income tax returns and returns their compliance status, ITR filing flag, and the relevant assessment year. It gives lenders, NBFCs, and compliance teams an instant signal of a borrower's or vendor's tax-filing behaviour without requiring manual document collection. A single PAN input is all that is needed — no document uploads or consent flows.",
 		relevance: "M",
 		bestFor:
 			"Lending platforms, NBFCs, and compliance teams that need an instant, automated ITR filing signal for a PAN holder during credit assessment or onboarding.",

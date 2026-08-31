@@ -22,9 +22,11 @@ const sanitizeTxns = (raw: number, fallback: number): number =>
 
 /**
  * Parses the payments selection from the `pay` URL param.
- * Format: `pay=dmt:5000:2500,bbps-electricity:1000:1500` — each entry is
- * `productId:monthlyTxns:avgAmount` (avgAmount omitted for products that
- * don't need an amount). Unknown ids dropped, duplicates deduped, clamped.
+ * Format: `pay=dmt:5000:2500,bbps-electricity:1000:1500:offline` — each entry
+ * is `productId:monthlyTxns:avgAmount[:offline]` (avgAmount omitted for
+ * products that don't need an amount; the `offline` suffix appears only on
+ * BBPS lines using the 6-hour settlement mode). Unknown ids dropped,
+ * duplicates deduped, clamped.
  */
 const parseSelectionFromParams = (
 	params: URLSearchParams,
@@ -34,7 +36,7 @@ const parseSelectionFromParams = (
 
 	for (const entry of (params.get("pay") ?? "").split(",")) {
 		if (!entry) continue;
-		const [productId, rawTxns, rawAmount] = entry.split(":");
+		const [productId, rawTxns, rawAmount, rawMode] = entry.split(":");
 		const product = EARNINGS_PRODUCTS_MAP[productId];
 		if (!product || seen.has(productId)) continue;
 		seen.add(productId);
@@ -47,6 +49,10 @@ const parseSelectionFromParams = (
 						Number(rawAmount) || product.defaultAvgAmount || 0,
 					)
 				: undefined,
+			mode:
+				rawMode === "offline" && product.offlineAvailable
+					? "offline"
+					: undefined,
 		});
 	}
 
@@ -56,11 +62,13 @@ const parseSelectionFromParams = (
 /** Serializes the selection back into the canonical `pay` param value */
 const serializeSelection = (selection: EarningsSelection[]): string =>
 	selection
-		.map(({ productId, monthlyTxns, avgAmount }) =>
-			avgAmount !== undefined
-				? `${productId}:${monthlyTxns}:${avgAmount}`
-				: `${productId}:${monthlyTxns}`,
-		)
+		.map(({ productId, monthlyTxns, avgAmount, mode }) => {
+			const base =
+				avgAmount !== undefined
+					? `${productId}:${monthlyTxns}:${avgAmount}`
+					: `${productId}:${monthlyTxns}`;
+			return mode === "offline" ? `${base}:offline` : base;
+		})
 		.join(",");
 
 /**
@@ -138,7 +146,9 @@ export const PaymentsCalculator = () => {
 
 	const updateLine = (
 		productId: string,
-		patch: Partial<Pick<EarningsSelection, "monthlyTxns" | "avgAmount">>,
+		patch: Partial<
+			Pick<EarningsSelection, "monthlyTxns" | "avgAmount" | "mode">
+		>,
 	) => {
 		setSelection((prev) =>
 			prev.map((entry) =>
@@ -178,6 +188,7 @@ export const PaymentsCalculator = () => {
 								onAvgAmountChange={(avgAmount) =>
 									updateLine(line.product.id, { avgAmount })
 								}
+								onModeChange={(mode) => updateLine(line.product.id, { mode })}
 								onRemove={() => toggleProduct(line.product.id)}
 							/>
 						))}
