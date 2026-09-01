@@ -16,14 +16,19 @@ Every SDK core MUST validate inputs against `requiredParams` (baked into
 "missing" when absent OR null. On a miss, fail fast with an error and send
 nothing.
 
-Conformance fixture — endpoint slug `dmt-get-sender`
-(`requiredParams = [initiator_id, customer_id]`):
+Conformance fixture — endpoint slug `dmt-get-sender`. Read its
+`requiredParams` from the baked surface rather than trusting this line, since
+specs evolve; at the time of writing it is
+`[initiator_id, customer_id, user_code]`:
 
-| Input params                                | Expected                                |
-| ------------------------------------------- | --------------------------------------- |
-| `{initiator_id}`                            | throw, message lists `customer_id`      |
-| `{customer_id, initiator_id: null}`         | throw, message lists `initiator_id`     |
-| `{customer_id, initiator_id}` (all present) | no throw; request is signed and sent    |
+| Input params                          | Expected                                        |
+| ------------------------------------- | ----------------------------------------------- |
+| `{initiator_id}`                      | throw, message lists `customer_id`, `user_code` |
+| `{…, initiator_id: null}`             | throw, message lists `initiator_id`             |
+| all three present                     | no throw; request is signed and sent            |
+
+The message lists **every** missing name, in the order the surface declares
+them — a port that reports only the first one is non-conformant.
 
 Error message format: `Missing required params for "<slug>": <names>.`
 Reference implementations: `packages/sdk-js/src/client.ts` (`call`),
