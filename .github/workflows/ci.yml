@@ -39,6 +39,7 @@ jobs:
       php: ${{ steps.f.outputs.php }}
       python: ${{ steps.f.outputs.python }}
       go: ${{ steps.f.outputs.go }}
+      java: ${{ steps.f.outputs.java }}
       poller: ${{ steps.f.outputs.poller }}
       transact: ${{ steps.f.outputs.transact }}
       backend: ${{ steps.f.outputs.backend }}
@@ -94,6 +95,12 @@ jobs:
             # go ⊂ code (invariant — do not add a path here that isn't in code).
             go:
               - 'packages/sdk-go/**'
+              - 'src/**' # sdk-surface derives from the SSOT in src/lib/data
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+            # java ⊂ code (invariant — do not add a path here that isn't in code).
+            java:
+              - 'packages/sdk-java/**'
               - 'src/**' # sdk-surface derives from the SSOT in src/lib/data
               - 'package-lock.json'
               - '.github/workflows/ci.yml'
@@ -486,11 +493,41 @@ jobs:
       - name: Run conformance suite
         run: go test -v ./...
 
+  java-sdk:
+    name: Java SDK
+    runs-on: ubuntu-latest
+    # Same shape as the other SDK jobs: needs the baked sdk-surface artifact
+    # from build-and-test-packages, safe because java ⊂ code.
+    needs: [changes, build-and-test-packages]
+    if: needs.changes.outputs.java == 'true'
+    defaults:
+      run:
+        working-directory: packages/sdk-java
+    steps:
+      - uses: actions/checkout@v4
+
+      # data/sdk-surface.json is generated (gitignored); the pom packages it
+      # from data/ into the jar, so without this the tests cannot load it.
+      - name: Download baked SDK surface
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-surface
+          path: packages/sdk-java/data
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17" # matches jitpack.yml and the pom's release level
+          cache: maven
+
+      - name: Run conformance suite
+        run: mvn -B --no-transfer-progress test
+
   # THE required status check. Every other job is intentionally skippable via a
   # path filter, so this one aggregates them: it always runs, and it is the only
   # name branch protection needs to know about.
   #
-  # `php-sdk`, `python-sdk` and `go-sdk` are deliberately NOT in `needs` — they stay
+  # `php-sdk`, `python-sdk`, `go-sdk` and `java-sdk` are deliberately NOT in `needs` — they stay
   # independent, non-blocking checks so a non-JS SDK failure never blocks the
   # dev → main merge that gates the npm release (see
   # docs/releasing-agent-packages.md §5). Leaving them out also keeps this gate

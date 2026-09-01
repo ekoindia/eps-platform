@@ -41,6 +41,7 @@ const SDK_DIRS = [
 	"packages/sdk-php",
 	"packages/sdk-python",
 	"packages/sdk-go",
+	"packages/sdk-java",
 ];
 
 /** The generated payload every SDK ships a copy of. */

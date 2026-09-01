@@ -34,7 +34,9 @@ Error message format: `Missing required params for "<slug>": <names>.`
 Reference implementations: `packages/sdk-js/src/client.ts` (`call`),
 `packages/sdk-php/src/EpsClient.php` (`resolveTarget`),
 `packages/sdk-python/src/eps_sdk/client.py` (`resolve_target`),
-`packages/sdk-go/eps.go` (`ResolveTarget`). Port the matching tests when adding
+`packages/sdk-go/eps.go` (`ResolveTarget`),
+`packages/sdk-java/src/main/java/in/eko/eps/EpsClient.java` (`resolveTarget`).
+Port the matching tests when adding
 a new language — the full suite, not just the fixtures on this page:
 `packages/sdk-php/tests/EpsClientTest.php`,
 `packages/sdk-python/tests/test_client.py` and `packages/sdk-go/eps_test.go`

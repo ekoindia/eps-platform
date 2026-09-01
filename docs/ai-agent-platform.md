@@ -163,6 +163,17 @@ straight from a git tag — no registry account.
 go get github.com/ekoindia/eps-sdk-go
 ```
 
+### `com.github.ekoindia:eps-sdk-java` (Java SDK)
+
+Backend-only Java SDK (package `in.eko.eps`, Java >= 17), same signing contract,
+verified against the cross-language golden vector. Published from the git tag by
+JitPack — no Maven Central account. One dependency (Gson): Java has no JSON
+parser in its standard library.
+
+```groovy
+implementation 'com.github.ekoindia:eps-sdk-java:v1.0.2'  // + the JitPack repo
+```
+
 ### `@ekoindia/eps-mock-server` (offline mock server)
 
 Offline HTTP server (default port **4010**, override with `PORT`) that replays

@@ -19,6 +19,9 @@ architecture of what is being shipped, see
 - **PHP SDK** (`ekoindia/eps-sdk`) → **Packagist** (Composer).
 - **Go SDK** (`github.com/ekoindia/eps-sdk-go`) → **no registry**: proxy.golang.org
   serves the mirror repo's git tag directly.
+- **Java SDK** (`com.github.ekoindia:eps-sdk-java`) → **no registry account**:
+  JitPack builds the mirror's git tag on first request. Consumers must add the
+  JitPack repository; Maven Central can come later without breaking them.
 - **Python SDK** (`eps-sdk`) → **PyPI**, published with OIDC Trusted Publishing
   (no API token), same as npm.
 - **Agent plugin** (`eps`) → the repo-root `.claude-plugin/marketplace.json`
@@ -110,6 +113,8 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
      --description "Read-only mirror of packages/sdk-php from ekoindia/eps-platform. Do not commit here."
    gh repo create ekoindia/eps-sdk-go --public \
      --description "Read-only mirror of packages/sdk-go from ekoindia/eps-platform. Do not commit here."
+   gh repo create ekoindia/eps-sdk-java --public \
+     --description "Read-only mirror of packages/sdk-java from ekoindia/eps-platform. Do not commit here."
    ```
 
    Mirror names are **not** free choice once a language ships: Go's module path
@@ -137,7 +142,7 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
    ```bash
    gh secret set SDK_SPLIT_TOKEN --repo ekoindia/eps-platform   # paste, then Ctrl-D
 
-   for r in eps-sdk-php eps-sdk-go; do
+   for r in eps-sdk-php eps-sdk-go eps-sdk-java; do
      echo -n "$r: "
      curl -sf -o /dev/null -H "Authorization: Bearer <PASTE_PAT>" \
        "https://api.github.com/repos/ekoindia/$r" && echo OK || echo "NO ACCESS"
@@ -529,9 +534,13 @@ Run after the first publish:
 - **`vX.Y.Z` is repo-global** by design (§4): no SDK versions independently. If
   one language ever needs its own cadence, add a scoped `sdk-<lang>-v*` tag and
   a matching job condition instead of changing the shared scheme.
-- **Remaining SDK languages** (Java, C#/.NET) — ports of the same ~220-line
-  client against `docs/sdk-golden-vector.md`. Java adds a row to the `sdk-split`
-  matrix and needs **no registry account** (JitPack builds straight from the
-  tag; Maven Central can come later without breaking consumers). C#/.NET is the
-  only one that requires a marketplace account (NuGet + `NUGET_API_KEY`), since
-  no git-install path exists.
+- **Wire the Java mirror**: create `ekoindia/eps-sdk-java` and add it to
+  `SDK_SPLIT_TOKEN`'s repository list. No registry submission — JitPack builds
+  the tag on first request. Verify with the Gradle/Maven snippet in
+  `packages/sdk-java/README.md`, and note JitPack is a third-party build service,
+  not an equivalent of Maven Central: if its availability ever matters, publish
+  the same artifact to Central without changing the coordinates consumers use.
+- **Remaining SDK language** (C#/.NET) — a port of the same ~220-line client
+  against `docs/sdk-golden-vector.md`. It is the only one that requires a
+  marketplace account (NuGet + `NUGET_API_KEY`), since no git-install path
+  exists.

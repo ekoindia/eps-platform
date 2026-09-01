@@ -27,7 +27,7 @@ export type SampleLang = "curl" | "javascript" | "python" | "php";
  * Languages that ship a signed SDK package. NOT a subset of {@link SampleLang}:
  * Go has an SDK but no raw-HTTP sample, and cURL has a sample but no SDK.
  */
-export type SdkLang = "javascript" | "php" | "python" | "go";
+export type SdkLang = "javascript" | "php" | "python" | "go" | "java";
 
 /** Any language the docs can be switched to, in either mode. */
 export type DocsLang = SampleLang | SdkLang;
@@ -354,6 +354,7 @@ export const SDK_LANGS: { id: SdkLang; label: string }[] = [
 	{ id: "php", label: "PHP" },
 	{ id: "python", label: "Python" },
 	{ id: "go", label: "Go" },
+	{ id: "java", label: "Java" },
 ];
 
 export interface SdkInstall {
@@ -384,6 +385,11 @@ export const SDK_INSTALL: Partial<Record<SdkLang, SdkInstall>> = {
 		command: "go get github.com/ekoindia/eps-sdk-go",
 		registry: "Go modules",
 		registryUrl: "https://pkg.go.dev/github.com/ekoindia/eps-sdk-go",
+	},
+	java: {
+		command: "com.github.ekoindia:eps-sdk-java",
+		registry: "JitPack",
+		registryUrl: "https://jitpack.io/#ekoindia/eps-sdk-java",
 	},
 };
 
@@ -651,11 +657,64 @@ export const toGoSdk = (spec: ApiSpec): string => {
 	].join("\n");
 };
 
+/** Java literal for a params value. Map.of caps at 10 pairs, so anything larger
+ * (or nested) uses Map.entry pairs, which have no limit. */
+const javaLiteral = (value: unknown, indent = 1): string => {
+	if (value === null || value === undefined) return "null";
+	if (typeof value === "boolean") return String(value);
+	if (typeof value !== "object") return JSON.stringify(value);
+	const pad = "    ".repeat(indent + 1);
+	const close = "    ".repeat(indent);
+	const entries = Object.entries(value as Record<string, unknown>);
+	if (!entries.length) return "Map.of()";
+	if (entries.length <= 10) {
+		const items = entries.map(
+			([k, v]) => `${pad}${JSON.stringify(k)}, ${javaLiteral(v, indent + 1)}`,
+		);
+		return `Map.of(\n${items.join(",\n")}\n${close})`;
+	}
+	const items = entries.map(
+		([k, v]) =>
+			`${pad}Map.entry(${JSON.stringify(k)}, ${javaLiteral(v, indent + 1)})`,
+	);
+	return `Map.ofEntries(\n${items.join(",\n")}\n${close})`;
+};
+
+export const toJavaSdk = (spec: ApiSpec): string => {
+	const params = sdkCallParams(spec);
+	const args = Object.keys(params).length
+		? `, ${javaLiteral(params)}`
+		: ", Map.of()";
+	// initiator_id / user_code are set once on the client and auto-injected.
+	const defaults = clientLevelDefaults(spec).map(
+		(d) =>
+			`    .${d.wire === "initiator_id" ? "initiatorId" : "userCode"}(${JSON.stringify(d.value)})`,
+	);
+	return [
+		"import in.eko.eps.EpsClient;",
+		"import java.util.Map;",
+		"",
+		"EpsClient client = EpsClient.builder()",
+		'    .developerKey(System.getenv("EPS_DEVELOPER_KEY"))',
+		'    .accessKey(System.getenv("EPS_ACCESS_KEY"))',
+		...defaults,
+		'    .environment("sandbox")',
+		"    .build();",
+		"",
+		...(isMultipart(spec)
+			? ["// File params accept a path or an EpsClient.EpsFile value."]
+			: []),
+		`Map<String, Object> result = client.call(${JSON.stringify(spec.slug)}${args});`,
+		"System.out.println(result);",
+	].join("\n");
+};
+
 /** SDK snippet for the given language (Node for anything without its own SDK). */
 export const sdkSampleFor = (spec: ApiSpec, lang: DocsLang): string => {
 	if (lang === "php") return toPhpSdk(spec);
 	if (lang === "python") return toPythonSdk(spec);
 	if (lang === "go") return toGoSdk(spec);
+	if (lang === "java") return toJavaSdk(spec);
 	return toNodeSdk(spec);
 };
 

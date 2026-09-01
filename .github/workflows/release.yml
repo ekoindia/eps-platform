@@ -246,6 +246,14 @@ jobs:
             mirror: eps-sdk-go
             go-version: "1.22" # the floor go.mod declares — not whatever the image ships
             test: test -z "$(gofmt -l .)" && go vet ./... && go test ./...
+          # Java needs no registry account either: JitPack builds the mirror's
+          # tag on first request and serves it as
+          # com.github.ekoindia:eps-sdk-java:vX.Y.Z.
+          - label: Java
+            dir: packages/sdk-java
+            mirror: eps-sdk-java
+            java-version: "17" # matches jitpack.yml, and the pom's release level
+            test: mvn -B --no-transfer-progress test
     steps:
       # Fail in seconds on a missing/scoped-wrong token instead of after the
       # full build + test, with the split step as the first thing that notices.
@@ -280,6 +288,15 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           tools: composer:v2
+
+      # Rows without `java-version` skip this.
+      - name: Setup Java ${{ matrix.java-version }}
+        if: matrix.java-version
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+          cache: maven
 
       # Rows without `go-version` skip this.
       - name: Setup Go ${{ matrix.go-version }}
