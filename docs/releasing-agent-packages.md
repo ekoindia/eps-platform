@@ -8,9 +8,14 @@ architecture of what is being shipped, see
 
 ## 1. Distribution decision
 
-- **npm packages** (`@ekoindia/eps-context-mcp`, `@ekoindia/eps-sdk`,
+- **npm tool packages** (`@ekoindia/eps-context-mcp`,
   `@ekoindia/eps-mock-server`, `@ekoindia/eps-transact-mcp`) → **public npm**
-  (`registry.npmjs.org`).
+  (`registry.npmjs.org`), versioned per package on content change.
+- **The four SDKs** — `@ekoindia/eps-sdk` (npm), `ekoindia/eps-sdk`
+  (Packagist), `eps-sdk` (PyPI) and `github.com/ekoindia/eps-sdk-go` — share
+  **one version line**, cut as a single `vX.Y.Z` tag (§4). They are the same
+  client in four languages; different numbers for the same behaviour is a
+  documentation trap.
 - **PHP SDK** (`ekoindia/eps-sdk`) → **Packagist** (Composer).
 - **Go SDK** (`github.com/ekoindia/eps-sdk-go`) → **no registry**: proxy.golang.org
   serves the mirror repo's git tag directly.
@@ -40,9 +45,10 @@ These cannot be done in-repo and must be done once before the first release.
 **Order matters.** Merge to `main` before anything else: a tag runs only the
 jobs that exist *on the tagged commit*, so `sdk-split` / `pypi-release` must
 already be on `main` and every tag below must be cut from it. Then: mirrors +
-`SDK_SPLIT_TOKEN` → PyPI environment + pending publisher → first `vX.Y.Z` tag
-(which releases **every** SDK at once) → Packagist submission, which has to come
-last because there is no `composer.json` in the mirror to read before that tag.
+`SDK_SPLIT_TOKEN` → PyPI environment + pending publisher → merge to `main`,
+which releases **every** SDK at once and cuts the `vX.Y.Z` tag itself →
+Packagist submission, which has to come last because there is no
+`composer.json` in the mirror to read before that first release.
 
 > **Tags are immutable downstream.** The Go module proxy and Packagist cache a
 > tag permanently, and a PyPI version can never be re-uploaded. A broken
@@ -226,9 +232,30 @@ and no API token exists anywhere.
 
 ## 3. Release flow
 
-Driven by **`.github/workflows/release.yml`**. The **npm** side runs on every
-push to **`main`** (and `workflow_dispatch`); **every SDK** — PHP, Go and
-Python — releases together from a single **`v*.*.*`** tag push.
+Driven by **`.github/workflows/release.yml`**, all on push to **`main`** (and
+`workflow_dispatch`): the **npm tool packages** release per package on content
+change, and **all four SDKs** — Node.js, PHP, Python, Go — release together at
+one version when the SDK content gate says they changed. A hand-pushed
+**`v*.*.*`** tag is the manual override for a minor/major.
+
+### Job `sdk-version` (auto, every run)
+
+Runs `scripts/sdk-release.mjs plan` and emits two outputs every SDK publish job
+gates on: `version` and `release`. On a hand-cut `vX.Y.Z` tag it skips the gate
+and takes the version from the tag. See §4 for the gating rule.
+
+### Job `npm-sdk-release` (auto, when the gate says release)
+
+Publishes `@ekoindia/eps-sdk` at the shared version via OIDC (no token),
+writing that version in with `npm pkg set` first. It is deliberately **not** in
+`auto-release.mjs`'s package list: per-package auto-patching is right for the
+tool packages, but it would drift the Node SDK away from the other three. A
+version already on npm is skipped rather than failing the run.
+
+### Job `sdk-tag` (auto, after every SDK publish succeeds)
+
+Creates and pushes the annotated `vX.Y.Z` tag whose message carries the content
+fingerprint. Last on purpose — see §4.
 
 ### Job `npm-release` (auto, on push to `main`)
 
@@ -267,7 +294,7 @@ manual `npm publish`; the workflow bypasses it with `--ignore-scripts` by design
 > language, taking the package dir as its argument), invoked from
 > the root `bake:all`.
 
-### Job `sdk-split` (manual, on a `vX.Y.Z` tag)
+### Job `sdk-split` (auto, when the gate says release)
 
 A matrix over every **git-tag-published** SDK — today PHP, with Go and Java
 designed to slot in as extra rows. For each: bakes `<dir>/data/sdk-surface.json`
@@ -303,7 +330,7 @@ checked against the archive itself, not the repo tree.
 > **Status:** wired. The remaining one-time actions are the mirror repo, the
 > `SDK_SPLIT_TOKEN` secret and the Packagist submission (§2).
 
-### Job `pypi-release` (manual, on the same `vX.Y.Z` tag)
+### Job `pypi-release` (auto, when the gate says release)
 
 Builds the website (to bake `packages/sdk-python/data/sdk-surface.json`),
 **writes the tag's version into `pyproject.toml`**, re-runs the conformance
@@ -336,19 +363,39 @@ are immutable and cannot be overwritten.
   set higher version; otherwise it auto-patches.
 - Each publish creates a `<name>@<version>` git tag for traceability.
 
-**Every SDK — manual, one shared tag:** push a **`vX.Y.Z`** git tag. It runs
-`sdk-split` (PHP, Go, later Java) *and* `pypi-release`, so all SDKs ship at the
-same version and a developer comparing two languages sees the same number.
-The tag is the version everywhere: Packagist and the Go module proxy read it
-from git, and `pypi-release` writes it into `pyproject.toml` before building.
-Automating the tag itself is a known follow-up (§7).
+**Every SDK — automatic, content-gated, one shared version, on merge to
+`main`:** `scripts/sdk-release.mjs plan` fingerprints all four SDK packages plus
+the baked `sdk-surface.json` and compares that against the fingerprint stored in
+the newest `vX.Y.Z` tag's message. Unchanged → nothing publishes. Changed → the
+`sdk-version` job hands one version to `npm-sdk-release`, `sdk-split` and
+`pypi-release`, and `sdk-tag` records the new tag once they all succeed.
+
+- Default bump is **patch**, floored at `VERSION_FLOOR` in the script (`1.0.0`:
+  the npm line had already reached 0.1.21 under the old per-package scheme, and
+  versions cannot go backwards).
+- To ship a **minor/major**, push that `vX.Y.Z` tag **by hand** — a hand-cut tag
+  skips the gate and releases at exactly that version.
+- The version is written into the manifests at publish time (`npm pkg set` /
+  `sed` on `pyproject.toml`); PHP and Go carry none at all. The committed
+  `packages/sdk-js/package.json` version is the floor of the current major, kept
+  real only because `eps-transact-mcp` depends on it by range.
+
+Two structural details that are easy to get wrong:
+
+- **The publish jobs hang off `needs`, not a tag event.** A tag pushed with
+  `GITHUB_TOKEN` does not trigger workflow runs, so an auto-created tag could
+  never start a second run. Everything therefore happens in the one run on push
+  to `main`.
+- **The tag is written last.** It carries the fingerprint the next run compares
+  against, so recording it before the publishes would make a retry after a
+  failure think there was nothing left to release.
 
 Consequences worth knowing:
 
-- **Every tag republishes every SDK**, changed or not. Harmless for PHP and Go
-  (the mirror just gets another tag over identical content) and a no-op for
-  PyPI when the version already exists, thanks to `skip-existing`. The cost is
-  version churn, not breakage — see the content-gate follow-up in §7.
+- **A release publishes every SDK**, including ones whose own sources did not
+  change — the gate is on the four packages collectively. Harmless for PHP and
+  Go (the mirror gets another tag over identical content), and a no-op on npm
+  and PyPI when that version already exists.
 - **No SDK can version independently.** A Python-only fix still ships as
   `vX.Y.Z` across PHP and Go. That is the deliberate trade for one legible
   version line; if a language ever needs its own cadence, give it a scoped tag
@@ -464,20 +511,18 @@ Run after the first publish:
   preflight + archive gates in place), and `ekoindia/eps-sdk-php` exists but is
   still empty. Outstanding one-time actions: add the `SDK_SPLIT_TOKEN` secret,
   cut `v0.1.0`, then submit the mirror to Packagist (§2, in that order).
-- **No content gate for the tag-published SDKs.** npm has `auto-release.mjs`
-  (fingerprint vs registry); PHP, Go and Python have none, so a `vX.Y.Z` tag
-  republishes all of them whether or not their sources changed. A PHP analog
-  would fingerprint against
-  `https://repo.packagist.org/p2/ekoindia/eps-sdk.json`, Go against
-  `https://proxy.golang.org/github.com/ekoindia/eps-sdk-go/@v/list`, and Python
-  is already effectively gated by `skip-existing`. Worth building only if the
-  version churn starts to bother consumers.
+- **The SDK gate is collective, not per-language.** `sdk-release.mjs`
+  fingerprints all four packages together, so a Go-only change also republishes
+  npm, Packagist and PyPI at the new version. That is inherent to a shared
+  version line, not a defect; per-language gating would reintroduce the drift
+  the shared line exists to remove.
 - **`vX.Y.Z` is repo-global** by design (§4): no SDK versions independently. If
   one language ever needs its own cadence, add a scoped `sdk-<lang>-v*` tag and
   a matching job condition instead of changing the shared scheme.
 - **Wire PyPI**: claim the `eps-sdk` name, add the pending publisher + `pypi`
-  environment (§2) **before** the first `v0.1.0` tag — that one tag releases
-  Python along with PHP and Go.
+  environment (§2) **before** the next merge to `main` — the release is
+  automatic now, so a missing publisher fails the run rather than waiting for a
+  tag.
 - **Wire the Go mirror**: create `ekoindia/eps-sdk-go` (the module path
   `github.com/ekoindia/eps-sdk-go` is compiled into `go.mod`, so the name is
   fixed) and give `SDK_SPLIT_TOKEN` write access to it. No registry submission —
