@@ -73,14 +73,6 @@ jobs:
       - name: Upgrade npm for OIDC Trusted Publishing (needs >= 11.5.1)
         run: npm install -g npm@^11.5.1
 
-      # Rows without `go-version` skip this.
-      - name: Setup Go ${{ matrix.go-version }}
-        if: matrix.go-version
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-          cache: false # stdlib only — no modules to cache, and no go.sum exists
-
       - name: Install dependencies
         run: npm ci
 
@@ -181,6 +173,14 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           tools: composer:v2
+
+      # Rows without `go-version` skip this.
+      - name: Setup Go ${{ matrix.go-version }}
+        if: matrix.go-version
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false # stdlib only — no modules to cache, and no go.sum exists
 
       - name: Install dependencies
         run: npm ci
