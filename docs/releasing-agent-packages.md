@@ -504,13 +504,23 @@ Run after the first publish:
 
 ## 7. Known follow-ups
 
+> **Shipped 2026-09-01.** All four SDKs are live and the pipeline is fully
+> automatic — merging to `main` fingerprints them and publishes only on a real
+> change. First release `v1.0.0`, plus `v1.0.1` fixing a build-artifact leak
+> (below). Every §2 one-time action is done: both mirrors, `SDK_SPLIT_TOKEN`,
+> the PyPI pending publisher and the `pypi` environment, and the Packagist
+> submission.
+>
+> Packagist `v1.0.0` shipped `vendor/` + `composer.lock` — the split copies the
+> working tree and the release gate's `composer install` ran just before it. The
+> fix (`git clean -xdf` plus a working-tree guard) landed in `v1.0.1`, and
+> `v1.0.0` was deleted from Packagist. **Any new language whose test step writes
+> into its package directory has the same exposure** — the `git archive` guard
+> alone cannot see it.
+
 - **Live-load the `eps` agent plugin** end-to-end in real sessions (files are
   well-formed and `npx plugins discover`/local-add smoke passes, but not yet
   verified in a live agent session).
-- **Wire the PHP mirror**: the workflow side is done (PAT wired, actions pinned,
-  preflight + archive gates in place), and `ekoindia/eps-sdk-php` exists but is
-  still empty. Outstanding one-time actions: add the `SDK_SPLIT_TOKEN` secret,
-  cut `v0.1.0`, then submit the mirror to Packagist (§2, in that order).
 - **The SDK gate is collective, not per-language.** `sdk-release.mjs`
   fingerprints all four packages together, so a Go-only change also republishes
   npm, Packagist and PyPI at the new version. That is inherent to a shared
@@ -519,14 +529,6 @@ Run after the first publish:
 - **`vX.Y.Z` is repo-global** by design (§4): no SDK versions independently. If
   one language ever needs its own cadence, add a scoped `sdk-<lang>-v*` tag and
   a matching job condition instead of changing the shared scheme.
-- **Wire PyPI**: claim the `eps-sdk` name, add the pending publisher + `pypi`
-  environment (§2) **before** the next merge to `main` — the release is
-  automatic now, so a missing publisher fails the run rather than waiting for a
-  tag.
-- **Wire the Go mirror**: create `ekoindia/eps-sdk-go` (the module path
-  `github.com/ekoindia/eps-sdk-go` is compiled into `go.mod`, so the name is
-  fixed) and give `SDK_SPLIT_TOKEN` write access to it. No registry submission —
-  the first `vX.Y.Z` tag is the release.
 - **Remaining SDK languages** (Java, C#/.NET) — ports of the same ~220-line
   client against `docs/sdk-golden-vector.md`. Java adds a row to the `sdk-split`
   matrix and needs **no registry account** (JitPack builds straight from the
