@@ -16,9 +16,10 @@
 #   registry account and no publish token for any of them, only push access to
 #   the mirrors.
 #
-# Python SDK: released by pushing a package-scoped `sdk-python-vX.Y.Z` tag
-#   (the pypi-release job). Scoped rather than the shared `vX.Y.Z` because PyPI
-#   versions are immutable — a re-run of a shared tag would collide.
+# Python SDK: released by the SAME `vX.Y.Z` tag (the pypi-release job), so one
+#   tag ships every SDK at one version. The tag is the version: the job writes it
+#   into pyproject.toml before building. `skip-existing` keeps a re-run or an
+#   unchanged-package tag a no-op, since PyPI versions are immutable.
 #
 # npm auth: OIDC Trusted Publishing (see docs/releasing-agent-packages.md §2).
 #   Each @ekoindia/* package has a Trusted Publisher configured on npmjs.com for
@@ -37,9 +38,7 @@ name: Release
 on:
   push:
     branches: [main] # npm-release (content-gated)
-    tags:
-      - "v*.*.*" # sdk-split (git-tag-published SDKs: PHP, later Go/Java)
-      - "sdk-python-v*" # pypi-release
+    tags: ["v*.*.*"] # every SDK release: sdk-split + pypi-release
   workflow_dispatch: {} # manual npm-release override
 
 # Serialize releases so two pushes can't publish/tag concurrently.
@@ -239,8 +238,9 @@ jobs:
 
   pypi-release:
     name: Release Python SDK
-    # Package-scoped tag: sdk-python-v0.1.0 releases pyproject.toml's version.
-    if: startsWith(github.ref, 'refs/tags/sdk-python-v')
+    # Same `vX.Y.Z` tag as sdk-split — one tag releases every SDK at one
+    # version. The tag IS the version here too (see "Set version from tag").
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     # PyPI Trusted Publishing binds to repo + workflow + environment, so the
     # environment name below must match the one configured on pypi.org.
@@ -272,16 +272,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      # The tag names the release; a mismatch would publish the wrong version
-      # under it, and PyPI versions cannot be replaced.
-      - name: Verify tag matches pyproject version
+      # The tag is the version for every SDK. Packagist and the Go module proxy
+      # read it straight from git; a Python wheel carries its version inside the
+      # artifact, so it has to be written into the manifest before the build.
+      # pyproject.toml therefore holds a placeholder, never a real version to
+      # keep in sync.
+      - name: Set version from tag
         run: |
-          tag_version="${GITHUB_REF_NAME#sdk-python-v}"
-          file_version="$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")"
-          if [ "$tag_version" != "$file_version" ]; then
-            echo "::error::tag $GITHUB_REF_NAME implies $tag_version but pyproject.toml says $file_version"
-            exit 1
-          fi
+          version="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version = .*/version = \"$version\"/" pyproject.toml
+          grep -qx "version = \"$version\"" pyproject.toml
+          echo "building eps-sdk $version"
 
       # Release gate — the ci.yml python-sdk job is deliberately non-blocking,
       # and a tag can be cut from any commit, so re-run against what ships.
@@ -305,7 +306,11 @@ jobs:
           print(f"ok: {wheel} ships the SDK surface")
           EOF
 
+      # skip-existing: a re-run of an already-published tag (or a tag cut when
+      # the Python SDK did not change) must be a no-op, not a red build — PyPI
+      # versions are immutable and cannot be overwritten.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/sdk-python/dist
+          skip-existing: true

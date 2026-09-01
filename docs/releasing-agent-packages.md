@@ -40,9 +40,9 @@ These cannot be done in-repo and must be done once before the first release.
 **Order matters.** Merge to `main` before anything else: a tag runs only the
 jobs that exist *on the tagged commit*, so `sdk-split` / `pypi-release` must
 already be on `main` and every tag below must be cut from it. Then: mirrors +
-`SDK_SPLIT_TOKEN` → first `vX.Y.Z` tag → Packagist submission (there is no
-`composer.json` to read before that tag) → PyPI environment → PyPI pending
-publisher → first `sdk-python-vX.Y.Z` tag.
+`SDK_SPLIT_TOKEN` → PyPI environment + pending publisher → first `vX.Y.Z` tag
+(which releases **every** SDK at once) → Packagist submission, which has to come
+last because there is no `composer.json` in the mirror to read before that tag.
 
 > **Tags are immutable downstream.** The Go module proxy and Packagist cache a
 > tag permanently, and a PyPI version can never be re-uploaded. A broken
@@ -208,7 +208,7 @@ and no API token exists anywhere.
    | Workflow name     | `release.yml`  |
    | Environment name  | `pypi`         |
 
-4. Verify after the first `sdk-python-vX.Y.Z` tag — the constructor is what
+4. Verify after the first `vX.Y.Z` tag — the constructor is what
    proves the wheel actually carries the baked surface:
 
    ```bash
@@ -227,9 +227,8 @@ and no API token exists anywhere.
 ## 3. Release flow
 
 Driven by **`.github/workflows/release.yml`**. The **npm** side runs on every
-push to **`main`** (and `workflow_dispatch`); the **git-tag-published** SDKs run
-on a **`v*.*.*`** tag push; the **Python** SDK runs on its own package-scoped
-**`sdk-python-v*`** tag.
+push to **`main`** (and `workflow_dispatch`); **every SDK** — PHP, Go and
+Python — releases together from a single **`v*.*.*`** tag push.
 
 ### Job `npm-release` (auto, on push to `main`)
 
@@ -304,14 +303,25 @@ checked against the archive itself, not the repo tree.
 > **Status:** wired. The remaining one-time actions are the mirror repo, the
 > `SDK_SPLIT_TOKEN` secret and the Packagist submission (§2).
 
-### Job `pypi-release` (manual, on an `sdk-python-vX.Y.Z` tag)
+### Job `pypi-release` (manual, on the same `vX.Y.Z` tag)
 
-Builds the website (to bake `packages/sdk-python/data/sdk-surface.json`), asserts
-the tag matches `pyproject.toml`'s `version`, re-runs the conformance suite,
-builds the sdist + wheel, **verifies the wheel actually contains
+Builds the website (to bake `packages/sdk-python/data/sdk-surface.json`),
+**writes the tag's version into `pyproject.toml`**, re-runs the conformance
+suite, builds the sdist + wheel, **verifies the wheel actually contains
 `eps_sdk/data/sdk-surface.json`** (the `force-include` is easy to break and the
 failure only shows up on a consumer's first call), then publishes via
 `pypa/gh-action-pypi-publish` using OIDC.
+
+Why the manifest is rewritten rather than kept in sync by hand: PHP and Go carry
+no version at all — Packagist and the Go module proxy read the git tag — but a
+Python wheel records its version *inside the artifact*, so something has to put
+it there. Writing it from the tag keeps one rule for every language and removes
+a file that could drift from the tag. `pyproject.toml` holds a `0.0.0`
+placeholder; only a local build ever produces it.
+
+`skip-existing: true` on the publish step makes a re-run, or a tag cut when the
+Python SDK did not change, a clean no-op instead of a red build — PyPI versions
+are immutable and cannot be overwritten.
 
 ## 4. Versioning / tag policy
 
@@ -326,14 +336,26 @@ failure only shows up on a consumer's first call), then publishes via
   set higher version; otherwise it auto-patches.
 - Each publish creates a `<name>@<version>` git tag for traceability.
 
-**Git-tag-published SDKs (PHP, later Go/Java) — manual:** push a **`vX.Y.Z`**
-git tag to run `sdk-split` (each ecosystem reads the version from the tag).
-Automating this is a known follow-up (§7), pending the mirror repos + token.
+**Every SDK — manual, one shared tag:** push a **`vX.Y.Z`** git tag. It runs
+`sdk-split` (PHP, Go, later Java) *and* `pypi-release`, so all SDKs ship at the
+same version and a developer comparing two languages sees the same number.
+The tag is the version everywhere: Packagist and the Go module proxy read it
+from git, and `pypi-release` writes it into `pyproject.toml` before building.
+Automating the tag itself is a known follow-up (§7).
 
-**Python — manual, package-scoped:** push an **`sdk-python-vX.Y.Z`** tag matching
-`pyproject.toml`'s `version`. The scoped tag is deliberate: PyPI versions are
-immutable, so a shared `vX.Y.Z` tag re-run (harmless for the git-published SDKs)
-would collide. The same rule applies to any future registry-published SDK.
+Consequences worth knowing:
+
+- **Every tag republishes every SDK**, changed or not. Harmless for PHP and Go
+  (the mirror just gets another tag over identical content) and a no-op for
+  PyPI when the version already exists, thanks to `skip-existing`. The cost is
+  version churn, not breakage — see the content-gate follow-up in §7.
+- **No SDK can version independently.** A Python-only fix still ships as
+  `vX.Y.Z` across PHP and Go. That is the deliberate trade for one legible
+  version line; if a language ever needs its own cadence, give it a scoped tag
+  (`sdk-<lang>-vX.Y.Z`) and its own job condition rather than breaking the
+  shared scheme for everyone.
+- **A prerelease tag works**, e.g. `v0.1.0-rc.1` — valid semver for Go and
+  normalised to `0.1.0rc1` by PyPI.
 
 ## 5. CI (`.github/workflows/ci.yml`)
 
@@ -442,16 +464,20 @@ Run after the first publish:
   preflight + archive gates in place), and `ekoindia/eps-sdk-php` exists but is
   still empty. Outstanding one-time actions: add the `SDK_SPLIT_TOKEN` secret,
   cut `v0.1.0`, then submit the mirror to Packagist (§2, in that order).
-- **No content gate for the git-published SDKs.** npm has `auto-release.mjs`
-  (fingerprint vs registry); PHP has none, so a `vX.Y.Z` tag re-splits whether or
-  not `packages/sdk-php` changed. A PHP analog would fingerprint against
-  `https://repo.packagist.org/p2/ekoindia/eps-sdk.json`, since PHP carries no
-  manifest `version` — the tag is the version.
-- **`vX.Y.Z` is repo-global**, shared by every future `sdk-split` row, so Go and
-  Java will not be able to version independently of PHP. Python sidestepped this
-  with a package-scoped tag; revisit the scheme when the second row lands.
-- **Wire PyPI**: claim the `eps-sdk` name, add the Trusted Publisher + `pypi`
-  environment (§2), then cut the first `sdk-python-v0.1.0` tag.
+- **No content gate for the tag-published SDKs.** npm has `auto-release.mjs`
+  (fingerprint vs registry); PHP, Go and Python have none, so a `vX.Y.Z` tag
+  republishes all of them whether or not their sources changed. A PHP analog
+  would fingerprint against
+  `https://repo.packagist.org/p2/ekoindia/eps-sdk.json`, Go against
+  `https://proxy.golang.org/github.com/ekoindia/eps-sdk-go/@v/list`, and Python
+  is already effectively gated by `skip-existing`. Worth building only if the
+  version churn starts to bother consumers.
+- **`vX.Y.Z` is repo-global** by design (§4): no SDK versions independently. If
+  one language ever needs its own cadence, add a scoped `sdk-<lang>-v*` tag and
+  a matching job condition instead of changing the shared scheme.
+- **Wire PyPI**: claim the `eps-sdk` name, add the pending publisher + `pypi`
+  environment (§2) **before** the first `v0.1.0` tag — that one tag releases
+  Python along with PHP and Go.
 - **Wire the Go mirror**: create `ekoindia/eps-sdk-go` (the module path
   `github.com/ekoindia/eps-sdk-go` is compiled into `go.mod`, so the name is
   fixed) and give `SDK_SPLIT_TOKEN` write access to it. No registry submission —
