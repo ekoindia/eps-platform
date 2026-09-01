@@ -1,5 +1,9 @@
 # ekoindia/eps-sdk
 
+> Published from a **read-only mirror** ([`ekoindia/eps-sdk-php`](https://github.com/ekoindia/eps-sdk-php)),
+> subtree-split from the monorepo. Source of truth, issues and PRs:
+> [`ekoindia/eps-platform` → `packages/sdk-php`](https://github.com/ekoindia/eps-platform/tree/main/packages/sdk-php).
+
 Backend-only PHP SDK for Eko Platform Services (EPS) APIs, with HMAC request signing baked in.
 
 ## ⚠️ BACKEND-ONLY — never run in a frontend
