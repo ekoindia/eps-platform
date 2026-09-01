@@ -12,35 +12,39 @@
  * real language example over the raw cURL transcript for first-time visitors.
  */
 import { useEffect, useState } from "react";
-import { SAMPLE_LANGS, type SampleLang } from "@/lib/docs/code-samples";
+import {
+	SAMPLE_LANGS,
+	SDK_LANGS,
+	type DocsLang,
+} from "@/lib/docs/code-samples";
 
 const LANG_KEY = "eko-docs-lang";
-const DEFAULT_LANG: SampleLang = "javascript";
+const DEFAULT_LANG: DocsLang = "javascript";
 
-const isSampleLang = (value: unknown): value is SampleLang =>
-	SAMPLE_LANGS.some((l) => l.id === value);
+// Both lists: a language can have an SDK without a raw-HTTP sample (Go) or a
+// sample without an SDK (cURL), and either is a valid persisted choice.
+const isDocsLang = (value: unknown): value is DocsLang =>
+	SAMPLE_LANGS.some((l) => l.id === value) ||
+	SDK_LANGS.some((l) => l.id === value);
 
 /**
  * Returns the persisted preferred language and a setter that writes the choice
  * back to localStorage. Defaults to {@link DEFAULT_LANG} until a saved value is
  * read on mount.
  */
-export const usePreferredLang = (): [
-	SampleLang,
-	(lang: SampleLang) => void,
-] => {
-	const [lang, setLang] = useState<SampleLang>(DEFAULT_LANG);
+export const usePreferredLang = (): [DocsLang, (lang: DocsLang) => void] => {
+	const [lang, setLang] = useState<DocsLang>(DEFAULT_LANG);
 
 	useEffect(() => {
 		try {
 			const saved = localStorage.getItem(LANG_KEY);
-			if (isSampleLang(saved)) setLang(saved);
+			if (isDocsLang(saved)) setLang(saved);
 		} catch {
 			/* ignore */
 		}
 	}, []);
 
-	const choose = (next: SampleLang) => {
+	const choose = (next: DocsLang) => {
 		setLang(next);
 		try {
 			localStorage.setItem(LANG_KEY, next);

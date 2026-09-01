@@ -143,6 +143,26 @@ verified against the cross-language golden vector.
 composer require ekoindia/eps-sdk
 ```
 
+### `eps-sdk` (Python SDK)
+
+Backend-only Python SDK (`eps_sdk`, Python >= 3.9), same signing contract,
+verified against the cross-language golden vector. Standard library only — no
+runtime dependencies.
+
+```bash
+pip install eps-sdk
+```
+
+### `github.com/ekoindia/eps-sdk-go` (Go SDK)
+
+Backend-only Go SDK (package `eps`, Go >= 1.22), same signing contract, verified
+against the cross-language golden vector. Standard library only. Published
+straight from a git tag — no registry account.
+
+```bash
+go get github.com/ekoindia/eps-sdk-go
+```
+
 ### `@ekoindia/eps-mock-server` (offline mock server)
 
 Offline HTTP server (default port **4010**, override with `PORT`) that replays

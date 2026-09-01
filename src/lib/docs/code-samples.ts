@@ -23,6 +23,15 @@ import {
 
 export type SampleLang = "curl" | "javascript" | "python" | "php";
 
+/**
+ * Languages that ship a signed SDK package. NOT a subset of {@link SampleLang}:
+ * Go has an SDK but no raw-HTTP sample, and cURL has a sample but no SDK.
+ */
+export type SdkLang = "javascript" | "php" | "python" | "go";
+
+/** Any language the docs can be switched to, in either mode. */
+export type DocsLang = SampleLang | SdkLang;
+
 export const SAMPLE_LANGS: { id: SampleLang; label: string }[] = [
 	{ id: "curl", label: "cURL" },
 	{ id: "javascript", label: "JavaScript" },
@@ -339,10 +348,12 @@ export const sampleFor = (spec: ApiSpec, lang: SampleLang): string => {
 // query / body itself (see packages/sdk-js, packages/sdk-php).
 // ---------------------------------------------------------------------------
 
-/** Languages that ship a signed SDK package (a subset of `SampleLang`). */
-export const SDK_LANGS: { id: SampleLang; label: string }[] = [
+/** Languages that ship a signed SDK package. */
+export const SDK_LANGS: { id: SdkLang; label: string }[] = [
 	{ id: "javascript", label: "Node.js" },
 	{ id: "php", label: "PHP" },
+	{ id: "python", label: "Python" },
+	{ id: "go", label: "Go" },
 ];
 
 export interface SdkInstall {
@@ -353,7 +364,7 @@ export interface SdkInstall {
 
 /** Install command + registry link per SDK language. Single source of truth
  * shared by the `/docs` showcase and the endpoint code pane. */
-export const SDK_INSTALL: Partial<Record<SampleLang, SdkInstall>> = {
+export const SDK_INSTALL: Partial<Record<SdkLang, SdkInstall>> = {
 	javascript: {
 		command: "npm i @ekoindia/eps-sdk",
 		registry: "npm",
@@ -364,11 +375,29 @@ export const SDK_INSTALL: Partial<Record<SampleLang, SdkInstall>> = {
 		registry: "Packagist",
 		registryUrl: "https://packagist.org/packages/ekoindia/eps-sdk",
 	},
+	python: {
+		command: "pip install eps-sdk",
+		registry: "PyPI",
+		registryUrl: "https://pypi.org/project/eps-sdk/",
+	},
+	go: {
+		command: "go get github.com/ekoindia/eps-sdk-go",
+		registry: "Go modules",
+		registryUrl: "https://pkg.go.dev/github.com/ekoindia/eps-sdk-go",
+	},
 };
 
-/** Clamp any language to the nearest SDK language (Node for non-PHP). */
-export const toSdkLang = (lang: SampleLang): SampleLang =>
-	lang === "php" ? "php" : "javascript";
+const isSdkLang = (lang: DocsLang): lang is SdkLang => lang in SDK_INSTALL;
+
+/** Clamp any docs language to the nearest SDK language (Node for the rest —
+ * cURL has no SDK of its own, and Node is the closest readable equivalent). */
+export const toSdkLang = (lang: DocsLang): SdkLang =>
+	isSdkLang(lang) ? lang : "javascript";
+
+/** Clamp any docs language to one with a raw-HTTP sample. A language with an
+ * SDK but no sample (Go) falls back to cURL, the neutral wire-level view. */
+export const toSampleLang = (lang: DocsLang): SampleLang =>
+	SAMPLE_LANGS.some((l) => l.id === lang) ? (lang as SampleLang) : "curl";
 
 /** Wire param → constructor option for params set once on the client (see
  * EpsClientOptions in packages/sdk-js, EpsClient ctor in packages/sdk-php).
@@ -481,9 +510,154 @@ export const toPhpSdk = (spec: ApiSpec): string => {
 	].join("\n");
 };
 
-/** SDK snippet for the given language (defaults to Node for anything non-PHP). */
-export const sdkSampleFor = (spec: ApiSpec, lang: SampleLang): string =>
-	lang === "php" ? toPhpSdk(spec) : toNodeSdk(spec);
+/** JSON is nearly valid Python — only the three literals differ. */
+const pyLiteral = (value: unknown, indent = 0): string => {
+	if (value === null || value === undefined) return "None";
+	if (typeof value === "boolean") return value ? "True" : "False";
+	if (typeof value !== "object") return JSON.stringify(value);
+	const pad = "    ".repeat(indent + 1);
+	const close = "    ".repeat(indent);
+	if (Array.isArray(value)) {
+		if (!value.length) return "[]";
+		const items = value.map((v) => `${pad}${pyLiteral(v, indent + 1)}`);
+		return `[\n${items.join(",\n")},\n${close}]`;
+	}
+	const entries = Object.entries(value as Record<string, unknown>);
+	if (!entries.length) return "{}";
+	const items = entries.map(
+		([k, v]) => `${pad}${JSON.stringify(k)}: ${pyLiteral(v, indent + 1)}`,
+	);
+	return `{\n${items.join(",\n")},\n${close}}`;
+};
+
+export const toPythonSdk = (spec: ApiSpec): string => {
+	const params = sdkCallParams(spec);
+	const args = Object.keys(params).length ? `, ${pyLiteral(params)}` : "";
+	// initiator_id / user_code are set once on the client and auto-injected; the
+	// Python constructor takes them under their wire names.
+	const defaults = clientLevelDefaults(spec).map(
+		(d) => `    ${d.wire}=${pyLiteral(d.value)},`,
+	);
+	return [
+		"import os",
+		"",
+		"from eps_sdk import EpsClient",
+		"",
+		"client = EpsClient(",
+		'    developer_key=os.environ["EPS_DEVELOPER_KEY"],',
+		'    access_key=os.environ["EPS_ACCESS_KEY"],',
+		...defaults,
+		'    environment="sandbox",',
+		")",
+		"",
+		...(isMultipart(spec)
+			? ["# File params accept a local file path or an (filename, bytes) pair."]
+			: []),
+		`result = client.call(${JSON.stringify(spec.slug)}${args})`,
+		"print(result)",
+	].join("\n");
+};
+
+/** Go composite literal for a `map[string]any` params argument. */
+const goLiteral = (value: unknown, indent = 0): string => {
+	if (value === null || value === undefined) return "nil";
+	if (typeof value === "boolean") return String(value);
+	if (typeof value !== "object") return JSON.stringify(value);
+	const pad = "\t".repeat(indent + 1);
+	const close = "\t".repeat(indent);
+	if (Array.isArray(value)) {
+		if (!value.length) return "[]any{}";
+		const items = value.map((v) => `${pad}${goLiteral(v, indent + 1)},`);
+		return `[]any{\n${items.join("\n")}\n${close}}`;
+	}
+	const entries = Object.entries(value as Record<string, unknown>);
+	if (!entries.length) return "map[string]any{}";
+	// gofmt aligns the values of consecutive single-line entries, and starts a
+	// fresh alignment section after any entry that spans lines (a nested map).
+	// Mirroring that keeps a pasted snippet gofmt-clean.
+	const rendered = entries.map(
+		([k, v]) =>
+			[`${JSON.stringify(k)}:`, goLiteral(v, indent + 1)] as [string, string],
+	);
+	const items: string[] = [];
+	let section: number[] = [];
+	const flush = () => {
+		const width = Math.max(...section.map((i) => rendered[i][0].length));
+		for (const i of section) {
+			const [key, val] = rendered[i];
+			items.push(`${pad}${key.padEnd(width)} ${val},`);
+		}
+		section = [];
+	};
+	rendered.forEach(([key, val], i) => {
+		if (val.includes("\n")) {
+			if (section.length) flush();
+			items.push(`${pad}${key} ${val},`);
+			return;
+		}
+		section.push(i);
+	});
+	if (section.length) flush();
+	return `map[string]any{\n${items.join("\n")}\n${close}}`;
+};
+
+export const toGoSdk = (spec: ApiSpec): string => {
+	const params = sdkCallParams(spec);
+	const args = Object.keys(params).length
+		? `, ${goLiteral(params, 1)}`
+		: ", nil";
+	// initiator_id / user_code are set once on the client and auto-injected.
+	// Padded to the longest field name (DeveloperKey) so the struct literal
+	// stays gofmt-aligned when a developer pastes it.
+	const GO_FIELDS: Record<string, string> = {
+		initiator_id: "InitiatorID: ",
+		user_code: "UserCode:    ",
+	};
+	const defaults = clientLevelDefaults(spec).map(
+		(d) => `\t\t${GO_FIELDS[d.wire]} ${JSON.stringify(d.value)},`,
+	);
+	return [
+		"package main",
+		"",
+		"import (",
+		'\t"context"',
+		'\t"fmt"',
+		'\t"log"',
+		'\t"os"',
+		"",
+		'\teps "github.com/ekoindia/eps-sdk-go"',
+		")",
+		"",
+		"func main() {",
+		"\tclient, err := eps.New(eps.Config{",
+		'\t\tDeveloperKey: os.Getenv("EPS_DEVELOPER_KEY"),',
+		'\t\tAccessKey:    os.Getenv("EPS_ACCESS_KEY"),',
+		...defaults,
+		'\t\tEnvironment:  "sandbox",',
+		"\t})",
+		"\tif err != nil {",
+		"\t\tlog.Fatal(err)",
+		"\t}",
+		"",
+		...(isMultipart(spec)
+			? ["\t// File params accept a local file path or an eps.File value."]
+			: []),
+		`\tresult, err := client.Call(context.Background(), ${JSON.stringify(spec.slug)}${args})`,
+		"\tif err != nil {",
+		"\t\tlog.Fatal(err)",
+		"\t}",
+		"\tfmt.Println(result)",
+		"}",
+	].join("\n");
+};
+
+/** SDK snippet for the given language (Node for anything without its own SDK). */
+export const sdkSampleFor = (spec: ApiSpec, lang: DocsLang): string => {
+	if (lang === "php") return toPhpSdk(spec);
+	if (lang === "python") return toPythonSdk(spec);
+	if (lang === "go") return toGoSdk(spec);
+	return toNodeSdk(spec);
+};
 
 /**
  * A ready-to-paste agent prompt that integrates THIS endpoint via the

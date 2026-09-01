@@ -37,6 +37,8 @@ jobs:
     outputs:
       code: ${{ steps.f.outputs.code }}
       php: ${{ steps.f.outputs.php }}
+      python: ${{ steps.f.outputs.python }}
+      go: ${{ steps.f.outputs.go }}
       poller: ${{ steps.f.outputs.poller }}
       transact: ${{ steps.f.outputs.transact }}
       backend: ${{ steps.f.outputs.backend }}
@@ -80,6 +82,18 @@ jobs:
             # php ⊂ code (invariant — do not add a path here that isn't in code).
             php:
               - 'packages/sdk-php/**'
+              - 'src/**' # sdk-surface derives from the SSOT in src/lib/data
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+            # python ⊂ code (invariant — do not add a path here that isn't in code).
+            python:
+              - 'packages/sdk-python/**'
+              - 'src/**' # sdk-surface derives from the SSOT in src/lib/data
+              - 'package-lock.json'
+              - '.github/workflows/ci.yml'
+            # go ⊂ code (invariant — do not add a path here that isn't in code).
+            go:
+              - 'packages/sdk-go/**'
               - 'src/**' # sdk-surface derives from the SSOT in src/lib/data
               - 'package-lock.json'
               - '.github/workflows/ci.yml'
@@ -393,14 +407,95 @@ jobs:
       - name: Run PHPUnit
         run: vendor/bin/phpunit --bootstrap vendor/autoload.php tests
 
+  python-sdk:
+    name: Python SDK
+    runs-on: ubuntu-latest
+    # Same shape as php-sdk: needs the baked sdk-surface artifact from
+    # build-and-test-packages, safe because python ⊂ code.
+    needs: [changes, build-and-test-packages]
+    if: needs.changes.outputs.python == 'true'
+    defaults:
+      run:
+        working-directory: packages/sdk-python
+    steps:
+      - uses: actions/checkout@v4
+
+      # data/sdk-surface.json is generated (gitignored), not committed.
+      - name: Download baked SDK surface
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-surface
+          path: packages/sdk-python/data
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9" # the floor in pyproject.toml
+
+      # Stdlib only — no install step, no dependencies to resolve.
+      - name: Run conformance suite
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+      # Packaging guard: the wheel must carry the surface (force-include in
+      # pyproject.toml). Without it `pip install` yields a client that raises
+      # "EPS SDK surface not found" on the first call.
+      - name: Build wheel and verify it ships the surface
+        run: |
+          python -m pip install --upgrade build
+          python -m build --wheel
+          python - <<'EOF'
+          import glob, zipfile, sys
+          wheel = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(wheel).namelist()
+          if "eps_sdk/data/sdk-surface.json" not in names:
+              sys.exit(f"{wheel} is missing eps_sdk/data/sdk-surface.json")
+          print(f"ok: {wheel} ships the SDK surface")
+          EOF
+
+  go-sdk:
+    name: Go SDK
+    runs-on: ubuntu-latest
+    # Same shape as php-sdk/python-sdk: needs the baked sdk-surface artifact
+    # from build-and-test-packages, safe because go ⊂ code.
+    needs: [changes, build-and-test-packages]
+    if: needs.changes.outputs.go == 'true'
+    defaults:
+      run:
+        working-directory: packages/sdk-go
+    steps:
+      - uses: actions/checkout@v4
+
+      # data/sdk-surface.json is generated (gitignored), not committed — and Go
+      # embeds it at COMPILE time, so without this the package does not build.
+      - name: Download baked SDK surface
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-surface
+          path: packages/sdk-go/data
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # the floor in go.mod
+          cache: false # stdlib only — no modules to cache, and no go.sum exists
+
+      - name: Verify formatting
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+      - run: go vet ./...
+
+      # Stdlib only — no modules to download.
+      - name: Run conformance suite
+        run: go test -v ./...
+
   # THE required status check. Every other job is intentionally skippable via a
   # path filter, so this one aggregates them: it always runs, and it is the only
   # name branch protection needs to know about.
   #
-  # `php-sdk` is deliberately NOT in `needs` — it stays its own independent,
-  # non-blocking check so a PHP failure never blocks the dev → main merge that
-  # gates the npm release (see docs/releasing-agent-packages.md §5). Leaving it
-  # out also keeps this gate from waiting on the PHP job's build dependency.
+  # `php-sdk`, `python-sdk` and `go-sdk` are deliberately NOT in `needs` — they stay
+  # independent, non-blocking checks so a non-JS SDK failure never blocks the
+  # dev → main merge that gates the npm release (see
+  # docs/releasing-agent-packages.md §5). Leaving them out also keeps this gate
+  # from waiting on their build dependency. They are not a release loophole:
+  # every SDK release job re-runs its own tests before publishing.
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
