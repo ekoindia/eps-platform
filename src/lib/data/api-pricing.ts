@@ -95,7 +95,7 @@ export const clampDiscountPercent = (raw: number): number =>
  * 100 = fully waived ("No setup fee"), 1–99 = partial ("50% off setup fee"),
  * 0 = no offer running (all offer copy disappears automatically).
  */
-export const SETUP_FEE_DISCOUNT_PERCENT = clampDiscountPercent(50);
+export const SETUP_FEE_DISCOUNT_PERCENT = clampDiscountPercent(25);
 
 /** True while any setup-fee offer (partial or full) is running. */
 export const SETUP_FEE_DISCOUNTED = SETUP_FEE_DISCOUNT_PERCENT > 0;

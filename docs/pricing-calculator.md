@@ -165,14 +165,14 @@ operator list, edit this file; the workbook regenerates on the next build.
   sum of those APIs' individual fees (greedy, declared order, each API
   counted once) — see `calcSetupFee`. Not modelled in the Excel workbook.
 
-**The discount** — `SETUP_FEE_DISCOUNT_PERCENT` (currently `50`) in
+**The discount** — `SETUP_FEE_DISCOUNT_PERCENT` (currently `25`) in
 `api-pricing.ts` is the **single source of truth for every setup-fee claim on
 the site**. It has three states, and all copy follows automatically:
 
 | Value | Copy | Payable |
 | ----- | ---- | ------- |
 | `100` | "No setup fee." / "₹0 setup fee — limited-time offer" | ₹0 |
-| `1`–`99` | "50% off setup fee." / "50% off setup fee — limited-time offer" | fee × (1 − pct) |
+| `1`–`99` | "{pct}% off setup fee." / "{pct}% off setup fee — limited-time offer" | fee × (1 − pct) |
 | `0` | no offer copy at all | full fee |
 
 Change the number and nothing else. It drives the pricing hero chip and
