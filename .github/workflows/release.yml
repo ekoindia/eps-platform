@@ -1,6 +1,20 @@
 # Release workflow.
 #
-# npm packages: AUTO-released on every push to `main`. scripts/auto-release.mjs
+# THE SHARED SDK LINE: @ekoindia/eps-sdk (npm), ekoindia/eps-sdk (Packagist),
+#   eps-sdk (PyPI) and eps-sdk-go all ship at ONE version, so a developer
+#   comparing two languages sees the same number. scripts/sdk-release.mjs
+#   fingerprints the four packages plus the baked surface, compares against the
+#   fingerprint stored in the newest vX.Y.Z tag, and only then does the
+#   sdk-version job hand a version to the publish jobs. The tag is written LAST,
+#   by sdk-tag, once every publish succeeded — a failed release records no
+#   fingerprint, so the next push retries instead of skipping.
+#
+#   Why the publishes hang off `needs` rather than a tag event: a tag pushed
+#   with GITHUB_TOKEN does not trigger workflow runs, so an auto-created tag
+#   could never start a second run. Pushing a vX.Y.Z tag BY HAND still works and
+#   forces a release at that exact version.
+#
+# npm tool packages: AUTO-released on every push to `main`. scripts/auto-release.mjs
 #   builds each package, fingerprints the exact files npm would publish, and
 #   publishes a patch bump ONLY when that content differs from what's already on
 #   npm — so unaffected packages are skipped. To force a minor/major, bump the
@@ -9,17 +23,19 @@
 #   (no commit is pushed back to the protected branch — the registry is the
 #   source of truth). See docs/releasing-agent-packages.md.
 #
-# Git-tag-published SDKs (PHP and Go, later Java): released MANUALLY by pushing
-#   a `vX.Y.Z` tag (the sdk-split job below). Each is subtree-split into its own
+# Git-tag-published SDKs (PHP and Go, later Java): each is subtree-split into its own
 #   read-only mirror repo, where the tag IS the release — Packagist watches the
 #   mirror, the Go module proxy reads the tag, JitPack builds from it. No
 #   registry account and no publish token for any of them, only push access to
 #   the mirrors.
 #
-# Python SDK: released by the SAME `vX.Y.Z` tag (the pypi-release job), so one
-#   tag ships every SDK at one version. The tag is the version: the job writes it
-#   into pyproject.toml before building. `skip-existing` keeps a re-run or an
-#   unchanged-package tag a no-op, since PyPI versions are immutable.
+# Python SDK: pypi-release writes the shared version into pyproject.toml before
+#   building. `skip-existing` keeps a re-run a no-op, since PyPI versions are
+#   immutable.
+#
+# Node.js SDK: npm-sdk-release publishes @ekoindia/eps-sdk at the shared version
+#   too — it is deliberately NOT in auto-release.mjs's list any more, because
+#   per-package auto-patching would drift it away from the other three.
 #
 # npm auth: OIDC Trusted Publishing (see docs/releasing-agent-packages.md §2).
 #   Each @ekoindia/* package has a Trusted Publisher configured on npmjs.com for
@@ -48,7 +64,7 @@ concurrency:
 
 jobs:
   npm-release:
-    name: Release npm packages
+    name: Release npm tool packages
     # Branch push or manual dispatch only — never on the vX.Y.Z tag (that's PHP).
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -100,18 +116,109 @@ jobs:
         run: |
           node scripts/auto-release.mjs \
             packages/eps-context-mcp \
-            packages/sdk-js \
             packages/eps-mock-server \
             packages/eps-transact-mcp
 
+  # Decides the one version every SDK publishes at in this run, and whether
+  # there is anything to publish at all.
+  sdk-version:
+    name: Resolve SDK version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      release: ${{ steps.resolve.outputs.release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags: the gate reads the newest vX.Y.Z
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The gate fingerprints dist/agent/sdk-surface.json, so it has to exist.
+      - name: Build agent bundles
+        run: npm run build
+
+      - name: Resolve version
+        id: resolve
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # Hand-cut tag: an explicit instruction to release exactly this.
+            version="${GITHUB_REF_NAME#v}"
+            echo "manual tag $GITHUB_REF_NAME -> $version"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            plan="$(node scripts/sdk-release.mjs plan)"
+            echo "$plan"
+            echo "version=$(echo "$plan" | jq -r .version)" >> "$GITHUB_OUTPUT"
+            echo "release=$(echo "$plan" | jq -r .changed)" >> "$GITHUB_OUTPUT"
+          fi
+
+  npm-sdk-release:
+    name: Release Node.js SDK
+    needs: sdk-version
+    if: needs.sdk-version.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC Trusted Publishing — no token
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          registry-url: https://registry.npmjs.org
+
+      # OIDC Trusted Publishing needs npm >= 11.5.1; Node 22.14.0 ships 10.9.2.
+      - name: Upgrade npm for OIDC Trusted Publishing (needs >= 11.5.1)
+        run: npm install -g npm@^11.5.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build agent bundles
+        run: npm run build
+
+      # The tag is the version for every SDK; npm records it in package.json.
+      - name: Set version from the shared SDK version
+        run: npm pkg set version="${{ needs.sdk-version.outputs.version }}"
+        working-directory: packages/sdk-js
+
+      - name: Test
+        run: npm test -w @ekoindia/eps-sdk
+
+      - name: Build package
+        run: npm run build -w @ekoindia/eps-sdk
+
+      # Idempotent: a re-run of an already-published version is a no-op rather
+      # than a red build. npm versions, like PyPI's, cannot be replaced.
+      # --ignore-scripts because the bake + build above already ran.
+      - name: Publish to npm
+        working-directory: packages/sdk-js
+        run: |
+          version="${{ needs.sdk-version.outputs.version }}"
+          if npm view "@ekoindia/eps-sdk@$version" version >/dev/null 2>&1; then
+            echo "@ekoindia/eps-sdk@$version already published — skipping"
+            exit 0
+          fi
+          npm publish --provenance --access public --ignore-scripts
+
   sdk-split:
     name: Split + publish ${{ matrix.label }} SDK
-    # Manual release of the git-tag-published SDKs: only on a vX.Y.Z tag push.
     # Splitting a row whose sources did not change is harmless — the mirror just
-    # gets another tag pointing at identical content. (Registry-published SDKs
-    # with immutable versions must NOT be released this way; they get their own
-    # package-scoped tag.)
-    if: startsWith(github.ref, 'refs/tags/v')
+    # gets another tag pointing at identical content — so every row goes on each
+    # release of the shared line.
+    needs: sdk-version
+    if: needs.sdk-version.outputs.release == 'true'
     runs-on: ubuntu-latest
     # Needs the SDK_SPLIT_TOKEN secret + the mirror repo for the row. A package
     # manager cannot install from a monorepo subdirectory, hence the read-only
@@ -233,14 +340,13 @@ jobs:
           repository_name: ${{ matrix.mirror }}
           user_name: "eko-ci"
           user_email: "ci@eko.in"
-          # The tag that triggered this workflow is propagated to the mirror.
-          tag: ${{ github.ref_name }}
+          # The mirror's tag IS its release, for Packagist and the Go proxy alike.
+          tag: v${{ needs.sdk-version.outputs.version }}
 
   pypi-release:
     name: Release Python SDK
-    # Same `vX.Y.Z` tag as sdk-split — one tag releases every SDK at one
-    # version. The tag IS the version here too (see "Set version from tag").
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: sdk-version
+    if: needs.sdk-version.outputs.release == 'true'
     runs-on: ubuntu-latest
     # PyPI Trusted Publishing binds to repo + workflow + environment, so the
     # environment name below must match the one configured on pypi.org.
@@ -277,9 +383,9 @@ jobs:
       # artifact, so it has to be written into the manifest before the build.
       # pyproject.toml therefore holds a placeholder, never a real version to
       # keep in sync.
-      - name: Set version from tag
+      - name: Set version from the shared SDK version
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${{ needs.sdk-version.outputs.version }}"
           sed -i "s/^version = .*/version = \"$version\"/" pyproject.toml
           grep -qx "version = \"$version\"" pyproject.toml
           echo "building eps-sdk $version"
@@ -314,3 +420,38 @@ jobs:
         with:
           packages-dir: packages/sdk-python/dist
           skip-existing: true
+
+  # Written LAST, and only when every publish succeeded: the tag carries the
+  # content fingerprint the next run compares against, so recording it after a
+  # failure would make the retry think there was nothing to release.
+  # Skipped for a hand-cut tag, which already exists.
+  sdk-tag:
+    name: Tag the SDK release
+    needs: [sdk-version, npm-sdk-release, sdk-split, pypi-release]
+    if: needs.sdk-version.outputs.release == 'true' && github.ref_type != 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the vX.Y.Z tag
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Must fingerprint the same built surface the gate did.
+      - name: Build agent bundles
+        run: npm run build
+
+      - name: Tag
+        run: |
+          git config user.name  "eko-ci"
+          git config user.email "ci@eko.in"
+          node scripts/sdk-release.mjs tag "${{ needs.sdk-version.outputs.version }}"
