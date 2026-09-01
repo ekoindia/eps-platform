@@ -20,6 +20,12 @@ dist-ssr
 # Never committed; created fresh on every root build and on package prepublish.
 packages/*/data/
 
+# PHP build/test litter (packages/sdk-php). A library never ships either: the
+# lock file is meaningless to consumers, and vendor/ would put our dev
+# dependencies inside theirs.
+packages/sdk-php/vendor/
+packages/sdk-php/composer.lock
+
 # Python build/test litter (packages/sdk-python)
 __pycache__/
 *.py[cod]

@@ -2,4 +2,6 @@
 # relative to this file, so they apply in the split mirror too (where this
 # directory becomes the repo root).
 /tests           export-ignore
+/vendor          export-ignore
+/composer.lock   export-ignore
 /.gitattributes  export-ignore

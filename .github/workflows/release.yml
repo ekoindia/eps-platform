@@ -307,6 +307,28 @@ jobs:
       # What consumers install is the DIST ARCHIVE, not the repo tree: the baked
       # surface must be in it and `.gitattributes` export-ignore must have kept
       # tests out. Asserting that here beats finding out from a broken install.
+      # Release gate. The matching ci.yml job is deliberately excluded from the
+      # required `ci-ok` check, and a tag can be cut from any commit, so the
+      # tests are re-run here against exactly what is about to be published.
+      # Runs BEFORE the cleanup below, because it is what creates the mess.
+      - name: Test ${{ matrix.label }} SDK
+        working-directory: ${{ matrix.dir }}
+        run: ${{ matrix.test }}
+
+      # The split action copies the WORKING TREE, not git history, so anything
+      # the test step dropped on disk ships to consumers — v1.0.0 of the PHP SDK
+      # went to Packagist carrying vendor/ (all of PHPUnit) and composer.lock
+      # because `composer install` ran just above. -x removes ignored files too;
+      # the baked surface survives because the previous step committed it, so it
+      # is tracked rather than untracked.
+      - name: Clean build artifacts before splitting
+        run: git clean -xdf "${{ matrix.dir }}"
+
+      # Two different leaks, two different checks. The tar check reads COMMITTED
+      # content (what `git archive`/Packagist's zipball would contain, honouring
+      # .gitattributes export-ignore); the porcelain check reads the WORKING
+      # TREE, which is what the split actually copies. The first alone missed
+      # the vendor/ leak entirely.
       - name: Verify publishable archive
         run: |
           git archive --format=tar "HEAD:${{ matrix.dir }}" > /tmp/split-archive.tar
@@ -318,13 +340,12 @@ jobs:
             echo "::error::tests/ leaked into the archive — check ${{ matrix.dir }}/.gitattributes export-ignore"
             exit 1
           fi
-
-      # Release gate. The matching ci.yml job is deliberately excluded from the
-      # required `ci-ok` check, and a tag can be cut from any commit, so the
-      # tests are re-run here against exactly what is about to be published.
-      - name: Test ${{ matrix.label }} SDK
-        working-directory: ${{ matrix.dir }}
-        run: ${{ matrix.test }}
+          untracked="$(git status --porcelain --ignored -- "${{ matrix.dir }}")"
+          if [ -n "$untracked" ]; then
+            echo "::error::${{ matrix.dir }} is not clean — the split would publish these:"
+            echo "$untracked"
+            exit 1
+          fi
 
       # Pushes `branch` (default `main`, creating it on an empty mirror) and the
       # tag — so a first release leaves the mirror with both.
