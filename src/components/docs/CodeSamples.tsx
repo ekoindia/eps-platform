@@ -9,6 +9,7 @@ import {
 	SDK_LANGS,
 	sampleFor,
 	sdkSampleFor,
+	toSampleLang,
 	toAiPrompt,
 	toSdkLang,
 } from "@/lib/docs/code-samples";
@@ -58,7 +59,7 @@ export const CodeSamples = ({
 			? sdkSampleFor(spec, sdkLang)
 			: mode === "ai"
 				? toAiPrompt(spec)
-				: sampleFor(spec, lang);
+				: sampleFor(spec, toSampleLang(lang));
 
 	return (
 		<div className="space-y-6">
@@ -126,7 +127,7 @@ export const CodeSamples = ({
 								</TabButton>
 							))}
 						</div>
-						<NumberedCode code={code} lang={prismLangFor(lang)} />
+						<NumberedCode code={code} lang={prismLangFor(toSampleLang(lang))} />
 						<div className="flex justify-end border-t border-[var(--rp-line)] px-3 py-2.5">
 							<button
 								type="button"

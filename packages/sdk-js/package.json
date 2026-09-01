@@ -20,7 +20,7 @@
 		"data"
 	],
 	"scripts": {
-		"bake": "node scripts/bake-surface.mjs",
+		"bake": "node ../../scripts/bake-surface.mjs packages/sdk-js",
 		"build": "tsup",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",

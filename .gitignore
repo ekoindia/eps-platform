@@ -20,6 +20,12 @@ dist-ssr
 # Never committed; created fresh on every root build and on package prepublish.
 packages/*/data/
 
+# Python build/test litter (packages/sdk-python)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
 # Env files (never commit secrets); keep .env.example tracked
 .env
 .env.*

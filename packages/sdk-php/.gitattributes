@@ -1,0 +1,5 @@
+# Keep the Composer dist archive to what consumers actually run. Paths are
+# relative to this file, so they apply in the split mirror too (where this
+# directory becomes the repo root).
+/tests           export-ignore
+/.gitattributes  export-ignore

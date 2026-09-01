@@ -27,8 +27,15 @@ Conformance fixture — endpoint slug `dmt-get-sender`
 
 Error message format: `Missing required params for "<slug>": <names>.`
 Reference implementations: `packages/sdk-js/src/client.ts` (`call`),
-`packages/sdk-php/src/EpsClient.php` (`resolveTarget`). Port the matching tests
-when adding a new language.
+`packages/sdk-php/src/EpsClient.php` (`resolveTarget`),
+`packages/sdk-python/src/eps_sdk/client.py` (`resolve_target`),
+`packages/sdk-go/eps.go` (`ResolveTarget`). Port the matching tests when adding
+a new language — the full suite, not just the fixtures on this page:
+`packages/sdk-php/tests/EpsClientTest.php`,
+`packages/sdk-python/tests/test_client.py` and `packages/sdk-go/eps_test.go`
+also pin client-level default
+injection, explicit-null clearing, GET query/path encoding, the multipart
+envelope, and JSON-encoding failures.
 
 ## Type validation conformance
 

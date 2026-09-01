@@ -10,10 +10,10 @@
  */
 import "./prism-setup";
 import type { PrismTheme } from "prism-react-renderer";
-import type { SampleLang } from "./code-samples";
+import type { DocsLang } from "./code-samples";
 
 /** Docs language id → Prism grammar name. cURL is shell, so it maps to `bash`. */
-export const prismLangFor = (lang: SampleLang): string =>
+export const prismLangFor = (lang: DocsLang): string =>
 	lang === "curl" ? "bash" : lang;
 
 /**

@@ -16,6 +16,7 @@ import {
 	SDK_LANGS,
 	sampleFor,
 	sdkSampleFor,
+	toSampleLang,
 	toSdkLang,
 } from "@/lib/docs/code-samples";
 import { isDocsMode, useDocsMode } from "@/lib/docs/use-docs-mode";
@@ -43,6 +44,12 @@ const MD_PATH = "/docs.md";
 const SHOWCASE_SPEC = API_SPECS_MAP["pan-lite"];
 
 /** Raw-HTTP languages offered in API mode — SDK languages first, cURL last. */
+/** "Node.js, PHP & Python" — derived so adding an SDK language never leaves a
+ * stale hardcoded list behind in the copy or the page metadata. */
+const SDK_LANG_LIST = SDK_LANGS.map((l) => l.label).reduce((acc, label, i) =>
+	i === SDK_LANGS.length - 1 ? `${acc} & ${label}` : `${acc}, ${label}`,
+);
+
 const API_LANGS: { id: SampleLang; label: string }[] = [
 	{ id: "javascript", label: "Node.js" },
 	{ id: "php", label: "PHP" },
@@ -243,7 +250,7 @@ const DocsIndexPage = () => {
 	const code =
 		mode === "sdk"
 			? sdkSampleFor(SHOWCASE_SPEC, sdkLang)
-			: sampleFor(SHOWCASE_SPEC, lang);
+			: sampleFor(SHOWCASE_SPEC, toSampleLang(lang));
 
 	const firstCallTitle =
 		mode === "sdk"
@@ -289,7 +296,7 @@ const DocsIndexPage = () => {
 				<title>Developer Documentation{SITE_TITLE_SUFFIX}</title>
 				<meta
 					name="description"
-					content="Start building on Eko's EPS platform — SDKs for Node.js and PHP, REST APIs, Postman & OpenAPI downloads, or fully automated integration with AI agents."
+					content={`Start building on Eko's EPS platform — SDKs for ${SDK_LANG_LIST}, REST APIs, Postman & OpenAPI downloads, or fully automated integration with AI agents.`}
 				/>
 				<link rel="canonical" href={canonical} />
 				<meta property="og:title" content="Developer Documentation" />
@@ -360,7 +367,7 @@ const DocsIndexPage = () => {
 							<PathCard
 								icon={Package}
 								title="Use an SDK"
-								description="Signed SDKs for Node.js & PHP — HMAC auth & input validations baked in."
+								description={`Signed SDKs for ${SDK_LANG_LIST} — HMAC auth & input validations baked in.`}
 								active={mode === "sdk"}
 								onClick={() => setMode("sdk")}
 							/>

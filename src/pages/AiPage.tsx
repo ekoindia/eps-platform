@@ -129,6 +129,11 @@ const ARTIFACTS: Artifact[] = [
 				href: "https://packagist.org/packages/ekoindia/eps-sdk",
 				external: true,
 			},
+			{
+				label: "pip install eps-sdk",
+				href: "https://pypi.org/project/eps-sdk/",
+				external: true,
+			},
 		],
 	},
 	{

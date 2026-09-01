@@ -3,6 +3,9 @@ import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import {
 	SAMPLE_LANGS,
 	SDK_LANGS,
+	toGoSdk,
+	toPythonSdk,
+	toSampleLang,
 	sampleFor,
 	sdkSampleFor,
 	toAiPrompt,
@@ -113,8 +116,13 @@ describe("code samples", () => {
 });
 
 describe("SDK snippets", () => {
-	it("SDK_LANGS lists Node.js and PHP only", () => {
-		expect(SDK_LANGS.map((l) => l.id)).toEqual(["javascript", "php"]);
+	it("SDK_LANGS lists every language that ships an SDK package", () => {
+		expect(SDK_LANGS.map((l) => l.id)).toEqual([
+			"javascript",
+			"php",
+			"python",
+			"go",
+		]);
 	});
 
 	it("Node SDK constructs the client and calls by slug with required params", () => {
@@ -146,10 +154,47 @@ describe("SDK snippets", () => {
 		expect(node).not.toContain('"initiator_id"'); // not a call param anymore
 	});
 
-	it("sdkSampleFor dispatches php vs node", () => {
+	it("Python SDK constructs the client and calls by slug with required params", () => {
+		const py = toPythonSdk(panLite);
+		expect(py).toContain("from eps_sdk import EpsClient");
+		expect(py).toContain('os.environ["EPS_DEVELOPER_KEY"]');
+		expect(py).toContain('client.call("pan-lite"');
+		expect(py).toContain('"pan_number"');
+		expect(py).toContain("print(result)");
+		expect(py).not.toContain("secret-key");
+	});
+
+	it("Python SDK names client-level params by their wire name", () => {
+		// The Python constructor is snake_case, unlike the JS camelCase options.
+		expect(toPythonSdk(getSpec)).toContain('initiator_id="9962981729"');
+	});
+
+	it("Go SDK constructs the client and calls by slug with required params", () => {
+		const go = toGoSdk(panLite);
+		expect(go).toContain('eps "github.com/ekoindia/eps-sdk-go"');
+		expect(go).toContain('os.Getenv("EPS_DEVELOPER_KEY")');
+		expect(go).toContain('client.Call(context.Background(), "pan-lite"');
+		expect(go).toContain('"pan_number"');
+		expect(go).toContain("fmt.Println(result)");
+		expect(go).not.toContain("secret-key");
+	});
+
+	it("Go SDK sets client-level params by their Go field name", () => {
+		expect(toGoSdk(getSpec)).toContain('InitiatorID:  "9962981729"');
+	});
+
+	it("toSampleLang falls back to cURL for an SDK-only language", () => {
+		// Go has an SDK but no raw-HTTP sample; cURL is the neutral wire view.
+		expect(toSampleLang("go")).toBe("curl");
+		expect(toSampleLang("python")).toBe("python");
+	});
+
+	it("sdkSampleFor dispatches per language", () => {
 		expect(sdkSampleFor(panLite, "php")).toContain("$client->call(");
 		expect(sdkSampleFor(panLite, "javascript")).toContain("client.call(");
-		// non-php/non-js langs fall back to Node so SDK mode never blanks out
+		expect(sdkSampleFor(panLite, "python")).toContain("from eps_sdk import");
+		expect(sdkSampleFor(panLite, "go")).toContain("eps.New(eps.Config{");
+		// a lang with no SDK falls back to Node so SDK mode never blanks out
 		expect(sdkSampleFor(panLite, "curl")).toContain("EpsClient");
 	});
 });

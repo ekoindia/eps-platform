@@ -9,8 +9,17 @@
 #   (no commit is pushed back to the protected branch — the registry is the
 #   source of truth). See docs/releasing-agent-packages.md.
 #
-# PHP SDK: released MANUALLY by pushing a `vX.Y.Z` tag (the php-split job below).
-#   Full automation is deferred until the mirror repo + deploy key exist.
+# Git-tag-published SDKs (PHP and Go, later Java): released MANUALLY by pushing
+#   a `vX.Y.Z` tag (the sdk-split job below). Each is subtree-split into its own
+#   read-only mirror repo, where the tag IS the release — Packagist watches the
+#   mirror, the Go module proxy reads the tag, JitPack builds from it. No
+#   registry account and no publish token for any of them, only push access to
+#   the mirrors.
+#
+# Python SDK: released by the SAME `vX.Y.Z` tag (the pypi-release job), so one
+#   tag ships every SDK at one version. The tag is the version: the job writes it
+#   into pyproject.toml before building. `skip-existing` keeps a re-run or an
+#   unchanged-package tag a no-op, since PyPI versions are immutable.
 #
 # npm auth: OIDC Trusted Publishing (see docs/releasing-agent-packages.md §2).
 #   Each @ekoindia/* package has a Trusted Publisher configured on npmjs.com for
@@ -19,17 +28,17 @@
 #   automatic. The bootstrap NPM_TOKEN secret has been removed.
 #
 # Required repository secrets:
-#   SDK_PHP_DEPLOY_KEY SSH deploy key (write access) for the PHP mirror repo
-#                      ekoindia/eps-sdk-php. Used by the php-split job to push the
-#                      subtree-split history + tag to Packagist's source repo.
-#                      TODO: required for php-split — see job notes below.
+#   SDK_SPLIT_TOKEN    Fine-grained PAT with Contents:write on every SDK mirror
+#                      repo (ekoindia/eps-sdk-php, -go, -java). ONE token for all
+#                      of them — the default GITHUB_TOKEN cannot push to another
+#                      repository. Fine-grained, Contents:write, mirrors only.
 
 name: Release
 
 on:
   push:
     branches: [main] # npm-release (content-gated)
-    tags: ["v*.*.*"] # php-split (manual PHP release)
+    tags: ["v*.*.*"] # every SDK release: sdk-split + pypi-release
   workflow_dispatch: {} # manual npm-release override
 
 # Serialize releases so two pushes can't publish/tag concurrently.
@@ -64,6 +73,14 @@ jobs:
       - name: Upgrade npm for OIDC Trusted Publishing (needs >= 11.5.1)
         run: npm install -g npm@^11.5.1
 
+      # Rows without `go-version` skip this.
+      - name: Setup Go ${{ matrix.go-version }}
+        if: matrix.go-version
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false # stdlib only — no modules to cache, and no go.sum exists
+
       - name: Install dependencies
         run: npm ci
 
@@ -95,17 +112,58 @@ jobs:
             packages/eps-mock-server \
             packages/eps-transact-mcp
 
-  php-split:
-    name: Split + publish PHP SDK
-    # Manual PHP release: only on a vX.Y.Z tag push.
+  sdk-split:
+    name: Split + publish ${{ matrix.label }} SDK
+    # Manual release of the git-tag-published SDKs: only on a vX.Y.Z tag push.
+    # Splitting a row whose sources did not change is harmless — the mirror just
+    # gets another tag pointing at identical content. (Registry-published SDKs
+    # with immutable versions must NOT be released this way; they get their own
+    # package-scoped tag.)
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    # TODO: requires SDK_PHP_DEPLOY_KEY secret + ekoindia/eps-sdk-php mirror repo.
-    # Until both exist, this job is a documented scaffold. Packagist watches the
-    # mirror repo (ekoindia/eps-sdk-php); pushing the subtree + tag there
-    # triggers a new package release. Composer cannot install a package living
-    # in a monorepo subdirectory, hence the read-only split mirror.
+    # Needs the SDK_SPLIT_TOKEN secret + the mirror repo for the row. A package
+    # manager cannot install from a monorepo subdirectory, hence the read-only
+    # split mirrors. Third-party actions here are SHA-pinned: this job holds a
+    # write-capable PAT, and a mutable tag would let it move under us.
+    strategy:
+      fail-fast: false # one language's failure must not cancel the others
+      matrix:
+        include:
+          # `test` runs in `dir`. A row may pin its toolchain (`php-version`
+          # here); rows that leave it unset use the stock ubuntu-latest image
+          # (Go and Temurin JDK are preinstalled).
+          # `composer validate --strict` is part of the gate: green tests say
+          # nothing about whether Packagist will accept the manifest.
+          - label: PHP
+            dir: packages/sdk-php
+            mirror: eps-sdk-php
+            php-version: "8.1" # the floor composer.json declares — not whatever the image ships
+            test: composer validate --strict && composer install --no-interaction --no-progress && vendor/bin/phpunit --bootstrap vendor/autoload.php tests
+          # Go needs no registry at all: proxy.golang.org serves the mirror's
+          # tag directly. The module path in go.mod is compiled in, so the
+          # mirror must stay at github.com/ekoindia/eps-sdk-go.
+          - label: Go
+            dir: packages/sdk-go
+            mirror: eps-sdk-go
+            go-version: "1.22" # the floor go.mod declares — not whatever the image ships
+            test: test -z "$(gofmt -l .)" && go vet ./... && go test ./...
     steps:
+      # Fail in seconds on a missing/scoped-wrong token instead of after the
+      # full build + test, with the split step as the first thing that notices.
+      - name: Preflight — mirror push credentials
+        env:
+          SDK_SPLIT_TOKEN: ${{ secrets.SDK_SPLIT_TOKEN }}
+        run: |
+          if [ -z "$SDK_SPLIT_TOKEN" ]; then
+            echo "::error::SDK_SPLIT_TOKEN is not set — see docs/releasing-agent-packages.md §2"
+            exit 1
+          fi
+          if ! curl -sf -o /dev/null -H "Authorization: Bearer $SDK_SPLIT_TOKEN" \
+               "https://api.github.com/repos/ekoindia/${{ matrix.mirror }}"; then
+            echo "::error::SDK_SPLIT_TOKEN cannot reach ekoindia/${{ matrix.mirror }} (missing repo, or token not scoped to it)"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -116,34 +174,143 @@ jobs:
         with:
           node-version: "22.14.0"
 
+      # Rows without `php-version` skip this.
+      - name: Setup PHP ${{ matrix.php-version }}
+        if: matrix.php-version
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2
+
       - name: Install dependencies
         run: npm ci
 
-      # The PHP runtime asset data/sdk-surface.json is generated + gitignored.
-      # The subtree split only carries COMMITTED files, so bake it and commit it
-      # into this ephemeral checkout before splitting — otherwise the Packagist
-      # mirror ships without the surface and EpsClient fails at runtime.
-      - name: Bake + commit PHP SDK surface
+      # The runtime asset data/sdk-surface.json is generated + gitignored. The
+      # subtree split only carries COMMITTED files, so bake it and commit it into
+      # this ephemeral checkout before splitting — otherwise the mirror ships
+      # without the surface and the client fails at runtime.
+      - name: Bake + commit SDK surface
         run: |
           npm run build
           git config user.name  "eko-ci"
           git config user.email "ci@eko.in"
-          git add -f packages/sdk-php/data/sdk-surface.json
-          git commit -m "chore(sdk-php): bake surface for split [skip ci]"
+          git add -f ${{ matrix.dir }}/data/sdk-surface.json
+          git commit -m "chore(${{ matrix.mirror }}): bake surface for split [skip ci]"
 
-      # TODO: enable once SDK_PHP_DEPLOY_KEY + ekoindia/eps-sdk-php exist.
-      #   - uses: webfactory/ssh-agent@v0.9.0
-      #     with:
-      #       ssh-private-key: ${{ secrets.SDK_PHP_DEPLOY_KEY }}
-      - name: Split packages/sdk-php to ekoindia/eps-sdk-php
-        uses: symplify/monorepo-split-github-action@v2.3.0
+      # What consumers install is the DIST ARCHIVE, not the repo tree: the baked
+      # surface must be in it and `.gitattributes` export-ignore must have kept
+      # tests out. Asserting that here beats finding out from a broken install.
+      - name: Verify publishable archive
+        run: |
+          git archive --format=tar "HEAD:${{ matrix.dir }}" > /tmp/split-archive.tar
+          if ! tar tf /tmp/split-archive.tar | grep -qx 'data/sdk-surface.json'; then
+            echo "::error::data/sdk-surface.json missing from the archive — the bake step did not commit it"
+            exit 1
+          fi
+          if tar tf /tmp/split-archive.tar | grep -q '^tests/'; then
+            echo "::error::tests/ leaked into the archive — check ${{ matrix.dir }}/.gitattributes export-ignore"
+            exit 1
+          fi
+
+      # Release gate. The matching ci.yml job is deliberately excluded from the
+      # required `ci-ok` check, and a tag can be cut from any commit, so the
+      # tests are re-run here against exactly what is about to be published.
+      - name: Test ${{ matrix.label }} SDK
+        working-directory: ${{ matrix.dir }}
+        run: ${{ matrix.test }}
+
+      # Pushes `branch` (default `main`, creating it on an empty mirror) and the
+      # tag — so a first release leaves the mirror with both.
+      - name: Split ${{ matrix.dir }} to ekoindia/${{ matrix.mirror }}
+        uses: symplify/monorepo-split-github-action@ac9845270ef47266435b4f124b133a323619e738 # v2.3.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The action reads GITHUB_TOKEN; the value is the mirror PAT, because
+          # the default GITHUB_TOKEN cannot push to another repository.
+          GITHUB_TOKEN: ${{ secrets.SDK_SPLIT_TOKEN }}
         with:
-          package_directory: packages/sdk-php
+          package_directory: ${{ matrix.dir }}
           repository_organization: ekoindia
-          repository_name: eps-sdk-php
+          repository_name: ${{ matrix.mirror }}
           user_name: "eko-ci"
           user_email: "ci@eko.in"
           # The tag that triggered this workflow is propagated to the mirror.
           tag: ${{ github.ref_name }}
+
+  pypi-release:
+    name: Release Python SDK
+    # Same `vX.Y.Z` tag as sdk-split — one tag releases every SDK at one
+    # version. The tag IS the version here too (see "Set version from tag").
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    # PyPI Trusted Publishing binds to repo + workflow + environment, so the
+    # environment name below must match the one configured on pypi.org.
+    environment: pypi
+    permissions:
+      id-token: write # OIDC Trusted Publishing — no API token
+    defaults:
+      run:
+        working-directory: packages/sdk-python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+
+      - name: Install dependencies
+        working-directory: .
+        run: npm ci
+
+      # Emits dist/agent/sdk-surface.json and bakes it into every SDK package.
+      - name: Build agent bundles
+        working-directory: .
+        run: npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The tag is the version for every SDK. Packagist and the Go module proxy
+      # read it straight from git; a Python wheel carries its version inside the
+      # artifact, so it has to be written into the manifest before the build.
+      # pyproject.toml therefore holds a placeholder, never a real version to
+      # keep in sync.
+      - name: Set version from tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version = .*/version = \"$version\"/" pyproject.toml
+          grep -qx "version = \"$version\"" pyproject.toml
+          echo "building eps-sdk $version"
+
+      # Release gate — the ci.yml python-sdk job is deliberately non-blocking,
+      # and a tag can be cut from any commit, so re-run against what ships.
+      - name: Run conformance suite
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      # The wheel must carry the baked surface (force-include in pyproject.toml)
+      # or the installed client raises "EPS SDK surface not found".
+      - name: Verify the wheel ships the SDK surface
+        run: |
+          python - <<'EOF'
+          import glob, zipfile, sys
+          wheel = glob.glob("dist/*.whl")[0]
+          if "eps_sdk/data/sdk-surface.json" not in zipfile.ZipFile(wheel).namelist():
+              sys.exit(f"{wheel} is missing eps_sdk/data/sdk-surface.json")
+          print(f"ok: {wheel} ships the SDK surface")
+          EOF
+
+      # skip-existing: a re-run of an already-published tag (or a tag cut when
+      # the Python SDK did not change) must be a no-op, not a red build — PyPI
+      # versions are immutable and cannot be overwritten.
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/sdk-python/dist
+          skip-existing: true

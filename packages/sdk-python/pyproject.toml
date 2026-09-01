@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eps-sdk"
+# Placeholder — never published as-is. The git tag is the version: the
+# pypi-release job rewrites this line from the vX.Y.Z tag before building, the
+# same way Packagist and the Go module proxy read that tag directly. A local
+# build produces 0.0.0.
+version = "0.0.0"
+description = "Backend-only Python SDK for Eko Platform Services (EPS) APIs, with request signing built in."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "Eko Bharat Ventures Pvt Ltd" }]
+keywords = ["eko", "eps", "fintech", "aeps", "bbps", "dmt", "kyc", "india"]
+classifiers = [
+	"Development Status :: 4 - Beta",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: MIT License",
+	"Programming Language :: Python :: 3",
+	"Topic :: Office/Business :: Financial",
+]
+# No runtime dependencies on purpose — the client is stdlib-only (urllib +
+# hmac), so there is nothing to keep patched.
+dependencies = []
+
+[project.urls]
+Homepage = "https://eps.eko.in/docs"
+Source = "https://github.com/ekoindia/eps-platform/tree/main/packages/sdk-python"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eps_sdk"]
+
+# data/sdk-surface.json is generated (see scripts/bake-surface.mjs) and
+# gitignored, so it lives outside the package directory in the monorepo and is
+# pulled into the wheel here. Without this the installed client raises
+# "EPS SDK surface not found" on the first call.
+[tool.hatch.build.targets.wheel.force-include]
+"data/sdk-surface.json" = "eps_sdk/data/sdk-surface.json"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "data", "README.md", "LICENSE"]
