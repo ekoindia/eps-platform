@@ -3,6 +3,7 @@ import BusinessDashboard from "@/components/console/dashboard/BusinessDashboard"
 import NextStepsCard from "@/components/console/NextStepsCard";
 import NotificationsCard from "@/components/console/NotificationsCard";
 import ProfileCard from "@/components/console/ProfileCard";
+import SupportContact from "@/components/console/SupportContact";
 import { isProvisioned } from "@/lib/auth/client";
 import {
 	SHOW_BUSINESS_DASHBOARD,
@@ -22,6 +23,10 @@ import {
  * transacted, and a wall of zeros would read as a fault; and the flag because
  * the numbers are not yet reconciled — see `docs/features/business-dashboard.md`.
  * Neither branch fetches, so a hidden dashboard costs no request.
+ *
+ * The support strip is last because it is a fallback, not a task: it is what
+ * you reach for once the blocks above have not answered your question. It
+ * hides itself when no `VITE_SUPPORT_*` channel is configured.
  */
 export default function ConsoleHome() {
 	const me = useConsoleMe();
@@ -41,6 +46,7 @@ export default function ConsoleHome() {
 			{isProvisioned(me.state) && SHOW_BUSINESS_DASHBOARD ? (
 				<BusinessDashboard />
 			) : null}
+			<SupportContact />
 		</div>
 	);
 }

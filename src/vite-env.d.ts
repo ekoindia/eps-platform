@@ -39,4 +39,13 @@ interface ImportMetaEnv {
 	 * Off by default — the shared EMS feed is authored for Eloka's retailers.
 	 */
 	readonly VITE_SHOW_NOTIFICATIONS?: string;
+	/**
+	 * Support contact channels for the strip at the bottom of `/console`. Each is
+	 * optional and independent; unset or blank hides that channel, and all three
+	 * unset hides the strip. Phone/WhatsApp are numbers (any punctuation), not
+	 * links — e.g. `+91 951 318 1707`.
+	 */
+	readonly VITE_SUPPORT_EMAIL?: string;
+	readonly VITE_SUPPORT_PHONE?: string;
+	readonly VITE_SUPPORT_WHATSAPP?: string;
 }

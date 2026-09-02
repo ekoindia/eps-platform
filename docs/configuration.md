@@ -158,6 +158,12 @@ No secrets are committed. Runtime secrets (if any) come from the deploy
 platform's environment variables — never hard-code keys (e.g. Eko `access_key`)
 in source. The API auth scheme is documented in [docs/api-specs.md](api-specs.md).
 
+Build-time `VITE_*` knobs live in `src/lib/config/features.ts` and are listed,
+with the reasoning for each default, in [.env.example](../.env.example). The
+support contact channels shown on Console Home — `VITE_SUPPORT_EMAIL`,
+`VITE_SUPPORT_PHONE`, `VITE_SUPPORT_WHATSAPP` — are configured there; see
+[Support contact strip](features/support-contact.md).
+
 ---
 
 ### Related detailed docs
