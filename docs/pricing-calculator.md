@@ -119,7 +119,12 @@ Commission products keyed on **transaction amount** (not monthly volume):
   Excel workbook.
 - `EARNINGS_PRODUCTS` / `EARNINGS_GROUPS` — the unified product list the
   calculator iterates (`dmt`, `aeps-cashout`, `aeps-mini`, `bbps-*`).
-  `needsAmount: false` only for `aeps-mini`.
+  `needsAmount: false` only for `aeps-mini`. `amountDependent` is a separate,
+  derived flag — whether the commission VALUE moves with the amount (a
+  percentage rate, or a second slab), computed over the ONLINE slabs. It
+  drives the picker's "?" explainer, which names the `defaultAvgAmount` the
+  preview rate was computed at, so e.g. Water Bill's ₹9.60 (1.2% × ₹800) does
+  not read as arbitrary beside a flat ₹1.20. Flat-rate rows get no icon.
 - Math: `commissionPerTxn(productId, avgAmount, mode = "online")`,
   `calcEarningsQuote(sel)` (each selection may carry `mode`) →
   `{ lines, total, totalAfterTds, totalTxns }`. `TDS_RATE` (2%) is applied as

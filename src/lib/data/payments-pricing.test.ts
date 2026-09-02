@@ -21,6 +21,25 @@ import {
 	applySetupFeeDiscount,
 } from "@/lib/data/api-pricing";
 
+describe("amountDependent", () => {
+	const flagOf = (id: string) => EARNINGS_PRODUCTS_MAP[id].amountDependent;
+
+	it("is true for a percentage rate", () => {
+		expect(flagOf("bbps-water")).toBe(true); // 1.2% of the bill
+		expect(flagOf("aeps-cashout")).toBe(true); // 0.40% up to ₹3,000
+	});
+
+	it("is true for a flat rate that changes across slabs", () => {
+		expect(flagOf("bbps-insurance")).toBe(true); // ₹3.76 then ₹1.74
+	});
+
+	it("is false for a single flat slab paying the same at any amount", () => {
+		expect(flagOf("bbps-broadband")).toBe(false); // flat ₹0.72
+		expect(flagOf("bbps-electricity")).toBe(false); // flat ₹1.20 online
+		expect(flagOf("aeps-mini")).toBe(false);
+	});
+});
+
 describe("commissionForAmount (AePS cashout)", () => {
 	it("uses 0.40% up to ₹3,000 and ₹13 flat above", () => {
 		expect(commissionForAmount(AEPS_CASHOUT_SLABS, 1000)).toBe(4);

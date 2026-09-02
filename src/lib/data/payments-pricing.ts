@@ -279,6 +279,14 @@ export interface EarningsProduct {
 	name: string;
 	/** Whether the commission depends on the average transaction amount */
 	needsAmount: boolean;
+	/**
+	 * Whether the commission VALUE actually moves with the transaction amount —
+	 * true for percentage rates and multi-slab flat rates, false for a single
+	 * flat rate. Computed over the ONLINE slabs, which is what the picker
+	 * previews. Distinct from `needsAmount`, which only says the calculator
+	 * collects an amount for this product.
+	 */
+	amountDependent: boolean;
 	/** Default average transaction amount preselected in the calculator (₹) */
 	defaultAvgAmount?: number;
 	/** Default monthly transaction count preselected in the calculator */
@@ -304,12 +312,22 @@ export const MAX_TXNS = 10_000_000;
 /** Fallback cap for the avg transaction amount input when not product-capped */
 export const DEFAULT_MAX_TXN_AMOUNT = 200_000;
 
+/**
+ * Whether a commission changes with the transaction amount. A single flat
+ * slab pays the same at every amount; a percentage rate or a second slab
+ * does not.
+ * @param slabs - The slabs the product charges
+ */
+const variesWithAmount = (slabs: AmountSlab[]): boolean =>
+	slabs.length > 1 || slabs.some((slab) => slab.pct !== undefined);
+
 export const EARNINGS_PRODUCTS: EarningsProduct[] = [
 	{
 		id: "aeps-cashout",
 		family: "AePS",
 		name: "AePS Cash Withdrawal",
 		needsAmount: true,
+		amountDependent: variesWithAmount(AEPS_CASHOUT_SLABS),
 		defaultAvgAmount: 2000,
 		defaultMonthlyTxns: 1000,
 		maxTxnAmount: 10000,
@@ -320,6 +338,7 @@ export const EARNINGS_PRODUCTS: EarningsProduct[] = [
 		family: "AePS",
 		name: "AePS Mini Statement",
 		needsAmount: false,
+		amountDependent: false,
 		defaultMonthlyTxns: 500,
 		notes: "₹0.75 per transaction",
 	},
@@ -329,6 +348,7 @@ export const EARNINGS_PRODUCTS: EarningsProduct[] = [
 			family: "BBPS",
 			name: category.name,
 			needsAmount: true,
+			amountDependent: variesWithAmount(category.online),
 			defaultAvgAmount: category.defaultAvgAmount,
 			defaultMonthlyTxns: 500,
 			notes: category.rangeNote,
