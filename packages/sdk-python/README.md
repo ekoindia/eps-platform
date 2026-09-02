@@ -1,6 +1,6 @@
 # EPS Python SDK
 
-Backend-only Python client for [Eko Platform Services](https://eps.eko.in/docs)
+Backend-only Python client for [Eko Platform Services](https://eps.eko.in/docs/sdk/python)
 APIs — DMT, AePS, BBPS, KYC and verification — with HMAC request signing built
 in.
 

@@ -18,6 +18,7 @@ import { GUIDES, type GuideMeta } from "@/content/docs/docs-guides";
 import type { ApiProductCategory } from "./api-products";
 import { ACTIVE_PRODUCTS_MAP, API_PRODUCTS } from "./api-products";
 import { recipeHref } from "./api-recipes";
+import { sdkGuideHref } from "./sdk-guides";
 import { API_SPECS } from "./api-specs";
 import type { ApiSpec } from "./api-specs-common";
 import { categoryForSpec } from "./api-specs-common";
@@ -56,6 +57,9 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
 	"docs",
 	"openapi",
 	"openapi.json",
+	// `/docs/sdk` is its own section (SdkIndexPage + SdkGuidePage), not a
+	// `/docs/:slug` node — a guide or endpoint of this name would shadow it.
+	"sdk",
 	"api",
 	"assets",
 	"index",
@@ -366,7 +370,9 @@ export const buildNavTree = (): DocsNav => {
 		...[...GUIDES]
 			.sort((a, b) => a.order - b.order)
 			.map((g) => ({ title: g.title, href: docsHref(g.slug) })),
-		// Recipes live outside the /docs slug namespace but read as a guide.
+		// SDKs and Recipes live outside the /docs slug namespace but read as
+		// guides. `isActiveHref` treats a section root as active on its children.
+		{ title: "SDKs (Node, Python, PHP, Go, Java)", href: sdkGuideHref() },
 		{ title: "Transaction Flows (Recipes)", href: recipeHref() },
 	];
 

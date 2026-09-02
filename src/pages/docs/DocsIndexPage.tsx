@@ -10,6 +10,7 @@ import { EPS_MCP_CMD, SITE_URL } from "@/lib/config/site";
 import { API_ENVIRONMENTS, AUTH_HEADERS } from "@/lib/data/api-auth";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import { docsHref } from "@/lib/data/docs-registry";
+import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
 import {
 	type SampleLang,
 	SDK_INSTALL,
@@ -246,6 +247,7 @@ const DocsIndexPage = () => {
 	const isAi = mode === "ai";
 	const sdkLang = toSdkLang(lang);
 	const install = SDK_INSTALL[sdkLang];
+	const sdkGuide = SDK_GUIDES.find((g) => g.lang === sdkLang);
 	// API/SDK only — the AI path delegates everything to the agent, so no sample.
 	const code =
 		mode === "sdk"
@@ -380,6 +382,22 @@ const DocsIndexPage = () => {
 							/>
 						</div>
 
+						{/* SDK path: the cards are <button role="radio">, so the link to the
+						    guides is a SIBLING of the grid, never nested inside one. */}
+						{mode === "sdk" && (
+							<p className="mt-4 text-sm text-muted-foreground">
+								Prefer to read first?{" "}
+								<Link
+									to={sdkGuideHref()}
+									className="font-medium text-eko-gold hover:underline"
+								>
+									Browse the SDK guides
+								</Link>{" "}
+								— install, client options, every method, file uploads, errors
+								and environments for all {SDK_GUIDES.length} languages.
+							</p>
+						)}
+
 						{/* AI path resolves here — banner to the AI hub, no further steps. */}
 						{isAi && (
 							<div className="mt-6">
@@ -439,15 +457,26 @@ const DocsIndexPage = () => {
 											</code>
 											<CopyButton text={install.command} />
 										</div>
-										<a
-											href={install.registryUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold hover:underline"
-										>
-											View on {install.registry}
-											<ArrowRight className="h-3.5 w-3.5" />
-										</a>
+										<div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+											{sdkGuide && (
+												<Link
+													to={sdkGuideHref(sdkGuide.slug)}
+													className="inline-flex items-center gap-1 text-sm font-medium text-eko-gold hover:underline"
+												>
+													Full {sdkGuide.title} guide
+													<ArrowRight className="h-3.5 w-3.5" />
+												</Link>
+											)}
+											<a
+												href={install.registryUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground hover:underline"
+											>
+												View on {install.registry}
+												<ArrowRight className="h-3.5 w-3.5" />
+											</a>
+										</div>
 									</div>
 								)}
 

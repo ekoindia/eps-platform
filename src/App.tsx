@@ -39,6 +39,8 @@ const AiPage = lazy(() => import("./pages/AiPage"));
 const AgentsPage = lazy(() => import("./pages/AgentsPage"));
 const DocsIndexPage = lazy(() => import("./pages/docs/DocsIndexPage"));
 const DocDetailPage = lazy(() => import("./pages/docs/DocDetailPage"));
+const SdkIndexPage = lazy(() => import("./pages/sdk/SdkIndexPage"));
+const SdkGuidePage = lazy(() => import("./pages/sdk/SdkGuidePage"));
 const RecipesIndexPage = lazy(() => import("./pages/recipe/RecipesIndexPage"));
 const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
@@ -145,6 +147,10 @@ const App = ({
 
 									{/* Developer Docs */}
 									<Route path="/docs" element={<DocsIndexPage />} />
+									{/* Static segments outrank /docs/:slug in the router's
+									    ranking, so these win regardless of order. */}
+									<Route path="/docs/sdk" element={<SdkIndexPage />} />
+									<Route path="/docs/sdk/:lang" element={<SdkGuidePage />} />
 									<Route path="/docs/:slug" element={<DocDetailPage />} />
 
 									{/* API Recipes — multi-step workflows across endpoints */}

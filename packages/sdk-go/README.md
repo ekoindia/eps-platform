@@ -1,6 +1,6 @@
 # EPS Go SDK
 
-Backend-only Go client for [Eko Platform Services](https://eps.eko.in/docs)
+Backend-only Go client for [Eko Platform Services](https://eps.eko.in/docs/sdk/go)
 APIs — DMT, AePS, BBPS, KYC and verification — with HMAC request signing built
 in.
 

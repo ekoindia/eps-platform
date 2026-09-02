@@ -35,6 +35,7 @@ interface CommandPaletteProps {
 const GROUPS: { category: SearchCategory; heading: string }[] = [
 	{ category: "api", heading: "APIs" },
 	{ category: "guide", heading: "Guides" },
+	{ category: "sdk", heading: "SDKs" },
 	{ category: "industry", heading: "Industries" },
 	{ category: "solution", heading: "Solutions" },
 	{ category: "page", heading: "Pages" },
@@ -50,6 +51,11 @@ const CATEGORY_BADGE: Record<
 	endpoint: { label: "Endpoint", className: "" },
 	guide: {
 		label: "Guide",
+		className:
+			"bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
+	},
+	sdk: {
+		label: "SDK",
 		className:
 			"bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
 	},
@@ -72,6 +78,7 @@ const ICON_TINT: Record<SearchCategory, string> = {
 	endpoint:
 		"bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
 	guide: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
+	sdk: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
 	solution:
 		"bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400",
 	industry: "bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400",
@@ -85,6 +92,7 @@ const SCOPES: { id: Scope; label: string }[] = [
 	{ id: "api", label: "Products" },
 	{ id: "endpoint", label: "Endpoints" },
 	{ id: "guide", label: "Guides" },
+	{ id: "sdk", label: "SDKs" },
 	{ id: "solution", label: "Solutions" },
 	{ id: "industry", label: "Industries" },
 	{ id: "page", label: "Pages" },

@@ -9,7 +9,7 @@
 		"url": "https://github.com/ekoindia/eps-platform.git",
 		"directory": "packages/sdk-js"
 	},
-	"homepage": "https://eps.eko.in/docs",
+	"homepage": "https://eps.eko.in/docs/sdk/nodejs",
 	"publishConfig": {
 		"access": "public"
 	},

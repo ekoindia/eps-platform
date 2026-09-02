@@ -1,0 +1,85 @@
+# Node.js SDK
+
+`@ekoindia/eps-sdk` is a thin, dependency-free client for every EPS API. One
+generic `call(slug, params)` covers all of them: the endpoint catalog, each
+endpoint's params and which of them are required are baked into the package from
+the same surface these docs are built from, so the client validates your input
+**before** it signs and sends anything.
+
+<Callout type="warning">
+Backend only. `accessKey` signs every request — it must never reach a browser,
+a mobile app, or any bundle a user can read. The constructor throws if it
+detects a `window` global, but that guard is a safety net, not a strategy.
+</Callout>
+
+## Install
+
+<SdkFacts section="install" />
+
+## Your first call
+
+Set the two keys from your secret store, pick an environment, and call an
+endpoint by its slug:
+
+<SdkFacts section="quickstart" />
+
+`initiatorId` and `userCode` are near-constant per developer, so set them once
+on the client. They are injected into every call as the wire params
+`initiator_id` and `user_code` — pass either in `params` to override it for a
+single call, or pass `null` to clear it.
+
+## Client options
+
+<SdkFacts section="config" />
+
+## API surface
+
+The SDK is deliberately small. There is no method per endpoint — `call()` takes
+the slug, and the baked surface supplies the method, path, and validation rules.
+
+<SdkFacts section="members" />
+
+## Authentication
+
+You never compute a signature yourself. On every request the client derives
+`secret-key = base64(HMAC-SHA256(timestamp, base64(accessKey)))` and sends it
+with `secret-key-timestamp` and `developer_key`. `signSecretKey` is exported
+only so you can reproduce a signature while debugging a `403`.
+
+## File uploads
+
+A single `type: "file"` param flips the whole request to `multipart/form-data`.
+You still pass every parameter flat; on the wire the SDK packs them the way the
+API expects — one form field named `form-data` holding all the non-file params
+as a single JSON object, plus one part per upload. A `null` param is dropped (a
+form field has no null encoding), while a `null` nested inside an object value
+is preserved.
+
+File params accept:
+
+<SdkFacts section="files" />
+
+## Errors and timeouts
+
+A non-2xx response **throws** — an auth or infrastructure failure is never
+returned as if it were a result. The decoded envelope is still on the error, so
+you can read `status` and `message` off it.
+
+<SdkFacts section="errors" />
+
+## Environments
+
+Switch with the `environment` option; there is no base-URL override.
+
+<SdkFacts section="environments" />
+
+## Node-specific notes
+
+<SdkFacts section="notes" />
+
+## Every endpoint
+
+`call()` accepts every slug in the EPS catalog. Each endpoint's reference page
+shows its parameters, response fields and a ready-to-paste Node.js snippet.
+
+<Button asChild><a href="/docs">Browse the API reference</a></Button>

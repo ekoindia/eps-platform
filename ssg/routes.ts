@@ -9,6 +9,7 @@ import { hasProductPage } from "@/lib/data/api-product-pages";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
 import { docsHref, getAllDocSlugs } from "@/lib/data/docs-registry";
+import { getAllSdkSlugs, sdkGuideHref } from "@/lib/data/sdk-guides";
 import { INDUSTRIES_LIST } from "@/lib/data/industries";
 import { SOLUTIONS_LIST } from "@/lib/data/solutions";
 
@@ -39,6 +40,10 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 		src: "src/pages/SolutionDetailPage.tsx",
 	},
 	{ pattern: /^\/solutions$/, src: "src/pages/SolutionsPage.tsx" },
+	// SDK guides — before the generic /docs/.+ entry, which would otherwise
+	// claim them and preload the wrong chunk.
+	{ pattern: /^\/docs\/sdk\/.+/, src: "src/pages/sdk/SdkGuidePage.tsx" },
+	{ pattern: /^\/docs\/sdk\/?$/, src: "src/pages/sdk/SdkIndexPage.tsx" },
 	// Developer docs (detail before the index)
 	{ pattern: /^\/docs\/.+/, src: "src/pages/docs/DocDetailPage.tsx" },
 	{ pattern: /^\/docs\/?$/, src: "src/pages/docs/DocsIndexPage.tsx" },
@@ -99,6 +104,9 @@ export const PRERENDER_ROUTES: string[] = [
 	// Developer docs (overview + every guide & endpoint slug)
 	"/docs",
 	...getAllDocSlugs().map((slug) => docsHref(slug)),
+	// SDK guides (hub + one per language)
+	sdkGuideHref(),
+	...getAllSdkSlugs().map((slug) => sdkGuideHref(slug)),
 
 	// API recipes (overview + every recipe slug)
 	"/recipe",

@@ -10,6 +10,7 @@ import {
 	Landmark,
 	Layers,
 	LayoutGrid,
+	Package,
 	Rocket,
 	ShieldCheck,
 	Users,
@@ -24,6 +25,7 @@ import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
 import { docsHref, getAllDocNodes } from "@/lib/data/docs-registry";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
+import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
 import { ACTIVE_SOLUTIONS_LIST } from "@/lib/data/solutions";
 import { stripMarkdown } from "@/lib/utils";
 
@@ -31,6 +33,7 @@ export type SearchCategory =
 	| "api"
 	| "endpoint"
 	| "guide"
+	| "sdk"
 	| "industry"
 	| "solution"
 	| "page"
@@ -71,6 +74,9 @@ const TYPE_WEIGHT: Record<SearchCategory, number> = {
 	api: 6,
 	endpoint: 5,
 	guide: 4,
+	// Same rank as a guide: an SDK guide IS a guide to a reader, it just lives
+	// in its own /docs/sdk section rather than the /docs/<slug> namespace.
+	sdk: 4,
 	solution: 3,
 	industry: 2,
 	page: 1,
@@ -176,6 +182,36 @@ const buildGuideItems = (): SearchItem[] =>
 			// Only the first guide (How Auth Works) surfaces in the empty-query view.
 			suggested: n.slug === "how-auth-works",
 		}));
+
+/** Builds SDK guide search items. Their own category, because they live in the
+ * `/docs/sdk` section rather than the flat `/docs/<slug>` namespace the "guide"
+ * items are pinned to. */
+const buildSdkItems = (): SearchItem[] => [
+	{
+		id: searchItemId("sdk", "sdk"),
+		slug: "sdk",
+		label: "EPS SDKs",
+		sublabel:
+			"Backend SDKs for Node.js, Python, PHP, Go and Java — signing and validation built in.",
+		href: sdkGuideHref(),
+		category: "sdk" as const,
+		keywords: ["sdk", "library", "client", "guide", "docs"],
+		icon: Package,
+		typeWeight: TYPE_WEIGHT.sdk,
+		suggested: true,
+	},
+	...SDK_GUIDES.map((g) => ({
+		id: searchItemId("sdk", g.slug),
+		slug: g.slug,
+		label: g.title,
+		sublabel: g.summary,
+		href: sdkGuideHref(g.slug),
+		category: "sdk" as const,
+		keywords: [g.slug, g.lang, g.packageName, "sdk", "library", "client"],
+		icon: Package,
+		typeWeight: TYPE_WEIGHT.sdk,
+	})),
+];
 
 /** Builds industry search items (priority 3 = hidden/draft, excluded) */
 const buildIndustryItems = (): SearchItem[] =>
@@ -407,6 +443,7 @@ const buildSearchIndex = (): SearchItem[] => [
 	...buildApiItems(),
 	...buildEndpointItems(),
 	...buildGuideItems(),
+	...buildSdkItems(),
 	...buildSolutionItems(),
 	...buildIndustryItems(),
 	...buildPageItems(),

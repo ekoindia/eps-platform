@@ -14,7 +14,7 @@
 
   <name>EPS Java SDK</name>
   <description>Backend-only Java SDK for Eko Platform Services (EPS) APIs, with request signing built in.</description>
-  <url>https://eps.eko.in/docs</url>
+  <url>https://eps.eko.in/docs/sdk/java</url>
 
   <licenses>
     <license>

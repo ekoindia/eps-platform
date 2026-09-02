@@ -1,6 +1,6 @@
 # EPS Java SDK
 
-Backend-only Java client for [Eko Platform Services](https://eps.eko.in/docs)
+Backend-only Java client for [Eko Platform Services](https://eps.eko.in/docs/sdk/java)
 APIs — DMT, AePS, BBPS, KYC and verification — with HMAC request signing built
 in. Java 17+.
 

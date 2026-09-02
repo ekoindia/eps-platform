@@ -3,7 +3,7 @@
 	"description": "Backend-only PHP SDK for Eko Platform Services (EPS) APIs, with request signing built in.",
 	"type": "library",
 	"license": "MIT",
-	"homepage": "https://eps.eko.in/docs",
+	"homepage": "https://eps.eko.in/docs/sdk/php",
 	"keywords": ["eko", "eps", "aeps", "dmt", "bbps", "payments", "india", "sdk", "fintech"],
 	"authors": [
 		{
@@ -12,7 +12,7 @@
 		}
 	],
 	"support": {
-		"docs": "https://eps.eko.in/docs",
+		"docs": "https://eps.eko.in/docs/sdk/php",
 		"issues": "https://github.com/ekoindia/eps-platform/issues",
 		"source": "https://github.com/ekoindia/eps-platform/tree/main/packages/sdk-php"
 	},

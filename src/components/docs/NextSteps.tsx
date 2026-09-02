@@ -7,6 +7,7 @@ import {
 	docsHref,
 	nextEndpointInGroup,
 } from "@/lib/data/docs-registry";
+import { sdkGuideHref } from "@/lib/data/sdk-guides";
 import { cn } from "@/lib/utils";
 import { HttpMethodTag } from "./HttpMethodTag";
 
@@ -66,8 +67,9 @@ const buildRelatedLinks = (spec: ApiSpec): ResolvedLink[] => {
 	});
 	links.push({
 		label: "Integrate using an SDK",
-		href: docsHref(),
-		description: "Browse guides and the full developer documentation.",
+		href: sdkGuideHref(),
+		description:
+			"Node.js, Python, PHP, Go and Java clients with signing built in.",
 		external: false,
 	});
 
