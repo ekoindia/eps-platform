@@ -109,6 +109,18 @@ export function labelsForFeeProducts(ids: readonly string[]): string[] {
 const bcFamilyIds = new Set(BC_PAYMENT_FAMILIES.map((family) => family.id));
 
 /**
+ * Whether an option is a BC/Payments family rather than a verification API.
+ *
+ * The two halves are not only priced differently — the setup-fee waiver covers
+ * verification only, so the page has to be able to tell them apart too.
+ * @param id - An option id from {@link FEE_PRODUCT_GROUPS}.
+ * @returns True for DMT, AePS and BBPS.
+ */
+export function isBcPaymentFamily(id: string): boolean {
+	return bcFamilyIds.has(id);
+}
+
+/**
  * What a selection costs to activate, as the partner should transfer it.
  *
  * The two halves of the catalogue are priced differently — verification is

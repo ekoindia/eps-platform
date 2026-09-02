@@ -30,6 +30,26 @@ claim, and finance reconciles that claim against the bank statement.
    (IMPS / NEFT / RTGS / Intra-Bank Transfer, commonest first), UTR, the name of
    the depositor, and an optional transaction slip.
 
+**Setup-fee waiver** — rendered directly under the step-2 quote, because that
+is the moment the partner has a number to weigh it against. It covers **KYC &
+Verification APIs only**: a partner who would rather not pay their fee can
+commit to a wallet top-up instead — ₹50,000 for a single verification API,
+₹1,00,000 for several — spendable against usage for 12 months from the date of
+top-up. DMT, AePS and BBPS are outside it and carry their per-family one-time
+fee either way, which the block says unconditionally and then repeats by name
+("Not covered: …") once one of those families is ticked, so nobody reads "the
+fee is waived" over a quote that includes DMT and transfers nothing.
+
+The tier matching the count of ticked *verification* APIs is highlighted rather
+than the other being hidden — someone ticking their second API should see what
+that tick costs — and a selection with no verification API in it highlights
+neither. `isBcPaymentFamily` in `feeProducts.ts` is what splits the two halves,
+the same split `calcActivationFee` prices on. Once the fee *has* been paid the
+wallet carries no validity and no commitment beyond a ₹500 minimum top-up, which
+the same block says. Nothing here is transactional: the waiver is arranged by
+mail to `eps@eko.in`, and the amounts live in `WAIVER_TOPUP` / `MIN_WALLET_TOPUP`
+at the top of `PayActivationFee.tsx`.
+
 **Name of depositor** is prefilled with the partner name, but only when that
 name contains a letter: upstream defaults a missing name to the mobile number,
 so a profile routinely carries `"7200000002"` as its `name`, and prefilling that
