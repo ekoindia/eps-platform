@@ -16,8 +16,14 @@ const connect = async () => {
 	return client;
 };
 
-const parse = (res: { content: { type: string; text?: string }[] }) =>
-	JSON.parse(res.content[0].text ?? "null");
+/**
+ * JSON body of a tool result. Takes callTool's own return type — a union that
+ * still carries the legacy `toolResult` shape — so call sites need no cast.
+ */
+const parse = (res: Awaited<ReturnType<Client["callTool"]>>) =>
+	JSON.parse(
+		(res.content as { text?: string }[] | undefined)?.[0]?.text ?? "null",
+	);
 
 describe("eps-context-mcp tools", () => {
 	it("exposes the expected tool set", async () => {
@@ -44,7 +50,7 @@ describe("eps-context-mcp tools", () => {
 	it("list_apis returns compact entries with no bodies", async () => {
 		const client = await connect();
 		const res = await client.callTool({ name: "list_apis", arguments: {} });
-		const list = parse(res as never);
+		const list = parse(res);
 		expect(list[0]).not.toHaveProperty("responseFields");
 	});
 
@@ -54,7 +60,7 @@ describe("eps-context-mcp tools", () => {
 			name: "get_topic",
 			arguments: { topic: "auth" },
 		});
-		expect(parse(res as never).backendOnly).toBe(true);
+		expect(parse(res).backendOnly).toBe(true);
 	});
 
 	it("get_meta reports package version + update availability", async () => {
