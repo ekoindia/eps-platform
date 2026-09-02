@@ -508,3 +508,55 @@ describe("PayActivationFee — payment modes", () => {
 		expect(sentPayload().mode).toBe("Intra-Bank Transfer");
 	});
 });
+
+describe("PayActivationFee — the setup-fee waiver", () => {
+	/** The first checkboxes are the BC/Payments families; verification follows. */
+	const verificationBoxes = () =>
+		screen.getAllByRole("checkbox").slice(FEE_PRODUCT_GROUPS[0].options.length);
+
+	it("offers both wallet top-up tiers and the ordinary minimum", () => {
+		renderPage();
+		expect(screen.getByText(/prefer not to pay the setup fee/i)).toBeVisible();
+		expect(screen.getByText(formatInr(50_000))).toBeVisible();
+		expect(screen.getByText(formatInr(100_000))).toBeVisible();
+		expect(screen.getByText(/from ₹500 upwards/i)).toBeVisible();
+	});
+
+	it("points at the single-API tier until a second verification API is ticked", () => {
+		renderPage();
+		const boxes = verificationBoxes();
+		fireEvent.click(boxes[0]);
+		expect(
+			screen.getByText(/matches your selection/i).closest("div"),
+		).toHaveTextContent(formatInr(50_000));
+		fireEvent.click(boxes[1]);
+		expect(
+			screen.getByText(/matches your selection/i).closest("div"),
+		).toHaveTextContent(formatInr(100_000));
+	});
+
+	it("says up front that DMT, AePS and BBPS are outside the waiver", () => {
+		renderPage();
+		expect(screen.getByText(/outside the waiver/i)).toBeVisible();
+	});
+
+	it("names the ticked BC families as not covered, and does not count them as APIs", () => {
+		renderPage();
+		// The first group is Banking & Payments, so its first two boxes are two
+		// families — which must not promote the partner to the multi-API tier.
+		const boxes = screen.getAllByRole("checkbox");
+		fireEvent.click(boxes[0]);
+		fireEvent.click(boxes[1]);
+		const [first, second] = FEE_PRODUCT_GROUPS[0].options;
+		const notCovered = screen.getByText(/Not covered:/);
+		expect(notCovered).toHaveTextContent(first.label);
+		expect(notCovered).toHaveTextContent(second.label);
+		expect(screen.queryByText(/matches your selection/i)).toBeNull();
+
+		// One verification API alongside them is a single-API waiver, not a multi.
+		fireEvent.click(verificationBoxes()[0]);
+		expect(
+			screen.getByText(/matches your selection/i).closest("div"),
+		).toHaveTextContent(formatInr(50_000));
+	});
+});

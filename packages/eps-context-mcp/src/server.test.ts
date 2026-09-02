@@ -16,8 +16,14 @@ const connect = async () => {
 	return client;
 };
 
-const parse = (res: { content: { type: string; text?: string }[] }) =>
-	JSON.parse(res.content[0].text ?? "null");
+/**
+ * JSON body of a tool result. Takes callTool's own return type — a union that
+ * still carries the legacy `toolResult` shape — so call sites need no cast.
+ */
+const parse = (res: Awaited<ReturnType<Client["callTool"]>>) =>
+	JSON.parse(
+		(res.content as { text?: string }[] | undefined)?.[0]?.text ?? "null",
+	);
 
 describe("eps-context-mcp tools", () => {
 	it("exposes the expected tool set", async () => {
@@ -29,10 +35,12 @@ describe("eps-context-mcp tools", () => {
 				"get_api",
 				"get_meta",
 				"get_recipe",
+				"get_sdk",
 				"get_signing_snippet",
 				"get_topic",
 				"list_apis",
 				"list_recipes",
+				"list_sdks",
 				"list_topics",
 				"search",
 			].sort(),
@@ -42,7 +50,7 @@ describe("eps-context-mcp tools", () => {
 	it("list_apis returns compact entries with no bodies", async () => {
 		const client = await connect();
 		const res = await client.callTool({ name: "list_apis", arguments: {} });
-		const list = parse(res as never);
+		const list = parse(res);
 		expect(list[0]).not.toHaveProperty("responseFields");
 	});
 
@@ -52,7 +60,7 @@ describe("eps-context-mcp tools", () => {
 			name: "get_topic",
 			arguments: { topic: "auth" },
 		});
-		expect(parse(res as never).backendOnly).toBe(true);
+		expect(parse(res).backendOnly).toBe(true);
 	});
 
 	it("get_meta reports package version + update availability", async () => {
@@ -194,5 +202,49 @@ describe("eps-context-mcp tools", () => {
 			arguments: {},
 		})) as { content: { text?: string }[] };
 		expect(res.content[0].text).not.toContain("\n");
+	});
+
+	it("lists the SDKs compactly, without members or examples", async () => {
+		const client = await connect();
+		const res = await client.callTool({ name: "list_sdks", arguments: {} });
+		const sdks = parse(res) as Record<string, unknown>[];
+		expect(sdks.length).toBeGreaterThan(0);
+		for (const sdk of sdks) {
+			expect(sdk.installCommand).toBeTruthy();
+			expect(sdk.docsUrl).toContain("/docs/sdk/");
+			expect(sdk.members).toBeUndefined();
+			expect(sdk.example).toBeUndefined();
+		}
+	});
+
+	it("returns one SDK in full, by language id or guide slug", async () => {
+		const client = await connect();
+		for (const language of ["javascript", "nodejs"]) {
+			const res = await client.callTool({
+				name: "get_sdk",
+				arguments: { language },
+			});
+			const sdk = parse(res) as Record<string, unknown>;
+			expect(sdk.slug).toBe("nodejs");
+			expect(Array.isArray(sdk.members)).toBe(true);
+			expect(sdk.example).toContain("pan-lite");
+			expect(Array.isArray(sdk.errorTypes)).toBe(true);
+		}
+	});
+
+	it("rejects a language with no SDK, naming the ones that exist", async () => {
+		const client = await connect();
+		const res = await client.callTool({
+			name: "get_sdk",
+			arguments: { language: "javascript" },
+		});
+		expect(res.isError).toBeFalsy();
+		// `csharp` is a signing-snippet language but has no SDK — the two enums
+		// are deliberately different, so schema validation rejects it.
+		const bad = await client.callTool({
+			name: "get_sdk",
+			arguments: { language: "csharp" },
+		});
+		expect(bad.isError).toBe(true);
 	});
 });

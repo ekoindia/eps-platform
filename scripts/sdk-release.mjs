@@ -41,15 +41,26 @@ const SDK_DIRS = [
 	"packages/sdk-php",
 	"packages/sdk-python",
 	"packages/sdk-go",
+	"packages/sdk-java",
 ];
 
 /** The generated payload every SDK ships a copy of. */
 const SURFACE = "dist/agent/sdk-surface.json";
 
-/** No shared tag may be below this. npm's @ekoindia/eps-sdk line reached 0.1.21
- * under the old per-package scheme and versions cannot go backwards, so the
- * unified line starts at 1.0.0. */
-const VERSION_FLOOR = "1.0.0";
+/** No shared tag may be below this. `nextVersion` only ever patch-bumps, so
+ * raising the floor is how a MAJOR release is cut: the floor wins whenever the
+ * patch-bump would land below it.
+ *
+ * History:
+ * - 1.0.0 — npm's @ekoindia/eps-sdk line reached 0.1.21 under the old
+ *   per-package scheme and versions cannot go backwards, so the unified line
+ *   started at 1.0.0.
+ * - 2.0.0 — `call()` now THROWS on a non-2xx response instead of returning the
+ *   error envelope (Node, PHP), a 30s request timeout applies where there was
+ *   none, and PHP's constructor gained a `$timeout` parameter. See the
+ *   "Response and error contract conformance" section of
+ *   docs/sdk-golden-vector.md. */
+const VERSION_FLOOR = "2.0.0";
 
 /** Marker for the fingerprint stored in an annotated tag's message. */
 const FINGERPRINT_PREFIX = "sdk-fingerprint:";

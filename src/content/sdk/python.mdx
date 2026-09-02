@@ -1,0 +1,87 @@
+# Python SDK
+
+`eps-sdk` is a standard-library-only client for every EPS API. One generic
+`call(slug, params)` covers all of them: the endpoint catalog, each endpoint's
+params and which of them are required are baked into the package from the same
+surface these docs are built from, so the client validates your input **before**
+it signs and sends anything.
+
+<Callout type="warning">
+Backend only. `access_key` signs every request — it must never reach a browser,
+a mobile app, or a notebook you share.
+</Callout>
+
+## Install
+
+<SdkFacts section="install" />
+
+## Your first call
+
+Read the two keys from the environment, pick an environment, and call an
+endpoint by its slug:
+
+<SdkFacts section="quickstart" />
+
+`initiator_id` and `user_code` are near-constant per developer, so set them once
+on the client. They are injected into every call — pass either in `params` to
+override it for a single call, or pass `None` to clear it.
+
+## Client options
+
+`EpsClient` is a dataclass, so every option is a keyword argument.
+
+<SdkFacts section="config" />
+
+## API surface
+
+The SDK is deliberately small. There is no method per endpoint — `call()` takes
+the slug, and the baked surface supplies the method, path, and validation rules.
+`resolve_target()` is the same pipeline stopping one step short of the network,
+which is the fastest way to see exactly what would be sent.
+
+<SdkFacts section="members" />
+
+## Authentication
+
+You never compute a signature yourself. On every request the client derives
+`secret-key = base64(HMAC-SHA256(timestamp, base64(access_key)))` and sends it
+with `secret-key-timestamp` and `developer_key`. `sign_secret_key` is exported
+only so you can reproduce a signature while debugging a `403`.
+
+## File uploads
+
+A single `type: "file"` param flips the whole request to `multipart/form-data`.
+You still pass every parameter flat; on the wire the SDK packs them the way the
+API expects — one form field named `form-data` holding all the non-file params
+as a single JSON object, plus one part per upload. A `None` param is dropped (a
+form field has no null encoding), while a `None` nested inside a dict value is
+preserved.
+
+File params accept:
+
+<SdkFacts section="files" />
+
+## Errors and timeouts
+
+A non-2xx response **raises** — an auth or infrastructure failure is never
+returned as if it were a result. The decoded envelope is still on the exception,
+so you can read `status` and `message` off `.body`.
+
+<SdkFacts section="errors" />
+
+## Environments
+
+Switch with the `environment` argument; there is no base-URL override.
+
+<SdkFacts section="environments" />
+
+## Python-specific notes
+
+<SdkFacts section="notes" />
+
+## Every endpoint
+
+`call()` accepts every slug in the EPS catalog. Each endpoint's reference page
+shows its parameters, response fields and a ready-to-paste Python snippet.
+
+<Button asChild><a href="/docs" className="!no-underline">Browse the API reference</a></Button>

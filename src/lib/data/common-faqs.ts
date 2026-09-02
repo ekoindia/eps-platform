@@ -99,10 +99,11 @@ export const COMMON_API_FAQS: FAQ[] = [
 	},
 	{
 		q: "What are the different ways to integrate with Eko EPS?",
-		a: "Three paths, pick whichever suits your stack:\n\n- Call the **REST APIs** directly.\n- Use our official **JavaScript / PHP SDKs** to skip request-signing boilerplate.\n- Let an **AI coding agent** build it via our [MCP server and agent skills](/ai#install).\n\nFor multi-step flows (onboard a sender, *then* transfer) start from a [transaction-flow recipe](/recipe) rather than wiring single endpoints together yourself.",
+		a: "Three paths, pick whichever suits your stack:\n\n- Call the **REST APIs** directly.\n- Use our official **Node.js, Python, PHP, Go or Java SDKs** to skip request-signing boilerplate.\n- Let an **AI coding agent** build it via our [MCP server and agent skills](/ai#install).\n\nFor multi-step flows (onboard a sender, *then* transfer) start from a [transaction-flow recipe](/recipe) rather than wiring single endpoints together yourself.",
 		tag: "integration",
 		links: [
-			{ label: "SDKs & developer docs", href: "/docs" },
+			{ label: "SDK guides", href: "/docs/sdk" },
+			{ label: "Developer docs", href: "/docs" },
 			{ label: "Integrate with AI", href: "/ai" },
 		],
 	},

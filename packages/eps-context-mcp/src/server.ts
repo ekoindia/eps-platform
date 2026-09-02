@@ -4,9 +4,13 @@ import { z } from "zod";
 import type { AgentBundle } from "./bundle-types.js";
 import {
 	getApi,
+	getSdk,
 	getRecipe,
 	getTopic,
 	listApis,
+	listSdkLanguages,
+	listSdkSlugs,
+	listSdks,
 	listCategories,
 	listRecipes,
 	listTopics,
@@ -57,6 +61,15 @@ export const createEpsServer = (
 		? z.enum(categories as [string, ...string[]])
 		: z.string();
 	const limitSchema = z.number().int().positive().optional();
+	// Deliberately NOT SIGNING_LANGUAGES: that tuple includes `csharp`, which has
+	// no SDK. Derived from the bundle so a new SDK needs no code change here.
+	const sdkLanguages = listSdkLanguages(bundle);
+	// Accept the guide slug too (javascript → nodejs): an agent that came from a
+	// docs URL has the slug, one that came from get_signing_snippet has the id.
+	const sdkAliases = [...new Set([...sdkLanguages, ...listSdkSlugs(bundle)])];
+	const sdkLanguageSchema = sdkAliases.length
+		? z.enum(sdkAliases as [string, ...string[]])
+		: z.string();
 
 	server.registerTool(
 		"list_apis",
@@ -194,6 +207,49 @@ export const createEpsServer = (
 		async ({ language }) => ({
 			content: [{ type: "text" as const, text: getSigningSnippet(language) }],
 		}),
+	);
+
+	server.registerTool(
+		"list_sdks",
+		{
+			title: "List EPS SDKs",
+			description:
+				"The backend SDKs that wrap every EPS endpoint (language, package, " +
+				"install command, minimum runtime, docs URL). Prefer an SDK over " +
+				"hand-written HTTP: signing, param validation and the error contract " +
+				"are built in. Call get_sdk for the full surface of one.",
+			inputSchema: {},
+			annotations: READ_ONLY,
+		},
+		async () => json(listSdks(bundle)),
+	);
+
+	server.registerTool(
+		"get_sdk",
+		{
+			title: "Get an EPS SDK",
+			description:
+				"Everything needed to integrate with one EPS SDK: install command and " +
+				"requirements, client config options with their units, every public " +
+				"class/method/type, file-upload values, the error and timeout contract, " +
+				"and a worked call() example. Signing is built in — NEVER hand-roll the " +
+				"HMAC secret-key when an SDK exists for the language.",
+			inputSchema: {
+				language: sdkLanguageSchema.describe(
+					`One of: ${sdkLanguages.join(", ")} (the guide slug, e.g. "nodejs", also works)`,
+				),
+			},
+			annotations: READ_ONLY,
+		},
+		async ({ language }) => {
+			const sdk = getSdk(bundle, language);
+			return sdk
+				? json(sdk)
+				: notFound(
+						`No EPS SDK for "${language}". Available: ${sdkLanguages.join(", ")}. ` +
+							"For other languages call the REST API directly and use get_signing_snippet.",
+					);
+		},
 	);
 
 	server.registerTool(

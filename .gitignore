@@ -26,6 +26,10 @@ packages/*/data/
 packages/sdk-php/vendor/
 packages/sdk-php/composer.lock
 
+# Java build output (packages/sdk-java). `mvn test` writes it into the package
+# directory, and the split copies the working tree — see the release runbook.
+packages/sdk-java/target/
+
 # Python build/test litter (packages/sdk-python)
 __pycache__/
 *.py[cod]

@@ -19,6 +19,9 @@ architecture of what is being shipped, see
 - **PHP SDK** (`ekoindia/eps-sdk`) → **Packagist** (Composer).
 - **Go SDK** (`github.com/ekoindia/eps-sdk-go`) → **no registry**: proxy.golang.org
   serves the mirror repo's git tag directly.
+- **Java SDK** (`com.github.ekoindia:eps-sdk-java`) → **no registry account**:
+  JitPack builds the mirror's git tag on first request. Consumers must add the
+  JitPack repository; Maven Central can come later without breaking them.
 - **Python SDK** (`eps-sdk`) → **PyPI**, published with OIDC Trusted Publishing
   (no API token), same as npm.
 - **Agent plugin** (`eps`) → the repo-root `.claude-plugin/marketplace.json`
@@ -110,6 +113,8 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
      --description "Read-only mirror of packages/sdk-php from ekoindia/eps-platform. Do not commit here."
    gh repo create ekoindia/eps-sdk-go --public \
      --description "Read-only mirror of packages/sdk-go from ekoindia/eps-platform. Do not commit here."
+   gh repo create ekoindia/eps-sdk-java --public \
+     --description "Read-only mirror of packages/sdk-java from ekoindia/eps-platform. Do not commit here."
    ```
 
    Mirror names are **not** free choice once a language ships: Go's module path
@@ -128,8 +133,19 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
    | Repository access      | *Only select repositories* → every `eps-sdk-*` mirror     |
    | Repository permissions | **Contents: Read and write** (Metadata: Read-only is added automatically). Nothing else. |
 
-   If the org requires approval, approve it at **ekoindia → Settings → Personal
-   access tokens → Pending requests**.
+   If the org requires approval, approve it at
+   <https://github.com/organizations/ekoindia/settings/personal-access-token-requests>
+   (the org-wide policy lives at
+   <https://github.com/organizations/ekoindia/settings/personal-access-tokens>).
+
+   **Adding a LATER mirror to an existing token** — the usual case once the
+   first release has shipped — does not need a new token or a new secret. Open
+   <https://github.com/settings/personal-access-tokens>, click `eps-sdk-split`,
+   *Repository access* → add the new mirror → **Update**. The token value does
+   not change, so `SDK_SPLIT_TOKEN` stays as it is. If the token was created
+   with *All repositories* instead, a new mirror is already covered and there is
+   nothing to do. Note that on an org requiring approval, editing access sends
+   the token back to the pending queue — approve it there before releasing.
 
 3. Store it and verify it reaches every mirror — the same check the job's
    preflight step runs:
@@ -137,12 +153,18 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
    ```bash
    gh secret set SDK_SPLIT_TOKEN --repo ekoindia/eps-platform   # paste, then Ctrl-D
 
-   for r in eps-sdk-php eps-sdk-go; do
+   for r in eps-sdk-php eps-sdk-go eps-sdk-java; do
      echo -n "$r: "
      curl -sf -o /dev/null -H "Authorization: Bearer <PASTE_PAT>" \
        "https://api.github.com/repos/ekoindia/$r" && echo OK || echo "NO ACCESS"
    done
    ```
+
+   The secret itself lives at
+   <https://github.com/ekoindia/eps-platform/settings/secrets/actions>. The
+   `sdk-split` job's first step runs the same reachability check against every
+   matrix row and fails in seconds, so a mis-scoped token is caught before the
+   build rather than at the push.
 
 4. Recommended: add a **tag ruleset** on `v*.*.*` restricting who can push one.
    `sdk-split` executes workflow code from the tagged commit with
@@ -504,13 +526,23 @@ Run after the first publish:
 
 ## 7. Known follow-ups
 
+> **Shipped 2026-09-01.** All four SDKs are live and the pipeline is fully
+> automatic — merging to `main` fingerprints them and publishes only on a real
+> change. First release `v1.0.0`, plus `v1.0.1` fixing a build-artifact leak
+> (below). Every §2 one-time action is done: both mirrors, `SDK_SPLIT_TOKEN`,
+> the PyPI pending publisher and the `pypi` environment, and the Packagist
+> submission.
+>
+> Packagist `v1.0.0` shipped `vendor/` + `composer.lock` — the split copies the
+> working tree and the release gate's `composer install` ran just before it. The
+> fix (`git clean -xdf` plus a working-tree guard) landed in `v1.0.1`, and
+> `v1.0.0` was deleted from Packagist. **Any new language whose test step writes
+> into its package directory has the same exposure** — the `git archive` guard
+> alone cannot see it.
+
 - **Live-load the `eps` agent plugin** end-to-end in real sessions (files are
   well-formed and `npx plugins discover`/local-add smoke passes, but not yet
   verified in a live agent session).
-- **Wire the PHP mirror**: the workflow side is done (PAT wired, actions pinned,
-  preflight + archive gates in place), and `ekoindia/eps-sdk-php` exists but is
-  still empty. Outstanding one-time actions: add the `SDK_SPLIT_TOKEN` secret,
-  cut `v0.1.0`, then submit the mirror to Packagist (§2, in that order).
 - **The SDK gate is collective, not per-language.** `sdk-release.mjs`
   fingerprints all four packages together, so a Go-only change also republishes
   npm, Packagist and PyPI at the new version. That is inherent to a shared
@@ -519,17 +551,13 @@ Run after the first publish:
 - **`vX.Y.Z` is repo-global** by design (§4): no SDK versions independently. If
   one language ever needs its own cadence, add a scoped `sdk-<lang>-v*` tag and
   a matching job condition instead of changing the shared scheme.
-- **Wire PyPI**: claim the `eps-sdk` name, add the pending publisher + `pypi`
-  environment (§2) **before** the next merge to `main` — the release is
-  automatic now, so a missing publisher fails the run rather than waiting for a
-  tag.
-- **Wire the Go mirror**: create `ekoindia/eps-sdk-go` (the module path
-  `github.com/ekoindia/eps-sdk-go` is compiled into `go.mod`, so the name is
-  fixed) and give `SDK_SPLIT_TOKEN` write access to it. No registry submission —
-  the first `vX.Y.Z` tag is the release.
-- **Remaining SDK languages** (Java, C#/.NET) — ports of the same ~220-line
-  client against `docs/sdk-golden-vector.md`. Java adds a row to the `sdk-split`
-  matrix and needs **no registry account** (JitPack builds straight from the
-  tag; Maven Central can come later without breaking consumers). C#/.NET is the
-  only one that requires a marketplace account (NuGet + `NUGET_API_KEY`), since
-  no git-install path exists.
+- **Wire the Java mirror**: create `ekoindia/eps-sdk-java` and add it to
+  `SDK_SPLIT_TOKEN`'s repository list. No registry submission — JitPack builds
+  the tag on first request. Verify with the Gradle/Maven snippet in
+  `packages/sdk-java/README.md`, and note JitPack is a third-party build service,
+  not an equivalent of Maven Central: if its availability ever matters, publish
+  the same artifact to Central without changing the coordinates consumers use.
+- **Remaining SDK language** (C#/.NET) — a port of the same ~220-line client
+  against `docs/sdk-golden-vector.md`. It is the only one that requires a
+  marketplace account (NuGet + `NUGET_API_KEY`), since no git-install path
+  exists.

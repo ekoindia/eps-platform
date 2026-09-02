@@ -56,7 +56,7 @@ const matchesType = (type: string, value: unknown): boolean => {
  * object. Eko's upload APIs do not take a form field per parameter. Mirrors
  * `MULTIPART_JSON_FIELD` in the website's `src/lib/data/api-specs-common.ts`.
  */
-const MULTIPART_JSON_FIELD = "form-data";
+export const MULTIPART_JSON_FIELD = "form-data";
 
 /**
  * Multipart body for a file-upload endpoint: one `form-data` part holding every
@@ -94,6 +94,50 @@ const buildFormData = (
 	return form;
 };
 
+/**
+ * Client-side failure: a bad option, an unknown slug, a missing required param,
+ * a wrong param type, or a response that could not be read.
+ */
+export class EpsError extends Error {
+	constructor(message: string, options?: ErrorOptions) {
+		super(message, options);
+		this.name = "EpsError";
+	}
+}
+
+/**
+ * Non-2xx response from EPS. The decoded envelope is kept on `body` so callers
+ * can inspect it, but this is THROWN rather than returned: an auth or
+ * infrastructure failure must never be mistaken for a successful call.
+ */
+export class EpsHttpError extends EpsError {
+	constructor(
+		readonly status: number,
+		readonly url: string,
+		readonly body: unknown,
+		readonly raw: string,
+	) {
+		super(`EPS request to ${url} failed with HTTP ${status}.`);
+		this.name = "EpsHttpError";
+	}
+}
+
+/** Decode a response body, or null when it is not JSON — the non-2xx path still
+ * wants whatever envelope the server sent. Mirrors `_decode_json_or_none` in
+ * the Python SDK.
+ * ponytail: a literal `null` body is indistinguishable from "not JSON" here.
+ * Java behaves the same and EPS never returns a bare `null` envelope. */
+const decodeJsonOrNull = (raw: string): unknown => {
+	try {
+		return JSON.parse(raw) as unknown;
+	} catch {
+		return null;
+	}
+};
+
+/** Whole-request budget, matching the 30s every other EPS SDK defaults to. */
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 interface Surface {
 	environments: { id: string; baseUrl: string }[];
 	endpoints: SdkEndpoint[];
@@ -114,13 +158,13 @@ const loadSurface = (): Surface => {
 	try {
 		raw = readFileSync(SURFACE_PATH, "utf8");
 	} catch {
-		throw new Error(
+		throw new EpsError(
 			`EPS SDK surface not found at ${SURFACE_PATH}. The package is built incorrectly (run \`npm run build\` to bake it).`,
 		);
 	}
 	const parsed = JSON.parse(raw) as Surface;
 	if (!parsed?.environments || !parsed?.endpoints) {
-		throw new Error(
+		throw new EpsError(
 			`EPS SDK surface at ${SURFACE_PATH} is invalid or corrupt.`,
 		);
 	}
@@ -140,6 +184,12 @@ export interface EpsClientOptions {
 	 * Override per call by passing `user_code` in `params`. */
 	userCode?: string;
 	fetch?: typeof fetch;
+	/** Abort a request that takes longer than this, in milliseconds. Default
+	 * 30_000 — the 30s every other EPS SDK defaults to. Named `timeoutMs` (not
+	 * `timeout`) because Python's `timeout` is in seconds; the unit is in the
+	 * name so the two can never be confused. Per-call cancellation signals are
+	 * not supported yet. */
+	timeoutMs?: number;
 	now?: () => number;
 }
 
@@ -155,25 +205,32 @@ export const signSecretKey = (accessKey: string, timestamp: string): string => {
 export class EpsClient {
 	private readonly baseUrl: string;
 	private readonly fetchFn: typeof fetch;
+	private readonly timeoutMs: number;
 	private readonly now: () => number;
 
 	constructor(private readonly opts: EpsClientOptions) {
 		// Backend-only guard: access_key must never run in a browser.
 		if (typeof (globalThis as { window?: unknown }).window !== "undefined") {
-			throw new Error(
+			throw new EpsError(
 				"EpsClient is backend-only: never instantiate it in a browser (access_key would leak).",
 			);
 		}
 		const env = SURFACE.environments.find((e) => e.id === opts.environment);
-		if (!env) throw new Error(`Unknown environment "${opts.environment}".`);
+		if (!env) throw new EpsError(`Unknown environment "${opts.environment}".`);
 		this.baseUrl = env.baseUrl;
 		this.fetchFn = opts.fetch ?? fetch;
+		const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+		if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+			throw new EpsError(
+				`Invalid timeoutMs: ${String(opts.timeoutMs)}. Expected a positive number of milliseconds.`,
+			);
+		this.timeoutMs = timeoutMs;
 		this.now = opts.now ?? Date.now;
 	}
 
 	private endpoint(slug: string): SdkEndpoint {
 		const e = SURFACE.endpoints.find((x) => x.slug === slug);
-		if (!e) throw new Error(`Unknown endpoint slug "${slug}".`);
+		if (!e) throw new EpsError(`Unknown endpoint slug "${slug}".`);
 		return e;
 	}
 
@@ -200,7 +257,7 @@ export class EpsClient {
 			(p) => merged[p] === undefined || merged[p] === null,
 		);
 		if (missing.length)
-			throw new Error(
+			throw new EpsError(
 				`Missing required params for "${slug}": ${missing.join(", ")}.`,
 			);
 		// Type guard: every provided param known to the spec must match its type.
@@ -214,7 +271,7 @@ export class EpsClient {
 			)
 			.map((p) => `${p.name} (expected ${p.type})`);
 		if (badTypes.length)
-			throw new Error(
+			throw new EpsError(
 				`Invalid param types for "${slug}": ${badTypes.join(", ")}.`,
 			);
 		// A `type:"file"` param flips the whole request to multipart/form-data.
@@ -243,7 +300,11 @@ export class EpsClient {
 			else rest[k] = v;
 		}
 		let url = `${this.baseUrl}${path}`;
-		const init: RequestInit = { method: endpoint.method, headers };
+		const init: RequestInit = {
+			method: endpoint.method,
+			headers,
+			signal: AbortSignal.timeout(this.timeoutMs),
+		};
 		if (endpoint.method === "GET") {
 			const query = new URLSearchParams(
 				Object.entries(rest).map(([k, v]) => [k, String(v)]),
@@ -255,6 +316,12 @@ export class EpsClient {
 			init.body = JSON.stringify(rest);
 		}
 		const res = await this.fetchFn(url, init);
-		return (await res.json()) as T;
+		const raw = await res.text();
+		const envelope = decodeJsonOrNull(raw);
+		// A non-2xx envelope is an error, not a result — see docs/sdk-golden-vector.md.
+		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);
+		if (envelope === null)
+			throw new EpsError(`EPS response from ${url} was not valid JSON.`);
+		return envelope as T;
 	}
 }

@@ -22,7 +22,14 @@ If the `access_key` ever leaves your server, it is compromised. **Only ever cons
 composer require ekoindia/eps-sdk
 ```
 
-Requires PHP >= 8.1.
+Requires PHP >= 8.1, with `ext-curl` and `ext-json`. No other dependencies.
+
+### What it does for you
+
+- **Signs the request** — `secret-key`, `secret-key-timestamp` and `developer_key` headers on every call.
+- **Validates first** — missing required params and wrong types throw `\InvalidArgumentException` before a request goes out.
+- **Routes the params** — path tokens, query string, JSON body, or `multipart/form-data` for file-upload endpoints, per the endpoint's spec.
+- **Fails loudly** — a non-2xx response throws `Eko\Eps\EpsHttpException` (with the decoded envelope on `->body`); a non-JSON body throws rather than returning `[]`.
 
 ## Usage
 
@@ -46,9 +53,12 @@ $result = $client->call('dmt-get-sender', [
 print_r($result);
 ```
 
-`new EpsClient($developerKey, $accessKey, $environment, $initiatorId, $userCode)` selects
+`new EpsClient($developerKey, $accessKey, $environment, $initiatorId, $userCode, $timeout)` selects
 the base URL from the embedded catalog based on `$environment` (`'sandbox'` or
 `'production'`). Use named arguments as shown above.
+
+`$timeout` is the whole-request budget in **seconds** (default `30.0`). A
+non-positive or non-finite value is rejected at construction.
 
 `$initiatorId` / `$userCode` are near-constant per developer, so set them once on the
 client. They are injected into every call as the wire params `initiator_id` / `user_code`
@@ -58,6 +68,26 @@ client. They are injected into every call as the wire params `initiator_id` / `u
 `$client->call($slug, $params)` signs the request, substitutes any `{token}` path params
 from `$params` (remaining keys become the JSON body — or a `multipart/form-data` body on
 file-upload endpoints), and returns the decoded JSON response as an associative array.
+
+A non-2xx response throws `Eko\Eps\EpsHttpException` — an auth or
+infrastructure failure is never returned as if it were a result:
+
+```php
+use Eko\Eps\EpsHttpException;
+
+try {
+    $result = $client->call('pan-lite', [/* … */]);
+} catch (EpsHttpException $e) {
+    error_log("HTTP {$e->status}");
+    print_r($e->body); // decoded envelope, or null when the body was not JSON
+}
+```
+
+A 2xx body that is not JSON throws `Eko\Eps\EpsException` — never a silent
+`[]`. Input validation keeps SPL's `\InvalidArgumentException`, which is a
+`\LogicException` and therefore cannot share that base. The contract is shared
+by all five EPS SDKs; see
+[docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).
 
 ### File uploads
 
@@ -96,3 +126,28 @@ need to sign requests yourself.
 The embedded endpoint catalog (slugs, methods, paths, required params) is generated from the
 EPS bundle at `/agent/sdk-surface.json` and shipped as `data/sdk-surface.json`. It is read at
 runtime — no network call is needed to resolve a slug.
+
+## Upgrading to 2.0
+
+`call()` used to return `json_decode($res, true) ?? []` whatever the HTTP status,
+so a `403` envelope looked like a result and a non-JSON body silently became an
+empty array. It now throws.
+
+```php
+// 1.x — an error envelope was indistinguishable from success
+$result = $client->call($slug, $params);
+if (($result['status'] ?? null) !== 0) handleFailure($result);
+
+// 2.x
+use Eko\Eps\EpsHttpException;
+try {
+    $result = $client->call($slug, $params);
+} catch (EpsHttpException $e) {
+    handleFailure($e->body, $e->status);
+}
+```
+
+Also new in 2.0: a `$timeout` constructor parameter (30s default) applied via
+`CURLOPT_TIMEOUT_MS`, a transport failure throws `Eko\Eps\EpsException` instead
+of decoding `false`, and the surface-load failures now throw `EpsException`
+(a `\RuntimeException` subclass, so existing catches still match).

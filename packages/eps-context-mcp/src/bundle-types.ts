@@ -151,11 +151,51 @@ export interface AgentTopics {
 
 export type AgentTopicId = keyof AgentTopics;
 
+/** One backend SDK: how to install it and what its client surface looks like.
+ * Derived from `SDK_GUIDES` in `src/lib/data/sdk-guides.ts`, which is also what
+ * the `/docs/sdk/<slug>` pages and their markdown twins render. */
+export interface AgentSdk {
+	/** Language id (`javascript` | `python` | `php` | `go` | `java`). */
+	lang: string;
+	/** URL segment of its guide — NOT derivable from `lang` (javascript → nodejs). */
+	slug: string;
+	title: string;
+	summary: string;
+	packageName: string;
+	installCommand?: string;
+	registry?: string;
+	registryUrl?: string;
+	minRuntime: string;
+	dependencies: string;
+	sourceUrl: string;
+	docsUrl: string;
+	installNotes?: string[];
+	config: {
+		name: string;
+		type: string;
+		required: boolean;
+		description: string;
+		units?: string;
+	}[];
+	members: {
+		kind: string;
+		name: string;
+		signature: string;
+		description: string;
+	}[];
+	errorTypes: { name: string; when: string; fields?: string }[];
+	fileValues: string[];
+	notes?: string[];
+	/** A worked `call()` example in this language, for the showcase endpoint. */
+	example: string;
+}
+
 export interface AgentBundle {
 	meta: AgentBundleMeta;
 	topics: AgentTopics;
 	apis: AgentApiDetail[];
 	recipes: Recipe[];
+	sdks: AgentSdk[];
 }
 
 /** Index slice: compact lists only, no full bodies. */

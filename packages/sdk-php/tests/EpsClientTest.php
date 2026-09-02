@@ -1,6 +1,8 @@
 <?php
 use PHPUnit\Framework\TestCase;
 use Eko\Eps\EpsClient;
+use Eko\Eps\EpsException;
+use Eko\Eps\EpsHttpException;
 
 final class EpsClientTest extends TestCase
 {
@@ -265,5 +267,71 @@ final class EpsClientTest extends TestCase
             'customer_id' => '9123456789',
             'initiator_id' => null,
         ]);
+    }
+
+    // ---- Response and error contract (docs/sdk-golden-vector.md) ----------
+
+    private const URL = 'https://staging.eko.in/ekoapi/v3/tools/kyc/pan-lite';
+
+    public function testDecodeResponseReturnsEnvelopeOn2xx(): void
+    {
+        $this->assertSame(
+            ['status' => 0, 'message' => 'Success'],
+            EpsClient::decodeResponse(200, self::URL, '{"status":0,"message":"Success"}')
+        );
+    }
+
+    public function testDecodeResponseThrowsEpsHttpExceptionOnNon2xx(): void
+    {
+        try {
+            EpsClient::decodeResponse(403, self::URL, '{"status":403,"message":"Forbidden"}');
+            $this->fail('expected EpsHttpException');
+        } catch (EpsHttpException $e) {
+            $this->assertSame(403, $e->status);
+            $this->assertSame(self::URL, $e->url);
+            $this->assertSame(['status' => 403, 'message' => 'Forbidden'], $e->body);
+            $this->assertSame('{"status":403,"message":"Forbidden"}', $e->raw);
+            $this->assertSame('EPS request to ' . self::URL . ' failed with HTTP 403.', $e->getMessage());
+        }
+    }
+
+    public function testDecodeResponseKeepsNullBodyForNonJsonErrorPayload(): void
+    {
+        try {
+            EpsClient::decodeResponse(502, self::URL, '<html>502</html>');
+            $this->fail('expected EpsHttpException');
+        } catch (EpsHttpException $e) {
+            $this->assertNull($e->body);
+            $this->assertSame('<html>502</html>', $e->raw);
+        }
+    }
+
+    /** Regression for the old `json_decode($res, true) ?? []`. */
+    public function testDecodeResponseThrowsWhenSuccessBodyIsNotJson(): void
+    {
+        $this->expectException(EpsException::class);
+        $this->expectExceptionMessage('was not valid JSON');
+        EpsClient::decodeResponse(200, self::URL, 'not json');
+    }
+
+    public function testCurlOptionsCarryTheTimeoutInMilliseconds(): void
+    {
+        $client = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', now: fn () => 1700000000000);
+        $target = $client->resolveTarget('pan-lite', [
+            'initiator_id' => '9962981729',
+            'pan_number' => 'BNZAA2318J',
+            'name' => 'Rahul Sharma',
+            'dob' => '1990-01-01',
+        ]);
+        $this->assertSame(30000, $client->curlOptions($target)[CURLOPT_TIMEOUT_MS]);
+
+        $fast = new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', timeout: 1.5, now: fn () => 1700000000000);
+        $this->assertSame(1500, $fast->curlOptions($target)[CURLOPT_TIMEOUT_MS]);
+    }
+
+    public function testRejectsNonPositiveTimeout(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', timeout: 0.0);
     }
 }

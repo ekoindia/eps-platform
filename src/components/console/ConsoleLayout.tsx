@@ -37,8 +37,8 @@ import {
 	Menu,
 	PlusCircle,
 	ReceiptText,
-	Sparkles,
 	ShieldCheck,
+	Sparkles,
 	UserCog,
 	Users,
 } from "lucide-react";
@@ -166,11 +166,12 @@ const DOCUMENTS_ITEM: NavItem = {
  */
 type Flow = { id: number; label: string; icon: typeof FilePen };
 
-const SIGN_AGREEMENT: Flow = {
-	id: 898,
-	label: "Sign Agreement",
-	icon: FilePen,
-};
+// Old Sign Agreement (tick "I Agree" and submit)
+// const SIGN_AGREEMENT: Flow = {
+// 	id: 898,
+// 	label: "Sign Agreement",
+// 	icon: FilePen,
+// };
 const MANAGE_ACCOUNT: Flow = {
 	id: 536,
 	label: "Manage My Account",
@@ -234,7 +235,7 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			title: "Complete your KYC",
 			items: [
 				...(kycEnabled ? [DOCUMENTS_ITEM] : []),
-				...flowItem(interactions, SIGN_AGREEMENT),
+				// ...flowItem(interactions, SIGN_AGREEMENT),
 			],
 		},
 		{

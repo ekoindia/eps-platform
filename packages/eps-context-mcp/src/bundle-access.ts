@@ -2,6 +2,7 @@ import type {
 	AgentApiDetail,
 	AgentApiIndexEntry,
 	AgentBundle,
+	AgentSdk,
 	AgentTopicId,
 	AgentTopics,
 	Recipe,
@@ -79,3 +80,44 @@ export const getRecipe = (
 	bundle: AgentBundle,
 	id: string,
 ): Recipe | undefined => bundle.recipes.find((r) => r.id === id);
+
+/** Compact SDK index — no members, config or examples. */
+export const listSdks = (
+	bundle: AgentBundle,
+): Pick<
+	AgentSdk,
+	| "lang"
+	| "slug"
+	| "title"
+	| "packageName"
+	| "installCommand"
+	| "registry"
+	| "minRuntime"
+	| "docsUrl"
+>[] =>
+	(bundle.sdks ?? []).map((s) => ({
+		lang: s.lang,
+		slug: s.slug,
+		title: s.title,
+		packageName: s.packageName,
+		installCommand: s.installCommand,
+		registry: s.registry,
+		minRuntime: s.minRuntime,
+		docsUrl: s.docsUrl,
+	}));
+
+/** Every language id an SDK exists for, in bundle order. */
+export const listSdkLanguages = (bundle: AgentBundle): string[] =>
+	(bundle.sdks ?? []).map((s) => s.lang);
+
+/** Every SDK guide slug, in bundle order. */
+export const listSdkSlugs = (bundle: AgentBundle): string[] =>
+	(bundle.sdks ?? []).map((s) => s.slug);
+
+/** One SDK in full. Accepts either the language id (`javascript`) or the guide
+ * slug (`nodejs`), because an agent may have either to hand. */
+export const getSdk = (
+	bundle: AgentBundle,
+	language: string,
+): AgentSdk | undefined =>
+	(bundle.sdks ?? []).find((s) => s.lang === language || s.slug === language);

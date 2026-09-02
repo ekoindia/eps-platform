@@ -298,6 +298,7 @@ const TOKEN_SCOPE: Record<string, Scope> = {
 	"endpoint:": "endpoint",
 	"g:": "guide",
 	"guide:": "guide",
+	"sdk:": "sdk",
 	"sol:": "solution",
 	"solution:": "solution",
 	"ind:": "industry",

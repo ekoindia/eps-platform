@@ -148,7 +148,7 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		);
 	});
 
-	it("closes the KYC section with Sign Agreement and the rail with Manage My Account", async () => {
+	it("closes the rail with Manage My Account, ignoring the retired Sign Agreement", async () => {
 		connectInteractions.mockResolvedValue({
 			interactions: [{ id: 491 }, { id: 898 }, { id: 536 }],
 		});
@@ -156,16 +156,13 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		renderRail();
 
 		expect(
-			await screen.findByRole("link", { name: "Sign Agreement" }),
-		).toHaveAttribute("href", "/console/transaction/898");
-		expect(
-			screen.getByRole("link", { name: "Manage My Account" }),
+			await screen.findByRole("link", { name: "Manage My Account" }),
 		).toHaveAttribute("href", "/console/transaction/536");
-		// Sign Agreement is onboarding, so it rides in the first section even
-		// without the document upload beside it.
+		// 898 (the old tick-and-submit Sign Agreement) was dropped from the rail;
+		// being entitled to it must not draw it back.
+		expect(screen.queryByRole("link", { name: "Sign Agreement" })).toBeNull();
 		expect(railLabels()).toEqual([
 			"Home",
-			"Sign Agreement",
 			"Credentials",
 			"Integration Docs",
 			"Build with AI Tools",
@@ -176,11 +173,11 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 	});
 
 	it("hides a flow the user is not entitled to", async () => {
-		connectInteractions.mockResolvedValue({ interactions: [{ id: 898 }] });
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
 
 		renderRail();
 
-		await screen.findByRole("link", { name: "Sign Agreement" });
+		await screen.findByRole("link", { name: "Load Wallet" });
 		expect(
 			screen.queryByRole("link", { name: "Manage My Account" }),
 		).toBeNull();

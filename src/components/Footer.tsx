@@ -43,7 +43,7 @@ const footerLinks = {
 			href: "/docs",
 			// external: true,
 		},
-		{ label: "SDKs & Libraries", href: "/docs" },
+		{ label: "SDKs & Libraries", href: "/docs/sdk" },
 		// { label: "Sandbox", href: "/docs" },
 		{ label: "Integrate with AI", href: "/ai" },
 		{ label: "FAQs", href: "/faq", internal: true },
@@ -51,7 +51,7 @@ const footerLinks = {
 		// { label: "Sandbox", href: "https://developers.eko.in", external: true },
 	],
 	guides: [
-		{ label: "Getting Started", href: "/docs/getting-started" },
+		{ label: "Getting Started", href: "/docs" },
 		{ label: "Transaction Flows (Recipes)", href: "/recipe" },
 		{ label: "How Auth Works", href: "/docs/how-auth-works" },
 		{ label: "Status/Error Codes", href: "/docs/error-codes" },

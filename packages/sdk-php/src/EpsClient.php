@@ -22,9 +22,15 @@ final class EpsClient
         // into every call and overridable per call via the `params` array.
         private ?string $initiatorId = null,
         private ?string $userCode = null,
+        // Whole-request budget in SECONDS, matching Python's `timeout=30.0`.
+        // Node names its knob `timeoutMs` because it is milliseconds there.
+        private float $timeout = 30.0,
         // Test-only clock injection (not part of the public surface).
         private $now = null
     ) {
+        if (!is_finite($this->timeout) || $this->timeout <= 0) {
+            throw new \InvalidArgumentException("Invalid timeout: {$this->timeout}. Expected a positive number of seconds.");
+        }
         $this->now = $this->now ?? fn () => (int) round(microtime(true) * 1000);
         // data/sdk-surface.json is a baked, shipped asset. A missing or invalid
         // file means the package was built/published incorrectly — fail with a
@@ -32,11 +38,11 @@ final class EpsClient
         $surfacePath = __DIR__ . '/../data/sdk-surface.json';
         $raw = @file_get_contents($surfacePath);
         if ($raw === false) {
-            throw new \RuntimeException("EPS SDK surface not found at $surfacePath. The package is built incorrectly (run `npm run build` to bake it).");
+            throw new EpsException("EPS SDK surface not found at $surfacePath. The package is built incorrectly (run `npm run build` to bake it).");
         }
         $surface = json_decode($raw, true);
         if (!is_array($surface) || !isset($surface['environments'])) {
-            throw new \RuntimeException("EPS SDK surface at $surfacePath is invalid or corrupt.");
+            throw new EpsException("EPS SDK surface at $surfacePath is invalid or corrupt.");
         }
         $this->surface = $surface;
         foreach ($this->surface['environments'] as $env) {
@@ -190,25 +196,72 @@ final class EpsClient
     }
 
     /**
+     * cURL options for one resolved target. Exposed for testing; `call()` builds
+     * on it — the timeout wiring is otherwise unreachable from a unit test.
+     *
+     * CURLOPT_TIMEOUT_MS, not CURLOPT_TIMEOUT: the latter takes whole seconds
+     * and would silently truncate a sub-second budget to 0 (= no timeout).
+     */
+    public function curlOptions(array $target): array
+    {
+        $headers = $this->buildHeaders($target['multipart']);
+        $options = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => $target['method'],
+            CURLOPT_HTTPHEADER => array_map(fn ($k, $v) => "$k: $v", array_keys($headers), $headers),
+            CURLOPT_TIMEOUT_MS => (int) round($this->timeout * 1000),
+        ];
+        if ($target['body'] !== null) $options[CURLOPT_POSTFIELDS] = $target['body'];
+        return $options;
+    }
+
+    /**
+     * Turn one raw response into the envelope callers expect. Exposed for
+     * testing; `call()` builds on it. PHP has no injectable transport, so this
+     * pure function is the seam for the response contract shared by all five
+     * SDKs (see docs/sdk-golden-vector.md).
+     *
+     * ponytail: the `array` return type cannot represent a valid JSON scalar or
+     * `null`, so those are reported as "not valid JSON". EPS always returns an
+     * object envelope; widen to `mixed` if that ever stops being true.
+     *
+     * @throws EpsHttpException On any non-2xx response.
+     * @throws EpsException When a 2xx body is not a JSON object — never a silent [].
+     */
+    public static function decodeResponse(int $status, string $url, string $raw): array
+    {
+        $decoded = json_decode($raw, true);
+        $body = is_array($decoded) ? $decoded : null;
+        if ($status < 200 || $status >= 300) {
+            throw new EpsHttpException($status, $url, $body, $raw);
+        }
+        if ($body === null) {
+            throw new EpsException("EPS response from $url was not valid JSON.");
+        }
+        return $body;
+    }
+
+    /**
      * Sign and send one endpoint call, returning the decoded response envelope.
      *
      * @throws \InvalidArgumentException On an unknown slug, a missing required param or a type mismatch.
      * @throws \JsonException When a multipart endpoint's non-file params cannot be JSON-encoded.
+     * @throws EpsHttpException On any non-2xx response (the envelope is on `$body`).
+     * @throws EpsException On a transport failure or a 2xx body that is not JSON.
      */
     public function call(string $slug, array $params = []): array
     {
         $target = $this->resolveTarget($slug, $params);
         $ch = curl_init($target['url']);
-        $headers = $this->buildHeaders($target['multipart']);
-        $headerLines = array_map(fn ($k, $v) => "$k: $v", array_keys($headers), $headers);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $target['method'],
-            CURLOPT_HTTPHEADER => $headerLines,
-        ]);
-        if ($target['body'] !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $target['body']);
+        curl_setopt_array($ch, $this->curlOptions($target));
         $res = curl_exec($ch);
+        // Read the status and the error BEFORE closing the handle.
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
-        return json_decode($res, true) ?? [];
+        if ($res === false) {
+            throw new EpsException("EPS request to {$target['url']} failed: $curlError");
+        }
+        return self::decodeResponse($status, $target['url'], $res);
     }
 }

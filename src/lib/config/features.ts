@@ -111,3 +111,20 @@ export const SHOW_NOTIFICATIONS: boolean =
  */
 export const SHOW_AI_CHAT: boolean =
 	import.meta.env.VITE_SHOW_AI_CHAT === "true";
+
+/**
+ * Support contact channels shown as a slim strip at the bottom of `/console`.
+ * Each is independent: a channel renders only when its var holds a usable
+ * value, and with none of the three set the strip does not render at all — so
+ * there is no separate `SHOW_` flag, being configured IS the flag.
+ *
+ * `||` rather than `??` for the same reason as `EKOSTORE_URL`: a blank
+ * `VITE_SUPPORT_EMAIL=` in a `.env` file arrives here as `""`, not `undefined`.
+ *
+ * `VITE_SUPPORT_WHATSAPP` is a phone number, not a link — the component builds
+ * the `wa.me` URL from its digits. See `docs/features/support-contact.md`.
+ */
+export const SUPPORT_EMAIL: string = import.meta.env.VITE_SUPPORT_EMAIL || "";
+export const SUPPORT_PHONE: string = import.meta.env.VITE_SUPPORT_PHONE || "";
+export const SUPPORT_WHATSAPP: string =
+	import.meta.env.VITE_SUPPORT_WHATSAPP || "";

@@ -102,8 +102,9 @@ An npm-workspaces monorepo. All three npm packages already carry
 ### `@ekoindia/eps-context-mcp` (local + hosted MCP server)
 
 Local **stdio** MCP server exposing **10 tiered, secret-free** tools over the
-baked bundle: `list_apis`, `list_topics`, `list_recipes`, `search`, `get_api`,
-`get_topic`, `get_recipe`, `get_signing_snippet`, `debug_auth`, `get_meta`. It reads the
+baked bundle: `list_apis`, `list_topics`, `list_recipes`, `list_sdks`, `search`,
+`get_api`, `get_topic`, `get_recipe`, `get_sdk`, `get_signing_snippet`,
+`debug_auth`, `get_meta`. It reads the
 **baked** `data/eps.json` shipped in the package; set `EPS_BUNDLE_URL` to fetch
 a fresher bundle at startup. No secrets are ever required or handled.
 
@@ -161,6 +162,17 @@ straight from a git tag — no registry account.
 
 ```bash
 go get github.com/ekoindia/eps-sdk-go
+```
+
+### `com.github.ekoindia:eps-sdk-java` (Java SDK)
+
+Backend-only Java SDK (package `in.eko.eps`, Java >= 17), same signing contract,
+verified against the cross-language golden vector. Published from the git tag by
+JitPack — no Maven Central account. One dependency (Gson): Java has no JSON
+parser in its standard library.
+
+```groovy
+implementation 'com.github.ekoindia:eps-sdk-java:v1.0.2'  // + the JitPack repo
 ```
 
 ### `@ekoindia/eps-mock-server` (offline mock server)

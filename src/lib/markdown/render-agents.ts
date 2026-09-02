@@ -5,6 +5,7 @@
 import { buildInstallMatrix } from "@/lib/agent/build-install-matrix";
 import { EPS_MCP_PKG, SITE_URL } from "@/lib/config/site";
 import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
+import { SDK_INSTALL, SDK_LANGS } from "@/lib/docs/code-samples";
 import { markdownTable } from "@/lib/markdown/shared";
 
 export function renderAgentsMarkdown(): string {
@@ -140,14 +141,18 @@ export function renderAgentsMarkdown(): string {
 		markdownTable(
 			["Tool", "Link"],
 			[
-				[
-					"@ekoindia/eps-sdk (npm — Node.js)",
-					"https://www.npmjs.com/package/@ekoindia/eps-sdk",
-				],
-				[
-					"ekoindia/eps-sdk (Composer — PHP)",
-					"https://packagist.org/packages/ekoindia/eps-sdk",
-				],
+				// Derived from SDK_INSTALL so a new SDK language shows up here the
+				// moment it ships, instead of silently missing from /ai.md.
+				...SDK_LANGS.flatMap((lang) => {
+					const install = SDK_INSTALL[lang.id];
+					if (!install) return [];
+					// "npm — Node.js", but just "Go modules" where the registry name
+					// already carries the language.
+					const source = install.registry.includes(lang.label)
+						? install.registry
+						: `${install.registry} — ${lang.label}`;
+					return [[`${install.command} (${source})`, install.registryUrl]];
+				}),
 				["Postman collection", `${SITE_URL}/agent/eps.postman_collection.json`],
 			],
 		),

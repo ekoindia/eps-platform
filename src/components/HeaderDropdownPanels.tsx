@@ -118,7 +118,7 @@ type DeveloperLinkItem = {
 const developerLinks: DeveloperLinkItem[] = [
 	{ label: "API Documentation", href: "/docs", icon: BookOpen },
 	{ label: "Build with AI", href: "/ai", icon: Sparkles },
-	{ label: "SDKs & Libraries", href: "/docs#sdk", icon: Package },
+	{ label: "SDKs & Libraries", href: "/docs/sdk", icon: Package },
 	{ label: "FAQs", href: "/faq", icon: HelpCircle },
 	{
 		label: "Open Source",

@@ -1,7 +1,13 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
-import { EpsClient, signSecretKey } from "./client.js";
+import {
+	EpsClient,
+	EpsError,
+	EpsHttpError,
+	MULTIPART_JSON_FIELD,
+	signSecretKey,
+} from "./client.js";
 
 // from docs/sdk-golden-vector.md
 const GOLDEN = "u30ak/iOGwKCaspqCeiYng8fd98QDx7kF3DBBOadQHk=";
@@ -363,5 +369,137 @@ describe("EpsClient.call", () => {
 				}),
 		).toThrow(/backend-only/i);
 		delete (globalThis as { window?: unknown }).window;
+	});
+});
+
+// The response/error contract shared by all five SDKs — docs/sdk-golden-vector.md.
+describe("EpsClient response contract", () => {
+	const clientWith = (
+		fetchMock: unknown,
+		opts: Partial<ConstructorParameters<typeof EpsClient>[0]> = {},
+	) =>
+		new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as typeof fetch,
+			now: () => 1700000000000,
+			...opts,
+		});
+
+	const PAN_ARGS = {
+		initiator_id: "9962981729",
+		pan_number: "BNZAA2318J",
+		name: "Rahul Sharma",
+		dob: "1990-01-01",
+	};
+
+	it("throws EpsHttpError on a non-2xx response, keeping the envelope", async () => {
+		const body = { status: 403, message: "Forbidden" };
+		const client = clientWith(
+			vi.fn(async () => new Response(JSON.stringify(body), { status: 403 })),
+		);
+		const err = await client.call("pan-lite", PAN_ARGS).catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(EpsHttpError);
+		const httpErr = err as EpsHttpError;
+		expect(httpErr.status).toBe(403);
+		expect(httpErr.url).toContain("/tools/kyc/pan-lite");
+		expect(httpErr.body).toEqual(body);
+		expect(httpErr.raw).toBe(JSON.stringify(body));
+		expect(httpErr.message).toBe(
+			`EPS request to ${httpErr.url} failed with HTTP 403.`,
+		);
+	});
+
+	it("keeps a non-JSON error body on raw with a null body", async () => {
+		const client = clientWith(
+			vi.fn(async () => new Response("<html>502</html>", { status: 502 })),
+		);
+		const err = (await client
+			.call("pan-lite", PAN_ARGS)
+			.catch((e: unknown) => e)) as EpsHttpError;
+		expect(err).toBeInstanceOf(EpsHttpError);
+		expect(err.body).toBeNull();
+		expect(err.raw).toBe("<html>502</html>");
+	});
+
+	it("throws EpsError when a 2xx body is not JSON — never returns {}", async () => {
+		const client = clientWith(
+			vi.fn(async () => new Response("not json", { status: 200 })),
+		);
+		await expect(client.call("pan-lite", PAN_ARGS)).rejects.toThrow(
+			/was not valid JSON/,
+		);
+	});
+
+	it("reports validation failures as EpsError", async () => {
+		const client = clientWith(vi.fn());
+		await expect(client.call("pan-lite", {})).rejects.toBeInstanceOf(EpsError);
+	});
+
+	it("exports MULTIPART_JSON_FIELD", () => {
+		expect(MULTIPART_JSON_FIELD).toBe("form-data");
+	});
+});
+
+describe("EpsClient timeout", () => {
+	const build = (fetchMock: unknown, timeoutMs?: number) =>
+		new EpsClient({
+			developerKey: "dev123",
+			accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+			environment: "sandbox",
+			fetch: fetchMock as typeof fetch,
+			now: () => 1700000000000,
+			...(timeoutMs === undefined ? {} : { timeoutMs }),
+		});
+
+	const PAN_ARGS = {
+		initiator_id: "9962981729",
+		pan_number: "BNZAA2318J",
+		name: "Rahul Sharma",
+		dob: "1990-01-01",
+	};
+
+	it("passes an abort signal to fetch, defaulting to 30s", async () => {
+		const spy = vi.spyOn(AbortSignal, "timeout");
+		const fetchMock = vi.fn(
+			async (_url: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(JSON.stringify({ status: 0 }), { status: 200 }),
+		);
+		await build(fetchMock).call("pan-lite", PAN_ARGS);
+		expect(spy).toHaveBeenCalledWith(30_000);
+		expect(fetchMock.mock.calls[0][1]!.signal).toBeInstanceOf(AbortSignal);
+		spy.mockRestore();
+	});
+
+	it("honours an explicit timeoutMs", async () => {
+		const spy = vi.spyOn(AbortSignal, "timeout");
+		await build(
+			vi.fn(async () => new Response(JSON.stringify({ status: 0 }))),
+			1234,
+		).call("pan-lite", PAN_ARGS);
+		expect(spy).toHaveBeenCalledWith(1234);
+		spy.mockRestore();
+	});
+
+	// The real thing, not just plumbing: a transport that never settles must be
+	// aborted rather than hanging the caller forever.
+	it("aborts a request that never settles", async () => {
+		const fetchMock = vi.fn(
+			(_url: RequestInfo | URL, init?: RequestInit) =>
+				new Promise<Response>((_resolve, reject) => {
+					init?.signal?.addEventListener("abort", () =>
+						reject(init.signal!.reason as Error),
+					);
+				}),
+		);
+		await expect(
+			build(fetchMock, 20).call("pan-lite", PAN_ARGS),
+		).rejects.toThrow(/abort/i);
+	});
+
+	it("rejects a non-positive or non-finite timeoutMs at construction", () => {
+		for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY])
+			expect(() => build(vi.fn(), bad)).toThrow(/Invalid timeoutMs/);
 	});
 });

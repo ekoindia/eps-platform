@@ -198,6 +198,9 @@ export function renderLlmsTxt(
 	lines.push(
 		`- Ready to build? Free AI plugins, MCP & SDKs at ${SITE_URL}/ai.`,
 	);
+	lines.push(
+		`- Backend SDKs (Node.js, Python, PHP, Go, Java) — install, usage and full API surface at ${SITE_URL}/docs/sdk.md.`,
+	);
 	lines.push("");
 
 	lines.push(

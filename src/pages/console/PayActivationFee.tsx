@@ -11,11 +11,12 @@ import {
 	calcActivationFee,
 	filterFeeProducts,
 	formatInr,
+	isBcPaymentFamily,
 	labelsForFeeProducts,
 } from "@/lib/console/feeProducts";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "@/pages/ai/CommandBlock";
-import { CircleCheck, Landmark, Search } from "lucide-react";
+import { CircleCheck, Landmark, Search, Wallet } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
@@ -53,6 +54,22 @@ const GSTIN_LENGTH = 15;
 /** What the attachment input accepts. Mirrors the backend's allowlist. */
 const SLIP_ACCEPT = "image/jpeg,image/png,application/pdf";
 const SLIP_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * The wallet top-up a partner can commit to *instead of* paying the one-time
+ * setup fee on **KYC & Verification APIs**: one amount for a single API, a
+ * larger one for several. The balance is spendable against usage for 12 months,
+ * so this is a commitment rather than a charge — which is the whole reason it
+ * can stand in for the fee. DMT, AePS and BBPS are outside it: their per-family
+ * fee is payable either way.
+ */
+const WAIVER_TOPUP = { single: 50_000, multiple: 100_000 } as const;
+
+/** How long a waiver top-up stays spendable, in months. */
+const WAIVER_VALIDITY_MONTHS = 12;
+
+/** The floor on an ordinary wallet top-up, once the fee has been paid. */
+const MIN_WALLET_TOPUP = 500;
 
 /**
  * The partner name, but only when it reads as one.
@@ -294,6 +311,109 @@ function FeeSummary({
 }
 
 /**
+ * The way out of the one-time fee on verification APIs: commit to a wallet
+ * top-up instead.
+ *
+ * Rendered right under the quote, because that is the moment the partner has a
+ * number in front of them to weigh this against. The tier that matches their
+ * verification selection is highlighted rather than the other being hidden — a
+ * partner ticking their second API should see the price of that tick. Any
+ * BC/Payments family they have ticked is named back to them as *not* waived,
+ * because a partner reading "the setup fee is waived" over a quote that
+ * includes DMT would otherwise transfer nothing.
+ * @param verificationCount - How many KYC & Verification APIs are ticked.
+ * @param unwaivedLabels - The ticked BC/Payments families, by name.
+ */
+function WaiverNotice({
+	verificationCount,
+	unwaivedLabels,
+}: {
+	verificationCount: number;
+	unwaivedLabels: string[];
+}) {
+	const multiple = verificationCount > 1;
+	// Nothing verification-shaped is ticked yet, so neither tier is "theirs".
+	const undecided = verificationCount === 0;
+	const tiers = [
+		{
+			key: "single",
+			title: "Single API",
+			amount: WAIVER_TOPUP.single,
+			active: !undecided && !multiple,
+		},
+		{
+			key: "multiple",
+			title: "Multiple APIs",
+			amount: WAIVER_TOPUP.multiple,
+			active: !undecided && multiple,
+		},
+	];
+	return (
+		<div className="flex flex-col gap-3 rounded-md border border-eko-navy/30 bg-eko-navy/5 p-4">
+			<p className="flex items-center gap-2 text-sm font-semibold text-eko-navy">
+				<Wallet aria-hidden className="size-4" />
+				Prefer not to pay the setup fee?
+			</p>
+			<p className="text-sm text-muted-foreground">
+				On <strong>KYC &amp; Verification APIs</strong>, commit to a wallet
+				top-up instead and the one-time setup fee is waived in full. The balance
+				stays valid for {WAIVER_VALIDITY_MONTHS} months from the date of top-up
+				and can be spent against your API usage in that time.
+			</p>
+			<div className="grid gap-2 sm:grid-cols-2">
+				{tiers.map((tier) => (
+					<div
+						key={tier.key}
+						className={cn(
+							"flex flex-col gap-1 rounded-md border bg-background p-3",
+							tier.active ? "border-eko-navy" : "border-transparent",
+						)}
+					>
+						<span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+							{tier.title}
+						</span>
+						<span className="font-mono text-lg font-semibold text-eko-navy">
+							{formatInr(tier.amount)}
+						</span>
+						<span className="text-xs text-muted-foreground">
+							Top up your partner wallet
+							{tier.active ? " — matches your selection" : ""}
+						</span>
+					</div>
+				))}
+			</div>
+			{unwaivedLabels.length > 0 ? (
+				<p className="text-xs font-medium text-eko-navy">
+					Not covered: {unwaivedLabels.join(", ")}. Money Transfer, AePS and Bill
+					Payments carry their one-time fee per API whichever way you go — the
+					waiver applies to the verification APIs in your selection only.
+				</p>
+			) : (
+				<p className="text-xs text-muted-foreground">
+					Money Transfer (DMT), AePS and Bill Payments (BBPS) are outside the
+					waiver — their one-time fee is payable per API.
+				</p>
+			)}
+			<p className="text-xs text-muted-foreground">
+				Already paying the setup fee? Then your wallet has no minimum commitment
+				and no expiry — top up from {formatInr(MIN_WALLET_TOPUP)} upwards,
+				whenever your business needs it.
+			</p>
+			<p className="text-xs text-muted-foreground">
+				To take the waiver, skip the transfer below and write to{" "}
+				<a
+					href="mailto:eps@eko.in?subject=Setup%20fee%20waiver%20—%20wallet%20top-up"
+					className="underline underline-offset-2"
+				>
+					eps@eko.in
+				</a>{" "}
+				and we&rsquo;ll set the top-up up with you.
+			</p>
+		</div>
+	);
+}
+
+/**
  * `/console/pay-activation-fee` — the partner tells Eko they have paid the
  * one-time API activation fee.
  *
@@ -528,6 +648,14 @@ export default function PayActivationFee() {
 				description="Calculated from your selection at today's rates."
 			>
 				<FeeSummary fee={fee} hasOther={Boolean(form.otherProducts.trim())} />
+				<WaiverNotice
+					verificationCount={
+						form.products.filter((id) => !isBcPaymentFamily(id)).length
+					}
+					unwaivedLabels={labelsForFeeProducts(
+						form.products.filter(isBcPaymentFamily),
+					)}
+				/>
 			</Section>
 
 			<Section

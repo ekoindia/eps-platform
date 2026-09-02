@@ -1,6 +1,6 @@
 # EPS Go SDK
 
-Backend-only Go client for [Eko Platform Services](https://eps.eko.in/docs)
+Backend-only Go client for [Eko Platform Services](https://eps.eko.in/docs/sdk/go)
 APIs — DMT, AePS, BBPS, KYC and verification — with HMAC request signing built
 in.
 
@@ -96,7 +96,7 @@ CI force-commits the baked file into the release mirror, so a `go get` consumer
 always compiles against a present surface.
 
 The test suite is the cross-language conformance suite described in
-`docs/sdk-golden-vector.md` — the same cases the Node.js, PHP and Python SDKs
+`docs/sdk-golden-vector.md` — the same cases the Node.js, PHP, Python and Java SDKs
 must pass.
 
 MIT licensed.

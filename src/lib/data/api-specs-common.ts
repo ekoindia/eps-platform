@@ -443,8 +443,10 @@ export const buildSampleRequest = (spec: ApiSpec): Record<string, unknown> => {
  *
  * Eko's file-upload APIs do NOT take a form field per parameter: the whole
  * non-file payload rides in this one part, and each upload is a sibling part
- * named after its own param. Mirrored (it cannot be imported) as
- * `EpsClient::MULTIPART_JSON_FIELD` in `packages/sdk-php`.
+ * named after its own param. Mirrored (it cannot be imported) in every SDK and
+ * exported by each: `MULTIPART_JSON_FIELD` in `packages/sdk-js`,
+ * `packages/sdk-python` and `packages/sdk-go` (`MultipartJSONField`), and
+ * `EpsClient::MULTIPART_JSON_FIELD` in `packages/sdk-php` / `packages/sdk-java`.
  */
 export const MULTIPART_JSON_FIELD = "form-data";
 

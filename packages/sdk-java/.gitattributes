@@ -1,0 +1,3 @@
+# Keep the published jar/source archive to what consumers run.
+/src/test        export-ignore
+/.gitattributes  export-ignore

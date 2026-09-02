@@ -72,12 +72,21 @@ clients can see this programmatically.
 | `get_topic`           | `topic` (`auth` \| `errors` \| `pricing` \| `environments`)                  | One documentation topic.                                                                                                                           |
 | `get_recipe`          | `id`                                                                         | One multi-step recipe (steps + branches).                                                                                                          |
 | `get_signing_snippet` | `language` (`php` \| `java` \| `csharp` \| `javascript` \| `python` \| `go`) | Paste-ready **backend** code to compute the request `secret-key`.                                                                                  |
+| `list_sdks`           | —                                                                            | The backend SDKs that wrap every endpoint: language, package, install command, minimum runtime, docs URL. Compact — no members or examples. |
+| `get_sdk`             | `language` (`javascript` \| `python` \| `php` \| `go` \| `java`; the guide slug such as `nodejs` also works) | One SDK in full: install + requirements, client config options with units, every public class/method/type, file-upload values, the error and timeout contract, and a worked `call()` example. |
 | `debug_auth`          | `timestamp?`, `secret_key?`                                                  | Diagnose a `403`: returns a known-answer test vector to check your signing against, mechanical checks on a supplied timestamp/signature, and ranked causes. **Never takes an `access_key`.** |
 | `get_meta`            | —                                                                            | Bundle org/version, data source (`baked` or `remote`), this server's `packageVersion`, and `updateAvailable` (whether a newer npm release exists). |
 
 **Tiered usage:** start with `list_apis` / `search` (cheap, compact), then call
 `get_api` only for the endpoint(s) you actually need. Same pattern for
-`list_topics` → `get_topic` and `list_recipes` → `get_recipe`.
+`list_topics` → `get_topic`, `list_recipes` → `get_recipe` and
+`list_sdks` → `get_sdk`.
+
+**Reach for an SDK first.** When the target language has one, `get_sdk` gives
+you install, client construction and the call pattern with signing, param
+validation and the error contract already handled — do not hand-roll the HMAC
+`secret-key`. `get_signing_snippet` is for the languages with no SDK (it covers
+`csharp` too) and for debugging a `403`.
 
 **Errors are actionable:** an unknown `slug`/`id` returns an MCP error result
 (`isError: true`) with "did you mean" suggestions and a pointer to

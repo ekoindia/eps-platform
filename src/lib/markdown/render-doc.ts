@@ -12,6 +12,7 @@ import {
 	DEFAULT_BASE_URL,
 } from "@/lib/data/api-auth";
 import { ACTIVE_PRODUCTS_MAP, productHref } from "@/lib/data/api-products";
+import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
 import { recipeHref } from "@/lib/data/api-recipes";
 import type {
 	ApiErrorScenario,
@@ -427,6 +428,17 @@ export function renderDocsIndexMarkdown(): string {
 			"**Make your first call** — pick an endpoint below (start with PAN Lite), drop in your credentials, and send it.",
 			`**Handle the response** — EPS APIs share a common envelope: \`status\` (\`0\` = success), \`response_status_id\`, \`message\`, and the payload under \`data\`. See ${link("Status & Error Codes", `${SITE_URL}${docsHref("error-codes")}`, "md")}.`,
 		]),
+
+		h2("SDKs"),
+		`Backend SDKs wrap every endpoint below behind one generic \`call(slug, params)\`, with HMAC signing, param validation and a shared error contract built in: ${link("All SDK guides", `${SITE_URL}${sdkGuideHref()}.md`, "md")}.`,
+		bulletList(
+			[...SDK_GUIDES]
+				.sort((a, b) => a.order - b.order)
+				.map(
+					(g) =>
+						`${link(g.title, `${SITE_URL}${sdkGuideHref(g.slug)}.md`, "md")} — \`${g.packageName}\` (${g.minRuntime})`,
+				),
+		),
 
 		h2("Recipes — multi-step workflows"),
 		`The references below document one endpoint each. Recipes document how to combine several into a complete flow (onboard a sender, then transfer; activate an agent, then withdraw): ${link("All API Recipes", `${SITE_URL}${recipeHref()}.md`, "md")}.`,

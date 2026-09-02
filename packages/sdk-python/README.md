@@ -1,6 +1,6 @@
 # EPS Python SDK
 
-Backend-only Python client for [Eko Platform Services](https://eps.eko.in/docs)
+Backend-only Python client for [Eko Platform Services](https://eps.eko.in/docs/sdk/python)
 APIs — DMT, AePS, BBPS, KYC and verification — with HMAC request signing built
 in.
 
@@ -17,6 +17,7 @@ client = EpsClient(
     environment="sandbox",      # or "production"
     initiator_id="9962981729",  # registered mobile of the API user
     user_code="20810200",       # retailer/agent code
+    timeout=30.0,               # whole-request budget in seconds (default)
 )
 
 sender = client.call("dmt-get-sender", {"customer_id": "9123456789"})
@@ -26,6 +27,12 @@ One generic `call(slug, params)` covers every endpoint. The slug list, each
 endpoint's params and which of them are required all come from the same
 generated API surface the docs are built from, so the client validates your
 input **before** it signs and sends anything.
+
+`timeout` is the whole-request budget in **seconds**, defaulting to `30.0` — the
+same 30s every EPS SDK defaults to. (Node names its knob `timeout_ms` /
+`timeoutMs` because it is milliseconds there.) The response and error contract
+is shared by all five SDKs; see
+[docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).
 
 ## Backend only
 

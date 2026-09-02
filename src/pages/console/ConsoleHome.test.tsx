@@ -16,6 +16,10 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 vi.mock("@/lib/config/features", async (orig) => ({
 	...(await orig<typeof import("@/lib/config/features")>()),
 	SHOW_BUSINESS_DASHBOARD: true,
+	// Proves ConsoleHome actually renders the support strip when a channel is
+	// configured — SupportContact's own tests pass through props and so would
+	// stay green even if the import here were dropped.
+	SUPPORT_EMAIL: "eps.support@eko.co.in",
 }));
 
 const { dashboardClient } = await import("@/lib/auth/client");
@@ -42,6 +46,14 @@ function renderHome(me: MeView) {
 }
 
 describe("ConsoleHome", () => {
+	it("renders the support strip when a channel is configured", () => {
+		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
+		expect(
+			screen.getByRole("link", { name: "Email support at eps.support@eko.co.in" }),
+		).toHaveAttribute("href", "mailto:eps.support@eko.co.in");
+	});
+
+
 	it("shows the lifecycle state on the profile card for a lead developer", () => {
 		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
 		expect(screen.getByText("Lead")).toBeInTheDocument();

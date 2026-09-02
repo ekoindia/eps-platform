@@ -46,6 +46,24 @@ export function generateMarkdownPlugin(): Plugin {
 					let body = renderDevRoute(url, bundle);
 					// Guide twins need an async file read, so they're not handled by
 					// the sync renderDevRoute.
+					if (body === null && url === "/docs/sdk.md") {
+						body = bundle.renderSdkIndexMarkdown();
+					}
+					// SDK guide twins are matched BEFORE the generic /docs/<slug>.md
+					// rule, which would otherwise swallow /docs/sdk/<lang>.md.
+					if (body === null) {
+						const sdkMd = url.match(/^\/docs\/sdk\/([^/]+)\.md$/);
+						const sdkGuide = sdkMd
+							? bundle.SDK_GUIDES.find((g) => g.slug === sdkMd[1])
+							: undefined;
+						if (sdkGuide) {
+							const raw = await readSdkSource(
+								server.config.root,
+								sdkGuide.slug,
+							);
+							body = bundle.renderSdkGuideMarkdown(sdkGuide, raw);
+						}
+					}
 					if (body === null) {
 						const guideMd = url.match(/^\/docs\/([^/]+)\.md$/);
 						const guide = guideMd
@@ -230,6 +248,22 @@ export function generateMarkdownPlugin(): Plugin {
 					written++;
 				}
 
+				// -- SDK guides -----------------------------------------------------
+				await writeFile(
+					path.join(outDir, "docs", "sdk.md"),
+					bundle.renderSdkIndexMarkdown(),
+				);
+				written++;
+
+				for (const guide of bundle.SDK_GUIDES) {
+					const raw = await readSdkSource(resolvedConfig.root, guide.slug);
+					await writeFile(
+						path.join(outDir, "docs", "sdk", `${guide.slug}.md`),
+						bundle.renderSdkGuideMarkdown(guide, raw),
+					);
+					written++;
+				}
+
 				// -- Recipes --------------------------------------------------------
 				for (const recipe of bundle.RECIPES) {
 					await writeFile(
@@ -366,6 +400,12 @@ interface MarkdownBundle {
 		meta: { slug: string; title: string; summary?: string },
 		rawBody: string,
 	) => string;
+	SDK_GUIDES: Array<{ slug: string; title: string; summary: string }>;
+	renderSdkGuideMarkdown: (
+		guide: { slug: string; title: string; summary: string },
+		rawBody: string,
+	) => string;
+	renderSdkIndexMarkdown: () => string;
 	RECIPES: Array<{ slug: string }>;
 	renderRecipeMarkdown: (recipe: unknown) => string;
 	renderRecipesIndexMarkdown: () => string;
@@ -438,6 +478,12 @@ async function collectBodies(
 		add("guide", guide.slug, bundle.renderGuideMarkdown(guide, raw));
 	}
 
+	add("sdk", "sdk", bundle.renderSdkIndexMarkdown());
+	for (const guide of bundle.SDK_GUIDES) {
+		const raw = await readSdkSource(root, guide.slug);
+		add("sdk", guide.slug, bundle.renderSdkGuideMarkdown(guide, raw));
+	}
+
 	return bodies;
 }
 
@@ -447,6 +493,11 @@ async function readGuideSource(root: string, slug: string): Promise<string> {
 		path.join(root, "src/content/docs", `${slug}.mdx`),
 		"utf8",
 	);
+}
+
+/** Read an SDK guide's raw `.mdx` source (pure markdown) from the content dir. */
+async function readSdkSource(root: string, slug: string): Promise<string> {
+	return fs.readFile(path.join(root, "src/content/sdk", `${slug}.mdx`), "utf8");
 }
 
 async function loadRenderBundle(
@@ -470,6 +521,8 @@ async function loadRenderBundle(
 		docsGuidesMod,
 		renderAgentsMod,
 		renderTransactMod,
+		sdkGuidesMod,
+		renderSdkMod,
 		recipesMod,
 		renderRecipeMod,
 		searchIndexMod,
@@ -492,6 +545,8 @@ async function loadRenderBundle(
 		server.ssrLoadModule("/src/content/docs/docs-guides.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-agents.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-transact.ts"),
+		server.ssrLoadModule("/src/lib/data/sdk-guides.ts"),
+		server.ssrLoadModule("/src/lib/markdown/render-sdk.ts"),
 		server.ssrLoadModule("/src/lib/data/api-recipes.ts"),
 		server.ssrLoadModule("/src/lib/markdown/render-recipe.ts"),
 		server.ssrLoadModule("/src/lib/search-index.ts"),
@@ -526,6 +581,9 @@ async function loadRenderBundle(
 		renderAgentsMarkdown: renderAgentsMod.renderAgentsMarkdown,
 		renderTransactAgentsMarkdown:
 			renderTransactMod.renderTransactAgentsMarkdown,
+		SDK_GUIDES: sdkGuidesMod.SDK_GUIDES,
+		renderSdkGuideMarkdown: renderSdkMod.renderSdkGuideMarkdown,
+		renderSdkIndexMarkdown: renderSdkMod.renderSdkIndexMarkdown,
 		RECIPES: recipesMod.RECIPES,
 		renderRecipeMarkdown: renderRecipeMod.renderRecipeMarkdown,
 		renderRecipesIndexMarkdown: renderRecipeMod.renderRecipesIndexMarkdown,

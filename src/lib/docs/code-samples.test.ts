@@ -4,6 +4,7 @@ import {
 	SAMPLE_LANGS,
 	SDK_LANGS,
 	toGoSdk,
+	toJavaSdk,
 	toPythonSdk,
 	toSampleLang,
 	sampleFor,
@@ -122,6 +123,7 @@ describe("SDK snippets", () => {
 			"php",
 			"python",
 			"go",
+			"java",
 		]);
 	});
 
@@ -189,11 +191,26 @@ describe("SDK snippets", () => {
 		expect(toSampleLang("python")).toBe("python");
 	});
 
+	it("Java SDK builds the client and calls by slug with required params", () => {
+		const java = toJavaSdk(panLite);
+		expect(java).toContain("import in.eko.eps.EpsClient;");
+		expect(java).toContain('System.getenv("EPS_DEVELOPER_KEY")');
+		expect(java).toContain('client.call("pan-lite"');
+		expect(java).toContain('"pan_number"');
+		expect(java).toContain("System.out.println(result)");
+		expect(java).not.toContain("secret-key");
+	});
+
+	it("Java SDK sets client-level params via the builder", () => {
+		expect(toJavaSdk(getSpec)).toContain('.initiatorId("9962981729")');
+	});
+
 	it("sdkSampleFor dispatches per language", () => {
 		expect(sdkSampleFor(panLite, "php")).toContain("$client->call(");
 		expect(sdkSampleFor(panLite, "javascript")).toContain("client.call(");
 		expect(sdkSampleFor(panLite, "python")).toContain("from eps_sdk import");
 		expect(sdkSampleFor(panLite, "go")).toContain("eps.New(eps.Config{");
+		expect(sdkSampleFor(panLite, "java")).toContain("EpsClient.builder()");
 		// a lang with no SDK falls back to Node so SDK mode never blanks out
 		expect(sdkSampleFor(panLite, "curl")).toContain("EpsClient");
 	});

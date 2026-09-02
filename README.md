@@ -27,7 +27,7 @@ A single source-of-truth **data layer** describes every EPS API once. From it, t
 
 - **One source of truth, zero drift.** Specs, SDKs, MCP, docs, OpenAPI and code samples all derive from the same data layer (`src/lib/data/`). No hand-maintained copies that fall out of date.
 - **AI-ready by design.** Ships an MCP server plus drop-in context packs (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `copilot-instructions.md`) so agents integrate EPS correctly — including the tricky parts: per-request HMAC-SHA256 signing and multi-step recipes (e.g. the DMT `463 → onboard sender` branch).
-- **Backend-safe SDKs.** Node.js, PHP, Python and Go SDKs are generated from an SDK surface with signing built in and cross-language golden-vector conformance tests. Coverage is a growing subset — see the [API coverage roadmap](docs/api-coverage-roadmap.md).
+- **Backend-safe SDKs.** Node.js, PHP, Python, Go and Java SDKs are generated from an SDK surface with signing built in and cross-language golden-vector conformance tests. Coverage is a growing subset — see the [API coverage roadmap](docs/api-coverage-roadmap.md).
 - **Open & offline.** The MCP runs locally with a baked-in bundle (no hosted service, no secrets); an offline mock server replays recorded fixtures for tests.
 
 ## Use EPS
@@ -41,6 +41,7 @@ npm install @ekoindia/eps-sdk          # Node.js
 composer require ekoindia/eps-sdk      # PHP 8.1+
 pip install eps-sdk                    # Python 3.9+
 go get github.com/ekoindia/eps-sdk-go  # Go 1.22+
+# Java 17+: com.github.ekoindia:eps-sdk-java via JitPack (see packages/sdk-java)
 
 # Offline mock server for local dev & tests
 npx -y @ekoindia/eps-mock-server
@@ -74,13 +75,14 @@ packages/        # published artifacts (each baked from the build output):
   sdk-php/           # ekoindia/eps-sdk — PHP backend SDK (Composer/Packagist)
   sdk-python/        # eps-sdk — Python backend SDK (PyPI)
   sdk-go/            # github.com/ekoindia/eps-sdk-go — Go backend SDK (git tag, no registry)
+  sdk-java/          # com.github.ekoindia:eps-sdk-java — Java backend SDK (JitPack, git tag)
   claude-plugin-eps/ # agent plugin: dev-time EPS context (manifest + skills + /eps command; not an npm package)
 
 dist/                  # build output (generated, gitignored)
 packages/*/data/       # baked artifacts copied here at build time (generated, gitignored — never hand-edit)
 ```
 
-That's **3 npm packages, 1 Composer package, 1 PyPI package, 1 Go module, and 1 agent plugin bundle** (the `eps` context plugin, installed via each agent's native plugin manager or MCP config — see `/ai`). The transactional MCP server ships as its own `@ekoindia/eps-transact-mcp` package (hosted + local stdio); it is not a coding-agent plugin.
+That's **3 npm packages, 1 Composer package, 1 PyPI package, 1 Go module, 1 JitPack artifact, and 1 agent plugin bundle** (the `eps` context plugin, installed via each agent's native plugin manager or MCP config — see `/ai`). The transactional MCP server ships as its own `@ekoindia/eps-transact-mcp` package (hosted + local stdio); it is not a coding-agent plugin.
 
 > [!CAUTION]
 > The `packages/*/data/` files are generated outputs — they may be present in your working tree but are gitignored and **must never be hand-edited or committed**.

@@ -1,4 +1,5 @@
 import type { Worksheet } from "exceljs";
+import { CONNECTED_BANKING_ENABLED } from "../../src/lib/data/connected-banking-pricing";
 import {
 	HEADER_FILL,
 	NAVY,
@@ -11,7 +12,6 @@ import {
 	solidFill,
 	type PricingXlsxData,
 } from "./shared";
-import { CONNECTED_BANKING_ENABLED } from "../../src/lib/data/connected-banking-pricing";
 
 /**
  * TOC entries: sheet name + what it's for, in workbook tab order. Entries for
@@ -133,7 +133,7 @@ export async function buildIndexSheet(
 	for (const note of [
 		"Commission figures are gross; TDS @ 2% is deducted from commission payouts.",
 		"Commercials and pricing are subject to change based on service-provider terms; revisions are communicated in advance.",
-		"For GST-compliant invoices, add your GST number on the Connect portal.",
+		"For GST-compliant invoices, add your GST number in the [console section](/console) (Login to console > Manage My Account > E-Invoice / GST).",
 	]) {
 		footnoteRow(ws, row, "B", note);
 		row++;

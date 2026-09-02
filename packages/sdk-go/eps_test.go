@@ -6,10 +6,13 @@
 package eps
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -410,4 +413,86 @@ func TestMultipartRejectsAnUnreadableUpload(t *testing.T) {
 	_, _, err := encodeMultipart(map[string]any{"pan_card": missing},
 		map[string]bool{"pan_card": true})
 	wantErr(t, err, "reading upload")
+}
+
+// ---- Response and error contract (docs/sdk-golden-vector.md) --------------
+
+// roundTripFunc lets a test stand in for the transport without a live server.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func respondWith(status int, body string) *http.Client {
+	return &http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: status,
+				Body:       io.NopCloser(strings.NewReader(body)),
+				Header:     make(http.Header),
+				Request:    r,
+			}, nil
+		}),
+	}
+}
+
+var panParams = map[string]any{
+	"initiator_id": "9962981729",
+	"pan_number":   "BNZAA2318J",
+	"name":         "Rahul Sharma",
+	"dob":          "1990-01-01",
+}
+
+func TestCallReturnsHTTPErrorOnNon2xx(t *testing.T) {
+	client := newTestClient(t, func(c *Config) {
+		c.HTTPClient = respondWith(403, `{"status":403,"message":"Forbidden"}`)
+	})
+	_, err := client.Call(context.Background(), "pan-lite", panParams)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("Call error = %v, want *HTTPError", err)
+	}
+	if httpErr.StatusCode != 403 {
+		t.Errorf("StatusCode = %d, want 403", httpErr.StatusCode)
+	}
+	if !strings.Contains(httpErr.URL, "/tools/kyc/pan-lite") {
+		t.Errorf("URL = %q, want the pan-lite path", httpErr.URL)
+	}
+	if httpErr.Body["message"] != "Forbidden" {
+		t.Errorf("Body = %v, want the decoded envelope", httpErr.Body)
+	}
+	if string(httpErr.Raw) != `{"status":403,"message":"Forbidden"}` {
+		t.Errorf("Raw = %q, want the raw payload", httpErr.Raw)
+	}
+}
+
+func TestCallKeepsNilBodyForNonJSONErrorPayload(t *testing.T) {
+	client := newTestClient(t, func(c *Config) {
+		c.HTTPClient = respondWith(502, "<html>502</html>")
+	})
+	_, err := client.Call(context.Background(), "pan-lite", panParams)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("Call error = %v, want *HTTPError", err)
+	}
+	if httpErr.Body != nil {
+		t.Errorf("Body = %v, want nil", httpErr.Body)
+	}
+	if string(httpErr.Raw) != "<html>502</html>" {
+		t.Errorf("Raw = %q, want the raw payload", httpErr.Raw)
+	}
+}
+
+func TestCallErrorsOnNonJSONSuccessBody(t *testing.T) {
+	client := newTestClient(t, func(c *Config) {
+		c.HTTPClient = respondWith(200, "not json")
+	})
+	_, err := client.Call(context.Background(), "pan-lite", panParams)
+	wantErr(t, err, "was not valid JSON")
+}
+
+func TestDefaultTimeoutIs30s(t *testing.T) {
+	client := newTestClient(t)
+	if got := client.http.Timeout; got != defaultTimeout {
+		t.Errorf("default timeout = %v, want %v", got, defaultTimeout)
+	}
 }

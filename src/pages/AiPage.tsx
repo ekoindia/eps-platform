@@ -10,6 +10,7 @@ import { McpIcon } from "@/components/icons/McpIcon";
 import type { IconComponent } from "@/components/icons/types";
 import { Picture } from "@/components/Picture";
 import { Badge } from "@/components/ui/badge";
+import { SDK_INSTALL, SDK_LANGS } from "@/lib/docs/code-samples";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -122,19 +123,20 @@ const ARTIFACTS: Artifact[] = [
 		icon: Package,
 		title: "HMAC-signed SDKs",
 		body: "Backend-only SDKs with HMAC signing baked in. Keep your access_key server-side.",
-		command: "npm i @ekoindia/eps-sdk",
-		links: [
-			{
-				label: "composer require ekoindia/eps-sdk",
-				href: "https://packagist.org/packages/ekoindia/eps-sdk",
-				external: true,
-			},
-			{
-				label: "pip install eps-sdk",
-				href: "https://pypi.org/project/eps-sdk/",
-				external: true,
-			},
-		],
+		command: SDK_INSTALL.javascript?.command ?? "npm i @ekoindia/eps-sdk",
+		// Every other SDK language, derived — a new one appears here on ship.
+		links: SDK_LANGS.slice(1).flatMap((lang) => {
+			const install = SDK_INSTALL[lang.id];
+			return install
+				? [
+						{
+							label: install.command,
+							href: install.registryUrl,
+							external: true,
+						},
+					]
+				: [];
+		}),
 	},
 	{
 		icon: ServerCog,
