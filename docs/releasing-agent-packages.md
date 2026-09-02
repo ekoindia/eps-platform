@@ -133,8 +133,19 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
    | Repository access      | *Only select repositories* → every `eps-sdk-*` mirror     |
    | Repository permissions | **Contents: Read and write** (Metadata: Read-only is added automatically). Nothing else. |
 
-   If the org requires approval, approve it at **ekoindia → Settings → Personal
-   access tokens → Pending requests**.
+   If the org requires approval, approve it at
+   <https://github.com/organizations/ekoindia/settings/personal-access-token-requests>
+   (the org-wide policy lives at
+   <https://github.com/organizations/ekoindia/settings/personal-access-tokens>).
+
+   **Adding a LATER mirror to an existing token** — the usual case once the
+   first release has shipped — does not need a new token or a new secret. Open
+   <https://github.com/settings/personal-access-tokens>, click `eps-sdk-split`,
+   *Repository access* → add the new mirror → **Update**. The token value does
+   not change, so `SDK_SPLIT_TOKEN` stays as it is. If the token was created
+   with *All repositories* instead, a new mirror is already covered and there is
+   nothing to do. Note that on an org requiring approval, editing access sends
+   the token back to the pending queue — approve it there before releasing.
 
 3. Store it and verify it reaches every mirror — the same check the job's
    preflight step runs:
@@ -148,6 +159,12 @@ covers every mirror — the default `GITHUB_TOKEN` cannot push to another repo.
        "https://api.github.com/repos/ekoindia/$r" && echo OK || echo "NO ACCESS"
    done
    ```
+
+   The secret itself lives at
+   <https://github.com/ekoindia/eps-platform/settings/secrets/actions>. The
+   `sdk-split` job's first step runs the same reachability check against every
+   matrix row and fails in seconds, so a mis-scoped token is caught before the
+   build rather than at the push.
 
 4. Recommended: add a **tag ruleset** on `v*.*.*` restricting who can push one.
    `sdk-split` executes workflow code from the tagged commit with
