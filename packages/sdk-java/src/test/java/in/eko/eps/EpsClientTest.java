@@ -408,4 +408,49 @@ class EpsClientTest {
 			assertTrue(e.getMessage().contains("Reading upload"), e.getMessage());
 		}
 	}
+
+	@Nested
+	@DisplayName("response contract")
+	class Responses {
+		// ---- Response and error contract (docs/sdk-golden-vector.md) ----------
+
+		private static final String URL = "https://staging.eko.in/ekoapi/v3/tools/kyc/pan-lite";
+
+		@Test
+		void handleResponseReturnsEnvelopeOn2xx() {
+			Map<String, Object> body = EpsClient.handleResponse(200, URL, "{\"status\":0}");
+			assertEquals(0.0, body.get("status"));
+		}
+
+		@Test
+		void handleResponseThrowsOnNon2xxKeepingTheEnvelope() {
+			EpsClient.EpsHttpException e =
+					assertThrows(
+							EpsClient.EpsHttpException.class,
+							() -> EpsClient.handleResponse(403, URL, "{\"status\":403}"));
+			assertEquals(403, e.status);
+			assertEquals(URL, e.url);
+			assertEquals(403.0, e.body.get("status"));
+			assertEquals("{\"status\":403}", e.raw);
+			assertEquals("EPS request to " + URL + " failed with HTTP 403.", e.getMessage());
+		}
+
+		@Test
+		void handleResponseKeepsNullBodyForNonJsonErrorPayload() {
+			EpsClient.EpsHttpException e =
+					assertThrows(
+							EpsClient.EpsHttpException.class,
+							() -> EpsClient.handleResponse(502, URL, "<html>502</html>"));
+			assertNull(e.body);
+			assertEquals("<html>502</html>", e.raw);
+		}
+
+		@Test
+		void handleResponseThrowsWhenSuccessBodyIsNotJson() {
+			EpsClient.EpsException e =
+					assertThrows(
+							EpsClient.EpsException.class, () -> EpsClient.handleResponse(200, URL, "not json"));
+			assertEquals("EPS response from " + URL + " was not valid JSON.", e.getMessage());
+		}
+	}
 }

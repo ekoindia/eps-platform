@@ -484,12 +484,24 @@ public final class EpsClient {
 			throw new EpsException("EPS request to " + target.url() + " was interrupted", e);
 		}
 
-		Map<String, Object> envelope = decodeOrNull(response.body());
-		if (response.statusCode() < 200 || response.statusCode() >= 300) {
-			throw new EpsHttpException(response.statusCode(), target.url(), envelope, response.body());
+		return handleResponse(response.statusCode(), target.url(), response.body());
+	}
+
+	/**
+	 * Turn one raw response into the envelope callers expect. Package-private so the response
+	 * contract shared by all five SDKs (see docs/sdk-golden-vector.md) is unit-testable without
+	 * stubbing the abstract {@link HttpClient}.
+	 *
+	 * @throws EpsHttpException on any non-2xx response; the decoded envelope is on {@code body}.
+	 * @throws EpsException when a 2xx body is not JSON — never a silent empty map.
+	 */
+	static Map<String, Object> handleResponse(int status, String url, String raw) {
+		Map<String, Object> envelope = decodeOrNull(raw);
+		if (status < 200 || status >= 300) {
+			throw new EpsHttpException(status, url, envelope, raw);
 		}
 		if (envelope == null) {
-			throw new EpsException("EPS response from " + target.url() + " was not valid JSON.");
+			throw new EpsException("EPS response from " + url + " was not valid JSON.");
 		}
 		return envelope;
 	}

@@ -18,7 +18,14 @@ If the `access_key` ever reaches a browser, frontend bundle, or any client devic
 npm install @ekoindia/eps-sdk
 ```
 
-Requires Node.js >= 18.
+Requires Node.js >= 18. No runtime dependencies — standard library only.
+
+### What it does for you
+
+- **Signs the request** — `secret-key`, `secret-key-timestamp` and `developer_key` headers on every call.
+- **Validates first** — missing required params and wrong types throw `EpsError` before a request goes out.
+- **Routes the params** — path tokens, query string, JSON body, or `multipart/form-data` for file-upload endpoints, per the endpoint's spec.
+- **Fails loudly** — a non-2xx response throws `EpsHttpError` (with the decoded envelope on `.body`); a non-JSON body throws rather than returning `{}`.
 
 ## Usage
 
@@ -51,9 +58,31 @@ console.log(result);
 | `userCode`     | `string` (optional)           | Default `user_code` injected into every call.                  |
 | `environment`  | `"sandbox" \| "production"`   | Selects the base URL.                                          |
 | `fetch`        | `typeof fetch` (optional)     | Inject a custom fetch implementation.                          |
+| `timeoutMs`    | `number` (optional)           | Abort a request after this many **milliseconds**. Default `30_000`. |
 | `now`          | `() => number` (optional)     | Inject a clock (returns timestamp in ms).                      |
 
 `await client.call(slug, params)` signs the request, substitutes any `{token}` path params from `params` (remaining keys become the JSON body — or a `multipart/form-data` body on file-upload endpoints), and returns the parsed JSON response.
+
+A non-2xx response throws `EpsHttpError` — an auth or infrastructure failure is
+never returned as if it were a result:
+
+```js
+import { EpsHttpError } from "@ekoindia/eps-sdk";
+
+try {
+	const result = await client.call("pan-lite", { /* … */ });
+} catch (err) {
+	if (err instanceof EpsHttpError) {
+		console.error(err.status, err.body); // decoded envelope, when the body was JSON
+	}
+	throw err;
+}
+```
+
+Every other client-side failure (unknown slug, missing param, wrong type, bad
+option) throws `EpsError`, which `EpsHttpError` extends. A 2xx body that is not
+JSON throws too — never a silent `{}`. The contract is shared by all five EPS
+SDKs; see [docs/sdk-golden-vector.md](../../docs/sdk-golden-vector.md).
 
 ### File uploads
 
@@ -81,3 +110,27 @@ You still pass every parameter flat, as above. On the wire the SDK packs them th
 `initiatorId` / `userCode` are near-constant per developer, so set them once on the client. They are injected into every call as the wire params `initiator_id` / `user_code` (note the snake_case wire names) — override either for a single call by passing it in `params`.
 
 A standalone `signSecretKey(accessKey, timestamp)` helper is also exported if you need to sign requests yourself.
+
+## Upgrading to 2.0
+
+`call()` used to return the response body whatever the HTTP status, so a `403`
+or `500` envelope arrived looking like a successful result. It now throws.
+
+```js
+// 1.x — an error envelope was indistinguishable from success
+const result = await client.call(slug, params);
+if (result.status !== 0) handleFailure(result);
+
+// 2.x
+import { EpsHttpError } from "@ekoindia/eps-sdk";
+try {
+	const result = await client.call(slug, params);
+} catch (err) {
+	if (err instanceof EpsHttpError) handleFailure(err.body, err.status);
+	else throw err;
+}
+```
+
+Also new in 2.0: requests time out after 30s by default (`timeoutMs` to change
+it), a 2xx body that is not JSON throws instead of surfacing as a parse error,
+and `MULTIPART_JSON_FIELD` / the `SdkParam` type are exported.

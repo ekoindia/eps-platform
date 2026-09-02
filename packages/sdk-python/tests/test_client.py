@@ -5,14 +5,18 @@ itself the executable form of `docs/sdk-golden-vector.md`. Any divergence here
 is a divergence on the wire.
 """
 
+import io
 import json
 import unittest
+import urllib.error
 from pathlib import Path
+from unittest import mock
 
 from eps_sdk import (
     MULTIPART_JSON_FIELD,
     EpsClient,
     EpsError,
+    EpsHttpError,
     sign_secret_key,
 )
 from eps_sdk.client import _encode_multipart
@@ -271,3 +275,69 @@ class TestMultipart(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ResponseContract(unittest.TestCase):
+    """The response/error contract shared by all five SDKs.
+
+    See the "Response and error contract conformance" section of
+    docs/sdk-golden-vector.md.
+    """
+
+    PAN_PARAMS = {
+        "initiator_id": "9962981729",
+        "pan_number": "BNZAA2318J",
+        "name": "Rahul Sharma",
+        "dob": "1990-01-01",
+    }
+
+    @staticmethod
+    def _ok(raw: bytes, status: int = 200):
+        """A context-manager stand-in for the urlopen response object."""
+        response = mock.MagicMock()
+        response.read.return_value = raw
+        response.status = status
+        response.__enter__.return_value = response
+        return response
+
+    def test_raises_eps_http_error_on_non_2xx(self):
+        error = urllib.error.HTTPError(
+            "https://x/y", 403, "Forbidden", {}, io.BytesIO(b'{"status":403}')
+        )
+        with mock.patch("eps_sdk.client.urllib.request.urlopen", side_effect=error):
+            with self.assertRaises(EpsHttpError) as ctx:
+                client().call("pan-lite", self.PAN_PARAMS)
+        self.assertEqual(ctx.exception.status, 403)
+        self.assertIn("/tools/kyc/pan-lite", ctx.exception.url)
+        self.assertEqual(ctx.exception.body, {"status": 403})
+        self.assertEqual(ctx.exception.raw, b'{"status":403}')
+
+    def test_keeps_none_body_for_non_json_error_payload(self):
+        error = urllib.error.HTTPError(
+            "https://x/y", 502, "Bad Gateway", {}, io.BytesIO(b"<html>502</html>")
+        )
+        with mock.patch("eps_sdk.client.urllib.request.urlopen", side_effect=error):
+            with self.assertRaises(EpsHttpError) as ctx:
+                client().call("pan-lite", self.PAN_PARAMS)
+        self.assertIsNone(ctx.exception.body)
+        self.assertEqual(ctx.exception.raw, b"<html>502</html>")
+
+    def test_raises_when_a_2xx_body_is_not_json(self):
+        with mock.patch(
+            "eps_sdk.client.urllib.request.urlopen",
+            return_value=self._ok(b"not json"),
+        ):
+            with self.assertRaisesRegex(EpsError, "was not valid JSON"):
+                client().call("pan-lite", self.PAN_PARAMS)
+
+    def test_returns_the_envelope_on_2xx(self):
+        with mock.patch(
+            "eps_sdk.client.urllib.request.urlopen",
+            return_value=self._ok(b'{"status":0}'),
+        ):
+            self.assertEqual(
+                client().call("pan-lite", self.PAN_PARAMS), {"status": 0}
+            )
+
+    def test_default_timeout_is_30_seconds(self):
+        self.assertEqual(client().timeout, 30.0)
