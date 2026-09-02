@@ -97,13 +97,18 @@ export interface DmtTxnBreakdown {
  * @param amount - Raw amount input (₹)
  */
 export const clampDmtAmount = (amount: number): number => {
-	const safe = Number.isFinite(amount) ? Math.round(amount) : DMT_DEFAULT_AMOUNT;
+	const safe = Number.isFinite(amount)
+		? Math.round(amount)
+		: DMT_DEFAULT_AMOUNT;
 	return Math.min(Math.max(safe, DMT_MIN_TXN_AMOUNT), DMT_MAX_TXN_AMOUNT);
 };
 
 /** Clamps a monthly count to a non-negative integer within MAX_TXNS */
 const clampCount = (value: number): number =>
-	Math.min(Math.max(Math.round(Number.isFinite(value) ? value : 0), 0), MAX_TXNS);
+	Math.min(
+		Math.max(Math.round(Number.isFinite(value) ? value : 0), 0),
+		MAX_TXNS,
+	);
 
 /**
  * The full per-transaction ledger for a DMT transfer.
@@ -220,8 +225,7 @@ export const calcDmtQuote = (input: DmtInput): DmtQuote => {
 	const monthlyNetPaise = monthlyGrossPaise - monthlyTdsPaise;
 
 	const kycPaise = toPaise(dmtSenderKycInclGst()) * newSendersPerMonth;
-	const verifyPaise =
-		toPaise(DMT_RECIPIENT_VERIFY_FEE) * newRecipientsPerMonth;
+	const verifyPaise = toPaise(DMT_RECIPIENT_VERIFY_FEE) * newRecipientsPerMonth;
 	const addOnPaise = kycPaise + verifyPaise;
 	const recoveredPaise = recoverChargesFromCustomer ? addOnPaise : 0;
 
@@ -242,9 +246,7 @@ export const calcDmtQuote = (input: DmtInput): DmtQuote => {
 		addOnCost: addOnPaise / 100,
 		recoveredFromCustomer: recoveredPaise / 100,
 		monthlyTakeHome: (monthlyNetPaise - addOnPaise + recoveredPaise) / 100,
-		setupFee: buildSetupFeeQuote(
-			monthlyTxns > 0 ? toPaise(BC_SETUP_FEE) : 0,
-		),
+		setupFee: buildSetupFeeQuote(monthlyTxns > 0 ? toPaise(BC_SETUP_FEE) : 0),
 	};
 };
 
@@ -280,7 +282,7 @@ export const DMT_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "What is the Reverse Charge Mechanism (RCM) on DMT?",
-		a: "DMT commission is notified under reverse charge, so the GST on your commission is paid to the government by **Eko** rather than collected and remitted by you. Raise your invoice to Eko with the **RCM option set to \"YES\"** and no GST line on it. Please confirm the treatment for your own registration with your accountant.",
+		a: 'DMT commission is notified under reverse charge, so the GST on your commission is paid to the government by **Eko** rather than collected and remitted by you. Raise your invoice to Eko with the **RCM option set to "YES"** and no GST line on it. Please confirm the treatment for your own registration with your accountant.',
 	},
 	{
 		q: "Is TDS deducted from DMT commissions?",
@@ -292,6 +294,6 @@ export const DMT_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "What is the maximum DMT transfer amount?",
-		a: `₹${DMT_MAX_TXN_AMOUNT.toLocaleString("en-IN")} per transaction. Larger payouts should be split across transfers, subject to the sender's KYC limits.`,
+		a: `₹${DMT_MAX_TXN_AMOUNT.toLocaleString("en-IN")} per transaction. Larger payouts should be split across transfers, subject to the sender's monthly limit of ₹25,000.`,
 	},
 ];
