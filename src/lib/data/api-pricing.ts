@@ -499,7 +499,7 @@ export interface PricingFaq {
 export const PRICING_FAQS: PricingFaq[] = [
 	{
 		q: "How does billing work?",
-		a: "Usage is billed **per successful API call** — you pay only for verifications that return a result. There is **no monthly minimum and no lock-in**. Monthly invoices are available on the Connect portal.",
+		a: "Usage is billed **per successful API call** — you pay only for verifications that return a result. There is **no monthly minimum and no lock-in**. Monthly invoices are available in the [console section](/console) (Login to console > Manage My Account > E-Invoice / GST).",
 	},
 	{
 		q: "Is there a setup fee?",
@@ -507,7 +507,7 @@ export const PRICING_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Are the listed prices inclusive of GST?",
-		a: "No. All listed rates are **exclusive of GST**, which is charged at 18%. The [calculator](/pricing) lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number on the Connect portal for GST-compliant invoices.",
+		a: "No. All listed rates are **exclusive of GST**, which is charged at 18%. The [calculator](/pricing) lets you toggle the total between GST-inclusive and GST-exclusive views. Add your GST number in the [console section](/console) for GST-compliant invoices (Login to console > Manage My Account > E-Invoice / GST).",
 	},
 	{
 		q: "Am I charged for failed verifications?",

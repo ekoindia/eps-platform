@@ -566,6 +566,6 @@ export const PAYMENTS_FAQS: PricingFaq[] = [
 	},
 	{
 		q: "Are the commission rates inclusive of GST?",
-		a: "No. All commission figures are **exclusive of GST @ 18%**. Add your GST number on the Connect portal for GST-compliant invoices.",
+		a: "No. All commission figures are **exclusive of GST @ 18%**. Add your GST number in the [console section](/console) for GST-compliant invoices (Login to console > Manage My Account > E-Invoice / GST).",
 	},
 ];
