@@ -23,6 +23,7 @@ const NAMES = [
 	"AgentEnvironmentsTopic",
 	"AgentGettingStartedTopic",
 	"AgentTopics",
+	"AgentSdk",
 	"AgentBundle",
 	"AgentIndex",
 ];

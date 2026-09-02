@@ -102,8 +102,9 @@ An npm-workspaces monorepo. All three npm packages already carry
 ### `@ekoindia/eps-context-mcp` (local + hosted MCP server)
 
 Local **stdio** MCP server exposing **10 tiered, secret-free** tools over the
-baked bundle: `list_apis`, `list_topics`, `list_recipes`, `search`, `get_api`,
-`get_topic`, `get_recipe`, `get_signing_snippet`, `debug_auth`, `get_meta`. It reads the
+baked bundle: `list_apis`, `list_topics`, `list_recipes`, `list_sdks`, `search`,
+`get_api`, `get_topic`, `get_recipe`, `get_sdk`, `get_signing_snippet`,
+`debug_auth`, `get_meta`. It reads the
 **baked** `data/eps.json` shipped in the package; set `EPS_BUNDLE_URL` to fetch
 a fresher bundle at startup. No secrets are ever required or handled.
 

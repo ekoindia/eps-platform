@@ -18,6 +18,7 @@ all are derived at read time from typed data.
 | [api-documentation.md](api-documentation.md) | How an endpoint spec renders into the detail page — params tables, headers, responses, error scenarios. |
 | [navigation-and-categories.md](navigation-and-categories.md) | The docs registry, the flat `/docs/<slug>` URL model, slug-collision guard, and how the left-menu categories are built. |
 | [mdx-guides.md](mdx-guides.md) | Prose guides (Quickstart, How Auth Works, Error Codes): MDX config, metadata vs component registries, routing. |
+| [sdk-guides.md](sdk-guides.md) | The `/docs/sdk` section: its own routes, the hybrid data + MDX content model, the `<SdkFacts>` bridge, markdown twins, and the `list_sdks`/`get_sdk` MCP tools. |
 | [code-samples.md](code-samples.md) | The pure cURL / JavaScript / Python generators and where they render. |
 | [try-it-now.md](try-it-now.md) | The Scalar "Try it" modal, the `beforeRequest` HMAC signing plugin, the interactive OpenAPI doc, and the CORS proxy. |
 | [layout-ssg-theming.md](layout-ssg-theming.md) | The 3-pane layout, SSG prerendering, and the docs-local dark theme toggle. |

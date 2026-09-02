@@ -7,6 +7,7 @@ import {
 	buildIndex,
 	buildTopic,
 } from "@/lib/agent/build-agent-bundle";
+import { SDK_GUIDES } from "@/lib/data/sdk-guides";
 
 const specs = getDocumentedSpecs();
 const bundle = buildAgentBundle(specs);
@@ -81,5 +82,33 @@ describe("slices", () => {
 		const withNone = bundle.apis.find((a) => a.responseTypes.length === 0);
 		expect(withNone).toBeDefined();
 		expect(withNone?.responseTypes).toEqual([]);
+	});
+});
+
+describe("SDK slice", () => {
+	it("carries every SDK with install, members and a worked example", () => {
+		const bundle = buildAgentBundle(getDocumentedSpecs());
+		expect(bundle.sdks).toHaveLength(SDK_GUIDES.length);
+		for (const sdk of bundle.sdks) {
+			expect(sdk.docsUrl, sdk.slug).toContain(`/docs/sdk/${sdk.slug}`);
+			expect(sdk.installCommand, sdk.slug).toBeTruthy();
+			expect(sdk.members.length, sdk.slug).toBeGreaterThan(0);
+			expect(sdk.example, sdk.slug).toContain("pan-lite");
+		}
+	});
+
+	// bundleVersion is copied into sdk-surface.json, whose bytes are part of the
+	// SDK release fingerprint — hashing SDK guide copy would republish all five
+	// packages on every prose edit.
+	it("keeps SDK guide content out of bundleVersion", () => {
+		const specs = getDocumentedSpecs();
+		const before = buildAgentBundle(specs).meta.bundleVersion;
+		const original = SDK_GUIDES[0].summary;
+		SDK_GUIDES[0].summary = `${original} (edited)`;
+		try {
+			expect(buildAgentBundle(specs).meta.bundleVersion).toBe(before);
+		} finally {
+			SDK_GUIDES[0].summary = original;
+		}
 	});
 });

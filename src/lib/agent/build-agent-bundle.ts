@@ -11,6 +11,7 @@ import type {
 	AgentBundle,
 	AgentEnvironment,
 	AgentIndex,
+	AgentSdk,
 	AgentTopicId,
 	AgentTopics,
 } from "@/lib/agent/agent-bundle-types";
@@ -28,7 +29,10 @@ import {
 	resolveRequestParams,
 	resolveResponseFields,
 } from "@/lib/data/api-specs-common";
+import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
+import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
+import { SDK_INSTALL, sdkSampleFor } from "@/lib/docs/code-samples";
 import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
 
 const BACKEND_ONLY_WARNING =
@@ -149,6 +153,41 @@ const buildTopics = (): AgentTopics => ({
 	},
 });
 
+/** Project `SDK_GUIDES` into the bundle, joining the install coordinates and the
+ * worked example that live in the docs layer. Same source as `/docs/sdk`. */
+/** The endpoint every SDK example calls — the same one `/docs/sdk` uses. */
+const SDK_SHOWCASE_SLUG = "pan-lite";
+
+const buildSdks = (): AgentSdk[] => {
+	const showcase = API_SPECS_MAP[SDK_SHOWCASE_SLUG];
+	return [...SDK_GUIDES]
+		.sort((a, b) => a.order - b.order)
+		.map((g) => {
+			const install = SDK_INSTALL[g.lang];
+			return {
+				lang: g.lang,
+				slug: g.slug,
+				title: g.title,
+				summary: g.summary,
+				packageName: g.packageName,
+				installCommand: install?.command,
+				registry: install?.registry,
+				registryUrl: install?.registryUrl,
+				minRuntime: g.minRuntime,
+				dependencies: g.dependencies,
+				sourceUrl: g.sourceUrl,
+				docsUrl: `${SITE_URL}${sdkGuideHref(g.slug)}`,
+				installNotes: g.installNotes,
+				config: g.config,
+				members: g.members,
+				errorTypes: g.errorTypes,
+				fileValues: g.fileValues,
+				notes: g.notes,
+				example: showcase ? sdkSampleFor(showcase, g.lang) : "",
+			};
+		});
+};
+
 /**
  * Build the full agent bundle. Callers should pass the documented set
  * (`getDocumentedSpecs()`).
@@ -163,16 +202,22 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 	const topics = buildTopics();
 	const apis = specs.map(apiDetail);
 	const recipes = RECIPES;
+	const sdks = buildSdks();
 
-	const hashInput = JSON.stringify({ topics, apis, recipes });
+	// `sdks` is DELIBERATELY excluded from the version hash. `bundleVersion` is
+	// copied into `sdk-surface.json` (build-sdk-surface.ts), whose bytes are part
+	// of the SDK release fingerprint (scripts/sdk-release.mjs), so hashing SDK
+	// *guide copy* here would republish all five packages on every prose edit.
+	// The field versions the API surface those packages embed — nothing else.
+	const apiSurfaceVersion = fnv1aHex(JSON.stringify({ topics, apis, recipes }));
 	const meta = {
 		org: "ekoindia",
 		apiVersion: API_DEFAULT_VERSION,
-		bundleVersion: fnv1aHex(hashInput),
+		bundleVersion: apiSurfaceVersion,
 		environments: ENVIRONMENTS,
 	};
 
-	return { meta, topics, apis, recipes };
+	return { meta, topics, apis, recipes, sdks };
 };
 
 /** Compact index slice — no full bodies. */

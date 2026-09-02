@@ -143,3 +143,11 @@ MDX.
    prerendered HTML file, and a left-nav entry. The slug guard rejects collisions
    and reserved slugs at build time.
 </content>
+
+## Related: the SDK guides
+
+`/docs/sdk/<lang>` uses the same MDX toolchain and the same eager metadata /
+component split, but lives in its own section with its own data module and
+markdown renderer — see [sdk-guides.md](sdk-guides.md). Its `<SdkFacts>` tag
+follows the same rule as the tags above: a substitution in the twin renderer is
+mandatory, and the build throws without one.

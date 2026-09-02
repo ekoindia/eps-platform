@@ -4,9 +4,13 @@ import { loadBundle } from "./load-bundle.js";
 import {
 	getApi,
 	getRecipe,
+	getSdk,
 	getTopic,
 	listApis,
 	listRecipes,
+	listSdkLanguages,
+	listSdkSlugs,
+	listSdks,
 	listTopics,
 	searchApis,
 } from "./bundle-access.js";
@@ -46,5 +50,23 @@ describe("bundle-access", () => {
 		expect(
 			getRecipe(bundle, "dmt-fino-send-money")?.steps.length,
 		).toBeGreaterThan(0);
+	});
+});
+
+describe("SDK accessors", () => {
+	it("lists every SDK compactly", () => {
+		expect(listSdks(bundle).length).toBe(bundle.sdks.length);
+		expect(listSdks(bundle)[0]).toHaveProperty("installCommand");
+	});
+
+	it("resolves an SDK by language id or guide slug", () => {
+		expect(getSdk(bundle, "javascript")?.slug).toBe("nodejs");
+		expect(getSdk(bundle, "nodejs")?.lang).toBe("javascript");
+		expect(getSdk(bundle, "csharp")).toBeUndefined();
+	});
+
+	it("exposes both alias lists for the tool schema", () => {
+		expect(listSdkLanguages(bundle)).toContain("javascript");
+		expect(listSdkSlugs(bundle)).toContain("nodejs");
 	});
 });

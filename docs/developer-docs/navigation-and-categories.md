@@ -14,6 +14,11 @@ A flat namespace:
 - `/docs/<slug>` — every guide *and* every endpoint share this one namespace
   (handled by `DocDetailPage`).
 
+One exception: the SDK guides are their own section at `/docs/sdk` and
+`/docs/sdk/<lang>`, with their own pages and data — see
+[sdk-guides.md](sdk-guides.md). `"sdk"` is in `RESERVED_SLUGS` so nothing in the
+flat namespace can shadow it.
+
 The HTTP method is **not** in the URL. An endpoint's slug is just `spec.slug`
 (`endpointSlug()` returns it unchanged); the method is surfaced via the nav tag
 and the detail-page method tag instead.
