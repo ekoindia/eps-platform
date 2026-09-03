@@ -7,6 +7,15 @@ export interface SdkParam {
 	name: string;
 	type: string;
 	required: boolean;
+	/** Key into the surface's `formats`; the wire string must match. */
+	format?: string;
+	/** Allowed values, compared as wire strings. */
+	enum?: (string | number)[];
+	/** Inclusive numeric bounds. */
+	min?: number;
+	max?: number;
+	/** Max length of the wire string in UTF-8 bytes. */
+	maxLength?: number;
 }
 export interface SdkEndpoint {
 	slug: string;
@@ -14,6 +23,9 @@ export interface SdkEndpoint {
 	path: string;
 	params: SdkParam[];
 	requiredParams: string[];
+	/** Money-moving endpoint: an indeterminate failure is followed by a status
+	 * check on the `client_ref_id` before the error is surfaced. */
+	financial?: boolean;
 }
 
 /** Cross-realm-safe Blob check (covers File, which extends Blob). */
@@ -51,6 +63,55 @@ const matchesType = (type: string, value: unknown): boolean => {
 			return true; // unknown/unsupported spec type → not enforced
 	}
 };
+
+/** Spec types whose values are scalars the value checks can stringify. */
+const SCALAR_TYPES = new Set(["string", "number", "integer", "boolean"]);
+
+/**
+ * Value check after the type check: enum → format → min/max → maxLength, on the
+ * wire string (`String(value)`) so `5` and `"5"` behave alike. Returns the first
+ * problem as the reason text, or null. Formats are syntactic regexes from the
+ * surface, matched whole-string. `maxLength` counts UTF-8 bytes — the one
+ * length every language agrees on without an ICU dependency.
+ */
+export const valueProblem = (
+	p: SdkParam,
+	value: unknown,
+	formats: Map<string, RegExp>,
+): string | null => {
+	if (!SCALAR_TYPES.has(p.type)) return null;
+	const wire = String(value);
+	if (p.enum && !p.enum.some((allowed) => String(allowed) === wire))
+		return `not one of: ${p.enum.join(", ")}`;
+	if (p.format) {
+		const re = formats.get(p.format);
+		if (re && !re.test(wire)) return `expected format ${p.format}`;
+	}
+	if (p.min !== undefined || p.max !== undefined) {
+		const n = Number(wire);
+		if (p.min !== undefined && n < p.min) return `below min ${p.min}`;
+		if (p.max !== undefined && n > p.max) return `above max ${p.max}`;
+	}
+	if (p.maxLength !== undefined && Buffer.byteLength(wire) > p.maxLength)
+		return `longer than ${p.maxLength} bytes`;
+	return null;
+};
+
+/**
+ * client_ref_id for a non-GET call that did not supply one: base36 millisecond
+ * stamp (sortable, greppable against a log line) plus 7 random base36 chars,
+ * exactly 15 of `[0-9a-z]`. Under EPS's 20-char limit with ~7.8e10 distinct
+ * tails per millisecond, so concurrent processes cannot collide in practice.
+ * Same shape in every SDK — see docs/sdk-golden-vector.md.
+ */
+export const generateClientRefId = (nowMs: number): string => {
+	const tail = crypto
+		.randomInt(0, 36 ** 7)
+		.toString(36)
+		.padStart(7, "0");
+	return (nowMs.toString(36) + tail).slice(-15);
+};
+
 /**
  * Name of the single form field carrying every non-file value as one JSON
  * object. Eko's upload APIs do not take a form field per parameter. Mirrors
@@ -122,6 +183,42 @@ export class EpsHttpError extends EpsError {
 	}
 }
 
+/**
+ * A non-GET call on a money-moving endpoint ended without a confirmed outcome
+ * (timeout, transport failure, HTTP 429 or 5xx). The SDK never re-sends such a
+ * request — that is how a customer gets debited twice — so it inquired by the
+ * call's `client_ref_id` instead and reports what it found. `statusCheck` is the
+ * Transaction Inquiry envelope (`data.tx_status`: 0 success, 1 fail, 2 awaited,
+ * …) or null when the inquiry itself failed, in which case `statusCheckError`
+ * says why. The original failure is the `cause`. Reconcile with the ref before
+ * retrying; never assume a timeout meant failure.
+ */
+export class EpsIndeterminateError extends EpsError {
+	/** HTTP status of the original attempt, or null for a transport failure. */
+	readonly status: number | null;
+	constructor(
+		readonly slug: string,
+		readonly clientRefId: string,
+		cause: unknown,
+		readonly statusCheck: unknown,
+		readonly statusCheckError: unknown,
+	) {
+		super(
+			`EPS request for "${slug}" with client_ref_id "${clientRefId}" has no confirmed outcome.`,
+			{ cause },
+		);
+		this.name = "EpsIndeterminateError";
+		this.status = cause instanceof EpsHttpError ? cause.status : null;
+	}
+}
+
+/** True when the outcome is unknown: no response, or a 429/5xx that says
+ * nothing about whether the request was processed. A 4xx is a decisive no. */
+const isIndeterminate = (err: unknown): boolean =>
+	err instanceof EpsHttpError
+		? err.status === 429 || err.status >= 500
+		: !(err instanceof EpsError);
+
 /** Decode a response body, or null when it is not JSON — the non-2xx path still
  * wants whatever envelope the server sent. Mirrors `_decode_json_or_none` in
  * the Python SDK.
@@ -135,12 +232,20 @@ const decodeJsonOrNull = (raw: string): unknown => {
 	}
 };
 
-/** Whole-request budget, matching the 30s every other EPS SDK defaults to. */
+/** Per-attempt budget, matching the 30s every other EPS SDK defaults to. */
 const DEFAULT_TIMEOUT_MS = 30_000;
+/** Extra attempts for a GET that ended indeterminate. */
+const DEFAULT_RETRIES = 2;
+/** Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). */
+const DEFAULT_RETRY_BASE_DELAY_MS = 200;
+const MAX_RETRY_DELAY_MS = 2_000;
+/** Generic status-check endpoint, keyed by TID or `client_ref_id:<ref>`. */
+const INQUIRY_SLUG = "transaction-inquiry";
 
 interface Surface {
 	environments: { id: string; baseUrl: string }[];
 	endpoints: SdkEndpoint[];
+	formats?: Record<string, string>;
 }
 
 // The surface is read at runtime from the shipped `data/` asset (not bundled).
@@ -172,6 +277,21 @@ const loadSurface = (): Surface => {
 };
 const SURFACE = loadSurface();
 
+/** Compiled once. A pattern that does not compile is corrupt package data —
+ * fail here, loudly, rather than silently skipping a validation. No `m` flag,
+ * so `$` is the end of the string and a trailing newline cannot slip past. */
+const FORMATS = new Map(
+	Object.entries(SURFACE.formats ?? {}).map(([name, pattern]) => {
+		try {
+			return [name, new RegExp(pattern)] as const;
+		} catch {
+			throw new EpsError(
+				`EPS SDK surface at ${SURFACE_PATH} is invalid or corrupt: format "${name}" does not compile.`,
+			);
+		}
+	}),
+);
+
 export interface EpsClientOptions {
 	developerKey: string;
 	accessKey: string;
@@ -187,9 +307,20 @@ export interface EpsClientOptions {
 	/** Abort a request that takes longer than this, in milliseconds. Default
 	 * 30_000 — the 30s every other EPS SDK defaults to. Named `timeoutMs` (not
 	 * `timeout`) because Python's `timeout` is in seconds; the unit is in the
-	 * name so the two can never be confused. Per-call cancellation signals are
-	 * not supported yet. */
+	 * name so the two can never be confused. Applies per attempt. Per-call
+	 * cancellation signals are not supported yet. */
 	timeoutMs?: number;
+	/** Extra attempts for a GET whose outcome was indeterminate (timeout,
+	 * transport failure, HTTP 429/5xx). Default 2 — three tries in all. Non-GET
+	 * calls are never retried. Set 0 to disable. */
+	retries?: number;
+	/** Backoff base in milliseconds: attempt n waits a random slice of
+	 * min(base × 2^(n-1), 2000). Default 200; 0 retries immediately (tests). */
+	retryBaseDelayMs?: number;
+	/** After an indeterminate failure on a money-moving (`financial`) endpoint,
+	 * look the transaction up by its `client_ref_id` and surface the result on
+	 * `EpsIndeterminateError.statusCheck`. Default true. */
+	autoStatusCheck?: boolean;
 	now?: () => number;
 }
 
@@ -206,6 +337,9 @@ export class EpsClient {
 	private readonly baseUrl: string;
 	private readonly fetchFn: typeof fetch;
 	private readonly timeoutMs: number;
+	private readonly retries: number;
+	private readonly retryBaseDelayMs: number;
+	private readonly autoStatusCheck: boolean;
 	private readonly now: () => number;
 
 	constructor(private readonly opts: EpsClientOptions) {
@@ -225,6 +359,19 @@ export class EpsClient {
 				`Invalid timeoutMs: ${String(opts.timeoutMs)}. Expected a positive number of milliseconds.`,
 			);
 		this.timeoutMs = timeoutMs;
+		const retries = opts.retries ?? DEFAULT_RETRIES;
+		if (!Number.isInteger(retries) || retries < 0)
+			throw new EpsError(
+				`Invalid retries: ${String(opts.retries)}. Expected a non-negative integer.`,
+			);
+		this.retries = retries;
+		const baseDelay = opts.retryBaseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS;
+		if (!Number.isFinite(baseDelay) || baseDelay < 0)
+			throw new EpsError(
+				`Invalid retryBaseDelayMs: ${String(opts.retryBaseDelayMs)}. Expected a non-negative number of milliseconds.`,
+			);
+		this.retryBaseDelayMs = baseDelay;
+		this.autoStatusCheck = opts.autoStatusCheck ?? true;
 		this.now = opts.now ?? Date.now;
 	}
 
@@ -234,10 +381,93 @@ export class EpsClient {
 		return e;
 	}
 
+	/**
+	 * Sign and send one endpoint call, returning the decoded response envelope.
+	 *
+	 * Validates first (throws `EpsError`, nothing sent), then sends. A GET whose
+	 * outcome is indeterminate is retried; a non-GET never is — on a `financial`
+	 * endpoint it is followed by a Transaction Inquiry on its `client_ref_id`
+	 * and thrown as `EpsIndeterminateError`. See docs/sdk-golden-vector.md.
+	 */
 	async call<T = unknown>(
 		slug: string,
 		params: Record<string, unknown> = {},
 	): Promise<T> {
+		const { endpoint, merged, clientRefId, ...target } = this.resolve(
+			slug,
+			params,
+		);
+		const attempts = endpoint.method === "GET" ? this.retries + 1 : 1;
+		for (let attempt = 1; ; attempt++) {
+			try {
+				return (await this.send(endpoint, target)) as T;
+			} catch (err) {
+				if (!isIndeterminate(err)) throw err;
+				if (attempt < attempts) {
+					await this.backoff(attempt);
+					continue;
+				}
+				// Never re-send a non-GET: that is how a customer is debited twice.
+				// Ask EPS what happened to the ref instead, if there is one to ask by.
+				if (
+					this.autoStatusCheck &&
+					endpoint.financial &&
+					clientRefId !== undefined
+				)
+					throw await this.indeterminate(
+						slug,
+						clientRefId,
+						merged["initiator_id"],
+						err,
+					);
+				throw err;
+			}
+		}
+	}
+
+	/** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
+	private async backoff(attempt: number): Promise<void> {
+		const cap = Math.min(
+			this.retryBaseDelayMs * 2 ** (attempt - 1),
+			MAX_RETRY_DELAY_MS,
+		);
+		const delay = Math.floor(Math.random() * (cap + 1));
+		if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+	}
+
+	/** One inquiry by `client_ref_id:<ref>`; its own failure is reported, never
+	 * allowed to mask the original one. */
+	private async indeterminate(
+		slug: string,
+		clientRefId: string,
+		initiatorId: unknown,
+		cause: unknown,
+	): Promise<EpsIndeterminateError> {
+		let statusCheck: unknown = null;
+		let statusCheckError: unknown = null;
+		try {
+			statusCheck = await this.call(INQUIRY_SLUG, {
+				"transaction-reference": `client_ref_id:${clientRefId}`,
+				...(initiatorId !== undefined && { initiator_id: initiatorId }),
+			});
+		} catch (err) {
+			statusCheckError = err;
+		}
+		return new EpsIndeterminateError(
+			slug,
+			clientRefId,
+			cause,
+			statusCheck,
+			statusCheckError,
+		);
+	}
+
+	/**
+	 * Validate and build everything but the signature: the URL, the body and
+	 * the merged params. Signing happens per attempt in `send`, so a retry
+	 * never reuses a stale `secret-key-timestamp`.
+	 */
+	private resolve(slug: string, params: Record<string, unknown>) {
 		const endpoint = this.endpoint(slug);
 		// Client-level defaults (initiator_id, user_code) are injected first; an
 		// explicit per-call value — including an explicit null to clear one —
@@ -251,6 +481,19 @@ export class EpsClient {
 			}),
 			...params,
 		};
+		// Every non-GET call carries a client_ref_id — the key a partner reconciles
+		// a lost response by. Generated only when the endpoint declares the param
+		// and the caller sent none (absent or null); a supplied value, even "",
+		// is theirs to own. Done before the required-param guard so a generated
+		// ref satisfies endpoints that require one.
+		const declaresRef =
+			endpoint.method !== "GET" &&
+			endpoint.params.some((p) => p.name === "client_ref_id");
+		if (declaresRef && merged["client_ref_id"] == null)
+			merged["client_ref_id"] = generateClientRefId(this.now());
+		const clientRefId = declaresRef
+			? String(merged["client_ref_id"])
+			: undefined;
 		// Spec-driven guard: every requiredParam (from the API spec, baked into the
 		// surface) must be present and non-null before we sign and send.
 		const missing = endpoint.requiredParams.filter(
@@ -274,20 +517,23 @@ export class EpsClient {
 			throw new EpsError(
 				`Invalid param types for "${slug}": ${badTypes.join(", ")}.`,
 			);
+		// Value guard: enum / format / min / max / maxLength from the spec, on the
+		// same provided params. Syntactic only — the server still owns semantics.
+		const badValues = endpoint.params.flatMap((p) => {
+			const value = merged[p.name];
+			if (value === undefined || value === null) return [];
+			const reason = valueProblem(p, value, FORMATS);
+			return reason ? [`${p.name} (${reason})`] : [];
+		});
+		if (badValues.length)
+			throw new EpsError(
+				`Invalid param values for "${slug}": ${badValues.join(", ")}.`,
+			);
 		// A `type:"file"` param flips the whole request to multipart/form-data.
 		const fileParams = new Set(
 			endpoint.params.filter((p) => p.type === "file").map((p) => p.name),
 		);
 		const multipart = fileParams.size > 0;
-		const timestamp = String(this.now());
-		const headers: Record<string, string> = {
-			developer_key: this.opts.developerKey,
-			"secret-key": signSecretKey(this.opts.accessKey, timestamp),
-			"secret-key-timestamp": timestamp,
-			// Multipart: no explicit content-type — fetch derives it (with the
-			// generated boundary) from the FormData body.
-			...(multipart ? {} : { "content-type": "application/json" }),
-		};
 		// Path params (e.g. {customer_id}) fill the URL; the rest become the
 		// query string on GET, a FormData body when the endpoint has file
 		// uploads, or the JSON body on every other method.
@@ -300,21 +546,41 @@ export class EpsClient {
 			else rest[k] = v;
 		}
 		let url = `${this.baseUrl}${path}`;
-		const init: RequestInit = {
-			method: endpoint.method,
-			headers,
-			signal: AbortSignal.timeout(this.timeoutMs),
-		};
+		let body: RequestInit["body"];
 		if (endpoint.method === "GET") {
 			const query = new URLSearchParams(
 				Object.entries(rest).map(([k, v]) => [k, String(v)]),
 			).toString();
 			if (query) url += (url.includes("?") ? "&" : "?") + query;
 		} else if (multipart) {
-			init.body = buildFormData(rest, fileParams);
+			body = buildFormData(rest, fileParams);
 		} else {
-			init.body = JSON.stringify(rest);
+			body = JSON.stringify(rest);
 		}
+		return { endpoint, merged, clientRefId, url, body, multipart };
+	}
+
+	/** Sign (fresh timestamp) and send one attempt; decode per the contract. */
+	private async send(
+		endpoint: SdkEndpoint,
+		target: { url: string; body: RequestInit["body"]; multipart: boolean },
+	): Promise<unknown> {
+		const { url, body, multipart } = target;
+		const timestamp = String(this.now());
+		const headers: Record<string, string> = {
+			developer_key: this.opts.developerKey,
+			"secret-key": signSecretKey(this.opts.accessKey, timestamp),
+			"secret-key-timestamp": timestamp,
+			// Multipart: no explicit content-type — fetch derives it (with the
+			// generated boundary) from the FormData body.
+			...(multipart ? {} : { "content-type": "application/json" }),
+		};
+		const init: RequestInit = {
+			method: endpoint.method,
+			headers,
+			signal: AbortSignal.timeout(this.timeoutMs),
+		};
+		if (body !== undefined) init.body = body;
 		const res = await this.fetchFn(url, init);
 		const raw = await res.text();
 		const envelope = decodeJsonOrNull(raw);
@@ -322,6 +588,6 @@ export class EpsClient {
 		if (!res.ok) throw new EpsHttpError(res.status, url, envelope, raw);
 		if (envelope === null)
 			throw new EpsError(`EPS response from ${url} was not valid JSON.`);
-		return envelope as T;
+		return envelope;
 	}
 }

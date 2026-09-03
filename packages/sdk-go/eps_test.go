@@ -15,6 +15,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -494,5 +496,438 @@ func TestDefaultTimeoutIs30s(t *testing.T) {
 	client := newTestClient(t)
 	if got := client.http.Timeout; got != defaultTimeout {
 		t.Errorf("default timeout = %v, want %v", got, defaultTimeout)
+	}
+}
+
+// ---- Shared fixtures for the suites below (docs/sdk-golden-vector.md) -----
+
+var refRe = regexp.MustCompile(`^[0-9a-z]{15}$`)
+
+// transferParams: dmt-initiate-transfer — POST, financial, client_ref_id required.
+var transferParams = map[string]any{
+	"initiator_id": "9962981729",
+	"customer_id":  "9123456789",
+	"recipient_id": "1",
+	"amount":       100,
+	"otp":          "123456",
+	"otp_ref_id":   "ref1",
+}
+
+var getParams = map[string]any{"initiator_id": "9962981729"}
+
+// step is one scripted transport outcome: a response, or a transport error.
+type step struct {
+	status int
+	body   string
+	err    error
+}
+
+func ok() step               { return step{status: 200, body: `{"status":0}`} }
+func httpStep(s int) step    { return step{status: s, body: `{"status":1}`} }
+func transportFail() step    { return step{err: errors.New("dial tcp: connection refused")} }
+func withBody(b string) step { return step{status: 200, body: b} }
+
+// scripted replays steps in order (the last one repeats) and records every
+// request with its body already read, so URLs, bodies and headers can be
+// asserted after the fact.
+type scripted struct {
+	steps    []step
+	requests []*http.Request
+	bodies   []string
+}
+
+func (s *scripted) RoundTrip(r *http.Request) (*http.Response, error) {
+	s.requests = append(s.requests, r)
+	body := ""
+	if r.Body != nil {
+		b, _ := io.ReadAll(r.Body)
+		body = string(b)
+	}
+	s.bodies = append(s.bodies, body)
+	st := s.steps[0]
+	if len(s.steps) > 1 {
+		s.steps = s.steps[1:]
+	}
+	if st.err != nil {
+		return nil, st.err
+	}
+	return &http.Response{
+		StatusCode: st.status,
+		Body:       io.NopCloser(strings.NewReader(st.body)),
+		Header:     make(http.Header),
+		Request:    r,
+	}, nil
+}
+
+func (s *scripted) body(t *testing.T, i int) map[string]any {
+	t.Helper()
+	var m map[string]any
+	if err := json.Unmarshal([]byte(s.bodies[i]), &m); err != nil {
+		t.Fatalf("body %d is not JSON: %v", i, err)
+	}
+	return m
+}
+
+// fastClient never sleeps between retries.
+func fastClient(t *testing.T, tr *scripted, mutate ...func(*Config)) *Client {
+	t.Helper()
+	all := append([]func(*Config){func(c *Config) { c.HTTPClient = &http.Client{Transport: tr} }}, mutate...)
+	client := newTestClient(t, all...)
+	client.retryBaseDelay = 0
+	return client
+}
+
+func mustCall(t *testing.T, c *Client, slug string, params map[string]any) {
+	t.Helper()
+	if _, err := c.Call(context.Background(), slug, params); err != nil {
+		t.Fatalf("Call(%s): %v", slug, err)
+	}
+}
+
+// ---- client_ref_id ---------------------------------------------------------
+
+func TestGenerateClientRefIDShape(t *testing.T) {
+	a, b := GenerateClientRefID(fixedMS), GenerateClientRefID(fixedMS)
+	if !refRe.MatchString(a) {
+		t.Errorf("ref = %q, want 15 of [0-9a-z]", a)
+	}
+	if !strings.HasPrefix(a, strconv.FormatInt(fixedMS, 36)) {
+		t.Errorf("ref = %q, want the base36 stamp first", a)
+	}
+	if a == b {
+		t.Errorf("two refs in one ms collided: %q", a)
+	}
+}
+
+func TestClientRefIDGeneratedForNonGet(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	mustCall(t, fastClient(t, tr), "pan-lite", panParams)
+	if ref, _ := tr.body(t, 0)["client_ref_id"].(string); !refRe.MatchString(ref) {
+		t.Errorf("client_ref_id = %q, want a generated ref", ref)
+	}
+}
+
+func TestClientRefIDSuppliedValueKept(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	params := map[string]any{"client_ref_id": "MY-REF_1"}
+	for k, v := range panParams {
+		params[k] = v
+	}
+	mustCall(t, fastClient(t, tr), "pan-lite", params)
+	if got := tr.body(t, 0)["client_ref_id"]; got != "MY-REF_1" {
+		t.Errorf("client_ref_id = %v, want the supplied value", got)
+	}
+}
+
+func TestClientRefIDSatisfiesRequiredParam(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	mustCall(t, fastClient(t, tr), "dmt-initiate-transfer", transferParams)
+	if ref, _ := tr.body(t, 0)["client_ref_id"].(string); !refRe.MatchString(ref) {
+		t.Errorf("client_ref_id = %q, want a generated ref", ref)
+	}
+}
+
+func TestClientRefIDNotAddedToGet(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	mustCall(t, fastClient(t, tr), "bbps-get-operators", getParams)
+	if u := tr.requests[0].URL.String(); strings.Contains(u, "client_ref_id") {
+		t.Errorf("GET url = %q, want no client_ref_id", u)
+	}
+}
+
+func TestClientRefIDNotAddedWhenEndpointOmitsIt(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	mustCall(t, fastClient(t, tr), "get-refund-otp", map[string]any{"initiator_id": "9962981729", "tid": "1"})
+	if _, has := tr.body(t, 0)["client_ref_id"]; has {
+		t.Error("client_ref_id was added to an endpoint that omits it")
+	}
+}
+
+func TestClientRefIDDiffersBetweenCalls(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	client := fastClient(t, tr)
+	mustCall(t, client, "pan-lite", panParams)
+	mustCall(t, client, "pan-lite", panParams)
+	if tr.body(t, 0)["client_ref_id"] == tr.body(t, 1)["client_ref_id"] {
+		t.Error("successive calls reused a client_ref_id")
+	}
+}
+
+func TestEmptyClientRefIDCountsAsSupplied(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	params := map[string]any{"client_ref_id": ""}
+	for k, v := range panParams {
+		params[k] = v
+	}
+	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", params)
+	wantErr(t, err, "client_ref_id (expected format client-ref)")
+	if len(tr.requests) != 0 {
+		t.Errorf("sent %d requests, want 0", len(tr.requests))
+	}
+}
+
+// ---- retry and status check ------------------------------------------------
+
+func TestGetRetries500ThenSucceedsResigning(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500), ok()}}
+	client := fastClient(t, tr)
+	clock := fixedMS
+	client.now = func() int64 { clock++; return clock }
+	got, err := client.Call(context.Background(), "bbps-get-operators", getParams)
+	if err != nil || got["status"] != float64(0) {
+		t.Fatalf("Call = %v, %v; want the eventual 2xx", got, err)
+	}
+	if len(tr.requests) != 2 {
+		t.Fatalf("sent %d requests, want 2", len(tr.requests))
+	}
+	ts := func(i int) string { return tr.requests[i].Header.Get("secret-key-timestamp") }
+	if ts(0) == ts(1) {
+		t.Errorf("retry reused secret-key-timestamp %q", ts(0))
+	}
+}
+
+func TestGetIndeterminateEveryAttemptThenFails(t *testing.T) {
+	for _, failure := range []step{transportFail(), httpStep(429), httpStep(503)} {
+		tr := &scripted{steps: []step{failure}}
+		if _, err := fastClient(t, tr).Call(context.Background(), "bbps-get-operators", getParams); err == nil {
+			t.Fatal("Call succeeded, want the final failure")
+		}
+		if len(tr.requests) != 3 {
+			t.Errorf("%+v: sent %d requests, want 3", failure, len(tr.requests))
+		}
+	}
+}
+
+func TestGetTransportFailureIsATransportError(t *testing.T) {
+	tr := &scripted{steps: []step{transportFail()}}
+	_, err := fastClient(t, tr).Call(context.Background(), "bbps-get-operators", getParams)
+	var te *TransportError
+	if !errors.As(err, &te) || !strings.Contains(te.Err.Error(), "connection refused") {
+		t.Errorf("err = %v, want *TransportError wrapping the native error", err)
+	}
+}
+
+func TestGetDoesNotRetry4xx(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(400)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "bbps-get-operators", getParams)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestRetriesZeroDisables(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500)}}
+	zero := 0
+	_, _ = fastClient(t, tr, func(c *Config) { c.Retries = &zero }).Call(context.Background(), "bbps-get-operators", getParams)
+	if len(tr.requests) != 1 {
+		t.Errorf("sent %d requests, want 1", len(tr.requests))
+	}
+}
+
+func TestCancelledContextStopsRetrying(t *testing.T) {
+	tr := &scripted{steps: []step{transportFail()}}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := fastClient(t, tr).Call(ctx, "bbps-get-operators", getParams)
+	if err == nil || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want a failure after exactly 1", err, len(tr.requests))
+	}
+}
+
+func TestPostNeverRetried(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestFinancialPost5xxInquiresAndReturnsIndeterminate(t *testing.T) {
+	inquiry := `{"status":0,"data":{"tx_status":"0","tid":"1"}}`
+	tr := &scripted{steps: []step{httpStep(502), withBody(inquiry)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError", err)
+	}
+	ref := tr.body(t, 0)["client_ref_id"].(string)
+	if ind.ClientRefID != ref || ind.Slug != "dmt-initiate-transfer" || ind.Status != 502 {
+		t.Errorf("IndeterminateError = %+v, want ref %q / slug / 502", ind, ref)
+	}
+	if ind.StatusCheck["data"].(map[string]any)["tx_status"] != "0" || ind.StatusCheckErr != nil {
+		t.Errorf("StatusCheck = %v (err %v), want the inquiry envelope", ind.StatusCheck, ind.StatusCheckErr)
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || httpErr.StatusCode != 502 {
+		t.Errorf("errors.As(*HTTPError) through Unwrap failed: %v", err)
+	}
+	want := `eps: request for "dmt-initiate-transfer" with client_ref_id "` + ref + `" has no confirmed outcome`
+	if err.Error() != want {
+		t.Errorf("Error() = %q, want %q", err.Error(), want)
+	}
+	if len(tr.requests) != 2 {
+		t.Fatalf("sent %d requests, want 2", len(tr.requests))
+	}
+	inq := tr.requests[1]
+	if inq.Method != http.MethodGet || !strings.Contains(inq.URL.String(),
+		"/tools/reference/transaction/client_ref_id:"+ref+"?initiator_id=9962981729") {
+		t.Errorf("inquiry = %s %s, want GET transaction-inquiry by client_ref_id", inq.Method, inq.URL)
+	}
+}
+
+func TestFinancialPostTransportFailureReusesSuppliedRef(t *testing.T) {
+	tr := &scripted{steps: []step{transportFail(), ok()}}
+	params := map[string]any{"client_ref_id": "MY-REF"}
+	for k, v := range transferParams {
+		params[k] = v
+	}
+	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", params)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) || ind.ClientRefID != "MY-REF" || ind.Status != 0 {
+		t.Fatalf("err = %v, want *IndeterminateError for MY-REF with Status 0", err)
+	}
+	var te *TransportError
+	if !errors.As(ind.Err, &te) {
+		t.Errorf("Err = %v, want the *TransportError cause", ind.Err)
+	}
+	if !strings.Contains(tr.requests[1].URL.String(), "client_ref_id:MY-REF") {
+		t.Errorf("inquiry url = %s, want the supplied ref", tr.requests[1].URL)
+	}
+}
+
+func TestFailingInquiryLandsOnStatusCheckErr(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500), httpStep(503)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if !errors.As(err, &ind) {
+		t.Fatalf("err = %v, want *IndeterminateError", err)
+	}
+	var checkErr *HTTPError
+	if ind.StatusCheck != nil || !errors.As(ind.StatusCheckErr, &checkErr) || checkErr.StatusCode != 503 {
+		t.Errorf("StatusCheck = %v / %v, want nil and a 503", ind.StatusCheck, ind.StatusCheckErr)
+	}
+	if ind.Status != 500 || len(tr.requests) != 1+3 {
+		t.Errorf("Status = %d after %d requests, want 500 after 4", ind.Status, len(tr.requests))
+	}
+}
+
+func TestFinancialPost4xxIsPlainHTTPError(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(403)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if errors.As(err, &ind) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestNonFinancialPost5xxNoInquiry(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", panParams)
+	var ind *IndeterminateError
+	if errors.As(err, &ind) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestFinancialWithoutRefParamNoInquiry(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500)}}
+	_, err := fastClient(t, tr).Call(context.Background(), "initiate-refund",
+		map[string]any{"initiator_id": "9962981729", "tid": "1", "otp": "1"})
+	var ind *IndeterminateError
+	if errors.As(err, &ind) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestAutoStatusCheckOff(t *testing.T) {
+	tr := &scripted{steps: []step{httpStep(500)}}
+	off := false
+	_, err := fastClient(t, tr, func(c *Config) { c.AutoStatusCheck = &off }).
+		Call(context.Background(), "dmt-initiate-transfer", transferParams)
+	var ind *IndeterminateError
+	if errors.As(err, &ind) || len(tr.requests) != 1 {
+		t.Errorf("err = %v after %d requests, want plain *HTTPError after 1", err, len(tr.requests))
+	}
+}
+
+func TestRejectsBadRetryKnobs(t *testing.T) {
+	neg := -1
+	if _, err := New(Config{DeveloperKey: "d", AccessKey: accessKey, Environment: "sandbox", Retries: &neg}); err == nil {
+		t.Error("New accepted Retries -1")
+	}
+	if _, err := New(Config{DeveloperKey: "d", AccessKey: accessKey, Environment: "sandbox", RetryBaseDelay: -1}); err == nil {
+		t.Error("New accepted a negative RetryBaseDelay")
+	}
+}
+
+// ---- value validation ------------------------------------------------------
+
+func withPan(over map[string]any) map[string]any {
+	params := map[string]any{}
+	for k, v := range panParams {
+		params[k] = v
+	}
+	for k, v := range over {
+		params[k] = v
+	}
+	return params
+}
+
+func TestRejectsBadFormatAndSendsNothing(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	_, err := fastClient(t, tr).Call(context.Background(), "pan-lite", withPan(map[string]any{"dob": "01-01-1990"}))
+	if err == nil || err.Error() != `Invalid param values for "pan-lite": dob (expected format date).` {
+		t.Errorf("err = %v", err)
+	}
+	if len(tr.requests) != 0 {
+		t.Errorf("sent %d requests, want 0", len(tr.requests))
+	}
+}
+
+func TestListsEveryOffenderInSurfaceOrder(t *testing.T) {
+	_, err := newTestClient(t).ResolveTarget("pan-lite", withPan(map[string]any{"pan_number": "bad", "dob": "1990-1-1"}))
+	want := `Invalid param values for "pan-lite": pan_number (expected format pan), dob (expected format date).`
+	if err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
+func TestWholeStringMatchRejectsTrailingNewline(t *testing.T) {
+	_, err := newTestClient(t).ResolveTarget("pan-lite", withPan(map[string]any{"dob": "1990-01-01\n"}))
+	wantErr(t, err, "dob (expected format date)")
+}
+
+func TestUnconstrainedParamPasses(t *testing.T) {
+	tr := &scripted{steps: []step{ok()}}
+	mustCall(t, fastClient(t, tr), "pan-lite", withPan(map[string]any{"name": "anything at all \n"}))
+}
+
+func TestValueProblemHelper(t *testing.T) {
+	formats := map[string]*regexp.Regexp{"date": regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)}
+	f := func(v float64) *float64 { return &v }
+	n := func(v int) *int { return &v }
+	cases := []struct {
+		p     Param
+		value any
+		want  string
+	}{
+		{Param{Type: "string", Enum: []any{1, 2}}, "1", ""},
+		{Param{Type: "string", Enum: []any{1, 2}}, 3, "not one of: 1, 2"},
+		{Param{Type: "number", Min: f(1), Max: f(5)}, "1", ""},
+		{Param{Type: "number", Min: f(1), Max: f(5)}, 5, ""},
+		{Param{Type: "number", Min: f(1)}, 0.5, "below min 1"},
+		{Param{Type: "number", Max: f(5)}, "6", "above max 5"},
+		{Param{Type: "string", MaxLength: n(3)}, "abc", ""},
+		{Param{Type: "string", MaxLength: n(3)}, "é€", "longer than 3 bytes"},
+		{Param{Type: "string", Enum: []any{"a"}, Format: "date"}, "b", "not one of: a"},
+		{Param{Type: "string", Format: "date", MaxLength: n(1)}, "x", "expected format date"},
+		{Param{Type: "object", MaxLength: n(1)}, map[string]any{"a": 1}, ""},
+	}
+	for _, c := range cases {
+		if got := valueProblem(c.p, c.value, formats); got != c.want {
+			t.Errorf("valueProblem(%+v, %v) = %q, want %q", c.p, c.value, got, c.want)
+		}
 	}
 }

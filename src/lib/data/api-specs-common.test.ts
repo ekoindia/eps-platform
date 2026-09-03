@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ApiParam, ApiSpec } from "./api-specs-common";
 import {
+	assertParamFormats,
 	assertResponseTypeSlugs,
 	buildMultipartPayload,
 	buildSampleRequest,
@@ -402,5 +403,38 @@ describe("enabledSpecs", () => {
 			spec({ id: "explicitly-live", disabled: false }),
 		]);
 		expect(kept.map((s) => s.id)).toEqual(["live", "explicitly-live"]);
+	});
+});
+
+describe("assertParamFormats", () => {
+	it("accepts a param whose format is in the registry", () => {
+		expect(() =>
+			assertParamFormats([
+				spec({
+					id: "a",
+					extraRequestParams: [
+						{ name: "dob", type: "string", required: true, format: "date" },
+					],
+				}),
+			]),
+		).not.toThrow();
+	});
+
+	it("throws on an unknown format name", () => {
+		expect(() =>
+			assertParamFormats([
+				spec({
+					id: "a",
+					extraRequestParams: [
+						{ name: "dob", type: "string", required: true, format: "datetime" },
+					],
+				}),
+			]),
+		).toThrow(/spec "a" param "dob" names unknown format "datetime"/);
+	});
+
+	it("checks the inherited common params too", () => {
+		// client_ref_id carries format "client-ref" from the commons.
+		expect(() => assertParamFormats([spec({ id: "a" })])).not.toThrow();
 	});
 });

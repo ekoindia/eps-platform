@@ -94,6 +94,7 @@ interface ApiSpec {
   docsUrl: string;            // developer-portal reference link
   financial?: boolean;        // adds the financial response envelope
   extraRequestParams: ApiParam[];   // API-specific; same name overrides a common param
+                                    // (ApiParam may carry format / enum / min / max / maxLength — see below)
   omitCommonParams?: string[];      // rare: drop a common param
   sampleRequest?: Record<string, unknown>;  // optional override; else generated from in:"body" examples
   responseData: ResponseField[];    // the `data` subtree only
@@ -102,6 +103,32 @@ interface ApiSpec {
   responseTypes?: { id: number; meaning: string; next?: string }[]; // response_type_id routing
 }
 ```
+
+### Param constraints (`format`, `enum`, `min`/`max`, `maxLength`)
+
+`ApiParam` carries optional, machine-readable constraints beside the prose
+`description`. They are baked into `data/sdk-surface.json` and enforced by every
+SDK **before** a request is signed (see "Value validation conformance" in
+`docs/sdk-golden-vector.md`):
+
+```ts
+{ name: "dob", type: "string", required: true, format: "date" }
+{ name: "client_ref_id", type: "string", required: false, format: "client-ref", maxLength: 20 }
+```
+
+- `format` names an entry in `src/lib/data/api-formats.ts` — the single
+  registry of syntactic regexes (`date`, `mobile`, `pan`, `aadhaar`, `ifsc`,
+  `pincode`, `lat-long`, `client-ref`). The build fails on an unknown name
+  (`assertParamFormats`) and on a pattern outside the portable subset the five
+  regex engines share (anchored, ASCII, no lookaround / backreferences / named
+  groups — RE2 is the binding constraint).
+- `enum` lists allowed values, compared as wire strings; `min`/`max` are
+  inclusive numeric bounds; `maxLength` caps the wire string in UTF-8 bytes.
+
+Seed constraints only where the param's own description already states the
+rule, and check real UAT values before touching a common param — `initiator_id`
+is on every endpoint, and a wrong `format` there rejects every call
+client-side.
 
 ### `responseTypes` (branching on `response_type_id`)
 

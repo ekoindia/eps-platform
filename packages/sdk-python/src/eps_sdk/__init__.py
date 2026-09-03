@@ -19,7 +19,9 @@ from .client import (
     EpsClient,
     EpsError,
     EpsHttpError,
+    EpsIndeterminateError,
     Target,
+    generate_client_ref_id,
     sign_secret_key,
 )
 
@@ -27,7 +29,9 @@ __all__ = [
     "EpsClient",
     "EpsError",
     "EpsHttpError",
+    "EpsIndeterminateError",
     "MULTIPART_JSON_FIELD",
     "Target",
+    "generate_client_ref_id",
     "sign_secret_key",
 ]

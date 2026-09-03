@@ -2,6 +2,7 @@ package in.eko.eps;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -48,7 +51,17 @@ public final class EpsClient {
 	 */
 	public static final String MULTIPART_JSON_FIELD = "form-data";
 
+	/** Per-attempt budget, matching every other EPS SDK. */
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+	/** Extra attempts for a GET that ended indeterminate. */
+	private static final int DEFAULT_RETRIES = 2;
+	/** Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). */
+	private static final Duration DEFAULT_RETRY_BASE_DELAY = Duration.ofMillis(200);
+	private static final long MAX_RETRY_DELAY_MS = 2_000;
+	/** Generic status-check endpoint, keyed by TID or {@code client_ref_id:<ref>}. */
+	private static final String INQUIRY_SLUG = "transaction-inquiry";
+	/** Spec types whose values are scalars the value checks can stringify. */
+	private static final Set<String> SCALAR_TYPES = Set.of("string", "number", "integer", "boolean");
 	private static final Pattern NUMBER_RE = Pattern.compile("^-?\\d+(\\.\\d+)?$");
 	private static final Pattern INTEGER_RE = Pattern.compile("^-?\\d+$");
 	/**
@@ -91,21 +104,103 @@ public final class EpsClient {
 		}
 	}
 
+	/**
+	 * The request never produced a response: an I/O failure (DNS, connect, TLS) or the per-attempt
+	 * timeout. The outcome is unknown, which is what separates it from the other {@link
+	 * EpsException} cases — a GET is retried, a financial POST is followed by a status check.
+	 */
+	public static final class EpsTransportException extends EpsException {
+		EpsTransportException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
+
+	/**
+	 * A non-GET call on a money-moving endpoint ended without a confirmed outcome (timeout,
+	 * transport failure, HTTP 429 or 5xx). The SDK never re-sends such a request — that is how a
+	 * customer gets debited twice — so it inquired by the call's {@code client_ref_id} instead and
+	 * reports what it found. {@link #statusCheck} is the Transaction Inquiry envelope ({@code
+	 * data.tx_status}: "0" success, "1" fail, "2" awaited, …) or null when the inquiry itself
+	 * failed, in which case {@link #statusCheckError} says why. The original failure is {@link
+	 * #getCause()}. Reconcile with the ref before retrying; never assume a timeout meant failure.
+	 */
+	public static final class EpsIndeterminateException extends EpsException {
+		public final String slug;
+		public final String clientRefId;
+		/** HTTP status of the original attempt, or null for a transport failure. */
+		public final Integer status;
+		public final Map<String, Object> statusCheck;
+		public final Throwable statusCheckError;
+
+		EpsIndeterminateException(
+				String slug,
+				String clientRefId,
+				Throwable cause,
+				Map<String, Object> statusCheck,
+				Throwable statusCheckError) {
+			super(
+					"EPS request for \"" + slug + "\" with client_ref_id \"" + clientRefId
+							+ "\" has no confirmed outcome.",
+					cause);
+			this.slug = slug;
+			this.clientRefId = clientRefId;
+			this.status = cause instanceof EpsHttpException h ? h.status : null;
+			this.statusCheck = statusCheck;
+			this.statusCheckError = statusCheckError;
+		}
+	}
+
+	/**
+	 * True when the outcome is unknown: no response, or a 429/5xx that says nothing about whether
+	 * the request was processed. A 4xx is a decisive no, and so is a 2xx that failed to decode.
+	 */
+	private static boolean isIndeterminate(EpsException e) {
+		if (e instanceof EpsHttpException h) return h.status == 429 || h.status >= 500;
+		return e instanceof EpsTransportException;
+	}
+
 	/** An in-memory upload, for callers that do not have the bytes on disk. */
 	public record EpsFile(String name, byte[] content) {}
 
-	/** The resolved wire target for one call — everything but the sending. */
+	/**
+	 * The resolved wire target for one call — everything but the sending. {@code clientRefId} is
+	 * the ref a non-GET call carries (generated or supplied), null on GET or when the endpoint omits
+	 * the param; {@code financial} marks a money-moving endpoint; {@code initiatorId} is reused by
+	 * the status check.
+	 */
 	public record Target(
-			String method, String url, byte[] body, Map<String, String> headers, boolean multipart) {}
+			String method,
+			String url,
+			byte[] body,
+			Map<String, String> headers,
+			boolean multipart,
+			String slug,
+			boolean financial,
+			String clientRefId,
+			Object initiatorId) {}
 
-	private record Param(String name, String type, boolean required) {}
+	private record Param(
+			String name,
+			String type,
+			boolean required,
+			String format,
+			@SerializedName("enum") List<Object> allowed,
+			Double min,
+			Double max,
+			Integer maxLength) {}
 
 	private record Endpoint(
-			String slug, String method, String path, List<Param> params, List<String> requiredParams) {}
+			String slug,
+			String method,
+			String path,
+			List<Param> params,
+			List<String> requiredParams,
+			boolean financial) {}
 
 	private record Environment(String id, String baseUrl) {}
 
-	private record Surface(List<Environment> environments, List<Endpoint> endpoints) {}
+	private record Surface(
+			List<Environment> environments, List<Endpoint> endpoints, Map<String, String> formats) {}
 
 	/**
 	 * The baked API surface, loaded once from the classpath. Generated by {@code
@@ -113,6 +208,30 @@ public final class EpsClient {
 	 * means the jar was built incorrectly.
 	 */
 	private static final Surface SURFACE = loadSurface();
+
+	/**
+	 * The surface's format table compiled once. A pattern that does not compile is corrupt package
+	 * data, so it fails here like the surface itself — never silently skipping a validation. Every
+	 * check uses {@code matches()}, so the whole string must match and a trailing newline cannot
+	 * slip past.
+	 */
+	private static final Map<String, Pattern> FORMATS = compileFormats(SURFACE.formats());
+
+	private static Map<String, Pattern> compileFormats(Map<String, String> formats) {
+		Map<String, Pattern> compiled = new LinkedHashMap<>();
+		if (formats == null) return compiled;
+		for (Map.Entry<String, String> entry : formats.entrySet()) {
+			try {
+				compiled.put(entry.getKey(), Pattern.compile(entry.getValue()));
+			} catch (PatternSyntaxException e) {
+				throw new EpsException(
+						"EPS SDK surface is invalid or corrupt: format \"" + entry.getKey()
+								+ "\" does not compile.",
+						e);
+			}
+		}
+		return compiled;
+	}
 
 	private static Surface loadSurface() {
 		try (InputStream in = EpsClient.class.getResourceAsStream("/sdk-surface.json")) {
@@ -138,6 +257,9 @@ public final class EpsClient {
 	private final String initiatorId;
 	private final String userCode;
 	private final HttpClient http;
+	private final int retries;
+	private final Duration retryBaseDelay;
+	private final boolean autoStatusCheck;
 	/** Test-only clock injection (ms since the epoch); not part of the public surface. */
 	java.util.function.LongSupplier now = System::currentTimeMillis;
 
@@ -146,6 +268,18 @@ public final class EpsClient {
 		this.accessKey = builder.accessKey;
 		this.initiatorId = builder.initiatorId;
 		this.userCode = builder.userCode;
+		if (builder.retries < 0) {
+			throw new EpsException(
+					"Invalid retries: " + builder.retries + ". Expected a non-negative integer.");
+		}
+		if (builder.retryBaseDelay == null || builder.retryBaseDelay.isNegative()) {
+			throw new EpsException(
+					"Invalid retryBaseDelay: " + builder.retryBaseDelay
+							+ ". Expected a non-negative duration.");
+		}
+		this.retries = builder.retries;
+		this.retryBaseDelay = builder.retryBaseDelay;
+		this.autoStatusCheck = builder.autoStatusCheck;
 		this.http =
 				builder.httpClient != null
 						? builder.httpClient
@@ -175,6 +309,9 @@ public final class EpsClient {
 		private String initiatorId;
 		private String userCode;
 		private HttpClient httpClient;
+		private int retries = DEFAULT_RETRIES;
+		private Duration retryBaseDelay = DEFAULT_RETRY_BASE_DELAY;
+		private boolean autoStatusCheck = true;
 
 		public Builder developerKey(String v) {
 			this.developerKey = v;
@@ -205,6 +342,34 @@ public final class EpsClient {
 		/** Supply your own client to control timeouts, proxies or redirects. */
 		public Builder httpClient(HttpClient v) {
 			this.httpClient = v;
+			return this;
+		}
+
+		/**
+		 * Extra attempts for a GET whose outcome was indeterminate (timeout, transport failure, HTTP
+		 * 429/5xx). Default 2 — three tries in all. Non-GET calls are never retried. 0 disables.
+		 */
+		public Builder retries(int v) {
+			this.retries = v;
+			return this;
+		}
+
+		/**
+		 * Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s). Default 200ms;
+		 * {@link Duration#ZERO} retries immediately (tests).
+		 */
+		public Builder retryBaseDelay(Duration v) {
+			this.retryBaseDelay = v;
+			return this;
+		}
+
+		/**
+		 * After an indeterminate failure on a money-moving endpoint, look the transaction up by its
+		 * {@code client_ref_id} and surface the result on {@link EpsIndeterminateException#statusCheck}.
+		 * Default true.
+		 */
+		public Builder autoStatusCheck(boolean v) {
+			this.autoStatusCheck = v;
 			return this;
 		}
 
@@ -290,6 +455,61 @@ public final class EpsClient {
 			if (d >= Long.MIN_VALUE && d <= Long.MAX_VALUE) return Long.toString((long) d);
 		}
 		return String.valueOf(value);
+	}
+
+	/**
+	 * Value check after the type check: enum → format → min/max → maxLength, on the wire string so
+	 * {@code 5} and {@code "5"} behave alike. Returns the first problem as the reason text, or null.
+	 * Formats are syntactic regexes from the surface, matched whole-string. {@code maxLength} counts
+	 * UTF-8 bytes — the one length every language agrees on. Package-private for the conformance
+	 * tests.
+	 */
+	static String valueProblem(Param p, Object value, Map<String, Pattern> formats) {
+		if (!SCALAR_TYPES.contains(p.type())) return null;
+		String wire = wireString(value);
+		if (p.allowed() != null) {
+			List<String> allowed = p.allowed().stream().map(EpsClient::wireString).toList();
+			if (!allowed.contains(wire)) return "not one of: " + String.join(", ", allowed);
+		}
+		if (p.format() != null) {
+			Pattern re = formats.get(p.format());
+			if (re != null && !re.matcher(wire).matches()) return "expected format " + p.format();
+		}
+		if (p.min() != null || p.max() != null) {
+			double n;
+			try {
+				n = Double.parseDouble(wire);
+			} catch (NumberFormatException e) {
+				n = Double.NaN;
+			}
+			if (p.min() != null && n < p.min()) return "below min " + wireString(p.min());
+			if (p.max() != null && n > p.max()) return "above max " + wireString(p.max());
+		}
+		if (p.maxLength() != null && wire.getBytes(StandardCharsets.UTF_8).length > p.maxLength()) {
+			return "longer than " + p.maxLength() + " bytes";
+		}
+		return null;
+	}
+
+	/** Test seam: a {@link Param} built from its constraints alone. */
+	static Param param(
+			String type, String format, List<Object> allowed, Double min, Double max, Integer maxLength) {
+		return new Param("x", type, false, format, allowed, min, max, maxLength);
+	}
+
+	/**
+	 * A {@code client_ref_id} for a non-GET call that did not supply one: base36 millisecond stamp
+	 * (sortable, greppable against a log line) plus 7 random base36 chars, exactly 15 of {@code
+	 * [0-9a-z]}. Under EPS's 20-char limit with ~7.8e10 distinct tails per millisecond, so
+	 * concurrent processes cannot collide in practice. Same shape in every SDK — see
+	 * docs/sdk-golden-vector.md.
+	 */
+	public static String generateClientRefId(long nowMs) {
+		long bound = 78_364_164_096L; // 36^7
+		String tail = Long.toString(Math.floorMod(RANDOM.nextLong(), bound), 36);
+		tail = "0".repeat(7 - tail.length()) + tail;
+		String ref = Long.toString(nowMs, 36) + tail;
+		return ref.substring(ref.length() - 15);
 	}
 
 	private static Endpoint endpointFor(String slug) {
@@ -393,6 +613,19 @@ public final class EpsClient {
 		if (userCode != null) merged.put("user_code", userCode);
 		if (params != null) merged.putAll(params);
 
+		// Every non-GET call carries a client_ref_id — the key a partner reconciles a
+		// lost response by. Generated only when the endpoint declares the param and
+		// the caller sent none (absent or null); a supplied value, even "", is theirs
+		// to own. Done before the required-param guard so a generated ref satisfies
+		// endpoints that require one.
+		boolean declaresRef =
+				!"GET".equals(endpoint.method())
+						&& endpoint.params().stream().anyMatch(p -> "client_ref_id".equals(p.name()));
+		if (declaresRef && merged.get("client_ref_id") == null) {
+			merged.put("client_ref_id", generateClientRefId(now.getAsLong()));
+		}
+		String clientRefId = declaresRef ? wireString(merged.get("client_ref_id")) : null;
+
 		// Spec-driven guard: every requiredParam must be present and non-null before
 		// we sign and send.
 		List<String> missing =
@@ -412,6 +645,20 @@ public final class EpsClient {
 		if (!badTypes.isEmpty()) {
 			throw new EpsException(
 					"Invalid param types for \"" + slug + "\": " + String.join(", ", badTypes) + ".");
+		}
+
+		// Value guard: enum / format / min / max / maxLength from the spec, on the
+		// same provided params. Syntactic only — the server still owns semantics.
+		List<String> badValues = new ArrayList<>();
+		for (Param p : endpoint.params()) {
+			Object value = merged.get(p.name());
+			if (value == null) continue;
+			String reason = valueProblem(p, value, FORMATS);
+			if (reason != null) badValues.add(p.name() + " (" + reason + ")");
+		}
+		if (!badValues.isEmpty()) {
+			throw new EpsException(
+					"Invalid param values for \"" + slug + "\": " + String.join(", ", badValues) + ".");
 		}
 
 		// A type:"file" param flips the whole request to multipart/form-data.
@@ -450,7 +697,16 @@ public final class EpsClient {
 		} else {
 			body = GSON.toJson(rest).getBytes(StandardCharsets.UTF_8);
 		}
-		return new Target(endpoint.method(), url, body, headers, multipart);
+		return new Target(
+				endpoint.method(),
+				url,
+				body,
+				headers,
+				multipart,
+				slug,
+				endpoint.financial(),
+				clientRefId,
+				merged.get("initiator_id"));
 	}
 
 	private static String encode(String value) {
@@ -460,14 +716,82 @@ public final class EpsClient {
 	/**
 	 * Sign and send one endpoint call, returning the decoded response envelope.
 	 *
-	 * @throws EpsHttpException on a non-2xx response; a body that is not JSON is an error, never a
-	 *     silent empty map.
+	 * <p>Validates first (throws {@link EpsException}, nothing sent), then sends. A GET whose outcome
+	 * is indeterminate is retried; a non-GET never is — on a {@code financial} endpoint it is
+	 * followed by a Transaction Inquiry on its {@code client_ref_id} and thrown as {@link
+	 * EpsIndeterminateException}. An interrupted thread stops everything: no retry, no inquiry. See
+	 * docs/sdk-golden-vector.md.
+	 *
+	 * @throws EpsIndeterminateException when a financial non-GET call has no confirmed outcome
+	 * @throws EpsHttpException on any other non-2xx response; the envelope is on {@code body}
+	 * @throws EpsTransportException on a transport failure that was not retried
+	 * @throws EpsException on a 2xx body that is not JSON — never a silent empty map
 	 */
 	public Map<String, Object> call(String slug, Map<String, Object> params) {
 		Target target = resolveTarget(slug, params);
+		int attempts = "GET".equals(target.method()) ? retries + 1 : 1;
+		for (int attempt = 1; ; attempt++) {
+			try {
+				return send(target);
+			} catch (EpsException e) {
+				if (!isIndeterminate(e) || Thread.currentThread().isInterrupted()) throw e;
+				if (attempt < attempts) {
+					backoff(attempt);
+					continue;
+				}
+				// Never re-send a non-GET: that is how a customer is debited twice. Ask
+				// EPS what happened to the ref instead, if there is one to ask by.
+				if (autoStatusCheck && target.financial() && target.clientRefId() != null) {
+					throw indeterminate(target, e);
+				}
+				throw e;
+			}
+		}
+	}
+
+	/** Attempt n sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter. */
+	private void backoff(int attempt) {
+		long cap = Math.min(retryBaseDelay.toMillis() << (attempt - 1), MAX_RETRY_DELAY_MS);
+		long delay = cap > 0 ? ThreadLocalRandom.current().nextLong(cap + 1) : 0;
+		if (delay == 0) return;
+		try {
+			Thread.sleep(delay);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new EpsException("EPS retry was interrupted", e);
+		}
+	}
+
+	/**
+	 * One inquiry by {@code client_ref_id:<ref>}; its own failure is reported, never allowed to mask
+	 * the original one.
+	 */
+	private EpsIndeterminateException indeterminate(Target target, EpsException cause) {
+		Map<String, Object> params = new LinkedHashMap<>();
+		params.put("transaction-reference", "client_ref_id:" + target.clientRefId());
+		if (target.initiatorId() != null) params.put("initiator_id", target.initiatorId());
+		Map<String, Object> statusCheck = null;
+		Throwable statusCheckError = null;
+		try {
+			statusCheck = call(INQUIRY_SLUG, params);
+		} catch (RuntimeException e) {
+			statusCheckError = e;
+		}
+		return new EpsIndeterminateException(
+				target.slug(), target.clientRefId(), cause, statusCheck, statusCheckError);
+	}
+
+	/**
+	 * Sign (fresh timestamp) and send one attempt; decode per the contract. The multipart
+	 * content-type, with its boundary, is kept from the target; every other header is re-signed so
+	 * a retry never reuses a stale {@code secret-key-timestamp}.
+	 */
+	private Map<String, Object> send(Target target) {
 		HttpRequest.Builder request =
 				HttpRequest.newBuilder(URI.create(target.url())).timeout(DEFAULT_TIMEOUT);
-		target.headers().forEach(request::header);
+		Map<String, String> headers = new LinkedHashMap<>(target.headers());
+		headers.putAll(buildHeaders(target.multipart()));
+		headers.forEach(request::header);
 		request.method(
 				target.method(),
 				target.body() == null
@@ -478,7 +802,8 @@ public final class EpsClient {
 		try {
 			response = http.send(request.build(), HttpResponse.BodyHandlers.ofString());
 		} catch (IOException e) {
-			throw new EpsException("EPS request to " + target.url() + " failed: " + e.getMessage(), e);
+			throw new EpsTransportException(
+					"EPS request to " + target.url() + " failed: " + e.getMessage(), e);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new EpsException("EPS request to " + target.url() + " was interrupted", e);

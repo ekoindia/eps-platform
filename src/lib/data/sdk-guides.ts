@@ -123,6 +123,42 @@ const commonConfig = (
 	},
 ];
 
+/** The retry / status-check knobs every client takes, whatever the spelling. */
+const retryConfig = (
+	retries: string,
+	retryBaseDelay: string,
+	autoStatusCheck: string,
+	intType: string,
+	durationType: string,
+	durationUnits: string,
+	boolType: string,
+): SdkConfigOption[] => [
+	{
+		name: retries,
+		type: intType,
+		required: false,
+		units: "default 2",
+		description:
+			"Extra attempts for a GET whose outcome was indeterminate (timeout, transport failure, HTTP 429/5xx). Non-GET calls are never retried. 0 disables.",
+	},
+	{
+		name: retryBaseDelay,
+		type: durationType,
+		required: false,
+		units: durationUnits,
+		description:
+			"Backoff base: attempt n waits a random slice of min(base × 2^(n-1), 2s).",
+	},
+	{
+		name: autoStatusCheck,
+		type: boolType,
+		required: false,
+		units: "default true",
+		description:
+			"After an indeterminate failure on a money-moving endpoint, look the transaction up by its `client_ref_id` and attach the result to the indeterminate error.",
+	},
+];
+
 export const SDK_GUIDES: SdkGuideMeta[] = [
 	{
 		lang: "javascript",
@@ -133,7 +169,8 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 		order: 1,
 		packageName: "@ekoindia/eps-sdk",
 		minRuntime: "Node.js 18 or newer",
-		dependencies: "None — standard library only (`node:crypto`, global `fetch`).",
+		dependencies:
+			"None — standard library only (`node:crypto`, global `fetch`).",
 		sourceUrl: `${REPO}/sdk-js`,
 		config: [
 			...commonConfig(
@@ -158,6 +195,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				required: false,
 				description: "Inject a custom fetch implementation (proxies, tests).",
 			},
+			...retryConfig(
+				"retries",
+				"retryBaseDelayMs",
+				"autoStatusCheck",
+				"number",
+				"number",
+				"milliseconds, default 200",
+				"boolean",
+			),
 		],
 		members: [
 			{
@@ -178,7 +224,8 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			{
 				kind: "function",
 				name: "signSecretKey",
-				signature: "signSecretKey(accessKey: string, timestamp: string): string",
+				signature:
+					"signSecretKey(accessKey: string, timestamp: string): string",
 				description:
 					"The raw signing primitive, exported for debugging. `call()` applies it for you.",
 			},
@@ -202,8 +249,21 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Shape of one endpoint in the embedded surface (slug, method, path, params).",
 			},
+			{
+				kind: "function",
+				name: "generateClientRefId",
+				signature: "generateClientRefId(nowMs: number): string",
+				description:
+					"The 15-char `client_ref_id` generator `call()` uses for a non-GET call that did not supply one — exported so you can mint refs the same way.",
+			},
 		],
 		errorTypes: [
+			{
+				name: "EpsIndeterminateError",
+				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				fields:
+					"`slug`, `clientRefId`, `status` (or null), `statusCheck` (inquiry envelope or null), `statusCheckError`, `cause`",
+			},
 			{
 				name: "EpsHttpError",
 				when: "Any non-2xx response.",
@@ -223,7 +283,7 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			"A `Blob` or `File` (a `File` keeps its own name)",
 		],
 		notes: [
-			"ESM only (`\"type\": \"module\"`). Use `import`, or `await import()` from CommonJS.",
+			'ESM only (`"type": "module"`). Use `import`, or `await import()` from CommonJS.',
 			"A per-call cancellation signal is not supported yet — `timeoutMs` is the only abort source.",
 		],
 	},
@@ -255,6 +315,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				units: "seconds, default 30.0",
 				description: "Whole-request budget passed through to `urlopen`.",
 			},
+			...retryConfig(
+				"retries",
+				"retry_base_delay",
+				"auto_status_check",
+				"int",
+				"float",
+				"seconds, default 0.2",
+				"bool",
+			),
 		],
 		members: [
 			{
@@ -262,7 +331,8 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				name: "EpsClient",
 				signature:
 					"EpsClient(developer_key, access_key, environment, initiator_id=None, user_code=None, timeout=30.0)",
-				description: "The client — a dataclass, so keyword arguments read well.",
+				description:
+					"The client — a dataclass, so keyword arguments read well.",
 			},
 			{
 				kind: "method",
@@ -275,15 +345,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			{
 				kind: "method",
 				name: "resolve_target",
-				signature:
-					"client.resolve_target(slug, params=None) -> Target",
+				signature: "client.resolve_target(slug, params=None) -> Target",
 				description:
 					"The signed method/url/body/headers for a call, without sending it. Useful for debugging.",
 			},
 			{
 				kind: "method",
 				name: "build_headers",
-				signature: "client.build_headers(multipart: bool = False) -> dict[str, str]",
+				signature:
+					"client.build_headers(multipart: bool = False) -> dict[str, str]",
 				description: "The four auth headers for a single request.",
 			},
 			{
@@ -305,12 +375,26 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				signature: "@dataclass Target(method, url, body, headers, multipart)",
 				description: "What `resolve_target` returns.",
 			},
+			{
+				kind: "function",
+				name: "generate_client_ref_id",
+				signature: "generate_client_ref_id(now_ms: int) -> str",
+				description:
+					"The 15-char `client_ref_id` generator `call()` uses for a non-GET call that did not supply one — exported so you can mint refs the same way.",
+			},
 		],
 		errorTypes: [
 			{
+				name: "EpsIndeterminateError",
+				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				fields:
+					"`slug`, `client_ref_id`, `status` (or None), `status_check`, `status_check_error`, `__cause__`",
+			},
+			{
 				name: "EpsHttpError",
 				when: "Any non-2xx response.",
-				fields: "`.status`, `.url`, `.body` (decoded envelope or None), `.raw` (bytes)",
+				fields:
+					"`.status`, `.url`, `.body` (decoded envelope or None), `.raw` (bytes)",
 			},
 			{
 				name: "EpsError",
@@ -360,6 +444,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Whole-request budget, applied as `CURLOPT_TIMEOUT_MS` so sub-second values are not truncated.",
 			},
+			...retryConfig(
+				"retries",
+				"retryBaseDelay",
+				"autoStatusCheck",
+				"int",
+				"float",
+				"seconds, default 0.2",
+				"bool",
+			),
 		],
 		members: [
 			{
@@ -379,7 +472,8 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			{
 				kind: "method",
 				name: "resolveTarget",
-				signature: "$client->resolveTarget(string $slug, array $params = []): array",
+				signature:
+					"$client->resolveTarget(string $slug, array $params = []): array",
 				description:
 					"The signed url/body/method for a call, without sending it. Exposed for testing.",
 			},
@@ -403,7 +497,8 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				name: "signSecretKey",
 				signature:
 					"EpsClient::signSecretKey(string $accessKey, string $timestamp): string",
-				description: "Static. The raw signing primitive, exposed for debugging.",
+				description:
+					"Static. The raw signing primitive, exposed for debugging.",
 			},
 			{
 				kind: "constant",
@@ -412,12 +507,30 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Name of the single form field carrying the JSON envelope on file-upload endpoints.",
 			},
+			{
+				kind: "method",
+				name: "EpsClient::generateClientRefId",
+				signature: "EpsClient::generateClientRefId(int $nowMs): string",
+				description:
+					"The 15-char `client_ref_id` generator `call()` uses for a non-GET call that did not supply one — exported so you can mint refs the same way.",
+			},
 		],
 		errorTypes: [
 			{
+				name: "Eko\\Eps\\EpsIndeterminateException",
+				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				fields:
+					"`slug`, `clientRefId`, `status` (or null), `statusCheck`, `statusCheckError`, `getPrevious()`",
+			},
+			{
+				name: "Eko\\Eps\\EpsTransportException",
+				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on GET; wraps the native error.",
+			},
+			{
 				name: "Eko\\Eps\\EpsHttpException",
 				when: "Any non-2xx response.",
-				fields: "`->status`, `->url`, `->body` (decoded envelope or null), `->raw`",
+				fields:
+					"`->status`, `->url`, `->body` (decoded envelope or null), `->raw`",
 			},
 			{
 				name: "Eko\\Eps\\EpsException",
@@ -468,6 +581,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Control timeouts, proxies or retries by supplying your own client.",
 			},
+			...retryConfig(
+				"Retries",
+				"RetryBaseDelay",
+				"AutoStatusCheck",
+				"*int (nil → 2)",
+				"time.Duration",
+				"default 200ms",
+				"*bool (nil → true)",
+			),
 		],
 		members: [
 			{
@@ -517,8 +639,25 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Name of the single form field carrying the JSON envelope on file-upload endpoints.",
 			},
+			{
+				kind: "function",
+				name: "GenerateClientRefID",
+				signature: "eps.GenerateClientRefID(nowMs int64) string",
+				description:
+					"The 15-char `client_ref_id` generator `call()` uses for a non-GET call that did not supply one — exported so you can mint refs the same way.",
+			},
 		],
 		errorTypes: [
+			{
+				name: "*eps.IndeterminateError",
+				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				fields:
+					"`Slug`, `ClientRefID`, `Status` (0 for transport), `StatusCheck`, `StatusCheckErr`, `Unwrap()`",
+			},
+			{
+				name: "*eps.TransportError",
+				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on GET; wraps the native error.",
+			},
 			{
 				name: "*eps.HTTPError",
 				when: "Any non-2xx response. Match it with `errors.As`.",
@@ -572,6 +711,15 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Control timeouts, proxies or redirects by supplying your own client.",
 			},
+			...retryConfig(
+				".retries(…)",
+				".retryBaseDelay(…)",
+				".autoStatusCheck(…)",
+				"int",
+				"Duration",
+				"default 200ms",
+				"boolean",
+			),
 		],
 		members: [
 			{
@@ -598,14 +746,16 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 			{
 				kind: "method",
 				name: "buildHeaders",
-				signature: "client.buildHeaders(boolean multipart): Map<String, String>",
+				signature:
+					"client.buildHeaders(boolean multipart): Map<String, String>",
 				description: "The four auth headers for a single request.",
 			},
 			{
 				kind: "method",
 				name: "sign",
 				signature: "EpsClient.sign(String accessKey, String timestamp): String",
-				description: "Static. The raw signing primitive, exposed for debugging.",
+				description:
+					"Static. The raw signing primitive, exposed for debugging.",
 			},
 			{
 				kind: "type",
@@ -620,8 +770,25 @@ export const SDK_GUIDES: SdkGuideMeta[] = [
 				description:
 					"Name of the single form field carrying the JSON envelope on file-upload endpoints.",
 			},
+			{
+				kind: "method",
+				name: "EpsClient.generateClientRefId",
+				signature: "static String generateClientRefId(long nowMs)",
+				description:
+					"The 15-char `client_ref_id` generator `call()` uses for a non-GET call that did not supply one — exported so you can mint refs the same way.",
+			},
 		],
 		errorTypes: [
+			{
+				name: "EpsClient.EpsIndeterminateException",
+				when: "A money-moving (`financial`) non-GET call ended with no confirmed outcome — timeout, transport failure, HTTP 429/5xx. The SDK did not re-send it; it looked the transaction up by its `client_ref_id` and attached the result. Reconcile before retrying.",
+				fields:
+					"`slug`, `clientRefId`, `status` (or null), `statusCheck`, `statusCheckError`, `getCause()`",
+			},
+			{
+				name: "EpsClient.EpsTransportException",
+				when: "The request produced no response at all (DNS, connect, TLS, timeout). Retried on GET; wraps the native error.",
+			},
 			{
 				name: "EpsClient.EpsHttpException",
 				when: "Any non-2xx response.",

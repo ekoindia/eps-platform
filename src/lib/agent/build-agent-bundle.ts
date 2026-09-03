@@ -28,6 +28,7 @@ import {
 	resolveHeaders,
 	resolveRequestParams,
 	resolveResponseFields,
+	assertParamFormats,
 } from "@/lib/data/api-specs-common";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
@@ -198,6 +199,7 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 	const documentedSlugs = new Set(specs.map((s) => s.slug));
 	assertRecipeSlugs(RECIPES, documentedSlugs);
 	assertResponseTypeSlugs(specs, documentedSlugs);
+	assertParamFormats(specs);
 
 	const topics = buildTopics();
 	const apis = specs.map(apiDetail);

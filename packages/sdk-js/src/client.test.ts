@@ -5,8 +5,11 @@ import {
 	EpsClient,
 	EpsError,
 	EpsHttpError,
+	EpsIndeterminateError,
 	MULTIPART_JSON_FIELD,
+	generateClientRefId,
 	signSecretKey,
+	valueProblem,
 } from "./client.js";
 
 // from docs/sdk-golden-vector.md
@@ -399,7 +402,9 @@ describe("EpsClient response contract", () => {
 		const client = clientWith(
 			vi.fn(async () => new Response(JSON.stringify(body), { status: 403 })),
 		);
-		const err = await client.call("pan-lite", PAN_ARGS).catch((e: unknown) => e);
+		const err = await client
+			.call("pan-lite", PAN_ARGS)
+			.catch((e: unknown) => e);
 		expect(err).toBeInstanceOf(EpsHttpError);
 		const httpErr = err as EpsHttpError;
 		expect(httpErr.status).toBe(403);
@@ -501,5 +506,357 @@ describe("EpsClient timeout", () => {
 	it("rejects a non-positive or non-finite timeoutMs at construction", () => {
 		for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY])
 			expect(() => build(vi.fn(), bad)).toThrow(/Invalid timeoutMs/);
+	});
+});
+
+// ── Shared fixtures for the three suites below (docs/sdk-golden-vector.md) ──
+
+const ok = () => new Response(JSON.stringify({ status: 0 }), { status: 200 });
+const http = (status: number) =>
+	new Response(JSON.stringify({ status: 1 }), { status });
+type FetchMock = ReturnType<typeof vi.fn>;
+const bodyOf = (fetchMock: FetchMock, i = 0): Record<string, unknown> =>
+	JSON.parse(fetchMock.mock.calls[i][1].body as string);
+const urlOf = (fetchMock: FetchMock, i = 0): string =>
+	String(fetchMock.mock.calls[i][0]);
+const make = (
+	fetchMock: unknown,
+	opts: Partial<ConstructorParameters<typeof EpsClient>[0]> = {},
+) =>
+	new EpsClient({
+		developerKey: "dev123",
+		accessKey: "TEST_ACCESS_KEY_DO_NOT_USE",
+		environment: "sandbox",
+		fetch: fetchMock as typeof fetch,
+		now: () => 1700000000000,
+		retryBaseDelayMs: 0,
+		...opts,
+	});
+/** pan-lite: POST, not financial. */
+const PAN = {
+	initiator_id: "9962981729",
+	pan_number: "BNZAA2318J",
+	name: "Rahul Sharma",
+	dob: "1990-01-01",
+};
+/** dmt-initiate-transfer: POST, financial, client_ref_id required. */
+const TRANSFER = {
+	initiator_id: "9962981729",
+	customer_id: "9123456789",
+	recipient_id: "1",
+	amount: 100,
+	otp: "123456",
+	otp_ref_id: "ref1",
+};
+const REF = /^[0-9a-z]{15}$/;
+
+describe("client_ref_id", () => {
+	it("generateClientRefId: 15 chars of [0-9a-z], stamp first, distinct tails", () => {
+		const a = generateClientRefId(1700000000000);
+		const b = generateClientRefId(1700000000000);
+		expect(a).toMatch(REF);
+		expect(a.slice(0, 8)).toBe((1700000000000).toString(36));
+		expect(a).not.toBe(b);
+	});
+
+	it("is generated for a non-GET call that did not supply one", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("pan-lite", PAN);
+		expect(bodyOf(f).client_ref_id).toMatch(REF);
+	});
+
+	it("keeps a supplied value untouched", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("pan-lite", { ...PAN, client_ref_id: "MY-REF_1" });
+		expect(bodyOf(f).client_ref_id).toBe("MY-REF_1");
+	});
+
+	it("satisfies an endpoint that requires client_ref_id", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("dmt-initiate-transfer", TRANSFER);
+		expect(bodyOf(f).client_ref_id).toMatch(REF);
+	});
+
+	it("is not added to a GET", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("bbps-get-operators", { initiator_id: "9962981729" });
+		expect(urlOf(f)).not.toContain("client_ref_id");
+	});
+
+	it("is not added when the endpoint omits the param", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("get-refund-otp", {
+			initiator_id: "9962981729",
+			tid: "1",
+		});
+		expect(bodyOf(f)).not.toHaveProperty("client_ref_id");
+	});
+
+	it("differs between successive calls", async () => {
+		const f = vi.fn(async () => ok());
+		const client = make(f);
+		await client.call("pan-lite", PAN);
+		await client.call("pan-lite", PAN);
+		expect(bodyOf(f, 0).client_ref_id).not.toBe(bodyOf(f, 1).client_ref_id);
+	});
+
+	it('treats "" as supplied, so it fails the client-ref format', async () => {
+		const f = vi.fn(async () => ok());
+		await expect(
+			make(f).call("pan-lite", { ...PAN, client_ref_id: "" }),
+		).rejects.toThrow(/client_ref_id \(expected format client-ref\)/);
+		expect(f).not.toHaveBeenCalled();
+	});
+});
+
+describe("retry and status check", () => {
+	const GET = ["bbps-get-operators", { initiator_id: "9962981729" }] as const;
+	const transportFailure = () => Promise.reject(new TypeError("fetch failed"));
+
+	it("GET: retries a 500 and returns the eventual 2xx, re-signing each attempt", async () => {
+		let t = 1700000000000;
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(http(500))
+			.mockResolvedValueOnce(ok());
+		const client = make(f, { now: () => t++ });
+		await expect(client.call(...GET)).resolves.toEqual({ status: 0 });
+		expect(f).toHaveBeenCalledTimes(2);
+		const ts = (i: number) =>
+			(f.mock.calls[i][1].headers as Record<string, string>)[
+				"secret-key-timestamp"
+			];
+		expect(ts(0)).not.toBe(ts(1));
+	});
+
+	it.each([
+		["transport failure", transportFailure],
+		[
+			"timeout",
+			() => Promise.reject(new DOMException("aborted", "TimeoutError")),
+		],
+		["HTTP 429", () => Promise.resolve(http(429))],
+		["HTTP 503", () => Promise.resolve(http(503))],
+	])(
+		"GET: %s on every attempt → retries × retries, then throws that failure",
+		async (_l, fail) => {
+			const f = vi.fn(fail);
+			await expect(make(f).call(...GET)).rejects.toThrow();
+			expect(f).toHaveBeenCalledTimes(3);
+		},
+	);
+
+	it("GET: does not retry a decisive 4xx", async () => {
+		const f = vi.fn(async () => http(400));
+		await expect(make(f).call(...GET)).rejects.toBeInstanceOf(EpsHttpError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("GET: retries: 0 disables retrying", async () => {
+		const f = vi.fn(async () => http(500));
+		await expect(make(f, { retries: 0 }).call(...GET)).rejects.toThrow();
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("POST: is never retried", async () => {
+		const f = vi.fn(async () => http(500));
+		await expect(make(f).call("pan-lite", PAN)).rejects.toBeInstanceOf(
+			EpsHttpError,
+		);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("financial POST + 5xx: inquires by client_ref_id and throws EpsIndeterminateError", async () => {
+		const inquiry = { status: 0, data: { tx_status: "0", tid: "1" } };
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(http(502))
+			.mockResolvedValueOnce(new Response(JSON.stringify(inquiry)));
+		const err = await make(f)
+			.call("dmt-initiate-transfer", TRANSFER)
+			.catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		const e = err as EpsIndeterminateError;
+		const ref = bodyOf(f, 0).client_ref_id as string;
+		expect(e.clientRefId).toBe(ref);
+		expect(e.slug).toBe("dmt-initiate-transfer");
+		expect(e.status).toBe(502);
+		expect(e.statusCheck).toEqual(inquiry);
+		expect(e.statusCheckError).toBeNull();
+		expect(e.cause).toBeInstanceOf(EpsHttpError);
+		expect(e.message).toBe(
+			`EPS request for "dmt-initiate-transfer" with client_ref_id "${ref}" has no confirmed outcome.`,
+		);
+		expect(f).toHaveBeenCalledTimes(2);
+		expect(urlOf(f, 1)).toContain(
+			`/tools/reference/transaction/client_ref_id%3A${ref}?initiator_id=9962981729`,
+		);
+		expect(f.mock.calls[1][1].method).toBe("GET");
+	});
+
+	it("financial POST + transport failure: same path, status null, supplied ref reused", async () => {
+		const f = vi
+			.fn()
+			.mockImplementationOnce(transportFailure)
+			.mockResolvedValueOnce(ok());
+		const err = (await make(f)
+			.call("dmt-initiate-transfer", { ...TRANSFER, client_ref_id: "MY-REF" })
+			.catch((e: unknown) => e)) as EpsIndeterminateError;
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		expect(err.clientRefId).toBe("MY-REF");
+		expect(err.status).toBeNull();
+		expect(err.cause).toBeInstanceOf(TypeError);
+		expect(urlOf(f, 1)).toContain("client_ref_id%3AMY-REF");
+	});
+
+	it("a failing inquiry (its GET retries exhausted) lands on statusCheckError, never masking the cause", async () => {
+		const f = vi
+			.fn()
+			.mockResolvedValueOnce(http(500))
+			.mockImplementation(async () => http(503));
+		const err = (await make(f)
+			.call("dmt-initiate-transfer", TRANSFER)
+			.catch((e: unknown) => e)) as EpsIndeterminateError;
+		expect(err).toBeInstanceOf(EpsIndeterminateError);
+		expect(err.statusCheck).toBeNull();
+		expect((err.statusCheckError as EpsHttpError).status).toBe(503);
+		expect((err.cause as EpsHttpError).status).toBe(500);
+		expect(f).toHaveBeenCalledTimes(1 + 3);
+	});
+
+	it("financial POST + decisive 4xx: plain EpsHttpError, no inquiry", async () => {
+		const f = vi.fn(async () => http(403));
+		await expect(
+			make(f).call("dmt-initiate-transfer", TRANSFER),
+		).rejects.toBeInstanceOf(EpsHttpError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("non-financial POST + 5xx: plain EpsHttpError, no inquiry", async () => {
+		const f = vi.fn(async () => http(500));
+		await expect(make(f).call("pan-lite", PAN)).rejects.toBeInstanceOf(
+			EpsHttpError,
+		);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("financial endpoint without a client_ref_id param (initiate-refund): no inquiry", async () => {
+		const f = vi.fn(async () => http(500));
+		await expect(
+			make(f).call("initiate-refund", {
+				initiator_id: "9962981729",
+				tid: "1",
+				otp: "1",
+			}),
+		).rejects.toBeInstanceOf(EpsHttpError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("autoStatusCheck: false → no inquiry", async () => {
+		const f = vi.fn(async () => http(500));
+		await expect(
+			make(f, { autoStatusCheck: false }).call(
+				"dmt-initiate-transfer",
+				TRANSFER,
+			),
+		).rejects.toBeInstanceOf(EpsHttpError);
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("rejects bad retries / retryBaseDelayMs at construction", () => {
+		for (const bad of [-1, 1.5, Number.NaN])
+			expect(() => make(vi.fn(), { retries: bad })).toThrow(/Invalid retries/);
+		for (const bad of [-1, Number.NaN])
+			expect(() => make(vi.fn(), { retryBaseDelayMs: bad })).toThrow(
+				/Invalid retryBaseDelayMs/,
+			);
+	});
+});
+
+describe("value validation", () => {
+	it("rejects a bad format and sends nothing", async () => {
+		const f = vi.fn(async () => ok());
+		await expect(
+			make(f).call("pan-lite", { ...PAN, dob: "01-01-1990" }),
+		).rejects.toThrow(
+			'Invalid param values for "pan-lite": dob (expected format date).',
+		);
+		expect(f).not.toHaveBeenCalled();
+	});
+
+	it("lists every offending param, in surface order", async () => {
+		await expect(
+			make(vi.fn()).call("pan-lite", {
+				...PAN,
+				pan_number: "bad",
+				dob: "1990-1-1",
+			}),
+		).rejects.toThrow(
+			'Invalid param values for "pan-lite": pan_number (expected format pan), dob (expected format date).',
+		);
+	});
+
+	it("matches the whole string — a trailing newline is rejected", async () => {
+		await expect(
+			make(vi.fn()).call("pan-lite", { ...PAN, dob: "1990-01-01\n" }),
+		).rejects.toThrow(/dob \(expected format date\)/);
+	});
+
+	it("maxLength counts UTF-8 bytes of the wire string", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("pan-lite", { ...PAN, client_ref_id: "x".repeat(20) });
+		await expect(
+			make(f).call("pan-lite", { ...PAN, client_ref_id: "x".repeat(21) }),
+		).rejects.toThrow(/client_ref_id \(expected format client-ref\)/);
+	});
+
+	it("does not enforce a param with no constraints", async () => {
+		const f = vi.fn(async () => ok());
+		await make(f).call("pan-lite", { ...PAN, name: "anything at all \n" });
+		expect(f).toHaveBeenCalledTimes(1);
+	});
+
+	it("rejects a value of the wrong type before value checks run", async () => {
+		await expect(
+			make(vi.fn()).call("pan-lite", { ...PAN, dob: true }),
+		).rejects.toThrow(/Invalid param types/);
+	});
+});
+
+describe("valueProblem", () => {
+	const formats = new Map([["date", /^\d{4}-\d{2}-\d{2}$/]]);
+	const check = (p: Partial<Parameters<typeof valueProblem>[0]>, v: unknown) =>
+		valueProblem(
+			{ name: "x", type: "string", required: false, ...p },
+			v,
+			formats,
+		);
+
+	it("enum compares wire strings", () => {
+		expect(check({ enum: [1, 2] }, "1")).toBeNull();
+		expect(check({ enum: [1, 2] }, 3)).toBe("not one of: 1, 2");
+	});
+
+	it("min/max are inclusive and numeric", () => {
+		expect(check({ type: "number", min: 1, max: 5 }, "1")).toBeNull();
+		expect(check({ type: "number", min: 1, max: 5 }, 5)).toBeNull();
+		expect(check({ type: "number", min: 1 }, 0.5)).toBe("below min 1");
+		expect(check({ type: "number", max: 5 }, "6")).toBe("above max 5");
+	});
+
+	it("maxLength is UTF-8 bytes, checked last", () => {
+		expect(check({ maxLength: 3 }, "abc")).toBeNull();
+		expect(check({ maxLength: 3 }, "é€")).toBe("longer than 3 bytes");
+	});
+
+	it("order: enum, then format, then range, then length", () => {
+		expect(check({ enum: ["a"], format: "date" }, "b")).toBe("not one of: a");
+		expect(check({ format: "date", maxLength: 1 }, "x")).toBe(
+			"expected format date",
+		);
+	});
+
+	it("skips non-scalar spec types", () => {
+		expect(check({ type: "object", maxLength: 1 }, { a: 1 })).toBeNull();
 	});
 });

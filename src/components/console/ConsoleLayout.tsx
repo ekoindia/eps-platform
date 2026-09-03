@@ -58,7 +58,7 @@ import {
  * (`DocsNavTree`): Home stands alone at the top, then three sections named for
  * what the partner is doing — Complete your KYC (onboarding they must clear),
  * Build (what they build with), Account & History (running the account). The
- * rail carries up to nine entries once entitlements resolve — past the point a
+ * rail carries up to ten entries once entitlements resolve — past the point a
  * flat list reads.
  */
 type NavItem = {
@@ -148,9 +148,9 @@ export function useConsoleMe(): MeView {
 }
 
 /**
- * KYC document upload. Heads the rail's first section when entitled: an
- * unfinished KYC pack is what blocks the account, so it outranks everything
- * else the rail offers.
+ * KYC document upload. Follows E-sign Documents in the rail's first section: an
+ * unfinished KYC pack is what blocks the account, so it outranks everything the
+ * rail offers except signing the agreement that gates the pack itself.
  */
 const DOCUMENTS_ITEM: NavItem = {
 	to: "/console/documents",
@@ -161,17 +161,22 @@ const DOCUMENTS_ITEM: NavItem = {
 
 /**
  * Self-service flows the rail links straight to. Each is placed by hand rather
- * than as one block: Sign Agreement closes the KYC section, Manage My Account
+ * than as one block: E-sign Documents opens the KYC section, Manage My Account
  * and AePS Agents sit under Account & History.
  */
 type Flow = { id: number; label: string; icon: typeof FilePen };
 
-// Old Sign Agreement (tick "I Agree" and submit)
-// const SIGN_AGREEMENT: Flow = {
-// 	id: 898,
-// 	label: "Sign Agreement",
-// 	icon: FilePen,
-// };
+/**
+ * E-signing the partner agreement. Opens the KYC section: the document pack
+ * behind Upload Documents is what the signed agreement covers, so signing comes
+ * first. Replaces the retired 898 "Sign Agreement" flow (tick "I Agree" and
+ * submit), which this supersedes rather than sits beside.
+ */
+const ESIGN_DOCUMENTS: Flow = {
+	id: 223,
+	label: "E-sign Documents",
+	icon: FilePen,
+};
 const MANAGE_ACCOUNT: Flow = {
 	id: 536,
 	label: "Manage My Account",
@@ -234,8 +239,8 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			// Nothing to finish, nothing to show: an empty group renders no caption.
 			title: "Complete your KYC",
 			items: [
+				...flowItem(interactions, ESIGN_DOCUMENTS),
 				...(kycEnabled ? [DOCUMENTS_ITEM] : []),
-				// ...flowItem(interactions, SIGN_AGREEMENT),
 			],
 		},
 		{

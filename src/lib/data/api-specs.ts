@@ -276,6 +276,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
 				example: "1990-05-15",
@@ -381,6 +382,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "aadhar",
 				type: "string",
+				format: "aadhaar",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
 				example: "234567890123",
@@ -809,6 +811,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description: "IFSC code of the beneficiary's bank branch.",
 				example: "SBIN0007515",
@@ -1374,6 +1377,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "ifsc",
 				label: "Settlement Account IFSC",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description:
 					"IFSC of the branch holding the settlement `account`. 11 characters.",
@@ -1419,6 +1423,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "aadhar",
 				label: "Aadhaar Number",
 				type: "string",
+				format: "aadhaar",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
 				example: "123456789012",
@@ -1454,6 +1459,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "latlong",
 				label: "Geolocation",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"GPS coordinates of the agent for whom AePS Fingpay service is being activated. Format: <latitude,longitude>",
@@ -1715,6 +1721,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
@@ -1849,6 +1856,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
@@ -1964,6 +1972,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"Agent's GPS coordinates as `latitude,longitude`. Required for security and fraud prevention.",
@@ -2096,6 +2105,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"GPS coordinates of the agent's location at the time of daily KYC.",
@@ -2253,6 +2263,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
@@ -2642,6 +2653,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
@@ -2903,6 +2915,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"GPS coordinates of the transaction origin in 'latitude,longitude' format.",
@@ -3156,6 +3169,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description: "IFSC code of the bank account.",
 				example: "SBIN0000000",
@@ -4978,6 +4992,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"Agent's GPS coordinates as `latitude,longitude`. Mandatory for BBPS agent activation.",
@@ -5115,6 +5130,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"Agent's current GPS coordinates in 'latitude,longitude' format. Used for geo-tagging the collection event.",
@@ -6001,6 +6017,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "pan_number",
 				label: "PAN Number",
 				type: "string",
+				format: "pan",
 				required: true,
 				description:
 					"10-character alphanumeric PAN identifier (5 letters, 4 digits, 1 letter).",
@@ -6090,6 +6107,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "pan_number",
 				label: "PAN Number",
 				type: "string",
+				format: "pan",
 				required: true,
 				description:
 					"10-character alphanumeric PAN identifier (5 letters, 4 digits, 1 letter).",
@@ -6106,6 +6124,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "dob",
 				label: "Date of Birth",
 				type: "string",
+				format: "date",
 				required: true,
 				description: "Date of birth in YYYY-MM-DD format.",
 				example: "1994-08-29",
@@ -6252,6 +6271,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "pan",
 				label: "PAN Number",
 				type: "string",
+				format: "pan",
 				required: true,
 				description:
 					"10-character alphanumeric PAN identifier (first 5 alphabets, 4 digits, 1 alphabet).",
@@ -6742,6 +6762,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "aadhar",
 				type: "string",
+				format: "aadhaar",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
 				example: "123456789012",
@@ -6961,6 +6982,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "aadhar",
 				type: "string",
+				format: "aadhaar",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
 				example: "123456789012",
@@ -7259,6 +7281,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description: "Date of birth of the sender in YYYY-MM-DD format.",
 				example: "1990-05-15",
@@ -7573,6 +7596,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "pan_number",
 				type: "string",
+				format: "pan",
 				required: false,
 				description: "The PAN number of the sender.",
 				example: "ABCDE1234F",
@@ -7906,6 +7930,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description: "IFSC code of the recipient's bank branch.",
 				example: "KKBK0000878",
@@ -8186,6 +8211,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: false,
 				description: "Geographic coordinates of the user's location.",
 				example: "28.63,77.22",
@@ -8434,6 +8460,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description: "Date of birth of the sender in YYYY-MM-DD format.",
 				example: "1990-05-15",
@@ -8933,6 +8960,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "aadhar",
 				type: "string",
+				format: "aadhaar",
 				required: true,
 				description: "12-digit Aadhaar number of the sender.",
 				example: "123456789012",
@@ -9050,6 +9078,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "pan_number",
 				type: "string",
+				format: "pan",
 				required: true,
 				description: "The PAN number of the sender.",
 				example: "ABCDE1234F",
@@ -9721,6 +9750,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: false,
 				description: "Geographic coordinates of the user's location.",
 				example: "28.63,77.22",
@@ -9866,6 +9896,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "pan_number",
 				type: "string",
+				format: "pan",
 				required: true,
 				description: "PAN card number of the agent.",
 				example: "ABCDE1234F",
@@ -9916,6 +9947,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description: "Date of birth of the agent in YYYY-MM-DD format.",
 				example: "1990-05-15",
@@ -10324,6 +10356,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description: "Date of birth of the customer in YYYY-MM-DD format.",
 				example: "1990-05-15",
@@ -10890,6 +10923,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				type: "string",
+				format: "ifsc",
 				required: false,
 				description: "IFSC code to narrow the lookup.",
 				example: "IDFB0080202",
@@ -10975,6 +11009,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "ifsc",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description: "IFSC code of the bank branch.",
 				example: "IOBA0002248",
@@ -11503,16 +11538,17 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "number",
 				required: true,
 				description: "Complete bank account number to be verified.",
-				example: 1234567890,
+				example: "026291800001191",
 			},
 			{
 				name: "ifsc",
 				label: "IFSC Code",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description:
 					"IFSC code of the bank account to be verified (11-character alphanumeric).",
-				example: "SBIN0001234",
+				example: "YESB0000262",
 			},
 		],
 		responseData: [
@@ -11667,6 +11703,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "ifsc",
 				label: "IFSC Code",
 				type: "string",
+				format: "ifsc",
 				required: true,
 				description:
 					"IFSC code of the bank account to be verified (11-character alphanumeric).",
@@ -12379,6 +12416,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "pan",
 				type: "string",
+				format: "pan",
 				required: true,
 				description:
 					"10-character alphanumeric PAN of the business or individual (5 letters, 4 digits, 1 letter).",
@@ -12536,6 +12574,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "latlong",
 				type: "string",
+				format: "lat-long",
 				required: true,
 				description:
 					"Geo-coordinates of the request origination point (latitude,longitude).",
@@ -12667,6 +12706,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description:
 					"Date of birth of the DL holder in YYYY-MM-DD format. Used to cross-validate the license.",
@@ -14736,6 +14776,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "dob",
 				type: "string",
+				format: "date",
 				required: true,
 				description:
 					"Date of birth of the passport holder in YYYY-MM-DD format.",
@@ -15319,6 +15360,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 			{
 				name: "pan_number",
 				type: "string",
+				format: "pan",
 				required: true,
 				description:
 					"PAN number of the individual or entity to check for ITR compliance (10-character alphanumeric, e.g. ABCDE1234F).",
@@ -16171,6 +16213,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "mobile",
 				label: "Mobile Number",
 				type: "string",
+				format: "mobile",
 				required: true,
 				description:
 					"Customer's 10-digit primary mobile number to send the OTP to.",
@@ -16251,6 +16294,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				name: "mobile",
 				label: "Mobile Number",
 				type: "string",
+				format: "mobile",
 				required: true,
 				description: "The same 10-digit mobile number the OTP was sent to.",
 				example: "9002336768",

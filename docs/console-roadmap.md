@@ -31,7 +31,7 @@ container and their own `<h1>`.
 
 Links are grouped under the docs rail's uppercase captions rather than flat, and
 the captions name what the partner is *doing*, not what the link *is*: **Home**
-alone at the top, then **Complete your KYC** (Upload Documents, Sign Agreement),
+alone at the top, then **Complete your KYC** (E-sign Documents, Upload Documents),
 **Build** (Credentials, `Integration Docs ↗`, `Build with AI Tools ↗`, Live
 Sandbox (KYC & Verification)) and
 **Account & History** (Load Wallet, Transaction History, Manage My Account, AePS
