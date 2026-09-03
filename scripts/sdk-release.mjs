@@ -59,8 +59,14 @@ const SURFACE = "dist/agent/sdk-surface.json";
  *   error envelope (Node, PHP), a 30s request timeout applies where there was
  *   none, and PHP's constructor gained a `$timeout` parameter. See the
  *   "Response and error contract conformance" section of
- *   docs/sdk-golden-vector.md. */
-const VERSION_FLOOR = "2.0.0";
+ *   docs/sdk-golden-vector.md.
+ * - 3.0.0 — every non-GET call carries a generated `client_ref_id` when the
+ *   caller sends none, GETs retry by default, a financial non-GET with no
+ *   confirmed outcome is followed by a status check and fails with a new
+ *   indeterminate error, and spec-driven value validation (format / enum /
+ *   range / length) rejects values that 2.x let through. See the three
+ *   conformance sections added to docs/sdk-golden-vector.md. */
+const VERSION_FLOOR = "3.0.0";
 
 /** Marker for the fingerprint stored in an annotated tag's message. */
 const FINGERPRINT_PREFIX = "sdk-fingerprint:";

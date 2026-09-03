@@ -62,6 +62,9 @@ leaked access key lets anyone transact as you.
   `multipart/form-data` for file-upload endpoints, per the endpoint's spec.
 - **Fails loudly** — a non-2xx response returns `*eps.HTTPError` (with the
   decoded envelope on `.Body`); a non-JSON body is an error, never an empty map.
+- **Never loses a transaction** — every non-GET call carries a `client_ref_id` (yours, or a generated 15-char one). A money-moving call that times out is looked up by that ref and surfaced as `*eps.IndeterminateError` with the inquiry result attached, never silently re-sent.
+- **Retries the safe things** — a GET that times out or gets a 429/5xx is retried with jittered backoff (`Config.Retries`, default 2); non-GET calls are never re-sent.
+- **Validates values too** — spec-driven format / enum / range / length rules (dates, PAN, IFSC, `client_ref_id` …) fail before the request is signed.
 
 Uploads take a path or in-memory bytes:
 
@@ -73,8 +76,24 @@ client.Call(ctx, "activate-aeps-fingpay", map[string]any{
 })
 ```
 
-Pass `Config.HTTPClient` to control timeouts, proxies or retries; the default is
-a client with a 30s timeout.
+Pass `Config.HTTPClient` to control timeouts or proxies; the default is a
+client with a 30s per-attempt timeout.
+
+Reconciling an indeterminate transaction:
+
+```go
+_, err := client.Call(ctx, "bbps-pay-bill", params)
+var ind *eps.IndeterminateError
+if errors.As(err, &ind) {
+	// ind.ClientRefID — persist it; ind.StatusCheck["data"].(map[string]any)["tx_status"]:
+	// "0" success, "1" fail, "2" awaited. Inquire again later with
+	// client.Call(ctx, "transaction-inquiry", map[string]any{"transaction-reference": "client_ref_id:" + ind.ClientRefID})
+}
+```
+
+Knobs: `Config.Retries` (nil → 2), `Config.RetryBaseDelay` (0 → 200ms),
+`Config.AutoStatusCheck` (nil → true). A transport failure is a
+`*eps.TransportError` wrapping the native error.
 
 ## Zero dependencies
 
