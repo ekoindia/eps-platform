@@ -3,6 +3,8 @@ use PHPUnit\Framework\TestCase;
 use Eko\Eps\EpsClient;
 use Eko\Eps\EpsException;
 use Eko\Eps\EpsHttpException;
+use Eko\Eps\EpsIndeterminateException;
+use Eko\Eps\EpsTransportException;
 
 final class EpsClientTest extends TestCase
 {
@@ -333,5 +335,337 @@ final class EpsClientTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox', timeout: 0.0);
+    }
+
+    // ── Shared fixtures for the suites below (docs/sdk-golden-vector.md) ────────
+
+    private const REF = '/^[0-9a-z]{15}$/';
+    /** pan-lite: POST, not financial. */
+    private const PAN = [
+        'initiator_id' => '9962981729',
+        'pan_number' => 'BNZAA2318J',
+        'name' => 'Rahul Sharma',
+        'dob' => '1990-01-01',
+    ];
+    /** dmt-initiate-transfer: POST, financial, client_ref_id required. */
+    private const TRANSFER = [
+        'initiator_id' => '9962981729',
+        'customer_id' => '9123456789',
+        'recipient_id' => '1',
+        'amount' => 100,
+        'otp' => '123456',
+        'otp_ref_id' => 'ref1',
+    ];
+    private const GET_ARGS = ['bbps-get-operators', ['initiator_id' => '9962981729']];
+    private const OK = '{"status":0}';
+
+    /**
+     * Scripted transport standing in for cURL: each step is [status, raw], a
+     * \Throwable to throw, or a closure. Records every target + options so
+     * URLs, bodies and headers can be asserted.
+     */
+    private static function transport(array $script): object
+    {
+        return new class($script) {
+            public array $requests = [];
+            public function __construct(private array $script) {}
+            public function __invoke(array $target, array $options): array
+            {
+                $this->requests[] = ['target' => $target, 'options' => $options];
+                $step = count($this->script) > 1 ? array_shift($this->script) : $this->script[0];
+                if ($step instanceof \Throwable) throw $step;
+                return $step;
+            }
+            public function body(int $i = 0): array { return json_decode($this->requests[$i]['target']['body'], true); }
+            public function url(int $i = 0): string { return $this->requests[$i]['target']['url']; }
+            public function timestamp(int $i = 0): string
+            {
+                foreach ($this->requests[$i]['options'][CURLOPT_HTTPHEADER] as $h) {
+                    if (str_starts_with($h, 'secret-key-timestamp: ')) return substr($h, 22);
+                }
+                return '';
+            }
+        };
+    }
+
+    private static function fast($transport, array $opts = []): EpsClient
+    {
+        return new EpsClient('dev123', 'TEST_ACCESS_KEY_DO_NOT_USE', 'sandbox',
+            ...array_merge(['retryBaseDelay' => 0.0, 'now' => fn () => 1700000000000, 'transport' => $transport], $opts));
+    }
+
+    private static function http(int $status): array { return [$status, '{"status":1}']; }
+    private static function transportFailure(): EpsTransportException
+    {
+        return new EpsTransportException('EPS request to x failed: Could not resolve host');
+    }
+
+    // ── client_ref_id ──────────────────────────────────────────────────────────
+
+    public function testGenerateClientRefIdShape(): void
+    {
+        $a = EpsClient::generateClientRefId(1700000000000);
+        $b = EpsClient::generateClientRefId(1700000000000);
+        $this->assertMatchesRegularExpression(self::REF, $a);
+        $this->assertStringStartsWith(base_convert('1700000000000', 10, 36), $a);
+        $this->assertNotSame($a, $b);
+    }
+
+    public function testClientRefIdGeneratedForNonGet(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        self::fast($t)->call('pan-lite', self::PAN);
+        $this->assertMatchesRegularExpression(self::REF, $t->body()['client_ref_id']);
+    }
+
+    public function testClientRefIdSuppliedValueKept(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        self::fast($t)->call('pan-lite', self::PAN + ['client_ref_id' => 'MY-REF_1']);
+        $this->assertSame('MY-REF_1', $t->body()['client_ref_id']);
+    }
+
+    public function testClientRefIdSatisfiesRequiredParam(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+        $this->assertMatchesRegularExpression(self::REF, $t->body()['client_ref_id']);
+    }
+
+    public function testClientRefIdNotAddedToGet(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        self::fast($t)->call(...self::GET_ARGS);
+        $this->assertStringNotContainsString('client_ref_id', $t->url());
+    }
+
+    public function testClientRefIdNotAddedWhenEndpointOmitsIt(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        self::fast($t)->call('get-refund-otp', ['initiator_id' => '9962981729', 'tid' => '1']);
+        $this->assertArrayNotHasKey('client_ref_id', $t->body());
+    }
+
+    public function testClientRefIdDiffersBetweenCalls(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        $client = self::fast($t);
+        $client->call('pan-lite', self::PAN);
+        $client->call('pan-lite', self::PAN);
+        $this->assertNotSame($t->body(0)['client_ref_id'], $t->body(1)['client_ref_id']);
+    }
+
+    public function testEmptyClientRefIdCountsAsSupplied(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/client_ref_id \(expected format client-ref\)/');
+        try {
+            self::fast($t)->call('pan-lite', self::PAN + ['client_ref_id' => '']);
+        } finally {
+            $this->assertSame([], $t->requests);
+        }
+    }
+
+    // ── retry and status check ─────────────────────────────────────────────────
+
+    public function testGetRetries500ThenSucceedsResigning(): void
+    {
+        $clock = 1700000000000;
+        $t = self::transport([self::http(500), [200, self::OK]]);
+        $client = self::fast($t, ['now' => function () use (&$clock) { return $clock++; }]);
+        $this->assertSame(['status' => 0], $client->call(...self::GET_ARGS));
+        $this->assertCount(2, $t->requests);
+        $this->assertNotSame($t->timestamp(0), $t->timestamp(1));
+    }
+
+    public function testGetIndeterminateEveryAttemptThenThrows(): void
+    {
+        foreach ([self::transportFailure(), self::http(429), self::http(503)] as $failure) {
+            $t = self::transport([$failure]);
+            try {
+                self::fast($t)->call(...self::GET_ARGS);
+                $this->fail('expected an exception');
+            } catch (EpsException $e) {
+                $this->assertCount(3, $t->requests);
+            }
+        }
+    }
+
+    public function testGetDoesNotRetry4xx(): void
+    {
+        $t = self::transport([self::http(400)]);
+        $this->expectException(EpsHttpException::class);
+        try { self::fast($t)->call(...self::GET_ARGS); } finally { $this->assertCount(1, $t->requests); }
+    }
+
+    public function testRetriesZeroDisables(): void
+    {
+        $t = self::transport([self::http(500)]);
+        $this->expectException(EpsHttpException::class);
+        try { self::fast($t, ['retries' => 0])->call(...self::GET_ARGS); } finally { $this->assertCount(1, $t->requests); }
+    }
+
+    public function testPostNeverRetried(): void
+    {
+        $t = self::transport([self::http(500)]);
+        $this->expectException(EpsHttpException::class);
+        try { self::fast($t)->call('pan-lite', self::PAN); } finally { $this->assertCount(1, $t->requests); }
+    }
+
+    public function testFinancialPost5xxInquiresAndThrowsIndeterminate(): void
+    {
+        $inquiry = ['status' => 0, 'data' => ['tx_status' => '0', 'tid' => '1']];
+        $t = self::transport([self::http(502), [200, json_encode($inquiry)]]);
+        try {
+            self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $ref = $t->body(0)['client_ref_id'];
+            $this->assertSame($ref, $e->clientRefId);
+            $this->assertSame('dmt-initiate-transfer', $e->slug);
+            $this->assertSame(502, $e->status);
+            $this->assertSame($inquiry, $e->statusCheck);
+            $this->assertNull($e->statusCheckError);
+            $this->assertInstanceOf(EpsHttpException::class, $e->getPrevious());
+            $this->assertSame(
+                "EPS request for \"dmt-initiate-transfer\" with client_ref_id \"$ref\" has no confirmed outcome.",
+                $e->getMessage()
+            );
+            $this->assertCount(2, $t->requests);
+            $this->assertStringContainsString(
+                "/tools/reference/transaction/client_ref_id%3A$ref?initiator_id=9962981729",
+                $t->url(1)
+            );
+            $this->assertSame('GET', $t->requests[1]['target']['method']);
+        }
+    }
+
+    public function testFinancialPostTransportFailureReusesSuppliedRef(): void
+    {
+        $t = self::transport([self::transportFailure(), [200, self::OK]]);
+        try {
+            self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER + ['client_ref_id' => 'MY-REF']);
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $this->assertSame('MY-REF', $e->clientRefId);
+            $this->assertNull($e->status);
+            $this->assertInstanceOf(EpsTransportException::class, $e->getPrevious());
+            $this->assertStringContainsString('client_ref_id%3AMY-REF', $t->url(1));
+        }
+    }
+
+    public function testFailingInquiryLandsOnStatusCheckError(): void
+    {
+        $t = self::transport([self::http(500), self::http(503)]);
+        try {
+            self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER);
+            $this->fail('expected EpsIndeterminateException');
+        } catch (EpsIndeterminateException $e) {
+            $this->assertNull($e->statusCheck);
+            $this->assertSame(503, $e->statusCheckError->status);
+            $this->assertSame(500, $e->getPrevious()->status);
+            $this->assertCount(1 + 3, $t->requests);
+        }
+    }
+
+    public function testFinancialPost4xxIsPlainHttpException(): void
+    {
+        $t = self::transport([self::http(403)]);
+        $this->expectException(EpsHttpException::class);
+        try { self::fast($t)->call('dmt-initiate-transfer', self::TRANSFER); } finally { $this->assertCount(1, $t->requests); }
+    }
+
+    public function testNonFinancialPost5xxNoInquiry(): void
+    {
+        $t = self::transport([self::http(500)]);
+        $this->expectException(EpsHttpException::class);
+        try { self::fast($t)->call('pan-lite', self::PAN); } finally { $this->assertCount(1, $t->requests); }
+    }
+
+    public function testFinancialWithoutRefParamNoInquiry(): void
+    {
+        $t = self::transport([self::http(500)]);
+        $this->expectException(EpsHttpException::class);
+        try {
+            self::fast($t)->call('initiate-refund', ['initiator_id' => '9962981729', 'tid' => '1', 'otp' => '1']);
+        } finally {
+            $this->assertCount(1, $t->requests);
+        }
+    }
+
+    public function testAutoStatusCheckOff(): void
+    {
+        $t = self::transport([self::http(500)]);
+        $this->expectException(EpsHttpException::class);
+        try {
+            self::fast($t, ['autoStatusCheck' => false])->call('dmt-initiate-transfer', self::TRANSFER);
+        } finally {
+            $this->assertCount(1, $t->requests);
+        }
+    }
+
+    public function testRejectsBadRetryKnobsAtConstruction(): void
+    {
+        foreach ([['retries' => -1], ['retryBaseDelay' => -1.0], ['retryBaseDelay' => NAN]] as $bad) {
+            try {
+                self::fast(null, $bad);
+                $this->fail('expected InvalidArgumentException');
+            } catch (\InvalidArgumentException $e) {
+                $this->assertStringStartsWith('Invalid retr', $e->getMessage());
+            }
+        }
+    }
+
+    // ── value validation ───────────────────────────────────────────────────────
+
+    public function testRejectsBadFormatAndSendsNothing(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        try {
+            self::fast($t)->call('pan-lite', ['dob' => '01-01-1990'] + self::PAN);
+            $this->fail('expected InvalidArgumentException');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertSame('Invalid param values for "pan-lite": dob (expected format date).', $e->getMessage());
+            $this->assertSame([], $t->requests);
+        }
+    }
+
+    public function testListsEveryOffenderInSurfaceOrder(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid param values for "pan-lite": pan_number (expected format pan), dob (expected format date).');
+        self::fast(null)->resolveTarget('pan-lite', ['pan_number' => 'bad', 'dob' => '1990-1-1'] + self::PAN);
+    }
+
+    public function testWholeStringMatchRejectsTrailingNewline(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/dob \(expected format date\)/');
+        self::fast(null)->resolveTarget('pan-lite', ['dob' => "1990-01-01\n"] + self::PAN);
+    }
+
+    public function testUnconstrainedParamPasses(): void
+    {
+        $t = self::transport([[200, self::OK]]);
+        self::fast($t)->call('pan-lite', ['name' => "anything at all \n"] + self::PAN);
+        $this->assertCount(1, $t->requests);
+    }
+
+    public function testValueProblemHelper(): void
+    {
+        $formats = ['date' => '~^\d{4}-\d{2}-\d{2}$~D'];
+        $check = fn ($value, array $p) => EpsClient::valueProblem($p + ['name' => 'x', 'type' => 'string'], $value, $formats);
+        $this->assertNull($check('1', ['enum' => [1, 2]]));
+        $this->assertSame('not one of: 1, 2', $check(3, ['enum' => [1, 2]]));
+        $this->assertNull($check('1', ['type' => 'number', 'min' => 1, 'max' => 5]));
+        $this->assertNull($check(5, ['type' => 'number', 'min' => 1, 'max' => 5]));
+        $this->assertSame('below min 1', $check(0.5, ['type' => 'number', 'min' => 1]));
+        $this->assertSame('above max 5', $check('6', ['type' => 'number', 'max' => 5]));
+        $this->assertNull($check('abc', ['maxLength' => 3]));
+        $this->assertSame('longer than 3 bytes', $check('é€', ['maxLength' => 3]));
+        $this->assertSame('not one of: a', $check('b', ['enum' => ['a'], 'format' => 'date']));
+        $this->assertSame('expected format date', $check('x', ['format' => 'date', 'maxLength' => 1]));
+        $this->assertNull($check(['a' => 1], ['type' => 'object', 'maxLength' => 1]));
     }
 }
