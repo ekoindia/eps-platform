@@ -11538,7 +11538,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "number",
 				required: true,
 				description: "Complete bank account number to be verified.",
-				example: 1234567890,
+				example: "026291800001191",
 			},
 			{
 				name: "ifsc",
@@ -11548,7 +11548,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				required: true,
 				description:
 					"IFSC code of the bank account to be verified (11-character alphanumeric).",
-				example: "SBIN0001234",
+				example: "YESB0000262",
 			},
 		],
 		responseData: [
