@@ -13,13 +13,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	cryptorand "crypto/rand"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
+	"math/big"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -39,7 +43,19 @@ import (
 // src/lib/data/api-specs-common.ts.
 const MultipartJSONField = "form-data"
 
+// defaultTimeout is the per-attempt budget, matching every other EPS SDK.
 const defaultTimeout = 30 * time.Second
+
+const (
+	// defaultRetries is the extra attempts for a GET that ended indeterminate.
+	defaultRetries = 2
+	// defaultRetryBaseDelay: attempt n waits a random slice of min(base × 2^(n-1), 2s).
+	defaultRetryBaseDelay = 200 * time.Millisecond
+	maxRetryDelay         = 2 * time.Second
+	// inquirySlug is the generic status-check endpoint, keyed by TID or
+	// "client_ref_id:<ref>".
+	inquirySlug = "transaction-inquiry"
+)
 
 // surfaceJSON is the generated API surface, baked in at build time by
 // scripts/bake-surface.mjs. It is gitignored in the monorepo (run `npm run
@@ -59,6 +75,15 @@ type Param struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Required bool   `json:"required"`
+	// Format keys the surface's formats table; the wire string must match.
+	Format string `json:"format,omitempty"`
+	// Enum lists the allowed values, compared as wire strings.
+	Enum []any `json:"enum,omitempty"`
+	// Min and Max are inclusive numeric bounds.
+	Min *float64 `json:"min,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	// MaxLength caps the wire string, in UTF-8 bytes.
+	MaxLength *int `json:"maxLength,omitempty"`
 }
 
 // Endpoint is one callable API, addressed by its Slug.
@@ -68,6 +93,9 @@ type Endpoint struct {
 	Path           string   `json:"path"`
 	Params         []Param  `json:"params"`
 	RequiredParams []string `json:"requiredParams"`
+	// Financial marks a money-moving endpoint: an indeterminate failure is
+	// followed by a status check on the client_ref_id before the error surfaces.
+	Financial bool `json:"financial,omitempty"`
 }
 
 type environment struct {
@@ -76,8 +104,9 @@ type environment struct {
 }
 
 type surface struct {
-	Environments []environment `json:"environments"`
-	Endpoints    []Endpoint    `json:"endpoints"`
+	Environments []environment     `json:"environments"`
+	Endpoints    []Endpoint        `json:"endpoints"`
+	Formats      map[string]string `json:"formats"`
 }
 
 var loadedSurface = func() surface {
@@ -87,6 +116,26 @@ var loadedSurface = func() surface {
 	}
 	return s
 }()
+
+// formatRes is the surface's format table compiled once. A pattern that does
+// not compile is corrupt package data, so it panics at init like the surface
+// itself — never silently skipping a validation. RE2 has no multiline mode by
+// default, so "$" is the true end of the text and a trailing newline cannot
+// slip past.
+var formatRes = func() map[string]*regexp.Regexp {
+	res := make(map[string]*regexp.Regexp, len(loadedSurface.Formats))
+	for name, pattern := range loadedSurface.Formats {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			panic(fmt.Sprintf("eps: embedded SDK surface is invalid or corrupt: format %q does not compile: %v", name, err))
+		}
+		res[name] = re
+	}
+	return res
+}()
+
+// scalarTypes are the spec types whose values the value checks can stringify.
+var scalarTypes = map[string]bool{"string": true, "number": true, "integer": true, "boolean": true}
 
 // File is an in-memory upload, for callers that do not have the bytes on disk.
 type File struct {
@@ -108,6 +157,76 @@ func (e *HTTPError) Error() string {
 	return fmt.Sprintf("eps: request to %s failed with HTTP %d", e.URL, e.StatusCode)
 }
 
+// TransportError wraps a failure that produced no response at all — DNS,
+// connect, TLS, or the per-attempt timeout. Err is the native error (a
+// *url.Error, context.DeadlineExceeded, …) and is reachable with errors.As /
+// errors.Is. The outcome is unknown, which is what separates it from a decode
+// failure: a GET is retried, a financial non-GET gets a status check.
+type TransportError struct {
+	URL string
+	Err error
+}
+
+func (e *TransportError) Error() string {
+	return fmt.Sprintf("eps: request to %s failed: %v", e.URL, e.Err)
+}
+
+func (e *TransportError) Unwrap() error { return e.Err }
+
+// IndeterminateError is a non-GET call on a money-moving endpoint that ended
+// without a confirmed outcome (timeout, transport failure, HTTP 429 or 5xx).
+// The SDK never re-sends such a request — that is how a customer gets debited
+// twice — so it inquired by the call's client_ref_id instead and reports what
+// it found. StatusCheck is the Transaction Inquiry envelope (data.tx_status:
+// "0" success, "1" fail, "2" awaited, …) or nil when the inquiry itself
+// failed, in which case StatusCheckErr says why. Err is the original failure,
+// reachable with errors.As (for *HTTPError) and errors.Is. Reconcile with the
+// ref before retrying; never assume a timeout meant failure.
+type IndeterminateError struct {
+	Slug        string
+	ClientRefID string
+	// Status is the HTTP status of the original attempt, or 0 for a transport
+	// failure.
+	Status         int
+	StatusCheck    map[string]any
+	StatusCheckErr error
+	Err            error
+}
+
+func (e *IndeterminateError) Error() string {
+	return fmt.Sprintf("eps: request for %q with client_ref_id %q has no confirmed outcome", e.Slug, e.ClientRefID)
+}
+
+func (e *IndeterminateError) Unwrap() error { return e.Err }
+
+// isIndeterminate reports whether the outcome is unknown: no response, or a
+// 429/5xx that says nothing about whether the request was processed. A 4xx is
+// a decisive no, and so is a 2xx that failed to decode.
+func isIndeterminate(err error) bool {
+	var httpErr *HTTPError
+	if errors.As(err, &httpErr) {
+		return httpErr.StatusCode == 429 || httpErr.StatusCode >= 500
+	}
+	var transportErr *TransportError
+	return errors.As(err, &transportErr)
+}
+
+// GenerateClientRefID mints a client_ref_id for a non-GET call that did not
+// supply one: base36 millisecond stamp (sortable, greppable against a log
+// line) plus 7 random base36 chars, exactly 15 of [0-9a-z]. Under EPS's
+// 20-char limit with ~7.8e10 distinct tails per millisecond, so concurrent
+// processes cannot collide in practice. Same shape in every SDK — see
+// docs/sdk-golden-vector.md.
+func GenerateClientRefID(nowMs int64) string {
+	n, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(math.Pow(36, 7))))
+	if err != nil {
+		panic(fmt.Sprintf("eps: crypto/rand unavailable: %v", err))
+	}
+	tail := fmt.Sprintf("%07s", strconv.FormatInt(n.Int64(), 36))
+	ref := strconv.FormatInt(nowMs, 36) + tail
+	return ref[len(ref)-15:]
+}
+
 // Config constructs a Client. InitiatorID and UserCode are near-constant per
 // developer, so they are set once here and injected into every call; pass
 // either in a call's params to override (including an explicit nil to clear).
@@ -118,15 +237,30 @@ type Config struct {
 	Environment string
 	InitiatorID string
 	UserCode    string
-	// HTTPClient defaults to a client with a 30s timeout.
+	// HTTPClient defaults to a client with a 30s per-attempt timeout.
 	HTTPClient *http.Client
+	// Retries is the number of extra attempts for a GET whose outcome was
+	// indeterminate (timeout, transport failure, HTTP 429/5xx). nil means the
+	// default of 2 — three tries in all; point at 0 to disable. Non-GET calls
+	// are never retried.
+	Retries *int
+	// RetryBaseDelay is the backoff base: attempt n waits a random slice of
+	// min(base × 2^(n-1), 2s). Zero means the default of 200ms.
+	RetryBaseDelay time.Duration
+	// AutoStatusCheck: after an indeterminate failure on a financial endpoint,
+	// look the transaction up by its client_ref_id and surface the result on
+	// IndeterminateError.StatusCheck. nil means the default of true.
+	AutoStatusCheck *bool
 }
 
 // Client is a signed EPS API client. Safe for concurrent use.
 type Client struct {
-	cfg     Config
-	baseURL string
-	http    *http.Client
+	cfg             Config
+	baseURL         string
+	http            *http.Client
+	retries         int
+	retryBaseDelay  time.Duration
+	autoStatusCheck bool
 	// now is test-only clock injection (milliseconds since the epoch); not part
 	// of the public surface.
 	now func() int64
@@ -135,12 +269,30 @@ type Client struct {
 // New validates the config against the baked surface and returns a client.
 func New(cfg Config) (*Client, error) {
 	c := &Client{
-		cfg:  cfg,
-		http: cfg.HTTPClient,
-		now:  func() int64 { return time.Now().UnixMilli() },
+		cfg:             cfg,
+		http:            cfg.HTTPClient,
+		retries:         defaultRetries,
+		retryBaseDelay:  defaultRetryBaseDelay,
+		autoStatusCheck: true,
+		now:             func() int64 { return time.Now().UnixMilli() },
 	}
 	if c.http == nil {
 		c.http = &http.Client{Timeout: defaultTimeout}
+	}
+	if cfg.Retries != nil {
+		if *cfg.Retries < 0 {
+			return nil, fmt.Errorf("Invalid retries: %d. Expected a non-negative integer.", *cfg.Retries)
+		}
+		c.retries = *cfg.Retries
+	}
+	if cfg.RetryBaseDelay < 0 {
+		return nil, fmt.Errorf("Invalid retry base delay: %v. Expected a non-negative duration.", cfg.RetryBaseDelay)
+	}
+	if cfg.RetryBaseDelay != 0 {
+		c.retryBaseDelay = cfg.RetryBaseDelay
+	}
+	if cfg.AutoStatusCheck != nil {
+		c.autoStatusCheck = *cfg.AutoStatusCheck
 	}
 	for _, env := range loadedSurface.Environments {
 		if env.ID == cfg.Environment {
@@ -262,6 +414,47 @@ func wireString(value any) string {
 	return fmt.Sprint(value)
 }
 
+// valueProblem is the value check after the type check: enum → format →
+// min/max → maxLength, on the wire string so 5 and "5" behave alike. It returns
+// the first problem as the reason text, or "" when the value passes. Formats
+// are syntactic regexes from the surface, matched whole-string. MaxLength
+// counts UTF-8 bytes — the one length every language agrees on.
+func valueProblem(p Param, value any, formats map[string]*regexp.Regexp) string {
+	if !scalarTypes[p.Type] {
+		return ""
+	}
+	wire := wireString(value)
+	if p.Enum != nil {
+		allowed := make([]string, len(p.Enum))
+		found := false
+		for i, a := range p.Enum {
+			allowed[i] = wireString(a)
+			found = found || allowed[i] == wire
+		}
+		if !found {
+			return "not one of: " + strings.Join(allowed, ", ")
+		}
+	}
+	if p.Format != "" {
+		if re, ok := formats[p.Format]; ok && !re.MatchString(wire) {
+			return "expected format " + p.Format
+		}
+	}
+	if p.Min != nil || p.Max != nil {
+		n, _ := strconv.ParseFloat(wire, 64)
+		if p.Min != nil && n < *p.Min {
+			return "below min " + wireString(*p.Min)
+		}
+		if p.Max != nil && n > *p.Max {
+			return "above max " + wireString(*p.Max)
+		}
+	}
+	if p.MaxLength != nil && len(wire) > *p.MaxLength {
+		return fmt.Sprintf("longer than %d bytes", *p.MaxLength)
+	}
+	return ""
+}
+
 // Target is the resolved wire target for one call — everything but the sending.
 type Target struct {
 	Method    string
@@ -269,6 +462,14 @@ type Target struct {
 	Body      []byte
 	Headers   map[string]string
 	Multipart bool
+	Slug      string
+	// Financial marks a money-moving endpoint (surface "financial").
+	Financial bool
+	// ClientRefID is the ref this non-GET call carries (generated or supplied);
+	// empty on GET or when the endpoint omits the param.
+	ClientRefID string
+	// InitiatorID is the initiator the call resolved, reused by the status check.
+	InitiatorID any
 }
 
 func endpointFor(slug string) (*Endpoint, error) {
@@ -393,6 +594,27 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		merged[k] = v
 	}
 
+	// Every non-GET call carries a client_ref_id — the key a partner reconciles
+	// a lost response by. Generated only when the endpoint declares the param
+	// and the caller sent none (absent or nil); a supplied value, even "", is
+	// theirs to own. Done before the required-param guard so a generated ref
+	// satisfies endpoints that require one.
+	declaresRef := false
+	if endpoint.Method != http.MethodGet {
+		for _, p := range endpoint.Params {
+			if p.Name == "client_ref_id" {
+				declaresRef = true
+			}
+		}
+	}
+	clientRefID := ""
+	if declaresRef {
+		if ref, ok := merged["client_ref_id"]; !ok || ref == nil {
+			merged["client_ref_id"] = GenerateClientRefID(c.now())
+		}
+		clientRefID = wireString(merged["client_ref_id"])
+	}
+
 	// Spec-driven guard: every requiredParam must be present and non-null before
 	// we sign and send.
 	var missing []string
@@ -421,6 +643,22 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 		return nil, fmt.Errorf("Invalid param types for %q: %s.", slug, strings.Join(badTypes, ", "))
 	}
 
+	// Value guard: enum / format / min / max / maxLength from the spec, on the
+	// same provided params. Syntactic only — the server still owns semantics.
+	var badValues []string
+	for _, p := range endpoint.Params {
+		value, ok := merged[p.Name]
+		if !ok || value == nil {
+			continue
+		}
+		if reason := valueProblem(p, value, formatRes); reason != "" {
+			badValues = append(badValues, fmt.Sprintf("%s (%s)", p.Name, reason))
+		}
+	}
+	if len(badValues) > 0 {
+		return nil, fmt.Errorf("Invalid param values for %q: %s.", slug, strings.Join(badValues, ", "))
+	}
+
 	// A type:"file" param flips the whole request to multipart/form-data.
 	fileParams := map[string]bool{}
 	for _, p := range endpoint.Params {
@@ -445,10 +683,14 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 	}
 
 	target := &Target{
-		Method:    endpoint.Method,
-		URL:       c.baseURL + path,
-		Headers:   c.BuildHeaders(isMultipart),
-		Multipart: isMultipart,
+		Method:      endpoint.Method,
+		URL:         c.baseURL + path,
+		Headers:     c.BuildHeaders(isMultipart),
+		Multipart:   isMultipart,
+		Slug:        slug,
+		Financial:   endpoint.Financial,
+		ClientRefID: clientRefID,
+		InitiatorID: merged["initiator_id"],
 	}
 	switch {
 	case endpoint.Method == http.MethodGet:
@@ -483,13 +725,91 @@ func (c *Client) ResolveTarget(slug string, params map[string]any) (*Target, err
 // Call signs and sends one endpoint call, returning the decoded response
 // envelope.
 //
-// A non-2xx response yields *HTTPError; a body that is not JSON is an error,
-// never a silent empty map.
+// It validates first (an error, nothing sent), then sends. A GET whose outcome
+// is indeterminate is retried; a non-GET never is — on a financial endpoint it
+// is followed by a Transaction Inquiry on its client_ref_id and returned as
+// *IndeterminateError. Otherwise a non-2xx response yields *HTTPError, a
+// transport failure *TransportError, and a body that is not JSON is an error,
+// never a silent empty map. A cancelled ctx stops everything: no retry, no
+// inquiry. See docs/sdk-golden-vector.md.
 func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (map[string]any, error) {
 	target, err := c.ResolveTarget(slug, params)
 	if err != nil {
 		return nil, err
 	}
+	attempts := 1
+	if target.Method == http.MethodGet {
+		attempts = c.retries + 1
+	}
+	for attempt := 1; ; attempt++ {
+		envelope, err := c.send(ctx, target)
+		if err == nil {
+			return envelope, nil
+		}
+		if !isIndeterminate(err) || ctx.Err() != nil {
+			return nil, err
+		}
+		if attempt < attempts {
+			if err := c.backoff(ctx, attempt); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		// Never re-send a non-GET: that is how a customer is debited twice. Ask
+		// EPS what happened to the ref instead, if there is one to ask by.
+		if c.autoStatusCheck && target.Financial && target.ClientRefID != "" {
+			return nil, c.indeterminate(ctx, target, err)
+		}
+		return nil, err
+	}
+}
+
+// backoff sleeps a random slice of min(base × 2^(n-1), 2s) — full jitter —
+// or returns early when ctx is done.
+func (c *Client) backoff(ctx context.Context, attempt int) error {
+	limit := c.retryBaseDelay << (attempt - 1)
+	if limit > maxRetryDelay || limit < 0 {
+		limit = maxRetryDelay
+	}
+	if limit <= 0 {
+		return nil
+	}
+	delay := time.Duration(rand.Int63n(int64(limit) + 1))
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(delay):
+		return nil
+	}
+}
+
+// indeterminate runs one inquiry by "client_ref_id:<ref>"; its own failure is
+// reported, never allowed to mask the original one.
+func (c *Client) indeterminate(ctx context.Context, target *Target, cause error) *IndeterminateError {
+	params := map[string]any{"transaction-reference": "client_ref_id:" + target.ClientRefID}
+	if target.InitiatorID != nil {
+		params["initiator_id"] = target.InitiatorID
+	}
+	statusCheck, checkErr := c.Call(ctx, inquirySlug, params)
+	result := &IndeterminateError{
+		Slug:           target.Slug,
+		ClientRefID:    target.ClientRefID,
+		StatusCheck:    statusCheck,
+		StatusCheckErr: checkErr,
+		Err:            cause,
+	}
+	var httpErr *HTTPError
+	if errors.As(cause, &httpErr) {
+		result.Status = httpErr.StatusCode
+	}
+	return result
+}
+
+// send signs (fresh timestamp) and sends one attempt, decoding per the
+// contract. The multipart content-type, with its boundary, is kept from the
+// target; every other header is re-signed so a retry never reuses a stale
+// secret-key-timestamp.
+func (c *Client) send(ctx context.Context, target *Target) (map[string]any, error) {
 	var body io.Reader
 	if target.Body != nil {
 		body = bytes.NewReader(target.Body)
@@ -501,14 +821,17 @@ func (c *Client) Call(ctx context.Context, slug string, params map[string]any) (
 	for name, value := range target.Headers {
 		req.Header.Set(name, value)
 	}
+	for name, value := range c.BuildHeaders(target.Multipart) {
+		req.Header.Set(name, value)
+	}
 	res, err := c.http.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, &TransportError{URL: target.URL, Err: err}
 	}
 	defer res.Body.Close()
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, &TransportError{URL: target.URL, Err: err}
 	}
 	var envelope map[string]any
 	decodeErr := json.Unmarshal(raw, &envelope)
