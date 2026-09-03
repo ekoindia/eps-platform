@@ -16,6 +16,7 @@ import json
 import math
 import mimetypes
 import os
+import random
 import re
 import secrets
 import time
@@ -30,8 +31,10 @@ __all__ = [
     "EpsClient",
     "EpsError",
     "EpsHttpError",
+    "EpsIndeterminateError",
     "MULTIPART_JSON_FIELD",
     "Target",
+    "generate_client_ref_id",
     "sign_secret_key",
 ]
 
@@ -40,10 +43,21 @@ __all__ = [
 #: ``MULTIPART_JSON_FIELD`` in the website's ``src/lib/data/api-specs-common.ts``.
 MULTIPART_JSON_FIELD = "form-data"
 
+#: Per-attempt budget in seconds, matching every other EPS SDK.
 _DEFAULT_TIMEOUT = 30.0
+#: Extra attempts for a GET that ended indeterminate.
+_DEFAULT_RETRIES = 2
+#: Backoff base in seconds: attempt n waits a random slice of min(base * 2**(n-1), 2s).
+_DEFAULT_RETRY_BASE_DELAY = 0.2
+_MAX_RETRY_DELAY = 2.0
+#: Generic status-check endpoint, keyed by TID or ``client_ref_id:<ref>``.
+_INQUIRY_SLUG = "transaction-inquiry"
 
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
 _INTEGER_RE = re.compile(r"^-?\d+$")
+_BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
+#: Spec types whose values are scalars the value checks can stringify.
+_SCALAR_TYPES = frozenset({"string", "number", "integer", "boolean"})
 
 
 class EpsError(Exception):
@@ -64,6 +78,67 @@ class EpsHttpError(EpsError):
         self.url = url
         self.body = body
         self.raw = raw
+
+
+class EpsIndeterminateError(EpsError):
+    """A non-GET call on a money-moving endpoint ended without a confirmed outcome.
+
+    Timeout, transport failure, HTTP 429 or 5xx. The SDK never re-sends such a
+    request -- that is how a customer gets debited twice -- so it inquired by the
+    call's ``client_ref_id`` instead. ``status_check`` is the Transaction Inquiry
+    envelope (``data.tx_status``: 0 success, 1 fail, 2 awaited, ...) or ``None``
+    when the inquiry itself failed, in which case ``status_check_error`` says
+    why. The original failure is ``__cause__``. Reconcile with the ref before
+    retrying; never assume a timeout meant failure.
+    """
+
+    def __init__(
+        self,
+        slug: str,
+        client_ref_id: str,
+        cause: BaseException,
+        status_check: Any,
+        status_check_error: Optional[BaseException],
+    ) -> None:
+        super().__init__(
+            f'EPS request for "{slug}" with client_ref_id "{client_ref_id}" '
+            "has no confirmed outcome."
+        )
+        self.slug = slug
+        self.client_ref_id = client_ref_id
+        #: HTTP status of the original attempt, or None for a transport failure.
+        self.status = cause.status if isinstance(cause, EpsHttpError) else None
+        self.status_check = status_check
+        self.status_check_error = status_check_error
+        self.__cause__ = cause
+
+
+def _is_indeterminate(exc: BaseException) -> bool:
+    """True when the outcome is unknown: no response, or a 429/5xx that says
+    nothing about whether the request was processed. A 4xx is a decisive no."""
+    if isinstance(exc, EpsHttpError):
+        return exc.status == 429 or exc.status >= 500
+    return not isinstance(exc, EpsError)
+
+
+def _base36(n: int) -> str:
+    digits = ""
+    while n:
+        n, rem = divmod(n, 36)
+        digits = _BASE36[rem] + digits
+    return digits or "0"
+
+
+def generate_client_ref_id(now_ms: int) -> str:
+    """client_ref_id for a non-GET call that did not supply one.
+
+    Base36 millisecond stamp (sortable, greppable against a log line) plus 7
+    random base36 chars: exactly 15 of ``[0-9a-z]``. Under EPS's 20-char limit
+    with ~7.8e10 distinct tails per millisecond, so concurrent processes cannot
+    collide in practice. Same shape in every SDK -- see docs/sdk-golden-vector.md.
+    """
+    tail = _base36(secrets.randbelow(36**7)).rjust(7, "0")
+    return (_base36(now_ms) + tail)[-15:]
 
 
 def sign_secret_key(access_key: str, timestamp: str) -> str:
@@ -148,6 +223,40 @@ def _to_wire_str(value: Any) -> str:
     return str(value)
 
 
+def value_problem(
+    param: Mapping[str, Any], value: Any, formats: Mapping[str, "re.Pattern[str]"]
+) -> Optional[str]:
+    """Value check after the type check: enum -> format -> min/max -> maxLength.
+
+    Runs on the wire string so ``5`` and ``"5"`` behave alike. Returns the first
+    problem as the reason text, or ``None``. Formats are syntactic regexes from
+    the surface, matched whole-string (``fullmatch``, so a trailing newline is
+    rejected). ``maxLength`` counts UTF-8 bytes -- the one length every language
+    agrees on without an ICU dependency.
+    """
+    if param.get("type") not in _SCALAR_TYPES:
+        return None
+    wire = _to_wire_str(value)
+    allowed = param.get("enum")
+    if allowed is not None and not any(_to_wire_str(a) == wire for a in allowed):
+        return "not one of: " + ", ".join(_to_wire_str(a) for a in allowed)
+    fmt = param.get("format")
+    if fmt is not None:
+        pattern = formats.get(fmt)
+        if pattern is not None and pattern.fullmatch(wire) is None:
+            return f"expected format {fmt}"
+    if param.get("min") is not None or param.get("max") is not None:
+        number = float(wire)
+        if param.get("min") is not None and number < param["min"]:
+            return f"below min {_to_wire_str(param['min'])}"
+        if param.get("max") is not None and number > param["max"]:
+            return f"above max {_to_wire_str(param['max'])}"
+    max_length = param.get("maxLength")
+    if max_length is not None and len(wire.encode("utf-8")) > max_length:
+        return f"longer than {max_length} bytes"
+    return None
+
+
 def _load_surface() -> Dict[str, Any]:
     """Load the baked ``sdk-surface.json`` asset.
 
@@ -175,6 +284,23 @@ def _load_surface() -> Dict[str, Any]:
 _SURFACE = _load_surface()
 
 
+def _compile_formats(surface: Mapping[str, Any]) -> Dict[str, "re.Pattern[str]"]:
+    """Compiled once. A pattern that does not compile is corrupt package data --
+    fail here, loudly, rather than silently skipping a validation."""
+    compiled: Dict[str, "re.Pattern[str]"] = {}
+    for name, pattern in (surface.get("formats") or {}).items():
+        try:
+            compiled[name] = re.compile(pattern)
+        except re.error as exc:
+            raise EpsError(
+                f'EPS SDK surface is invalid or corrupt: format "{name}" does not compile.'
+            ) from exc
+    return compiled
+
+
+_FORMATS = _compile_formats(_SURFACE)
+
+
 @dataclass
 class Target:
     """The resolved wire target for one call — everything but the sending."""
@@ -184,6 +310,13 @@ class Target:
     body: Optional[bytes]
     headers: Dict[str, str]
     multipart: bool
+    slug: str = ""
+    #: Money-moving endpoint (surface ``financial``).
+    financial: bool = False
+    #: The ref this non-GET call carries (generated or supplied); None on GET.
+    client_ref_id: Optional[str] = None
+    #: The initiator the call resolved, reused by the status check.
+    initiator_id: Any = None
 
 
 def _encode_multipart(
@@ -248,7 +381,18 @@ class EpsClient:
     environment: str
     initiator_id: Optional[str] = None
     user_code: Optional[str] = None
+    #: Per-attempt budget in seconds.
     timeout: float = _DEFAULT_TIMEOUT
+    #: Extra attempts for a GET whose outcome was indeterminate (timeout,
+    #: transport failure, HTTP 429/5xx). Non-GET calls are never retried.
+    retries: int = _DEFAULT_RETRIES
+    #: Backoff base in seconds: attempt n waits a random slice of
+    #: min(base * 2**(n-1), 2.0). 0 retries immediately (tests).
+    retry_base_delay: float = _DEFAULT_RETRY_BASE_DELAY
+    #: After an indeterminate failure on a ``financial`` endpoint, look the
+    #: transaction up by its client_ref_id and surface the result on
+    #: ``EpsIndeterminateError.status_check``.
+    auto_status_check: bool = True
     #: Test-only clock injection (milliseconds since the epoch).
     now: Callable[[], int] = field(
         default_factory=lambda: (lambda: int(time.time() * 1000))
@@ -256,6 +400,19 @@ class EpsClient:
     base_url: str = field(init=False)
 
     def __post_init__(self) -> None:
+        if not math.isfinite(self.timeout) or self.timeout <= 0:
+            raise EpsError(
+                f"Invalid timeout: {self.timeout}. Expected a positive number of seconds."
+            )
+        if isinstance(self.retries, bool) or not isinstance(self.retries, int) or self.retries < 0:
+            raise EpsError(
+                f"Invalid retries: {self.retries}. Expected a non-negative integer."
+            )
+        if not math.isfinite(self.retry_base_delay) or self.retry_base_delay < 0:
+            raise EpsError(
+                f"Invalid retry_base_delay: {self.retry_base_delay}. "
+                "Expected a non-negative number of seconds."
+            )
         for env in _SURFACE["environments"]:
             if env["id"] == self.environment:
                 self.base_url = env["baseUrl"]
@@ -301,6 +458,19 @@ class EpsClient:
             merged["user_code"] = self.user_code
         merged.update(params or {})
 
+        # Every non-GET call carries a client_ref_id -- the key a partner
+        # reconciles a lost response by. Generated only when the endpoint
+        # declares the param and the caller sent none (absent or None); a
+        # supplied value, even "", is theirs to own. Done before the
+        # required-param guard so a generated ref satisfies endpoints that
+        # require one.
+        declares_ref = endpoint["method"] != "GET" and any(
+            p["name"] == "client_ref_id" for p in endpoint["params"]
+        )
+        if declares_ref and merged.get("client_ref_id") is None:
+            merged["client_ref_id"] = generate_client_ref_id(self.now())
+        client_ref_id = _to_wire_str(merged["client_ref_id"]) if declares_ref else None
+
         # Spec-driven guard: every requiredParam must be present and non-null
         # before we sign and send.
         missing = [p for p in endpoint["requiredParams"] if merged.get(p) is None]
@@ -320,6 +490,21 @@ class EpsClient:
         if bad_types:
             raise EpsError(
                 f'Invalid param types for "{slug}": {", ".join(bad_types)}.'
+            )
+
+        # Value guard: enum / format / min / max / maxLength from the spec, on
+        # the same provided params. Syntactic only -- the server owns semantics.
+        bad_values = []
+        for p in endpoint["params"]:
+            value = merged.get(p["name"])
+            if value is None:
+                continue
+            reason = value_problem(p, value, _FORMATS)
+            if reason is not None:
+                bad_values.append(f'{p["name"]} ({reason})')
+        if bad_values:
+            raise EpsError(
+                f'Invalid param values for "{slug}": {", ".join(bad_values)}.'
             )
 
         # A `type: "file"` param flips the whole request to multipart/form-data.
@@ -359,20 +544,84 @@ class EpsClient:
             body=body,
             headers=headers,
             multipart=multipart,
+            slug=slug,
+            financial=bool(endpoint.get("financial")),
+            client_ref_id=client_ref_id,
+            initiator_id=merged.get("initiator_id"),
         )
 
     def call(self, slug: str, params: Optional[Mapping[str, Any]] = None) -> Any:
         """Sign and send one endpoint call, returning the decoded response envelope.
 
-        Raises :class:`EpsError` on invalid input, :class:`EpsHttpError` on a
-        non-2xx response, and :class:`urllib.error.URLError` on a transport
-        failure. A body that is not JSON is an error, never a silent ``{}``.
+        Validates first (raises :class:`EpsError`, nothing sent), then sends. A
+        GET whose outcome is indeterminate is retried; a non-GET never is -- on a
+        ``financial`` endpoint it is followed by a Transaction Inquiry on its
+        ``client_ref_id`` and raised as :class:`EpsIndeterminateError`. Otherwise
+        raises :class:`EpsHttpError` on a non-2xx response and
+        :class:`urllib.error.URLError` on a transport failure. A body that is
+        not JSON is an error, never a silent ``{}``. See docs/sdk-golden-vector.md.
         """
         target = self.resolve_target(slug, params)
+        attempts = self.retries + 1 if target.method == "GET" else 1
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                return self._send(target)
+            except Exception as exc:
+                if not _is_indeterminate(exc):
+                    raise
+                if attempt < attempts:
+                    self._backoff(attempt)
+                    continue
+                # Never re-send a non-GET: that is how a customer is debited
+                # twice. Ask EPS what happened to the ref instead, if there is
+                # one to ask by.
+                if (
+                    self.auto_status_check
+                    and target.financial
+                    and target.client_ref_id is not None
+                ):
+                    raise self._indeterminate(target, exc) from exc
+                raise
+
+    def _backoff(self, attempt: int) -> None:
+        """Attempt n sleeps a random slice of min(base * 2**(n-1), 2s) -- full jitter."""
+        cap = min(self.retry_base_delay * 2 ** (attempt - 1), _MAX_RETRY_DELAY)
+        delay = random.uniform(0, cap)
+        if delay > 0:
+            time.sleep(delay)
+
+    def _indeterminate(
+        self, target: Target, cause: BaseException
+    ) -> EpsIndeterminateError:
+        """One inquiry by ``client_ref_id:<ref>``; its own failure is reported,
+        never allowed to mask the original one."""
+        status_check: Any = None
+        status_check_error: Optional[BaseException] = None
+        params: Dict[str, Any] = {
+            "transaction-reference": f"client_ref_id:{target.client_ref_id}"
+        }
+        if target.initiator_id is not None:
+            params["initiator_id"] = target.initiator_id
+        try:
+            status_check = self.call(_INQUIRY_SLUG, params)
+        except Exception as exc:  # reported on the error, not raised
+            status_check_error = exc
+        return EpsIndeterminateError(
+            target.slug, str(target.client_ref_id), cause, status_check, status_check_error
+        )
+
+    def _send(self, target: Target) -> Any:
+        """Sign (fresh timestamp) and send one attempt; decode per the contract."""
         request = urllib.request.Request(
             target.url, data=target.body, method=target.method
         )
-        for name, value in target.headers.items():
+        # Re-sign every attempt so a retry never reuses a stale timestamp; the
+        # multipart content-type (with its boundary) is kept from the target.
+        headers = dict(target.headers)
+        headers.update(self.build_headers(target.multipart))
+        for name, value in headers.items():
             request.add_header(name, value)
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
