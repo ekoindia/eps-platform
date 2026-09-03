@@ -384,9 +384,9 @@ function WaiverNotice({
 			</div>
 			{unwaivedLabels.length > 0 ? (
 				<p className="text-xs font-medium text-eko-navy">
-					Not covered: {unwaivedLabels.join(", ")}. Money Transfer, AePS and Bill
-					Payments carry their one-time fee per API whichever way you go — the
-					waiver applies to the verification APIs in your selection only.
+					Not covered: {unwaivedLabels.join(", ")}. Money Transfer, AePS and
+					Bill Payments carry their one-time fee per API whichever way you go —
+					the waiver applies to the verification APIs in your selection only.
 				</p>
 			) : (
 				<p className="text-xs text-muted-foreground">
@@ -450,10 +450,7 @@ export default function PayActivationFee() {
 	const [error, setError] = useState<unknown>(null);
 	const [done, setDone] = useState(false);
 
-	const fee = useMemo(
-		() => calcActivationFee(form.products),
-		[form.products],
-	);
+	const fee = useMemo(() => calcActivationFee(form.products), [form.products]);
 
 	const visibleGroups = useMemo(
 		() => filterFeeProducts(productQuery),
@@ -550,9 +547,9 @@ export default function PayActivationFee() {
 						them one by one, and we don&rsquo;t make you ask twice.
 					</p>
 					<p className="text-muted-foreground">
-						In return, we trust you to pay the one-time activation fee for
-						the APIs you actually use. Tell us which ones you&rsquo;ve put
-						into production, and settle the fee for those.
+						In return, we trust you to pay the one-time activation fee for the
+						APIs you actually use. Tell us which ones you&rsquo;ve put into
+						production, and settle the fee for those.
 					</p>
 				</div>
 			</Section>
@@ -738,8 +735,8 @@ export default function PayActivationFee() {
 										</p>
 									) : !amountEdited && fee.total > 0 ? (
 										<p className="text-xs text-muted-foreground">
-											Prefilled from your selection. Edit it if you
-											transferred a different amount.
+											Prefilled from your selection. Edit it if you transferred
+											a different amount.
 										</p>
 									) : null}
 								</div>
@@ -832,9 +829,7 @@ export default function PayActivationFee() {
 												depositorName: true,
 											}))
 										}
-										aria-invalid={
-											errorFor("depositorName") ? true : undefined
-										}
+										aria-invalid={errorFor("depositorName") ? true : undefined}
 										aria-describedby={
 											errorFor("depositorName")
 												? "depositorName-error"
@@ -853,9 +848,8 @@ export default function PayActivationFee() {
 											id="depositorName-hint"
 											className="text-xs text-muted-foreground"
 										>
-											Change it if the transfer came from a different
-											account — a director&rsquo;s, or a parent
-											company&rsquo;s.
+											Change it if the transfer came from a different account —
+											a director&rsquo;s, or a parent company&rsquo;s.
 										</p>
 									)}
 								</div>
@@ -875,18 +869,14 @@ export default function PayActivationFee() {
 											onChange={(e) => set("gst", e.target.value)}
 											aria-describedby="gst-hint"
 										/>
-										<p
-											id="gst-hint"
-											className="text-xs text-muted-foreground"
-										>
-											We don&rsquo;t have one on file. Add your GST number
-											and we&rsquo;ll use it on your invoice.
+										<p id="gst-hint" className="text-xs text-muted-foreground">
+											We don&rsquo;t have one on file. Add your GST number and
+											we&rsquo;ll use it on your invoice.
 										</p>
 									</div>
 								)}
 							</div>
 						</fieldset>
-
 
 						<fieldset className="flex flex-col gap-2" disabled={busy}>
 							<legend className="text-sm font-medium">
@@ -912,9 +902,9 @@ export default function PayActivationFee() {
 								{busy ? "Sending…" : "Send payment details"}
 							</Button>
 							<p className="text-xs text-muted-foreground">
-								We&rsquo;ll send these to Team Eko for confirmation. You
-								will receive your invoice between the 10th and 15th of next
-								month.
+								We&rsquo;ll send these to Team Eko for confirmation. You will
+								receive your invoice between the 10th and 15th of next month on
+								your registered email.
 							</p>
 						</div>
 					</form>
