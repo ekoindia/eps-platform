@@ -94,6 +94,28 @@ describe("Documents", () => {
 
 		// The approved one is listed but not owed.
 		expect(await screen.findByText("4 of 5 documents pending")).toBeVisible();
+		// Work is still owed, so the header still asks for it.
+		expect(screen.getByText(/Upload the documents we need/i)).toBeVisible();
+	});
+
+	it("stops asking for uploads once every document is under review", async () => {
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) => ({
+				...d,
+				status: 1,
+			})),
+		});
+
+		render(<Documents />);
+
+		expect(
+			await screen.findByText(/Please wait while we verify/i),
+		).toBeVisible();
+		expect(screen.queryByText(/Upload the documents we need/i)).toBeNull();
+		// Nothing to act on, so nothing to click either.
+		expect(
+			screen.queryByRole("button", { name: /upload|retry|capture/i }),
+		).toBeNull();
 	});
 
 	it("says so plainly when nothing is left to upload", async () => {

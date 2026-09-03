@@ -21,14 +21,20 @@ import { CheckCircle2, FileText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-/** The two-line page header every console sub-page opens with. */
-function Header() {
+/**
+ * The two-line page header every console sub-page opens with.
+ * @param props.waiting - Whether every document is in, leaving nothing to
+ *   upload. Asking for uploads under a list that offers no Upload button reads
+ *   as a broken page, so the subtitle says what the partner should do instead.
+ */
+function Header({ waiting = false }: { waiting?: boolean }) {
 	return (
 		<div className="flex flex-col gap-1">
 			<h2 className="text-lg font-semibold text-eko-navy">Upload Documents</h2>
 			<p className="text-sm text-muted-foreground">
-				Upload the documents we need to verify your business. All of them are
-				required.
+				{waiting
+					? "Please wait while we verify your uploaded documents. Please check back later for updated status."
+					: "Upload the documents we need to verify your business. All of them are required."}
 			</p>
 		</div>
 	);
@@ -178,19 +184,28 @@ export default function Documents() {
 	// approved rows still counted as pending would tell a partner they owe work
 	// they have already done. `uploadedNow` counts too, for the same reason the
 	// rows honour it — see `kyc.ts`.
-	const pending = documents.filter(
-		(doc) => !statusOfDocument(doc, uploadedNow.has(doc.docType)).uploaded,
-	).length;
+	const statuses = documents.map((doc) =>
+		statusOfDocument(doc, uploadedNow.has(doc.docType)),
+	);
+	const pending = statuses.filter((status) => !status.uploaded).length;
 	const summary = !pending
 		? "All documents uploaded"
 		: `${pending} of ${documents.length} document${documents.length > 1 ? "s" : ""} pending`;
+
+	// Not `!pending`: `canUpload` is the flag that decides whether a row offers a
+	// button at all, and it is deliberately not `!uploaded` — see `kyc.ts`. The
+	// header should follow the buttons. Not gated on `resolving` either: the
+	// refetch after the last upload would otherwise flip the subtitle back to
+	// asking for uploads that are already in.
+	const waiting =
+		!error && documents.length > 0 && !statuses.some((s) => s.canUpload);
 
 	return (
 		// Its own provider, not the app's: this page is rendered on its own in
 		// tests, and Radix throws if a Tooltip finds no provider above it.
 		<TooltipProvider delayDuration={150}>
 			<div className="flex max-w-3xl flex-col gap-6">
-				<Header />
+				<Header waiting={waiting} />
 
 				{error ? (
 					<ErrorNotice
