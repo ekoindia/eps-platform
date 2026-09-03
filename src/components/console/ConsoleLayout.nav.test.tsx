@@ -202,7 +202,9 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 		// entitled to follow this one, so a whole-list compare would break on
 		// nothing.
 		const labels = railLabels();
-		expect(labels.indexOf(NAME)).toBe(labels.indexOf("Build with AI Tools") + 1);
+		expect(labels.indexOf(NAME)).toBe(
+			labels.indexOf("Build with AI Tools") + 1,
+		);
 	});
 
 	it("stays hidden without the entitlement", async () => {
@@ -241,10 +243,9 @@ describe("ConsoleLayout — rail shell", () => {
 		expect(screen.getByText("Complete your KYC")).toBeVisible();
 		expect(screen.getByText("Build")).toBeVisible();
 		expect(screen.getByText("Account & History")).toBeVisible();
-		expect(screen.getByRole("link", { name: /Integration Docs/ })).toHaveAttribute(
-			"href",
-			"/docs",
-		);
+		expect(
+			screen.getByRole("link", { name: /Integration Docs/ }),
+		).toHaveAttribute("href", "/docs");
 		// Position, not mere presence: an API Docs link left dangling below every
 		// group would still satisfy the href assertion above.
 		const labels = railLabels();
@@ -326,6 +327,53 @@ describe("ConsoleLayout — Documents rail item", () => {
 			expect(
 				screen.queryByRole("link", { name: "Upload Documents" }),
 			).toBeNull(),
+		);
+	});
+});
+
+describe("ConsoleLayout — E-sign Documents rail item", () => {
+	const NAME = "E-sign Documents";
+
+	it("links to the flow when 223 is entitled", async () => {
+		// 223 alone: visibility is the entitlement's own question, and mixing the
+		// KYC-upload ids in would make a `useKycEnabled` regression fail here too.
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 223 }] });
+
+		renderRail();
+
+		expect(await screen.findByRole("link", { name: NAME })).toHaveAttribute(
+			"href",
+			"/console/transaction/223",
+		);
+	});
+
+	it("opens the KYC section, ahead of Upload Documents", async () => {
+		connectInteractions.mockResolvedValue({
+			interactions: [{ id: 223 }, { id: 586 }, { id: 587 }],
+		});
+
+		renderRail();
+
+		await screen.findByRole("link", { name: NAME });
+		// Signing the agreement is what the document pack hangs off, so it leads
+		// the section — and the section leads the rail, straight after Home.
+		expect(railLabels().slice(0, 3)).toEqual([
+			"Home",
+			NAME,
+			"Upload Documents",
+		]);
+	});
+
+	it("stays hidden without the entitlement", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+
+		renderRail();
+
+		expect(
+			await screen.findByRole("link", { name: "Load Wallet" }),
+		).toBeVisible();
+		await waitFor(() =>
+			expect(screen.queryByRole("link", { name: NAME })).toBeNull(),
 		);
 	});
 });
