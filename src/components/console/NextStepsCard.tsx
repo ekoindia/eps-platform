@@ -8,6 +8,10 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import type { MeView } from "@/lib/auth/client";
+import { ESIGN_ID, ESIGN_PATH } from "@/lib/connect/esign";
+import { type KycPackSummary, summariseDocuments } from "@/lib/connect/kyc";
+import { useKycDocuments } from "@/lib/connect/kyc-documents";
+import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { cn } from "@/lib/utils";
 import { CircleCheck, CircleDashed } from "lucide-react";
@@ -64,6 +68,58 @@ function StepMark({ done, label }: { done?: boolean; label?: string }) {
 }
 
 /**
+ * How the KYC row reads once the pack itself has been counted.
+ *
+ * The account state only says upstream is still waiting; the pack says what for.
+ * Three answers, in the order a partner cares about them: nothing owed, nothing
+ * owed *yet* (it is all with the reviewer), and documents actually outstanding.
+ *
+ * `cta` is null on the first two: a row with nothing to act on must not carry a
+ * button to a page that would only show it the same thing.
+ * @param pack - The counted pack.
+ * @returns The row's badge, mark and button text, or null to leave the row on
+ *   the account-state reading — a pack of nothing to do reads as done.
+ */
+function packStatus(pack: KycPackSummary): {
+	badge: Step["badge"];
+	done?: boolean;
+	markLabel?: string;
+	cta: "Upload" | "Re-upload" | null;
+} {
+	// An empty pack is upstream's way of saying "No Records Found" — nothing is
+	// owed. See `docs/features/kyc-documents.md`.
+	if (pack.pendingUpload + pack.reupload + pack.awaitingReview === 0) {
+		return {
+			badge: { label: "Approved", variant: "secondary" },
+			done: true,
+			cta: null,
+		};
+	}
+	if (pack.pendingUpload + pack.reupload === 0) {
+		return {
+			badge: { label: "Approval Pending", variant: "secondary" },
+			// Not `false`: the orange ring is a call to act, and there is nothing
+			// here to act on. Left undefined for the muted ring, with the label
+			// corrected off "Status unknown" — the status is known, it is just
+			// nobody's turn but the reviewer's.
+			markLabel: "Approval pending",
+			cta: null,
+		};
+	}
+	// Red, and counted. A partner owing two documents is owed the number.
+	const parts = [
+		pack.pendingUpload ? `${pack.pendingUpload} Pending` : "",
+		pack.reupload ? `${pack.reupload} Re-upload` : "",
+	].filter(Boolean);
+	return {
+		badge: { label: parts.join(", "), variant: "destructive" },
+		done: false,
+		markLabel: parts.join(", "),
+		cta: pack.reupload ? "Re-upload" : "Upload",
+	};
+}
+
+/**
  * What the partner still has to do to go live.
  *
  * The page's own content while the Business Dashboard is flag-gated off, and the
@@ -82,32 +138,77 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 	// late — exactly how the rail's Upload Documents item appears. Never send a
 	// partner at a page the rail is hiding from them.
 	const kycEnabled = useKycEnabled();
+	// The same entitlement, read the same fail-closed way, as the rail's E-sign
+	// Documents item: an unresolved or unreadable list hides the row rather than
+	// pointing a partner at a flow they cannot run. Entitlement is all either
+	// surface has — nothing here can tell a signed pack from an unsigned one, so
+	// the row states what is owed and carries no status.
+	const interactions = useRoleTransactionList();
+	const esignPending = Boolean(interactions?.[String(ESIGN_ID)]);
 	const kycDone = me.state === "active";
 	// Upstream reviewed the pack and refused at least one document. Distinct from
 	// `kyc-pending` in words and colour: "Pending" tells a partner to wait, which
 	// is the one thing that will never clear this state.
 	const kycRejected = me.state === "kyc-rejected";
+	// The two states upstream reports as account_state_id 48 and 47 — the only
+	// ones where the pack can still say something the state does not. `me.state`
+	// rather than the raw id, per `client.ts`: the backend already collapsed the
+	// ids into these two names.
+	const kycBlocked = me.state === "kyc-pending" || kycRejected;
+	// Null while unresolved, when unentitled, and when the fetch failed — each of
+	// which leaves the row on the account-state reading it had before this card
+	// ever asked. A blip must not hide the way in.
+	const documents = useKycDocuments(kycEnabled === true && kycBlocked);
+	const pack = documents ? packStatus(summariseDocuments(documents)) : null;
 
 	const steps: Step[] = [
+		// Heads the card when owed, mirroring the rail, where E-sign Documents opens
+		// the KYC section: the signed agreement is what the document pack behind
+		// Upload Documents covers.
+		...(esignPending
+			? [
+					{
+						label: "Sign pending documents to activate your account",
+						cta: {
+							label: "Sign Document",
+							to: ESIGN_PATH,
+							primary: true,
+						},
+						// Owed, not unknowable: the entitlement is only in the list while
+						// the signature is outstanding, so the ring reads like KYC's —
+						// orange and "Not started", not the muted "state unknown" grey the
+						// credentials and fee rows get.
+						done: false,
+					},
+				]
+			: []),
 		{
 			label: "Finish your KYC by uploading documents",
 			cta:
-				kycEnabled && !kycDone
+				kycEnabled && !kycDone && pack?.cta !== null
 					? {
-							label: kycRejected ? "Re-upload" : "Upload",
+							label: pack?.cta ?? (kycRejected ? "Re-upload" : "Upload"),
 							to: "/console/documents",
-							primary: true,
+							// Signing comes first, and one card gets one filled button.
+							primary: !esignPending,
 						}
 					: undefined,
-			done: kycDone,
+			// `pack.done` is deliberately undefined for a pack in review — the muted
+			// ring. Without a pack the row keeps its old orange "owed" ring, so a
+			// failed fetch never demotes a real blocker to "status unknown".
+			done: kycDone ? true : pack ? pack.done : false,
 			badge: kycDone
 				? { label: "Done", variant: "secondary" }
-				: kycRejected
-					? { label: "Re-upload required", variant: "destructive" }
-					: { label: "Pending", variant: "secondary" },
+				: (pack?.badge ??
+					(kycRejected
+						? { label: "Re-upload required", variant: "destructive" }
+						: { label: "Pending", variant: "secondary" })),
 			// The reasons live per document on Upload Documents; this row only
 			// says that a mark is owed, so the icon must not read "Not started".
-			markLabel: kycRejected ? "Re-upload required" : undefined,
+			// The counted pack has the better wording when it has arrived.
+			markLabel:
+				(kycDone ? undefined : pack?.markLabel) ??
+				(kycRejected ? "Re-upload required" : undefined),
 		},
 		{
 			label: "Complete your integration using UAT credentials",

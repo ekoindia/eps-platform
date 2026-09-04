@@ -19,6 +19,7 @@ import {
 } from "@/lib/auth/client";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { clearConnectTokens } from "@/lib/connect/token";
+import { resetKycDocumentCache } from "@/lib/connect/kyc-documents";
 import { resetDashboardCache } from "@/lib/console/dashboard";
 import { SHOW_NOTIFICATIONS } from "@/lib/config/features";
 import {
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				"[connect] signup→developer upgrade: resetting entitlement caches",
 			);
 			resetRoleTransactionCache();
+			resetKycDocumentCache();
 			clearConnectTokens();
 			resetDashboardCache();
 			resetWalletBalanceCache();
@@ -253,6 +255,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// own unmount clears them; this catches every other way a session ends.
 		clearConnectTokens();
 		resetRoleTransactionCache();
+		// One partner's document statuses, held in module scope for the same
+		// remount reason as the balance above.
+		resetKycDocumentCache();
 		// Same hazard as the balance: the dashboard's numbers are one partner's
 		// business data, cached in module scope for the same remount reason.
 		resetDashboardCache();
