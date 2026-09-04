@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { MeView } from "@/lib/auth/client";
 import { readNextParam } from "@/lib/auth/next-param";
+import { ESIGN_ID } from "@/lib/connect/esign";
 import type { RoleTransactionList } from "@/lib/connect/interactions";
 import { EKOSTORE_KYC_ID } from "@/lib/connect/use-ekostore";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
@@ -173,7 +174,7 @@ type Flow = { id: number; label: string; icon: typeof FilePen };
  * submit), which this supersedes rather than sits beside.
  */
 const ESIGN_DOCUMENTS: Flow = {
-	id: 223,
+	id: ESIGN_ID,
 	label: "E-sign Documents",
 	icon: FilePen,
 };

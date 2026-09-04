@@ -12,9 +12,7 @@ describes it as *Ready for Resubmission*), `16` once the account is live — and
 the backend turns those into the `kyc-pending` and `kyc-rejected` lifecycle
 states (see
 [`user-onboarding.md` § Lifecycle state](./user-onboarding.md#lifecycle-state-meviewstate)).
-That is what makes the Next Steps card's "Finish your KYC" row read Pending, or
-a red **Re-upload required** with a *Re-upload* button for `kyc-rejected`. Both
-states are `isProvisioned`: a refused document does not take away the
+Both states are `isProvisioned`: a refused document does not take away the
 transaction history or the dashboard the partner already had.
 
 It is a coarse signal, not a per-document one: it says upstream is still waiting
@@ -24,6 +22,28 @@ the partner: the account-level `kyc-rejected` is the counterpart of the
 per-document status `3` rows below, which carry the actual rejection reason. The
 two can also disagree — the state does not change until upstream flips the
 account itself, which can lag a successful upload.
+
+**The pack itself says what is owed.** For those two states — and only for an
+account entitled to run the flow — the Next Steps card fetches the document list
+and reads the row off the documents rather than off the account state:
+`Approved` with a tick when every document is at status 2 (or the pack is empty),
+`Approval Pending` with no button while everything sits with the reviewer, and a
+red `2 Pending, 1 Re-upload` with the matching button when documents are
+outstanding. `summariseDocuments` (`src/lib/connect/kyc.ts`) does the counting —
+statuses 3 and 4 fold into one re-upload count, and an unrecognised status counts
+as still owed. Any other state, an unentitled account, an unresolved fetch or a
+failed one leaves the row on the coarse account-state reading it had before:
+`Pending`, or a red **Re-upload required** with a *Re-upload* button for
+`kyc-rejected`. A transient 502 must not take away the way in.
+
+The card reads the pack through `useKycDocuments`
+(`src/lib/connect/kyc-documents.ts`), which caches it for 60 seconds and shares
+one request between callers, so walking Home → a page → Home does not re-ask
+upstream. `AuthProvider` clears that cache wherever it clears the interaction
+list — a pack is one partner's data — and a request already in flight when the
+cache is reset is dropped rather than cached. **`Documents.tsx` deliberately does
+not use it**: that page refetches after every upload and must never read a cached
+pack.
 
 ## The two upstream transactions
 
@@ -771,11 +791,13 @@ only useful before a file is picked.
 
 | Path | Role |
 | --- | --- |
-| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, gating, parsing, status |
+| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, gating, parsing, status, `summariseDocuments` |
 | `src/lib/connect/kyc-docs.ts` | Per-`doc_type` overrides, `KYC_ACCEPT`, the mirrored backend limits |
 | `src/lib/connect/kyc.fixture.ts` | The 586 sample, shared by tests and the bench |
 | `public/kyc-samples/` | The downloadable blanks a `sampleUrl` points at |
 | `src/lib/connect/use-kyc.ts` | `useKycEnabled()` |
+| `src/lib/connect/kyc-documents.ts` | `useKycDocuments()` and its 60 s cache — the Next Steps row only |
+| `src/components/console/NextStepsCard.tsx` | The **Finish your KYC** row |
 | `src/pages/console/Documents.tsx` | The checklist page |
 | `src/components/console/KycUploadDialog.tsx` | The upload dialog |
 | `src/components/console/ConsoleLayout.tsx` | The **Documents** rail item |

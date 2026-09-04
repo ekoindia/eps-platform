@@ -53,7 +53,16 @@ page behind it frames ekostore's gateway and mints the access token itself.
 The console's index page (`/console`) is **Home**. It leads with the profile card
 (`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT
 credentials, production credentials and the one-time integration fee — for every
-lifecycle state. The fee step links through to `/console/pay-activation-fee`,
+lifecycle state. For an account whose KYC is outstanding (48/47) and entitled to
+586/587, the KYC step reads off the document pack itself — `Approved`, `Approval
+Pending`, or a red `2 Pending, 1 Re-upload` with the matching button — falling
+back to the coarse account state when the pack is unavailable; see
+[`docs/features/kyc-documents.md`](./features/kyc-documents.md). A partner entitled to interaction **223** gets one more step at
+the head of that card, "Sign pending documents to activate your account", linking
+to `/console/transaction/223`: the same id, read the same fail-closed way, as the
+rail's E-sign Documents item (`ESIGN_ID` in `src/lib/connect/esign.ts`), so the two
+surfaces cannot disagree. It takes the card's one filled button while it shows, and
+the KYC upload drops to outline. The fee step links through to `/console/pay-activation-fee`,
 where a partner reports the bank transfer that settles it; see
 [`docs/features/activation-fee.md`](./features/activation-fee.md). The profile card carries name, lifecycle badge, mobile, email and
 **EkoCode** (with a click-to-copy button, `CopyButton` from `pages/ai/CommandBlock`),

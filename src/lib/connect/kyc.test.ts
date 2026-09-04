@@ -5,6 +5,7 @@ import {
 	kycEnabled,
 	parseDocumentList,
 	statusOfDocument,
+	summariseDocuments,
 	type KycDocument,
 } from "@/lib/connect/kyc";
 import { describe, expect, it } from "vitest";
@@ -321,5 +322,57 @@ describe("statusOfDocument", () => {
 		// The overlay only fills the gap before upstream catches up; once it has,
 		// a stale "Approval Pending" would hide an approval that already happened.
 		expect(statusOfDocument(doc({ status: 2 }), true).label).toBe("Uploaded");
+	});
+});
+
+describe("summariseDocuments", () => {
+	it("counts an empty pack as nothing owed", () => {
+		expect(summariseDocuments([])).toEqual({
+			approved: 0,
+			awaitingReview: 0,
+			pendingUpload: 0,
+			reupload: 0,
+			total: 0,
+		});
+	});
+
+	it("counts each status into its own bucket", () => {
+		const summary = summariseDocuments([
+			doc({ docType: "1", status: 2 }),
+			doc({ docType: "2", status: 1 }),
+			doc({ docType: "3", status: 0 }),
+			doc({ docType: "4", status: 3 }),
+		]);
+
+		expect(summary).toEqual({
+			approved: 1,
+			awaitingReview: 1,
+			pendingUpload: 1,
+			reupload: 1,
+			total: 4,
+		});
+	});
+
+	// The two refusal codes ask the partner for the same thing, and the row's own
+	// wording is where the difference belongs.
+	it("folds rejection and resubmission into one re-upload count", () => {
+		expect(
+			summariseDocuments([
+				doc({ docType: "1", status: 3 }),
+				doc({ docType: "2", status: 4 }),
+			]).reupload,
+		).toBe(2);
+	});
+
+	// Same fail-open reading `UNKNOWN_STATUS` gives a single row: a code we cannot
+	// place must not report a pack as finished.
+	it("counts an unrecognised status as still owed", () => {
+		const summary = summariseDocuments([
+			doc({ status: 9 }),
+			doc({ docType: "2", status: Number.NaN }),
+		]);
+
+		expect(summary.pendingUpload).toBe(2);
+		expect(summary.approved).toBe(0);
 	});
 });

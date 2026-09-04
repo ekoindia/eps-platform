@@ -299,3 +299,55 @@ export function statusOfDocument(
 			: doc.statusDesc || mapped.label;
 	return { ...mapped, label };
 }
+
+/**
+ * The pack at a glance: how many documents sit in each of the four states a
+ * partner can be told about.
+ *
+ * `reupload` folds statuses 3 and 4 together — resubmission and outright
+ * rejection ask the partner for exactly the same thing, and the difference
+ * between them belongs on the document's own row, not in a count. An
+ * unrecognised status counts as `pendingUpload`, the same fail-open reading
+ * `UNKNOWN_STATUS` gives a single row: an id we cannot place is not grounds to
+ * tell a partner their pack is finished.
+ */
+export interface KycPackSummary {
+	/** Status 2. */
+	approved: number;
+	/** Status 1 — uploaded, waiting on the reviewer. Nothing for the partner to do. */
+	awaitingReview: number;
+	/** Status 0, and anything unrecognised. */
+	pendingUpload: number;
+	/** Statuses 3 and 4 — refused, and owed again. */
+	reupload: number;
+	total: number;
+}
+
+/**
+ * Counts a document pack by what it asks of the partner.
+ *
+ * Deliberately separate from the per-row `statusOfDocument`: that answers "how
+ * does this row read", this answers "is the pack finished, waiting, or owed",
+ * which is the question the Next Steps card puts to it. Pure, so the card can be
+ * tested without a fetch.
+ * @param docs - The parsed pack, in any order.
+ * @returns The four counts and the total.
+ */
+export function summariseDocuments(
+	docs: readonly KycDocument[],
+): KycPackSummary {
+	const summary: KycPackSummary = {
+		approved: 0,
+		awaitingReview: 0,
+		pendingUpload: 0,
+		reupload: 0,
+		total: docs.length,
+	};
+	for (const doc of docs) {
+		if (doc.status === 2) summary.approved += 1;
+		else if (doc.status === 1) summary.awaitingReview += 1;
+		else if (doc.status === 3 || doc.status === 4) summary.reupload += 1;
+		else summary.pendingUpload += 1;
+	}
+	return summary;
+}
