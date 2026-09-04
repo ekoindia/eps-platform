@@ -93,7 +93,16 @@ const OutputRow = ({
 	</div>
 );
 
-export const SecretKeyTester = () => {
+/**
+ * @param defaultAccessKey - Access key to seed the field with on mount. The docs
+ * mount passes nothing (a visitor pastes their own key); the console test page
+ * passes the shared UAT key so a signature is ready without a single click.
+ */
+export const SecretKeyTester = ({
+	defaultAccessKey = "",
+}: {
+	defaultAccessKey?: string;
+} = {}) => {
 	const [accessKey, setAccessKey] = useState("");
 	const [timestamp, setTimestamp] = useState("");
 	const [reveal, setReveal] = useState(false);
@@ -101,8 +110,17 @@ export const SecretKeyTester = () => {
 	const [secretKey, setSecretKey] = useState("");
 	const [error, setError] = useState("");
 
-	// Client-only seed: keeps the SSR and first client render identical.
-	useEffect(() => setTimestamp(String(Date.now())), []);
+	// Client-only seed: keeps the SSR and first client render identical. Both
+	// values are seeded here rather than in useState — `Date.now()` cannot be an
+	// initial value without a hydration mismatch, and seeding only one of them
+	// there would put the two halves of the same input pair out of step.
+	useEffect(() => {
+		setTimestamp(String(Date.now()));
+		if (defaultAccessKey) setAccessKey(defaultAccessKey);
+		// Mount-only: a caller changing the default later must not clobber what the
+		// user has since typed into the field.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const key = accessKey.trim();
 	const stamp = timestamp.trim();
@@ -203,7 +221,7 @@ export const SecretKeyTester = () => {
 									className={sampleLink}
 								>
 									<Sparkles className="h-3.5 w-3.5" />
-									Use the public UAT sample key
+									Use the UAT test key
 								</button>
 							) : null}
 							{/* Same constant the agent bundle publishes as `auth.testVector`

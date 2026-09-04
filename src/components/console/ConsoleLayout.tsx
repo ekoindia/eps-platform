@@ -36,6 +36,7 @@ import {
 	KeyRound,
 	LayoutDashboard,
 	Menu,
+	PlayCircle,
 	PlusCircle,
 	ReceiptText,
 	ShieldCheck,
@@ -91,6 +92,18 @@ const CREDENTIALS_ITEM: NavItem = {
 	to: "/console/credentials",
 	label: "Credentials",
 	icon: KeyRound,
+	end: false,
+};
+
+/**
+ * How to exercise those keys: the three UAT testing routes plus a browser-side
+ * `secret-key` generator. Sits directly under Credentials — the keys are useless
+ * until you can sign with them, so the two are read as one pair.
+ */
+const TEST_APIS_ITEM: NavItem = {
+	to: "/console/uat-sandbox",
+	label: "Test the APIs (UAT)",
+	icon: PlayCircle,
 	end: false,
 };
 
@@ -248,6 +261,7 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 			title: "Build",
 			items: [
 				CREDENTIALS_ITEM,
+				TEST_APIS_ITEM,
 				API_DOCS_ITEM,
 				BUILD_WITH_AI_ITEM,
 				...(interactions?.[String(EKOSTORE_KYC_ID)] ? [EKOSTORE_KYC_ITEM] : []),

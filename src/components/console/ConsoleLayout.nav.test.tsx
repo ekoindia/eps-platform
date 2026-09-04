@@ -97,6 +97,7 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 			"Home",
 			"Upload Documents",
 			"Credentials",
+			"Test the APIs (UAT)",
 			"Integration Docs",
 			"Build with AI Tools",
 			"Load Wallet",
@@ -164,6 +165,7 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		expect(railLabels()).toEqual([
 			"Home",
 			"Credentials",
+			"Test the APIs (UAT)",
 			"Integration Docs",
 			"Build with AI Tools",
 			"Load Wallet",
@@ -250,8 +252,9 @@ describe("ConsoleLayout — rail shell", () => {
 		// group would still satisfy the href assertion above.
 		const labels = railLabels();
 		const build = labels.indexOf("Credentials");
-		expect(labels.slice(build, build + 3)).toEqual([
+		expect(labels.slice(build, build + 4)).toEqual([
 			"Credentials",
+			"Test the APIs (UAT)",
 			"Integration Docs",
 			"Build with AI Tools",
 		]);

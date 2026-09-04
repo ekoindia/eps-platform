@@ -47,6 +47,23 @@ describe("SecretKeyTester", () => {
 		expect(await screen.findByText(GOLDEN)).toBeInTheDocument();
 	});
 
+	it("signs with no interaction when seeded with a default access key", async () => {
+		// The console test page mounts it this way: a developer must land on a
+		// ready-to-copy signature without hunting for the sample-key button.
+		render(<SecretKeyTester defaultAccessKey={ACCESS_KEY} />);
+		expect(accessKeyInput()).toHaveValue(ACCESS_KEY);
+		// The timestamp is seeded from Date.now(), so the signature is whatever
+		// that timestamp signs to — assert against the reference implementation.
+		await waitFor(() => expect(timestampInput()).not.toHaveValue(""));
+		const stamp = (timestampInput() as HTMLInputElement).value;
+		expect(await screen.findByText(ref(stamp, ACCESS_KEY))).toBeInTheDocument();
+	});
+
+	it("starts empty when no default access key is given", () => {
+		render(<SecretKeyTester />);
+		expect(accessKeyInput()).toHaveValue("");
+	});
+
 	it("masks the access key until it is revealed", () => {
 		render(<SecretKeyTester />);
 		expect(accessKeyInput()).toHaveAttribute("type", "password");

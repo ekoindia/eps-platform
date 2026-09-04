@@ -307,11 +307,16 @@ Plan, quota, quota consumed, billing contact, upgrade link. Partners track
 consumption against contract. Needs billing-system integration.
 _Pattern: Cohere billing & usage, WorkOS billing._
 
-### Sandbox / API playground — **L**
-Interactive endpoint explorer pre-authenticated with the UAT key. Reduces
-time-to-first-call. Could start as an embedded Scalar instance scoped to the
-developer's UAT key (small dep surface). Today this lives only in `/docs`
-behind a CORS proxy — the console should own it.
+### Sandbox / API playground — **L** (partly shipped)
+**Shipped:** `/console/uat-sandbox` ("Test the APIs (UAT)") — the UAT keypair, a
+browser-side `secret-key` generator (`SecretKeyTester`, seeded with the UAT
+access key), and walkthroughs of the three testing routes: the docs Try-it
+modal, a copied cURL, and the Postman collection.
+
+**Still open:** the interactive explorer itself. Running a request from inside
+the console still means leaving for `/docs`, where the Scalar modal lives behind
+a CORS proxy — the console should own that instance, scoped to the developer's
+own UAT key.
 _Pattern: Exa playground, OpenAI platform playground._
 
 ---

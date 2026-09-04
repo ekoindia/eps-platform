@@ -46,6 +46,7 @@ const RecipeDetailPage = lazy(() => import("./pages/recipe/RecipeDetailPage"));
 const ConsoleLayout = lazy(() => import("./components/console/ConsoleLayout"));
 const ConsoleHome = lazy(() => import("./pages/console/ConsoleHome"));
 const ConsoleCredentials = lazy(() => import("./pages/console/Credentials"));
+const ConsoleTestApis = lazy(() => import("./pages/console/TestApis"));
 const ConsoleProfile = lazy(() => import("./pages/console/Profile"));
 const ConsoleDocuments = lazy(() => import("./pages/console/Documents"));
 const ConsoleTransactions = lazy(() => import("./pages/console/Transactions"));
@@ -187,6 +188,7 @@ const App = ({
 											path="credentials"
 											element={<ConsoleCredentials />}
 										/>
+										<Route path="uat-sandbox" element={<ConsoleTestApis />} />
 										<Route
 											path="transactions"
 											element={<ConsoleTransactions />}
