@@ -64,6 +64,7 @@ import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
 import ConsoleLayout from "./components/console/ConsoleLayout";
 import ConsoleHome from "./pages/console/ConsoleHome";
 import ConsoleCredentials from "./pages/console/Credentials";
+import ConsoleTestApis from "./pages/console/TestApis";
 import ConsoleProfile from "./pages/console/Profile";
 import ConsoleDocuments from "./pages/console/Documents";
 import ConsoleTransactions from "./pages/console/Transactions";
@@ -175,6 +176,7 @@ const AppServer = ({
 											path="credentials"
 											element={<ConsoleCredentials />}
 										/>
+										<Route path="uat-sandbox" element={<ConsoleTestApis />} />
 										<Route
 											path="transactions"
 											element={<ConsoleTransactions />}
