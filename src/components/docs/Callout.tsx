@@ -60,9 +60,12 @@ const ALIAS: Record<string, string> = { caution: "danger" };
 export const Callout = ({
 	type = "note",
 	children,
+	className,
 }: {
 	type?: string;
 	children?: ReactNode;
+	/** For callers outside the docs prose flow, whose own container sets spacing. */
+	className?: string;
 }) => {
 	const key = ALIAS[type] ?? type;
 	const variant = VARIANTS[key] ?? VARIANTS.note;
@@ -73,6 +76,7 @@ export const Callout = ({
 			className={cn(
 				"my-5 flex gap-3 rounded-lg border border-l-4 px-4 py-3",
 				variant.box,
+				className,
 			)}
 		>
 			<Icon className={cn("mt-0.5 h-5 w-5 shrink-0", variant.accent)} />
