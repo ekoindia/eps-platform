@@ -15,6 +15,7 @@ import {
 	labelsForFeeProducts,
 } from "@/lib/console/feeProducts";
 import { cn } from "@/lib/utils";
+import { Callout } from "@/components/docs/Callout";
 import { CopyButton } from "@/pages/ai/CommandBlock";
 import { CircleCheck, Landmark, Search, Wallet } from "lucide-react";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
@@ -658,7 +659,7 @@ export default function PayActivationFee() {
 			<Section
 				step={3}
 				title="Transfer the amount"
-				description="Pay into Eko's collection account by NEFT, IMPS or RTGS."
+				description="Pay into Eko's one-time activation fee collection account by NEFT, IMPS or RTGS."
 			>
 				<div className="flex flex-col gap-3 rounded-md border p-4">
 					<p className="flex items-center gap-2 text-sm font-medium">
@@ -675,6 +676,15 @@ export default function PayActivationFee() {
 							/>
 						))}
 					</div>
+					<Callout type="danger" className="my-0">
+						<p className="text-sm">
+							<strong className="font-semibold">
+								Do not use this bank account to load your E-value wallet
+								balance.
+							</strong>{" "}
+							This account is only for payment of the one-time activation fee.
+						</p>
+					</Callout>
 				</div>
 			</Section>
 
