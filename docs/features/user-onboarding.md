@@ -450,7 +450,7 @@ connect-api's tokens in KV at `ca:<sid>`. The upgraded claim **must** carry that
 same `sid` across: every Connect-backed route fails closed on a missing one
 (`/connect/*` → 501 `CONNECT_UNAVAILABLE`, likewise `/dashboard` and
 `/notifications`). A sid-less upgrade orphans the sealed session, and the console
-loses everything gated on the interaction list — Upload Documents, Load Wallet,
+loses everything gated on the interaction list — Load Wallet,
 Sign Agreement, Manage My Account — with no way to recover short of signing out
 and back in, since the replacement cookie is what a reload replays.
 
@@ -554,7 +554,7 @@ rotation therefore reach the rail on the next full page load, not mid-session.
 #### Troubleshooting stale entitlements after signup
 
 Symptom: onboarding completes, the console loads, but the entitlement-gated
-nav (Upload Documents, Load Wallet, Sign Agreement, Manage My Account) is
+nav (Load Wallet, Sign Agreement, Manage My Account) is
 missing — and stays missing across reloads, while a fresh login in another
 browser shows it. The diagnostic logs below are **always on** (no
 `EKO_LOG_LEVEL` needed) precisely because this failure was silent twice.
@@ -578,7 +578,7 @@ dev: `npm run dev:pretty`):
 | `[connect-auth] entitlement refresh collapsed { refreshedAgoMs }` | provider | The 60s guard swallowed it — another completed `/signup/*` response already refreshed within the last minute. |
 | `[connect-auth] profile refreshed { sid, mobile, userType, anonymousUser }` | provider | `POST /authentication/refresh-profile` succeeded and what identity it minted. After onboarding this must NOT say anonymous. |
 | `[connect-auth] rotated { sid, userType, anonymousUser }` | provider | A plain expiry-driven token rotation (`/authentication/token`). Cannot change roles by construction. |
-| `[connect] wlc { mobile, sid, count, kycEntitled }` | `/connect/interactions` | What upstream actually served for this sealed token (586+587 = Upload Documents). |
+| `[connect] wlc { mobile, sid, count, kycEntitled }` | `/connect/interactions` | What upstream actually served for this sealed token. `kycEntitled` (586+587) is a diagnostic only — Upload Documents is gated on the account state now, not on this. |
 
 Browser side, the same request logs `[connect] interaction list fetched
 { count, kycEntitled }` (`console.debug` — enable Verbose in devtools) and a
@@ -595,11 +595,17 @@ Verdict table for a repro:
 - `entitlement refresh collapsed` / `failed` / `unavailable` at the moment of
   completion → the one-shot refresh was skipped; the stored token keeps the
   login-time roles until someone refreshes again.
-- Backend `wlc` says `kycEntitled: true` but the menu is missing → frontend.
-  The signup→developer upgrade resets the tab's module caches synchronously in
-  `AuthProvider.accept()` (interaction list, widget tokens, dashboard,
-  balance), and `useKycEnabled` re-fetches when the role changes — check the
-  `[connect] signup→developer upgrade` debug line fired.
+- Backend `wlc` says `kycEntitled: true` but a gated item is missing →
+  frontend. The signup→developer upgrade resets the tab's module caches
+  synchronously in `AuthProvider.accept()` (interaction list, widget tokens,
+  dashboard, balance) — check the `[connect] signup→developer upgrade` debug
+  line fired.
+- **Upload Documents specifically is no longer in this class.** It is gated on
+  the account's lifecycle (`account_state_id` 48/47) rather than on the wlc
+  list, so a stale entitlement cannot hide it. If it is missing, check what
+  `GET /me` reports as `state` — a 151 that errors reads as `unknown`, which
+  hides the item. See
+  [`kyc-documents.md`](./kyc-documents.md#when-the-flow-is-offered).
 
 Local repro: fresh mobile on UAT → complete the wizard → watch the sequence
 above in order. The whole point of the ordering is that `login`, `profile

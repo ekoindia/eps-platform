@@ -61,3 +61,22 @@ export const LIVE_ACCOUNT_STATE_ID = 16;
  */
 export const canRaiseIssue = (accountStateId: number | null | undefined): boolean =>
 	accountStateId === LIVE_ACCOUNT_STATE_ID;
+
+/**
+ * Whether this account still owes a KYC document pack.
+ *
+ * The two upstream `account_state_id` values 48 (KYC Pending) and 47 (Ready for
+ * Resubmission), read through the names the backend already collapsed them into
+ * — see `deriveStateFromProfile`. Gating on the state rather than on the
+ * `/connect/interactions` entitlement for 586/587 is deliberate: a short or
+ * stale wlc list used to hide the one step a partner must complete to go live.
+ *
+ * Fails CLOSED like `canRaiseIssue`, and for a milder reason: every other
+ * lifecycle — `active` included — is an account with no pack outstanding, so
+ * `unknown` reading as "nothing owed" costs a partner a rail item for one
+ * `/me` round-trip, not access to a working account.
+ * @param state - The session's lifecycle state.
+ * @returns True while the KYC pack is outstanding or was refused.
+ */
+export const needsKycUpload = (state: Lifecycle): boolean =>
+	state === "kyc-pending" || state === "kyc-rejected";

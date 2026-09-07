@@ -1,8 +1,7 @@
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import {
-	KYC_LIST_ID,
-	KYC_UPLOAD_ID,
-	kycEnabled,
+	isAwaitingReview,
+	isPackApproved,
 	parseDocumentList,
 	statusOfDocument,
 	summariseDocuments,
@@ -25,29 +24,6 @@ function doc(overrides: Partial<KycDocument> = {}): KycDocument {
 		...overrides,
 	};
 }
-
-/** An interaction list carrying exactly the given ids. */
-function listOf(...ids: number[]) {
-	return Object.fromEntries(ids.map((id) => [String(id), { id }]));
-}
-
-describe("kycEnabled", () => {
-	it("needs both the list and the upload interaction", () => {
-		expect(kycEnabled(listOf(KYC_LIST_ID, KYC_UPLOAD_ID))).toBe(true);
-	});
-
-	it("refuses a user who can list but not upload", () => {
-		expect(kycEnabled(listOf(KYC_LIST_ID))).toBe(false);
-	});
-
-	it("refuses a user who can upload but not list", () => {
-		expect(kycEnabled(listOf(KYC_UPLOAD_ID))).toBe(false);
-	});
-
-	it("refuses an unrelated entitlement", () => {
-		expect(kycEnabled(listOf(491, 240))).toBe(false);
-	});
-});
 
 describe("parseDocumentList", () => {
 	it("reads the sample response", () => {
@@ -374,5 +350,57 @@ describe("summariseDocuments", () => {
 
 		expect(summary.pendingUpload).toBe(2);
 		expect(summary.approved).toBe(0);
+	});
+});
+
+describe("isAwaitingReview", () => {
+	// The condition the auto-refresh timer runs on: the partner has done their
+	// part, so only a decision made elsewhere can change the page.
+	it("holds when the pack is with the reviewer, approvals included", () => {
+		expect(
+			isAwaitingReview([
+				doc({ docType: "1", status: 1 }),
+				doc({ docType: "2", status: 2 }),
+			]),
+		).toBe(true);
+	});
+
+	it.each([
+		["pending upload", 0],
+		["resubmission", 3],
+		["rejection", 4],
+		["an unrecognised code", 9],
+	])("fails while one document still owes %s", (_why, status) => {
+		expect(
+			isAwaitingReview([
+				doc({ docType: "1", status: 1 }),
+				doc({ docType: "2", status }),
+			]),
+		).toBe(false);
+	});
+
+	// Nothing left to wait for. Polling a settled pack would ask upstream a
+	// question whose answer cannot change.
+	it("fails on a fully approved pack, and on an empty one", () => {
+		expect(isAwaitingReview([doc({ status: 2 })])).toBe(false);
+		expect(isAwaitingReview([])).toBe(false);
+	});
+});
+
+describe("isPackApproved", () => {
+	it("holds only when every document is approved", () => {
+		expect(isPackApproved([doc({ status: 2 })])).toBe(true);
+		expect(
+			isPackApproved([
+				doc({ docType: "1", status: 2 }),
+				doc({ docType: "2", status: 1 }),
+			]),
+		).toBe(false);
+	});
+
+	// Upstream sends an empty list for an account that never owed documents.
+	// Announcing an approval to one of those is an announcement about nothing.
+	it("fails on an empty pack", () => {
+		expect(isPackApproved([])).toBe(false);
 	});
 });

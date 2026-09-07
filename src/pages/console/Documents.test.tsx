@@ -1,6 +1,13 @@
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import Documents from "@/pages/console/Documents";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked at the module boundary, per repo convention — never `fetch`.
@@ -16,6 +23,14 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 const kycEnabled = vi.fn();
 vi.mock("@/lib/connect/use-kyc", () => ({
 	useKycEnabled: () => kycEnabled(),
+}));
+
+// The e-sign entitlement, same treatment: the page only reads it to decide
+// whether the approved callout carries a link, and the real hook would reach
+// for an `authClient` method this file's mock deliberately does not have.
+const esignEntitlement = vi.fn();
+vi.mock("@/lib/connect/use-interactions", () => ({
+	useRoleTransactionList: () => esignEntitlement(),
 }));
 
 // The dialog pulls in the camera and image editor; this page's tests are about
@@ -41,11 +56,13 @@ vi.mock("@/components/console/KycUploadDialog", () => ({
 		) : null,
 }));
 
+const { KYC_POLL_MS } = await import("@/lib/connect/kyc");
 const { authClient } = await import("@/lib/auth/client");
 const fetchDocuments = vi.mocked(authClient.connectKyc.documents);
 
 beforeEach(() => {
 	kycEnabled.mockReset().mockReturnValue(true);
+	esignEntitlement.mockReset().mockReturnValue(null);
 	fetchDocuments.mockReset().mockResolvedValue({
 		documents: [...KYC_DOCUMENTS_SAMPLE.data.document_list],
 	});
@@ -108,9 +125,11 @@ describe("Documents", () => {
 
 		render(<Documents />);
 
-		expect(
-			await screen.findByText(/Please wait while we verify/i),
-		).toBeVisible();
+		// The callout below says this better than the header subtitle did, so the
+		// subtitle stands down rather than saying it twice.
+		expect(await screen.findByText(/Documents received/i)).toBeVisible();
+		expect(screen.getByText(/up to 3 hours on working days/i)).toBeVisible();
+		expect(screen.queryByText(/Please wait while we verify/i)).toBeNull();
 		expect(screen.queryByText(/Upload the documents we need/i)).toBeNull();
 		// Nothing to act on, so nothing to click either.
 		expect(
@@ -297,5 +316,161 @@ describe("Documents", () => {
 			await screen.findByRole("button", { name: "Capture Again" }),
 		).toBeVisible();
 		expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+	});
+
+	/** Runs `body` on fake timers, always restoring real ones. */
+	const withFakeTimers = async (body: () => Promise<void>) => {
+		vi.useFakeTimers();
+		try {
+			await body();
+		} finally {
+			vi.useRealTimers();
+		}
+	};
+
+	/** Advances fake time inside `act`, so the resulting effects flush first. */
+	const tick = (ms: number) =>
+		act(async () => {
+			await vi.advanceTimersByTimeAsync(ms);
+		});
+
+	/** The sample pack, every row forced to one status. */
+	const packAt = (status: number) =>
+		KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) => ({ ...d, status }));
+
+	it("re-asks upstream while the pack sits with the reviewer", async () => {
+		await withFakeTimers(async () => {
+			fetchDocuments.mockResolvedValue({ documents: packAt(1) });
+			render(<Documents />);
+			await tick(0);
+			expect(fetchDocuments).toHaveBeenCalledTimes(1);
+
+			await tick(KYC_POLL_MS);
+
+			expect(fetchDocuments).toHaveBeenCalledTimes(2);
+			// A background refresh must not replace what the partner is reading with
+			// four grey bars.
+			expect(screen.queryByTestId("documents-loading")).toBeNull();
+			expect(screen.getByText("Aadhaar Card")).toBeVisible();
+		});
+	});
+
+	it("fires no timer while a document is still owed", async () => {
+		await withFakeTimers(async () => {
+			const [first, ...rest] = packAt(1);
+			fetchDocuments.mockResolvedValue({
+				documents: [{ ...first, status: 0 }, ...rest],
+			});
+			render(<Documents />);
+			await tick(0);
+
+			await tick(KYC_POLL_MS * 2);
+
+			expect(fetchDocuments).toHaveBeenCalledTimes(1);
+			expect(screen.queryByText(/Documents received/i)).toBeNull();
+		});
+	});
+
+	it("stops asking once the decision has come back", async () => {
+		await withFakeTimers(async () => {
+			fetchDocuments
+				.mockResolvedValueOnce({ documents: packAt(1) })
+				.mockResolvedValue({ documents: packAt(2) });
+			render(<Documents />);
+			await tick(0);
+
+			await tick(KYC_POLL_MS);
+			expect(fetchDocuments).toHaveBeenCalledTimes(2);
+			// Approved is a settled answer; there is nothing left to ask about.
+			await tick(KYC_POLL_MS * 2);
+
+			expect(fetchDocuments).toHaveBeenCalledTimes(2);
+			expect(screen.getByText(/Documents approved/i)).toBeVisible();
+		});
+	});
+
+	it("keeps the list on screen when a background refresh fails", async () => {
+		await withFakeTimers(async () => {
+			fetchDocuments
+				.mockResolvedValueOnce({ documents: packAt(1) })
+				.mockRejectedValueOnce(new Error("upstream down"))
+				.mockResolvedValue({ documents: packAt(2) });
+			render(<Documents />);
+			await tick(0);
+
+			await tick(KYC_POLL_MS);
+
+			expect(screen.getByText("Aadhaar Card")).toBeVisible();
+			expect(screen.queryByRole("alert")).toBeNull();
+
+			// And the poll that follows it recovers.
+			await tick(KYC_POLL_MS);
+			expect(screen.getByText(/Documents approved/i)).toBeVisible();
+		});
+	});
+
+	it("points an approved pack at the signature it still owes", async () => {
+		esignEntitlement.mockReturnValue({ [String(223)]: { name: "E-sign" } });
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) => ({
+				...d,
+				status: 2,
+			})),
+		});
+
+		render(
+			<MemoryRouter>
+				<Documents />
+			</MemoryRouter>,
+		);
+
+		expect(await screen.findByText(/Documents approved/i)).toBeVisible();
+		expect(
+			screen.getByRole("link", { name: /E-sign Documents/i }),
+		).toHaveAttribute("href", "/console/transaction/223");
+		// Superseded by the callout.
+		expect(screen.queryByText(/Please wait while we verify/i)).toBeNull();
+	});
+
+	// Entitlement gates the link, not the news: a partner whose documents were
+	// just approved is owed that either way, and a link into a flow this account
+	// cannot run is worse than no link.
+	it("still says approved without the e-sign entitlement, but offers no link", async () => {
+		fetchDocuments.mockResolvedValue({
+			documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) => ({
+				...d,
+				status: 2,
+			})),
+		});
+
+		render(<Documents />);
+
+		expect(await screen.findByText(/Documents approved/i)).toBeVisible();
+		expect(screen.queryByRole("link", { name: /E-sign/i })).toBeNull();
+	});
+
+	// The optimistic overlay bridges an upload and the refetch chasing it. Left
+	// in place, it would keep reading a rejection as "Approval Pending" — with no
+	// button to act on it.
+	it("drops the just-uploaded overlay once upstream refuses the document", async () => {
+		// Only one row left owing anything, so there is exactly one button to click.
+		const [first, ...rest] = KYC_DOCUMENTS_SAMPLE.data.document_list;
+		const approvedRest = rest.map((d) => ({ ...d, status: 2 }));
+		fetchDocuments.mockResolvedValueOnce({
+			documents: [{ ...first, status: 0 }, ...approvedRest],
+		});
+		render(<Documents />);
+
+		fireEvent.click(await screen.findByRole("button", { name: "Upload" }));
+		fetchDocuments.mockResolvedValue({
+			documents: [
+				{ ...first, status: 3, error: "Blurred scan" },
+				...approvedRest,
+			],
+		});
+		fireEvent.click(screen.getByText("simulate-upload-success"));
+
+		expect(await screen.findByText("Blurred scan")).toBeVisible();
+		expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
 	});
 });

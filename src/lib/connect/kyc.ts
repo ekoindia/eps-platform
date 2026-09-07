@@ -4,7 +4,7 @@
  * Two upstream transactions back this feature, and the ids below are two
  * different numbering schemes that happen to sit side by side in one payload:
  * the `*_ID` constants are the *interaction* ids that appear in the
- * `/transactions/wlc` list and gate the feature, while the `*_TYPE` constants
+ * `/transactions/wlc` list, while the `*_TYPE` constants
  * are the `interaction_type_id` values that go in the request body. They are
  * not interchangeable — see `buildRoleTransactionList` in `interactions.ts` for
  * why the list is keyed by the former.
@@ -13,13 +13,18 @@
  * JSX over these functions.
  */
 
-import type { RoleTransactionList } from "@/lib/connect/interactions";
 import { withDocConfig } from "@/lib/connect/kyc-docs";
 
-/** Interaction id for "fetch the required document list". Gates the feature. */
+/**
+ * Interaction id for "fetch the required document list".
+ *
+ * No longer gates the feature: whether the flow is offered is decided by the
+ * account's lifecycle state (`needsKycUpload`), not by this id's presence in the
+ * caller's wlc list. Kept because it is still the id the request itself names.
+ */
 export const KYC_LIST_ID = 586;
 
-/** Interaction id for "upload a document". Gates the feature. */
+/** Interaction id for "upload a document". Not a gate — see `KYC_LIST_ID`. */
 export const KYC_UPLOAD_ID = 587;
 
 /** `interaction_type_id` sent to `/transactions/do` to fetch the list. */
@@ -147,19 +152,6 @@ const UNKNOWN_STATUS = {
 	canUpload: true,
 	order: DOCUMENT_STATUS[0].order,
 };
-
-/**
- * Whether this user may run the KYC document flow.
- *
- * Requires BOTH interactions. An account entitled to read the list but not to
- * upload would get a page whose every button fails upstream, which reads as a
- * broken console rather than an unavailable feature.
- * @param list - The caller's interaction list.
- * @returns True when the user can both list and upload documents.
- */
-export function kycEnabled(list: RoleTransactionList): boolean {
-	return Boolean(list[String(KYC_LIST_ID)] && list[String(KYC_UPLOAD_ID)]);
-}
 
 /**
  * Reads a `pages` value that arrives as a string.
@@ -350,4 +342,43 @@ export function summariseDocuments(
 		else summary.pendingUpload += 1;
 	}
 	return summary;
+}
+
+/**
+ * How often a pack that is waiting only on the reviewer is re-asked.
+ *
+ * Its own constant rather than `POLL_MS` from `lib/notifications.ts`: same value
+ * today, but a document pack and a notification feed are unrelated features that
+ * should be tunable apart.
+ */
+export const KYC_POLL_MS = 600_000;
+
+/**
+ * Whether the pack is entirely with the reviewer — something has been uploaded
+ * and is awaiting approval, and nothing at all is owed back.
+ *
+ * This is the condition under which the console re-asks upstream on a timer: the
+ * partner has done their part, so the only thing that can change the page is a
+ * decision made elsewhere. A pack with anything still owed (statuses 0, 3, 4, or
+ * an unrecognised code, all counted as owed by `summariseDocuments`) is waiting
+ * on the partner, not on us, and polling it would only re-render what they are
+ * already looking at.
+ * @param docs - The parsed pack.
+ */
+export function isAwaitingReview(docs: readonly KycDocument[]): boolean {
+	const pack = summariseDocuments(docs);
+	return pack.awaitingReview > 0 && pack.pendingUpload + pack.reupload === 0;
+}
+
+/**
+ * Whether every document in a non-empty pack has been approved.
+ *
+ * An empty pack is deliberately false: upstream sends "No Records Found" as an
+ * empty list for accounts that never owed documents at all, and telling one of
+ * those that its documents are approved would be an announcement about nothing.
+ * @param docs - The parsed pack.
+ */
+export function isPackApproved(docs: readonly KycDocument[]): boolean {
+	const pack = summariseDocuments(docs);
+	return pack.total > 0 && pack.approved === pack.total;
 }

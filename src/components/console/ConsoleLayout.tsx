@@ -165,6 +165,12 @@ export function useConsoleMe(): MeView {
  * KYC document upload. Follows E-sign Documents in the rail's first section: an
  * unfinished KYC pack is what blocks the account, so it outranks everything the
  * rail offers except signing the agreement that gates the pack itself.
+ *
+ * Shown by ACCOUNT STATE, not by entitlement — `useKycEnabled` reads the
+ * lifecycle (48 KYC Pending / 47 Ready for Resubmission) rather than the
+ * `/connect/interactions` list every other conditional item here is gated on. A
+ * short or stale wlc list used to hide the one step a blocked partner must
+ * complete to go live.
  */
 const DOCUMENTS_ITEM: NavItem = {
 	to: "/console/documents",
@@ -243,6 +249,7 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 	// Same entitlement that gates the wallet card's "+" button, and the same
 	// route it links to — the rail just says it in words.
 	const loadFlowId = useLoadWalletFlowId();
+	// Account state, not entitlement — see DOCUMENTS_ITEM.
 	const kycEnabled = useKycEnabled();
 	const interactions = useRoleTransactionList();
 	// Whatever this user is entitled to, in place. Built as a flat spread per

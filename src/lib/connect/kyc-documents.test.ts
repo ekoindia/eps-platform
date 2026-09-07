@@ -3,7 +3,7 @@ import {
 	useKycDocuments,
 } from "@/lib/connect/kyc-documents";
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked at the module boundary, per repo convention — never `fetch`.
@@ -14,6 +14,7 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 	},
 }));
 
+const { KYC_POLL_MS } = await import("@/lib/connect/kyc");
 const { authClient } = await import("@/lib/auth/client");
 const fetchDocuments = vi.mocked(authClient.connectKyc.documents);
 
@@ -110,5 +111,68 @@ describe("useKycDocuments", () => {
 
 		rerender({ enabled: false });
 		expect(result.current).toBeNull();
+	});
+
+	/** The sample pack, every row forced to one status. */
+	const packAt = (status: number) => ({
+		documents: KYC_DOCUMENTS_SAMPLE.data.document_list.map((d) => ({
+			...d,
+			status,
+		})),
+	});
+
+	/** Advances fake time inside `act`, so the resulting effects flush first. */
+	const tick = (ms: number) =>
+		act(async () => {
+			await vi.advanceTimersByTimeAsync(ms);
+		});
+
+	// Home's whole reason for this: a partner who leaves the page open while
+	// their documents are approved should see it happen.
+	it("re-asks while the pack sits with the reviewer, then stops", async () => {
+		vi.useFakeTimers();
+		fetchDocuments
+			.mockResolvedValueOnce(packAt(1))
+			.mockResolvedValue(packAt(2));
+
+		const { result } = renderHook(() => useKycDocuments(true));
+		await tick(0);
+		expect(fetchDocuments).toHaveBeenCalledTimes(1);
+
+		await tick(KYC_POLL_MS);
+		expect(fetchDocuments).toHaveBeenCalledTimes(2);
+		expect(result.current?.every((doc) => doc.status === 2)).toBe(true);
+
+		// Approved is settled — the timer tears itself down.
+		await tick(KYC_POLL_MS * 3);
+		expect(fetchDocuments).toHaveBeenCalledTimes(2);
+	});
+
+	it("arms no timer while a document is still owed", async () => {
+		vi.useFakeTimers();
+		fetchDocuments.mockResolvedValue(packAt(0));
+
+		renderHook(() => useKycDocuments(true));
+		await tick(0);
+
+		await tick(KYC_POLL_MS * 2);
+
+		expect(fetchDocuments).toHaveBeenCalledTimes(1);
+	});
+
+	it("keeps the last pack when a poll fails", async () => {
+		vi.useFakeTimers();
+		fetchDocuments
+			.mockResolvedValueOnce(packAt(1))
+			.mockRejectedValue(new Error("upstream down"));
+
+		const { result } = renderHook(() => useKycDocuments(true));
+		await tick(0);
+		const before = result.current;
+
+		await tick(KYC_POLL_MS);
+
+		expect(fetchDocuments).toHaveBeenCalledTimes(2);
+		expect(result.current).toBe(before);
 	});
 });

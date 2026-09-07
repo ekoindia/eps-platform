@@ -53,8 +53,8 @@ page behind it frames ekostore's gateway and mints the access token itself.
 The console's index page (`/console`) is **Home**. It leads with the profile card
 (`src/components/console/ProfileCard.tsx`) beside the Next Steps card — KYC, UAT
 credentials, production credentials and the one-time integration fee — for every
-lifecycle state. For an account whose KYC is outstanding (48/47) and entitled to
-586/587, the KYC step reads off the document pack itself — `Approved`, `Approval
+lifecycle state. For an account whose KYC is outstanding (48/47), the KYC step reads off the
+document pack itself — `Approved`, `Approval
 Pending`, or a red `2 Pending, 1 Re-upload` with the matching button — falling
 back to the coarse account state when the pack is unavailable; see
 [`docs/features/kyc-documents.md`](./features/kyc-documents.md). A partner entitled to interaction **223** gets one more step at
@@ -216,8 +216,10 @@ which covers expiry as well as explicit logout.
 
 Picking up where signup stops, `/console/documents` ("Upload Documents") is the
 KYC document pack — the checklist a user uploads to get the account activated.
-It appears in the rail directly after Home, and only for accounts entitled to
-both upstream interactions (586 list, 587 upload). Every listed document is
+It appears in the rail directly after Home, and only for accounts whose KYC is
+outstanding — `account_state_id` 48 (KYC Pending) or 47 (Ready for
+Resubmission). It used to be gated on the 586/587 entitlements instead, whose
+session-cached list could hide the step entirely. Every listed document is
 treated as mandatory; upstream's `is_required` is deliberately ignored. See
 [`docs/features/kyc-documents.md`](./features/kyc-documents.md).
 

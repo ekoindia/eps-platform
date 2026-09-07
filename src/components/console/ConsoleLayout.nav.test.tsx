@@ -1,5 +1,6 @@
 import ConsoleLayout from "@/components/console/ConsoleLayout";
 import type { AuthState } from "@/lib/auth/AuthProvider";
+import type { Lifecycle } from "@/lib/auth/client";
 import { resetRoleTransactionCache } from "@/lib/connect/interactions";
 import { render, screen, waitFor } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
@@ -19,11 +20,18 @@ vi.mock("@/lib/config/features", async (orig) => ({
 	SHOW_CONNECT_WIDGET: true,
 }));
 
-const DEVELOPER: AuthState = {
-	status: "authed",
-	role: "developer",
-	me: { state: "active", mobile: "999", profile: null, zohoId: null },
+// Mutable, because the rail's Upload Documents item is gated on the account's
+// LIFECYCLE now, not on an entitlement — `setLifecycle` is how a test asks for
+// that item, where it used to add interactions 586/587.
+let DEVELOPER: AuthState;
+const setLifecycle = (state: Lifecycle) => {
+	DEVELOPER = {
+		status: "authed",
+		role: "developer",
+		me: { state, mobile: "999", profile: null, zohoId: null },
+	};
 };
+setLifecycle("active");
 
 vi.mock("@/lib/auth/AuthProvider", () => ({
 	useAuth: () => ({ state: DEVELOPER, refresh: vi.fn(), logout: vi.fn() }),
@@ -56,6 +64,9 @@ function renderRail() {
 beforeEach(() => {
 	connectInteractions.mockReset();
 	resetRoleTransactionCache();
+	// Live account: no KYC pack owed, so Upload Documents is absent unless a
+	// test says otherwise.
+	setLifecycle("active");
 });
 
 /** Rail labels in render order, minus the DEV-only bench. */
@@ -84,9 +95,8 @@ describe("ConsoleLayout — Load Wallet rail item", () => {
 	});
 
 	it("sits behind the KYC and Build sections when all are entitled", async () => {
-		connectInteractions.mockResolvedValue({
-			interactions: [{ id: 491 }, { id: 586 }, { id: 587 }],
-		});
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+		setLifecycle("kyc-pending");
 
 		renderRail();
 
@@ -235,9 +245,8 @@ describe("ConsoleLayout — ekostore KYC sandbox rail item", () => {
 
 describe("ConsoleLayout — rail shell", () => {
 	it("captions the groups and carries API Docs inside Build", async () => {
-		connectInteractions.mockResolvedValue({
-			interactions: [{ id: 491 }, { id: 586 }, { id: 587 }],
-		});
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+		setLifecycle("kyc-pending");
 
 		renderRail();
 
@@ -293,10 +302,9 @@ describe("ConsoleLayout — rail shell", () => {
 });
 
 describe("ConsoleLayout — Documents rail item", () => {
-	it("appears directly after Home when KYC upload is entitled", async () => {
-		connectInteractions.mockResolvedValue({
-			interactions: [{ id: 586 }, { id: 587 }],
-		});
+	it("appears directly after Home for a KYC-pending account", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [] });
+		setLifecycle("kyc-pending");
 
 		renderRail();
 
@@ -305,23 +313,37 @@ describe("ConsoleLayout — Documents rail item", () => {
 		expect(railLabels().slice(0, 2)).toEqual(["Home", "Upload Documents"]);
 	});
 
-	it("stays hidden when the user can list documents but not upload them", async () => {
-		// Every button on the page would fail upstream, which reads as a broken
-		// console rather than an unavailable feature.
-		connectInteractions.mockResolvedValue({ interactions: [{ id: 586 }] });
+	it("appears for an account whose documents were refused", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [] });
+		setLifecycle("kyc-rejected");
 
 		renderRail();
 
-		expect(await screen.findByRole("link", { name: "Home" })).toBeVisible();
-		await waitFor(() =>
-			expect(
-				screen.queryByRole("link", { name: "Upload Documents" }),
-			).toBeNull(),
-		);
+		expect(
+			await screen.findByRole("link", { name: "Upload Documents" }),
+		).toBeVisible();
 	});
 
-	it("stays hidden without either interaction", async () => {
+	// The point of the change: the wlc list is fetched once per session and read
+	// fail-closed, so a short or stale one used to hide the single step a blocked
+	// partner has to complete. The account state now decides on its own.
+	it("appears with no KYC interactions entitled at all", async () => {
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+		setLifecycle("kyc-pending");
+
+		renderRail();
+
+		await screen.findByRole("link", { name: "Load Wallet" });
+		expect(
+			screen.getByRole("link", { name: "Upload Documents" }),
+		).toBeVisible();
+	});
+
+	// Even entitled to both 586 and 587: a live account owes no pack.
+	it("stays hidden for an active account", async () => {
+		connectInteractions.mockResolvedValue({
+			interactions: [{ id: 586 }, { id: 587 }],
+		});
 
 		renderRail();
 
@@ -338,8 +360,8 @@ describe("ConsoleLayout — E-sign Documents rail item", () => {
 	const NAME = "E-sign Documents";
 
 	it("links to the flow when 223 is entitled", async () => {
-		// 223 alone: visibility is the entitlement's own question, and mixing the
-		// KYC-upload ids in would make a `useKycEnabled` regression fail here too.
+		// 223 alone: visibility is the entitlement's own question, and leaving the
+		// account state live keeps a `useKycEnabled` regression out of this test.
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 223 }] });
 
 		renderRail();
@@ -351,9 +373,8 @@ describe("ConsoleLayout — E-sign Documents rail item", () => {
 	});
 
 	it("opens the KYC section, ahead of Upload Documents", async () => {
-		connectInteractions.mockResolvedValue({
-			interactions: [{ id: 223 }, { id: 586 }, { id: 587 }],
-		});
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 223 }] });
+		setLifecycle("kyc-pending");
 
 		renderRail();
 

@@ -303,10 +303,11 @@ knows the per-document truth and can disagree. The other steps are a route, not 
 whether a partner has finished integrating, and a step that reads "Pending"
 forever is worse than one that reads nothing.
 
-The KYC step links to `/console/documents` only when `useKycEnabled()` says so,
-mirroring the rail — never link at a page the rail is hiding. The hook returns
-`null` while the entitlement is loading, so the step is plain text for a tick and
-then becomes a link, exactly as the rail's own item appears late.
+The KYC step links to `/console/documents` only for the two states that owe a
+pack — `needsKycUpload(me.state)`, the same predicate the rail's own item is
+gated on, so the card can never link at a page the rail is hiding. Read straight
+off `me` rather than through `useKycEnabled()`: this card already has the
+session.
 
 **Only the KYC step's button is primary-coloured** (`cta.primary`); the rest stay
 outline. Two filled buttons in one card is two next steps, which is none — and

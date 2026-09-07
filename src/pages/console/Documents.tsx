@@ -9,16 +9,22 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ErrorNotice } from "@/components/console/ErrorNotice";
-import { ApiError, authClient } from "@/lib/auth/client";
+import { Callout } from "@/components/docs/Callout";
+import { authClient } from "@/lib/auth/client";
+import { ESIGN_ID, ESIGN_PATH } from "@/lib/connect/esign";
 import {
+	isPackApproved,
+	KYC_POLL_MS,
 	parseDocumentList,
 	statusOfDocument,
 	type KycDocument,
 } from "@/lib/connect/kyc";
 import { configOf } from "@/lib/connect/kyc-docs";
+import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { useKycEnabled } from "@/lib/connect/use-kyc";
 import { CheckCircle2, FileText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 /**
@@ -26,16 +32,27 @@ import { toast } from "sonner";
  * @param props.waiting - Whether every document is in, leaving nothing to
  *   upload. Asking for uploads under a list that offers no Upload button reads
  *   as a broken page, so the subtitle says what the partner should do instead.
+ * @param props.quiet - Whether a callout below already says where the pack
+ *   stands. The subtitle drops out rather than repeating it a line above, in
+ *   weaker words.
  */
-function Header({ waiting = false }: { waiting?: boolean }) {
+function Header({
+	waiting = false,
+	quiet = false,
+}: {
+	waiting?: boolean;
+	quiet?: boolean;
+}) {
 	return (
 		<div className="flex flex-col gap-1">
 			<h2 className="text-lg font-semibold text-eko-navy">Upload Documents</h2>
-			<p className="text-sm text-muted-foreground">
-				{waiting
-					? "Please wait while we verify your uploaded documents. Please check back later for updated status."
-					: "Upload the documents we need to verify your business. All of them are required."}
-			</p>
+			{quiet ? null : (
+				<p className="text-sm text-muted-foreground">
+					{waiting
+						? "Please wait while we verify your uploaded documents. Please check back later for updated status."
+						: "Upload the documents we need to verify your business. All of them are required."}
+				</p>
+			)}
 		</div>
 	);
 }
@@ -143,17 +160,49 @@ export default function Documents() {
 		new Set(),
 	);
 
-	const load = useCallback(async (signal?: AbortSignal) => {
-		setLoading(true);
-		setError(null);
+	/**
+	 * Fetches the pack.
+	 * @param signal - Aborts with the component.
+	 * @param silent - A background refresh rather than one the partner asked for.
+	 *   It neither raises the skeletons nor surfaces a failure: replacing a list
+	 *   the partner is reading with four grey bars — or with an error box — is a
+	 *   worse answer than leaving the list they already have alone.
+	 */
+	const load = useCallback(async (signal?: AbortSignal, silent = false) => {
+		if (!silent) {
+			setLoading(true);
+			setError(null);
+		}
 		try {
 			const { documents: raw } = await authClient.connectKyc.documents(signal);
-			setDocuments(parseDocumentList(raw));
+			const parsed = parseDocumentList(raw);
+			setDocuments(parsed);
+			// Also clears an error a previous attempt left behind, so a poll that
+			// succeeds after a failure puts the list back.
+			setError(null);
+			// The overlay only bridges an upload and the refetch chasing it. Once
+			// upstream reports anything but "still owed" for a document, its own
+			// status is the better answer — a rejection especially, which the
+			// overlay would otherwise keep reading as "Approval Pending" with no
+			// button to retry from.
+			const owed = new Set(
+				parsed.filter((doc) => doc.status === 0).map((doc) => doc.docType),
+			);
+			setUploadedNow((prev) => {
+				const next = new Set([...prev].filter((type) => owed.has(type)));
+				// Same set, same reference — a new one every fetch would restart the
+				// poll timer below on every tick.
+				return next.size === prev.size ? prev : next;
+			});
 		} catch (err) {
 			if (signal?.aborted) return;
+			if (silent) {
+				console.warn("[connect] KYC document poll failed", err);
+				return;
+			}
 			setError(err);
 		} finally {
-			if (!signal?.aborted) setLoading(false);
+			if (!signal?.aborted && !silent) setLoading(false);
 		}
 	}, []);
 
@@ -164,21 +213,6 @@ export default function Documents() {
 		void load(controller.signal);
 		return () => controller.abort();
 	}, [enabled, load]);
-
-	// The rail hides this page, but the route is reachable by URL — a nav item is
-	// not an access control.
-	if (enabled === false) {
-		return (
-			<div className="flex max-w-3xl flex-col gap-6">
-				<Header />
-				<div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-					Document verification isn't available on this account.
-				</div>
-			</div>
-		);
-	}
-
-	const resolving = enabled === null || loading;
 
 	// Counted through `statusOfDocument`, not `documents.length`: a pack whose
 	// approved rows still counted as pending would tell a partner they owe work
@@ -199,13 +233,62 @@ export default function Documents() {
 	// asking for uploads that are already in.
 	const waiting =
 		!error && documents.length > 0 && !statuses.some((s) => s.canUpload);
+	const approved = !error && isPackApproved(documents);
+	// Read off `waiting`, which honours `uploadedNow`, rather than off the raw
+	// statuses: upstream does not always report the new status on the refetch that
+	// immediately follows an upload, and a pack judged only on raw statuses could
+	// sit at "Approval Pending" on screen with no timer ever started behind it.
+	const awaitingReview = waiting && !approved;
+
+	// Nothing here can change except by a decision made elsewhere, so the page
+	// asks again on a timer for as long as the partner is looking at it. Stops on
+	// its own the moment a fetch comes back with something owed or everything
+	// approved — `awaitingReview` goes false and the effect tears the timer down.
+	useEffect(() => {
+		if (enabled !== true || !awaitingReview) return;
+		const controller = new AbortController();
+		const timer = setInterval(() => {
+			// A background tab is nobody watching.
+			if (document.hidden) return;
+			void load(controller.signal, true);
+		}, KYC_POLL_MS);
+		return () => {
+			controller.abort();
+			clearInterval(timer);
+		};
+	}, [enabled, awaitingReview, load]);
+
+	// The signature the approved pack points at. Fail-closed, the same read as the
+	// rail's E-sign Documents item and the Next Steps card: an unresolved or
+	// unreadable list means no link, rather than one into a flow this account may
+	// not be able to run. The callout itself still renders — "your documents are
+	// approved" is worth saying either way.
+	const esignPending = Boolean(useRoleTransactionList()?.[String(ESIGN_ID)]);
+
+	// The rail hides this page, but the route is reachable by URL — a nav item is
+	// not an access control.
+	if (enabled === false) {
+		return (
+			<div className="flex max-w-3xl flex-col gap-6">
+				<Header />
+				<div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+					Document verification isn't available on this account.
+				</div>
+			</div>
+		);
+	}
+
+	const resolving = enabled === null || loading;
 
 	return (
 		// Its own provider, not the app's: this page is rendered on its own in
 		// tests, and Radix throws if a Tooltip finds no provider above it.
 		<TooltipProvider delayDuration={150}>
 			<div className="flex max-w-3xl flex-col gap-6">
-				<Header waiting={waiting} />
+				<Header
+					waiting={waiting}
+					quiet={!resolving && (awaitingReview || approved)}
+				/>
 
 				{error ? (
 					<ErrorNotice
@@ -227,6 +310,37 @@ export default function Documents() {
 						No pending documents at this time. If you have already uploaded your
 						documents, it is pending verification.
 					</div>
+				) : null}
+
+				{/* The pack is in and nobody is waiting on the partner. Says how long
+				    that wait usually is, because "check back later" without a number is
+				    what turns into a support ticket. */}
+				{!resolving && awaitingReview ? (
+					<Callout type="note" label="Documents received" className="my-0">
+						<p className="text-sm">
+							We've received your documents and our team will verify them. This
+							usually takes up to 3 hours on working days, and up to 6 hours on
+							weekends.
+						</p>
+					</Callout>
+				) : null}
+
+				{/* Approved, and the pack itself is no longer the next step. The link
+				    is entitlement-gated; the message is not — a partner whose documents
+				    were just approved is owed that news either way. */}
+				{!resolving && approved ? (
+					<Callout type="tip" label="Documents approved" className="my-0">
+						<div className="flex flex-col items-start gap-3">
+							<p className="text-sm">
+								Sign your uploaded documents digitally to activate your account.
+							</p>
+							{esignPending ? (
+								<Button asChild size="sm">
+									<Link to={ESIGN_PATH}>E-sign Documents</Link>
+								</Button>
+							) : null}
+						</div>
+					</Callout>
 				) : null}
 
 				{!resolving && !error && documents.length > 0 ? (

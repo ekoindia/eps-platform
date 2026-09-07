@@ -7,7 +7,12 @@
  */
 
 import { authClient } from "@/lib/auth/client";
-import { type KycDocument, parseDocumentList } from "@/lib/connect/kyc";
+import {
+	isAwaitingReview,
+	KYC_POLL_MS,
+	type KycDocument,
+	parseDocumentList,
+} from "@/lib/connect/kyc";
 import { useEffect, useState } from "react";
 
 /**
@@ -82,6 +87,12 @@ export function resetKycDocumentCache(): void {
  * @param enabled - Whether to ask at all. False fires no request and clears any
  *   pack already held, so an account that loses entitlement — or a session that
  *   changes under the component — never keeps showing the last one's documents.
+ * A pack that is waiting only on the reviewer is re-asked every `KYC_POLL_MS`
+ * for as long as the caller stays mounted, so a partner who leaves Home open
+ * while their documents are approved sees the new state without a reload. It
+ * costs nothing in every other case: the timer only exists while
+ * `isAwaitingReview` holds, which is precisely when the page cannot change on
+ * its own.
  * @returns The pack once it resolves, or null while unresolved, when disabled,
  *   and when the fetch failed. A caller that cannot tell those apart should fall
  *   back to whatever it showed before it asked.
@@ -107,6 +118,33 @@ export function useKycDocuments(enabled: boolean): KycDocument[] | null {
 			alive = false;
 		};
 	}, [enabled]);
+
+	// Deliberately depends on `documents`: every answer restarts the clock, and
+	// the timer tears itself down as soon as a fetch comes back with something
+	// owed — or approved — so it stops without anyone having to stop it. No
+	// `force` is needed on the fetch, since `DOCUMENT_TTL_MS` is far shorter than
+	// the poll interval and the cache is always stale by the time we ask.
+	useEffect(() => {
+		if (!enabled || !documents || !isAwaitingReview(documents)) return;
+		let alive = true;
+		const timer = setInterval(() => {
+			// A background tab is nobody watching. The catch-up happens naturally on
+			// the next tick after the tab comes back.
+			if (document.hidden) return;
+			void fetchKycDocuments()
+				.then((next) => {
+					if (alive) setDocuments(next);
+				})
+				.catch(() => {
+					// Warned in the fetch. Keeping the last pack is better than blanking
+					// a card over one failed poll.
+				});
+		}, KYC_POLL_MS);
+		return () => {
+			alive = false;
+			clearInterval(timer);
+		};
+	}, [enabled, documents]);
 
 	return documents;
 }
