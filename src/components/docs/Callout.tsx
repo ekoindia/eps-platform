@@ -61,11 +61,19 @@ export const Callout = ({
 	type = "note",
 	children,
 	className,
+	label,
 }: {
 	type?: string;
 	children?: ReactNode;
 	/** For callers outside the docs prose flow, whose own container sets spacing. */
 	className?: string;
+	/**
+	 * Overrides the variant's own heading. The variant names an alert *level*
+	 * ("NOTE", "TIP"), which is the right word for a GitHub alert in prose and the
+	 * wrong one for a callout that has something specific to say. Callers outside
+	 * the docs flow name their own.
+	 */
+	label?: string;
 }) => {
 	const key = ALIAS[type] ?? type;
 	const variant = VARIANTS[key] ?? VARIANTS.note;
@@ -87,7 +95,7 @@ export const Callout = ({
 						variant.accent,
 					)}
 				>
-					{variant.label}
+					{label ?? variant.label}
 				</div>
 				<div className="[&>:first-child]:mt-0 [&>:last-child]:mb-0">
 					{children}

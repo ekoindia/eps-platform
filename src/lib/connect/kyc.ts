@@ -343,3 +343,42 @@ export function summariseDocuments(
 	}
 	return summary;
 }
+
+/**
+ * How often a pack that is waiting only on the reviewer is re-asked.
+ *
+ * Its own constant rather than `POLL_MS` from `lib/notifications.ts`: same value
+ * today, but a document pack and a notification feed are unrelated features that
+ * should be tunable apart.
+ */
+export const KYC_POLL_MS = 600_000;
+
+/**
+ * Whether the pack is entirely with the reviewer — something has been uploaded
+ * and is awaiting approval, and nothing at all is owed back.
+ *
+ * This is the condition under which the console re-asks upstream on a timer: the
+ * partner has done their part, so the only thing that can change the page is a
+ * decision made elsewhere. A pack with anything still owed (statuses 0, 3, 4, or
+ * an unrecognised code, all counted as owed by `summariseDocuments`) is waiting
+ * on the partner, not on us, and polling it would only re-render what they are
+ * already looking at.
+ * @param docs - The parsed pack.
+ */
+export function isAwaitingReview(docs: readonly KycDocument[]): boolean {
+	const pack = summariseDocuments(docs);
+	return pack.awaitingReview > 0 && pack.pendingUpload + pack.reupload === 0;
+}
+
+/**
+ * Whether every document in a non-empty pack has been approved.
+ *
+ * An empty pack is deliberately false: upstream sends "No Records Found" as an
+ * empty list for accounts that never owed documents at all, and telling one of
+ * those that its documents are approved would be an announcement about nothing.
+ * @param docs - The parsed pack.
+ */
+export function isPackApproved(docs: readonly KycDocument[]): boolean {
+	const pack = summariseDocuments(docs);
+	return pack.total > 0 && pack.approved === pack.total;
+}

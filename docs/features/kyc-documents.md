@@ -614,6 +614,54 @@ list, not the length alone: upstream keeps approved documents in the list, and
 counting them as outstanding tells a partner they owe work they have already
 done. At zero the line reads **"All documents uploaded"** rather than "0 of 11".
 
+### Callouts, and the auto-refresh behind them
+
+A pack that is entirely with the reviewer — at least one document at status 1 and
+nothing at 0, 3, 4 or an unrecognised code — is a page nothing the partner does
+can change. `isAwaitingReview()` in `kyc.ts` is that condition, and two things
+hang off it.
+
+**A callout above the list**, headed *Documents received*, saying that the
+documents are in and that verification usually takes up to 3 hours on working
+days and up to 6 hours on weekends. A number is what stops "check back later"
+turning into a support ticket. Once every document is approved
+(`isPackApproved()`) it is replaced by a *Documents approved* callout pointing at
+the signature that is now the real next step. Both suppress the header subtitle
+rather than saying the same thing twice, a line above, in weaker words.
+
+The e-sign **link** in that second callout is gated on the `223` entitlement in
+the `/transactions/wlc` list — the same fail-closed read the rail's E-sign
+Documents item and the Next Steps card use. The **message** is not: a partner
+whose documents were just approved is owed that news whether or not this session
+can resolve their entitlement, and a link into a flow the account cannot run is
+worse than no link.
+
+**A 10-minute refetch** (`KYC_POLL_MS`) for as long as the partner stays on the
+page, so an approval that lands while they are looking at it does not wait for
+them to think of reloading. Both surfaces poll: `Documents.tsx` on its own
+uncached `load()`, and Console Home through `useKycDocuments`, which arms the
+same timer for the Next Steps row. Four properties are deliberate:
+
+- **It stops by itself.** The timer only exists while `isAwaitingReview` holds,
+  so a pack that comes back owed — or approved — tears it down on that fetch.
+  Nothing has to remember to stop it.
+- **A background tab does not poll.** `document.hidden` skips the tick, the same
+  guard `startNotificationsPolling` uses in `src/lib/notifications.ts`.
+- **The refresh is silent.** `load(signal, silent)` skips the skeletons and
+  swallows the failure: replacing a list the partner is reading with four grey
+  bars — or with an error box — is worse than leaving the list they already have.
+  A later poll that succeeds clears the error and puts the page back.
+- **It reads the overlaid statuses, not the raw ones.** Upstream does not always
+  report the new status on the refetch that immediately follows an upload. A pack
+  judged only on raw statuses could sit at "Approval Pending" on screen with no
+  timer running behind it.
+
+The `uploadedNow` overlay is pruned on every fetch, keeping only doc types
+upstream still reports at status 0. Left in place it would keep reading a
+rejection that arrives *after* the upload as "Approval Pending", with no button
+to act on it — the polling above is precisely what makes such a rejection arrive
+while the page is open.
+
 Three things the row deliberately does **not** show:
 
 - **A progress bar.** The line above the list already carries the ratio, and a
@@ -810,13 +858,14 @@ only useful before a file is picked.
 
 | Path | Role |
 | --- | --- |
-| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, parsing, status, `summariseDocuments` |
+| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, parsing, status, `summariseDocuments`, `isAwaitingReview`, `isPackApproved`, `KYC_POLL_MS` |
 | `src/lib/connect/kyc-docs.ts` | Per-`doc_type` overrides, `KYC_ACCEPT`, the mirrored backend limits |
 | `src/lib/connect/kyc.fixture.ts` | The 586 sample, shared by tests and the bench |
 | `public/kyc-samples/` | The downloadable blanks a `sampleUrl` points at |
 | `src/lib/console/lifecycle.ts` | `needsKycUpload()` — the 48/47 gate the rail, page and card share |
 | `src/lib/connect/use-kyc.ts` | `useKycEnabled()`, the hook face of it |
-| `src/lib/connect/kyc-documents.ts` | `useKycDocuments()` and its 60 s cache — the Next Steps row only |
+| `src/lib/connect/kyc-documents.ts` | `useKycDocuments()`, its 60 s cache and Home's 10-minute poll — the Next Steps row only |
+| `src/components/docs/Callout.tsx` | The admonition box both callouts reuse, with a caller-supplied `label` |
 | `src/components/console/NextStepsCard.tsx` | The **Finish your KYC** row |
 | `src/pages/console/Documents.tsx` | The checklist page |
 | `src/components/console/KycUploadDialog.tsx` | The upload dialog |
