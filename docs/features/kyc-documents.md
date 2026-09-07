@@ -23,16 +23,16 @@ per-document status `3` rows below, which carry the actual rejection reason. The
 two can also disagree — the state does not change until upstream flips the
 account itself, which can lag a successful upload.
 
-**The pack itself says what is owed.** For those two states — and only for an
-account entitled to run the flow — the Next Steps card fetches the document list
+**The pack itself says what is owed.** For those two states, the Next Steps card
+fetches the document list
 and reads the row off the documents rather than off the account state:
 `Approved` with a tick when every document is at status 2 (or the pack is empty),
 `Approval Pending` with no button while everything sits with the reviewer, and a
 red `2 Pending, 1 Re-upload` with the matching button when documents are
 outstanding. `summariseDocuments` (`src/lib/connect/kyc.ts`) does the counting —
 statuses 3 and 4 fold into one re-upload count, and an unrecognised status counts
-as still owed. Any other state, an unentitled account, an unresolved fetch or a
-failed one leaves the row on the coarse account-state reading it had before:
+as still owed. Any other state, an unresolved fetch or a failed one leaves the
+row on the coarse account-state reading it had before:
 `Pending`, or a red **Re-upload required** with a *Re-upload* button for
 `kyc-rejected`. A transient 502 must not take away the way in.
 
@@ -132,23 +132,42 @@ surfaces as one.
 Matching on the message is all upstream gives us to go on. If a
 `response_type_id` for this case ever surfaces, prefer it.
 
-## Entitlement
+## When the flow is offered
 
-`kycEnabled(list)` (`src/lib/connect/kyc.ts`) requires **both** 586 and 587 in
-the `/transactions/wlc` list. Listing without uploading would render a page
-whose every button fails upstream, which reads as a broken console rather than
-an unavailable feature.
+**Account state, not entitlement.** `needsKycUpload(state)`
+(`src/lib/console/lifecycle.ts`) is true for exactly the two lifecycles that owe
+a pack — `kyc-pending` and `kyc-rejected`, upstream `account_state_id` 48 and 47.
 
-`useKycEnabled()` is the React face of it, mirroring `useLoadWalletFlowId`. It
-returns `null` while unresolved so callers can tell "not entitled" from "not yet
-loaded" and avoid flashing a refusal at every user on mount.
+This used to be an entitlement check: `kycEnabled(list)` required **both** 586
+and 587 in the `/transactions/wlc` list. That list is fetched once per session
+and read fail-closed, so a short or stale one silently hid the single step a
+blocked partner has to complete to go live — the failure mode
+[`user-onboarding.md`](./user-onboarding.md#troubleshooting-stale-entitlements-after-signup)
+documents. The account state answers the same question without the cache.
 
-Two independent guards use it, deliberately:
+`useKycEnabled()` (`src/lib/connect/use-kyc.ts`) is the React face of it: it
+reads `MeView.state` off the auth context and returns `null` while the session is
+still loading, so callers can tell "nothing owed" from "not yet known" and avoid
+flashing a refusal at every user on mount. It is deliberately **not** gated on
+`SHOW_CONNECT_WIDGET` — that flag is about the Eko Connect iframe (Load E-value,
+Manage My Account); this page is the console's own JSX over a backend call.
+
+Two independent guards use it:
 
 - `ConsoleLayout` inserts the **Documents** rail item, directly after Home and
   ahead of Load Wallet — an unfinished KYC pack is what blocks the account.
-- `Documents.tsx` guards itself and fires no requests when unentitled. A nav
-  item is not an access control, and `/console/documents` is reachable by URL.
+- `Documents.tsx` guards itself and fires no requests for an account that owes no
+  pack. A nav item is not an access control, and `/console/documents` is
+  reachable by URL.
+
+`NextStepsCard` asks `needsKycUpload(me.state)` directly rather than through the
+hook — it already has the session, so re-deriving it from context would only add
+a way for the card and the rail to disagree.
+
+Note the consequence: an account in state 48/47 that is **not** entitled to
+586/587 upstream now reaches the page, and the document-list call fails there
+rather than the link being hidden. That is the intended trade — a visible error
+on the step a partner must complete beats a silently missing one.
 
 ## Every document is mandatory
 
@@ -791,11 +810,12 @@ only useful before a file is picked.
 
 | Path | Role |
 | --- | --- |
-| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, gating, parsing, status, `summariseDocuments` |
+| `src/lib/connect/kyc.ts` | Constants, `KycDocument`, parsing, status, `summariseDocuments` |
 | `src/lib/connect/kyc-docs.ts` | Per-`doc_type` overrides, `KYC_ACCEPT`, the mirrored backend limits |
 | `src/lib/connect/kyc.fixture.ts` | The 586 sample, shared by tests and the bench |
 | `public/kyc-samples/` | The downloadable blanks a `sampleUrl` points at |
-| `src/lib/connect/use-kyc.ts` | `useKycEnabled()` |
+| `src/lib/console/lifecycle.ts` | `needsKycUpload()` — the 48/47 gate the rail, page and card share |
+| `src/lib/connect/use-kyc.ts` | `useKycEnabled()`, the hook face of it |
 | `src/lib/connect/kyc-documents.ts` | `useKycDocuments()` and its 60 s cache — the Next Steps row only |
 | `src/components/console/NextStepsCard.tsx` | The **Finish your KYC** row |
 | `src/pages/console/Documents.tsx` | The checklist page |

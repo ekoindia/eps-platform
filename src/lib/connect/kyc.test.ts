@@ -1,8 +1,5 @@
 import { KYC_DOCUMENTS_SAMPLE } from "@/lib/connect/kyc.fixture";
 import {
-	KYC_LIST_ID,
-	KYC_UPLOAD_ID,
-	kycEnabled,
 	parseDocumentList,
 	statusOfDocument,
 	summariseDocuments,
@@ -25,29 +22,6 @@ function doc(overrides: Partial<KycDocument> = {}): KycDocument {
 		...overrides,
 	};
 }
-
-/** An interaction list carrying exactly the given ids. */
-function listOf(...ids: number[]) {
-	return Object.fromEntries(ids.map((id) => [String(id), { id }]));
-}
-
-describe("kycEnabled", () => {
-	it("needs both the list and the upload interaction", () => {
-		expect(kycEnabled(listOf(KYC_LIST_ID, KYC_UPLOAD_ID))).toBe(true);
-	});
-
-	it("refuses a user who can list but not upload", () => {
-		expect(kycEnabled(listOf(KYC_LIST_ID))).toBe(false);
-	});
-
-	it("refuses a user who can upload but not list", () => {
-		expect(kycEnabled(listOf(KYC_UPLOAD_ID))).toBe(false);
-	});
-
-	it("refuses an unrelated entitlement", () => {
-		expect(kycEnabled(listOf(491, 240))).toBe(false);
-	});
-});
 
 describe("parseDocumentList", () => {
 	it("reads the sample response", () => {

@@ -67,10 +67,13 @@ export function fetchRoleTransactionList(): Promise<RoleTransactionList> {
 		.connectInteractions()
 		.then(({ interactions }) => {
 			cache = buildRoleTransactionList(interactions);
-			// 586/587 gate Upload Documents (`KYC_LIST_ID`/`KYC_UPLOAD_ID` in
-			// kyc.ts — not imported: a diagnostic must not couple this generic
-			// module to one feature). Mirrors the backend's `[connect] wlc` line
-			// so browser and server can be compared for the same request.
+			// 586/587 are the KYC list/upload interactions (`KYC_LIST_ID` /
+			// `KYC_UPLOAD_ID` in kyc.ts — not imported: a diagnostic must not
+			// couple this generic module to one feature). They no longer gate the
+			// Upload Documents item, which reads the account's lifecycle state
+			// instead; this stays because the calls behind that page still name
+			// them, and it mirrors the backend's `[connect] wlc` line so browser
+			// and server can be compared for the same request.
 			console.debug("[connect] interaction list fetched", {
 				count: interactions.length,
 				kycEntitled: Boolean(cache["586"] && cache["587"]),

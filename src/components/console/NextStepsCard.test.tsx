@@ -4,13 +4,6 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The entitlement hook is the switch under test for the KYC link, so it is
-// driven directly — same as Documents.test.tsx does.
-const kycEnabled = vi.fn();
-vi.mock("@/lib/connect/use-kyc", () => ({
-	useKycEnabled: () => kycEnabled(),
-}));
-
 // The pack itself. Null by default — unresolved, unentitled or failed — so
 // every case written before the fetch existed still sees the account-state row.
 const documents = vi.fn();
@@ -44,7 +37,6 @@ function entitledTo(...ids: number[]) {
 }
 
 beforeEach(() => {
-	kycEnabled.mockReturnValue(false);
 	interactions.mockReturnValue(null);
 	documents.mockReset().mockReturnValue(null);
 });
@@ -86,7 +78,6 @@ describe("NextStepsCard", () => {
 	// The state that exists to say exactly this. Nothing in the component tests
 	// for it by name — it falls out of "not active" — so this guards that.
 	it("marks KYC pending, and offers the upload, for a kyc-pending account", () => {
-		kycEnabled.mockReturnValue(true);
 		renderCard({ state: "kyc-pending" });
 		expect(screen.getByText("Pending")).toBeInTheDocument();
 		expect(screen.queryByText("Done")).not.toBeInTheDocument();
@@ -98,7 +89,6 @@ describe("NextStepsCard", () => {
 	// The bug this state was added for: 47 read as `active`, so a partner whose
 	// documents were refused saw a struck-out KYC row and an "Active" account.
 	it("marks a rejected KYC red, and offers the re-upload", () => {
-		kycEnabled.mockReturnValue(true);
 		renderCard({ state: "kyc-rejected" });
 		const badge = screen.getByText("Re-upload required");
 		expect(badge).toBeInTheDocument();
@@ -193,7 +183,6 @@ describe("NextStepsCard", () => {
 
 	// One filled button per card. While a signature is owed, it is the signature's.
 	it("hands the filled button to E-sign and demotes the upload", () => {
-		kycEnabled.mockReturnValue(true);
 		interactions.mockReturnValue(entitledTo(223));
 		renderCard({ state: "kyc-pending" });
 		expect(screen.getByRole("link", { name: /sign document/i })).toHaveClass(
@@ -212,12 +201,16 @@ describe("NextStepsCard", () => {
 		expect(screen.getByText(/finish your kyc/i)).toBeInTheDocument();
 	});
 
-	it("links KYC to the upload page once entitled", () => {
-		kycEnabled.mockReturnValue(true);
-		renderCard({ state: "lead" });
-		expect(
-			screen.getByRole("link", { name: /uploading documents/i }),
-		).toHaveAttribute("href", "/console/documents");
+	// The link follows the account state, not an entitlement: a lead owes no
+	// document pack yet, so the row states what is coming and carries no way in.
+	it("offers no upload link to an account that owes no pack", () => {
+		for (const state of ["lead", "onboarded", "unknown"] as const) {
+			const { unmount } = renderCard({ state });
+			expect(
+				screen.queryByRole("link", { name: /uploading documents/i }),
+			).not.toBeInTheDocument();
+			unmount();
+		}
 	});
 
 	// Was gated on `profile.dateOfJoining >= 2026-08-03`. The gate came out
@@ -245,10 +238,6 @@ describe("NextStepsCard", () => {
 
 	// The pack says what the account state cannot: which documents are owed.
 	describe("driven by the document pack", () => {
-		beforeEach(() => {
-			kycEnabled.mockReturnValue(true);
-		});
-
 		it("asks for the pack only for an account whose KYC is outstanding", () => {
 			renderCard({ state: "lead" });
 			expect(documents).toHaveBeenCalledWith(false);

@@ -1,57 +1,41 @@
 import { useOptionalAuth } from "@/lib/auth/AuthProvider";
-import { SHOW_CONNECT_WIDGET } from "@/lib/config/features";
-import { fetchRoleTransactionList } from "@/lib/connect/interactions";
-import { kycEnabled } from "@/lib/connect/kyc";
-import { useEffect, useState } from "react";
+import { needsKycUpload } from "@/lib/console/lifecycle";
 
 /**
- * Whether this user may run the KYC document flow — both listing and uploading.
+ * Whether this user should be offered the KYC document flow.
  *
- * Safe to call from several components: the interaction list is cached for the
- * session and concurrent callers share one request. Mirrors
- * `useLoadWalletFlowId`, including its failure behaviour — an entitlement we
- * could not read is treated as an entitlement the user does not have.
- * @returns True or false once resolved, and null while still unknown, so a
- *   caller can tell "not entitled" apart from "not yet loaded" and avoid
- *   flashing a "not available" message at every user on mount.
+ * Answered from the account's lifecycle state — upstream `account_state_id` 48
+ * (KYC Pending) and 47 (Ready for Resubmission), as collapsed by the backend
+ * (`deriveStateFromProfile`) — and NOT from the `/connect/interactions`
+ * entitlement for 586/587 that used to gate it. That list is fetched once per
+ * session and read fail-closed, so a short or stale wlc list silently hid the
+ * one step a blocked partner must complete.
+ *
+ * Deliberately NOT gated on `SHOW_CONNECT_WIDGET`: that flag is about the Eko
+ * Connect iframe (Load E-value, Manage My Account). The documents page is this
+ * app's own JSX over `authClient.connectKyc.*`, a backend call, and works with
+ * the widget switched off.
+ *
+ * Reads context and returns — no fetch, so no failure mode of its own, and a
+ * lifecycle that changes without a remount (the signup→developer upgrade) is
+ * picked up on the next render rather than by an effect keyed on the role.
+ *
+ * The session is painted from this tab's cached view before `/me` confirms it
+ * (see `AuthProvider`), so the answer can flip once on load. Callers already
+ * tolerate that: it is display data, and the page behind the link re-reads.
+ * @returns True or false once the session resolves, and null while it is still
+ *   loading, so a caller can tell "no pack owed" apart from "not yet known" and
+ *   avoid flashing a "not available" message at every user on mount.
  */
 export function useKycEnabled(): boolean | null {
-	const [enabled, setEnabled] = useState<boolean | null>(null);
-	// Re-runs the check when the signed-in role changes — the signup→developer
-	// upgrade at the end of onboarding grants new entitlements without a
-	// remount, and a `[]`-effect would keep reporting the pre-upgrade answer.
 	// Optional so the hook still works in trees (and tests) with no provider.
 	const auth = useOptionalAuth();
-	const roleKey =
-		auth === null
-			? "no-provider"
-			: auth.state.status === "authed"
-				? auth.state.role
-				: auth.state.status;
-
-	useEffect(() => {
-		if (!SHOW_CONNECT_WIDGET) {
-			setEnabled(false);
-			return;
-		}
-		let alive = true;
-		void fetchRoleTransactionList()
-			.then((list) => {
-				const next = kycEnabled(list);
-				console.debug("[connect] useKycEnabled", { roleKey, enabled: next });
-				if (alive) setEnabled(next);
-			})
-			.catch(() => {
-				// The fetch itself already warned; this is the consequence.
-				console.warn(
-					"[connect] useKycEnabled: list unavailable — treating as not entitled",
-				);
-				if (alive) setEnabled(false);
-			});
-		return () => {
-			alive = false;
-		};
-	}, [roleKey]);
-
-	return enabled;
+	if (auth === null) return false;
+	const { state } = auth;
+	if (state.status === "loading") return null;
+	// Admin and signup sessions carry no lifecycle; anon carries no session.
+	if (state.status !== "authed" || state.role !== "developer") return false;
+	// No debug line: this runs in a render body, where a log fires on every
+	// paint. The same answer is legible from the lifecycle badge on Home.
+	return needsKycUpload(state.me.state);
 }

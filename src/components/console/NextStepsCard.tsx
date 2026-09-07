@@ -12,7 +12,7 @@ import { ESIGN_ID, ESIGN_PATH } from "@/lib/connect/esign";
 import { type KycPackSummary, summariseDocuments } from "@/lib/connect/kyc";
 import { useKycDocuments } from "@/lib/connect/kyc-documents";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
-import { useKycEnabled } from "@/lib/connect/use-kyc";
+import { needsKycUpload } from "@/lib/console/lifecycle";
 import { cn } from "@/lib/utils";
 import { CircleCheck, CircleDashed } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -134,10 +134,6 @@ function packStatus(pack: KycPackSummary): {
  * @param me - The session view.
  */
 export default function NextStepsCard({ me }: { me: MeView }) {
-	// null while the entitlement is still unknown, so the action appears a tick
-	// late — exactly how the rail's Upload Documents item appears. Never send a
-	// partner at a page the rail is hiding from them.
-	const kycEnabled = useKycEnabled();
 	// The same entitlement, read the same fail-closed way, as the rail's E-sign
 	// Documents item: an unresolved or unreadable list hides the row rather than
 	// pointing a partner at a flow they cannot run. Entitlement is all either
@@ -151,14 +147,16 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 	// is the one thing that will never clear this state.
 	const kycRejected = me.state === "kyc-rejected";
 	// The two states upstream reports as account_state_id 48 and 47 — the only
-	// ones where the pack can still say something the state does not. `me.state`
-	// rather than the raw id, per `client.ts`: the backend already collapsed the
-	// ids into these two names.
-	const kycBlocked = me.state === "kyc-pending" || kycRejected;
-	// Null while unresolved, when unentitled, and when the fetch failed — each of
-	// which leaves the row on the account-state reading it had before this card
-	// ever asked. A blip must not hide the way in.
-	const documents = useKycDocuments(kycEnabled === true && kycBlocked);
+	// ones where the pack can still say something the state does not, and the
+	// only ones the upload page is offered for. The same predicate the rail's
+	// Upload Documents item is gated on, read straight from `me` rather than
+	// through `useKycEnabled`: this card already has the session, so a hook that
+	// re-derives it from context would only add a way for the two to disagree.
+	const kycBlocked = needsKycUpload(me.state);
+	// Null while the fetch is in flight and when it failed — either way the row
+	// keeps the account-state reading it had before this card ever asked. A blip
+	// must not hide the way in.
+	const documents = useKycDocuments(kycBlocked);
 	const pack = documents ? packStatus(summariseDocuments(documents)) : null;
 
 	const steps: Step[] = [
@@ -185,7 +183,7 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 		{
 			label: "Finish your KYC by uploading documents",
 			cta:
-				kycEnabled && !kycDone && pack?.cta !== null
+				kycBlocked && pack?.cta !== null
 					? {
 							label: pack?.cta ?? (kycRejected ? "Re-upload" : "Upload"),
 							to: "/console/documents",
