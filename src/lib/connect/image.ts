@@ -1,6 +1,20 @@
 import type { Crop } from "react-image-crop";
 
 /**
+ * Default cap for the longer side of a processed image, in pixels.
+ *
+ * A phone camera hands back its full sensor resolution, which is several
+ * megabytes of detail no document reviewer can use. 2000 px is ~170 dpi on
+ * A4 — readable, OCR-able, and a quarter of the bytes of a 4000 px capture.
+ *
+ * One number for both branches: the image editor applies it to every picked
+ * or captured image, and `pdfFromImages` to every image folded into a
+ * combined PDF, so a lone attachment and a page of a pack come out at the
+ * same resolution.
+ */
+export const DEFAULT_IMAGE_MAX_LENGTH = 2000;
+
+/**
  * Scales a size down so its longer side fits `maxLength`, keeping the ratio.
  * @param size.width - Width in pixels.
  * @param size.height - Height in pixels.

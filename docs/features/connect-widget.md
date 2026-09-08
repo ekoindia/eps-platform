@@ -293,6 +293,16 @@ photo" rather than "Select file" when images are all that is allowed);
 `cameraOnly` drops the picker and the drop zone; `options.disableImageConfirm`
 takes the capture as-is. It needs a `ConnectDialogProvider` above it.
 
+**Size cap.** `options.maxLength` bounds the longer side of the processed
+image, and defaults to `DEFAULT_IMAGE_MAX_LENGTH` (2000 px,
+`src/lib/connect/image.ts`) — the same number `pdfFromImages` uses, so one
+attachment and a page of a combined PDF come out at the same resolution.
+Without it a phone capture is stored at full sensor resolution: an
+`ImageCapture.takePhoto()` still is 12 MP, several megabytes of detail no
+reviewer can use. Quality is a fixed JPEG 0.8 (`getProcessedImage`).
+`disableImageConfirm` skips the editor, and with it this cap — those images
+are attached raw.
+
 **Watermark.** `watermark` carries provenance into the pixels, because a KYC
 photo is evidence and evidence without provenance can be re-used for a different
 customer on a different day.
