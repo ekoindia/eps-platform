@@ -20,7 +20,7 @@ all are derived at read time from typed data.
 | [mdx-guides.md](mdx-guides.md) | Prose guides (Quickstart, How Auth Works, Error Codes): MDX config, metadata vs component registries, routing. |
 | [sdk-guides.md](sdk-guides.md) | The `/docs/sdk` section: its own routes, the hybrid data + MDX content model, the `<SdkFacts>` bridge, markdown twins, and the `list_sdks`/`get_sdk` MCP tools. |
 | [code-samples.md](code-samples.md) | The pure cURL / JavaScript / Python generators and where they render. |
-| [try-it-now.md](try-it-now.md) | The Scalar "Try it" modal, the `beforeRequest` HMAC signing plugin, the interactive OpenAPI doc, and the CORS proxy. |
+| [try-it-now.md](try-it-now.md) | The custom "Test Request" dialog, in-browser HMAC signing at send time, and the eps-backend try-it proxy. |
 | [layout-ssg-theming.md](layout-ssg-theming.md) | The 3-pane layout, SSG prerendering, and the docs-local dark theme toggle. |
 
 ## High-level data flow
@@ -47,7 +47,7 @@ api-specs-common.ts ─┼─┴──> api-specs.ts          │
                                           ▼                              ▼
                                   guide → MdxGuide          endpoint → EndpointDetail
                                                                  + CodeSamples (right rail)
-                                                                 + Scalar "Try it" modal (onTest)
+                                                                 + "Test Request" dialog (onTest)
 ```
 
 ## Key directories

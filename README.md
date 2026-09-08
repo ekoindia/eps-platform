@@ -134,10 +134,11 @@ npm run lint         # eslint
 
 `npm install`, `npm run build`, `npm run lint`, and `npm test` all run **without any
 credentials** — no API keys are needed to build the site or run the suite. Sandbox
-credentials are only required to exercise the `/docs` **"Try it"** console live: copy
-[`.env.example`](.env.example) → `.env.local` and fill in your own Eko UAT/sandbox keys.
-Those values are read only during `vite dev` (gated by `import.meta.env.DEV`), are never
-bundled into production, and the access key is used purely for in-browser HMAC signing.
+credentials are only needed to prefill the `/docs` **"Test Request"** dialog: copy
+[`.env.example`](.env.example) → `.env.local` and set the public UAT demo keypair (it is
+deliberately inlined in production builds too — see `src/lib/uat-credentials.ts`). The
+access key is used purely for in-browser HMAC signing at send time; the request itself
+goes through eps-backend's `POST /tryit/proxy` (see `docs/developer-docs/try-it-now.md`).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow.
 
 **How to add things:**

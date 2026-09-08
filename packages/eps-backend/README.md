@@ -29,6 +29,7 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | POST   | /activation-fee/intimate    | cookie         | Partner reports paying the one-time activation fee; mails Team Eko. 503 `ACTIVATION_FEE_DISABLED` unless `ACTIVATION_FEE_WEBHOOK_URL` is set |
 | GET    | /crm/lead                   | cookie         | The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` unless `ZOHO_ENABLED=true`; 404 `NO_CRM_LEAD` when the profile has no `crm_lead_id` |
 | PATCH  | /crm/lead                   | cookie         | Writes allow-listed Lead fields back to Zoho — see docs/features/crm-lead.md |
+| POST   | /tryit/proxy                | none (public)  | Same-origin relay for the docs "Try it" widget — see below |
 
 ## Auth providers
 
@@ -264,6 +265,56 @@ down. Concurrency can therefore overshoot by up to `concurrency × per-request
 cost`. The per-login rate limit is what actually bounds abuse; a true ceiling
 would need conditional increments plus reserve/refund around every provider
 call, which is not worth it for a login-gated, already rate-limited feature.
+
+## Docs "Try it" proxy (`POST /tryit/proxy`)
+
+The docs pages let a visitor call an Eko API with their own keys straight from
+the browser. Eko's API hosts do not answer CORS preflights, so the widget posts
+to this same-origin route and the backend relays the call. Anonymous by design:
+no session is read, and nothing is persisted. No env vars — the route is always
+mounted. Implementation: `src/http/tryitProxy.ts`.
+
+**Request** — always `POST /tryit/proxy`; the real call is described in headers:
+
+| Header                  | Meaning                                                                   |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `x-eps-target-url`      | Absolute upstream URL incl. query. Must sit under an allowed base (below). |
+| `x-eps-target-method`   | `GET` \| `POST` \| `PUT` \| `DELETE` (default `POST`); else 400 `INVALID_METHOD`. |
+| `x-eps-developer-key`   | Forwarded upstream as `developer_key`. Renamed because nginx drops request headers containing underscores by default (`underscores_in_headers off`). |
+| `secret-key`, `secret-key-timestamp`, `content-type`, `accept` | Copied verbatim when present. |
+
+The body is forwarded byte-for-byte (multipart boundaries survive) for
+`POST`/`PUT`; `GET`/`DELETE` send none. **Nothing else is forwarded** — cookies,
+`authorization`, `origin`, and every `x-eps-*` header stop here.
+
+**Allowed targets** (hardcoded in `TRYIT_ALLOWED_BASES`): `https://staging.eko.in/ekoapi/v3`
+and `https://api.eko.in/ekoicici/v3`. The URL is parsed once with WHATWG `URL`
+and must be `https:`, carry no userinfo or explicit port, match an allowed
+origin exactly, and have a path equal to or under the base path (so
+`/ekoapi/v3/../../x` normalises to `/x` and is rejected). Otherwise 400
+`INVALID_TARGET`.
+
+**Caps & timeouts**: request body and upstream body are each capped at 4 MiB
+(`TRYIT_MAX_BODY_BYTES`, read with a counting reader — never `arrayBuffer()`):
+413 `PAYLOAD_TOO_LARGE` / 502 `UPSTREAM_TOO_LARGE`. The whole upstream exchange
+must finish in 30 s (`TRYIT_TIMEOUT_MS`) → 504 `UPSTREAM_TIMEOUT`; transport
+failure → 502 `UPSTREAM_UNREACHABLE`; any upstream 3xx → 502 `UPSTREAM_REDIRECT`
+(never followed, `Location` never forwarded). All errors use the standard
+envelope. The nginx vhost needs a matching `client_max_body_size 4m` on this
+location — see `docs/eps-backend-vm-deploy.md`.
+
+**Response**: upstream status verbatim; body bytes verbatim; only upstream
+`content-type`, `date`, `retry-after` are echoed (not `content-length` — Node
+fetch may have decompressed; never `set-cookie`). Added: `cache-control:
+no-store`, `x-eps-proxied: 1`, `x-eps-upstream-ms`. The last two are in the
+site CORS `exposeHeaders`.
+
+**Rate limit**: 300 calls per `x-real-ip` per `RL_WINDOW_SEC` (10 min) → 429
+`RATE_LIMITED`, enforced before the body is read. Caveat: behind Vercel → nginx,
+`X-Real-IP` is the Vercel edge IP (nginx overwrites with `$remote_addr`), so the
+bucket is per-edge, not per-visitor — the same caveat as the OTP routes; the
+generous limit compensates. Per-visitor keying is a deploy-chain change, out of
+scope here.
 
 ## Reverse proxy requirement
 

@@ -1,117 +1,121 @@
-# "Try It Now" Console & Request Signing
+# "Test Request" dialog & request signing
 
-Each endpoint page has a **Test Request** button that opens the **Scalar API-client
-modal** scoped to that operation. The user supplies UAT credentials in the modal's
-auth panel; each request is signed **locally** with Web Crypto (an Eko HMAC plugin)
-and routed through a **CORS proxy** to the sandbox. The raw `access_key` never leaves
-the browser — only the derived signature is sent.
+Each endpoint page has a **Test Request** button (API mode of the right rail) that
+opens a custom dialog scoped to that operation. The form is generated from the
+`ApiSpec`, the request is **signed locally with Web Crypto at the moment Send is
+pressed**, and it is sent through eps-backend's `POST /tryit/proxy` (same-origin
+`/api` on Vercel) because the Eko API hosts send no CORS headers. The raw
+`access_key` never leaves the browser — only the derived `secret-key` does.
 
-This replaced an earlier hand-rolled in-browser console (`TryItPanel`) that did a
-direct `fetch()` and hit CORS. The cURL/JS/Python code samples remain as the
-copy-and-run fallback.
+This replaced the `@scalar/api-client` modal (Sept 2026): heavy Vue dependency,
+brittle DOM overrides, cluttered UI, unlabeled UAT/prod picker, and every request
+transiting Scalar's hosted proxy. Design spec:
+`docs/superpowers/specs/2026-09-08-tryit-widget-design.md`.
 
 ## Components
 
-- **`src/components/docs/CodeSamples.tsx`** — renders the right-rail code samples and
-  the "Test Request" button; calls `onTest(path, method)`.
-- **`src/components/docs/useTryIt.ts`** — hook returning `onTest`; **dynamically
-  imports** the Scalar client on first click so it never enters the SSR/prerender
-  bundle (no-op on the server).
-- **`src/lib/docs/tryit-client.ts`** — client-only singleton that creates the Scalar
-  modal (`createApiClientModal` from `@scalar/api-client/modal` + `@scalar/workspace-store`),
-  registers the interactive OpenAPI doc, and exposes `openTryIt(path, method)`.
-- **`src/lib/docs/eko-signing-plugin.ts`** — the `ClientPlugin` (`beforeRequest` hook)
-  that signs each request.
-- **`src/lib/docs/eko-signing.ts`** — Web Crypto HMAC-SHA256 signing (reused by the
-  plugin; unchanged from the old console).
-- **`src/lib/docs/tryit-proxy.ts`** — resolves the CORS proxy URL.
-- **`src/lib/openapi/build-openapi.ts`** — `{ interactive: true }` builds the
-  Scalar-tuned spec (auth schemes; signing headers dropped).
+| File | Role |
+|---|---|
+| `src/components/docs/CodeSamples.tsx` | Renders the **Test Request** button (API mode); calls `onTest()`. |
+| `src/components/docs/useTryIt.ts` | `useTryIt(spec)` → `{ onTest, dialog }`. Dynamically imports the dialog on first click (own async chunk, never in SSR/prerender); `?try=1` opens it on load. |
+| `src/components/docs/tryit/TryItDialog.tsx` | Radix dialog shell: breadcrumb (product › API), method tag, live URL, environment toggle, Send, production banner, ⌘/Ctrl+Enter. |
+| `src/components/docs/tryit/RequestPane.tsx` | Auth (collapsed), URL params (only when the spec has any), body as Form ↔ Raw JSON, live code snippets (collapsed). |
+| `src/components/docs/tryit/ParamField.tsx` | One input per `ResolvedApiParam`: enum → select, file → file input, number, boolean, object/array → JSON textarea, else text. |
+| `src/components/docs/tryit/ResponsePane.tsx` | HTTP status / ms / bytes, Eko verdict badge, callouts, request/response headers on demand, body Preview/Raw, copy + download. |
+| `src/components/docs/tryit/useTryItState.ts` | Reducer + sessionStorage persistence + `send()` / `abort()`. |
+| `src/components/docs/tryit/useDocsDark.ts` | Mirrors the docs `docs-dark` flag on `<html>` (the dialog renders in a portal, outside the `.dark` subtree). |
+| `src/lib/docs/tryit-request.ts` | Pure pipeline: validate → sign → build body → `sendViaProxy` → classify. |
+| `src/lib/docs/eko-signing.ts` | Web Crypto HMAC-SHA256 (`buildSignedHeaders`). |
+| `src/lib/docs/code-samples.ts` | `sampleFor` / `sdkSampleFor` with `SampleOverrides` so snippets reflect edited values. |
+| `packages/eps-backend/src/http/tryitProxy.ts` | The CORS proxy (see its README section). |
 
-## Why the lower-level client (not `@scalar/api-client-react`)
+Styling is entirely the docs `--rp-*` tokens (`code-samples.css`), so the dialog is
+warm Parchment in light mode and navy in dark mode.
 
-The react wrapper's `useApiClient` does **not** forward `plugins`, and this version of
-the client does **not** execute `x-pre-request` scripts in its send path. Signing must
-therefore happen in a `beforeRequest` **plugin**, which only `createApiClientModal`
-accepts — so `tryit-client.ts` mirrors what the react wrapper does internally but adds
-`plugins: [ekoSigningPlugin]`. Direct deps: `@scalar/api-client`,
-`@scalar/workspace-store`, `@scalar/oas-utils` (the react wrapper is not used).
+## Environments
 
-## Credentials
+- **UAT / Sandbox** (default) — prefilled with the public demo keypair from
+  `uatCredentials()` (`VITE_EPS_UAT_*`, deliberately inlined in production builds;
+  see `src/lib/uat-credentials.ts`).
+- **Production** — switching clears the credentials (the demo keys are never sent
+  to prod), shows a red banner, and for `spec.financial` endpoints Send needs a
+  second click ("Confirm production send"). Any edit disarms it.
 
-`developer_key` and `access_key` are modeled as `apiKey` **header** security schemes in
-the interactive OpenAPI doc, so the modal renders auth fields for them. In **DEV only**
-they are prefilled from `VITE_EPS_UAT_DEVELOPER_KEY` / `VITE_EPS_UAT_ACCESS_KEY` via
-`authentication.securitySchemes` (gated by `import.meta.env.DEV`, which is false during
-the Node prerender and in production — so creds never reach static output).
+Both base URLs come from `API_ENVIRONMENTS` (`src/lib/data/api-auth.ts`).
 
-## Client-side HMAC signing (the plugin)
+## Credentials & signing
 
-`eko-signing.ts` reproduces Eko's scheme with Web Crypto:
+- Keys live in component state only — never localStorage/sessionStorage.
+- On Send: `buildSignedHeaders(creds, Date.now())` computes
+  `secret-key = base64(HMAC-SHA256(timestamp, base64(access_key)))` with a fresh
+  timestamp, so a dialog left open for an hour still signs correctly.
+- `developer_key` travels to the proxy as **`x-eps-developer-key`** because nginx
+  drops headers containing underscores by default (`underscores_in_headers off`);
+  the proxy renames it back before forwarding upstream.
+- Code snippets always show `<your_developer_key>` / `<computed_secret_key>`
+  placeholders, never real keys.
 
-```
-secret-key = base64( HMAC-SHA256( timestamp, base64(access_key) ) )
-```
+## Request body
 
-The plugin runs in `beforeRequest` — **after** the auth schemes have populated the
-`developer_key` / `access_key` headers and **immediately before** the request is built,
-so the `access_key` delete is deterministic:
+- The spec's `resolveRequestParams()` drives the form; `buildSampleRequest()`
+  prefills it. Content type is derived (`resolveContentType`) and shown as a
+  read-only chip — JSON, or `multipart/form-data` for specs with `type: "file"`
+  params (non-file fields ride in the single `form-data` JSON part, each upload is
+  its own part, exactly like the SDKs).
+- Form and Raw JSON edit the same `body`; the raw textarea keeps its draft while
+  typing (no reformat / cursor jump). Invalid JSON blocks Send and shows the parse
+  error; switching back to Form discards the invalid draft.
+- `client_ref_id` is regenerated per send (15 base-36 chars, time-prefixed) while
+  "auto-generate per send" is on.
+- Validation before signing: required, enum, min/max, UTF-8 `maxLength`, named
+  `format` patterns (`api-formats.ts`), file `max` bytes.
 
-```typescript
-// src/lib/docs/eko-signing-plugin.ts
-export const ekoSigningPlugin: ClientPlugin = {
-	hooks: {
-		beforeRequest: async ({ requestBuilder }) => {
-			const { headers } = requestBuilder; // standard Headers
-			const accessKey = headers.get("access_key");
-			if (!accessKey) return;
-			const timestamp = String(Date.now());
-			headers.set("secret-key", await computeSecretKey(accessKey, timestamp));
-			headers.set("secret-key-timestamp", timestamp);
-			headers.delete("access_key"); // never sent — only the signature leaves
-		},
-	},
-};
-```
+## Response classification
 
-`developer_key` passes through unchanged.
+- HTTP status coloured via `codeColor`, plus timing and body size.
+- **Eko badge**: `status === 0` → success, any other number → failure, non-envelope
+  body (HTML, empty) → unknown. Financial specs also show the `tx_status` meaning.
+- `responseTypeFor(spec, json)` annotates a documented `response_type_id`;
+  `matchErrorScenario` links a documented error scenario.
+- **UAT callout** whenever a sandbox call fails (HTTP error or Eko failure): UAT may
+  break due to changes at the provider's own sandbox; we are working with them.
+- A financial send that was dispatched but got no answer (timeout, proxy 502/504,
+  cancel) shows **Outcome unknown** with the `client_ref_id` that was sent.
+- Proxy-level errors (rate limit, size cap, target rejected, `/api` not routed) are
+  recognised by the absence of `x-eps-proxied: 1` and shown as an error message,
+  not as a response.
 
-## Interactive OpenAPI doc vs. the public `/openapi.json`
+## Persistence
 
-The public `openapi.json` (served/emitted by `vite-plugin-generate-openapi`) stays
-**pristine and byte-stable**: no security schemes, signing headers modeled as required
-header parameters. The modal instead consumes `buildOpenApiDocument(specs, { interactive:
-true })`, which:
+`sessionStorage["eko-tryit:<spec.id>"]` = `{ env, params, body, rawMode, autoRef }`,
+written on change, restored on open. Credentials, uploads, results and the raw draft
+are never written, and any body key named `developer_key` / `access_key` /
+`secret-key` / `secret-key-timestamp` is redacted before writing. A restored
+production session starts with empty credentials. The header's ↺ button ("Clear
+saved request") deletes the entry and resets to the documented example. Typed
+values such as PAN/Aadhaar numbers do persist for the tab's lifetime — hence the
+button.
 
-- adds `components.securitySchemes.developerKey` / `.accessKey` (`apiKey`, in `header`);
-- sets per-operation `security: [{ developerKey: [], accessKey: [] }]`;
-- drops `developer_key` / `secret-key` / `secret-key-timestamp` from operation params
-  (schemes + plugin supply them), and `content-type` when a JSON body exists.
+## Proxy
 
-The interactive doc is built lazily on first "Test Request" click (inside the async
-`tryit-client` chunk), so the 342 KB spec layer is not shipped on initial docs load.
-
-## CORS proxy
-
-`resolveTryItProxyUrl()` reads `VITE_SCALAR_PROXY_URL`:
-
-- **unset** → Scalar's hosted proxy `https://proxy.scalar.com` (default);
-- `"<url>"` → that proxy (e.g. a self-hosted one);
-- `""` (blank) → proxy disabled (direct request; will likely fail CORS).
+`TRYIT_PROXY_URL = VITE_TRYIT_PROXY_URL ?? "<VITE_EPS_BACKEND_URL ?? /api>/tryit/proxy"`.
+The dialog POSTs with `x-eps-target-url`, `x-eps-target-method` and the signed
+headers; the proxy allowlists the two Eko base URLs, forwards only the auth headers,
+never follows redirects, caps bodies at 4 MiB and rate-limits per IP. Full contract
+in `packages/eps-backend/README.md`; nginx needs `location = /tryit/proxy {
+client_max_body_size 4m; }` (see `eps-backend-vm-deploy.md`).
 
 ## Security framing (honest)
 
-This is a **UAT/sandbox** console. With the hosted proxy, the `developer_key`, computed
-`secret-key`, timestamp, URL, request body, and responses transit a third party
-(Scalar). That is acceptable for sandbox traffic and is the trade-off for solving CORS.
-The raw `access_key` is never transmitted — it is only the HMAC key, consumed in-browser
-and stripped before send. Blank `VITE_SCALAR_PROXY_URL` for zero third-party transit
-(CORS then applies).
+- `access_key` never leaves the browser (HMAC input only).
+- `developer_key`, the one-time `secret-key`, the URL, body and response transit
+  **our own** eps-backend, not a third party. That holds for production too.
+- The proxy cannot be used as an open relay: HTTPS-only, exact-origin + path-prefix
+  allowlist, userinfo/port rejected, redirects refused.
 
 ## SSG safety
 
-`DocDetailPage` is prerendered by `AppServer.tsx`. The Scalar client (Vue app + CSS) is
-loaded only via the dynamic `import("@/lib/docs/tryit-client")` inside `useTryIt`'s
-callback, so it stays out of the server module graph and out of the initial client
-bundle — verified: prerendered HTML contains no Scalar markup, and the build emits
-`tryit-client-*.js` as a separate async chunk.
+`DocDetailPage` is prerendered by `AppServer.tsx`. Only `useTryIt` is in the page
+module graph; the dialog is reached through `import("./tryit/TryItDialog")` inside a
+click/mount callback, so the build emits `TryItDialog-*.js` as a separate async chunk
+and prerendered HTML contains none of its markup.

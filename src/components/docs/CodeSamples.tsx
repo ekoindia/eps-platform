@@ -36,7 +36,7 @@ const MODES: { id: DocsMode; label: string }[] = [
  *   • SDK — `@ekoindia/eps-sdk` usage for the chosen language + install hint;
  *   • AI Coding — a ready-to-paste agent prompt + the eps-context-mcp command.
  * Code samples come from the pure generators; auth values are placeholders /
- * env vars. "Test Request" (API only) hands off to the Scalar "Try it" modal.
+ * env vars. "Test Request" (API only) opens the lazy-loaded Try-it dialog.
  *
  * Colours come entirely from the `--rp-*` tokens (see `code-samples.css`), so
  * the pane is warm Parchment in light mode and navy in dark mode.
@@ -46,7 +46,7 @@ export const CodeSamples = ({
 	onTest,
 }: {
 	spec: ApiSpec;
-	onTest?: (path: string, method: string) => void;
+	onTest?: () => void;
 }) => {
 	const [mode, setMode] = useDocsMode();
 	const [lang, setLang] = usePreferredLang();
@@ -131,7 +131,7 @@ export const CodeSamples = ({
 						<div className="flex justify-end border-t border-[var(--rp-line)] px-3 py-2.5">
 							<button
 								type="button"
-								onClick={() => onTest?.(spec.path, spec.method)}
+								onClick={onTest}
 								disabled={!onTest}
 								className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[var(--rp-fg)] px-3 py-1.5 text-xs font-semibold text-[var(--rp-bg)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
 							>

@@ -114,27 +114,13 @@ export const operationIdFor = (spec: Pick<ApiSpec, "id">): string =>
 const productNameFor = (spec: ApiSpec): string =>
 	ACTIVE_PRODUCTS_MAP[spec.productId]?.name ?? spec.productId;
 
-/**
- * Auth headers that the interactive (Scalar) client supplies itself: the signing
- * headers are injected by the `beforeRequest` plugin and `developer_key` /
- * `access_key` are modeled as apiKey security schemes — so they are omitted from
- * the interactive operation's header parameters to avoid duplicate inputs.
- */
-const INTERACTIVE_SIGNING_HEADERS = new Set([
-	"developer_key",
-	"secret-key",
-	"secret-key-timestamp",
-]);
-
 /** Split request params into OpenAPI `parameters` vs a JSON-body schema. */
 const buildOperationParams = (
 	spec: ApiSpec,
-	interactive: boolean,
 ): { parameters: Json[]; requestBody?: Json } => {
 	const parameters: Json[] = [];
 
-	// Resolve the body first so we know whether to keep the `content-type` header
-	// param (Scalar derives it from the JSON body when a request body exists).
+	// Resolve the body first, then the header params.
 	const bodyProps: Json = {};
 	const bodyRequired: string[] = [];
 	const nonBodyParams: Json[] = [];
@@ -155,10 +141,6 @@ const buildOperationParams = (
 	const hasBody = Object.keys(bodyProps).length > 0;
 
 	for (const header of resolveHeaders(spec)) {
-		if (interactive) {
-			if (INTERACTIVE_SIGNING_HEADERS.has(header.name)) continue;
-			if (header.name === "content-type" && hasBody) continue;
-		}
 		parameters.push({
 			name: header.name,
 			in: "header",
@@ -261,7 +243,7 @@ const exampleSummary = (
 
 /**
  * The `response_type_id` routing table as GFM, appended to the operation
- * description — Scalar renders tables there. Undefined when the spec documents
+ * description — OpenAPI viewers render tables there. Undefined when the spec documents
  * no response types.
  */
 const responseTypesBlock = (spec: ApiSpec): string | undefined => {
@@ -341,39 +323,7 @@ const buildResponses = (spec: ApiSpec): Json => {
 export interface BuildOpenApiOptions {
 	/** Override the document version (defaults to the site API version). */
 	version?: string;
-	/**
-	 * Emit a variant tuned for the embedded Scalar "Try it" client: model
-	 * `developer_key` / `access_key` as apiKey security schemes (so the modal
-	 * renders auth fields) and drop the signing headers from operation params
-	 * (the `beforeRequest` plugin injects them). The public `openapi.json` is
-	 * built WITHOUT this flag and stays byte-stable.
-	 */
-	interactive?: boolean;
 }
-
-/** apiKey header security schemes used only by the interactive client. */
-const INTERACTIVE_SECURITY_SCHEMES: Json = {
-	developerKey: {
-		type: "apiKey",
-		in: "header",
-		name: "developer_key",
-		description: "Your UAT/sandbox developer key, sent on every request.",
-	},
-	accessKey: {
-		type: "apiKey",
-		in: "header",
-		name: "access_key",
-		description:
-			"Your UAT/sandbox access key. Used only to compute the per-request " +
-			"HMAC signature locally in your browser; it is stripped before the " +
-			"request is sent and never leaves your machine.",
-	},
-};
-
-/** Per-operation requirement: both keys (AND) for the interactive client. */
-const INTERACTIVE_OPERATION_SECURITY: Json[] = [
-	{ developerKey: [], accessKey: [] },
-];
 
 /**
  * Build a complete OpenAPI 3.1 document from the given specs. Callers should
@@ -411,7 +361,6 @@ export const buildOpenApiDocument = (
 		else groups.set(key, [spec]);
 	}
 
-	const interactive = options.interactive ?? false;
 	const paths: Json = {};
 	for (const group of groups.values()) {
 		// Stable-sort non-`-status` specs first so a generic endpoint stays the
@@ -421,18 +370,15 @@ export const buildOpenApiDocument = (
 				Number(a.id.endsWith("-status")) - Number(b.id.endsWith("-status")),
 		);
 		const [primary] = ordered;
-		const { parameters, requestBody } = buildOperationParams(
-			primary,
-			interactive,
-		);
+		const { parameters, requestBody } = buildOperationParams(primary);
 		const operation: Json = {
 			operationId: operationIdFor(primary),
 			summary: primary.name,
 			// NOTE: for grouped path+method variants only the PRIMARY spec's
-			// description and responses appear in the OpenAPI/Scalar operation
+			// description and responses appear in the OpenAPI operation
 			// (variants are summary-only under `x-eko-variants`). A rich
 			// description — or a `responseTypes` table — on a non-primary variant
-			// won't reach Scalar; its `/docs/<slug>` page still renders both. Keep
+			// won't reach OpenAPI viewers; its `/docs/<slug>` page still renders both. Keep
 			// rich descriptions and response types on the primary spec.
 			description: [
 				resolveShortDescription(primary) ?? primary.summary,
@@ -446,7 +392,6 @@ export const buildOpenApiDocument = (
 			responses: buildResponses(primary),
 		};
 		if (requestBody) operation.requestBody = requestBody;
-		if (interactive) operation.security = INTERACTIVE_OPERATION_SECURITY;
 		if (ordered.length > 1) {
 			operation.description = `${operation.description as string}\n\nThis endpoint backs multiple operations selected by request parameters: ${ordered
 				.map((s) => s.name)
@@ -495,9 +440,6 @@ export const buildOpenApiDocument = (
 		externalDocs: { url: `${SITE_URL}/docs`, description: "Developer docs" },
 	};
 	if (tagGroups.length) doc["x-tagGroups"] = tagGroups;
-	if (interactive) {
-		doc.components = { securitySchemes: INTERACTIVE_SECURITY_SCHEMES };
-	}
 
 	return doc as unknown as OpenAPIV3_1.Document;
 };

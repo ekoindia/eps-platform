@@ -60,7 +60,7 @@ declared per-spec.
 
 **`CodeSamples.tsx`** — the right rail. Request card (method/path header, copy
 button, cURL/JS/Python tabs, line-numbered code, and a "Test Request" button that
-opens the Scalar "Try it" modal via `onTest`) plus a response card showing
+opens the "Test Request" dialog via `onTest`) plus a response card showing
 `spec.sampleSuccessResponse`. Fully covered in [code-samples.md](code-samples.md)
 and [try-it-now.md](try-it-now.md).
 

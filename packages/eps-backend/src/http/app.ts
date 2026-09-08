@@ -38,6 +38,7 @@ import { mountCrm } from "./crm";
 import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
+import { mountTryItProxy } from "./tryitProxy";
 import {
 	ADMIN_CALLBACK_IP_LIMIT,
 	ADMIN_LOGIN_IP_LIMIT,
@@ -86,6 +87,8 @@ export interface Deps {
 	contextFetch?: typeof fetch;
 	/** Chat LLM provider; test seam, defaults to one built from `cfg.chat`. */
 	chatProvider?: ChatProvider;
+	/** Fetch used by the docs try-it proxy to call Eko; test seam, defaults to global. */
+	tryItFetch?: typeof fetch;
 }
 
 const OTP_START_LIMIT = 5;
@@ -222,7 +225,12 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const corsSite = cors({
 		origin: cfg.corsOrigins,
 		credentials: true,
-		exposeHeaders: ["x-request-id", "x-eps-version"],
+		exposeHeaders: [
+			"x-request-id",
+			"x-eps-version",
+			"x-eps-proxied",
+			"x-eps-upstream-ms",
+		],
 	});
 	/**
 	 * The MCP server at /context/* is anonymous and called from arbitrary
@@ -675,6 +683,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });
+	// Anonymous by design: the docs "Try it" widget relays partner-supplied keys
+	// to Eko; no session is read and only an allowlist of headers is forwarded.
+	mountTryItProxy(app, { kv, fetchImpl: deps.tryItFetch });
 
 	// Mounted unconditionally so the console page it backs is never a 404. When
 	// `cfg.activationFee` is absent the route answers a named 503 the page can

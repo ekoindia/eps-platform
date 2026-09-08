@@ -20,7 +20,8 @@ interface Row {
 }
 
 /** Status-code colour, matching common REST conventions. */
-const codeColor = (code: string): string => {
+/** HTTP status colour class (2xx green, 3xx sky, 4xx amber, 5xx rose). */
+export const codeColor = (code: string): string => {
 	const n = Number(code);
 	if (n >= 500) return "text-rose-600 dark:text-rose-400";
 	if (n >= 400) return "text-amber-600 dark:text-amber-400";

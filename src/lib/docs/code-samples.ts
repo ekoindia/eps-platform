@@ -5,15 +5,22 @@
  * computed per request use obvious placeholder tokens (never real secrets); the
  * live try-it console fills the real, locally-signed values at send time.
  *
+ * Every generator takes an optional {@link SampleOverrides} so the "Test
+ * Request" widget can re-render the snippets from user-edited values (base
+ * URL, environment, path/query params, JSON body). Auth headers stay
+ * placeholders regardless of overrides; file params stay path placeholders.
+ * All user-supplied values are embedded through language-safe quoting
+ * (`shellQuote` / `JSON.stringify` / `phpStr`), never raw interpolation.
+ *
  * Pure + dependency-free so it unit-tests cleanly and is SSR-safe.
  */
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import type { ApiParam, ApiSpec } from "@/lib/data/api-specs-common";
 import {
-	buildMultipartPayload,
 	buildSampleRequest,
 	isMultipart,
 	MULTIPART_JSON_FIELD,
+	multipartPayloadFrom,
 	pathTokens,
 	resolveHeaders,
 	resolveRequestParams,
@@ -31,6 +38,18 @@ export type SdkLang = "javascript" | "php" | "python" | "go" | "java";
 
 /** Any language the docs can be switched to, in either mode. */
 export type DocsLang = SampleLang | SdkLang;
+
+/** User-edited values a generator renders instead of the spec's examples. */
+export interface SampleOverrides {
+	/** Base URL to render (defaults to DEFAULT_BASE_URL / sandbox). */
+	baseUrl?: string;
+	/** Environment literal for SDK snippets (`environment: "..."`). Default "sandbox". */
+	environment?: "sandbox" | "production";
+	/** Path + query values by param name (override the spec examples). */
+	params?: Record<string, unknown>;
+	/** Full JSON request body (replaces buildSampleRequest(spec) wholesale). */
+	body?: Record<string, unknown>;
+}
 
 export const SAMPLE_LANGS: { id: SampleLang; label: string }[] = [
 	{ id: "curl", label: "cURL" },
@@ -75,21 +94,25 @@ const sampleHeaders = (spec: ApiSpec): ApiParam[] =>
 		(h) => !(isMultipart(spec) && h.name === "content-type"),
 	);
 
-/** Render a param value for a URL (path token or query value). */
+/** Render a param value for a URL (path token or query value), percent-encoded.
+ * A missing value stays a readable, unencoded `<name>` placeholder. */
 const urlValue = (value: unknown, name: string): string => {
 	if (value == null) return `<${name}>`;
-	if (typeof value === "object") return JSON.stringify(value);
-	return String(value);
+	return encodeURIComponent(
+		typeof value === "object" ? JSON.stringify(value) : String(value),
+	);
 };
 
 /**
  * Resolve the full request URL: substitute `{path_param}` tokens and append a
  * query string for any `in:"query"` params. Values come from `overrides`
- * (keyed by param name) when present, else the param's `example`.
+ * (keyed by param name) when present, else the param's `example`; both are
+ * percent-encoded. `baseUrl` defaults to the sandbox host.
  */
 export const resolveEndpointUrl = (
 	spec: ApiSpec,
 	overrides?: Record<string, unknown>,
+	baseUrl: string = DEFAULT_BASE_URL,
 ): string => {
 	const params = resolveRequestParams(spec);
 	let path = spec.path;
@@ -97,13 +120,13 @@ export const resolveEndpointUrl = (
 		const value = overrides?.[p.name] ?? p.example;
 		path = path.replace(`{${p.name}}`, urlValue(value, p.name));
 	}
-	let url = `${DEFAULT_BASE_URL}${path}`;
+	let url = `${baseUrl}${path}`;
 	const queryParams = params.filter((p) => p.in === "query");
 	if (queryParams.length) {
 		const qs = queryParams
 			.map((p) => {
 				const value = overrides?.[p.name] ?? p.example;
-				return `${encodeURIComponent(p.name)}=${encodeURIComponent(urlValue(value, p.name))}`;
+				return `${encodeURIComponent(p.name)}=${urlValue(value, p.name)}`;
 			})
 			.join("&");
 		url += `?${qs}`;
@@ -111,18 +134,38 @@ export const resolveEndpointUrl = (
 	return url;
 };
 
-const resolveUrl = (spec: ApiSpec): string => resolveEndpointUrl(spec);
+const resolveUrl = (spec: ApiSpec, o?: SampleOverrides): string =>
+	resolveEndpointUrl(spec, o?.params, o?.baseUrl);
 
-const hasBody = (spec: ApiSpec): boolean =>
-	spec.method !== "GET" && Object.keys(buildSampleRequest(spec)).length > 0;
+/** JSON request body: the override wholesale, else the spec's example body. */
+const sampleBody = (
+	spec: ApiSpec,
+	o?: SampleOverrides,
+): Record<string, unknown> => o?.body ?? buildSampleRequest(spec);
 
-export const toCurl = (spec: ApiSpec): string => {
-	const url = resolveUrl(spec);
-	const lines = [`curl --request ${spec.method} \\`, `  --url '${url}' \\`];
+/** The `form-data` envelope: the body minus the declared upload keys. */
+const multipartPayload = (
+	spec: ApiSpec,
+	o?: SampleOverrides,
+): Record<string, unknown> =>
+	multipartPayloadFrom(
+		sampleBody(spec, o),
+		bodyParts(spec).files.map((p) => p.name),
+	);
+
+const hasBody = (spec: ApiSpec, o?: SampleOverrides): boolean =>
+	spec.method !== "GET" && Object.keys(sampleBody(spec, o)).length > 0;
+
+export const toCurl = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const url = resolveUrl(spec, o);
+	const lines = [
+		`curl --request ${spec.method} \\`,
+		`  --url ${shellQuote(url)} \\`,
+	];
 	const multipart = isMultipart(spec);
 	const headers = sampleHeaders(spec);
 	headers.forEach((h, i) => {
-		const last = i === headers.length - 1 && !hasBody(spec) && !multipart;
+		const last = i === headers.length - 1 && !hasBody(spec, o) && !multipart;
 		lines.push(`  --header '${h.name}: ${headerValue(h)}'${last ? "" : " \\"}`);
 	});
 	if (multipart) {
@@ -132,7 +175,7 @@ export const toCurl = (spec: ApiSpec): string => {
 		// `;type=` inside it as a part parameter.
 		const { files } = bodyParts(spec);
 		const parts = [
-			`--form-string ${shellQuote(`${MULTIPART_JSON_FIELD}=${JSON.stringify(buildMultipartPayload(spec))}`)}`,
+			`--form-string ${shellQuote(`${MULTIPART_JSON_FIELD}=${JSON.stringify(multipartPayload(spec, o))}`)}`,
 			...files.map(
 				(p) => `--form ${shellQuote(`${p.name}=@${filePlaceholder(p)}`)}`,
 			),
@@ -141,16 +184,16 @@ export const toCurl = (spec: ApiSpec): string => {
 			const last = i === parts.length - 1;
 			lines.push(`  ${part}${last ? "" : " \\"}`);
 		});
-	} else if (hasBody(spec)) {
+	} else if (hasBody(spec, o)) {
 		lines.push(
-			`  --data '${JSON.stringify(buildSampleRequest(spec), null, 2)}'`,
+			`  --data ${shellQuote(JSON.stringify(sampleBody(spec, o), null, 2))}`,
 		);
 	}
 	return lines.join("\n");
 };
 
-export const toJsFetch = (spec: ApiSpec): string => {
-	const url = resolveUrl(spec);
+export const toJsFetch = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const url = resolveUrl(spec, o);
 	const headers = Object.fromEntries(
 		sampleHeaders(spec).map((h) => [h.name, headerValue(h)]),
 	);
@@ -167,7 +210,7 @@ export const toJsFetch = (spec: ApiSpec): string => {
 			"",
 			"const form = new FormData();",
 			`form.append(${JSON.stringify(MULTIPART_JSON_FIELD)}, JSON.stringify(${JSON.stringify(
-				buildMultipartPayload(spec),
+				multipartPayload(spec, o),
 				null,
 				2,
 			)}));`,
@@ -178,29 +221,29 @@ export const toJsFetch = (spec: ApiSpec): string => {
 		];
 		init.body = "__BODY__";
 		const initStr = JSON.stringify(init, null, 2).replace('"__BODY__"', "form");
-		return `${formLines.join("\n")}\n\nconst response = await fetch('${url}', ${initStr});\nconst data = await response.json();`;
+		return `${formLines.join("\n")}\n\nconst response = await fetch(${JSON.stringify(url)}, ${initStr});\nconst data = await response.json();`;
 	}
-	if (hasBody(spec)) init.body = "__BODY__";
+	if (hasBody(spec, o)) init.body = "__BODY__";
 
 	let initStr = JSON.stringify(init, null, 2);
-	if (hasBody(spec)) {
+	if (hasBody(spec, o)) {
 		initStr = initStr.replace(
 			'"__BODY__"',
-			`JSON.stringify(${JSON.stringify(buildSampleRequest(spec), null, 2)})`,
+			`JSON.stringify(${JSON.stringify(sampleBody(spec, o), null, 2)})`,
 		);
 	}
-	return `const response = await fetch('${url}', ${initStr});\nconst data = await response.json();`;
+	return `const response = await fetch(${JSON.stringify(url)}, ${initStr});\nconst data = await response.json();`;
 };
 
-export const toPython = (spec: ApiSpec): string => {
-	const url = resolveUrl(spec);
+export const toPython = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const url = resolveUrl(spec, o);
 	const headers = Object.fromEntries(
 		sampleHeaders(spec).map((h) => [h.name, headerValue(h)]),
 	);
 	const lines = [
 		"import requests",
 		"",
-		`url = "${url}"`,
+		`url = ${JSON.stringify(url)}`,
 		`headers = ${pyDict(headers)}`,
 	];
 	if (isMultipart(spec)) {
@@ -208,7 +251,7 @@ export const toPython = (spec: ApiSpec): string => {
 		// Every non-file field goes in one JSON `form-data` part.
 		const { files } = bodyParts(spec);
 		lines.splice(1, 0, "import json");
-		lines.push(`payload = ${pyDict(buildMultipartPayload(spec))}`);
+		lines.push(`payload = ${pyDict(multipartPayload(spec, o))}`);
 		lines.push(
 			`data = {${JSON.stringify(MULTIPART_JSON_FIELD)}: json.dumps(payload)}`,
 		);
@@ -223,8 +266,8 @@ export const toPython = (spec: ApiSpec): string => {
 		lines.push(
 			`response = requests.${spec.method.toLowerCase()}(url, data=data, files=files, headers=headers)`,
 		);
-	} else if (hasBody(spec)) {
-		lines.push(`payload = ${pyDict(buildSampleRequest(spec))}`);
+	} else if (hasBody(spec, o)) {
+		lines.push(`payload = ${pyDict(sampleBody(spec, o))}`);
 		lines.push(
 			`response = requests.${spec.method.toLowerCase()}(url, json=payload, headers=headers)`,
 		);
@@ -237,8 +280,8 @@ export const toPython = (spec: ApiSpec): string => {
 	return lines.join("\n");
 };
 
-export const toPhp = (spec: ApiSpec): string => {
-	const url = resolveUrl(spec);
+export const toPhp = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const url = resolveUrl(spec, o);
 	const headerLines = sampleHeaders(spec).map(
 		(h) => `    ${phpStr(`${h.name}: ${headerValue(h)}`)},`,
 	);
@@ -257,7 +300,7 @@ export const toPhp = (spec: ApiSpec): string => {
 		// An array payload makes curl send multipart/form-data with its boundary.
 		// Every non-file field goes in one JSON `form-data` part.
 		const { files } = bodyParts(spec);
-		lines.push(`$payload = ${phpArray(buildMultipartPayload(spec))};`);
+		lines.push(`$payload = ${phpArray(multipartPayload(spec, o))};`);
 		lines.push("");
 		lines.push("$fields = [");
 		lines.push(
@@ -269,10 +312,8 @@ export const toPhp = (spec: ApiSpec): string => {
 		);
 		lines.push("];");
 		lines.push("curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);");
-	} else if (hasBody(spec)) {
-		lines.push(
-			`$payload = json_encode(${phpArray(buildSampleRequest(spec))});`,
-		);
+	} else if (hasBody(spec, o)) {
+		lines.push(`$payload = json_encode(${phpArray(sampleBody(spec, o))});`);
 		lines.push("curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);");
 	}
 	lines.push("");
@@ -328,16 +369,20 @@ const pyDict = (value: unknown, indent = 0): string => {
 	return `{\n${items.join(",\n")}\n${closePad}}`;
 };
 
-export const sampleFor = (spec: ApiSpec, lang: SampleLang): string => {
+export const sampleFor = (
+	spec: ApiSpec,
+	lang: SampleLang,
+	o?: SampleOverrides,
+): string => {
 	switch (lang) {
 		case "curl":
-			return toCurl(spec);
+			return toCurl(spec, o);
 		case "javascript":
-			return toJsFetch(spec);
+			return toJsFetch(spec, o);
 		case "python":
-			return toPython(spec);
+			return toPython(spec, o);
 		case "php":
-			return toPhp(spec);
+			return toPhp(spec, o);
 	}
 };
 
@@ -414,12 +459,14 @@ const CLIENT_LEVEL_PARAMS: Record<string, string> = {
 	user_code: "userCode",
 };
 
-const valueFor = (name: string, p?: ApiParam): unknown =>
-	p?.type === "file"
-		? filePlaceholder(p)
-		: p?.example != null
-			? p.example
-			: `<${name}>`;
+/** Value to render for a param: an override (params, then body) when given,
+ * a path placeholder for uploads, else the example or a `<name>` placeholder. */
+const valueFor = (name: string, p?: ApiParam, o?: SampleOverrides): unknown => {
+	if (p?.type === "file") return filePlaceholder(p);
+	const override = o?.params?.[name] ?? o?.body?.[name];
+	if (override !== undefined) return override;
+	return p?.example != null ? p.example : `<${name}>`;
+};
 
 /**
  * Client-level defaults to render in the SDK constructor for this endpoint:
@@ -429,13 +476,14 @@ const valueFor = (name: string, p?: ApiParam): unknown =>
  */
 const clientLevelDefaults = (
 	spec: ApiSpec,
+	o?: SampleOverrides,
 ): { wire: string; option: string; value: unknown }[] =>
 	resolveRequestParams(spec)
 		.filter((p) => CLIENT_LEVEL_PARAMS[p.name] && p.in !== "path")
 		.map((p) => ({
 			wire: p.name,
 			option: CLIENT_LEVEL_PARAMS[p.name],
-			value: valueFor(p.name, p),
+			value: valueFor(p.name, p, o),
 		}));
 
 /**
@@ -444,32 +492,49 @@ const clientLevelDefaults = (
  * (falling back to a `<name>` placeholder). Header/auth params are excluded —
  * the SDK supplies those — and client-level params (initiator_id / user_code)
  * are excluded as query/body args since they're set once in the constructor.
+ *
+ * With overrides, every overridden key that is a declared non-header,
+ * non-client-level param is included even when optional (so edited optional
+ * fields show up), in declared order; undeclared override keys follow.
  */
-const sdkCallParams = (spec: ApiSpec): Record<string, unknown> => {
+const sdkCallParams = (
+	spec: ApiSpec,
+	o?: SampleOverrides,
+): Record<string, unknown> => {
 	const declared = resolveRequestParams(spec);
 	const byName = new Map(declared.map((p) => [p.name, p]));
+	const overrides = { ...o?.body, ...o?.params };
 	const out: Record<string, unknown> = {};
 	// Path tokens first (guaranteed present even if not separately declared).
 	for (const name of pathTokens(spec.path)) {
-		out[name] = valueFor(name, byName.get(name));
+		out[name] = valueFor(name, byName.get(name), o);
 	}
-	// Then required query/body params, minus the client-level ones (constructor).
+	// Then required (or overridden) query/body params, minus the client-level
+	// ones (constructor).
 	for (const p of declared) {
 		if (p.in === "header" || out[p.name] !== undefined) continue;
 		if (CLIENT_LEVEL_PARAMS[p.name] && p.in !== "path") continue;
-		if (p.required || p.in === "path") out[p.name] = valueFor(p.name, p);
+		if (p.required || p.in === "path" || p.name in overrides)
+			out[p.name] = valueFor(p.name, p, o);
+	}
+	// Finally any override key the spec does not declare (raw JSON edits) —
+	// never an auth header key, so a pasted credential cannot land in a snippet.
+	for (const [name, value] of Object.entries(overrides)) {
+		if (!(name in out) && !byName.has(name) && !(name in HEADER_PLACEHOLDER))
+			out[name] = value;
 	}
 	return out;
 };
 
-export const toNodeSdk = (spec: ApiSpec): string => {
-	const params = sdkCallParams(spec);
+export const toNodeSdk = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const env = o?.environment ?? "sandbox";
+	const params = sdkCallParams(spec, o);
 	const args = Object.keys(params).length
 		? `, ${JSON.stringify(params, null, 2)}`
 		: "";
 	// initiator_id / user_code are set once on the client and auto-injected into
 	// every call (override per call by passing them in the params object).
-	const defaults = clientLevelDefaults(spec).map(
+	const defaults = clientLevelDefaults(spec, o).map(
 		(d) => `  ${d.option}: ${JSON.stringify(d.value)},`,
 	);
 	return [
@@ -479,7 +544,7 @@ export const toNodeSdk = (spec: ApiSpec): string => {
 		"  developerKey: process.env.EPS_DEVELOPER_KEY,",
 		"  accessKey: process.env.EPS_ACCESS_KEY,",
 		...defaults,
-		'  environment: "sandbox",',
+		`  environment: ${JSON.stringify(env)},`,
 		"});",
 		"",
 		...(isMultipart(spec)
@@ -490,11 +555,12 @@ export const toNodeSdk = (spec: ApiSpec): string => {
 	].join("\n");
 };
 
-export const toPhpSdk = (spec: ApiSpec): string => {
-	const params = sdkCallParams(spec);
+export const toPhpSdk = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const env = o?.environment ?? "sandbox";
+	const params = sdkCallParams(spec, o);
 	const args = Object.keys(params).length ? `, ${phpArray(params)}` : "";
 	// initiator_id / user_code are set once on the client and auto-injected.
-	const defaults = clientLevelDefaults(spec).map(
+	const defaults = clientLevelDefaults(spec, o).map(
 		(d) => `    ${d.option}: ${phpArray(d.value)},`,
 	);
 	return [
@@ -505,7 +571,7 @@ export const toPhpSdk = (spec: ApiSpec): string => {
 		"    developerKey: getenv('EPS_DEVELOPER_KEY'),",
 		"    accessKey: getenv('EPS_ACCESS_KEY'),",
 		...defaults,
-		"    environment: 'sandbox'",
+		`    environment: ${phpStr(env)}`,
 		");",
 		"",
 		...(isMultipart(spec)
@@ -536,12 +602,13 @@ const pyLiteral = (value: unknown, indent = 0): string => {
 	return `{\n${items.join(",\n")},\n${close}}`;
 };
 
-export const toPythonSdk = (spec: ApiSpec): string => {
-	const params = sdkCallParams(spec);
+export const toPythonSdk = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const env = o?.environment ?? "sandbox";
+	const params = sdkCallParams(spec, o);
 	const args = Object.keys(params).length ? `, ${pyLiteral(params)}` : "";
 	// initiator_id / user_code are set once on the client and auto-injected; the
 	// Python constructor takes them under their wire names.
-	const defaults = clientLevelDefaults(spec).map(
+	const defaults = clientLevelDefaults(spec, o).map(
 		(d) => `    ${d.wire}=${pyLiteral(d.value)},`,
 	);
 	return [
@@ -553,7 +620,7 @@ export const toPythonSdk = (spec: ApiSpec): string => {
 		'    developer_key=os.environ["EPS_DEVELOPER_KEY"],',
 		'    access_key=os.environ["EPS_ACCESS_KEY"],',
 		...defaults,
-		'    environment="sandbox",',
+		`    environment=${JSON.stringify(env)},`,
 		")",
 		"",
 		...(isMultipart(spec)
@@ -607,8 +674,9 @@ const goLiteral = (value: unknown, indent = 0): string => {
 	return `map[string]any{\n${items.join("\n")}\n${close}}`;
 };
 
-export const toGoSdk = (spec: ApiSpec): string => {
-	const params = sdkCallParams(spec);
+export const toGoSdk = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const env = o?.environment ?? "sandbox";
+	const params = sdkCallParams(spec, o);
 	const args = Object.keys(params).length
 		? `, ${goLiteral(params, 1)}`
 		: ", nil";
@@ -619,7 +687,7 @@ export const toGoSdk = (spec: ApiSpec): string => {
 		initiator_id: "InitiatorID: ",
 		user_code: "UserCode:    ",
 	};
-	const defaults = clientLevelDefaults(spec).map(
+	const defaults = clientLevelDefaults(spec, o).map(
 		(d) => `\t\t${GO_FIELDS[d.wire]} ${JSON.stringify(d.value)},`,
 	);
 	return [
@@ -639,7 +707,7 @@ export const toGoSdk = (spec: ApiSpec): string => {
 		'\t\tDeveloperKey: os.Getenv("EPS_DEVELOPER_KEY"),',
 		'\t\tAccessKey:    os.Getenv("EPS_ACCESS_KEY"),',
 		...defaults,
-		'\t\tEnvironment:  "sandbox",',
+		`\t\tEnvironment:  ${JSON.stringify(env)},`,
 		"\t})",
 		"\tif err != nil {",
 		"\t\tlog.Fatal(err)",
@@ -680,13 +748,14 @@ const javaLiteral = (value: unknown, indent = 1): string => {
 	return `Map.ofEntries(\n${items.join(",\n")}\n${close})`;
 };
 
-export const toJavaSdk = (spec: ApiSpec): string => {
-	const params = sdkCallParams(spec);
+export const toJavaSdk = (spec: ApiSpec, o?: SampleOverrides): string => {
+	const env = o?.environment ?? "sandbox";
+	const params = sdkCallParams(spec, o);
 	const args = Object.keys(params).length
 		? `, ${javaLiteral(params)}`
 		: ", Map.of()";
 	// initiator_id / user_code are set once on the client and auto-injected.
-	const defaults = clientLevelDefaults(spec).map(
+	const defaults = clientLevelDefaults(spec, o).map(
 		(d) =>
 			`    .${d.wire === "initiator_id" ? "initiatorId" : "userCode"}(${JSON.stringify(d.value)})`,
 	);
@@ -698,7 +767,7 @@ export const toJavaSdk = (spec: ApiSpec): string => {
 		'    .developerKey(System.getenv("EPS_DEVELOPER_KEY"))',
 		'    .accessKey(System.getenv("EPS_ACCESS_KEY"))',
 		...defaults,
-		'    .environment("sandbox")',
+		`    .environment(${JSON.stringify(env)})`,
 		"    .build();",
 		"",
 		...(isMultipart(spec)
@@ -710,12 +779,16 @@ export const toJavaSdk = (spec: ApiSpec): string => {
 };
 
 /** SDK snippet for the given language (Node for anything without its own SDK). */
-export const sdkSampleFor = (spec: ApiSpec, lang: DocsLang): string => {
-	if (lang === "php") return toPhpSdk(spec);
-	if (lang === "python") return toPythonSdk(spec);
-	if (lang === "go") return toGoSdk(spec);
-	if (lang === "java") return toJavaSdk(spec);
-	return toNodeSdk(spec);
+export const sdkSampleFor = (
+	spec: ApiSpec,
+	lang: DocsLang,
+	o?: SampleOverrides,
+): string => {
+	if (lang === "php") return toPhpSdk(spec, o);
+	if (lang === "python") return toPythonSdk(spec, o);
+	if (lang === "go") return toGoSdk(spec, o);
+	if (lang === "java") return toJavaSdk(spec, o);
+	return toNodeSdk(spec, o);
 };
 
 /**

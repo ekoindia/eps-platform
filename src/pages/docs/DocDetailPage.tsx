@@ -20,9 +20,9 @@ import NotFound from "@/pages/NotFound";
  */
 const DocDetailPage = () => {
 	const { slug } = useParams<{ slug: string }>();
-	// Stable hook call before any early return; opens the Scalar "Try it" modal.
-	const onTest = useTryIt();
 	const node = slug ? getDocBySlug(slug) : undefined;
+	// Stable hook call before any early return; lazy-loads the Try-it dialog.
+	const { onTest, dialog } = useTryIt(node?.spec);
 
 	if (!node) return <NotFound />;
 
@@ -110,6 +110,7 @@ const DocDetailPage = () => {
 				/>
 				<EndpointDetail spec={spec} />
 			</DocsLayout>
+			{dialog}
 		</>
 	);
 };

@@ -75,18 +75,40 @@ const HEADER_PLACEHOLDER: Record<string, string> = {
 };
 ```
 
-The live "Try it" console substitutes the real, locally-signed values at send
-time (see [try-it-now.md](try-it-now.md)) — the static samples stay placeholder-only.
+The live "Test Request" dialog signs the real request itself at send time (see
+[try-it-now.md](try-it-now.md)) — samples stay placeholder-only even there.
+
+## Overrides (live snippets in the Test Request dialog)
+
+Every generator takes an optional trailing `SampleOverrides`:
+
+```typescript
+export interface SampleOverrides {
+	baseUrl?: string;                       // default DEFAULT_BASE_URL (sandbox)
+	environment?: "sandbox" | "production"; // SDK `environment:` literal
+	params?: Record<string, unknown>;       // path + query values by name
+	body?: Record<string, unknown>;         // replaces buildSampleRequest(spec)
+}
+sampleFor(spec, lang, overrides?);
+sdkSampleFor(spec, lang, overrides?);
+resolveEndpointUrl(spec, params?, baseUrl?);
+```
+
+Values are interpolated safely: path values are `encodeURIComponent`-ed, curl
+wraps `--url`/`--data` in `shellQuote`, JS/Python embed the URL via
+`JSON.stringify`, PHP via `phpStr`. Credential-named keys in an override body
+(`developer_key`, `secret-key`, …) are excluded from SDK call params. Without
+overrides the output is identical to before.
 
 ## Where they render
 
 `src/components/docs/CodeSamples.tsx` (the right rail):
 
 1. `DocDetailPage` passes `spec` to `<CodeSamples spec=… />`.
-2. State `lang` defaults to `"curl"`; `sampleFor(spec, lang)` produces the string.
+2. `usePreferredLang()` (persisted) picks the language; `sampleFor` / `sdkSampleFor` produce the string per `useDocsMode()` (API / SDK / AI Coding).
 3. Language tabs call `setLang()` → re-render with the new snippet.
 4. `<NumberedCode>` shows line-numbered code with a copy button; a "Test Request"
-   button calls `onTest(path, method)`, which opens the Scalar "Try it" modal
+   button calls `onTest()`, which opens the "Test Request" dialog
    (see [try-it-now.md](try-it-now.md)).
 5. A second card renders `spec.sampleSuccessResponse` as line-numbered JSON.
 

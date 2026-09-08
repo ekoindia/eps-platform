@@ -145,7 +145,7 @@ export interface ApiSpec {
 	/** Short one-line summary of the API */
 	summary: string;
 	/** Short description (plain GFM markdown). Used by the `.md` twin,
-	 * OpenAPI/Scalar and the agent bundle. If {@link descriptionFile} is also set,
+	 * OpenAPI and the agent bundle. If {@link descriptionFile} is also set,
 	 * the docs page shows the richer file while these text sinks use this string. */
 	description?: string;
 	/** OPTIONAL: basename of a markdown file under

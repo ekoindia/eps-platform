@@ -1,15 +1,16 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-	/** UAT/sandbox developer_key — DEV-only prefill for the docs "Try it" modal. */
+	/** Public UAT demo developer_key, prefilled into the docs "Test Request"
+	 * dialog (inlined in production too — see lib/uat-credentials.ts). */
 	readonly VITE_EPS_UAT_DEVELOPER_KEY?: string;
-	/** UAT/sandbox access_key — DEV-only prefill; used for local HMAC signing. */
+	/** Public UAT demo access_key; only ever an in-browser HMAC input. */
 	readonly VITE_EPS_UAT_ACCESS_KEY?: string;
 	/**
-	 * CORS proxy for the docs "Try it" modal. Unset → Scalar's hosted proxy;
-	 * empty string → proxy disabled (direct request). See lib/docs/tryit-proxy.ts.
+	 * Override for the Try-it proxy endpoint. Unset → `<VITE_EPS_BACKEND_URL or
+	 * /api>/tryit/proxy` (eps-backend). See lib/docs/tryit-request.ts.
 	 */
-	readonly VITE_SCALAR_PROXY_URL?: string;
+	readonly VITE_TRYIT_PROXY_URL?: string;
 	/**
 	 * Origin serving the Eko Connect widget bundle, e.g.
 	 * `https://beta.ekoconnect.in`. Must match the environment

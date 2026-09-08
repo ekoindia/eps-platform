@@ -6,7 +6,9 @@ Only **active, not-yet-implemented** designs are kept here in full.
 
 ## Active
 
-_(nothing — every design in this folder has shipped.)_
+| Design | Status |
+|---|---|
+| [2026-09-08 Test Request widget (replaces Scalar) + eps-backend try-it proxy](specs/2026-09-08-tryit-widget-design.md) | implemented on `dev`, pending PR + eps-backend deploy (nginx `location = /tryit/proxy`) |
 
 ## Delivered (plans/specs pruned; see the merge commit + committed doc)
 
