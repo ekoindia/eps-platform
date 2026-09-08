@@ -10,12 +10,20 @@ import {
 	lowestBlurScore,
 	setBlurScore,
 } from "@/lib/connect/blur";
-import { blurScorePdf } from "@/lib/pdf/pdf-client";
+import {
+	blurScorePdf,
+	pdfPageCount,
+	toPdfFile,
+	unlockPdf,
+	verifyPdfPassword,
+} from "@/lib/pdf/pdf-client";
+import { EncryptedPdfError } from "@/lib/pdf/pdf-errors";
 import {
 	combinePdfParts,
 	compressIfLarge,
 	DEFAULT_COMPRESS_THRESHOLD_BYTES,
 	fileToPdfBytes,
+	PDF_MIME,
 	shrinkToFit,
 } from "@/lib/pdf/upload-combine";
 import { cn } from "@/lib/utils";
@@ -288,7 +296,8 @@ export function FileUpload({
 	disabled = false,
 	className,
 }: FileUploadProps) {
-	const { editImage, openCamera, showFile } = useConnectDialogs();
+	const { editImage, openCamera, showFile, requestPdfPassword } =
+		useConnectDialogs();
 	// Resolved here rather than at capture time: the position prompt and the IP
 	// call must already have settled when the editor draws, or the first capture
 	// of a session is stamped with a blank location.
@@ -388,6 +397,69 @@ export function FileUpload({
 	}
 
 	/**
+	 * Returns a PDF the rest of the pipeline can actually read.
+	 *
+	 * Encrypted documents are unlocked in place: silently when the lock only
+	 * restricts permissions, by asking for the password otherwise. Without this
+	 * a locked bank statement uploads fine and fails a week later in review, or
+	 * — with a second attachment — dies in `mergePdfs`, which like every other
+	 * `pdf-lib` path refuses any encrypted document.
+	 *
+	 * Fail-open where the answer is not about encryption: a dead worker or a
+	 * failed chunk load must not cost the user their upload.
+	 *
+	 * @param picked - The file as picked.
+	 * @returns The usable file, or null when it could not be unlocked.
+	 */
+	async function unlockIfEncrypted(picked: File): Promise<File | null> {
+		if (picked.type.toLowerCase() !== PDF_MIME) return picked;
+
+		try {
+			// The cheapest question available: `pdf-lib` in the worker that is
+			// already running, no pdf.js and no wasm unless the answer is yes.
+			await withStatus("Checking document…", () => pdfPageCount(picked));
+			return picked;
+		} catch (error) {
+			if (!(error instanceof EncryptedPdfError)) return picked;
+		}
+
+		let password = "";
+		try {
+			// A permissions-only lock opens on an empty password, so the common
+			// "protected" PDF never earns a prompt.
+			if ((await verifyPdfPassword(picked, password)) === "wrong") {
+				const result = await requestPdfPassword({
+					fileName: picked.name,
+					verify: async (candidate) =>
+						(await verifyPdfPassword(picked, candidate)) === "ok",
+				});
+				if (!result.accepted) {
+					toast.error(
+						result.unreadable
+							? `Could not read ${picked.name}. Please upload an unlocked copy.`
+							: `${picked.name} is password-protected, so it was not attached.`,
+					);
+					return null;
+				}
+				password = result.password ?? "";
+			}
+			const unlocked = await withStatus("Unlocking PDF…", () =>
+				unlockPdf(picked, password),
+			);
+			// The password dies with this call: it is never stored, stamped into
+			// the file name, or sent with the upload.
+			return toPdfFile(unlocked, picked.name);
+		} catch {
+			// Already known to be encrypted, so passing it on would only move the
+			// failure somewhere with less to say about it.
+			toast.error(
+				`Could not unlock ${picked.name}. Please upload an unlocked copy.`,
+			);
+			return null;
+		}
+	}
+
+	/**
 	 * Hands a file to the caller and shows its preview, unless it is too large.
 	 *
 	 * @returns False when the file was refused for its size.
@@ -419,17 +491,35 @@ export function FileUpload({
 	/** Routes a file: images through the editor, anything else straight through. */
 	async function handleFile(picked: File | undefined | null) {
 		if (!picked || disabled) return;
+		// Unlocking and editing both span awaits the user drives. A second pick
+		// during either would resolve against a stale view of the field and could
+		// overwrite the newer file with the older one.
+		if (addingRef.current) return;
+		addingRef.current = true;
+		try {
+			await routeFile(picked);
+		} finally {
+			addingRef.current = false;
+		}
+	}
 
+	/** The body of {@link handleFile}, minus the re-entry guard. */
+	async function routeFile(picked: File) {
 		if (!isImageType(picked.type)) {
+			const usable = await unlockIfEncrypted(picked);
+			if (!usable) {
+				resetInput();
+				return;
+			}
 			// PDFs never reach the editor, so their blur check happens here.
 			const ok = await withStatus("Checking quality…", () =>
-				checkBlurOrExplain(picked, options),
+				checkBlurOrExplain(usable, options),
 			);
 			if (!ok) {
 				resetInput();
 				return;
 			}
-			attach(picked, null);
+			attach(usable, null);
 			return;
 		}
 
@@ -509,9 +599,12 @@ export function FileUpload({
 			}
 		}
 
+		const usable = await unlockIfEncrypted(candidate);
+		if (!usable) return null;
+
 		try {
 			const compressed = await withStatus("Compressing PDF…", () =>
-				compressIfLarge(candidate, compressThresholdBytes),
+				compressIfLarge(usable, compressThresholdBytes),
 			);
 			// Checked after compression, so the verdict — and the telemetry score —
 			// belong to the bytes that are actually uploaded.

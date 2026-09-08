@@ -242,6 +242,43 @@ describe("KycUploadDialog", () => {
 		});
 	});
 
+	describe("no-signing notice", () => {
+		// `6` (COI) and `999` (unknown) carry no `instructions` of their own: the
+		// notice must not be nested under that block, which is where the company
+		// documents whose signing rule actually changed would lose it.
+		it.each(["1", "6", "999"])(
+			"reassures the partner on doc_type %s",
+			(docType) => {
+				render(<KycUploadDialog doc={doc({ docType })} onClose={vi.fn()} />);
+
+				expect(screen.getByText(/No need to sign or stamp/i)).toBeVisible();
+			},
+		);
+
+		it("stays off the live photograph", () => {
+			// doc_type 24 is camera-only: a selfie was never going to be signed.
+			render(
+				<KycUploadDialog doc={doc({ docType: "24" })} onClose={vi.fn()} />,
+			);
+
+			expect(screen.queryByText(/No need to sign or stamp/i)).toBeNull();
+		});
+
+		it("still reassures on a document that has a blank to fill in", () => {
+			// A sample is something to fill in, not to sign: the download link says so
+			// too, so the notice and the link agree.
+			vi.mocked(configOf).mockReturnValue({
+				sampleUrl: "/kyc-samples/authorisation-letter.docx",
+			});
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			expect(screen.getByText(/No need to sign or stamp/i)).toBeVisible();
+			expect(
+				screen.getByRole("link", { name: /sample/i }),
+			).not.toHaveTextContent(/sign/i);
+		});
+	});
+
 	describe("instructions", () => {
 		it("renders the notice as markdown, not as source", () => {
 			vi.mocked(configOf).mockReturnValue({

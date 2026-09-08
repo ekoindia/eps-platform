@@ -1,3 +1,5 @@
+import type { IconComponent } from "@/components/icons/types";
+import { recipeHref } from "@/lib/data/api-recipes";
 import {
 	buildNavTree,
 	docsHref,
@@ -5,8 +7,18 @@ import {
 	type NavLeaf,
 	type NavNode,
 } from "@/lib/data/docs-registry";
+import { sdkGuideHref } from "@/lib/data/sdk-guides";
 import { cn } from "@/lib/utils";
-import { ChevronRight } from "lucide-react";
+import {
+	ChevronRight,
+	CircleHelp,
+	Fingerprint,
+	KeyRound,
+	Package,
+	Rocket,
+	TriangleAlert,
+	Workflow,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { HttpMethodTag } from "./HttpMethodTag";
@@ -20,6 +32,29 @@ import { HttpMethodTag } from "./HttpMethodTag";
  * active endpoint's ancestor branches are expanded by default; opening a branch
  * also opens any sole-branch-child chain under it.
  */
+
+/**
+ * Leading icons for the reading-material rows (Get Started + the Guides group),
+ * which carry no HTTP-method tag or chevron of their own. API product/endpoint
+ * rows stay iconless by design — the icon column is what tells the two kinds of
+ * link apart. Keyed by href because guides are addressed by href (see
+ * `NavGuideLink`); a guide with no entry simply renders without an icon.
+ */
+const GUIDE_ICONS: Record<string, IconComponent> = {
+	[docsHref("how-auth-works")]: KeyRound,
+	[docsHref("error-codes")]: TriangleAlert,
+	[docsHref("aadhaar-biometric-rdservice")]: Fingerprint,
+	[docsHref("faqs")]: CircleHelp,
+	[sdkGuideHref()]: Package,
+	[recipeHref()]: Workflow,
+};
+
+/** Row icon: chevron-sized, nudged to the first text line (rows are
+ * `items-start` with clamped multi-line labels) and inheriting the row's
+ * colour, so it tracks the active/hover states for free. */
+const RowIcon = ({ icon: Icon }: { icon: IconComponent }) => (
+	<Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+);
 
 /** Strip a trailing slash (except the root) so `/docs/x/` matches `/docs/x`. */
 const normalizePath = (path: string): string =>
@@ -171,7 +206,8 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 				onClick={onNavigate}
 				className={itemClass(current === docsHref())}
 			>
-				Get Started
+				<RowIcon icon={Rocket} />
+				<span className="min-w-0 flex-1">Get Started</span>
 			</Link>
 
 			{nav.guides.length > 0 && (
@@ -180,17 +216,21 @@ export const DocsNavTree = ({ onNavigate }: { onNavigate?: () => void }) => {
 						Guides
 					</p>
 					<div className="space-y-0.5">
-						{nav.guides.map((g) => (
-							<Link
-								key={g.href}
-								to={g.href}
-								onClick={onNavigate}
-								className={itemClass(isActiveHref(g.href))}
-								title={g.title}
-							>
-								<span className="line-clamp-3 min-w-0 flex-1">{g.title}</span>
-							</Link>
-						))}
+						{nav.guides.map((g) => {
+							const icon = GUIDE_ICONS[g.href];
+							return (
+								<Link
+									key={g.href}
+									to={g.href}
+									onClick={onNavigate}
+									className={itemClass(isActiveHref(g.href))}
+									title={g.title}
+								>
+									{icon && <RowIcon icon={icon} />}
+									<span className="line-clamp-3 min-w-0 flex-1">{g.title}</span>
+								</Link>
+							);
+						})}
 					</div>
 				</div>
 			)}

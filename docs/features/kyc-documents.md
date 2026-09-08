@@ -364,6 +364,42 @@ never retried, so a file this section refuses still fails on the first attempt.
 Note that three attempts consume three of the route's `KYC_UPLOAD_LIMIT` budget.
 See [`user-onboarding.md`](./user-onboarding.md#retrying-transient-failures).
 
+## Password-protected PDFs
+
+A locked bank statement is the single most common PDF a user has lying around,
+and until now it uploaded happily and failed a week later in review — nothing on
+the pick path ever parsed the bytes. With a second attachment it failed sooner
+and worse, inside `mergePdfs`, as "Could not combine those files".
+
+`FileUpload` now unlocks them instead of refusing them. Picking a PDF costs one
+`pdfPageCount` call — `pdf-lib`, in the worker, no pdf.js and no wasm — and only
+a document that comes back encrypted goes any further:
+
+- **Permissions-only lock** (an "owner password", which opens in any viewer):
+  unlocked silently. The user is never asked for a password they were never
+  given. This case previously broke multi-page merging outright.
+- **Real password**: a dialog asks for it, verifying each attempt with pdf.js
+  and staying open on a wrong one, then qpdf strips the encryption and the
+  unlocked file continues through compression, the blur check and merging as
+  any other PDF would.
+- **Cancelled, or unreadable**: that one file is refused with a toast naming it.
+  In multi mode the rest of the batch is unaffected.
+
+**The password never leaves the browser.** It lives in the dialog's state and in
+the single call that decrypts, and is deliberately absent from the file name,
+the `blur_scoreN` telemetry fields and the upload itself. Everything happens on
+the device, like the rest of the toolkit.
+
+The unlocked document is a real rewrite, not a re-render: qpdf rebuilds the
+object graph, so the text layer survives and the file stays roughly its original
+size. See [`pdf-toolkit.md`](../pdf-toolkit.md#encrypted-documents) for why the
+verify-then-decrypt order is mandatory and what qpdf costs.
+
+**The backend does not mirror this.** `isAllowedKycFile`
+(`packages/eps-backend/src/http/connect.ts`) still checks declared MIME type and
+extension only, so an API client posting directly can still send an encrypted
+PDF. Worth closing if document review ever reports locked files arriving.
+
 ## Blur detection
 
 Badly scanned documents — blurred, out of focus — sail through every rule above
@@ -787,7 +823,7 @@ The entries that ship today:
 | `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]`, `multiple` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. Photographed far more often than scanned, and a phone rarely gets a whole card square in one frame — so each side may take several shots. |
 | `"2"` and `"15"` PAN | `multiple` | Same reasoning as Aadhaar: a photographed card, sometimes worth two shots. Both codes are configured — the 586 sample calls `15` "Director PAN Card", so configuring only one would silently do nothing for accounts asked for the other. |
 | `"14"` Board resolution | `name: "Board Resolution (BR)"`, `sampleUrl` | A partner does not own a blank board resolution; the wording is ours to dictate, and one invented from scratch comes back rejected weeks later. The sample is `public/kyc-samples/Board_Resolution_Format.docx`. |
-| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `accept` images only, `cameraOnly`, `multiple`, `watermark` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. |
+| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `accept` images only, `cameraOnly`, `multiple`, `watermark`, `options: { maxLength: 1000 }` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. Half the editor's 2000 px default: a face and its surroundings are legible at 1000 px, and this is the row most likely to arrive several times over from a high-resolution phone camera. |
 
 The live-photograph entry is what the whole map exists for. A "live" photograph
 selectable from the gallery is not live, so the camera is the only source, the
@@ -869,6 +905,9 @@ only useful before a file is picked.
 | `src/components/console/NextStepsCard.tsx` | The **Finish your KYC** row |
 | `src/pages/console/Documents.tsx` | The checklist page |
 | `src/components/console/KycUploadDialog.tsx` | The upload dialog |
+| `src/components/FileUpload.tsx` | The picker: unlocking, the blur check, compression and merging |
+| `src/components/connect/PdfPasswordDialog.tsx` | The password prompt, which verifies before it closes |
+| `src/lib/pdf/pdf-decrypt.ts` | qpdf-wasm, the only thing that can remove a PDF's password |
 | `src/components/console/ConsoleLayout.tsx` | The **Documents** rail item |
 | `packages/eps-backend/src/http/connect.ts` | `POST /connect/kyc/documents`, `POST /connect/kyc/upload` |
 | `packages/eps-backend/src/clients/connect.ts` | `uploadInteraction` |

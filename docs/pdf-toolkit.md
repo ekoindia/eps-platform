@@ -16,6 +16,8 @@ import {
 	compressPdf,
 	extractPdfImages,
 	toPdfFile,
+	verifyPdfPassword,
+	unlockPdf,
 } from "@/lib/pdf/pdf-client";
 
 const pages = await pdfPageCount(file); // number
@@ -23,6 +25,8 @@ const merged = await mergePdfs([fileA, fileB]); // Blob
 const built = await pdfFromImages([photo1, photo2]); // Blob
 const { blob, compressed, originalSize, outputSize } = await compressPdf(file);
 const images = await extractPdfImages(file); // Blob[] (PNG)
+const verdict = await verifyPdfPassword(file, "hunter2"); // "ok" | "wrong"
+const unlocked = await unlockPdf(file, "hunter2"); // Blob, no encryption
 
 // The backend checks MIME type *and* extension, so name it properly.
 onFileChange(toPdfFile(merged, "kyc-document.pdf"));
@@ -53,6 +57,7 @@ the toolkit alone:
 | `pdf-worker` (our ops + `pdf-lib`) | 424 KB | 172 KB | first call to any function |
 | `pdf-render` (pdf.js main) | 455 KB | 130 KB | first `compressPdf` / `extractPdfImages` |
 | `pdf.worker.min.mjs` (pdf.js's own worker) | 1.26 MB | 365 KB | when pdf.js starts its worker |
+| `qpdf.wasm` + its glue (`pdf-decrypt`) | 1.33 MB + 43 KB | — | first `unlockPdf`, i.e. only for an encrypted document |
 
 So counting, merging and building PDFs cost one 172 KB chunk; only the raster
 operations pull in the ~495 KB of pdf.js behind them.
@@ -82,6 +87,40 @@ deny-list rather than an allow-list because real scanner output routinely
 carries clip paths, transforms and graphics-state changes that an allow-list
 version rejected. It is conservative best effort, not a proof.
 
+### Encrypted documents
+
+`pdf-lib` refuses **every** encrypted PDF — including the common
+permissions-only ("owner password") lock that opens fine in any viewer — so
+without a decrypt step a locked bank statement cannot be counted, merged or
+compressed. `unlockPdf` removes the encryption with
+[qpdf](https://qpdf.readthedocs.io) compiled to WebAssembly
+(`@neslinesli93/qpdf-wasm`, pinned; the npm licence field says ISC but the
+binary is qpdf, **Apache-2.0**).
+
+qpdf rewrites the object graph, so text, vectors and page geometry all survive.
+That is why it is here rather than the obvious alternative of rendering the
+pages and rebuilding through `compressPdf`: password-protected documents in the
+wild are text (statements, credit reports), and rasterising one destroys every
+word in it and can multiply its size.
+
+The order to call things in, and why:
+
+1. `pdfPageCount` — the cheapest detector. It throws `EncryptedPdfError` for
+   both kinds of lock, using the worker that is already running.
+2. `verifyPdfPassword(file, "")` — a permissions-only lock answers `"ok"`, so
+   the user is never asked for a password they do not have.
+3. `verifyPdfPassword(file, candidate)` for each attempt, then `unlockPdf`.
+
+Step 3 is not optional. **This qpdf build cannot say why it refused a
+document**: it is closure-minified with a restricted module API, so `printErr`
+is stripped and qpdf's "invalid password" goes to the console, leaving a wrong
+password and a corrupt file sharing exit code 2. pdf.js knows the difference,
+is already loaded wherever PDFs are blur-checked, and only parses the trailer.
+Verify first, decrypt second.
+
+`pdf-decrypt.ts` is **browser-only and dynamic-import-only**, exactly like
+`pdf-render.ts`.
+
 ### Known ceilings
 
 - **Images become JPEG.** `pdfFromImages` runs every source image through a
@@ -104,7 +143,15 @@ version rejected. It is conservative best effort, not a proof.
 ### Vite
 
 `vite.config.ts` sets `worker: { format: "es" }` — the worker is a module
-worker and Vite's default `iife` output cannot carry imports. `pdf-render.ts`
+worker and Vite's default `iife` output cannot carry imports.
+
+`@neslinesli93/qpdf-wasm` ships as CommonJS, so it must go **through** Vite's
+dependency pre-bundling — excluding it from `optimizeDeps` serves the raw UMD
+file to the browser and dev dies on `does not provide an export named 'default'`,
+while the production build (where Rollup converts it) stays green. The usual
+reason to exclude an Emscripten package does not apply here: `pdf-decrypt.ts`
+passes `locateFile` explicitly from its own `?url` import, so the glue never has
+to find the binary relative to itself. `pdf-render.ts`
 hands pdf.js its worker URL explicitly (`GlobalWorkerOptions.workerSrc`),
 because pdf.js cannot find its own worker through a bundler that hashes
 filenames.
@@ -132,6 +179,7 @@ still receives exactly one `File`.
 | `multiple` | `false` | Opt in to batch mode |
 | `maxFiles` | `10` | Ceiling on attachments |
 | `compressThresholdBytes` | 1 MB | PDFs above this are compressed first |
+| `options.maxLength` | 2000 px | Longer side of every image, editor and PDF alike |
 | `combinedFileName` | `combined-documents.pdf` | Name of the result |
 
 Behaviour:
@@ -140,7 +188,9 @@ Behaviour:
   (`acceptsOnlyImagesAndPdfs`). A zone that also takes a spreadsheet keeps the
   single-file behaviour rather than silently dropping what it cannot fold in.
 - **One attachment passes through as itself** — an image stays an image, a PDF
-  stays a PDF. Combining starts at two.
+  stays a PDF. Combining starts at two. It is still size-capped: the editor
+  and `pdfFromImages` share `DEFAULT_IMAGE_MAX_LENGTH`, so a lone image is
+  not left at a higher resolution than one folded into a pack.
 - Images still go through the editor one at a time, so crop, aspect ratio, face
   checks and the **watermark** all still apply. Cancelling one image drops that
   image, not the batch.
@@ -178,7 +228,15 @@ so the suite covers the layers that do not need them:
 - `upload-combine.test.ts` — when compression runs (the threshold gate) and
   what happens when it refuses, with `pdf-client` mocked out.
 - `FileUpload.test.tsx` — the `accept` gate that decides whether multi-file
-  mode engages at all.
+  mode engages at all, and the whole unlock path (prompt, wrong password,
+  cancel, fail-open) against a mocked `pdf-client`.
+- `pdf-decrypt.integration.test.ts` — the one test that runs the **real** qpdf
+  wasm, in the Node environment, against fixtures qpdf itself encrypts: right
+  password, empty password on a permissions-only lock, wrong password, and a
+  file it cannot parse. Stubs cannot prove the binary initialises or that the
+  argv is the argv qpdf wants. `verifyPdfPassword` is not covered here — pdf.js's
+  modern build will not load under Node — so its two answers are covered through
+  the component instead.
 
 The canvas and worker paths are exercised by hand at `/console/test` → **PDF
 tools** (dev-only route), which drives every operation from picked files.

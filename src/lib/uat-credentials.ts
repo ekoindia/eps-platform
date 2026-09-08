@@ -3,8 +3,8 @@
  *
  * DELIBERATE: this keypair is public. It is published openly in llms.txt /
  * index.md (see `aiGettingStartedNotice` in lib/markdown/shared.ts) to give AI
- * agents a zero-signup trial, prefilled into the docs Try-it panel (see
- * `uatAuthentication` in lib/docs/tryit-client.ts), and shown on the developer
+ * agents a zero-signup trial, prefilled into the docs "Test Request" dialog (see
+ * `credsFor` in components/docs/tryit/useTryItState.ts), and shown on the developer
  * console — so it is inlined in the production client bundle. Treat it as a
  * public demo credential: scoped, quota'd, rotatable — NEVER a secret. Do not
  * "fix" any of those call sites by removing the keypair without checking that

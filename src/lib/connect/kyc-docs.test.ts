@@ -5,6 +5,7 @@ import {
 	KYC_MAX_PAGES,
 	withDocConfig,
 } from "@/lib/connect/kyc-docs";
+import { DEFAULT_IMAGE_MAX_LENGTH } from "@/lib/connect/image";
 import type { KycDocument } from "@/lib/connect/kyc";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -97,6 +98,16 @@ describe("KYC_DOC_CONFIG entries", () => {
 			if (config.maxBytes !== undefined) {
 				expect(config.maxBytes).toBeGreaterThan(0);
 				expect(config.maxBytes).toBeLessThanOrEqual(KYC_MAX_FILE_BYTES);
+			}
+			// Same reasoning one level down: a per-document image cap is a place to
+			// send *less*. Raising it past the editor's default would quietly make
+			// one row heavier than every other, which is never what the override is
+			// reached for.
+			if (config.options?.maxLength !== undefined) {
+				expect(config.options.maxLength).toBeGreaterThan(0);
+				expect(config.options.maxLength).toBeLessThanOrEqual(
+					DEFAULT_IMAGE_MAX_LENGTH,
+				);
 			}
 		},
 	);

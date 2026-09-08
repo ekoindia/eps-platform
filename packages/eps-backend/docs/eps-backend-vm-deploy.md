@@ -352,6 +352,12 @@ server {
             include /etc/nginx/eps-backend-proxy.inc;
       }
 
+      # Docs "Try it" proxy: three 1 MB files + envelope; the vhost default is 1m.
+      location = /tryit/proxy {
+            client_max_body_size 4m;
+            include /etc/nginx/eps-backend-proxy.inc;
+      }
+
       location / {
             include /etc/nginx/eps-backend-proxy.inc;
       }

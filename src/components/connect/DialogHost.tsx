@@ -18,6 +18,10 @@ import type {
 	ImageEditorOptions,
 	ImageEditorResult,
 } from "./ImageEditorDialog";
+import type {
+	PdfPasswordOptions,
+	PdfPasswordResult,
+} from "./PdfPasswordDialog";
 import type { RaiseIssueOptions, RaiseIssueResult } from "./RaiseIssueDialog";
 
 // Lazily loaded, and worth it: the editor pulls in react-image-crop and the
@@ -34,13 +38,17 @@ const CameraDialog = lazy(() =>
 const RaiseIssueDialog = lazy(() =>
 	import("./RaiseIssueDialog").then((m) => ({ default: m.RaiseIssueDialog })),
 );
+const PdfPasswordDialog = lazy(() =>
+	import("./PdfPasswordDialog").then((m) => ({ default: m.PdfPasswordDialog })),
+);
 
 /** One open dialog, discriminated by `kind`. */
 type DialogRequest =
 	| { kind: "file"; file: string; options?: FileViewOptions }
 	| { kind: "image"; image: string; options?: ImageEditorOptions }
 	| { kind: "camera"; options?: CameraOptions }
-	| { kind: "issue"; options?: RaiseIssueOptions };
+	| { kind: "issue"; options?: RaiseIssueOptions }
+	| { kind: "pdfPassword"; options?: PdfPasswordOptions };
 
 /** What a dialog hands back. Closing without a decision resolves `{}`. */
 export type DialogResult = Record<string, unknown>;
@@ -76,6 +84,12 @@ const CHROME: Record<
 		className: "w-full max-w-[100vw] px-2 md:w-162 lg:w-200",
 		closeButton: false,
 	},
+	// A short form, so a narrow panel; its own Cancel means a second close
+	// control would only add a way to resolve without a decision.
+	pdfPassword: {
+		className: "w-full max-w-[100vw] px-4 sm:w-112",
+		closeButton: false,
+	},
 };
 
 /** Screen-reader titles; Radix requires one per dialog. */
@@ -84,6 +98,7 @@ const TITLES: Record<DialogRequest["kind"], string> = {
 	image: "Edit image",
 	camera: "Camera",
 	issue: "Raise a query",
+	pdfPassword: "Unlock PDF",
 };
 
 /**
@@ -107,6 +122,13 @@ export interface ConnectDialogs {
 	showRaiseIssue: (
 		options?: RaiseIssueOptions,
 	) => Promise<Partial<RaiseIssueResult>>;
+	/**
+	 * Asks for an encrypted PDF's password, verifying each attempt before it
+	 * resolves. Dismissing it resolves without a password.
+	 */
+	requestPdfPassword: (
+		options: PdfPasswordOptions,
+	) => Promise<Partial<PdfPasswordResult>>;
 }
 
 const DialogContext = createContext<ConnectDialogs | null>(null);
@@ -190,6 +212,7 @@ export function ConnectDialogProvider({ children }: { children: ReactNode }) {
 			editImage: (image, options) => open({ kind: "image", image, options }),
 			openCamera: (options) => open({ kind: "camera", options }),
 			showRaiseIssue: (options) => open({ kind: "issue", options }),
+			requestPdfPassword: (options) => open({ kind: "pdfPassword", options }),
 		}),
 		[open],
 	);
@@ -304,6 +327,10 @@ function DialogBody({
 			);
 		case "camera":
 			return <CameraDialog options={entry.request.options} onClose={dismiss} />;
+		case "pdfPassword":
+			return (
+				<PdfPasswordDialog options={entry.request.options} onClose={dismiss} />
+			);
 		case "issue":
 			return (
 				<RaiseIssueDialog

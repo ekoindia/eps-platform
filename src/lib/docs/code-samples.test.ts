@@ -1,6 +1,9 @@
 import { DEFAULT_BASE_URL } from "@/lib/data/api-auth";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
+import type { ApiSpec } from "@/lib/data/api-specs-common";
 import {
+	type SampleOverrides,
+	resolveEndpointUrl,
 	SAMPLE_LANGS,
 	SDK_LANGS,
 	toGoSdk,
@@ -343,5 +346,144 @@ describe("SDK snippets for multipart endpoints", () => {
 	it("JSON endpoints get no file note", () => {
 		expect(toNodeSdk(panLite)).not.toContain("File params");
 		expect(toPhpSdk(panLite)).not.toContain("File params");
+	});
+});
+
+describe("overrides (Test Request widget)", () => {
+	const multipart = API_SPECS_MAP["activate-aeps-fingpay"];
+	const baseUrl = "https://api.example.test/v3";
+	/** panLite plus one OPTIONAL body param, so the "edited optional field" path is deterministic. */
+	const withOptional: ApiSpec = {
+		...panLite,
+		extraRequestParams: [
+			...panLite.extraRequestParams,
+			{ name: "note", type: "string", required: false, description: "" },
+		],
+	};
+	const body = { pan_number: "ZZZZZ9999Z", name: "O'Brien", note: "edited" };
+
+	it("resolveEndpointUrl takes a base URL and percent-encodes path values, keeping <name> placeholders readable", () => {
+		const url = resolveEndpointUrl(
+			getSpec,
+			{ customer_id: "a b/c'd" },
+			baseUrl,
+		);
+		expect(
+			url.startsWith(
+				`${baseUrl}/customer/payment/dmt-fino/sender/a%20b%2Fc'd?`,
+			),
+		).toBe(true);
+		expect(url).not.toContain("a b/c");
+		const noExample: ApiSpec = {
+			...getSpec,
+			extraRequestParams: getSpec.extraRequestParams.map((p) =>
+				p.name === "customer_id" ? { ...p, example: undefined } : p,
+			),
+		};
+		expect(resolveEndpointUrl(noExample)).toContain("/sender/<customer_id>?");
+	});
+
+	it("baseUrl + params + body flow into every raw-HTTP sample; auth headers stay placeholders", () => {
+		const o: SampleOverrides = {
+			baseUrl,
+			params: { initiator_id: "111" },
+			body,
+		};
+		for (const lang of ["curl", "javascript", "python", "php"] as const) {
+			const out = sampleFor(panLite, lang, o);
+			expect(out).toContain(`${baseUrl}${panLite.path}`);
+			expect(out).not.toContain(DEFAULT_BASE_URL);
+			expect(out).toContain("ZZZZZ9999Z");
+			expect(out).toContain("<your_developer_key>");
+			expect(out).toContain("<computed_secret_key>");
+		}
+		const get = sampleFor(getSpec, "curl", {
+			params: { initiator_id: "111", customer_id: "42" },
+		});
+		expect(get).toContain("/sender/42?initiator_id=111");
+	});
+
+	it("hostile values stay inside shell / JS quoting", () => {
+		const nasty = { pan_number: "it's $(whoami)\nnext" };
+		const curl = toCurl(panLite, { params: { customer_id: "x" }, body: nasty });
+		expect(curl).toContain("--data '{");
+		expect(curl).toContain(`it'\\''s $(whoami)`); // apostrophe closed + reopened
+		expect(curl).toContain("\\n"); // JSON keeps the newline escaped, never a raw line break in the word
+		const js = toJsFetch(panLite, { body: nasty });
+		expect(js).toContain(`it's $(whoami)\\nnext`);
+		const pathy = toCurl(getSpec, { params: { customer_id: "a b/c'd" } });
+		expect(pathy).toContain(
+			`--url '${DEFAULT_BASE_URL}/customer/payment/dmt-fino/sender/a%20b%2Fc'\\''d?`,
+		);
+		// URL with a quote goes through JSON.stringify in fetch/python, phpStr in PHP.
+		expect(toJsFetch(getSpec, { params: { customer_id: "a'b" } })).toContain(
+			`fetch("${DEFAULT_BASE_URL}`,
+		);
+		expect(toPhp(getSpec, { params: { customer_id: "a'b" } })).toContain(
+			"/sender/a\\'b?",
+		);
+	});
+
+	it("SDK snippets render override values, optional overridden keys and the environment literal", () => {
+		const o: SampleOverrides = { environment: "production", body };
+		expect(toNodeSdk(withOptional, o)).toContain('"note": "edited"');
+		expect(toNodeSdk(withOptional)).not.toContain('"note"'); // optional stays hidden without overrides
+		expect(toNodeSdk(withOptional, o)).toContain('environment: "production"');
+		expect(toNodeSdk(withOptional)).toContain('environment: "sandbox"');
+		expect(toPhpSdk(withOptional, o)).toContain("environment: 'production'");
+		expect(toPhpSdk(withOptional, o)).toContain("'note' => 'edited'");
+		expect(toPythonSdk(withOptional, o)).toContain('environment="production"');
+		expect(toPythonSdk(withOptional, o)).toContain('"note": "edited"');
+		expect(toGoSdk(withOptional, o)).toContain('Environment:  "production"');
+		expect(toGoSdk(withOptional, o)).toContain('"note":');
+		expect(toJavaSdk(withOptional, o)).toContain('.environment("production")');
+		expect(toJavaSdk(withOptional, o)).toContain('"note", "edited"');
+		for (const lang of ["javascript", "php", "python", "go", "java"] as const) {
+			expect(sdkSampleFor(withOptional, lang, o)).toContain("ZZZZZ9999Z");
+			expect(sdkSampleFor(withOptional, lang)).toContain("sandbox");
+		}
+		// client-level + path overrides land in the ctor / call respectively.
+		const node = toNodeSdk(getSpec, {
+			params: { initiator_id: "111", customer_id: "42" },
+		});
+		expect(node).toContain('initiatorId: "111"');
+		expect(node).toContain('"customer_id": "42"');
+		// an auth key pasted into the body never reaches a snippet
+		expect(
+			toNodeSdk(panLite, { body: { developer_key: "real" } }),
+		).not.toContain("real");
+	});
+
+	it("multipart: override body drives the envelope minus file keys; file parts stay placeholders", () => {
+		const o: SampleOverrides = {
+			body: {
+				modelname: "Edited",
+				office_address: { line: "1" },
+				pan_card: "real.jpg",
+				aadhar_front: "x",
+			},
+		};
+		const curl = toCurl(multipart, o);
+		const match = curl.match(/--form-string 'form-data=(.*)'/);
+		const envelope = JSON.parse(match![1].replace(/'\\''/g, "'"));
+		expect(envelope).toEqual({
+			modelname: "Edited",
+			office_address: { line: "1" },
+		});
+		expect(curl).toContain("--form 'pan_card=@/path/to/pan_card.jpg'");
+		expect(curl).not.toContain("real.jpg");
+		expect(toJsFetch(multipart, o)).toContain('"modelname": "Edited"');
+		expect(toPython(multipart, o)).toContain('"modelname": "Edited"');
+		expect(toPhp(multipart, o)).toContain("'modelname' => 'Edited'");
+		expect(toNodeSdk(multipart, o)).toContain(
+			'"pan_card": "/path/to/pan_card.jpg"',
+		);
+	});
+
+	it("no overrides = identical output to the plain call", () => {
+		for (const spec of [panLite, getSpec, multipart]) {
+			expect(sampleFor(spec, "curl", {})).toBe(toCurl(spec));
+			expect(sdkSampleFor(spec, "go", {})).toBe(toGoSdk(spec));
+		}
 	});
 });

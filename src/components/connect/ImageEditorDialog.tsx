@@ -11,6 +11,7 @@ import {
 	initializeFaceDetector,
 } from "@/lib/connect/face-detector";
 import {
+	DEFAULT_IMAGE_MAX_LENGTH,
 	dataUrlToFile,
 	getProcessedImage,
 	getRotatedImage,
@@ -29,7 +30,12 @@ const FACE_DETECTION_TIMEOUT_MS = 3000;
 export interface ImageEditorOptions {
 	/** Name for the `File` handed back; generated when absent. */
 	fileName?: string;
-	/** Cap for the longer side of the result, in pixels. */
+	/**
+	 * Cap for the longer side of the result, in pixels. Defaults to
+	 * {@link DEFAULT_IMAGE_MAX_LENGTH} — a phone capture is otherwise stored
+	 * at full sensor resolution. Raise it only for a document that genuinely
+	 * needs the detail.
+	 */
 	maxLength?: number;
 	/** Locks the crop to a ratio — 1 for a square portrait, say. */
 	aspectRatio?: number;
@@ -126,7 +132,7 @@ export function ImageEditorDialog({
 }) {
 	const {
 		fileName,
-		maxLength,
+		maxLength = DEFAULT_IMAGE_MAX_LENGTH,
 		aspectRatio,
 		detectFace = false,
 		minFaceCount = 0,

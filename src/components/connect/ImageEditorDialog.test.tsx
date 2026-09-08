@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_IMAGE_MAX_LENGTH } from "@/lib/connect/image";
 import { ImageEditorDialog } from "./ImageEditorDialog";
 
 const toastError = vi.fn();
@@ -20,10 +21,19 @@ vi.mock("@/lib/connect/blur", () => ({
 	setBlurScore: (...args: unknown[]) => setBlurScore(...args),
 }));
 
-// Everything canvas-touching is mocked — jsdom has no 2D context.
+// Everything canvas-touching is mocked — jsdom has no 2D context. The rest of
+// the module is kept: `DEFAULT_IMAGE_MAX_LENGTH` is what the editor defaults
+// to, so stubbing it would test the stub.
 const processedFile = new File(["x"], "processed.jpg", { type: "image/jpeg" });
-vi.mock("@/lib/connect/image", () => ({
-	getProcessedImage: () => "data:image/jpeg;base64,processed",
+type ProcessImageArgs = Parameters<
+	typeof import("@/lib/connect/image").getProcessedImage
+>[0];
+const getProcessedImage = vi.fn(
+	(_options: ProcessImageArgs) => "data:image/jpeg;base64,processed",
+);
+vi.mock("@/lib/connect/image", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/connect/image")>()),
+	getProcessedImage: (options: ProcessImageArgs) => getProcessedImage(options),
 	getRotatedImage: () => "data:image/jpeg;base64,rotated",
 	dataUrlToFile: async () => processedFile,
 }));
@@ -147,5 +157,29 @@ describe("ImageEditorDialog blur check", () => {
 			expect.objectContaining({ accepted: true }),
 		);
 		expect(setBlurScore).not.toHaveBeenCalled();
+	});
+});
+
+describe("size cap", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("caps a capture at the default when the caller names no size", () => {
+		renderEditor();
+		clickAccept();
+
+		expect(getProcessedImage).toHaveBeenCalledWith(
+			expect.objectContaining({ maxLength: DEFAULT_IMAGE_MAX_LENGTH }),
+		);
+	});
+
+	it("lets a caller's own cap win", () => {
+		renderEditor({ maxLength: 1200 });
+		clickAccept();
+
+		expect(getProcessedImage).toHaveBeenCalledWith(
+			expect.objectContaining({ maxLength: 1200 }),
+		);
 	});
 });

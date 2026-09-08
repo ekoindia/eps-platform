@@ -1786,3 +1786,68 @@ describe("context MCP mount", () => {
 		expect(get.headers.get("allow")).toBe("POST");
 	});
 });
+
+describe("tryit proxy mount", () => {
+	it("relays without the session cookie or Authorization, no-store on the answer", async () => {
+		const tryItFetch = vi.fn(
+			async () =>
+				new Response('{"ok":1}', {
+					status: 200,
+					headers: { "content-type": "application/json" },
+				}),
+		) as unknown as typeof fetch;
+		const kv = createInMemoryKV();
+		const { app } = deps({}, { kv });
+		const verify = await app.request("/auth/otp/verify", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ mobile: "9990000001", otp: "123456" }),
+		});
+		const cookie = cookieFrom(verify);
+		expect(cookie).toContain("eps_at=");
+
+		const withProxy = createApp({
+			cfg,
+			eko: deps().eko,
+			zoho: deps().zoho,
+			sessions: createSessions(cfg, kv),
+			kv,
+			tryItFetch,
+		});
+		const res = await withProxy.request("/tryit/proxy", {
+			method: "POST",
+			headers: {
+				cookie,
+				authorization: "Bearer nope",
+				"x-eps-target-url": "https://staging.eko.in/ekoapi/v3/pan",
+				"x-eps-developer-key": "DK",
+				"content-type": "application/json",
+			},
+			body: "{}",
+		});
+		expect(res.status).toBe(200);
+		expect(res.headers.get("cache-control")).toBe("no-store");
+		expect(res.headers.get("x-eps-proxied")).toBe("1");
+		expect(tryItFetch).toHaveBeenCalledTimes(1);
+		const [, init] = (tryItFetch as unknown as ReturnType<typeof vi.fn>).mock
+			.calls[0] as [string, RequestInit];
+		const sent = new Headers(init.headers);
+		expect(sent.get("cookie")).toBeNull();
+		expect(sent.get("authorization")).toBeNull();
+		expect(sent.get("developer_key")).toBe("DK");
+
+		// Error envelope shape for a bad target, via the real onError.
+		const bad = await withProxy.request("/tryit/proxy", {
+			method: "POST",
+			headers: { "x-eps-target-url": "https://evil.example/ekoapi/v3/x" },
+		});
+		expect(bad.status).toBe(400);
+		const envelope = (await bad.json()) as {
+			error: { code: string; source: string };
+			rid: string;
+		};
+		expect(envelope.error.code).toBe("INVALID_TARGET");
+		expect(envelope.error.source).toBe("proxy");
+		expect(envelope.rid).toBeTruthy();
+	});
+});
