@@ -14,6 +14,7 @@ import {
 
 /** Mirrors `SLOW_STEP_MS` in the component — the delay before a step is named. */
 const SLOW_STEP_MS = 1000;
+import { EncryptedPdfError } from "@/lib/pdf/pdf-errors";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const toastError = vi.fn();
@@ -26,10 +27,25 @@ vi.mock("sonner", () => ({
 }));
 
 const blurScorePdfMock = vi.fn();
+const pdfPageCountMock = vi.fn();
+const verifyPdfPasswordMock = vi.fn();
+const unlockPdfMock = vi.fn();
 vi.mock("@/lib/pdf/pdf-client", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/pdf/pdf-client")>()),
 	blurScorePdf: (...args: unknown[]) => blurScorePdfMock(...args),
+	pdfPageCount: (...args: unknown[]) => pdfPageCountMock(...args),
+	verifyPdfPassword: (...args: unknown[]) => verifyPdfPasswordMock(...args),
+	unlockPdf: (...args: unknown[]) => unlockPdfMock(...args),
 }));
+
+beforeEach(() => {
+	// The default document is not encrypted, which is what every test that is
+	// not about encryption expects to happen.
+	pdfPageCountMock.mockResolvedValue(1);
+	unlockPdfMock.mockResolvedValue(
+		new Blob(["unlocked"], { type: "application/pdf" }),
+	);
+});
 
 /** Renders the control inside the provider its dialogs need. */
 function renderUpload(props: Partial<Parameters<typeof FileUpload>[0]> = {}) {
@@ -477,5 +493,168 @@ describe("FileUpload multi-file mode", () => {
 			URL.createObjectURL = original.create;
 			URL.revokeObjectURL = original.revoke;
 		}
+	});
+});
+
+describe("password-protected PDFs", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		pdfPageCountMock.mockRejectedValue(new EncryptedPdfError());
+		unlockPdfMock.mockResolvedValue(
+			new Blob(["unlocked"], { type: "application/pdf" }),
+		);
+	});
+
+	/** The dialog's password field, once the lazy chunk has rendered. */
+	function passwordField() {
+		return screen.findByLabelText(/document password/i);
+	}
+
+	/** Types a password and submits the prompt. */
+	function submitPassword(field: HTMLElement, password: string) {
+		fireEvent.change(field, { target: { value: password } });
+		fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+	}
+
+	it("unlocks a permissions-locked document without asking", async () => {
+		// No user password: the empty string opens it, so a prompt would be noise.
+		verifyPdfPasswordMock.mockResolvedValue("ok");
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("statement.pdf", 1024));
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+		expect(unlockPdfMock).toHaveBeenCalledWith(expect.anything(), "");
+		expect(
+			screen.queryByLabelText(/document password/i),
+		).not.toBeInTheDocument();
+		// The unlocked bytes are what gets attached, under the original name.
+		expect(onFileChange.mock.calls[0][0].name).toBe("statement.pdf");
+	});
+
+	it("asks for a password and attaches the unlocked file", async () => {
+		verifyPdfPasswordMock.mockImplementation(async (_file, password) =>
+			password === "secret" ? "ok" : "wrong",
+		);
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("locked.pdf", 1024));
+
+		submitPassword(await passwordField(), "secret");
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+		expect(unlockPdfMock).toHaveBeenCalledWith(expect.anything(), "secret");
+		expect(onFileChange.mock.calls[0][0].name).toBe("locked.pdf");
+	});
+
+	it("keeps the prompt open and says so when the password is wrong", async () => {
+		verifyPdfPasswordMock.mockResolvedValue("wrong");
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("locked.pdf", 1024));
+		submitPassword(await passwordField(), "nope");
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(/didn't work/i);
+		// Still open, so the user can try again without re-picking the file.
+		expect(await passwordField()).toBeInTheDocument();
+		expect(onFileChange).not.toHaveBeenCalled();
+		expect(unlockPdfMock).not.toHaveBeenCalled();
+	});
+
+	it("refuses the file when the prompt is cancelled", async () => {
+		verifyPdfPasswordMock.mockResolvedValue("wrong");
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("locked.pdf", 1024));
+		await passwordField();
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+		await waitFor(() =>
+			expect(toastError).toHaveBeenCalledWith(
+				expect.stringContaining("locked.pdf is password-protected"),
+			),
+		);
+		expect(onFileChange).not.toHaveBeenCalled();
+	});
+
+	it("blames the document, not the password, when it cannot be read", async () => {
+		verifyPdfPasswordMock
+			.mockResolvedValueOnce("wrong")
+			.mockRejectedValue(new Error("Invalid PDF structure"));
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("damaged.pdf", 1024));
+		submitPassword(await passwordField(), "anything");
+
+		await waitFor(() =>
+			expect(toastError).toHaveBeenCalledWith(
+				expect.stringContaining("Could not read damaged.pdf"),
+			),
+		);
+		expect(onFileChange).not.toHaveBeenCalled();
+	});
+
+	it("attaches unchanged when the check itself fails", async () => {
+		// A dead worker or a failed chunk load says nothing about the document,
+		// so it must not cost the user their upload.
+		pdfPageCountMock.mockRejectedValue(new Error("The PDF worker crashed."));
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			onFileChange,
+		});
+
+		const picked = fileOf("scan.pdf", 1024);
+		pickFile(container, picked);
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledWith(picked));
+		expect(unlockPdfMock).not.toHaveBeenCalled();
+	});
+
+	it("skips a cancelled file in multi mode and keeps the rest", async () => {
+		verifyPdfPasswordMock.mockResolvedValue("wrong");
+		pdfPageCountMock
+			.mockRejectedValueOnce(new EncryptedPdfError())
+			.mockResolvedValue(1);
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			multiple: true,
+			onFileChange,
+		});
+
+		const input =
+			container.querySelector<HTMLInputElement>('input[type="file"]');
+		fireEvent.change(input, {
+			target: {
+				files: [fileOf("locked.pdf", 1024), fileOf("clean.pdf", 1024)],
+			},
+		});
+
+		await passwordField();
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+		expect(onFileChange.mock.calls[0][0].name).toBe("clean.pdf");
 	});
 });

@@ -364,6 +364,42 @@ never retried, so a file this section refuses still fails on the first attempt.
 Note that three attempts consume three of the route's `KYC_UPLOAD_LIMIT` budget.
 See [`user-onboarding.md`](./user-onboarding.md#retrying-transient-failures).
 
+## Password-protected PDFs
+
+A locked bank statement is the single most common PDF a user has lying around,
+and until now it uploaded happily and failed a week later in review — nothing on
+the pick path ever parsed the bytes. With a second attachment it failed sooner
+and worse, inside `mergePdfs`, as "Could not combine those files".
+
+`FileUpload` now unlocks them instead of refusing them. Picking a PDF costs one
+`pdfPageCount` call — `pdf-lib`, in the worker, no pdf.js and no wasm — and only
+a document that comes back encrypted goes any further:
+
+- **Permissions-only lock** (an "owner password", which opens in any viewer):
+  unlocked silently. The user is never asked for a password they were never
+  given. This case previously broke multi-page merging outright.
+- **Real password**: a dialog asks for it, verifying each attempt with pdf.js
+  and staying open on a wrong one, then qpdf strips the encryption and the
+  unlocked file continues through compression, the blur check and merging as
+  any other PDF would.
+- **Cancelled, or unreadable**: that one file is refused with a toast naming it.
+  In multi mode the rest of the batch is unaffected.
+
+**The password never leaves the browser.** It lives in the dialog's state and in
+the single call that decrypts, and is deliberately absent from the file name,
+the `blur_scoreN` telemetry fields and the upload itself. Everything happens on
+the device, like the rest of the toolkit.
+
+The unlocked document is a real rewrite, not a re-render: qpdf rebuilds the
+object graph, so the text layer survives and the file stays roughly its original
+size. See [`pdf-toolkit.md`](../pdf-toolkit.md#encrypted-documents) for why the
+verify-then-decrypt order is mandatory and what qpdf costs.
+
+**The backend does not mirror this.** `isAllowedKycFile`
+(`packages/eps-backend/src/http/connect.ts`) still checks declared MIME type and
+extension only, so an API client posting directly can still send an encrypted
+PDF. Worth closing if document review ever reports locked files arriving.
+
 ## Blur detection
 
 Badly scanned documents — blurred, out of focus — sail through every rule above
@@ -869,6 +905,9 @@ only useful before a file is picked.
 | `src/components/console/NextStepsCard.tsx` | The **Finish your KYC** row |
 | `src/pages/console/Documents.tsx` | The checklist page |
 | `src/components/console/KycUploadDialog.tsx` | The upload dialog |
+| `src/components/FileUpload.tsx` | The picker: unlocking, the blur check, compression and merging |
+| `src/components/connect/PdfPasswordDialog.tsx` | The password prompt, which verifies before it closes |
+| `src/lib/pdf/pdf-decrypt.ts` | qpdf-wasm, the only thing that can remove a PDF's password |
 | `src/components/console/ConsoleLayout.tsx` | The **Documents** rail item |
 | `packages/eps-backend/src/http/connect.ts` | `POST /connect/kyc/documents`, `POST /connect/kyc/upload` |
 | `packages/eps-backend/src/clients/connect.ts` | `uploadInteraction` |

@@ -62,19 +62,62 @@ const DEFAULT_QUALITY = 0.7;
  * Opens a PDF, mapping pdf.js's password failure onto our own error.
  *
  * @param bytes - Raw PDF bytes.
+ * @param password - The document's password, when it has one.
  * @returns The open document. The caller must `destroy()` it.
  */
-async function open(bytes: Uint8Array): Promise<PDFDocumentProxy> {
+async function open(
+	bytes: Uint8Array,
+	password?: string,
+): Promise<PDFDocumentProxy> {
+	// pdf.js takes ownership of the buffer, so hand it a copy — the caller
+	// (and the bench) will still want the original bytes afterwards.
+	const task = getDocument({ data: bytes.slice(), password });
 	try {
-		// pdf.js takes ownership of the buffer, so hand it a copy — the caller
-		// (and the bench) will still want the original bytes afterwards.
-		return await getDocument({ data: bytes.slice() }).promise;
+		return await task.promise;
 	} catch (error) {
+		// A task that never resolved still holds its worker port, and no caller
+		// can reach it from here to clean up. That matters most on the password
+		// prompt, which opens the same document once per attempt.
+		await task.destroy().catch(() => {});
 		if (error instanceof Error && error.name === "PasswordException") {
 			throw new EncryptedPdfError();
 		}
 		throw error;
 	}
+}
+
+/** Whether a password attempt opened the document. */
+export type PdfPasswordVerdict = "ok" | "wrong";
+
+/**
+ * Tries a password against an encrypted PDF.
+ *
+ * The unlock path needs this because qpdf cannot tell us *why* it refused a
+ * document — this build reports "invalid password" to the console and hands
+ * back the same exit code it uses for a corrupt file. pdf.js knows the
+ * difference, costs nothing extra (it is already loaded wherever PDFs are blur
+ * checked), and only parses the trailer, so no page is ever rendered.
+ *
+ * A document that needs no password at all answers `"ok"` for any input,
+ * including `""`, which is exactly what a permissions-only lock should do.
+ *
+ * @param bytes - Raw PDF bytes.
+ * @param password - The password to try; `""` for a permissions-only lock.
+ * @returns Whether the document opened.
+ */
+export async function verifyPdfPassword(
+	bytes: Uint8Array,
+	password: string,
+): Promise<PdfPasswordVerdict> {
+	let document_: PDFDocumentProxy;
+	try {
+		document_ = await open(bytes, password);
+	} catch (error) {
+		if (error instanceof EncryptedPdfError) return "wrong";
+		throw error;
+	}
+	await document_.loadingTask.destroy();
+	return "ok";
 }
 
 /**

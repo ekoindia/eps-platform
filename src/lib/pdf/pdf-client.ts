@@ -13,7 +13,10 @@
  * ```
  */
 
-import { getFinalImageDimensions } from "@/lib/connect/image";
+import {
+	DEFAULT_IMAGE_MAX_LENGTH,
+	getFinalImageDimensions,
+} from "@/lib/connect/image";
 import { isBrowser } from "@/lib/ssr-safe";
 import { EncryptedPdfError, NotCompressibleError } from "./pdf-errors";
 import type { ImagesToPdfOptions, PdfImageInput } from "./pdf-ops";
@@ -22,7 +25,7 @@ import type {
 	PdfWorkerRequest,
 	PdfWorkerMessage,
 } from "./pdf-worker";
-import type { RasterizeOptions } from "./pdf-render";
+import type { PdfPasswordVerdict, RasterizeOptions } from "./pdf-render";
 
 /** Anything a caller might hold a PDF in. */
 export type PdfSource = Blob | Uint8Array;
@@ -48,7 +51,6 @@ export interface PdfFromImagesOptions extends ImagesToPdfOptions {
 }
 
 const PDF_MIME = "application/pdf";
-const DEFAULT_IMAGE_MAX_LENGTH = 2000;
 const DEFAULT_IMAGE_QUALITY = 0.85;
 
 let worker: Worker | null = null;
@@ -378,6 +380,47 @@ export async function blurScorePdf(
 	const bytes = await toBytes(source);
 	const { blurScorePdfPages } = await import("./pdf-render");
 	return blurScorePdfPages(bytes, deadlineMs);
+}
+
+/**
+ * Tries a password against an encrypted PDF. Loads `pdf.js` on first use.
+ *
+ * Cheap and precise: it parses the trailer, renders nothing, and distinguishes
+ * a wrong password from an unreadable file — which the unlock step itself
+ * cannot. Always ask this first.
+ *
+ * @param source - The PDF.
+ * @param password - The password to try; `""` for a permissions-only lock.
+ * @returns Whether the document opened.
+ */
+export async function verifyPdfPassword(
+	source: PdfSource,
+	password: string,
+): Promise<PdfPasswordVerdict> {
+	const bytes = await toBytes(source);
+	const { verifyPdfPassword: verify } = await import("./pdf-render");
+	return verify(bytes, password);
+}
+
+/**
+ * Removes a PDF's password, keeping the document itself intact.
+ *
+ * Loads qpdf (≈1.3 MB of wasm) on first use, so call it only for a document
+ * already known to be encrypted, and only with a password `verifyPdfPassword`
+ * has accepted.
+ *
+ * @param source - The encrypted PDF.
+ * @param password - The verified password; `""` for a permissions-only lock.
+ * @returns The same document, unencrypted.
+ * @throws {EncryptedPdfError} If qpdf could not open it with that password.
+ */
+export async function unlockPdf(
+	source: PdfSource,
+	password: string,
+): Promise<Blob> {
+	const bytes = await toBytes(source);
+	const { decryptPdf } = await import("./pdf-decrypt");
+	return toPdfBlob(await decryptPdf(bytes, password));
 }
 
 /**

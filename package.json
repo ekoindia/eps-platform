@@ -39,6 +39,7 @@
 	"dependencies": {
 		"@codemirror/lang-markdown": "^6.5.0",
 		"@mediapipe/tasks-vision": "^0.10.35",
+		"@neslinesli93/qpdf-wasm": "0.3.0",
 		"@radix-ui/react-accordion": "^1.2.11",
 		"@radix-ui/react-alert-dialog": "^1.1.14",
 		"@radix-ui/react-aspect-ratio": "^1.1.7",
