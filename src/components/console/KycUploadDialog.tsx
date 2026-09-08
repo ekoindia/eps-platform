@@ -1,4 +1,5 @@
 import { FileUpload } from "@/components/FileUpload";
+import { Callout } from "@/components/docs/Callout";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -162,6 +163,25 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 				</DialogHeader>
 
 				{/*
+				 * The rule that changed. Every one of these documents used to have to be
+				 * printed, self-attested and stamped before it was scanned, and a partner
+				 * who has done that for years will do it again unless told otherwise —
+				 * dropping the old instruction is not the same as saying the new one.
+				 *
+				 * Off only for the live photograph (`cameraOnly`), where signing was
+				 * never a question and the line would read as noise.
+				 */}
+				{!config.cameraOnly ? (
+					<Callout type="tip" className="my-0" label="No signing needed">
+						<p className="text-sm">
+							No need to sign or stamp these documents by hand — upload them
+							exactly as they are. Once everything is verified, you'll be asked
+							to e-sign all of them digitally, in one go.
+						</p>
+					</Callout>
+				) : null}
+
+				{/*
 				 * Whatever this document needs said before a file is picked — what
 				 * must be on the letterhead, which director signs, what makes review
 				 * reject it. Markdown so a list reads as a list.
@@ -205,7 +225,7 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 						className="inline-flex items-center gap-2 self-start rounded-md text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 					>
 						<Download className="h-4 w-4 shrink-0" />
-						Download the sample, fill and sign it, then upload the PDF
+						Download the sample, fill it, then upload the PDF
 					</a>
 				) : null}
 

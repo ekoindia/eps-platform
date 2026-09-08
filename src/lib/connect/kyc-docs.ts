@@ -223,7 +223,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 		pageLabels: ["Aadhaar card(s) (both front and back)"], // "Aadhaar back"
 		multiple: true,
 		instructions:
-			"- The Aadhaar copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the Aadhaar copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.\n- Upload both the front and the back of the Aadhaar card.\n- If you are uploading multiple Aadhaar cards, please ensure that you upload both the front and back of each Aadhaar card.",
+			"- If you represent a company, upload the Aadhaar copies of **all directors**.\n  - Start with uploading or capturing the first Aadhaar\n  - then, you will get option to add more.\n- Upload both the front and the back of the Aadhaar card.\n- If you are uploading multiple Aadhaar cards, please ensure that you upload both the front and back of each Aadhaar card.",
 	},
 
 	// PAN Card (2 = Personal, 15 = Director's)
@@ -234,77 +234,68 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	"2": {
 		multiple: true,
 		instructions:
-			"- The PAN copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the PAN copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
+			"- If you represent a company, upload the PAN copies of **all directors**.\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
 	},
 	"15": {
 		multiple: true,
 		instructions:
-			"- The PAN copy must be self-attested (self-signed) by the individual.\n- If you represent a company, upload the PAN copies of **all directors** (self-signed by each).\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
+			"- If you represent a company, upload the PAN copies of **all directors**.\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
 	},
 
 	// MOA - Memorandum of Association
 	"4": {
 		name: "Memorandum of Association (MOA)",
 		multiple: true,
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// AOA - Company articles of association
 	"5": {
 		name: "Company Articles of Association (AOA)",
 		multiple: true,
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Certificate of Incorporation (COI)
 	"6": {
 		multiple: true,
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Bank Statement (of company)
 	"7": {
 		multiple: true,
-		instructions:
-			"Company bank statement must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company bank statement must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Company PAN
-	"8": {
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
-	},
+	// "8": {
+	// 	instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+	// },
 
 	// 9: Address Proof (Electricity Bill, Rent Agreement, or Lease Agreement)
 	9: {
 		multiple: true,
 		pageLabels: ["Electricity Bill, Rent Agreement, or Lease Agreement"],
-		instructions:
-			"No need to sign or stamp these documents. Please ensure that the document is valid and not expired.",
+		instructions: "Please ensure that the document is valid and not expired.",
 	},
 
 	// LLP Agreement
 	"10": {
 		multiple: true,
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Partnership Deed
 	"11": {
 		multiple: true,
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// Company Registration Certificate
 	"12": {
 		multiple: true,
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// BR-Board Resolution - Show a sample file
@@ -312,8 +303,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 		name: "Board Resolution (BR)",
 		multiple: true,
 		sampleUrl: "/kyc-samples/Board_Resolution_Format.docx",
-		instructions:
-			"Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
 	// The live photograph. Upstream's name spells out the capture instructions
@@ -362,7 +352,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	"25": {
 		name: "GST Registration (or, Udyam) Certificate",
 		instructions:
-			"- If you are a **Sole Proprietor** Firm and don't have a GST registration certificate, please **upload your Udyam certificate**.\n- Company GST must be signed by **all directors**, and affixed with the **company seal/stamp.**",
+			"- If you are a **Sole Proprietor** Firm and don't have a GST registration certificate, please **upload your Udyam certificate**.\n- If you are a **Company** or **Partnership** Firm, please **upload your GST registration certificate**.",
 	},
 };
 
