@@ -18,7 +18,7 @@ transiting Scalar's hosted proxy. Design spec:
 |---|---|
 | `src/components/docs/CodeSamples.tsx` | Renders the **Test Request** button (API mode); calls `onTest()`. |
 | `src/components/docs/useTryIt.ts` | `useTryIt(spec)` → `{ onTest, dialog }`. Dynamically imports the dialog on first click (own async chunk, never in SSR/prerender); `?try=1` opens it on load. |
-| `src/components/docs/tryit/TryItDialog.tsx` | Radix dialog shell: breadcrumb (product › API), method tag, live URL, environment toggle, Send, production banner, ⌘/Ctrl+Enter. |
+| `src/components/docs/tryit/TryItDialog.tsx` | Radix dialog shell: breadcrumb (product › API), method tag, live URL, environment toggle, Send, production banner, ⌘/Ctrl+Enter. Two independently-scrolling columns from `lg` up; below that the panes are **block flow** inside one scroller (a grid there splits the dialog's fixed height between the rows, clipping the request pane). Parks the SalesIQ widget via `setZohoChatOverlayHidden()` while open. |
 | `src/components/docs/tryit/RequestPane.tsx` | Auth (collapsed), URL params (only when the spec has any), body as Form ↔ Raw JSON, live code snippets (collapsed). |
 | `src/components/docs/tryit/ParamField.tsx` | One input per `ResolvedApiParam`: enum → select, file → file input, number, boolean, object/array → JSON textarea, else text. |
 | `src/components/docs/tryit/ResponsePane.tsx` | HTTP status / ms / bytes, Eko verdict badge, callouts, request/response headers on demand, body Preview/Raw, copy + download. |
