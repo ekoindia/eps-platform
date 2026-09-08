@@ -347,6 +347,12 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 		multiple: true,
 		watermark: true,
 		blurCheck: "off",
+		// Half the global cap. A live photograph only has to show that a person
+		// was in a place at a time — a face and its surroundings, both legible at
+		// 1000 px — where a document scan has to keep small print readable. And
+		// this is the row most likely to arrive from a high-resolution phone
+		// camera, several per account, so it is where the bytes actually are.
+		options: { maxLength: 1000 },
 		info: "Capture the live photographs of all your directors",
 		instructions:
 			"- If you represent a company, capture the live photographs of **all directors**.\n  - Start with capturing the first photograph\n  - then, you will get option to add more.",
