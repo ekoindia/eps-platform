@@ -18,6 +18,7 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 		createProfile: vi.fn(),
 		submitPan: vi.fn(),
 		submitPin: vi.fn(),
+		submitBusiness: vi.fn(),
 	},
 }));
 
@@ -66,6 +67,19 @@ const panPending: SignupState = {
 	currentRole: 13000,
 };
 const pinPending: SignupState = { ...panPending, currentRole: 12600 };
+
+/** A PAN -> Business Details flow, for the cross-step prefill tests below. */
+const businessFlow: SignupState = {
+	mobile: "9990000001",
+	status: "in_progress",
+	steps: [
+		{ role: 13000, label: "PAN Details" },
+		// Upstream still calls this "Company Details"; the registry label wins.
+		{ role: 13100, label: "Company Details" },
+	],
+	currentRole: 13000,
+};
+const businessPending: SignupState = { ...businessFlow, currentRole: 13100 };
 const done: SignupState = { ...panPending, status: "done", currentRole: null };
 
 beforeEach(() => vi.clearAllMocks());
@@ -232,5 +246,55 @@ describe("SignupWizard", () => {
 		fireEvent.click(screen.getByRole("button", { name: /finish/i }));
 		expect(await screen.findByText(/you're all set/i)).toBeInTheDocument();
 		await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
+	});
+
+	it("carries the PAN category into the Business step's prefill", async () => {
+		// BusinessStep seeds company_type in a one-time lazy initialiser, so the
+		// category has to be in the provider by the time that step first mounts.
+		// Component tests cannot see this — only the wizard wires the two steps.
+		vi.mocked(signupClient.state).mockResolvedValue(businessFlow);
+		vi.mocked(signupClient.submitPan).mockResolvedValue(businessPending);
+		render(<SignupWizard />);
+
+		fireEvent.change(await screen.findByLabelText(/pan/i), {
+			target: { value: "ABCCE1234F" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await findStepHeading("Business Details");
+		expect(screen.getByLabelText(/business type/i)).toHaveValue("1");
+	});
+
+	it("prefills from the retried PAN after a failed attempt, not the first one", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(businessFlow);
+		vi.mocked(signupClient.submitPan)
+			.mockRejectedValueOnce(// INVALID_INPUT is in NEVER_RETRY, so this surfaces immediately
+			// rather than burning the backoff.
+			new ApiError("INVALID_INPUT", "Bad PAN.", 400))
+			.mockResolvedValueOnce(businessPending);
+		render(<SignupWizard />);
+
+		const input = await screen.findByLabelText(/pan/i);
+		// First attempt: a firm PAN that fails upstream.
+		fireEvent.change(input, { target: { value: "ABCFE1234F" } });
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+		expect(await screen.findByRole("alert")).toHaveTextContent("Bad PAN.");
+
+		// Retry with a company PAN — the prefill must follow the retry.
+		fireEvent.change(screen.getByLabelText(/pan/i), {
+			target: { value: "ABCCE1234F" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await findStepHeading("Business Details");
+		expect(screen.getByLabelText(/business type/i)).toHaveValue("1");
+	});
+
+	it("titles the middle step from the registry, ignoring the API's label", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(businessPending);
+		render(<SignupWizard />);
+
+		await findStepHeading("Business Details");
+		expect(screen.queryByText("Company Details")).not.toBeInTheDocument();
 	});
 });

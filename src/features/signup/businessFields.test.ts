@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	BUSINESS_FIELDS,
+	COMPANY_TYPES,
 	INDIAN_STATES,
 	validateField,
 } from "./businessFields";
@@ -108,5 +109,19 @@ describe("validateField", () => {
 		expect(
 			validateField(field("current_address_district"), "Bengaluru1"),
 		).toBeTruthy();
+	});
+
+	it("accepts every value COMPANY_TYPES offers, Individual's 7 included", () => {
+		// Regression: Individual was split onto code 7 without widening this
+		// pattern, so picking it left the form permanently unsubmittable.
+		for (const { value } of COMPANY_TYPES) {
+			expect(validateField(field("company_type"), value)).toBeNull();
+		}
+	});
+
+	it("rejects a company type outside COMPANY_TYPES", () => {
+		expect(validateField(field("company_type"), "6")).toBeTruthy();
+		expect(validateField(field("company_type"), "8")).toBeTruthy();
+		expect(validateField(field("company_type"), "0")).toBeTruthy();
 	});
 });

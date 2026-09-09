@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BusinessStep } from "./BusinessStep";
 import {
@@ -7,6 +7,16 @@ import {
 } from "./SignupProfileContext";
 
 const noop = async () => {};
+
+/**
+ * Business Type's option values, in render order, minus the placeholder. Scoped
+ * to that select — the State dropdown contributes 36 more options to the page.
+ */
+const businessTypeValues = () =>
+	within(screen.getByLabelText(/business type/i) as HTMLSelectElement)
+		.getAllByRole("option")
+		.map((o) => (o as HTMLOptionElement).value)
+		.filter((v) => v !== "");
 
 /** Renders BusinessStep inside a profile provider (empty profile by default). */
 const renderStep = (
@@ -80,7 +90,7 @@ describe("BusinessStep", () => {
 	it("disables every field while busy", () => {
 		renderStep({ onSubmit: noop, busy: true, error: null });
 		expect(screen.getByLabelText(/company\/firm's name/i)).toBeDisabled();
-		expect(screen.getByLabelText(/company type/i)).toBeDisabled();
+		expect(screen.getByLabelText(/business type/i)).toBeDisabled();
 		expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
 	});
 
@@ -109,7 +119,7 @@ describe("BusinessStep", () => {
 		fireEvent.change(screen.getByLabelText(/company\/firm's name/i), {
 			target: { value: "  Acme Retail  " },
 		});
-		fireEvent.change(screen.getByLabelText(/company type/i), {
+		fireEvent.change(screen.getByLabelText(/business type/i), {
 			target: { value: "4" },
 		});
 		fireEvent.change(screen.getByLabelText(/state/i), {
@@ -168,6 +178,79 @@ describe("BusinessStep", () => {
 		expect(screen.getByLabelText(/company\/firm's name/i)).toHaveValue("");
 		expect(screen.getByLabelText(/company\/firm's name/i)).not.toHaveAttribute(
 			"readonly",
+		);
+	});
+
+	it("preselects Business Type from the PAN category and says so", () => {
+		renderStep({ onSubmit: noop, busy: false, error: null }, {
+			mobile: "9990000001",
+			panCategory: "C",
+		});
+		const select = screen.getByLabelText(/business type/i);
+		expect(select).toHaveValue("1"); // Private Limited
+		expect(
+			screen.getByText(/auto-filled from your PAN/i),
+		).toBeInTheDocument();
+	});
+
+	it("drops the auto-filled hint once the user picks something else", () => {
+		renderStep({ onSubmit: noop, busy: false, error: null }, {
+			mobile: "9990000001",
+			panCategory: "C",
+		});
+		fireEvent.change(screen.getByLabelText(/business type/i), {
+			target: { value: "2" },
+		});
+		expect(
+			screen.queryByText(/auto-filled from your PAN/i),
+		).not.toBeInTheDocument();
+	});
+
+	it("floats the PAN category's candidates to the top without dropping any", () => {
+		renderStep({ onSubmit: noop, busy: false, error: null }, {
+			mobile: "9990000001",
+			panCategory: "F",
+		});
+		const options = businessTypeValues();
+		expect(options.slice(0, 2)).toEqual(["4", "2"]); // LLP, Partnership
+		expect(options).toHaveLength(6); // every option still selectable
+	});
+
+	it("leaves Business Type blank for an individual PAN, but leads with its candidates", () => {
+		// P is ambiguous between Sole Proprietorship and Individual, so it orders
+		// but never guesses.
+		renderStep({ onSubmit: noop, busy: false, error: null }, {
+			mobile: "9990000001",
+			panCategory: "P",
+		});
+		expect(screen.getByLabelText(/business type/i)).toHaveValue("");
+		expect(
+			screen.queryByText(/auto-filled from your PAN/i),
+		).not.toBeInTheDocument();
+		expect(businessTypeValues().slice(0, 2)).toEqual(["3", "7"]);
+	});
+
+	it("leaves Business Type blank and unordered with no PAN category", () => {
+		renderStep({ onSubmit: noop, busy: false, error: null });
+		expect(screen.getByLabelText(/business type/i)).toHaveValue("");
+		expect(
+			screen.queryByText(/auto-filled from your PAN/i),
+		).not.toBeInTheDocument();
+	});
+
+	it("submits Individual (upstream code 7), which validation must not reject", () => {
+		const onSubmit = vi.fn(async () => {});
+		renderStep({ onSubmit, busy: false, error: null });
+		fillText();
+		fireEvent.change(screen.getByLabelText(/business type/i), {
+			target: { value: "7" },
+		});
+		fireEvent.change(screen.getByLabelText(/^state$/i), {
+			target: { value: "Karnataka" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+		expect(onSubmit).toHaveBeenCalledWith(
+			expect.objectContaining({ company_type: "7" }),
 		);
 	});
 });

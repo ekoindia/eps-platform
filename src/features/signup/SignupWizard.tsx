@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
 import { withRetries } from "@/lib/retry";
+import { panCategory } from "./panCategory";
 import { resolveSteps } from "./resolveSteps";
 import { SignupProfileProvider } from "./SignupProfileContext";
 import { StepRail } from "./StepRail";
@@ -23,6 +24,10 @@ export function SignupWizard() {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [fatal, setFatal] = useState<string | null>(null);
+	// Holder-type letter from the PAN step, kept so the Business step can
+	// preselect and re-order its Business Type options. Only the letter is held,
+	// never the PAN. A reload clears it and that step simply starts blank.
+	const [panCat, setPanCat] = useState<string | undefined>(undefined);
 
 	// Guards against a second run of the mount effect below (e.g. a
 	// <StrictMode> double-mount). `createProfile()` is a non-idempotent POST
@@ -157,10 +162,21 @@ export function SignupWizard() {
 							mobile: state.mobile,
 							name: state.name,
 							email: state.email,
+							panCategory: panCat,
 						}}
 					>
 						<Component
-							onSubmit={(values) => runStep(() => submit(signupClient, values))}
+							onSubmit={(values) => {
+								// Captured here rather than off the resolved promise simply
+								// because it is the one place that sees the submitted values
+								// synchronously. (React batches this with `runStep`'s own
+								// `setState`, so a post-await capture happens to work too —
+								// this way just doesn't depend on that.)
+								if (values.pan) {
+									setPanCat(panCategory(values.pan) ?? undefined);
+								}
+								return runStep(() => submit(signupClient, values));
+							}}
 							busy={busy}
 							error={error}
 						/>

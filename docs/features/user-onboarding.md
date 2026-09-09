@@ -732,8 +732,9 @@ client-side mismatch never burns a single-use key.
 
 ## How to add a step
 
-The step order and labels are never hardcoded on either side — they come
-from the API's `onboarding_steps` at runtime. Adding a step is two additions,
+The step order is never hardcoded on either side — it comes from the API's
+`onboarding_steps` at runtime. Labels are the exception: see
+[Who names a step](#who-names-a-step) below. Adding a step is two additions,
 no branching logic anywhere else:
 
 **Backend** (`packages/eps-backend/src/`):
@@ -767,14 +768,30 @@ Promise<void>`, `busy`, `error`. Values are a **named record keyed by field
 
 That is the entire registry surface. `resolveSteps()` (`resolveSteps.ts:83-122`)
 filters the registry down to whatever roles the API actually returned, orders
-them by the API's order (not the registry's), prefers the API's label,
-falling back to the registry's, and marks steps before `currentRole`
+them by the API's order (not the registry's), takes the label from the
+registry (falling back to the API's), and marks steps before `currentRole`
 complete. **The wizard never branches on step names** — `SignupWizard.tsx`
 picks whichever `ResolvedStep` has `status === "current"` and renders its
 `Component`, forwarding `onSubmit` straight into that step's own `submit`
 closure. A role in the API the registry doesn't know is silently skipped
 rather than thrown on, so the backend can ship a new step before the frontend
 has UI for it.
+
+### Who names a step
+
+The API is authoritative for **which** steps exist and **in what order**. It is
+not authoritative for the **label** of a step we render: the wording belongs
+with the UI that implements it, and upstream's labels lag ours. Upstream still
+calls role 13100 "Company Details", which reads as Pvt-Ltd-only and excludes
+the sole proprietors and individuals that step is built to serve — the registry
+calls it "Business Details" and wins.
+
+So `resolveSteps` resolves the label as `def.label || apiStep.label`: the
+registry's, unless its entry has none. A role the registry does not know is
+skipped entirely, and its API label goes with it.
+
+Renaming a step is therefore a one-line change in `steps.ts` — no upstream
+ticket, no deploy coordination.
 
 A new entry also appears in the step rail automatically: `StepRail.tsx` renders
 whatever `resolveSteps()` returns, so there is no second list to update. It
@@ -802,6 +819,66 @@ the wizard's `onSubmit` switch." That switch does not exist in the built
 code; the wizard has zero knowledge of step-specific call signatures. Each
 `StepDefinition` owns its own `submit`, which is strictly less coupling than
 the spec proposed, and is what's actually shipped.
+
+## PAN category: warning and Business Type prefill
+
+The 4th letter of an Indian PAN encodes the holder's legal type. `panCategory.ts`
+reads it and drives two things, neither of which blocks the user.
+
+**1. A warning on the PAN step.** A partner representing a company sometimes
+enters their own PAN. Left alone that surfaces weeks later as a KYC rejection, so
+`PanStep` shows an amber `Callout` the moment a category-`P` PAN is complete.
+**Continue stays enabled** — an individual or sole proprietor entering a personal
+PAN is doing the right thing, and the step's own copy says so. The warning is
+advice, not a gate.
+
+**Input is normalised on every change.** `normalizePan` strips everything that is
+not a letter or a digit, uppercases, then caps at 10 — in that order. It runs from
+`onChange`, not an `onPaste` handler, so a paste, a typed character, a
+drag-and-drop and a browser autofill are all cleaned the same way.
+
+The input deliberately carries **no `maxLength`**. The browser applies that before
+the change handler sees the value, so pasting "ABCDE 1234 F" would be truncated to
+ten *dirty* characters and silently lose its final letter. Capping after the strip
+is the fix; re-adding `maxLength` would reintroduce the bug.
+
+**2. A prefill and an ordering on the Business step.** `CATEGORY_CANDIDATES` maps
+a letter to the `COMPANY_TYPES` it admits, best candidate first, plus whether that
+first one dominates enough to preselect:
+
+| PAN letter | Candidates, best first | Preselected |
+|---|---|---|
+| `P` Individual | Sole Proprietorship, Individual | — a genuine coin flip |
+| `C` Company | Private Limited, Public Limited | Private Limited |
+| `F` Firm / LLP | LLP, Partnership | LLP |
+| `H` `A` `T` `B` `L` `J` `G` | (default order) | — no matching option exists |
+
+`C` and `F` each hide a collision — that is why the second candidate is kept
+adjacent to the preselected one rather than dropped. Where nothing dominates, the
+field stays blank and only the ordering helps.
+
+The ordering **never filters**. Every option stays selectable, because a partner
+whose PAN letter disagrees with their legal type must still be able to pick the
+right one. `panCategory.test.ts` asserts each result is a permutation of
+`COMPANY_TYPES` — same members, no drops, no duplicates — and that any preselected
+value is the head of its own ordering.
+
+While Business Type still holds the derived value, its hint reads "Auto-filled
+from your PAN — change it if this isn't right", and that hint disappears as soon
+as the user picks something else. The field is never locked.
+
+**How the category reaches step 2.** Signup progress is server-held and
+`SignupState` carries no PAN, so `SignupWizard` keeps the letter in React state
+and passes it through `SignupProfileContext` as `panCategory`. Only the letter
+travels — later steps need the category, not the number, so the PII goes no
+further than the step that collected it. A mid-flow page reload clears it and the
+dropdown simply starts blank in default order; that is an accepted cost for a
+convenience, not a bug to fix with browser storage.
+
+`BusinessStep` seeds `company_type` in its one-time lazy initialiser, so the
+category must be in the provider before that step first mounts. Component tests
+cannot see that wiring — `SignupWizard.test.tsx` covers it end to end, including
+a failed PAN submit followed by a retry with a different category.
 
 ## Retrying transient failures
 

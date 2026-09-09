@@ -349,6 +349,30 @@ describe("POST /signup/business", () => {
 		expect(submitBusiness).toHaveBeenCalledWith("9990000001", valid, undefined);
 	});
 
+	it("accepts Individual's company_type 7, which the client can now select", async () => {
+		// Regression: this rule was left at /^[1-5]$/ when Individual was split
+		// onto code 7, so the option was unsubmittable at the trust boundary too.
+		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, { ...valid, company_type: "7" });
+		expect(res.status).toBe(200);
+		expect(submitBusiness).toHaveBeenCalledWith(
+			"9990000001",
+			{ ...valid, company_type: "7" },
+			undefined,
+		);
+	});
+
+	it("still rejects a company_type outside the known set", async () => {
+		const submitBusiness = vi.fn();
+		const app = harness("signup", { submitBusiness });
+		for (const company_type of ["6", "8", "0", "17"]) {
+			const res = await post(app, { ...valid, company_type });
+			expect(res.status).toBe(400);
+		}
+		expect(submitBusiness).not.toHaveBeenCalled();
+	});
+
 	it("requires a signup session", async () => {
 		const app = harness(null, {});
 		const res = await post(app, valid);

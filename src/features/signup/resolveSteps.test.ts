@@ -68,7 +68,9 @@ describe("resolveSteps", () => {
 		expect(resolved.map((s) => s.name)).toEqual(["pin", "pan"]);
 	});
 
-	it("prefers the API label over the registry label", () => {
+	it("prefers the registry label over the API label", () => {
+		// The wording of a step we render belongs with the UI that renders it —
+		// upstream still calls the Business Details step "Company Details".
 		const resolved = resolveSteps(
 			state({
 				steps: [{ role: 13000, label: "PAN Card" }],
@@ -76,10 +78,21 @@ describe("resolveSteps", () => {
 			}),
 			registry,
 		);
+		expect(resolved[0].label).toBe("PAN Details");
+	});
+
+	it("falls back to the API label when the registry entry has none", () => {
+		const resolved = resolveSteps(
+			state({
+				steps: [{ role: 13000, label: "PAN Card" }],
+				currentRole: 13000,
+			}),
+			[{ ...registry[0], label: "" }],
+		);
 		expect(resolved[0].label).toBe("PAN Card");
 	});
 
-	it("falls back to the registry label when the API sends none", () => {
+	it("uses the registry label when the API sends none", () => {
 		const resolved = resolveSteps(
 			state({ steps: [{ role: 13000, label: "" }], currentRole: 13000 }),
 			registry,

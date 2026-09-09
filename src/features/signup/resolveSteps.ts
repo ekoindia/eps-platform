@@ -25,8 +25,9 @@ export type StepSubmit = (
  * A step this app knows how to render.
  *
  * To add a step: append an entry with its role code, component, and submit. To
- * remove one: delete the entry. Order and labels come from the API at runtime,
- * so neither is authoritative in this file.
+ * remove one: delete the entry. Order comes from the API at runtime, so it is
+ * not authoritative in this file — but the label here IS, for any role we can
+ * render (see `resolveSteps`).
  *
  * Each entry owns its `submit` so the wizard never needs to know step names or
  * call signatures — that is what keeps adding a step to one entry plus one
@@ -37,7 +38,10 @@ export interface StepDefinition {
 	role: number;
 	/** Unique identifier for this step within the app. */
 	name: string;
-	/** Fallback label; the API's label wins when present. */
+	/**
+	 * Display label. Authoritative for a role we can render — the API's label is
+	 * used only when this one is blank. See `resolveSteps` for why.
+	 */
 	label: string;
 	/** React component that renders this step's UI. */
 	Component: ComponentType<StepProps>;
@@ -67,9 +71,15 @@ export interface ResolvedStep {
 /**
  * Resolves the server's onboarding steps against the local registry.
  *
- * The API is authoritative for which steps exist, their order, and their
- * labels. A role the registry does not know is skipped rather than thrown on,
- * so the backend can introduce a step before this app ships its UI.
+ * The API is authoritative for which steps exist and their order. It is NOT
+ * authoritative for the label of a step we render: the wording belongs with the
+ * UI that implements it, and upstream's own labels lag ours (it still calls the
+ * Business Details step "Company Details", which reads as Pvt-Ltd-only and
+ * excludes the sole proprietors and individuals the step is built to serve).
+ * The API label is still used as the fallback when the registry entry has none.
+ *
+ * A role the registry does not know is skipped rather than thrown on, so the
+ * backend can introduce a step before this app ships its UI.
  *
  * @param state - Server-authoritative signup state.
  * @param registry - Steps this app can render.
@@ -103,7 +113,9 @@ export function resolveSteps(
 		return {
 			role: def.role,
 			name: def.name,
-			label: apiStep.label || def.label,
+			// Local label wins — see the module doc. The API label backstops a
+			// registry entry that forgot one.
+			label: def.label || apiStep.label,
 			// currentIndex === -1 means no step is currently actionable: either onboarding
 			// is finished, or the user is in-progress but has no actionable step (empty
 			// role_list from backend). Callers must check state.status to distinguish.

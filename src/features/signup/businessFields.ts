@@ -112,14 +112,16 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 	},
 	{
 		name: "company_type",
-		label: "Company Type",
+		label: "Business Type",
 		kind: "select",
 		options: COMPANY_TYPES,
 		required: true,
-		pattern: /^[1-5]$/,
+		// Every value in COMPANY_TYPES, which is 1-5 plus Individual's 7. Keep in
+		// step with that array and with the BFF mirror in `http/signup.ts`.
+		pattern: /^(?:[1-5]|7)$/,
 		min: 1,
 		max: 1,
-		message: "Select a company type",
+		message: "Select a business type",
 	},
 	{
 		name: "authorized_signatory_name",

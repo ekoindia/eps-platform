@@ -8,8 +8,13 @@ import {
 	type BusinessField,
 	validateField,
 } from "./businessFields";
+import { companyTypeForPan, orderCompanyTypes } from "./panCategory";
 import type { StepProps } from "./resolveSteps";
 import { useSignupProfile } from "./SignupProfileContext";
+
+/** Shown while Business Type still holds the value derived from the PAN. */
+const AUTO_FILLED_HINT =
+	"Auto-filled from your PAN — change it if this isn't right.";
 
 /** Looks up a field's spec by name. */
 const specOf = (name: string): BusinessField =>
@@ -28,6 +33,14 @@ const emptyValues = (): Record<string, string> =>
  */
 export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 	const profile = useSignupProfile();
+	// The PAN's holder-type letter narrows Business Type: it preselects the one
+	// option that dominates its category, and floats that category's candidates
+	// to the top of the list either way. A hint (below) says where the value came
+	// from, and nothing here locks the field — the PAN is evidence, not a verdict.
+	const panCat = profile.panCategory ?? null;
+	const autoFilledType = companyTypeForPan(panCat);
+	const companyTypeOptions = orderCompanyTypes(panCat);
+
 	// Seed name/email from the profile when present; every other field starts
 	// empty. Computed once for the initial state — the wizard only mounts this
 	// step after SignupState (and thus the profile) has loaded, so there is no
@@ -36,6 +49,7 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 		...emptyValues(),
 		name: profile.name ?? "",
 		email: profile.email ?? "",
+		company_type: autoFilledType ?? "",
 	}));
 	const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -94,9 +108,20 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 						{group.fields.map((name) => {
 							const field = specOf(name);
 							const fieldError = errorFor(field);
+							// Business Type borrows the hint slot to explain its preselected
+							// value, and drops back to the field's own description the moment
+							// the user picks something else. Computed once and used for BOTH
+							// the rendered hint and `aria-describedby` — `field.description`
+							// is empty here, so gating on it would silently hide this.
+							const hint =
+								name === "company_type" &&
+								autoFilledType &&
+								values.company_type === autoFilledType
+									? AUTO_FILLED_HINT
+									: field.description;
 							const describedBy = fieldError
 								? `${name}-error`
-								: field.description
+								: hint
 									? `${name}-hint`
 									: undefined;
 							return (
@@ -116,7 +141,10 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 											onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
 										>
 											<option value="">Select…</option>
-											{field.options?.map((o) => (
+											{(name === "company_type"
+												? companyTypeOptions
+												: field.options
+											)?.map((o) => (
 												<option key={o.value} value={o.value}>
 													{o.label}
 												</option>
@@ -151,12 +179,12 @@ export function BusinessStep({ onSubmit, busy, error }: StepProps) {
 											{fieldError}
 										</p>
 									) : (
-										field.description && (
+										hint && (
 											<p
 												id={`${name}-hint`}
 												className="text-xs text-muted-foreground"
 											>
-												{field.description}
+												{hint}
 											</p>
 										)
 									)}

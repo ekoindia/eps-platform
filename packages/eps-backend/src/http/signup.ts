@@ -35,7 +35,8 @@ const BUSINESS_RULES: Record<
 	{ pattern: RegExp; min: number; max: number; required: boolean }
 > = {
 	name: { pattern: /^[-a-zA-Z0-9 ,./:]+$/, min: 2, max: 100, required: true },
-	company_type: { pattern: /^[1-5]$/, min: 1, max: 1, required: true },
+	// 1-5 plus Individual's 7 — the exact value set of the client's COMPANY_TYPES.
+	company_type: { pattern: /^(?:[1-5]|7)$/, min: 1, max: 1, required: true },
 	authorized_signatory_name: {
 		pattern: /^[a-zA-Z][a-zA-Z .]{1,49}$/,
 		min: 2,
