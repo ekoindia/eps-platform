@@ -4,6 +4,7 @@ import {
 	SITE_LOGO_URL,
 	PARENT_SITE_URL,
 	PARENT_SITE_NAME,
+	COMPANY_FOUNDED_YEAR,
 } from "@/lib/config/site";
 import type { ProductPageData } from "@/lib/data/api-product-pages";
 import { productHref } from "@/lib/data/api-products";
@@ -17,6 +18,31 @@ import type { FaqItem } from "@/components/sections/FaqSection";
 import { stripMarkdown } from "@/lib/utils";
 
 const ORG_ID = `${SITE_URL}/#organization`;
+const PARENT_ORG_ID = `${PARENT_SITE_URL}/#organization`;
+
+/**
+ * The shared `Organization` node every page's `@graph` opens with.
+ *
+ * EPS is the publishing entity; Eko Bharat Ventures is its `parentOrganization`.
+ * `foundingDate` therefore hangs off the **parent** — 2007 is the parent
+ * company's track record and must not be asserted of EPS itself.
+ */
+function organizationNode(): object {
+	return {
+		"@type": "Organization",
+		"@id": ORG_ID,
+		name: SITE_ORG_NAME,
+		url: SITE_URL,
+		logo: SITE_LOGO_URL,
+		parentOrganization: {
+			"@type": "Organization",
+			"@id": PARENT_ORG_ID,
+			name: PARENT_SITE_NAME,
+			url: PARENT_SITE_URL,
+			foundingDate: String(COMPANY_FOUNDED_YEAR),
+		},
+	};
+}
 
 /**
  * Builds a `schema.org` FAQPage node from any FAQ collection. The single place
@@ -65,18 +91,7 @@ export function generateProductJsonLd(
 	const productId = `${productUrl}#product`;
 
 	const graph: object[] = [
-		{
-			"@type": "Organization",
-			"@id": ORG_ID,
-			name: SITE_ORG_NAME,
-			url: SITE_URL,
-			logo: SITE_LOGO_URL,
-			parentOrganization: {
-				"@type": "Organization",
-				name: PARENT_SITE_NAME,
-				url: PARENT_SITE_URL,
-			},
-		},
+		organizationNode(),
 		{
 			"@type": ["Product", "SoftwareApplication"],
 			"@id": productId,
@@ -161,18 +176,7 @@ export function generatePricingJsonLd(faqs: FaqItem[]): object[] {
 	const pricingUrl = `${SITE_URL}/pricing`;
 
 	const graph: object[] = [
-		{
-			"@type": "Organization",
-			"@id": ORG_ID,
-			name: SITE_ORG_NAME,
-			url: SITE_URL,
-			logo: SITE_LOGO_URL,
-			parentOrganization: {
-				"@type": "Organization",
-				name: PARENT_SITE_NAME,
-				url: PARENT_SITE_URL,
-			},
-		},
+		organizationNode(),
 		{
 			"@type": "OfferCatalog",
 			"@id": `${pricingUrl}#offers`,
@@ -288,4 +292,48 @@ export function generateFaqJsonLd(faqs: FaqItem[]): object[] {
 	const faqUrl = `${SITE_URL}/faq`;
 	if (!faqs.length) return [];
 	return [faqPageJsonLd(faqs, `${faqUrl}#faq`)];
+}
+
+/**
+ * Generates the JSON-LD `@graph` for the About Us page (`/about-us`).
+ *
+ * The page describes the parent company, so the graph leads with the shared
+ * Organization node (whose `parentOrganization` carries `foundingDate`) and
+ * adds an `AboutPage` node pointing at that parent entity, plus a breadcrumb.
+ *
+ * @param description - The page's meta description, reused as the node's description.
+ */
+export function generateAboutJsonLd(description: string): object[] {
+	const aboutUrl = `${SITE_URL}/about-us`;
+
+	return [
+		{
+			"@context": "https://schema.org",
+			"@graph": [
+				organizationNode(),
+				{
+					"@type": "AboutPage",
+					"@id": `${aboutUrl}#about`,
+					url: aboutUrl,
+					name: `About ${PARENT_SITE_NAME}`,
+					description,
+					mainEntity: { "@id": PARENT_ORG_ID },
+					publisher: { "@id": ORG_ID },
+				},
+				{
+					"@type": "BreadcrumbList",
+					"@id": `${aboutUrl}#breadcrumb`,
+					itemListElement: [
+						{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+						{
+							"@type": "ListItem",
+							position: 2,
+							name: "About Us",
+							item: aboutUrl,
+						},
+					],
+				},
+			],
+		},
+	];
 }

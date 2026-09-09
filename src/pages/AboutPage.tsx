@@ -17,7 +17,20 @@ import {
 	Quote,
 } from "lucide-react";
 import { FadeIn } from "@/components/FadeIn";
-import { PARENT_SITE_URL } from "@/lib/config/site";
+import {
+	COMPANY_FOUNDED_YEAR,
+	PARENT_SITE_NAME,
+	PARENT_SITE_URL,
+	SITE_OG_IMAGE,
+	SITE_URL,
+} from "@/lib/config/site";
+import { generateAboutJsonLd } from "@/lib/utils/json-ld";
+import { Helmet } from "react-helmet-async";
+
+const PAGE_TITLE = `About Eko — Building India's Financial Infrastructure Since ${COMPANY_FOUNDED_YEAR} | Eko Platform Services`;
+const PAGE_DESCRIPTION = `${PARENT_SITE_NAME} has been building financial infrastructure for Bharat since ${COMPANY_FOUNDED_YEAR}, connecting brands, banks and fintechs to customers through a nationwide network of trusted micro-entrepreneurs.`;
+const PAGE_KEYWORDS =
+	"about Eko, Eko Bharat Ventures, Eko India, fintech company India, financial inclusion, micro-entrepreneurs, distribution as a service, banking correspondent network";
 
 const roles = [
 	{
@@ -109,8 +122,32 @@ const values = [
 ];
 
 const AboutPage = () => {
+	const jsonLdSchemas = generateAboutJsonLd(PAGE_DESCRIPTION);
+
 	return (
 		<>
+			<Helmet>
+				<title>{PAGE_TITLE}</title>
+				<meta name="description" content={PAGE_DESCRIPTION} />
+				<meta name="keywords" content={PAGE_KEYWORDS} />
+				<link rel="canonical" href={`${SITE_URL}/about-us`} />
+				{/* No <link rel="alternate" type="text/markdown"> yet: /about-us.md
+				    is not generated because the About copy still lives inline in
+				    this component rather than in a data module. See AGENTS.md. */}
+				<meta property="og:title" content={PAGE_TITLE} />
+				<meta property="og:description" content={PAGE_DESCRIPTION} />
+				<meta property="og:url" content={`${SITE_URL}/about-us`} />
+				<meta property="og:image" content={SITE_OG_IMAGE} />
+				<meta name="twitter:title" content={PAGE_TITLE} />
+				<meta name="twitter:description" content={PAGE_DESCRIPTION} />
+				<meta name="twitter:image" content={SITE_OG_IMAGE} />
+				{jsonLdSchemas.map((schema, i) => (
+					<script key={i} type="application/ld+json">
+						{JSON.stringify(schema)}
+					</script>
+				))}
+			</Helmet>
+
 			<main className="pt-20">
 				{/* Hero */}
 				<section className="relative overflow-hidden bg-eko-navy py-24 lg:py-32">
@@ -123,7 +160,7 @@ const AboutPage = () => {
 						className="container mx-auto px-6 text-center max-w-3xl relative z-10"
 					>
 						<span className="inline-block px-4 py-1.5 rounded-full bg-eko-gold/20 text-eko-gold text-sm font-semibold mb-6">
-							About Eko
+							About Eko &middot; Since {COMPANY_FOUNDED_YEAR}
 						</span>
 						<h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
 							Building the infrastructure for community-powered finance
@@ -147,7 +184,7 @@ const AboutPage = () => {
 				<section className="py-16 lg:py-20">
 					<div className="container mx-auto px-6 max-w-3xl flex flex-col gap-5">
 						{[
-							"Across Bharat, millions of people prefer accessing financial services through someone they trust — their neighbourhood shopkeeper, a local entrepreneur, or a community agent who understands their needs and aspirations. Eko enables this ecosystem.",
+							`Eko has been building India's financial infrastructure since ${COMPANY_FOUNDED_YEAR}. Across Bharat, millions of people prefer accessing financial services through someone they trust — their neighbourhood shopkeeper, a local entrepreneur, or a community agent who understands their needs and aspirations. Eko enables this ecosystem.`,
 							"Through a combination of distribution infrastructure, fintech APIs, and simple digital tools, we connect institutions with a vast network of micro-entrepreneurs — many of them women — who bring financial services closer to their communities.",
 							"Today, Eko powers a nationwide network serving tens of millions of customers across thousands of towns and villages, enabling banking services, digital transactions, and financial products through entrepreneurs deeply embedded in local markets.",
 						].map((text, i) => (

@@ -15,7 +15,7 @@ the build files, or the per-platform deploy files.
 
 | File | Configures | Edit when |
 |------|-----------|-----------|
-| [`src/lib/config/site.ts`](../src/lib/config/site.ts) | Canonical `SITE_URL`, SEO defaults (`SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_OG_IMAGE`), social links, sales mobile, signup path, `API_DEFAULT_VERSION`, parent-site links | Domain change, default SEO/social copy, default API version |
+| [`src/lib/config/site.ts`](../src/lib/config/site.ts) | Canonical `SITE_URL`, SEO defaults (`SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_OG_IMAGE`), social links, sales mobile, signup path, `API_DEFAULT_VERSION`, parent-site links, `COMPANY_FOUNDED_YEAR` | Domain change, default SEO/social copy, default API version, founding-year trust signal |
 | [`src/lib/config/zoho.ts`](../src/lib/config/zoho.ts) | Zoho SalesIQ / chat + CRM integration constants | Chat widget or lead-routing changes |
 
 Canonical links, AI-hint text, and JSON-LD all read `SITE_URL` from here — change it in one place.

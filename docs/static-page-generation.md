@@ -201,6 +201,13 @@ Every pre-rendered page includes:
   - Industry pages: BreadcrumbList + FAQPage
   - Solution pages: BreadcrumbList + FAQPage + Product
   - Product pages: SoftwareApplication + FAQPage (where data is defined)
+  - About Us: AboutPage + BreadcrumbList (`generateAboutJsonLd`)
+
+Every `@graph` opens with the shared `Organization` node built by
+`organizationNode()` in `src/lib/utils/json-ld.ts`. EPS is the publishing
+entity; Eko Bharat Ventures is its `parentOrganization`, and
+`COMPANY_FOUNDED_YEAR` is asserted there as `foundingDate` — it is the parent
+company's track record, not EPS's, so it must not be moved onto the EPS node.
 
 All canonical URLs and JSON-LD domain references use the `SITE_URL` constant
 from `src/lib/config/site.ts`. Updating that constant propagates everywhere.
