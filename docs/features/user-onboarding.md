@@ -793,6 +793,49 @@ skipped entirely, and its API label goes with it.
 Renaming a step is therefore a one-line change in `steps.ts` — no upstream
 ticket, no deploy coordination.
 
+### When a step wants more than a card
+
+Two optional fields on `StepDefinition` let a step opt out of the default chrome.
+Both default to off, so a step that sets neither renders exactly as it always has.
+
+- **`ownsHeading`** — the wizard omits its `CardHeader` and the step writes its own
+  heading. The PAN step uses this: the rail still says "PAN Details" (wayfinding
+  needs to be short), while the card says "First, your PAN" in the step's own
+  voice. The step heading is an `<h2>` under the page's `<h1>`; steps that don't
+  opt in get the `<h3>` `CardTitle` renders. Tests must query the right level.
+- **`Aside`** — a component rendered as a sibling of the card, not inside it, for
+  supporting content the form itself shouldn't carry. It is the third DOM child of
+  the grid, so it stacks last on narrow screens with no `order-*` juggling.
+
+**The third column waits for 1100px, not `lg`.** At plain `lg` (1024) the rail
+(200px), a 20rem aside and two 2.5rem gaps would leave the form under 300px of
+inner width — narrower than it is with no aside at all. Between `lg` and 1100 the
+aside sits below the card in the content column (`lg:col-start-2`).
+
+1100px is the `wide` breakpoint, declared as `--breakpoint-wide: 68.75rem` in
+`src/index.css`. Both of those details were arrived at the hard way, and the
+comment there records why:
+
+- **Not `min-[1100px]:`.** Tailwind emits arbitrary media variants *before* the
+  named breakpoint scale, so an inline `min-[1100px]:grid-cols-…` loses the
+  cascade to `lg:grid-cols-…` at every width where both match — the layout just
+  silently stays two-column.
+- **Not `1100px`.** The scale is sorted by raw value, and px cannot be compared
+  against rem, so even a *named* px breakpoint sorts ahead of `lg` (64rem) and
+  fails the same way. Match the unit the scale uses.
+
+Both failures are invisible in tests (jsdom has no layout) and in the class
+names. If a breakpoint ever appears not to apply, check the media-query order in
+the built CSS before assuming the classes are wrong.
+
+**The wizard clamps its own width, and owns the page heading to do it.** Only the
+wizard knows the resolved step, so only it knows whether the current step needs
+the wider measure — `max-w-6xl` with an aside, `max-w-3xl` without, applied by the
+`Shell` wrapper that every return branch goes through, including the loading,
+fatal, completion and unsupported-step cards. `SignupPage.tsx` just sets the outer
+bound. The `<h1>` moved into `Shell` for the same reason: left on the page it
+would sit at the edge of a wide container while a narrow step stayed centred.
+
 A new entry also appears in the step rail automatically: `StepRail.tsx` renders
 whatever `resolveSteps()` returns, so there is no second list to update. It
 must stay that way — never hardcode a step count or order in the rail.
@@ -831,6 +874,28 @@ enters their own PAN. Left alone that surfaces weeks later as a KYC rejection, s
 **Continue stays enabled** — an individual or sole proprietor entering a personal
 PAN is doing the right thing, and the step's own copy says so. The warning is
 advice, not a gate.
+
+**The status line under the field has three states**, driven by `panCategory.ts`
+and swapped in place inside one `role="status"` element:
+
+| Condition | Reads |
+|---|---|
+| valid format | "Format looks right — {phrase}." with a green check |
+| exactly 10 characters, invalid | "That doesn't look like a valid PAN." |
+| anything else | "Encrypted, and used only for your KYC check." |
+
+The error keys on the full `PAN_LENGTH`, and `normalizePan` caps input there, so it
+cannot fire mid-typing — telling someone their half-typed PAN is wrong is nagging.
+
+`panCategoryPhrase` needs its fallback: `PAN_PATTERN` accepts **any** letter in the
+4th position, not only the ten the department allocates, so `ABCDE1234F` is
+format-valid with a meaningless category `D`. Those read "a valid PAN" rather than
+inventing a holder type, and they must never be rejected.
+
+The line is `role="status"`, deliberately **not** `role="alert"`. The server error
+below it is this form's alert; a second one would fight it for attention and break
+every singular `getByRole("alert")` query in the suite. `PanStep.test.tsx` carries
+a regression guard for exactly that.
 
 **Input is normalised on every change.** `normalizePan` strips everything that is
 not a letter or a digit, uppercases, then caps at 10 — in that order. It runs from

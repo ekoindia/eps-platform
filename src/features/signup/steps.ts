@@ -1,4 +1,5 @@
 import { BusinessStep } from "./BusinessStep";
+import { PanAside } from "./PanAside";
 import { PanStep } from "./PanStep";
 import { PinStep } from "./PinStep";
 import type { StepDefinition } from "./resolveSteps";
@@ -21,6 +22,10 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		label: "PAN Details",
 		Component: PanStep,
 		submit: (client, v) => client.submitPan(v.pan),
+		// The rail keeps the short wayfinding label; the card says "First, your
+		// PAN" in the step's own words.
+		Aside: PanAside,
+		ownsHeading: true,
 	},
 	{
 		role: 13100,

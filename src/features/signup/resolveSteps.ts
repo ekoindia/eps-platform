@@ -47,6 +47,18 @@ export interface StepDefinition {
 	Component: ComponentType<StepProps>;
 	/** Submits this step's values and returns refreshed signup state. */
 	submit: StepSubmit;
+	/**
+	 * Supporting content rendered beside the step's card, stacking below it on
+	 * narrow screens. Opt-in: a step without one renders exactly as before, at
+	 * the wizard's normal width.
+	 */
+	Aside?: ComponentType;
+	/**
+	 * When true the step renders its own heading and the wizard omits its card
+	 * header. Independent of `Aside` — a step may want either without the other.
+	 * The rail still shows `label` regardless, since that is wayfinding.
+	 */
+	ownsHeading?: boolean;
 }
 
 /** Status of a step in the onboarding flow. "complete" = already finished or no actionable step. "current" = user is here now. "pending" = not yet reached. */
@@ -66,6 +78,10 @@ export interface ResolvedStep {
 	Component: ComponentType<StepProps>;
 	/** Submits this step's values and returns refreshed signup state. */
 	submit: StepSubmit;
+	/** Supporting content beside the card; see {@link StepDefinition.Aside}. */
+	Aside?: ComponentType;
+	/** Step renders its own heading; see {@link StepDefinition.ownsHeading}. */
+	ownsHeading?: boolean;
 }
 
 /**
@@ -129,6 +145,8 @@ export function resolveSteps(
 							: "pending",
 			Component: def.Component,
 			submit: def.submit,
+			Aside: def.Aside,
+			ownsHeading: def.ownsHeading,
 		};
 	});
 }

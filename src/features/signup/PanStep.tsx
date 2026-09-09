@@ -2,10 +2,23 @@ import { Callout } from "@/components/docs/Callout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock } from "lucide-react";
+import { CheckCircle2, Lock, XCircle } from "lucide-react";
 import { useState } from "react";
-import { isPersonalPan, normalizePan, PAN_PATTERN } from "./panCategory";
+import {
+	isPersonalPan,
+	normalizePan,
+	PAN_LENGTH,
+	PAN_PATTERN,
+	panCategory,
+	panCategoryPhrase,
+} from "./panCategory";
 import type { StepProps } from "./resolveSteps";
+
+/** Who should enter which PAN. Two lines each, so the row stays scannable. */
+const WHOSE_PAN: readonly { who: string; which: string }[] = [
+	{ who: "Company / LLP / partnership", which: "The entity's PAN" },
+	{ who: "Individual / sole proprietor", which: "Your personal PAN" },
+];
 
 /**
  * Collects and submits the user's PAN. No photo upload — the number alone is
@@ -16,6 +29,10 @@ import type { StepProps } from "./resolveSteps";
 export function PanStep({ onSubmit, busy, error }: StepProps) {
 	const [pan, setPan] = useState("");
 	const isValid = PAN_PATTERN.test(pan);
+	// Only a COMPLETE entry can be wrong. `normalizePan` caps at PAN_LENGTH, so
+	// this cannot fire while the user is still typing — which is the point:
+	// telling someone their half-typed PAN is invalid is just nagging.
+	const isMalformed = pan.length === PAN_LENGTH && !isValid;
 
 	return (
 		<form
@@ -25,16 +42,14 @@ export function PanStep({ onSubmit, busy, error }: StepProps) {
 				if (isValid && !busy) void onSubmit({ pan });
 			}}
 		>
-			<ul className="text-muted-foreground mb-2 list-disc pl-5 text-xs">
-				<li>
-					If you represent a business (Pvt. Ltd., LLP, Partnership, etc.), enter
-					your company's registered PAN number.
-				</li>
-				<li>
-					If you are an individual or a Sole Proprietor, enter your personal PAN
-					number.
-				</li>
-			</ul>
+			<div className="flex flex-col gap-1.5">
+				<h2 className="text-2xl font-semibold tracking-tight">
+					First, your PAN
+				</h2>
+				<p className="text-muted-foreground">
+					Enter the PAN of the business or the individual signing up.
+				</p>
+			</div>
 
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="pan">PAN</Label>
@@ -45,15 +60,49 @@ export function PanStep({ onSubmit, busy, error }: StepProps) {
 					autoComplete="off"
 					autoCapitalize="characters"
 					placeholder="ABCDE1234F"
-					className="font-mono tracking-widest uppercase"
+					aria-describedby="pan-status"
+					aria-invalid={isMalformed || undefined}
+					// `md:text-lg` is not redundant: the Input base sets `md:text-sm`,
+					// and a responsive utility survives the class merge, so a bare
+					// `text-lg` would be overridden from the `md` breakpoint up.
+					className="h-12 font-mono text-lg tracking-widest uppercase md:text-lg"
 					// No `maxLength`: it truncates before this handler runs, so a
 					// pasted PAN with spaces would lose its tail. `normalizePan` caps
 					// the length after stripping instead.
 					onChange={(e) => setPan(normalizePan(e.target.value))}
 				/>
-				<p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-					<Lock className="h-3.5 w-3.5 shrink-0" />
-					We use your PAN to verify your identity, as required by regulation.
+				{/* One line, three states. `role="status"`, not `alert`: the server
+				    error below is this form's alert, and a second one would both
+				    fight it for attention and break every singular
+				    `getByRole("alert")` query in the suite. */}
+				<p
+					id="pan-status"
+					role="status"
+					aria-live="polite"
+					className={`flex items-center gap-1.5 text-sm ${
+						isValid
+							? "text-eko-success"
+							: isMalformed
+								? "text-destructive"
+								: "text-muted-foreground"
+					}`}
+				>
+					{isValid ? (
+						<>
+							<CheckCircle2 className="h-4 w-4 shrink-0" />
+							Format looks right — {panCategoryPhrase(panCategory(pan))}.
+						</>
+					) : isMalformed ? (
+						<>
+							<XCircle className="h-4 w-4 shrink-0" />
+							That doesn't look like a valid PAN.
+						</>
+					) : (
+						<>
+							<Lock className="h-3.5 w-3.5 shrink-0" />
+							Encrypted, and used only for your KYC check.
+						</>
+					)}
 				</p>
 			</div>
 
@@ -75,15 +124,34 @@ export function PanStep({ onSubmit, busy, error }: StepProps) {
 				</Callout>
 			)}
 
+			<hr className="border-border" />
+
+			<div className="grid gap-4 sm:grid-cols-2 text-xs mb-4 mt-[-2px] text-muted-foreground">
+				{WHOSE_PAN.map(({ who, which }) => (
+					<div key={who} className="flex flex-col gap-1">
+						<div className="font-semibold">{who}</div>
+						<div>{which}</div>
+					</div>
+				))}
+			</div>
+
 			{error && (
 				<p role="alert" className="text-sm text-destructive">
 					{error}
 				</p>
 			)}
 
-			<Button type="submit" disabled={!isValid || busy}>
-				{busy ? "Verifying…" : "Continue"}
-			</Button>
+			<div className="flex flex-col gap-2">
+				<Button type="submit" className="w-full" disabled={!isValid || busy}>
+					{busy ? "Verifying…" : "Continue"}
+				</Button>
+				{/* Deliberately not "until step 3": the step list comes from the
+				    server and the PIN step is absent for some tenants, so no fixed
+				    number is true for every partner. */}
+				<p className="text-center text-[0.7em] text-muted-foreground">
+					Nothing is charged and no agreement is signed yet.
+				</p>
+			</div>
 		</form>
 	);
 }

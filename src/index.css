@@ -12,6 +12,18 @@
 	   utilities resolve the runtime CSS vars at use-site — required for the
 	   docs-local `.dark` subtree (and any future dark mode) to actually switch.
 	   Without it, Tailwind resolves these to the :root value at build time. */
+	/* An extra breakpoint between `lg` (64rem) and `xl` (80rem), for layouts that
+	   gain a column before 80rem. 68.75rem is 1100px at the default root size.
+	   Two things here are load-bearing, both verified against the built CSS:
+	   1. It is a named breakpoint, not an inline `min-[1100px]:` variant —
+	      Tailwind emits arbitrary media variants BEFORE the named scale, so
+	      `min-[1100px]:` loses the cascade to `lg` at every width where both
+	      match, silently keeping the smaller layout.
+	   2. It is in `rem`, not `px` — the scale is sorted by raw value and px
+	      cannot be compared against rem, so a `1100px` breakpoint also sorts
+	      ahead of `lg` (64rem) and loses the same way. Match the unit. */
+	--breakpoint-wide: 68.75rem;
+
 	/* Brand colors — exposed as utilities (bg-eko-gold etc.) */
 	--color-eko-gold: hsl(42 96% 54%);
 	--color-eko-gold-hover: hsl(42 96% 48%);

@@ -48,6 +48,40 @@ const CATEGORY_CANDIDATES: Record<
 };
 
 /**
+ * How each category reads in the success line under the field, article included.
+ *
+ * Separate from {@link PAN_CATEGORY_LABELS}, which names the legal type for
+ * prose; these are written to slot into "Format looks right — ___."
+ */
+const PAN_CATEGORY_PHRASES: Record<string, string> = {
+	P: "an individual's PAN",
+	C: "a company PAN",
+	H: "a Hindu Undivided Family PAN",
+	F: "a partnership or LLP PAN",
+	A: "an association-of-persons PAN",
+	T: "a trust PAN",
+	B: "a body-of-individuals PAN",
+	L: "a local-authority PAN",
+	J: "an artificial-judicial-person PAN",
+	G: "a government-agency PAN",
+};
+
+/**
+ * Names the holder type for the success line.
+ *
+ * PAN_PATTERN accepts ANY letter in the 4th position, not just the ten the
+ * Income Tax Department allocates — "ABCDE1234F" is a well-formed PAN whose
+ * category "D" means nothing. Those are format-valid and must not be rejected,
+ * so they fall back to a phrase that claims nothing about the holder.
+ *
+ * @param category - A PAN category letter, or null when unknown.
+ * @returns A phrase for "Format looks right — ___."
+ */
+export function panCategoryPhrase(category: string | null): string {
+	return (category && PAN_CATEGORY_PHRASES[category]) ?? "a valid PAN";
+}
+
+/**
  * Cleans raw input into a PAN candidate: drops everything that is not a letter
  * or a digit, uppercases, and caps the length.
  *

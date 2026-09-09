@@ -7,6 +7,7 @@ import {
 	orderCompanyTypes,
 	PAN_CATEGORY_LABELS,
 	panCategory,
+	panCategoryPhrase,
 } from "./panCategory";
 
 /** Builds a well-formed PAN carrying `letter` in the 4th position. */
@@ -56,6 +57,26 @@ describe("panCategory", () => {
 		expect(panCategory("ABCPE1234")).toBeNull();
 		expect(panCategory("abcpe1234f")).toBeNull(); // lowercase never reaches us
 		expect(panCategory("ABCPE12345")).toBeNull(); // last char must be a letter
+	});
+});
+
+describe("panCategoryPhrase", () => {
+	it("names every real category", () => {
+		for (const letter of Object.keys(PAN_CATEGORY_LABELS)) {
+			expect(panCategoryPhrase(letter)).toBeTruthy();
+		}
+		expect(panCategoryPhrase("C")).toBe("a company PAN");
+		expect(panCategoryPhrase("P")).toBe("an individual's PAN");
+	});
+
+	it("falls back without claiming a holder type for an unallocated letter", () => {
+		// PAN_PATTERN accepts ANY letter in the 4th position, not just the ten the
+		// department allocates — "ABCDE1234F" is format-valid with category "D".
+		// Those must still read as success, just without inventing a holder type.
+		expect(panCategory("ABCDE1234F")).toBe("D");
+		expect(panCategoryPhrase("D")).toBe("a valid PAN");
+		expect(panCategoryPhrase("Z")).toBe("a valid PAN");
+		expect(panCategoryPhrase(null)).toBe("a valid PAN");
 	});
 });
 

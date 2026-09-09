@@ -57,6 +57,17 @@ function typePin(name: RegExp, value: string) {
 const findStepHeading = (name: string) =>
 	screen.findByRole("heading", { name, level: 3 });
 
+/**
+ * Finds the PAN step's heading.
+ *
+ * The PAN step opts into `ownsHeading`, so it writes its own copy in its own
+ * words at level 2 instead of taking the wizard's CardTitle. The rail still
+ * says "PAN Details" — the two names coexist by design, which is why this is a
+ * separate helper rather than a wider `findStepHeading`.
+ */
+const findPanHeading = () =>
+	screen.findByRole("heading", { name: "First, your PAN", level: 2 });
+
 const panPending: SignupState = {
 	mobile: "9990000001",
 	status: "in_progress",
@@ -106,7 +117,7 @@ describe("SignupWizard", () => {
 			currentRole: null,
 		});
 		await waitFor(() => expect(signupClient.createProfile).toHaveBeenCalled());
-		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
+		expect(await findPanHeading()).toBeInTheDocument();
 	});
 
 	// Regression guard: the mount effect used to pair a `started` ref with a
@@ -130,14 +141,14 @@ describe("SignupWizard", () => {
 				<SignupWizard />
 			</StrictMode>,
 		);
-		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
+		expect(await findPanHeading()).toBeInTheDocument();
 		expect(signupClient.createProfile).toHaveBeenCalledTimes(1);
 	});
 
 	it("renders the current step and its progress", async () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		render(<SignupWizard />);
-		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
+		expect(await findPanHeading()).toBeInTheDocument();
 		expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
 		expect(signupClient.createProfile).not.toHaveBeenCalled();
 	});
@@ -192,7 +203,7 @@ describe("SignupWizard", () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		vi.mocked(signupClient.submitPan).mockResolvedValue(pinPending);
 		render(<SignupWizard />);
-		await findStepHeading("PAN Details");
+		await findPanHeading();
 		fireEvent.change(screen.getByLabelText(/pan/i), {
 			target: { value: "ABCDE1234F" },
 		});
@@ -229,7 +240,7 @@ describe("SignupWizard", () => {
 			await vi.advanceTimersByTimeAsync(0);
 			expect(screen.getByRole("alert")).toHaveTextContent("PAN already in use");
 			expect(
-				screen.getByRole("heading", { name: "PAN Details", level: 3 }),
+				screen.getByRole("heading", { name: "First, your PAN", level: 2 }),
 			).toBeInTheDocument();
 		} finally {
 			vi.useRealTimers();
@@ -296,5 +307,32 @@ describe("SignupWizard", () => {
 
 		await findStepHeading("Business Details");
 		expect(screen.queryByText("Company Details")).not.toBeInTheDocument();
+	});
+
+	it("renders the PAN step's aside, while the rail keeps the short label", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(panPending);
+		render(<SignupWizard />);
+
+		await findPanHeading();
+		const aside = screen.getByRole("complementary", { name: /why we ask/i });
+		expect(within(aside).getByText(/why we ask/i)).toBeInTheDocument();
+		expect(within(aside).getByText("Trusted since 2007")).toBeInTheDocument();
+
+		// The card's copy and the rail's wayfinding label are different strings
+		// on purpose — this is the assertion that pins that down.
+		const rail = screen.getByRole("navigation", { name: /signup progress/i });
+		expect(within(rail).getByText(/PAN Details, current step/)).toBeInTheDocument();
+	});
+
+	it("renders no aside for a step that does not opt in", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(pinPending);
+		render(<SignupWizard />);
+
+		await findStepHeading("Set Secret PIN");
+		// The slot is opt-in: every other step must be untouched by it.
+		expect(screen.queryByRole("complementary")).toBeNull();
+		expect(
+			screen.getByRole("heading", { name: "Set Secret PIN", level: 3 }),
+		).toBeInTheDocument();
 	});
 });
