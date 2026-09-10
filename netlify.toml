@@ -70,6 +70,19 @@
   to = "/__spa-fallback.html"
   status = 200
 
+# Sample partner agreement: noindex, but deliberately still fetchable (no
+# robots.txt Disallow) so an AI agent handed the URL can read and explain it.
+# The header also covers the .md twin, which carries no HTML meta of its own.
+[[headers]]
+  for = "/samples/partner-agreement"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/samples/partner-agreement.md"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
 # Auth-gated internal routes must never be indexed. public/robots.txt already
 # Disallows them; these headers cover bots that ignore robots.txt, which would
 # otherwise get a 200 SPA shell carrying no robots meta until JS runs.

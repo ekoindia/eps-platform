@@ -13,10 +13,12 @@ import remarkGfm from "remark-gfm";
  * would compile the raw endpoint-description files under
  * `content/docs/endpoints/` into components and break their `?raw` import (see
  * `endpoint-descriptions.ts`). Those files are pure markdown loaded as strings,
- * never as MDX, so we keep MDX away from that directory.
+ * never as MDX, so we keep MDX away from those directories. Same for
+ * `content/legal/` (the sample partner agreement), read `?raw` by its page and
+ * copied verbatim to its `.md` twin.
  */
 export const mdxOptions: Options = {
-	exclude: ["**/content/docs/endpoints/**"],
+	exclude: ["**/content/docs/endpoints/**", "**/content/legal/**"],
 	// Always compile against the stable automatic JSX runtime (`jsx`/`jsxs`),
 	// never the dev runtime (`jsxDEV`). The prerender's inner SSR server runs in
 	// Vite "dev" mode but has no `react/jsx-dev-runtime` wired, so dev-runtime

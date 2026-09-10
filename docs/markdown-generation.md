@@ -20,6 +20,18 @@ At build time, the site generates Markdown equivalents for:
 - Site index: `/index.md`
 - LLM discovery index: `/llms.txt`
 - Full-content alias: `/llms-full.txt`
+- Sample partner agreement: `/samples/partner-agreement.md`
+
+The partner agreement is the one twin that is **authored, not generated**:
+`src/content/legal/partner-agreement.md` is the single source of truth, imported
+`?raw` by `src/pages/PartnerAgreementSamplePage.tsx` and copied byte-for-byte to
+`dist/samples/partner-agreement.md`, so the page and the twin cannot drift. Its
+directory is listed in `mdxOptions.exclude` (`ssg/mdx-options.ts`) — without
+that, `@mdx-js/rollup` would compile the `.md` into a component and break the
+`?raw` import. The page and the twin are both served `noindex`
+(HTML meta + `X-Robots-Tag` in `vercel.json` / `netlify.toml`) and the route is
+filtered out of the sitemap by `NOINDEX_ROUTES` in `ssg/sitemap.ts`; it stays
+fetchable on purpose so an AI agent handed the URL can read and explain it.
 
 A sibling plugin (`vite-plugin-generate-xlsx.ts`) generates the offline Excel
 pricing calculator at `/eps-pricing-calculator.xlsx` from the same pricing

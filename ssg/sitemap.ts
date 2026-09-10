@@ -24,6 +24,13 @@ const MONTHLY_CHANGEFREQ_ROUTES = new Set([
 	"/signup",
 ]);
 
+/**
+ * Prerendered but served with `<meta name="robots" content="noindex">`, so they
+ * must not be advertised in the sitemap. Kept fetchable on purpose — AI agents
+ * handed the URL should still be able to read the page.
+ */
+const NOINDEX_ROUTES = new Set(["/samples/partner-agreement"]);
+
 function priority(route: string): string {
 	if (route === "/") return "1.0";
 	if (LOW_PRIORITY_ROUTES.has(route)) return "0.5";
@@ -42,7 +49,9 @@ export async function generateSitemap(
 ): Promise<void> {
 	const lastmod = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-	const urls = routes
+	const indexable = routes.filter((route) => !NOINDEX_ROUTES.has(route));
+
+	const urls = indexable
 		.map(
 			(route) =>
 				`  <url>\n    <loc>${SITE_URL}${route === "/" ? "" : route}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq(route)}</changefreq>\n    <priority>${priority(route)}</priority>\n  </url>`,
@@ -54,5 +63,5 @@ export async function generateSitemap(
 	await fs.writeFile(path.join(outDir, "sitemap.xml"), xml, "utf-8");
 
 	// eslint-disable-next-line no-console
-	console.log(`[ssg] Wrote sitemap.xml (${routes.length} URLs)`);
+	console.log(`[ssg] Wrote sitemap.xml (${indexable.length} URLs)`);
 }
