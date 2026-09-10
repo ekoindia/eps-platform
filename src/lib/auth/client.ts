@@ -145,6 +145,21 @@ export interface SignupState {
 	name?: string;
 	/** Profile email, when an upstream record carries one. */
 	email?: string;
+	/**
+	 * The verified PAN, once upstream has back-filled it on the profile.
+	 *
+	 * Best-effort, and absent until the PAN step has run — the Business step
+	 * uses it only to name the source of its prefilled details and renders
+	 * without it when it is missing. Never treat it as "the PAN step is done";
+	 * `currentRole` is the authority on progress.
+	 */
+	pan?: string;
+}
+
+/** City and state for a PIN code; either is null when upstream did not name it. */
+export interface PincodeView {
+	city: string | null;
+	state: string | null;
 }
 
 /** The e-sign URL details for the Sign Agreement step, from the backend. */
@@ -775,6 +790,21 @@ export const signupClient = {
 			method: "POST",
 			body: JSON.stringify(details),
 		}) as Promise<SignupState>,
+	/**
+	 * Resolves a 6-digit PIN code to its city and state.
+	 *
+	 * Takes a `signal` so the Business step can abandon a lookup the moment the
+	 * user edits the code again — the same convention as `transactionsClient
+	 * .search`.
+	 */
+	lookupPincode: (
+		pincode: string,
+		signal?: AbortSignal,
+	): Promise<PincodeView> =>
+		request(`/signup/pincode?pincode=${encodeURIComponent(pincode)}`, {
+			method: "GET",
+			signal,
+		}) as Promise<PincodeView>,
 	getAgreementUrl: (): Promise<SignUrlView> =>
 		request("/signup/agreement/url", { method: "GET" }) as Promise<SignUrlView>,
 	submitAgreement: (documentId: string): Promise<SignupState> =>

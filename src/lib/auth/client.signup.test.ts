@@ -85,3 +85,24 @@ describe("signupClient", () => {
 		}
 	});
 });
+
+describe("signupClient.lookupPincode", () => {
+	it("GETs /signup/pincode with the code in the query string", async () => {
+		const spy = stubFetch({ city: "Bangalore", state: "Karnataka" });
+		expect(await signupClient.lookupPincode("560001")).toEqual({
+			city: "Bangalore",
+			state: "Karnataka",
+		});
+		const [url, init] = spy.mock.calls[0];
+		expect(String(url)).toContain("/signup/pincode?pincode=560001");
+		expect(init.method).toBe("GET");
+		expect(init.credentials).toBe("include");
+	});
+
+	it("forwards an abort signal so the caller can abandon the lookup", async () => {
+		const spy = stubFetch({ city: null, state: null });
+		const controller = new AbortController();
+		await signupClient.lookupPincode("560001", controller.signal);
+		expect(spy.mock.calls[0][1].signal).toBe(controller.signal);
+	});
+});

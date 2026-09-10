@@ -55,10 +55,14 @@ export function SignupWizard() {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [fatal, setFatal] = useState<string | null>(null);
-	// Holder-type letter from the PAN step, kept so the Business step can
-	// preselect and re-order its Business Type options. Only the letter is held,
-	// never the PAN. A reload clears it and that step simply starts blank.
-	const [panCat, setPanCat] = useState<string | undefined>(undefined);
+	// The PAN this session submitted, kept as a FALLBACK for `state.pan`: the
+	// server forwards the PAN only once upstream back-fills it on the profile,
+	// which is not guaranteed and never survives into a brand-new session. A
+	// reload therefore clears this and leaves the Business step relying on the
+	// server's copy — or, if that is absent too, rendering without a PAN.
+	const [panFromSession, setPanFromSession] = useState<string | undefined>(
+		undefined,
+	);
 
 	// Guards against a second run of the mount effect below (e.g. a
 	// <StrictMode> double-mount). `createProfile()` is a non-idempotent POST
@@ -186,6 +190,10 @@ export function SignupWizard() {
 	// signatures — adding a step touches only the registry and its component.
 	const { Component, submit, Aside, ownsHeading } = current;
 
+	// Server first: it survives reloads and new devices, where the in-session
+	// capture does not. Both can be absent, and steps render without one.
+	const pan = state.pan ?? panFromSession;
+
 	// The rail sits outside the card, so the wizard owns the card rather than the
 	// page: only the wizard knows the resolved steps.
 	return (
@@ -214,7 +222,10 @@ export function SignupWizard() {
 								mobile: state.mobile,
 								name: state.name,
 								email: state.email,
-								panCategory: panCat,
+								pan,
+								// Always derived, never stored beside the PAN: two fields
+								// holding the same fact are two fields that can disagree.
+								panCategory: pan ? (panCategory(pan) ?? undefined) : undefined,
 							}}
 						>
 							<Component
@@ -225,7 +236,7 @@ export function SignupWizard() {
 									// `setState`, so a post-await capture happens to work too —
 									// this way just doesn't depend on that.)
 									if (values.pan) {
-										setPanCat(panCategory(values.pan) ?? undefined);
+										setPanFromSession(values.pan);
 									}
 									return runStep(() => submit(signupClient, values));
 								}}

@@ -159,8 +159,12 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	const secretbox = deps.secretbox ?? passThroughSecretBox;
 	const securityLog = deps.securityLog ?? noopSecurityLogger;
 	const accessLog = deps.accessLog ?? noopAccessLogger;
-	const signup = deps.signup ?? createSignupService({ eko, cfg });
+	// `auth` first: the signup service needs it to resolve the sealed upstream
+	// token behind a session id for its connect-api calls.
 	const auth = deps.auth ?? createEkoAuthProvider(eko);
+	const signup =
+		deps.signup ??
+		createSignupService({ eko, cfg, connect: deps.connect, auth });
 	const app = new Hono<AppEnv>();
 
 	/**

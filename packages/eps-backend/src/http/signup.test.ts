@@ -218,6 +218,8 @@ describe("signup endpoints", () => {
 			"9990000001",
 			"1234",
 			"1234",
+			// The sid authenticates the connect-api call for the substitution keys.
+			"sid-1",
 			undefined,
 		);
 	});
@@ -283,6 +285,64 @@ describe("signup endpoints", () => {
 			message: "Nope",
 			source: "api",
 		});
+	});
+});
+
+describe("GET /signup/pincode", () => {
+	it("returns the city and state for a valid code", async () => {
+		const lookupPincode = vi
+			.fn()
+			.mockResolvedValue({ ok: true, city: "Bangalore", state: "Karnataka" });
+		const app = harness("signup", { lookupPincode });
+		const res = await app.request("/signup/pincode?pincode=560001", withCookie);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			city: "Bangalore",
+			state: "Karnataka",
+		});
+		expect(lookupPincode).toHaveBeenCalledWith(
+			"9990000001",
+			"560001",
+			undefined,
+		);
+	});
+
+	it.each(["56", "5600011", "abcdef", ""])(
+		"rejects %o without calling upstream",
+		async (pincode) => {
+			const lookupPincode = vi.fn();
+			const app = harness("signup", { lookupPincode });
+			const res = await app.request(
+				`/signup/pincode?pincode=${pincode}`,
+				withCookie,
+			);
+			expect(res.status).toBe(400);
+			expect(lookupPincode).not.toHaveBeenCalled();
+		},
+	);
+
+	it("requires a signup session", async () => {
+		const lookupPincode = vi.fn();
+		const app = harness("developer", { lookupPincode });
+		const res = await app.request("/signup/pincode?pincode=560001", withCookie);
+		expect(res.status).toBe(403);
+		expect(lookupPincode).not.toHaveBeenCalled();
+	});
+
+	it("answers 502 when the lookup itself is broken", async () => {
+		// A malformed upstream reply is our integration failing, not bad input —
+		// it has to be visible as a 5xx rather than blend into the 400s.
+		const app = harness("signup", {
+			lookupPincode: vi.fn().mockResolvedValue({
+				ok: false,
+				reason: "malformed",
+				message: "no dependent_params",
+			}),
+		});
+		const res = await app.request("/signup/pincode?pincode=560001", withCookie);
+		expect(res.status).toBe(502);
+		const body = (await res.json()) as { error: { code: string } };
+		expect(body.error.code).toBe("PINCODE_LOOKUP_FAILED");
 	});
 });
 

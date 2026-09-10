@@ -1,3 +1,4 @@
+import { BusinessAside } from "./BusinessAside";
 import { BusinessStep } from "./BusinessStep";
 import { PanAside } from "./PanAside";
 import { PanStep } from "./PanStep";
@@ -33,6 +34,10 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		label: "Business Details",
 		Component: BusinessStep,
 		submit: (client, v) => client.submitBusiness(v),
+		// Same treatment as the PAN step: the rail keeps the short wayfinding
+		// label, the card says "Now, your business details" in its own words.
+		Aside: BusinessAside,
+		ownsHeading: true,
 	},
 	{
 		role: 12600,

@@ -68,6 +68,13 @@ const findStepHeading = (name: string) =>
 const findPanHeading = () =>
 	screen.findByRole("heading", { name: "First, your PAN", level: 2 });
 
+/** The Business step's own heading — it opts into `ownsHeading` too. */
+const findBusinessHeading = () =>
+	screen.findByRole("heading", {
+		name: "Now, your business details",
+		level: 2,
+	});
+
 const panPending: SignupState = {
 	mobile: "9990000001",
 	status: "in_progress",
@@ -272,7 +279,7 @@ describe("SignupWizard", () => {
 		});
 		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-		await findStepHeading("Business Details");
+		await findBusinessHeading();
 		expect(screen.getByLabelText(/business type/i)).toHaveValue("1");
 	});
 
@@ -297,16 +304,68 @@ describe("SignupWizard", () => {
 		});
 		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-		await findStepHeading("Business Details");
+		await findBusinessHeading();
 		expect(screen.getByLabelText(/business type/i)).toHaveValue("1");
 	});
 
-	it("titles the middle step from the registry, ignoring the API's label", async () => {
+	it("rails the middle step from the registry, ignoring the API's label", async () => {
+		// The card owns its heading now, so the registry label survives only in
+		// the rail — that is where upstream's "Company Details" must not appear.
 		vi.mocked(signupClient.state).mockResolvedValue(businessPending);
 		render(<SignupWizard />);
 
-		await findStepHeading("Business Details");
+		await findBusinessHeading();
+		const rail = screen.getByRole("navigation", { name: /signup progress/i });
+		expect(
+			within(rail).getByText(/Business Details, current step/),
+		).toBeInTheDocument();
 		expect(screen.queryByText("Company Details")).not.toBeInTheDocument();
+	});
+
+	it("shows the server's PAN in the Business step", async () => {
+		// Survives a reload, unlike the in-session capture below.
+		vi.mocked(signupClient.state).mockResolvedValue({
+			...businessPending,
+			name: "Umbrella Foundation",
+			pan: "AAATU1234E",
+		});
+		render(<SignupWizard />);
+
+		await findBusinessHeading();
+		expect(
+			screen.getByText(/verified from PAN AAATU1234E/i),
+		).toBeInTheDocument();
+	});
+
+	it("falls back to this session's PAN when the server omits it", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(businessFlow);
+		vi.mocked(signupClient.submitPan).mockResolvedValue({
+			...businessPending,
+			name: "Umbrella Foundation",
+		});
+		render(<SignupWizard />);
+
+		fireEvent.change(await screen.findByLabelText(/pan/i), {
+			target: { value: "AAATU1234E" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await findBusinessHeading();
+		expect(
+			screen.getByText(/verified from PAN AAATU1234E/i),
+		).toBeInTheDocument();
+	});
+
+	it("renders the Business step without a PAN when neither source has one", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue({
+			...businessPending,
+			name: "Umbrella Foundation",
+		});
+		render(<SignupWizard />);
+
+		await findBusinessHeading();
+		expect(screen.getByText("Umbrella Foundation")).toBeInTheDocument();
+		expect(screen.queryByText(/from PAN/i)).toBeNull();
 	});
 
 	it("renders the PAN step's aside, while the rail keeps the short label", async () => {

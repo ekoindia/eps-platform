@@ -32,6 +32,33 @@ const onboardingProfile = {
 	},
 };
 
+/** The same onboarding profile, with extra `user_detail` keys merged in. */
+function withUserDetail(extra: Record<string, unknown>) {
+	return {
+		...onboardingProfile,
+		profile: {
+			...onboardingProfile.profile,
+			userDetail: { ...onboardingProfile.profile.userDetail, ...extra },
+		},
+	};
+}
+
+/**
+ * Builds the connect-api double the PIN step needs, plus an auth provider that
+ * yields a sealed upstream token. Interaction 10005 lives on connect-api, so a
+ * `submitPin` test without these cannot get past the key fetch.
+ */
+function pintwinDeps(fetchPintwinKey = vi.fn()) {
+	return {
+		fetchPintwinKey,
+		connect: { fetchPintwinKey } as never,
+		auth: {
+			name: "connect" as const,
+			getUpstream: vi.fn().mockResolvedValue({ accessToken: "tok-1" }),
+		} as never,
+	};
+}
+
 /** Builds an EkoClient double; only the methods a test needs are provided. */
 function ekoStub(over: Partial<EkoClient>): EkoClient {
 	return {
@@ -41,8 +68,8 @@ function ekoStub(over: Partial<EkoClient>): EkoClient {
 		createPartialAccount: vi.fn(),
 		verifyPan: vi.fn(),
 		submitBusiness: vi.fn(),
+		lookupPincode: vi.fn(),
 		getBooklet: vi.fn(),
-		fetchPintwinKey: vi.fn(),
 		setSecretPin: vi.fn(),
 		...over,
 	} as unknown as EkoClient;
@@ -150,6 +177,113 @@ describe("project surfaces profile name/email", () => {
 		const state = await svc.getState("9990000001");
 		expect(state.name).toBeUndefined();
 		expect(state.email).toBeUndefined();
+	});
+
+	it("forwards the PAN once upstream back-fills pancardnumber", async () => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(
+				withUserDetail({
+					pancardnumber: "aaatu1234e",
+				}),
+			),
+		});
+		const svc = createSignupService({ eko, cfg });
+		// Upper-cased on the way out so the client can render it verbatim.
+		expect((await svc.getState("9990000001")).pan).toBe("AAATU1234E");
+	});
+
+	it("omits the PAN when upstream has not back-filled it", async () => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+		});
+		const svc = createSignupService({ eko, cfg });
+		expect((await svc.getState("9990000001")).pan).toBeUndefined();
+	});
+
+	it.each([
+		["a masked value", "AAATU****E"],
+		["a placeholder", "NA"],
+		["an empty string", "   "],
+		["a non-string", 12345],
+	])("omits the PAN for %s", async (_label, pancardnumber) => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(withUserDetail({ pancardnumber })),
+		});
+		const svc = createSignupService({ eko, cfg });
+		expect((await svc.getState("9990000001")).pan).toBeUndefined();
+	});
+});
+
+describe("lookupPincode", () => {
+	it("runs the lookup against the eko upstream with the caller's identity", async () => {
+		const lookupPincode = vi
+			.fn()
+			.mockResolvedValue({ ok: true, city: "Bangalore", state: "Karnataka" });
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			lookupPincode,
+		});
+		const svc = createSignupService({ eko, cfg });
+		expect(await svc.lookupPincode("9990000001", "560001")).toEqual({
+			ok: true,
+			city: "Bangalore",
+			state: "Karnataka",
+		});
+		expect(lookupPincode).toHaveBeenCalledWith(
+			expect.objectContaining({
+				pincode: "560001",
+				identity: expect.objectContaining({ initiatorId: "9990000001" }),
+			}),
+		);
+	});
+
+	it("reports an unrecognised code as a successful empty answer", async () => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			lookupPincode: vi.fn().mockResolvedValue({
+				ok: false,
+				kind: "miss",
+				message: "Invalid pincode",
+				responseTypeId: 1502,
+			}),
+		});
+		const svc = createSignupService({ eko, cfg });
+		expect(await svc.lookupPincode("9990000001", "999999")).toEqual({
+			ok: true,
+			city: null,
+			state: null,
+		});
+	});
+
+	it("reports a malformed reply as a fault, so a dead lookup cannot hide", async () => {
+		const eko = ekoStub({
+			getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			lookupPincode: vi.fn().mockResolvedValue({
+				ok: false,
+				kind: "malformed",
+				message: "no dependent_params",
+				responseTypeId: 1043,
+			}),
+		});
+		const svc = createSignupService({ eko, cfg });
+		expect(await svc.lookupPincode("9990000001", "560001")).toMatchObject({
+			ok: false,
+			reason: "malformed",
+		});
+	});
+
+	it("does not re-read the profile after the lookup", async () => {
+		const getProfile = vi.fn().mockResolvedValue(onboardingProfile);
+		const eko = ekoStub({
+			getProfile,
+			lookupPincode: vi
+				.fn()
+				.mockResolvedValue({ ok: true, city: "Pune", state: null }),
+		});
+		const svc = createSignupService({ eko, cfg });
+		await svc.lookupPincode("9990000001", "411001");
+		// One call for the identity, none for a refresh — nothing changed upstream.
+		expect(getProfile).toHaveBeenCalledTimes(1);
 	});
 });
 
@@ -262,16 +396,17 @@ describe("submitBusiness", () => {
 });
 
 describe("submitPin", () => {
-	it("fetches a fresh key per PIN and submits both encoded okekeys", async () => {
+	it("fetches a fresh key per PIN from connect-api and submits both encoded okekeys", async () => {
 		const setSecretPin = vi.fn().mockResolvedValue({ ok: true });
-		const fetchPintwinKey = vi
-			.fn()
-			.mockResolvedValueOnce({ pintwinKey: "1974856302", keyId: 39 })
-			.mockResolvedValueOnce({ pintwinKey: "0123456789", keyId: 41 });
+		const { fetchPintwinKey, connect, auth } = pintwinDeps(
+			vi
+				.fn()
+				.mockResolvedValueOnce({ pintwinKey: "1974856302", keyId: 39 })
+				.mockResolvedValueOnce({ pintwinKey: "0123456789", keyId: 41 }),
+		);
 		const svc = createSignupService({
 			eko: ekoStub({
 				setSecretPin,
-				fetchPintwinKey,
 				getBooklet: vi.fn().mockResolvedValue({
 					bookletSerialNumber: "SN123",
 					isPintwinUser: 1,
@@ -279,10 +414,17 @@ describe("submitPin", () => {
 				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
 			}),
 			cfg,
+			connect,
+			auth,
 		});
-		await svc.submitPin("9990000001", "1234", "1234");
+		await svc.submitPin("9990000001", "1234", "1234", "sid-1");
 		// Two independent keys, mirroring Eloka's two Pintwin mounts.
 		expect(fetchPintwinKey).toHaveBeenCalledTimes(2);
+		// Authenticated by the session's sealed upstream token, not an
+		// initiator/user_code pair — 10005 is a connect-api interaction.
+		expect(fetchPintwinKey).toHaveBeenCalledWith("tok-1", "9990000001", {
+			xRealIp: undefined,
+		});
 		expect(setSecretPin).toHaveBeenCalledWith(
 			expect.objectContaining({
 				firstOkekey: "9748|39",
@@ -290,6 +432,49 @@ describe("submitPin", () => {
 				booklet: { bookletSerialNumber: "SN123", isPintwinUser: 1 },
 			}),
 		);
+	});
+
+	it.each([
+		[
+			"this deployment has no connect-api",
+			() => ({ connect: undefined, auth: undefined }),
+		],
+		[
+			"the session has no sid",
+			() => ({ ...pintwinDeps(vi.fn()), sid: undefined }),
+		],
+		[
+			"the sealed upstream session is gone",
+			() => ({
+				connect: { fetchPintwinKey: vi.fn() } as never,
+				auth: {
+					name: "connect" as const,
+					getUpstream: vi.fn().mockResolvedValue(null),
+				} as never,
+			}),
+		],
+	])("refuses the step when %s", async (_label, build) => {
+		// The PIN cannot be set without a substitution key, so this fails the
+		// step outright rather than degrading — unlike the PIN-code lookup.
+		const over = build() as { connect?: never; auth?: never; sid?: string };
+		const setSecretPin = vi.fn();
+		const svc = createSignupService({
+			eko: ekoStub({
+				setSecretPin,
+				getBooklet: vi.fn().mockResolvedValue({
+					bookletSerialNumber: "SN123",
+					isPintwinUser: 1,
+				}),
+				getProfile: vi.fn().mockResolvedValue(onboardingProfile),
+			}),
+			cfg,
+			connect: over.connect,
+			auth: over.auth,
+		});
+		await expect(
+			svc.submitPin("9990000001", "1234", "1234", "sid" in over ? over.sid : "sid-1"),
+		).rejects.toThrow(/secure your PIN/i);
+		expect(setSecretPin).not.toHaveBeenCalled();
 	});
 
 	it("rejects mismatched pins before any upstream call", async () => {

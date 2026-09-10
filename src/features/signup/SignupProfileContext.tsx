@@ -9,11 +9,19 @@ export interface SignupProfile {
 	name?: string;
 	email?: string;
 	/**
-	 * Holder-type letter from the PAN the user just submitted, when this session
-	 * collected it. Only the letter travels, never the PAN — later steps need the
-	 * category, not the number, so there is no reason to carry the PII further.
-	 * Absent after a page reload, since signup state is server-held and the
-	 * server does not return the PAN.
+	 * The verified PAN, from the server's profile when it carries one and
+	 * otherwise from this session's own PAN step.
+	 *
+	 * Displayed by the Business step to name where its prefilled details came
+	 * from. Both sources can be absent at once — a reload past the PAN step,
+	 * with upstream not echoing `pancardnumber` — so every consumer must render
+	 * without it.
+	 */
+	pan?: string;
+	/**
+	 * Holder-type letter of `pan` (its 4th character), derived rather than
+	 * stored so the two can never disagree. Narrows the Business Type options
+	 * and, for the categories that determine one, supplies the answer outright.
 	 */
 	panCategory?: string;
 }
