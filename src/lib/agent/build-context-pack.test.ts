@@ -42,6 +42,12 @@ describe("buildContextPackBody", () => {
 		expect(body).toContain("DMT (Fino) — Send Money");
 		expect(body).toContain("AePS (Fingpay) — Cash Withdrawal");
 	});
+
+	it("marks a conditional recipe step with its condition and skip target", () => {
+		expect(body).toContain(
+			"`aeps-fingpay-cash-withdrawal-otp` — (only if amount > ₹5,000; otherwise skip to step 7)",
+		);
+	});
 });
 
 describe("CONTEXT_PACK_FILES", () => {

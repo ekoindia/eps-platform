@@ -73,21 +73,21 @@ Emitted by `buildFiles()` in `vite-plugin-generate-agent-bundle.ts` to
 (the dev middleware serves every artifact, JSON **and** the packs, not just
 `.json`).
 
-| Artifact | What it is | Built by | Consumed by |
-|---|---|---|---|
-| `agent/eps.json` | The canonical bundle: `meta` + `topics` + `apis` (full detail) + `recipes` | `buildAgentBundle` | Everything downstream; baked into the MCP package |
-| `agent/index.json` | Compact index — all endpoints (no bodies), topic ids, recipe summaries | `buildIndex` | Fast discovery / listing |
-| `recipe.md` + `recipe/<slug>.md` | Human + agent recipe pages: a mermaid `flowchart TD` of the flow, then the numbered steps linking to each endpoint twin | `renderRecipesIndexMarkdown` / `renderRecipeMarkdown` | Linked from `/docs.md`, `/llms.txt`, `/ai.md` |
-| `agent/api/<slug>.json` | One endpoint's full detail (headers, params, sample req/resp, errors) | `buildApi` | Per-endpoint lookups |
-| `agent/topic/<topic>.json` | One topic: `auth`, `errors`, `pricing`, `environments` | `buildTopic` | Topic lookups (e.g. signing rules) |
-| `agent/AGENTS.md` | Canonical lean context pack (open `AGENTS.md` standard) | `CONTEXT_PACK_FILES` | Codex, Gemini CLI, opencode, Windsurf, Cody, Zed, aider, JetBrains AI |
-| `agent/CLAUDE.md` | Same body, wrapped for drop-in as a repo `CLAUDE.md` | `CONTEXT_PACK_FILES` | Claude Code |
-| `agent/.cursorrules` | Same body, Cursor rules header | `CONTEXT_PACK_FILES` | Cursor |
-| `agent/copilot-instructions.md` | Same body, for `.github/copilot-instructions.md` | `CONTEXT_PACK_FILES` | GitHub Copilot |
-| `agent/sdk-surface.json` | Language-neutral SDK surface (endpoints + signing contract) | `buildSdkSurface` | JS SDK + PHP SDK (baked into each) |
-| `agent/fixtures.json` | Sample success + error responses per endpoint | `buildFixtures` | `@ekoindia/eps-mock-server` (baked) |
-| `agent/install-matrix.json` | Per-harness MCP wiring (`mcp.command` and/or `mcp.configFile` + `mcp.configSnippet`) and/or pack file | `buildInstallMatrix` | `/ai` hub page + `/ai.md` |
-| `agent/eps.postman_collection.json` | Postman collection with an HMAC signing pre-request script | `buildPostmanCollection` | Postman import |
+| Artifact                            | What it is                                                                                                              | Built by                                              | Consumed by                                                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
+| `agent/eps.json`                    | The canonical bundle: `meta` + `topics` + `apis` (full detail) + `recipes`                                              | `buildAgentBundle`                                    | Everything downstream; baked into the MCP package                     |
+| `agent/index.json`                  | Compact index — all endpoints (no bodies), topic ids, recipe summaries                                                  | `buildIndex`                                          | Fast discovery / listing                                              |
+| `recipe.md` + `recipe/<slug>.md`    | Human + agent recipe pages: a mermaid `flowchart TD` of the flow, then the numbered steps linking to each endpoint twin | `renderRecipesIndexMarkdown` / `renderRecipeMarkdown` | Linked from `/docs.md`, `/llms.txt`, `/ai.md`                         |
+| `agent/api/<slug>.json`             | One endpoint's full detail (headers, params, sample req/resp, errors)                                                   | `buildApi`                                            | Per-endpoint lookups                                                  |
+| `agent/topic/<topic>.json`          | One topic: `auth`, `errors`, `pricing`, `environments`                                                                  | `buildTopic`                                          | Topic lookups (e.g. signing rules)                                    |
+| `agent/AGENTS.md`                   | Canonical lean context pack (open `AGENTS.md` standard)                                                                 | `CONTEXT_PACK_FILES`                                  | Codex, Gemini CLI, opencode, Windsurf, Cody, Zed, aider, JetBrains AI |
+| `agent/CLAUDE.md`                   | Same body, wrapped for drop-in as a repo `CLAUDE.md`                                                                    | `CONTEXT_PACK_FILES`                                  | Claude Code                                                           |
+| `agent/.cursorrules`                | Same body, Cursor rules header                                                                                          | `CONTEXT_PACK_FILES`                                  | Cursor                                                                |
+| `agent/copilot-instructions.md`     | Same body, for `.github/copilot-instructions.md`                                                                        | `CONTEXT_PACK_FILES`                                  | GitHub Copilot                                                        |
+| `agent/sdk-surface.json`            | Language-neutral SDK surface (endpoints + signing contract)                                                             | `buildSdkSurface`                                     | JS SDK + PHP SDK (baked into each)                                    |
+| `agent/fixtures.json`               | Sample success + error responses per endpoint                                                                           | `buildFixtures`                                       | `@ekoindia/eps-mock-server` (baked)                                   |
+| `agent/install-matrix.json`         | Per-harness MCP wiring (`mcp.command` and/or `mcp.configFile` + `mcp.configSnippet`) and/or pack file                   | `buildInstallMatrix`                                  | `/ai` hub page + `/ai.md`                                             |
+| `agent/eps.postman_collection.json` | Postman collection with an HMAC signing pre-request script                                                              | `buildPostmanCollection`                              | Postman import                                                        |
 
 The four context packs (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`,
 `copilot-instructions.md`) share **one** canonical body
@@ -281,7 +281,7 @@ sitemap entry and the agent bundle all derive from the data. `assertRecipeSlugs`
 runs at build and fails on a duplicate/malformed slug or a step referencing an
 unknown endpoint, so a broken recipe cannot ship.
 
-> **Known data gap.** `RecipeStep.branches` encodes only the *exceptional* jump
+> **Known data gap.** `RecipeStep.branches` encodes only the _exceptional_ jump
 > (e.g. DMT step 1: `463 → onboard sender`). The implied success path — sender
 > found, so skip onboarding — has nowhere to live in the current shape, so
 > neither the stepper nor the mermaid graph draws it. Both render exactly what
@@ -289,15 +289,19 @@ unknown endpoint, so a broken recipe cannot ship.
 > or explicit edges), which would also improve the context packs and MCP, since
 > they read the same field.
 
-> **Second known gap: no conditional step.** A step that applies to only *some*
-> inputs cannot be modelled — every step renders as a mandatory sequential call.
-> Prose in `purpose` does not fix it, because the MCP and context packs read the
-> step list, not the paragraph. Nor can you route around it: a `goto` that jumps
-> *over* a step makes that step unreachable in the graph. This is why
-> `bbps-district-discome` is **not** a step in `bbps-bill-payment` — it applies
-> to operator 190 (UPPCL) only, so it stays a documented endpoint referenced
-> from the recipe `summary` and from the `district_discome` param description.
-> Same fix as above: extend the step shape (e.g. an `appliesWhen` predicate).
+> **Conditional steps (`appliesWhen`).** A step that applies to only _some_
+> inputs sets `appliesWhen` — a human/LLM-readable condition on the request,
+> e.g. `"amount > ₹5,000"` on AePS's Cash Withdrawal OTP step. Prose in
+> `purpose` alone would not do: the MCP and context packs read the step list,
+> not the paragraph. `resolveRecipe` draws the edge into the step as
+> `if <condition>` and adds an `otherwise` edge from the previous step past it;
+> the stepper badges it, the `.md` twin and context packs print
+> `only if … — otherwise skip to step N`, and the MCP returns the field as-is.
+> `assertRecipeSlugs` allows only the unambiguous shape: never on the first or
+> last step, never on two adjacent steps, never after a step that branches,
+> never a branch `goto` target. `bbps-district-discome` (operator 190 / UPPCL
+> only) could now become a conditional step in `bbps-bill-payment`; it is still
+> referenced from the recipe `summary` and the `district_discome` param.
 
 1. Edit `src/lib/data/api-specs.ts` (endpoints) and/or
    `src/lib/data/api-recipes.ts` (recipes), or the shared

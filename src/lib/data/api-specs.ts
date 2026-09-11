@@ -2203,6 +2203,119 @@ const ALL_API_SPECS: ApiSpec[] = [
 		],
 	},
 	{
+		id: "aeps-fingpay-cash-withdrawal-otp",
+		productId: "aeps",
+		name: "Cash Withdrawal OTP",
+		slug: "aeps-fingpay-cash-withdrawal-otp",
+		provider: "AePS – Fingpay",
+		summary:
+			"Generate the transaction OTP required before an AePS cash withdrawal above ₹5,000.",
+		description:
+			"Fingpay requires a fresh, transaction-scoped OTP for every cash withdrawal above **₹5,000**. Call this before Cash Withdrawal only when `amount` is greater than ₹5,000 — for ₹5,000 or less, skip it and call Cash Withdrawal directly.\n\nOn success the customer receives a 6-digit OTP by SMS on their Aadhaar-linked mobile, and the response returns `data.fp_transaction_id`. Send that id to Cash Withdrawal as `txn_otp_request_id`, and put the SMS OTP in the `otp` attribute of the PidOptions used to capture the customer's fingerprint. They are two different values, and Cash Withdrawal needs both. The id belongs to this one withdrawal attempt: generate a new one for every attempt and never reuse it.\n\nNo biometric capture happens in this call — it takes no `piddata`.",
+		relatedLinks: [
+			{
+				label: "Aadhaar Biometric Authentication (RDService) guide",
+				slug: "aadhaar-biometric-rdservice",
+				description:
+					"How to set the `otp` attribute in PidOptions and capture the PID block.",
+			},
+		],
+		relevance: "H",
+		bestFor:
+			"BC agents and CSPs pre-authorising AePS cash withdrawals above ₹5,000",
+		method: "POST",
+		path: "/customer/collection/aeps-fingpay/cash-withdrawal/otp/{customer_id}",
+		docsUrl: "https://developers.eko.in/reference/aeps-fingpay-transaction",
+		extraRequestParams: [
+			{
+				name: "user_code",
+				type: "string",
+				required: true,
+				description:
+					"Unique code of your user/agent/retailer the service is run for. Use `Onboard Agent` API to register your users",
+				example: "10000001",
+			},
+			{
+				name: "customer_id",
+				type: "string",
+				required: true,
+				description: "Customer's registered mobile number.",
+				example: "9000000000",
+			},
+			{
+				name: "bank_code",
+				type: "string",
+				required: false,
+				description:
+					"Short bank code identifying the customer's Aadhaar-linked bank (e.g. `HDFC`, `SBIN`). Obtain from the bank list API. Recommended — send the same value you will use for the withdrawal.",
+				example: "HDFC",
+			},
+			{
+				name: "aadhar",
+				type: "string",
+				required: true,
+				description:
+					'RSA-encrypted, Base64-encoded Aadhaar number of the customer — the same value you send to Cash Withdrawal. Encrypt the 12-digit Aadhaar with the Eko RSA public key using PKCS#1 v1.5 padding (Java\'s default `Cipher.getInstance("RSA")`), then Base64-encode the ciphertext.',
+				example: "BASE64_ENCRYPTED_AADHAAR",
+			},
+			{
+				name: "latlong",
+				type: "string",
+				format: "lat-long",
+				required: true,
+				description:
+					"GPS coordinates of the agent's device in 'latitude,longitude' format.",
+				example: "28.6139,77.2090",
+			},
+			{
+				name: "amount",
+				type: "number",
+				required: true,
+				description:
+					"Withdrawal amount in Indian Rupees (integer) — the same amount you will send to Cash Withdrawal. Only call this API when it is above ₹5,000.",
+				example: 6000,
+			},
+		],
+		responseTypes: [
+			{
+				id: 1459,
+				meaning:
+					"OTP generated and sent to the customer by SMS — send `data.fp_transaction_id` as `txn_otp_request_id` to Cash Withdrawal",
+				next: "aeps-fingpay-cash-withdrawal",
+			},
+		],
+		responseData: [
+			{
+				name: "fp_transaction_id",
+				type: "string",
+				description:
+					"OTP reference id for this one withdrawal attempt. Send it to Cash Withdrawal as `txn_otp_request_id`. It is NOT the OTP — the customer receives that by SMS.",
+				imp: true,
+				example: "FP2609010001234567",
+			},
+		],
+		sampleSuccessResponse: {
+			response_status_id: 0,
+			data: { fp_transaction_id: "FP2609010001234567" },
+			response_type_id: 1459,
+			message:
+				"OTP generated successfully. Use the reference ID for your transaction.",
+			status: 0,
+		},
+		errorScenarios: [
+			{
+				scenario:
+					"OTP generation failed — generic Fingpay failure. There are no OTP-specific error codes yet; `message` carries the gateway's reason",
+				statusCode: 200,
+				example: {
+					response_status_id: 1,
+					message: "<failure description from the Fingpay gateway>",
+					status: 1,
+				},
+			},
+		],
+	},
+	{
 		id: "aeps-fingpay-cash-withdrawal",
 		productId: "aeps",
 		name: "AePS Cash Withdrawal",
@@ -2211,7 +2324,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		summary:
 			"Withdraw cash from any Aadhaar-linked bank account using biometric fingerprint authentication — no card or PIN required.",
 		description:
-			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
+			"Allows a customer to withdraw cash from their bank account at an agent/BC point by providing their Aadhaar number and a live fingerprint scan. The agent's biometric device captures a PID XML blob which is passed verbatim to this API. The customer's Aadhaar is RSA-encrypted before transmission. Requires the agent to have completed AePS Fingpay activation, the one-time eKYC (Send OTP → Verify OTP → Biometric), and the Daily KYC for the current day.\n\n**Above ₹5,000 a transaction OTP is required.** First call Cash Withdrawal OTP, then send its `fp_transaction_id` here as `txn_otp_request_id`, and put the customer's 6-digit SMS OTP in the `otp` attribute of the PidOptions used for the fingerprint capture. For ₹5,000 or less, no OTP step is needed.\n\nTo capture the `piddata` PID block with an RDService-compliant fingerprint scanner, see the [Aadhaar Biometric Authentication guide](/docs/aadhaar-biometric-rdservice).",
 		descriptionFile: "aeps-fingpay-cash-withdrawal.md",
 		relatedLinks: [
 			{
@@ -2274,7 +2387,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "string",
 				required: true,
 				description:
-					"PID data captured from the UIDAI-certified biometric device, as a raw XML string. Must use Data type='X' (XML, not Protobuf). DeviceInfo must include the 'mc' (device certificate) parameter. fType must be 2.",
+					"PID data captured from the UIDAI-certified biometric device, as a raw XML string. Must use Data type='X' (XML, not Protobuf). DeviceInfo must include the 'mc' (device certificate) parameter. fType must be 2. For an `amount` above ₹5,000, set the `otp` attribute of the PidOptions `<Opts>` element to the customer's 6-digit SMS OTP before capture — the OTP itself, not the `fp_transaction_id`.",
 				example:
 					"<?xml version='1.0'?><PidData><Data type='X'>...</Data><DeviceInfo mc='...' /></PidData>",
 			},
@@ -2283,8 +2396,15 @@ const ALL_API_SPECS: ApiSpec[] = [
 				type: "number",
 				required: true,
 				description:
-					"Withdrawal amount in Indian Rupees (integer). Must be greater than 0 for cash withdrawal.",
+					"Withdrawal amount in Indian Rupees (integer). Must be greater than 0 for cash withdrawal. Above ₹5,000, call Cash Withdrawal OTP first and send `txn_otp_request_id`.",
 				example: 1000,
+			},
+			{
+				name: "txn_otp_request_id",
+				type: "string",
+				required: false,
+				description:
+					"Required when `amount` is above ₹5,000: the `fp_transaction_id` returned by Cash Withdrawal OTP for this attempt (e.g. `FP2609010001234567`). Omit for ₹5,000 or less.",
 			},
 		],
 		responseData: [
@@ -2458,6 +2578,13 @@ const ALL_API_SPECS: ApiSpec[] = [
 					"Human-readable transaction remark from the provider (e.g. 'Request Completed').",
 				example: "Request Completed",
 			},
+			{
+				name: "fp_transaction_id",
+				type: "string",
+				description:
+					"Returned only with `response_type_id` 1459 (OTP required — nothing was withdrawn): the OTP reference to send back as `txn_otp_request_id`.",
+				example: "FP2609010001234567",
+			},
 		],
 		sampleSuccessResponse: {
 			response_status_id: 0,
@@ -2549,6 +2676,19 @@ const ALL_API_SPECS: ApiSpec[] = [
 				},
 			},
 			{
+				scenario:
+					"OTP required — `amount` above ₹5,000 sent without `txn_otp_request_id`. NOTHING was withdrawn: an OTP was sent to the customer instead",
+				statusCode: 200,
+				example: {
+					response_status_id: 0,
+					data: { fp_transaction_id: "FP2609010001234567" },
+					response_type_id: 1459,
+					message:
+						"OTP generated successfully. Use the reference ID for your transaction.",
+					status: 0,
+				},
+			},
+			{
 				scenario: "Transaction Pending — awaiting bank confirmation",
 				statusCode: 200,
 				example: {
@@ -2585,11 +2725,20 @@ const ALL_API_SPECS: ApiSpec[] = [
 		],
 		responseTypes: [
 			{ id: 1463, meaning: "Transaction Successful" },
-			{ id: 1464, meaning: "Transaction Fail" },
+			{
+				id: 1464,
+				meaning:
+					"Transaction Fail — above ₹5,000 this also covers an expired, invalid or already-used OTP (there is no separate code). Once the failure is final, generate a fresh OTP and re-capture before retrying",
+			},
 			{
 				id: 1465,
 				meaning: "Transaction Pending — check final status later",
 				next: "transaction-inquiry",
+			},
+			{
+				id: 1459,
+				meaning:
+					"OTP required — `amount` is above ₹5,000 but no `txn_otp_request_id` was sent. Nothing was withdrawn; an OTP was sent to the customer. Retry with `data.fp_transaction_id` as `txn_otp_request_id` and the customer's SMS OTP in the PidOptions `otp` attribute — do not generate another OTP",
 			},
 		],
 	},

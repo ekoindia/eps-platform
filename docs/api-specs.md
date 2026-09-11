@@ -30,13 +30,13 @@ one product (api-products.ts)  ──<  many APIs (api-specs.ts)
 
 ## Files
 
-| File | Responsibility |
-|------|---------------|
-| `src/lib/data/api-specs.ts` | `API_SPECS: ApiSpec[]` (registry), `API_SPECS_MAP`, `getSpecsForProduct(productId)` |
-| `src/lib/data/api-specs-common.ts` | Types (`ApiSpec`, `ResponseField`, `ApiParam`), `COMMON_REQUEST_PARAMS`, `COMMON_RESPONSE_ENVELOPE`, `FINANCIAL_RESPONSE_ENVELOPE`, and resolvers |
-| `src/lib/data/api-auth.ts` | `AUTH_HEADERS`, `API_ENVIRONMENTS` (sandbox/production base URLs), `API_AUTH_INFO` (token-gen notes) |
-| `src/lib/data/api-error-codes.ts` | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES`, `getErrorCodeMeaning()` |
-| `src/lib/data/api-spec-previews.ts` | Adapters that turn specs into product-page previews + docs links |
+| File                                | Responsibility                                                                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/data/api-specs.ts`         | `API_SPECS: ApiSpec[]` (registry), `API_SPECS_MAP`, `getSpecsForProduct(productId)`                                                               |
+| `src/lib/data/api-specs-common.ts`  | Types (`ApiSpec`, `ResponseField`, `ApiParam`), `COMMON_REQUEST_PARAMS`, `COMMON_RESPONSE_ENVELOPE`, `FINANCIAL_RESPONSE_ENVELOPE`, and resolvers |
+| `src/lib/data/api-auth.ts`          | `AUTH_HEADERS`, `API_ENVIRONMENTS` (sandbox/production base URLs), `API_AUTH_INFO` (token-gen notes)                                              |
+| `src/lib/data/api-error-codes.ts`   | `HTTP_STATUS_CODES`, `RESPONSE_STATUS_CODES`, `getErrorCodeMeaning()`                                                                             |
+| `src/lib/data/api-spec-previews.ts` | Adapters that turn specs into product-page previews + docs links                                                                                  |
 
 ## DRY: deltas + resolvers
 
@@ -61,46 +61,46 @@ To reconstruct a full view (for a portal or preview), use the resolvers in
 ```ts
 import { getSpecsForProduct } from "@/lib/data/api-specs";
 import {
-  resolveHeaders,        // AUTH_HEADERS
-  resolveRequestParams,  // method-applicable COMMON_REQUEST_PARAMS (− omitted/overridden) + extraRequestParams
-  buildSampleRequest,    // request body example: override or generated from in:"body" examples
-  resolveResponseFields, // envelope with data = responseData
+	resolveHeaders, // AUTH_HEADERS
+	resolveRequestParams, // method-applicable COMMON_REQUEST_PARAMS (− omitted/overridden) + extraRequestParams
+	buildSampleRequest, // request body example: override or generated from in:"body" examples
+	resolveResponseFields, // envelope with data = responseData
 } from "@/lib/data/api-specs-common";
 
 const spec = getSpecsForProduct("pan")[0];
 const headers = resolveHeaders(spec);
-const params  = resolveRequestParams(spec);
-const fields  = resolveResponseFields(spec);
+const params = resolveRequestParams(spec);
+const fields = resolveResponseFields(spec);
 ```
 
 ## The `ApiSpec` shape
 
 ```ts
 interface ApiSpec {
-  id: string;                 // unique kebab id, e.g. "pan-lite"
-  productId: string;          // FK -> API_PRODUCTS.id
-  name: string;               // "PAN Lite"
-  slug: string;
-  summary: string;
-  description?: string;       // short text (used by .md twin / OpenAPI / agent bundle)
-  descriptionFile?: string;   // rich .md file basename (used by the docs page). Both may be set.
-  // category is NOT stored here — it is derived from the product via
-  // categoryForSpec(spec) (productId -> API_PRODUCTS[…].category).
-  relevance?: "H" | "M" | "L";
-  disabled?: boolean;         // hide the endpoint everywhere — see "Hide (disable) an API"
-  bestFor?: string;
-  method: "GET" | "POST" | "PUT" | "DELETE";
-  path: string;               // relative; full URL = environment baseUrl + path
-  docsUrl: string;            // developer-portal reference link
-  financial?: boolean;        // adds the financial response envelope
-  extraRequestParams: ApiParam[];   // API-specific; same name overrides a common param
-                                    // (ApiParam may carry format / enum / min / max / maxLength — see below)
-  omitCommonParams?: string[];      // rare: drop a common param
-  sampleRequest?: Record<string, unknown>;  // optional override; else generated from in:"body" examples
-  responseData: ResponseField[];    // the `data` subtree only
-  sampleSuccessResponse: Record<string, unknown>;
-  errorScenarios?: { scenario: string; statusCode?: number; example: object }[];
-  responseTypes?: { id: number; meaning: string; next?: string }[]; // response_type_id routing
+	id: string; // unique kebab id, e.g. "pan-lite"
+	productId: string; // FK -> API_PRODUCTS.id
+	name: string; // "PAN Lite"
+	slug: string;
+	summary: string;
+	description?: string; // short text (used by .md twin / OpenAPI / agent bundle)
+	descriptionFile?: string; // rich .md file basename (used by the docs page). Both may be set.
+	// category is NOT stored here — it is derived from the product via
+	// categoryForSpec(spec) (productId -> API_PRODUCTS[…].category).
+	relevance?: "H" | "M" | "L";
+	disabled?: boolean; // hide the endpoint everywhere — see "Hide (disable) an API"
+	bestFor?: string;
+	method: "GET" | "POST" | "PUT" | "DELETE";
+	path: string; // relative; full URL = environment baseUrl + path
+	docsUrl: string; // developer-portal reference link
+	financial?: boolean; // adds the financial response envelope
+	extraRequestParams: ApiParam[]; // API-specific; same name overrides a common param
+	// (ApiParam may carry format / enum / min / max / maxLength — see below)
+	omitCommonParams?: string[]; // rare: drop a common param
+	sampleRequest?: Record<string, unknown>; // optional override; else generated from in:"body" examples
+	responseData: ResponseField[]; // the `data` subtree only
+	sampleSuccessResponse: Record<string, unknown>;
+	errorScenarios?: { scenario: string; statusCode?: number; example: object }[];
+	responseTypes?: { id: number; meaning: string; next?: string }[]; // response_type_id routing
 }
 ```
 
@@ -165,7 +165,9 @@ Recipes (`api-recipes.ts`) branch on the same field: a `RecipeBranch` sets
 (financial endpoints, whose responses carry no `response_type_id`; `status` is
 the envelope's success flag, `0` = success). Renderers call
 `branchCondition(branch)` for the field name and value rather than assuming
-either.
+either. A step that runs only for some requests sets `appliesWhen` (e.g.
+`"amount > ₹5,000"`) instead of a branch — see the recipe notes in
+`ai-agent-platform.md`.
 
 ### `imp` flags ("What can you verify?")
 
@@ -181,21 +183,21 @@ Description content is **GFM markdown**. It supports callouts, section headings
 syntax-highlighted fenced code blocks. Two resolvers in `endpoint-descriptions.ts`
 pick the right variant per sink:
 
-| Resolver | Precedence | Used by |
-|----------|-----------|---------|
-| `resolveDescription` | **file** → inline (rich wins) | Docs HTML page only |
+| Resolver                  | Precedence                     | Used by                                      |
+| ------------------------- | ------------------------------ | -------------------------------------------- |
+| `resolveDescription`      | **file** → inline (rich wins)  | Docs HTML page only                          |
 | `resolveShortDescription` | **inline** → file (short wins) | `.md` twin, OpenAPI/Scalar, agent/MCP bundle |
 
 So a spec can carry BOTH: a long, rich `descriptionFile` for the docs page and a
 short inline `description` for the text sinks. With only one set, both resolvers
 fall back to it.
 
-| Sink | Resolver | How it renders |
-|------|----------|----------------|
-| Docs page (middle pane) | `resolveDescription` | `MarkdownProse.tsx` — `react-markdown` + `remark-gfm` + `remarkCallout`; code via `MarkdownCodeBlock.tsx` (prism, own `--mdc-*` theme), callouts via `Callout.tsx`. `h1` is stripped (the endpoint title owns it). |
-| `.md` twin (`render-doc.ts`) | `resolveShortDescription` | inserted raw — any callouts stay native GitHub-alert blockquotes |
-| OpenAPI → Scalar (`build-openapi.ts`) | `resolveShortDescription` | CommonMark in the operation `description` (primary spec only for grouped path+method variants) |
-| Agent bundle / MCP (`build-agent-bundle.ts`) | `resolveShortDescription` | raw string |
+| Sink                                         | Resolver                  | How it renders                                                                                                                                                                                                     |
+| -------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Docs page (middle pane)                      | `resolveDescription`      | `MarkdownProse.tsx` — `react-markdown` + `remark-gfm` + `remarkCallout`; code via `MarkdownCodeBlock.tsx` (prism, own `--mdc-*` theme), callouts via `Callout.tsx`. `h1` is stripped (the endpoint title owns it). |
+| `.md` twin (`render-doc.ts`)                 | `resolveShortDescription` | inserted raw — any callouts stay native GitHub-alert blockquotes                                                                                                                                                   |
+| OpenAPI → Scalar (`build-openapi.ts`)        | `resolveShortDescription` | CommonMark in the operation `description` (primary spec only for grouped path+method variants)                                                                                                                     |
+| Agent bundle / MCP (`build-agent-bundle.ts`) | `resolveShortDescription` | raw string                                                                                                                                                                                                         |
 
 **Callouts** use GitHub-alert syntax (no dependency — `remark-callout.ts` is a
 hand-rolled mdast transform):
@@ -277,17 +279,17 @@ that way — there is no runtime accessor for disabled specs, by design.
 
 **Clean up inbound references in the same change**, or the build/tests fail:
 
-| Pointer | Guard |
-| --- | --- |
-| A recipe `step.specSlug` or branch `goto` | `assertRecipeSlugs` throws at build |
-| Another spec's `responseTypes[].next` | `assertResponseTypeSlugs` throws at build |
-| A curated `relatedLinks[].slug` | asserted in `docs-registry.test.ts` |
-| A hard-coded `API_SPECS_MAP["<id>"]` (e.g. the `/docs` showcase spec, code-sample tests) | becomes `undefined` — update the caller |
+| Pointer                                                                                  | Guard                                     |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------- |
+| A recipe `step.specSlug` or branch `goto`                                                | `assertRecipeSlugs` throws at build       |
+| Another spec's `responseTypes[].next`                                                    | `assertResponseTypeSlugs` throws at build |
+| A curated `relatedLinks[].slug`                                                          | asserted in `docs-registry.test.ts`       |
+| A hard-coded `API_SPECS_MAP["<id>"]` (e.g. the `/docs` showcase spec, code-sample tests) | becomes `undefined` — update the caller   |
 
 Loud failure is deliberate: a half-removed endpoint leaving a recipe with a
 missing step is exactly the drift these guards exist to catch. Note this is a
 different mechanism from the `-status` convention, which only hides async-job
-pollers from the *marketing* surface while keeping their docs pages.
+pollers from the _marketing_ surface while keeping their docs pages.
 
 ## Data provenance & caveat
 

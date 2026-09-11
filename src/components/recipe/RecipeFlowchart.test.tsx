@@ -26,6 +26,22 @@ const skipping: Recipe = {
 	],
 };
 
+/** No routing branch and no conditional step — every edge a straight drop. */
+const linear: Recipe = {
+	id: "linear",
+	slug: "linear",
+	name: "Linear",
+	summary: "l",
+	steps: [
+		{ specSlug: "dmt-get-sender", purpose: "a" },
+		{
+			specSlug: "dmt-onboard-sender",
+			purpose: "b",
+			branches: [{ onStatus: 0, goto: "done" }],
+		},
+	],
+};
+
 /** The whole <figure> — the diagram plus its legend. Routed, because each step
  * node is a link to its endpoint's docs page. */
 const figureOf = (recipe: Recipe): HTMLElement => {
@@ -110,10 +126,19 @@ describe("RecipeFlowchart", () => {
 	it("says whether an unlabelled edge is the only way on, or the leftover case", () => {
 		// Onboard Sender branches away on 309, so its fall-through is what is left.
 		expect(textsOf(svgOf(dmt))).toContain("otherwise, on success");
-		// AePS branches nowhere, so every edge is unconditional.
-		const linear = textsOf(svgOf(aeps));
-		expect(linear).toContain("on success");
-		expect(linear.some((t) => t.startsWith("otherwise"))).toBe(false);
+		// A linear recipe branches nowhere, so every edge is unconditional.
+		const texts = textsOf(svgOf(linear));
+		expect(texts).toContain("on success");
+		expect(texts.some((t) => t.startsWith("otherwise"))).toBe(false);
+	});
+
+	it("routes around a conditional step: `if` into it, an `otherwise` arc past it", () => {
+		const svg = svgOf(aeps);
+		const texts = textsOf(svg);
+		expect(texts).toContain("on success, if amount > ₹5,000");
+		expect(texts).toContain("on success, otherwise");
+		// Only the skip bows out; the edge into the conditional step drops straight.
+		expect(svg.querySelectorAll("path[stroke-dasharray]")).toHaveLength(1);
 	});
 
 	it("glosses only the notations the recipe actually uses", () => {
@@ -122,7 +147,7 @@ describe("RecipeFlowchart", () => {
 		expect(dmtLegend?.textContent).toContain("response_type_id");
 		expect(dmtLegend?.textContent).toContain("on success");
 		// A linear recipe draws no `on type` edge, so it gets no `on type` gloss.
-		const linearLegend = figureOf(aeps).querySelector("figcaption");
+		const linearLegend = figureOf(linear).querySelector("figcaption");
 		expect(linearLegend?.textContent).toContain("on success");
 		expect(linearLegend?.textContent).not.toContain("on type");
 	});
@@ -150,9 +175,9 @@ describe("RecipeFlowchart", () => {
 	});
 
 	it("draws only straight edges, and reserves no arc gutter, for a linear flow", () => {
-		// AePS is the fully sequential recipe — every step falls through to the
-		// next, so nothing should reach for the gutter.
-		const svg = svgOf(aeps);
+		// Every step falls through to the next, so nothing should reach for the
+		// gutter.
+		const svg = svgOf(linear);
 		expect(svg.querySelectorAll("path[stroke-dasharray]")).toHaveLength(0);
 		// No dead gutter: the node box fills the whole (dynamic) viewBox width.
 		expect(viewWidth(svg)).toBe(nodeWidth(svg));

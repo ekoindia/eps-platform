@@ -5,6 +5,7 @@ import {
 	branchCondition,
 	RECIPES,
 	recipesForSpec,
+	type Recipe,
 	type RecipeBranch,
 } from "@/lib/data/api-recipes";
 import { API_SPECS } from "@/lib/data/api-specs";
@@ -66,6 +67,82 @@ describe("api-recipes", () => {
 				new Set(["dmt-get-sender"]),
 			),
 		).toThrow(/neither onResponseTypeId nor onStatus/);
+	});
+});
+
+describe("assertRecipeSlugs — conditional steps", () => {
+	const known = new Set([
+		"dmt-get-sender",
+		"dmt-onboard-sender",
+		"dmt-add-recipient",
+		"dmt-send-otp",
+	]);
+	const check = (steps: Recipe["steps"]) => () =>
+		assertRecipeSlugs(
+			[{ id: "c", slug: "c", name: "C", summary: "x", steps }],
+			known,
+		);
+	const plain = (specSlug: string) => ({ specSlug, purpose: "x" });
+	const conditional = (specSlug: string) => ({
+		specSlug,
+		purpose: "x",
+		appliesWhen: "amount > ₹5,000",
+	});
+
+	it("accepts a conditional step between two plain steps", () => {
+		expect(
+			check([
+				plain("dmt-get-sender"),
+				conditional("dmt-onboard-sender"),
+				plain("dmt-add-recipient"),
+			]),
+		).not.toThrow();
+	});
+
+	it("rejects a conditional first or last step — nothing to skip from or to", () => {
+		expect(
+			check([conditional("dmt-get-sender"), plain("dmt-onboard-sender")]),
+		).toThrow(/first or last/);
+		expect(
+			check([plain("dmt-get-sender"), conditional("dmt-onboard-sender")]),
+		).toThrow(/first or last/);
+	});
+
+	it("rejects two adjacent conditional steps", () => {
+		expect(
+			check([
+				plain("dmt-get-sender"),
+				conditional("dmt-onboard-sender"),
+				conditional("dmt-add-recipient"),
+				plain("dmt-send-otp"),
+			]),
+		).toThrow(/another conditional step/);
+	});
+
+	it("rejects a conditional step after a branching step", () => {
+		expect(
+			check([
+				{
+					...plain("dmt-get-sender"),
+					branches: [{ onStatus: 0, goto: "done" }],
+				},
+				conditional("dmt-onboard-sender"),
+				plain("dmt-add-recipient"),
+			]),
+		).toThrow(/follow a step that branches/);
+	});
+
+	it("rejects a conditional step that a branch jumps to", () => {
+		expect(
+			check([
+				plain("dmt-get-sender"),
+				conditional("dmt-onboard-sender"),
+				{
+					...plain("dmt-add-recipient"),
+					branches: [{ onResponseTypeId: 1, goto: "dmt-onboard-sender" }],
+				},
+			]),
+		).toThrow(/branch goto target/);
 	});
 });
 

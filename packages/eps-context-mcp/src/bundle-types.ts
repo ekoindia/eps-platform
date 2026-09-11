@@ -49,6 +49,8 @@ export interface RecipeStep {
 	specSlug: string;
 	purpose: string;
 	branches?: RecipeBranch[];
+	/** Step runs only when this request condition holds; otherwise skip it. */
+	appliesWhen?: string;
 }
 export interface Recipe {
 	id: string;

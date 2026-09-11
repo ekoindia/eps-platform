@@ -54,10 +54,19 @@ describe("recipeMermaidFence", () => {
 	it("suffixes the frequency onto tagged step nodes, and only those", () => {
 		const fence = recipeMermaidFence(aeps);
 		// The activation + 3 eKYC steps are one-time; step 5 (daily-auth) is daily;
-		// step 6 (withdrawal) carries no tag and must stay unsuffixed.
+		// step 7 (withdrawal) carries no tag and must stay unsuffixed.
 		expect(fence).toContain("· One-time");
 		expect(fence).toContain("· Daily");
-		expect(fence).toMatch(/s6\["POST AePS Cash Withdrawal"\]/);
+		expect(fence).toMatch(/s7\["POST AePS Cash Withdrawal"\]/);
+	});
+
+	it("labels the edges around a conditional step with its condition", () => {
+		// Step 6 (Cash Withdrawal OTP) applies only above ₹5,000: daily-auth enters
+		// it on the condition, or skips past it to the withdrawal.
+		const fence = recipeMermaidFence(aeps);
+		expect(fence).toContain('s5 -->|"if amount > ₹5,000"| s6');
+		expect(fence).toContain('s5 -->|"otherwise"| s7');
+		expect(fence).toMatch(/^\s*s6 --> s7$/m);
 	});
 
 	it("collapses a branch that targets the next step into one labelled edge", () => {
@@ -158,6 +167,12 @@ describe("renderRecipeMarkdown", () => {
 		expect(md).toContain(`_(${STEP_FREQUENCY_LABEL.daily})_`);
 		// The final withdrawal step carries no tag — no marker leaks onto it.
 		expect(md).not.toMatch(/AePS Cash Withdrawal\*\* — [^\n]*_\(/);
+	});
+
+	it("marks a conditional step and names the step it skips to", () => {
+		expect(renderRecipeMarkdown(aeps)).toContain(
+			"_(only if amount > ₹5,000 — otherwise skip to step 7)_",
+		);
 	});
 
 	it("spells out each branch condition in the step list", () => {

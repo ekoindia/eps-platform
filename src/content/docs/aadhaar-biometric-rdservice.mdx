@@ -260,19 +260,19 @@ the exact field name and any accompanying parameters:
 All attributes go on the `<Opts … />` element inside
 `<PidOptions ver="1.0">`:
 
-| Attribute | Applies to  | Values                           | Notes                                                                  |
-| --------- | ----------- | -------------------------------- | ---------------------------------------------------------------------- |
-| `fCount`  | Fingerprint | `1`–`10`                         | Number of fingers to capture. `1` for auth/eKYC.                       |
-| `fType`   | Fingerprint | `0` = FMR, `1` = FIR, `2` = both | `2` is the safe default.                                               |
-| `iCount`  | Iris        | `1`–`2`                          | Number of iris records.                                                |
-| `iType`   | Iris        | `0` = IIR                        | Only defined value.                                                    |
-| `format`  | Both        | `0` = XML, `1` = Protobuf        | Use `0`; many drivers reject Protobuf (error `210`).                   |
-| `pidVer`  | Both        | `2.0`                            | PID block version.                                                     |
-| `timeout` | Both        | milliseconds                     | How long the driver waits for the finger/eye. `30000` is typical.      |
-| `otp`     | Both        | string                           | Only for OTP-combined flows; usually empty.                            |
-| `wadh`    | Both        | base64 digest                    | **eKYC only** — use the exact value your API specifies. Omit for auth. |
-| `posh`    | Both        | `UNKNOWN` or position list       | `UNKNOWN` = any finger.                                                |
-| `env`     | Both        | `P`                              | Always `P` in practice — see gotchas above.                            |
+| Attribute | Applies to  | Values                           | Notes                                                                                                                                                              |
+| --------- | ----------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `fCount`  | Fingerprint | `1`–`10`                         | Number of fingers to capture. `1` for auth/eKYC.                                                                                                                   |
+| `fType`   | Fingerprint | `0` = FMR, `1` = FIR, `2` = both | `2` is the safe default.                                                                                                                                           |
+| `iCount`  | Iris        | `1`–`2`                          | Number of iris records.                                                                                                                                            |
+| `iType`   | Iris        | `0` = IIR                        | Only defined value.                                                                                                                                                |
+| `format`  | Both        | `0` = XML, `1` = Protobuf        | Use `0`; many drivers reject Protobuf (error `210`).                                                                                                               |
+| `pidVer`  | Both        | `2.0`                            | PID block version.                                                                                                                                                 |
+| `timeout` | Both        | milliseconds                     | How long the driver waits for the finger/eye. `30000` is typical.                                                                                                  |
+| `otp`     | Both        | string                           | Only for OTP-combined flows — e.g. the customer's 6-digit SMS OTP for an [AePS cash withdrawal above ₹5,000](/docs/aeps-fingpay-cash-withdrawal). Otherwise empty. |
+| `wadh`    | Both        | base64 digest                    | **eKYC only** — use the exact value your API specifies. Omit for auth.                                                                                             |
+| `posh`    | Both        | `UNKNOWN` or position list       | `UNKNOWN` = any finger.                                                                                                                                            |
+| `env`     | Both        | `P`                              | Always `P` in practice — see gotchas above.                                                                                                                        |
 
 ## Capture response & error codes
 
