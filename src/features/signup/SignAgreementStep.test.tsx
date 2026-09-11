@@ -59,7 +59,11 @@ vi.mock("@/lib/config/features", async (importOriginal) => {
 });
 
 import { ApiError } from "@/lib/auth/client";
-import { SignAgreementStep } from "./SignAgreementStep";
+import {
+	AI_SUMMARY_ENABLED,
+	EXPLAIN_URL,
+	SignAgreementStep,
+} from "./SignAgreementStep";
 import {
 	type SignupProfile,
 	SignupProfileProvider,
@@ -337,18 +341,30 @@ describe("SignAgreementStep", () => {
 		expect(screen.getByText(/document ready/i)).toBeInTheDocument();
 	});
 
-	it("hands the sample agreement to ChatGPT for an explanation", async () => {
-		getAgreementUrl.mockResolvedValue(READY);
-		renderStep();
-		const link = await screen.findByRole("link", { name: /explain with ai/i });
-		const href = link.getAttribute("href") ?? "";
-		expect(href.startsWith("https://chatgpt.com/?q=")).toBe(true);
-		expect(decodeURIComponent(href)).toContain(
+	// Runs whatever the toggle says: a prompt that is wrong the day the feature is
+	// switched on is a prompt nobody tested.
+	it("builds a ChatGPT prompt pointing at the published sample", () => {
+		expect(EXPLAIN_URL.startsWith("https://chatgpt.com/?q=")).toBe(true);
+		expect(decodeURIComponent(EXPLAIN_URL)).toContain(
 			"https://eps.eko.in/samples/partner-agreement",
 		);
-		// The only link in the panel — reading the real document is what the CTA
-		// does, so a "read a sample" link beside it would just be a worse copy.
-		expect(screen.getAllByRole("link")).toHaveLength(1);
+	});
+
+	it("shows the Explain with AI link only while the feature is enabled", async () => {
+		getAgreementUrl.mockResolvedValue(READY);
+		renderStep();
+		await screen.findByText("Eko Platform Services Agreement");
+
+		const link = screen.queryByRole("link", { name: /explain with ai/i });
+		if (AI_SUMMARY_ENABLED) {
+			expect(link).toHaveAttribute("href", EXPLAIN_URL);
+			// The only link in the panel — reading the real document is what the CTA
+			// does, so a "read a sample" link beside it would just be a worse copy.
+			expect(screen.getAllByRole("link")).toHaveLength(1);
+		} else {
+			expect(link).toBeNull();
+			expect(screen.queryAllByRole("link")).toHaveLength(0);
+		}
 	});
 
 	it("drops the name clause when the profile has none", async () => {

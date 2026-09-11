@@ -49,12 +49,17 @@ const SAMPLE_AGREEMENT_URL = "https://eps.eko.in/samples/partner-agreement";
  */
 const EXPLAIN_PROMPT = `Summarize and explain the following sample agreement which I have to sign with eps.eko.in before using their APIs: \`${SAMPLE_AGREEMENT_URL}\`, then ask for followup questions or to explain in my regional language.`;
 
-const EXPLAIN_URL = `https://chatgpt.com/?q=${encodeURIComponent(EXPLAIN_PROMPT)}`;
+export const EXPLAIN_URL = `https://chatgpt.com/?q=${encodeURIComponent(EXPLAIN_PROMPT)}`;
 
 /**
  * Toggle AI summary link visibility. The AI is a convenience, not a requirement, so the link is hidden when the feature is disabled.
+ *
+ * Exported alongside {@link EXPLAIN_URL} so the suite can follow the toggle
+ * rather than assume it: the link's test asserts it is absent while this is
+ * false and that it carries the right URL while it is true, so flipping this
+ * needs no test edit and cannot ship a broken prompt.
  */
-const AI_SUMMARY_ENABLED = false;
+export const AI_SUMMARY_ENABLED = false;
 
 /**
  * What is being written onto the document, revealed one at a time while the
