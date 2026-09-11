@@ -47,7 +47,7 @@ const SAMPLE_AGREEMENT_URL = "https://eps.eko.in/samples/partner-agreement";
  * The production URL is hard-coded rather than built from `SITE_URL`: ChatGPT
  * fetches this itself, and a dev build's localhost origin would be unreachable.
  */
-const EXPLAIN_PROMPT = `Summarize and explain the following sample agreement which I have to sign with eps.eko.in before using their APIs: \`${SAMPLE_AGREEMENT_URL}\`, then ask for followup questions or to explain in my regional language.`;
+const EXPLAIN_PROMPT = `Summarize only the following sample agreement document clearly and succinctly, which needs to be signed before using APIs provided by Eko Platform Services: \`${SAMPLE_AGREEMENT_URL}\`, then ask me to summarize again in my regional languages. Do not give any legal advice, and do not make up any clauses that are not in the document.`;
 
 export const EXPLAIN_URL = `https://chatgpt.com/?q=${encodeURIComponent(EXPLAIN_PROMPT)}`;
 
