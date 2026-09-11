@@ -34,6 +34,30 @@ vi.mock("./esign", () => ({
 	esignOrigin: () => "https://sign.example",
 }));
 
+/**
+ * The configured support number, flipped per-test.
+ *
+ * Mocked rather than left to the environment: `SUPPORT_WHATSAPP` comes from
+ * `VITE_SUPPORT_WHATSAPP`, which a developer has in `.env.local` and CI does
+ * not. A test that read the real constant therefore passed on a laptop and
+ * failed on the runner — and the empty case is a real deployment state, so both
+ * branches want covering explicitly anyway.
+ */
+let supportWhatsapp = "9876543210";
+
+vi.mock("@/lib/config/features", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("@/lib/config/features")>();
+	// A getter, not a value: the step reads the constant on every render, and a
+	// plain property would freeze whatever this file happened to hold at import.
+	return {
+		...actual,
+		get SUPPORT_WHATSAPP() {
+			return supportWhatsapp;
+		},
+	};
+});
+
 import { ApiError } from "@/lib/auth/client";
 import { SignAgreementStep } from "./SignAgreementStep";
 import {
@@ -119,6 +143,7 @@ beforeEach(() => {
 	submitAgreement.mockReset();
 	openEsign.mockReset();
 	leegality = true;
+	supportWhatsapp = "9876543210";
 });
 
 describe("SignAgreementStep", () => {
@@ -238,6 +263,25 @@ describe("SignAgreementStep", () => {
 				screen.getByRole("link", { name: /talk to support on whatsapp/i }),
 			).toBeInTheDocument();
 			expect(screen.queryByText(/if the second attempt fails too/i)).toBeNull();
+			expect(screen.getByText(/^Quote reference/)).toBeInTheDocument();
+		});
+	});
+
+	// A deployment that configures no number must not render a dead link — the
+	// reference and the escalated copy still stand on their own.
+	it("escalates without a WhatsApp link when no number is configured", async () => {
+		await withFakeTimers(async () => {
+			supportWhatsapp = "";
+			getAgreementUrl.mockRejectedValue(
+				new ApiError("INVALID_INPUT", "nope", 400),
+			);
+			vi.spyOn(console, "error").mockImplementation(() => {});
+			renderStep();
+			await settle();
+			fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+			await settle();
+
+			expect(screen.queryByRole("link", { name: /whatsapp/i })).toBeNull();
 			expect(screen.getByText(/^Quote reference/)).toBeInTheDocument();
 		});
 	});
