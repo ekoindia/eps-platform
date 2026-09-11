@@ -218,6 +218,8 @@ describe("signup endpoints", () => {
 			"9990000001",
 			"1234",
 			"1234",
+			// The sid authenticates the connect-api call for the substitution keys.
+			"sid-1",
 			undefined,
 		);
 	});
@@ -286,6 +288,64 @@ describe("signup endpoints", () => {
 	});
 });
 
+describe("GET /signup/pincode", () => {
+	it("returns the city and state for a valid code", async () => {
+		const lookupPincode = vi
+			.fn()
+			.mockResolvedValue({ ok: true, city: "Bangalore", state: "Karnataka" });
+		const app = harness("signup", { lookupPincode });
+		const res = await app.request("/signup/pincode?pincode=560001", withCookie);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			city: "Bangalore",
+			state: "Karnataka",
+		});
+		expect(lookupPincode).toHaveBeenCalledWith(
+			"9990000001",
+			"560001",
+			undefined,
+		);
+	});
+
+	it.each(["56", "5600011", "abcdef", ""])(
+		"rejects %o without calling upstream",
+		async (pincode) => {
+			const lookupPincode = vi.fn();
+			const app = harness("signup", { lookupPincode });
+			const res = await app.request(
+				`/signup/pincode?pincode=${pincode}`,
+				withCookie,
+			);
+			expect(res.status).toBe(400);
+			expect(lookupPincode).not.toHaveBeenCalled();
+		},
+	);
+
+	it("requires a signup session", async () => {
+		const lookupPincode = vi.fn();
+		const app = harness("developer", { lookupPincode });
+		const res = await app.request("/signup/pincode?pincode=560001", withCookie);
+		expect(res.status).toBe(403);
+		expect(lookupPincode).not.toHaveBeenCalled();
+	});
+
+	it("answers 502 when the lookup itself is broken", async () => {
+		// A malformed upstream reply is our integration failing, not bad input —
+		// it has to be visible as a 5xx rather than blend into the 400s.
+		const app = harness("signup", {
+			lookupPincode: vi.fn().mockResolvedValue({
+				ok: false,
+				reason: "malformed",
+				message: "no dependent_params",
+			}),
+		});
+		const res = await app.request("/signup/pincode?pincode=560001", withCookie);
+		expect(res.status).toBe(502);
+		const body = (await res.json()) as { error: { code: string } };
+		expect(body.error.code).toBe("PINCODE_LOOKUP_FAILED");
+	});
+});
+
 describe("POST /signup/business", () => {
 	const valid = {
 		name: "Acme Retail",
@@ -349,6 +409,30 @@ describe("POST /signup/business", () => {
 		expect(submitBusiness).toHaveBeenCalledWith("9990000001", valid, undefined);
 	});
 
+	it("accepts Individual's company_type 7, which the client can now select", async () => {
+		// Regression: this rule was left at /^[1-5]$/ when Individual was split
+		// onto code 7, so the option was unsubmittable at the trust boundary too.
+		const submitBusiness = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { submitBusiness });
+		const res = await post(app, { ...valid, company_type: "7" });
+		expect(res.status).toBe(200);
+		expect(submitBusiness).toHaveBeenCalledWith(
+			"9990000001",
+			{ ...valid, company_type: "7" },
+			undefined,
+		);
+	});
+
+	it("still rejects a company_type outside the known set", async () => {
+		const submitBusiness = vi.fn();
+		const app = harness("signup", { submitBusiness });
+		for (const company_type of ["6", "8", "0", "17"]) {
+			const res = await post(app, { ...valid, company_type });
+			expect(res.status).toBe(400);
+		}
+		expect(submitBusiness).not.toHaveBeenCalled();
+	});
+
 	it("requires a signup session", async () => {
 		const app = harness(null, {});
 		const res = await post(app, valid);
@@ -376,6 +460,41 @@ describe("sign agreement endpoints", () => {
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual(url);
 		expect(getAgreementUrl).toHaveBeenCalledWith("9990000001", undefined);
+	});
+
+	it("GET /signup/agreement/url logs the client reference when preparing fails", async () => {
+		const getAgreementUrl = vi.fn().mockRejectedValue(new Error("upstream"));
+		const app = harness("signup", { getAgreementUrl });
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await app.request(
+				// Newlines and quotes are what a log-injection attempt looks like;
+				// only the reference's own character set may reach the log line.
+				"/signup/agreement/url?client_ref_id=K7P2XQ9MTB%0Afake%20log%20line",
+				withCookie,
+			);
+			expect(error).toHaveBeenCalledWith(
+				"[signup] agreement url failed",
+				expect.objectContaining({ clientRef: "K7P2XQ9MTBfakelogline" }),
+			);
+		} finally {
+			error.mockRestore();
+		}
+	});
+
+	it("GET /signup/agreement/url logs nothing extra when no reference is sent", async () => {
+		const getAgreementUrl = vi.fn().mockRejectedValue(new Error("upstream"));
+		const app = harness("signup", { getAgreementUrl });
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await app.request("/signup/agreement/url", withCookie);
+			expect(error).not.toHaveBeenCalledWith(
+				"[signup] agreement url failed",
+				expect.anything(),
+			);
+		} finally {
+			error.mockRestore();
+		}
 	});
 
 	it("POST /signup/agreement forwards the document id from the body", async () => {

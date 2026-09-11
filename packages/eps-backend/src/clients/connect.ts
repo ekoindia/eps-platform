@@ -62,6 +62,23 @@ export interface ConnectTokens {
 	anonymousUser?: boolean;
 }
 
+/** Interaction id for the single-use PIN substitution key. connect-api only. */
+const PINTWIN_KEY_INTERACTION = 10005;
+
+/**
+ * A single-use substitution key from interaction 10005.
+ *
+ * Lives here rather than in `clients/eko.ts` because connect-api is the only
+ * thing that can produce one: the 10000+ interaction range is served by
+ * connect-api, not by the SimpliBank upstream. `keyId` is deliberately
+ * `number | string` — upstream sends 0 as a number and other ids as strings,
+ * and 0 is a VALID id, so nothing here may treat it as absent.
+ */
+export interface PintwinKey {
+	pintwinKey: string;
+	keyId: number | string;
+}
+
 export interface ConnectClient {
 	sendOtp(input: {
 		mobile: string;
@@ -131,6 +148,22 @@ export interface ConnectClient {
 		body: Record<string, unknown>,
 		opts?: { xRealIp?: string },
 	): Promise<Record<string, unknown>>;
+	/**
+	 * Fetches one single-use PIN substitution key (interaction 10005).
+	 *
+	 * Upstream invalidates a key after each use, so the PIN step calls this once
+	 * per PIN field rather than reusing one key twice.
+	 * @param accessToken - The caller's FULL upstream access token. A signup-role
+	 *   session has one: `POST /auth/otp/verify` seals upstream material for an
+	 *   `onboarding` profile exactly as it does for a `found` one.
+	 * @param mobile - Rides as `alternate_user_id`, naming whose key this is.
+	 * @returns The key, or null when upstream did not issue one.
+	 */
+	fetchPintwinKey(
+		accessToken: string,
+		mobile: string,
+		opts?: { xRealIp?: string },
+	): Promise<PintwinKey | null>;
 	/**
 	 * Runs an interaction that carries files, over `/transactions/upload`.
 	 *
@@ -647,6 +680,23 @@ export function createConnectClient(
 				xRealIp: opts.xRealIp,
 			});
 			return (raw ?? {}) as Record<string, unknown>;
+		},
+
+		async fetchPintwinKey(accessToken, mobile, opts = {}) {
+			const raw = (await post(
+				"/transactions/do",
+				{
+					interaction_type_id: PINTWIN_KEY_INTERACTION,
+					alternate_user_id: mobile,
+				},
+				{ bearer: accessToken, xRealIp: opts.xRealIp },
+			)) as { data?: { pintwin_key?: string; key_id?: number | string } };
+			const key = raw?.data?.pintwin_key;
+			const keyId = raw?.data?.key_id;
+			// `key_id` 0 is a real id, so test for absence explicitly rather than
+			// falsiness — `!keyId` would discard every key upstream numbers 0.
+			if (!key || keyId === undefined || keyId === null) return null;
+			return { pintwinKey: String(key), keyId };
 		},
 
 		async createSupportTicket(accessToken, fields, files, opts = {}) {

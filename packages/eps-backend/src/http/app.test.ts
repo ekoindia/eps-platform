@@ -69,8 +69,12 @@ function deps(
 		createPartialAccount: vi.fn(async () => ({ ok: true as const })),
 		verifyPan: vi.fn(async () => ({ ok: true as const })),
 		submitBusiness: vi.fn(async () => ({ ok: true as const })),
+		lookupPincode: vi.fn(async () => ({
+			ok: true as const,
+			city: null,
+			state: null,
+		})),
 		getBooklet: vi.fn(async () => null),
-		fetchPintwinKey: vi.fn(async () => null),
 		setSecretPin: vi.fn(async () => ({ ok: true as const })),
 		getAgreementUrl: vi.fn(async () => ({
 			ok: true as const,

@@ -510,3 +510,65 @@ describe("createConnectClient upstream logging", () => {
 		spy.mockRestore();
 	});
 });
+
+describe("ConnectClient.fetchPintwinKey", () => {
+	function fetchReturning(body: unknown, status = 200) {
+		return vi.fn(
+			async () =>
+				new Response(JSON.stringify(body), {
+					status,
+					headers: { "content-type": "application/json" },
+				}),
+		) as unknown as typeof fetch;
+	}
+
+	const bodyOf = (f: typeof fetch) =>
+		JSON.parse(
+			(f as unknown as { mock: { calls: [string, { body: string }][] } }).mock
+				.calls[0][1].body,
+		);
+
+	it("posts interaction 10005 to /transactions/do with a bearer token", async () => {
+		// 10005 is served by connect-api, not by the SimpliBank upstream — that
+		// is the whole reason this lives here rather than on the eko client.
+		const f = fetchReturning({
+			data: { pintwin_key: "1974856302", key_id: 39 },
+		});
+		const r = await createConnectClient(cfg, f).fetchPintwinKey(
+			"tok-1",
+			"9990000001",
+		);
+		expect(r).toEqual({ pintwinKey: "1974856302", keyId: 39 });
+
+		const [url, init] = (
+			f as unknown as {
+				mock: { calls: [string, { headers: Record<string, string> }][] };
+			}
+		).mock.calls[0];
+		expect(String(url)).toBe("https://api.beta.ekoconnect.in/transactions/do");
+		expect(init.headers.Authorization).toBe("Bearer tok-1");
+		const body = bodyOf(f);
+		expect(body.interaction_type_id).toBe(10005);
+		expect(body.alternate_user_id).toBe("9990000001");
+		expect(body.client_ref_id).toMatch(CLIENT_REF_ID);
+	});
+
+	it("accepts key_id 0, which is a real id", async () => {
+		// A falsiness check here would discard every key upstream numbers 0.
+		const f = fetchReturning({ data: { pintwin_key: "1974856302", key_id: 0 } });
+		expect(
+			await createConnectClient(cfg, f).fetchPintwinKey("tok-1", "9990000001"),
+		).toEqual({ pintwinKey: "1974856302", keyId: 0 });
+	});
+
+	it.each([
+		["the key is missing", { data: { key_id: 39 } }],
+		["the id is missing", { data: { pintwin_key: "1974856302" } }],
+		["there is no data block", {}],
+	])("returns null when %s", async (_label, body) => {
+		const f = fetchReturning(body);
+		expect(
+			await createConnectClient(cfg, f).fetchPintwinKey("tok-1", "9990000001"),
+		).toBeNull();
+	});
+});

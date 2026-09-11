@@ -44,15 +44,16 @@ export interface EkoClient {
 		identity: EkoIdentity;
 		xRealIp?: string;
 	}): Promise<EkoStepResult>;
+	lookupPincode(input: {
+		/** Six digits, already shape-checked by the route. */
+		pincode: string;
+		identity: EkoIdentity;
+		xRealIp?: string;
+	}): Promise<PincodeResult>;
 	getBooklet(input: {
 		identity: EkoIdentity;
 		xRealIp?: string;
 	}): Promise<EkoBooklet | null>;
-	fetchPintwinKey(input: {
-		mobile: string;
-		identity: EkoIdentity;
-		xRealIp?: string;
-	}): Promise<EkoPintwinKey | null>;
 	setSecretPin(input: {
 		firstOkekey: string;
 		secondOkekey: string;
@@ -212,12 +213,6 @@ export interface BusinessDetails {
 	current_address_pincode: string;
 }
 
-/** A single-use substitution key from interaction 10005. */
-export interface EkoPintwinKey {
-	pintwinKey: string;
-	keyId: number | string;
-}
-
 /**
  * The diagnostic sub-objects an upstream failure can carry beyond `message`.
  *
@@ -255,6 +250,114 @@ export type EkoStepResult =
 			responseTypeId: number;
 			details?: EkoErrorDetails;
 	  };
+
+/**
+ * Interaction id for the PIN-code lookup.
+ *
+ * 353, NOT 10027: the 10000+ range is served by connect-api, not by the
+ * SimpliBank upstream this client talks to, so 10027 answers here as an unknown
+ * interaction. 353 is the equivalent that this upstream does serve.
+ */
+const PINCODE_INTERACTION = "353";
+
+/**
+ * Outcome of a PIN-code lookup (interaction 353).
+ *
+ * The failure arm is split so a broken integration cannot hide as a run of
+ * unrecognised PIN codes: `miss` is upstream saying it has no such code, which
+ * is ordinary and expected, while `malformed` is upstream reporting success and
+ * then not carrying the answer — a schema drift the route surfaces as a 5xx.
+ */
+export type PincodeResult =
+	| { ok: true; city: string | null; state: string | null }
+	| {
+			ok: false;
+			kind: "miss" | "malformed";
+			message: string;
+			responseTypeId: number;
+	  };
+
+/**
+ * `dependent_params` entry names the PIN-code lookup answers with.
+ *
+ * The `sender_` prefix is upstream's, not ours: this is the lookup behind the
+ * DMT sender-address form and it keeps that naming for every caller.
+ */
+const PINCODE_CITY_PARAM = "sender_city";
+const PINCODE_STATE_PARAM = "sender_state";
+
+/**
+ * Reads `dependent_params` off a PIN-code reply.
+ *
+ * Looks in both the envelope root and `data`, because this is the first place
+ * anything reads that key off a SUCCESS reply — `errorDetails` only ever saw it
+ * on failures, where it sits at the root — and the success shape is not pinned
+ * down by any fixture in this repo.
+ *
+ * @param raw - The parsed upstream reply.
+ * @returns The entries, or null when the key is absent or not an array.
+ */
+function dependentParams(
+	raw: unknown,
+): { name?: unknown; value?: unknown }[] | null {
+	if (!raw || typeof raw !== "object") return null;
+	const r = raw as Record<string, unknown>;
+	const data = r.data as Record<string, unknown> | undefined;
+	const found = r.dependent_params ?? data?.dependent_params;
+	return Array.isArray(found) ? found : null;
+}
+
+/** Pulls one named entry's value, as a trimmed string, or null. */
+function dependentParam(
+	entries: { name?: unknown; value?: unknown }[],
+	name: string,
+): string | null {
+	const hit = entries.find((e) => e?.name === name);
+	const value = typeof hit?.value === "string" ? hit.value.trim() : "";
+	return value || null;
+}
+
+/**
+ * Classifies a PIN-code lookup reply.
+ *
+ * Success is `status === 0` plus a payload, never a `response_type_id`
+ * allowlist — documented ids for these interactions have gone stale before.
+ */
+export function pincodeResult(raw: unknown): PincodeResult {
+	const r = (raw ?? {}) as { status?: unknown; message?: unknown };
+	const status = Number(r.status ?? -1);
+	const responseTypeId = Number(
+		(raw as { response_type_id?: unknown } | null)?.response_type_id ?? -1,
+	);
+	if (status !== 0) {
+		return {
+			ok: false,
+			kind: "miss",
+			message:
+				typeof r.message === "string" && r.message
+					? r.message
+					: "That PIN code could not be looked up.",
+			responseTypeId,
+		};
+	}
+	const entries = dependentParams(raw);
+	if (!entries) {
+		// Upstream said OK and then sent nothing to read. Not a miss — a miss
+		// comes back with a non-zero status — so surface it as the integration
+		// fault it is rather than as an empty result.
+		return {
+			ok: false,
+			kind: "malformed",
+			message: "Upstream returned no dependent_params for the PIN code.",
+			responseTypeId,
+		};
+	}
+	return {
+		ok: true,
+		city: dependentParam(entries, PINCODE_CITY_PARAM),
+		state: dependentParam(entries, PINCODE_STATE_PARAM),
+	};
+}
 
 /**
  * Outcome of fetching the e-sign URL (interaction 287).
@@ -627,6 +730,17 @@ export function createEkoClient(
 			);
 			return stepResult(raw, BUSINESS_DETAILS_OK);
 		},
+		async lookupPincode(input) {
+			const raw = await post(
+				{
+					...actor(input.identity),
+					interaction_type_id: PINCODE_INTERACTION,
+					pincode: input.pincode,
+				},
+				input.xRealIp,
+			);
+			return pincodeResult(raw);
+		},
 		async getBooklet(input) {
 			const raw = (await post(
 				{
@@ -652,20 +766,6 @@ export function createEkoClient(
 				bookletSerialNumber: String(raw.data?.booklet_serial_number ?? ""),
 				isPintwinUser: Number(raw.data?.is_pintwin_user ?? 0),
 			};
-		},
-		async fetchPintwinKey(input) {
-			const raw = (await post(
-				{
-					...actor(input.identity),
-					interaction_type_id: "10005",
-					alternate_user_id: input.mobile,
-				},
-				input.xRealIp,
-			)) as { data?: { pintwin_key?: string; key_id?: number | string } };
-			const key = raw?.data?.pintwin_key;
-			const keyId = raw?.data?.key_id;
-			if (!key || keyId === undefined || keyId === null) return null;
-			return { pintwinKey: String(key), keyId };
 		},
 		async setSecretPin(input) {
 			// is_pintwin_user and booklet_serial_number are forwarded verbatim from

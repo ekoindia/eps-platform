@@ -657,27 +657,6 @@ describe("onboarding interactions", () => {
 		expect(await eko.getBooklet({ identity })).toBeNull();
 	});
 
-	it("fetchPintwinKey returns the key and id", async () => {
-		const f = mockFetch(200, {
-			data: { pintwin_key: "1974856302", key_id: 39 },
-		});
-		const eko = createEkoClient(ekoCfg, f);
-		expect(
-			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
-		).toEqual({ pintwinKey: "1974856302", keyId: 39 });
-		const body = bodyOf(f);
-		expect(body.get("interaction_type_id")).toBe("10005");
-		expect(body.get("alternate_user_id")).toBe("9990000001");
-	});
-
-	it("fetchPintwinKey returns null when the key is missing", async () => {
-		const f = mockFetch(200, { data: {} });
-		const eko = createEkoClient(ekoCfg, f);
-		expect(
-			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
-		).toBeNull();
-	});
-
 	it("setSecretPin sends 5 with both okekeys and the booklet fields verbatim", async () => {
 		const f = mockFetch(200, { response_type_id: 9 });
 		const eko = createEkoClient(ekoCfg, f);
@@ -704,16 +683,6 @@ describe("onboarding interactions", () => {
 		});
 		const eko = createEkoClient(ekoCfg, f);
 		expect(await eko.getBooklet({ identity })).toBeNull();
-	});
-
-	it("fetchPintwinKey accepts key_id 0 as valid", async () => {
-		const f = mockFetch(200, {
-			data: { pintwin_key: "1974856302", key_id: 0 },
-		});
-		const eko = createEkoClient(ekoCfg, f);
-		expect(
-			await eko.fetchPintwinKey({ mobile: "9990000001", identity }),
-		).toEqual({ pintwinKey: "1974856302", keyId: 0 });
 	});
 
 	it("createPartialAccount returns failure when response_type_id is missing", async () => {
@@ -756,6 +725,70 @@ describe("onboarding interactions", () => {
 			message: "Invalid pincode",
 			responseTypeId: 1502,
 		});
+	});
+
+	it("lookupPincode posts interaction 353 with the actor and the code", async () => {
+		// 353, not 10027: the 10000+ range is served by connect-api, which this
+		// client does not talk to.
+		const f = mockFetch(200, {
+			status: 0,
+			dependent_params: [
+				{ name: "sender_city", value: "Bangalore" },
+				{ name: "sender_state", value: "Karnataka" },
+			],
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.lookupPincode({ pincode: "560001", identity });
+		expect(r).toEqual({ ok: true, city: "Bangalore", state: "Karnataka" });
+		const body = bodyOf(f);
+		expect(body.get("interaction_type_id")).toBe("353");
+		expect(body.get("pincode")).toBe("560001");
+		expect(body.get("initiator_id")).toBe("9990000001");
+		expect(body.get("user_code")).toBe("20810001");
+		expect(body.get("org_id")).toBe("1");
+		expect(body.get("client_ref_id")).toMatch(CLIENT_REF_ID);
+	});
+
+	it("lookupPincode reads dependent_params nested under data", async () => {
+		const f = mockFetch(200, {
+			status: 0,
+			data: {
+				dependent_params: [{ name: "sender_city", value: " Pune " }],
+			},
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		// The state entry is simply absent, which is not a failure — the client
+		// fills what it got and leaves the rest to the user.
+		expect(await eko.lookupPincode({ pincode: "411001", identity })).toEqual({
+			ok: true,
+			city: "Pune",
+			state: null,
+		});
+	});
+
+	it("lookupPincode treats a non-zero status as an ordinary miss", async () => {
+		const f = mockFetch(200, {
+			status: 26,
+			response_type_id: 1502,
+			message: "Invalid pincode",
+		});
+		const eko = createEkoClient(ekoCfg, f);
+		expect(await eko.lookupPincode({ pincode: "999999", identity })).toEqual({
+			ok: false,
+			kind: "miss",
+			message: "Invalid pincode",
+			responseTypeId: 1502,
+		});
+	});
+
+	it("lookupPincode flags a success with no dependent_params as malformed", async () => {
+		// The failure mode this arm exists for: upstream answers OK and carries
+		// nothing, which would otherwise read as "every PIN code is unknown".
+		const f = mockFetch(200, { status: 0, response_type_id: 1043 });
+		const eko = createEkoClient(ekoCfg, f);
+		const r = await eko.lookupPincode({ pincode: "560001", identity });
+		expect(r.ok).toBe(false);
+		expect(r).toMatchObject({ kind: "malformed", responseTypeId: 1043 });
 	});
 });
 

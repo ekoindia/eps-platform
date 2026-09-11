@@ -10,6 +10,7 @@ import type { ApiSpec } from "@/lib/data/api-specs-common";
 import { resolveEndpointUrl } from "@/lib/docs/code-samples";
 import type { TryItEnv } from "@/lib/docs/tryit-request";
 import { cn } from "@/lib/utils";
+import { setZohoChatOverlayHidden } from "@/lib/zoho-chat";
 import { AlertTriangle, Play, RotateCcw } from "lucide-react";
 import { useEffect, type KeyboardEvent } from "react";
 import { HttpMethodTag } from "../HttpMethodTag";
@@ -57,6 +58,13 @@ const TryItDialog = ({
 			void send();
 		}
 	};
+
+	// The SalesIQ bubble sits over the dialog's bottom-right corner, and its
+	// proactive popup can open on top of the whole thing. Park it while open.
+	useEffect(() => {
+		setZohoChatOverlayHidden(open);
+		return () => setZohoChatOverlayHidden(false);
+	}, [open]);
 
 	// A production+financial confirmation must not outlive a closed dialog.
 	useEffect(() => {
@@ -162,11 +170,15 @@ const TryItDialog = ({
 				</div>
 
 				{/* Panes */}
-				<div className="docs-scroll grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-2 lg:overflow-hidden">
+				{/* Below `lg` this is block flow, not a grid: grid rows share the
+				    dialog's fixed height, which clips the request pane and lets the
+				    response pane overlap it. Blocks stack at their natural heights
+				    and this container scrolls the pair. */}
+				<div className="docs-scroll min-h-0 flex-1 overflow-y-auto lg:grid lg:grid-cols-2 lg:overflow-hidden">
 					<div className="docs-scroll min-h-0 p-4 lg:overflow-y-auto lg:border-r lg:border-[var(--rp-line)]">
 						<RequestPane spec={spec} ctl={ctl} />
 					</div>
-					<div className="docs-scroll min-h-0 bg-[var(--rp-code)] lg:overflow-y-auto">
+					<div className="docs-scroll min-h-0 border-t border-[var(--rp-line)] bg-[var(--rp-code)] lg:border-t-0 lg:overflow-y-auto">
 						<ResponsePane
 							spec={spec}
 							state={state}

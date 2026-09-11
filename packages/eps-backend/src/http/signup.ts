@@ -19,6 +19,9 @@ import type { AppEnv } from "./requestId";
 /** Indian PAN: five letters, four digits, one letter. */
 const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
+/** Indian postal code: exactly six digits. Mirrors `BUSINESS_RULES` below. */
+const PINCODE_PATTERN = /^\d{6}$/;
+
 /**
  * Trust-boundary rules for the Business Details step, mirroring the client's
  * `businessFields.ts`. The duplication is deliberate — the client's copy is for
@@ -35,7 +38,8 @@ const BUSINESS_RULES: Record<
 	{ pattern: RegExp; min: number; max: number; required: boolean }
 > = {
 	name: { pattern: /^[-a-zA-Z0-9 ,./:]+$/, min: 2, max: 100, required: true },
-	company_type: { pattern: /^[1-5]$/, min: 1, max: 1, required: true },
+	// 1-5 plus Individual's 7 — the exact value set of the client's COMPANY_TYPES.
+	company_type: { pattern: /^(?:[1-5]|7)$/, min: 1, max: 1, required: true },
 	authorized_signatory_name: {
 		pattern: /^[a-zA-Z][a-zA-Z .]{1,49}$/,
 		min: 2,
@@ -348,6 +352,42 @@ export function mountSignup(
 		}
 	});
 
+	/**
+	 * Looks up the city and state for a PIN code, so the Business step can fill
+	 * two fields the user would otherwise type.
+	 *
+	 * Runs interaction 353 against the SimpliBank upstream, the same transport as
+	 * every other signup step. NOT 10027 — that id lives on connect-api, which a
+	 * signup-role session has no route to.
+	 *
+	 * Deliberately does NOT go through `respond`: it returns no onboarding state,
+	 * so there is nothing to upgrade a completed session on. A PIN code upstream
+	 * does not recognise is an ordinary `{ city: null, state: null }` answer, not
+	 * an error — the client silently leaves both fields editable.
+	 */
+	app.get("/signup/pincode", async (c) => {
+		const { sub: mobile } = await requireSignupSession(c);
+		const pincode = c.req.query("pincode") ?? "";
+		if (!PINCODE_PATTERN.test(pincode)) {
+			throw new AppError(
+				400,
+				"INVALID_INPUT",
+				"Enter a valid 6-digit PIN code.",
+			);
+		}
+		const outcome = await signup.lookupPincode(
+			mobile,
+			pincode,
+			c.req.header("x-real-ip"),
+		);
+		if (outcome.ok) return c.json({ city: outcome.city, state: outcome.state });
+		// 502, not a 4xx: this fires only when upstream answered OK and then
+		// omitted the payload, which is our integration being broken rather than
+		// the caller's input. Answering 200 with nulls instead is exactly how a
+		// dead lookup would hide as a run of unrecognised PIN codes.
+		throw new AppError(502, "PINCODE_LOOKUP_FAILED", outcome.message);
+	});
+
 	app.post("/signup/pin", async (c) => {
 		const { sub: mobile, sid } = await requireSignupSession(c);
 		const { pin1, pin2 } = await c.req.json().catch(() => ({}));
@@ -362,6 +402,8 @@ export function mountSignup(
 					mobile,
 					String(pin1),
 					String(pin2),
+					// Authenticates the connect-api call for the substitution keys.
+					sid,
 					c.req.header("x-real-ip"),
 				),
 				sid,
@@ -376,11 +418,27 @@ export function mountSignup(
 	// than routing through `respond()`.
 	app.get("/signup/agreement/url", async (c) => {
 		const { sub: mobile } = await requireSignupSession(c);
+		// The browser mints one of these per attempt — 10 opaque characters — and
+		// shows it to the user when preparing the document fails. Logging it against this
+		// request's id is what makes a quoted reference resolvable — without it the
+		// string is visible to support but greppable nowhere. Client-supplied, so
+		// it is stripped to the character set of the format that produced it and
+		// capped: anything else is not a reference, and an unbounded raw string
+		// with newlines in it would be a log-injection vector.
+		const clientRef = (c.req.query("client_ref_id") ?? "")
+			.replace(/[^A-Za-z0-9-]/g, "")
+			.slice(0, 32);
 		try {
 			return c.json(
 				await signup.getAgreementUrl(mobile, c.req.header("x-real-ip")),
 			);
 		} catch (e) {
+			if (clientRef) {
+				console.error("[signup] agreement url failed", {
+					rid: c.get("rid"),
+					clientRef,
+				});
+			}
 			toAppError(e);
 		}
 	});

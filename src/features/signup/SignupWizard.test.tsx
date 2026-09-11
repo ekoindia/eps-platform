@@ -18,6 +18,7 @@ vi.mock("@/lib/auth/client", async (orig) => ({
 		createProfile: vi.fn(),
 		submitPan: vi.fn(),
 		submitPin: vi.fn(),
+		submitBusiness: vi.fn(),
 	},
 }));
 
@@ -56,6 +57,24 @@ function typePin(name: RegExp, value: string) {
 const findStepHeading = (name: string) =>
 	screen.findByRole("heading", { name, level: 3 });
 
+/**
+ * Finds the PAN step's heading.
+ *
+ * The PAN step opts into `ownsHeading`, so it writes its own copy in its own
+ * words at level 2 instead of taking the wizard's CardTitle. The rail still
+ * says "PAN Details" — the two names coexist by design, which is why this is a
+ * separate helper rather than a wider `findStepHeading`.
+ */
+const findPanHeading = () =>
+	screen.findByRole("heading", { name: "First, your PAN", level: 2 });
+
+/** The Business step's own heading — it opts into `ownsHeading` too. */
+const findBusinessHeading = () =>
+	screen.findByRole("heading", {
+		name: "Now, your business details",
+		level: 2,
+	});
+
 const panPending: SignupState = {
 	mobile: "9990000001",
 	status: "in_progress",
@@ -66,6 +85,19 @@ const panPending: SignupState = {
 	currentRole: 13000,
 };
 const pinPending: SignupState = { ...panPending, currentRole: 12600 };
+
+/** A PAN -> Business Details flow, for the cross-step prefill tests below. */
+const businessFlow: SignupState = {
+	mobile: "9990000001",
+	status: "in_progress",
+	steps: [
+		{ role: 13000, label: "PAN Details" },
+		// Upstream still calls this "Company Details"; the registry label wins.
+		{ role: 13100, label: "Company Details" },
+	],
+	currentRole: 13000,
+};
+const businessPending: SignupState = { ...businessFlow, currentRole: 13100 };
 const done: SignupState = { ...panPending, status: "done", currentRole: null };
 
 beforeEach(() => vi.clearAllMocks());
@@ -92,7 +124,7 @@ describe("SignupWizard", () => {
 			currentRole: null,
 		});
 		await waitFor(() => expect(signupClient.createProfile).toHaveBeenCalled());
-		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
+		expect(await findPanHeading()).toBeInTheDocument();
 	});
 
 	// Regression guard: the mount effect used to pair a `started` ref with a
@@ -116,14 +148,14 @@ describe("SignupWizard", () => {
 				<SignupWizard />
 			</StrictMode>,
 		);
-		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
+		expect(await findPanHeading()).toBeInTheDocument();
 		expect(signupClient.createProfile).toHaveBeenCalledTimes(1);
 	});
 
 	it("renders the current step and its progress", async () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		render(<SignupWizard />);
-		expect(await findStepHeading("PAN Details")).toBeInTheDocument();
+		expect(await findPanHeading()).toBeInTheDocument();
 		expect(screen.getByText(/step 1 of 2/i)).toBeInTheDocument();
 		expect(signupClient.createProfile).not.toHaveBeenCalled();
 	});
@@ -178,7 +210,7 @@ describe("SignupWizard", () => {
 		vi.mocked(signupClient.state).mockResolvedValue(panPending);
 		vi.mocked(signupClient.submitPan).mockResolvedValue(pinPending);
 		render(<SignupWizard />);
-		await findStepHeading("PAN Details");
+		await findPanHeading();
 		fireEvent.change(screen.getByLabelText(/pan/i), {
 			target: { value: "ABCDE1234F" },
 		});
@@ -215,7 +247,7 @@ describe("SignupWizard", () => {
 			await vi.advanceTimersByTimeAsync(0);
 			expect(screen.getByRole("alert")).toHaveTextContent("PAN already in use");
 			expect(
-				screen.getByRole("heading", { name: "PAN Details", level: 3 }),
+				screen.getByRole("heading", { name: "First, your PAN", level: 2 }),
 			).toBeInTheDocument();
 		} finally {
 			vi.useRealTimers();
@@ -232,5 +264,134 @@ describe("SignupWizard", () => {
 		fireEvent.click(screen.getByRole("button", { name: /finish/i }));
 		expect(await screen.findByText(/you're all set/i)).toBeInTheDocument();
 		await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
+	});
+
+	it("carries the PAN category into the Business step's prefill", async () => {
+		// BusinessStep seeds company_type in a one-time lazy initialiser, so the
+		// category has to be in the provider by the time that step first mounts.
+		// Component tests cannot see this — only the wizard wires the two steps.
+		vi.mocked(signupClient.state).mockResolvedValue(businessFlow);
+		vi.mocked(signupClient.submitPan).mockResolvedValue(businessPending);
+		render(<SignupWizard />);
+
+		fireEvent.change(await screen.findByLabelText(/pan/i), {
+			target: { value: "ABCCE1234F" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await findBusinessHeading();
+		expect(screen.getByLabelText(/business type/i)).toHaveValue("1");
+	});
+
+	it("prefills from the retried PAN after a failed attempt, not the first one", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(businessFlow);
+		vi.mocked(signupClient.submitPan)
+			.mockRejectedValueOnce(// INVALID_INPUT is in NEVER_RETRY, so this surfaces immediately
+			// rather than burning the backoff.
+			new ApiError("INVALID_INPUT", "Bad PAN.", 400))
+			.mockResolvedValueOnce(businessPending);
+		render(<SignupWizard />);
+
+		const input = await screen.findByLabelText(/pan/i);
+		// First attempt: a firm PAN that fails upstream.
+		fireEvent.change(input, { target: { value: "ABCFE1234F" } });
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+		expect(await screen.findByRole("alert")).toHaveTextContent("Bad PAN.");
+
+		// Retry with a company PAN — the prefill must follow the retry.
+		fireEvent.change(screen.getByLabelText(/pan/i), {
+			target: { value: "ABCCE1234F" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await findBusinessHeading();
+		expect(screen.getByLabelText(/business type/i)).toHaveValue("1");
+	});
+
+	it("rails the middle step from the registry, ignoring the API's label", async () => {
+		// The card owns its heading now, so the registry label survives only in
+		// the rail — that is where upstream's "Company Details" must not appear.
+		vi.mocked(signupClient.state).mockResolvedValue(businessPending);
+		render(<SignupWizard />);
+
+		await findBusinessHeading();
+		const rail = screen.getByRole("navigation", { name: /signup progress/i });
+		expect(
+			within(rail).getByText(/Business Details, current step/),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Company Details")).not.toBeInTheDocument();
+	});
+
+	it("shows the server's PAN in the Business step", async () => {
+		// Survives a reload, unlike the in-session capture below.
+		vi.mocked(signupClient.state).mockResolvedValue({
+			...businessPending,
+			name: "Umbrella Foundation",
+			pan: "AAATU1234E",
+		});
+		render(<SignupWizard />);
+
+		await findBusinessHeading();
+		expect(
+			screen.getByText(/verified from PAN AAATU1234E/i),
+		).toBeInTheDocument();
+	});
+
+	it("falls back to this session's PAN when the server omits it", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(businessFlow);
+		vi.mocked(signupClient.submitPan).mockResolvedValue({
+			...businessPending,
+			name: "Umbrella Foundation",
+		});
+		render(<SignupWizard />);
+
+		fireEvent.change(await screen.findByLabelText(/pan/i), {
+			target: { value: "AAATU1234E" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+		await findBusinessHeading();
+		expect(
+			screen.getByText(/verified from PAN AAATU1234E/i),
+		).toBeInTheDocument();
+	});
+
+	it("renders the Business step without a PAN when neither source has one", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue({
+			...businessPending,
+			name: "Umbrella Foundation",
+		});
+		render(<SignupWizard />);
+
+		await findBusinessHeading();
+		expect(screen.getByText("Umbrella Foundation")).toBeInTheDocument();
+		expect(screen.queryByText(/from PAN/i)).toBeNull();
+	});
+
+	it("renders the PAN step's aside, while the rail keeps the short label", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(panPending);
+		render(<SignupWizard />);
+
+		await findPanHeading();
+		const aside = screen.getByRole("complementary", { name: /why we ask/i });
+		expect(within(aside).getByText(/why we ask/i)).toBeInTheDocument();
+		expect(within(aside).getByText("Trusted since 2007")).toBeInTheDocument();
+
+		// The card's copy and the rail's wayfinding label are different strings
+		// on purpose — this is the assertion that pins that down.
+		const rail = screen.getByRole("navigation", { name: /signup progress/i });
+		expect(within(rail).getByText(/PAN Details, current step/)).toBeInTheDocument();
+	});
+
+	it("renders no aside for a step that does not opt in", async () => {
+		vi.mocked(signupClient.state).mockResolvedValue(pinPending);
+		render(<SignupWizard />);
+
+		await findStepHeading("Set Secret PIN");
+		// The slot is opt-in: every other step must be untouched by it.
+		expect(screen.queryByRole("complementary")).toBeNull();
+		expect(
+			screen.getByRole("heading", { name: "Set Secret PIN", level: 3 }),
+		).toBeInTheDocument();
 	});
 });

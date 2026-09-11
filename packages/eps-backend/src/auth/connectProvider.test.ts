@@ -42,6 +42,7 @@ function setup(
 		interactions: vi.fn(async () => []),
 		interact: vi.fn(async () => ({})),
 		interactJson: vi.fn(async () => ({})),
+		fetchPintwinKey: vi.fn(async () => null),
 		uploadInteraction: vi.fn(async () => ({})),
 		createSupportTicket: vi.fn(async () => ({})),
 		...over,

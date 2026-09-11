@@ -62,6 +62,10 @@ export const ROUTE_CHUNK_MAP: Array<{ pattern: RegExp; src: string }> = [
 	{ pattern: /^\/privacy-policy$/, src: "src/pages/PrivacyPolicyPage.tsx" },
 	{ pattern: /^\/refund-policy$/, src: "src/pages/RefundPolicyPage.tsx" },
 	{ pattern: /^\/grievance$/, src: "src/pages/GrievancePage.tsx" },
+	{
+		pattern: /^\/samples\/partner-agreement$/,
+		src: "src/pages/PartnerAgreementSamplePage.tsx",
+	},
 	{ pattern: /^\/signup$/, src: "src/pages/SignupPage.tsx" },
 	// Home — last so it does not accidentally match other paths
 	{ pattern: /^\/$/, src: "src/pages/Index.tsx" },
@@ -123,4 +127,7 @@ export const PRERENDER_ROUTES: string[] = [
 	"/refund-policy",
 	"/grievance",
 	"/signup",
+
+	// Samples (noindex — excluded from the sitemap in ssg/sitemap.ts)
+	"/samples/partner-agreement",
 ];

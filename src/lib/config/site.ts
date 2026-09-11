@@ -35,8 +35,14 @@ export const EPS_TRANSACT_MCP_CMD = `npx -y ${EPS_TRANSACT_MCP_PKG}`;
  * (/context/ is reserved for the future remote eps-context-mcp). */
 export const EPS_TRANSACT_MCP_URL = "https://mcp.eko.in/transact/mcp";
 
-export const PARENT_SITE_URL = "https://eko.in";
+export const PARENT_SITE_URL = "https://about.eko.in";
 export const PARENT_SITE_NAME = "Eko Bharat Ventures Pvt. Ltd.";
+/**
+ * Year Eko Bharat Ventures was founded — the parent company's track record,
+ * not EPS's. Surfaced as a trust signal in the About copy, `WhyEkoSection`
+ * and the `parentOrganization` node of every page's Organization JSON-LD.
+ */
+export const COMPANY_FOUNDED_YEAR = 2007;
 
 /**
  * Default SEO meta — used by DefaultMeta.tsx as the base layer for Helmet cascading.

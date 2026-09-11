@@ -15,7 +15,7 @@ the build files, or the per-platform deploy files.
 
 | File | Configures | Edit when |
 |------|-----------|-----------|
-| [`src/lib/config/site.ts`](../src/lib/config/site.ts) | Canonical `SITE_URL`, SEO defaults (`SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_OG_IMAGE`), social links, sales mobile, signup path, `API_DEFAULT_VERSION`, parent-site links | Domain change, default SEO/social copy, default API version |
+| [`src/lib/config/site.ts`](../src/lib/config/site.ts) | Canonical `SITE_URL`, SEO defaults (`SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_OG_IMAGE`), social links, sales mobile, signup path, `API_DEFAULT_VERSION`, parent-site links, `COMPANY_FOUNDED_YEAR` | Domain change, default SEO/social copy, default API version, founding-year trust signal |
 | [`src/lib/config/zoho.ts`](../src/lib/config/zoho.ts) | Zoho SalesIQ / chat + CRM integration constants | Chat widget or lead-routing changes |
 
 Canonical links, AI-hint text, and JSON-LD all read `SITE_URL` from here — change it in one place.
@@ -31,8 +31,9 @@ rule, edit `isChatHiddenPath()` **and** the matching path check in the
 are duplicated on purpose.
 
 The whole widget — bubble, chat window and any proactive popup — is also
-parked while a full-screen overlay covers the page (the mobile menu sheet and
-the ⌘K command palette). `Header.tsx` calls `setZohoChatOverlayHidden()`, which
+parked while a full-screen overlay covers the page (the mobile menu sheet, the
+⌘K command palette and the docs try-it dialog). `Header.tsx` and
+`TryItDialog.tsx` call `setZohoChatOverlayHidden()`, which
 toggles a `chat-overlay-open` class on `<body>`; the rule that hides SalesIQ's
 `.zsiq_theme1` root lives in [`src/index.css`](../src/index.css). It is CSS
 rather than the widget's `visible()` API because the widget re-shows itself on

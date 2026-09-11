@@ -25,6 +25,9 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const RefundPolicyPage = lazy(() => import("./pages/RefundPolicyPage"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
+const PartnerAgreementSamplePage = lazy(
+	() => import("./pages/PartnerAgreementSamplePage"),
+);
 // const EkoShieldPage = lazy(() => import("./pages/EkoShieldPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const IndustryDetailPage = lazy(() => import("./pages/IndustryDetailPage"));
@@ -177,6 +180,10 @@ const App = ({
 									/>
 									<Route path="/refund-policy" element={<RefundPolicyPage />} />
 									<Route path="/grievance" element={<GrievancePage />} />
+									<Route
+										path="/samples/partner-agreement"
+										element={<PartnerAgreementSamplePage />}
+									/>
 									<Route path="/signup" element={<SignupPage />} />
 
 									{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}

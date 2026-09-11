@@ -77,6 +77,8 @@ export interface BusinessField {
 	options?: readonly { label: string; value: string }[];
 	/** Optional helper line shown under the label. */
 	description?: string;
+	/** Optional in-field hint. Doubles as the empty option's text on a select. */
+	placeholder?: string;
 	required: boolean;
 	pattern: RegExp;
 	min: number;
@@ -87,11 +89,24 @@ export interface BusinessField {
 	inputMode?: "numeric" | "email";
 	/** When true, the field renders read-only once the profile prefills it. */
 	lockWhenPrefilled?: boolean;
+	/**
+	 * When true the field takes the whole row; otherwise it shares a row with
+	 * its neighbour on `sm` and up. Groups render as a two-column grid, so this
+	 * is what puts PIN code beside City while State and Street address run full
+	 * width — laid out here, next to the field, rather than as a rule about
+	 * which group a field happens to sit in.
+	 */
+	fullWidth?: boolean;
 }
 
 /**
  * Every field of the step, declared once. This array drives both the rendered
  * form and client-side validation, so adding a field is a one-line change.
+ *
+ * `name` and `company_type` are declared here — and so validated and submitted
+ * with the rest — but are NOT listed in `BUSINESS_GROUPS` below: `BusinessStep`
+ * renders them itself, in the verified-from-PAN box and the business-type
+ * question respectively.
  *
  * The BFF re-validates all of this independently (`http/signup.ts`) — these
  * rules are for feedback, not enforcement.
@@ -109,23 +124,28 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		max: 100,
 		message: "Use only letters, numbers and , . / : -",
 		lockWhenPrefilled: true,
+		fullWidth: true,
 	},
 	{
 		name: "company_type",
-		label: "Company Type",
+		label: "Business Type",
 		kind: "select",
 		options: COMPANY_TYPES,
+		placeholder: "Select business type…",
 		required: true,
-		pattern: /^[1-5]$/,
+		// Every value in COMPANY_TYPES, which is 1-5 plus Individual's 7. Keep in
+		// step with that array and with the BFF mirror in `http/signup.ts`.
+		pattern: /^(?:[1-5]|7)$/,
 		min: 1,
 		max: 1,
-		message: "Select a company type",
+		message: "Select a business type",
+		fullWidth: true,
 	},
 	{
 		name: "authorized_signatory_name",
-		label: "Director / Authorised Signatory's Full Name",
+		label: "Authorised signatory",
 		kind: "text",
-		description: "Used for signing the agreement.",
+		placeholder: "Full name",
 		required: true,
 		pattern: /^[a-zA-Z][a-zA-Z .]{1,49}$/,
 		min: 2,
@@ -134,9 +154,9 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 	},
 	{
 		name: "email",
-		label: "Email Address",
+		label: "Work email",
 		kind: "text",
-		description: "Used for communication and agreement delivery.",
+		placeholder: "you@organisation.in",
 		required: true,
 		pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 		min: 5,
@@ -145,29 +165,22 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		inputMode: "email",
 	},
 	{
-		name: "current_address_line1",
-		label: "Registered Business Address (Line 1)",
+		name: "current_address_pincode",
+		label: "PIN code",
 		kind: "text",
+		// placeholder: "560001",
 		required: true,
-		pattern: /^.+$/,
-		min: 10,
-		max: 200,
-		message: "Enter a valid address",
-	},
-	{
-		name: "current_address_line2",
-		label: "Registered Business Address (Line 2, optional)",
-		kind: "text",
-		required: false,
-		pattern: /^.*$/,
-		min: 0,
-		max: 200,
-		message: "Enter a valid address",
+		pattern: /^\d{6}$/,
+		min: 6,
+		max: 6,
+		message: "Enter a valid 6-digit PIN code",
+		inputMode: "numeric",
 	},
 	{
 		name: "current_address_district",
 		label: "City",
 		kind: "text",
+		placeholder: "Fills from the PIN code",
 		required: true,
 		pattern: /^[a-zA-Z ]+$/,
 		min: 2,
@@ -181,41 +194,51 @@ export const BUSINESS_FIELDS: readonly BusinessField[] = [
 		options: INDIAN_STATES.map((s) => ({ label: s, value: s })).sort((a, b) =>
 			a.label.localeCompare(b.label),
 		),
+		placeholder: "Select state…",
 		required: true,
 		pattern: /^.+$/,
 		min: 2,
 		max: 60,
 		message: "Select a state",
+		fullWidth: true,
 	},
 	{
-		name: "current_address_pincode",
-		label: "Pincode",
+		// The only address line. The optional "Floor, unit, landmark" second line
+		// was dropped: it was one more box on an already long form, and upstream
+		// takes 200 characters here, which is room for both parts of an address.
+		// The BFF still accepts `current_address_line2` (optional) so an older
+		// cached client keeps working.
+		name: "current_address_line1",
+		label: "Street address",
 		kind: "text",
+		placeholder: "Floor, building, street, area",
 		required: true,
-		pattern: /^\d{6}$/,
-		min: 6,
-		max: 6,
-		message: "Enter a valid 6-digit pincode",
-		inputMode: "numeric",
+		pattern: /^.+$/,
+		min: 10,
+		max: 200,
+		message: "Enter a valid address",
+		fullWidth: true,
 	},
 ];
 
-/** Fields grouped for display, so nine inputs don't render as one wall. */
+/**
+ * Fields grouped for display, in render order.
+ *
+ * `name` and `company_type` are deliberately absent — see `BUSINESS_FIELDS`.
+ */
 export const BUSINESS_GROUPS: readonly { heading: string; fields: string[] }[] =
 	[
-		{ heading: "Business", fields: ["name", "company_type"] },
 		{
-			heading: "Contact",
+			heading: "Who signs the agreement",
 			fields: ["authorized_signatory_name", "email"],
 		},
 		{
-			heading: "Address",
+			heading: "Registered address",
 			fields: [
-				"current_address_line1",
-				"current_address_line2",
+				"current_address_pincode",
 				"current_address_district",
 				"current_address_state",
-				"current_address_pincode",
+				"current_address_line1",
 			],
 		},
 	];

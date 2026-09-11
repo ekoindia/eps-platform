@@ -46,6 +46,9 @@ export function generateMarkdownPlugin(): Plugin {
 					let body = renderDevRoute(url, bundle);
 					// Guide twins need an async file read, so they're not handled by
 					// the sync renderDevRoute.
+					if (body === null && url === PARTNER_AGREEMENT_MD_PATH) {
+						body = await readPartnerAgreementSource(server.config.root);
+					}
 					if (body === null && url === "/docs/sdk.md") {
 						body = bundle.renderSdkIndexMarkdown();
 					}
@@ -212,6 +215,15 @@ export function generateMarkdownPlugin(): Plugin {
 				await writeFile(
 					path.join(outDir, "faq.md"),
 					bundle.renderFaqMarkdown(bundle.GLOBAL_FAQS),
+				);
+				written++;
+
+				// -- Sample partner agreement ---------------------------------------
+				// Copied verbatim: the authored markdown file IS the twin, so the
+				// page and the .md can never drift.
+				await writeFile(
+					path.join(outDir, "samples", "partner-agreement.md"),
+					await readPartnerAgreementSource(resolvedConfig.root),
 				);
 				written++;
 
@@ -491,6 +503,21 @@ async function collectBodies(
 async function readGuideSource(root: string, slug: string): Promise<string> {
 	return fs.readFile(
 		path.join(root, "src/content/docs", `${slug}.mdx`),
+		"utf8",
+	);
+}
+
+/** Twin URL for the sample partner agreement — one string, two call sites. */
+const PARTNER_AGREEMENT_MD_PATH = "/samples/partner-agreement.md";
+
+/**
+ * Read the sample partner agreement's raw markdown. Unlike every other twin
+ * this one is authored, not generated, so it is served byte-for-byte — the same
+ * file the page imports `?raw`.
+ */
+async function readPartnerAgreementSource(root: string): Promise<string> {
+	return fs.readFile(
+		path.join(root, "src/content/legal/partner-agreement.md"),
 		"utf8",
 	);
 }

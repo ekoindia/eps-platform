@@ -25,6 +25,8 @@ document is the end-to-end step walkthrough and the Eloka diff.
 | Registry | `src/features/signup/steps.ts` | Maps role `12800` → `SignAgreementStep`, and its submit → `client.submitAgreement(v.document_id)` |
 | Resolver | `src/features/signup/resolveSteps.ts` | Server `onboarding_steps` × local registry → ordered steps with `complete`/`current`/`pending` |
 | Step UI | `src/features/signup/SignAgreementStep.tsx` | Phase machine, URL fetch, provider open, `STATUS_UPDATE` listener, final submit |
+| Step aside | `src/features/signup/SignAgreementAside.tsx` | "Why sign now" and "About the e-signature" columns + trust chips (presentational) |
+| Document mock | `src/features/signup/AgreementDocPreview.tsx` | Inline SVG page in three states (`loading`/`ready`/`error`) |
 | Provider mechanics | `src/features/signup/esign.ts` | `usesLeegality()`, `loadLeegality()`, `esignOrigin()`, `openEsign()` |
 | SDK asset | `public/scripts/leegalityv5.min.js` | Self-hosted Leegality v5 loader (script id `leegality-sdk`), so it loads under `script-src 'self'` |
 | API client | `src/lib/auth/client.ts` | `signupClient.getAgreementUrl()`, `signupClient.submitAgreement()`, `SignUrlView`, cookie auth + one-shot 401 refresh |
@@ -274,25 +276,109 @@ names a bad field — or any of the deny-listed codes — still surfaces at once
 
 ### 1.6 What the step renders
 
-One return, no separate loading/error screens — `loading` and `error` are states
-of the first checklist row:
+The step sets `ownsHeading: true` and carries an `Aside`, so the wizard omits its
+card header and widens to `max-w-6xl` — the same shape as `PanStep` and
+`BusinessStep`. One return, no separate loading/error screens: `loading` and
+`error` are contents of the single document panel.
 
 | Element | Rendered when | Content |
 | --- | --- | --- |
-| Blurb | always | "Review and digitally sign the terms and conditions to activate your account and start using our services." |
-| Row 1 — document | always | spinner "Preparing your document…" / ✗ "Failed to prepare document" + **Retry** / ✓ "Document is generated for **{name}**" with "Document ID: {id}" beneath |
-| Row 2 — e-sign | always (40% opacity on `error`) | ✓ or ○, "Document Esign", `Badge` **Completed**/**Pending** |
-| **Sign Agreement** | `!signed && !loading && !error` | disabled only while the SDK modal is up; reads "Open the signing window again" for an open popup |
-| Steps box | `!signed && !loading && !error` | the 3 numbered instructions |
+| Heading | always | h2 "Last step — sign the agreement" + the cost/commitment blurb |
+| Document panel | always | `AgreementDocPreview` beside the status block below |
+| — loading | `phase === "loading"` | spinner "Preparing your document…", the stamped-fields checklist, and after 8s "Still going — this one is slower than usual…" (`role="status"`) |
+| — error | `phase === "error"` | red panel, "Couldn't prepare the document" / "Something broke on our side", WhatsApp support link (`attempts > 1` **and** `SUPPORT_WHATSAPP` set), `REF {clientRef}` |
+| — ready/signed | otherwise | ✓ "Document ready" (or "Signed"), **Eko Platform Services Agreement**, "Prepared for **{name}**", **Explain with AI**, `ID {documentId}` |
+| **Preparing your document…** | `loading` | disabled |
+| **Try again** | `error` | re-runs `initialize()` with a fresh reference |
+| **Read and sign the agreement** | `!signed && !loading && !error` | disabled only while the SDK modal is up; reads "Open the signing window again" for an open popup |
 | Grace line | `popupOpen && grace > 0` | `aria-live` "Opening the signing window… you can continue in N seconds." |
-| **Continue** | `signed \|\| popupOpen` | disabled during the popup grace; "Finishing…" while `busy` |
+| **Continue** | `signed \|\| popupOpen` | disabled during the popup grace; "Finishing…" while `busy`. For an open popup it renders **alongside** the reopen button, never instead of it — the user may need either. |
+| Sub-caption | always | "Opens the document first…"; on a first failure "If the second attempt fails too, quote reference …"; on a later one "Quote reference …" |
+| Gold box | always | "Signing does not start a bill." — no signing fee, no minimum usage |
 
 The name is `useSignupProfile().name` — the same context `BusinessStep` prefills
 from, sourced from the interaction-151 profile via `SignupState.name`. It is
-`.trim()`ed and the whole "for …" clause is dropped when absent, rather than
-substituting a placeholder: a legal agreement should not claim to be generated
-for "your business". The document id is the one already held for the 293 submit;
-it was simply never displayed before.
+`.trim()`ed and the whole "Prepared for …" line is dropped when absent, rather
+than substituting a placeholder: a legal agreement should not claim to be
+generated for "your business". The document id is the one already held for the
+293 submit.
+
+`DOCUMENT_TITLE` is a local constant, because upstream returns no title. It must
+stay equal to the title of the published sample at `/samples/partner-agreement`,
+which is the URL handed to the AI — a user who follows that link and finds a
+differently-named contract has been handed a reason to distrust the flow.
+
+The panel carries **no** "read a sample" link. The CTA opens the real, filled-in
+document for reading before the signature block, so a sample link beside it would
+only offer a worse copy of what the button already gives.
+
+#### The loading checklist is local, not server progress
+
+`GET /signup/agreement/url` is a single call that reports nothing until it
+answers. `STAMPED_FIELDS` (Registered name → Registered address → Signatory →
+Formatting and layout) is revealed on a local 1200ms interval and names *what is being written onto
+the document*, not what upstream has finished. Two rules keep it honest:
+
+- The **last** field never ticks (`Math.min(n + 1, length - 1)`). It completes
+  when the document does; showing it done while we are still waiting would be a
+  lie the user can catch.
+- `slow` flips only after `SLOW_AFTER_MS` (8s) of **real** elapsed time.
+
+Both, plus the reference, reset at the top of `initialize()` — not merely when
+the timers are cleared. Without that, a retry after a slow failure would open
+with every field already ticked and the "slower than usual" line already
+showing.
+
+#### Escalation is gated on a failed retry
+
+`attempts` counts how many times `initialize()` has run this mount — **user**
+attempts, not `withRetries` attempts, since three transparent retries behind one
+spinner are still one try as far as the user is concerned. The first failure
+shows no WhatsApp link and a caption pointing at the button ("If the second
+attempt fails too…"); only from `attempts > 1` does the panel offer a human. The
+copy promises a retry usually fixes this and it usually does, so sending people
+to support ahead of the button that would have worked just costs support tickets.
+The link additionally requires `SUPPORT_WHATSAPP` to be set — the support vars
+are per-deployment, and a dead link is worse than none.
+
+#### The error reference
+
+`newClientRef()` mints 10 characters from a 32-symbol alphabet
+(`REF_ALPHABET`, with `I`/`O`/`0`/`1` left out because these get read aloud down
+a phone line; exactly 32 symbols also means a byte maps on with no modulo bias)
+using `crypto.getRandomValues`, **before** the request and passes it to `signupClient.getAgreementUrl(ref)`, which sends it as
+`?client_ref_id=`. All three `withRetries` attempts quote the same reference —
+one user attempt is one reference — and **Try again** mints a new one. On
+failure the browser `console.error`s `[agreement] {ref}` with the underlying
+error, and the BFF logs `[signup] agreement url failed { rid, clientRef }`, which
+is what makes a quoted reference resolvable to a request. The BFF strips the
+value to `[A-Za-z0-9-]` and caps it at 32 chars before logging: it is
+client-supplied, and a raw string with newlines in it is a log-injection vector.
+
+The reference is deliberately opaque — no prefix, no grouping. It is a lookup
+key, not a code anyone parses, and structure would only be one more thing that
+can drift out of step with whatever a log search expects.
+
+#### Animation
+
+`AgreementDocPreview` is inline SVG — a rounded page plus seven line `rect`s.
+While loading, the lines run the shared `pulse-soft` keyframe with a per-row
+`animationDelay`, and a gradient band runs the `doc-scan` keyframe
+(`src/index.css`) down the page behind a `clipPath`. When the document is ready
+three lines transition to gold, standing in for the fields we filled in. Both
+animations carry `motion-reduce:` opt-outs — the reduced-motion failsafe in
+`index.css` is class-scoped (`.fade-in-*`, `.hero-bot`) and does not cover new
+keyframes.
+
+#### Aside
+
+`SignAgreementAside` mirrors `PanAside`/`BusinessAside` exactly — `Card` sections
+with uppercase `<p>` eyebrows (never an `<h2>`: `SignupWizard.test.tsx` runs
+singular level-2 heading queries), `text-[0.76rem]` lead/body pairs, then the
+chip row (`Trusted since 2007`, `ISO 27001`, `UIDAI eSign`). Because its heading
+is "Why sign now" rather than "Why we ask", `StepDefinition` gained an optional
+`asideLabel`, which the wizard uses for the `<aside>`'s `aria-label` and which
+defaults to "Why we ask" for the other two steps.
 
 ### 1.7 Trust boundary
 

@@ -164,6 +164,9 @@ export function renderLlmsTxt(
 	lines.push(
 		`- [API Recipes](${SITE_URL}${recipeHref()}.md): Multi-step workflows — the order to call endpoints in, and how to branch on each response`,
 	);
+	lines.push(
+		`- [Sample Partner Agreement](${SITE_URL}/samples/partner-agreement.md): The EPS partner agreement, published for review before signing, plus an explanatory FAQ`,
+	);
 	// lines.push(`- [Use cases hub](${SITE_URL}/use-cases.md): Industries and solution packs`);
 	lines.push("");
 

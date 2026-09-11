@@ -29,6 +29,7 @@ import AboutPage from "./pages/AboutPage";
 import BlogsMediaPage from "./pages/BlogsMediaPage";
 import GrievancePage from "./pages/GrievancePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import PartnerAgreementSamplePage from "./pages/PartnerAgreementSamplePage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import TermsPage from "./pages/TermsPage";
 // import EkoShieldPage from "./pages/EkoShieldPage";
@@ -165,6 +166,10 @@ const AppServer = ({
 									/>
 									<Route path="/refund-policy" element={<RefundPolicyPage />} />
 									<Route path="/grievance" element={<GrievancePage />} />
+									<Route
+										path="/samples/partner-agreement"
+										element={<PartnerAgreementSamplePage />}
+									/>
 									<Route path="/signup" element={<SignupPage />} />
 
 									{/* Auth — client-only (intentionally excluded from PRERENDER_ROUTES) */}

@@ -145,6 +145,21 @@ export interface SignupState {
 	name?: string;
 	/** Profile email, when an upstream record carries one. */
 	email?: string;
+	/**
+	 * The verified PAN, once upstream has back-filled it on the profile.
+	 *
+	 * Best-effort, and absent until the PAN step has run — the Business step
+	 * uses it only to name the source of its prefilled details and renders
+	 * without it when it is missing. Never treat it as "the PAN step is done";
+	 * `currentRole` is the authority on progress.
+	 */
+	pan?: string;
+}
+
+/** City and state for a PIN code; either is null when upstream did not name it. */
+export interface PincodeView {
+	city: string | null;
+	state: string | null;
 }
 
 /** The e-sign URL details for the Sign Agreement step, from the backend. */
@@ -775,8 +790,35 @@ export const signupClient = {
 			method: "POST",
 			body: JSON.stringify(details),
 		}) as Promise<SignupState>,
-	getAgreementUrl: (): Promise<SignUrlView> =>
-		request("/signup/agreement/url", { method: "GET" }) as Promise<SignUrlView>,
+	/**
+	 * Resolves a 6-digit PIN code to its city and state.
+	 *
+	 * Takes a `signal` so the Business step can abandon a lookup the moment the
+	 * user edits the code again — the same convention as `transactionsClient
+	 * .search`.
+	 */
+	lookupPincode: (
+		pincode: string,
+		signal?: AbortSignal,
+	): Promise<PincodeView> =>
+		request(`/signup/pincode?pincode=${encodeURIComponent(pincode)}`, {
+			method: "GET",
+			signal,
+		}) as Promise<PincodeView>,
+	/**
+	 * Fetches the provider signing URL for the agreement.
+	 *
+	 * @param clientRefId - Caller-generated reference for this attempt. Sent so
+	 *   the same string the user is shown on failure is attached to the request
+	 *   that failed, rather than being minted after the fact.
+	 */
+	getAgreementUrl: (clientRefId?: string): Promise<SignUrlView> =>
+		request(
+			`/signup/agreement/url${
+				clientRefId ? `?client_ref_id=${encodeURIComponent(clientRefId)}` : ""
+			}`,
+			{ method: "GET" },
+		) as Promise<SignUrlView>,
 	submitAgreement: (documentId: string): Promise<SignupState> =>
 		request("/signup/agreement", {
 			method: "POST",

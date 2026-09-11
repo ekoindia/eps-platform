@@ -59,16 +59,15 @@ const SignupPage = () => {
 				) : (
 					<section className="py-4 md:py-6">
 						<div className="container mx-auto px-4 sm:px-6 lg:px-8">
+							{/* The wizard clamps its OWN width, and owns its heading with
+							    it: only the wizard knows whether the current step brings a
+							    side column that needs the extra room. This container just
+							    sets the outer bound. */}
 							<div
-								className={`mx-auto w-full ${isWizard ? "max-w-3xl" : "max-w-md"}`}
+								className={`mx-auto w-full ${isWizard ? "max-w-6xl" : "max-w-md"}`}
 							>
 								{isWizard ? (
-									<>
-										<h1 className="mb-6 text-2xl font-semibold tracking-tight">
-											Complete your setup
-										</h1>
-										<SignupWizard />
-									</>
+									<SignupWizard />
 								) : (
 									<Card>
 										<CardContent className="pt-6">

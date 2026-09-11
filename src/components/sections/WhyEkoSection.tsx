@@ -1,11 +1,12 @@
 import { FadeIn } from "@/components/FadeIn";
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Handshake, HeadphonesIcon, Shield, Users } from "lucide-react";
+import { COMPANY_FOUNDED_YEAR } from "@/lib/config/site";
 
 const trustPillars = [
 	{
 		icon: Users,
-		value: "Since 2007",
+		value: `Since ${COMPANY_FOUNDED_YEAR}`,
 		label: "Powering Bharat's MSMEs",
 		description:
 			"Building India's financial infrastructure for micro-entrepreneurs across Tier 2 and beyond",

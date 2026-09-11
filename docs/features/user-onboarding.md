@@ -55,9 +55,14 @@ envelope onto the same `ProfileResult` union `getProfile` returns, in the same
 branch order. See "Auth providers" in `packages/eps-backend/README.md`.
 
 Only the _OTP exchange_ is delegated. Every onboarding interaction below (521,
-523, 522, 170, 10005, 5) still goes straight to SimpliBank with the
+523, 522, 353, 170, 5) still goes straight to SimpliBank with the
 `developer_key` header under both providers, and so does the `/signup/state`
 profile refresh.
+
+**The one exception is 10005**, the pintwin-key fetch. It is served by
+connect-api, not by SimpliBank, so it goes out over `clients/connect.ts` with
+the session's own bearer token — see "Pintwin" below. That makes connect-api a
+hard requirement for the PIN step, not just for the OTP exchange.
 
 **The profile is read from 151 under both providers, login included.**
 `mapConnectLogin` classifies the envelope — that is what decides whether a
@@ -109,7 +114,9 @@ function actor(identity: EkoIdentity): Record<string, string> {
 (`packages/eps-backend/src/config.ts:100-101`) before a partial account
 exists (used by `createPartialAccount`, interaction 521). `actor()` supplies
 the user's own **mobile** / `code`, mapped from the 151 response by
-`identityOf()`, for every step after the account exists (523, 170, 10005, 5).
+`identityOf()`, for every step after the account exists (523, 353, 170, 5).
+10005 sends no identity pair at all — connect-api reads the caller off the
+bearer token.
 
 `initiator_id` is the user's **registered mobile number** — never an internal
 id. This mirrors connect-api, the live Eloka backend: its 151 login builds the
@@ -615,9 +622,10 @@ the failing layer.
 
 ## Interaction reference table
 
-All eight onboarding interactions post to the same `cfg.eko` SimpliBank path
-with the `developer_key` header. Seven of the eight (521, 522, 170, 10005, 5,
-287, 293) go through the shared `post()` helper, form-urlencoded; 523 goes through the
+All but one of the onboarding interactions post to the same `cfg.eko`
+SimpliBank path with the `developer_key` header — **10005 is the exception and
+goes to connect-api** (see its row). Of the SimpliBank ones, 521, 522, 353, 170,
+5, 287 and 293 go through the shared `post()` helper, form-urlencoded; 523 goes through the
 sibling `postMultipart()` helper instead — see "PAN (523)" above. Both
 helpers share one send/log/error pipeline (`sendForm()` in `eko.ts`), so
 logging and error semantics are identical either way. Success is judged
@@ -629,7 +637,8 @@ per-interaction — there is no single convention:
 | 523   | Verify PAN              | `verifyPan` (multipart, via `postMultipart()`) | user's own (`actor()`)        | `response_type_id === 1569` (`PAN_VERIFICATION_OK`)                                                                                                                                        |
 | 522   | Business details        | `submitBusiness` (398-414)                     | user's own (`actor()`)        | `response_type_id === 1567` (`BUSINESS_DETAILS_OK`)                                                                                                                                        |
 | 170   | Get booklet number      | `getBooklet` (326-351)                         | user's own                    | **both** `response_status_id === 0` **and** `response_type_id === 1646` (`BOOKLET_OK`) — the code comments that this interaction reports success on both ids and neither alone is accepted |
-| 10005 | Fetch pintwin key       | `fetchPintwinKey` (352-365)                    | user's own                    | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id`                                                                                     |
+| 353   | PIN code → city/state   | `lookupPincode`                                | user's own (`actor()`)        | `status === 0` **and** a `dependent_params` array — see "PIN code → City and State"                                                                                                        |
+| 10005 | Fetch pintwin key       | **`connect.fetchPintwinKey`** — connect-api, bearer auth, NOT `eko.ts` | the session's sealed token    | no status code check — accepted iff the response carries both a non-empty `pintwin_key` and a `key_id` (`key_id` 0 is valid)                                                               |
 | 5     | Set secret PIN          | `setSecretPin` (366-382)                       | user's own                    | `response_type_id === 9` (`SECRET_PIN_OK`)                                                                                                                                                 |
 | 287   | Fetch e-sign URL        | `getAgreementUrl`                              | user's own                    | `status === 0` **and** a `data.short_url` with an `http(s)` scheme — **not** a fixed `response_type_id` (see below). `response_type_id` 1615/1069 with `status` 0 means already signed     |
 | 293   | Submit signed agreement | `submitSignAgreement`                          | user's own                    | `status === 0`. An absent `status` fails, unlike 287                                                                                                                                       |
@@ -695,6 +704,19 @@ it with the same UAT question.
 
 ## Pintwin (170 → 10005 → 5)
 
+**10005 runs against connect-api, not SimpliBank.** The 10000+ interaction range
+is served by connect-api, so `fetchPintwinKey` lives on `clients/connect.ts` and
+authenticates with the session's own sealed upstream token
+(`auth.getUpstream(sid)` → `ca:<sid>`), which a signup-role session has. 170 and
+5, on either side of it, remain SimpliBank calls on the eko client — one step,
+two upstreams.
+
+Consequence: **the PIN step cannot run without `CONNECT_API_BASE_URL`.**
+`requireUpstreamToken` refuses the step rather than degrading — there is no PIN
+without a substitution key — and logs which of the three causes it was (no
+connect-api configured, session has no `sid`, no stored upstream session). The
+user sees one message for all three; the operator does not.
+
 Pintwin is **digit substitution, not encryption**. The 10005 response hands
 back a 10-character permutation of `0`-`9` in plaintext
 (`packages/eps-backend/src/signup/pintwin.ts:1-41`):
@@ -732,8 +754,9 @@ client-side mismatch never burns a single-use key.
 
 ## How to add a step
 
-The step order and labels are never hardcoded on either side — they come
-from the API's `onboarding_steps` at runtime. Adding a step is two additions,
+The step order is never hardcoded on either side — it comes from the API's
+`onboarding_steps` at runtime. Labels are the exception: see
+[Who names a step](#who-names-a-step) below. Adding a step is two additions,
 no branching logic anywhere else:
 
 **Backend** (`packages/eps-backend/src/`):
@@ -767,14 +790,79 @@ Promise<void>`, `busy`, `error`. Values are a **named record keyed by field
 
 That is the entire registry surface. `resolveSteps()` (`resolveSteps.ts:83-122`)
 filters the registry down to whatever roles the API actually returned, orders
-them by the API's order (not the registry's), prefers the API's label,
-falling back to the registry's, and marks steps before `currentRole`
+them by the API's order (not the registry's), takes the label from the
+registry (falling back to the API's), and marks steps before `currentRole`
 complete. **The wizard never branches on step names** — `SignupWizard.tsx`
 picks whichever `ResolvedStep` has `status === "current"` and renders its
 `Component`, forwarding `onSubmit` straight into that step's own `submit`
 closure. A role in the API the registry doesn't know is silently skipped
 rather than thrown on, so the backend can ship a new step before the frontend
 has UI for it.
+
+### Who names a step
+
+The API is authoritative for **which** steps exist and **in what order**. It is
+not authoritative for the **label** of a step we render: the wording belongs
+with the UI that implements it, and upstream's labels lag ours. Upstream still
+calls role 13100 "Company Details", which reads as Pvt-Ltd-only and excludes
+the sole proprietors and individuals that step is built to serve — the registry
+calls it "Business Details" and wins.
+
+So `resolveSteps` resolves the label as `def.label || apiStep.label`: the
+registry's, unless its entry has none. A role the registry does not know is
+skipped entirely, and its API label goes with it.
+
+Renaming a step is therefore a one-line change in `steps.ts` — no upstream
+ticket, no deploy coordination.
+
+### When a step wants more than a card
+
+Three optional fields on `StepDefinition` let a step opt out of the default
+chrome. All default to off, so a step that sets none renders exactly as it always
+has. PAN, Business Details and Sign Agreement all opt in; the PIN step does not.
+
+- **`ownsHeading`** — the wizard omits its `CardHeader` and the step writes its own
+  heading. The PAN step uses this: the rail still says "PAN Details" (wayfinding
+  needs to be short), while the card says "First, your PAN" in the step's own
+  voice. The step heading is an `<h2>` under the page's `<h1>`; steps that don't
+  opt in get the `<h3>` `CardTitle` renders. Tests must query the right level.
+- **`Aside`** — a component rendered as a sibling of the card, not inside it, for
+  supporting content the form itself shouldn't carry. It is the third DOM child of
+  the grid, so it stacks last on narrow screens with no `order-*` juggling.
+- **`asideLabel`** — the accessible name for that `<aside>` landmark, defaulting
+  to "Why we ask", which is what the PAN and Business asides literally say. The
+  Sign Agreement aside asks a different question ("Why sign now") and names its
+  own, so the landmark list stays truthful rather than describing every column
+  with one step's heading.
+
+**The third column waits for 1100px, not `lg`.** At plain `lg` (1024) the rail
+(200px), a 20rem aside and two 2.5rem gaps would leave the form under 300px of
+inner width — narrower than it is with no aside at all. Between `lg` and 1100 the
+aside sits below the card in the content column (`lg:col-start-2`).
+
+1100px is the `wide` breakpoint, declared as `--breakpoint-wide: 68.75rem` in
+`src/index.css`. Both of those details were arrived at the hard way, and the
+comment there records why:
+
+- **Not `min-[1100px]:`.** Tailwind emits arbitrary media variants *before* the
+  named breakpoint scale, so an inline `min-[1100px]:grid-cols-…` loses the
+  cascade to `lg:grid-cols-…` at every width where both match — the layout just
+  silently stays two-column.
+- **Not `1100px`.** The scale is sorted by raw value, and px cannot be compared
+  against rem, so even a *named* px breakpoint sorts ahead of `lg` (64rem) and
+  fails the same way. Match the unit the scale uses.
+
+Both failures are invisible in tests (jsdom has no layout) and in the class
+names. If a breakpoint ever appears not to apply, check the media-query order in
+the built CSS before assuming the classes are wrong.
+
+**The wizard clamps its own width, and owns the page heading to do it.** Only the
+wizard knows the resolved step, so only it knows whether the current step needs
+the wider measure — `max-w-6xl` with an aside, `max-w-3xl` without, applied by the
+`Shell` wrapper that every return branch goes through, including the loading,
+fatal, completion and unsupported-step cards. `SignupPage.tsx` just sets the outer
+bound. The `<h1>` moved into `Shell` for the same reason: left on the page it
+would sit at the edge of a wide container while a narrow step stayed centred.
 
 A new entry also appears in the step rail automatically: `StepRail.tsx` renders
 whatever `resolveSteps()` returns, so there is no second list to update. It
@@ -802,6 +890,187 @@ the wizard's `onSubmit` switch." That switch does not exist in the built
 code; the wizard has zero knowledge of step-specific call signatures. Each
 `StepDefinition` owns its own `submit`, which is strictly less coupling than
 the spec proposed, and is what's actually shipped.
+
+## PAN category: warning and Business Type prefill
+
+The 4th letter of an Indian PAN encodes the holder's legal type. `panCategory.ts`
+reads it and drives two things, neither of which blocks the user.
+
+**1. A warning on the PAN step.** A partner representing a company sometimes
+enters their own PAN. Left alone that surfaces weeks later as a KYC rejection, so
+`PanStep` shows an amber `Callout` the moment a category-`P` PAN is complete.
+**Continue stays enabled** — an individual or sole proprietor entering a personal
+PAN is doing the right thing, and the step's own copy says so. The warning is
+advice, not a gate.
+
+**The status line under the field has three states**, driven by `panCategory.ts`
+and swapped in place inside one `role="status"` element:
+
+| Condition | Reads |
+|---|---|
+| valid format | "Format looks right — {phrase}." with a green check |
+| exactly 10 characters, invalid | "That doesn't look like a valid PAN." |
+| anything else | "Encrypted, and used only for your KYC check." |
+
+The error keys on the full `PAN_LENGTH`, and `normalizePan` caps input there, so it
+cannot fire mid-typing — telling someone their half-typed PAN is wrong is nagging.
+
+`panCategoryPhrase` needs its fallback: `PAN_PATTERN` accepts **any** letter in the
+4th position, not only the ten the department allocates, so `ABCDE1234F` is
+format-valid with a meaningless category `D`. Those read "a valid PAN" rather than
+inventing a holder type, and they must never be rejected.
+
+The line is `role="status"`, deliberately **not** `role="alert"`. The server error
+below it is this form's alert; a second one would fight it for attention and break
+every singular `getByRole("alert")` query in the suite. `PanStep.test.tsx` carries
+a regression guard for exactly that.
+
+**Input is normalised on every change.** `normalizePan` strips everything that is
+not a letter or a digit, uppercases, then caps at 10 — in that order. It runs from
+`onChange`, not an `onPaste` handler, so a paste, a typed character, a
+drag-and-drop and a browser autofill are all cleaned the same way.
+
+The input deliberately carries **no `maxLength`**. The browser applies that before
+the change handler sees the value, so pasting "ABCDE 1234 F" would be truncated to
+ten *dirty* characters and silently lose its final letter. Capping after the strip
+is the fix; re-adding `maxLength` would reintroduce the bug.
+
+**2. A prefill and an ordering on the Business step.** `CATEGORY_CANDIDATES` maps
+a letter to the `COMPANY_TYPES` it admits, best candidate first, plus whether that
+first one dominates enough to preselect:
+
+| PAN letter | Candidates, best first | Preselected |
+|---|---|---|
+| `P` Individual | Sole Proprietorship, Individual | — a genuine coin flip |
+| `C` Company | Private Limited, Public Limited | Private Limited |
+| `F` Firm / LLP | LLP, Partnership | LLP |
+| `H` `A` `T` `B` `L` `J` `G` | (default order) | — no matching option exists |
+
+`C` and `F` each hide a collision — that is why the second candidate is kept
+adjacent to the preselected one rather than dropped. Where nothing dominates, the
+field stays blank and only the ordering helps.
+
+The ordering **never filters**. Every option stays selectable, because a partner
+whose PAN letter disagrees with their legal type must still be able to pick the
+right one. `panCategory.test.ts` asserts each result is a permutation of
+`COMPANY_TYPES` — same members, no drops, no duplicates — and that any preselected
+value is the head of its own ordering.
+
+Where the category **does** determine a type (`C`, `F`), the Business step stops
+asking: the answer appears in the verified-from-PAN box with a pencil beside it,
+and the "How is the business registered?" card is not rendered at all. Where it
+does not (`P`, and every letter with no matching option), the card is shown with
+the ordering applied and nothing preselected.
+
+That trade is deliberate and worth naming: `C` and `F` are heuristics, not
+verdicts — a `C` PAN could be a Public Limited and an `F` could be a Partnership
+— and business type decides which registration document KYC asks for. The edit
+control is what makes the trade acceptable, so it is **always visible**, never a
+hover-only affordance. `BusinessStep.test.tsx` guards the case that would make it
+unreachable; see the next section.
+
+**How the PAN reaches step 2.** Two sources, server first:
+
+1. `SignupState.pan`, projected in `project()` (`signup/service.ts`) from
+   `profile.userDetail.pancardnumber`, gated on the PAN shape so a masked or
+   placeholder value never arrives labelled as a PAN. Survives a reload.
+2. `panFromSession` in `SignupWizard`, captured from the PAN step's own submit.
+   Covers the case where upstream has not back-filled the profile yet.
+
+`SignupWizard` resolves `state.pan ?? panFromSession` and derives `panCategory`
+from whichever it got — the letter is never stored separately, because two fields
+holding the same fact are two fields that can disagree.
+
+**Both can be absent at once** (a reload, with upstream not echoing
+`pancardnumber`), and every consumer must render without one: the verified box
+drops to a plain "Verified" with no PAN, and the business-type question comes
+back. That is the third state, and it is tested.
+
+`BusinessStep` seeds `company_type` in its one-time lazy initialiser, so the
+category must be in the provider before that step first mounts. Component tests
+cannot see that wiring — `SignupWizard.test.tsx` covers it end to end, including
+a failed PAN submit followed by a retry with a different category.
+
+## Business Details: what is shown, what is asked
+
+The step renders four things, in order:
+
+1. **The verified-from-PAN box** — the registered name, read-only, and (when the
+   PAN determines one) the business type with its edit control. Shown only when
+   `profile.name` is present **and** passes the name field's own pattern.
+2. **The business-type question**, when `!verifiedBoxVisible || !autoFilledType
+   || editingType`.
+
+   That first clause is load-bearing. An upstream name containing `&` fails the
+   field pattern, so the box does not render; a predicate testing only the PAN
+   category would then hide the sole control for a required field and leave the
+   form permanently unsubmittable. When the box cannot render, the editable
+   Company/Firm's Name input comes back too.
+3. **Who signs the agreement** — authorised signatory and work email.
+4. **Registered address** — PIN code and City on one row, then State, then a
+   single Street address line.
+
+The optional second address line was removed. Upstream still accepts
+`current_address_line2` and `BUSINESS_RULES` still lists it as optional, so an
+older cached client keeps working; the client simply stops sending it, and the
+200-character `current_address_line1` carries the whole address.
+
+### PIN code → City and State (interaction 353)
+
+Typing six digits fires `GET /signup/pincode`, which the BFF answers over
+`eko.lookupPincode` — `post()`, `developer_key`, the same transport as
+521/522/523.
+
+**The interaction id is 353, not 10027.** 10027 is the id the lookup carries on
+connect-api; the SimpliBank upstream this client talks to does not serve it, and
+routing it there answers as an unknown interaction. That was tried and reverted.
+353 is the equivalent this upstream does serve. Both ids exist for the same
+lookup — which transport you are on decides which one is correct, so do not
+copy an id between the two clients without checking.
+
+A signup-role session cannot reach `/connect/*` anyway (403
+`NOT_DEVELOPER_SESSION`), so the eko client is the only path available here.
+
+Upstream answers in `dependent_params` as `sender_city` / `sender_state` — the
+`sender_` prefix is upstream's, from the DMT sender-address form this lookup was
+built for. This is the first place anything reads that key off a **success**
+envelope; `errorDetails` only ever saw it on failures. Success is classified on
+`status === 0`, never a `response_type_id` allowlist.
+
+The result is deliberately three-way, not two:
+
+| Upstream | `PincodeResult` | Service `PincodeOutcome` | Route | UI |
+|---|---|---|---|---|
+| `status === 0` + params | `ok: true` | `ok: true` | 200 `{city, state}` | fills what it got |
+| `status !== 0` | `kind: "miss"` | `ok: true`, both null | 200 `{null, null}` | silent |
+| `status === 0`, no params | `kind: "malformed"` | `reason: "malformed"` | **502** | silent |
+
+Collapsing the last row into the second is the failure mode this split exists to
+prevent: a dead lookup would look exactly like a long run of unrecognised PIN
+codes, and nothing would ever page. The UI is silent for both because City and
+State stay typeable either way — the lookup is a convenience, never a gate.
+
+Four rules in `BusinessStep` keep the autofill from doing damage:
+
+- **Only non-empty strings are assigned.** Form state is
+  `Record<string, string>`; a `null` city would break `validateField` and the
+  `.trim()` on submit.
+- **State names are matched case-insensitively, plus an alias table.** 522 wants
+  "National Capital Territory of Delhi (UT)" and "PondiCherry"; the lookup says
+  "Delhi" and "Puducherry". No match leaves the dropdown for the user rather than
+  guessing.
+- **A new PIN code clears what the previous lookup filled.** Otherwise a second,
+  unrecognised code leaves the first one's city sitting there — complete, valid
+  and wrong. Only lookup-owned values are cleared; anything the user typed is
+  theirs. Provenance lives in two refs (`filledByLookup`, `editedByUser`), not in
+  value comparison, because a user can legitimately type the same city the lookup
+  would have.
+- **A late response never overwrites a manual edit.** Aborting on a PIN-code
+  change does not cover an edit made to City while the *same* code's lookup is in
+  flight, so the response checks `editedByUser` before assigning.
+
+The lookup is **not** wrapped in `withRetries`. It is a convenience, and retrying
+would triple the traffic against an upstream already answering badly.
 
 ## Retrying transient failures
 
