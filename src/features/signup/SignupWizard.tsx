@@ -188,7 +188,7 @@ export function SignupWizard() {
 
 	// Each step owns its submit, so the wizard never learns step names or call
 	// signatures — adding a step touches only the registry and its component.
-	const { Component, submit, Aside, ownsHeading } = current;
+	const { Component, submit, Aside, asideLabel, ownsHeading } = current;
 
 	// Server first: it survives reloads and new devices, where the in-session
 	// capture does not. Both can be absent, and steps render without one.
@@ -251,7 +251,7 @@ export function SignupWizard() {
 				    rail once the rail column exists. */}
 				{Aside && (
 					<aside
-						aria-label="Why we ask"
+						aria-label={asideLabel ?? "Why we ask"}
 						className="min-w-0 lg:col-start-2 wide:col-start-3 wide:row-start-1"
 					>
 						<Aside />

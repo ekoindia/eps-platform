@@ -817,8 +817,9 @@ ticket, no deploy coordination.
 
 ### When a step wants more than a card
 
-Two optional fields on `StepDefinition` let a step opt out of the default chrome.
-Both default to off, so a step that sets neither renders exactly as it always has.
+Three optional fields on `StepDefinition` let a step opt out of the default
+chrome. All default to off, so a step that sets none renders exactly as it always
+has. PAN, Business Details and Sign Agreement all opt in; the PIN step does not.
 
 - **`ownsHeading`** — the wizard omits its `CardHeader` and the step writes its own
   heading. The PAN step uses this: the rail still says "PAN Details" (wayfinding
@@ -828,6 +829,11 @@ Both default to off, so a step that sets neither renders exactly as it always ha
 - **`Aside`** — a component rendered as a sibling of the card, not inside it, for
   supporting content the form itself shouldn't carry. It is the third DOM child of
   the grid, so it stacks last on narrow screens with no `order-*` juggling.
+- **`asideLabel`** — the accessible name for that `<aside>` landmark, defaulting
+  to "Why we ask", which is what the PAN and Business asides literally say. The
+  Sign Agreement aside asks a different question ("Why sign now") and names its
+  own, so the landmark list stays truthful rather than describing every column
+  with one step's heading.
 
 **The third column waits for 1100px, not `lg`.** At plain `lg` (1024) the rail
 (200px), a 20rem aside and two 2.5rem gaps would leave the form under 300px of

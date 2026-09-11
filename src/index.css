@@ -105,6 +105,7 @@
 	--animate-scale-in: scale-in 0.2s ease-out forwards;
 	--animate-menu-fullwidth-reveal: menu-fullwidth-reveal 0.2s ease-out forwards;
 	--animate-chevron-scroll: chevron-scroll 1.8s ease-in-out 10;
+	--animate-doc-scan: doc-scan 2.2s ease-in-out infinite;
 
 	@keyframes accordion-down {
 		from {
@@ -241,6 +242,22 @@
 		100% {
 			opacity: 0.15;
 			transform: translateY(0);
+		}
+	}
+	/* A highlight band sweeping down the document preview while the agreement is
+	   being prepared. Percentages are of the band's own height, so the element
+	   sizes itself and this keyframe never needs to know the page's dimensions. */
+	@keyframes doc-scan {
+		0% {
+			opacity: 0;
+			transform: translateY(-100%);
+		}
+		50% {
+			opacity: 0.9;
+		}
+		100% {
+			opacity: 0;
+			transform: translateY(900%);
 		}
 	}
 }

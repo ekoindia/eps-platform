@@ -418,11 +418,27 @@ export function mountSignup(
 	// than routing through `respond()`.
 	app.get("/signup/agreement/url", async (c) => {
 		const { sub: mobile } = await requireSignupSession(c);
+		// The browser mints one of these per attempt — 10 opaque characters — and
+		// shows it to the user when preparing the document fails. Logging it against this
+		// request's id is what makes a quoted reference resolvable — without it the
+		// string is visible to support but greppable nowhere. Client-supplied, so
+		// it is stripped to the character set of the format that produced it and
+		// capped: anything else is not a reference, and an unbounded raw string
+		// with newlines in it would be a log-injection vector.
+		const clientRef = (c.req.query("client_ref_id") ?? "")
+			.replace(/[^A-Za-z0-9-]/g, "")
+			.slice(0, 32);
 		try {
 			return c.json(
 				await signup.getAgreementUrl(mobile, c.req.header("x-real-ip")),
 			);
 		} catch (e) {
+			if (clientRef) {
+				console.error("[signup] agreement url failed", {
+					rid: c.get("rid"),
+					clientRef,
+				});
+			}
 			toAppError(e);
 		}
 	});

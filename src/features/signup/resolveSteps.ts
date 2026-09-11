@@ -54,6 +54,12 @@ export interface StepDefinition {
 	 */
 	Aside?: ComponentType;
 	/**
+	 * Accessible name for the aside's landmark. Defaults to "Why we ask", which
+	 * is what the PAN and Business asides actually say — a step whose aside asks
+	 * a different question names it here so the landmark list stays truthful.
+	 */
+	asideLabel?: string;
+	/**
 	 * When true the step renders its own heading and the wizard omits its card
 	 * header. Independent of `Aside` — a step may want either without the other.
 	 * The rail still shows `label` regardless, since that is wayfinding.
@@ -80,6 +86,8 @@ export interface ResolvedStep {
 	submit: StepSubmit;
 	/** Supporting content beside the card; see {@link StepDefinition.Aside}. */
 	Aside?: ComponentType;
+	/** Landmark name for the aside; see {@link StepDefinition.asideLabel}. */
+	asideLabel?: string;
 	/** Step renders its own heading; see {@link StepDefinition.ownsHeading}. */
 	ownsHeading?: boolean;
 }
@@ -146,6 +154,7 @@ export function resolveSteps(
 			Component: def.Component,
 			submit: def.submit,
 			Aside: def.Aside,
+			asideLabel: def.asideLabel,
 			ownsHeading: def.ownsHeading,
 		};
 	});

@@ -4,6 +4,7 @@ import { PanAside } from "./PanAside";
 import { PanStep } from "./PanStep";
 import { PinStep } from "./PinStep";
 import type { StepDefinition } from "./resolveSteps";
+import { SignAgreementAside } from "./SignAgreementAside";
 import { SignAgreementStep } from "./SignAgreementStep";
 
 /**
@@ -52,5 +53,12 @@ export const SIGNUP_STEPS: readonly StepDefinition[] = [
 		label: "Sign Agreement",
 		Component: SignAgreementStep,
 		submit: (client, v) => client.submitAgreement(v.document_id),
+		// Same treatment as the PAN and Business steps: the rail keeps the short
+		// wayfinding label, the card says "Last step — sign the agreement". The
+		// aside answers a different question from the other two, so it names its
+		// own landmark.
+		Aside: SignAgreementAside,
+		asideLabel: "Why sign now",
+		ownsHeading: true,
 	},
 ];

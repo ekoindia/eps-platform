@@ -462,6 +462,41 @@ describe("sign agreement endpoints", () => {
 		expect(getAgreementUrl).toHaveBeenCalledWith("9990000001", undefined);
 	});
 
+	it("GET /signup/agreement/url logs the client reference when preparing fails", async () => {
+		const getAgreementUrl = vi.fn().mockRejectedValue(new Error("upstream"));
+		const app = harness("signup", { getAgreementUrl });
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await app.request(
+				// Newlines and quotes are what a log-injection attempt looks like;
+				// only the reference's own character set may reach the log line.
+				"/signup/agreement/url?client_ref_id=K7P2XQ9MTB%0Afake%20log%20line",
+				withCookie,
+			);
+			expect(error).toHaveBeenCalledWith(
+				"[signup] agreement url failed",
+				expect.objectContaining({ clientRef: "K7P2XQ9MTBfakelogline" }),
+			);
+		} finally {
+			error.mockRestore();
+		}
+	});
+
+	it("GET /signup/agreement/url logs nothing extra when no reference is sent", async () => {
+		const getAgreementUrl = vi.fn().mockRejectedValue(new Error("upstream"));
+		const app = harness("signup", { getAgreementUrl });
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await app.request("/signup/agreement/url", withCookie);
+			expect(error).not.toHaveBeenCalledWith(
+				"[signup] agreement url failed",
+				expect.anything(),
+			);
+		} finally {
+			error.mockRestore();
+		}
+	});
+
 	it("POST /signup/agreement forwards the document id from the body", async () => {
 		const submitSignAgreement = vi.fn().mockResolvedValue(inProgress);
 		const app = harness("signup", { submitSignAgreement });

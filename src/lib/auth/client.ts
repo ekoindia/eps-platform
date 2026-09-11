@@ -805,8 +805,20 @@ export const signupClient = {
 			method: "GET",
 			signal,
 		}) as Promise<PincodeView>,
-	getAgreementUrl: (): Promise<SignUrlView> =>
-		request("/signup/agreement/url", { method: "GET" }) as Promise<SignUrlView>,
+	/**
+	 * Fetches the provider signing URL for the agreement.
+	 *
+	 * @param clientRefId - Caller-generated reference for this attempt. Sent so
+	 *   the same string the user is shown on failure is attached to the request
+	 *   that failed, rather than being minted after the fact.
+	 */
+	getAgreementUrl: (clientRefId?: string): Promise<SignUrlView> =>
+		request(
+			`/signup/agreement/url${
+				clientRefId ? `?client_ref_id=${encodeURIComponent(clientRefId)}` : ""
+			}`,
+			{ method: "GET" },
+		) as Promise<SignUrlView>,
 	submitAgreement: (documentId: string): Promise<SignupState> =>
 		request("/signup/agreement", {
 			method: "POST",
