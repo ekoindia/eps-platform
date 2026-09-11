@@ -95,10 +95,9 @@ const REF_LENGTH = 10;
 function newClientRef(): string {
 	const bytes = new Uint8Array(REF_LENGTH);
 	crypto.getRandomValues(bytes);
-	return Array.from(
-		bytes,
-		(b) => REF_ALPHABET[b % REF_ALPHABET.length],
-	).join("");
+	return Array.from(bytes, (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join(
+		"",
+	);
 }
 
 /** The uppercase eyebrow the signup asides use, reused for the panel's status line. */
@@ -348,7 +347,7 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 								<p className="text-sm text-muted-foreground">
 									Still going — this one is slower than usual. Nothing is lost;
 									your details are saved and the document will appear here as
-									soon as it's stamped.
+									soon as it is ready.
 								</p>
 							)}
 							<ul className="mt-1 flex flex-col gap-1">
