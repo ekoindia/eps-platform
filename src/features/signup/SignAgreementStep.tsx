@@ -49,7 +49,17 @@ const SAMPLE_AGREEMENT_URL = "https://eps.eko.in/samples/partner-agreement";
  */
 const EXPLAIN_PROMPT = `Summarize and explain the following sample agreement which I have to sign with eps.eko.in before using their APIs: \`${SAMPLE_AGREEMENT_URL}\`, then ask for followup questions or to explain in my regional language.`;
 
-const EXPLAIN_URL = `https://chatgpt.com/?q=${encodeURIComponent(EXPLAIN_PROMPT)}`;
+export const EXPLAIN_URL = `https://chatgpt.com/?q=${encodeURIComponent(EXPLAIN_PROMPT)}`;
+
+/**
+ * Toggle AI summary link visibility. The AI is a convenience, not a requirement, so the link is hidden when the feature is disabled.
+ *
+ * Exported alongside {@link EXPLAIN_URL} so the suite can follow the toggle
+ * rather than assume it: the link's test asserts it is absent while this is
+ * false and that it carries the right URL while it is true, so flipping this
+ * needs no test edit and cannot ship a broken prompt.
+ */
+export const AI_SUMMARY_ENABLED = false;
 
 /**
  * What is being written onto the document, revealed one at a time while the
@@ -382,17 +392,19 @@ export function SignAgreementStep({ onSubmit, busy, error }: StepProps) {
 									<span className="font-semibold text-foreground">{name}</span>
 								</p>
 							)}
-							<div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-								<a
-									href={EXPLAIN_URL}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-4"
-								>
-									<Sparkles className="h-3.5 w-3.5 shrink-0" />
-									Explain with AI
-								</a>
-							</div>
+							{AI_SUMMARY_ENABLED ? (
+								<div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+									<a
+										href={EXPLAIN_URL}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-4"
+									>
+										<Sparkles className="h-3.5 w-3.5 shrink-0" />
+										Explain with AI
+									</a>
+								</div>
+							) : null}
 							{documentId && (
 								<p className="truncate font-mono text-xs text-muted-foreground">
 									ID {documentId}
