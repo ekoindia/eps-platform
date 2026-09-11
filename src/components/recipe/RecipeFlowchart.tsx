@@ -133,9 +133,11 @@ const nodeY = (index: number): number => index * PITCH;
  * longer be mistaken for `0` (a `status`). A `status` of `0` is the success
  * case, so it reads as "on success" — the same words the unconditional edges
  * use. A fall-through says whether it is the only way onward, or the remaining
- * case once the step's own branches have been ruled out.
+ * case once the step's own branches have been ruled out. An edge around a
+ * conditional step is still a success fall-through, qualified by its condition.
  */
 const edgeLabel = (edge: ResolvedEdge, sourceHasBranches: boolean): string => {
+	if (edge.when) return `on success, ${edge.when}`;
 	if (!edge.branch)
 		return sourceHasBranches ? "otherwise, on success" : "on success";
 	const { field, value } = branchCondition(edge.branch);

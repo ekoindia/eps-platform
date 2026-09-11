@@ -51,6 +51,8 @@ export interface ResolvedStep {
 	/** Frequency tag, when the step is a one-time or daily gate. Carried through
 	 * so both HTML surfaces and the markdown twin can badge it. */
 	frequency?: RecipeStepFrequency;
+	/** The step's `appliesWhen` condition, when it is conditional. */
+	appliesWhen?: string;
 	branches: ResolvedBranch[];
 }
 
@@ -61,6 +63,10 @@ export interface ResolvedEdge {
 	 * next step. Renderers format their own label from it — the compact SVG wants
 	 * just the status id, the mermaid twin wants the full note. */
 	branch?: ResolvedBranch;
+	/** Request-condition label for a fall-through around a conditional step:
+	 * `if <appliesWhen>` into it, `otherwise` on the skip edge past it. Never set
+	 * together with {@link branch} — `assertRecipeSlugs` forbids that shape. */
+	when?: string;
 }
 
 export interface ResolvedRecipe {
@@ -115,6 +121,9 @@ const resolveBranch = (
  * - Branch edges carry their condition — `response_type_id` or `status` — and
  *   note as the label.
  * - A `goto: "done"` branch draws an edge to the terminal node.
+ * - A conditional step (`appliesWhen`) is entered by a fall-through labelled
+ *   `if <condition>`, and its predecessor gains a second, `otherwise` edge that
+ *   skips past it to the step after.
  *
  * NOTE: the flow drawn here is exactly what `RECIPES` encodes and no more. Where
  * a step branches on an error but the success path is only implied (e.g. DMT's
@@ -132,6 +141,7 @@ export const resolveRecipe = (recipe: Recipe): ResolvedRecipe => {
 		method: getDocBySlug(step.specSlug)?.method,
 		docHref: docHrefForSlug(step.specSlug),
 		frequency: step.frequency,
+		appliesWhen: step.appliesWhen,
 		branches: (step.branches ?? []).map((branch) =>
 			resolveBranch(branch, recipe.steps, index),
 		),
@@ -146,7 +156,24 @@ export const resolveRecipe = (recipe: Recipe): ResolvedRecipe => {
 		if (!next) continue;
 		// A labelled branch to the next step already covers the fall-through.
 		if (step.branches.some((b) => b.targetIsNextStep)) continue;
-		edges.push({ from: step.nodeId, to: next.nodeId });
+		if (next.appliesWhen === undefined) {
+			edges.push({ from: step.nodeId, to: next.nodeId });
+			continue;
+		}
+		edges.push({
+			from: step.nodeId,
+			to: next.nodeId,
+			when: `if ${next.appliesWhen}`,
+		});
+		// assertRecipeSlugs guarantees a conditional step is never last.
+		const afterNext = steps[index + 2];
+		if (afterNext) {
+			edges.push({
+				from: step.nodeId,
+				to: afterNext.nodeId,
+				when: "otherwise",
+			});
+		}
 	}
 
 	return { steps, edges, hasDone: edges.some((e) => e.to === DONE_NODE) };

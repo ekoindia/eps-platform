@@ -71,6 +71,17 @@ export interface RecipeStep {
 	/** How often the step runs (one-time setup/eKYC, or a daily KYC gate); see
 	 * {@link RecipeStepFrequency}. Absent → no frequency badge. */
 	frequency?: RecipeStepFrequency;
+	/**
+	 * Makes the step conditional: it runs only when this human/LLM-readable
+	 * condition on the request holds (e.g. `"amount > ₹5,000"`); otherwise the
+	 * flow skips straight from the previous step to the next one. Absent → the
+	 * step always runs.
+	 *
+	 * Only the simple shape is supported, and {@link assertRecipeSlugs} rejects
+	 * the rest: never on the first or last step, never on two adjacent steps,
+	 * never after a step that branches, never a branch `goto` target.
+	 */
+	appliesWhen?: string;
 }
 
 /** A named, multi-step flow across several endpoints. */
@@ -191,7 +202,7 @@ export const RECIPES: Recipe[] = [
 		slug: "aeps-fingpay-cash-withdrawal",
 		name: "AePS (Fingpay) — Cash Withdrawal",
 		summary:
-			"Aadhaar-enabled cash withdrawal: one-time agent activation and eKYC, daily KYC, then the biometric withdrawal.",
+			"Aadhaar-enabled cash withdrawal: one-time agent activation and eKYC, daily KYC, a transaction OTP for amounts above ₹5,000, then the biometric withdrawal.",
 		productId: "aeps",
 		steps: [
 			{
@@ -224,8 +235,15 @@ export const RECIPES: Recipe[] = [
 				frequency: "daily",
 			},
 			{
+				specSlug: "aeps-fingpay-cash-withdrawal-otp",
+				appliesWhen: "amount > ₹5,000",
+				purpose:
+					"Generate the transaction OTP: the customer receives a 6-digit OTP by SMS on their Aadhaar-linked mobile, and the response returns `fp_transaction_id`. Generate a fresh one for every withdrawal attempt — it is never reusable.",
+			},
+			{
 				specSlug: "aeps-fingpay-cash-withdrawal",
-				purpose: "Perform the biometric Aadhaar-enabled cash withdrawal.",
+				purpose:
+					"Perform the biometric Aadhaar-enabled cash withdrawal. Above ₹5,000, send the `fp_transaction_id` as `txn_otp_request_id` AND put the customer's SMS OTP in the PidOptions `otp` attribute before the fingerprint capture — two different values, both required. A `response_type_id` of 1459 means the OTP step was skipped and nothing was withdrawn. Persist `tid`; on Pending (1465) reconcile via Transaction Inquiry before any retry.",
 				branches: [{ onStatus: 0, goto: "done" }],
 			},
 		],
@@ -421,5 +439,34 @@ export const assertRecipeSlugs = (
 				}
 			}
 		}
+
+		assertConditionalSteps(recipe);
 	}
+};
+
+/**
+ * Throws on any `appliesWhen` shape the graph cannot draw unambiguously: a
+ * conditional step needs a plain predecessor to skip FROM and a successor to
+ * skip TO, and must only be entered by that fall-through.
+ */
+const assertConditionalSteps = (recipe: Recipe): void => {
+	const failure = (slug: string, why: string): Error =>
+		new Error(
+			`api-recipes: recipe "${recipe.id}" conditional step "${slug}" ${why}.`,
+		);
+	const gotoTargets = new Set(
+		recipe.steps.flatMap((s) => (s.branches ?? []).map((b) => b.goto)),
+	);
+	recipe.steps.forEach((step, index) => {
+		if (step.appliesWhen === undefined) return;
+		const previous = recipe.steps[index - 1];
+		if (!previous || index === recipe.steps.length - 1)
+			throw failure(step.specSlug, "cannot be the first or last step");
+		if (previous.appliesWhen !== undefined)
+			throw failure(step.specSlug, "cannot follow another conditional step");
+		if (previous.branches?.length)
+			throw failure(step.specSlug, "cannot follow a step that branches");
+		if (gotoTargets.has(step.specSlug))
+			throw failure(step.specSlug, "cannot be a branch goto target");
+	});
 };

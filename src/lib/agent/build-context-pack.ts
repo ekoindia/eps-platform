@@ -141,8 +141,11 @@ export const buildContextPackBody = (bundle: AgentBundle): string => {
 					return ` (if ${field} ${value} → ${b.goto})`;
 				})
 				.join("");
+			const condition = step.appliesWhen
+				? `(only if ${step.appliesWhen}; otherwise skip to step ${i + 2}) `
+				: "";
 			lines.push(
-				`${i + 1}. \`${step.specSlug}\` — ${step.purpose}${branch ?? ""}`,
+				`${i + 1}. \`${step.specSlug}\` — ${condition}${step.purpose}${branch ?? ""}`,
 			);
 		}
 		lines.push("");

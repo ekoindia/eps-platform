@@ -72,11 +72,12 @@ const edgeLabel = (branch: ResolvedBranch): string => {
 };
 
 const mermaidEdges = (recipe: ResolvedRecipe): string[] =>
-	recipe.edges.map((edge) =>
-		edge.branch
-			? `  ${edge.from} -->|"${escapeMermaidLabel(edgeLabel(edge.branch))}"| ${edge.to}`
-			: `  ${edge.from} --> ${edge.to}`,
-	);
+	recipe.edges.map((edge) => {
+		const label = edge.branch ? edgeLabel(edge.branch) : edge.when;
+		return label
+			? `  ${edge.from} -->|"${escapeMermaidLabel(label)}"| ${edge.to}`
+			: `  ${edge.from} --> ${edge.to}`;
+	});
 
 /** The recipe's flow as a fenced mermaid `flowchart TD`. */
 export const recipeMermaidFence = (recipe: Recipe): string => {
@@ -101,8 +102,11 @@ const stepList = (resolved: ResolvedRecipe): string =>
 			const freq = step.frequency
 				? ` _(${STEP_FREQUENCY_LABEL[step.frequency]})_`
 				: "";
+			const condition = step.appliesWhen
+				? ` _(only if ${step.appliesWhen} — otherwise skip to step ${step.number + 1})_`
+				: "";
 			const lines = [
-				`${step.number}. ${method}**${name}** — ${step.purpose}${freq}`,
+				`${step.number}. ${method}**${name}** — ${step.purpose}${freq}${condition}`,
 			];
 			for (const branch of step.branches) {
 				const target =

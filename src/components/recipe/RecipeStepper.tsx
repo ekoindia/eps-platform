@@ -48,6 +48,14 @@ const FrequencyTag = ({
 	</span>
 );
 
+/** Badge for a conditional (`appliesWhen`) step — fuchsia, off the method,
+ * branch-callout and frequency palettes so it never reads as any of those. */
+const ConditionTag = ({ condition }: { condition: string }) => (
+	<span className="inline-flex items-center rounded-[5px] border border-fuchsia-200 bg-fuchsia-50 px-[7px] py-[3px] font-mono text-[0.625rem] font-semibold leading-none tracking-[0.04em] text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/15 dark:text-fuchsia-400">
+		Only if {condition}
+	</span>
+);
+
 /** A conditional jump, shown inset under the step whose response triggers it. */
 const BranchCallout = ({ branch }: { branch: ResolvedBranch }) => {
 	const isDone = branch.goto === DONE_NODE;
@@ -134,7 +142,17 @@ const StepCard = ({
 						className="ml-auto shrink-0"
 					/>
 				)}
+				{step.appliesWhen && (
+					<span className="ml-auto shrink-0">
+						<ConditionTag condition={step.appliesWhen} />
+					</span>
+				)}
 			</div>
+			{step.appliesWhen && (
+				<p className="mt-1.5 text-xs text-muted-foreground">
+					Otherwise skip to step {step.number + 1}.
+				</p>
+			)}
 			<p className="mt-1.5 text-sm text-muted-foreground">{step.purpose}</p>
 			{step.branches.map((branch) => (
 				<BranchCallout
