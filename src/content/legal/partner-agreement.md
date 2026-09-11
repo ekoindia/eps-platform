@@ -176,7 +176,7 @@ For Eko Bharat Ventures Private Limited
 
 Signature: ____________________________
 
-Name: Abhinav Sinha
+Name: <Eko Authorized Signatory Name>
 
 Designation: Authorised Signatory
 
