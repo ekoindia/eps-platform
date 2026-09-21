@@ -799,8 +799,8 @@ Rules that matter:
 - **`maxBytes` only ever goes down.** Raising it past the backend's ceiling does
   not accept a larger file; it spends the upload before the same rejection. It
   is enforced *after* the image editor has run, so a phone photo the editor was
-  about to shrink is not refused — what it really catches is an oversized PDF,
-  which skips the editor entirely.
+  about to shrink is not refused — what it really catches is a PDF still
+  oversized after compression (text/vector PDFs are never compressed).
 - **Never combine `options.disableImageConfirm` with a document that needs
   provenance.** It skips the editor, and the editor is where the watermark is
   burnt into the pixels.

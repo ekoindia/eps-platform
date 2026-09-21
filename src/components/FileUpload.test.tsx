@@ -30,8 +30,15 @@ const blurScorePdfMock = vi.fn();
 const pdfPageCountMock = vi.fn();
 const verifyPdfPasswordMock = vi.fn();
 const unlockPdfMock = vi.fn();
+// Hoisted: the factory below runs before this module's own `const`s.
+const { compressPdfMock, compressImageMock } = vi.hoisted(() => ({
+	compressPdfMock: vi.fn(),
+	compressImageMock: vi.fn(),
+}));
 vi.mock("@/lib/pdf/pdf-client", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/pdf/pdf-client")>()),
+	compressPdf: (...args: unknown[]) => compressPdfMock(...args),
+	compressImage: (...args: unknown[]) => compressImageMock(...args),
 	blurScorePdf: (...args: unknown[]) => blurScorePdfMock(...args),
 	pdfPageCount: (...args: unknown[]) => pdfPageCountMock(...args),
 	verifyPdfPassword: (...args: unknown[]) => verifyPdfPasswordMock(...args),
@@ -45,6 +52,13 @@ beforeEach(() => {
 	unlockPdfMock.mockResolvedValue(
 		new Blob(["unlocked"], { type: "application/pdf" }),
 	);
+	// jsdom can neither rasterise a PDF nor decode an image, so compression
+	// defaults to "did not help" and hands back the original.
+	compressPdfMock.mockImplementation(async (source: Blob) => ({
+		blob: source,
+		compressed: false,
+	}));
+	compressImageMock.mockImplementation(async (image: File) => image);
 });
 
 /** Renders the control inside the provider its dialogs need. */
@@ -378,6 +392,99 @@ describe("FileUpload", () => {
 		discard.click();
 
 		expect(onFileChange).toHaveBeenCalledWith(null);
+	});
+});
+
+describe("compression", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	const smallPdf = new Blob(["small"], { type: "application/pdf" });
+
+	it("compresses a single PDF at the options.maxLength cap", async () => {
+		compressPdfMock.mockResolvedValueOnce({ blob: smallPdf, compressed: true });
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			compressThresholdBytes: 1024,
+			options: { maxLength: 1200 },
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("scan.pdf", 4096));
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+		expect(compressPdfMock).toHaveBeenCalledWith(expect.anything(), {
+			maxLength: 1200,
+		});
+		// The compressed bytes upload, under the original name.
+		const attached: File = onFileChange.mock.calls[0][0];
+		expect(attached.size).toBe(smallPdf.size);
+		expect(attached.name).toBe("scan.pdf");
+	});
+
+	it("leaves a single PDF under the threshold alone", async () => {
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			compressThresholdBytes: 8192,
+			onFileChange,
+		});
+
+		const picked = fileOf("small.pdf", 4096);
+		pickFile(container, picked);
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledWith(picked));
+		expect(compressPdfMock).not.toHaveBeenCalled();
+	});
+
+	it("compresses a multi-mode PDF at the options.maxLength cap", async () => {
+		compressPdfMock.mockResolvedValueOnce({ blob: smallPdf, compressed: true });
+		const { container } = renderUpload({
+			multiple: true,
+			accept: "image/*,application/pdf",
+			compressThresholdBytes: 1024,
+			options: { maxLength: 1200 },
+		});
+
+		pickFile(container, fileOf("scan.pdf", 4096));
+
+		await waitFor(() =>
+			expect(compressPdfMock).toHaveBeenCalledWith(expect.anything(), {
+				maxLength: 1200,
+			}),
+		);
+	});
+
+	it("shrinks a single image that skips the editor", async () => {
+		const shrunk = new File(["s"], "photo.jpg", { type: "image/jpeg" });
+		compressImageMock.mockResolvedValueOnce(shrunk);
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "image/*",
+			options: { disableImageConfirm: true, maxLength: 1200 },
+			onFileChange,
+		});
+
+		const picked = fileOf("photo.png", 4096, "image/png");
+		pickFile(container, picked);
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledWith(shrunk));
+		expect(compressImageMock).toHaveBeenCalledWith(picked, 1200);
+	});
+
+	it("shrinks a multi-mode image that skips the editor", async () => {
+		const { container } = renderUpload({
+			multiple: true,
+			accept: "image/*,application/pdf",
+			options: { disableImageConfirm: true, maxLength: 1200 },
+		});
+
+		const picked = fileOf("photo.png", 4096, "image/png");
+		pickFile(container, picked);
+
+		await waitFor(() =>
+			expect(compressImageMock).toHaveBeenCalledWith(picked, 1200),
+		);
 	});
 });
 

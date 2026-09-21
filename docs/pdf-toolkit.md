@@ -14,6 +14,7 @@ import {
 	mergePdfs,
 	pdfFromImages,
 	compressPdf,
+	compressImage,
 	extractPdfImages,
 	toPdfFile,
 	verifyPdfPassword,
@@ -24,6 +25,7 @@ const pages = await pdfPageCount(file); // number
 const merged = await mergePdfs([fileA, fileB]); // Blob
 const built = await pdfFromImages([photo1, photo2]); // Blob
 const { blob, compressed, originalSize, outputSize } = await compressPdf(file);
+const smaller = await compressImage(photo, 1200); // File (.jpg), or the original
 const images = await extractPdfImages(file); // Blob[] (PNG)
 const verdict = await verifyPdfPassword(file, "hunter2"); // "ok" | "wrong"
 const unlocked = await unlockPdf(file, "hunter2"); // Blob, no encryption
@@ -178,8 +180,8 @@ still receives exactly one `File`.
 |---|---|---|
 | `multiple` | `false` | Opt in to batch mode |
 | `maxFiles` | `10` | Ceiling on attachments |
-| `compressThresholdBytes` | 1 MB | PDFs above this are compressed first |
-| `options.maxLength` | 2000 px | Longer side of every image, editor and PDF alike |
+| `compressThresholdBytes` | 1 MB | PDFs above this are compressed first (single-file mode too) |
+| `options.maxLength` | 2000 px images, 1654 px PDF pages | Longer side of every image, editor and PDF alike — also caps pages rasterised by PDF compression (only runs for image-only PDFs over the threshold, or a combined PDF over `maxBytes`) |
 | `combinedFileName` | `combined-documents.pdf` | Name of the result |
 
 Behaviour:

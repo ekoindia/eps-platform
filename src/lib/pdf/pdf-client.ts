@@ -287,6 +287,39 @@ async function imageToJpeg(
 }
 
 /**
+ * Caps an image's longer side and re-encodes it as JPEG, for images that
+ * skip the editor (which does the same on accept).
+ *
+ * ponytail: when re-encoding does not shrink the bytes, the original is kept
+ * even if it is over `maxLength` — a small-bytes image that large is not the
+ * phone-photo case this guards against. Also kept when the browser cannot
+ * decode it (HEIC outside Safari), so the upload still goes through.
+ *
+ * @param image - The picked image.
+ * @param maxLength - Cap for the longer side. Default 2000.
+ * @returns A smaller `.jpg` file, or the original.
+ */
+export async function compressImage(
+	image: File,
+	maxLength: number = DEFAULT_IMAGE_MAX_LENGTH,
+): Promise<File> {
+	try {
+		const { bytes } = await imageToJpeg(
+			image,
+			maxLength,
+			DEFAULT_IMAGE_QUALITY,
+		);
+		if (bytes.byteLength >= image.size) return image;
+		const name = image.name.replace(/\.[^.]*$/, "") + ".jpg";
+		return new File([bytes as unknown as BlobPart], name, {
+			type: "image/jpeg",
+		});
+	} catch {
+		return image;
+	}
+}
+
+/**
  * Builds a PDF from images, one image per page.
  *
  * Pages are A4 by default, in the orientation that suits each image — see
