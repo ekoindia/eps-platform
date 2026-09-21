@@ -20,6 +20,7 @@ import {
 	KYC_BLUR_CHECK,
 	KYC_BLUR_STAMP_FILENAME,
 	KYC_BLUR_THRESHOLD,
+	KYC_DOC_OPTIONS,
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
 import { Download, Info, RefreshCw } from "lucide-react";
@@ -261,7 +262,10 @@ export function KycUploadDialog({ doc, onClose }: KycUploadDialogProps) {
 								// mode, as a live photograph does. Spread last so `options`
 								// cannot quietly opt a document out; its type excludes these
 								// keys, and `config.blurCheck` is the sanctioned way in.
+								// The checklist-wide defaults go first, so a document type
+								// overrides them key by key.
 								options={{
+									...KYC_DOC_OPTIONS,
 									...config.options,
 									blurCheck: config.blurCheck ?? KYC_BLUR_CHECK,
 									blurThreshold: KYC_BLUR_THRESHOLD,

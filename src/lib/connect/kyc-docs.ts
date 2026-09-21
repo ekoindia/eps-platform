@@ -82,6 +82,21 @@ export const KYC_BLUR_THRESHOLD = DEFAULT_BLUR_THRESHOLD;
 export const KYC_BLUR_STAMP_FILENAME = true;
 
 /**
+ * Editing requirements for every KYC document, under whatever a document type
+ * names in {@link KycDocConfig.options}.
+ *
+ * Merged key by key, so a type that sets only `aspectRatio` still gets this
+ * `maxLength`, and one that sets its own `maxLength` (the live photograph)
+ * wins outright.
+ *
+ * 1200 px rather than the editor's 2000: a KYC scan has to be legible to a
+ * reviewer, not archival, and several of them go up per account.
+ */
+export const KYC_DOC_OPTIONS: NonNullable<KycDocConfig["options"]> = {
+	maxLength: 1200,
+};
+
+/**
  * What this console knows about one document type, over and above upstream.
  *
  * Every field is optional and every field that is set replaces upstream's
@@ -167,7 +182,7 @@ export interface KycDocConfig {
 	watermark?: WatermarkSpec;
 	/**
 	 * Editing requirements for images of this document — crop ratio, size cap,
-	 * face checks.
+	 * face checks. Layered over {@link KYC_DOC_OPTIONS}, key by key.
 	 *
 	 * `fileName` and `watermark` are excluded on purpose: the first is per-file,
 	 * and the second would be a second watermark knob that `FileUpload` silently
@@ -235,17 +250,20 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 		multiple: true,
 		instructions:
 			"- If you represent a company, upload the PAN copies of **all directors**.\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
+		options: { maxLength: 1000 },
 	},
 	"15": {
 		multiple: true,
 		instructions:
 			"- If you represent a company, upload the PAN copies of **all directors**.\n  - Start with uploading or capturing the first PAN\n  - then, you will get option to add more.",
+		options: { maxLength: 1000 },
 	},
 
 	// MOA - Memorandum of Association
 	"4": {
 		name: "Memorandum of Association (MOA)",
 		multiple: true,
+		options: { maxLength: 1000 },
 		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
@@ -253,6 +271,7 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 	"5": {
 		name: "Company Articles of Association (AOA)",
 		multiple: true,
+		options: { maxLength: 1000 },
 		// instructions: "Company document must be signed by **all directors**, and affixed with the **company seal/stamp.**",
 	},
 
@@ -339,10 +358,10 @@ export const KYC_DOC_CONFIG: Record<string, KycDocConfig> = {
 		blurCheck: "off",
 		// Half the global cap. A live photograph only has to show that a person
 		// was in a place at a time — a face and its surroundings, both legible at
-		// 1000 px — where a document scan has to keep small print readable. And
+		// 800 px — where a document scan has to keep small print readable. And
 		// this is the row most likely to arrive from a high-resolution phone
 		// camera, several per account, so it is where the bytes actually are.
-		options: { maxLength: 1000 },
+		options: { maxLength: 800 },
 		info: "Capture the live photographs of all your directors",
 		instructions:
 			"- If you represent a company, capture the live photographs of **all directors**.\n  - Start with capturing the first photograph\n  - then, you will get option to add more.",

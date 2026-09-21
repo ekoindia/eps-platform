@@ -1,6 +1,7 @@
 import {
 	configOf,
 	KYC_DOC_CONFIG,
+	KYC_DOC_OPTIONS,
 	KYC_MAX_FILE_BYTES,
 	KYC_MAX_PAGES,
 	withDocConfig,
@@ -100,13 +101,13 @@ describe("KYC_DOC_CONFIG entries", () => {
 				expect(config.maxBytes).toBeLessThanOrEqual(KYC_MAX_FILE_BYTES);
 			}
 			// Same reasoning one level down: a per-document image cap is a place to
-			// send *less*. Raising it past the editor's default would quietly make
+			// send *less*. Raising it past the checklist default would quietly make
 			// one row heavier than every other, which is never what the override is
 			// reached for.
 			if (config.options?.maxLength !== undefined) {
 				expect(config.options.maxLength).toBeGreaterThan(0);
 				expect(config.options.maxLength).toBeLessThanOrEqual(
-					DEFAULT_IMAGE_MAX_LENGTH,
+					KYC_DOC_OPTIONS.maxLength ?? DEFAULT_IMAGE_MAX_LENGTH,
 				);
 			}
 		},
