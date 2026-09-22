@@ -43,7 +43,7 @@ export const KYC_ACCEPT = "image/jpeg,image/png,application/pdf";
 export const KYC_MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 /** The backend's per-document file-count ceiling. Above it, every upload 400s. */
-export const KYC_MAX_PAGES = 6;
+export const KYC_MAX_PAGES = 10;
 
 /**
  * What a blurry scan costs the partner, for every KYC document that does not
@@ -84,15 +84,17 @@ export const KYC_BLUR_STAMP_FILENAME = true;
 /**
  * Editing requirements for every KYC document, under whatever a document type
  * names in {@link KycDocConfig.options}.
+ * MARK: DEFAULTS
  *
  * Merged key by key, so a type that sets only `aspectRatio` still gets this
  * `maxLength`, and one that sets its own `maxLength` (the live photograph)
  * wins outright.
  */
 export const KYC_DOC_OPTIONS: NonNullable<KycDocConfig["options"]> = {
-	maxLength: 1200, // 1200 px rather than the editor's 2000
+	maxLength: 1600, // compression and resizing only up to 1400 px on the long edge
 	compressTextPdfs: false, // Rasterised Text-bearing PDFs too?
-	minCompressionGainPercent: 10, // Only when the pass saves more than 10%
+	minCompressionGainPercent: 10, // Compress images and image PDFs only when the pass saves more than 10%
+	minTextPdfCompressionGainPercent: 40, // Compress text PDFs (by converting to image) only when the pass saves more than 40%
 };
 
 /**
