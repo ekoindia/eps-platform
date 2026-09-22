@@ -172,17 +172,25 @@ describe("buildNavTree", () => {
 		expect(finoGroups).toEqual(["Sender", "Recipients", "Transaction"]);
 	});
 
-	it("merges PPI providers (DigiKhata/Levin) under one product", () => {
+	it("hides a disabled product (PPI Wallet) and its provider branches", () => {
+		// PPI Wallet is `disabled: true` in api-products.ts: the product and its
+		// two providers (DigiKhata/Levin) must not render even though their specs
+		// remain in api-specs.ts (archived, not deleted).
 		const { categories } = buildNavTree();
 		const bc = categories.find((c) => c.category === "bc")!;
-		const ppi = findBranch(bc.nodes, "PPI Wallet");
-		expect(ppi).toBeTruthy();
-		const providers = childBranches(ppi!.children, "provider").map(
-			(b) => b.label,
-		);
-		expect(new Set(providers)).toEqual(
-			new Set(["PPI – Levin", "PPI – DigiKhata"]),
-		);
+		expect(findBranch(bc.nodes, "PPI Wallet")).toBeUndefined();
+		const allNodes = categories.flatMap((c) => c.nodes);
+		const providerLabels: string[] = [];
+		const walk = (nodes: NavNode[]) => {
+			for (const n of nodes) {
+				if (n.type === "branch") {
+					if (n.kind === "provider") providerLabels.push(n.label);
+					walk(n.children);
+				}
+			}
+		};
+		walk(allNodes);
+		expect(providerLabels.some((l) => l.startsWith("PPI – "))).toBe(false);
 	});
 });
 
