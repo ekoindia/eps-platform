@@ -466,6 +466,7 @@ describe("compression", () => {
 				maxLength: 1200,
 				compressTextPdfs: true,
 				minCompressionGainPercent: 25,
+				minTextPdfCompressionGainPercent: 50,
 			},
 			onFileChange,
 		});
@@ -477,6 +478,7 @@ describe("compression", () => {
 			maxLength: 1200,
 			allowText: true,
 			minGainPercent: 25,
+			minTextGainPercent: 50,
 		});
 	});
 
@@ -489,7 +491,12 @@ describe("compression", () => {
 			accept: "application/pdf",
 			compressThresholdBytes: 1024,
 			maxBytes: 2048,
-			options: { maxLength: 1200, minCompressionGainPercent: 25 },
+			options: {
+				maxLength: 1200,
+				compressTextPdfs: true,
+				minCompressionGainPercent: 25,
+				minTextPdfCompressionGainPercent: 50,
+			},
 			onFileChange,
 		});
 
@@ -498,8 +505,9 @@ describe("compression", () => {
 		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
 		expect(compressPdfMock).toHaveBeenCalledWith(expect.anything(), {
 			maxLength: 1200,
-			allowText: undefined,
+			allowText: true,
 			minGainPercent: 0,
+			minTextGainPercent: 0,
 		});
 	});
 

@@ -295,6 +295,7 @@ function FileUploadTest() {
 	const [disableImageConfirm, setDisableImageConfirm] = useState(false);
 	const [compressTextPdfs, setCompressTextPdfs] = useState(false);
 	const [minGain, setMinGain] = useState("0");
+	const [minTextGain, setMinTextGain] = useState("");
 	const [kycWatermark, setKycWatermark] = useState(false);
 	const [customWatermark, setCustomWatermark] = useState("");
 	const [multiple, setMultiple] = useState(false);
@@ -320,6 +321,11 @@ function FileUploadTest() {
 					onChange={setCompressTextPdfs}
 				/>
 				<Field label="minGain %" value={minGain} onChange={setMinGain} />
+				<Field
+					label="minTextGain %"
+					value={minTextGain}
+					onChange={setMinTextGain}
+				/>
 				<Toggle
 					label="watermark (KYC defaults)"
 					checked={kycWatermark}
@@ -363,6 +369,8 @@ function FileUploadTest() {
 					disableImageConfirm,
 					compressTextPdfs,
 					minCompressionGainPercent: Number(minGain) || 0,
+					minTextPdfCompressionGainPercent:
+						minTextGain === "" ? undefined : Number(minTextGain) || 0,
 				}}
 				className="max-w-md"
 			/>
@@ -782,6 +790,7 @@ function PdfToolsTest() {
 							publish(compressed.blob);
 							return {
 								compressed: compressed.compressed,
+								hasText: compressed.hasText,
 								originalSize: compressed.originalSize,
 								outputSize: compressed.outputSize,
 								saved: `${Math.round(

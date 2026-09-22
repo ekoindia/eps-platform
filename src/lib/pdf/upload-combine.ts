@@ -59,8 +59,8 @@ export function shouldCompress(
  * or vector drawings, unless `options.allowText` — comes back untouched and
  * **silently**: the user asked to attach a document, not to be told about our
  * optimisation policy. So does one that did not shrink by
- * `options.minGainPercent`. Every other failure (encrypted, corrupt) is the
- * caller's to report.
+ * `options.minGainPercent` (`minTextGainPercent` for a text document). Every
+ * other failure (encrypted, corrupt) is the caller's to report.
  *
  * @param file - The picked file.
  * @param thresholdBytes - Size above which compression is attempted.
@@ -129,7 +129,7 @@ export async function combinePdfParts(
  *
  * @param combined - The merged document.
  * @param maxBytes - Ceiling it has to fit under, if there is one.
- * @param options - Rendering knobs and text policy. `minGainPercent` is
+ * @param options - Rendering knobs and text policy. The min-gain bars are
  *   ignored: the alternative to a small saving here is refusing the upload.
  * @returns A smaller file, or the original when it cannot help.
  */
@@ -141,5 +141,9 @@ export async function shrinkToFit(
 	if (!maxBytes || combined.size <= maxBytes) return combined;
 	// Threshold is 0: we already know it is too big, so size is not the question
 	// — and neither is how much it shrinks, as long as it does.
-	return compressIfLarge(combined, 0, { ...options, minGainPercent: 0 });
+	return compressIfLarge(combined, 0, {
+		...options,
+		minGainPercent: 0,
+		minTextGainPercent: 0,
+	});
 }

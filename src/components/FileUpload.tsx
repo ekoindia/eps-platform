@@ -63,6 +63,14 @@ export interface FileUploadOptions extends ImageEditorOptions {
 	 * where the alternative is refusing it.
 	 */
 	minCompressionGainPercent?: number;
+	/**
+	 * The same bar for a PDF that carries text (`compressTextPdfs` only).
+	 * Rasterising it throws the text away, so hold it to a bigger saving than a
+	 * scan — an e-Aadhaar drops ~75 %, a lightly-illustrated contract barely
+	 * moves and is better left searchable. Defaults to
+	 * `minCompressionGainPercent`. Waived over `maxBytes` likewise.
+	 */
+	minTextPdfCompressionGainPercent?: number;
 }
 
 export interface FileUploadProps {
@@ -291,8 +299,10 @@ async function checkBlurOrExplain(
  *
  * PDFs over `compressThresholdBytes` are rasterised to JPEG pages. By default
  * only scans qualify; `options.compressTextPdfs` extends that to text-bearing
- * documents, and `options.minCompressionGainPercent` sets the saving a lossy
- * pass has to earn before its output replaces the original.
+ * documents, and `options.minCompressionGainPercent` /
+ * `options.minTextPdfCompressionGainPercent` set the saving a lossy pass has
+ * to earn before its output replaces the original — the second, higher bar
+ * for documents whose text it throws away.
  * @param props - See {@link FileUploadProps}.
  * @example
  * <FileUpload
@@ -396,6 +406,9 @@ export function FileUpload({
 			...imageToPdfOptions,
 			allowText: options.compressTextPdfs,
 			minGainPercent: mustShrink ? 0 : options.minCompressionGainPercent,
+			minTextGainPercent: mustShrink
+				? 0
+				: options.minTextPdfCompressionGainPercent,
 		};
 	}
 

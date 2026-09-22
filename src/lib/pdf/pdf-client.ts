@@ -38,6 +38,13 @@ export interface CompressPdfOptions extends RasterizeOptions {
 	 * 0–100. Default 0: anything smaller wins. See `isGainEnough`.
 	 */
 	minGainPercent?: number;
+	/**
+	 * The same bar for a document that carried text or vector drawings (so
+	 * only under `allowText`). Rasterising those costs selectable text, so a
+	 * caller can demand a bigger saving before paying it. Defaults to
+	 * `minGainPercent`.
+	 */
+	minTextGainPercent?: number;
 }
 
 /** Outcome of a compression attempt. */
@@ -46,6 +53,8 @@ export interface PdfCompressionResult {
 	blob: Blob;
 	/** False when the rebuilt file did not shrink enough and the original was kept. */
 	compressed: boolean;
+	/** Whether the input carried text or vector drawings. */
+	hasText: boolean;
 	/** Size of the input, in bytes. */
 	originalSize: number;
 	/** Size of `blob`, in bytes. */
@@ -372,7 +381,8 @@ export async function pdfFromImages(
  *
  * @param source - The PDF.
  * @param options - Resolution cap, JPEG quality, text policy and the saving
- *   the result has to beat.
+ *   the result has to beat — one bar for scans, optionally a higher one for
+ *   text documents.
  * @returns The smaller document, or the original when it did not help enough.
  * @throws {NotCompressibleError} If a page carries text or drawings and
  *   `allowText` is not set.
@@ -384,18 +394,21 @@ export async function compressPdf(
 ): Promise<PdfCompressionResult> {
 	const bytes = await toBytes(source);
 	const { rasterizeForCompression } = await import("./pdf-render");
-	const pages = await rasterizeForCompression(bytes, options);
+	const { pages, hasText } = await rasterizeForCompression(bytes, options);
 	const rebuilt = await call<Uint8Array>({ op: "rebuildFromRaster", pages });
 
 	// Never hand back something bigger than we were given — an already-optimised
 	// scan can easily re-encode larger — and, when the caller asks for it, not
-	// something that barely shrank either: the pass is lossy every time.
-	if (
-		!isGainEnough(bytes.byteLength, rebuilt.byteLength, options.minGainPercent)
-	) {
+	// something that barely shrank either: the pass is lossy every time, and
+	// for a text document it also threw the text away.
+	const minGain = hasText
+		? (options.minTextGainPercent ?? options.minGainPercent)
+		: options.minGainPercent;
+	if (!isGainEnough(bytes.byteLength, rebuilt.byteLength, minGain)) {
 		return {
 			blob: toPdfBlob(bytes),
 			compressed: false,
+			hasText,
 			originalSize: bytes.byteLength,
 			outputSize: bytes.byteLength,
 		};
@@ -403,6 +416,7 @@ export async function compressPdf(
 	return {
 		blob: toPdfBlob(rebuilt),
 		compressed: true,
+		hasText,
 		originalSize: bytes.byteLength,
 		outputSize: rebuilt.byteLength,
 	};

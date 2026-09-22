@@ -88,18 +88,11 @@ export const KYC_BLUR_STAMP_FILENAME = true;
  * Merged key by key, so a type that sets only `aspectRatio` still gets this
  * `maxLength`, and one that sets its own `maxLength` (the live photograph)
  * wins outright.
- *
- * 1200 px rather than the editor's 2000: a KYC scan has to be legible to a
- * reviewer, not archival, and several of them go up per account.
- *
- * Text-bearing PDFs are rasterised too — an e-Aadhaar is 1 MB+ of oversampled
- * images plus one font, and a reviewer reads it, nobody searches it — but only
- * when the pass saves more than a quarter, since it costs sharpness every time.
  */
 export const KYC_DOC_OPTIONS: NonNullable<KycDocConfig["options"]> = {
-	maxLength: 1200,
-	compressTextPdfs: true,
-	minCompressionGainPercent: 25,
+	maxLength: 1200, // 1200 px rather than the editor's 2000
+	compressTextPdfs: false, // Rasterised Text-bearing PDFs too?
+	minCompressionGainPercent: 10, // Only when the pass saves more than 10%
 };
 
 /**

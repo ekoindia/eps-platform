@@ -787,7 +787,7 @@ where the console records what it knows that the shared list cannot express.
 | `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
 | `multiple` | One slot may take several attachments, combined into a single PDF |
 | `watermark` | Burns a provenance stamp into this type's captures. Opt-in — absent means none |
-| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions`. Layered key by key over `KYC_DOC_OPTIONS` (`{ maxLength: 1200, compressTextPdfs: true, minCompressionGainPercent: 25 }`), which applies to every document type: text-bearing PDFs (an e-Aadhaar, mostly oversampled images) are rasterised like scans, and a lossy pass only replaces the original when it saves more than a quarter |
+| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions`. Layered key by key over `KYC_DOC_OPTIONS` (`{ maxLength: 1200, minCompressionGainPercent: 25, compressTextPdfs: true, minTextPdfCompressionGainPercent: 50 }`), which applies to every document type: a lossy pass only replaces a scan when it saves more than a quarter, and text-bearing PDFs (an e-Aadhaar, mostly oversampled images) are rasterised like scans but only kept when that saves more than half, since it also throws the text away |
 | `maxBytes` | A tighter per-file limit than the backend's 10 MB |
 
 Rules that matter:
@@ -806,8 +806,8 @@ Rules that matter:
   not accept a larger file; it spends the upload before the same rejection. It
   is enforced *after* the image editor has run, so a phone photo the editor was
   about to shrink is not refused — what it really catches is a PDF still
-  oversized after compression. A PDF already over `maxBytes` skips the 25 %
-  min-gain rule and takes any saving, since the alternative is refusing it.
+  oversized after compression. A PDF already over `maxBytes` skips the 25 % /
+  50 % min-gain rules and takes any saving, since the alternative is refusing it.
 - **Never combine `options.disableImageConfirm` with a document that needs
   provenance.** It skips the editor, and the editor is where the watermark is
   burnt into the pixels.

@@ -86,9 +86,12 @@ a real document, so by default it **refuses anything that is not image-only**:
   contract someone will search. At 1200 px the longer side of an A4 page is
   ~100 dpi; check small print at the resolution you actually ship.
 - If the rebuilt PDF did not shrink by more than `minGainPercent` (default 0:
-  any saving), the original bytes come back with `compressed: false`. It never
-  hands back something bigger, whatever the knob says — `isGainEnough` clamps
-  it to 0–100 and treats a non-finite value as 0.
+  any saving), the original bytes come back with `compressed: false`. A
+  document that held text is judged against `minTextGainPercent` instead
+  (default: `minGainPercent`), so a caller can demand a dramatic saving before
+  throwing the text away; the result's `hasText` says which bar applied. It
+  never hands back something bigger, whatever the knob says — `isGainEnough`
+  clamps it to 0–100 and treats a non-finite value as 0.
 - A password-protected document throws `EncryptedPdfError` from any operation.
 
 The rule lives in `pdf-page-content.ts` as a deny-list of pdf.js operators
@@ -192,6 +195,7 @@ still receives exactly one `File`.
 | `options.maxLength` | 2000 px images, 1654 px PDF pages | Longer side of every image, editor and PDF alike — also caps pages rasterised by PDF compression (only runs for PDFs over the threshold, or a combined PDF over `maxBytes`) |
 | `options.compressTextPdfs` | `false` | Also rasterise PDFs that carry text or vector drawings (`allowText`); by default only image-only scans are compressed |
 | `options.minCompressionGainPercent` | `0` | Saving a compressed PDF must beat to replace the original. Waived for a PDF already over `maxBytes`, and for the combined-document pass, where the alternative is refusing the upload |
+| `options.minTextPdfCompressionGainPercent` | `minCompressionGainPercent` | The same bar for a PDF that carried text (`compressTextPdfs` only) — held higher because that pass also throws the text away. Waived likewise |
 | `combinedFileName` | `combined-documents.pdf` | Name of the result |
 
 Behaviour:
@@ -208,9 +212,9 @@ Behaviour:
   image, not the batch.
 - PDFs over `compressThresholdBytes` are compressed. A PDF that *cannot* be
   compressed — the text/vector case without `compressTextPdfs` — or that did
-  not shrink by `minCompressionGainPercent` is attached untouched and
-  **silently**; only a PDF we cannot read at all (encrypted, corrupt) reports
-  and is skipped.
+  not shrink by `minCompressionGainPercent` (`minTextPdfCompressionGainPercent`
+  for a text document) is attached untouched and **silently**; only a PDF we
+  cannot read at all (encrypted, corrupt) reports and is skipped.
 - Attachments accumulate: pick again, capture from the camera, drag more in.
   Each row can be removed or reordered, and page order follows the list.
 - A row's thumbnail and name are one button that opens that attachment in the

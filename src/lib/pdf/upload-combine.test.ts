@@ -135,12 +135,14 @@ describe("compressIfLarge", () => {
 			maxLength: 1200,
 			allowText: true,
 			minGainPercent: 25,
+			minTextGainPercent: 50,
 		});
 
 		expect(compressPdf).toHaveBeenCalledWith(big, {
 			maxLength: 1200,
 			allowText: true,
 			minGainPercent: 25,
+			minTextGainPercent: 50,
 		});
 	});
 });
@@ -166,12 +168,14 @@ describe("shrinkToFit", () => {
 			maxLength: 1200,
 			allowText: true,
 			minGainPercent: 25,
+			minTextGainPercent: 50,
 		});
 
 		expect(compressPdf).toHaveBeenCalledWith(oversized, {
 			maxLength: 1200,
 			allowText: true,
 			minGainPercent: 0,
+			minTextGainPercent: 0,
 		});
 	});
 });
