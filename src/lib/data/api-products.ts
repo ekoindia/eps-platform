@@ -46,6 +46,7 @@ const API_PRODUCTS_DATA = [
 		slug: "ppi-api",
 		category: "bc",
 		shortDesc: "Prepaid (PPI) wallet & bank transfers (Levin & DigiKhata)",
+		disabled: true,
 	},
 
 	// MARK: Payment APIs
