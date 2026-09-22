@@ -53,6 +53,13 @@ export interface RasterizeOptions {
 	maxLength?: number;
 	/** JPEG quality, 0–1. */
 	quality?: number;
+	/**
+	 * Rasterise pages that carry text or vector drawings instead of refusing
+	 * them. The text stops being selectable, so this is for a document whose
+	 * bulk is oversampled images (an e-Aadhaar, a bank statement with a scanned
+	 * signature block), not for a contract someone will want to search.
+	 */
+	allowText?: boolean;
 }
 
 const DEFAULT_MAX_LENGTH = 1654;
@@ -169,22 +176,36 @@ async function rasterizePage(
 	};
 }
 
+/** What {@link rasterizeForCompression} produced, and what it found. */
+export interface RasterizedDocument {
+	/** One raster page per source page, in order. */
+	pages: RasterPage[];
+	/**
+	 * Whether any page carried text or vector drawings — i.e. rasterising it
+	 * cost something. Only ever true under `allowText`.
+	 */
+	hasText: boolean;
+}
+
 /**
- * Rasterises every page of a PDF, refusing documents that are not scans.
+ * Rasterises every page of a PDF, refusing documents that are not scans
+ * unless `allowText` says otherwise.
  *
  * @param bytes - Raw PDF bytes.
- * @param options - Resolution cap and JPEG quality.
- * @returns One raster page per source page, in order.
- * @throws {NotCompressibleError} On the first page carrying text or vectors.
+ * @param options - Resolution cap, JPEG quality and the text policy.
+ * @returns The rendered pages and whether any of them held text.
+ * @throws {NotCompressibleError} On the first page carrying text or vectors,
+ *   unless `options.allowText` is set.
  * @throws {EncryptedPdfError} If the document is password-protected.
  */
 export async function rasterizeForCompression(
 	bytes: Uint8Array,
 	options: RasterizeOptions = {},
-): Promise<RasterPage[]> {
+): Promise<RasterizedDocument> {
 	const document_ = await open(bytes);
 	try {
 		const pages: RasterPage[] = [];
+		let hasText = false;
 		for (
 			let pageNumber = 1;
 			pageNumber <= document_.numPages;
@@ -192,9 +213,12 @@ export async function rasterizeForCompression(
 		) {
 			const page = await document_.getPage(pageNumber);
 			try {
+				// Scanned even under `allowText`: the caller may hold a text
+				// document to a higher saving than a scan, since it pays more.
 				const { fnArray } = await page.getOperatorList();
 				if (findNonImageOp(fnArray, NON_IMAGE_OPS) !== -1) {
-					throw new NotCompressibleError(pageNumber);
+					if (!options.allowText) throw new NotCompressibleError(pageNumber);
+					hasText = true;
 				}
 				pages.push(await rasterizePage(page, options));
 			} finally {
@@ -203,7 +227,7 @@ export async function rasterizeForCompression(
 				page.cleanup();
 			}
 		}
-		return pages;
+		return { pages, hasText };
 	} finally {
 		await document_.loadingTask.destroy();
 	}

@@ -12,10 +12,12 @@ import {
 } from "@/lib/connect/blur";
 import {
 	blurScorePdf,
+	compressImage,
 	pdfPageCount,
 	toPdfFile,
 	unlockPdf,
 	verifyPdfPassword,
+	type CompressPdfOptions,
 } from "@/lib/pdf/pdf-client";
 import { EncryptedPdfError } from "@/lib/pdf/pdf-errors";
 import {
@@ -42,8 +44,33 @@ import { toast } from "sonner";
 
 /** What the picked image must satisfy before it is accepted. */
 export interface FileUploadOptions extends ImageEditorOptions {
-	/** Take the capture as-is, skipping the crop/confirm step. */
+	/**
+	 * Skip the crop/confirm step. The image is still capped at `maxLength` and
+	 * re-encoded as JPEG, just not cropped or watermarked.
+	 */
 	disableImageConfirm?: boolean;
+	/**
+	 * Also compress PDFs that carry text or vector drawings, by rasterising
+	 * them like a scan. Their text stops being selectable, so leave this off
+	 * unless the documents are mostly oversampled images (an e-Aadhaar) and a
+	 * reviewer only needs to read them.
+	 */
+	compressTextPdfs?: boolean;
+	/**
+	 * Saving a compressed PDF must beat to replace the original, 0–100.
+	 * Default 0: any saving. Every pass is lossy, so a KYC upload may not want
+	 * a 5 % smaller but softer file. Waived for a PDF that is over `maxBytes`,
+	 * where the alternative is refusing it.
+	 */
+	minCompressionGainPercent?: number;
+	/**
+	 * The same bar for a PDF that carries text (`compressTextPdfs` only).
+	 * Rasterising it throws the text away, so hold it to a bigger saving than a
+	 * scan — an e-Aadhaar drops ~75 %, a lightly-illustrated contract barely
+	 * moves and is better left searchable. Defaults to
+	 * `minCompressionGainPercent`. Waived over `maxBytes` likewise.
+	 */
+	minTextPdfCompressionGainPercent?: number;
 }
 
 export interface FileUploadProps {
@@ -269,6 +296,13 @@ async function checkBlurOrExplain(
  * `watermark` carries provenance into the pixels: pass `true` for the KYC
  * defaults (user, org, position, IP, timestamp) as Eloka's flag did, an object
  * to override individual fields, or a string to stamp exact text.
+ *
+ * PDFs over `compressThresholdBytes` are rasterised to JPEG pages. By default
+ * only scans qualify; `options.compressTextPdfs` extends that to text-bearing
+ * documents, and `options.minCompressionGainPercent` /
+ * `options.minTextPdfCompressionGainPercent` set the saving a lossy pass has
+ * to earn before its output replaces the original — the second, higher bar
+ * for documents whose text it throws away.
  * @param props - See {@link FileUploadProps}.
  * @example
  * <FileUpload
@@ -354,8 +388,29 @@ export function FileUpload({
 		watermark: watermarkText || options.watermark,
 	};
 	// The editor already caps image size; carry the same cap into the PDF so a
-	// combined document is not larger than the images it was built from.
+	// combined document is not larger than the images it was built from, and
+	// into PDF compression so a rasterised page is not either. Unset, each path
+	// keeps its own default (2000 px for images, 1654 px for PDF pages).
 	const imageToPdfOptions = { maxLength: options.maxLength };
+
+	/**
+	 * Compression knobs for one picked PDF.
+	 *
+	 * A file already over `maxBytes` takes any saving it can get: the min-gain
+	 * rule exists to avoid a lossy pass for little benefit, and refusing the
+	 * upload is not a benefit.
+	 */
+	function compressOptionsFor(pdf: File): CompressPdfOptions {
+		const mustShrink = Boolean(maxBytes && pdf.size > maxBytes);
+		return {
+			...imageToPdfOptions,
+			allowText: options.compressTextPdfs,
+			minGainPercent: mustShrink ? 0 : options.minCompressionGainPercent,
+			minTextGainPercent: mustShrink
+				? 0
+				: options.minTextPdfCompressionGainPercent,
+		};
+	}
 
 	/** Replaces the preview, releasing the previous object URL if there was one. */
 	function showPreview(url: string | null, isObjectUrl = false) {
@@ -470,9 +525,11 @@ export function FileUpload({
 		//
 		// Late on purpose: images come back from the editor re-encoded and usually
 		// far smaller, so checking at pick time would refuse a phone photo the
-		// editor was about to shrink. What this catches is the path that skips the
-		// editor — an oversized PDF. For images `options.maxLength` is the better
-		// lever, since it fixes the file instead of refusing it.
+		// editor was about to shrink. What this catches is a PDF still oversized
+		// after compression (text/vector PDFs only get one with
+		// `compressTextPdfs`). For images
+		// `options.maxLength` is the better lever, since it fixes the file
+		// instead of refusing it.
 		if (maxBytes && picked.size > maxBytes) {
 			// Nothing took ownership of the URL, so release it here.
 			if (isObjectUrl && image) URL.revokeObjectURL(image);
@@ -511,34 +568,58 @@ export function FileUpload({
 				resetInput();
 				return;
 			}
-			// PDFs never reach the editor, so their blur check happens here.
+			let compressed: File;
+			try {
+				// A no-op for anything that is not a PDF over the threshold.
+				compressed = await withStatus("Compressing PDF…", () =>
+					compressIfLarge(
+						usable,
+						compressThresholdBytes,
+						compressOptionsFor(usable),
+					),
+				);
+			} catch (error) {
+				// Encrypted or corrupt; a document that merely resists compression
+				// comes back unchanged instead.
+				toast.error(
+					error instanceof Error
+						? error.message
+						: `Could not read ${picked.name}.`,
+				);
+				resetInput();
+				return;
+			}
+			// PDFs never reach the editor, so their blur check happens here — after
+			// compression, so the verdict belongs to the bytes that upload.
 			const ok = await withStatus("Checking quality…", () =>
-				checkBlurOrExplain(usable, options),
+				checkBlurOrExplain(compressed, options),
 			);
 			if (!ok) {
 				resetInput();
 				return;
 			}
-			attach(usable, null);
+			attach(compressed, null);
+			return;
+		}
+
+		if (options.disableImageConfirm) {
+			// Skips the editor, so it also skips the editor's resize and blur check.
+			const shrunk = await withStatus("Compressing image…", () =>
+				compressImage(picked, options.maxLength),
+			);
+			const ok = await withStatus("Checking quality…", () =>
+				checkBlurOrExplain(shrunk, options),
+			);
+			if (!ok) {
+				resetInput();
+				return;
+			}
+			// Not cropped, but still previewed — the URL now belongs to the preview.
+			attach(shrunk, URL.createObjectURL(shrunk), true);
 			return;
 		}
 
 		const objectUrl = URL.createObjectURL(picked);
-
-		if (options.disableImageConfirm) {
-			// Skips the editor, so it also skips the editor's blur check.
-			const ok = await withStatus("Checking quality…", () =>
-				checkBlurOrExplain(picked, options),
-			);
-			if (!ok) {
-				URL.revokeObjectURL(objectUrl);
-				resetInput();
-				return;
-			}
-			// Taken as-is, but still previewed — the URL now belongs to the preview.
-			attach(picked, objectUrl, true);
-			return;
-		}
 
 		try {
 			const result = await editImage(objectUrl, {
@@ -573,12 +654,15 @@ export function FileUpload({
 			// show, so the row falls back to the file name. Keeping the object URL
 			// instead would mean tracking a revoke per row for a thumbnail.
 			if (options.disableImageConfirm) {
-				// No editor for this image, so no editor blur check either.
+				// No editor for this image, so no editor resize or blur check either.
+				const shrunk = await withStatus("Compressing image…", () =>
+					compressImage(candidate, options.maxLength),
+				);
 				const ok = await withStatus("Checking quality…", () =>
-					checkBlurOrExplain(candidate, options),
+					checkBlurOrExplain(shrunk, options),
 				);
 				if (!ok) return null;
-				return { id: nextItemId(), file: candidate, thumbnail: null };
+				return { id: nextItemId(), file: shrunk, thumbnail: null };
 			}
 			const objectUrl = URL.createObjectURL(candidate);
 			try {
@@ -604,7 +688,11 @@ export function FileUpload({
 
 		try {
 			const compressed = await withStatus("Compressing PDF…", () =>
-				compressIfLarge(usable, compressThresholdBytes),
+				compressIfLarge(
+					usable,
+					compressThresholdBytes,
+					compressOptionsFor(usable),
+				),
 			);
 			// Checked after compression, so the verdict — and the telemetry score —
 			// belong to the bytes that are actually uploaded.
@@ -671,7 +759,7 @@ export function FileUpload({
 
 			const combined = await withStatus("Combining pages…", async () => {
 				const merged = await combinePdfParts(parts, combinedFileName);
-				return shrinkToFit(merged, maxBytes);
+				return shrinkToFit(merged, maxBytes, compressOptionsFor(merged));
 			});
 			if (token !== rebuildTokenRef.current) return;
 

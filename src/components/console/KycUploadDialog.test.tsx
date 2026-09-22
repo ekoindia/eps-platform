@@ -5,6 +5,7 @@ import {
 	configOf,
 	KYC_BLUR_CHECK,
 	KYC_BLUR_THRESHOLD,
+	KYC_DOC_OPTIONS,
 	KYC_MAX_FILE_BYTES,
 } from "@/lib/connect/kyc-docs";
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -35,7 +36,12 @@ vi.mock("@/components/FileUpload", () => ({
 		multiple?: boolean;
 		combinedFileName?: string;
 		watermark?: boolean | string | Record<string, string>;
-		options?: { blurCheck?: string; blurThreshold?: number };
+		options?: {
+			blurCheck?: string;
+			blurThreshold?: number;
+			maxLength?: number;
+			aspectRatio?: number;
+		};
 		onFileChange: (file: File | null) => void;
 	}) => (
 		<button
@@ -50,6 +56,8 @@ vi.mock("@/components/FileUpload", () => ({
 			data-watermark={String(watermark)}
 			data-blur-check={options?.blurCheck}
 			data-blur-threshold={String(options?.blurThreshold)}
+			data-max-length={String(options?.maxLength)}
+			data-aspect-ratio={String(options?.aspectRatio)}
 			onClick={() => onFileChange(pick())}
 		>
 			{label}
@@ -398,6 +406,32 @@ describe("KycUploadDialog", () => {
 
 		fireEvent.click(screen.getAllByTestId("file-upload")[0]);
 		expect(screen.getByRole("button", { name: "Upload" })).toBeEnabled();
+	});
+
+	describe("editing options", () => {
+		it("applies the checklist defaults to every slot", () => {
+			render(<KycUploadDialog doc={doc({ pages: 2 })} onClose={vi.fn()} />);
+
+			for (const slot of screen.getAllByTestId("file-upload")) {
+				expect(slot.dataset.maxLength).toBe(String(KYC_DOC_OPTIONS.maxLength));
+			}
+		});
+
+		it("lets a document config override a default key by key", () => {
+			vi.mocked(configOf).mockReturnValue({ options: { maxLength: 800 } });
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			expect(screen.getByTestId("file-upload").dataset.maxLength).toBe("800");
+		});
+
+		it("keeps the defaults a document config does not name", () => {
+			vi.mocked(configOf).mockReturnValue({ options: { aspectRatio: 1 } });
+			render(<KycUploadDialog doc={doc()} onClose={vi.fn()} />);
+
+			const slot = screen.getByTestId("file-upload");
+			expect(slot.dataset.aspectRatio).toBe("1");
+			expect(slot.dataset.maxLength).toBe(String(KYC_DOC_OPTIONS.maxLength));
+		});
 	});
 
 	describe("blur check", () => {

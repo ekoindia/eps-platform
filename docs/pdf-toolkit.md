@@ -14,6 +14,7 @@ import {
 	mergePdfs,
 	pdfFromImages,
 	compressPdf,
+	compressImage,
 	extractPdfImages,
 	toPdfFile,
 	verifyPdfPassword,
@@ -24,6 +25,7 @@ const pages = await pdfPageCount(file); // number
 const merged = await mergePdfs([fileA, fileB]); // Blob
 const built = await pdfFromImages([photo1, photo2]); // Blob
 const { blob, compressed, originalSize, outputSize } = await compressPdf(file);
+const smaller = await compressImage(photo, 1200); // File (.jpg), or the original
 const images = await extractPdfImages(file); // Blob[] (PNG)
 const verdict = await verifyPdfPassword(file, "hunter2"); // "ok" | "wrong"
 const unlocked = await unlockPdf(file, "hunter2"); // Blob, no encryption
@@ -72,13 +74,24 @@ optional, and the worker is cheap to keep.
 
 `compressPdf` re-renders each page as a JPEG and rebuilds the document at the
 original page geometry. That is a good trade for a scan and a terrible one for
-a real document, so it **refuses anything that is not image-only**:
+a real document, so by default it **refuses anything that is not image-only**:
 
 - Any page carrying text or filled/stroked vector paths throws
   `NotCompressibleError`, which names the offending page. The original file is
   untouched.
-- If the rebuilt PDF is not smaller than the input, the original bytes come
-  back with `compressed: false`. It never hands back something bigger.
+- `allowText: true` waives that check and rasterises text pages like a scan.
+  The text stops being selectable and dense barcodes may stop scanning, so it
+  is for documents whose bulk is oversampled images — an e-Aadhaar is 1 MB+ of
+  300–600 ppi JPEGs plus one font and shrinks ~75 % at 1200 px — not for a
+  contract someone will search. At 1200 px the longer side of an A4 page is
+  ~100 dpi; check small print at the resolution you actually ship.
+- If the rebuilt PDF did not shrink by more than `minGainPercent` (default 0:
+  any saving), the original bytes come back with `compressed: false`. A
+  document that held text is judged against `minTextGainPercent` instead
+  (default: `minGainPercent`), so a caller can demand a dramatic saving before
+  throwing the text away; the result's `hasText` says which bar applied. It
+  never hands back something bigger, whatever the knob says — `isGainEnough`
+  clamps it to 0–100 and treats a non-finite value as 0.
 - A password-protected document throws `EncryptedPdfError` from any operation.
 
 The rule lives in `pdf-page-content.ts` as a deny-list of pdf.js operators
@@ -178,8 +191,11 @@ still receives exactly one `File`.
 |---|---|---|
 | `multiple` | `false` | Opt in to batch mode |
 | `maxFiles` | `10` | Ceiling on attachments |
-| `compressThresholdBytes` | 1 MB | PDFs above this are compressed first |
-| `options.maxLength` | 2000 px | Longer side of every image, editor and PDF alike |
+| `compressThresholdBytes` | 1 MB | PDFs above this are compressed first (single-file mode too) |
+| `options.maxLength` | 2000 px images, 1654 px PDF pages | Longer side of every image, editor and PDF alike — also caps pages rasterised by PDF compression (only runs for PDFs over the threshold, or a combined PDF over `maxBytes`) |
+| `options.compressTextPdfs` | `false` | Also rasterise PDFs that carry text or vector drawings (`allowText`); by default only image-only scans are compressed |
+| `options.minCompressionGainPercent` | `0` | Saving a compressed PDF must beat to replace the original. Waived for a PDF already over `maxBytes`, and for the combined-document pass, where the alternative is refusing the upload |
+| `options.minTextPdfCompressionGainPercent` | `minCompressionGainPercent` | The same bar for a PDF that carried text (`compressTextPdfs` only) — held higher because that pass also throws the text away. Waived likewise |
 | `combinedFileName` | `combined-documents.pdf` | Name of the result |
 
 Behaviour:
@@ -195,8 +211,10 @@ Behaviour:
   checks and the **watermark** all still apply. Cancelling one image drops that
   image, not the batch.
 - PDFs over `compressThresholdBytes` are compressed. A PDF that *cannot* be
-  compressed — the text/vector case — is attached untouched and **silently**;
-  only a PDF we cannot read at all (encrypted, corrupt) reports and is skipped.
+  compressed — the text/vector case without `compressTextPdfs` — or that did
+  not shrink by `minCompressionGainPercent` (`minTextPdfCompressionGainPercent`
+  for a text document) is attached untouched and **silently**; only a PDF we
+  cannot read at all (encrypted, corrupt) reports and is skipped.
 - Attachments accumulate: pick again, capture from the camera, drag more in.
   Each row can be removed or reordered, and page order follows the list.
 - A row's thumbnail and name are one button that opens that attachment in the
@@ -223,10 +241,11 @@ so the suite covers the layers that do not need them:
   pure JS and runs fine under jsdom.
 - `pdf-worker.test.ts` — the message dispatch table, called directly.
 - `pdf-page-content.test.ts` — the compression refusal rule, against
-  hand-built operator lists. This is the check that fails if the policy
-  regresses.
-- `upload-combine.test.ts` — when compression runs (the threshold gate) and
-  what happens when it refuses, with `pdf-client` mocked out.
+  hand-built operator lists, and the `isGainEnough` acceptance rule. This is
+  the check that fails if the policy regresses.
+- `upload-combine.test.ts` — when compression runs (the threshold gate), what
+  happens when it refuses, and that `shrinkToFit` takes any saving, with
+  `pdf-client` mocked out.
 - `FileUpload.test.tsx` — the `accept` gate that decides whether multi-file
   mode engages at all, and the whole unlock path (prompt, wrong password,
   cancel, fail-open) against a mocked `pdf-client`.

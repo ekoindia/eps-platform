@@ -71,3 +71,29 @@ export function isPageImageOnly(
 ): boolean {
 	return findNonImageOp(fnArray, nonImageOps) === -1;
 }
+
+/**
+ * Whether a compressed document shrank enough to be worth keeping.
+ *
+ * Every rasterise pass is lossy, so a caller can demand a real saving before
+ * accepting it: at 25, a file that only lost a fifth of its size is left as it
+ * was. `minGainPercent` is clamped to 0–100 and a non-finite value counts as 0,
+ * so a bad knob can never accept an output that is *larger* than its input.
+ *
+ * @param originalSize - Input size in bytes.
+ * @param outputSize - Rebuilt size in bytes.
+ * @param minGainPercent - Saving the output must beat, 0–100. Default 0: any
+ *   saving at all.
+ * @returns True when `outputSize` is smaller than `originalSize` by more than
+ *   `minGainPercent`.
+ */
+export function isGainEnough(
+	originalSize: number,
+	outputSize: number,
+	minGainPercent = 0,
+): boolean {
+	const gain = Number.isFinite(minGainPercent)
+		? Math.min(100, Math.max(0, minGainPercent))
+		: 0;
+	return outputSize < originalSize * (1 - gain / 100);
+}

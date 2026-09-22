@@ -19,6 +19,7 @@ import {
 } from "@/lib/connect/image";
 import { isBrowser } from "@/lib/ssr-safe";
 import { EncryptedPdfError, NotCompressibleError } from "./pdf-errors";
+import { isGainEnough } from "./pdf-page-content";
 import type { ImagesToPdfOptions, PdfImageInput } from "./pdf-ops";
 import type {
 	PdfWorkerReply,
@@ -30,12 +31,30 @@ import type { PdfPasswordVerdict, RasterizeOptions } from "./pdf-render";
 /** Anything a caller might hold a PDF in. */
 export type PdfSource = Blob | Uint8Array;
 
+/** Knobs for {@link compressPdf}: how to render, and when to keep the result. */
+export interface CompressPdfOptions extends RasterizeOptions {
+	/**
+	 * Saving the rebuilt document must beat for it to replace the original,
+	 * 0–100. Default 0: anything smaller wins. See `isGainEnough`.
+	 */
+	minGainPercent?: number;
+	/**
+	 * The same bar for a document that carried text or vector drawings (so
+	 * only under `allowText`). Rasterising those costs selectable text, so a
+	 * caller can demand a bigger saving before paying it. Defaults to
+	 * `minGainPercent`.
+	 */
+	minTextGainPercent?: number;
+}
+
 /** Outcome of a compression attempt. */
 export interface PdfCompressionResult {
 	/** The smaller document, or the original when compression did not help. */
 	blob: Blob;
-	/** False when the rebuilt file was not smaller and the original was kept. */
+	/** False when the rebuilt file did not shrink enough and the original was kept. */
 	compressed: boolean;
+	/** Whether the input carried text or vector drawings. */
+	hasText: boolean;
 	/** Size of the input, in bytes. */
 	originalSize: number;
 	/** Size of `blob`, in bytes. */
@@ -287,6 +306,39 @@ async function imageToJpeg(
 }
 
 /**
+ * Caps an image's longer side and re-encodes it as JPEG, for images that
+ * skip the editor (which does the same on accept).
+ *
+ * ponytail: when re-encoding does not shrink the bytes, the original is kept
+ * even if it is over `maxLength` — a small-bytes image that large is not the
+ * phone-photo case this guards against. Also kept when the browser cannot
+ * decode it (HEIC outside Safari), so the upload still goes through.
+ *
+ * @param image - The picked image.
+ * @param maxLength - Cap for the longer side. Default 2000.
+ * @returns A smaller `.jpg` file, or the original.
+ */
+export async function compressImage(
+	image: File,
+	maxLength: number = DEFAULT_IMAGE_MAX_LENGTH,
+): Promise<File> {
+	try {
+		const { bytes } = await imageToJpeg(
+			image,
+			maxLength,
+			DEFAULT_IMAGE_QUALITY,
+		);
+		if (bytes.byteLength >= image.size) return image;
+		const name = image.name.replace(/\.[^.]*$/, "") + ".jpg";
+		return new File([bytes as unknown as BlobPart], name, {
+			type: "image/jpeg",
+		});
+	} catch {
+		return image;
+	}
+}
+
+/**
  * Builds a PDF from images, one image per page.
  *
  * Pages are A4 by default, in the orientation that suits each image — see
@@ -321,32 +373,42 @@ export async function pdfFromImages(
 }
 
 /**
- * Shrinks a scanned PDF by re-rendering each page as a JPEG.
+ * Shrinks a PDF by re-rendering each page as a JPEG.
  *
  * Refuses any document with text or vector drawings, which rasterising would
- * destroy. Loads `pdf.js` on first use.
+ * destroy, unless `options.allowText` accepts that trade. Loads `pdf.js` on
+ * first use.
  *
  * @param source - The PDF.
- * @param options - Resolution cap and JPEG quality for the rendered pages.
- * @returns The smaller document, or the original when it did not help.
- * @throws {NotCompressibleError} If a page carries text or drawings.
+ * @param options - Resolution cap, JPEG quality, text policy and the saving
+ *   the result has to beat — one bar for scans, optionally a higher one for
+ *   text documents.
+ * @returns The smaller document, or the original when it did not help enough.
+ * @throws {NotCompressibleError} If a page carries text or drawings and
+ *   `allowText` is not set.
  * @throws {EncryptedPdfError} If the document is password-protected.
  */
 export async function compressPdf(
 	source: PdfSource,
-	options: RasterizeOptions = {},
+	options: CompressPdfOptions = {},
 ): Promise<PdfCompressionResult> {
 	const bytes = await toBytes(source);
 	const { rasterizeForCompression } = await import("./pdf-render");
-	const pages = await rasterizeForCompression(bytes, options);
+	const { pages, hasText } = await rasterizeForCompression(bytes, options);
 	const rebuilt = await call<Uint8Array>({ op: "rebuildFromRaster", pages });
 
-	// Never hand back something bigger than we were given — a already-optimised
-	// scan can easily re-encode larger.
-	if (rebuilt.byteLength >= bytes.byteLength) {
+	// Never hand back something bigger than we were given — an already-optimised
+	// scan can easily re-encode larger — and, when the caller asks for it, not
+	// something that barely shrank either: the pass is lossy every time, and
+	// for a text document it also threw the text away.
+	const minGain = hasText
+		? (options.minTextGainPercent ?? options.minGainPercent)
+		: options.minGainPercent;
+	if (!isGainEnough(bytes.byteLength, rebuilt.byteLength, minGain)) {
 		return {
 			blob: toPdfBlob(bytes),
 			compressed: false,
+			hasText,
 			originalSize: bytes.byteLength,
 			outputSize: bytes.byteLength,
 		};
@@ -354,6 +416,7 @@ export async function compressPdf(
 	return {
 		blob: toPdfBlob(rebuilt),
 		compressed: true,
+		hasText,
 		originalSize: bytes.byteLength,
 		outputSize: rebuilt.byteLength,
 	};

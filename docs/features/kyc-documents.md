@@ -526,9 +526,15 @@ reviewer opens. Scoring the original would refuse captures that are fine.
   `FileUpload`'s `checkBlurOrExplain`, PDFs after `compressIfLarge`.
 - PDFs go through `blurScorePdf` (`pdf-client.ts` → `pdf-render.ts`): only pure
   image scans are eligible (any text or vector op means born-digital, sharp by
-  construction — the same conservative test compression uses, so an
+  construction — the same conservative test compression uses by default, so an
   OCR-overlaid scan is skipped rather than misjudged), at most the first 3
-  pages are rasterized, and a soft 4s deadline stops the check early.
+  pages are rasterized, and a soft 4s deadline stops the check early. A
+  text-bearing PDF that `compressTextPdfs` rasterised *is* a pure image scan by
+  the time the check runs, so it gets scored — harmless in measure mode, and
+  such pages are sharp by construction. The combined-document pass
+  (`shrinkToFit`) runs after the check and is not rescored; the pack carries
+  the worst per-attachment score, which is `null` for a text PDF that only got
+  rasterised there.
 
 **Several pages: the lowest wins.** `lowestBlurScore` is the single home for
 that rule — not the average. Review reads every page, so a pack whose middle
@@ -781,7 +787,7 @@ where the console records what it knows that the shared list cannot express.
 | `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
 | `multiple` | One slot may take several attachments, combined into a single PDF |
 | `watermark` | Burns a provenance stamp into this type's captures. Opt-in — absent means none |
-| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions` |
+| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions`. Layered key by key over `KYC_DOC_OPTIONS` (`{ maxLength: 1200, minCompressionGainPercent: 25, compressTextPdfs: true, minTextPdfCompressionGainPercent: 50 }`), which applies to every document type: a lossy pass only replaces a scan when it saves more than a quarter, and text-bearing PDFs (an e-Aadhaar, mostly oversampled images) are rasterised like scans but only kept when that saves more than half, since it also throws the text away |
 | `maxBytes` | A tighter per-file limit than the backend's 10 MB |
 
 Rules that matter:
@@ -799,8 +805,9 @@ Rules that matter:
 - **`maxBytes` only ever goes down.** Raising it past the backend's ceiling does
   not accept a larger file; it spends the upload before the same rejection. It
   is enforced *after* the image editor has run, so a phone photo the editor was
-  about to shrink is not refused — what it really catches is an oversized PDF,
-  which skips the editor entirely.
+  about to shrink is not refused — what it really catches is a PDF still
+  oversized after compression. A PDF already over `maxBytes` skips the 25 % /
+  50 % min-gain rules and takes any saving, since the alternative is refusing it.
 - **Never combine `options.disableImageConfirm` with a document that needs
   provenance.** It skips the editor, and the editor is where the watermark is
   burnt into the pixels.
@@ -823,7 +830,7 @@ The entries that ship today:
 | `"1"` Aadhaar | `pageLabels: ["Aadhaar front", "Aadhaar back"]`, `multiple` | Two identical "Page 1 / Page 2" slots is how a user attaches the front twice and hears about it at review, a week later. Photographed far more often than scanned, and a phone rarely gets a whole card square in one frame — so each side may take several shots. |
 | `"2"` and `"15"` PAN | `multiple` | Same reasoning as Aadhaar: a photographed card, sometimes worth two shots. Both codes are configured — the 586 sample calls `15` "Director PAN Card", so configuring only one would silently do nothing for accounts asked for the other. |
 | `"14"` Board resolution | `name: "Board Resolution (BR)"`, `sampleUrl` | A partner does not own a blank board resolution; the wording is ours to dictate, and one invented from scratch comes back rejected weeks later. The sample is `public/kyc-samples/Board_Resolution_Format.docx`. |
-| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `accept` images only, `cameraOnly`, `multiple`, `watermark`, `options: { maxLength: 1000 }` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. Half the editor's 2000 px default: a face and its surroundings are legible at 1000 px, and this is the row most likely to arrive several times over from a high-resolution phone camera. |
+| `"24"` Live photograph | `name: "Directors' Live Photograph"`, `accept` images only, `cameraOnly`, `multiple`, `watermark`, `options: { maxLength: 800 }` | Upstream's name spells out the capture rules ("with Location Coordinates") and its `info` names a third-party GPS camera app, because upstream cannot enforce either. This console can. Below the checklist's 1200 px default (`KYC_DOC_OPTIONS`): a face and its surroundings are legible at 800 px, and this is the row most likely to arrive several times over from a high-resolution phone camera. |
 
 The live-photograph entry is what the whole map exists for. A "live" photograph
 selectable from the gallery is not live, so the camera is the only source, the

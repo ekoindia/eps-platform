@@ -291,7 +291,7 @@ sees it, so a form receives a cropped, rotated, size-capped JPEG instead of a
 `accept` decides which sources appear (no camera for a PDF-only field, "Select
 photo" rather than "Select file" when images are all that is allowed);
 `cameraOnly` drops the picker and the drop zone; `options.disableImageConfirm`
-takes the capture as-is. It needs a `ConnectDialogProvider` above it.
+skips the crop/confirm step. It needs a `ConnectDialogProvider` above it.
 
 **Size cap.** `options.maxLength` bounds the longer side of the processed
 image, and defaults to `DEFAULT_IMAGE_MAX_LENGTH` (2000 px,
@@ -300,8 +300,16 @@ attachment and a page of a combined PDF come out at the same resolution.
 Without it a phone capture is stored at full sensor resolution: an
 `ImageCapture.takePhoto()` still is 12 MP, several megabytes of detail no
 reviewer can use. Quality is a fixed JPEG 0.8 (`getProcessedImage`).
-`disableImageConfirm` skips the editor, and with it this cap — those images
-are attached raw.
+`disableImageConfirm` skips the editor but not this cap: those images go
+through `compressImage` (`src/lib/pdf/pdf-client.ts`) — scaled to `maxLength`,
+re-encoded as JPEG 0.85, renamed `.jpg`. No crop, no watermark. The original is
+kept when re-encoding does not shrink it or the browser cannot decode it (HEIC
+outside Safari).
+
+**PDFs.** A PDF over `compressThresholdBytes` (default 1 MB) is compressed in
+single-file mode too — same `compressIfLarge` as the multi-file path, pages
+rasterised at `options.maxLength` (1654 px when unset). Text/vector PDFs are
+never rasterised and attach untouched; see `docs/pdf-toolkit.md`.
 
 **Watermark.** `watermark` carries provenance into the pixels, because a KYC
 photo is evidence and evidence without provenance can be re-used for a different
