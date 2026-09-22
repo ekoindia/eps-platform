@@ -12,9 +12,9 @@ import {
 	mergePdfs,
 	pdfFromImages,
 	toPdfFile,
+	type CompressPdfOptions,
 	type PdfFromImagesOptions,
 } from "./pdf-client";
-import type { RasterizeOptions } from "./pdf-render";
 
 /** MIME type of a PDF. */
 export const PDF_MIME = "application/pdf";
@@ -56,20 +56,22 @@ export function shouldCompress(
  * Compresses a PDF if it is big enough to be worth it.
  *
  * A PDF that cannot be compressed without destroying it — one with real text
- * or vector drawings — comes back untouched and **silently**: the user asked
- * to attach a document, not to be told about our optimisation policy. Every
- * other failure (encrypted, corrupt) is the caller's to report.
+ * or vector drawings, unless `options.allowText` — comes back untouched and
+ * **silently**: the user asked to attach a document, not to be told about our
+ * optimisation policy. So does one that did not shrink by
+ * `options.minGainPercent`. Every other failure (encrypted, corrupt) is the
+ * caller's to report.
  *
  * @param file - The picked file.
  * @param thresholdBytes - Size above which compression is attempted.
- * @param options - Resolution cap and JPEG quality for the rendered pages.
+ * @param options - Rendering knobs, text policy and the saving to beat.
  * @returns The smaller file, or the original.
  * @throws {EncryptedPdfError} If the document is password-protected.
  */
 export async function compressIfLarge(
 	file: File,
 	thresholdBytes: number,
-	options?: RasterizeOptions,
+	options?: CompressPdfOptions,
 ): Promise<File> {
 	if (!shouldCompress(file, thresholdBytes)) return file;
 
@@ -122,20 +124,22 @@ export async function combinePdfParts(
  * The per-file threshold cannot see this coming: ten 800 KB scans are each
  * under it and still merge into 8 MB. Refusing outright would be worse than
  * one lossy pass, so try that before giving up — and if the merged document
- * turns out to hold text, leave it alone and let the caller's size check
- * refuse it with a message the user can act on.
+ * turns out to hold text (and `allowText` is off), leave it alone and let the
+ * caller's size check refuse it with a message the user can act on.
  *
  * @param combined - The merged document.
  * @param maxBytes - Ceiling it has to fit under, if there is one.
- * @param options - Resolution cap and JPEG quality.
+ * @param options - Rendering knobs and text policy. `minGainPercent` is
+ *   ignored: the alternative to a small saving here is refusing the upload.
  * @returns A smaller file, or the original when it cannot help.
  */
 export async function shrinkToFit(
 	combined: File,
 	maxBytes: number | undefined,
-	options?: RasterizeOptions,
+	options?: CompressPdfOptions,
 ): Promise<File> {
 	if (!maxBytes || combined.size <= maxBytes) return combined;
-	// Threshold is 0: we already know it is too big, so size is not the question.
-	return compressIfLarge(combined, 0, options);
+	// Threshold is 0: we already know it is too big, so size is not the question
+	// — and neither is how much it shrinks, as long as it does.
+	return compressIfLarge(combined, 0, { ...options, minGainPercent: 0 });
 }

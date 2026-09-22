@@ -17,6 +17,7 @@ import {
 	toPdfFile,
 	unlockPdf,
 	verifyPdfPassword,
+	type CompressPdfOptions,
 } from "@/lib/pdf/pdf-client";
 import { EncryptedPdfError } from "@/lib/pdf/pdf-errors";
 import {
@@ -48,6 +49,20 @@ export interface FileUploadOptions extends ImageEditorOptions {
 	 * re-encoded as JPEG, just not cropped or watermarked.
 	 */
 	disableImageConfirm?: boolean;
+	/**
+	 * Also compress PDFs that carry text or vector drawings, by rasterising
+	 * them like a scan. Their text stops being selectable, so leave this off
+	 * unless the documents are mostly oversampled images (an e-Aadhaar) and a
+	 * reviewer only needs to read them.
+	 */
+	compressTextPdfs?: boolean;
+	/**
+	 * Saving a compressed PDF must beat to replace the original, 0–100.
+	 * Default 0: any saving. Every pass is lossy, so a KYC upload may not want
+	 * a 5 % smaller but softer file. Waived for a PDF that is over `maxBytes`,
+	 * where the alternative is refusing it.
+	 */
+	minCompressionGainPercent?: number;
 }
 
 export interface FileUploadProps {
@@ -273,6 +288,11 @@ async function checkBlurOrExplain(
  * `watermark` carries provenance into the pixels: pass `true` for the KYC
  * defaults (user, org, position, IP, timestamp) as Eloka's flag did, an object
  * to override individual fields, or a string to stamp exact text.
+ *
+ * PDFs over `compressThresholdBytes` are rasterised to JPEG pages. By default
+ * only scans qualify; `options.compressTextPdfs` extends that to text-bearing
+ * documents, and `options.minCompressionGainPercent` sets the saving a lossy
+ * pass has to earn before its output replaces the original.
  * @param props - See {@link FileUploadProps}.
  * @example
  * <FileUpload
@@ -362,6 +382,22 @@ export function FileUpload({
 	// into PDF compression so a rasterised page is not either. Unset, each path
 	// keeps its own default (2000 px for images, 1654 px for PDF pages).
 	const imageToPdfOptions = { maxLength: options.maxLength };
+
+	/**
+	 * Compression knobs for one picked PDF.
+	 *
+	 * A file already over `maxBytes` takes any saving it can get: the min-gain
+	 * rule exists to avoid a lossy pass for little benefit, and refusing the
+	 * upload is not a benefit.
+	 */
+	function compressOptionsFor(pdf: File): CompressPdfOptions {
+		const mustShrink = Boolean(maxBytes && pdf.size > maxBytes);
+		return {
+			...imageToPdfOptions,
+			allowText: options.compressTextPdfs,
+			minGainPercent: mustShrink ? 0 : options.minCompressionGainPercent,
+		};
+	}
 
 	/** Replaces the preview, releasing the previous object URL if there was one. */
 	function showPreview(url: string | null, isObjectUrl = false) {
@@ -477,7 +513,8 @@ export function FileUpload({
 		// Late on purpose: images come back from the editor re-encoded and usually
 		// far smaller, so checking at pick time would refuse a phone photo the
 		// editor was about to shrink. What this catches is a PDF still oversized
-		// after compression (text/vector PDFs are never compressed). For images
+		// after compression (text/vector PDFs only get one with
+		// `compressTextPdfs`). For images
 		// `options.maxLength` is the better lever, since it fixes the file
 		// instead of refusing it.
 		if (maxBytes && picked.size > maxBytes) {
@@ -522,7 +559,11 @@ export function FileUpload({
 			try {
 				// A no-op for anything that is not a PDF over the threshold.
 				compressed = await withStatus("Compressing PDF…", () =>
-					compressIfLarge(usable, compressThresholdBytes, imageToPdfOptions),
+					compressIfLarge(
+						usable,
+						compressThresholdBytes,
+						compressOptionsFor(usable),
+					),
 				);
 			} catch (error) {
 				// Encrypted or corrupt; a document that merely resists compression
@@ -634,7 +675,11 @@ export function FileUpload({
 
 		try {
 			const compressed = await withStatus("Compressing PDF…", () =>
-				compressIfLarge(usable, compressThresholdBytes, imageToPdfOptions),
+				compressIfLarge(
+					usable,
+					compressThresholdBytes,
+					compressOptionsFor(usable),
+				),
 			);
 			// Checked after compression, so the verdict — and the telemetry score —
 			// belong to the bytes that are actually uploaded.
@@ -701,7 +746,7 @@ export function FileUpload({
 
 			const combined = await withStatus("Combining pages…", async () => {
 				const merged = await combinePdfParts(parts, combinedFileName);
-				return shrinkToFit(merged, maxBytes, imageToPdfOptions);
+				return shrinkToFit(merged, maxBytes, compressOptionsFor(merged));
 			});
 			if (token !== rebuildTokenRef.current) return;
 

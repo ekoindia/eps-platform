@@ -293,6 +293,8 @@ function FileUploadTest() {
 	const [accept, setAccept] = useState("");
 	const [cameraOnly, setCameraOnly] = useState(false);
 	const [disableImageConfirm, setDisableImageConfirm] = useState(false);
+	const [compressTextPdfs, setCompressTextPdfs] = useState(false);
+	const [minGain, setMinGain] = useState("0");
 	const [kycWatermark, setKycWatermark] = useState(false);
 	const [customWatermark, setCustomWatermark] = useState("");
 	const [multiple, setMultiple] = useState(false);
@@ -312,6 +314,12 @@ function FileUploadTest() {
 					checked={disableImageConfirm}
 					onChange={setDisableImageConfirm}
 				/>
+				<Toggle
+					label="compressTextPdfs"
+					checked={compressTextPdfs}
+					onChange={setCompressTextPdfs}
+				/>
+				<Field label="minGain %" value={minGain} onChange={setMinGain} />
 				<Toggle
 					label="watermark (KYC defaults)"
 					checked={kycWatermark}
@@ -350,7 +358,12 @@ function FileUploadTest() {
 				file={file}
 				onFileChange={setFile}
 				multiple={multiple}
-				options={{ ...options, disableImageConfirm }}
+				options={{
+					...options,
+					disableImageConfirm,
+					compressTextPdfs,
+					minCompressionGainPercent: Number(minGain) || 0,
+				}}
 				className="max-w-md"
 			/>
 			{multiple ? (
@@ -666,6 +679,7 @@ function PdfToolsTest() {
 	const [output, setOutput] = useState<string | null>(null);
 	const [thumbnails, setThumbnails] = useState<string[]>([]);
 	const [busy, setBusy] = useState(false);
+	const [allowText, setAllowText] = useState(false);
 
 	const pdfs = files.filter((file) => file.type === "application/pdf");
 	const images = files.filter((file) => file.type.startsWith("image/"));
@@ -764,7 +778,7 @@ function PdfToolsTest() {
 					disabled={busy || pdfs.length === 0}
 					onClick={() =>
 						run("compress", async () => {
-							const compressed = await compressPdf(pdfs[0]);
+							const compressed = await compressPdf(pdfs[0], { allowText });
 							publish(compressed.blob);
 							return {
 								compressed: compressed.compressed,
@@ -779,6 +793,7 @@ function PdfToolsTest() {
 				>
 					Compress
 				</Button>
+				<Toggle label="allowText" checked={allowText} onChange={setAllowText} />
 				<Button
 					variant="outline"
 					size="sm"

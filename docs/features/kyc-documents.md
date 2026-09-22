@@ -526,9 +526,15 @@ reviewer opens. Scoring the original would refuse captures that are fine.
   `FileUpload`'s `checkBlurOrExplain`, PDFs after `compressIfLarge`.
 - PDFs go through `blurScorePdf` (`pdf-client.ts` → `pdf-render.ts`): only pure
   image scans are eligible (any text or vector op means born-digital, sharp by
-  construction — the same conservative test compression uses, so an
+  construction — the same conservative test compression uses by default, so an
   OCR-overlaid scan is skipped rather than misjudged), at most the first 3
-  pages are rasterized, and a soft 4s deadline stops the check early.
+  pages are rasterized, and a soft 4s deadline stops the check early. A
+  text-bearing PDF that `compressTextPdfs` rasterised *is* a pure image scan by
+  the time the check runs, so it gets scored — harmless in measure mode, and
+  such pages are sharp by construction. The combined-document pass
+  (`shrinkToFit`) runs after the check and is not rescored; the pack carries
+  the worst per-attachment score, which is `null` for a text PDF that only got
+  rasterised there.
 
 **Several pages: the lowest wins.** `lowestBlurScore` is the single home for
 that rule — not the average. Review reads every page, so a pack whose middle
@@ -781,7 +787,7 @@ where the console records what it knows that the shared list cannot express.
 | `cameraOnly` | No file picker and no drag-and-drop — the camera or nothing |
 | `multiple` | One slot may take several attachments, combined into a single PDF |
 | `watermark` | Burns a provenance stamp into this type's captures. Opt-in — absent means none |
-| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions`. Layered key by key over `KYC_DOC_OPTIONS` (`{ maxLength: 1200 }`), which applies to every document type |
+| `options` | Crop ratio, size cap, face checks — see `FileUploadOptions`. Layered key by key over `KYC_DOC_OPTIONS` (`{ maxLength: 1200, compressTextPdfs: true, minCompressionGainPercent: 25 }`), which applies to every document type: text-bearing PDFs (an e-Aadhaar, mostly oversampled images) are rasterised like scans, and a lossy pass only replaces the original when it saves more than a quarter |
 | `maxBytes` | A tighter per-file limit than the backend's 10 MB |
 
 Rules that matter:
@@ -800,7 +806,8 @@ Rules that matter:
   not accept a larger file; it spends the upload before the same rejection. It
   is enforced *after* the image editor has run, so a phone photo the editor was
   about to shrink is not refused — what it really catches is a PDF still
-  oversized after compression (text/vector PDFs are never compressed).
+  oversized after compression. A PDF already over `maxBytes` skips the 25 %
+  min-gain rule and takes any saving, since the alternative is refusing it.
 - **Never combine `options.disableImageConfirm` with a document that needs
   provenance.** It skips the editor, and the editor is where the watermark is
   burnt into the pixels.

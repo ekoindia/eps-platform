@@ -455,6 +455,54 @@ describe("compression", () => {
 		);
 	});
 
+	it("passes the text policy and min gain through to PDF compression", async () => {
+		compressPdfMock.mockResolvedValueOnce({ blob: smallPdf, compressed: true });
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			compressThresholdBytes: 1024,
+			maxBytes: 1024 * 1024,
+			options: {
+				maxLength: 1200,
+				compressTextPdfs: true,
+				minCompressionGainPercent: 25,
+			},
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("aadhaar.pdf", 4096));
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+		expect(compressPdfMock).toHaveBeenCalledWith(expect.anything(), {
+			maxLength: 1200,
+			allowText: true,
+			minGainPercent: 25,
+		});
+	});
+
+	it("waives the min gain for a PDF already over maxBytes", async () => {
+		// A 5.1 MB file that only shrinks to 4.9 MB must still make it under a
+		// 5 MB limit; refusing it for a "small" saving would be a regression.
+		compressPdfMock.mockResolvedValueOnce({ blob: smallPdf, compressed: true });
+		const onFileChange = vi.fn();
+		const { container } = renderUpload({
+			accept: "application/pdf",
+			compressThresholdBytes: 1024,
+			maxBytes: 2048,
+			options: { maxLength: 1200, minCompressionGainPercent: 25 },
+			onFileChange,
+		});
+
+		pickFile(container, fileOf("scan.pdf", 4096));
+
+		await waitFor(() => expect(onFileChange).toHaveBeenCalledTimes(1));
+		expect(compressPdfMock).toHaveBeenCalledWith(expect.anything(), {
+			maxLength: 1200,
+			allowText: undefined,
+			minGainPercent: 0,
+		});
+	});
+
 	it("shrinks a single image that skips the editor", async () => {
 		const shrunk = new File(["s"], "photo.jpg", { type: "image/jpeg" });
 		compressImageMock.mockResolvedValueOnce(shrunk);

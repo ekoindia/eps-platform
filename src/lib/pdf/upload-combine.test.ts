@@ -4,6 +4,7 @@ import {
 	compressIfLarge,
 	isImageMime,
 	shouldCompress,
+	shrinkToFit,
 	PDF_MIME,
 } from "./upload-combine";
 
@@ -121,5 +122,56 @@ describe("compressIfLarge", () => {
 		await expect(compressIfLarge(locked, ONE_MB)).rejects.toBeInstanceOf(
 			EncryptedPdfError,
 		);
+	});
+
+	it("hands the text policy and the saving to beat through to the client", async () => {
+		const big = fileOf("aadhaar.pdf", 5 * ONE_MB);
+		compressPdf.mockResolvedValue({
+			blob: new Blob(["same"], { type: PDF_MIME }),
+			compressed: false,
+		});
+
+		await compressIfLarge(big, ONE_MB, {
+			maxLength: 1200,
+			allowText: true,
+			minGainPercent: 25,
+		});
+
+		expect(compressPdf).toHaveBeenCalledWith(big, {
+			maxLength: 1200,
+			allowText: true,
+			minGainPercent: 25,
+		});
+	});
+});
+
+describe("shrinkToFit", () => {
+	it("leaves a document that already fits alone", async () => {
+		const fits = fileOf("combined.pdf", 4 * ONE_MB);
+
+		expect(await shrinkToFit(fits, 5 * ONE_MB)).toBe(fits);
+		expect(compressPdf).not.toHaveBeenCalled();
+	});
+
+	it("takes any saving for a document over the ceiling", async () => {
+		// The min-gain rule guards against a lossy pass for little benefit; here
+		// the alternative to a small saving is refusing the upload outright.
+		const oversized = fileOf("combined.pdf", 6 * ONE_MB);
+		compressPdf.mockResolvedValue({
+			blob: new Blob(["smaller"], { type: PDF_MIME }),
+			compressed: true,
+		});
+
+		await shrinkToFit(oversized, 5 * ONE_MB, {
+			maxLength: 1200,
+			allowText: true,
+			minGainPercent: 25,
+		});
+
+		expect(compressPdf).toHaveBeenCalledWith(oversized, {
+			maxLength: 1200,
+			allowText: true,
+			minGainPercent: 0,
+		});
 	});
 });
