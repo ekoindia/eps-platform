@@ -1,6 +1,7 @@
 import type { AuthProvider } from "../auth/provider";
 import type { ConnectClient } from "../clients/connect";
 import type {
+	Attribution,
 	BusinessDetails,
 	EkoClient,
 	EkoErrorDetails,
@@ -79,7 +80,11 @@ export interface AgreementUrl {
 /** Orchestrates user signup, validating inputs before any upstream call. */
 export interface SignupService {
 	getState(mobile: string, xRealIp?: string): Promise<SignupState>;
-	createProfile(mobile: string, xRealIp?: string): Promise<SignupState>;
+	createProfile(
+		mobile: string,
+		attribution: Attribution,
+		xRealIp?: string,
+	): Promise<SignupState>;
 	submitPan(
 		mobile: string,
 		pan: string,
@@ -118,7 +123,8 @@ export interface SignupService {
 }
 
 /** Re-exported so route handlers have one import site for the request shape — `http/` should not reach past `service/` into `clients/`. */
-export type { BusinessDetails } from "../clients/eko";
+export type { Attribution, BusinessDetails } from "../clients/eko";
+export { ATTRIBUTION_KEYS } from "../clients/eko";
 
 /** A step that failed upstream, carrying the upstream's own message for the user. */
 export class SignupStepError extends Error {
@@ -266,7 +272,8 @@ export function createSignupService(deps: {
 				-1,
 			);
 		};
-		if (!connect || !auth?.getUpstream) return fail("no connect-api configured");
+		if (!connect || !auth?.getUpstream)
+			return fail("no connect-api configured");
 		if (!sid) return fail("session has no sid");
 		const upstream = await auth.getUpstream(sid);
 		if (!upstream) return fail("no stored upstream session");
@@ -305,8 +312,12 @@ export function createSignupService(deps: {
 			return refresh(mobile, xRealIp);
 		},
 
-		async createProfile(mobile, xRealIp) {
-			const result = await eko.createPartialAccount({ mobile, xRealIp });
+		async createProfile(mobile, attribution, xRealIp) {
+			const result = await eko.createPartialAccount({
+				mobile,
+				attribution,
+				xRealIp,
+			});
 			if (!result.ok) {
 				throw new SignupStepError(
 					result.message,
@@ -361,7 +372,8 @@ export function createSignupService(deps: {
 			// Deliberately no `refresh()`: this reads a reference table and changes
 			// nothing upstream, so re-projecting onboarding state would be a second
 			// 151 call for no reason.
-			if (result.ok) return { ok: true, city: result.city, state: result.state };
+			if (result.ok)
+				return { ok: true, city: result.city, state: result.state };
 			// An unrecognised code is a normal answer; only a malformed reply is a
 			// fault worth shouting about.
 			if (result.kind === "miss") return { ok: true, city: null, state: null };

@@ -773,8 +773,17 @@ export const authClient = {
 export const signupClient = {
 	state: (): Promise<SignupState> =>
 		request("/signup/state", { method: "GET" }) as Promise<SignupState>,
-	createProfile: (): Promise<SignupState> =>
-		request("/signup/profile", { method: "POST" }) as Promise<SignupState>,
+	/**
+	 * Creates the partial account. `attribution` is the stored ad/UTM params;
+	 * the backend forwards only its allowlisted keys upstream.
+	 */
+	createProfile: (
+		attribution: Record<string, string> = {},
+	): Promise<SignupState> =>
+		request("/signup/profile", {
+			method: "POST",
+			body: JSON.stringify(attribution),
+		}) as Promise<SignupState>,
 	submitPan: (pan: string): Promise<SignupState> =>
 		request("/signup/pan", {
 			method: "POST",

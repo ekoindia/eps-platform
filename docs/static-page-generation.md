@@ -16,10 +16,10 @@ immediately.
 The site uses two versions of the App component to support both route-based
 code splitting and static pre-rendering:
 
-| File | Imports | Used by |
-|------|---------|--------|
-| `src/App.tsx` | `React.lazy()` dynamic imports | `src/main.tsx` (client hydration & SPA) |
-| `src/AppServer.tsx` | Static eager imports | `src/entry-server.tsx` (SSG pre-rendering) |
+| File                | Imports                        | Used by                                    |
+| ------------------- | ------------------------------ | ------------------------------------------ |
+| `src/App.tsx`       | `React.lazy()` dynamic imports | `src/main.tsx` (client hydration & SPA)    |
+| `src/AppServer.tsx` | Static eager imports           | `src/entry-server.tsx` (SSG pre-rendering) |
 
 **Why two files?** `React.lazy` is not supported by `renderToString` (used for
 SSG). The server variant keeps all page imports static so every route can be
@@ -106,44 +106,44 @@ whether the page was pre-rendered by checking for meaningful markup inside
 `#root` (ignoring comment-only placeholders like `<!--ssr-outlet-->`):
 
 ```ts
-import App from "./App.tsx";   // lazy route imports + Suspense
+import App from "./App.tsx"; // lazy route imports + Suspense
 
 const hasPrerenderedMarkup =
 	container.innerHTML.replace(/<!--([\s\S]*?)-->/g, "").trim().length > 0;
 
 if (hasPrerenderedMarkup) {
-  // Pre-rendered: defer hydration to browser idle time.
-  // Fire immediately on the first user interaction so React event
-  // handlers are available the moment the user needs them.
-  let hydrated = false;
-  const TRIGGER_EVENTS = ["click", "touchstart", "keydown", "scroll"];
+	// Pre-rendered: defer hydration to browser idle time.
+	// Fire immediately on the first user interaction so React event
+	// handlers are available the moment the user needs them.
+	let hydrated = false;
+	const TRIGGER_EVENTS = ["click", "touchstart", "keydown", "scroll"];
 
-  function doHydrate() {
-    if (hydrated) return;
-    hydrated = true;
-    TRIGGER_EVENTS.forEach((e) => document.removeEventListener(e, doHydrate));
-    hydrateRoot(container, app, {
-      // Logs hydration mismatches (React #418/#423) with component stacks,
-      // even in minified production builds — see docs/ssg-hydration.md
-      onRecoverableError: (error, errorInfo) => {
-        console.warn("[hydration]", error, errorInfo?.componentStack);
-      },
-    });
-  }
+	function doHydrate() {
+		if (hydrated) return;
+		hydrated = true;
+		TRIGGER_EVENTS.forEach((e) => document.removeEventListener(e, doHydrate));
+		hydrateRoot(container, app, {
+			// Logs hydration mismatches (React #418/#423) with component stacks,
+			// even in minified production builds — see docs/ssg-hydration.md
+			onRecoverableError: (error, errorInfo) => {
+				console.warn("[hydration]", error, errorInfo?.componentStack);
+			},
+		});
+	}
 
-  TRIGGER_EVENTS.forEach((e) =>
-    document.addEventListener(e, doHydrate, { once: true, passive: true }),
-  );
+	TRIGGER_EVENTS.forEach((e) =>
+		document.addEventListener(e, doHydrate, { once: true, passive: true }),
+	);
 
-  // requestIdleCallback schedules work during browser idle periods.
-  // Safari fallback: 2 s timeout.
-  if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(doHydrate, { timeout: 2000 });
-  } else {
-    setTimeout(doHydrate, 2000);
-  }
+	// requestIdleCallback schedules work during browser idle periods.
+	// Safari fallback: 2 s timeout.
+	if (typeof requestIdleCallback === "function") {
+		requestIdleCallback(doHydrate, { timeout: 2000 });
+	} else {
+		setTimeout(doHydrate, 2000);
+	}
 } else {
-  createRoot(container).render(app);  // SPA fallback: full client render
+	createRoot(container).render(app); // SPA fallback: full client render
 }
 ```
 
@@ -169,19 +169,19 @@ can be added to the manifest incrementally.
 
 ### Key files
 
-| File | Purpose |
-|------|---------|
-| `ssg/routes.ts` | Deterministic route manifest — add routes here |
-| `ssg/renderer.ts` | Injects rendered HTML + Helmet head tags into template |
-| `ssg/prerender.ts` | Orchestrator: iterates routes, writes HTML, generates sitemap |
-| `ssg/plugin.ts` | Vite plugin (`closeBundle` hook) — registered in `vite.config.ts` |
-| `ssg/sitemap.ts` | XML sitemap generator (uses the same route manifest) |
-| `src/entry-server.tsx` | SSR entry: `renderPage(url)` via `StaticRouter` + `renderToString` |
-| `src/App.tsx` | Client App — `React.lazy` imports + `Suspense` for code splitting |
-| `src/AppServer.tsx` | Server App — eager imports for synchronous SSG rendering |
-| `src/lib/ssr-safe.ts` | Browser-API guards (`safeSessionStorage`, `safeLocationHref`) |
-| `vite.config.ts` | Enables `build.manifest` for asset URL rewriting |
-| `tsconfig.node.json` | Covers `ssg/` files; includes `@/*` path alias so SSG modules can import `src/` data |
+| File                   | Purpose                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `ssg/routes.ts`        | Deterministic route manifest — add routes here                                       |
+| `ssg/renderer.ts`      | Injects rendered HTML + Helmet head tags into template                               |
+| `ssg/prerender.ts`     | Orchestrator: iterates routes, writes HTML, generates sitemap                        |
+| `ssg/plugin.ts`        | Vite plugin (`closeBundle` hook) — registered in `vite.config.ts`                    |
+| `ssg/sitemap.ts`       | XML sitemap generator (uses the same route manifest)                                 |
+| `src/entry-server.tsx` | SSR entry: `renderPage(url)` via `StaticRouter` + `renderToString`                   |
+| `src/App.tsx`          | Client App — `React.lazy` imports + `Suspense` for code splitting                    |
+| `src/AppServer.tsx`    | Server App — eager imports for synchronous SSG rendering                             |
+| `src/lib/ssr-safe.ts`  | Browser-API guards (`safeSessionStorage`, `safeLocalStorage`, `safeLocationHref`)    |
+| `vite.config.ts`       | Enables `build.manifest` for asset URL rewriting                                     |
+| `tsconfig.node.json`   | Covers `ssg/` files; includes `@/*` path alias so SSG modules can import `src/` data |
 
 ### SEO outputs per page
 
@@ -249,12 +249,13 @@ in `ConsoleLayout.tsx` / `Admin.tsx` is a fourth, JS-dependent layer.
 A small number of browser APIs needed guarding before server-side rendering
 could work. All fixes live in `src/lib/ssr-safe.ts`:
 
-- **`safeSessionStorage`** — no-ops `sessionStorage` calls during SSR.
+- **`safeSessionStorage` / `safeLocalStorage`** — no-op `sessionStorage` /
+  `localStorage` calls during SSR (one `safeStorage` factory).
   Used in `src/hooks/use-tracking-params.ts` so tracking params are read safely.
 - **`isBrowser()`** — explicit browser check used where effects access `window`
-	or DOM APIs (for example in `src/components/ZohoSignupForm.tsx`).
+  or DOM APIs (for example in `src/components/ZohoSignupForm.tsx`).
 - **`safeLocationHref()`** — returns `window.location.href` in the browser,
-	`SITE_URL` during SSR. Available for SSR-safe URL reads where needed.
+  `SITE_URL` during SSR. Available for SSR-safe URL reads where needed.
 
 These are the only two SSR-unsafe patterns found in the codebase. Everything
 else (`Header`, `LanguageSelector`, `ScrollToTop`, `zoho-custom-form.ts`, etc.) was
@@ -264,7 +265,7 @@ already guarded inside `useEffect` or event handlers.
 
 `useCaptureTrackingParams()` runs inside `useEffect`, so it fires after
 hydration — correctly capturing `gclid`, `utm_*`, and other tracking params
-from the hydrated page URL and persisting them to `sessionStorage`. The
+from the hydrated page URL and persisting them to `localStorage`. The
 `ZohoSignupForm` renders a placeholder `<div>` during SSR and defers loading
 the iframe until the container scrolls near the viewport (via
 `IntersectionObserver` with a 200px root margin). Once visible, it builds the
@@ -292,11 +293,11 @@ from the data and picks it up automatically.
 Catch-all rewrites now point to `/__spa-fallback.html` instead of `index.html`,
 so the pre-rendered `index.html` is served for the home page:
 
-| Platform | Config file | Catch-all target |
-|----------|-------------|-----------------|
-| Vercel | `vercel.json` | `/__spa-fallback.html` |
-| Netlify | `netlify.toml` / `public/_redirects` | `/__spa-fallback.html` |
-| Nginx | `nginx.conf` — `try_files $uri $uri/` | `/__spa-fallback.html` |
+| Platform | Config file                           | Catch-all target       |
+| -------- | ------------------------------------- | ---------------------- |
+| Vercel   | `vercel.json`                         | `/__spa-fallback.html` |
+| Netlify  | `netlify.toml` / `public/_redirects`  | `/__spa-fallback.html` |
+| Nginx    | `nginx.conf` — `try_files $uri $uri/` | `/__spa-fallback.html` |
 
 Pre-rendered `.html` files are served as exact static matches before the
 catch-all is reached, so there is no routing conflict.
@@ -338,7 +339,6 @@ grep 'fetchpriority="low"' dist/products/dmt-api/index.html
 grep -c 'fetchpriority' dist/__spa-fallback.html
 ```
 
-
 ## Future: Migration to Vike
 
 The current SSG implementation is intentionally structured to make a future
@@ -363,7 +363,7 @@ The architecture is designed with this transition in mind.
 function:
 
 ```ts
-export function renderPage(url: string): { html: string; head: string }
+export function renderPage(url: string): { html: string; head: string };
 ```
 
 When migrating to Vike:
@@ -392,6 +392,6 @@ entry point and the build plugin.
 - [ ] Move `src/main.tsx` hydration logic to `pages/+onRenderClient.tsx`
 - [ ] Remove `ssg/` directory and `prerenderPlugin()` from `vite.config.ts`
 - [ ] Verify `sitemap.xml` is still generated (Vike can call `ssg/sitemap.ts`
-  from a post-build script or `+onPrerenderStart` hook)
+      from a post-build script or `+onPrerenderStart` hook)
 - [ ] Run `npm run build` and verify all pages pre-render correctly
 - [ ] Check for hydration mismatches (none expected — page components are unchanged)

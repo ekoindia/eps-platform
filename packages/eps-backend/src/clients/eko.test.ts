@@ -574,6 +574,26 @@ describe("onboarding interactions", () => {
 		expect(body.get("user_code")).toBe(ekoCfg.userCode);
 		// user_id must never be sent upstream.
 		expect(body.get("user_id")).toBeNull();
+		// No attribution given → no attribution fields.
+		expect(body.get("gclid")).toBeNull();
+	});
+
+	it("createPartialAccount forwards attribution without letting it shadow system fields", async () => {
+		const f = mockFetch(200, { response_type_id: 1566 });
+		const eko = createEkoClient(ekoCfg, f);
+		await eko.createPartialAccount({
+			mobile: "9990000001",
+			attribution: {
+				gclid: "Cj0KCQ",
+				utm_source: "google",
+				// Not a real key at the type level; proves spread order at runtime.
+				...({ interaction_type_id: "999" } as object),
+			},
+		});
+		const body = bodyOf(f);
+		expect(body.get("gclid")).toBe("Cj0KCQ");
+		expect(body.get("utm_source")).toBe("google");
+		expect(body.get("interaction_type_id")).toBe("521");
 	});
 
 	it("createPartialAccount reports the upstream message on failure", async () => {
