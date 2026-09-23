@@ -297,9 +297,10 @@ describe("createProfile", () => {
 			eko: ekoStub({ createPartialAccount, getProfile }),
 			cfg,
 		});
-		const state = await svc.createProfile("9990000001");
+		const state = await svc.createProfile("9990000001", { gclid: "abc" });
 		expect(createPartialAccount).toHaveBeenCalledWith({
 			mobile: "9990000001",
+			attribution: { gclid: "abc" },
 			xRealIp: undefined,
 		});
 		expect(state.status).toBe("in_progress");
@@ -320,7 +321,7 @@ describe("createProfile", () => {
 			}),
 			cfg,
 		});
-		await expect(svc.createProfile("9990000001")).rejects.toThrow(
+		await expect(svc.createProfile("9990000001", {})).rejects.toThrow(
 			"Already exists",
 		);
 	});
@@ -472,7 +473,12 @@ describe("submitPin", () => {
 			auth: over.auth,
 		});
 		await expect(
-			svc.submitPin("9990000001", "1234", "1234", "sid" in over ? over.sid : "sid-1"),
+			svc.submitPin(
+				"9990000001",
+				"1234",
+				"1234",
+				"sid" in over ? over.sid : "sid-1",
+			),
 		).rejects.toThrow(/secure your PIN/i);
 		expect(setSecretPin).not.toHaveBeenCalled();
 	});

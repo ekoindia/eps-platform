@@ -32,6 +32,8 @@ export interface EkoClient {
 	}): Promise<ProfileResult>;
 	createPartialAccount(input: {
 		mobile: string;
+		/** Allowlisted ad/UTM attribution, forwarded verbatim as 521 fields. */
+		attribution?: Attribution;
 		xRealIp?: string;
 	}): Promise<EkoStepResult>;
 	verifyPan(input: {
@@ -212,6 +214,24 @@ export interface BusinessDetails {
 	current_address_state: string;
 	current_address_pincode: string;
 }
+
+/**
+ * Ad/UTM attribution keys forwarded to interaction 521 under the same names.
+ * An allowlist — the browser stores every tracking param it sees, but only
+ * these reach upstream. Agreed with the SimpliBank side; extend there first.
+ */
+export const ATTRIBUTION_KEYS = [
+	"gclid",
+	"fbclid",
+	"utm_source",
+	"utm_medium",
+	"utm_campaign",
+] as const;
+
+export type AttributionKey = (typeof ATTRIBUTION_KEYS)[number];
+
+/** Allowlisted attribution, already trimmed and length-checked by the route. */
+export type Attribution = Partial<Record<AttributionKey, string>>;
 
 /**
  * The diagnostic sub-objects an upstream failure can carry beyond `message`.
@@ -676,6 +696,9 @@ export function createEkoClient(
 			// user_code pair acts on the new user's behalf, identified by mobile.
 			const raw = await post(
 				{
+					// `attribution` is spread FIRST so none of its keys can override
+					// the system fields below (same rule as `submitBusiness`).
+					...input.attribution,
 					...base(),
 					interaction_type_id: "521",
 					user_identity: input.mobile,

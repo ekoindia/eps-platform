@@ -6,13 +6,13 @@ One page, four client-side tabs:
    (you pay per call).
 2. **Money Transfer (DMT)** — per-transaction LEDGER calculator + RCM
    explainer + crawlable rate card. DMT does not fit the slab-commission
-   model: the customer fee is GST-*inclusive*, GST is carved back *out* of
+   model: the customer fee is GST-_inclusive_, GST is carved back _out_ of
    it, Eko's flat ₹2.80 comes off the taxable value, then TDS.
 3. **AePS & BBPS** — interactive EARNINGS calculator + commission rate card
    (these products pay the partner a commission per transaction — inverted
    semantics vs. verification).
 4. **Connected Banking** — COST calculator (one-time setup per bank per user
-   + per-transaction charges). **Currently disabled** — see below.
+   - per-transaction charges). **Currently disabled** — see below.
 
 DigiKhata is intentionally out of scope.
 
@@ -82,18 +82,18 @@ docs/ssg-hydration.md); the param-less URL stays mismatch-free.
 
 Each sellable API is a `PricedApi`:
 
-| Field | Meaning |
-|---|---|
-| `id` | URL-stable id used in query params (e.g. `pan-lite`). Never rename once shipped — breaks shared links. |
-| `name` | Display name |
+| Field       | Meaning                                                                                                                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`        | URL-stable id used in query params (e.g. `pan-lite`). Never rename once shipped — breaks shared links.                                                                                                  |
+| `name`      | Display name                                                                                                                                                                                            |
 | `productId` | Optional — maps to `ApiProductRef.id` in `api-products.ts`. One product → many priced APIs (`pan` → PAN Lite / Bulk / Status / Comprehensive). Omit when no product page exists (e.g. `ckyc-download`). |
-| `group` | Section heading; ordered by `PRICING_GROUP_ORDER` |
-| `tiers` | Volume slabs, ascending; last has `upTo: null`. Flat rate = single entry. |
-| `tierMode` | `"volume"` (default — matched slab rate applies to all units) or `"graduated"` (each slab priced separately) |
-| `unitLabel` | e.g. `"per lookup"`; defaults to `"per verification"` |
-| `popular` | Shows the Popular badge + quick-add chip eligibility |
-| `setupFee` | One-time activation fee (INR, excl. GST). Omit when none. |
-| `isBulk` | Bulk APIs (billed per individual verification inside the bulk request) — renders an asterisk + footnote; list bulk APIs **after** non-bulk APIs within their group |
+| `group`     | Section heading; ordered by `PRICING_GROUP_ORDER`                                                                                                                                                       |
+| `tiers`     | Volume slabs, ascending; last has `upTo: null`. Flat rate = single entry.                                                                                                                               |
+| `tierMode`  | `"volume"` (default — matched slab rate applies to all units) or `"graduated"` (each slab priced separately)                                                                                            |
+| `unitLabel` | e.g. `"per lookup"`; defaults to `"per verification"`                                                                                                                                                   |
+| `popular`   | Shows the Popular badge + quick-add chip eligibility                                                                                                                                                    |
+| `setupFee`  | One-time activation fee (INR, excl. GST). Omit when none.                                                                                                                                               |
+| `isBulk`    | Bulk APIs (billed per individual verification inside the bulk request) — renders an asterisk + footnote; list bulk APIs **after** non-bulk APIs within their group                                      |
 
 All rates: **INR per transaction, exclusive of GST @ 18%** (`GST_RATE`).
 Money math runs in integer paise to avoid float drift (`calcQuote`, `calcLineCost`).
@@ -174,11 +174,11 @@ operator list, edit this file; the workbook regenerates on the next build.
 `api-pricing.ts` is the **single source of truth for every setup-fee claim on
 the site**. It has three states, and all copy follows automatically:
 
-| Value | Copy | Payable |
-| ----- | ---- | ------- |
-| `100` | "No setup fee." / "₹0 setup fee — limited-time offer" | ₹0 |
+| Value    | Copy                                                                  | Payable         |
+| -------- | --------------------------------------------------------------------- | --------------- |
+| `100`    | "No setup fee." / "₹0 setup fee — limited-time offer"                 | ₹0              |
 | `1`–`99` | "{pct}% off setup fee." / "{pct}% off setup fee — limited-time offer" | fee × (1 − pct) |
-| `0` | no offer copy at all | full fee |
+| `0`      | no offer copy at all                                                  | full fee        |
 
 Change the number and nothing else. It drives the pricing hero chip and
 subtitle, both calculator summaries, the pricing and payments FAQs, the 12
@@ -277,15 +277,15 @@ APIs (e.g. `ip`) automatically show neither.
 
 ## URL param scheme
 
-| Param | Owner | Example | Meaning |
-|---|---|---|---|
-| `tab` | PricingTabs | `tab=dmt` | Active tab (`dmt` / `payments` / `banking`). Absent = verification (never written). |
-| `sel` | PricingCalculator | `sel=pan-lite:50000,bank-pennydrop:10000` | Verification state — `apiId:volume` pairs. |
-| `apis` | PricingCalculator | `apis=pan` | Deep-link entry. Accepts priced-API ids OR product ids (expands at `DEFAULT_VOLUME`). Normalised into `sel` after load. |
-| `gst` | PricingCalculator | `gst=1` | Verification headline total includes GST |
-| `pay` | PaymentsCalculator | `pay=dmt:5000:2500,bbps-electricity:1000:1500:offline` | Earnings state — `productId:monthlyTxns:avgAmount[:offline]` (avgAmount omitted for `aeps-mini`; the `offline` suffix only on BBPS lines using the 6-hour mode). |
-| `dmt` | DmtCalculator | `dmt=2500:1000:50:80:0` | `amount:monthlyTxns:newSenders:newRecipients:recover` (recover = `1`/`0`). Written only after the user touches an input. |
-| `cb` | ConnectedBankingCalculator | `cb=2:5000:10000` | `bankUsers:monthlyTxns:avgAmount`. Written only after the user touches an input. |
+| Param  | Owner                      | Example                                                | Meaning                                                                                                                                                          |
+| ------ | -------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tab`  | PricingTabs                | `tab=dmt`                                              | Active tab (`dmt` / `payments` / `banking`). Absent = verification (never written).                                                                              |
+| `sel`  | PricingCalculator          | `sel=pan-lite:50000,bank-pennydrop:10000`              | Verification state — `apiId:volume` pairs.                                                                                                                       |
+| `apis` | PricingCalculator          | `apis=pan`                                             | Deep-link entry. Accepts priced-API ids OR product ids (expands at `DEFAULT_VOLUME`). Normalised into `sel` after load.                                          |
+| `gst`  | PricingCalculator          | `gst=1`                                                | Verification headline total includes GST                                                                                                                         |
+| `pay`  | PaymentsCalculator         | `pay=dmt:5000:2500,bbps-electricity:1000:1500:offline` | Earnings state — `productId:monthlyTxns:avgAmount[:offline]` (avgAmount omitted for `aeps-mini`; the `offline` suffix only on BBPS lines using the 6-hour mode). |
+| `dmt`  | DmtCalculator              | `dmt=2500:1000:50:80:0`                                | `amount:monthlyTxns:newSenders:newRecipients:recover` (recover = `1`/`0`). Written only after the user touches an input.                                         |
+| `cb`   | ConnectedBankingCalculator | `cb=2:5000:10000`                                      | `bankUsers:monthlyTxns:avgAmount`. Written only after the user touches an input.                                                                                 |
 
 Every writer uses the **functional `setSearchParams` updater** (debounced
 300 ms, `replace: true`, `preventScrollReset: true`) and deletes/sets **only
@@ -308,7 +308,17 @@ Implemented in `src/hooks/use-tracking-params.ts`:
 - **Capture matcher** `isTrackingParam`: prefixes `utm_*`, `gad_*`, `gcl_*` +
   exact keys (`gclid`, `gbraid`, `wbraid`, `fbclid`, `msclkid`, `ttclid`,
   `twclid`, `li_fat_id`, `campaign_name`, `adgroup`, `matchtype`, `network`,
-  `keyword`). Captured to sessionStorage, first-touch (stored values win).
+  `keyword`). Captured to localStorage (`eps_tracking_params`, envelope
+  `{ params, capturedAt }`), first-touch (stored values win), expires 30 days
+  after first capture (`TRACKING_TTL_MS`). A legacy sessionStorage record is
+  migrated once on first read.
+- **Console signup (interaction 521)**: `SignupWizard` POSTs the stored
+  params as the JSON body of `/signup/profile`; the backend
+  (`http/signup.ts` `parseAttribution`) forwards only `ATTRIBUTION_KEYS`
+  (`gclid`, `fbclid`, `utm_source`, `utm_medium`, `utm_campaign`) — string
+  values, trimmed, ≤200 chars, never blocking account creation — as fields on
+  the SimpliBank `createPartialAccount` (521) request under the same names.
+  Calculator selection is deliberately not sent.
 - **URL re-append**: `useCaptureTrackingParams` (App root) re-appends stored
   tracking params to the URL after every internal navigation (replace, no
   history spam) — Zoho SalesIQ records page URLs, so attribution survives
@@ -359,16 +369,16 @@ into `/pricing.md` automatically.
 A downloadable companion workbook generated at build time from the same data
 modules. **Eight sheets, in tab order:**
 
-| Sheet | Purpose |
-|---|---|
-| `Index` | First tab: what's inside + internal hyperlinks (`{ text, hyperlink: "#'Sheet Name'!A1" }`) to every sheet |
-| `Verification Calculator` | Monthly COST estimate — usage inputs, line/subtotal/GST formulas |
-| `DMT Calculator` | Per-txn ledger + monthly take-home — **all live formulas** (closed-form, no lookup table) |
-| `Payments Earnings` | Monthly EARNINGS estimate for AePS/BBPS — settlement-mode dropdown (BBPS), avg-amount + txn inputs; gross / TDS / net payout summary |
-| `Connected Banking` | Setup (₹75,000 × banks + GST) and monthly (per-txn slab IF + GST) blocks |
-| `Verification Rate Card` | Static verification reference |
-| `Payments Rate Card` | Static AePS reference + BBPS categories with both settlement modes side by side |
-| `BBPS Operator Rates` | Full operator list, frozen header + auto-filter |
+| Sheet                     | Purpose                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `Index`                   | First tab: what's inside + internal hyperlinks (`{ text, hyperlink: "#'Sheet Name'!A1" }`) to every sheet                            |
+| `Verification Calculator` | Monthly COST estimate — usage inputs, line/subtotal/GST formulas                                                                     |
+| `DMT Calculator`          | Per-txn ledger + monthly take-home — **all live formulas** (closed-form, no lookup table)                                            |
+| `Payments Earnings`       | Monthly EARNINGS estimate for AePS/BBPS — settlement-mode dropdown (BBPS), avg-amount + txn inputs; gross / TDS / net payout summary |
+| `Connected Banking`       | Setup (₹75,000 × banks + GST) and monthly (per-txn slab IF + GST) blocks                                                             |
+| `Verification Rate Card`  | Static verification reference                                                                                                        |
+| `Payments Rate Card`      | Static AePS reference + BBPS categories with both settlement modes side by side                                                      |
+| `BBPS Operator Rates`     | Full operator list, frozen header + auto-filter                                                                                      |
 
 - **Renderer**: `ssg/render-pricing-xlsx.ts` — pure `renderPricingXlsx(data)`
   → `Buffer` (unit-tested in `src/test/render-pricing-xlsx.test.ts`). It

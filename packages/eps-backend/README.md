@@ -30,6 +30,8 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET    | /crm/lead                   | cookie         | The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` unless `ZOHO_ENABLED=true`; 404 `NO_CRM_LEAD` when the profile has no `crm_lead_id` |
 | PATCH  | /crm/lead                   | cookie         | Writes allow-listed Lead fields back to Zoho — see docs/features/crm-lead.md |
 | POST   | /tryit/proxy                | none (public)  | Same-origin relay for the docs "Try it" widget — see below |
+| POST   | /signup/profile             | signup cookie  | Creates the partial account (SimpliBank 521). Optional JSON body of ad attribution; only `ATTRIBUTION_KEYS` (`gclid`, `fbclid`, `utm_source`, `utm_medium`, `utm_campaign`; strings ≤200 chars) are forwarded upstream under the same names, never blocking the step |
+| \*     | /signup/\*                  | signup cookie  | Remaining self-serve onboarding steps (`state`, `pan`, `business`, `pin`, `pincode`, `agreement`) |
 
 ## Auth providers
 

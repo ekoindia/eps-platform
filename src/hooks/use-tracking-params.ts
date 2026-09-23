@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { safeSessionStorage } from "@/lib/ssr-safe";
+import { safeLocalStorage, safeSessionStorage } from "@/lib/ssr-safe";
 
 /** Exact ad-platform keys that don't follow a prefix convention */
 const TRACKING_EXACT = new Set([
@@ -25,6 +25,15 @@ const TRACKING_PREFIXES = ["utm_", "gad_", "gcl_"];
 const STORAGE_KEY = "eps_tracking_params";
 const CALC_STORAGE_KEY = "eps_calc_selection";
 
+/** How long first-touch attribution lives in localStorage. */
+export const TRACKING_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** localStorage envelope: params + when first captured (for expiry). */
+interface TrackingEnvelope {
+	params: Record<string, string>;
+	capturedAt: number;
+}
+
 /** Max length of the Zoho CRM "Website" field */
 const CRM_URL_MAX_LEN = 450;
 
@@ -42,9 +51,72 @@ export const isTrackingParam = (key: string): boolean => {
 };
 
 /**
+ * Reads the live (unexpired) envelope, or null. Drops an expired or malformed
+ * one so the next landing with tracking params starts a fresh 30-day window.
+ * One-time migration: a legacy sessionStorage record (pre-localStorage) is
+ * adopted as a fresh envelope when no live one exists.
+ */
+function readEnvelope(): TrackingEnvelope | null {
+	try {
+		const raw = safeLocalStorage.getItem(STORAGE_KEY);
+		if (raw) {
+			const parsed = JSON.parse(raw) as Partial<TrackingEnvelope>;
+			if (
+				parsed &&
+				typeof parsed.capturedAt === "number" &&
+				parsed.params &&
+				typeof parsed.params === "object" &&
+				parsed.capturedAt + TRACKING_TTL_MS > Date.now()
+			) {
+				return { params: parsed.params, capturedAt: parsed.capturedAt };
+			}
+			safeLocalStorage.removeItem(STORAGE_KEY);
+		}
+		const legacy = safeSessionStorage.getItem(STORAGE_KEY);
+		if (legacy) {
+			safeSessionStorage.removeItem(STORAGE_KEY);
+			const params = JSON.parse(legacy) as Record<string, string>;
+			if (params && typeof params === "object" && Object.keys(params).length) {
+				const envelope = { params, capturedAt: Date.now() };
+				safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+				return envelope;
+			}
+		}
+	} catch {
+		safeLocalStorage.removeItem(STORAGE_KEY);
+	}
+	return null;
+}
+
+/**
+ * Captures tracking params from a query string into localStorage.
+ * First-touch: stored values win over later ones, and the expiry clock
+ * starts when the envelope is first created, not on every visit.
+ * @param search - `location.search` (with or without leading `?`).
+ */
+export function captureTrackingParams(search: string): void {
+	const captured: Record<string, string> = {};
+	new URLSearchParams(search).forEach((value, key) => {
+		if (value && isTrackingParam(key)) captured[key] = value;
+	});
+	if (Object.keys(captured).length === 0) return;
+	// ponytail: a tab left open on an attributed URL past expiry re-captures
+	// the same ids and restarts the clock; needs a "seen" marker if it matters.
+	const live = readEnvelope();
+	safeLocalStorage.setItem(
+		STORAGE_KEY,
+		JSON.stringify({
+			params: { ...captured, ...live?.params },
+			capturedAt: live?.capturedAt ?? Date.now(),
+		}),
+	);
+}
+
+/**
  * Call once at app root (inside BrowserRouter).
- * 1. Captures any tracking/UTM params from the URL into sessionStorage
- *    (first-touch attribution — stored values win over later ones).
+ * 1. Captures any tracking/UTM params from the URL into localStorage
+ *    (first-touch attribution — stored values win over later ones; expires
+ *    after `TRACKING_TTL_MS`).
  * 2. Re-appends stored params to the URL after every internal navigation,
  *    so Zoho SalesIQ (which records the page URL) always sees them, no
  *    matter which Link/navigation dropped them.
@@ -55,21 +127,9 @@ export function useCaptureTrackingParams() {
 
 	useEffect(() => {
 		const params = new URLSearchParams(search);
+		captureTrackingParams(search);
 
-		// 1. Capture tracking params present in the URL (first-touch merge)
-		const captured: Record<string, string> = {};
-		params.forEach((value, key) => {
-			if (value && isTrackingParam(key)) captured[key] = value;
-		});
-		if (Object.keys(captured).length > 0) {
-			const existing = getStoredTrackingParams();
-			safeSessionStorage.setItem(
-				STORAGE_KEY,
-				JSON.stringify({ ...captured, ...existing }),
-			);
-		}
-
-		// 2. Re-append stored params missing from the current URL
+		// Re-append stored params missing from the current URL
 		const stored = getStoredTrackingParams();
 		let changed = false;
 		Object.entries(stored).forEach(([key, value]) => {
@@ -87,13 +147,9 @@ export function useCaptureTrackingParams() {
 	}, [pathname, search, hash, navigate]);
 }
 
-/** Returns tracking params saved from the landing URL, or an empty object. */
+/** Returns unexpired tracking params saved from the landing URL, or `{}`. */
 export function getStoredTrackingParams(): Record<string, string> {
-	try {
-		return JSON.parse(safeSessionStorage.getItem(STORAGE_KEY) || "{}");
-	} catch {
-		return {};
-	}
+	return readEnvelope()?.params ?? {};
 }
 
 /**

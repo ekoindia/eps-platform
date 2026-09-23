@@ -8,11 +8,12 @@ import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
 import { buildMeView } from "../identity/me";
 import type {
+	Attribution,
 	BusinessDetails,
 	SignupService,
 	SignupState,
 } from "../signup/service";
-import { SignupStepError } from "../signup/service";
+import { ATTRIBUTION_KEYS, SignupStepError } from "../signup/service";
 import { AppError } from "./errors";
 import type { AppEnv } from "./requestId";
 
@@ -68,6 +69,34 @@ const BUSINESS_RULES: Record<
 		required: true,
 	},
 };
+
+/**
+ * Longest attribution value forwarded upstream. Click ids are opaque, so an
+ * over-long one is dropped rather than truncated into a useless prefix.
+ */
+const ATTRIBUTION_MAX_LEN = 200;
+
+/**
+ * Narrows a request body to the allowlisted attribution keys.
+ *
+ * Best-effort by design: attribution must never block account creation, so
+ * this never throws — a missing, malformed or non-string value is simply
+ * left out, and unknown keys are ignored.
+ *
+ * @param body - Untrusted JSON body.
+ */
+export function parseAttribution(body: unknown): Attribution {
+	const src =
+		body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+	const out: Attribution = {};
+	for (const key of ATTRIBUTION_KEYS) {
+		const raw = src[key];
+		if (typeof raw !== "string") continue;
+		const value = raw.trim();
+		if (value && value.length <= ATTRIBUTION_MAX_LEN) out[key] = value;
+	}
+	return out;
+}
 
 /**
  * Validates and narrows a request body to exactly the nine business fields.
@@ -301,11 +330,16 @@ export function mountSignup(
 
 	app.post("/signup/profile", async (c) => {
 		const { sub: mobile, sid } = await requireSignupSession(c);
+		const attribution = parseAttribution(await c.req.json().catch(() => ({})));
 		try {
 			return await respond(
 				c,
 				mobile,
-				await signup.createProfile(mobile, c.req.header("x-real-ip")),
+				await signup.createProfile(
+					mobile,
+					attribution,
+					c.req.header("x-real-ip"),
+				),
 				sid,
 			);
 		} catch (e) {

@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { getStoredTrackingParams } from "@/hooks/use-tracking-params";
 import { ApiError, signupClient, type SignupState } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { withRetries } from "@/lib/retry";
@@ -89,7 +90,7 @@ export function SignupWizard() {
 					// Deliberately NOT wrapped in `withRetries`: this POST creates a
 					// partial account upstream, which is the very thing `started` above
 					// exists to stop happening twice.
-					next = await signupClient.createProfile();
+					next = await signupClient.createProfile(getStoredTrackingParams());
 				}
 				setState(next);
 			} catch (e) {

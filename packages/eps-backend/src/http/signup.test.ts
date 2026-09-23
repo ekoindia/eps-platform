@@ -155,7 +155,45 @@ describe("signup endpoints", () => {
 		});
 		expect(res.status).toBe(200);
 		// The mobile comes from the session, never from the request body.
-		expect(createProfile).toHaveBeenCalledWith("9990000001", undefined);
+		expect(createProfile).toHaveBeenCalledWith("9990000001", {}, undefined);
+	});
+
+	it("POST /signup/profile forwards only allowlisted, well-formed attribution", async () => {
+		const createProfile = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { createProfile });
+		const res = await app.request("/signup/profile", {
+			method: "POST",
+			...withCookie,
+			headers: { ...withCookie.headers, "content-type": "application/json" },
+			body: JSON.stringify({
+				gclid: "  Cj0KCQ  ",
+				utm_source: "google",
+				utm_medium: "",
+				utm_campaign: "x".repeat(201),
+				fbclid: { toString: null },
+				mobile: "1234567890", // not allowlisted
+				gbraid: "dropped",
+			}),
+		});
+		expect(res.status).toBe(200);
+		expect(createProfile).toHaveBeenCalledWith(
+			"9990000001",
+			{ gclid: "Cj0KCQ", utm_source: "google" },
+			undefined,
+		);
+	});
+
+	it("POST /signup/profile tolerates a malformed body", async () => {
+		const createProfile = vi.fn().mockResolvedValue(inProgress);
+		const app = harness("signup", { createProfile });
+		const res = await app.request("/signup/profile", {
+			method: "POST",
+			...withCookie,
+			headers: { ...withCookie.headers, "content-type": "application/json" },
+			body: "not json",
+		});
+		expect(res.status).toBe(200);
+		expect(createProfile).toHaveBeenCalledWith("9990000001", {}, undefined);
 	});
 
 	it("POST /signup/pan submits the PAN", async () => {
