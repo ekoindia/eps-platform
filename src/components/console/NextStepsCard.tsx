@@ -13,8 +13,9 @@ import { type KycPackSummary, summariseDocuments } from "@/lib/connect/kyc";
 import { useKycDocuments } from "@/lib/connect/kyc-documents";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { needsKycUpload } from "@/lib/console/lifecycle";
+import { SETUP_FEE_DISCOUNT_PERCENT } from "@/lib/data/api-pricing";
 import { cn } from "@/lib/utils";
-import { CircleCheck, CircleDashed } from "lucide-react";
+import { Check, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Step {
@@ -40,31 +41,70 @@ interface Step {
 }
 
 /**
- * The status mark at the head of a row, one size for all three states.
+ * The numbered status mark at the head of a row, one size for every state.
  *
- * A dashed ring for a step that has not started, the same ring muted for one
- * whose state is genuinely unknown, and a filled tick for done. Every row keeps
- * a mark so the labels stay on one left edge — an absent icon would indent the
- * text of some rows and not others.
+ * A tick for done, a filled gold number for the step spotlighted as up next, a
+ * primary ring for one that is owed, and a muted ring for one whose state is
+ * genuinely unknown. Every row keeps a mark so the labels stay on one left edge.
+ * The number is decorative — the list already says where the row sits — so the
+ * mark speaks only its state.
+ * @param index - 1-based position in the list.
  * @param done - `true`, `false`, or undefined when the state is unknowable.
+ * @param label - Overrides the spoken state when "Not started" would be wrong.
+ * @param upNext - True on the one step the card is asking for now.
  */
-function StepMark({ done, label }: { done?: boolean; label?: string }) {
+function StepMark({
+	index,
+	done,
+	label,
+	upNext,
+}: {
+	index: number;
+	done?: boolean;
+	label?: string;
+	upNext?: boolean;
+}) {
+	const base =
+		"flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold";
 	if (done)
 		return (
-			<CircleCheck
+			<span
+				role="img"
 				aria-label="Done"
-				className="mt-0.5 h-5 w-5 shrink-0 text-eko-success"
-			/>
+				className={cn(base, "bg-eko-success/15 text-eko-success")}
+			>
+				<Check className="h-4 w-4" aria-hidden />
+			</span>
 		);
 	return (
-		<CircleDashed
+		<span
+			role="img"
 			aria-label={label ?? (done === false ? "Not started" : "Status unknown")}
 			className={cn(
-				"mt-0.5 h-5 w-5 shrink-0",
-				done === false ? "text-primary" : "text-muted-foreground/50",
+				base,
+				upNext
+					? "bg-primary text-primary-foreground"
+					: done === false
+						? "border border-primary text-primary"
+						: "border text-muted-foreground",
 			)}
-		/>
+		>
+			{index}
+		</span>
 	);
+}
+
+/**
+ * The offer pill over the fee panel, read off the same constant the pricing
+ * page and the payment page quote from — so the three can never disagree.
+ * @param percent - The running setup-fee discount, already clamped 0–100.
+ * @returns The pill text, or null when no offer is running.
+ */
+function offerLabel(percent: number): string | null {
+	if (percent <= 0) return null;
+	return percent >= 100
+		? "Limited-time offer · Fee waived"
+		: `Limited-time offer · Save ${percent}%`;
 }
 
 /**
@@ -216,67 +256,149 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 			label: "Receive your production credentials",
 			cta: { label: "View", to: "/console/credentials" },
 		},
-		// Shown to everyone. This was gated on `profile.dateOfJoining >= 2026-08-03`
-		// so that only post-cutover accounts saw it, but that field has no format
-		// contract and no other consumer, so the gate silently hid the step from
-		// accounts that DO owe the fee. Shown unconditionally until a join date —
-		// or an eligibility flag — arrives from upstream in a shape worth trusting.
-		{
-			label: "Pay your one-time integration fee",
-			cta: { label: "Pay", to: "/console/pay-activation-fee" },
-		},
 	];
+
+	// The one step the card is asking for now: E-sign when owed, else the KYC
+	// upload when owed — the same step that already held the filled button. When
+	// neither is, nothing is spotlighted: the remaining rows are routes, not
+	// blockers this session can see, and an account that is already live must
+	// not be told integrating is its next move.
+	const upNext = steps.find((step) => step.cta?.primary);
+	const offer = offerLabel(SETUP_FEE_DISCOUNT_PERCENT);
 
 	return (
 		<Card className="max-w-2xl">
 			<CardHeader>
-				<CardTitle>Next Steps</CardTitle>
+				<CardTitle>Next steps</CardTitle>
 				<CardDescription>
 					What's left before you can transact in production.
 				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<ol className="divide-y">
-					{steps.map((step) => (
-						<li
-							key={step.label}
-							className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-						>
-							<StepMark done={step.done} label={step.markLabel} />
-							<span className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-								{/* The strike is on the label alone — carrying it on the row
-								    would draw a line through the badge as well. */}
-								<span
-									className={cn(
-										step.done && "text-muted-foreground line-through",
-									)}
-								>
-									{step.label}
-								</span>
-								{step.badge ? (
-									<Badge variant={step.badge.variant}>{step.badge.label}</Badge>
-								) : null}
-							</span>
-							{step.cta ? (
-								<Button
-									asChild
-									size="sm"
-									variant={step.cta.primary ? "default" : "outline"}
-									className="shrink-0"
-								>
-									{/* Two of these read "View". Named after their own step so a
-									    screen reader hears which one it is landing on. */}
-									<Link
-										to={step.cta.to}
-										aria-label={`${step.cta.label} — ${step.label}`}
-									>
-										{step.cta.label}
-									</Link>
-								</Button>
-							) : null}
-						</li>
+				{/* Decorative: every row already says its own state. The last segment
+				    is the fee, which nothing here can see paid, so it stays grey. */}
+				<div aria-hidden className="flex gap-1.5 pt-2">
+					{[...steps, null].map((step) => (
+						<span
+							key={step?.label ?? "fee"}
+							className={cn(
+								"h-1.5 flex-1 rounded-full",
+								step?.done
+									? "bg-eko-success"
+									: step && step === upNext
+										? "bg-primary"
+										: "bg-muted",
+							)}
+						/>
 					))}
+				</div>
+			</CardHeader>
+			<CardContent className="flex flex-col gap-4">
+				<ol className="divide-y">
+					{steps.map((step, i) => {
+						const spotlit = step === upNext;
+						return (
+							<li
+								key={step.label}
+								aria-label={spotlit ? `Up next: ${step.label}` : undefined}
+								className={cn(
+									"flex flex-wrap items-center gap-3 py-3",
+									spotlit
+										? "mb-1 rounded-lg border border-primary/40 bg-primary/10 px-4 py-4"
+										: "px-4 first:pt-0 last:pb-0",
+								)}
+							>
+								<StepMark
+									index={i + 1}
+									done={step.done}
+									label={step.markLabel}
+									upNext={spotlit}
+								/>
+								<span className="flex min-w-48 flex-1 flex-col gap-0.5 text-sm">
+									{spotlit ? (
+										<span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-eko-gold-ink dark:text-eko-gold">
+											Up next
+										</span>
+									) : null}
+									<span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+										<span
+											className={cn(
+												spotlit && "font-semibold",
+												step.done && "text-muted-foreground",
+											)}
+										>
+											{step.label}
+										</span>
+										{step.badge ? (
+											<Badge variant={step.badge.variant}>
+												{step.badge.label}
+											</Badge>
+										) : null}
+									</span>
+								</span>
+								{step.cta ? (
+									<Button
+										asChild
+										size="sm"
+										variant={step.cta.primary ? "default" : "outline"}
+										className="ml-auto shrink-0"
+									>
+										{/* Two of these read "View". Named after their own step so a
+										    screen reader hears which one it is landing on. */}
+										<Link
+											to={step.cta.to}
+											aria-label={`${step.cta.label} — ${step.label}`}
+										>
+											{step.cta.label}
+										</Link>
+									</Button>
+								) : null}
+							</li>
+						);
+					})}
 				</ol>
+				{/* Out of the numbered list on purpose: the fee gates nothing above it
+				    and can be paid on day one, so it is its own panel with its own
+				    nudge rather than the last step in a queue. Shown to everyone — a
+				    join-date gate once hid it from accounts that DO owe the fee, and
+				    nothing upstream yet says an account has paid. */}
+				<section
+					aria-label="Integration fee"
+					className={cn(
+						"relative flex flex-wrap items-center gap-3 rounded-lg border border-eko-success/25 bg-eko-success/5 px-4 py-4",
+						offer && "mt-2",
+					)}
+				>
+					{offer ? (
+						<span className="absolute -top-2.5 right-3 rounded-full bg-eko-success px-2 py-0.5 text-[0.6875rem] font-semibold text-white">
+							{offer}
+						</span>
+					) : null}
+					<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-eko-success/25 bg-background text-eko-success">
+						<CreditCard className="h-4 w-4" aria-hidden />
+					</span>
+					<span className="flex min-w-48 flex-1 flex-col gap-0.5 text-sm">
+						<span className="font-semibold">
+							Pay your one-time integration fee
+						</span>
+						<span className="text-muted-foreground">
+							No need to wait for the steps above — pay anytime.
+							{offer ? " The discount offer may end soon." : null}
+						</span>
+					</span>
+					{/* Navy ink vanishes on the dark card; gold carries it there. */}
+					<Button
+						asChild
+						size="sm"
+						variant="navy-outline"
+						className="ml-auto shrink-0 dark:border-eko-gold dark:text-eko-gold dark:hover:bg-eko-gold dark:hover:text-eko-navy"
+					>
+						<Link
+							to="/console/pay-activation-fee"
+							aria-label="Pay now — one-time integration fee"
+						>
+							Pay now
+						</Link>
+					</Button>
+				</section>
 			</CardContent>
 		</Card>
 	);

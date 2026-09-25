@@ -62,7 +62,22 @@ the head of that card, "Sign pending documents to activate your account", linkin
 to `/console/transaction/223`: the same id, read the same fail-closed way, as the
 rail's E-sign Documents item (`ESIGN_ID` in `src/lib/connect/esign.ts`), so the two
 surfaces cannot disagree. It takes the card's one filled button while it shows, and
-the KYC upload drops to outline. The fee step links through to `/console/pay-activation-fee`,
+the KYC upload drops to outline.
+
+The step holding that filled button is spotlighted as **Up next** — a gold panel
+with a filled number, mirrored as the gold segment of the progress bar under the
+title (done steps green, the rest grey). Only an actionable blocker is ever
+spotlighted: E-sign when owed, else the KYC upload/re-upload when owed. With
+neither (KYC done or with the reviewer) nothing is — the card cannot see
+integration or production-credential progress, and must not tell a live partner
+that integrating is next.
+
+The fee is **not** a numbered step. It sits in its own green panel below the list
+("Pay your one-time integration fee … pay anytime"), because it gates nothing
+above it and can be paid on day one. The panel's offer pill reads
+`SETUP_FEE_DISCOUNT_PERCENT` (`src/lib/data/api-pricing.ts`) — the same constant
+the pricing page and the payment page quote — as `Save N%`, `Fee waived` at 100,
+and disappears (with the "may end soon" nudge) at 0. Its **Pay now** button links through to `/console/pay-activation-fee`,
 where a partner reports the bank transfer that settles it; see
 [`docs/features/activation-fee.md`](./features/activation-fee.md). The profile card carries name, lifecycle badge, mobile, email and
 **EkoCode** (with a click-to-copy button, `CopyButton` from `pages/ai/CommandBlock`),

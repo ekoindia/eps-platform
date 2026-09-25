@@ -43,7 +43,7 @@ describe("ConsoleHome with the dashboard flag off", () => {
 		expect(
 			screen.getByRole("heading", { level: 2, name: "Home" }),
 		).toBeInTheDocument();
-		expect(screen.getByText("Next Steps")).toBeInTheDocument();
+		expect(screen.getByText("Next steps")).toBeInTheDocument();
 		expect(screen.getByText("Active")).toBeInTheDocument();
 		expect(screen.queryByTestId("dashboard-loading")).not.toBeInTheDocument();
 		// The point of the flag: a hidden dashboard costs no upstream call.

@@ -64,7 +64,7 @@ describe("ConsoleHome", () => {
 
 	it("still shows the next steps for a lead, beside the profile card", () => {
 		renderHome({ state: "lead", mobile: "999", profile: null, zohoId: null });
-		expect(screen.getByText("Next Steps")).toBeInTheDocument();
+		expect(screen.getByText("Next steps")).toBeInTheDocument();
 		expect(screen.getByText(/finish your kyc/i)).toBeInTheDocument();
 	});
 
