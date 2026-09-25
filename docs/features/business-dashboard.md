@@ -23,7 +23,8 @@ Ported from Eloka's (`wlc-webapp`) Admin Business Dashboard,
 > `echo=` fields are the instrument; read them before debugging any number here.
 >
 > Untested difference against Eloka, kept deliberately: Eloka's dashboard sends no
-> `source`, so connect-api defaults it to `NEWCONNECT`; this route sends `EPS`.
+> `source`, so connect-api defaults it to `NEWCONNECT`; the connect client stamps
+> `EPS` on every call, this route included.
 > Token type is not a factor — connect-api forwards only `initiator_id`,
 > `user_code` and `org_id` upstream, which both token types carry.
 
@@ -431,9 +432,9 @@ surface.
    upstream only honours the first key, the route must split into four parallel
    calls.
 4. **`source: "EPS"` and `client_ref_id`.** Eloka's dashboard calls send
-   neither; connect-api defaults `source` to `NEWCONNECT`. Both are sent here for
-   consistency with the rest of this backend — `client_ref_id` by the connect
-   client itself, for every call it makes. Untested on this interaction.
+   neither; connect-api defaults `source` to `NEWCONNECT`. Both are sent here,
+   stamped by the connect client on every call it makes. Untested on this
+   interaction.
 5. **Bucket granularity of `verification_trends`.** Upstream chooses it and does
    not announce it; `isHourlyRange` infers it from the first bucket's own span.
 

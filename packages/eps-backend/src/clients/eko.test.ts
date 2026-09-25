@@ -86,10 +86,12 @@ describe("EkoClient client_ref_id", () => {
 			"getProfile",
 			(eko: EkoClient) => eko.getProfile({ mobile: "9990000001" }),
 		],
-	])("%s sends one", async (_name, call) => {
+	])("%s sends one, plus source=EPS", async (_name, call) => {
 		const f = mockFetch(200, { response_status_id: 0 });
 		await call(createEkoClient(ekoCfg, f));
 		expect(refOf(f)).toMatch(CLIENT_REF_ID);
+		const init = (f as unknown as Mock).mock.calls[0][1];
+		expect(new URLSearchParams(init.body as string).get("source")).toBe("EPS");
 	});
 
 	it("is distinct per call", async () => {

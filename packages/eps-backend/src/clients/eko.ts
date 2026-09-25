@@ -6,7 +6,7 @@ import {
 	selectEvalueAccountId,
 	type AccountDetail,
 } from "./accounts";
-import { clientRefId, withTimeout } from "./http";
+import { clientRefId, SOURCE, withTimeout } from "./http";
 import { stripSensitive, toStateId } from "./profile-fields";
 
 export interface EkoClient {
@@ -15,14 +15,12 @@ export interface EkoClient {
 		orgId?: number;
 		platform?: string;
 		app?: string;
-		source?: string;
 		xRealIp?: string;
 	}): Promise<{ ok: boolean; raw: unknown }>;
 	verifyOtp(input: {
 		mobile: string;
 		otp: string;
 		orgId?: number;
-		source?: string;
 		xRealIp?: string;
 	}): Promise<{ ok: boolean; raw: unknown }>;
 	getProfile(input: {
@@ -491,7 +489,9 @@ export function createEkoClient(
 		// each call site so no future one can forget it — that omission is what
 		// broke /authentication/login upstream. Generated, never caller-supplied,
 		// so one request cannot replay another's reference.
-		const withRef = { ...fields, client_ref_id: clientRefId() };
+		// `source` likewise: stamped here, after the caller's fields, so every
+		// interaction carries `EPS` and none can send another value.
+		const withRef = { ...fields, source: SOURCE, client_ref_id: clientRefId() };
 		const body = new URLSearchParams(withRef).toString();
 		const headers: Record<string, string> = {
 			"Content-Type": "application/x-www-form-urlencoded",
@@ -524,7 +524,7 @@ export function createEkoClient(
 		fields: Record<string, string>,
 		xRealIp?: string,
 	): Promise<unknown> {
-		const withRef = { ...fields, client_ref_id: clientRefId() };
+		const withRef = { ...fields, source: SOURCE, client_ref_id: clientRefId() };
 		const body = new FormData();
 		body.append("form-data", new URLSearchParams(withRef).toString());
 		const headers: Record<string, string> = { developer_key: cfg.developerKey };
@@ -572,7 +572,6 @@ export function createEkoClient(
 					mobile: input.mobile,
 					app: input.app ?? "eps",
 					platform: input.platform ?? "web",
-					source: input.source ?? "EPSBACKEND",
 					intent_id: "0",
 					user_identity: input.mobile,
 					user_identity_type: "mobile_number",
@@ -588,7 +587,6 @@ export function createEkoClient(
 					interaction_type_id: "518",
 					otp: input.otp,
 					mobile: input.mobile,
-					source: input.source ?? "EPSBACKEND",
 					intent_id: "0",
 					verification_type: "2",
 					user_identity: input.mobile,
@@ -707,7 +705,6 @@ export function createEkoClient(
 					applicant_type: "1",
 					business_vertical: "EPS",
 					latlong: ONBOARDING_LATLONG,
-					source: "EPS",
 				},
 				input.xRealIp,
 			);
@@ -726,7 +723,6 @@ export function createEkoClient(
 					intent_id: "3",
 					doc_type: "2",
 					doc_id: input.pan,
-					source: "EPS",
 					latlong: ONBOARDING_LATLONG,
 					...actor(input.identity),
 				},
@@ -747,7 +743,6 @@ export function createEkoClient(
 					...actor(input.identity),
 					interaction_type_id: "522",
 					latlong: ONBOARDING_LATLONG,
-					source: "EPS",
 				},
 				input.xRealIp,
 			);
@@ -916,7 +911,6 @@ export function createEkoClient(
 				{
 					...actor(input.identity),
 					interaction_type_id: "9",
-					source: "EPS",
 				},
 				input.xRealIp,
 			)) as { data?: { balance?: unknown } };
@@ -949,7 +943,6 @@ export function createEkoClient(
 					...input.filters,
 					...actor(input.identity),
 					interaction_type_id: "154",
-					source: "EPS",
 					isNetworkTransactionHistory: "0",
 					start_index: String(input.startIndex),
 					limit: String(input.limit),

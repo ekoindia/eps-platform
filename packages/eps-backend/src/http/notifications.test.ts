@@ -435,7 +435,6 @@ describe("notifications delivery marking", () => {
 		const marks = callsOf(interact, 10023);
 		expect(marks).toEqual([
 			{
-				source: "EPS",
 				interaction_type_id: 10023,
 				notification_id: 1,
 				delivery_status: 2,
@@ -491,9 +490,6 @@ describe("notifications read route", () => {
 		expect(res.status).toBe(200);
 		expect(callsOf(interact, 10012)).toEqual([
 			{
-				// Every EMS interaction carries `source`; omitting it is what upstream
-				// refuses with a non-zero envelope.
-				source: "EPS",
 				interaction_type_id: 10012,
 				notification_id: 123,
 				notification_status: 1,

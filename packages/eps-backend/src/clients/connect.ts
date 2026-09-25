@@ -6,7 +6,7 @@ import {
 	selectEvalueAccountId,
 	type AccountDetail,
 } from "./accounts";
-import { clientRefId, withTimeout } from "./http";
+import { clientRefId, SOURCE, withTimeout } from "./http";
 import { stripSensitive, toStateId } from "./profile-fields";
 
 /**
@@ -489,7 +489,7 @@ export function createConnectClient(
 	async function post(
 		path: string,
 		body: Record<string, unknown>,
-		opts: { xRealIp?: string; bearer?: string } = {},
+		opts: { xRealIp?: string; bearer?: string; source?: string } = {},
 	): Promise<unknown> {
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
@@ -505,7 +505,16 @@ export function createConnectClient(
 		// how a sibling endpoint stays fixed: sendotp was patched alone once, and
 		// login broke next. The generated value always wins, so nothing a caller
 		// (least of all the browser) supplies can be replayed.
-		const payload = { ...body, client_ref_id: clientRefId() };
+		//
+		// `source` is injected the same way: `EPS` on every call, so a new
+		// endpoint cannot fall through to connect-api's `NEWCONNECT` default.
+		// Only `opts.source` overrides it (`/transactions/wlc` needs `WLC`), never
+		// a body field, which may have come from the browser.
+		const payload = {
+			...body,
+			source: opts.source ?? SOURCE,
+			client_ref_id: clientRefId(),
+		};
 		// The body goes to the logger as-is; redaction there is recursive, so a
 		// credential nested inside an interaction payload is caught too.
 		const { res, parsed, parseError } = await callUpstream(path, payload, () =>
@@ -579,6 +588,7 @@ export function createConnectClient(
 			"formdata",
 			new URLSearchParams({
 				...fields,
+				source: SOURCE,
 				client_ref_id: clientRefId(),
 			}).toString(),
 		);
@@ -646,13 +656,12 @@ export function createConnectClient(
 		},
 
 		async interactions(accessToken, opts = {}) {
-			// `source: "WLC"` and a `client_ref_id` are what Eloka's shared fetcher
-			// adds to every connect-api call; the endpoint expects both. The ref
-			// comes from `post`.
+			// The one call that is not `source: "EPS"`: /transactions/wlc expects
+			// `WLC`, as Eloka's shared fetcher sends it. The ref comes from `post`.
 			const raw = await post(
 				"/transactions/wlc",
-				{ source: "WLC" },
-				{ bearer: accessToken, xRealIp: opts.xRealIp },
+				{},
+				{ bearer: accessToken, xRealIp: opts.xRealIp, source: "WLC" },
 			);
 			// Shape varies across connect-api versions: a bare array in some, wrapped
 			// in `data` in others. Normalize rather than trust one of them.
@@ -662,11 +671,8 @@ export function createConnectClient(
 		},
 
 		async interact(accessToken, body, opts = {}) {
-			// No `source: "WLC"` here, though Eloka's shared fetcher stamps one on
-			// every connect-api body. Tried against UAT and it changes nothing:
-			// interaction 10022 returns the same list with it, without it, and with
-			// a JSON body rather than Eloka's form-encoded one. `interactions()`
-			// sends it because /transactions/wlc requires it, not as a convention.
+			// `source: "EPS"` comes from `post`, not Eloka's `WLC`: on UAT,
+			// interaction 10022 returns the same list with either value.
 			const raw = await post("/transactions/do", body, {
 				bearer: accessToken,
 				xRealIp: opts.xRealIp,

@@ -4,6 +4,14 @@ import { randomInt } from "node:crypto";
 export const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
 
 /**
+ * The `source` every upstream call carries, stamped by each client's transport
+ * helper so no call site (or future endpoint) can omit it. Without it
+ * connect-api defaults to `NEWCONNECT`. Sole exception: `/transactions/wlc`
+ * sends `WLC`.
+ */
+export const SOURCE = "EPS";
+
+/**
  * A fresh 10-character `client_ref_id` for one upstream call.
  *
  * Ten characters because connect-api rejects anything longer on
