@@ -83,7 +83,7 @@ Labels and one-line summaries alone can't answer a lot of real queries — "penn
 - `src/lib/search-index.test.ts` — index integrity (unique ids, live `/docs` slugs).
 - `src/lib/markdown/extract-body.ts` (+ `.test.ts`) — markdown → searchable prose.
 - `vite-plugin-generate-markdown.ts` — `collectBodies()` + the `search-body.json` emit and dev route.
-- `src/components/CommandPalette.tsx` — palette UI (Dialog + `ui/command.tsx` primitives).
+- `src/components/CommandPalette.tsx` — palette UI (Dialog + `ui/command.tsx` primitives). Sends one telemetry report per session — see [palette telemetry](features/palette-telemetry.md).
 - `src/components/Header.tsx` — triggers, ⌘K listener, lazy mount + idle prefetch.
 - `index.html` / `src/index.css` — OS detection + kbd-hint visibility.
 

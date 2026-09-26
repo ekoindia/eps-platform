@@ -23,7 +23,12 @@ import {
 	type SearchItem,
 } from "@/lib/search-index";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { SHOW_AI_CHAT } from "@/lib/config/features";
+import { PALETTE_QUERY_SAMPLE_RATE, SHOW_AI_CHAT } from "@/lib/config/features";
+import {
+	isSampled,
+	type PaletteOutcome,
+	reportPaletteSearch,
+} from "@/lib/palette-telemetry";
 import { cn } from "@/lib/utils";
 
 interface CommandPaletteProps {
@@ -271,13 +276,45 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 		[engine, query, scope],
 	);
 
+	// One telemetry report per palette session, for its last query. Refs, not
+	// state: nothing renders from them.
+	const sampledRef = useRef(false);
+	const reportedRef = useRef(false);
+
 	// Fresh query + scope every time the palette opens
 	useEffect(() => {
 		if (open) {
 			setQuery("");
 			setScope("all");
+			sampledRef.current = isSampled(PALETTE_QUERY_SAMPLE_RATE);
+			reportedRef.current = false;
 		}
 	}, [open]);
+
+	const report = (outcome: PaletteOutcome, clicked?: SearchItem): void => {
+		if (reportedRef.current) return;
+		reportedRef.current = true;
+		const rank = clicked
+			? results.findIndex((r) => r.item.id === clicked.id) + 1
+			: 0;
+		reportPaletteSearch(
+			{
+				query,
+				scope,
+				resultCount: results.length,
+				outcome,
+				clickedCategory: clicked?.category,
+				clickedRank: rank > 0 ? rank : undefined,
+			},
+			sampledRef.current,
+		);
+	};
+
+	// Closed by Esc / outside click with nothing chosen: the dropoff case.
+	const handleOpenChange = (next: boolean): void => {
+		if (!next) report("abandon");
+		onOpenChange(next);
+	};
 
 	// Safety net: close if the route changes while the palette is open
 	useEffect(() => {
@@ -296,6 +333,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	};
 
 	const handleSelect = (item: SearchItem): void => {
+		report("click", item);
 		onOpenChange(false);
 		if (item.action === "talk-to-sales") {
 			window.dispatchEvent(new Event("open-talk-to-sales"));
@@ -308,7 +346,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={handleOpenChange}>
 				<DialogContent
 					aria-describedby={undefined}
 					className="top-[12%] translate-y-0 sm:top-[18%] w-[calc(100vw-2rem)] max-w-xl gap-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl motion-reduce:animate-none [&>button]:hidden [--tw-enter-translate-x:0]! [--tw-enter-translate-y:0]! [--tw-exit-translate-x:0]! [--tw-exit-translate-y:0]!"
@@ -345,6 +383,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 								<CommandItem
 									value={`ask-ai-${query}`}
 									onSelect={() => {
+										report("ask_ai");
 										onOpenChange(false);
 										setAskQuery(query.trim());
 									}}

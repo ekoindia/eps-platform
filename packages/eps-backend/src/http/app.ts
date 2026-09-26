@@ -38,6 +38,7 @@ import { mountCrm } from "./crm";
 import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
+import { mountPaletteLog } from "./paletteLog";
 import { mountTryItProxy } from "./tryitProxy";
 import {
 	ADMIN_CALLBACK_IP_LIMIT,
@@ -47,12 +48,7 @@ import {
 	RL_WINDOW_SEC,
 } from "./rateLimit";
 import { requestId, type AppEnv } from "./requestId";
-import {
-	debugEcho,
-	isAuthenticated,
-	trace,
-	traceForResponse,
-} from "./trace";
+import { debugEcho, isAuthenticated, trace, traceForResponse } from "./trace";
 import { API_VERSION } from "../version";
 
 /**
@@ -690,6 +686,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	// Anonymous by design: the docs "Try it" widget relays partner-supplied keys
 	// to Eko; no session is read and only an allowlist of headers is forwarded.
 	mountTryItProxy(app, { kv, fetchImpl: deps.tryItFetch });
+	// Anonymous by design too: sampled, redacted ⌘K queries for the query-router
+	// eval set. Mounted unconditionally — the site's sample rate is the switch.
+	mountPaletteLog(app, { kv });
 
 	// Mounted unconditionally so the console page it backs is never a 404. When
 	// `cfg.activationFee` is absent the route answers a named 503 the page can
