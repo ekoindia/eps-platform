@@ -196,8 +196,8 @@ path.
 
 None of these block the call; each is a thing to watch on the first real UAT run.
 
-1. **`source`.** This client sends `source: "EPS"`; Eloka sends `"WLC"` and
-   connect-api defaults to `"NEWCONNECT"`. Whether upstream cares is untested.
+1. **`source`.** The connect client stamps `source: "EPS"` on every call; Eloka
+   sends `"WLC"`. Whether upstream cares is untested.
 2. **`limit` cap**, and whether `start_index` is a row offset or a page index.
 3. **Filter date semantics.** `start_date`/`tx_date` are Eloka's From/To names;
    their exact upstream meaning on this transport is assumed, not confirmed.

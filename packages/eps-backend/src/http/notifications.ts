@@ -164,8 +164,6 @@ export function mountNotifications(
 					.interact(
 						upstream.accessToken,
 						{
-							// Same reason as the read call: every EMS interaction carries it.
-							source: "EPS",
 							interaction_type_id: DELIVERY_INTERACTION,
 							notification_id: item.id,
 							delivery_status: DELIVERY_PULL,
@@ -218,7 +216,6 @@ export function mountNotifications(
 				// client_ref_id is added by the connect client, so a browser-sent one
 				// can never be replayed here.
 				interaction_type_id: LIST_INTERACTION,
-				source: "EPS",
 			},
 			{ xRealIp },
 		);
@@ -293,11 +290,6 @@ export function mountNotifications(
 		const envelope = await connect!.interact(
 			upstream.accessToken,
 			{
-				// `source` is sent here as it is on the list call. Eloka's fetcher adds
-				// it to EVERY interaction, and the EMS interactions are the ones that
-				// read it — omitting it is the difference between a call upstream
-				// accepts and one it rejects with a non-zero envelope.
-				source: "EPS",
 				interaction_type_id: STATUS_INTERACTION,
 				// A NUMBER, never the path string: upstream is lenient about types and
 				// this is the field that decides whose row is updated.

@@ -44,8 +44,11 @@ const PINS: Pin[] = [
 		// connect-api/Eko request bodies, not to the fetch-timeout util copied
 		// here — and this server is pass-through, so it never mints a
 		// client_ref_id of its own. Nothing to port.
+		// Re-acked 2026-09-26: http.ts gained `SOURCE = "EPS"`, the `source` param
+		// connect-api reads. This server calls EPS APIs, never connect-api, so
+		// there is no call to stamp it on. Nothing to port.
 		sourceSha:
-			"cb0b1489255b7d75d071c35fb4e753865843706ed5304faa98f702d5ff7daf4f",
+			"47bd8ed24cb8343beb98e44aa2f913b7f0b0c750cbf710056be2ce66968651a0",
 	},
 	{
 		local: "packages/eps-transact-mcp/src/requestId.ts",

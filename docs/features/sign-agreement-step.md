@@ -622,7 +622,7 @@ single-entry pipeline this is a no-op here.
 | `initiator_id` | mobile, set by BFF from the 151 profile | mobile, set by connect-api from the JWT | equivalent |
 | `user_code` | `profile.code` | JWT `code` (else `DEFAULT_TRXN_USER_CODE`) | equivalent |
 | `org_id` | `profile.orgId` | JWT `org_id` else `"1"` | equivalent |
-| `source` | not sent | `"WLC"` | differs |
+| `source` | `"EPS"`, stamped by the transport | `"WLC"` | differs |
 | `client_ref_id` | server-generated | client-generated in `fetcher` | differs (EPS: not caller-supplied by design) |
 
 **293**
@@ -637,7 +637,7 @@ single-entry pipeline this is a no-op here.
 | `completion_timestamp` | ISO now (server) | ISO now (client) | same |
 | `latlong` | fixed constant | **absent** (no `preSubmit.inject` on this step) | differs |
 | `user_id` / `csp_id` | not sent on 293 | both = mobile | differs |
-| `source` | not sent | `"WLC"` | differs |
+| `source` | `"EPS"`, stamped by the transport | `"WLC"` | differs |
 
 ### 3.3 Success classification
 

@@ -142,9 +142,9 @@ read-mark still 502s — harmless on screen, since the mark is optimistic-local 
 the next poll reconciles, but the read would never stick upstream. That log line
 is the thing to read after this ships.
 
-All three also send **`source: "EPS"`**. Eloka's fetcher adds `source` to every
-interaction, and the EMS ones read it; the list call had it from the start and the
-two status calls did not.
+All three carry **`source: "EPS"`**, stamped by the connect client on every call.
+The EMS interactions read it; before the client stamped it, the list call sent it
+and the two status calls did not.
 
 **Delivery marking (10023)** is best-effort and at-most-once: capped at 20 per
 poll, ≤5 in flight, started before the response is written and not awaited. A

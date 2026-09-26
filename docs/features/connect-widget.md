@@ -363,12 +363,12 @@ the IP lookup or the watermark builder.
 There is no "Raise issue" entry point on the transaction-history rows yet — the
 dialog is reached from a flow.
 
-`source: "WLC"` is **not** sent on `/transactions/do`, though Eloka's shared
-fetcher stamps one on every connect-api body. Tested against UAT: interaction
-10022 returns the same 29 rows with it, without it, and with a JSON body rather
-than Eloka's form-encoded one. `interactions()` sends it because
-`/transactions/wlc` requires it, not as a house convention. `is_admin`, `locale`
-and an empty `status` likewise make no difference.
+`source` is `"EPS"` on `/transactions/do`, stamped by the connect client on every
+call, not Eloka's `"WLC"`. Tested against UAT: interaction 10022 returns the
+same 29 rows with `WLC`, without `source`, and with a JSON body rather than
+Eloka's form-encoded one. Only `interactions()` sends `WLC`, because
+`/transactions/wlc` requires it. `is_admin`, `locale` and an empty `status`
+likewise make no difference.
 
 Two Eloka bugs are **not** ported: `transaction_time` vs `transactionTime`
 (`RaiseIssueCard.tsx:61` vs `HistoryCard.jsx:258`, which silently killed the

@@ -232,5 +232,6 @@ needs no entry.
 - No payment gateway. This is a bank-transfer intimation, not a checkout.
 - No duplicate detection beyond the in-flight button guard and the per-partner
   rate limit — two genuine intimations with the same UTR would both be mailed.
-- No rail item in the console nav; the entry point is the Console Home
-  "Next Steps" card.
+- No rail item in the console nav; the entry point is the fee panel on the
+  Console Home "Next steps" card — kept out of the numbered steps as a
+  pay-anytime task, with an offer pill read from `SETUP_FEE_DISCOUNT_PERCENT`.

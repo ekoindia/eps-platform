@@ -196,7 +196,6 @@ export function mountDashboard(
 				upstream.accessToken,
 				{
 					interaction_type_id: SERVICE_LIST_INTERACTION,
-					source: "EPS",
 				},
 				{ xRealIp },
 			);
@@ -284,7 +283,6 @@ export function mountDashboard(
 			const envelope = await connect!.interactJson(
 				upstream.accessToken,
 				{
-					source: "EPS",
 					// client_ref_id is added by the connect client, so a browser-sent
 					// one can never be replayed here.
 					interaction_type_id: DASHBOARD_INTERACTION,

@@ -225,6 +225,7 @@ describe("createConnectClient", () => {
 			id_token: "123456",
 			platform: "web",
 			org_id: 1,
+			source: "EPS",
 			client_ref_id: expect.stringMatching(CLIENT_REF_ID),
 		});
 	});
@@ -234,6 +235,57 @@ describe("createConnectClient", () => {
 		await createConnectClient(cfg, f).sendOtp({ mobile: "9990000001" });
 		const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
 		expect((init as RequestInit).headers).not.toHaveProperty("X-Real-IP");
+	});
+
+	// Without a `source`, connect-api defaults to NEWCONNECT. The transport stamps
+	// EPS on every call; /transactions/wlc is the one WLC exception.
+	describe("source", () => {
+		/** The parsed JSON body of one fetch call. */
+		function bodyOfCall(f: typeof fetch, index = 0): Record<string, unknown> {
+			const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[
+				index
+			];
+			return JSON.parse((init as RequestInit).body as string);
+		}
+
+		it.each([
+			["sendOtp", (c: ConnectClient) => c.sendOtp({ mobile: "9990000001" })],
+			["login", (c: ConnectClient) => c.login({ mobile: "9", otp: "1" })],
+			["refreshTokens", (c: ConnectClient) => c.refreshTokens("r")],
+			["refreshProfile", (c: ConnectClient) => c.refreshProfile("t", "r")],
+			["revoke", (c: ConnectClient) => c.revoke("r")],
+			["interact", (c: ConnectClient) => c.interact("t", { a: "1" })],
+			["interactJson", (c: ConnectClient) => c.interactJson("t", { a: "1" })],
+		])("%s sends EPS", async (_name, call) => {
+			const f = fetchReturning({ response_status_id: 0 });
+			await call(createConnectClient(cfg, f));
+			expect(bodyOfCall(f).source).toBe("EPS");
+		});
+
+		it("interactions sends WLC, the one exception", async () => {
+			const f = fetchReturning([]);
+			await createConnectClient(cfg, f).interactions("t");
+			expect(bodyOfCall(f).source).toBe("WLC");
+		});
+
+		it("overrides any source a caller supplied", async () => {
+			const f = fetchReturning({ response_status_id: 0 });
+			await createConnectClient(cfg, f).interact("t", { source: "WLC" });
+			expect(bodyOfCall(f).source).toBe("EPS");
+		});
+
+		it("uploadInteraction sends EPS inside the formdata part", async () => {
+			const f = fetchReturning({ response_status_id: 0 });
+			await createConnectClient(cfg, f).uploadInteraction(
+				"t",
+				{ interaction_type_id: "523", source: "WLC" },
+				[{ name: "file1", file: new File(["x"], "a.png") }],
+			);
+			const [, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+			const form = (init as RequestInit).body as FormData;
+			const fields = new URLSearchParams(form.get("formdata") as string);
+			expect(fields.get("source")).toBe("EPS");
+		});
 	});
 
 	// connect-api validates this field on every endpoint and answers
@@ -555,7 +607,9 @@ describe("ConnectClient.fetchPintwinKey", () => {
 
 	it("accepts key_id 0, which is a real id", async () => {
 		// A falsiness check here would discard every key upstream numbers 0.
-		const f = fetchReturning({ data: { pintwin_key: "1974856302", key_id: 0 } });
+		const f = fetchReturning({
+			data: { pintwin_key: "1974856302", key_id: 0 },
+		});
 		expect(
 			await createConnectClient(cfg, f).fetchPintwinKey("tok-1", "9990000001"),
 		).toEqual({ pintwinKey: "1974856302", keyId: 0 });

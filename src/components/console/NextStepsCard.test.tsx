@@ -1,6 +1,7 @@
 import NextStepsCard from "@/components/console/NextStepsCard";
 import type { Lifecycle, MeView } from "@/lib/auth/client";
 import { render, screen, within } from "@testing-library/react";
+import { SETUP_FEE_DISCOUNT_PERCENT } from "@/lib/data/api-pricing";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -107,21 +108,36 @@ describe("NextStepsCard", () => {
 		expect(link).toHaveTextContent("Re-upload");
 	});
 
-	it("marks KYC done once the account is active, and strikes it out", () => {
+	it("marks KYC done once the account is active, and mutes it", () => {
 		renderCard({ state: "active" });
 		expect(screen.getByText("Done")).toBeInTheDocument();
 		expect(screen.queryByText("Pending")).not.toBeInTheDocument();
-		expect(screen.getByText(/finish your kyc/i)).toHaveClass("line-through");
-		// The strike must not reach the badge beside it.
-		expect(screen.getByText("Done")).not.toHaveClass("line-through");
+		expect(screen.getByText(/finish your kyc/i)).toHaveClass(
+			"text-muted-foreground",
+		);
+		expect(screen.getByLabelText("Done")).toBeInTheDocument();
+	});
+
+	// Nothing this session can see is blocking a live account, and integrating
+	// is not a step it can be told is "next".
+	it("spotlights nothing for an active account with no signature owed", () => {
+		renderCard({ state: "active" });
+		expect(screen.queryByText("Up next")).not.toBeInTheDocument();
+	});
+
+	it("spotlights the upload when it is the only thing owed", () => {
+		renderCard({ state: "kyc-pending" });
+		const spot = screen.getByRole("listitem", { name: /^up next/i });
+		expect(within(spot).getByText(/finish your kyc/i)).toBeInTheDocument();
 	});
 
 	it("badges only the step whose status it can answer", () => {
 		renderCard({ state: "lead" });
-		// Every row carries a status mark; only one carries a badge.
+		// Every row carries a status mark; only one carries a badge. The fee is
+		// its own panel, not a numbered row.
 		expect(
 			screen.getAllByLabelText(/not started|status unknown/i),
-		).toHaveLength(4);
+		).toHaveLength(3);
 		expect(screen.getByLabelText("Not started")).toBeInTheDocument();
 		expect(
 			screen.getAllByText(/^(Pending|Done|Re-upload required)$/),
@@ -152,9 +168,10 @@ describe("NextStepsCard", () => {
 		expect(
 			within(first).getByText(/sign pending documents/i),
 		).toBeInTheDocument();
-		// Owed, so the ring is the live one — not the muted "unknown" mark.
+		// Owed and first, so it is the spotlighted step with the filled mark.
+		expect(within(first).getByText("Up next")).toBeInTheDocument();
 		expect(within(first).getByLabelText("Not started")).toHaveClass(
-			"text-primary",
+			"bg-primary",
 		);
 	});
 
@@ -191,6 +208,8 @@ describe("NextStepsCard", () => {
 		const upload = screen.getByRole("link", { name: /uploading documents/i });
 		expect(upload).toHaveClass("border");
 		expect(upload).not.toHaveClass("bg-primary");
+		// One spotlight, and it is the signature's.
+		expect(screen.getAllByText("Up next")).toHaveLength(1);
 	});
 
 	it("does not link KYC while the entitlement says no", () => {
@@ -236,6 +255,17 @@ describe("NextStepsCard", () => {
 		).toHaveAttribute("href", "/console/pay-activation-fee");
 	});
 
+	// Read off the pricing constant, so the card cannot quote a stale offer.
+	it("quotes the running setup-fee offer on the fee panel", () => {
+		renderCard({ state: "lead" });
+		const panel = screen.getByRole("region", { name: "Integration fee" });
+		const pill = within(panel).queryByText(/limited-time offer/i);
+		if (SETUP_FEE_DISCOUNT_PERCENT <= 0) expect(pill).toBeNull();
+		else if (SETUP_FEE_DISCOUNT_PERCENT >= 100)
+			expect(pill).toHaveTextContent("Fee waived");
+		else expect(pill).toHaveTextContent(`Save ${SETUP_FEE_DISCOUNT_PERCENT}%`);
+	});
+
 	// The pack says what the account state cannot: which documents are owed.
 	describe("driven by the document pack", () => {
 		it("asks for the pack only for an account whose KYC is outstanding", () => {
@@ -263,7 +293,9 @@ describe("NextStepsCard", () => {
 			renderCard({ state: "kyc-pending" });
 
 			expect(screen.getByText("Approved")).toBeInTheDocument();
-			expect(screen.getByText(/finish your kyc/i)).toHaveClass("line-through");
+			expect(screen.getByText(/finish your kyc/i)).toHaveClass(
+				"text-muted-foreground",
+			);
 		});
 
 		// Uploaded and with the reviewer: nothing for the partner to do, so no
@@ -274,8 +306,9 @@ describe("NextStepsCard", () => {
 
 			expect(screen.getByText("Approval Pending")).toBeInTheDocument();
 			expect(screen.getByLabelText("Approval pending")).toHaveClass(
-				"text-muted-foreground/50",
+				"text-muted-foreground",
 			);
+			expect(screen.queryByText("Up next")).not.toBeInTheDocument();
 			expect(
 				screen.queryByRole("link", { name: /uploading documents/i }),
 			).not.toBeInTheDocument();
