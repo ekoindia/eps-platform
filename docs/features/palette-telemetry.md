@@ -40,6 +40,10 @@ Zero-result rate = `resultCount == 0`; abandon rate = `outcome == "abandon"`.
   GTM, only to our own VM.
 - **Off by default.** Sample rate unset = 0 = no text leaves the browser. Set it
   (planned `0.1`) only once the privacy policy covers search logs.
+- **Policy clause follows the flag.** `/privacy-policy` §4 renders a "Site
+  search queries" paragraph only when the sample rate is > 0, so the published
+  policy and the build always agree. Changing what is collected, who processes
+  it, or how long it is kept means changing that paragraph in the same commit.
 
 ## Backend
 
