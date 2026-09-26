@@ -76,8 +76,8 @@ const PrivacyPolicyPage = () => {
 			</p>
 			{PALETTE_QUERY_SAMPLE_RATE > 0 && (
 				<p>
-					<strong>Site search queries:</strong> We record a sample of the
-					queries typed into our Website's search to understand what users look
+					<strong>Site search queries:</strong> We record the queries (or a
+					sample) typed into our Website's search to understand what users look
 					for and to improve our search and help features, including training
 					the models that power them. Before a query is stored, phone, account,
 					Aadhaar and PAN numbers, email addresses and access keys are
