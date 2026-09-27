@@ -10,6 +10,7 @@ import { createSessions } from "./auth/session";
 import { createEkoAuthProvider } from "./auth/ekoProvider";
 import { createConnectAuthProvider } from "./auth/connectProvider";
 import { createApp } from "./http/app";
+import { openPaletteStore, scheduleRetention } from "./analytics/paletteStore";
 import { createSecurityLogger } from "./audit/securityLog";
 import { createAccessLogger } from "./audit/accessLog";
 import { createEkoLogger } from "./audit/ekoLog";
@@ -21,7 +22,7 @@ export interface BuiltApp {
 	app: ReturnType<typeof createApp>;
 	/** Configured listen port (Node/VM path only; unused on serverless). */
 	port: number;
-	/** Closes the store connection; undefined for the in-memory backend. */
+	/** Closes the KV connection (when Redis) and the search-log database. */
 	closeStore?: () => Promise<void>;
 }
 
@@ -91,6 +92,14 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		: createEkoAuthProvider(eko);
 	console.log(`[eps-backend] auth provider: ${auth.name}`);
 
+	// Opened before the app so a bad path or unwritable volume fails startup
+	// loudly instead of silently dropping every search log.
+	const paletteStore = openPaletteStore(cfg.analyticsDbPath ?? ":memory:");
+	const stopRetention = scheduleRetention(paletteStore);
+	console.log(
+		`[eps-backend] search-log store: ${cfg.analyticsDbPath ?? "in-memory (lost on restart)"}`,
+	);
+
 	const app = createApp({
 		cfg,
 		kv,
@@ -104,7 +113,16 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		zoho: createZohoClient(cfg.zoho),
 		github: createGitHubClient(cfg.github),
 		sessions: createSessions(cfg, kv, { secretbox }),
+		paletteStore,
 	});
 
-	return { app, port: cfg.port, closeStore };
+	return {
+		app,
+		port: cfg.port,
+		closeStore: async () => {
+			stopRetention();
+			paletteStore.close();
+			if (closeStore) await closeStore();
+		},
+	};
 }

@@ -49,26 +49,47 @@ Zero-result rate = `resultCount == 0`; abandon rate = `outcome == "abandon"`.
 
 `POST /telemetry/palette` (`packages/eps-backend/src/http/paletteLog.ts`):
 anonymous, `text/plain` JSON body (no CORS preflight), ≤2 KB, 60 reports per IP
-per 10 min, answers `204`. Writes one stdout line:
+per 10 min, answers `204`. Writes one row to the `palette_query` table in a
+SQLite file (`packages/eps-backend/src/analytics/paletteStore.ts`, Node's
+built-in `node:sqlite`):
 
-```json
-{"type":"palette_query","ts":"…","query":"verify pan …","scope":"all","resultCount":3,"outcome":"click","clickedCategory":"endpoint","clickedRank":1}
-```
+| Column                             | Notes                                  |
+| ---------------------------------- | -------------------------------------- |
+| `id`, `ts`                         | autoincrement, ISO-8601 UTC            |
+| `query`                            | redacted, ≤200 chars                   |
+| `scope`, `result_count`, `outcome` | as sent                                |
+| `clicked_category`, `clicked_rank` | null unless `outcome = click`          |
+
+No ip, session or request id — by design. Production path:
+`/var/lib/eps-analytics/search-logs.db` on the `eps-analytics-data` volume
+(set in `docker-compose.prod.yml`). Unset `ANALYTICS_DB_PATH` = in-memory,
+emptied on restart (local dev). Rows older than **365 days** are purged at
+startup and daily, matching the privacy policy's 12 months. An insert failure
+(disk full) is logged and swallowed — telemetry never fails a search.
 
 No nginx or Vercel change needed: both already forward every backend path.
 
-## Exporting the eval set
+## Admin: exploring and exporting
 
-Retention is the container log rotation (10 MB × 5), so lines roll off in days.
-Export weekly on the VM:
+`/admin` → **Search logs** tab (admin session only; `AdminSearchLogs.tsx`):
 
-```sh
-dc logs --since 8d eps-backend | jq -Rc 'fromjson? // empty | select(.type=="palette_query")' \
-  >> ~/palette-queries.jsonl
-```
+- **Filter** — date range (UTC days, inclusive; default last 30 days), query
+  substring, outcome. Clicking a query in either top table filters to it.
+- **Summary cards** — searches, % no results, % clicked, % abandoned, % asked AI.
+- **Top queries / top failing queries** — 25 each, case- and space-folded.
+  Failing = no results or abandoned: the synonym and content backlog.
+- **Log** — newest first, 50 per page, *Load more*.
+- **Export JSONL / CSV** — every row matching the filter, streamed. CSV defuses
+  formula-leading cells (`=`, `+`, `-`, `@`) since queries are visitor-typed.
 
-Then dedupe, label intents/slots, and keep a held-out test split that is never
-used for fine-tuning (see the Needle plan's gate).
+Backend routes: `/admin/search-logs/{overview,rows,export}` — see the
+eps-backend README "Search logs" section. For ad-hoc SQL on the VM, use a
+backup copy (see `eps-backend-vm-deploy.md`) rather than the live file.
+
+## Building the eval set
+
+Export JSONL for the range, dedupe, label intents/slots, and keep a held-out
+test split that is never used for fine-tuning (see the Needle plan's gate).
 
 ## Files
 
@@ -76,4 +97,8 @@ used for fine-tuning (see the Needle plan's gate).
 - `src/components/CommandPalette.tsx` — one report per session (`report()`).
 - `src/lib/config/features.ts` — `PALETTE_QUERY_SAMPLE_RATE`.
 - `src/lib/analytics.ts` — shared `redactIdentifiers`.
+- `src/components/admin/AdminSearchLogs.tsx` (+ test), `AdminConsole.tsx` — admin tab.
+- `src/lib/auth/client.ts` — `authClient.adminSearchLogs`, `searchLogQuery`.
 - `packages/eps-backend/src/http/paletteLog.ts` (+ test), `src/audit/redact.ts`.
+- `packages/eps-backend/src/analytics/paletteStore.ts` (+ test) — schema, reads, retention.
+- `packages/eps-backend/src/http/searchLogs.ts` (+ test) — admin routes, CSV.

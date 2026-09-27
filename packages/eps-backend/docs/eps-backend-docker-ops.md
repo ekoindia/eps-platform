@@ -204,7 +204,6 @@ Filter by the `type` discriminator:
 | `security_audit`   | `src/audit/securityLog.ts` | admin login / mutation, granted vs denied     |
 | `eko_upstream`     | `src/audit/ekoLog.ts`      | SimpliBank calls (verbosity: `EKO_LOG_LEVEL`) |
 | `connect_upstream` | `src/audit/ekoLog.ts`      | connect-api calls                             |
-| `palette_query`    | `src/http/paletteLog.ts`   | sampled, redacted ⌘K query + outcome; no ip   |
 
 ```sh
 # server errors in the last hour

@@ -86,3 +86,11 @@ The following features are intentionally not included in v1:
 - **Inline preview:** Live HTML preview while editing (Propose to trigger a deploy preview instead).
 
 These may be added in v2 based on usage feedback and team priorities.
+
+## Search logs tab
+
+A second tab on `/admin` shows ⌘K search logs: summary rates, top and
+top-failing queries, a paged log, and JSONL/CSV export. Read-only, needs an
+admin session but no GitHub token. See
+[⌘K palette telemetry](features/palette-telemetry.md#admin-exploring-and-exporting).
+

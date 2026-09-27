@@ -82,8 +82,9 @@ const PrivacyPolicyPage = () => {
 					the models that power them. Before a query is stored, phone, account,
 					Aadhaar and PAN numbers, email addresses and access keys are
 					automatically removed, and it is stored without your IP address,
-					account or session, so it cannot be linked back to you. These queries
-					may be processed by our service providers for this purpose and are
+					account or session, so it cannot be linked back to you. Stored queries
+					are kept for up to 12 months and then deleted. These queries may be
+					processed by our service providers for this purpose and are
 					never sold. Please do not enter personal information in the search
 					box.
 				</p>

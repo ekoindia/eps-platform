@@ -19,6 +19,12 @@ export interface Config {
 	redisUrl?: string;
 	kvEncryptionKey?: string;
 	redisTlsRejectUnauthorized: boolean;
+	/**
+	 * SQLite file for ⌘K search logs (`ANALYTICS_DB_PATH`). Unset = in-memory:
+	 * fine locally, but every restart empties it, so production must set it to
+	 * a path on a mounted volume.
+	 */
+	analyticsDbPath?: string;
 	eko: {
 		scheme: string;
 		host: string;
@@ -504,6 +510,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		redisUrl,
 		kvEncryptionKey,
 		redisTlsRejectUnauthorized: env.REDIS_TLS_REJECT_UNAUTHORIZED !== "false",
+		analyticsDbPath: env.ANALYTICS_DB_PATH || undefined,
 		eko: {
 			scheme: ekoScheme,
 			host: ekoHost,

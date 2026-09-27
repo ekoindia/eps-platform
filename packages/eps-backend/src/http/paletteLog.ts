@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import type { PaletteOutcome, PaletteStore } from "../analytics/paletteStore";
 import { redactIdentifiers } from "../audit/redact";
 import type { KV } from "../store/kv";
 import { AppError } from "./errors";
@@ -21,19 +22,9 @@ export interface PaletteReport {
 	query: string;
 	scope: string;
 	resultCount: number;
-	outcome: "click" | "ask_ai" | "abandon";
+	outcome: PaletteOutcome;
 	clickedCategory: string | null;
 	clickedRank: number | null;
-}
-
-/**
- * One sampled ⌘K query. Emitted as a single JSON line to stdout and filtered
- * downstream on the `type: "palette_query"` marker. Deliberately no ip, rid or
- * session: the eval set needs what was asked, not who asked it.
- */
-export interface PaletteRecord extends PaletteReport {
-	type: "palette_query";
-	ts: string;
 }
 
 const isCount = (v: unknown, max: number): v is number =>
@@ -74,7 +65,7 @@ export function parsePaletteReport(raw: unknown): PaletteReport {
 		query: r.query.trim(),
 		scope: r.scope,
 		resultCount: r.resultCount,
-		outcome: r.outcome as PaletteReport["outcome"],
+		outcome: r.outcome as PaletteOutcome,
 		clickedCategory: (r.clickedCategory as string | undefined) ?? null,
 		clickedRank: (r.clickedRank as number | undefined) ?? null,
 	};
@@ -86,19 +77,18 @@ export function parsePaletteReport(raw: unknown): PaletteReport {
  * The site sends a sampled share of ⌘K sessions (`VITE_PALETTE_QUERY_SAMPLE_RATE`)
  * as `text/plain` JSON so the browser skips the CORS preflight. The query is
  * redacted again here — the client's redaction is a courtesy, this one is the
- * guarantee — and written as one `palette_query` log line. Retention is the
- * container log rotation (10 MB × 5), so export lines regularly; see
- * `docs/features/palette-telemetry.md`.
+ * guarantee — and stored as one row. Deliberately no ip, rid or session in the
+ * row: the eval set needs what was asked, not who asked it. Admins read it via
+ * `/admin/search-logs/*`; see `docs/features/palette-telemetry.md` (site repo).
  * @param app - The BFF app.
  * @param deps.kv - Rate-limit counters.
- * @param deps.sink - Line destination; defaults to `console.log`.
+ * @param deps.store - Where rows go.
  * @param deps.now - Clock for `ts`; injectable for tests.
  */
 export function mountPaletteLog(
 	app: Hono<AppEnv>,
-	deps: { kv: KV; sink?: (line: string) => void; now?: () => Date },
+	deps: { kv: KV; store: PaletteStore; now?: () => Date },
 ): void {
-	const sink = deps.sink ?? ((line: string) => console.log(line));
 	const now = deps.now ?? (() => new Date());
 
 	app.post("/telemetry/palette", async (c) => {
@@ -119,16 +109,16 @@ export function mountPaletteLog(
 			throw new AppError(400, "BAD_REQUEST", "Invalid palette report: body");
 		}
 		const report = parsePaletteReport(raw);
-		const record: PaletteRecord = {
-			type: "palette_query",
-			ts: now().toISOString(),
-			...report,
-			query: redactIdentifiers(report.query),
-		};
 		try {
-			sink(JSON.stringify(record));
-		} catch {
-			// best-effort: a logging failure must never fail the request
+			deps.store.insert({
+				ts: now().toISOString(),
+				...report,
+				query: redactIdentifiers(report.query),
+			});
+		} catch (err) {
+			// Telemetry must never fail the visitor's search: a full disk or a
+			// locked file loses this row, and the log says so.
+			console.error("[eps-backend] palette store insert failed", err);
 		}
 		return c.body(null, 204);
 	});
