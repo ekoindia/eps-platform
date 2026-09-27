@@ -58,6 +58,19 @@ describe("reportPaletteSearch", () => {
 		});
 	});
 
+	// GTM persists dataLayer values across pushes; only an explicit undefined
+	// clears the previous click (docs/features/palette-telemetry.md, Gotchas).
+	it("sends click keys as explicit undefined on non-click outcomes", () => {
+		reportPaletteSearch(
+			{ query: "gst", scope: "all", resultCount: 0, outcome: "abandon" },
+			false,
+		);
+
+		const pushed = window.dataLayer?.[0] as Record<string, unknown>;
+		expect(pushed).toHaveProperty("clickedCategory", undefined);
+		expect(pushed).toHaveProperty("clickedRank", undefined);
+	});
+
 	it("ignores an empty query", () => {
 		reportPaletteSearch({ ...report, query: "  " }, true);
 

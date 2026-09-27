@@ -52,6 +52,9 @@ export function reportPaletteSearch(
 	const query = report.query.trim();
 	if (!query) return;
 
+	// The click keys stay present even when undefined: GTM's data model keeps
+	// values across pushes, and only an explicit undefined stops an abandoned
+	// search from inheriting the previous click's category and rank.
 	const counts = {
 		scope: report.scope,
 		resultCount: report.resultCount,
