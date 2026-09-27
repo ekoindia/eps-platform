@@ -12,6 +12,13 @@ export interface Config {
 	 * it would hand anyone who knows a mobile number that number's login code.
 	 */
 	demoOtp: boolean;
+	/**
+	 * `DEV_ADMIN_LOGIN=true` mounts `POST /auth/admin/dev-login`, which mints an
+	 * admin session with no OAuth — local dev only. `loadConfig` refuses to boot
+	 * with it under `NODE_ENV=production` or Secure cookies, so a copied `.env`
+	 * stops a deployed server from starting rather than opening it.
+	 */
+	devAdminLogin: boolean;
 	cookieSecure: boolean;
 	cookieSameSite: string;
 	adminPostLoginRedirect: string;
@@ -483,6 +490,16 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		crmRecordBaseUrl = crmRecordBaseUrl.replace(/\/+$/, "");
 	}
 
+	const devAdminLogin = env.DEV_ADMIN_LOGIN === "true";
+	if (
+		devAdminLogin &&
+		(env.NODE_ENV === "production" || env.COOKIE_SECURE !== "false")
+	) {
+		throw new Error(
+			"DEV_ADMIN_LOGIN is local-dev only: it requires COOKIE_SECURE=false and a non-production NODE_ENV",
+		);
+	}
+
 	const redisUrl = env.REDIS_URL || undefined;
 	const kvEncryptionKey = env.KV_ENCRYPTION_KEY || undefined;
 	if (redisUrl) {
@@ -500,6 +517,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
 		refreshTtlSec: Number(env.REFRESH_TTL_SEC ?? 60 * 60 * 24 * 30),
 		adminRefreshTtlSec: Number(env.ADMIN_REFRESH_TTL_SEC ?? 28800),
 		demoOtp: env.DEMO_OTP === "true",
+		devAdminLogin,
 		cookieSecure: env.COOKIE_SECURE !== "false",
 		cookieSameSite: env.COOKIE_SAMESITE ?? "Lax",
 		adminPostLoginRedirect: env.ADMIN_POST_LOGIN_REDIRECT ?? "/admin",

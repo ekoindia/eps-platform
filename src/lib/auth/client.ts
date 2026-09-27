@@ -822,6 +822,16 @@ export const authClient = {
 			}) as Promise<ProposeResult>,
 	},
 
+	/**
+	 * Local-dev admin session without GitHub OAuth. The backend mounts the route
+	 * only with `DEV_ADMIN_LOGIN=true` and refuses it off-machine; callers render
+	 * the button only under `import.meta.env.DEV`.
+	 */
+	devAdminLogin: (): Promise<{ ok: true }> =>
+		request("/auth/admin/dev-login", { method: "POST" }) as Promise<{
+			ok: true;
+		}>,
+
 	/** Admin ⌘K search logs — summary, top queries, paged rows, export link. */
 	adminSearchLogs: {
 		overview: (filter: SearchLogFilter): Promise<SearchLogOverview> =>

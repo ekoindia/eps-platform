@@ -393,6 +393,32 @@ Use a **dedicated dev app** (separate credentials from production):
 Visit `http://localhost:8080/admin` → "Sign in with GitHub". Admin access is
 gated on **write** permission to `GITHUB_REPO`.
 
+### Shortcut: demo admin login (no OAuth App)
+
+To explore read-only admin pages (Search logs) without registering an OAuth
+App, set in `.env`:
+
+    DEV_ADMIN_LOGIN=true
+    COOKIE_SECURE=false
+
+`/admin` then shows **Demo admin login (local dev)** under `npm run dev`. It
+mints an admin session as `dev:local-admin` via `POST /auth/admin/dev-login`.
+Locks, all enforced and tested (`src/http/devAdminLogin.test.ts`):
+
+| Lock | Effect |
+| ---- | ------ |
+| `loadConfig` | refuses to boot with the flag under `NODE_ENV=production` (the Docker image) or Secure cookies |
+| flag off | route not mounted → 404 |
+| socket | peer must be loopback, with no `x-real-ip` / `x-forwarded-for` (nginx and Vercel always add one; the Vite proxy adds neither) |
+| `Origin` | must be a loopback origin (login-CSRF guard) |
+| no GitHub token | GitOps propose/deploy fail `NO_GH_TOKEN` — it can read, never write the repo. The console opens on Search logs and shows a notice instead of the Documentation tab: any `/admin/docs*` call would 401, which the client treats as an expired session and signs you out |
+| frontend | button renders only under `import.meta.env.DEV`; Vite drops it from production builds |
+
+The Vite dev server listens on all interfaces (`host: "::"`), so a LAN device
+reaching `:8080` is proxied from loopback and passes the socket lock. What it
+could reach is your local dev data only. Turn the flag off on untrusted
+networks.
+
 ## Admin GitOps console
 
 Admins can edit documentation and endpoint notes directly from the `/admin` page,

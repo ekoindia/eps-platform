@@ -91,6 +91,11 @@ export async function buildApp(env: NodeJS.ProcessEnv): Promise<BuiltApp> {
 		? createConnectAuthProvider(connect, { kv, secretbox, cfg, eko })
 		: createEkoAuthProvider(eko);
 	console.log(`[eps-backend] auth provider: ${auth.name}`);
+	if (cfg.devAdminLogin) {
+		console.warn(
+			"[eps-backend] DEV_ADMIN_LOGIN is ON — POST /auth/admin/dev-login grants admin without OAuth (local dev only)",
+		);
+	}
 
 	// Opened before the app so a bad path or unwritable volume fails startup
 	// loudly instead of silently dropping every search log.

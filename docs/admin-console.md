@@ -91,6 +91,7 @@ These may be added in v2 based on usage feedback and team priorities.
 
 A second tab on `/admin` shows ⌘K search logs: summary rates, top and
 top-failing queries, a paged log, and JSONL/CSV export. Read-only, needs an
-admin session but no GitHub token. See
+admin session but no GitHub token — so locally the **Demo admin login** button
+(`DEV_ADMIN_LOGIN=true`, see the eps-backend README) is enough. See
 [⌘K palette telemetry](features/palette-telemetry.md#admin-exploring-and-exporting).
 

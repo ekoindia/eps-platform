@@ -39,6 +39,7 @@ import { mountCrm } from "./crm";
 import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
+import { mountDevAdminLogin } from "./devAdminLogin";
 import { mountPaletteLog } from "./paletteLog";
 import { mountSearchLogs } from "./searchLogs";
 import { mountTryItProxy } from "./tryitProxy";
@@ -684,6 +685,9 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 					}
 				: undefined,
 	});
+
+	// Local-dev only; loadConfig refuses the flag under production settings.
+	if (cfg.devAdminLogin) mountDevAdminLogin(app, { cfg, sessions, securityLog });
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });
