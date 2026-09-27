@@ -86,6 +86,54 @@ Backend routes: `/admin/search-logs/{overview,rows,export}` — see the
 eps-backend README "Search logs" section. For ad-hoc SQL on the VM, use a
 backup copy (see `eps-backend-vm-deploy.md`) rather than the live file.
 
+## GTM / GA4 setup
+
+The site only pushes `palette_search` into the dataLayer of container
+`GTM-MLL3LZZD` (`index.html`); nothing reaches GA4 until the container maps it.
+One-time setup:
+
+1. **Variables** → User-Defined → Data Layer Variable (Version 2), one each for
+   `scope`, `resultCount`, `outcome`, `clickedCategory`, `clickedRank`,
+   `queryLength` (e.g. `DLV - palette outcome`).
+2. **Trigger** → Custom Event, event name `palette_search`, all custom events
+   (`CE - palette_search`).
+3. **Tag** → Google Analytics: GA4 Event, event name `palette_search`, trigger
+   `CE - palette_search`, parameters in GA4's snake_case:
+
+   | GA4 parameter      | Value                              |
+   | ------------------ | ---------------------------------- |
+   | `scope`            | `{{DLV - palette scope}}`          |
+   | `result_count`     | `{{DLV - palette resultCount}}`    |
+   | `outcome`          | `{{DLV - palette outcome}}`        |
+   | `clicked_category` | `{{DLV - palette clickedCategory}}`|
+   | `clicked_rank`     | `{{DLV - palette clickedRank}}`    |
+   | `query_length`     | `{{DLV - palette queryLength}}`    |
+
+4. **Preview** (Tag Assistant): search in ⌘K and click a result, then search and
+   press Esc — expect two `palette_search` events, the second with
+   `outcome: abandon` and empty click fields. Confirm in GA4 DebugView, then
+   **Publish**.
+5. **GA4 Admin → Custom definitions** (reports ignore unregistered params; data
+   shows only from registration on, after 24–48 h):
+   - custom dimensions (Event scope): `outcome`, `scope`, `clicked_category`,
+     `result_count` (a dimension so it can be filtered `= 0`);
+   - custom metrics (Standard): `query_length`, `clicked_rank`.
+
+Reading it — Explore → Free form, filter event name `palette_search`: rows
+`outcome` × event count gives click / abandon / Ask-AI rates; filter
+`result_count` = `0` for the zero-result rate. A funnel from `palette_search` to
+the signup event is what GA4 adds over the admin page: its rows carry no session,
+so only GA4 can join search to acquisition and conversion.
+
+Gotchas:
+
+- **Keep the undefined keys.** GTM's data model persists values across pushes.
+  `reportPaletteSearch` sends `clickedCategory` / `clickedRank` as explicit
+  `undefined` on non-click outcomes to overwrite the previous click; dropping
+  those keys would make abandoned searches inherit the last click's category.
+- **GA4 undercounts.** Ad blockers and consent banners stop GTM. The SQLite log
+  on `/admin` does not depend on it — use that for exact counts.
+
 ## Building the eval set
 
 Export JSONL for the range, dedupe, label intents/slots, and keep a held-out
