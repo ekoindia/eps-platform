@@ -30,6 +30,7 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
 | GET    | /crm/lead                   | cookie         | The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` unless `ZOHO_ENABLED=true`; 404 `NO_CRM_LEAD` when the profile has no `crm_lead_id` |
 | PATCH  | /crm/lead                   | cookie         | Writes allow-listed Lead fields back to Zoho — see docs/features/crm-lead.md |
 | POST   | /tryit/proxy                | none (public)  | Same-origin relay for the docs "Try it" widget — see below |
+| POST   | /telemetry/palette          | none (public)  | Sampled, redacted ⌘K query → one SQLite row; 204. See "Search logs" below |
 | POST   | /signup/profile             | signup cookie  | Creates the partial account (SimpliBank 521). Optional JSON body of ad attribution; only `ATTRIBUTION_KEYS` (`gclid`, `fbclid`, `utm_source`, `utm_medium`, `utm_campaign`; strings ≤200 chars) are forwarded upstream under the same names, never blocking the step |
 | \*     | /signup/\*                  | signup cookie  | Remaining self-serve onboarding steps (`state`, `pan`, `business`, `pin`, `pincode`, `agreement`) |
 
@@ -101,6 +102,26 @@ session's profile view.
   console and `/admin` already render sign-in for `anon`, so the user lands on
   login in place, with the URL intact. `/auth/otp/*` and `/auth/logout` are
   exempt: a 401 there is a bad OTP or an already-dead session, not an expiry.
+
+## Search logs (SQLite)
+
+⌘K palette sessions sampled by the site (`VITE_PALETTE_QUERY_SAMPLE_RATE`)
+land in one SQLite table via `POST /telemetry/palette`, using Node's built-in
+`node:sqlite` (why the image is Node 24). Rows are redacted server-side and
+carry no ip, session or request id. Admins read them at `/admin` → Search logs:
+
+| Method | Path                            | Auth          | Purpose |
+| ------ | ------------------------------- | ------------- | ------- |
+| GET    | /admin/search-logs/overview     | admin cookie  | Summary counts + top / top-failing queries (25 each) |
+| GET    | /admin/search-logs/rows         | admin cookie  | Newest-first page; `before=<id>` cursor, `limit` ≤200 |
+| GET    | /admin/search-logs/export       | admin cookie  | Streamed attachment, `format=jsonl` (default) or `csv` (formula-safe) |
+
+All three take `from`/`to` (`YYYY-MM-DD`, UTC, inclusive), `q` (substring),
+`outcome` and `scope`. Storage: `ANALYTICS_DB_PATH` (prod: the
+`eps-analytics-data` volume, WAL mode). Unset = in-memory. Rows older than 365
+days are purged at startup and daily — the privacy policy promises 12 months.
+Single-writer by design; move to Postgres if the backend ever runs as more than
+one instance.
 
 ## Scaling & storage backends
 
@@ -371,6 +392,32 @@ Use a **dedicated dev app** (separate credentials from production):
 
 Visit `http://localhost:8080/admin` → "Sign in with GitHub". Admin access is
 gated on **write** permission to `GITHUB_REPO`.
+
+### Shortcut: demo admin login (no OAuth App)
+
+To explore read-only admin pages (Search logs) without registering an OAuth
+App, set in `.env`:
+
+    DEV_ADMIN_LOGIN=true
+    COOKIE_SECURE=false
+
+`/admin` then shows **Demo admin login (local dev)** under `npm run dev`. It
+mints an admin session as `dev:local-admin` via `POST /auth/admin/dev-login`.
+Locks, all enforced and tested (`src/http/devAdminLogin.test.ts`):
+
+| Lock | Effect |
+| ---- | ------ |
+| `loadConfig` | refuses to boot with the flag under `NODE_ENV=production` (the Docker image) or Secure cookies |
+| flag off | route not mounted → 404 |
+| socket | peer must be loopback, with no `x-real-ip` / `x-forwarded-for` (nginx and Vercel always add one; the Vite proxy adds neither) |
+| `Origin` | must be a loopback origin (login-CSRF guard) |
+| no GitHub token | GitOps propose/deploy fail `NO_GH_TOKEN` — it can read, never write the repo. The console opens on Search logs and shows a notice instead of the Documentation tab: any `/admin/docs*` call would 401, which the client treats as an expired session and signs you out |
+| frontend | button renders only under `import.meta.env.DEV`; Vite drops it from production builds |
+
+The Vite dev server listens on all interfaces (`host: "::"`), so a LAN device
+reaching `:8080` is proxied from loopback and passes the socket lock. What it
+could reach is your local dev data only. Turn the flag off on untrusted
+networks.
 
 ## Admin GitOps console
 

@@ -1,4 +1,7 @@
 import LegalPageLayout from "@/components/LegalPageLayout";
+// Build-time constant, so the prerendered HTML and the client agree: the
+// search-query clause exists exactly when the site can send queries.
+import { PALETTE_QUERY_SAMPLE_RATE } from "@/lib/config/features";
 
 const PrivacyPolicyPage = () => {
 	return (
@@ -71,6 +74,21 @@ const PrivacyPolicyPage = () => {
 				our affiliates and service providers under contract to support the
 				operation of the Platform.
 			</p>
+			{PALETTE_QUERY_SAMPLE_RATE > 0 && (
+				<p>
+					<strong>Site search queries:</strong> We record the queries (or a
+					sample) typed into our Website's search to understand what users look
+					for and to improve our search and help features, including training
+					the models that power them. Before a query is stored, phone, account,
+					Aadhaar and PAN numbers, email addresses and access keys are
+					automatically removed, and it is stored without your IP address,
+					account or session, so it cannot be linked back to you. Stored queries
+					are kept for up to 12 months and then deleted. These queries may be
+					processed by our service providers for this purpose and are
+					never sold. Please do not enter personal information in the search
+					box.
+				</p>
+			)}
 
 			<h4>5. Disclosure of Information</h4>
 			<ul>

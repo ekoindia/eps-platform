@@ -27,6 +27,12 @@ services:
     image: ${EPS_BACKEND_IMAGE}
     env_file:
       - .env
+    # ⌘K search logs (SQLite). Set here, not in the operator's .env: the path
+    # only means anything together with the volume mounted beside it.
+    environment:
+      ANALYTICS_DB_PATH: /var/lib/eps-analytics/search-logs.db
+    volumes:
+      - eps-analytics-data:/var/lib/eps-analytics
     ports:
       - "127.0.0.1:8787:8787"
     networks:
@@ -94,6 +100,7 @@ services:
 volumes:
   eps-redis-data:
   eps-poller-state:
+  eps-analytics-data:
 
 networks:
   eps-internal:

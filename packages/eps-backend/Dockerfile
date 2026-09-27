@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 # Root package.json's `prepare` runs `node .githooks/setup.mjs` on npm ci
@@ -20,14 +20,14 @@ RUN npm run build -w @ekoindia/eps-backend
 # final image. Worth a second npm ci: the deploy VM's Docker runs on the vfs
 # storage driver, which copies every layer in full, so image size converts
 # directly into pull and container-create minutes.
-FROM node:20-alpine AS proddeps
+FROM node:24-alpine AS proddeps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY .githooks/setup.mjs .githooks/setup.mjs
 COPY packages/eps-backend/package.json packages/eps-backend/package.json
 RUN npm ci --workspace @ekoindia/eps-backend --include-workspace-root --omit=dev
 
-FROM node:20-alpine
+FROM node:24-alpine
 # Keep the monorepo path layout from the build stage — do NOT flatten dist into
 # /app. npm nests a workspace dep whenever the hoisted version conflicts (here:
 # eps-backend wants jose@^5 while @modelcontextprotocol/sdk hoists jose@^6, so

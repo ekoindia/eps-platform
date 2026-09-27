@@ -713,6 +713,17 @@ upgrade is one-way — snapshot the `eps-redis-data` volume first if a rollback
 to `redis:7` must stay possible. Worst case of losing the volume is a mass
 re-login (it holds only tokens, counters, and cache).
 
+The **`eps-analytics-data`** volume holds `search-logs.db`, the ⌘K search-log
+SQLite file (`ANALYTICS_DB_PATH`, set in the compose file). Losing it loses
+search history only — no auth state. Back it up with a consistent snapshot, not
+a raw copy of a live WAL database:
+
+```sh
+dc exec eps-backend rm -f /var/lib/eps-analytics/backup.db   # VACUUM INTO won't overwrite
+dc exec eps-backend node -e "new (require('node:sqlite').DatabaseSync)('/var/lib/eps-analytics/search-logs.db').exec(\"VACUUM INTO '/var/lib/eps-analytics/backup.db'\")"
+docker cp "$(dc ps -q eps-backend)":/var/lib/eps-analytics/backup.db ./search-logs-$(date +%F).db
+```
+
 Redundancy tiers, in order of preference:
 
 1. **Valkey container** (default, this stack) — durable across restarts and

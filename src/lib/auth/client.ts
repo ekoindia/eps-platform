@@ -198,6 +198,68 @@ export interface DeployResult {
 	prNumber: number;
 }
 
+/** Filter shared by every admin search-log read. Dates are `YYYY-MM-DD`, UTC, both inclusive. */
+export interface SearchLogFilter {
+	from?: string;
+	to?: string;
+	q?: string;
+	outcome?: "click" | "ask_ai" | "abandon";
+}
+
+export interface SearchLogSummary {
+	total: number;
+	zeroResult: number;
+	click: number;
+	askAi: number;
+	abandon: number;
+}
+
+export interface SearchLogQueryCount {
+	query: string;
+	count: number;
+}
+
+export interface SearchLogOverview {
+	summary: SearchLogSummary;
+	top: SearchLogQueryCount[];
+	topFailing: SearchLogQueryCount[];
+}
+
+export interface SearchLogRow {
+	id: number;
+	ts: string;
+	query: string;
+	scope: string;
+	resultCount: number;
+	outcome: "click" | "ask_ai" | "abandon";
+	clickedCategory: string | null;
+	clickedRank: number | null;
+}
+
+export interface SearchLogPage {
+	rows: SearchLogRow[];
+	/** Pass as `before` for the next page; null when this was the last. */
+	nextBefore: number | null;
+}
+
+/**
+ * Serialises a search-log filter, dropping empty fields.
+ * @param filter - The admin's filter.
+ * @param extra - Additional params (cursor, format).
+ * @returns A query string with leading `?`, or "" when nothing is set.
+ */
+export function searchLogQuery(
+	filter: SearchLogFilter,
+	extra: Record<string, string | number | undefined> = {},
+): string {
+	const params = new URLSearchParams();
+	for (const [k, v] of Object.entries({ ...filter, ...extra })) {
+		if (v !== undefined && v !== "") params.set(k, String(v));
+	}
+	const qs = params.toString();
+	return qs ? `?${qs}` : "";
+}
+
 /**
  * The full-scope connect-api token, handed over for the ekostore sign-in
  * handoff. Only `GET /connect/ekostore-token` returns this, and only to an
@@ -758,6 +820,31 @@ export const authClient = {
 				method: "POST",
 				body: JSON.stringify(input),
 			}) as Promise<ProposeResult>,
+	},
+
+	/**
+	 * Local-dev admin session without GitHub OAuth. The backend mounts the route
+	 * only with `DEV_ADMIN_LOGIN=true` and refuses it off-machine; callers render
+	 * the button only under `import.meta.env.DEV`.
+	 */
+	devAdminLogin: (): Promise<{ ok: true }> =>
+		request("/auth/admin/dev-login", { method: "POST" }) as Promise<{
+			ok: true;
+		}>,
+
+	/** Admin ⌘K search logs — summary, top queries, paged rows, export link. */
+	adminSearchLogs: {
+		overview: (filter: SearchLogFilter): Promise<SearchLogOverview> =>
+			request(`/admin/search-logs/overview${searchLogQuery(filter)}`, {
+				method: "GET",
+			}) as Promise<SearchLogOverview>,
+		rows: (filter: SearchLogFilter, before?: number): Promise<SearchLogPage> =>
+			request(`/admin/search-logs/rows${searchLogQuery(filter, { before })}`, {
+				method: "GET",
+			}) as Promise<SearchLogPage>,
+		/** A plain link, not a fetch: the browser streams the attachment to disk. */
+		exportUrl: (filter: SearchLogFilter, format: "jsonl" | "csv"): string =>
+			`${BASE}/admin/search-logs/export${searchLogQuery(filter, { format })}`,
 	},
 
 	/** Admin deploy operations — trigger production promotion PRs. */

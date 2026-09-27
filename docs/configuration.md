@@ -164,6 +164,9 @@ with the reasoning for each default, in [.env.example](../.env.example). The
 support contact channels shown on Console Home — `VITE_SUPPORT_EMAIL`,
 `VITE_SUPPORT_PHONE`, `VITE_SUPPORT_WHATSAPP` — are configured there; see
 [Support contact strip](features/support-contact.md).
+`VITE_PALETTE_QUERY_SAMPLE_RATE` (0–1, default 0) sets the share of ⌘K
+sessions whose redacted query reaches eps-backend; see
+[⌘K palette telemetry](features/palette-telemetry.md).
 
 ---
 

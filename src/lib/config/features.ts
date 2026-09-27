@@ -113,6 +113,20 @@ export const SHOW_AI_CHAT: boolean =
 	import.meta.env.VITE_SHOW_AI_CHAT === "true";
 
 /**
+ * Share of ⌘K palette sessions (0–1) whose final query text is sent, redacted,
+ * to eps-backend `POST /telemetry/palette`. Those samples become the eval set
+ * for the on-device query router (`docs/features/palette-telemetry.md`).
+ *
+ * Being configured IS the flag: unset, blank or unparseable is 0, and at 0 no
+ * query text leaves the browser — GTM only ever receives counts. Raise it
+ * (0.1 is the planned value) only once the privacy policy covers search logs.
+ */
+export const PALETTE_QUERY_SAMPLE_RATE: number = Math.min(
+	1,
+	Math.max(0, Number(import.meta.env.VITE_PALETTE_QUERY_SAMPLE_RATE) || 0),
+);
+
+/**
  * Support contact channels shown as a slim strip at the bottom of `/console`.
  * Each is independent: a channel renders only when its var holds a usable
  * value, and with none of the three set the strip does not render at all — so

@@ -1855,3 +1855,22 @@ describe("tryit proxy mount", () => {
 		expect(envelope.rid).toBeTruthy();
 	});
 });
+
+describe("dev admin login mounting", () => {
+	const devLogin = (app: ReturnType<typeof createApp>) =>
+		app.request("/auth/admin/dev-login", {
+			method: "POST",
+			headers: { origin: "http://localhost:8080" },
+		});
+
+	it("is absent unless DEV_ADMIN_LOGIN is on", async () => {
+		expect((await devLogin(deps().app)).status).toBe(404);
+	});
+
+	// Mounted, but app.request has no socket, so the loopback lock refuses it.
+	it("is mounted, and still socket-locked, when on", async () => {
+		const { app } = deps({}, { cfg: { ...cfg, devAdminLogin: true } });
+
+		expect((await devLogin(app)).status).toBe(403);
+	});
+});

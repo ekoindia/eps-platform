@@ -33,3 +33,25 @@ export async function requireDeveloperSession(
 	}
 	return claim.sub;
 }
+
+/**
+ * Gate for admin-only reads that need no GitHub token (the search-log pages).
+ * Same rule as the GitOps routes' first step: a verified access claim whose
+ * role is `admin`. Mutations keep their stricter gate in `admin.ts`.
+ *
+ * @param sessions - Session verifier.
+ * @param c - The request context.
+ * @throws AppError 401 NO_SESSION when there is no valid access cookie.
+ * @throws AppError 403 NOT_AUTHORIZED for any non-admin session.
+ */
+export async function requireAdminSession(
+	sessions: Sessions,
+	c: Context<AppEnv>,
+): Promise<void> {
+	const token = getCookie(c, ACCESS_COOKIE);
+	const claim = token ? await sessions.verifyAccess(token) : null;
+	if (!claim) throw new AppError(401, "NO_SESSION", "Not authenticated");
+	if (claim.role !== "admin") {
+		throw new AppError(403, "NOT_AUTHORIZED", "Admin access required");
+	}
+}

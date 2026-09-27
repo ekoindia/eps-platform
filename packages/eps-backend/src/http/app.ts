@@ -14,6 +14,7 @@ import { identityOf } from "../clients/eko";
 import type { GitHubClient } from "../clients/github";
 import type { ZohoClient } from "../clients/zoho";
 import type { Config } from "../config";
+import { openPaletteStore, type PaletteStore } from "../analytics/paletteStore";
 import { buildMeView } from "../identity/me";
 import type { SignupView } from "../identity/me";
 import { createSignupService, type SignupService } from "../signup/service";
@@ -38,6 +39,9 @@ import { mountCrm } from "./crm";
 import { mountNotifications } from "./notifications";
 import { mountSignup } from "./signup";
 import { mountTransactions } from "./transactions";
+import { mountDevAdminLogin } from "./devAdminLogin";
+import { mountPaletteLog } from "./paletteLog";
+import { mountSearchLogs } from "./searchLogs";
 import { mountTryItProxy } from "./tryitProxy";
 import {
 	ADMIN_CALLBACK_IP_LIMIT,
@@ -47,12 +51,7 @@ import {
 	RL_WINDOW_SEC,
 } from "./rateLimit";
 import { requestId, type AppEnv } from "./requestId";
-import {
-	debugEcho,
-	isAuthenticated,
-	trace,
-	traceForResponse,
-} from "./trace";
+import { debugEcho, isAuthenticated, trace, traceForResponse } from "./trace";
 import { API_VERSION } from "../version";
 
 /**
@@ -89,6 +88,8 @@ export interface Deps {
 	chatProvider?: ChatProvider;
 	/** Fetch used by the docs try-it proxy to call Eko; test seam, defaults to global. */
 	tryItFetch?: typeof fetch;
+	/** ⌘K search-log store; defaults to an in-memory one (tests, local dev). */
+	paletteStore?: PaletteStore;
 }
 
 const OTP_START_LIMIT = 5;
@@ -685,11 +686,20 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				: undefined,
 	});
 
+	// Local-dev only; loadConfig refuses the flag under production settings.
+	if (cfg.devAdminLogin) mountDevAdminLogin(app, { cfg, sessions, securityLog });
+
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });
 	// Anonymous by design: the docs "Try it" widget relays partner-supplied keys
 	// to Eko; no session is read and only an allowlist of headers is forwarded.
 	mountTryItProxy(app, { kv, fetchImpl: deps.tryItFetch });
+	// Anonymous by design too: sampled, redacted ⌘K queries for the query-router
+	// eval set. Mounted unconditionally — the site's sample rate is the switch.
+	// Admins read the same store under /admin/search-logs.
+	const paletteStore = deps.paletteStore ?? openPaletteStore(":memory:");
+	mountPaletteLog(app, { kv, store: paletteStore });
+	mountSearchLogs(app, { sessions, store: paletteStore });
 
 	// Mounted unconditionally so the console page it backs is never a 404. When
 	// `cfg.activationFee` is absent the route answers a named 503 the page can
