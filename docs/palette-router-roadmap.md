@@ -86,7 +86,7 @@ The zero-MB comparator. Useful even if Needle never ships.
     - `find_api` → MiniSearch over the **`endpoint`** category (REST operations; the `api` category is product pages) → endpoint card (method, path, docs link, Try-it link). Top 3 when scores are close.
     - `how_to_build` → recipes (4 today: DMT Fino send money, AePS Fingpay withdrawal, BBPS bill payment, BBPS recharge) → recipe card. **Built** differently from this plan: recipes were added to the search index (category `recipe`, ~few KB in the lazy palette chunk) instead of lazy-fetching `/agent/eps.json` — one resolution path (MiniSearch), and recipes became findable in plain search too.
     - `get_started` → session-aware next step. Needs `NextStepsCard`'s spotlight logic extracted into a pure `deriveNextStep(...)` with **all** its inputs: `MeView`, KYC documents, fee state (can be unknown), E-sign entitlement (`useRoleTransactionList`), loading/error, and "no known next action". Anonymous → signup/sandbox.
-    - `estimate_earnings` → deep link `/pricing?pay=…`. Product names map to **calculator ids** (`aeps-cashout`, `bbps-electricity`…, from `EARNINGS_PRODUCTS_MAP`), not families; slots = average amount + monthly count. Needs the private serializer in `PaymentsCalculator.tsx` exported, and the calculator to re-read `?pay=` when already mounted.
+    - `estimate_earnings` → deep link `/pricing?tab=payments&pay=…` or `?tab=dmt&dmt=…` (DMT has its own tab and param). Product names map to **calculator ids** (`dmt`, `aeps-cashout`, `bbps-electricity`…), not families; slots = product + average amount + monthly count. **Built**: serializers moved to the pricing data files; tabs + both calculators follow external URL changes; the card also shows the calculator's headline number.
 - `CommandPalette.tsx` — pinned card slot above results; Enter opens it; never auto-acts.
 - Telemetry — record which card was shown and whether it was used (new `actionIntent` field; card click = `outcome: click`, `clickedCategory: "action"`), so the gate can score it from real sessions.
 - Flag `VITE_SHOW_PALETTE_ACTIONS` (default off) until the gate.
@@ -102,7 +102,7 @@ safe to merge. Runtime A/B waits for Phase 3.
 | shared scaffolding (flag, `normalizeAmounts`, `detectIntent`, card slot, telemetry, eval harness) | ✅ 2026-09-28 | see log |
 | `find_api` | ✅ 2026-09-28 — product or endpoint card, endpoints with Try-it | see log |
 | `how_to_build` | ✅ 2026-09-28 — recipe card + Step 1 link; falls back to `find_api`; recipes now searchable (`recipe` category) | see log |
-| `estimate_earnings` | ⬜ | |
+| `estimate_earnings` | ✅ 2026-09-28 — pre-filled calculator link + the calculator's own number on the card; calculators follow URL changes | see log |
 | `get_started` | ⬜ | |
 
 ## Phase 1b — Needle spike (⬜)
@@ -171,6 +171,14 @@ signup started/completed, chat availability equal across arms.
   aliasing words the corpus uses. Fixed 2026-09-28 with `STEM_RULES`: index
   keeps surface form + root (so partial words and typos still match), query
   sends the root only. Stemming both sides alone would break mid-word typing.
+- **`setSearchParams` drops the URL hash**, and `ScrollToTop` used to try a
+  hash once (before lazy routes rendered) and scroll to top on *any* hash
+  change — so every `/page?x#section` link into a lazy page landed at the
+  top. Fixed 2026-09-28: poll for a visible target, top-scroll only on a
+  pathname change.
+- **Same-route links don't remount.** A card linking `/pricing?…` from
+  `/pricing` only changes the query; components reading the URL once in a
+  `useState` initialiser must also follow later changes.
 - **cmdk in jsdom:** components rendering cmdk items need
   `Element.prototype.scrollIntoView` stubbed in the test.
 - **Module mocks hide constants:** tests mocking `@/lib/auth/client` spread
@@ -179,6 +187,17 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — PR #131 merged and `VITE_SHOW_PALETTE_ACTIONS` turned on
+  in prod by the user (deploy date for before/after comparison): search
+  stemming, searchable recipes, `find_api` + `how_to_build` cards live.
+- **2026-09-28** — `estimate_earnings` built: card shows the calculator's own
+  number (DMT take-home / AePS-BBPS gross) and opens the calculator
+  pre-filled. Pricing tabs + calculators now follow external URL changes;
+  `ScrollToTop` fixed for hash links into lazy pages (sitewide). Browser-
+  verified from /docs (DMT, ₹8,102 card = page) and on /pricing itself (AePS
+  1,000 × ₹3,000, ₹12,000 card = page, tab switched, scrolled). Next:
+  `get_started`.
 
 - **2026-09-28** — `how_to_build` built (flag off): recipes indexed as a new
   `recipe` search category (were not searchable at all), rule ahead of

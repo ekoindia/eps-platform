@@ -8,6 +8,7 @@ import {
 	MAX_TXNS,
 	calcEarningsQuote,
 	clampAvgAmount,
+	serializeSelection,
 	type EarningsSelection,
 } from "@/lib/data/payments-pricing";
 import { formatINR } from "@/lib/utils";
@@ -59,18 +60,6 @@ const parseSelectionFromParams = (
 	return selection;
 };
 
-/** Serializes the selection back into the canonical `pay` param value */
-const serializeSelection = (selection: EarningsSelection[]): string =>
-	selection
-		.map(({ productId, monthlyTxns, avgAmount, mode }) => {
-			const base =
-				avgAmount !== undefined
-					? `${productId}:${monthlyTxns}:${avgAmount}`
-					: `${productId}:${monthlyTxns}`;
-			return mode === "offline" ? `${base}:offline` : base;
-		})
-		.join(",");
-
 /**
  * Interactive EARNINGS calculator for Payments & BC products (DMT, AePS,
  * BBPS): grouped product picker, per-product txn-count + avg-amount
@@ -85,6 +74,19 @@ export const PaymentsCalculator = () => {
 	);
 	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+	// Re-read `?pay=` when something else rewrites it on this mounted page (a
+	// ⌘K earnings card linking here). Our own debounced write-back is
+	// remembered in `lastWritten` and ignored, so it never fights slider drags.
+	const payParam = searchParams.get("pay") ?? "";
+	const lastWritten = useRef(payParam);
+	useEffect(() => {
+		if (payParam === lastWritten.current) return;
+		lastWritten.current = payParam;
+		setSelection(
+			parseSelectionFromParams(new URLSearchParams({ pay: payParam })),
+		);
+	}, [payParam]);
+
 	const quote = useMemo(() => calcEarningsQuote(selection), [selection]);
 
 	// Mirror state into the URL (debounced so slider drags don't spam history).
@@ -92,6 +94,7 @@ export const PaymentsCalculator = () => {
 	// `pay` key is rewritten.
 	useEffect(() => {
 		writeBackTimer.current = setTimeout(() => {
+			lastWritten.current = serializeSelection(selection);
 			setSearchParams(
 				(prev) => {
 					const params = new URLSearchParams(prev);

@@ -1,6 +1,7 @@
 import { search } from "@/lib/search-engine";
 import { SEARCH_INDEX } from "@/lib/search-index";
 import { RECIPES } from "@/lib/data/api-recipes";
+import { resolveEstimateEarnings } from "./earnings";
 import { detectIntent } from "./intent";
 import type { ActionCard, CardLink, DetectedIntent } from "./types";
 
@@ -106,6 +107,8 @@ export function resolveAction(
 	switch (detected.intent) {
 		case "find_api":
 			return resolveFindApi(engine, detected);
+		case "estimate_earnings":
+			return resolveEstimateEarnings(detected);
 		case "how_to_build":
 			// "how do i verify a bank account" has no recipe but names an API.
 			return (

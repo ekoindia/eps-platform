@@ -4,7 +4,12 @@
 // This is what switches Connected Banking off (CONNECTED_BANKING_ENABLED).
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import {
+	MemoryRouter,
+	useLocation,
+	useNavigate,
+	type NavigateFunction,
+} from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	PricingTabs,
@@ -24,6 +29,17 @@ const SearchProbe = () => {
 	return null;
 };
 
+let navigate: NavigateFunction;
+
+/** Exposes the router's navigate, to change the URL while the tabs stay mounted. */
+const NavProbe = () => {
+	const nav = useNavigate();
+	useEffect(() => {
+		navigate = nav;
+	}, [nav]);
+	return null;
+};
+
 const renderTabs = (
 	initialUrl: string,
 	props: Partial<PricingTabsProps> = {},
@@ -33,6 +49,7 @@ const renderTabs = (
 		root.render(
 			<MemoryRouter initialEntries={[initialUrl]}>
 				<SearchProbe />
+				<NavProbe />
 				<PricingTabs
 					verification={<div>VERIFICATION PANEL</div>}
 					dmt={<div>DMT PANEL</div>}
@@ -95,5 +112,14 @@ describe("PricingTabs", () => {
 
 		expect(activeTrigger()).toBe("Money Transfer (DMT)");
 		expect(search).toContain("tab=dmt");
+	});
+
+	// A ⌘K earnings card on /pricing links to /pricing?tab=dmt… — same route,
+	// so the tabs stay mounted and must follow the URL, not just read it once.
+	it("follows a ?tab= change while mounted", () => {
+		renderTabs("/pricing");
+		expect(activeTrigger()).toContain("Verification");
+		act(() => navigate("/pricing?tab=dmt"));
+		expect(activeTrigger()).toContain("DMT");
 	});
 });

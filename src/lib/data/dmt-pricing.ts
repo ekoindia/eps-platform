@@ -174,6 +174,20 @@ export interface DmtInput {
 	recoverChargesFromCustomer: boolean;
 }
 
+/** The DMT calculator's starting input — shared with the ⌘K earnings card so
+ * both quote the same number for the same link. */
+export const DMT_DEFAULT_INPUT: DmtInput = {
+	amount: DMT_DEFAULT_AMOUNT,
+	monthlyTxns: DMT_DEFAULT_MONTHLY_TXNS,
+	newSendersPerMonth: 50,
+	newRecipientsPerMonth: 80,
+	recoverChargesFromCustomer: false,
+};
+
+/** Serializes a DMT input into the calculator's `dmt` URL param value. */
+export const serializeDmtInput = (input: DmtInput): string =>
+	`${input.amount}:${input.monthlyTxns}:${input.newSendersPerMonth}:${input.newRecipientsPerMonth}:${input.recoverChargesFromCustomer ? 1 : 0}`;
+
 export interface DmtQuote {
 	/** Per-transaction ledger at the chosen amount */
 	perTxn: DmtTxnBreakdown;

@@ -9,14 +9,14 @@ import { toast } from "@/components/ui/sonner";
 import { saveCalculatorContext } from "@/hooks/use-tracking-params";
 import { GST_RATE } from "@/lib/data/api-pricing";
 import {
-	DMT_DEFAULT_AMOUNT,
-	DMT_DEFAULT_MONTHLY_TXNS,
+	DMT_DEFAULT_INPUT as DEFAULT_INPUT,
 	DMT_MAX_TXN_AMOUNT,
 	DMT_MIN_TXN_AMOUNT,
 	DMT_RECIPIENT_VERIFY_FEE,
 	calcDmtQuote,
 	clampDmtAmount,
 	dmtSenderKycInclGst,
+	serializeDmtInput,
 	type DmtInput,
 } from "@/lib/data/dmt-pricing";
 import { MAX_TXNS, TDS_RATE } from "@/lib/data/payments-pricing";
@@ -25,14 +25,6 @@ import { ArrowRight, Link2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RcmExplainer } from "./RcmExplainer";
-
-const DEFAULT_INPUT: DmtInput = {
-	amount: DMT_DEFAULT_AMOUNT,
-	monthlyTxns: DMT_DEFAULT_MONTHLY_TXNS,
-	newSendersPerMonth: 50,
-	newRecipientsPerMonth: 80,
-	recoverChargesFromCustomer: false,
-};
 
 /** Log-spaced txn-count steps for the slider (direct input allows any value) */
 const TXN_STEPS = [
@@ -153,6 +145,20 @@ export const DmtCalculator = () => {
 	const writeBackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const recoverId = useId();
 
+	// Re-read `?dmt=` when something else rewrites it on this mounted page (a
+	// ⌘K earnings card linking here). Our own debounced write-back is
+	// remembered in `lastWritten` and ignored, so it never fights typing.
+	const dmtParam = searchParams.get("dmt");
+	const lastWritten = useRef(dmtParam);
+	useEffect(() => {
+		if (dmtParam === lastWritten.current) return;
+		lastWritten.current = dmtParam;
+		const next = parseInputFromParams(
+			new URLSearchParams({ dmt: dmtParam ?? "" }),
+		);
+		if (next) setInput(next);
+	}, [dmtParam]);
+
 	const quote = useMemo(() => calcDmtQuote(input), [input]);
 	const { perTxn } = quote;
 
@@ -160,8 +166,9 @@ export const DmtCalculator = () => {
 	// and only once the user has actually changed something.
 	useEffect(() => {
 		if (!touched) return;
-		const serialized = `${input.amount}:${input.monthlyTxns}:${input.newSendersPerMonth}:${input.newRecipientsPerMonth}:${input.recoverChargesFromCustomer ? 1 : 0}`;
+		const serialized = serializeDmtInput(input);
 		writeBackTimer.current = setTimeout(() => {
+			lastWritten.current = serialized;
 			setSearchParams(
 				(prev) => {
 					const params = new URLSearchParams(prev);
