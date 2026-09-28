@@ -18,19 +18,29 @@ const MAX_ALTERNATIVES = 2;
 const API_CATEGORIES = new Set(["api", "endpoint"]);
 
 /**
+ * Best-hit categories that mean the visitor wants a page, not an API: "api
+ * pricing" → Pricing, "how does authentication work" → the auth guide. The
+ * plain results already lead with it, so no card.
+ */
+const NOT_AN_API = new Set(["page", "guide", "faq", "sdk"]);
+
+/**
  * `find_api`: the best product page or REST operation for the subject. Uses
  * the palette's own ranking (all scopes, products ahead of endpoints on equal
  * relevance), so "dmt api" lands on the DMT product and "fetch bill" on the
  * Fetch Bill endpoint. Endpoints get a Try-it link.
  * @param engine - The palette's search engine.
  * @param detected - The detected intent.
- * @returns A card, or null when no product or endpoint matches.
+ * @returns A card, or null when no product or endpoint matches every subject
+ *   word, or when the best match overall is a docs page rather than an API.
  */
 export function resolveFindApi(
 	engine: Engine,
 	detected: DetectedIntent,
 ): ActionCard | null {
-	const [top, ...rest] = search(engine, detected.subject).filter((r) =>
+	const hits = search(engine, detected.subject, "all", { strict: true });
+	if (!hits[0] || NOT_AN_API.has(hits[0].item.category)) return null;
+	const [top, ...rest] = hits.filter((r) =>
 		API_CATEGORIES.has(r.item.category),
 	);
 	if (!top) return null;
@@ -73,7 +83,9 @@ export function resolveHowToBuild(
 	engine: Engine,
 	detected: DetectedIntent,
 ): ActionCard | null {
-	const [top, ...rest] = search(engine, detected.subject, "recipe");
+	const [top, ...rest] = search(engine, detected.subject, "recipe", {
+		strict: true,
+	});
 	const recipe = top && RECIPE_BY_SLUG.get(top.item.slug ?? "");
 	if (!recipe) return null;
 	const firstStep = ITEM_BY_ID.get(`endpoint:${recipe.steps[0]?.specSlug}`);

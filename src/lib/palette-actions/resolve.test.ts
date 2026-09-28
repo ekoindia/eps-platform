@@ -14,7 +14,8 @@ describe("detectIntent", () => {
 	it.each([
 		["is there an api to verify pan", "verify pan"],
 		["dmt api", "dmt"],
-		["check gst number", "check gst number"],
+		["check gst number", "gst number"],
+		["cin lookup api", "cin"],
 		["endpoint to send money", "send money"],
 	])("%s → find_api (%s)", (query, subject) => {
 		expect(detectIntent(query)).toEqual({
@@ -38,7 +39,14 @@ describe("detectIntent", () => {
 	});
 
 	// Plain keyword search keeps the palette's normal results — no card.
-	it.each([["pricing"], ["bank account verification"], ["api"], [""]])(
+	it.each([
+		["pricing"],
+		["bank account verification"],
+		["api"],
+		[""],
+		// A lone verb names nothing to look up.
+		["verify"],
+	])(
 		"%j → no intent",
 		(query) => {
 			expect(detectIntent(query)).toBeNull();
@@ -68,9 +76,29 @@ describe("resolveAction (real search index)", () => {
 		});
 	});
 
+	// Found by the query audit (scripts/palette-eval/audit.jsonl).
+	it.each([
+		["how do i start using eps", "get_started"],
+		["how to onboard sender in dmt", "how_to_build"],
+		["payout api", "find_api"],
+	])("%s → %s", (query, intent) => {
+		expect(detectIntent(query)?.intent).toBe(intent);
+	});
+
 	it("returns no card for plain search or an empty subject", () => {
 		expect(resolveAction(engine, "pricing")).toBeNull();
 		expect(resolveAction(engine, "api")).toBeNull();
+	});
+
+	// Query audit: a card must match every subject word (no OR fallback), and
+	// a docs page as the best hit means the visitor wants that page instead.
+	it.each([
+		["cibil score api"],
+		["how to cook biryani"],
+		["api pricing"],
+		["how does authentication work"],
+	])("%s → no card", (query) => {
+		expect(resolveAction(engine, query)).toBeNull();
 	});
 
 	it("sends a how-to question to its recipe, with the first step", () => {

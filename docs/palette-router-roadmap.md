@@ -20,6 +20,7 @@ status updates the board and appends to the progress log in the same commit.
 | 0 | Palette telemetry: GTM counts + redacted query log in SQLite, admin Search logs page | ✅ **Live in prod**, verified 2026-09-28 | — |
 | 0b | Baseline data collection (2–4 weeks at sample rate 1) | ⏳ **Running since 2026-09-28** — first review ~2026-10-12, eval-set cut ~2026-10-26 | — |
 | 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ✅ All 4 intents built 2026-09-28; flag **on in prod** since PR #131 | 2026-09-28 |
+| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); awaiting deploy | 2026-09-28 |
 | 1b | Needle spike: JS API, browser cost, base-model sanity | ⬜ Not started | — |
 | 1c | Eval set + gate run (comparator vs Needle, end to end) | ⬜ Needs 0b data | — |
 | 2 | Needle build behind `VITE_SHOW_NEEDLE` | ⬜ Only if Needle clearly beats 1a at the gate | — |
@@ -73,7 +74,7 @@ fix (see gotchas).
   (see Deploy cadence); compare numbers around each logged deploy date.
 - **~2026-10-26 eval-set cut**: export JSONL, dedupe, label (below).
 
-## Phase 1a — rules + MiniSearch action cards (▶️ next)
+## Phase 1a — rules + MiniSearch action cards (✅ done)
 
 The zero-MB comparator. Useful even if Needle never ships.
 
@@ -104,6 +105,47 @@ safe to merge. Runtime A/B waits for Phase 3.
 | `how_to_build` | ✅ 2026-09-28 — recipe card + Step 1 link; falls back to `find_api`; recipes now searchable (`recipe` category) | see log |
 | `estimate_earnings` | ✅ 2026-09-28 — pre-filled calculator link + the calculator's own number on the card; calculators follow URL changes | see log |
 | `get_started` | ✅ 2026-09-28 — session-aware; shares `deriveNextStep` with NextStepsCard | see log |
+
+## Query audit (✅ 2026-09-28)
+
+164 hand-written queries (`scripts/palette-eval/audit.jsonl`, 54 held out as
+`test`) labelled with the ideal answer: card target, or no card, plus an
+optional plain-search top-3 `result`. Run and label format:
+[scripts/palette-eval/README.md](../scripts/palette-eval/README.md).
+
+| Full-text engine | intent | refusal | precision | target | plain top-3 |
+| ---------------- | ------ | ------- | --------- | ------ | ----------- |
+| before, dev | 0.90 | 0.83 | 0.73 | 0.80 | 44/53 (all) |
+| after, dev | 0.98 | 0.96 | 0.95 | 0.98 | 48/53 (all) |
+| before, **test** | 0.87 | 0.91 | 0.84 | 0.80 | — |
+| after, **test** | 0.89 | 0.91 | 0.90 | 0.87 | — |
+
+"Before" used the original single-target labels. Between runs, 18 rows were
+widened to accept a product **or** its only endpoint (a labelling policy,
+applied to test rows too without looking at their output), so part of the
+target/precision gain is that relabel, not the fixes. Test barely clears the
+gate: the rules generalise less than dev suggests.
+
+Fixes:
+
+- **Full-text search was off in prod** — see gotchas (`constructor`).
+- Cards use **strict** search (every subject word must match; no OR
+  fallback) — killed "cibil score api" → IP Verification, "how to cook
+  biryani" → DMT recipe.
+- `find_api` shows no card when the best overall hit is a page, guide, FAQ or
+  SDK ("api pricing", "how does authentication work").
+- Rules: a lone verb ("verify") is no intent; "payout" no longer means
+  earnings; "onboard sender/user/…" is a how-to, not account onboarding;
+  "start using/with" → `get_started`; `check`, `lookup`, `docs`, `app` are
+  request phrasing, not subject.
+- Search content: `golang` → `go` alias; FASTag on BBPS; product names and
+  "fees" on the Pricing page.
+
+Known dev misses left: "payout api" (fuzzy → UPI Verification), "how to open a
+bank account" (→ Get User's Services), "api documentation" (Docs page loses
+to "document" endpoints on type weight), "fingpay" (Fingpay endpoints outrank
+the AePS product — acceptable), "endpoint to fetch ifsc details" (→ Get Bank
+Details).
 
 ## Phase 1b — Needle spike (⬜)
 
@@ -181,12 +223,35 @@ signup started/completed, chat availability equal across arms.
   `useState` initialiser must also follow later changes.
 - **cmdk in jsdom:** components rendering cmdk items need
   `Element.prototype.scrollIntoView` stubbed in the test.
+- **`Object.prototype` names in a lookup table.** `TOKEN_ALIASES[term]`
+  returned `Object.prototype.constructor` for the word "constructor" (in the
+  Node/PHP SDK pages), MiniSearch threw `key must be a string`, and the
+  palette's silent body-index fetch fell back to labels only — in prod, since
+  at least the SDK pages. So every Phase 0 row so far has
+  `bodyIndexLoaded: false`: the baseline measures label-only search. Fixed
+  2026-09-28 with an own-key check.
+- **Vitest hides eval output under an agent** — pass `--reporter=default`.
 - **Module mocks hide constants:** tests mocking `@/lib/auth/client` spread
   the real module (`importOriginal`) so `LIFECYCLES` still exists.
 
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — Query audit done (see section). Found and fixed a prod bug:
+  the full-text body index never loaded (`constructor` alias lookup), so
+  search has been label-only and every telemetry row says
+  `bodyIndexLoaded: false` — compare before/after this deploy. Cards now use
+  strict search. Held-out test at the gate: intent 0.89, refusal 0.91,
+  precision 0.90. Browser-verified on the dev server (body index loads,
+  junk queries show no card, fixed queries show the right card). Next: deploy,
+  then Phase 1b or wait for the ~2026-10-12 review.
+
+- **2026-09-28** — PR #132 (earnings + next-step cards, hash-link fix,
+  in-memory search-log banner) and PR #133 ("go live" → Sign Up + Docs, was
+  Go SDK + PAN Lite) deployed; #133 verified in prod by the user. Deploy date
+  for before/after comparison. Next: query audit (~120 realistic queries,
+  fix misses, keep as the eval set); "golang" → nothing is a known miss.
 
 - **2026-09-28** — `get_started` built; **Phase 1a complete** (all four
   intents). `deriveNextStep` extracted from NextStepsCard (its 26 tests pass

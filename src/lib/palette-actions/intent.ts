@@ -51,6 +51,14 @@ const FILLER = new Set([
 	"show",
 	"find",
 	"some",
+	"check",
+	"lookup",
+	"look",
+	"up",
+	"docs",
+	"documentation",
+	"app",
+	"application",
 	// how_to_build phrasing
 	"integrate",
 	"integration",
@@ -96,13 +104,13 @@ const RULES: readonly Rule[] = [
 	{
 		intent: "estimate_earnings",
 		match:
-			/\b(?:earn\w*|commissions?|income|profits?|margins?|payouts?|take[\s-]?home)\b|\bhow much\b.*\b(?:make|get)\b/i,
+			/\b(?:earn\w*|commissions?|income|profits?|margins?|take[\s-]?home)\b|\bhow much\b.*\b(?:make|get)\b/i,
 	},
 	{
 		// Account onboarding, not KYC *APIs*: bare "kyc" is left to find_api.
 		intent: "get_started",
 		match:
-			/\b(?:get(?:ting)?\s+started|go(?:ing)?\s+live|onboard\w*|sign\s?up|register|create\s+(?:an?\s+)?account|next\s+steps?|api\s+keys?|(?:production|prod|live|uat)\s+(?:credentials|keys|access)|credentials|(?:activation|integration)\s+fee)\b/i,
+			/\b(?:get(?:ting)?\s+started|start(?:ing)?\s+(?:using|with)|go(?:ing)?\s+live|onboard(?:ing)?\b(?!\s+(?:an?\s+)?(?:senders?|users?|retailers?|agents?|merchants?|customers?|employees?))|sign\s?up|register|create\s+(?:an?\s+)?account|next\s+steps?|api\s+keys?|(?:production|prod|live|uat)\s+(?:credentials|keys|access)|credentials|(?:activation|integration)\s+fee)\b/i,
 	},
 	{
 		intent: "how_to_build",
@@ -112,7 +120,7 @@ const RULES: readonly Rule[] = [
 	{
 		intent: "find_api",
 		match:
-			/\b(apis?|endpoints?)\b|^\s*(verify|validate|check|fetch|look\s?up)\b/i,
+			/\b(apis?|endpoints?)\b|^\s*(verify|validate|check|fetch|look\s?up)\s+\S/i,
 	},
 ];
 
