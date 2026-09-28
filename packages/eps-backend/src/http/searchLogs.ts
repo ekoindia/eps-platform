@@ -138,6 +138,9 @@ export function mountSearchLogs(
 	app.get("/admin/search-logs/overview", (c) => {
 		const filter = parseFilter(c);
 		return c.json({
+			// Lets the admin page warn when logs live in memory (no
+			// ANALYTICS_DB_PATH) and vanish on every deploy.
+			persistent: store.persistent,
 			summary: store.summary(filter),
 			top: store.topQueries(filter, {
 				failing: false,

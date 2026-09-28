@@ -89,6 +89,8 @@ export interface QueryCount {
 
 /** Search-log persistence; one SQLite file on the VM. */
 export interface PaletteStore {
+	/** False for `:memory:` — every row is lost on restart. Shown to admins. */
+	readonly persistent: boolean;
 	insert(row: NewPaletteRow): void;
 	summary(filter: PaletteFilter): PaletteSummary;
 	/**
@@ -231,6 +233,7 @@ export function openPaletteStore(path: string): PaletteStore {
 	);
 
 	return {
+		persistent: path !== ":memory:",
 		insert(row) {
 			insert.run(
 				row.ts,

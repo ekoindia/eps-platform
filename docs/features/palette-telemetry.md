@@ -96,7 +96,11 @@ nulls rather than failing. They were added after the first release —
 No ip, session or request id — by design. Production path:
 `/var/lib/eps-analytics/search-logs.db` on the `eps-analytics-data` volume
 (set in `docker-compose.prod.yml`). Unset `ANALYTICS_DB_PATH` = in-memory,
-emptied on restart (local dev). Rows older than **365 days** are purged at
+emptied on restart (local dev) — the overview API reports `persistent: false`
+and the admin Search logs page shows a red "lost on every restart" banner, so
+a server missing the path can't go unnoticed (the VM's hand-copied compose file
+is the usual culprit). Check with `docker logs … | grep "search-log store"`.
+Rows older than **365 days** are purged at
 startup and daily, matching the privacy policy's 12 months. An insert failure
 (disk full) is logged and swallowed — telemetry never fails a search.
 

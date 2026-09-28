@@ -747,7 +747,12 @@ to `redis:7` must stay possible. Worst case of losing the volume is a mass
 re-login (it holds only tokens, counters, and cache).
 
 The **`eps-analytics-data`** volume holds `search-logs.db`, the ⌘K search-log
-SQLite file (`ANALYTICS_DB_PATH`, set in the compose file). Losing it loses
+SQLite file (`ANALYTICS_DB_PATH`, set in the compose file). The VM's
+`/data/eps-backend/docker-compose.prod.yml` is a hand-kept copy: if it predates
+this section, the backend logs `search-log store: in-memory (lost on restart)`,
+the admin Search logs page shows a red banner, and every deploy wipes the
+logs — re-copy the compose file from the repo and `up -d --no-deps
+eps-backend`. Losing it loses
 search history only — no auth state. Back it up with a consistent snapshot, not
 a raw copy of a live WAL database:
 
