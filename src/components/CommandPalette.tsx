@@ -28,6 +28,9 @@ import {
 	SHOW_AI_CHAT,
 	SHOW_PALETTE_ACTIONS,
 } from "@/lib/config/features";
+import { ESIGN_ID } from "@/lib/connect/esign";
+import { useRoleTransactionList } from "@/lib/connect/use-interactions";
+import type { PaletteSession } from "@/lib/palette-actions/get-started";
 import { resolveAction } from "@/lib/palette-actions/resolve";
 import type { CardLink } from "@/lib/palette-actions/types";
 import { PaletteActionCard } from "@/components/PaletteActionCard";
@@ -306,14 +309,34 @@ export const CommandPalette = ({
 		[engine, query, scope],
 	);
 
+	// Who is asking, for the get_started card. The E-sign entitlement list is
+	// fetched for developers only (cached for the session, shared with the
+	// console) — a visitor's call would 401, and a 401 signs the session out.
+	const isDeveloper =
+		auth.state.status === "authed" && auth.state.role === "developer";
+	const interactions = useRoleTransactionList(
+		SHOW_PALETTE_ACTIONS && isDeveloper,
+	);
+	const session = useMemo((): PaletteSession => {
+		if (auth.state.status !== "authed") return { kind: "anon" };
+		if (auth.state.role === "developer") {
+			return {
+				kind: "developer",
+				state: auth.state.me.state,
+				esignPending: Boolean(interactions?.[String(ESIGN_ID)]),
+			};
+		}
+		return { kind: auth.state.role };
+	}, [auth.state, interactions]);
+
 	// Pinned action card: rules + MiniSearch, same engine, so no extra cost.
 	// Only in the "All" scope — a visitor who picked a tab asked for a list.
 	const action = useMemo(
 		() =>
 			SHOW_PALETTE_ACTIONS && scope === "all" && query.trim()
-				? resolveAction(engine, query)
+				? resolveAction(engine, query, session)
 				: null,
-		[engine, query, scope],
+		[engine, query, scope, session],
 	);
 
 	// One telemetry report per palette session, for its last query. Refs, not

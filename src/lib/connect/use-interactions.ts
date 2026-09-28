@@ -13,13 +13,17 @@ import { useEffect, useState } from "react";
  * concurrent callers share one request. Same failure behaviour as
  * `useLoadWalletFlowId` and `useKycEnabled` — a list we could not read stays
  * null, i.e. nothing is treated as entitled.
+ * @param enabled - False skips the fetch (and returns null) — for callers that
+ *   may render for a visitor, whose call would 401, and a 401 signs out.
  * @returns The list, or null while unresolved or when the fetch failed.
  */
-export function useRoleTransactionList(): RoleTransactionList | null {
+export function useRoleTransactionList(
+	enabled = true,
+): RoleTransactionList | null {
 	const [list, setList] = useState<RoleTransactionList | null>(null);
 
 	useEffect(() => {
-		if (!SHOW_CONNECT_WIDGET) return;
+		if (!SHOW_CONNECT_WIDGET || !enabled) return;
 		let alive = true;
 		void fetchRoleTransactionList()
 			.then((fetched) => {
@@ -29,7 +33,7 @@ export function useRoleTransactionList(): RoleTransactionList | null {
 		return () => {
 			alive = false;
 		};
-	}, []);
+	}, [enabled]);
 
 	return list;
 }

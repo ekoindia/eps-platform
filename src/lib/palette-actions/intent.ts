@@ -99,6 +99,12 @@ const RULES: readonly Rule[] = [
 			/\b(?:earn\w*|commissions?|income|profits?|margins?|payouts?|take[\s-]?home)\b|\bhow much\b.*\b(?:make|get)\b/i,
 	},
 	{
+		// Account onboarding, not KYC *APIs*: bare "kyc" is left to find_api.
+		intent: "get_started",
+		match:
+			/\b(?:get(?:ting)?\s+started|go(?:ing)?\s+live|onboard\w*|sign\s?up|register|create\s+(?:an?\s+)?account|next\s+steps?|api\s+keys?|(?:production|prod|live|uat)\s+(?:credentials|keys|access)|credentials|(?:activation|integration)\s+fee)\b/i,
+	},
+	{
 		intent: "how_to_build",
 		match:
 			/\bhow\s+(?:do|does|can|to|would|should)\b|\b(?:integrat\w*|build|implement|flow|workflow|recipe|steps?|walkthrough)\b/i,

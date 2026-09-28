@@ -13,6 +13,7 @@ import { type KycPackSummary, summariseDocuments } from "@/lib/connect/kyc";
 import { useKycDocuments } from "@/lib/connect/kyc-documents";
 import { useRoleTransactionList } from "@/lib/connect/use-interactions";
 import { needsKycUpload } from "@/lib/console/lifecycle";
+import { deriveNextStep } from "@/lib/console/next-step";
 import { SETUP_FEE_DISCOUNT_PERCENT } from "@/lib/data/api-pricing";
 import { cn } from "@/lib/utils";
 import { Check, CreditCard } from "lucide-react";
@@ -198,6 +199,12 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 	// must not hide the way in.
 	const documents = useKycDocuments(kycBlocked);
 	const pack = documents ? packStatus(summariseDocuments(documents)) : null;
+	// Shared with ⌘K's get_started card, so both name the same step.
+	const next = deriveNextStep({
+		state: me.state,
+		esignPending,
+		packCta: pack?.cta,
+	});
 
 	const steps: Step[] = [
 		// Heads the card when owed, mirroring the rail, where E-sign Documents opens
@@ -210,7 +217,7 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 						cta: {
 							label: "Sign Document",
 							to: ESIGN_PATH,
-							primary: true,
+							primary: next.kind === "esign",
 						},
 						// Owed, not unknowable: the entitlement is only in the list while
 						// the signature is outstanding, so the ring reads like KYC's —
@@ -228,7 +235,7 @@ export default function NextStepsCard({ me }: { me: MeView }) {
 							label: pack?.cta ?? (kycRejected ? "Re-upload" : "Upload"),
 							to: "/console/documents",
 							// Signing comes first, and one card gets one filled button.
-							primary: !esignPending,
+							primary: next.kind === "kyc-upload",
 						}
 					: undefined,
 			// `pack.done` is deliberately undefined for a pack in review — the muted

@@ -19,7 +19,7 @@ status updates the board and appends to the progress log in the same commit.
 | ----- | ---- | ------ | ------------ |
 | 0 | Palette telemetry: GTM counts + redacted query log in SQLite, admin Search logs page | ✅ **Live in prod**, verified 2026-09-28 | — |
 | 0b | Baseline data collection (2–4 weeks at sample rate 1) | ⏳ **Running since 2026-09-28** — first review ~2026-10-12, eval-set cut ~2026-10-26 | — |
-| 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ⏳ **In progress** on `dev`, flag off — per-intent table below | started 2026-09-28 |
+| 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ✅ All 4 intents built 2026-09-28; flag **on in prod** since PR #131 | 2026-09-28 |
 | 1b | Needle spike: JS API, browser cost, base-model sanity | ⬜ Not started | — |
 | 1c | Eval set + gate run (comparator vs Needle, end to end) | ⬜ Needs 0b data | — |
 | 2 | Needle build behind `VITE_SHOW_NEEDLE` | ⬜ Only if Needle clearly beats 1a at the gate | — |
@@ -85,7 +85,7 @@ The zero-MB comparator. Useful even if Needle never ships.
   - resolvers, one per intent, returning a card model or null:
     - `find_api` → MiniSearch over the **`endpoint`** category (REST operations; the `api` category is product pages) → endpoint card (method, path, docs link, Try-it link). Top 3 when scores are close.
     - `how_to_build` → recipes (4 today: DMT Fino send money, AePS Fingpay withdrawal, BBPS bill payment, BBPS recharge) → recipe card. **Built** differently from this plan: recipes were added to the search index (category `recipe`, ~few KB in the lazy palette chunk) instead of lazy-fetching `/agent/eps.json` — one resolution path (MiniSearch), and recipes became findable in plain search too.
-    - `get_started` → session-aware next step. Needs `NextStepsCard`'s spotlight logic extracted into a pure `deriveNextStep(...)` with **all** its inputs: `MeView`, KYC documents, fee state (can be unknown), E-sign entitlement (`useRoleTransactionList`), loading/error, and "no known next action". Anonymous → signup/sandbox.
+    - `get_started` → session-aware next step. **Built**: `deriveNextStep` (`src/lib/console/next-step.ts`) holds NextStepsCard's spotlight choice (E-sign → KYC upload → none), used by both. Inputs: lifecycle state, E-sign entitlement, optional KYC-pack action; fee state is unknowable so the fee is always a secondary link. Loading/anon → sign-up card; admin → none. The palette skips the KYC-pack fetch (names the step from the lifecycle).
     - `estimate_earnings` → deep link `/pricing?tab=payments&pay=…` or `?tab=dmt&dmt=…` (DMT has its own tab and param). Product names map to **calculator ids** (`dmt`, `aeps-cashout`, `bbps-electricity`…), not families; slots = product + average amount + monthly count. **Built**: serializers moved to the pricing data files; tabs + both calculators follow external URL changes; the card also shows the calculator's headline number.
 - `CommandPalette.tsx` — pinned card slot above results; Enter opens it; never auto-acts.
 - Telemetry — record which card was shown and whether it was used (new `actionIntent` field; card click = `outcome: click`, `clickedCategory: "action"`), so the gate can score it from real sessions.
@@ -103,7 +103,7 @@ safe to merge. Runtime A/B waits for Phase 3.
 | `find_api` | ✅ 2026-09-28 — product or endpoint card, endpoints with Try-it | see log |
 | `how_to_build` | ✅ 2026-09-28 — recipe card + Step 1 link; falls back to `find_api`; recipes now searchable (`recipe` category) | see log |
 | `estimate_earnings` | ✅ 2026-09-28 — pre-filled calculator link + the calculator's own number on the card; calculators follow URL changes | see log |
-| `get_started` | ⬜ | |
+| `get_started` | ✅ 2026-09-28 — session-aware; shares `deriveNextStep` with NextStepsCard | see log |
 
 ## Phase 1b — Needle spike (⬜)
 
@@ -187,6 +187,14 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — `get_started` built; **Phase 1a complete** (all four
+  intents). `deriveNextStep` extracted from NextStepsCard (its 26 tests pass
+  unchanged); `useRoleTransactionList` gained an `enabled` flag so the palette
+  fetches the E-sign list for developers only. Browser-verified as a visitor
+  ("how do i go live" → sign-up card, no `/connect` call). Developer path
+  covered by unit tests only — no local developer login. Next: Phase 0b
+  review with real data, Phase 1b Needle spike.
 
 - **2026-09-28** — PR #131 merged and `VITE_SHOW_PALETTE_ACTIONS` turned on
   in prod by the user (deploy date for before/after comparison): search
