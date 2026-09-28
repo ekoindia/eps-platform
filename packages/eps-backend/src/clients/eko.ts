@@ -1,4 +1,4 @@
-import { noopEkoLogger, type EkoLogger } from "../audit/ekoLog";
+import { noopEkoLogger, type EkoLogEntry, type EkoLogger } from "../audit/ekoLog";
 import type { Config } from "../config";
 import type { EkoProfile, ProfileResult, TransactionRow } from "../types";
 import {
@@ -82,7 +82,57 @@ export interface EkoClient {
 	getTransactionHistory(
 		input: TransactionHistoryInput,
 	): Promise<{ rows: TransactionRow[] }>;
+	downloadTransactionReport(
+		input: TransactionReportInput,
+	): Promise<TransactionReportResult>;
 }
+
+/** File formats interaction 183 renders a statement in. */
+export type ReportFormat = "pdf" | "xlsx";
+
+/**
+ * A downloadable statement of this user's own transactions (interaction 183).
+ * Same identity/account/filter rules as {@link TransactionHistoryInput}, minus
+ * paging — upstream renders the whole filtered range, up to `REPORT_ROW_LIMIT`.
+ */
+export interface TransactionReportInput {
+	identity: EkoIdentity;
+	accountId: string;
+	/** Already allow-listed and shape-checked by the route. */
+	filters: Record<string, string>;
+	format: ReportFormat;
+	xRealIp?: string;
+}
+
+/**
+ * Outcome of interaction 183.
+ *
+ * `pending` is upstream answering JSON instead of a file: the query ran too
+ * long, and the file is delivered later by notification (connect-api answers
+ * that case 202 — `routes/transactions.js` `handleFileDownloadRequest`).
+ */
+export type TransactionReportResult =
+	| { kind: "file"; name: string; contentType: string; base64: string }
+	| { kind: "pending"; message: string };
+
+/** Rows interaction 183 is asked for. Eloka's own cap; upstream truncates past it. */
+export const REPORT_ROW_LIMIT = 50_000;
+
+/**
+ * Largest report file accepted from upstream. The file is buffered and then
+ * base64-encoded for the browser, so it sits in memory ~2.3× over.
+ * ponytail: generous guess, no measured sizes yet — lower it once real
+ * 50k-row reports have been seen, or stream the file instead of buffering.
+ */
+const REPORT_MAX_BYTES = 25 * 1024 * 1024;
+
+/**
+ * Report generation is slower than a page read; the default upstream timeout
+ * would abort a big range before upstream even gets to its own "too slow, will
+ * notify" JSON reply.
+ * ponytail: fixed; make it a config value if a deployment needs it tuned.
+ */
+const REPORT_TIMEOUT_MS = 60_000;
 
 /**
  * A page of this user's own transaction history.
@@ -411,6 +461,14 @@ export function createEkoClient(
 	 * upstream). connect-api routes it the same way (`utils/url.js:70-99`).
 	 */
 	const historyUrl = cfg.historyUrl;
+	/**
+	 * Interaction 183 (history report file) — the history upstream's `/download`
+	 * sibling path, as in every connect-api environment
+	 * (`SIMPLIBANK_HISTORY_API_PATH_FILE`).
+	 * ponytail: derived, not configured; add a SIMPLIBANK_HISTORY_API_FILE_PATH
+	 * override if an environment ever diverges.
+	 */
+	const historyFileUrl = `${historyUrl.replace(/\/+$/, "")}/download`;
 	const doFetch = withTimeout(fetchImpl, cfg.timeoutMs);
 
 	/**
@@ -531,6 +589,113 @@ export function createEkoClient(
 		// Logged fields mirror the actual wire values, so redaction and the
 		// `basic`-level summary keep working exactly as they do for `post()`.
 		return sendForm(body, headers, withRef, xRealIp);
+	}
+
+	/**
+	 * POSTs a file-download interaction and returns the file, base64-encoded.
+	 *
+	 * Mirrors connect-api's `handleFileDownloadRequest`: upstream answers either
+	 * the binary file (name in `content-disposition`) or, when the query ran too
+	 * long, JSON saying the file will follow by notification. A JSON reply that
+	 * is an ERROR (non-zero `status`) is thrown, not reported as pending — it
+	 * must not read as "your report is on its way".
+	 *
+	 * Logs the fields, status, type and size — never the file itself.
+	 */
+	async function postFile(
+		fields: Record<string, string>,
+		xRealIp: string | undefined,
+		target: string,
+	): Promise<TransactionReportResult> {
+		const withRef = { ...fields, source: SOURCE, client_ref_id: clientRefId() };
+		const headers: Record<string, string> = {
+			"Content-Type": "application/x-www-form-urlencoded",
+			developer_key: cfg.developerKey,
+		};
+		if (xRealIp) headers["X-Real-IP"] = xRealIp;
+
+		const start = performance.now();
+		const logEntry = (extra: Partial<EkoLogEntry>) =>
+			logger.log({
+				fields: withRef,
+				path: target,
+				durMs: Math.round(performance.now() - start),
+				...extra,
+			});
+
+		let res: Response;
+		try {
+			res = await withTimeout(fetchImpl, REPORT_TIMEOUT_MS)(target, {
+				method: "POST",
+				headers,
+				body: new URLSearchParams(withRef).toString(),
+			});
+		} catch (e) {
+			logEntry({ error: e instanceof Error ? e.message : String(e) });
+			throw e;
+		}
+
+		const contentType = res.headers.get("content-type") ?? "";
+		if (/json/i.test(contentType) || !res.ok) {
+			const text = await res.text();
+			let parsed: { status?: unknown; message?: unknown } | undefined;
+			try {
+				parsed = JSON.parse(text);
+			} catch {
+				parsed = undefined;
+			}
+			logEntry({
+				status: res.status,
+				response: parsed ?? { nonJson: text.slice(0, 500) },
+			});
+			if (!res.ok) throw new Error(`Eko upstream HTTP ${res.status}`);
+			if (!parsed) throw new Error("Eko upstream returned malformed JSON");
+			const message =
+				typeof parsed.message === "string" && parsed.message.trim()
+					? parsed.message.trim()
+					: "";
+			// An absent `status` reads as success, like 287: the deferred reply is
+			// only documented by its message, and an error reply always carries a
+			// non-zero status.
+			if (Number(parsed.status ?? 0) !== 0) {
+				throw new EkoReportError(
+					message || "The report could not be generated.",
+				);
+			}
+			return {
+				kind: "pending",
+				message:
+					message ||
+					"Your report is taking a while. It will be sent to you when ready.",
+			};
+		}
+
+		const bytes = Buffer.from(await res.arrayBuffer());
+		logEntry({
+			status: res.status,
+			response: { file: { contentType, bytes: bytes.length } },
+		});
+		if (!/pdf|excel|xls|spreadsheet|csv/i.test(contentType)) {
+			throw new Error(
+				`Eko upstream returned unsupported file type "${contentType}"`,
+			);
+		}
+		if (bytes.length === 0)
+			throw new Error("Eko upstream returned an empty file");
+		if (bytes.length > REPORT_MAX_BYTES) {
+			throw new EkoReportError(
+				"This report is too large to download. Please narrow the date range.",
+			);
+		}
+		return {
+			kind: "file",
+			name: fileNameOf(
+				res.headers.get("content-disposition"),
+				fields.reporttype,
+			),
+			contentType,
+			base64: bytes.toString("base64"),
+		};
 	}
 
 	function base(orgId?: number): Record<string, string> {
@@ -954,7 +1119,45 @@ export function createEkoClient(
 			);
 			return { rows: mapTransactionRows(raw) };
 		},
+		async downloadTransactionReport(input) {
+			return postFile(
+				{
+					// Same spread order as 154: filters first, system fields win.
+					...input.filters,
+					...actor(input.identity),
+					interaction_type_id: "183",
+					isNetworkTransactionHistory: "0",
+					start_index: "0",
+					limit: String(REPORT_ROW_LIMIT),
+					reporttype: input.format,
+					account_id: input.accountId,
+				},
+				input.xRealIp,
+				historyFileUrl,
+			);
+		},
 	};
+}
+
+/**
+ * An upstream refusal of a report, carrying a message fit to show the user
+ * (upstream's own, or ours for an over-size file). Transport faults stay plain
+ * `Error`s and surface as a generic 5xx.
+ */
+export class EkoReportError extends Error {}
+
+/**
+ * The download's file name, from `content-disposition` (`attachment;
+ * filename=Statement.pdf`, possibly quoted). Only the base name is kept, so a
+ * hostile header cannot hand the browser a path.
+ * @param header - The raw `content-disposition` header, if any.
+ * @param format - The requested format, for the fallback name's extension.
+ * @returns A safe file name; `statement.<format>` when none is usable.
+ */
+export function fileNameOf(header: string | null, format?: string): string {
+	const raw = header?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i)?.[1] ?? "";
+	const name = decodeURIComponent(raw.trim()).split(/[\\/]/).pop() ?? "";
+	return name || `statement.${format || "pdf"}`;
 }
 
 /** Coerces an upstream money/number field, which may arrive as a numeric string. */

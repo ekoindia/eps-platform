@@ -15,9 +15,10 @@ from Eloka's (`wlc-webapp`) History feature — see
 | ------------------------- | ------------------------------------------------------------------------------------------- |
 | Types + all pure logic    | `src/lib/console/transactions.ts`                                                           |
 | Page                      | `src/pages/console/Transactions.tsx`                                                        |
-| Client method             | `transactionsClient.search` in `src/lib/auth/client.ts`                                     |
+| Client methods            | `transactionsClient.search` / `.report` in `src/lib/auth/client.ts`                         |
 | BFF route                 | `packages/eps-backend/src/http/transactions.ts`                                             |
 | Upstream adapter + mapper | `getTransactionHistory` / `mapTransactionRows` in `packages/eps-backend/src/clients/eko.ts` |
+| Report download (183)     | `downloadTransactionReport` / `postFile` in `packages/eps-backend/src/clients/eko.ts`       |
 | Account resolution        | `selectEvalueAccountId` in `packages/eps-backend/src/clients/accounts.ts`                   |
 | Real captured response    | `packages/eps-backend/src/clients/transactions.sample.ts`                                   |
 
@@ -25,7 +26,7 @@ Columns: expand toggle · Summary · Transaction Amount · Debit · Credit · Ru
 Balance · Date & Time · Status. Expanding a row reveals "Other Details" (status,
 amount, TID, and whichever counterparty fields the row carries).
 
-**Not ported:** Export (PDF/Excel), the Columns show/hide toggle, the
+**Not ported:** the Columns show/hide toggle, the
 network/admin statement view, the multi-wallet account switcher, and the expanded
 row's Report Issue / Print / Share actions. All are additive later.
 
@@ -110,6 +111,43 @@ as `active` before those states existed, and gating on `active` alone would have
 taken the history away from every partner whose KYC is outstanding or whose
 documents were refused. Test for `active` only when the question really is
 "is anything still outstanding" — which is what `NextStepsCard` asks.
+
+## Export (PDF / Excel)
+
+The **Export** button beside Filter opens the same filter fields plus "Download
+report as" (PDF default, Excel), as in Eloka.
+
+- **Pre-fill:** the applied filters, plus From = 1st of this month and To = today
+  — except alongside a TID, where a default range could exclude that very
+  transaction.
+- **Dates:** From/To are required unless a TID is given (Eloka's rule — a report
+  is otherwise unbounded), bounded to the last 90 days and To ≥ From, in both
+  dialogs. The BFF re-checks presence and From ≤ To.
+- **Cap:** upstream is asked for at most 50,000 rows (Eloka's `limit`); the dialog
+  says so, since a larger range is silently truncated upstream.
+
+`POST /transactions/report` with `{ filters, format }` (`pdf` | `xlsx`). Same
+session → 151 → `NO_PROFILE` / `NO_ACCOUNT` gate as search (shared
+`resolveCaller`), same `parseFilters` allow-list. Answers:
+
+| Status | Body                                  | Meaning                                                   |
+| ------ | ------------------------------------- | --------------------------------------------------------- |
+| 200    | `{ file: { name, contentType, base64 } }` | The file; the console saves it via a Blob URL.        |
+| 202    | `{ message }`                         | Upstream needs longer; the file follows by notification. |
+| 502    | `REPORT_FAILED`                       | Upstream refused (JSON with non-zero `status`), or file too large (25 MB). |
+
+**Upstream:** interaction **183**, posted urlencoded to the history upstream's
+**`/download`** sibling path (`historyUrl + "/download"`), which is what every
+connect-api environment uses (`SIMPLIBANK_HISTORY_API_PATH_FILE`,
+`handleFileDownloadRequest` in `routes/transactions.js`). The reply is either the
+binary file (name from `content-disposition`, reduced to its base name) or JSON:
+`status` 0 → deferred (202), anything else → error. Unlike connect-api, a JSON
+error is never reported as "on its way". Timeout is 60 s, not the default 10 s,
+so a slow range can reach upstream's own deferred reply.
+
+Base64-in-JSON (not a binary body) so the console's single `request()` helper —
+session refresh, error envelope, call log — serves it unchanged. Costs ~33% on
+the wire and a buffered copy server-side; stream it if real reports get big.
 
 ## Confirmed by a real response
 
@@ -201,7 +239,12 @@ None of these block the call; each is a thing to watch on the first real UAT run
 2. **`limit` cap**, and whether `start_index` is a row offset or a page index.
 3. **Filter date semantics.** `start_date`/`tx_date` are Eloka's From/To names;
    their exact upstream meaning on this transport is assumed, not confirmed.
-4. **`isNetworkTransactionHistory`.** Sent as `"0"`; the network/admin statement
+4. **Export (183) on this transport.** Path, reply shapes and the 202 message
+   are taken from connect-api, not a live eps-backend call. Also unverified: how
+   long a 90-day report takes vs the 60 s timeout (and nginx's
+   `proxy_read_timeout` in front of eps-backend), real file sizes vs the 25 MB
+   cap, and whether a deferred report's notification reaches a console user.
+5. **`isNetworkTransactionHistory`.** Sent as `"0"`; the network/admin statement
    view is not ported, so the non-zero case is unexercised.
 
 ### First live run

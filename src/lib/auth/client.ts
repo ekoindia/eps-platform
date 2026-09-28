@@ -1,7 +1,9 @@
 import type { DashboardView, DatePreset } from "@/lib/console/dashboard";
 import type {
+	ReportFormat,
 	TransactionFilters,
 	TransactionPage,
+	TransactionReport,
 } from "@/lib/console/transactions";
 import type { ChatAnswer, ChatMessage } from "@/lib/chat";
 import type { NotificationView } from "@/lib/notifications";
@@ -967,6 +969,20 @@ export const transactionsClient = {
 			body: JSON.stringify(input),
 			signal,
 		}) as Promise<TransactionPage>,
+	/**
+	 * Downloads a statement of the caller's transactions (PDF or Excel).
+	 * @param input - Allow-listed filters (a date range or a TID) and the format.
+	 * @returns The file, base64-encoded — or, when upstream needs longer, its
+	 * message that the file will be delivered later (HTTP 202).
+	 */
+	report: (input: {
+		filters: TransactionFilters;
+		format: ReportFormat;
+	}): Promise<TransactionReport> =>
+		request("/transactions/report", {
+			method: "POST",
+			body: JSON.stringify(input),
+		}) as Promise<TransactionReport>,
 };
 
 /**

@@ -72,7 +72,7 @@ skips at verify time, so its tokens are treated as opaque credentials for
 calling connect-api and nothing more.
 
 Profile _reads_ are deliberately outside the provider seam: `/me`,
-`/wallet/balance`, `/signup/*` and `/transactions/search` call `eko.getProfile`
+`/wallet/balance`, `/signup/*` and `/transactions/*` call `eko.getProfile`
 under either provider, because both ultimately read the same interaction 151.
 Only login is delegated, so a connect-api outage cannot break an established
 session's profile view.

@@ -17,11 +17,18 @@ import Transactions from "@/pages/console/Transactions";
 // Mocked at the module boundary, per repo convention — never `fetch`.
 vi.mock("@/lib/auth/client", async (orig) => ({
 	...(await orig<typeof import("@/lib/auth/client")>()),
-	transactionsClient: { search: vi.fn() },
+	transactionsClient: { search: vi.fn(), report: vi.fn() },
+}));
+
+vi.mock("@/lib/console/transactions", async (orig) => ({
+	...(await orig<typeof import("@/lib/console/transactions")>()),
+	saveBase64File: vi.fn(),
 }));
 
 const { transactionsClient } = await import("@/lib/auth/client");
 const search = vi.mocked(transactionsClient.search);
+const report = vi.mocked(transactionsClient.report);
+const { saveBase64File } = await import("@/lib/console/transactions");
 
 /** A zeroed row; each test overrides only what it exercises. */
 function row(overrides: Partial<TransactionRow> = {}): TransactionRow {
@@ -279,5 +286,60 @@ describe("Transactions", () => {
 				expect.anything(),
 			),
 		);
+	});
+
+	it("exports with the default range and PDF, and saves the file", async () => {
+		report.mockResolvedValue({
+			file: {
+				name: "Statement.pdf",
+				contentType: "application/pdf",
+				base64: "JVBERi0=",
+			},
+		});
+		renderPage();
+		await screen.findByText("Digi Khata Load Wallet");
+
+		fireEvent.click(screen.getByRole("button", { name: /export/i }));
+		const dialog = await screen.findByRole("dialog");
+		expect(within(dialog).getByLabelText("PDF")).toBeChecked();
+		fireEvent.click(within(dialog).getByRole("button", { name: /download/i }));
+
+		await waitFor(() => expect(saveBase64File).toHaveBeenCalled());
+		const { filters, format } = report.mock.calls[0][0];
+		expect(format).toBe("pdf");
+		expect(filters.start_date).toMatch(/^\d{4}-\d{2}-01$/);
+		expect(filters.tx_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(saveBase64File).toHaveBeenCalledWith(
+			"JVBERi0=",
+			"Statement.pdf",
+			"application/pdf",
+		);
+	});
+
+	it("exports Excel with the applied filters, and no default range beside a TID", async () => {
+		report.mockResolvedValue({ message: "We'll send it when ready" });
+		renderPage();
+		await screen.findByText("Digi Khata Load Wallet");
+
+		fireEvent.click(screen.getByRole("button", { name: /filter/i }));
+		fireEvent.change(await screen.findByLabelText("TID"), {
+			target: { value: "2886973933" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: /^apply$/i }));
+		await waitFor(() => expect(search).toHaveBeenCalledTimes(2));
+
+		fireEvent.click(screen.getByRole("button", { name: /export/i }));
+		const dialog = await screen.findByRole("dialog");
+		fireEvent.click(within(dialog).getByLabelText("Excel"));
+		fireEvent.click(within(dialog).getByRole("button", { name: /download/i }));
+
+		expect(
+			await within(dialog).findByText("We'll send it when ready"),
+		).toBeInTheDocument();
+		expect(report).toHaveBeenCalledWith({
+			filters: { tid: "2886973933" },
+			format: "xlsx",
+		});
+		expect(saveBase64File).not.toHaveBeenCalled();
 	});
 });
