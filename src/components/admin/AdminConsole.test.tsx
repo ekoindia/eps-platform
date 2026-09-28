@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { authClient } from "@/lib/auth/client";
 import { AdminConsole } from "./AdminConsole";
 
-vi.mock("@/lib/auth/client", () => ({
+// Real module for its constants (LIFECYCLES); only the network client is faked.
+vi.mock("@/lib/auth/client", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/auth/client")>()),
 	authClient: {
 		adminDocs: { list: vi.fn(async () => ({ docs: [] })) },
 		adminSearchLogs: {

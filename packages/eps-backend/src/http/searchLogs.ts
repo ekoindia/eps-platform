@@ -19,6 +19,8 @@ const PAGE_MAX = 200;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const SLUG = /^[a-z]{1,20}$/;
 const OUTCOMES = new Set<PaletteOutcome>(["click", "ask_ai", "abandon"]);
+const AUTHS = new Set(["anon", "developer", "signup", "admin", "unknown"]);
+const STAGE = /^[a-z-]{1,20}$/;
 
 const bad = (field: string) =>
 	new AppError(400, "INVALID_INPUT", `Invalid search-log filter: ${field}`);
@@ -38,7 +40,7 @@ function dayStart(day: string, field: string): Date {
  * @throws AppError 400 INVALID_INPUT naming the bad field.
  */
 export function parseFilter(c: Context<AppEnv>): PaletteFilter {
-	const { from, to, q, outcome, scope } = c.req.query();
+	const { from, to, q, outcome, scope, auth, stage } = c.req.query();
 	const filter: PaletteFilter = {};
 	if (from) filter.from = dayStart(from, "from").toISOString();
 	if (to) {
@@ -58,18 +60,47 @@ export function parseFilter(c: Context<AppEnv>): PaletteFilter {
 		if (!SLUG.test(scope)) throw bad("scope");
 		filter.scope = scope;
 	}
+	if (auth) {
+		if (!AUTHS.has(auth)) throw bad("auth");
+		filter.auth = auth;
+	}
+	if (stage) {
+		if (!STAGE.test(stage)) throw bad("stage");
+		filter.stage = stage;
+	}
 	return filter;
 }
 
-const CSV_HEADER =
-	"id,ts,query,scope,resultCount,outcome,clickedCategory,clickedRank\n";
+/** Export columns, in order; every one a {@link PaletteRow} key. */
+const CSV_COLUMNS: readonly (keyof PaletteRow)[] = [
+	"id",
+	"ts",
+	"query",
+	"scope",
+	"resultCount",
+	"outcome",
+	"clickedCategory",
+	"clickedRank",
+	"clickedId",
+	"clickedLabel",
+	"page",
+	"auth",
+	"stage",
+	"trigger",
+	"device",
+	"refinements",
+	"durationMs",
+	"bodyIndexLoaded",
+];
+
+const CSV_HEADER = `${CSV_COLUMNS.join(",")}\n`;
 
 /**
  * One CSV field. Query text is visitor-typed, so a leading `=`, `+`, `-` or `@`
  * is defused with a quote — otherwise opening the export in a spreadsheet would
  * run it as a formula.
  */
-function csvField(value: string | number | null): string {
+function csvField(value: string | number | boolean | null): string {
 	if (value === null) return "";
 	let s = String(value);
 	if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
@@ -78,18 +109,7 @@ function csvField(value: string | number | null): string {
 
 /** Serialises one row as a CSV line. */
 export function csvLine(r: PaletteRow): string {
-	return `${[
-		r.id,
-		r.ts,
-		r.query,
-		r.scope,
-		r.resultCount,
-		r.outcome,
-		r.clickedCategory,
-		r.clickedRank,
-	]
-		.map(csvField)
-		.join(",")}\n`;
+	return `${CSV_COLUMNS.map((column) => csvField(r[column])).join(",")}\n`;
 }
 
 /**

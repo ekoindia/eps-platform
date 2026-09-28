@@ -16,12 +16,27 @@ One report per palette session that had a query, sent when the session ends:
 | `ask_ai`  | the "Ask AI" row was chosen                       |
 | `abandon` | closed by Esc / outside click with nothing chosen |
 
+Each report carries the search, its outcome, and context:
+
+| Field | Meaning |
+| ----- | ------- |
+| `query`, `scope`, `resultCount`, `outcome` | the last query and how it ended |
+| `clickedCategory`, `clickedRank`, `clickedId`, `clickedLabel` | on `click`: which result, where it ranked, its id and the title the visitor saw |
+| `page` | normalised path the palette was opened on — no query string or hash; segments with ≥4 digits or a UUID become `:id` |
+| `auth` | `anon` · `developer` · `signup` · `admin` · `unknown` (`/me` still loading) |
+| `stage` | developers only: lifecycle (`lead`, `onboarded`, `active`, `kyc-pending`, `kyc-rejected`, `inactive`, `unknown`) |
+| `trigger` | `keyboard` · `header_button` · `mobile_button` |
+| `device` | `mobile` (viewport ≤767px) · `desktop` |
+| `refinements` | queries the visitor paused on (≥800 ms) before the final one — struggle signal |
+| `durationMs` | palette open → outcome |
+| `bodyIndexLoaded` | whether the long-form page-text index had loaded; `false` on a zero-result search = maybe a loading gap, not a content gap |
+
 Two destinations, deliberately different:
 
-| Destination                       | Gets                                                               | When                                      |
-| --------------------------------- | ------------------------------------------------------------------ | ----------------------------------------- |
-| GTM `palette_search` event        | `scope`, `resultCount`, `outcome`, `clickedCategory`, `clickedRank`, `queryLength` — **never text** | every session with a query                |
-| eps-backend `POST /telemetry/palette` | the same fields **plus redacted query text**                   | sampled sessions only (`VITE_PALETTE_QUERY_SAMPLE_RATE`) |
+| Destination | Gets | When |
+| ----------- | ---- | ---- |
+| GTM `palette_search` event | counts + `queryLength`, `auth`, `trigger`, `device` — **never** text, page, stage or clicked label/id | every session with a query |
+| eps-backend `POST /telemetry/palette` | every field above, query redacted | sampled sessions only (`VITE_PALETTE_QUERY_SAMPLE_RATE`) |
 
 Zero-result rate = `resultCount == 0`; abandon rate = `outcome == "abandon"`.
 
@@ -33,9 +48,14 @@ Zero-result rate = `resultCount == 0`; abandon rate = `outcome == "abandon"`.
   again with its own copy (`packages/eps-backend/src/audit/redact.ts`) because
   a stale client cannot be trusted. `src/lib/analytics.parity.test.ts` fails if
   the two lists drift.
-- **Not joinable.** The request is sent `credentials: "omit"` (no session
-  cookie), and the log line carries no ip, request id or session — only what
-  was asked and what happened.
+- **Not linked to an account.** The request is sent `credentials: "omit"` (no
+  session cookie), and the row carries no ip, request id, session, mobile, name
+  or org — only what was asked, what happened, and the coarse context above.
+- **Small user base ⇒ context can re-identify.** "A `kyc-rejected` developer on
+  `/console/kyc` at 10:03" may point at one partner. So: `ts` is stored
+  **rounded to the hour** (server-side, `hourOf`); stage is the lifecycle only;
+  and page, stage and clicked label/id never go to GTM, where GA4 would join
+  them to its own client ids. Treat the admin page as personal data anyway.
 - **Names and addresses survive redaction.** That is why text never goes to
   GTM, only to our own VM.
 - **Off by default.** Sample rate unset = 0 = no text leaves the browser. Set it
@@ -48,17 +68,26 @@ Zero-result rate = `resultCount == 0`; abandon rate = `outcome == "abandon"`.
 ## Backend
 
 `POST /telemetry/palette` (`packages/eps-backend/src/http/paletteLog.ts`):
-anonymous, `text/plain` JSON body (no CORS preflight), ≤2 KB, 60 reports per IP
+anonymous, `text/plain` JSON body (no CORS preflight), ≤4 KB, 60 reports per IP
 per 10 min, answers `204`. Writes one row to the `palette_query` table in a
 SQLite file (`packages/eps-backend/src/analytics/paletteStore.ts`, Node's
 built-in `node:sqlite`):
 
-| Column                             | Notes                                  |
-| ---------------------------------- | -------------------------------------- |
-| `id`, `ts`                         | autoincrement, ISO-8601 UTC            |
-| `query`                            | redacted, ≤200 chars                   |
-| `scope`, `result_count`, `outcome` | as sent                                |
-| `clicked_category`, `clicked_rank` | null unless `outcome = click`          |
+| Column | Notes |
+| ------ | ----- |
+| `id`, `ts` | autoincrement; ISO-8601 UTC **rounded down to the hour** |
+| `query` | redacted, ≤200 chars |
+| `scope`, `result_count`, `outcome` | as sent |
+| `clicked_category`, `clicked_rank`, `clicked_id`, `clicked_label` | null unless `outcome = click`; label redacted, ≤200 |
+| `page` | redacted, ≤200, must start with `/` |
+| `auth`, `stage`, `trigger`, `device` | allow-listed values only |
+| `refinements`, `duration_ms` | bounded integers (≤1000; ≤1 day) |
+| `body_index_loaded` | 0/1 (read back as boolean) |
+
+All context columns are optional: a report from an older site build stores
+nulls rather than failing. They were added after the first release —
+`openPaletteStore` adds any missing column to an existing file on startup
+(`ADDED_COLUMNS`, append-only), so no manual migration.
 
 No ip, session or request id — by design. Production path:
 `/var/lib/eps-analytics/search-logs.db` on the `eps-analytics-data` volume
@@ -74,11 +103,14 @@ No nginx or Vercel change needed: both already forward every backend path.
 `/admin` → **Search logs** tab (admin session only; `AdminSearchLogs.tsx`):
 
 - **Filter** — date range (UTC days, inclusive; default last 30 days), query
-  substring, outcome. Clicking a query in either top table filters to it.
+  substring, outcome, who (`auth`), and account stage (shown once "Developer"
+  is picked). Clicking a query in either top table filters to it.
 - **Summary cards** — searches, % no results, % clicked, % abandoned, % asked AI.
 - **Top queries / top failing queries** — 25 each, case- and space-folded.
   Failing = no results or abandoned: the synonym and content backlog.
-- **Log** — newest first, 50 per page, *Load more*.
+- **Log** — newest first, 50 per page, *Load more*. Columns: hour, query,
+  results, outcome, clicked (label and rank), page, who (auth · stage), effort
+  (tries · seconds).
 - **Export JSONL / CSV** — every row matching the filter, streamed. CSV defuses
   formula-leading cells (`=`, `+`, `-`, `@`) since queries are visitor-typed.
 
@@ -94,7 +126,7 @@ One-time setup:
 
 1. **Variables** → User-Defined → Data Layer Variable (Version 2), one each for
    `scope`, `resultCount`, `outcome`, `clickedCategory`, `clickedRank`,
-   `queryLength` (e.g. `DLV - palette outcome`).
+   `queryLength`, `auth`, `trigger`, `device` (e.g. `DLV - palette outcome`).
 2. **Trigger** → Custom Event, event name `palette_search`, all custom events
    (`CE - palette_search`).
 3. **Tag** → Google Analytics: GA4 Event, event name `palette_search`, trigger
@@ -108,6 +140,9 @@ One-time setup:
    | `clicked_category` | `{{DLV - palette clickedCategory}}`|
    | `clicked_rank`     | `{{DLV - palette clickedRank}}`    |
    | `query_length`     | `{{DLV - palette queryLength}}`    |
+   | `auth`             | `{{DLV - palette auth}}`           |
+   | `trigger`          | `{{DLV - palette trigger}}`        |
+   | `device`           | `{{DLV - palette device}}`         |
 
 4. **Preview** (Tag Assistant): search in ⌘K and click a result, then search and
    press Esc — expect two `palette_search` events, the second with
@@ -116,7 +151,8 @@ One-time setup:
 5. **GA4 Admin → Custom definitions** (reports ignore unregistered params; data
    shows only from registration on, after 24–48 h):
    - custom dimensions (Event scope): `outcome`, `scope`, `clicked_category`,
-     `result_count` (a dimension so it can be filtered `= 0`);
+     `result_count` (a dimension so it can be filtered `= 0`), `auth`,
+     `trigger`, `device`;
    - custom metrics (Standard): `query_length`, `clicked_rank`.
 
 Reading it — Explore → Free form, filter event name `palette_search`: rows

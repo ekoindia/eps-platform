@@ -25,8 +25,12 @@ import {
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { PALETTE_QUERY_SAMPLE_RATE, SHOW_AI_CHAT } from "@/lib/config/features";
 import {
+	authContext,
+	deviceClass,
 	isSampled,
+	normalizePagePath,
 	type PaletteOutcome,
+	type PaletteTrigger,
 	reportPaletteSearch,
 } from "@/lib/palette-telemetry";
 import { cn } from "@/lib/utils";
@@ -34,7 +38,12 @@ import { cn } from "@/lib/utils";
 interface CommandPaletteProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/** How this open happened — recorded with the session's telemetry. */
+	trigger: PaletteTrigger;
 }
+
+/** Typing pause after which a query counts as one the visitor actually read. */
+const SETTLE_MS = 800;
 
 /** Fixed display order + headings of the suggested (empty-query) groups */
 const GROUPS: { category: SearchCategory; heading: string }[] = [
@@ -224,7 +233,11 @@ const AskAiDialog = lazy(() =>
  * Global ⌘K / Ctrl+K command palette. Lazy-loaded — never part of the
  * initial bundle or the pre-rendered HTML (see Header.tsx).
  */
-export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
+export const CommandPalette = ({
+	open,
+	onOpenChange,
+	trigger,
+}: CommandPaletteProps) => {
 	const [query, setQuery] = useState("");
 	const [scope, setScope] = useState<Scope>("all");
 	// State, not a ref: the body-aware engine replaces this one once
@@ -256,6 +269,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	// a one-shot 160 KB fetch is not worth the cancellation bookkeeping. Until
 	// it lands (or if it never does) the label/keyword index already answers
 	// most queries, so every failure path here is a silent no-op.
+	const bodyIndexLoadedRef = useRef(false);
 	useEffect(() => {
 		fetch("/search-body.json")
 			.then((r) => (r.ok ? r.json() : null))
@@ -263,7 +277,10 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 				// MiniSearch cannot add a field to already-indexed documents, so the
 				// index is rebuilt rather than amended. ~4 ms for ~195 docs — cheaper
 				// than shipping a pre-serialised index that would have to stay in sync.
-				if (bodies) setEngine(buildEngine(bodies));
+				if (bodies) {
+					setEngine(buildEngine(bodies));
+					bodyIndexLoadedRef.current = true;
+				}
 			})
 			.catch(() => {
 				// Offline or 404 — body search is a pure enhancement.
@@ -280,6 +297,9 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 	// state: nothing renders from them.
 	const sampledRef = useRef(false);
 	const reportedRef = useRef(false);
+	const openedAtRef = useRef(0);
+	// Queries the visitor paused on — each one a search they actually read.
+	const settledRef = useRef<string[]>([]);
 
 	// Fresh query + scope every time the palette opens
 	useEffect(() => {
@@ -288,12 +308,27 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 			setScope("all");
 			sampledRef.current = isSampled(PALETTE_QUERY_SAMPLE_RATE);
 			reportedRef.current = false;
+			openedAtRef.current = Date.now();
+			settledRef.current = [];
 		}
 	}, [open]);
+
+	// A query counts as settled once typing pauses for SETTLE_MS; keystrokes in
+	// between are one search being typed, not refinements.
+	useEffect(() => {
+		const trimmed = query.trim();
+		if (!trimmed) return;
+		const timer = setTimeout(() => {
+			const settled = settledRef.current;
+			if (settled[settled.length - 1] !== trimmed) settled.push(trimmed);
+		}, SETTLE_MS);
+		return () => clearTimeout(timer);
+	}, [query]);
 
 	const report = (outcome: PaletteOutcome, clicked?: SearchItem): void => {
 		if (reportedRef.current) return;
 		reportedRef.current = true;
+		const finalQuery = query.trim();
 		const rank = clicked
 			? results.findIndex((r) => r.item.id === clicked.id) + 1
 			: 0;
@@ -305,6 +340,15 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 				outcome,
 				clickedCategory: clicked?.category,
 				clickedRank: rank > 0 ? rank : undefined,
+				clickedId: clicked?.id,
+				clickedLabel: clicked?.label,
+				refinements: settledRef.current.filter((q) => q !== finalQuery).length,
+				durationMs: Date.now() - openedAtRef.current,
+				bodyIndexLoaded: bodyIndexLoadedRef.current,
+				page: normalizePagePath(location.pathname),
+				...authContext(auth.state),
+				trigger,
+				device: deviceClass(),
 			},
 			sampledRef.current,
 		);

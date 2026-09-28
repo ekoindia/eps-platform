@@ -15,7 +15,45 @@ export interface PaletteRow {
 	outcome: PaletteOutcome;
 	clickedCategory: string | null;
 	clickedRank: number | null;
+	// Context — null on rows written by site builds that predate it.
+	/** Normalised page path the palette was opened on. */
+	page: string | null;
+	/** `anon` | `developer` | `signup` | `admin` | `unknown`. */
+	auth: string | null;
+	/** Developer lifecycle (`active`, `kyc-pending`…); null for everyone else. */
+	stage: string | null;
+	/** `keyboard` | `header_button` | `mobile_button`. */
+	trigger: string | null;
+	/** `mobile` | `desktop`. */
+	device: string | null;
+	/** Search item id of the clicked result, e.g. `endpoint:pan-verification`. */
+	clickedId: string | null;
+	/** The clicked result's title as the visitor saw it. */
+	clickedLabel: string | null;
+	/** Settled queries before the final one. */
+	refinements: number | null;
+	/** Milliseconds from palette open to outcome. */
+	durationMs: number | null;
+	/** Whether the long-form page-text index had loaded. */
+	bodyIndexLoaded: boolean | null;
 }
+
+/** Context fields a row may lack: older site builds never send them. */
+type ContextKey =
+	| "page"
+	| "auth"
+	| "stage"
+	| "trigger"
+	| "device"
+	| "clickedId"
+	| "clickedLabel"
+	| "refinements"
+	| "durationMs"
+	| "bodyIndexLoaded";
+
+/** What `insert` takes: context fields optional, stored as null when absent. */
+export type NewPaletteRow = Omit<PaletteRow, "id" | ContextKey> &
+	Partial<Pick<PaletteRow, ContextKey>>;
 
 /** Narrows every read. All fields optional; an empty filter means everything. */
 export interface PaletteFilter {
@@ -27,6 +65,8 @@ export interface PaletteFilter {
 	q?: string;
 	outcome?: PaletteOutcome;
 	scope?: string;
+	auth?: string;
+	stage?: string;
 }
 
 /** Counts behind the admin summary cards. */
@@ -46,7 +86,7 @@ export interface QueryCount {
 
 /** Search-log persistence; one SQLite file on the VM. */
 export interface PaletteStore {
-	insert(row: Omit<PaletteRow, "id">): void;
+	insert(row: NewPaletteRow): void;
 	summary(filter: PaletteFilter): PaletteSummary;
 	/**
 	 * Most frequent queries, case- and whitespace-folded. `failing` keeps only
@@ -82,9 +122,39 @@ CREATE TABLE IF NOT EXISTS palette_query (
 CREATE INDEX IF NOT EXISTS palette_query_ts ON palette_query (ts);
 `;
 
+/**
+ * Columns added after the first release, as [name, type]. `openPaletteStore`
+ * adds whichever an existing file lacks, so a database written by an older
+ * backend upgrades in place; old rows read these as null. Append only.
+ */
+const ADDED_COLUMNS: readonly [string, string][] = [
+	["page", "TEXT"],
+	["auth", "TEXT"],
+	["stage", "TEXT"],
+	["trigger", "TEXT"],
+	["device", "TEXT"],
+	["clicked_id", "TEXT"],
+	["clicked_label", "TEXT"],
+	["refinements", "INTEGER"],
+	["duration_ms", "INTEGER"],
+	["body_index_loaded", "INTEGER"],
+];
+
 const COLUMNS = `id, ts, query, scope,
 	result_count AS resultCount, outcome,
-	clicked_category AS clickedCategory, clicked_rank AS clickedRank`;
+	clicked_category AS clickedCategory, clicked_rank AS clickedRank,
+	page, auth, stage, trigger, device,
+	clicked_id AS clickedId, clicked_label AS clickedLabel,
+	refinements, duration_ms AS durationMs,
+	body_index_loaded AS bodyIndexLoaded`;
+
+/** SQLite has no boolean: 0/1/null back to boolean/null, and a plain object. */
+const toRow = (r: Record<string, unknown>): PaletteRow =>
+	({
+		...r,
+		bodyIndexLoaded:
+			r.bodyIndexLoaded === null ? null : r.bodyIndexLoaded === 1,
+	}) as unknown as PaletteRow;
 
 /** Escapes LIKE wildcards so a typed `%` or `_` matches itself. */
 const likeLiteral = (s: string): string => s.replace(/[\\%_]/g, "\\$&");
@@ -112,6 +182,8 @@ export function whereClause(
 	if (filter.outcome)
 		parts.push({ sql: "outcome = ?", params: [filter.outcome] });
 	if (filter.scope) parts.push({ sql: "scope = ?", params: [filter.scope] });
+	if (filter.auth) parts.push({ sql: "auth = ?", params: [filter.auth] });
+	if (filter.stage) parts.push({ sql: "stage = ?", params: [filter.stage] });
 	const all = [...parts, ...extra];
 	return all.length
 		? {
@@ -134,11 +206,23 @@ export function openPaletteStore(path: string): PaletteStore {
 	const db = new DatabaseSync(path);
 	db.exec("PRAGMA journal_mode = WAL;");
 	db.exec(SCHEMA);
+	const existing = new Set(
+		db
+			.prepare("PRAGMA table_info(palette_query)")
+			.all()
+			.map((c) => String(c.name)),
+	);
+	for (const [name, type] of ADDED_COLUMNS) {
+		if (!existing.has(name))
+			db.exec(`ALTER TABLE palette_query ADD COLUMN ${name} ${type}`);
+	}
 
 	const insert = db.prepare(
 		`INSERT INTO palette_query
-			(ts, query, scope, result_count, outcome, clicked_category, clicked_rank)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			(ts, query, scope, result_count, outcome, clicked_category, clicked_rank,
+			 page, auth, stage, trigger, device, clicked_id, clicked_label,
+			 refinements, duration_ms, body_index_loaded)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 	);
 
 	return {
@@ -151,6 +235,16 @@ export function openPaletteStore(path: string): PaletteStore {
 				row.outcome,
 				row.clickedCategory,
 				row.clickedRank,
+				row.page ?? null,
+				row.auth ?? null,
+				row.stage ?? null,
+				row.trigger ?? null,
+				row.device ?? null,
+				row.clickedId ?? null,
+				row.clickedLabel ?? null,
+				row.refinements ?? null,
+				row.durationMs ?? null,
+				row.bodyIndexLoaded == null ? null : row.bodyIndexLoaded ? 1 : 0,
 			);
 		},
 
@@ -197,7 +291,7 @@ export function openPaletteStore(path: string): PaletteStore {
 					 ORDER BY id DESC LIMIT ?`,
 				)
 				.all(...w.params, limit)
-				.map((r) => ({ ...r }) as unknown as PaletteRow);
+				.map(toRow);
 		},
 
 		*exportRows(filter) {
@@ -206,7 +300,7 @@ export function openPaletteStore(path: string): PaletteStore {
 				`SELECT ${COLUMNS} FROM palette_query ${w.sql} ORDER BY id`,
 			);
 			for (const r of stmt.iterate(...w.params)) {
-				yield { ...r } as unknown as PaletteRow;
+				yield toRow(r);
 			}
 		},
 
@@ -242,7 +336,8 @@ export function scheduleRetention(
 			const removed = store.purgeBefore(
 				new Date(now() - RETENTION_DAYS * DAY_MS).toISOString(),
 			);
-			if (removed) console.log(`[eps-backend] purged ${removed} search-log rows`);
+			if (removed)
+				console.log(`[eps-backend] purged ${removed} search-log rows`);
 		} catch (err) {
 			console.error("[eps-backend] search-log purge failed", err);
 		}

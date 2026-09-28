@@ -54,6 +54,8 @@ async function harness() {
 		outcome: "click",
 		clickedCategory: "endpoint",
 		clickedRank: 2,
+		auth: "developer",
+		stage: "kyc-pending",
 	});
 	store.insert({
 		...base,
@@ -132,6 +134,20 @@ describe("admin search-log routes", () => {
 		expect(body.summary.total).toBe(1);
 	});
 
+	it("filters by auth and stage", async () => {
+		const { get } = await harness();
+
+		const dev = await json<Overview>(
+			get("/admin/search-logs/overview?auth=developer&stage=kyc-pending"),
+		);
+		const anon = await json<Overview>(
+			get("/admin/search-logs/overview?auth=anon"),
+		);
+
+		expect(dev.summary.total).toBe(1);
+		expect(anon.summary.total).toBe(0);
+	});
+
 	it("pages rows with a cursor that ends on a short page", async () => {
 		const { get } = await harness();
 
@@ -152,6 +168,8 @@ describe("admin search-log routes", () => {
 		["scope=DROP"],
 		["limit=500"],
 		["before=-1"],
+		["auth=root"],
+		["stage=DROP TABLE"],
 	])("rejects bad filter %s with 400", async (qs) => {
 		const { get } = await harness();
 
@@ -176,7 +194,7 @@ describe("admin search-log routes", () => {
 		);
 		expect(lines.map((r) => r.query)).toEqual(["upi", "gst", "=HYPERLINK(1)"]);
 		expect(csvText.split("\n")[0]).toBe(
-			"id,ts,query,scope,resultCount,outcome,clickedCategory,clickedRank",
+			"id,ts,query,scope,resultCount,outcome,clickedCategory,clickedRank,clickedId,clickedLabel,page,auth,stage,trigger,device,refinements,durationMs,bodyIndexLoaded",
 		);
 		expect(csvText).toContain(",'=HYPERLINK(1),");
 		expect(csvText).not.toContain("upi");
@@ -195,7 +213,19 @@ describe("csvLine", () => {
 				outcome: "abandon",
 				clickedCategory: null,
 				clickedRank: null,
+				clickedId: null,
+				clickedLabel: null,
+				page: "/docs",
+				auth: "anon",
+				stage: null,
+				trigger: "keyboard",
+				device: "mobile",
+				refinements: 2,
+				durationMs: 900,
+				bodyIndexLoaded: false,
 			}),
-		).toBe('1,t,"say ""hi"", ok",all,0,abandon,,\n');
+		).toBe(
+			'1,t,"say ""hi"", ok",all,0,abandon,,,,,/docs,anon,,keyboard,mobile,2,900,false\n',
+		);
 	});
 });

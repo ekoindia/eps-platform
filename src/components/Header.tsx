@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { SHOW_NOTIFICATIONS, SHOW_USER_LOGIN } from "@/lib/config/features";
 import { navLinks, type DropdownKey } from "@/lib/config/nav";
 import { cn } from "@/lib/utils";
+import type { PaletteTrigger } from "@/lib/palette-telemetry";
 import { setZohoChatOverlayHidden } from "@/lib/zoho-chat";
 import { ChevronDown, Globe, Menu, Search, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
@@ -95,6 +96,8 @@ export const Header = () => {
 	// const [getStartedOpen, setGetStartedOpen] = useState(false);
 	const [talkToSalesOpen, setTalkToSalesOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
+	const [searchTrigger, setSearchTrigger] =
+		useState<PaletteTrigger>("keyboard");
 	/** Palette chunk is mounted on first open and kept mounted afterwards */
 	const [searchMounted, setSearchMounted] = useState(false);
 	/**
@@ -243,8 +246,12 @@ export const Header = () => {
 		searchOpenRef.current = searchOpen;
 	}, [searchOpen]);
 
-	/** Opens the command palette, mounting its lazy chunk on first use */
-	const openSearch = () => {
+	/**
+	 * Opens the command palette, mounting its lazy chunk on first use.
+	 * @param trigger - Which control opened it, for palette telemetry.
+	 */
+	const openSearch = (trigger: PaletteTrigger) => {
+		setSearchTrigger(trigger);
 		setSearchMounted(true);
 		setSearchOpen(true);
 	};
@@ -262,6 +269,7 @@ export const Header = () => {
 				return;
 			}
 			e.preventDefault();
+			setSearchTrigger("keyboard");
 			setSearchMounted(true);
 			setSearchOpen((o) => !o);
 		};
@@ -423,7 +431,7 @@ export const Header = () => {
                */}
 							<button
 								id="btn-search-header-desktop"
-								onClick={openSearch}
+								onClick={() => openSearch("header_button")}
 								aria-label="Search"
 								aria-keyshortcuts="Meta+K Control+K"
 								className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm text-white/70 transition-colors hover:bg-white/15 hover:text-white cursor-pointer"
@@ -516,7 +524,7 @@ export const Header = () => {
               */}
 							<button
 								className="p-2 cursor-pointer"
-								onClick={openSearch}
+								onClick={() => openSearch("mobile_button")}
 								aria-label="Search"
 							>
 								<Search
@@ -575,7 +583,11 @@ export const Header = () => {
 
 			{searchMounted && (
 				<Suspense fallback={null}>
-					<CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
+					<CommandPalette
+						open={searchOpen}
+						onOpenChange={setSearchOpen}
+						trigger={searchTrigger}
+					/>
 				</Suspense>
 			)}
 		</>

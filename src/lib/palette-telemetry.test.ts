@@ -1,4 +1,12 @@
-import { isSampled, reportPaletteSearch } from "@/lib/palette-telemetry";
+import {
+	authContext,
+	deviceClass,
+	isSampled,
+	normalizePagePath,
+	type PaletteSearchReport,
+	reportPaletteSearch,
+} from "@/lib/palette-telemetry";
+import type { MeView } from "@/lib/auth/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchMock = vi.fn(() => Promise.resolve(new Response(null)));
@@ -14,18 +22,34 @@ afterEach(() => {
 	fetchMock.mockClear();
 });
 
-const report = {
+const report: PaletteSearchReport = {
 	query: "verify pan abcde1234f",
 	scope: "all",
 	resultCount: 3,
-	outcome: "click" as const,
+	outcome: "click",
 	clickedCategory: "endpoint",
 	clickedRank: 1,
+	clickedId: "endpoint:pan-verification",
+	clickedLabel: "PAN Verification",
+	refinements: 2,
+	durationMs: 4200,
+	bodyIndexLoaded: true,
+	page: "/products/kyc-api",
+	auth: "developer",
+	stage: "kyc-pending",
+	trigger: "keyboard",
+	device: "desktop",
+};
+
+const sent = (): Record<string, unknown> => {
+	const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+	return JSON.parse(init.body as string);
 };
 
 describe("reportPaletteSearch", () => {
-	// A typed name survives redaction, so Google must only ever see the shape.
-	it("pushes counts to GTM and never the query text", () => {
+	// GA4 joins events to its own client ids: with a small user base, text,
+	// page, stage or the clicked label there would identify a partner.
+	it("pushes counts plus auth/trigger/device to GTM — nothing identifying", () => {
 		reportPaletteSearch(report, false);
 
 		expect(window.dataLayer).toEqual([
@@ -37,24 +61,48 @@ describe("reportPaletteSearch", () => {
 				clickedCategory: "endpoint",
 				clickedRank: 1,
 				queryLength: 21,
+				auth: "developer",
+				trigger: "keyboard",
+				device: "desktop",
 			},
 		]);
-		expect(JSON.stringify(window.dataLayer)).not.toContain("verify");
+		const pushed = JSON.stringify(window.dataLayer);
+		for (const secret of [
+			"verify",
+			"kyc-pending",
+			"/products",
+			"PAN Verification",
+		]) {
+			expect(pushed).not.toContain(secret);
+		}
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
-	it("sends redacted text, cookie-free, only when sampled", () => {
+	it("sends the full redacted report, cookie-free, only when sampled", () => {
 		reportPaletteSearch(report, true);
 
-		expect(fetchMock).toHaveBeenCalledOnce();
 		const [, init] = fetchMock.mock.calls[0] as unknown as [
 			string,
 			RequestInit,
 		];
 		expect(init.credentials).toBe("omit");
-		expect(JSON.parse(init.body as string)).toMatchObject({
-			query: "verify pan …",
+		expect(sent()).toEqual({
+			scope: "all",
+			resultCount: 3,
 			outcome: "click",
+			clickedCategory: "endpoint",
+			clickedRank: 1,
+			query: "verify pan …",
+			page: "/products/kyc-api",
+			auth: "developer",
+			stage: "kyc-pending",
+			trigger: "keyboard",
+			device: "desktop",
+			clickedId: "endpoint:pan-verification",
+			clickedLabel: "PAN Verification",
+			refinements: 2,
+			durationMs: 4200,
+			bodyIndexLoaded: true,
 		});
 	});
 
@@ -62,7 +110,12 @@ describe("reportPaletteSearch", () => {
 	// clears the previous click (docs/features/palette-telemetry.md, Gotchas).
 	it("sends click keys as explicit undefined on non-click outcomes", () => {
 		reportPaletteSearch(
-			{ query: "gst", scope: "all", resultCount: 0, outcome: "abandon" },
+			{
+				...report,
+				outcome: "abandon",
+				clickedCategory: undefined,
+				clickedRank: undefined,
+			},
 			false,
 		);
 
@@ -76,6 +129,48 @@ describe("reportPaletteSearch", () => {
 
 		expect(window.dataLayer).toEqual([]);
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("normalizePagePath", () => {
+	it("keeps page paths, collapses record ids", () => {
+		expect(normalizePagePath("/docs/how-auth-works")).toBe(
+			"/docs/how-auth-works",
+		);
+		expect(normalizePagePath("/console/transaction/48213")).toBe(
+			"/console/transaction/:id",
+		);
+		expect(normalizePagePath("/x/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/y")).toBe(
+			"/x/:id/y",
+		);
+		expect(normalizePagePath("")).toBe("/");
+	});
+});
+
+describe("authContext", () => {
+	it("sends only role, and lifecycle for developers", () => {
+		const me = { state: "kyc-rejected", mobile: "9990000001" } as MeView;
+
+		expect(authContext({ status: "loading" })).toEqual({ auth: "unknown" });
+		expect(authContext({ status: "anon" })).toEqual({ auth: "anon" });
+		expect(authContext({ status: "authed", role: "developer", me })).toEqual({
+			auth: "developer",
+			stage: "kyc-rejected",
+		});
+		expect(
+			authContext({
+				status: "authed",
+				role: "signup",
+				me: { role: "signup", mobile: "9990000001" },
+			}),
+		).toEqual({ auth: "signup" });
+	});
+});
+
+describe("deviceClass", () => {
+	it("splits at the md breakpoint", () => {
+		expect(deviceClass(767)).toBe("mobile");
+		expect(deviceClass(768)).toBe("desktop");
 	});
 });
 

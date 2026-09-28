@@ -204,6 +204,9 @@ export interface SearchLogFilter {
 	to?: string;
 	q?: string;
 	outcome?: "click" | "ask_ai" | "abandon";
+	auth?: "anon" | "developer" | "signup" | "admin" | "unknown";
+	/** A developer lifecycle, e.g. `kyc-pending`. */
+	stage?: Lifecycle;
 }
 
 export interface SearchLogSummary {
@@ -234,6 +237,17 @@ export interface SearchLogRow {
 	outcome: "click" | "ask_ai" | "abandon";
 	clickedCategory: string | null;
 	clickedRank: number | null;
+	/** Context fields are null on rows from site builds that predate them. */
+	clickedId: string | null;
+	clickedLabel: string | null;
+	page: string | null;
+	auth: string | null;
+	stage: string | null;
+	trigger: string | null;
+	device: string | null;
+	refinements: number | null;
+	durationMs: number | null;
+	bodyIndexLoaded: boolean | null;
 }
 
 export interface SearchLogPage {
