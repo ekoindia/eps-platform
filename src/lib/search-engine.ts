@@ -47,6 +47,8 @@ const TOKEN_ALIASES: Record<string, string> = {
 	// PAN — colloquial and issuing-authority names
 	pancard: "pan",
 	nsdl: "pan",
+	// Go SDK — the corpus says "Go", never "golang"
+	golang: "go",
 	// AePS — "mATM" never appears in the corpus, "aeps" does
 	matm: "aeps",
 	// Bill payments
