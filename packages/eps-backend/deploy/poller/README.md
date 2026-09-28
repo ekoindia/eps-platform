@@ -145,6 +145,13 @@ docker compose -p <project> --project-directory /deploy \
   Every other HOLD form — `dependency fault …`, `first-deploy image fault …`,
   `rollback …` — means the live image never passed the health gate and is
   **never** auto-cleared.
+- **Rejected digest:** a gate failure with Redis healthy (bad `/readyz` or a
+  crash-looping container) is an image fault: the poller writes the digest to
+  `/state/rejected`, rolls back to the previous digest, and skips that digest
+  on every later tick (re-alerting `WARN` every `HOLD_REALERT_SEC`) until
+  `:prod` moves. A successful deploy clears it; `rm -f /state/rejected` forces
+  a retry. Only a Redis outage during the gate is a dependency fault (HOLD).
+- **Dashboards:** see [status.json / events.jsonl](#statusjson--eventsjsonl).
 - **Freezing deploys by hand:** write any reason that is *not* `deploy error <digest>`
   (`... exec poller sh -c 'echo "frozen for maintenance" > /state/HOLD'`, or just
   `touch`). Free-text and empty HOLDs are always left alone.
@@ -154,3 +161,49 @@ docker compose -p <project> --project-directory /deploy \
 `eps-transact-mcp` runs live under exactly this recipe
 (`https://mcp.eko.in/transact/mcp`) — precedent that the pattern works, though
 each new project still needs its own healthcheck and port verified.
+
+## status.json / events.jsonl
+
+Machine-readable state for dashboards, in the poller's `/state` volume
+(`<project>_<volume>`, e.g. `eps-backend_eps-poller-state`,
+`eps-transact-mcp_transact-poller-state`). Both files are mode 644 and replaced
+atomically, so a read-only mount in another container can read them at any
+time. Timestamps are epoch seconds (UTC).
+
+`status.json` — rewritten after **every** tick (`POLL_INTERVAL_SEC`):
+
+```json
+{
+  "schema": 1,
+  "service": "eps-backend",
+  "image": "ghcr.io/ekoindia/eps-backend",
+  "watch_tag": "prod",
+  "updated_at": 1790563050,
+  "poll_interval_sec": 30,
+  "app": { "container": "running", "restarting": false, "restart_count": 0, "ready": true },
+  "running_digest": "sha256:…",
+  "running_revision": "d9ba80c…",
+  "remote_digest": "sha256:…",
+  "last_good": "sha256:…",
+  "hold": { "reason": "dependency fault deploying sha256:…", "since": 1790560000 },
+  "rejected": { "digest": "sha256:…", "since": 1790560000 },
+  "last_deploy": { "at": 1790560000, "kind": "deploy", "digest": "sha256:…" }
+}
+```
+
+- `updated_at` older than ~3× `poll_interval_sec` → the poller itself is down.
+- `app.ready` is the tick's `READYZ_URL` probe; `app.container` is Docker's
+  `State.Status` (`running`, `restarting`, `exited`, … or `missing`).
+- `hold`, `rejected`, `last_deploy` are `null` when absent. `remote_digest` is
+  `null` on ticks that never reach the registry (HOLD set, registry error).
+- `running_digest != remote_digest` with no hold/rejected → a deploy is pending
+  or in flight. `last_deploy.kind` is `deploy` or `rollback`.
+- `running_revision` is the image's `org.opencontainers.image.revision` label.
+- Unknown fields may be added; `schema` bumps only on a breaking change.
+
+`events.jsonl` — one line per alert, newest last, capped at `EVENTS_MAX`
+(default 200):
+
+```json
+{"at":1790563050,"level":"WARN","service":"eps-backend","message":"image fault (container crash-looping) on sha256:… — rejected; rolling back to sha256:…"}
+```

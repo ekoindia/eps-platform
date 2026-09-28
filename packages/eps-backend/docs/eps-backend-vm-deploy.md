@@ -539,10 +539,16 @@ and cookies that survive the cross-site hop.
    3-second delay between attempts. Redis availability is checked in parallel.
 6. If the gate passes, the poller records the digest in `/state/last_good` and
    sends an `INFO` alert.
-7. If the gate fails, the poller checks whether the failure is a dependency
-   fault (Redis down or the container itself crashing) or a pure image fault,
-   then either holds (dependency/first-deploy) or rolls back to the previous
-   known-good digest (image fault).
+7. If the gate fails, the poller checks whether Redis was down during the
+   gate. Redis down → **dependency fault**: HOLD, no rollback. Otherwise →
+   **image fault** (including a crash-looping container): the digest is written
+   to `/state/rejected` and the poller rolls back to the previous digest (or
+   holds, when there is none or the rollback also fails).
+8. While `:prod` still points at the rejected digest the poller skips it every
+   tick and re-alerts `WARN` every `HOLD_REALERT_SEC` — no deploy/rollback
+   loop. The next merge moves `:prod` to a new digest, which deploys normally;
+   a successful deploy deletes `/state/rejected`. To force a retry of the
+   rejected digest: `docker run --rm -v eps-backend_eps-poller-state:/state busybox rm -f /state/rejected`.
 
 ---
 
@@ -617,14 +623,12 @@ takes no action.
 
 **HOLD is set automatically in three situations:**
 
-- **Dependency fault during deploy:** Redis was down or the container was
-  crash-looping when the health gate ran. The failing image is left running.
-  Fix the dependency, verify Redis is reachable, then clear HOLD.
-  A crash-loop with Redis healthy is usually the **image** itself — read
-  `docker logs --tail 80 eps-backend-eps-backend-1` first. On 2026-09-28 a
-  bundle importing bare `sqlite` crash-looped prod for ~12h under this HOLD;
-  the poller does not roll back here, so do a [manual rollback](#manual-rollback)
-  to `last_good` and keep HOLD until a fixed image reaches `:prod`.
+- **Dependency fault during deploy:** Redis was down when the health gate ran.
+  The failing image is left running. Fix the dependency, verify Redis is
+  reachable, then clear HOLD. (Until 2026-09-28 a crash-looping container also
+  counted as a dependency fault — a bundle importing bare `sqlite` then sat
+  ~12h under this HOLD. A crash-loop with Redis healthy is now an image fault:
+  rejected and rolled back automatically.)
 - **First-deploy image fault:** The very first deploy of an image failed the
   health gate and there is no previous known-good digest to roll back to.
   Inspect the container logs, fix the image or configuration, then clear HOLD.
@@ -653,6 +657,16 @@ rather than logging one line per tick, so a latched HOLD cannot go unnoticed the
 way it did between 2026-07-31 and 2026-08-05. Set `POLLER_ALERT_WEBHOOK` in
 `/data/eps-backend/.env` for those alerts to leave the container — without it the
 poller warns at boot that alerts are log-only.
+
+**Before clearing, wait for `:prod` to move.** Merging the fix is not enough:
+the `Deploy eps-backend` workflow for that merge commit must have **completed**
+(it retags `:prod` a few minutes after CI). Clear HOLD earlier and the next tick
+still sees the bad digest on `:prod`, redeploys it, and re-sets HOLD — this
+happened on 2026-09-28. Check from any machine with `gh`:
+
+```sh
+gh run list --branch main --workflow "Deploy eps-backend" --limit 1
+```
 
 **To clear HOLD and resume automatic deploys:**
 
@@ -688,10 +702,21 @@ docker compose -p eps-backend --project-directory /data/eps-backend --env-file /
 
 **Payload format** — the poller POSTs JSON on every alert:
 
-    {"level":"INFO"|"WARN"|"CRIT","service":"eps-backend","message":"<text>"}
+    {"level":"INFO"|"WARN"|"CRIT","service":"eps-backend","message":"<msg>","text":"[LEVEL] eps-backend: <msg>"}
 
-Levels: `INFO` for successful deploys; `WARN` for rollbacks and transient
-issues; `CRIT` for faults that set HOLD.
+`text` makes the payload a valid **Slack, Google Chat or Mattermost incoming
+webhook** as-is — paste the channel's webhook URL. Generic receivers read the
+structured fields.
+
+Levels: `INFO` for successful deploys; `WARN` for rollbacks, a rejected digest
+still on `:prod` (hourly), and transient issues; `CRIT` for faults that set HOLD
+(re-alerted hourly while set).
+
+**Dashboards** — independent of the webhook, every alert is appended to
+`/state/events.jsonl` and a full snapshot is rewritten to `/state/status.json`
+after every tick (both in the `eps-backend_eps-poller-state` volume,
+world-readable). Mount the volume read-only into a dashboard container; schema
+in [`deploy/poller/README.md`](../deploy/poller/README.md#statusjson--eventsjsonl).
 
 **Without a webhook**, monitor the poller with:
 

@@ -21,7 +21,7 @@ setup() {
 	unset SHIM_SKOPEO_FAIL SHIM_SKOPEO_DIGEST SHIM_READYZ_DEFAULT SHIM_REDIS_DEFAULT \
 		SHIM_CTR_DEFAULT SHIM_REPODIGESTS SHIM_NEW_CID SHIM_IMGID \
 		SHIM_PULL_FAIL SHIM_UP_FAIL SHIM_UP_RECREATES SHIM_REPODIGESTS_AFTER \
-		HOLD_REALERT_SEC 2>/dev/null || true
+		HOLD_REALERT_SEC EVENTS_MAX SHIM_REVISION 2>/dev/null || true
 	: >"$SHIM_STATE/calls.log"
 }
 ok() { printf 'ok\t%s\n' "$1" >>"$RESULTS"; }
@@ -61,6 +61,8 @@ seed_deploy() {            # common: a change is pending, redis up, container he
 	export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
 }
 lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
+rj() { cat "$SHIM_STATE/rejected" 2>/dev/null || true; }
+hold_txt() { cat "$SHIM_STATE/HOLD" 2>/dev/null || true; }
 ( setup; seed_deploy; load
 	reconcile_once
 	eq "happy path writes last_good=remote" "$(lg)" "sha256:remote"
@@ -87,11 +89,15 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 	is_hold && ok "redis blip in gate → HOLD no rollback" || no "redis blip in gate → HOLD" "not held"
 	[ "$(lg)" = "sha256:LIVE" ] && no "blip → no rollback" "rolled back" || ok "blip → no rollback"
 )
+# A crash-loop with redis healthy is the image's fault (2026-09-28: a bundle
+# importing bare `sqlite` crash-looped ~12h under a "dependency fault" HOLD).
 ( setup; seed_deploy
 	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
 	printf 'running false 0\nexited false 0\nexited false 1\nrunning false 1' >"$SHIM_STATE/ctr_state"; load
 	reconcile_once                                                    # container unstable during gate
-	is_hold && ok "container unstable → HOLD no rollback" || no "container unstable → HOLD" "not held"
+	is_hold && no "crash-loop, redis up → no HOLD" "held: $(hold_txt)" || ok "crash-loop, redis up → no HOLD"
+	eq "crash-loop, redis up → rolls back" "$(lg)" "sha256:LIVE"
+	eq "crash-loop, redis up → digest rejected" "$(rj)" "sha256:remote"
 )
 ( setup
 	: >"$SHIM_STATE/ps"; export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
@@ -188,7 +194,6 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 )
 
 # --- Task 7 cases: stale-HOLD auto-clear, narrowly ---
-hold_txt() { cat "$SHIM_STATE/HOLD" 2>/dev/null || true; }
 # "deploy error <live digest>" is self-contradictory: that image IS running.
 ( setup; seed_deploy; load
 	set_hold "deploy error sha256:LIVE"
@@ -296,6 +301,133 @@ di() { deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>/dev/null; }
 	err="$(deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>&1 >/dev/null)"
 	case "$err" in *"pull ok in "*"s"*) ok "pull duration logged" ;; *) no "pull duration logged" "[$err]" ;; esac
 	case "$err" in *"up ok in "*"s"*) ok "up duration logged" ;; *) no "up duration logged" "[$err]" ;; esac
+)
+
+# --- Task 10 cases: a rejected digest is not redeployed ---
+# Before `rejected`, a successful rollback left :prod on the bad digest, so the
+# very next tick redeployed it, failed the gate and rolled back again — forever.
+( setup; seed_deploy; printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once                                       # tick 1: image fault → rollback
+	eq "image fault rejects the digest" "$(rj)" "sha256:remote"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once                                       # tick 2: :prod still the bad digest
+	grep -q "up -d" "$SHIM_STATE/calls.log" && no "rejected digest not redeployed" "redeployed" \
+		|| ok "rejected digest not redeployed"
+	is_hold && no "rejected skip sets no HOLD" "held" || ok "rejected skip sets no HOLD"
+)
+( setup; seed_deploy; export SHIM_SKOPEO_DIGEST=sha256:NEW; load
+	set_rejected "sha256:remote"                         # an older bad digest
+	reconcile_once                                       # :prod moved to a new digest
+	eq "new digest after a rejection deploys" "$(lg)" "sha256:NEW"
+	eq "successful deploy clears rejected" "$(rj)" ""
+)
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=0; load
+	set_rejected "sha256:remote"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && ok "rejected digest on :prod re-alerts" || no "rejected digest on :prod re-alerts" "silent"
+)
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=9999; load
+	set_rejected "sha256:remote"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && no "rejected re-alert throttled" "alerted" || ok "rejected re-alert throttled"
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'UP DOWN DOWN UP' >"$SHIM_STATE/redis_ping"; load
+	reconcile_once                                       # dependency fault: image not blamed
+	eq "dependency fault rejects nothing" "$(rj)" ""
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once                                       # new AND rollback image both fail
+	case "$(hold_txt)" in "rollback to sha256:LIVE failed"*) ok "failed rollback → HOLD" ;;
+		*) no "failed rollback → HOLD" "[$(hold_txt)]" ;; esac
+	eq "failed rollback still rejects the new digest" "$(rj)" "sha256:remote"
+)
+( setup
+	: >"$SHIM_STATE/ps"; export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once
+	eq "first-deploy fault rejects the digest" "$(rj)" "sha256:remote"
+)
+# No-redis stacks (transact): every gate failure is an image fault.
+( setup; seed_deploy; export REDIS_REQUIRED=0
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'running false 0\nrunning true 1\nrunning true 2\nrunning true 3' >"$SHIM_STATE/ctr_state"; load
+	reconcile_once
+	eq "REDIS_REQUIRED=0 crash-loop rolls back" "$(lg)" "sha256:LIVE"
+	eq "REDIS_REQUIRED=0 crash-loop rejects" "$(rj)" "sha256:remote"
+)
+
+# --- Task 11 cases: status.json / events.jsonl for dashboards ---
+# jq_ <file> <python-expr over `d`>: evaluate against parsed JSON (python3 is on
+# macOS and the ubuntu CI runner; jq is not guaranteed on the former). eval only
+# ever sees the literal expressions written in this file.
+jq_() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(eval(sys.argv[2]))' "$1" "$2" 2>&1; }
+( setup; seed_deploy; export SHIM_REVISION=abc1234; load
+	printf 'sha256:GOOD\n' >"$SHIM_STATE/last_good"
+	set_hold 'frozen "by hand"'
+	set_rejected "sha256:BAD"
+	record_deploy rollback "sha256:LIVE"
+	TICK_REMOTE="sha256:remote"
+	write_status
+	f="$SHIM_STATE/status.json"
+	eq "status: schema" "$(jq_ "$f" 'd["schema"]')" "1"
+	eq "status: service" "$(jq_ "$f" 'd["service"]')" "eps-backend"
+	eq "status: running digest" "$(jq_ "$f" 'd["running_digest"]')" "sha256:LIVE"
+	eq "status: running revision" "$(jq_ "$f" 'd["running_revision"]')" "abc1234"
+	eq "status: remote digest" "$(jq_ "$f" 'd["remote_digest"]')" "sha256:remote"
+	eq "status: last_good" "$(jq_ "$f" 'd["last_good"]')" "sha256:GOOD"
+	eq "status: app ready" "$(jq_ "$f" 'd["app"]["ready"]')" "True"
+	eq "status: app container" "$(jq_ "$f" 'd["app"]["container"]')" "running"
+	eq "status: hold reason escaped" "$(jq_ "$f" 'd["hold"]["reason"]')" 'frozen "by hand"'
+	eq "status: hold since is epoch" "$(jq_ "$f" 'type(d["hold"]["since"]).__name__')" "int"
+	eq "status: rejected digest" "$(jq_ "$f" 'd["rejected"]["digest"]')" "sha256:BAD"
+	eq "status: last deploy kind" "$(jq_ "$f" 'd["last_deploy"]["kind"]')" "rollback"
+	eq "status: last deploy digest" "$(jq_ "$f" 'd["last_deploy"]["digest"]')" "sha256:LIVE"
+	eq "status: world-readable" "$(ls -l "$f" | cut -c1-10)" "-rw-r--r--"
+)
+( setup; seed_deploy; printf 'FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'restarting true 7' >"$SHIM_STATE/ctr_state"; load
+	write_status                                         # crash-looping app, clean state
+	f="$SHIM_STATE/status.json"
+	eq "status: app not ready" "$(jq_ "$f" 'd["app"]["ready"]')" "False"
+	eq "status: app restarting" "$(jq_ "$f" 'd["app"]["restarting"]')" "True"
+	eq "status: restart count" "$(jq_ "$f" 'd["app"]["restart_count"]')" "7"
+	eq "status: no hold → null" "$(jq_ "$f" 'd["hold"]')" "None"
+	eq "status: no rejected → null" "$(jq_ "$f" 'd["rejected"]')" "None"
+	eq "status: no deploy yet → null" "$(jq_ "$f" 'd["last_deploy"]')" "None"
+)
+( setup; seed_deploy; load
+	reconcile_once                                       # happy path records the deploy
+	read -r _at kind digest <"$SHIM_STATE/last_deploy"
+	eq "deploy recorded as deploy" "$kind $digest" "deploy sha256:remote"
+)
+( setup; seed_deploy; printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once                                       # rollback path records the rollback
+	read -r _at kind digest <"$SHIM_STATE/last_deploy"
+	eq "rollback recorded as rollback" "$kind $digest" "rollback sha256:LIVE"
+)
+( setup; export POLLER_ALERT_WEBHOOK=http://hook; load
+	alert WARN 'bad "quote" \ here'
+	f="$SHIM_STATE/events.jsonl"
+	python3 -c 'import json,sys; [json.loads(l) for l in open(sys.argv[1])]' "$f" 2>/dev/null \
+		&& ok "events.jsonl lines are valid JSON" || no "events.jsonl lines are valid JSON" "$(cat "$f")"
+	eq "event message round-trips" "$(python3 -c 'import json,sys; print(json.loads(open(sys.argv[1]).readline())["message"])' "$f")" 'bad "quote" \ here'
+	grep -q '"text":"\[WARN\] eps-backend: bad' "$SHIM_STATE/calls.log" \
+		&& ok "webhook carries chat-compatible text" || no "webhook carries chat-compatible text" "$(grep hook "$SHIM_STATE/calls.log")"
+)
+( setup; export EVENTS_MAX=3; load
+	for i in 1 2 3 4 5; do alert INFO "event $i"; done
+	f="$SHIM_STATE/events.jsonl"
+	eq "events.jsonl trimmed to EVENTS_MAX" "$(wc -l <"$f" | tr -d ' ')" "3"
+	eq "events.jsonl keeps the newest" "$(tail -n1 "$f" | python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')" "event 5"
+)
+( setup; seed_deploy; export POLLER_ONESHOT=1
+	bash "$POLL" >/dev/null 2>&1 || true
+	[ -s "$SHIM_STATE/status.json" ] && ok "main writes status.json after a tick" || no "main writes status.json" "missing"
 )
 
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---

@@ -184,6 +184,11 @@ else
 		ok "no HOLD — auto-deploy is live"
 	fi
 	note "last_good: $(cat "$mount/last_good" 2>/dev/null || echo '<none>')"
+	# An image fault the poller rolled back from; skipped until :prod moves.
+	if [ -f "$mount/rejected" ]; then
+		age=$(( $(date +%s) - $(stat -c %Y "$mount/rejected") ))
+		warn "rejected ${age}s ago: $(head -n1 "$mount/rejected") — failed the health gate, rolled back; not redeployed until :prod moves"
+	fi
 	fails="$(cat "$mount/remote_fail_count" 2>/dev/null)"
 	if [ -n "${fails:-}" ] && [ "$fails" -gt 0 ] 2>/dev/null; then
 		warn "remote_fail_count=$fails — registry auth/connectivity (check .ghcr-auth.json)"

@@ -29,6 +29,9 @@ if [ "$1" = "inspect" ]; then
 		*) echo "shim docker inspect: unexpected '$*'" >&2; exit 1 ;;
 	esac
 fi
+if [ "$1" = "image" ] && [ "$2" = "inspect" ] && [[ "$*" == *"image.revision"* ]]; then
+	printf '%s\n' "${SHIM_REVISION:-}"; exit 0
+fi
 if [ "$1" = "image" ] && [ "$2" = "inspect" ]; then
 	# A recreate may have moved the live image mid-case; that wins over the static
 	# env default so a single case can assert before-and-after digests.
