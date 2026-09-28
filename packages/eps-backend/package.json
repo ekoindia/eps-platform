@@ -20,6 +20,7 @@
 		"dev": "tsx watch --env-file-if-exists=.env src/index.ts",
 		"dev:pretty": "npm run dev | jq -R -r -C --tab 'fromjson? // .'",
 		"build": "tsup",
+		"check:dist": "tsup --metafile && node scripts/check-dist-imports.mjs",
 		"start": "node dist/index.js",
 		"test": "vitest run",
 		"test:watch": "vitest",

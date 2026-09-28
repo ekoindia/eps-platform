@@ -620,6 +620,11 @@ takes no action.
 - **Dependency fault during deploy:** Redis was down or the container was
   crash-looping when the health gate ran. The failing image is left running.
   Fix the dependency, verify Redis is reachable, then clear HOLD.
+  A crash-loop with Redis healthy is usually the **image** itself — read
+  `docker logs --tail 80 eps-backend-eps-backend-1` first. On 2026-09-28 a
+  bundle importing bare `sqlite` crash-looped prod for ~12h under this HOLD;
+  the poller does not roll back here, so do a [manual rollback](#manual-rollback)
+  to `last_good` and keep HOLD until a fixed image reaches `:prod`.
 - **First-deploy image fault:** The very first deploy of an image failed the
   health gate and there is no previous known-good digest to roll back to.
   Inspect the container logs, fix the image or configuration, then clear HOLD.
@@ -631,7 +636,7 @@ takes no action.
   and CI has moved `:prod` to a good digest.
 
 **One HOLD form clears itself.** `docker compose up -d` can recreate the container
-on the target image and *still* exit non-zero. The poller used to take that at
+on the target image and _still_ exit non-zero. The poller used to take that at
 face value and write `deploy error <digest>` for a deploy that had in fact landed
 — pinning production to that image until a human noticed. It now verifies the
 live digest before declaring a deploy failed, and on startup clears a HOLD of
@@ -749,7 +754,7 @@ stores at runtime.
 `mcp.eko.in` (`/transact/` and `/context/`), and the co-hosted sites.
 
 The mechanism: with that flag, the kernel caches the last TCP timestamp seen
-*per source IP* and rejects any SYN carrying a lower one. That assumes one clock
+_per source IP_ and rejects any SYN carrying a lower one. That assumes one clock
 per IP, which is false for anything behind carrier NAT and for clients that
 randomise timestamps per connection (macOS, Linux >= 4.10). Affected SYNs are
 discarded with no RST and nothing in any log — the client just retransmits for
@@ -763,12 +768,12 @@ Symptoms, if it ever comes back (a reboot onto an unfixed sysctl would do it):
   never established, so nginx and the app never see it.
 - `tcpdump -ni any 'host <client-ip> and tcp port 443 and tcp[tcpflags] & tcp-syn != 0'`
   shows the SYN arriving and being retransmitted 6 times with **no SYN-ACK**.
-- `netstat -s`: *"passive connections rejected because of time stamp"* climbs,
-  and *"SYNs to LISTEN sockets dropped"* climbs while
-  *"times the listen queue of a socket overflowed"* stays flat. That pairing is
+- `netstat -s`: _"passive connections rejected because of time stamp"_ climbs,
+  and _"SYNs to LISTEN sockets dropped"_ climbs while
+  _"times the listen queue of a socket overflowed"_ stays flat. That pairing is
   the signature — it rules out backlog exhaustion, which is the tempting
   misdiagnosis (`somaxconn` is 128 here, and its overflow counter is large but
-  accumulated over a multi-year uptime, so read *deltas*, never totals).
+  accumulated over a multi-year uptime, so read _deltas_, never totals).
 
 Fix (immediate, no restart, no downtime):
 
@@ -784,7 +789,7 @@ failures, versus 43 requests and 13 failures in the same window before.
 Related, still outstanding: `net.core.somaxconn` and `net.ipv4.tcp_max_syn_backlog`
 are both 128 (kernel defaults) on a host fronting several public sites — worth
 raising to 1024/4096 plus `listen ... backlog=1024` in nginx during the overlay2
-maintenance window (the backlog change needs an nginx *restart*, not a reload).
+maintenance window (the backlog change needs an nginx _restart_, not a reload).
 Uptime is over 2000 days, so the kernel is unpatched; that reboot is overdue.
 
 ### Log rotation

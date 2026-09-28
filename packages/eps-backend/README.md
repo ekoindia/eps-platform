@@ -10,29 +10,35 @@ login via GitHub OAuth, delegating OTP + profile to the Eko backend
     npm run build -w @ekoindia/eps-backend
     npm start -w @ekoindia/eps-backend
 
+Tests run the TypeScript source, never the tsup bundle. `npm run check:dist -w
+@ekoindia/eps-backend` (also in CI) rebuilds with an esbuild metafile and fails
+if any bundle import cannot resolve. `tsup.config.ts` sets
+`removeNodeProtocol: false`: tsup's default strips `node:`, and prefix-only
+builtins like `node:sqlite` then crash the server at boot.
+
 ## Endpoints
 
-| Method | Path                        | Auth           | Purpose                                                 |
-| ------ | --------------------------- | -------------- | ------------------------------------------------------- |
-| POST   | /auth/otp/start             | none           | Send mobile OTP (see Auth providers)                    |
-| POST   | /auth/otp/verify            | none           | Verify OTP, classify profile, set session               |
-| GET    | /me                         | cookie         | Profile + lifecycle state                               |
-| POST   | /auth/refresh               | refresh cookie | Rotate session                                          |
-| POST   | /auth/logout                | cookie         | Revoke session                                          |
-| GET    | /auth/admin/github          | none           | Begin admin OAuth                                       |
-| GET    | /auth/admin/github/callback | none           | Complete admin OAuth                                    |
-| GET    | /healthz                    | none           | Liveness                                                |
-| GET    | /readyz                     | none           | Readiness; PINGs Redis when configured, else always 200 |
-| POST   | /context/mcp                | none (public)  | Anonymous MCP server (docs lookups); only when `CONTEXT_BUNDLE_URL` is set |
-| GET    | /context/healthz            | none (public)  | Served bundle version + source                          |
-| POST   | /chat/ask                   | cookie         | Grounded docs assistant; 503 `CHAT_DISABLED` unless `EPS_CHAT_*` is set |
-| POST   | /activation-fee/intimate    | cookie         | Partner reports paying the one-time activation fee; mails Team Eko. 503 `ACTIVATION_FEE_DISABLED` unless `ACTIVATION_FEE_WEBHOOK_URL` is set |
-| GET    | /crm/lead                   | cookie         | The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` unless `ZOHO_ENABLED=true`; 404 `NO_CRM_LEAD` when the profile has no `crm_lead_id` |
-| PATCH  | /crm/lead                   | cookie         | Writes allow-listed Lead fields back to Zoho — see docs/features/crm-lead.md |
-| POST   | /tryit/proxy                | none (public)  | Same-origin relay for the docs "Try it" widget — see below |
-| POST   | /telemetry/palette          | none (public)  | Sampled, redacted ⌘K query → one SQLite row; 204. See "Search logs" below |
+| Method | Path                        | Auth           | Purpose                                                                                                                                                                                                                                                              |
+| ------ | --------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | /auth/otp/start             | none           | Send mobile OTP (see Auth providers)                                                                                                                                                                                                                                 |
+| POST   | /auth/otp/verify            | none           | Verify OTP, classify profile, set session                                                                                                                                                                                                                            |
+| GET    | /me                         | cookie         | Profile + lifecycle state                                                                                                                                                                                                                                            |
+| POST   | /auth/refresh               | refresh cookie | Rotate session                                                                                                                                                                                                                                                       |
+| POST   | /auth/logout                | cookie         | Revoke session                                                                                                                                                                                                                                                       |
+| GET    | /auth/admin/github          | none           | Begin admin OAuth                                                                                                                                                                                                                                                    |
+| GET    | /auth/admin/github/callback | none           | Complete admin OAuth                                                                                                                                                                                                                                                 |
+| GET    | /healthz                    | none           | Liveness                                                                                                                                                                                                                                                             |
+| GET    | /readyz                     | none           | Readiness; PINGs Redis when configured, else always 200                                                                                                                                                                                                              |
+| POST   | /context/mcp                | none (public)  | Anonymous MCP server (docs lookups); only when `CONTEXT_BUNDLE_URL` is set                                                                                                                                                                                           |
+| GET    | /context/healthz            | none (public)  | Served bundle version + source                                                                                                                                                                                                                                       |
+| POST   | /chat/ask                   | cookie         | Grounded docs assistant; 503 `CHAT_DISABLED` unless `EPS_CHAT_*` is set                                                                                                                                                                                              |
+| POST   | /activation-fee/intimate    | cookie         | Partner reports paying the one-time activation fee; mails Team Eko. 503 `ACTIVATION_FEE_DISABLED` unless `ACTIVATION_FEE_WEBHOOK_URL` is set                                                                                                                         |
+| GET    | /crm/lead                   | cookie         | The partner's own Zoho CRM Lead. 404 `CRM_DISABLED` unless `ZOHO_ENABLED=true`; 404 `NO_CRM_LEAD` when the profile has no `crm_lead_id`                                                                                                                              |
+| PATCH  | /crm/lead                   | cookie         | Writes allow-listed Lead fields back to Zoho — see docs/features/crm-lead.md                                                                                                                                                                                         |
+| POST   | /tryit/proxy                | none (public)  | Same-origin relay for the docs "Try it" widget — see below                                                                                                                                                                                                           |
+| POST   | /telemetry/palette          | none (public)  | Sampled, redacted ⌘K query → one SQLite row; 204. See "Search logs" below                                                                                                                                                                                            |
 | POST   | /signup/profile             | signup cookie  | Creates the partial account (SimpliBank 521). Optional JSON body of ad attribution; only `ATTRIBUTION_KEYS` (`gclid`, `fbclid`, `utm_source`, `utm_medium`, `utm_campaign`; strings ≤200 chars) are forwarded upstream under the same names, never blocking the step |
-| \*     | /signup/\*                  | signup cookie  | Remaining self-serve onboarding steps (`state`, `pan`, `business`, `pin`, `pincode`, `agreement`) |
+| \*     | /signup/\*                  | signup cookie  | Remaining self-serve onboarding steps (`state`, `pan`, `business`, `pin`, `pincode`, `agreement`)                                                                                                                                                                    |
 
 ## Auth providers
 
@@ -110,11 +116,11 @@ land in one SQLite table via `POST /telemetry/palette`, using Node's built-in
 `node:sqlite` (why the image is Node 24). Rows are redacted server-side and
 carry no ip, session or request id. Admins read them at `/admin` → Search logs:
 
-| Method | Path                            | Auth          | Purpose |
-| ------ | ------------------------------- | ------------- | ------- |
-| GET    | /admin/search-logs/overview     | admin cookie  | Summary counts + top / top-failing queries (25 each) |
-| GET    | /admin/search-logs/rows         | admin cookie  | Newest-first page; `before=<id>` cursor, `limit` ≤200 |
-| GET    | /admin/search-logs/export       | admin cookie  | Streamed attachment, `format=jsonl` (default) or `csv` (formula-safe) |
+| Method | Path                        | Auth         | Purpose                                                               |
+| ------ | --------------------------- | ------------ | --------------------------------------------------------------------- |
+| GET    | /admin/search-logs/overview | admin cookie | Summary counts + top / top-failing queries (25 each)                  |
+| GET    | /admin/search-logs/rows     | admin cookie | Newest-first page; `before=<id>` cursor, `limit` ≤200                 |
+| GET    | /admin/search-logs/export   | admin cookie | Streamed attachment, `format=jsonl` (default) or `csv` (formula-safe) |
 
 All three take `from`/`to` (`YYYY-MM-DD`, UTC, inclusive), `q` (substring),
 `outcome` and `scope`. Storage: `ANALYTICS_DB_PATH` (prod: the
@@ -201,14 +207,14 @@ design** — every tool is a read-only lookup over the public agent bundle, with
 credentials, no PII and no billable upstream call. Unset the variable and the
 routes cease to exist; that is the kill switch.
 
-| Env                     | Default | Meaning                                                      |
-| ----------------------- | ------- | ------------------------------------------------------------ |
-| `CONTEXT_BUNDLE_URL`    | unset   | Live bundle, e.g. `https://eps.eko.in/agent/eps.json`         |
-| `CONTEXT_BUNDLE_TTL_SEC`| `900`   | Re-validation window (conditional GET with `If-None-Match`)   |
+| Env                      | Default | Meaning                                                     |
+| ------------------------ | ------- | ----------------------------------------------------------- |
+| `CONTEXT_BUNDLE_URL`     | unset   | Live bundle, e.g. `https://eps.eko.in/agent/eps.json`       |
+| `CONTEXT_BUNDLE_TTL_SEC` | `900`   | Re-validation window (conditional GET with `If-None-Match`) |
 
 What the mount deliberately does **not** share with the rest of the BFF:
 
-- **No cookies, ever.** `/context/*` gets wildcard CORS *without* credentials, so
+- **No cookies, ever.** `/context/*` gets wildcard CORS _without_ credentials, so
   a browser will not attach a session cookie to a public endpoint.
 - **No session, KV or secretbox access**, and no contribution to `/readyz` — a
   site outage must never fail the deploy health gate for auth.
@@ -238,15 +244,15 @@ because the thing this exists to get right (`secret-key = base64(HMAC-SHA256(
 timestamp, base64(access_key)))`) is exactly what a general-purpose assistant
 gets wrong.
 
-| Env                              | Default            | Meaning                                                        |
-| -------------------------------- | ------------------ | -------------------------------------------------------------- |
+| Env                              | Default            | Meaning                                                       |
+| -------------------------------- | ------------------ | ------------------------------------------------------------- |
 | `EPS_CHAT_PROVIDER`              | unset              | `anthropic` \| `openai` \| `openrouter`. Unset ⇒ feature dark |
-| `EPS_CHAT_API_KEY`               | unset              | Provider key. Must be set together with the provider           |
-| `EPS_CHAT_MODEL`                 | `claude-haiku-4-5` | Model id                                                        |
-| `EPS_CHAT_BASE_URL`              | provider default   | Override for a gateway / self-host / OpenRouter                 |
-| `EPS_CHAT_MONTHLY_BUDGET_USD`    | `0` (off)          | Best-effort monthly cost guard                                  |
-| `EPS_CHAT_PRICE_INPUT_PER_MTOK`  | `0`                | USD per 1M input tokens. Required when the budget is set        |
-| `EPS_CHAT_PRICE_OUTPUT_PER_MTOK` | `0`                | USD per 1M output tokens. Required when the budget is set       |
+| `EPS_CHAT_API_KEY`               | unset              | Provider key. Must be set together with the provider          |
+| `EPS_CHAT_MODEL`                 | `claude-haiku-4-5` | Model id                                                      |
+| `EPS_CHAT_BASE_URL`              | provider default   | Override for a gateway / self-host / OpenRouter               |
+| `EPS_CHAT_MONTHLY_BUDGET_USD`    | `0` (off)          | Best-effort monthly cost guard                                |
+| `EPS_CHAT_PRICE_INPUT_PER_MTOK`  | `0`                | USD per 1M input tokens. Required when the budget is set      |
+| `EPS_CHAT_PRICE_OUTPUT_PER_MTOK` | `0`                | USD per 1M output tokens. Required when the budget is set     |
 
 Prices are configured, never inferred: `EPS_CHAT_MODEL` and `EPS_CHAT_BASE_URL`
 can name anything, and a guessed price would silently mis-meter every request.
@@ -255,15 +261,15 @@ cap is worse than an obviously absent one.
 
 **Bounds, and why each one exists**
 
-| Bound                                    | Value      | Reason                                                             |
-| ---------------------------------------- | ---------- | ------------------------------------------------------------------ |
-| Requests per login (`enforceRateLimit`)  | 30 / 600 s | The hard abuse gate. Each request may carry up to 20 messages       |
-| Messages per request                     | 20         | Bounds one request's cost                                           |
-| Characters per message                   | 4 000      | ditto                                                               |
-| Request body                             | 32 KB      | Checked on `content-length` **and** actual bytes, before parsing    |
-| Tool rounds                              | 6          | Then one forced tool-free turn, so the reply is always prose        |
-| Whole-request deadline                   | 60 s       | One budget shared by every provider call, not 30 s × rounds         |
-| Tool result                              | 12 000 ch  | A verbose endpoint must not crowd out the conversation              |
+| Bound                                   | Value      | Reason                                                           |
+| --------------------------------------- | ---------- | ---------------------------------------------------------------- |
+| Requests per login (`enforceRateLimit`) | 30 / 600 s | The hard abuse gate. Each request may carry up to 20 messages    |
+| Messages per request                    | 20         | Bounds one request's cost                                        |
+| Characters per message                  | 4 000      | ditto                                                            |
+| Request body                            | 32 KB      | Checked on `content-length` **and** actual bytes, before parsing |
+| Tool rounds                             | 6          | Then one forced tool-free turn, so the reply is always prose     |
+| Whole-request deadline                  | 60 s       | One budget shared by every provider call, not 30 s × rounds      |
+| Tool result                             | 12 000 ch  | A verbose endpoint must not crowd out the conversation           |
 
 Errors: `401` no session · `403 NOT_DEVELOPER_SESSION` (a `signup`-role session
 is mid-onboarding; developers and admins may ask) · `400 BAD_REQUEST` ·
@@ -299,12 +305,12 @@ mounted. Implementation: `src/http/tryitProxy.ts`.
 
 **Request** — always `POST /tryit/proxy`; the real call is described in headers:
 
-| Header                  | Meaning                                                                   |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `x-eps-target-url`      | Absolute upstream URL incl. query. Must sit under an allowed base (below). |
-| `x-eps-target-method`   | `GET` \| `POST` \| `PUT` \| `DELETE` (default `POST`); else 400 `INVALID_METHOD`. |
-| `x-eps-developer-key`   | Forwarded upstream as `developer_key`. Renamed because nginx drops request headers containing underscores by default (`underscores_in_headers off`). |
-| `secret-key`, `secret-key-timestamp`, `content-type`, `accept` | Copied verbatim when present. |
+| Header                                                         | Meaning                                                                                                                                              |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x-eps-target-url`                                             | Absolute upstream URL incl. query. Must sit under an allowed base (below).                                                                           |
+| `x-eps-target-method`                                          | `GET` \| `POST` \| `PUT` \| `DELETE` (default `POST`); else 400 `INVALID_METHOD`.                                                                    |
+| `x-eps-developer-key`                                          | Forwarded upstream as `developer_key`. Renamed because nginx drops request headers containing underscores by default (`underscores_in_headers off`). |
+| `secret-key`, `secret-key-timestamp`, `content-type`, `accept` | Copied verbatim when present.                                                                                                                        |
 
 The body is forwarded byte-for-byte (multipart boundaries survive) for
 `POST`/`PUT`; `GET`/`DELETE` send none. **Nothing else is forwarded** — cookies,
@@ -405,14 +411,14 @@ App, set in `.env`:
 mints an admin session as `dev:local-admin` via `POST /auth/admin/dev-login`.
 Locks, all enforced and tested (`src/http/devAdminLogin.test.ts`):
 
-| Lock | Effect |
-| ---- | ------ |
-| `loadConfig` | refuses to boot with the flag under `NODE_ENV=production` (the Docker image) or Secure cookies |
-| flag off | route not mounted → 404 |
-| socket | peer must be loopback, with no `x-real-ip` / `x-forwarded-for` (nginx and Vercel always add one; the Vite proxy adds neither) |
-| `Origin` | must be a loopback origin (login-CSRF guard) |
+| Lock            | Effect                                                                                                                                                                                                                                                                 |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loadConfig`    | refuses to boot with the flag under `NODE_ENV=production` (the Docker image) or Secure cookies                                                                                                                                                                         |
+| flag off        | route not mounted → 404                                                                                                                                                                                                                                                |
+| socket          | peer must be loopback, with no `x-real-ip` / `x-forwarded-for` (nginx and Vercel always add one; the Vite proxy adds neither)                                                                                                                                          |
+| `Origin`        | must be a loopback origin (login-CSRF guard)                                                                                                                                                                                                                           |
 | no GitHub token | GitOps propose/deploy fail `NO_GH_TOKEN` — it can read, never write the repo. The console opens on Search logs and shows a notice instead of the Documentation tab: any `/admin/docs*` call would 401, which the client treats as an expired session and signs you out |
-| frontend | button renders only under `import.meta.env.DEV`; Vite drops it from production builds |
+| frontend        | button renders only under `import.meta.env.DEV`; Vite drops it from production builds                                                                                                                                                                                  |
 
 The Vite dev server listens on all interfaces (`host: "::"`), so a LAN device
 reaching `:8080` is proxied from loopback and passes the socket lock. What it
@@ -619,11 +625,11 @@ the `type` tag says which transport produced the line:
 Grep one transport with `docker logs … | grep connect_upstream`. Verbosity is set
 by `EKO_LOG_LEVEL` so it can differ between dev and prod:
 
-| level               | what it logs                                                                                                                                                                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `off`               | nothing                                                                                                                                                                                                                                                 |
+| level               | what it logs                                                                                                                                                                                                                                                                                                                                              |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `off`               | nothing                                                                                                                                                                                                                                                                                                                                                   |
 | `basic` _(default)_ | `interaction_type_id`, **masked** mobile, `org_id`, `http_status`, `durMs`, and a response summary (`response_status_id` / `response_type_id` / `response_code` / `status` / `message`, plus the field-level diagnostics `invalid_params` / `dependent_params` / `list_items`). No OTP, no merchant credentials, no `data`, no full body — **prod-safe.** |
-| `full`              | the complete request form-fields (**including the OTP**) and the full response body. **Dev debugging only.**                                                                                                                                            |
+| `full`              | the complete request form-fields (**including the OTP**) and the full response body. **Dev debugging only.**                                                                                                                                                                                                                                              |
 
 The `developer_key` / `secret-key` auth headers are never part of the logged
 form-fields, so they are never emitted at any level. Logging is best-effort and
@@ -737,11 +743,11 @@ mislead), and `version` (the build that served it).
 `error.source` says **who produced the message**, which is the first thing ops
 needs from a screenshot:
 
-| `source` | Meaning | Where it goes |
-| --- | --- | --- |
-| `api` | The upstream call failed and `message` is its envelope message | Forward to Eko |
-| `proxy` | This service produced it — a guard, a validation, a failure it could not get an upstream answer for | Backend team |
-| `client` | Added by the frontend for failures that never reached the network (`NETWORK_ERROR`) | Frontend / the user's connection |
+| `source` | Meaning                                                                                             | Where it goes                    |
+| -------- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `api`    | The upstream call failed and `message` is its envelope message                                      | Forward to Eko                   |
+| `proxy`  | This service produced it — a guard, a validation, a failure it could not get an upstream answer for | Backend team                     |
+| `client` | Added by the frontend for failures that never reached the network (`NETWORK_ERROR`)                 | Frontend / the user's connection |
 
 The frontend also files `PARSE_ERROR` — a response that is not JSON — as
 `proxy`: an nginx or Vercel error page, or an SPA fallback, is an intermediary
@@ -849,18 +855,18 @@ PAN comes from `user_detail.pancardnumber`; GST has no agreed upstream field
 name, so it is a best-effort scan of the allowlisted business detail blocks for
 a key matching `/gst/i`, and prints as `—` when the profile carries none.
 
-| Env var                      | Default                                        | Notes                                                            |
-| ---------------------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
-| `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_                       | https required off loopback. **Secret**; never ship to the browser |
-| `ACTIVATION_FEE_RECIPIENTS`  | _(none — required with the URL)_               | Comma-separated. Absent, empty or malformed = boot error         |
-| `ACTIVATION_FEE_TIMEOUT_MS`  | `20000`                                        | Abort for the webhook call                                       |
-| `ZOHO_CRM_RECORD_BASE_URL`   | _(unset — links omitted)_                      | CRM record-URL base incl. org, e.g. `https://crm.zoho.in/crm/orgNNN`. Not `ZOHO_BASE_URL` (the REST host) |
-| `ZOHO_ENABLED`               | `false`                                        | On = the three OAuth vars below are required; a missing one is a boot error |
-| `ZOHO_CLIENT_ID`             | _(unset)_                                      | OAuth refresh-token grant. **Secret** |
-| `ZOHO_CLIENT_SECRET`         | _(unset)_                                      | **Secret** |
-| `ZOHO_REFRESH_TOKEN`         | _(unset)_                                      | **Secret**. Needs `ZohoCRM.modules.leads.ALL` — a READ-only token 401s on `PATCH /crm/lead` |
-| `ZOHO_BASE_URL`              | `https://www.zohoapis.in`                      | REST API host for the org's data centre. Not a record URL |
-| `ZOHO_ACCOUNTS_URL`          | _(derived from `ZOHO_BASE_URL`)_               | OAuth accounts host; set for a custom domain or an undeducible DC |
+| Env var                      | Default                          | Notes                                                                                                     |
+| ---------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ACTIVATION_FEE_WEBHOOK_URL` | _(unset — feature dark)_         | https required off loopback. **Secret**; never ship to the browser                                        |
+| `ACTIVATION_FEE_RECIPIENTS`  | _(none — required with the URL)_ | Comma-separated. Absent, empty or malformed = boot error                                                  |
+| `ACTIVATION_FEE_TIMEOUT_MS`  | `20000`                          | Abort for the webhook call                                                                                |
+| `ZOHO_CRM_RECORD_BASE_URL`   | _(unset — links omitted)_        | CRM record-URL base incl. org, e.g. `https://crm.zoho.in/crm/orgNNN`. Not `ZOHO_BASE_URL` (the REST host) |
+| `ZOHO_ENABLED`               | `false`                          | On = the three OAuth vars below are required; a missing one is a boot error                               |
+| `ZOHO_CLIENT_ID`             | _(unset)_                        | OAuth refresh-token grant. **Secret**                                                                     |
+| `ZOHO_CLIENT_SECRET`         | _(unset)_                        | **Secret**                                                                                                |
+| `ZOHO_REFRESH_TOKEN`         | _(unset)_                        | **Secret**. Needs `ZohoCRM.modules.leads.ALL` — a READ-only token 401s on `PATCH /crm/lead`               |
+| `ZOHO_BASE_URL`              | `https://www.zohoapis.in`        | REST API host for the org's data centre. Not a record URL                                                 |
+| `ZOHO_ACCOUNTS_URL`          | _(derived from `ZOHO_BASE_URL`)_ | OAuth accounts host; set for a custom domain or an undeducible DC                                         |
 
 > An n8n `/webhook-test/...` URL only fires while the workflow editor is open
 > and listening. Production must use the `/webhook/...` URL, or every
