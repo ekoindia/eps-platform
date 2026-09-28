@@ -654,6 +654,16 @@ way it did between 2026-07-31 and 2026-08-05. Set `POLLER_ALERT_WEBHOOK` in
 `/data/eps-backend/.env` for those alerts to leave the container — without it the
 poller warns at boot that alerts are log-only.
 
+**Before clearing, wait for `:prod` to move.** Merging the fix is not enough:
+the `Deploy eps-backend` workflow for that merge commit must have **completed**
+(it retags `:prod` a few minutes after CI). Clear HOLD earlier and the next tick
+still sees the bad digest on `:prod`, redeploys it, and re-sets HOLD — this
+happened on 2026-09-28. Check from any machine with `gh`:
+
+```sh
+gh run list --branch main --workflow "Deploy eps-backend" --limit 1
+```
+
 **To clear HOLD and resume automatic deploys:**
 
 ```sh
