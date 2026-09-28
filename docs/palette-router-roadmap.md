@@ -1,0 +1,186 @@
+# ⌘K palette router — roadmap & progress
+
+**Read this first when resuming.** It is the canonical plan and status for
+turning the ⌘K palette from keyword search into an action router (rules first,
+then possibly the on-device Needle model). Every session that changes the
+status updates the board and appends to the progress log in the same commit.
+
+- Goal: cut onboarding dropoff for developers and prospective partners on the
+  docs and product pages, by answering intent ("how do I go live", "what will I
+  earn on 500 DMT a month") with a direct action, not a list of links.
+- Related docs: [palette telemetry](features/palette-telemetry.md) (Phase 0,
+  shipped), [command palette search](command-palette-search.md) (current
+  MiniSearch engine), [docs-chat agent](docs-chat-agent.md) (the `/chat/ask`
+  fallback).
+
+## Status board
+
+| Phase | What | Status | Owner / date |
+| ----- | ---- | ------ | ------------ |
+| 0 | Palette telemetry: GTM counts + redacted query log in SQLite, admin Search logs page | ✅ **Live in prod**, verified 2026-09-28 | — |
+| 0b | Baseline data collection (2–4 weeks at sample rate 1) | ⏳ **Running since 2026-09-28** — first review ~2026-10-12, eval-set cut ~2026-10-26 | — |
+| 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ⏳ **In progress** on `dev`, flag off — per-intent table below | started 2026-09-28 |
+| 1b | Needle spike: JS API, browser cost, base-model sanity | ⬜ Not started | — |
+| 1c | Eval set + gate run (comparator vs Needle, end to end) | ⬜ Needs 0b data | — |
+| 2 | Needle build behind `VITE_SHOW_NEEDLE` | ⬜ Only if Needle clearly beats 1a at the gate | — |
+| 3 | Enable `/chat/ask` for developers + real concurrent A/B | ⬜ | — |
+| — | Doc-scan quality / right-document checks | ⏸ Separate track, not Needle (text-only model) | — |
+
+Legend: ✅ done · ⏳ in progress / waiting · ▶️ next · ⬜ not started · ⏸ parked
+
+## Decisions (and why)
+
+| Topic | Decision |
+| ----- | -------- |
+| Audience | Docs developers and prospects on product pages — not partners' retailers |
+| Role of a model | Router only: pick an action and fill its slots; answers come from data already in the browser. Needle writes no free text |
+| Fallback for open questions | `/chat/ask`, **signed-in developers/admins only** — no public LLM endpoint. Anonymous visitors get cards + MiniSearch (+ a "sign up to ask AI" nudge later) |
+| v1 intents | `find_api`, `how_to_build`, `get_started`, `estimate_earnings` (≤5 tools is where Needle is accurate) |
+| Entity resolution | The router extracts a verbatim `subject` + typed slots; **MiniSearch** resolves the subject — new APIs need no retraining |
+| UX | Never auto-navigate. Confident → pinned card above results; unsure → "Did you mean"; nothing → plain results |
+| `get_started` | Deterministic, session-aware: the answer comes from `NextStepsCard`'s own logic, not the router |
+| Model path | Base Needle model first; if it fails the gate, **hosted** fine-tune (keeps calibrated confidence; ask before any paid job). Local LoRA rejected (no confidence head) |
+| Loading | Lazy on first ⌘K open; skipped on Save-Data or slow-2g/2g/3g |
+| Hosting weights | Self-hosted, pinned by sha256, immutable cache, not in git |
+| Telemetry privacy | Query text never to GTM; redacted twice; rows unlinked to accounts; `ts` rounded to the hour; page/stage/label never to GA4 (small user base ⇒ re-identification risk) |
+| Retention | 365 days, purged daily; privacy clause says 12 months (legal-reviewed) |
+| Sample rate | 1 (all sessions) — the user base is small |
+| Comparator first | Needle ships only if it beats rules + MiniSearch **by a clear margin, end to end**. If rules are good enough, the 29 MB model is not needed |
+
+## Phase 0 — telemetry (✅ shipped)
+
+What it records and where: see [palette telemetry](features/palette-telemetry.md).
+Admin view: `/admin` → Search logs (summary, top and top-failing queries,
+filters by date/query/outcome/who/stage, paged log, JSONL/CSV export).
+
+Commits (all on `dev`, merged to `main`): `a763b0e` telemetry + redaction ·
+`b213d2f`, `483fe4a` privacy clause · `0151c0e` Node 24 · `047ba75` SQLite store +
+admin tab · `6943525` local demo admin login · `d5a4885` env docs · `9d7fac2`
+GTM setup doc · `d94b427` GTM undefined-key test · `c39ab92` context fields
+(page, auth, stage, clicked result, effort, trigger, device) · `25aa127` bundle
+fix (see gotchas).
+
+## Phase 0b — baseline (⏳ running)
+
+- **~2026-10-12 (week 2) review** on `/admin` → Search logs, last 14 days:
+  zero-result %, abandon %, click-through %, top failing queries, pages with
+  the most failing searches, effort (tries/seconds) by `auth`/`stage`.
+  Ship quick wins from the failing list immediately (synonyms in
+  `TOKEN_ALIASES`/`PHRASE_ALIASES`, `src/lib/search-engine.ts`; missing content)
+  — they raise the bar every later phase must clear. Record the numbers in the
+  progress log **before** and after the fixes.
+- **~2026-10-26 eval-set cut**: export JSONL, dedupe, label (below).
+
+## Phase 1a — rules + MiniSearch action cards (▶️ next)
+
+The zero-MB comparator. Useful even if Needle never ships.
+
+**Shape (proposed, pending the open questions):**
+
+- `src/lib/palette-actions/` — pure, unit-tested:
+  - `normalizeAmounts(query)` — `1 lakh`/`2 crore`/`5k`/`₹5,000` → digits.
+  - `detectIntent(query)` — ordered regex rules per intent → `{intent, subject, slots}` or null.
+  - resolvers, one per intent, returning a card model or null:
+    - `find_api` → MiniSearch over the **`endpoint`** category (REST operations; the `api` category is product pages) → endpoint card (method, path, docs link, Try-it link). Top 3 when scores are close.
+    - `how_to_build` → recipes from `/agent/eps.json` (4 today: DMT Fino send money, AePS Fingpay withdrawal, BBPS bill payment, BBPS recharge) → ordered-steps card. Lazy-fetch the bundle only on a match.
+    - `get_started` → session-aware next step. Needs `NextStepsCard`'s spotlight logic extracted into a pure `deriveNextStep(...)` with **all** its inputs: `MeView`, KYC documents, fee state (can be unknown), E-sign entitlement (`useRoleTransactionList`), loading/error, and "no known next action". Anonymous → signup/sandbox.
+    - `estimate_earnings` → deep link `/pricing?pay=…`. Product names map to **calculator ids** (`aeps-cashout`, `bbps-electricity`…, from `EARNINGS_PRODUCTS_MAP`), not families; slots = average amount + monthly count. Needs the private serializer in `PaymentsCalculator.tsx` exported, and the calculator to re-read `?pay=` when already mounted.
+- `CommandPalette.tsx` — pinned card slot above results; Enter opens it; never auto-acts.
+- Telemetry — record which card was shown and whether it was used (new `actionIntent` field; card click = `outcome: click`, `clickedCategory: "action"`), so the gate can score it from real sessions.
+- Flag `VITE_SHOW_PALETTE_ACTIONS` (default off) until the gate.
+- Shared eval harness `scripts/palette-eval/` scoring the **same** labelled JSONL for rules now and Needle later: intent accuracy, slot accuracy, card precision, off-topic refusal.
+
+**Decided 2026-09-28:** all four intents, **one intent per commit** in this
+order — `find_api` → `how_to_build` → `estimate_earnings` → `get_started` —
+on `dev` behind `VITE_SHOW_PALETTE_ACTIONS` (default off), so partial work is
+safe to merge. Runtime A/B waits for Phase 3.
+
+| Intent | Status | Commit |
+| ------ | ------ | ------ |
+| shared scaffolding (flag, `normalizeAmounts`, `detectIntent`, card slot, telemetry, eval harness) | ⬜ | |
+| `find_api` | ⬜ | |
+| `how_to_build` | ⬜ | |
+| `estimate_earnings` | ⬜ | |
+| `get_started` | ⬜ | |
+
+## Phase 1b — Needle spike (⬜)
+
+Throwaway branch; nothing merges.
+
+1. Download the `wasm` build (`needle.js`, `needle.wasm`, `needle3.cact`) into scratch; read `needle.js`/`needle.h` for the JS API (undocumented).
+2. Check whether it needs threads / SharedArrayBuffer / COOP-COEP headers.
+3. Measure on a mid-range Android and a desktop, in a Web Worker: first-load time for ~29 MB, per-query latency, `prefill_tps`/`decode_tps`/`peak_ram_mb`.
+4. ~40 hand-written queries against the 4 tool schemas — a sanity signal only; the real gate needs the Phase 0b eval set.
+
+New dependency to approve first: the `cactus-needle` Python package in a
+scratch virtualenv (reference harness), outside the repo.
+
+Tool-design rules learnt from Needle's docs: tool names in users' words;
+descriptions state facts, never instructions; constraints in the schema
+(enum/min/max), not prose; only digits or number words count as evidence for a
+number (hence `normalizeAmounts`); `triggers` regexes route and force a call —
+don't add an `and|then` guard blindly ("bank account and IFSC verification" is
+one intent).
+
+## Phase 1c — eval set + gate (⬜)
+
+- ~150 unique real queries from the Phase 0b export, labelled with: intent (or
+  none), subject, slots, expected card. **≥50 off-topic.** The clicked result
+  (`clickedId`/`clickedLabel`) is a free label for `find_api`.
+- Hold out a test split that is never used for fine-tuning.
+- **Gate (end to end, per candidate):** intent ≥85%, off-topic refusal ≥90%,
+  pinned-card precision ≥90%, browser p95 latency <300 ms after load. Needle
+  must beat rules + MiniSearch by a clear margin to proceed to Phase 2.
+- Gate fail for Needle → price the hosted fine-tune, ask, then train on data
+  synthesised from specs + recipes + labelled queries; pick the smallest passing
+  depth (smaller download); re-gate.
+
+## Phase 2 — Needle build (⬜, conditional)
+
+Behind `VITE_SHOW_NEEDLE`. Web Worker with debounce (~250 ms), serialised calls,
+query ids, stale-result drop, 1 s timeout → rules/MiniSearch fallback. Pinned
+self-hosted weights (sha256), immutable cache headers, `application/wasm`.
+Confidence tiers: ≥0.7 pinned card, 0.1–0.7 or suppressed → "Did you mean",
+empty → plain results.
+
+## Phase 3 — chat + A/B (⬜)
+
+`/chat/ask` rollout per [docs-chat agent](docs-chat-agent.md) (developers/admins
+only). A/B must be **concurrent** with stable assignment (hashed cookie,
+runtime flag — not a build flag vs history), exposure = palette opens, outcome =
+signup started/completed, chat availability equal across arms.
+
+## Gotchas learnt (keep adding)
+
+- **`node:` builtins and tsup.** tsup 8.5 defaults `removeNodeProtocol: true`,
+  turning `node:sqlite` into bare `sqlite` → prod crash-loop, while every test
+  passed (vitest/tsx run TS source). Fixed in `25aa127`; CI now checks bundle
+  imports. **Verify backend changes by booting `dist/`, not just tests.**
+- **A 401 signs the user out.** The client treats any 401 as an expired
+  session. An admin without GitHub (local demo login) must never mount the docs
+  tab, whose calls 401 `NO_GH_TOKEN`.
+- **GTM keeps dataLayer values across pushes.** Non-click reports send click
+  keys as explicit `undefined`; a test pins it.
+- **Search categories:** `api` = product pages, `endpoint` = REST operations.
+- **Redaction lives twice** (site + backend) and is pinned by
+  `src/lib/analytics.parity.test.ts`.
+- **Module mocks hide constants:** tests mocking `@/lib/auth/client` spread
+  the real module (`importOriginal`) so `LIFECYCLES` still exists.
+
+## Progress log
+
+Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — Phase 0 verified in prod by the user (logs recording; GTM
+  and legal review done; sample rate 1). Baseline clock started. Roadmap doc
+  created. Phase 1a decided: all four intents, one per commit, on `dev`
+  behind `VITE_SHOW_PALETTE_ACTIONS` (off). Starting with shared scaffolding
+  + `find_api`.
+- **2026-09-28** — Context fields added to telemetry (`c39ab92`), hour-rounded
+  timestamps, privacy clause reworded.
+- **2026-09-27** — SQLite store + admin Search logs (`047ba75`), local demo
+  admin login (`6943525`), Node 24 (`0151c0e`). Prod crash-loop from the
+  `node:sqlite` bundle rewrite, fixed in `25aa127`.
+- **2026-09-27** — Palette telemetry shipped (`a763b0e`); plan grilled and
+  approved (Needle as router, rules comparator first, instrument before
+  building).

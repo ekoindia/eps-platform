@@ -6,6 +6,9 @@ route palette queries, we need two things the palette never recorded: a
 build the router's eval set. This feature collects both, with query text kept
 off third-party servers.
 
+Plan and status for everything after this phase:
+[palette router roadmap](../palette-router-roadmap.md).
+
 ## What is recorded
 
 One report per palette session that had a query, sent when the session ends:
