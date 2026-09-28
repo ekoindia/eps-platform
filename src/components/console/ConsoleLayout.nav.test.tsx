@@ -146,6 +146,32 @@ describe("ConsoleLayout — self-service flow rail items", () => {
 		);
 	});
 
+	it("shows Fund Settlement before Manage My Account, only when 972 is entitled", async () => {
+		connectInteractions.mockResolvedValue({
+			interactions: [{ id: 536 }, { id: 972 }],
+		});
+
+		renderRail();
+
+		expect(
+			await screen.findByRole("link", { name: "Fund Settlement" }),
+		).toHaveAttribute("href", "/console/transaction/972");
+		const labels = railLabels();
+		expect(labels.indexOf("Manage My Account")).toBe(
+			labels.indexOf("Fund Settlement") + 1,
+		);
+	});
+
+	it("hides Fund Settlement when 972 is not entitled", async () => {
+		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
+
+		renderRail();
+
+		// Load Wallet is entitlement-driven, so the list has resolved by now.
+		await screen.findByRole("link", { name: "Load Wallet" });
+		expect(screen.queryByRole("link", { name: "Fund Settlement" })).toBeNull();
+	});
+
 	it("hides AePS Agents when 36 is not entitled", async () => {
 		connectInteractions.mockResolvedValue({ interactions: [{ id: 491 }] });
 

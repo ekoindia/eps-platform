@@ -86,6 +86,10 @@ function deps(
 		submitSignAgreement: vi.fn(async () => ({ ok: true as const })),
 		getWalletBalance: vi.fn(async () => 2800000),
 		getTransactionHistory: vi.fn(async () => ({ rows: [] })),
+		downloadTransactionReport: vi.fn(async () => ({
+			kind: "pending" as const,
+			message: "later",
+		})),
 		...over,
 	};
 	const zoho: ZohoClient = {

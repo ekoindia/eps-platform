@@ -28,12 +28,18 @@ import {
 	debitOf,
 	deriveAmount,
 	describeRow,
+	HISTORY_MAX_DAYS,
 	hueOf,
 	inferSearchField,
 	initialsOf,
+	isoDate,
 	PAGE_LIMIT,
+	REPORT_FORMATS,
+	REPORT_ROW_LIMIT,
+	saveBase64File,
 	statusOf,
 	totalsOf,
+	type ReportFormat,
 	type TransactionFilters,
 	type TransactionRow,
 } from "@/lib/console/transactions";
@@ -42,6 +48,7 @@ import { formatINR } from "@/lib/utils";
 import {
 	ChevronLeft,
 	ChevronRight,
+	Download,
 	ListFilter,
 	Minus,
 	Plus,
@@ -78,6 +85,76 @@ const FILTER_FIELDS: Array<{
 	{ name: "amount", label: "Amount", placeholder: "₹" },
 	{ name: "rr_no", label: "Tracking Number" },
 ];
+
+/** Drops blank fields, so an emptied input is not sent as a filter. */
+function nonEmpty(filters: TransactionFilters): TransactionFilters {
+	return Object.fromEntries(
+		Object.entries(filters).filter(([, value]) => value !== ""),
+	);
+}
+
+/**
+ * The filter inputs, shared by the Filter and Export dialogs.
+ *
+ * Dates are bounded like Eloka's: no later than today, no earlier than
+ * `HISTORY_MAX_DAYS` ago, and To no earlier than From.
+ * @param props.draft - The values being edited.
+ * @param props.onChange - Receives the next draft.
+ * @param props.idPrefix - Namespaces input ids, so both dialogs keep labels unique.
+ * @param props.requireDates - Marks From/To required (Export without a TID).
+ */
+function FilterFields({
+	draft,
+	onChange,
+	idPrefix,
+	requireDates = false,
+}: {
+	draft: TransactionFilters;
+	onChange: (next: TransactionFilters) => void;
+	idPrefix: string;
+	requireDates?: boolean;
+}) {
+	// Fixed at mount, like Eloka's `today`: render must stay pure.
+	const [{ today, oldest }] = useState(() => {
+		const now = new Date();
+		return {
+			today: isoDate(now),
+			oldest: isoDate(
+				new Date(now.getFullYear(), now.getMonth(), now.getDate() - HISTORY_MAX_DAYS),
+			),
+		};
+	});
+	return (
+		<div className="flex flex-col gap-3">
+			{FILTER_FIELDS.map((field) => {
+				const isDate = field.type === "date";
+				return (
+					<div key={field.name} className="flex flex-col gap-1.5">
+						<Label htmlFor={`${idPrefix}-${field.name}`}>{field.label}</Label>
+						<Input
+							id={`${idPrefix}-${field.name}`}
+							type={field.type ?? "text"}
+							placeholder={field.placeholder}
+							value={draft[field.name] ?? ""}
+							required={isDate && requireDates}
+							min={
+								isDate
+									? field.name === "tx_date"
+										? draft.start_date || oldest
+										: oldest
+									: undefined
+							}
+							max={isDate ? today : undefined}
+							onChange={(e) =>
+								onChange({ ...draft, [field.name]: e.target.value })
+							}
+						/>
+					</div>
+				);
+			})}
+		</div>
+	);
+}
 
 /** Formats "2026-04-16 11:49:00" as a two-line date and time. */
 function formatDateTime(raw: string): { date: string; time: string } {
@@ -209,6 +286,12 @@ export default function Transactions() {
 	const [search, setSearch] = useState("");
 	const [filterOpen, setFilterOpen] = useState(false);
 	const [draft, setDraft] = useState<TransactionFilters>({});
+	const [exportOpen, setExportOpen] = useState(false);
+	const [exportDraft, setExportDraft] = useState<TransactionFilters>({});
+	const [exportFormat, setExportFormat] = useState<ReportFormat>("pdf");
+	const [exporting, setExporting] = useState(false);
+	const [exportError, setExportError] = useState<unknown>(null);
+	const [exportNotice, setExportNotice] = useState("");
 
 	useEffect(() => {
 		if (!isActive) return;
@@ -251,12 +334,59 @@ export default function Transactions() {
 	}
 
 	function applyFilters() {
-		const cleaned = Object.fromEntries(
-			Object.entries(draft).filter(([, value]) => value !== ""),
-		);
 		setStartIndex(0);
-		setFilters(cleaned);
+		setFilters(nonEmpty(draft));
 		setFilterOpen(false);
+	}
+
+	/**
+	 * Opens Export pre-filled with the applied filters. A report needs a date
+	 * range unless a TID pins one transaction, so the range defaults to this
+	 * month — but not alongside a TID, where it could exclude that transaction.
+	 */
+	function openExport(open: boolean) {
+		setExportOpen(open);
+		if (!open) return;
+		const now = new Date();
+		setExportDraft(
+			filters.tid
+				? filters
+				: {
+						start_date: isoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+						tx_date: isoDate(now),
+						...filters,
+					},
+		);
+		setExportFormat("pdf");
+		setExportError(null);
+		setExportNotice("");
+	}
+
+	async function downloadReport(event: React.FormEvent) {
+		event.preventDefault();
+		setExporting(true);
+		setExportError(null);
+		setExportNotice("");
+		try {
+			const result = await transactionsClient.report({
+				filters: nonEmpty(exportDraft),
+				format: exportFormat,
+			});
+			if ("file" in result) {
+				saveBase64File(
+					result.file.base64,
+					result.file.name,
+					result.file.contentType,
+				);
+				setExportOpen(false);
+			} else {
+				setExportNotice(result.message);
+			}
+		} catch (err) {
+			setExportError(err);
+		} finally {
+			setExporting(false);
+		}
 	}
 
 	function clearFilters() {
@@ -325,28 +455,85 @@ export default function Transactions() {
 						<DialogHeader>
 							<DialogTitle>Filter</DialogTitle>
 						</DialogHeader>
-						<div className="flex flex-col gap-3">
-							{FILTER_FIELDS.map((field) => (
-								<div key={field.name} className="flex flex-col gap-1.5">
-									<Label htmlFor={`filter-${field.name}`}>{field.label}</Label>
-									<Input
-										id={`filter-${field.name}`}
-										type={field.type ?? "text"}
-										placeholder={field.placeholder}
-										value={draft[field.name] ?? ""}
-										onChange={(e) =>
-											setDraft((d) => ({ ...d, [field.name]: e.target.value }))
-										}
-									/>
-								</div>
-							))}
-						</div>
+						<FilterFields draft={draft} onChange={setDraft} idPrefix="filter" />
 						<DialogFooter>
 							<Button variant="ghost" onClick={clearFilters}>
 								Clear all
 							</Button>
 							<Button onClick={applyFilters}>Apply</Button>
 						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+				<Dialog open={exportOpen} onOpenChange={openExport}>
+					<DialogTrigger asChild>
+						<Button variant="outline" className="gap-2">
+							<Download className="h-4 w-4" />
+							Export
+						</Button>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Export</DialogTitle>
+						</DialogHeader>
+						{/* A form, so the browser enforces the required/min/max date rules. */}
+						<form onSubmit={downloadReport} className="flex flex-col gap-4">
+							<FilterFields
+								draft={exportDraft}
+								onChange={setExportDraft}
+								idPrefix="export"
+								requireDates={!exportDraft.tid}
+							/>
+							<fieldset className="flex flex-col gap-2">
+								<legend className="mb-1.5 text-sm font-medium">
+									Download report as
+								</legend>
+								<div className="flex gap-4">
+									{REPORT_FORMATS.map((option) => (
+										<label
+											key={option.value}
+											className="flex items-center gap-2 text-sm"
+										>
+											<input
+												type="radio"
+												name="reporttype"
+												value={option.value}
+												checked={exportFormat === option.value}
+												onChange={() => setExportFormat(option.value)}
+												className="accent-eko-navy"
+											/>
+											{option.label}
+										</label>
+									))}
+								</div>
+							</fieldset>
+							<p className="text-xs text-muted-foreground">
+								Covers up to {REPORT_ROW_LIMIT.toLocaleString("en-IN")}{" "}
+								transactions. Narrow the dates for a larger history.
+							</p>
+							{exportNotice ? (
+								<p role="status" className="rounded-md bg-muted p-3 text-sm">
+									{exportNotice}
+								</p>
+							) : null}
+							{exportError ? (
+								<ErrorNotice
+									error={exportError}
+									fallback="Couldn't prepare your report. Please try again."
+								/>
+							) : null}
+							<DialogFooter>
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => setExportOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button type="submit" disabled={exporting}>
+									{exporting ? "Preparing…" : "Download"}
+								</Button>
+							</DialogFooter>
+						</form>
 					</DialogContent>
 				</Dialog>
 			</div>

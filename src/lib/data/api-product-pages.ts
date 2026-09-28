@@ -1682,7 +1682,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		faqs: [
 			{
 				q: "DL Verification vs RC Verification?",
-				a: "Driving License Verification validates the person’s license details, such as holder name, DOB, validity, address, and vehicle class eligibility. Vehicle RC Verification validates vehicle registration details, ownership, fitness, insurance, and registration status. For complete driver and vehicle onboarding, combine DL Verification with RC Verification.",
+				a: "Driving License Verification validates the person’s license details, such as holder name, DOB, validity, address, and vehicle class eligibility. Vehicle RC Verification validates vehicle registration details, ownership, insurance, and registration status. For complete driver and vehicle onboarding, combine DL Verification with RC Verification.",
 			},
 			{
 				q: "How fast is DL verification?",
@@ -1722,7 +1722,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			"Confirms vehicle ownership and registration status",
 			"Returns insurance validity, company, and policy number",
 			"Blacklist and challan status check",
-			"Permit and fitness certificate details for commercial vehicles",
+			"Permit details for commercial vehicles",
 			"Pan-India coverage via VAHAN database",
 		],
 		features: [
@@ -1743,8 +1743,8 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 				desc: "Identify blacklisted vehicles and pending traffic challans for risk assessment.",
 			},
 			{
-				title: "Permit & Fitness Details",
-				desc: "Verify commercial vehicle permits, fitness certificates, and tax validity.",
+				title: "Permit Details",
+				desc: "Verify commercial vehicle permits and tax validity.",
 			},
 			{
 				title: "Financier Information",
@@ -1795,7 +1795,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			},
 			{
 				q: "Can I verify commercial vehicles?",
-				a: "Yes, commercial vehicles return additional details like permit type, permit validity, fitness certificate status, national permit, and tax status.",
+				a: "Yes, commercial vehicles return additional details like permit type, permit validity, national permit, and tax status.",
 			},
 			{
 				q: "How accurate is the verification?",

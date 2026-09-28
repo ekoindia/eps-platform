@@ -114,6 +114,18 @@ describe("word forms", () => {
 	});
 });
 
+describe("onboarding phrasing", () => {
+	// Regression: no document said "go live", so AND matched nothing and the OR
+	// fallback served "Go SDK" (go) and "PAN Lite" (lite, one edit from live).
+	it("answers go live with the onboarding pages, not the Go SDK", () => {
+		const found = ids("how do i go live", "all", 5);
+		expect(found).toContain("page:signup");
+		expect(found).toContain("page:docs");
+		expect(found).not.toContain("sdk:go");
+		expect(top("go sdk")).toBe("sdk:go");
+	});
+});
+
 describe("type weighting", () => {
 	// Regression: boostDocument receives STORED fields, not the source document.
 	// With storeFields:["id"] the typeWeight lookup was undefined and every

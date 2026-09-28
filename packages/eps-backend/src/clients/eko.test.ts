@@ -4,6 +4,8 @@ import type { EkoProfile } from "../types";
 import {
 	agreementIdOf,
 	createEkoClient,
+	EkoReportError,
+	fileNameOf,
 	identityOf,
 	mapTransactionRows,
 	type EkoClient,
@@ -1452,5 +1454,107 @@ describe("mapTransactionRows against the real interaction-154 response", () => {
 	it("reads the fractional charges", () => {
 		expect(rows[1].fee).toBe(5.91);
 		expect(rows[5].gst).toBe(0.76);
+	});
+});
+
+describe("downloadTransactionReport", () => {
+	const input = {
+		identity: { initiatorId: "9990000001", userCode: "20810001", orgId: 1 },
+		accountId: "392961",
+		filters: { start_date: "2026-09-01", tx_date: "2026-09-28" },
+		format: "xlsx" as const,
+	};
+	const JSON_TYPE = { "content-type": "application/json" };
+
+	function fileFetch(
+		body: ConstructorParameters<typeof Response>[0],
+		headers: Record<string, string>,
+		status = 200,
+	): typeof fetch {
+		return vi.fn(
+			async () => new Response(body, { status, headers }),
+		) as unknown as typeof fetch;
+	}
+
+	it("posts 183 to the history /download path and returns the file as base64", async () => {
+		const f = fileFetch(new Uint8Array([1, 2, 3]), {
+			"content-type": "application/vnd.ms-excel",
+			"content-disposition": "attachment; filename=Statement.xlsx",
+		});
+		const result = await createEkoClient(ekoCfg, f).downloadTransactionReport(
+			input,
+		);
+		expect(result).toEqual({
+			kind: "file",
+			name: "Statement.xlsx",
+			contentType: "application/vnd.ms-excel",
+			base64: "AQID",
+		});
+		const [target, init] = (f as unknown as Mock).mock.calls[0];
+		expect(target).toBe("https://sb.local:8080/v1-history/download");
+		const body = new URLSearchParams(init.body as string);
+		expect(body.get("interaction_type_id")).toBe("183");
+		expect(body.get("reporttype")).toBe("xlsx");
+		expect(body.get("account_id")).toBe("392961");
+		expect(body.get("initiator_id")).toBe("9990000001");
+		expect(body.get("start_date")).toBe("2026-09-01");
+		expect(body.get("start_index")).toBe("0");
+		expect(body.get("limit")).toBe("50000");
+	});
+
+	it("never lets a filter override a system field", async () => {
+		const f = fileFetch("%PDF", {
+			"content-type": "application/pdf",
+			"content-disposition": "attachment; filename=a.pdf",
+		});
+		await createEkoClient(ekoCfg, f).downloadTransactionReport({
+			...input,
+			filters: { interaction_type_id: "515", account_id: "1", reporttype: "csv" },
+		});
+		const body = new URLSearchParams(
+			(f as unknown as Mock).mock.calls[0][1].body as string,
+		);
+		expect(body.get("interaction_type_id")).toBe("183");
+		expect(body.get("account_id")).toBe("392961");
+		expect(body.get("reporttype")).toBe("xlsx");
+	});
+
+	it("reports a JSON success reply as pending, with upstream's message", async () => {
+		const f = fileFetch(JSON.stringify({ status: 0, message: "Report will be emailed" }), JSON_TYPE);
+		expect(
+			await createEkoClient(ekoCfg, f).downloadTransactionReport(input),
+		).toEqual({ kind: "pending", message: "Report will be emailed" });
+	});
+
+	it("throws a JSON error reply instead of calling it pending", async () => {
+		const f = fileFetch(JSON.stringify({ status: 463, message: "Invalid account" }), JSON_TYPE);
+		await expect(
+			createEkoClient(ekoCfg, f).downloadTransactionReport(input),
+		).rejects.toThrow(new EkoReportError("Invalid account"));
+	});
+
+	it("throws on a non-2xx reply", async () => {
+		const f = mockFetch(500, { status: 0 });
+		await expect(
+			createEkoClient(ekoCfg, f).downloadTransactionReport(input),
+		).rejects.toThrow("HTTP 500");
+	});
+
+	it("rejects a file type it does not expect", async () => {
+		const f = fileFetch("<html>", { "content-type": "text/html" });
+		await expect(
+			createEkoClient(ekoCfg, f).downloadTransactionReport(input),
+		).rejects.toThrow("unsupported file type");
+	});
+});
+
+describe("fileNameOf", () => {
+	it.each([
+		["attachment; filename=Statement.pdf", "Statement.pdf"],
+		['attachment; filename="My Statement.xlsx"', "My Statement.xlsx"],
+		["attachment; filename=../../etc/passwd", "passwd"],
+		[null, "statement.xlsx"],
+	])("%s → %s", (header, expected) => {
+		expect(fileNameOf(header, "xlsx")).toBe(expected);
 	});
 });

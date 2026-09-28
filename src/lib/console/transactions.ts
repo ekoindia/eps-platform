@@ -291,3 +291,52 @@ export function describeRow(row: TransactionRow): string {
 	].filter((part): part is string => Boolean(part && part.trim()));
 	return parts.join(" · ");
 }
+
+/** File formats the Export dialog offers, in display order. PDF is the default. */
+export const REPORT_FORMATS = [
+	{ value: "pdf", label: "PDF" },
+	{ value: "xlsx", label: "Excel" },
+] as const;
+
+export type ReportFormat = (typeof REPORT_FORMATS)[number]["value"];
+
+/** Rows a report covers at most — upstream truncates past this (Eloka's cap). */
+export const REPORT_ROW_LIMIT = 50_000;
+
+/** Oldest date the filters offer, in days before today (Eloka's `calendar_min_date`). */
+export const HISTORY_MAX_DAYS = 90;
+
+/**
+ * The BFF's answer to an export: the file itself, or upstream's note that it
+ * will be delivered later (the range took too long to render).
+ */
+export type TransactionReport =
+	| { file: { name: string; contentType: string; base64: string } }
+	| { message: string };
+
+/**
+ * A local calendar date as `YYYY-MM-DD` — what `<input type="date">` reads and
+ * writes. Local, not UTC: `toISOString` would say "yesterday" before 05:30 IST.
+ * @param date - The date to format.
+ * @returns The date in `YYYY-MM-DD` form.
+ */
+export function isoDate(date: Date): string {
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/**
+ * Hands a base64-encoded file to the browser as a download.
+ * @param base64 - The file's bytes, base64-encoded.
+ * @param name - The file name to save as.
+ * @param type - The file's MIME type.
+ */
+export function saveBase64File(base64: string, name: string, type: string): void {
+	const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+	const url = URL.createObjectURL(new Blob([bytes], { type }));
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = name;
+	a.click();
+	URL.revokeObjectURL(url);
+}

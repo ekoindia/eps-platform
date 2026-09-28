@@ -13223,9 +13223,9 @@ const ALL_API_SPECS: ApiSpec[] = [
 		name: "Vehicle & RC Verification",
 		slug: "vehicle-rc",
 		summary:
-			"Verify a vehicle's registration certificate (RC) in real time — owner details, chassis/engine numbers, insurance validity, blacklist status, permits, fitness, and financier info via the VAHAN national database.",
+			"Verify a vehicle's registration certificate (RC) in real time — owner details, chassis/engine numbers, insurance validity, blacklist status, permits, and financier info via the VAHAN national database.",
 		description:
-			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, fitness certificate, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms. Source (VAHAN) data typically reflects real-world changes within 15–30 days.",
+			"Send a vehicle registration number and receive a comprehensive RC dataset in a single API call. The response covers ownership (name, father's name, address), registration details (authority, dates, expiry), insurance (company, policy number, validity), compliance (blacklist, challan, PUCC, emission norms), commercial-vehicle specifics (permit type/validity, national permit, tax status), and financier information. Pan-India coverage via the VAHAN database makes it suitable for driver onboarding, fleet monitoring, motor insurance underwriting, vehicle finance, and used-car platforms. Source (VAHAN) data typically reflects real-world changes within 15–30 days.",
 		relevance: "M",
 		bestFor:
 			"Mobility platforms, logistics companies, fleet operators, motor insurers, vehicle finance and lending platforms, used-car marketplaces.",

@@ -34,8 +34,8 @@ the captions name what the partner is *doing*, not what the link *is*: **Home**
 alone at the top, then **Complete your KYC** (E-sign Documents, Upload Documents),
 **Build** (Credentials, `Integration Docs ↗`, `Build with AI Tools ↗`, Live
 Sandbox (KYC & Verification)) and
-**Account & History** (Load Wallet, Transaction History, Manage My Account, AePS
-Agents, plus the DEV-only Test bench). A group whose items are all unentitled
+**Account & History** (Load Wallet, Transaction History, Fund Settlement (972), Manage
+My Account, AePS Agents, plus the DEV-only Test bench). A group whose items are all unentitled
 renders nothing rather than an empty caption — which is how the KYC section
 disappears once onboarding is behind the partner. Order within a group is
 entitlement-independent and pinned by `ConsoleLayout.nav.test.tsx`, which also

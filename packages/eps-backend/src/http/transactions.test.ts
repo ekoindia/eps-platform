@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Sessions } from "../auth/session";
 import type { EkoClient } from "../clients/eko";
 import type { TransactionRow } from "../types";
+import { EkoReportError } from "../clients/eko";
 import { AppError, errorBody } from "./errors";
 import type { AppEnv } from "./requestId";
 import { mountTransactions } from "./transactions";
@@ -74,6 +75,12 @@ function harness(
 			profile: foundProfile,
 		}),
 		getTransactionHistory: vi.fn().mockResolvedValue({ rows: [row()] }),
+		downloadTransactionReport: vi.fn().mockResolvedValue({
+			kind: "file",
+			name: "Statement.pdf",
+			contentType: "application/pdf",
+			base64: "JVBERi0=",
+		}),
 		...overrides.eko,
 	} as unknown as EkoClient;
 	mountTransactions(app, { sessions, eko });
@@ -264,5 +271,108 @@ describe("transactions search", () => {
 		expect(res.status).toBe(502);
 		expect((await errorOf(res)).code).toBe("NO_ACCOUNT");
 		expect(eko.getTransactionHistory).not.toHaveBeenCalled();
+	});
+});
+
+/** POSTs a report body with the session cookie attached. */
+async function report(app: Hono<AppEnv>, body: unknown): Promise<Response> {
+	return app.request("/transactions/report", {
+		method: "POST",
+		headers: { ...withCookie.headers, "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+}
+
+const RANGE = { start_date: "2026-09-01", tx_date: "2026-09-28" };
+
+describe("transactions report", () => {
+	it("401s without a session cookie", async () => {
+		const { app } = harness(null);
+		const res = await app.request("/transactions/report", { method: "POST" });
+		expect(res.status).toBe(401);
+	});
+
+	it("returns the file for the caller's own account", async () => {
+		const { app, eko } = harness("developer");
+		const res = await report(app, { filters: RANGE, format: "xlsx" });
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			file: {
+				name: "Statement.pdf",
+				contentType: "application/pdf",
+				base64: "JVBERi0=",
+			},
+		});
+		expect(eko.downloadTransactionReport).toHaveBeenCalledWith(
+			expect.objectContaining({
+				accountId: "392961",
+				format: "xlsx",
+				filters: RANGE,
+				identity: { initiatorId: "9990000001", userCode: "1", orgId: 42 },
+			}),
+		);
+	});
+
+	it("defaults to PDF", async () => {
+		const { app, eko } = harness("developer");
+		await report(app, { filters: RANGE });
+		expect(eko.downloadTransactionReport).toHaveBeenCalledWith(
+			expect.objectContaining({ format: "pdf" }),
+		);
+	});
+
+	it("answers 202 with upstream's message when the file will follow later", async () => {
+		const { app } = harness("developer", {
+			eko: {
+				downloadTransactionReport: vi
+					.fn()
+					.mockResolvedValue({ kind: "pending", message: "We'll email it" }),
+			},
+		});
+		const res = await report(app, { filters: RANGE });
+		expect(res.status).toBe(202);
+		expect(await res.json()).toEqual({ message: "We'll email it" });
+	});
+
+	it("surfaces an upstream refusal as REPORT_FAILED", async () => {
+		const { app } = harness("developer", {
+			eko: {
+				downloadTransactionReport: vi
+					.fn()
+					.mockRejectedValue(new EkoReportError("Too many rows")),
+			},
+		});
+		const res = await report(app, { filters: RANGE });
+		expect(res.status).toBe(502);
+		expect((await errorOf(res)).code).toBe("REPORT_FAILED");
+	});
+
+	it.each([
+		["an unknown format", { filters: RANGE, format: "docx" }],
+		["no date range and no TID", { filters: {} }],
+		["only a From date", { filters: { start_date: "2026-09-01" } }],
+		[
+			"From after To",
+			{ filters: { start_date: "2026-09-28", tx_date: "2026-09-01" } },
+		],
+	])("400s %s without calling upstream", async (_label, body) => {
+		const { app, eko } = harness("developer");
+		const res = await report(app, body);
+		expect(res.status).toBe(400);
+		expect((await errorOf(res)).code).toBe("INVALID_INPUT");
+		expect(eko.downloadTransactionReport).not.toHaveBeenCalled();
+	});
+
+	it("accepts a TID alone, with no date range", async () => {
+		const { app } = harness("developer");
+		const res = await report(app, { filters: { tid: "2886973933" } });
+		expect(res.status).toBe(200);
+	});
+
+	it("never forwards an unknown filter key upstream", async () => {
+		const { app, eko } = harness("developer");
+		await report(app, { filters: { ...RANGE, interaction_type_id: "515" } });
+		const { filters } = vi.mocked(eko.downloadTransactionReport).mock.calls[0][0];
+		expect(filters).toEqual(RANGE);
 	});
 });
