@@ -34,6 +34,7 @@ import {
 	FilePen,
 	FlaskConical,
 	KeyRound,
+	Landmark,
 	LayoutDashboard,
 	Menu,
 	PlayCircle,
@@ -181,8 +182,8 @@ const DOCUMENTS_ITEM: NavItem = {
 
 /**
  * Self-service flows the rail links straight to. Each is placed by hand rather
- * than as one block: E-sign Documents opens the KYC section, Manage My Account
- * and AePS Agents sit under Account & History.
+ * than as one block: E-sign Documents opens the KYC section, Fund Settlement,
+ * Manage My Account and AePS Agents sit under Account & History.
  */
 type Flow = { id: number; label: string; icon: typeof FilePen };
 
@@ -207,6 +208,12 @@ const AEPS_AGENTS: Flow = {
 	id: 36,
 	label: "AePS Agents",
 	icon: Users,
+};
+/** Settling the partner's funds out to their bank. Precedes Manage My Account. */
+const FUND_SETTLEMENT: Flow = {
+	id: 972,
+	label: "Fund Settlement",
+	icon: Landmark,
 };
 
 /**
@@ -288,6 +295,7 @@ function ConsoleNav({ onNavigate }: { onNavigate?: () => void }) {
 							},
 						]),
 				TRANSACTIONS_ITEM,
+				...flowItem(interactions, FUND_SETTLEMENT),
 				...flowItem(interactions, MANAGE_ACCOUNT),
 				...flowItem(interactions, AEPS_AGENTS),
 				...DEV_ITEMS,
