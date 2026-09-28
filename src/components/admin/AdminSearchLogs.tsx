@@ -18,6 +18,7 @@ import {
 	type SearchLogQueryCount,
 	type SearchLogRow,
 	type SearchLogSummary,
+	LIFECYCLES,
 } from "@/lib/auth/client";
 
 const DAY_MS = 86_400_000;
@@ -33,6 +34,15 @@ const defaultFilter = (now: number = Date.now()): SearchLogFilter => ({
 /** `part` as a whole-number percentage of `total`; "–" when there is nothing to divide. */
 const percent = (part: number, total: number): string =>
 	total ? `${Math.round((part / total) * 100)}%` : "–";
+
+/** "3 tries · 4.2s" — how hard the visitor worked; empty on pre-context rows. */
+const effort = (row: SearchLogRow): string =>
+	[
+		row.refinements === null ? null : `${row.refinements + 1} tries`,
+		row.durationMs === null ? null : `${(row.durationMs / 1000).toFixed(1)}s`,
+	]
+		.filter(Boolean)
+		.join(" · ");
 
 /** The summary cards, in the order a dropoff review reads them. */
 const cards = (s: SearchLogSummary) => [
@@ -198,6 +208,50 @@ export function AdminSearchLogs() {
 						<option value="ask_ai">Asked AI</option>
 					</select>
 				</label>
+				<label className="flex flex-col gap-1 text-xs">
+					Who
+					<select
+						className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+						value={draft.auth ?? ""}
+						onChange={(e) =>
+							setDraft({
+								...draft,
+								auth: (e.target.value || undefined) as SearchLogFilter["auth"],
+								// Stage only exists for developers.
+								stage: e.target.value === "developer" ? draft.stage : undefined,
+							})
+						}
+					>
+						<option value="">Anyone</option>
+						<option value="anon">Signed out</option>
+						<option value="developer">Developer</option>
+						<option value="signup">Signing up</option>
+						<option value="admin">Admin</option>
+					</select>
+				</label>
+				{draft.auth === "developer" && (
+					<label className="flex flex-col gap-1 text-xs">
+						Account stage
+						<select
+							className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+							value={draft.stage ?? ""}
+							onChange={(e) =>
+								setDraft({
+									...draft,
+									stage: (e.target.value ||
+										undefined) as SearchLogFilter["stage"],
+								})
+							}
+						>
+							<option value="">Any</option>
+							{LIFECYCLES.map((stage) => (
+								<option key={stage} value={stage}>
+									{stage}
+								</option>
+							))}
+						</select>
+					</label>
+				)}
 				<Button type="submit">Apply</Button>
 				<div className="ml-auto flex gap-2">
 					<Button variant="outline" asChild>
@@ -257,11 +311,14 @@ export function AdminSearchLogs() {
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>Time (UTC)</TableHead>
+							<TableHead>Hour (UTC)</TableHead>
 							<TableHead>Query</TableHead>
 							<TableHead className="text-right">Results</TableHead>
 							<TableHead>Outcome</TableHead>
 							<TableHead>Clicked</TableHead>
+							<TableHead>Page</TableHead>
+							<TableHead>Who</TableHead>
+							<TableHead>Effort</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -277,8 +334,17 @@ export function AdminSearchLogs() {
 								<TableCell>{row.outcome}</TableCell>
 								<TableCell className="text-xs text-muted-foreground">
 									{row.clickedCategory
-										? `${row.clickedCategory} #${row.clickedRank}`
+										? `${row.clickedLabel ?? row.clickedCategory} (#${row.clickedRank})`
 										: ""}
+								</TableCell>
+								<TableCell className="text-xs text-muted-foreground">
+									{row.page ?? ""}
+								</TableCell>
+								<TableCell className="text-xs text-muted-foreground">
+									{[row.auth, row.stage].filter(Boolean).join(" · ")}
+								</TableCell>
+								<TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+									{effort(row)}
 								</TableCell>
 							</TableRow>
 						))}

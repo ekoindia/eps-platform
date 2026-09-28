@@ -82,6 +82,38 @@ describe("synonyms and misspellings", () => {
 	});
 });
 
+describe("word forms", () => {
+	// Regression: no stemming meant "verify" never reached "verification" — not
+	// by prefix (verif-y vs verif-i) nor by fuzzy (too many edits) — so "verify
+	// pan" found only the one doc whose slug says "verify" (pan-bulk-verify).
+	it("matches verify to verification", () => {
+		const found = ids("verify pan", "all", 10);
+		expect(found).toContain("api:pan-verification-api");
+		expect(found).toContain("endpoint:pan-bulk-verify");
+		expect(ids("verify gstin", "all", 10)).toContain(
+			"api:gst-verification-api",
+		);
+	});
+
+	it("matches validate to validation", () => {
+		expect(ids("validate passport", "all", 10)).toContain(
+			"api:passport-application-validation-api",
+		);
+	});
+
+	// Mid-word input must still prefix-match the surface form: "verific" is
+	// not a stem, so it only works while the index keeps the unstemmed word.
+	it("keeps prefix matching for a partly typed word", () => {
+		expect(ids("verific pan", "all", 10)).toContain("api:pan-verification-api");
+	});
+
+	it("still bridges a typo in a stemmed word", () => {
+		expect(ids("verfication pan", "all", 10)).toContain(
+			"api:pan-verification-api",
+		);
+	});
+});
+
 describe("type weighting", () => {
 	// Regression: boostDocument receives STORED fields, not the source document.
 	// With storeFields:["id"] the typeWeight lookup was undefined and every

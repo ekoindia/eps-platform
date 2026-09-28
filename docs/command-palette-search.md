@@ -17,7 +17,7 @@ Global fuzzy search across APIs, industries, solution packs and site pages. Impl
 | Concern | Approach |
 |---|---|
 | Search engine | **MiniSearch** (`minisearch@^7`, ~5 KB gz) in `src/lib/search-engine.ts` — BM25 with prefix matching, length-gated fuzzy, and per-field boosts. `cmdk` is left to do rendering and keyboard navigation only (`shouldFilter={false}`); it no longer scores anything. |
-| Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products with a page), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `docs-registry.ts` (endpoints + guides), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), `common-faqs.ts`, plus a static pages list. New APIs/endpoints/industries/solutions appear in search automatically. |
+| Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products with a page), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `docs-registry.ts` (endpoints + guides), `api-recipes.ts` (recipes — category `recipe`, no scope tab; step endpoint slugs are keywords), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), `common-faqs.ts`, plus a static pages list. New APIs/endpoints/industries/solutions appear in search automatically. |
 | Body index | `dist/search-body.json` — long-form page prose, keyed by `SearchItem.id`. Emitted by `vite-plugin-generate-markdown.ts` from the same renderers that produce the `.md` twins, so there is no second source of truth. **Lazily fetched when the palette first mounts**, then the MiniSearch index is rebuilt with a `body` field. 157 entries / ~160 KB (~38 KB gz), entirely off the critical path; a 404 or offline just leaves the label-only index in place. |
 | Lazy loading | `CommandPalette` is a separate Vite chunk, lazy-imported by `Header.tsx` (same pattern as `HeaderDropdownPanels`), mounted on first open, prefetched via `requestIdleCallback`. **Zero initial-bundle impact, zero CLS** — only the fixed-size trigger pill and a keydown listener live in the main bundle. |
 | Data weight | The big data modules (`api-product-pages`, `industries`, `solutions`) are already shared Rollup chunks (used by header dropdowns + detail pages), so the palette references them at no extra network cost. Verified: page-data strings appear in exactly one dist chunk. |
@@ -65,6 +65,13 @@ Revisit when there is evidence rather than intuition: log zero-result queries fi
 
 `TOKEN_ALIASES` handles single tokens; `PHRASE_ALIASES` handles multi-word forms, applied to the raw query *before* MiniSearch tokenizes (the tokenizer would otherwise have already split them).
 
+**Word forms (stemming).** `STEM_RULES` fold two suffix families onto a root: `verify`/`verified`/`verification` → `verif`, `validate`/`validation` → `valid` (roots shorter than 4 characters are left alone, so `state`/`rate` are untouched). Without this, "verify pan" never reached "PAN Verification": not by prefix (verif-y vs verif-i), not by fuzzy (too many edits). The two sides differ on purpose:
+
+- **Index** stores the surface form *and* the root. The surface form keeps synonym rule 1 intact — a half-typed `verific` still prefix-matches `verification`, and a typo like `verfication` still fuzzy-matches.
+- **Query** sends only the root, which prefix-matches every indexed form.
+
+This is not a full Porter stemmer. Add a rule when Search logs show another form pair missing, with a test in the `word forms` block.
+
 ## Body index (long-form prose)
 
 Labels and one-line summaries alone can't answer a lot of real queries — "penny drop" appears in the Bank Account Verification *description*, not its title. `search-body.json` closes that gap.
@@ -75,14 +82,34 @@ Labels and one-line summaries alone can't answer a lot of real queries — "penn
 - **`extractBody`** (`src/lib/markdown/extract-body.ts`) drops frontmatter, the boilerplate canonical-URL blockquote, fenced code and pipe tables; it keeps heading *text* and non-boilerplate blockquote prose. Capped at 1500 chars/document — measured: 500 → 82 KB, 1500 → 160 KB, 3000 → 240 KB raw.
 - **Dev**: served by the plugin's middleware at `/search-body.json`, cached in the plugin closure (336 ms cold → 2 ms warm). Not invalidated on HMR — restart the dev server after editing page data if the body index needs to reflect it.
 
+## Action cards (flagged)
+
+With `VITE_SHOW_PALETTE_ACTIONS=true`, a query that reads as an intent gets a
+pinned **Suggested action** group above the results (All scope only):
+`src/lib/palette-actions/` detects the intent with ordered regex rules, strips
+request phrasing to a subject, and resolves it with this same engine. Today:
+
+- `find_api` → the best product page or endpoint, endpoints with a **Try it**
+  link (`?try=1` opens the docs page's Try-it dialog).
+- `how_to_build` ("how do I integrate DMT", "aeps cash withdrawal flow") → the
+  best recipe (`/recipe/<slug>`), with a **Step 1** link to the first
+  endpoint. No recipe matches → falls back to `find_api` on the same subject,
+  so "how do I verify a bank account" still gets an API card.
+
+Rules are ordered, `how_to_build` before `find_api`. Never auto-acts; Enter on
+the first row opens it. Plan, remaining intents and the gate:
+[palette router roadmap](palette-router-roadmap.md).
+
 ## Files
 
-- `src/lib/search-engine.ts` — MiniSearch config, synonyms, stopwords, ranking, `parseQuery`.
+- `src/lib/search-engine.ts` — MiniSearch config, synonyms, stemming, stopwords, ranking, `parseQuery`.
 - `src/lib/search-engine.test.ts` — ranking behaviour + regression guards.
 - `src/lib/search-index.ts` — `SearchItem` type, `searchItemId()`, `SEARCH_INDEX` builder (lazy chunk only).
 - `src/lib/search-index.test.ts` — index integrity (unique ids, live `/docs` slugs).
 - `src/lib/markdown/extract-body.ts` (+ `.test.ts`) — markdown → searchable prose.
 - `vite-plugin-generate-markdown.ts` — `collectBodies()` + the `search-body.json` emit and dev route.
+- `src/lib/palette-actions/` — action-card rules, resolvers, eval scorer (`eval.test.ts`, see `scripts/palette-eval/`).
+- `src/components/PaletteActionCard.tsx` — the pinned card group.
 - `src/components/CommandPalette.tsx` — palette UI (Dialog + `ui/command.tsx` primitives). Sends one telemetry report per session — see [palette telemetry](features/palette-telemetry.md).
 - `src/components/Header.tsx` — triggers, ⌘K listener, lazy mount + idle prefetch.
 - `index.html` / `src/index.css` — OS detection + kbd-hint visibility.
@@ -90,6 +117,7 @@ Labels and one-line summaries alone can't answer a lot of real queries — "penn
 ## Maintenance
 
 - **Adding a synonym**: one line in `TOKEN_ALIASES` (single word) or `PHRASE_ALIASES` (multi-word) in `src/lib/search-engine.ts`. Check the two rules above first — the test suite enforces them.
+- **Adding a word-form rule** (e.g. `-ment`): one entry in `STEM_RULES`, plus a case in the `word forms` tests.
 - **Adding a searchable static page**: append to `PAGE_ITEMS` in `src/lib/search-index.ts`.
 - **Curating the empty-query view**: edit `SUGGESTED_API_IDS` (APIs) or rely on `priority: 1` (industries/solutions); set `suggested: true` on page items.
 - **Retuning ranking**: adjust the boosts or `TYPE_ALPHA` in `search-engine.ts`, then `npx vitest run src/lib/search-engine.test.ts`. The suite pins the cases that previously regressed.

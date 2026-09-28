@@ -1,0 +1,7 @@
+{"query":"dmt api","intent":"find_api","target":"action:find_api:dmt-api","split":"dev"}
+{"query":"is there an api to fetch a bbps bill","intent":"find_api","target":"action:find_api:bbps-fetch-bill","split":"dev"}
+{"query":"check gst number","intent":"find_api","split":"dev"}
+{"query":"pricing","intent":null,"split":"dev"}
+{"query":"what is the weather today","intent":null,"split":"test"}
+{"query":"endpoint to send money","intent":"find_api","split":"test"}
+{"query":"how do i integrate dmt","intent":"how_to_build","target":"action:how_to_build:dmt-fino-send-money","split":"dev"}

@@ -12,9 +12,22 @@ const row = (id: number, query: string): SearchLogRow => ({
 	outcome: "abandon",
 	clickedCategory: null,
 	clickedRank: null,
+	clickedId: null,
+	clickedLabel: null,
+	page: "/products/dmt-api",
+	auth: "developer",
+	stage: "kyc-pending",
+	trigger: "keyboard",
+	device: "desktop",
+	refinements: 2,
+	durationMs: 4200,
+	bodyIndexLoaded: true,
+	actionIntent: null,
 });
 
-vi.mock("@/lib/auth/client", () => ({
+// Real module for its constants (LIFECYCLES); only the network client is faked.
+vi.mock("@/lib/auth/client", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/auth/client")>()),
 	authClient: {
 		adminSearchLogs: {
 			overview: vi.fn(async () => ({
@@ -68,5 +81,20 @@ describe("AdminSearchLogs", () => {
 		expect(await screen.findByText("older")).toBeInTheDocument();
 		expect(screen.getByText("newest")).toBeInTheDocument();
 		expect(screen.queryByText("Load more")).not.toBeInTheDocument();
+	});
+
+	it("shows page, who and effort; stage filter only for developers", async () => {
+		render(<AdminSearchLogs />);
+
+		expect(await screen.findByText("newest")).toBeInTheDocument();
+		expect(screen.getByText("/products/dmt-api")).toBeInTheDocument();
+		expect(screen.getByText("developer · kyc-pending")).toBeInTheDocument();
+		expect(screen.getByText("3 tries · 4.2s")).toBeInTheDocument();
+
+		expect(screen.queryByLabelText("Account stage")).not.toBeInTheDocument();
+		fireEvent.change(screen.getByLabelText("Who"), {
+			target: { value: "developer" },
+		});
+		expect(screen.getByLabelText("Account stage")).toBeInTheDocument();
 	});
 });

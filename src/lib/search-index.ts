@@ -14,6 +14,7 @@ import {
 	Rocket,
 	ShieldCheck,
 	Users,
+	Workflow,
 	type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ import {
 } from "@/lib/data/api-product-pages";
 import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
 import { getActiveProducts, productHref } from "@/lib/data/api-products";
+import { RECIPES, recipeHref } from "@/lib/data/api-recipes";
 import { docsHref, getAllDocNodes } from "@/lib/data/docs-registry";
 import { ACTIVE_INDUSTRIES_LIST } from "@/lib/data/industries";
 import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
@@ -33,6 +35,7 @@ export type SearchCategory =
 	| "api"
 	| "endpoint"
 	| "guide"
+	| "recipe"
 	| "sdk"
 	| "industry"
 	| "solution"
@@ -74,6 +77,8 @@ const TYPE_WEIGHT: Record<SearchCategory, number> = {
 	api: 6,
 	endpoint: 5,
 	guide: 4,
+	// A recipe is a step-by-step guide to a reader; it lives under /recipe.
+	recipe: 4,
 	// Same rank as a guide: an SDK guide IS a guide to a reader, it just lives
 	// in its own /docs/sdk section rather than the /docs/<slug> namespace.
 	sdk: 4,
@@ -182,6 +187,28 @@ const buildGuideItems = (): SearchItem[] =>
 			// Only the first guide (How Auth Works) surfaces in the empty-query view.
 			suggested: n.slug === "how-auth-works",
 		}));
+
+/** Builds recipe search items: multi-step integration flows (`/recipe/<slug>`).
+ * Step endpoint slugs go in as keywords so "fetch bill" also surfaces the flow
+ * that uses it. */
+const buildRecipeItems = (): SearchItem[] =>
+	RECIPES.map((r) => ({
+		id: searchItemId("recipe", r.slug),
+		slug: r.slug,
+		label: r.name,
+		sublabel: r.summary,
+		href: recipeHref(r.slug),
+		category: "recipe" as const,
+		keywords: [
+			r.productId ?? "",
+			"recipe",
+			"flow",
+			"integration",
+			...r.steps.map((step) => step.specSlug),
+		].filter(Boolean),
+		icon: Workflow,
+		typeWeight: TYPE_WEIGHT.recipe,
+	}));
 
 /** Builds SDK guide search items. Their own category, because they live in the
  * `/docs/sdk` section rather than the flat `/docs/<slug>` namespace the "guide"
@@ -443,6 +470,7 @@ const buildSearchIndex = (): SearchItem[] => [
 	...buildApiItems(),
 	...buildEndpointItems(),
 	...buildGuideItems(),
+	...buildRecipeItems(),
 	...buildSdkItems(),
 	...buildSolutionItems(),
 	...buildIndustryItems(),

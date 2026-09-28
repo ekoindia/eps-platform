@@ -1,11 +1,16 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import {
+	type NewPaletteRow,
 	openPaletteStore,
 	type PaletteRow,
 	scheduleRetention,
 } from "./paletteStore";
 
-type NewRow = Omit<PaletteRow, "id">;
+type NewRow = NewPaletteRow;
 
 const row = (over: Partial<NewRow>): NewRow => ({
 	ts: "2026-09-10T10:00:00.000Z",
@@ -121,5 +126,48 @@ describe("scheduleRetention", () => {
 		stop();
 
 		expect(store.summary({}).total).toBe(1);
+	});
+});
+
+describe("schema upgrade", () => {
+	// Prod may hold a file written before the context columns existed.
+	it("adds missing columns in place; old rows read them as null", () => {
+		const dir = mkdtempSync(join(tmpdir(), "palette-"));
+		const path = join(dir, "old.db");
+		const legacy = new DatabaseSync(path);
+		legacy.exec(`CREATE TABLE palette_query (
+			id INTEGER PRIMARY KEY, ts TEXT NOT NULL, query TEXT NOT NULL,
+			scope TEXT NOT NULL, result_count INTEGER NOT NULL, outcome TEXT NOT NULL,
+			clicked_category TEXT, clicked_rank INTEGER)`);
+		legacy.exec(`INSERT INTO palette_query (ts, query, scope, result_count, outcome)
+			VALUES ('2026-09-01T10:00:00.000Z', 'old', 'all', 0, 'abandon')`);
+		legacy.close();
+
+		const store = openPaletteStore(path);
+		store.insert(
+			row({
+				query: "new",
+				auth: "developer",
+				stage: "active",
+				bodyIndexLoaded: true,
+			}),
+		);
+		const [newer, older] = store.rows({}, { limit: 10 });
+		store.close();
+		// Reopening an upgraded file must not try to add the columns again.
+		openPaletteStore(path).close();
+		rmSync(dir, { recursive: true });
+
+		expect(older).toMatchObject({
+			query: "old",
+			auth: null,
+			bodyIndexLoaded: null,
+		});
+		expect(newer).toMatchObject({
+			query: "new",
+			auth: "developer",
+			stage: "active",
+			bodyIndexLoaded: true,
+		});
 	});
 });

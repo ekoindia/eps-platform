@@ -19,7 +19,7 @@ function harness() {
 	mountPaletteLog(app, {
 		kv: createInMemoryKV(),
 		store,
-		now: () => new Date("2026-09-27T00:00:00Z"),
+		now: () => new Date("2026-09-27T10:47:31.250Z"),
 	});
 	const rows = () => store.rows({}, { limit: 100 });
 	const post = (body: string, ip = "1.2.3.4") =>
@@ -41,7 +41,8 @@ const valid = {
 };
 
 describe("POST /telemetry/palette", () => {
-	it("stores one redacted row with no ip or session and answers 204", async () => {
+	// An older site build sends no context: the row stores nulls, not a 400.
+	it("stores one redacted row, hour-rounded, with no ip or session", async () => {
 		const { post, rows } = harness();
 
 		const res = await post(JSON.stringify(valid));
@@ -50,15 +51,61 @@ describe("POST /telemetry/palette", () => {
 		expect(rows()).toEqual([
 			{
 				id: 1,
-				ts: "2026-09-27T00:00:00.000Z",
+				ts: "2026-09-27T10:00:00.000Z",
 				query: "verify pan …",
 				scope: "all",
 				resultCount: 3,
 				outcome: "click",
 				clickedCategory: "endpoint",
 				clickedRank: 1,
+				page: null,
+				auth: null,
+				stage: null,
+				trigger: null,
+				device: null,
+				clickedId: null,
+				clickedLabel: null,
+				refinements: null,
+				durationMs: null,
+				bodyIndexLoaded: null,
+				actionIntent: null,
 			},
 		]);
+	});
+
+	it("stores context, redacting page and label server-side", async () => {
+		const { post, rows } = harness();
+
+		await post(
+			JSON.stringify({
+				...valid,
+				page: "/console/9876543210",
+				auth: "developer",
+				stage: "kyc-pending",
+				trigger: "mobile_button",
+				device: "mobile",
+				clickedId: "endpoint:pan-verification",
+				clickedLabel: "PAN Verification",
+				refinements: 2,
+				durationMs: 4200,
+				bodyIndexLoaded: false,
+				actionIntent: "find_api",
+			}),
+		);
+
+		expect(rows()[0]).toMatchObject({
+			page: "/console/…",
+			auth: "developer",
+			stage: "kyc-pending",
+			trigger: "mobile_button",
+			device: "mobile",
+			clickedId: "endpoint:pan-verification",
+			clickedLabel: "PAN Verification",
+			refinements: 2,
+			durationMs: 4200,
+			bodyIndexLoaded: false,
+			actionIntent: "find_api",
+		});
 	});
 
 	// A stale client may skip its own redaction; the server's is the guarantee.
@@ -83,6 +130,25 @@ describe("POST /telemetry/palette", () => {
 		["unknown outcome", JSON.stringify({ ...valid, outcome: "maybe" })],
 		["non-slug scope", JSON.stringify({ ...valid, scope: "<script>" })],
 		["negative count", JSON.stringify({ ...valid, resultCount: -1 })],
+		["unknown auth", JSON.stringify({ ...valid, auth: "root" })],
+		["free-form stage", JSON.stringify({ ...valid, stage: "Rahul, Pune" })],
+		["relative page", JSON.stringify({ ...valid, page: "https://x.test/" })],
+		["unknown trigger", JSON.stringify({ ...valid, trigger: "voice" })],
+		["spaced item id", JSON.stringify({ ...valid, clickedId: "a b" })],
+		[
+			"overlong label",
+			JSON.stringify({ ...valid, clickedLabel: "x".repeat(201) }),
+		],
+		["string refinements", JSON.stringify({ ...valid, refinements: "2" })],
+		[
+			"week-long duration",
+			JSON.stringify({ ...valid, durationMs: 7 * 86_400_000 }),
+		],
+		["non-boolean index", JSON.stringify({ ...valid, bodyIndexLoaded: 1 })],
+		[
+			"unknown action intent",
+			JSON.stringify({ ...valid, actionIntent: "delete_all" }),
+		],
 	])("rejects %s with 400 and stores nothing", async (_label, body) => {
 		const { post, rows } = harness();
 
@@ -93,7 +159,7 @@ describe("POST /telemetry/palette", () => {
 	it("rejects an oversized body with 413", async () => {
 		const { post } = harness();
 
-		expect((await post("x".repeat(3000))).status).toBe(413);
+		expect((await post("x".repeat(5000))).status).toBe(413);
 	});
 
 	it("rate-limits per ip", async () => {

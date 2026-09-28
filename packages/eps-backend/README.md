@@ -123,7 +123,11 @@ carry no ip, session or request id. Admins read them at `/admin` → Search logs
 | GET    | /admin/search-logs/export   | admin cookie | Streamed attachment, `format=jsonl` (default) or `csv` (formula-safe) |
 
 All three take `from`/`to` (`YYYY-MM-DD`, UTC, inclusive), `q` (substring),
-`outcome` and `scope`. Storage: `ANALYTICS_DB_PATH` (prod: the
+`outcome`, `scope`, `auth` and `stage`. Rows also carry optional context (page,
+auth, developer lifecycle, trigger, device, clicked id/label, refinements,
+duration, body-index flag, action-card intent); `ts` is stored rounded to the hour. Columns added
+after first release are created on startup (`ADDED_COLUMNS` in
+`src/analytics/paletteStore.ts`). Storage: `ANALYTICS_DB_PATH` (prod: the
 `eps-analytics-data` volume, WAL mode). Unset = in-memory. Rows older than 365
 days are purged at startup and daily — the privacy policy promises 12 months.
 Single-writer by design; move to Postgres if the backend ever runs as more than
