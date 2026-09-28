@@ -45,6 +45,7 @@ Legend: ✅ done · ⏳ in progress / waiting · ▶️ next · ⬜ not started 
 | Telemetry privacy | Query text never to GTM; redacted twice; rows unlinked to accounts; `ts` rounded to the hour; page/stage/label never to GA4 (small user base ⇒ re-identification risk) |
 | Retention | 365 days, purged daily; privacy clause says 12 months (legal-reviewed) |
 | Sample rate | 1 (all sessions) — the user base is small |
+| Deploy cadence | **Ship every improvement to prod as soon as it is verified** (tests + browser) — decided 2026-09-28, deadline to grow EPS business. No holding fixes for review dates or to keep the baseline clean; instead log each deploy date in the progress log so telemetry can be compared before/after by date |
 | Comparator first | Needle ships only if it beats rules + MiniSearch **by a clear margin, end to end**. If rules are good enough, the 29 MB model is not needed |
 
 ## Phase 0 — telemetry (✅ shipped)
@@ -66,9 +67,10 @@ fix (see gotchas).
   zero-result %, abandon %, click-through %, top failing queries, pages with
   the most failing searches, effort (tries/seconds) by `auth`/`stage`.
   Ship quick wins from the failing list immediately (synonyms in
-  `TOKEN_ALIASES`/`PHRASE_ALIASES`, `src/lib/search-engine.ts`; missing content)
-  — they raise the bar every later phase must clear. Record the numbers in the
-  progress log **before** and after the fixes.
+  `TOKEN_ALIASES`/`PHRASE_ALIASES`, word forms in `STEM_RULES`,
+  `src/lib/search-engine.ts`; missing content) — they raise the bar every later
+  phase must clear. Search fixes also ship as soon as found, before this review
+  (see Deploy cadence); compare numbers around each logged deploy date.
 - **~2026-10-26 eval-set cut**: export JSONL, dedupe, label (below).
 
 ## Phase 1a — rules + MiniSearch action cards (▶️ next)
@@ -164,12 +166,11 @@ signup started/completed, chat availability equal across arms.
 - **Search categories:** `api` = product pages, `endpoint` = REST operations.
 - **Redaction lives twice** (site + backend) and is pinned by
   `src/lib/analytics.parity.test.ts`.
-- **"verify" ≠ "verification" in search.** MiniSearch has no stemming, and
-  synonym rule 1 forbids aliasing words the corpus uses ("verify" is in
-  `pan-bulk-verify`, `verify-gstin`). So "verify pan" finds only *Bulk* PAN
-  Verification — in the palette's own results and therefore in the card.
-  Candidate fix for the week-2 review: a light stemmer (verify/verification,
-  validate/validation) in the tokenizer, both sides, with a regression test.
+- **Word forms need stemming, not aliases.** "verify pan" found only *Bulk*
+  PAN Verification: MiniSearch has no stemming, and synonym rule 1 forbids
+  aliasing words the corpus uses. Fixed 2026-09-28 with `STEM_RULES`: index
+  keeps surface form + root (so partial words and typos still match), query
+  sends the root only. Stemming both sides alone would break mid-word typing.
 - **cmdk in jsdom:** components rendering cmdk items need
   `Element.prototype.scrollIntoView` stubbed in the test.
 - **Module mocks hide constants:** tests mocking `@/lib/auth/client` spread
@@ -178,6 +179,11 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — Search fix: word-form stemming (`STEM_RULES` in
+  `src/lib/search-engine.ts`), "verify pan" now returns the PAN Verification
+  product + all PAN endpoints, same as "pan verification"; the find_api card
+  follows. Browser-verified. Deploy cadence changed to ship-as-verified.
 
 - **2026-09-28** — Phase 1a scaffolding + `find_api` built on `dev` behind
   `VITE_SHOW_PALETTE_ACTIONS` (off): `src/lib/palette-actions/` (amount

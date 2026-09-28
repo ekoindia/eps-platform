@@ -65,6 +65,13 @@ Revisit when there is evidence rather than intuition: log zero-result queries fi
 
 `TOKEN_ALIASES` handles single tokens; `PHRASE_ALIASES` handles multi-word forms, applied to the raw query *before* MiniSearch tokenizes (the tokenizer would otherwise have already split them).
 
+**Word forms (stemming).** `STEM_RULES` fold two suffix families onto a root: `verify`/`verified`/`verification` → `verif`, `validate`/`validation` → `valid` (roots shorter than 4 characters are left alone, so `state`/`rate` are untouched). Without this, "verify pan" never reached "PAN Verification": not by prefix (verif-y vs verif-i), not by fuzzy (too many edits). The two sides differ on purpose:
+
+- **Index** stores the surface form *and* the root. The surface form keeps synonym rule 1 intact — a half-typed `verific` still prefix-matches `verification`, and a typo like `verfication` still fuzzy-matches.
+- **Query** sends only the root, which prefix-matches every indexed form.
+
+This is not a full Porter stemmer. Add a rule when Search logs show another form pair missing, with a test in the `word forms` block.
+
 ## Body index (long-form prose)
 
 Labels and one-line summaries alone can't answer a lot of real queries — "penny drop" appears in the Bank Account Verification *description*, not its title. `search-body.json` closes that gap.
@@ -88,7 +95,7 @@ first row opens it. Plan, remaining intents and the gate:
 
 ## Files
 
-- `src/lib/search-engine.ts` — MiniSearch config, synonyms, stopwords, ranking, `parseQuery`.
+- `src/lib/search-engine.ts` — MiniSearch config, synonyms, stemming, stopwords, ranking, `parseQuery`.
 - `src/lib/search-engine.test.ts` — ranking behaviour + regression guards.
 - `src/lib/search-index.ts` — `SearchItem` type, `searchItemId()`, `SEARCH_INDEX` builder (lazy chunk only).
 - `src/lib/search-index.test.ts` — index integrity (unique ids, live `/docs` slugs).
@@ -103,6 +110,7 @@ first row opens it. Plan, remaining intents and the gate:
 ## Maintenance
 
 - **Adding a synonym**: one line in `TOKEN_ALIASES` (single word) or `PHRASE_ALIASES` (multi-word) in `src/lib/search-engine.ts`. Check the two rules above first — the test suite enforces them.
+- **Adding a word-form rule** (e.g. `-ment`): one entry in `STEM_RULES`, plus a case in the `word forms` tests.
 - **Adding a searchable static page**: append to `PAGE_ITEMS` in `src/lib/search-index.ts`.
 - **Curating the empty-query view**: edit `SUGGESTED_API_IDS` (APIs) or rely on `priority: 1` (industries/solutions); set `suggested: true` on page items.
 - **Retuning ranking**: adjust the boosts or `TYPE_ALPHA` in `search-engine.ts`, then `npx vitest run src/lib/search-engine.test.ts`. The suite pins the cases that previously regressed.

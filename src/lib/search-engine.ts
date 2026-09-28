@@ -125,13 +125,59 @@ const norm = (term: string): string =>
 	term.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 /**
- * Shared index/query term pipeline: normalise → drop stopwords → canonicalise.
- * Returning null tells MiniSearch to skip the token entirely.
+ * Suffix rules that fold word forms onto a shared root: verify / verified /
+ * verification → "verif", validate / validation → "valid". Without them
+ * "verify" reaches "verification" neither by prefix nor by fuzzy.
+ *
+ * ponytail: two suffix families, not a full Porter stemmer — add a rule when
+ * the Search logs show another form pair missing.
  */
-const processTerm = (term: string): string | null => {
+const STEM_RULES: [RegExp, string][] = [
+	[/ifications?$/, "if"],
+	[/if(?:y|ied|ies|ying)$/, "if"],
+	[/ations?$/, ""],
+	[/at(?:e|ed|es|ing)$/, ""],
+];
+
+/** Shortest root a rule may leave — keeps "state", "rate", "gate" intact. */
+const MIN_STEM = 4;
+
+const stem = (term: string): string => {
+	const rule = STEM_RULES.find(([pattern]) => pattern.test(term));
+	const root = rule ? term.replace(rule[0], rule[1]) : term;
+	return root.length >= MIN_STEM ? root : term;
+};
+
+/**
+ * Normalise → drop stopwords → canonicalise. Returning null tells MiniSearch
+ * to skip the token entirely.
+ */
+const baseTerm = (term: string): string | null => {
 	const n = norm(term);
 	if (!n || STOPWORDS.has(n)) return null;
 	return TOKEN_ALIASES[n] ?? n;
+};
+
+/**
+ * Index side keeps the surface form AND its root. The surface form is what
+ * lets a half-typed "verific" prefix-match and a typo fuzzy-match (synonym
+ * rule 1 above); the root is what a stemmed query lands on.
+ */
+const indexTerm = (term: string): string | string[] | null => {
+	const base = baseTerm(term);
+	if (!base) return null;
+	const root = stem(base);
+	return root === base ? base : [base, root];
+};
+
+/**
+ * Query side sends only the root: "verify" → "verif", which prefix-matches
+ * both "verify" and "verification" documents. A partial word that no rule
+ * touches ("verific") passes through unchanged and prefix-matches the surface.
+ */
+const queryTerm = (term: string): string | null => {
+	const base = baseTerm(term);
+	return base && stem(base);
 };
 
 /** Applies PHRASE_ALIASES to a raw query before MiniSearch tokenizes it. */
@@ -184,12 +230,12 @@ export const buildEngine = (
 		// boostDocument, not the original document. Omit it and the type
 		// multiplier silently collapses to 1.0 for every result.
 		storeFields: ["id", "typeWeight"],
-		processTerm,
+		processTerm: indexTerm,
 		searchOptions: {
 			prefix: true,
 			fuzzy: fuzzyForTerm,
 			combineWith: "AND",
-			processTerm,
+			processTerm: queryTerm,
 			boost: {
 				slug: 8,
 				label: 3,
