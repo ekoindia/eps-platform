@@ -246,6 +246,11 @@ jobs:
           # but the Redis adapter (Lua incr, GETDEL, fail-closed) stays unproven.
           REDIS_TEST_URL: redis://localhost:6379
 
+      # Tests run the TS source; this proves the shipped bundle's imports
+      # resolve (a stripped `node:` prefix crash-looped prod on 2026-09-28).
+      - name: Check eps-backend bundle imports resolve
+        run: npm run check:dist -w @ekoindia/eps-backend
+
       - name: Shellcheck deploy scripts
         run: |
           shellcheck packages/eps-backend/deploy/poller/poll.sh \
