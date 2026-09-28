@@ -1467,7 +1467,7 @@ describe("downloadTransactionReport", () => {
 	const JSON_TYPE = { "content-type": "application/json" };
 
 	function fileFetch(
-		body: BodyInit,
+		body: ConstructorParameters<typeof Response>[0],
 		headers: Record<string, string>,
 		status = 200,
 	): typeof fetch {
