@@ -101,10 +101,13 @@ An npm-workspaces monorepo. All three npm packages already carry
 
 ### `@ekoindia/eps-context-mcp` (local + hosted MCP server)
 
-Local **stdio** MCP server exposing **10 tiered, secret-free** tools over the
+Local **stdio** MCP server exposing **13 tiered, secret-free** tools over the
 baked bundle: `list_apis`, `list_topics`, `list_recipes`, `list_sdks`, `search`,
-`get_api`, `get_topic`, `get_recipe`, `get_sdk`, `get_signing_snippet`,
-`debug_auth`, `get_meta`. It reads the
+`get_api`, `get_topic`, `get_recipe`, `get_sdk`, `get_faqs`,
+`get_signing_snippet`, `debug_auth`, `get_meta`. FAQs come from
+`GLOBAL_FAQS` + `PRICING_FAQS` (`build-agent-bundle.ts`, optional
+`AgentBundle.faqs`, links absolutized) and are deliberately left out of the
+`bundleVersion` hash, like `sdks`. It reads the
 **baked** `data/eps.json` shipped in the package; set `EPS_BUNDLE_URL` to fetch
 a fresher bundle at startup. No secrets are ever required or handled.
 
@@ -119,6 +122,15 @@ endpoint is hosted **in-process by eps-backend** (`src/http/contextMcp.ts`,
 mounted when `CONTEXT_BUNDLE_URL` is set), which re-validates the bundle against
 `https://eps.eko.in/agent/eps.json` on a TTL — so a docs change reaches remote
 agents without republishing the package or redeploying the server.
+
+For clients that cannot speak MCP (ChatGPT custom-GPT Actions, Gemini
+function calling, n8n), the same app also serves a **REST shim**:
+`GET /context/openapi.json` (OpenAPI 3.1, generated from `tools/list`) and
+`POST /context/tools/<name>` (`src/rest.ts`). Each request drives the real
+MCP server through an in-memory client, so there is no second copy of the
+tools; only `readOnlyHint` tools are published. REST paths get a
+`{error:{code,message}}` envelope from the backend's 503 guard and `onError`
+instead of JSON-RPC (`contextMcp.ts`).
 
 The `@latest` tag keeps users on the newest publish (code + baked bundle)
 without editing config. The server also does a best-effort npm version check on

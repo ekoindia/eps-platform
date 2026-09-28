@@ -33,6 +33,7 @@ describe("eps-context-mcp tools", () => {
 			[
 				"debug_auth",
 				"get_api",
+				"get_faqs",
 				"get_meta",
 				"get_recipe",
 				"get_sdk",
@@ -246,5 +247,45 @@ describe("eps-context-mcp tools", () => {
 			arguments: { language: "csharp" },
 		});
 		expect(bad.isError).toBe(true);
+	});
+
+	it("get_faqs filters by tag, ranks by query, links are absolute", async () => {
+		const client = await connect();
+		const all = parse(
+			await client.callTool({ name: "get_faqs", arguments: {} }),
+		);
+		expect(all.length).toBeGreaterThan(0);
+		for (const faq of all) expect(faq.a).not.toMatch(/\]\(\//);
+
+		const pricing = parse(
+			await client.callTool({
+				name: "get_faqs",
+				arguments: { tag: "pricing" },
+			}),
+		);
+		expect(pricing.length).toBeGreaterThan(0);
+		expect(pricing.every((f: { tag: string }) => f.tag === "pricing")).toBe(
+			true,
+		);
+
+		const ranked = parse(
+			await client.callTool({
+				name: "get_faqs",
+				arguments: { query: "billing", limit: 2 },
+			}),
+		);
+		expect(ranked.length).toBeLessThanOrEqual(2);
+		expect(`${ranked[0].q} ${ranked[0].a}`.toLowerCase()).toContain("billing");
+	});
+
+	it("get_faqs tolerates a bundle built before FAQs shipped", async () => {
+		const { faqs: _dropped, ...legacy } = bundle;
+		const server = createEpsServer(legacy, "remote");
+		const client = new Client({ name: "test", version: "0" });
+		const [a, b] = InMemoryTransport.createLinkedPair();
+		await Promise.all([server.connect(a), client.connect(b)]);
+		const res = await client.callTool({ name: "get_faqs", arguments: {} });
+		expect(res.isError).toBeFalsy();
+		expect(parse(res)).toEqual([]);
 	});
 });

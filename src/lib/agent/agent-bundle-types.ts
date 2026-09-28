@@ -147,12 +147,22 @@ export interface AgentSdk {
 	example: string;
 }
 
+/** One FAQ: `a` is markdown with absolute site links. */
+export interface AgentFaq {
+	q: string;
+	a: string;
+	tag?: string;
+	links?: { label: string; href: string }[];
+}
+
 export interface AgentBundle {
 	meta: AgentBundleMeta;
 	topics: AgentTopics;
 	apis: AgentApiDetail[];
 	recipes: Recipe[];
 	sdks: AgentSdk[];
+	/** Optional: bundles built before FAQs shipped have none. */
+	faqs?: AgentFaq[];
 }
 
 /** Index slice: compact lists only, no full bodies. */

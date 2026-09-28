@@ -2,6 +2,7 @@ import type {
 	AgentApiDetail,
 	AgentApiIndexEntry,
 	AgentBundle,
+	AgentFaq,
 	AgentSdk,
 	AgentTopicId,
 	AgentTopics,
@@ -121,3 +122,33 @@ export const getSdk = (
 	language: string,
 ): AgentSdk | undefined =>
 	(bundle.sdks ?? []).find((s) => s.lang === language || s.slug === language);
+
+/** Distinct FAQ tags in the bundle, in first-seen order (empty for a bundle
+ * built before FAQs shipped). */
+export const listFaqTags = (bundle: AgentBundle): string[] => [
+	...new Set((bundle.faqs ?? []).flatMap((f) => (f.tag ? [f.tag] : []))),
+];
+
+/**
+ * FAQs, optionally narrowed to one tag and/or ranked by a free-text query
+ * (same zero-dependency term scoring as {@link searchApis}, over q + a).
+ * Without a query, source order is kept.
+ */
+export const getFaqs = (
+	bundle: AgentBundle,
+	{ tag, query, limit }: { tag?: string; query?: string; limit?: number } = {},
+): AgentFaq[] => {
+	const pool = (bundle.faqs ?? []).filter((f) => !tag || f.tag === tag);
+	const terms = (query ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+	const ranked = terms.length
+		? pool
+				.map((f) => {
+					const hay = `${f.q} ${f.a}`.toLowerCase();
+					return { f, score: terms.filter((t) => hay.includes(t)).length };
+				})
+				.filter((s) => s.score > 0)
+				.sort((x, y) => y.score - x.score)
+				.map((s) => s.f)
+		: pool;
+	return limit !== undefined ? ranked.slice(0, limit) : ranked;
+};

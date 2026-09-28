@@ -32,7 +32,11 @@ function bundle(bundleVersion: string) {
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
 	return new Response(JSON.stringify(body), {
 		status: 200,
-		headers: { "content-type": "application/json", etag: '"v1"', ...init.headers },
+		headers: {
+			"content-type": "application/json",
+			etag: '"v1"',
+			...init.headers,
+		},
 		...init,
 	});
 }
@@ -180,7 +184,9 @@ describe("mountContextMcp", () => {
 				jsonResponse({
 					meta: { bundleVersion: "idx" },
 					topics: ["auth", "errors"],
-					apis: [{ slug: "pan-verify", name: "PAN", method: "POST", path: "/pan" }],
+					apis: [
+						{ slug: "pan-verify", name: "PAN", method: "POST", path: "/pan" },
+					],
 					recipes: [],
 				}),
 		],
@@ -240,7 +246,7 @@ describe("mountContextMcp", () => {
 		const app = harness({ fetchImpl: fetchImpl as unknown as typeof fetch });
 		// Mirrors app.ts: Hono sends thrown handler errors to onError, never to a
 		// middleware catch, so containment is asserted the way production wires it.
-		app.onError((_err, c) => c.json(contextMcpErrorBody(), 500));
+		app.onError((_err, c) => c.json(contextMcpErrorBody(c.req.path), 500));
 		app.get("/context/boom", () => {
 			throw new Error("kaboom");
 		});
@@ -254,4 +260,42 @@ describe("mountContextMcp", () => {
 		});
 	});
 
+	it("serves the REST shim through the mount (openapi + a tool call)", async () => {
+		const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(bundle("aaa")));
+		const app = harness({ fetchImpl: fetchImpl as unknown as typeof fetch });
+		await settle();
+
+		const doc = await app.request("https://mcp.eko.in/context/openapi.json");
+		expect(doc.status).toBe(200);
+		const body = (await doc.json()) as {
+			servers: { url: string }[];
+			paths: Record<string, unknown>;
+		};
+		expect(body.servers[0].url).toBe("https://mcp.eko.in/context");
+		expect(Object.keys(body.paths)).toContain("/tools/get_api");
+
+		const call = await app.request("/context/tools/get_api", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ slug: "pan-verify" }),
+		});
+		expect(call.status).toBe(200);
+		expect(await call.json()).toMatchObject({ slug: "pan-verify" });
+	});
+
+	it("uses the REST envelope for REST-shim 503s and handler failures", async () => {
+		const fetchImpl = vi.fn().mockRejectedValue(new Error("offline"));
+		const app = harness({ fetchImpl: fetchImpl as unknown as typeof fetch });
+		app.onError((_err, c) => c.json(contextMcpErrorBody(c.req.path), 500));
+		await settle();
+
+		const down = await app.request("/context/tools/search", { method: "POST" });
+		expect(down.status).toBe(503);
+		expect(await down.json()).toEqual({
+			error: { code: "UNAVAILABLE", message: "Context bundle not loaded yet" },
+		});
+		expect(contextMcpErrorBody("/context/tools/x")).toEqual({
+			error: { code: "INTERNAL", message: "Internal error" },
+		});
+	});
 });

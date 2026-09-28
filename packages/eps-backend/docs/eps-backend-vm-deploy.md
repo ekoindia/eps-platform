@@ -458,6 +458,9 @@ server {
 nginx -t && systemctl reload nginx
 
 curl -s https://mcp.eko.in/context/healthz     # {"ok":true,"bundleVersion":"…","source":"remote"}
+# REST shim for non-MCP clients — same location block, same limit_req
+curl -s https://mcp.eko.in/context/openapi.json | jq '.paths | keys'
+curl -s -X POST https://mcp.eko.in/context/tools/list_recipes
 curl -s https://mcp.eko.in/transact/healthz    # regression: still 200
 curl -s -o /dev/null -w '%{http_code}\n' https://mcp.eko.in/   # 404, namespace stays clean
 ```

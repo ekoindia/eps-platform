@@ -270,7 +270,7 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 				rid: c.get("rid"),
 				err,
 			});
-			return c.json(contextMcpErrorBody(), 500);
+			return c.json(contextMcpErrorBody(c.req.path), 500);
 		}
 		if (err instanceof AppError) {
 			return c.json(
@@ -687,7 +687,8 @@ export function createApp(deps: Deps): Hono<AppEnv> {
 	});
 
 	// Local-dev only; loadConfig refuses the flag under production settings.
-	if (cfg.devAdminLogin) mountDevAdminLogin(app, { cfg, sessions, securityLog });
+	if (cfg.devAdminLogin)
+		mountDevAdminLogin(app, { cfg, sessions, securityLog });
 
 	mountSignup(app, { sessions, signup, eko, zoho, cfg, auth });
 	mountTransactions(app, { sessions, eko });

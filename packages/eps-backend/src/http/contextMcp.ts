@@ -29,8 +29,26 @@ const rpcError = (code: number, message: string) => ({
 	id: null,
 });
 
+/** The REST face of the tools (`/context/tools/*`, `/context/openapi.json`)
+ * is plain HTTP, so its errors use a REST envelope rather than JSON-RPC. */
+const isRestPath = (path: string) =>
+	path === "/context/openapi.json" || path.startsWith("/context/tools/");
+
+/** Error body for `path`: REST `{error:{code,message}}` or JSON-RPC. */
+const contextErrorBody = (
+	path: string,
+	rpcCode: number,
+	restCode: string,
+	message: string,
+) =>
+	isRestPath(path)
+		? { error: { code: restCode, message } }
+		: rpcError(rpcCode, message);
+
 /**
- * Mounts `GET /context/healthz` + `POST /context/mcp` against a shared bundle.
+ * Mounts `GET /context/healthz`, `POST /context/mcp` and the REST shim
+ * (`GET /context/openapi.json`, `POST /context/tools/:name`) against a shared
+ * bundle.
  *
  * @param app - the BFF app; routes are added under `/context`.
  * @param bundles - the shared bundle manager, also used by the chat route.
@@ -42,7 +60,15 @@ export function mountContextMcp(
 	app.use("/context/*", async (c, next) => {
 		bundles.ensureFresh();
 		if (!bundles.isLoaded()) {
-			return c.json(rpcError(-32000, "Context bundle not loaded yet"), 503);
+			return c.json(
+				contextErrorBody(
+					c.req.path,
+					-32000,
+					"UNAVAILABLE",
+					"Context bundle not loaded yet",
+				),
+				503,
+			);
 		}
 		await next();
 		// Hono's cors middleware rebuilds the response when an Origin header is
@@ -60,7 +86,8 @@ export function mountContextMcp(
 }
 
 /**
- * The JSON-RPC error an unhandled failure under `/context/*` must return.
+ * The error an unhandled failure under `/context/*` must return: JSON-RPC for
+ * the MCP endpoint, the REST envelope for the REST shim.
  *
  * Hono resolves a thrown handler error inside `dispatch` and hands it to the
  * app-level `onError`, so a middleware `try/catch` around `next()` never sees
@@ -68,5 +95,5 @@ export function mountContextMcp(
  * exported rather than applied here. Without it an MCP client gets the BFF's
  * `{error:{code:"UPSTREAM_ERROR"}}` envelope, which is not JSON-RPC.
  */
-export const contextMcpErrorBody = () =>
-	rpcError(-32603, "Internal error");
+export const contextMcpErrorBody = (path: string) =>
+	contextErrorBody(path, -32603, "INTERNAL", "Internal error");
