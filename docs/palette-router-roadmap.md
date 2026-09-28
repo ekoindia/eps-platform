@@ -84,7 +84,7 @@ The zero-MB comparator. Useful even if Needle never ships.
   - `detectIntent(query)` — ordered regex rules per intent → `{intent, subject, slots}` or null.
   - resolvers, one per intent, returning a card model or null:
     - `find_api` → MiniSearch over the **`endpoint`** category (REST operations; the `api` category is product pages) → endpoint card (method, path, docs link, Try-it link). Top 3 when scores are close.
-    - `how_to_build` → recipes from `/agent/eps.json` (4 today: DMT Fino send money, AePS Fingpay withdrawal, BBPS bill payment, BBPS recharge) → ordered-steps card. Lazy-fetch the bundle only on a match.
+    - `how_to_build` → recipes (4 today: DMT Fino send money, AePS Fingpay withdrawal, BBPS bill payment, BBPS recharge) → recipe card. **Built** differently from this plan: recipes were added to the search index (category `recipe`, ~few KB in the lazy palette chunk) instead of lazy-fetching `/agent/eps.json` — one resolution path (MiniSearch), and recipes became findable in plain search too.
     - `get_started` → session-aware next step. Needs `NextStepsCard`'s spotlight logic extracted into a pure `deriveNextStep(...)` with **all** its inputs: `MeView`, KYC documents, fee state (can be unknown), E-sign entitlement (`useRoleTransactionList`), loading/error, and "no known next action". Anonymous → signup/sandbox.
     - `estimate_earnings` → deep link `/pricing?pay=…`. Product names map to **calculator ids** (`aeps-cashout`, `bbps-electricity`…, from `EARNINGS_PRODUCTS_MAP`), not families; slots = average amount + monthly count. Needs the private serializer in `PaymentsCalculator.tsx` exported, and the calculator to re-read `?pay=` when already mounted.
 - `CommandPalette.tsx` — pinned card slot above results; Enter opens it; never auto-acts.
@@ -101,7 +101,7 @@ safe to merge. Runtime A/B waits for Phase 3.
 | ------ | ------ | ------ |
 | shared scaffolding (flag, `normalizeAmounts`, `detectIntent`, card slot, telemetry, eval harness) | ✅ 2026-09-28 | see log |
 | `find_api` | ✅ 2026-09-28 — product or endpoint card, endpoints with Try-it | see log |
-| `how_to_build` | ⬜ | |
+| `how_to_build` | ✅ 2026-09-28 — recipe card + Step 1 link; falls back to `find_api`; recipes now searchable (`recipe` category) | see log |
 | `estimate_earnings` | ⬜ | |
 | `get_started` | ⬜ | |
 
@@ -179,6 +179,13 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — `how_to_build` built (flag off): recipes indexed as a new
+  `recipe` search category (were not searchable at all), rule ahead of
+  `find_api`, card = recipe + Step 1 link, fallback to `find_api` when no
+  recipe matches. Browser-verified: "how do i integrate dmt" → DMT recipe card
+  → Enter opens `/recipe/dmt-fino-send-money`. PR #131 (stemmer + earlier
+  commits) green, awaiting merge. Next: `estimate_earnings`.
 
 - **2026-09-28** — Search fix: word-form stemming (`STEM_RULES` in
   `src/lib/search-engine.ts`), "verify pan" now returns the PAN Verification

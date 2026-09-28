@@ -24,6 +24,19 @@ describe("detectIntent", () => {
 		});
 	});
 
+	it.each([
+		["how do i integrate dmt", "dmt"],
+		["How to recharge a mobile?", "recharge mobile"],
+		["steps for aeps cash withdrawal", "aeps cash withdrawal"],
+		["bbps bill payment flow", "bbps bill payment"],
+	])("%s → how_to_build (%s)", (query, subject) => {
+		expect(detectIntent(query)).toEqual({
+			intent: "how_to_build",
+			subject,
+			slots: {},
+		});
+	});
+
 	// Plain keyword search keeps the palette's normal results — no card.
 	it.each([["pricing"], ["bank account verification"], ["api"], [""]])(
 		"%j → no intent",
@@ -58,5 +71,41 @@ describe("resolveAction (real search index)", () => {
 	it("returns no card for plain search or an empty subject", () => {
 		expect(resolveAction(engine, "pricing")).toBeNull();
 		expect(resolveAction(engine, "api")).toBeNull();
+	});
+
+	it("sends a how-to question to its recipe, with the first step", () => {
+		expect(resolveAction(engine, "how do i integrate dmt")).toMatchObject({
+			intent: "how_to_build",
+			id: "action:how_to_build:dmt-fino-send-money",
+			badge: "Recipe",
+			primary: { label: "Open recipe", href: "/recipe/dmt-fino-send-money" },
+			secondary: [
+				{
+					label: expect.stringMatching(/^Step 1: /),
+					href: "/docs/dmt-get-sender",
+				},
+			],
+		});
+	});
+
+	it.each([
+		["how to recharge mobile", "bbps-mobile-recharge"],
+		["aeps cash withdrawal flow", "aeps-fingpay-cash-withdrawal"],
+		["how do i send money", "dmt-fino-send-money"],
+	])("%s → recipe %s", (query, slug) => {
+		expect(resolveAction(engine, query)?.id).toBe(
+			`action:how_to_build:${slug}`,
+		);
+	});
+
+	// No recipe covers bank-account checks, but the question still names an
+	// API — the card falls back to find_api rather than showing nothing.
+	it("falls back to find_api when no recipe matches", () => {
+		expect(
+			resolveAction(engine, "how do i verify a bank account"),
+		).toMatchObject({
+			intent: "find_api",
+			id: "action:find_api:bank-account-verification",
+		});
 	});
 });

@@ -1,4 +1,6 @@
 import { search } from "@/lib/search-engine";
+import { SEARCH_INDEX } from "@/lib/search-index";
+import { RECIPES } from "@/lib/data/api-recipes";
 import { detectIntent } from "./intent";
 import type { ActionCard, CardLink, DetectedIntent } from "./types";
 
@@ -55,6 +57,41 @@ export function resolveFindApi(
 	};
 }
 
+const RECIPE_BY_SLUG = new Map(RECIPES.map((r) => [r.slug, r]));
+const ITEM_BY_ID = new Map(SEARCH_INDEX.map((item) => [item.id, item]));
+
+/**
+ * `how_to_build`: the best recipe (multi-step integration flow) for the
+ * subject, with a link straight to its first step.
+ * @param engine - The palette's search engine.
+ * @param detected - The detected intent.
+ * @returns A card, or null when no recipe matches.
+ */
+export function resolveHowToBuild(
+	engine: Engine,
+	detected: DetectedIntent,
+): ActionCard | null {
+	const [top, ...rest] = search(engine, detected.subject, "recipe");
+	const recipe = top && RECIPE_BY_SLUG.get(top.item.slug ?? "");
+	if (!recipe) return null;
+	const firstStep = ITEM_BY_ID.get(`endpoint:${recipe.steps[0]?.specSlug}`);
+	return {
+		intent: "how_to_build",
+		id: `action:how_to_build:${recipe.slug}`,
+		title: recipe.name,
+		detail: `${recipe.steps.length} steps · ${recipe.summary}`,
+		badge: "Recipe",
+		primary: { label: "Open recipe", href: top.item.href },
+		secondary: firstStep
+			? [{ label: `Step 1: ${firstStep.label}`, href: firstStep.href }]
+			: [],
+		alternatives: rest
+			.filter((r) => r.score >= top.score * CLOSE_SCORE)
+			.slice(0, MAX_ALTERNATIVES)
+			.map((r) => ({ label: r.item.label, href: r.item.href })),
+	};
+}
+
 /**
  * Turns a palette query into an action card, or null for plain search.
  * @param engine - The palette's search engine.
@@ -69,6 +106,12 @@ export function resolveAction(
 	switch (detected.intent) {
 		case "find_api":
 			return resolveFindApi(engine, detected);
+		case "how_to_build":
+			// "how do i verify a bank account" has no recipe but names an API.
+			return (
+				resolveHowToBuild(engine, detected) ??
+				resolveFindApi(engine, { ...detected, intent: "find_api" })
+			);
 		default:
 			return null;
 	}

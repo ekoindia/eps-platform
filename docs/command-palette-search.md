@@ -17,7 +17,7 @@ Global fuzzy search across APIs, industries, solution packs and site pages. Impl
 | Concern | Approach |
 |---|---|
 | Search engine | **MiniSearch** (`minisearch@^7`, ~5 KB gz) in `src/lib/search-engine.ts` — BM25 with prefix matching, length-gated fuzzy, and per-field boosts. `cmdk` is left to do rendering and keyboard navigation only (`shouldFilter={false}`); it no longer scores anything. |
-| Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products with a page), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `docs-registry.ts` (endpoints + guides), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), `common-faqs.ts`, plus a static pages list. New APIs/endpoints/industries/solutions appear in search automatically. |
+| Search index | **Auto-generated at module scope** in `src/lib/search-index.ts` from `api-products.ts` (active products with a page), `api-product-pages.ts` (`seo.keywords`, capped at 12 terms), `docs-registry.ts` (endpoints + guides), `api-recipes.ts` (recipes — category `recipe`, no scope tab; step endpoint slugs are keywords), `industries.ts` / `solutions.ts` (`ACTIVE_*` lists, `priority !== 3`), `common-faqs.ts`, plus a static pages list. New APIs/endpoints/industries/solutions appear in search automatically. |
 | Body index | `dist/search-body.json` — long-form page prose, keyed by `SearchItem.id`. Emitted by `vite-plugin-generate-markdown.ts` from the same renderers that produce the `.md` twins, so there is no second source of truth. **Lazily fetched when the palette first mounts**, then the MiniSearch index is rebuilt with a `body` field. 157 entries / ~160 KB (~38 KB gz), entirely off the critical path; a 404 or offline just leaves the label-only index in place. |
 | Lazy loading | `CommandPalette` is a separate Vite chunk, lazy-imported by `Header.tsx` (same pattern as `HeaderDropdownPanels`), mounted on first open, prefetched via `requestIdleCallback`. **Zero initial-bundle impact, zero CLS** — only the fixed-size trigger pill and a keydown listener live in the main bundle. |
 | Data weight | The big data modules (`api-product-pages`, `industries`, `solutions`) are already shared Rollup chunks (used by header dropdowns + detail pages), so the palette references them at no extra network cost. Verified: page-data strings appear in exactly one dist chunk. |
@@ -88,9 +88,16 @@ With `VITE_SHOW_PALETTE_ACTIONS=true`, a query that reads as an intent gets a
 pinned **Suggested action** group above the results (All scope only):
 `src/lib/palette-actions/` detects the intent with ordered regex rules, strips
 request phrasing to a subject, and resolves it with this same engine. Today:
-`find_api` → the best product page or endpoint, endpoints with a **Try it** link
-(`?try=1` opens the docs page's Try-it dialog). Never auto-acts; Enter on the
-first row opens it. Plan, remaining intents and the gate:
+
+- `find_api` → the best product page or endpoint, endpoints with a **Try it**
+  link (`?try=1` opens the docs page's Try-it dialog).
+- `how_to_build` ("how do I integrate DMT", "aeps cash withdrawal flow") → the
+  best recipe (`/recipe/<slug>`), with a **Step 1** link to the first
+  endpoint. No recipe matches → falls back to `find_api` on the same subject,
+  so "how do I verify a bank account" still gets an API card.
+
+Rules are ordered, `how_to_build` before `find_api`. Never auto-acts; Enter on
+the first row opens it. Plan, remaining intents and the gate:
 [palette router roadmap](palette-router-roadmap.md).
 
 ## Files

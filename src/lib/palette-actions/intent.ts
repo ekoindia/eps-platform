@@ -50,6 +50,18 @@ const FILLER = new Set([
 	"show",
 	"find",
 	"some",
+	// how_to_build phrasing
+	"integrate",
+	"integration",
+	"build",
+	"implement",
+	"flow",
+	"workflow",
+	"recipe",
+	"steps",
+	"step",
+	"walkthrough",
+	"guide",
 ]);
 
 /**
@@ -80,6 +92,11 @@ interface Rule {
  * model router must beat (docs/palette-router-roadmap.md, Phase 1c).
  */
 const RULES: readonly Rule[] = [
+	{
+		intent: "how_to_build",
+		match:
+			/\bhow\s+(?:do|does|can|to|would|should)\b|\b(?:integrat\w*|build|implement|flow|workflow|recipe|steps?|walkthrough)\b/i,
+	},
 	{
 		intent: "find_api",
 		match:
