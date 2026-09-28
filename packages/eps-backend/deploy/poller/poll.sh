@@ -102,30 +102,52 @@ set_hold() {
 }
 clear_hold() { rm -f "$(hold_path)" "$(hold_stamp_path)"; }
 
-# Epoch seconds of the last HOLD alert. 0 when missing, unreadable, or not a
+# `rejected` names the one digest that failed the health gate as an IMAGE fault.
+# Without it a successful rollback leaves :prod on the bad digest and the next
+# tick redeploys it — a deploy/rollback loop every POLL_INTERVAL_SEC. Scoped to
+# a single digest: any new :prod deploys normally and a success clears it.
+rejected_path() { printf '%s/rejected' "$STATE_DIR"; }
+rejected_stamp_path() { printf '%s/rejected_alerted_at' "$STATE_DIR"; }
+rejected_digest() { head -n1 "$(rejected_path)" 2>/dev/null || printf ''; }
+# Stamped like set_hold: the caller has just alerted.
+set_rejected() {
+	printf '%s\n' "$1" >"$(rejected_path)" || log "could not persist rejected=$1"
+	date -u +%s >"$(rejected_stamp_path)" 2>/dev/null || :
+}
+clear_rejected() { rm -f "$(rejected_path)" "$(rejected_stamp_path)"; }
+
+# Epoch seconds stored in stamp file $1. 0 when missing, unreadable, or not a
 # plain integer — a corrupt stamp must never abort the poller under errexit.
-hold_alerted_at() {
+stamp_at() {
 	local v
-	v="$(cat "$(hold_stamp_path)" 2>/dev/null || printf '')"
+	v="$(cat "$1" 2>/dev/null || printf '')"
 	case "$v" in
 		'' | *[!0-9]*) printf '0' ;;
 		*) printf '%s' "$v" ;;
 	esac
 }
 
-# Re-announce a still-set HOLD at most once per HOLD_REALERT_SEC. Deliberately
-# independent of the registry: a HOLD must keep nagging even while skopeo is
-# failing, which is exactly when it is most likely to be ignored.
-maybe_realert_hold() {
-	local now last elapsed
+# maybe_realert <stamp-file> <level> <message>: alert at most once per
+# HOLD_REALERT_SEC, measured from the stamp. `{elapsed}` in the message becomes
+# the seconds since the last alert.
+maybe_realert() {
+	local stamp="$1" level="$2" msg="$3" now last elapsed
 	now="$(date -u +%s)"
-	last="$(hold_alerted_at)"
+	last="$(stamp_at "$stamp")"
 	# A stamp in the future (clock stepped back) would otherwise mute alerts forever.
 	[ "$last" -le "$now" ] || last=0
 	elapsed=$((now - last))
 	[ "$elapsed" -ge "$HOLD_REALERT_SEC" ] || return 0
-	alert CRIT "HOLD still set after ${elapsed}s ($(hold_reason)) — nothing has deployed since"
-	printf '%s\n' "$now" >"$(hold_stamp_path)" 2>/dev/null || log "could not persist hold_alerted_at"
+	alert "$level" "${msg//\{elapsed\}/$elapsed}"
+	printf '%s\n' "$now" >"$stamp" 2>/dev/null || log "could not persist $stamp"
+}
+
+# Re-announce a still-set HOLD. Deliberately independent of the registry: a HOLD
+# must keep nagging even while skopeo is failing, which is exactly when it is
+# most likely to be ignored.
+maybe_realert_hold() {
+	maybe_realert "$(hold_stamp_path)" CRIT \
+		"HOLD still set after {elapsed}s ($(hold_reason)) — nothing has deployed since"
 }
 
 # True when HOLD blames a deploy that demonstrably DID land: the pull/up-error
@@ -230,7 +252,7 @@ deploy_image() {
 
 # One full decide-and-act pass. Always rc 0; outcomes via side effects.
 reconcile_once() {
-	local remote running prev cid rcid n
+	local remote running prev cid rcid n fault
 	if is_hold; then
 		if hold_is_falsified; then
 			alert INFO "clearing stale HOLD ($(hold_reason)) — that image is live, so the deploy had in fact landed"
@@ -254,6 +276,12 @@ reconcile_once() {
 	[ -n "$remote" ] || { log "empty remote digest; skip"; return 0; }
 	running="$(running_repo_digest)" || { log "running_repo_digest failed; skip tick"; return 0; }
 	[ "$remote" = "$running" ] && return 0
+	if [ "$remote" = "$(rejected_digest)" ]; then
+		maybe_realert "$(rejected_stamp_path)" WARN \
+			"rejected image $remote still on :$WATCH_TAG after {elapsed}s — running ${running:-none}; push a fixed image"
+		log "skip: $remote was rejected (image fault); running ${running:-none}"
+		return 0
+	fi
 	if [ "$REDIS_REQUIRED" = 1 ] && ! redis_ping; then alert WARN "redis down — deploy of $remote paused"; return 0; fi
 	prev="$running"
 	log "deploying $remote (prev=${prev:-none})"
@@ -264,20 +292,28 @@ reconcile_once() {
 	fi
 	if gate "$cid"; then
 		printf '%s\n' "$remote" >"$STATE_DIR/last_good" || alert WARN "could not persist last_good=$remote"
+		clear_rejected
 		alert INFO "deployed $remote"
 		return 0
 	fi
-	if [ "$GATE_REDIS_DOWN_SEEN" = true ] || { [ "$REDIS_REQUIRED" = 1 ] && ! redis_ping; } || [ "$GATE_CONTAINER_UNSTABLE" = true ]; then
+	# Only a redis outage exonerates the image. A crash-loop with redis healthy
+	# is the image's fault (2026-09-28: a bundle importing bare `sqlite` sat ~12h
+	# under a "dependency fault" HOLD). A host-level cause (OOM, full disk) fails
+	# the rollback gate too and still ends in the "rollback … failed" HOLD.
+	if [ "$GATE_REDIS_DOWN_SEEN" = true ] || { [ "$REDIS_REQUIRED" = 1 ] && ! redis_ping; }; then
 		alert CRIT "dependency fault during deploy of $remote — holding, no rollback"
 		set_hold "dependency fault deploying $remote"
 		return 0
 	fi
+	fault="image fault"
+	[ "$GATE_CONTAINER_UNSTABLE" = true ] && fault="image fault (container crash-looping)"
+	set_rejected "$remote"
 	if [ -z "$prev" ]; then
-		alert CRIT "first deploy of $remote failed — no rollback target; holding"
+		alert CRIT "first deploy of $remote failed: $fault — no rollback target; holding"
 		set_hold "first-deploy image fault $remote"
 		return 0
 	fi
-	alert WARN "image fault on $remote — rolling back to $prev"
+	alert WARN "$fault on $remote — rejected; rolling back to $prev"
 	if ! rcid="$(deploy_image "$IMAGE@$prev")"; then
 		alert CRIT "rollback deploy of $prev failed (pull/up error) — holding"
 		set_hold "rollback deploy error $prev"

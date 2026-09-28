@@ -61,6 +61,8 @@ seed_deploy() {            # common: a change is pending, redis up, container he
 	export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
 }
 lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
+rj() { cat "$SHIM_STATE/rejected" 2>/dev/null || true; }
+hold_txt() { cat "$SHIM_STATE/HOLD" 2>/dev/null || true; }
 ( setup; seed_deploy; load
 	reconcile_once
 	eq "happy path writes last_good=remote" "$(lg)" "sha256:remote"
@@ -87,11 +89,15 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 	is_hold && ok "redis blip in gate → HOLD no rollback" || no "redis blip in gate → HOLD" "not held"
 	[ "$(lg)" = "sha256:LIVE" ] && no "blip → no rollback" "rolled back" || ok "blip → no rollback"
 )
+# A crash-loop with redis healthy is the image's fault (2026-09-28: a bundle
+# importing bare `sqlite` crash-looped ~12h under a "dependency fault" HOLD).
 ( setup; seed_deploy
 	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
 	printf 'running false 0\nexited false 0\nexited false 1\nrunning false 1' >"$SHIM_STATE/ctr_state"; load
 	reconcile_once                                                    # container unstable during gate
-	is_hold && ok "container unstable → HOLD no rollback" || no "container unstable → HOLD" "not held"
+	is_hold && no "crash-loop, redis up → no HOLD" "held: $(hold_txt)" || ok "crash-loop, redis up → no HOLD"
+	eq "crash-loop, redis up → rolls back" "$(lg)" "sha256:LIVE"
+	eq "crash-loop, redis up → digest rejected" "$(rj)" "sha256:remote"
 )
 ( setup
 	: >"$SHIM_STATE/ps"; export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
@@ -188,7 +194,6 @@ lg() { cat "$SHIM_STATE/last_good" 2>/dev/null || true; }
 )
 
 # --- Task 7 cases: stale-HOLD auto-clear, narrowly ---
-hold_txt() { cat "$SHIM_STATE/HOLD" 2>/dev/null || true; }
 # "deploy error <live digest>" is self-contradictory: that image IS running.
 ( setup; seed_deploy; load
 	set_hold "deploy error sha256:LIVE"
@@ -296,6 +301,64 @@ di() { deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>/dev/null; }
 	err="$(deploy_image "ghcr.io/ekoindia/eps-backend@sha256:remote" 2>&1 >/dev/null)"
 	case "$err" in *"pull ok in "*"s"*) ok "pull duration logged" ;; *) no "pull duration logged" "[$err]" ;; esac
 	case "$err" in *"up ok in "*"s"*) ok "up duration logged" ;; *) no "up duration logged" "[$err]" ;; esac
+)
+
+# --- Task 10 cases: a rejected digest is not redeployed ---
+# Before `rejected`, a successful rollback left :prod on the bad digest, so the
+# very next tick redeployed it, failed the gate and rolled back again — forever.
+( setup; seed_deploy; printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once                                       # tick 1: image fault → rollback
+	eq "image fault rejects the digest" "$(rj)" "sha256:remote"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once                                       # tick 2: :prod still the bad digest
+	grep -q "up -d" "$SHIM_STATE/calls.log" && no "rejected digest not redeployed" "redeployed" \
+		|| ok "rejected digest not redeployed"
+	is_hold && no "rejected skip sets no HOLD" "held" || ok "rejected skip sets no HOLD"
+)
+( setup; seed_deploy; export SHIM_SKOPEO_DIGEST=sha256:NEW; load
+	set_rejected "sha256:remote"                         # an older bad digest
+	reconcile_once                                       # :prod moved to a new digest
+	eq "new digest after a rejection deploys" "$(lg)" "sha256:NEW"
+	eq "successful deploy clears rejected" "$(rj)" ""
+)
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=0; load
+	set_rejected "sha256:remote"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && ok "rejected digest on :prod re-alerts" || no "rejected digest on :prod re-alerts" "silent"
+)
+( setup; seed_deploy; export POLLER_ALERT_WEBHOOK=http://hook HOLD_REALERT_SEC=9999; load
+	set_rejected "sha256:remote"
+	: >"$SHIM_STATE/calls.log"
+	reconcile_once
+	hooked && no "rejected re-alert throttled" "alerted" || ok "rejected re-alert throttled"
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'UP DOWN DOWN UP' >"$SHIM_STATE/redis_ping"; load
+	reconcile_once                                       # dependency fault: image not blamed
+	eq "dependency fault rejects nothing" "$(rj)" ""
+)
+( setup; seed_deploy
+	printf 'FAIL FAIL FAIL FAIL FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once                                       # new AND rollback image both fail
+	case "$(hold_txt)" in "rollback to sha256:LIVE failed"*) ok "failed rollback → HOLD" ;;
+		*) no "failed rollback → HOLD" "[$(hold_txt)]" ;; esac
+	eq "failed rollback still rejects the new digest" "$(rj)" "sha256:remote"
+)
+( setup
+	: >"$SHIM_STATE/ps"; export SHIM_SKOPEO_DIGEST=sha256:remote SHIM_NEW_CID=cidNEW
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"; load
+	reconcile_once
+	eq "first-deploy fault rejects the digest" "$(rj)" "sha256:remote"
+)
+# No-redis stacks (transact): every gate failure is an image fault.
+( setup; seed_deploy; export REDIS_REQUIRED=0
+	printf 'FAIL FAIL FAIL FAIL' >"$SHIM_STATE/curl_readyz"
+	printf 'running false 0\nrunning true 1\nrunning true 2\nrunning true 3' >"$SHIM_STATE/ctr_state"; load
+	reconcile_once
+	eq "REDIS_REQUIRED=0 crash-loop rolls back" "$(lg)" "sha256:LIVE"
+	eq "REDIS_REQUIRED=0 crash-loop rejects" "$(rj)" "sha256:remote"
 )
 
 # --- summary (added once; Tasks 2–3 insert their cases ABOVE this block) ---

@@ -145,6 +145,12 @@ docker compose -p <project> --project-directory /deploy \
   Every other HOLD form — `dependency fault …`, `first-deploy image fault …`,
   `rollback …` — means the live image never passed the health gate and is
   **never** auto-cleared.
+- **Rejected digest:** a gate failure with Redis healthy (bad `/readyz` or a
+  crash-looping container) is an image fault: the poller writes the digest to
+  `/state/rejected`, rolls back to the previous digest, and skips that digest
+  on every later tick (re-alerting `WARN` every `HOLD_REALERT_SEC`) until
+  `:prod` moves. A successful deploy clears it; `rm -f /state/rejected` forces
+  a retry. Only a Redis outage during the gate is a dependency fault (HOLD).
 - **Freezing deploys by hand:** write any reason that is *not* `deploy error <digest>`
   (`... exec poller sh -c 'echo "frozen for maintenance" > /state/HOLD'`, or just
   `touch`). Free-text and empty HOLDs are always left alone.

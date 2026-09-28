@@ -539,10 +539,16 @@ and cookies that survive the cross-site hop.
    3-second delay between attempts. Redis availability is checked in parallel.
 6. If the gate passes, the poller records the digest in `/state/last_good` and
    sends an `INFO` alert.
-7. If the gate fails, the poller checks whether the failure is a dependency
-   fault (Redis down or the container itself crashing) or a pure image fault,
-   then either holds (dependency/first-deploy) or rolls back to the previous
-   known-good digest (image fault).
+7. If the gate fails, the poller checks whether Redis was down during the
+   gate. Redis down → **dependency fault**: HOLD, no rollback. Otherwise →
+   **image fault** (including a crash-looping container): the digest is written
+   to `/state/rejected` and the poller rolls back to the previous digest (or
+   holds, when there is none or the rollback also fails).
+8. While `:prod` still points at the rejected digest the poller skips it every
+   tick and re-alerts `WARN` every `HOLD_REALERT_SEC` — no deploy/rollback
+   loop. The next merge moves `:prod` to a new digest, which deploys normally;
+   a successful deploy deletes `/state/rejected`. To force a retry of the
+   rejected digest: `docker run --rm -v eps-backend_eps-poller-state:/state busybox rm -f /state/rejected`.
 
 ---
 
@@ -617,14 +623,12 @@ takes no action.
 
 **HOLD is set automatically in three situations:**
 
-- **Dependency fault during deploy:** Redis was down or the container was
-  crash-looping when the health gate ran. The failing image is left running.
-  Fix the dependency, verify Redis is reachable, then clear HOLD.
-  A crash-loop with Redis healthy is usually the **image** itself — read
-  `docker logs --tail 80 eps-backend-eps-backend-1` first. On 2026-09-28 a
-  bundle importing bare `sqlite` crash-looped prod for ~12h under this HOLD;
-  the poller does not roll back here, so do a [manual rollback](#manual-rollback)
-  to `last_good` and keep HOLD until a fixed image reaches `:prod`.
+- **Dependency fault during deploy:** Redis was down when the health gate ran.
+  The failing image is left running. Fix the dependency, verify Redis is
+  reachable, then clear HOLD. (Until 2026-09-28 a crash-looping container also
+  counted as a dependency fault — a bundle importing bare `sqlite` then sat
+  ~12h under this HOLD. A crash-loop with Redis healthy is now an image fault:
+  rejected and rolled back automatically.)
 - **First-deploy image fault:** The very first deploy of an image failed the
   health gate and there is no previous known-good digest to roll back to.
   Inspect the container logs, fix the image or configuration, then clear HOLD.
