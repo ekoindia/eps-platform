@@ -702,10 +702,21 @@ docker compose -p eps-backend --project-directory /data/eps-backend --env-file /
 
 **Payload format** — the poller POSTs JSON on every alert:
 
-    {"level":"INFO"|"WARN"|"CRIT","service":"eps-backend","message":"<text>"}
+    {"level":"INFO"|"WARN"|"CRIT","service":"eps-backend","message":"<msg>","text":"[LEVEL] eps-backend: <msg>"}
 
-Levels: `INFO` for successful deploys; `WARN` for rollbacks and transient
-issues; `CRIT` for faults that set HOLD.
+`text` makes the payload a valid **Slack, Google Chat or Mattermost incoming
+webhook** as-is — paste the channel's webhook URL. Generic receivers read the
+structured fields.
+
+Levels: `INFO` for successful deploys; `WARN` for rollbacks, a rejected digest
+still on `:prod` (hourly), and transient issues; `CRIT` for faults that set HOLD
+(re-alerted hourly while set).
+
+**Dashboards** — independent of the webhook, every alert is appended to
+`/state/events.jsonl` and a full snapshot is rewritten to `/state/status.json`
+after every tick (both in the `eps-backend_eps-poller-state` volume,
+world-readable). Mount the volume read-only into a dashboard container; schema
+in [`deploy/poller/README.md`](../deploy/poller/README.md#statusjson--eventsjsonl).
 
 **Without a webhook**, monitor the poller with:
 

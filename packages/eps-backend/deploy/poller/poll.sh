@@ -23,6 +23,8 @@ set -euo pipefail
 : "${STATE_DIR:=/state}"
 : "${POLLER_ALERT_WEBHOOK:=}"
 : "${REMOTE_FAIL_ALERT_THRESHOLD:=5}"
+# Alerts kept in $STATE_DIR/events.jsonl for dashboards (oldest dropped).
+: "${EVENTS_MAX:=200}"
 # How often a still-set HOLD re-announces itself. A HOLD nobody is told about is
 # indistinguishable from no auto-deploy at all: one CRIT at latch time was once
 # missed for five days while six merged commits sat undeployed.
@@ -36,13 +38,50 @@ dc() {
 
 log() { printf '%s [poller] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >&2; }
 
-# alert <level> <msg>: always logs; also POSTs JSON when POLLER_ALERT_WEBHOOK is set.
+# JSON string literal for $1, or `null` when empty. ponytail: escapes \ " and
+# \n \r \t only — every message is poller-authored or a one-line HOLD reason.
+jstr() {
+	[ -n "$1" ] || { printf 'null'; return 0; }
+	local s="$1"
+	s="${s//\\/\\\\}"
+	s="${s//\"/\\\"}"
+	s="${s//$'\n'/\\n}"
+	s="${s//$'\r'/\\r}"
+	s="${s//$'\t'/\\t}"
+	printf '"%s"' "$s"
+}
+# JSON integer for $1, or `null` when it is not a plain non-negative integer.
+jnum() {
+	case "$1" in '' | *[!0-9]*) printf 'null' ;; *) printf '%s' "$1" ;; esac
+}
+
+# Append one JSON line to $STATE_DIR/events.jsonl, keeping the newest EVENTS_MAX.
+# Never fails: a dashboard feed must not be able to break a deploy.
+record_event() {
+	local f="$STATE_DIR/events.jsonl" tmp
+	printf '%s\n' "$1" >>"$f" 2>/dev/null || return 0
+	[ "$(($(wc -l <"$f")))" -gt "$EVENTS_MAX" ] || return 0
+	tmp="$(mktemp "$STATE_DIR/.events.XXXXXX" 2>/dev/null)" || return 0
+	if tail -n "$EVENTS_MAX" "$f" >"$tmp" && chmod 644 "$tmp"; then
+		mv -f "$tmp" "$f" || rm -f "$tmp"
+	else
+		rm -f "$tmp"
+	fi
+	return 0
+}
+
+# alert <level> <msg>: always logs and records to events.jsonl; also POSTs JSON
+# when POLLER_ALERT_WEBHOOK is set. `text` makes the same payload a valid Slack /
+# Google Chat / Mattermost incoming-webhook message; generic receivers read the
+# structured fields.
 alert() {
 	local level="$1"; shift
-	log "ALERT[$level] $*"
+	local msg="$*"
+	log "ALERT[$level] $msg"
+	record_event "{\"at\":$(date -u +%s),\"level\":$(jstr "$level"),\"service\":$(jstr "$ALERT_SERVICE"),\"message\":$(jstr "$msg")}"
 	[ -n "$POLLER_ALERT_WEBHOOK" ] || return 0
 	curl -fsS -m 10 -X POST -H 'Content-Type: application/json' \
-		-d "{\"level\":\"$level\",\"service\":\"$ALERT_SERVICE\",\"message\":\"$*\"}" \
+		-d "{\"level\":$(jstr "$level"),\"service\":$(jstr "$ALERT_SERVICE"),\"message\":$(jstr "$msg"),\"text\":$(jstr "[$level] $ALERT_SERVICE: $msg")}" \
 		"$POLLER_ALERT_WEBHOOK" >/dev/null 2>&1 || log "webhook post failed"
 }
 
@@ -55,16 +94,31 @@ remote_digest() {
 	skopeo inspect --format '{{.Digest}}' "docker://$IMAGE:$WATCH_TAG" 2>/dev/null
 }
 
+# Local image id of the LIVE $SERVICE container. Empty if none.
+running_image_id() {
+	local cid
+	cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
+	[ -n "$cid" ] || { printf ''; return 0; }
+	docker inspect "$cid" --format '{{.Image}}' 2>/dev/null || printf ''
+}
+
 # Digest the LIVE backend container is actually running, resolved to a RepoDigest
 # (container .Image is a local config id, NOT the registry digest). Empty if none.
 running_repo_digest() {
-	local cid imgid
-	cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
-	[ -n "$cid" ] || { printf ''; return 0; }
-	imgid="$(docker inspect "$cid" --format '{{.Image}}' 2>/dev/null || true)"
+	local imgid
+	imgid="$(running_image_id)"
 	[ -n "$imgid" ] || { printf ''; return 0; }
 	docker image inspect "$imgid" --format '{{join .RepoDigests "\n"}}' 2>/dev/null \
 		| grep -m1 "^${IMAGE}@sha256:" | sed "s#^${IMAGE}@##" || printf ''
+}
+
+# Git commit baked into the LIVE image (OCI revision label). Empty if none.
+running_revision() {
+	local imgid
+	imgid="$(running_image_id)"
+	[ -n "$imgid" ] || { printf ''; return 0; }
+	docker image inspect "$imgid" \
+		--format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || printf ''
 }
 
 # Atomically point deploy.env's $DEPLOY_ENV_KEY at an image ref: temp in same
@@ -115,6 +169,49 @@ set_rejected() {
 	date -u +%s >"$(rejected_stamp_path)" 2>/dev/null || :
 }
 clear_rejected() { rm -f "$(rejected_path)" "$(rejected_stamp_path)"; }
+
+# record_deploy <deploy|rollback> <digest>: what went live last, and when.
+record_deploy() {
+	printf '%s %s %s\n' "$(date -u +%s)" "$1" "$2" >"$STATE_DIR/last_deploy" 2>/dev/null \
+		|| log "could not persist last_deploy"
+}
+
+# Epoch mtime of file $1, empty if unreadable. `date -r` works on GNU, BusyBox
+# and BSD alike; `stat` flags do not.
+file_mtime() { date -u -r "$1" +%s 2>/dev/null || printf ''; }
+
+# $STATE_DIR/status.json: one machine-readable snapshot for dashboards, rewritten
+# atomically after every tick (schema: deploy/poller/README.md "status.json").
+# World-readable so a read-only volume mount in another container can use it.
+write_status() {
+	local cid st=missing restarting=false restarts=0 ready=false
+	local hold=null rejected=null last_deploy=null at kind digest tmp
+	cid="$(dc ps -q "$SERVICE" 2>/dev/null || true)"
+	[ -z "$cid" ] || read -r st restarting restarts <<<"$(container_state "$cid")"
+	[ "$restarting" = true ] || restarting=false
+	curl -fsS -m 5 -o /dev/null "$READYZ_URL" 2>/dev/null && ready=true
+	if is_hold; then
+		hold="{\"reason\":$(jstr "$(hold_reason)"),\"since\":$(jnum "$(file_mtime "$(hold_path)")")}"
+	fi
+	if [ -f "$(rejected_path)" ]; then
+		rejected="{\"digest\":$(jstr "$(rejected_digest)"),\"since\":$(jnum "$(file_mtime "$(rejected_path)")")}"
+	fi
+	if read -r at kind digest <"$STATE_DIR/last_deploy" 2>/dev/null; then
+		last_deploy="{\"at\":$(jnum "$at"),\"kind\":$(jstr "$kind"),\"digest\":$(jstr "$digest")}"
+	fi
+	tmp="$(mktemp "$STATE_DIR/.status.XXXXXX")" || return 1
+	{
+		printf '{"schema":1,"service":%s,"image":%s,"watch_tag":%s,' \
+			"$(jstr "$ALERT_SERVICE")" "$(jstr "$IMAGE")" "$(jstr "$WATCH_TAG")"
+		printf '"updated_at":%s,"poll_interval_sec":%s,' "$(date -u +%s)" "$(jnum "$POLL_INTERVAL_SEC")"
+		printf '"app":{"container":%s,"restarting":%s,"restart_count":%s,"ready":%s},' \
+			"$(jstr "$st")" "$restarting" "$(jnum "$restarts")" "$ready"
+		printf '"running_digest":%s,"running_revision":%s,"remote_digest":%s,"last_good":%s,' \
+			"$(jstr "$(running_repo_digest)")" "$(jstr "$(running_revision)")" \
+			"$(jstr "${TICK_REMOTE:-}")" "$(jstr "$(head -n1 "$STATE_DIR/last_good" 2>/dev/null || true)")"
+		printf '"hold":%s,"rejected":%s,"last_deploy":%s}\n' "$hold" "$rejected" "$last_deploy"
+	} >"$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$STATE_DIR/status.json" || { rm -f "$tmp"; return 1; }
+}
 
 # Epoch seconds stored in stamp file $1. 0 when missing, unreadable, or not a
 # plain integer — a corrupt stamp must never abort the poller under errexit.
@@ -253,6 +350,8 @@ deploy_image() {
 # One full decide-and-act pass. Always rc 0; outcomes via side effects.
 reconcile_once() {
 	local remote running prev cid rcid n fault
+	# For write_status; empty on ticks that never reach the registry (HOLD, error).
+	TICK_REMOTE=""
 	if is_hold; then
 		if hold_is_falsified; then
 			alert INFO "clearing stale HOLD ($(hold_reason)) — that image is live, so the deploy had in fact landed"
@@ -274,6 +373,7 @@ reconcile_once() {
 	fi
 	: >"$STATE_DIR/remote_fail_count"
 	[ -n "$remote" ] || { log "empty remote digest; skip"; return 0; }
+	TICK_REMOTE="$remote"
 	running="$(running_repo_digest)" || { log "running_repo_digest failed; skip tick"; return 0; }
 	[ "$remote" = "$running" ] && return 0
 	if [ "$remote" = "$(rejected_digest)" ]; then
@@ -293,6 +393,7 @@ reconcile_once() {
 	if gate "$cid"; then
 		printf '%s\n' "$remote" >"$STATE_DIR/last_good" || alert WARN "could not persist last_good=$remote"
 		clear_rejected
+		record_deploy deploy "$remote"
 		alert INFO "deployed $remote"
 		return 0
 	fi
@@ -321,6 +422,7 @@ reconcile_once() {
 	fi
 	if gate "$rcid"; then
 		printf '%s\n' "$prev" >"$STATE_DIR/last_good" || alert WARN "could not persist last_good=$prev"
+		record_deploy rollback "$prev"
 		alert WARN "rolled back to $prev"
 		return 0
 	fi
@@ -339,10 +441,12 @@ main() {
 		|| alert WARN "POLLER_ALERT_WEBHOOK unset — alerts are log-only; nobody is paged when a deploy holds"
 	if [ "${POLLER_ONESHOT:-0}" = "1" ]; then
 		reconcile_once
+		write_status || log "status.json write failed"
 		return 0
 	fi
 	while true; do
 		reconcile_once || log "reconcile error (continuing)"
+		write_status || log "status.json write failed"
 		sleep "$POLL_INTERVAL_SEC"
 	done
 }
