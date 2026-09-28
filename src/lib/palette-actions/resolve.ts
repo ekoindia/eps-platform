@@ -1,6 +1,8 @@
 import { search } from "@/lib/search-engine";
 import { SEARCH_INDEX } from "@/lib/search-index";
 import { RECIPES } from "@/lib/data/api-recipes";
+import { resolveEstimateEarnings } from "./earnings";
+import { type PaletteSession, resolveGetStarted } from "./get-started";
 import { detectIntent } from "./intent";
 import type { ActionCard, CardLink, DetectedIntent } from "./types";
 
@@ -96,16 +98,22 @@ export function resolveHowToBuild(
  * Turns a palette query into an action card, or null for plain search.
  * @param engine - The palette's search engine.
  * @param query - The raw query.
+ * @param session - Who is asking, for `get_started`; a visitor when omitted.
  */
 export function resolveAction(
 	engine: Engine,
 	query: string,
+	session: PaletteSession = { kind: "anon" },
 ): ActionCard | null {
 	const detected = detectIntent(query);
 	if (!detected) return null;
 	switch (detected.intent) {
 		case "find_api":
 			return resolveFindApi(engine, detected);
+		case "get_started":
+			return resolveGetStarted(session);
+		case "estimate_earnings":
+			return resolveEstimateEarnings(detected);
 		case "how_to_build":
 			// "how do i verify a bank account" has no recipe but names an API.
 			return (

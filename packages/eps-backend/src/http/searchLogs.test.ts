@@ -27,6 +27,7 @@ const cfg = loadConfig({
 });
 
 interface Overview {
+	persistent: boolean;
 	summary: PaletteSummary;
 	top: QueryCount[];
 	topFailing: QueryCount[];
@@ -110,6 +111,8 @@ describe("admin search-log routes", () => {
 		const body = await json<Overview>(res);
 
 		expect(res.headers.get("cache-control")).toBe("no-store");
+		// The harness store is in-memory: the admin page warns on exactly this.
+		expect(body.persistent).toBe(false);
 		expect(body.summary).toEqual({
 			total: 3,
 			zeroResult: 2,

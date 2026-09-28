@@ -430,6 +430,22 @@ export interface EarningsSelection {
 	mode?: BbpsMode;
 }
 
+/**
+ * Serializes a selection into the earnings calculator's `pay` URL param:
+ * `productId:monthlyTxns[:avgAmount][:offline]`, comma-separated. Shared by
+ * the calculator and the ⌘K earnings card.
+ */
+export const serializeSelection = (selection: EarningsSelection[]): string =>
+	selection
+		.map(({ productId, monthlyTxns, avgAmount, mode }) => {
+			const base =
+				avgAmount !== undefined
+					? `${productId}:${monthlyTxns}:${avgAmount}`
+					: `${productId}:${monthlyTxns}`;
+			return mode === "offline" ? `${base}:offline` : base;
+		})
+		.join(",");
+
 export interface EarningsLine {
 	product: EarningsProduct;
 	monthlyTxns: number;

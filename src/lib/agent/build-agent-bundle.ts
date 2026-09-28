@@ -10,6 +10,7 @@ import type {
 	AgentApiIndexEntry,
 	AgentBundle,
 	AgentEnvironment,
+	AgentFaq,
 	AgentIndex,
 	AgentSdk,
 	AgentTopicId,
@@ -18,6 +19,8 @@ import type {
 import { API_DEFAULT_VERSION, SITE_URL } from "@/lib/config/site";
 import { API_AUTH_INFO, API_ENVIRONMENTS } from "@/lib/data/api-auth";
 import { ALL_ERROR_CODES } from "@/lib/data/api-error-codes";
+import { PRICING_FAQS } from "@/lib/data/api-pricing";
+import { GLOBAL_FAQS, type FAQ } from "@/lib/data/common-faqs";
 import { ACTIVE_PRODUCTS_MAP } from "@/lib/data/api-products";
 import { RECIPES, assertRecipeSlugs } from "@/lib/data/api-recipes";
 import type { ApiSpec } from "@/lib/data/api-specs-common";
@@ -189,6 +192,33 @@ const buildSdks = (): AgentSdk[] => {
 		});
 };
 
+/** Site-relative `/path` → absolute URL; agents read FAQs outside the site. */
+const absoluteHref = (href: string): string =>
+	href.startsWith("/") ? `${SITE_URL}${href}` : href;
+
+/**
+ * Global + pricing FAQs with every site-relative link made absolute (markdown
+ * `](/path)` in answers and `links[].href`). Pricing FAQs carry no tag, so
+ * they get `pricing`.
+ */
+const buildFaqs = (): AgentFaq[] => {
+	const faqs: FAQ[] = [
+		...GLOBAL_FAQS,
+		...PRICING_FAQS.map((faq): FAQ => ({ ...faq, tag: "pricing" })),
+	];
+	return faqs.map(({ q, a, tag, links }) => ({
+		q,
+		a: a.replace(
+			/\]\((\/[^)]*)\)/g,
+			(_, href: string) => `](${absoluteHref(href)})`,
+		),
+		...(tag && { tag }),
+		...(links && {
+			links: links.map((link) => ({ ...link, href: absoluteHref(link.href) })),
+		}),
+	}));
+};
+
 /**
  * Build the full agent bundle. Callers should pass the documented set
  * (`getDocumentedSpecs()`).
@@ -205,12 +235,15 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 	const apis = specs.map(apiDetail);
 	const recipes = RECIPES;
 	const sdks = buildSdks();
+	const faqs = buildFaqs();
 
 	// `sdks` is DELIBERATELY excluded from the version hash. `bundleVersion` is
 	// copied into `sdk-surface.json` (build-sdk-surface.ts), whose bytes are part
 	// of the SDK release fingerprint (scripts/sdk-release.mjs), so hashing SDK
 	// *guide copy* here would republish all five packages on every prose edit.
 	// The field versions the API surface those packages embed — nothing else.
+	// `faqs` is excluded for the same reason; the remote refresh keys on the
+	// file's ETag, not this hash, so FAQ edits still reach the MCP server.
 	const apiSurfaceVersion = fnv1aHex(JSON.stringify({ topics, apis, recipes }));
 	const meta = {
 		org: "ekoindia",
@@ -219,7 +252,7 @@ export const buildAgentBundle = (specs: ApiSpec[]): AgentBundle => {
 		environments: ENVIRONMENTS,
 	};
 
-	return { meta, topics, apis, recipes, sdks };
+	return { meta, topics, apis, recipes, sdks, faqs };
 };
 
 /** Compact index slice — no full bodies. */

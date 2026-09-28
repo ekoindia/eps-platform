@@ -61,6 +61,30 @@ describe("AdminSearchLogs", () => {
 		);
 	});
 
+	// Unset ANALYTICS_DB_PATH silently kept prod logs in memory, wiped on
+	// every deploy. The page must say so.
+	it("warns when the server keeps logs in memory", async () => {
+		vi.mocked(authClient.adminSearchLogs.overview).mockResolvedValueOnce({
+			persistent: false,
+			summary: { total: 0, zeroResult: 0, click: 0, askAi: 0, abandon: 0 },
+			top: [],
+			topFailing: [],
+		});
+		render(<AdminSearchLogs />);
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			/lost on every restart/i,
+		);
+	});
+
+	// An older backend omits the field; that must not read as "in memory".
+	it("shows no warning when persistence is not reported", async () => {
+		render(<AdminSearchLogs />);
+
+		await screen.findByText("50%");
+		expect(screen.queryByRole("alert")).toBeNull();
+	});
+
 	it("filters the log to a query picked from a top table", async () => {
 		render(<AdminSearchLogs />);
 

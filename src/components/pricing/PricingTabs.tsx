@@ -98,6 +98,14 @@ export const PricingTabs = ({
 		);
 	}, [hasStaleTabParam, setSearchParams]);
 
+	// Follow `?tab=` when something else rewrites it on this mounted page (a
+	// ⌘K earnings card linking to another tab). Our own writes already match
+	// `activeTab`, so this is a no-op for them.
+	const urlTabIsVisible = isVisibleTabId(urlTab, tabs);
+	useEffect(() => {
+		if (urlTabIsVisible) setActiveTab(urlTab as PricingTabId);
+	}, [urlTab, urlTabIsVisible]);
+
 	const onTabChange = (value: string) => {
 		if (!isVisibleTabId(value, tabs)) return;
 		setActiveTab(value);

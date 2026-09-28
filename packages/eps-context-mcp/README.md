@@ -51,6 +51,36 @@ claude mcp add eps --transport http https://mcp.eko.in/context/mcp
 `GET https://mcp.eko.in/context/healthz` reports the bundle version it is serving.
 Rate-limited per IP at the proxy.
 
+### Non-MCP clients (REST + OpenAPI)
+
+For tools that take plain HTTP actions instead of MCP — ChatGPT custom GPTs
+(Actions), Gemini function calling, n8n, Zapier and the like — the same tools
+are served as REST, described by a generated OpenAPI 3.1 document:
+
+```
+https://mcp.eko.in/context/openapi.json
+```
+
+Every tool is `POST /context/tools/<name>` with its arguments as a JSON object
+body (empty body = no arguments). It is not a second implementation: each
+request drives the real MCP server in-process, so names, arguments and
+validation match the MCP tools exactly, and a new tool appears here
+automatically (only tools annotated `readOnlyHint: true` are published).
+
+```bash
+curl -s -X POST https://mcp.eko.in/context/tools/get_faqs \
+  -H 'content-type: application/json' -d '{"query":"billing","limit":3}'
+```
+
+- `200` → the tool's JSON result (non-JSON output such as `get_signing_snippet`
+  comes back as `{ "text": "…" }`).
+- `400` → invalid arguments or a body that is not a JSON object; `404` →
+  unknown tool, or the slug/id/recipe looked up does not exist; `503` → bundle
+  not loaded yet. Errors are `{ "error": { "code", "message" } }`.
+
+**ChatGPT custom GPT:** Configure → Actions → *Import from URL* →
+`https://mcp.eko.in/context/openapi.json`, authentication *None*.
+
 **stdio is still the better fit for CLI agents** (Claude Code, Cursor, Codex):
 it starts instantly, works offline from the baked bundle, and costs no network
 round trip per tool call.
@@ -71,6 +101,7 @@ clients can see this programmatically.
 | `get_api`             | `slug`                                                                       | Full detail for one endpoint (params, response fields, errors, examples).                                                                          |
 | `get_topic`           | `topic` (`auth` \| `errors` \| `pricing` \| `environments`)                  | One documentation topic.                                                                                                                           |
 | `get_recipe`          | `id`                                                                         | One multi-step recipe (steps + branches).                                                                                                          |
+| `get_faqs`            | `tag?`, `query?`, `limit?`                                                   | EPS FAQs (onboarding, auth, testing, integration, pricing, compliance, support). Filter by `tag`, rank by `query`. Answers are markdown with absolute links. |
 | `get_signing_snippet` | `language` (`php` \| `java` \| `csharp` \| `javascript` \| `python` \| `go`) | Paste-ready **backend** code to compute the request `secret-key`.                                                                                  |
 | `list_sdks`           | —                                                                            | The backend SDKs that wrap every endpoint: language, package, install command, minimum runtime, docs URL. Compact — no members or examples. |
 | `get_sdk`             | `language` (`javascript` \| `python` \| `php` \| `go` \| `java`; the guide slug such as `nodejs` also works) | One SDK in full: install + requirements, client config options with units, every public class/method/type, file-upload values, the error and timeout contract, and a worked `call()` example. |

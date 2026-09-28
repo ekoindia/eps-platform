@@ -269,6 +269,19 @@ export function AdminSearchLogs() {
 
 			{error && <p className="text-sm text-destructive">{error}</p>}
 
+			{/* `=== false`: an older backend omits the field, which is not a warning. */}
+			{overview?.persistent === false && (
+				<p
+					role="alert"
+					className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+				>
+					<strong>Search logs are in memory and lost on every restart.</strong>{" "}
+					The backend has no <code>ANALYTICS_DB_PATH</code>, so each deploy
+					wipes this page. Set it on a mounted volume — see the eps-backend VM
+					deploy guide (<code>eps-analytics-data</code>).
+				</p>
+			)}
+
 			{!overview && !error ? (
 				<div className="grid gap-3 grid-cols-2 md:grid-cols-5" aria-busy="true">
 					{Array.from({ length: 5 }).map((_, i) => (

@@ -293,6 +293,20 @@ its own keys** — UTM/tracking params and the other calculators' state always
 survive. Unknown ids are dropped, duplicates deduped, values clamped.
 Garbage params never crash the page.
 
+**External URL changes are followed.** `PricingTabs` (`tab`),
+`PaymentsCalculator` (`pay`) and `DmtCalculator` (`dmt`) re-read their key
+when something else rewrites it while the page is mounted — the ⌘K earnings
+card links to `/pricing?tab=…&pay=…` from `/pricing` itself. Each calculator
+remembers its own last write (`lastWritten`) and ignores it, so the follow
+never fights typing or slider drags. `serializeSelection` (`pay`) and
+`serializeDmtInput` / `DMT_DEFAULT_INPUT` (`dmt`) live in the pricing data
+files so the ⌘K card builds the same links and quotes the same numbers.
+
+**Hash links survive the write-back.** `setSearchParams` drops the URL hash;
+`ScrollToTop` scrolls to a hash target once it is rendered and visible
+(polls up to 2 s — lazy routes and hidden tab panels render late) and scrolls
+to top only on a pathname change, so the write-back never jumps the page.
+
 ## Cross-component handoff
 
 - Verification rate card "+": dispatches `pricing:add-api`

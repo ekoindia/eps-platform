@@ -70,7 +70,9 @@ title (done steps green, the rest grey). Only an actionable blocker is ever
 spotlighted: E-sign when owed, else the KYC upload/re-upload when owed. With
 neither (KYC done or with the reviewer) nothing is — the card cannot see
 integration or production-credential progress, and must not tell a live partner
-that integrating is next.
+that integrating is next. The choice lives in `deriveNextStep`
+(`src/lib/console/next-step.ts`), shared with the ⌘K `get_started` card so the
+palette and the console always name the same step.
 
 The fee is **not** a numbered step. It sits in its own green panel below the list
 ("Pay your one-time integration fee … pay anytime"), because it gates nothing

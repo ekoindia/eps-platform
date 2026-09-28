@@ -1,3 +1,4 @@
+import { earningsProductOf, earningsSlotsOf } from "./earnings";
 import { normalizeAmounts } from "./normalize";
 import type { ActionIntent, DetectedIntent } from "./types";
 
@@ -93,6 +94,17 @@ interface Rule {
  */
 const RULES: readonly Rule[] = [
 	{
+		intent: "estimate_earnings",
+		match:
+			/\b(?:earn\w*|commissions?|income|profits?|margins?|payouts?|take[\s-]?home)\b|\bhow much\b.*\b(?:make|get)\b/i,
+	},
+	{
+		// Account onboarding, not KYC *APIs*: bare "kyc" is left to find_api.
+		intent: "get_started",
+		match:
+			/\b(?:get(?:ting)?\s+started|go(?:ing)?\s+live|onboard\w*|sign\s?up|register|create\s+(?:an?\s+)?account|next\s+steps?|api\s+keys?|(?:production|prod|live|uat)\s+(?:credentials|keys|access)|credentials|(?:activation|integration)\s+fee)\b/i,
+	},
+	{
 		intent: "how_to_build",
 		match:
 			/\bhow\s+(?:do|does|can|to|would|should)\b|\b(?:integrat\w*|build|implement|flow|workflow|recipe|steps?|walkthrough)\b/i,
@@ -103,6 +115,23 @@ const RULES: readonly Rule[] = [
 			/\b(apis?|endpoints?)\b|^\s*(verify|validate|check|fetch|look\s?up)\b/i,
 	},
 ];
+
+/**
+ * Typed values an intent reads from the query. Only `estimate_earnings` has
+ * slots today: the calculator product plus count/amount, when stated.
+ */
+function slotsFor(
+	intent: ActionIntent,
+	normalised: string,
+	raw: string,
+): DetectedIntent["slots"] {
+	if (intent !== "estimate_earnings") return {};
+	const product = earningsProductOf(normalised);
+	return {
+		...(product ? { product } : {}),
+		...earningsSlotsOf(normalised, raw),
+	};
+}
 
 /**
  * Reads an action intent from a palette query.
@@ -117,5 +146,9 @@ export function detectIntent(query: string): DetectedIntent | null {
 	if (!rule) return null;
 	const subject = subjectOf(normalised);
 	if (!subject) return null;
-	return { intent: rule.intent, subject, slots: {} };
+	return {
+		intent: rule.intent,
+		subject,
+		slots: slotsFor(rule.intent, normalised, query),
+	};
 }

@@ -223,6 +223,8 @@ export interface SearchLogQueryCount {
 }
 
 export interface SearchLogOverview {
+	/** False when the backend keeps logs in memory (lost on restart). Absent on older backends. */
+	persistent?: boolean;
 	summary: SearchLogSummary;
 	top: SearchLogQueryCount[];
 	topFailing: SearchLogQueryCount[];

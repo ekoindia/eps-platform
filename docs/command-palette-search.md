@@ -95,8 +95,28 @@ request phrasing to a subject, and resolves it with this same engine. Today:
   best recipe (`/recipe/<slug>`), with a **Step 1** link to the first
   endpoint. No recipe matches → falls back to `find_api` on the same subject,
   so "how do I verify a bank account" still gets an API card.
+- `estimate_earnings` ("what will I earn on 500 DMT a month", "aeps
+  commission for 1 lakh withdrawals of ₹2,500") → the earnings calculator,
+  pre-filled (`/pricing?tab=dmt&dmt=…` or `?tab=payments&pay=…`), with the
+  calculator's own headline number on the card (DMT take-home, AePS/BBPS
+  gross commission) — computed by the same pricing functions, so they match.
+  Product = the calculator id sharing the most words with the query
+  (`src/lib/palette-actions/earnings.ts`); counts and amounts are read by cue
+  words ("a month", "withdrawals", "avg", "of", "₹"). Numbers left out use the
+  calculator's defaults; no product named → the calculator unfilled.
 
-Rules are ordered, `how_to_build` before `find_api`. Never auto-acts; Enter on
+- `get_started` ("how do I go live", "api keys", "next steps", "integration
+  fee") → the asker's own next step, from the session: visitors → sign up
+  (+ Get Started guide); part-signed-up → finish sign-up; developers → the step
+  the console's Next steps card spotlights (same `deriveNextStep`: E-sign, else
+  KYC upload), else credentials, with the fee link alongside; admins → no card.
+  The E-sign entitlement list is fetched for developers only — a visitor's
+  call would 401, and a 401 signs the session out. No KYC-pack fetch: the step
+  is named from the lifecycle state, `/console/documents` has the detail.
+  Bare "kyc" is deliberately not a trigger (KYC *APIs* are products).
+
+Rules are ordered: `estimate_earnings`, `get_started`, `how_to_build`,
+`find_api`. Never auto-acts; Enter on
 the first row opens it. Plan, remaining intents and the gate:
 [palette router roadmap](palette-router-roadmap.md).
 

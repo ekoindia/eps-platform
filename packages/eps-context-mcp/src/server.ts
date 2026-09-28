@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AgentBundle } from "./bundle-types.js";
 import {
 	getApi,
+	getFaqs,
 	getSdk,
 	getRecipe,
 	getTopic,
@@ -12,6 +13,7 @@ import {
 	listSdkSlugs,
 	listSdks,
 	listCategories,
+	listFaqTags,
 	listRecipes,
 	listTopics,
 	searchApis,
@@ -29,9 +31,12 @@ const json = (value: unknown) => ({
 	content: [{ type: "text" as const, text: JSON.stringify(value) }],
 });
 
+/** `_meta.httpStatus` lets the REST shim (rest.ts) answer 404 without
+ * parsing the message; MCP clients ignore it. */
 const notFound = (message: string) => ({
 	isError: true as const,
 	content: [{ type: "text" as const, text: message }],
+	_meta: { httpStatus: 404 },
 });
 
 /** Every tool reads the in-memory bundle only (annotations describe tool
@@ -193,6 +198,31 @@ export const createEpsServer = (
 				`Unknown recipe "${id}". Valid recipe ids: ${valid}. Use list_recipes for details.`,
 			);
 		},
+	);
+
+	const faqTags = listFaqTags(bundle);
+	// Same empty-tuple fallback as categorySchema: a pre-FAQ bundle has no tags.
+	const faqTagSchema = faqTags.length
+		? z.enum(faqTags as [string, ...string[]])
+		: z.string();
+
+	server.registerTool(
+		"get_faqs",
+		{
+			title: "Get FAQs",
+			description:
+				"EPS FAQs (onboarding, auth, testing, integration, pricing, compliance, " +
+				"support). Answers are markdown with absolute links. Filter by tag " +
+				"and/or rank by query; with neither, all FAQs are returned.",
+			inputSchema: {
+				tag: faqTagSchema.optional().describe(`One of: ${faqTags.join(", ")}`),
+				query: z.string().optional().describe("Free-text question to rank by"),
+				limit: limitSchema.describe("Max FAQs to return (default: all)"),
+			},
+			annotations: READ_ONLY,
+		},
+		async ({ tag, query, limit }) =>
+			json(getFaqs(bundle, { tag, query, limit })),
 	);
 
 	server.registerTool(
