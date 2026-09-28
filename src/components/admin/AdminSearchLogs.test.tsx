@@ -22,6 +22,7 @@ const row = (id: number, query: string): SearchLogRow => ({
 	refinements: 2,
 	durationMs: 4200,
 	bodyIndexLoaded: true,
+	actionIntent: null,
 });
 
 // Real module for its constants (LIFECYCLES); only the network client is faked.

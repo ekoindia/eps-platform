@@ -97,8 +97,8 @@ safe to merge. Runtime A/B waits for Phase 3.
 
 | Intent | Status | Commit |
 | ------ | ------ | ------ |
-| shared scaffolding (flag, `normalizeAmounts`, `detectIntent`, card slot, telemetry, eval harness) | ⬜ | |
-| `find_api` | ⬜ | |
+| shared scaffolding (flag, `normalizeAmounts`, `detectIntent`, card slot, telemetry, eval harness) | ✅ 2026-09-28 | see log |
+| `find_api` | ✅ 2026-09-28 — product or endpoint card, endpoints with Try-it | see log |
 | `how_to_build` | ⬜ | |
 | `estimate_earnings` | ⬜ | |
 | `get_started` | ⬜ | |
@@ -164,12 +164,29 @@ signup started/completed, chat availability equal across arms.
 - **Search categories:** `api` = product pages, `endpoint` = REST operations.
 - **Redaction lives twice** (site + backend) and is pinned by
   `src/lib/analytics.parity.test.ts`.
+- **"verify" ≠ "verification" in search.** MiniSearch has no stemming, and
+  synonym rule 1 forbids aliasing words the corpus uses ("verify" is in
+  `pan-bulk-verify`, `verify-gstin`). So "verify pan" finds only *Bulk* PAN
+  Verification — in the palette's own results and therefore in the card.
+  Candidate fix for the week-2 review: a light stemmer (verify/verification,
+  validate/validation) in the tokenizer, both sides, with a regression test.
+- **cmdk in jsdom:** components rendering cmdk items need
+  `Element.prototype.scrollIntoView` stubbed in the test.
 - **Module mocks hide constants:** tests mocking `@/lib/auth/client` spread
   the real module (`importOriginal`) so `LIFECYCLES` still exists.
 
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-28** — Phase 1a scaffolding + `find_api` built on `dev` behind
+  `VITE_SHOW_PALETTE_ACTIONS` (off): `src/lib/palette-actions/` (amount
+  normaliser, ordered intent rules, subject extraction, resolver),
+  `PaletteActionCard`, `actionIntent` telemetry end to end (site, GTM, backend
+  column, CSV), eval scorer + `scripts/palette-eval/`. Browser-verified: "is
+  there an api to fetch a bbps bill" → card → Try it → docs page with the
+  Try-it dialog open and prefilled, also detail→detail. Built backend `dist`
+  booted and accepted an `actionIntent` report. Next: `how_to_build`.
 
 - **2026-09-28** — Phase 0 verified in prod by the user (logs recording; GTM
   and legal review done; sample rate 1). Baseline clock started. Roadmap doc

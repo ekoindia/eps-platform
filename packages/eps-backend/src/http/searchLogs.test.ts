@@ -194,7 +194,7 @@ describe("admin search-log routes", () => {
 		);
 		expect(lines.map((r) => r.query)).toEqual(["upi", "gst", "=HYPERLINK(1)"]);
 		expect(csvText.split("\n")[0]).toBe(
-			"id,ts,query,scope,resultCount,outcome,clickedCategory,clickedRank,clickedId,clickedLabel,page,auth,stage,trigger,device,refinements,durationMs,bodyIndexLoaded",
+			"id,ts,query,scope,resultCount,outcome,clickedCategory,clickedRank,clickedId,clickedLabel,page,auth,stage,trigger,device,refinements,durationMs,bodyIndexLoaded,actionIntent",
 		);
 		expect(csvText).toContain(",'=HYPERLINK(1),");
 		expect(csvText).not.toContain("upi");
@@ -223,9 +223,10 @@ describe("csvLine", () => {
 				refinements: 2,
 				durationMs: 900,
 				bodyIndexLoaded: false,
+				actionIntent: "find_api",
 			}),
 		).toBe(
-			'1,t,"say ""hi"", ok",all,0,abandon,,,,,/docs,anon,,keyboard,mobile,2,900,false\n',
+			'1,t,"say ""hi"", ok",all,0,abandon,,,,,/docs,anon,,keyboard,mobile,2,900,false,find_api\n',
 		);
 	});
 });

@@ -23,7 +23,14 @@ import {
 	type SearchItem,
 } from "@/lib/search-index";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { PALETTE_QUERY_SAMPLE_RATE, SHOW_AI_CHAT } from "@/lib/config/features";
+import {
+	PALETTE_QUERY_SAMPLE_RATE,
+	SHOW_AI_CHAT,
+	SHOW_PALETTE_ACTIONS,
+} from "@/lib/config/features";
+import { resolveAction } from "@/lib/palette-actions/resolve";
+import type { CardLink } from "@/lib/palette-actions/types";
+import { PaletteActionCard } from "@/components/PaletteActionCard";
 import {
 	authContext,
 	deviceClass,
@@ -293,6 +300,16 @@ export const CommandPalette = ({
 		[engine, query, scope],
 	);
 
+	// Pinned action card: rules + MiniSearch, same engine, so no extra cost.
+	// Only in the "All" scope — a visitor who picked a tab asked for a list.
+	const action = useMemo(
+		() =>
+			SHOW_PALETTE_ACTIONS && scope === "all" && query.trim()
+				? resolveAction(engine, query)
+				: null,
+		[engine, query, scope],
+	);
+
 	// One telemetry report per palette session, for its last query. Refs, not
 	// state: nothing renders from them.
 	const sampledRef = useRef(false);
@@ -325,7 +342,10 @@ export const CommandPalette = ({
 		return () => clearTimeout(timer);
 	}, [query]);
 
-	const report = (outcome: PaletteOutcome, clicked?: SearchItem): void => {
+	const report = (
+		outcome: PaletteOutcome,
+		clicked?: Pick<SearchItem, "id" | "label"> & { category: string },
+	): void => {
 		if (reportedRef.current) return;
 		reportedRef.current = true;
 		const finalQuery = query.trim();
@@ -342,6 +362,7 @@ export const CommandPalette = ({
 				clickedRank: rank > 0 ? rank : undefined,
 				clickedId: clicked?.id,
 				clickedLabel: clicked?.label,
+				actionIntent: action?.intent,
 				refinements: settledRef.current.filter((q) => q !== finalQuery).length,
 				durationMs: Date.now() - openedAtRef.current,
 				bodyIndexLoaded: bodyIndexLoadedRef.current,
@@ -374,6 +395,14 @@ export const CommandPalette = ({
 		const { scope: tokenScope, query: stripped } = parseQuery(raw);
 		if (tokenScope) setScope(tokenScope);
 		setQuery(tokenScope ? stripped : raw);
+	};
+
+	// A card click reports as category "action" with no rank: it sits above
+	// the ranked list rather than in it.
+	const handleActionPick = (link: CardLink, id: string): void => {
+		report("click", { id, label: link.label, category: "action" });
+		onOpenChange(false);
+		navigate(link.href);
 	};
 
 	const handleSelect = (item: SearchItem): void => {
@@ -423,6 +452,9 @@ export const CommandPalette = ({
 							))}
 						</div>
 						<CommandList className="max-h-[min(60vh,420px)] overscroll-contain">
+							{action && (
+								<PaletteActionCard card={action} onPick={handleActionPick} />
+							)}
 							{canAskAi && query.trim() && (
 								<CommandItem
 									value={`ask-ai-${query}`}

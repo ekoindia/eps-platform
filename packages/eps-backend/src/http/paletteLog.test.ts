@@ -68,6 +68,7 @@ describe("POST /telemetry/palette", () => {
 				refinements: null,
 				durationMs: null,
 				bodyIndexLoaded: null,
+				actionIntent: null,
 			},
 		]);
 	});
@@ -88,6 +89,7 @@ describe("POST /telemetry/palette", () => {
 				refinements: 2,
 				durationMs: 4200,
 				bodyIndexLoaded: false,
+				actionIntent: "find_api",
 			}),
 		);
 
@@ -102,6 +104,7 @@ describe("POST /telemetry/palette", () => {
 			refinements: 2,
 			durationMs: 4200,
 			bodyIndexLoaded: false,
+			actionIntent: "find_api",
 		});
 	});
 
@@ -142,6 +145,10 @@ describe("POST /telemetry/palette", () => {
 			JSON.stringify({ ...valid, durationMs: 7 * 86_400_000 }),
 		],
 		["non-boolean index", JSON.stringify({ ...valid, bodyIndexLoaded: 1 })],
+		[
+			"unknown action intent",
+			JSON.stringify({ ...valid, actionIntent: "delete_all" }),
+		],
 	])("rejects %s with 400 and stores nothing", async (_label, body) => {
 		const { post, rows } = harness();
 

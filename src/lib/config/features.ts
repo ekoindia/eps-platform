@@ -113,6 +113,15 @@ export const SHOW_AI_CHAT: boolean =
 	import.meta.env.VITE_SHOW_AI_CHAT === "true";
 
 /**
+ * When true, the ⌘K palette pins an action card above its results when a
+ * query reads as an intent ("api to verify pan", "earn on 500 dmt a month").
+ * Rules + MiniSearch only — no model. Off by default until the Phase 1c gate
+ * (docs/palette-router-roadmap.md) scores it against real queries.
+ */
+export const SHOW_PALETTE_ACTIONS: boolean =
+	import.meta.env.VITE_SHOW_PALETTE_ACTIONS === "true";
+
+/**
  * Share of ⌘K palette sessions (0–1) whose final query text is sent, redacted,
  * to eps-backend `POST /telemetry/palette`. Those samples become the eval set
  * for the on-device query router (`docs/features/palette-telemetry.md`).

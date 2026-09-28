@@ -91,6 +91,7 @@ const CSV_COLUMNS: readonly (keyof PaletteRow)[] = [
 	"refinements",
 	"durationMs",
 	"bodyIndexLoaded",
+	"actionIntent",
 ];
 
 const CSV_HEADER = `${CSV_COLUMNS.join(",")}\n`;

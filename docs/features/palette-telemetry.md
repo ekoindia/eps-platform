@@ -32,13 +32,14 @@ Each report carries the search, its outcome, and context:
 | `device` | `mobile` (viewport ≤767px) · `desktop` |
 | `refinements` | queries the visitor paused on (≥800 ms) before the final one — struggle signal |
 | `durationMs` | palette open → outcome |
+| `actionIntent` | intent of the action card shown for the final query (`find_api`…), clicked or not; a card click itself is `outcome: click` with `clickedCategory: "action"` and no rank |
 | `bodyIndexLoaded` | whether the long-form page-text index had loaded; `false` on a zero-result search = maybe a loading gap, not a content gap |
 
 Two destinations, deliberately different:
 
 | Destination | Gets | When |
 | ----------- | ---- | ---- |
-| GTM `palette_search` event | counts + `queryLength`, `auth`, `trigger`, `device` — **never** text, page, stage or clicked label/id | every session with a query |
+| GTM `palette_search` event | counts + `queryLength`, `auth`, `trigger`, `device`, `actionIntent` — **never** text, page, stage or clicked label/id | every session with a query |
 | eps-backend `POST /telemetry/palette` | every field above, query redacted | sampled sessions only (`VITE_PALETTE_QUERY_SAMPLE_RATE`) |
 
 Zero-result rate = `resultCount == 0`; abandon rate = `outcome == "abandon"`.
@@ -129,7 +130,7 @@ One-time setup:
 
 1. **Variables** → User-Defined → Data Layer Variable (Version 2), one each for
    `scope`, `resultCount`, `outcome`, `clickedCategory`, `clickedRank`,
-   `queryLength`, `auth`, `trigger`, `device` (e.g. `DLV - palette outcome`).
+   `queryLength`, `auth`, `trigger`, `device`, `actionIntent` (e.g. `DLV - palette outcome`).
 2. **Trigger** → Custom Event, event name `palette_search`, all custom events
    (`CE - palette_search`).
 3. **Tag** → Google Analytics: GA4 Event, event name `palette_search`, trigger
@@ -146,6 +147,7 @@ One-time setup:
    | `auth`             | `{{DLV - palette auth}}`           |
    | `trigger`          | `{{DLV - palette trigger}}`        |
    | `device`           | `{{DLV - palette device}}`         |
+   | `action_intent`    | `{{DLV - palette actionIntent}}`   |
 
 4. **Preview** (Tag Assistant): search in ⌘K and click a result, then search and
    press Esc — expect two `palette_search` events, the second with
@@ -155,7 +157,7 @@ One-time setup:
    shows only from registration on, after 24–48 h):
    - custom dimensions (Event scope): `outcome`, `scope`, `clicked_category`,
      `result_count` (a dimension so it can be filtered `= 0`), `auth`,
-     `trigger`, `device`;
+     `trigger`, `device`, `action_intent`;
    - custom metrics (Standard): `query_length`, `clicked_rank`.
 
 Reading it — Explore → Free form, filter event name `palette_search`: rows

@@ -36,6 +36,8 @@ export interface PaletteRow {
 	durationMs: number | null;
 	/** Whether the long-form page-text index had loaded. */
 	bodyIndexLoaded: boolean | null;
+	/** Intent of the action card shown for the final query, if any. */
+	actionIntent: string | null;
 }
 
 /** Context fields a row may lack: older site builds never send them. */
@@ -49,7 +51,8 @@ type ContextKey =
 	| "clickedLabel"
 	| "refinements"
 	| "durationMs"
-	| "bodyIndexLoaded";
+	| "bodyIndexLoaded"
+	| "actionIntent";
 
 /** What `insert` takes: context fields optional, stored as null when absent. */
 export type NewPaletteRow = Omit<PaletteRow, "id" | ContextKey> &
@@ -138,6 +141,7 @@ const ADDED_COLUMNS: readonly [string, string][] = [
 	["refinements", "INTEGER"],
 	["duration_ms", "INTEGER"],
 	["body_index_loaded", "INTEGER"],
+	["action_intent", "TEXT"],
 ];
 
 const COLUMNS = `id, ts, query, scope,
@@ -146,7 +150,8 @@ const COLUMNS = `id, ts, query, scope,
 	page, auth, stage, trigger, device,
 	clicked_id AS clickedId, clicked_label AS clickedLabel,
 	refinements, duration_ms AS durationMs,
-	body_index_loaded AS bodyIndexLoaded`;
+	body_index_loaded AS bodyIndexLoaded,
+	action_intent AS actionIntent`;
 
 /** SQLite has no boolean: 0/1/null back to boolean/null, and a plain object. */
 const toRow = (r: Record<string, unknown>): PaletteRow =>
@@ -221,8 +226,8 @@ export function openPaletteStore(path: string): PaletteStore {
 		`INSERT INTO palette_query
 			(ts, query, scope, result_count, outcome, clicked_category, clicked_rank,
 			 page, auth, stage, trigger, device, clicked_id, clicked_label,
-			 refinements, duration_ms, body_index_loaded)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			 refinements, duration_ms, body_index_loaded, action_intent)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 	);
 
 	return {
@@ -245,6 +250,7 @@ export function openPaletteStore(path: string): PaletteStore {
 				row.refinements ?? null,
 				row.durationMs ?? null,
 				row.bodyIndexLoaded == null ? null : row.bodyIndexLoaded ? 1 : 0,
+				row.actionIntent ?? null,
 			);
 		},
 

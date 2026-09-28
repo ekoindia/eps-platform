@@ -248,6 +248,8 @@ export interface SearchLogRow {
 	refinements: number | null;
 	durationMs: number | null;
 	bodyIndexLoaded: boolean | null;
+	/** Action card shown for the final query (`find_api`…), if any. */
+	actionIntent: string | null;
 }
 
 export interface SearchLogPage {

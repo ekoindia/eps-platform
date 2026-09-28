@@ -75,6 +75,17 @@ Labels and one-line summaries alone can't answer a lot of real queries — "penn
 - **`extractBody`** (`src/lib/markdown/extract-body.ts`) drops frontmatter, the boilerplate canonical-URL blockquote, fenced code and pipe tables; it keeps heading *text* and non-boilerplate blockquote prose. Capped at 1500 chars/document — measured: 500 → 82 KB, 1500 → 160 KB, 3000 → 240 KB raw.
 - **Dev**: served by the plugin's middleware at `/search-body.json`, cached in the plugin closure (336 ms cold → 2 ms warm). Not invalidated on HMR — restart the dev server after editing page data if the body index needs to reflect it.
 
+## Action cards (flagged)
+
+With `VITE_SHOW_PALETTE_ACTIONS=true`, a query that reads as an intent gets a
+pinned **Suggested action** group above the results (All scope only):
+`src/lib/palette-actions/` detects the intent with ordered regex rules, strips
+request phrasing to a subject, and resolves it with this same engine. Today:
+`find_api` → the best product page or endpoint, endpoints with a **Try it** link
+(`?try=1` opens the docs page's Try-it dialog). Never auto-acts; Enter on the
+first row opens it. Plan, remaining intents and the gate:
+[palette router roadmap](palette-router-roadmap.md).
+
 ## Files
 
 - `src/lib/search-engine.ts` — MiniSearch config, synonyms, stopwords, ranking, `parseQuery`.
@@ -83,6 +94,8 @@ Labels and one-line summaries alone can't answer a lot of real queries — "penn
 - `src/lib/search-index.test.ts` — index integrity (unique ids, live `/docs` slugs).
 - `src/lib/markdown/extract-body.ts` (+ `.test.ts`) — markdown → searchable prose.
 - `vite-plugin-generate-markdown.ts` — `collectBodies()` + the `search-body.json` emit and dev route.
+- `src/lib/palette-actions/` — action-card rules, resolvers, eval scorer (`eval.test.ts`, see `scripts/palette-eval/`).
+- `src/components/PaletteActionCard.tsx` — the pinned card group.
 - `src/components/CommandPalette.tsx` — palette UI (Dialog + `ui/command.tsx` primitives). Sends one telemetry report per session — see [palette telemetry](features/palette-telemetry.md).
 - `src/components/Header.tsx` — triggers, ⌘K listener, lazy mount + idle prefetch.
 - `index.html` / `src/index.css` — OS detection + kbd-hint visibility.

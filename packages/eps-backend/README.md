@@ -125,7 +125,7 @@ carry no ip, session or request id. Admins read them at `/admin` → Search logs
 All three take `from`/`to` (`YYYY-MM-DD`, UTC, inclusive), `q` (substring),
 `outcome`, `scope`, `auth` and `stage`. Rows also carry optional context (page,
 auth, developer lifecycle, trigger, device, clicked id/label, refinements,
-duration, body-index flag); `ts` is stored rounded to the hour. Columns added
+duration, body-index flag, action-card intent); `ts` is stored rounded to the hour. Columns added
 after first release are created on startup (`ADDED_COLUMNS` in
 `src/analytics/paletteStore.ts`). Storage: `ANALYTICS_DB_PATH` (prod: the
 `eps-analytics-data` volume, WAL mode). Unset = in-memory. Rows older than 365

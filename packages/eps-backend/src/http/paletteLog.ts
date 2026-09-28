@@ -27,6 +27,12 @@ export type PaletteReport = Omit<NewPaletteRow, "ts">;
 const AUTHS = new Set(["anon", "developer", "signup", "admin", "unknown"]);
 const TRIGGERS = new Set(["keyboard", "header_button", "mobile_button"]);
 const DEVICES = new Set(["mobile", "desktop"]);
+const ACTION_INTENTS = new Set([
+	"find_api",
+	"how_to_build",
+	"estimate_earnings",
+	"get_started",
+]);
 /** Lifecycle values are short kebab-case words (`kyc-pending`). */
 const STAGE = /^[a-z-]{1,20}$/;
 /** Search item ids are `${category}:${slug}`, no whitespace. */
@@ -113,6 +119,7 @@ export function parsePaletteReport(raw: unknown): PaletteReport {
 			"bodyIndexLoaded",
 			(v) => typeof v === "boolean",
 		),
+		actionIntent: optional<string>("actionIntent", inSet(ACTION_INTENTS)),
 	};
 }
 

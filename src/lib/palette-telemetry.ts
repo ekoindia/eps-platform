@@ -35,6 +35,8 @@ export interface PaletteSearchReport extends PaletteContext {
 	clickedId?: string;
 	/** The result's title as the visitor saw it; only on `click`. */
 	clickedLabel?: string;
+	/** Intent of the action card shown for the final query, if any — clicked or not. */
+	actionIntent?: string;
 	/** Settled queries before the last one — how much the visitor had to rephrase. */
 	refinements: number;
 	/** Milliseconds from palette open to the outcome. */
@@ -141,6 +143,7 @@ export function reportPaletteSearch(
 		auth: report.auth,
 		trigger: report.trigger,
 		device: report.device,
+		actionIntent: report.actionIntent,
 	});
 
 	if (!sampled) return;
@@ -160,6 +163,7 @@ export function reportPaletteSearch(
 				device: report.device,
 				clickedId: report.clickedId,
 				clickedLabel: report.clickedLabel,
+				actionIntent: report.actionIntent,
 				refinements: report.refinements,
 				durationMs: report.durationMs,
 				bodyIndexLoaded: report.bodyIndexLoaded,
