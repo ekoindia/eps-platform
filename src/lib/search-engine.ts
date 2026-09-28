@@ -155,7 +155,10 @@ const stem = (term: string): string => {
 const baseTerm = (term: string): string | null => {
 	const n = norm(term);
 	if (!n || STOPWORDS.has(n)) return null;
-	return TOKEN_ALIASES[n] ?? n;
+	// Own keys only: TOKEN_ALIASES["constructor"] is Object.prototype's function.
+	return Object.prototype.hasOwnProperty.call(TOKEN_ALIASES, n)
+		? TOKEN_ALIASES[n]
+		: n;
 };
 
 /**
