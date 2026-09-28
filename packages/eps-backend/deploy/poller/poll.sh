@@ -200,7 +200,7 @@ write_status() {
 		last_deploy="{\"at\":$(jnum "$at"),\"kind\":$(jstr "$kind"),\"digest\":$(jstr "$digest")}"
 	fi
 	tmp="$(mktemp "$STATE_DIR/.status.XXXXXX")" || return 1
-	{
+	if ! {
 		printf '{"schema":1,"service":%s,"image":%s,"watch_tag":%s,' \
 			"$(jstr "$ALERT_SERVICE")" "$(jstr "$IMAGE")" "$(jstr "$WATCH_TAG")"
 		printf '"updated_at":%s,"poll_interval_sec":%s,' "$(date -u +%s)" "$(jnum "$POLL_INTERVAL_SEC")"
@@ -210,7 +210,10 @@ write_status() {
 			"$(jstr "$(running_repo_digest)")" "$(jstr "$(running_revision)")" \
 			"$(jstr "${TICK_REMOTE:-}")" "$(jstr "$(head -n1 "$STATE_DIR/last_good" 2>/dev/null || true)")"
 		printf '"hold":%s,"rejected":%s,"last_deploy":%s}\n' "$hold" "$rejected" "$last_deploy"
-	} >"$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$STATE_DIR/status.json" || { rm -f "$tmp"; return 1; }
+	} >"$tmp" || ! chmod 644 "$tmp" || ! mv -f "$tmp" "$STATE_DIR/status.json"; then
+		rm -f "$tmp"
+		return 1
+	fi
 }
 
 # Epoch seconds stored in stamp file $1. 0 when missing, unreadable, or not a
