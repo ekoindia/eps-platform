@@ -20,7 +20,7 @@ status updates the board and appends to the progress log in the same commit.
 | 0 | Palette telemetry: GTM counts + redacted query log in SQLite, admin Search logs page | ✅ **Live in prod**, verified 2026-09-28 | — |
 | 0b | Baseline data collection (2–4 weeks at sample rate 1) | ⏳ **Running since 2026-09-28** — first review ~2026-10-12, eval-set cut ~2026-10-26 | — |
 | 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ✅ All 4 intents built 2026-09-28; flag **on in prod** since PR #131 | 2026-09-28 |
-| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); awaiting deploy | 2026-09-28 |
+| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); deployed 2026-09-29 (PR #134), `bodyIndexLoaded: true` confirmed in prod | 2026-09-29 |
 | 1b | Needle spike: JS API, browser cost, base-model sanity | ⬜ Not started | — |
 | 1c | Eval set + gate run (comparator vs Needle, end to end) | ⬜ Needs 0b data | — |
 | 2 | Needle build behind `VITE_SHOW_NEEDLE` | ⬜ Only if Needle clearly beats 1a at the gate | — |
@@ -119,6 +119,8 @@ optional plain-search top-3 `result`. Run and label format:
 | after, dev | 0.98 | 0.96 | 0.95 | 0.98 | 48/53 (all) |
 | before, **test** | 0.87 | 0.91 | 0.84 | 0.80 | — |
 | after, **test** | 0.89 | 0.91 | 0.90 | 0.87 | — |
+| miss fixes 09-29, dev | 1.00 | 1.00 | 1.00 | 1.00 | 49/53 (all) |
+| miss fixes 09-29, **test** | 0.89 | 0.91 | 0.90 | 0.87 | — |
 
 "Before" used the original single-target labels. Between runs, 18 rows were
 widened to accept a product **or** its only endpoint (a labelling policy,
@@ -141,11 +143,25 @@ Fixes:
 - Search content: `golang` → `go` alias; FASTag on BBPS; product names and
   "fees" on the Pricing page.
 
-Known dev misses left: "payout api" (fuzzy → UPI Verification), "how to open a
-bank account" (→ Get User's Services), "api documentation" (Docs page loses
-to "document" endpoints on type weight), "fingpay" (Fingpay endpoints outrank
-the AePS product — acceptable), "endpoint to fetch ifsc details" (→ Get Bank
-Details).
+Dev misses fixed 2026-09-29 (causes, for the next rule change):
+
+- "payout api" → UPI Verification: "payout" appeared only in the UPI page's
+  body text. `find_api` now shows no card when the chosen API matched in
+  page prose only (`bodyOnly`, `resolve.ts`).
+- "how to open a bank account" → Get User's Services: the best hit was a
+  solution pack and the resolver took the next API down (fuzzy bank→back).
+  Now **any** non-API best hit means no card (was: page/guide/FAQ/SDK only).
+- "endpoint to fetch ifsc details" → Get Bank Details: Get IFSC Details never
+  said "fetch", so strict search dropped it. Spec summary now "Fetch the
+  bank and branch for an IFSC code."
+- "api documentation" → DigiLocker endpoints: "documentation" stems to
+  "document". Phrase alias `api docs|documentation` → `docs`.
+
+Left: "fingpay" — Fingpay endpoints and the Fingpay recipe take the top 3,
+the AePS product doesn't; a "Fingpay" product keyword didn't move it. Kept
+as acceptable (they are AePS answers). Held-out test did not move: these
+fixes don't generalise, so the remaining test misses need real queries
+(Phase 0b), not more hand tuning.
 
 ## Phase 1b — Needle spike (⬜)
 
@@ -237,6 +253,17 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-29** — Query-audit fixes (full-text index `constructor` fix,
+  strict card search, rule and content fixes) merged to `main` in PR #134
+  at 08:23 IST: **deploy date for before/after comparison.** Rows before
+  it have `bodyIndexLoaded: false`; rows after should be `true`. The
+  user confirmed `true` in the prod export. Admin Search logs now also
+  shows a "Full-text index loaded" summary card (% of searches), so the
+  split is visible without an export. Then fixed 4 of the 5 known dev
+  misses (see Query audit): dev set 1.00 on every metric, plain top-3
+  49/53; held-out test unchanged. Next: Phase 1b spike or the ~2026-10-12
+  review.
 
 - **2026-09-28** — Query audit done (see section). Found and fixed a prod bug:
   the full-text body index never loaded (`constructor` alias lookup), so

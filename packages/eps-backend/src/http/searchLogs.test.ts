@@ -119,6 +119,7 @@ describe("admin search-log routes", () => {
 			click: 1,
 			askAi: 0,
 			abandon: 2,
+			bodyIndexLoaded: 0,
 		});
 		expect(body.top).toHaveLength(3);
 		expect(body.topFailing.map((t) => t.query)).toEqual([

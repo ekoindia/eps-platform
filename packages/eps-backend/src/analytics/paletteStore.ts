@@ -79,6 +79,8 @@ export interface PaletteSummary {
 	click: number;
 	askAi: number;
 	abandon: number;
+	/** Sessions whose full-text page index had loaded; the rest searched labels only. */
+	bodyIndexLoaded: number;
 }
 
 /** A query and how many sessions ended on it. */
@@ -265,7 +267,8 @@ export function openPaletteStore(path: string): PaletteStore {
 						coalesce(sum(result_count = 0), 0)       AS zeroResult,
 						coalesce(sum(outcome = 'click'), 0)      AS click,
 						coalesce(sum(outcome = 'ask_ai'), 0)     AS askAi,
-						coalesce(sum(outcome = 'abandon'), 0)    AS abandon
+						coalesce(sum(outcome = 'abandon'), 0)    AS abandon,
+						coalesce(sum(body_index_loaded = 1), 0)  AS bodyIndexLoaded
 					 FROM palette_query ${w.sql}`,
 				)
 				.get(...w.params) as unknown as PaletteSummary;

@@ -1316,7 +1316,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		seo: {
 			title: "Bank Account Verification API India | Penny Drop & Name Match",
 			description:
-				"Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payouts.",
+				"Verify bank account details instantly with Eko's Bank Verification API. Penny drop verification, IFSC validation, and account holder name matching for secure payments.",
 			keywords:
 				"bank account verification API, penny drop API, IFSC validation API, bank verification, account verification, Eko API",
 		},
@@ -1332,7 +1332,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		features: [
 			{
 				title: "Penny Drop Verification",
-				desc: "Send ₹1 to verify account exists and is active before large payouts.",
+				desc: "Send ₹1 to verify account exists and is active before large payments.",
 				icon: CreditCard,
 			},
 			{
@@ -1363,13 +1363,13 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		],
 		benefits: [
 			{
-				title: "Reduce Failed Payouts",
+				title: "Reduce Failed Payments",
 				desc: "Verify accounts before disbursement to minimize transaction failures and reversals.",
 				icon: CheckCircle,
 			},
 			{
 				title: "Prevent Fraud",
-				desc: "Match account holder names to prevent payouts to wrong accounts.",
+				desc: "Match account holder names to prevent payments to wrong accounts.",
 				icon: Shield,
 			},
 			{
@@ -1397,7 +1397,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			...VERIFICATION_STEPS_BASE,
 			{
 				title: "Go Live",
-				desc: "Start verifying real bank accounts before payouts.",
+				desc: "Start verifying real bank accounts before payments.",
 			},
 		],
 		useCases: [
@@ -1406,7 +1406,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			"Loan Disbursement",
 			"Insurance Claims",
 			"Refund Processing",
-			"Incentive Payouts",
+			"Incentive Payments",
 			"Commission Payments",
 			"E-commerce Seller Onboarding",
 		],
@@ -1470,7 +1470,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			},
 			{
 				title: "Business Identity Confirmation",
-				desc: "Validate legal business information before onboarding or payouts.",
+				desc: "Validate legal business information before onboarding or payments.",
 			},
 			{
 				title: "Automation Ready",
@@ -1529,7 +1529,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			title:
 				"UPI ID Verification API India | Verify UPI VPA, Mobile & Payee Name",
 			description:
-				"Verify UPI IDs (VPA) and registered phone numbers in real time. Confirm payee name before initiating UPI transfers to reduce payout failures.",
+				"Verify UPI IDs (VPA) and registered phone numbers in real time. Confirm payee name before initiating UPI transfers to reduce payment failures.",
 			keywords:
 				"UPI ID Verification API, VPA Verification API, UPI VPA check API, Verify UPI ID, Verify UPI VPA, Virtual Payment Address verification, UPI verification API India",
 		},
@@ -1537,7 +1537,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		desc: "Verify UPI IDs (VPA) and registered phone number",
 		heroTitle: "UPI ID (VPA) Verification API – Confirm Payee Before Payment",
 		heroSubtitle:
-			"Validate UPI IDs — also known as Virtual Payment Address (VPA) — and registered phone numbers in real time. Confirm payee name before initiating transfers to reduce payout failures and payment fraud.",
+			"Validate UPI IDs — also known as Virtual Payment Address (VPA) — and registered phone numbers in real time. Confirm payee name before initiating transfers to reduce payment failures and payment fraud.",
 		category: "verification",
 		icon: Zap,
 		heroImage: upiVerifyImg,
@@ -1570,10 +1570,10 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		],
 		useCases: [
 			"Pre-payment UPI ID (VPA) validation for UPI transfers",
-			"Reducing payout failures caused by incorrect UPI IDs",
+			"Reducing payment failures caused by incorrect UPI IDs",
 			"Customer onboarding where UPI ID (VPA) discovery is required",
 			"Assisted payments (agent or retailer-led transactions)",
-			"Payee name confirmation before bulk payouts",
+			"Payee name confirmation before bulk payment",
 		],
 		trustAndCompliance: [
 			"Every API call is secured with one-time-use tokens generated using asymmetric cryptography",
@@ -2522,7 +2522,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			"ITC fraud detection via GST-PAN-bank name checks",
 			"Lending name match for fraud prevention",
 			"Merchant onboarding name consistency checks",
-			"Payout reconciliation",
+			"Payment reconciliation",
 			"Risk and fraud prevention",
 		],
 		trustAndCompliance: [
@@ -2931,7 +2931,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		seo: {
 			title: "Mobile OTP Verification API India | Send, Verify & Validate OTP",
 			description:
-				"Send OTPs to mobile numbers, verify the code entered by the customer, and validate a signed proof token — for onboarding, payouts, and any OTP-gated transaction. Bring your own DLT-registered Sender ID.",
+				"Send OTPs to mobile numbers, verify the code entered by the customer, and validate a signed proof token — for onboarding, payments, and any OTP-gated transaction. Bring your own DLT-registered Sender ID.",
 			keywords:
 				"Mobile OTP API, OTP Verification API, Send OTP API, Verify OTP API, SMS OTP API India, Phone Verification API",
 		},
@@ -2977,7 +2977,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 		],
 		useCases: [
 			"Verify a mobile number during customer onboarding",
-			"Two-factor confirmation before payouts or high-value transactions",
+			"Two-factor confirmation before payments or high-value transactions",
 			"Prove OTP verification to a downstream API via the token",
 			"Reduce fake signups with real mobile-ownership checks",
 		],

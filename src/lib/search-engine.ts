@@ -70,6 +70,9 @@ const PHRASE_ALIASES: [RegExp, string][] = [
 	[/\bmoney[\s-]?transfer\b/g, "dmt"],
 	[/\bbill[\s-]?payment(s)?\b/g, "bbps"],
 	[/\bpan[\s-]?card\b/g, "pan"],
+	// "documentation" stems to "document", which DigiLocker's document
+	// endpoints own by label and slug; "docs" is the Developer Docs label.
+	[/\bapi\s+doc(?:s|umentation)\b/g, "docs"],
 	// "penny drop" is deliberately absent: both words exist in the corpus prose,
 	// so once Phase B indexes body text the natural tokens match. Rewriting it to
 	// a coined "pennydrop" token would guarantee zero results instead.
@@ -288,6 +291,8 @@ export interface Ranked {
 	score: number;
 	/** Indexed terms that matched — drives highlighting. */
 	terms: string[];
+	/** Matched term → fields it matched in (label, slug, keywords, body…). */
+	match: Record<string, string[]>;
 }
 
 const ITEM_BY_ID = new Map(SEARCH_INDEX.map((item) => [item.id, item]));
@@ -330,7 +335,12 @@ export const search = (
 		const item = ITEM_BY_ID.get(result.id as string);
 		if (!item) return acc;
 		if (scope !== "all" && item.category !== scope) return acc;
-		acc.push({ item, score: result.score, terms: Object.keys(result.match) });
+		acc.push({
+			item,
+			score: result.score,
+			terms: Object.keys(result.match),
+			match: result.match,
+		});
 		return acc;
 	}, []);
 

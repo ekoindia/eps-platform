@@ -10,7 +10,7 @@ vi.mock("@/lib/auth/client", async (importOriginal) => ({
 		adminDocs: { list: vi.fn(async () => ({ docs: [] })) },
 		adminSearchLogs: {
 			overview: vi.fn(async () => ({
-				summary: { total: 0, zeroResult: 0, click: 0, askAi: 0, abandon: 0 },
+				summary: { total: 0, zeroResult: 0, click: 0, askAi: 0, abandon: 0, bodyIndexLoaded: 0 },
 				top: [],
 				topFailing: [],
 			})),

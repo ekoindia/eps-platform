@@ -113,7 +113,8 @@ No nginx or Vercel change needed: both already forward every backend path.
 - **Filter** — date range (UTC days, inclusive; default last 30 days), query
   substring, outcome, who (`auth`), and account stage (shown once "Developer"
   is picked). Clicking a query in either top table filters to it.
-- **Summary cards** — searches, % no results, % clicked, % abandoned, % asked AI.
+- **Summary cards** — searches, % no results, % clicked, % abandoned, % asked AI,
+  % with the full-text index loaded (the rest searched labels only).
 - **Top queries / top failing queries** — 25 each, case- and space-folded.
   Failing = no results or abandoned: the synonym and content backlog.
 - **Log** — newest first, 50 per page, *Load more*. Columns: hour, query,

@@ -124,6 +124,11 @@ describe("onboarding phrasing", () => {
 		expect(found).not.toContain("sdk:go");
 		expect(top("go sdk")).toBe("sdk:go");
 	});
+
+	// "documentation" stems to "document", which DigiLocker endpoints own.
+	it("sends api documentation to the Developer Docs", () => {
+		expect(top("api documentation")).toBe("page:docs");
+	});
 });
 
 describe("type weighting", () => {

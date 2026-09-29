@@ -31,7 +31,14 @@ vi.mock("@/lib/auth/client", async (importOriginal) => ({
 	authClient: {
 		adminSearchLogs: {
 			overview: vi.fn(async () => ({
-				summary: { total: 4, zeroResult: 1, click: 2, askAi: 1, abandon: 1 },
+				summary: {
+					total: 4,
+					zeroResult: 1,
+					click: 2,
+					askAi: 1,
+					abandon: 1,
+					bodyIndexLoaded: 3,
+				},
 				top: [{ query: "upi", count: 3 }],
 				topFailing: [{ query: "gst verify", count: 1 }],
 			})),
@@ -55,6 +62,7 @@ describe("AdminSearchLogs", () => {
 
 		expect(await screen.findByText("50%")).toBeInTheDocument(); // clicked 2/4
 		expect(screen.getAllByText("25%")).toHaveLength(3); // no results, abandoned, asked AI
+		expect(screen.getByText("75%")).toBeInTheDocument(); // full-text index 3/4
 		expect(screen.getByText("Export CSV").closest("a")).toHaveAttribute(
 			"href",
 			"/api/export?format=csv",
@@ -66,7 +74,14 @@ describe("AdminSearchLogs", () => {
 	it("warns when the server keeps logs in memory", async () => {
 		vi.mocked(authClient.adminSearchLogs.overview).mockResolvedValueOnce({
 			persistent: false,
-			summary: { total: 0, zeroResult: 0, click: 0, askAi: 0, abandon: 0 },
+			summary: {
+				total: 0,
+				zeroResult: 0,
+				click: 0,
+				askAi: 0,
+				abandon: 0,
+				bodyIndexLoaded: 0,
+			},
 			top: [],
 			topFailing: [],
 		});

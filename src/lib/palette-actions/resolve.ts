@@ -1,4 +1,4 @@
-import { search } from "@/lib/search-engine";
+import { type Ranked, search } from "@/lib/search-engine";
 import { SEARCH_INDEX } from "@/lib/search-index";
 import { RECIPES } from "@/lib/data/api-recipes";
 import { resolveEstimateEarnings } from "./earnings";
@@ -17,12 +17,11 @@ const MAX_ALTERNATIVES = 2;
 /** Search categories a `find_api` card may point at: product pages and REST operations. */
 const API_CATEGORIES = new Set(["api", "endpoint"]);
 
-/**
- * Best-hit categories that mean the visitor wants a page, not an API: "api
- * pricing" → Pricing, "how does authentication work" → the auth guide. The
- * plain results already lead with it, so no card.
- */
-const NOT_AN_API = new Set(["page", "guide", "faq", "sdk"]);
+/** True when every matched term matched in page prose only, not in a name or keyword. */
+const bodyOnly = (hit: Ranked): boolean =>
+	Object.values(hit.match).every((fields) =>
+		fields.every((field) => field === "body"),
+	);
 
 /**
  * `find_api`: the best product page or REST operation for the subject. Uses
@@ -32,18 +31,21 @@ const NOT_AN_API = new Set(["page", "guide", "faq", "sdk"]);
  * @param engine - The palette's search engine.
  * @param detected - The detected intent.
  * @returns A card, or null when no product or endpoint matches every subject
- *   word, or when the best match overall is a docs page rather than an API.
+ *   word, when the best match overall is not an API ("api pricing" → Pricing,
+ *   "open a bank account" → a solution pack — the plain results lead with it),
+ *   or when the API matched only in its page prose ("payout api" → a UPI page
+ *   that mentions payouts).
  */
 export function resolveFindApi(
 	engine: Engine,
 	detected: DetectedIntent,
 ): ActionCard | null {
 	const hits = search(engine, detected.subject, "all", { strict: true });
-	if (!hits[0] || NOT_AN_API.has(hits[0].item.category)) return null;
+	if (!hits[0] || !API_CATEGORIES.has(hits[0].item.category)) return null;
 	const [top, ...rest] = hits.filter((r) =>
 		API_CATEGORIES.has(r.item.category),
 	);
-	if (!top) return null;
+	if (!top || bodyOnly(top)) return null;
 	const { item } = top;
 	const isEndpoint = item.category === "endpoint";
 	const alternatives: CardLink[] = rest
