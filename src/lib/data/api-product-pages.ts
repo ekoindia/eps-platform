@@ -483,7 +483,7 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			description:
 				"Integrate BBPS API to enable bill payments for electricity, gas, water, DTH, broadband, insurance, and 200+ biller categories. RBI-compliant infrastructure.",
 			keywords:
-				"BBPS API, bill payment API, Bharat Bill Payment System, utility bill API, electricity bill API, Eko API",
+				"BBPS API, bill payment API, Bharat Bill Payment System, utility bill API, electricity bill API, FASTag recharge API, Eko API",
 			ogTitle: "BBPS API - Bharat Bill Payment System",
 			ogDescription:
 				"Enable seamless bill payments for 200+ biller categories with Eko's BBPS API.",

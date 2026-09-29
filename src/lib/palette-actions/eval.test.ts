@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { buildEngine } from "@/lib/search-engine";
+import { buildEngine, search } from "@/lib/search-engine";
 import { describe, expect, it } from "vitest";
 import { resolveAction } from "./resolve";
 import type { ActionCard, ActionIntent } from "./types";
@@ -7,12 +7,18 @@ import type { ActionCard, ActionIntent } from "./types";
 /**
  * One labelled palette query. `intent: null` = off-topic or plain search: the
  * right answer is no card. `target` is the card id the answer must point at
- * (`action:find_api:bbps-fetch-bill`); omit it to score the intent only.
+ * (`action:find_api:bbps-fetch-bill`), or a list when several are right (a
+ * product and its only endpoint); omit it to score the intent only.
  */
 export interface LabelledQuery {
 	query: string;
 	intent: ActionIntent | null;
-	target?: string;
+	target?: string | string[];
+	/**
+	 * Search item id (`api:pan-verification-api`, `sdk:go`) that must be in the
+	 * plain results' top 3. Scores search itself, which the card metrics miss.
+	 */
+	result?: string;
 	/** `test` rows are the held-out split — never used for tuning rules or a model. */
 	split?: "dev" | "test";
 }
@@ -31,6 +37,10 @@ export interface EvalScore {
 }
 
 const share = (hits: number, of: number): number => (of ? hits / of : 1);
+
+/** Whether a card id is (one of) the labelled target(s); true when unlabelled. */
+const hitsTarget = (target: LabelledQuery["target"], id?: string): boolean =>
+	!target || (id !== undefined && [target].flat().includes(id));
 
 /**
  * Scores a router against labelled queries. Router-agnostic: rules today, a
@@ -52,7 +62,7 @@ export function scoreRouter(
 	const correctCard = ({ row, card }: (typeof results)[number]) =>
 		card !== null &&
 		card.intent === row.intent &&
-		(!row.target || card.id === row.target);
+		hitsTarget(row.target, card.id);
 	return {
 		total: rows.length,
 		intentAccuracy: share(rightIntent.length, rows.length),
@@ -97,9 +107,14 @@ describe("scoreRouter", () => {
 	});
 });
 
+/** Plain results a `result` label must appear in. */
+const RESULT_TOP_N = 3;
+
 // Real run: PALETTE_EVAL_FILE=path/to/labelled.jsonl npx vitest run src/lib/palette-actions/eval.test.ts
 // Prints the gate table for the rules router. See scripts/palette-eval/README.md.
 const EVAL_FILE = process.env.PALETTE_EVAL_FILE;
+/** Optional `dist/search-body.json`: score the full-text engine the palette uses once loaded. */
+const BODIES_FILE = process.env.PALETTE_EVAL_BODIES;
 
 describe.skipIf(!EVAL_FILE)("palette eval (rules router)", () => {
 	it("prints gate metrics", () => {
@@ -107,8 +122,45 @@ describe.skipIf(!EVAL_FILE)("palette eval (rules router)", () => {
 			.split("\n")
 			.filter((line) => line.trim())
 			.map((line) => JSON.parse(line) as LabelledQuery);
-		const engine = buildEngine();
+		const engine = buildEngine(
+			BODIES_FILE ? JSON.parse(readFileSync(BODIES_FILE, "utf8")) : undefined,
+		);
 		const route = (query: string) => resolveAction(engine, query);
+		const topIds = (query: string) =>
+			search(engine, query)
+				.slice(0, RESULT_TOP_N)
+				.map((r) => r.item.id);
+
+		// Every dev row whose card or plain results miss its label, for fixing.
+		// Test rows stay unseen: they only count in the aggregate table.
+		const misses = rows.flatMap((row) => {
+			if (row.split === "test") return [];
+			const card = route(row.query);
+			const top = topIds(row.query);
+			const cardOk =
+				(card?.intent ?? null) === row.intent &&
+				hitsTarget(row.target, card?.id);
+			const resultOk = !row.result || top.includes(row.result);
+			return cardOk && resultOk
+				? []
+				: [
+						{
+							query: row.query,
+							want: [row.target ?? row.intent ?? "no card"].flat().join(" | "),
+							got: card?.id ?? "no card",
+							wantResult: row.result ?? "",
+							top: top.join(" "),
+						},
+					];
+		});
+		const resultRows = rows.filter((r) => r.result);
+		console.table(misses);
+		console.log(
+			`plain-search top-${RESULT_TOP_N} hit: ${
+				resultRows.filter((r) => topIds(r.query).includes(r.result as string))
+					.length
+			}/${resultRows.length}`,
+		);
 		const bySplit = {
 			all: scoreRouter(rows, route),
 			dev: scoreRouter(

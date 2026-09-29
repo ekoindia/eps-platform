@@ -47,6 +47,8 @@ const TOKEN_ALIASES: Record<string, string> = {
 	// PAN — colloquial and issuing-authority names
 	pancard: "pan",
 	nsdl: "pan",
+	// Go SDK — the corpus says "Go", never "golang"
+	golang: "go",
 	// AePS — "mATM" never appears in the corpus, "aeps" does
 	matm: "aeps",
 	// Bill payments
@@ -155,7 +157,10 @@ const stem = (term: string): string => {
 const baseTerm = (term: string): string | null => {
 	const n = norm(term);
 	if (!n || STOPWORDS.has(n)) return null;
-	return TOKEN_ALIASES[n] ?? n;
+	// Own keys only: TOKEN_ALIASES["constructor"] is Object.prototype's function.
+	return Object.prototype.hasOwnProperty.call(TOKEN_ALIASES, n)
+		? TOKEN_ALIASES[n]
+		: n;
 };
 
 /**
@@ -292,11 +297,16 @@ const ITEM_BY_ID = new Map(SEARCH_INDEX.map((item) => [item.id, item]));
  *
  * Scope is applied after scoring rather than by pre-filtering the corpus: a
  * scoped search returns the same relative order those items had globally.
+ *
+ * `strict` skips the OR fallback: palette action cards use it, because a card
+ * built on a one-word partial match ("cibil score" → IP Verification) is a
+ * confident wrong answer, while a loose result list is only a suggestion.
  */
 export const search = (
 	engine: MiniSearch<IndexedDoc>,
 	query: string,
 	scope: Scope = "all",
+	{ strict = false }: { strict?: boolean } = {},
 ): Ranked[] => {
 	const expanded = expandPhrases(query.trim());
 	if (!expanded) return [];
@@ -310,7 +320,7 @@ export const search = (
 	//
 	// Only on a total miss: a query that already returned something precise must
 	// not be diluted by loosely-related OR matches.
-	if (hits.length === 0) {
+	if (hits.length === 0 && !strict) {
 		const loose = engine.search(expanded, { combineWith: "OR" });
 		const floor = (loose[0]?.score ?? 0) * OR_SCORE_FLOOR;
 		hits = loose.filter((r) => r.score >= floor);

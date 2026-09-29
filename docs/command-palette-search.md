@@ -43,6 +43,10 @@ Under `AND`, a single word no document uses zeroes the entire query — and sent
 
 When the strict pass returns **zero** results, the query is retried with `combineWith: "OR"`, keeping only results scoring at least `OR_SCORE_FLOOR` of the best. Unfiltered OR returns 30–100 items for these queries, almost all noise; the score curve drops off a cliff after the genuine matches, so the floor cuts them to 1–9.
 
+Palette **action cards** skip this fallback (`search(…, { strict: true })`): a card built on a one-word partial match — *"cibil score api"* → IP Verification — is a confident wrong answer, while a loose result list is only a suggestion.
+
+**Alias lookups must use own keys.** `TOKEN_ALIASES` is a plain object, so a bare `TOKEN_ALIASES[term]` returns `Object.prototype.constructor` for the word *constructor*; MiniSearch then throws `key must be a string` and the body index never loads. `baseTerm` checks `hasOwnProperty`.
+
 This recovers 6 of the 8 previously-dead queries with the right answer in the top 3. Two remain unanswerable lexically (*"check if someone is who they say they are"*, *"stop fraudulent payouts"*) — they share no vocabulary with any document, and would need semantic retrieval.
 
 The fallback fires **only on a total miss**, so a query that already matched precisely is never diluted, and gibberish still returns nothing.

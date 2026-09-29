@@ -1,0 +1,164 @@
+{"query":"api for bank account verification","intent":"find_api","target":["action:find_api:bank-verification-api","action:find_api:bank-account-verification"],"split":"dev"}
+{"query":"penny drop api","intent":"find_api","target":["action:find_api:bank-verification-api","action:find_api:bank-account-verification"],"split":"dev"}
+{"query":"pennyless bank verification api","intent":"find_api","target":"action:find_api:bank-account-verification-pennyless","split":"test"}
+{"query":"endpoint to fetch ifsc details","intent":"find_api","target":"action:find_api:get-ifsc-details","split":"dev"}
+{"query":"verify gstin","intent":"find_api","split":"dev"}
+{"query":"check upi id","intent":"find_api","result":"api:upi-verification-api","split":"test"}
+{"query":"validate vpa","intent":"find_api","split":"dev"}
+{"query":"api to check driving licence","intent":"find_api","target":["action:find_api:dl-verification-api","action:find_api:driving-license"],"split":"dev"}
+{"query":"vehicle rc api","intent":"find_api","target":["action:find_api:vehicle-rc-verification-api","action:find_api:vehicle-rc"],"split":"test"}
+{"query":"digilocker api","intent":"find_api","target":"action:find_api:digilocker-api","split":"dev"}
+{"query":"voter id verification api","intent":"find_api","target":["action:find_api:voter-id-verification-api","action:find_api:voter-id"],"split":"dev"}
+{"query":"api to verify email address","intent":"find_api","target":["action:find_api:email-verification-api","action:find_api:check-email"],"split":"test"}
+{"query":"fssai license check api","intent":"find_api","target":["action:find_api:fssai-verification-api","action:find_api:fetch-fssai"],"split":"dev"}
+{"query":"cin lookup api","intent":"find_api","target":["action:find_api:cin-verification-api","action:find_api:cin"],"split":"dev"}
+{"query":"api to get wallet balance","intent":"find_api","target":"action:find_api:get-wallet-balance","split":"test"}
+{"query":"check transaction status api","intent":"find_api","target":"action:find_api:transaction-inquiry","split":"dev"}
+{"query":"refund api","intent":"find_api","result":"endpoint:initiate-refund","split":"dev"}
+{"query":"bbps fetch bill api","intent":"find_api","target":"action:find_api:bbps-fetch-bill","split":"test"}
+{"query":"api to get list of billers","intent":"find_api","target":"action:find_api:bbps-get-operators","split":"dev"}
+{"query":"recharge plans api","intent":"find_api","target":"action:find_api:bbps-recharge-plans","split":"dev"}
+{"query":"aeps balance enquiry api","intent":"find_api","target":"action:find_api:aeps-fingpay-balance-enquiry","split":"test"}
+{"query":"mini statement api","intent":"find_api","target":"action:find_api:aeps-fingpay-mini-statement","split":"dev"}
+{"query":"aeps settlement api","intent":"find_api","split":"dev"}
+{"query":"api to onboard a retailer","intent":"find_api","target":"action:find_api:onboard-user","split":"test"}
+{"query":"send otp api","intent":"find_api","target":"action:find_api:mobile-otp-send","split":"dev"}
+{"query":"name match api","intent":"find_api","target":["action:find_api:name-match-api","action:find_api:name-match"],"split":"dev"}
+{"query":"employee verification api","intent":"find_api","target":["action:find_api:employee-verification-api","action:find_api:advance-employment"],"split":"test"}
+{"query":"itr check api","intent":"find_api","target":["action:find_api:itr-compliance-api","action:find_api:itr-compliance"],"split":"dev"}
+{"query":"e challan api","intent":"find_api","target":["action:find_api:e-challan-verification-api","action:find_api:e-challan"],"split":"dev"}
+{"query":"reverse geocode api","intent":"find_api","target":["action:find_api:reverse-geocoding-api","action:find_api:reverse-geocoding"],"split":"test"}
+{"query":"ip address lookup api","intent":"find_api","target":["action:find_api:ip-verification-api","action:find_api:ip"],"split":"dev"}
+{"query":"din verification api","intent":"find_api","target":["action:find_api:din-verification-api","action:find_api:din-verification"],"split":"dev"}
+{"query":"passport verification api","intent":"find_api","target":["action:find_api:passport-application-validation-api","action:find_api:passport-application"],"split":"test"}
+{"query":"gst from pan api","intent":"find_api","target":"action:find_api:gstin-with-pan","split":"dev"}
+{"query":"bulk pan verification api","intent":"find_api","target":"action:find_api:pan-bulk-verify","split":"dev"}
+{"query":"fetch pan details","intent":"find_api","target":"action:find_api:pan-fetch","split":"test"}
+{"query":"verify mobile number","intent":"find_api","target":"action:find_api:mobile-otp-verification-api","split":"dev"}
+{"query":"validate ifsc","intent":"find_api","target":["action:find_api:get-ifsc-details","action:find_api:bank-verification-api"],"split":"dev"}
+{"query":"look up bank by ifsc","intent":"find_api","target":"action:find_api:get-ifsc-details","split":"test"}
+{"query":"check dl","intent":"find_api","target":["action:find_api:dl-verification-api","action:find_api:driving-license"],"split":"dev"}
+{"query":"api for money transfer","intent":"find_api","target":"action:find_api:dmt-api","split":"dev"}
+{"query":"aeps api","intent":"find_api","target":"action:find_api:aeps-api","split":"test"}
+{"query":"credit card bill payment api","intent":"find_api","result":"api:bbps-api","split":"dev"}
+{"query":"fastag recharge api","intent":"find_api","result":"api:bbps-api","split":"dev"}
+{"query":"api to add beneficiary","intent":"find_api","target":"action:find_api:dmt-add-recipient","split":"test"}
+{"query":"cibil score api","intent":null,"split":"dev"}
+{"query":"account aggregator api","intent":null,"split":"dev"}
+{"query":"upi payment api","intent":null,"split":"test"}
+{"query":"payout api","intent":null,"split":"dev"}
+{"query":"how do i integrate dmt","intent":"how_to_build","target":"action:how_to_build:dmt-fino-send-money","split":"dev"}
+{"query":"how to send money using eko api","intent":"how_to_build","target":"action:how_to_build:dmt-fino-send-money","split":"test"}
+{"query":"steps for aeps cash withdrawal","intent":"how_to_build","target":"action:how_to_build:aeps-fingpay-cash-withdrawal","split":"dev"}
+{"query":"how to integrate aeps","intent":"how_to_build","target":"action:how_to_build:aeps-fingpay-cash-withdrawal","split":"dev"}
+{"query":"how to pay electricity bill via api","intent":"how_to_build","target":"action:how_to_build:bbps-bill-payment","split":"test"}
+{"query":"bbps integration flow","intent":"how_to_build","target":"action:how_to_build:bbps-bill-payment","split":"dev"}
+{"query":"how to do mobile recharge","intent":"how_to_build","target":"action:how_to_build:bbps-mobile-recharge","split":"dev"}
+{"query":"dth recharge integration","intent":"how_to_build","target":"action:how_to_build:bbps-mobile-recharge","split":"test"}
+{"query":"how do i implement bill payment","intent":"how_to_build","target":"action:how_to_build:bbps-bill-payment","split":"dev"}
+{"query":"dmt workflow","intent":"how_to_build","target":"action:how_to_build:dmt-fino-send-money","split":"dev"}
+{"query":"walkthrough for cash withdrawal","intent":"how_to_build","target":"action:how_to_build:aeps-fingpay-cash-withdrawal","split":"test"}
+{"query":"how to build a money transfer app","intent":"how_to_build","target":"action:how_to_build:dmt-fino-send-money","split":"dev"}
+{"query":"how do i verify a bank account","intent":"find_api","target":["action:find_api:bank-verification-api","action:find_api:bank-account-verification"],"split":"dev"}
+{"query":"how to check pan status","intent":"find_api","split":"test"}
+{"query":"how to onboard sender in dmt","intent":"how_to_build","split":"dev"}
+{"query":"how do i get started","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"how to go live","intent":"get_started","target":"action:get_started:signup","split":"test"}
+{"query":"get api keys","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"sign up","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"create account","intent":"get_started","target":"action:get_started:signup","split":"test"}
+{"query":"production credentials","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"how to get uat access","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"onboarding process","intent":"get_started","target":"action:get_started:signup","split":"test"}
+{"query":"what are the next steps","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"activation fee","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"i want to become a partner","intent":"get_started","target":"action:get_started:signup","split":"test"}
+{"query":"register as developer","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"how do i start using eps","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"developer account","intent":"get_started","target":"action:get_started:signup","split":"test"}
+{"query":"sandbox credentials","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"where do i get my api key","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"going live checklist","intent":"get_started","target":"action:get_started:signup","split":"test"}
+{"query":"integration fee","intent":"get_started","target":"action:get_started:signup","split":"dev"}
+{"query":"how much can i earn from dmt","intent":"estimate_earnings","target":"action:estimate_earnings:dmt","split":"dev"}
+{"query":"commission on aeps","intent":"estimate_earnings","target":"action:estimate_earnings:aeps-cashout","split":"test"}
+{"query":"dmt commission for 500 transactions a month","intent":"estimate_earnings","target":"action:estimate_earnings:dmt","split":"dev"}
+{"query":"what will i earn on 1000 aeps withdrawals of 3000","intent":"estimate_earnings","target":"action:estimate_earnings:aeps-cashout","split":"dev"}
+{"query":"earnings from electricity bill payments","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-electricity","split":"test"}
+{"query":"income from bbps","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-electricity","split":"dev"}
+{"query":"how much will i make with 2 lakh monthly dmt","intent":"estimate_earnings","target":"action:estimate_earnings:dmt","split":"dev"}
+{"query":"profit on mobile recharge","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-prepaid","split":"test"}
+{"query":"margin on fastag","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-fastag","split":"dev"}
+{"query":"commission calculator","intent":"estimate_earnings","target":"action:estimate_earnings:calculator","split":"dev"}
+{"query":"take home for 5k transfers","intent":"estimate_earnings","target":"action:estimate_earnings:dmt","split":"test"}
+{"query":"aeps mini statement commission","intent":"estimate_earnings","target":"action:estimate_earnings:aeps-mini","split":"dev"}
+{"query":"retailer commission","intent":"estimate_earnings","target":"action:estimate_earnings:calculator","split":"dev"}
+{"query":"dth recharge earnings","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-dth","split":"test"}
+{"query":"credit card bill commission","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-credit-card","split":"dev"}
+{"query":"what do i earn per dmt transaction","intent":"estimate_earnings","target":"action:estimate_earnings:dmt","split":"dev"}
+{"query":"lpg booking commission","intent":"estimate_earnings","target":"action:estimate_earnings:bbps-lpg","split":"test"}
+{"query":"pan verification","intent":null,"result":"api:pan-verification-api","split":"dev"}
+{"query":"dmt","intent":null,"result":"api:dmt-api","split":"dev"}
+{"query":"golang","intent":null,"result":"sdk:go","split":"dev"}
+{"query":"go sdk","intent":null,"result":"sdk:go","split":"test"}
+{"query":"node sdk","intent":null,"result":"sdk:nodejs","split":"dev"}
+{"query":"npm package","intent":null,"result":"sdk:nodejs","split":"dev"}
+{"query":"python library","intent":null,"result":"sdk:python","split":"test"}
+{"query":"java client","intent":null,"result":"sdk:java","split":"dev"}
+{"query":"composer package","intent":null,"result":"sdk:php","split":"dev"}
+{"query":"pricing","intent":null,"result":"page:pricing","split":"test"}
+{"query":"dmt charges","intent":null,"result":"page:pricing","split":"dev"}
+{"query":"error codes","intent":null,"result":"guide:error-codes","split":"dev"}
+{"query":"hmac signature","intent":null,"result":"guide:how-auth-works","split":"test"}
+{"query":"secret-key generation","intent":null,"result":"guide:how-auth-works","split":"dev"}
+{"query":"how does authentication work","intent":null,"result":"guide:how-auth-works","split":"dev"}
+{"query":"is there a sandbox","intent":null,"result":"faq:is-there-a-sandbox-environment-for-testing","split":"test"}
+{"query":"base url","intent":null,"result":"faq:what-are-the-sandbox-and-production-base-urls","split":"dev"}
+{"query":"ip whitelisting","intent":null,"result":"faq:do-i-need-to-whitelist-my-server-ip","split":"dev"}
+{"query":"rd service","intent":null,"result":"guide:aadhaar-biometric-rdservice","split":"test"}
+{"query":"fingerprint device","intent":null,"result":"guide:aadhaar-biometric-rdservice","split":"dev"}
+{"query":"mcp server","intent":null,"result":"page:ai","split":"dev"}
+{"query":"claude code","intent":null,"result":"page:ai","split":"test"}
+{"query":"lending kyc","intent":null,"result":"solution:lending-kyc-pack","split":"dev"}
+{"query":"nbfc","intent":null,"result":"industry:lending-nbfc","split":"dev"}
+{"query":"kirana store","intent":null,"result":"industry:kirana-retail","split":"test"}
+{"query":"privacy policy","intent":null,"result":"page:privacy-policy","split":"dev"}
+{"query":"terms","intent":null,"result":"page:tnc","split":"dev"}
+{"query":"refund policy","intent":null,"result":"page:refund-policy","split":"test"}
+{"query":"about eko","intent":null,"result":"page:about-us","split":"dev"}
+{"query":"what is eps","intent":null,"result":"faq:what-is-eps","split":"dev"}
+{"query":"api versioning","intent":null,"result":"faq:how-does-api-versioning-work","split":"test"}
+{"query":"api documentation","intent":null,"result":"page:docs","split":"dev"}
+{"query":"api pricing","intent":null,"result":"page:pricing","split":"dev"}
+{"query":"list of apis","intent":null,"result":"page:products","split":"test"}
+{"query":"fingpay","intent":null,"result":"api:aeps-api","split":"dev"}
+{"query":"sender ekyc","intent":null,"result":"endpoint:dmt-fino-sender-ekyc","split":"dev"}
+{"query":"daily kyc aeps","intent":null,"result":"endpoint:aeps-fingpay-daily-auth","split":"test"}
+{"query":"bank list","intent":null,"result":"endpoint:get-banks","split":"dev"}
+{"query":"operator list","intent":null,"result":"endpoint:bbps-get-operators","split":"dev"}
+{"query":"biller list","intent":null,"result":"endpoint:bbps-get-operators","split":"test"}
+{"query":"beneficiary","intent":null,"result":"endpoint:dmt-add-recipient","split":"dev"}
+{"query":"remittance","intent":null,"result":"api:dmt-api","split":"dev"}
+{"query":"micro atm","intent":null,"result":"api:aeps-api","split":"test"}
+{"query":"bill payment","intent":null,"result":"api:bbps-api","split":"dev"}
+{"query":"cash withdrawal","intent":null,"result":"endpoint:aeps-fingpay-cash-withdrawal","split":"dev"}
+{"query":"penny drop","intent":null,"result":"api:bank-verification-api","split":"test"}
+{"query":"background verification","intent":null,"result":"api:employee-verification-api","split":"dev"}
+{"query":"gig workers","intent":null,"result":"solution:gig-worker-onboarding-pack","split":"dev"}
+{"query":"upi","intent":null,"result":"api:upi-verification-api","split":"test"}
+{"query":"verify","intent":null,"split":"dev"}
+{"query":"api","intent":null,"split":"dev"}
+{"query":"kyc","intent":null,"split":"test"}
+{"query":"what is the weather today","intent":null,"split":"dev"}
+{"query":"tell me a joke","intent":null,"split":"dev"}
+{"query":"cricket score","intent":null,"split":"test"}
+{"query":"hello","intent":null,"split":"dev"}
+{"query":"asdf","intent":null,"split":"dev"}
+{"query":"personal loan apply","intent":null,"split":"test"}
+{"query":"my money not received","intent":null,"split":"dev"}
+{"query":"customer care number","intent":null,"split":"dev"}
+{"query":"bitcoin","intent":null,"split":"test"}
+{"query":"how to cook biryani","intent":null,"split":"dev"}
+{"query":"how to open a bank account","intent":null,"split":"dev"}
+{"query":"how to learn python","intent":null,"split":"test"}
+{"query":"whatsapp","intent":null,"split":"dev"}

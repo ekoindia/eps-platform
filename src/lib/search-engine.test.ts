@@ -287,6 +287,20 @@ describe("body index", () => {
 		}
 	});
 
+	// SDK pages say "constructor". A plain-object alias lookup returned
+	// Object.prototype.constructor for it, MiniSearch threw "key must be a
+	// string", and the palette silently stayed on the label-only index.
+	it("indexes and queries words that name Object.prototype members", () => {
+		const target = SEARCH_INDEX.find((i) => i.category === "sdk")!;
+		const withBodies = buildEngine({
+			[target.id]: "the client constructor takes a tostring hasownproperty",
+		});
+		expect(search(withBodies, "constructor", "all")[0]?.item.id).toBe(
+			target.id,
+		);
+		expect(() => search(engine, "toString valueOf __proto__")).not.toThrow();
+	});
+
 	it("makes prose searchable that labels and keywords do not contain", () => {
 		const target = SEARCH_INDEX.find((i) => i.category === "endpoint")!;
 		const withBodies = buildEngine({
