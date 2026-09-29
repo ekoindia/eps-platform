@@ -11146,7 +11146,7 @@ const ALL_API_SPECS: ApiSpec[] = [
 		productId: "bank-info",
 		name: "Get IFSC Details",
 		slug: "get-ifsc-details",
-		summary: "Resolve a bank and branch from an IFSC code.",
+		summary: "Fetch the bank and branch for an IFSC code.",
 		description:
 			"Returns the bank name, branch, Eko `bank_id`, and verification availability for a given IFSC code.",
 		relevance: "L",

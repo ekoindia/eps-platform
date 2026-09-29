@@ -97,8 +97,25 @@ describe("resolveAction (real search index)", () => {
 		["how to cook biryani"],
 		["api pricing"],
 		["how does authentication work"],
+		// Best hit is a solution pack, not an API.
+		["how to open a bank account"],
 	])("%s → no card", (query) => {
 		expect(resolveAction(engine, query)).toBeNull();
+	});
+
+	// A word found only in page prose is a mention, not the API's subject:
+	// the UPI page says "before a payout", but it is no payout API.
+	it("shows no card when the API matched only in its page text", () => {
+		const withBody = buildEngine({
+			"api:upi-verification-api": "Check the VPA before a payout.",
+		});
+		expect(resolveAction(withBody, "payout api")).toBeNull();
+	});
+
+	it("finds an endpoint named by what it fetches", () => {
+		expect(resolveAction(engine, "endpoint to fetch ifsc details")?.id).toBe(
+			"action:find_api:get-ifsc-details",
+		);
 	});
 
 	it("sends a how-to question to its recipe, with the first step", () => {
