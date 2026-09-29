@@ -217,6 +217,7 @@ export interface SearchLogSummary {
 	click: number;
 	askAi: number;
 	abandon: number;
+	bodyIndexLoaded: number;
 }
 
 export interface SearchLogQueryCount {

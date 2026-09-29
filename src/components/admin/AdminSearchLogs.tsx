@@ -51,6 +51,7 @@ const cards = (s: SearchLogSummary) => [
 	{ label: "Clicked a result", value: percent(s.click, s.total) },
 	{ label: "Abandoned", value: percent(s.abandon, s.total) },
 	{ label: "Asked AI", value: percent(s.askAi, s.total) },
+	{ label: "Full-text index loaded", value: percent(s.bodyIndexLoaded, s.total) },
 ];
 
 /** One ranked query table. */

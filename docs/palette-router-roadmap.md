@@ -20,7 +20,7 @@ status updates the board and appends to the progress log in the same commit.
 | 0 | Palette telemetry: GTM counts + redacted query log in SQLite, admin Search logs page | ✅ **Live in prod**, verified 2026-09-28 | — |
 | 0b | Baseline data collection (2–4 weeks at sample rate 1) | ⏳ **Running since 2026-09-28** — first review ~2026-10-12, eval-set cut ~2026-10-26 | — |
 | 1a | Rules + MiniSearch **action cards** (zero-MB comparator) | ✅ All 4 intents built 2026-09-28; flag **on in prod** since PR #131 | 2026-09-28 |
-| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); awaiting deploy | 2026-09-28 |
+| 1a+ | Query audit: 164 synthetic labelled queries (`scripts/palette-eval/audit.jsonl`), misses fixed | ✅ 2026-09-28 — held-out test at the gate (intent 0.89, refusal 0.91, precision 0.90); deployed 2026-09-29 (PR #134), `bodyIndexLoaded: true` confirmed in prod | 2026-09-29 |
 | 1b | Needle spike: JS API, browser cost, base-model sanity | ⬜ Not started | — |
 | 1c | Eval set + gate run (comparator vs Needle, end to end) | ⬜ Needs 0b data | — |
 | 2 | Needle build behind `VITE_SHOW_NEEDLE` | ⬜ Only if Needle clearly beats 1a at the gate | — |
@@ -237,6 +237,15 @@ signup started/completed, chat availability equal across arms.
 ## Progress log
 
 Newest first. One entry per working session that changes status.
+
+- **2026-09-29** — Query-audit fixes (full-text index `constructor` fix,
+  strict card search, rule and content fixes) merged to `main` in PR #134
+  at 08:23 IST: **deploy date for before/after comparison.** Rows before
+  it have `bodyIndexLoaded: false`; rows after should be `true`. The
+  user confirmed `true` in the prod export. Admin Search logs now also
+  shows a "Full-text index loaded" summary card (% of searches), so the
+  split is visible without an export. Next: fix the known dev misses,
+  then the Phase 1b spike or the ~2026-10-12 review.
 
 - **2026-09-28** — Query audit done (see section). Found and fixed a prod bug:
   the full-text body index never loaded (`constructor` alias lookup), so

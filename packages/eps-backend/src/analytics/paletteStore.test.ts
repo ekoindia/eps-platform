@@ -26,7 +26,7 @@ const row = (over: Partial<NewRow>): NewRow => ({
 function seeded() {
 	const store = openPaletteStore(":memory:");
 	[
-		row({ query: "UPI " }),
+		row({ query: "UPI ", bodyIndexLoaded: true }),
 		row({
 			query: "upi",
 			outcome: "abandon",
@@ -60,6 +60,7 @@ describe("paletteStore", () => {
 			click: 2,
 			askAi: 1,
 			abandon: 2,
+			bodyIndexLoaded: 1,
 		});
 	});
 
