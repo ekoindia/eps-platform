@@ -261,6 +261,17 @@ export const Footer = () => {
 								</a>
 							))}
 						</div>
+						{/* DUNS Seal */}
+						<iframe
+							className="mt-6"
+							id="dunsframe"
+							src="https://dunsregistered.dnb.com/SealAuthentication.aspx?Cid=1"
+							width="75px"
+							height="50px"
+							frameborder="0"
+							scrolling="no"
+							allowtransparency="true"
+						></iframe>
 					</div>
 
 					{/*
