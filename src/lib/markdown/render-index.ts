@@ -159,7 +159,10 @@ export function renderLlmsTxt(
 		`- [Pricing](${SITE_URL}/pricing.md): Full per-transaction rate card for all verification APIs`,
 	);
 	lines.push(
-		`- [FAQ](${SITE_URL}/faq.md): Common questions on integration, auth, testing, billing, versioning and compliance`,
+		`- [FAQ](${SITE_URL}/faq.md): Common questions on integration, auth, testing, billing, versioning and security`,
+	);
+	lines.push(
+		`- [Security & Data Protection](${SITE_URL}/security.md): Data residency (Azure, India), Aadhaar/biometric handling, ISO/IEC 27001 audits, API security and transaction safeguards`,
 	);
 	lines.push(
 		`- [API Recipes](${SITE_URL}${recipeHref()}.md): Multi-step workflows — the order to call endpoints in, and how to branch on each response`,

@@ -35,6 +35,7 @@ import {
 } from "@/lib/data/api-specs-common";
 import { API_SPECS_MAP } from "@/lib/data/api-specs";
 import { docHrefForSlug, docsHref } from "@/lib/data/docs-registry";
+import { SECURITY_PATH, SECURITY_SECTIONS } from "@/lib/data/security";
 import { SDK_GUIDES, sdkGuideHref } from "@/lib/data/sdk-guides";
 import { SDK_INSTALL, sdkSampleFor } from "@/lib/docs/code-samples";
 import { resolveShortDescription } from "@/lib/data/endpoint-descriptions";
@@ -88,6 +89,17 @@ const apiDetail = (spec: ApiSpec): AgentApiDetail => ({
 	errorScenarios: spec.errorScenarios ?? [],
 	responseTypes: spec.responseTypes ?? [],
 });
+
+/** Site-relative `/path` → absolute URL; agents read FAQs outside the site. */
+const absoluteHref = (href: string): string =>
+	href.startsWith("/") ? `${SITE_URL}${href}` : href;
+
+/** Absolutize every site-relative markdown link target: `](/path)`. */
+const absoluteMarkdownLinks = (markdown: string): string =>
+	markdown.replace(
+		/\]\((\/[^)]*)\)/g,
+		(_, href: string) => `](${absoluteHref(href)})`,
+	);
 
 const buildTopics = (): AgentTopics => ({
 	auth: {
@@ -155,6 +167,19 @@ const buildTopics = (): AgentTopics => ({
 			{ label: "AI integration hub", url: `${SITE_URL}/ai` },
 		],
 	},
+	security: {
+		id: "security",
+		url: `${SITE_URL}${SECURITY_PATH}`,
+		summary:
+			"Data residency (Azure, India only), Aadhaar/biometric handling, " +
+			"ISO/IEC 27001 audits, API security and per-product transaction " +
+			"safeguards. Quote these statements as-is; do not strengthen them.",
+		sections: SECURITY_SECTIONS.map(({ id, title, points }) => ({
+			id,
+			title,
+			points: points.map(absoluteMarkdownLinks),
+		})),
+	},
 });
 
 /** Project `SDK_GUIDES` into the bundle, joining the install coordinates and the
@@ -192,10 +217,6 @@ const buildSdks = (): AgentSdk[] => {
 		});
 };
 
-/** Site-relative `/path` → absolute URL; agents read FAQs outside the site. */
-const absoluteHref = (href: string): string =>
-	href.startsWith("/") ? `${SITE_URL}${href}` : href;
-
 /**
  * Global + pricing FAQs with every site-relative link made absolute (markdown
  * `](/path)` in answers and `links[].href`). Pricing FAQs carry no tag, so
@@ -208,10 +229,7 @@ const buildFaqs = (): AgentFaq[] => {
 	];
 	return faqs.map(({ q, a, tag, links }) => ({
 		q,
-		a: a.replace(
-			/\]\((\/[^)]*)\)/g,
-			(_, href: string) => `](${absoluteHref(href)})`,
-		),
+		a: absoluteMarkdownLinks(a),
 		...(tag && { tag }),
 		...(links && {
 			links: links.map((link) => ({ ...link, href: absoluteHref(link.href) })),

@@ -1,6 +1,7 @@
 import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { Shield, Lock, FileCheck } from "lucide-react";
 import { FadeIn } from "@/components/FadeIn";
+import { Link } from "react-router-dom";
 import { Picture } from "@/components/Picture";
 import airtelLogo from "@/assets/partners/airtel-payments-bank.png?w=120;240&format=avif;webp&as=picture";
 import finoLogo from "@/assets/partners/fino-payments-bank.png?w=120;240&format=avif;webp&as=picture";
@@ -90,6 +91,15 @@ export const ComplianceSection = () => {
 					</FadeIn>
 				))}
 			</div>
+
+			<FadeIn className="mt-8 text-center">
+				<Link
+					to="/security"
+					className="font-medium text-eko-gold underline underline-offset-2 hover:no-underline"
+				>
+					How we protect your data &amp; transactions →
+				</Link>
+			</FadeIn>
 
 			{/* Partner Logos */}
 			<FadeIn className="mt-16 pt-12 border-t border-border/50">

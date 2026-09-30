@@ -52,6 +52,7 @@ import {
 
 import type { ProductPageContent } from "@/components/ProductPageLayout";
 import { COMMON_API_FAQS } from "./common-faqs";
+import { SECURITY_PATH, TRANSACTION_AUTH } from "./security";
 
 // ---------------------------------------------------------------------------
 // Hero image assets
@@ -246,6 +247,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "Is there a settlement delay?",
 				a: "Settlement timelines depend on your agreement. Most partners receive T+1 settlements, with options for same-day settlements for high-volume partners.",
+			},
+			{
+				q: "How are money transfers authenticated?",
+				a: TRANSACTION_AUTH.dmt,
+				links: [{ label: "Transaction security", href: `${SECURITY_PATH}#transactions` }],
 			},
 		],
 	},
@@ -459,6 +465,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 				q: "What biometric devices are supported?",
 				a: "We support all UIDAI-certified biometric devices including Morpho, Mantra, Startek, and others.",
 			},
+			{
+				q: "How are AePS transactions authenticated?",
+				a: TRANSACTION_AUTH.aeps,
+				links: [{ label: "Transaction security", href: `${SECURITY_PATH}#transactions` }],
+			},
 			// {
 			//   q: "What is the transaction limit for AePS?",
 			//   a: "Cash withdrawal limits vary by bank but typically range from ₹10,000 to ₹50,000 per transaction. Some banks allow higher limits for specific use cases.",
@@ -611,6 +622,11 @@ export const API_PRODUCT_PAGES: Record<string, ProductPageData> = {
 			{
 				q: "Is BBPS API available 24/7?",
 				a: "Yes, BBPS services are available 24/7. However, some billers may have specific operating hours for payment processing.",
+			},
+			{
+				q: "How is the bill payment amount protected?",
+				a: TRANSACTION_AUTH.bbps,
+				links: [{ label: "Transaction security", href: `${SECURITY_PATH}#transactions` }],
 			},
 			// {
 			//   q: "How long does integration take?",

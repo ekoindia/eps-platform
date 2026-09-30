@@ -102,6 +102,8 @@ That's **3 npm packages, 1 Composer package, 1 PyPI package, 1 Go module, 1 JitP
 | [`industries.ts`](src/lib/data/industries.ts) / [`solutions.ts`](src/lib/data/solutions.ts) | Industry pages + solution/pack definitions |
 | `api-pricing.ts` / `payments-pricing.ts` | Pricing data (drives pricing page + xlsx calculator) |
 | `docs-registry.ts` | Merges MDX guides + API endpoints into the docs nav |
+| `common-faqs.ts` | Global + common FAQs (`/faq`, product pages, `/docs/faqs`, MCP `get_faqs`) |
+| `security.ts` | IT-confirmed security copy for `/security`, security FAQs and the MCP `security` topic — see [docs/security-page.md](docs/security-page.md) |
 
 **Config files** (root): `package.json` (npm workspaces), `vite.config.ts`, `vitest.config.ts`, `tsconfig*.json`, `eslint.config.js`, `components.json`, the `vite-plugin-generate-*.ts` emitters, and per-platform deploy rewrites (`vercel.json`, `netlify.toml`, `nginx.conf`, `.htaccess`).
 
@@ -167,6 +169,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow.
 
 **API & data model**
 - [API technical specifications](docs/api-specs.md)
+- [Security & data protection content](docs/security-page.md)
 - [Markdown / LLM content generation](docs/markdown-generation.md)
 - [Developer-docs portal architecture](docs/developer-docs/)
 - [Industries & solution packs plan](docs/industry-and-packs-plan.md)

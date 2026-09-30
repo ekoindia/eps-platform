@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import type { AgentBundle } from "./bundle-types.js";
+import type { AgentBundle, AgentTopicId } from "./bundle-types.js";
 import {
 	getApi,
 	getFaqs,
@@ -160,20 +160,17 @@ export const createEpsServer = (
 		},
 	);
 
+	// Topic ids come from the bundle, so a new topic (e.g. `security`) needs no
+	// server change and an older bundle never advertises one it lacks.
+	const topicIds = listTopics(bundle);
+
 	server.registerTool(
 		"get_topic",
 		{
 			title: "Get topic",
-			description:
-				"One topic: getting-started | auth | errors | pricing | environments.",
+			description: `One topic: ${topicIds.join(" | ")}.`,
 			inputSchema: {
-				topic: z.enum([
-					"getting-started",
-					"auth",
-					"errors",
-					"pricing",
-					"environments",
-				]),
+				topic: z.enum(topicIds as [AgentTopicId, ...AgentTopicId[]]),
 			},
 			annotations: READ_ONLY,
 		},
@@ -211,7 +208,7 @@ export const createEpsServer = (
 		{
 			title: "Get FAQs",
 			description:
-				"EPS FAQs (onboarding, auth, testing, integration, pricing, compliance, " +
+				"EPS FAQs (onboarding, auth, testing, integration, pricing, security, " +
 				"support). Answers are markdown with absolute links. Filter by tag " +
 				"and/or rank by query; with neither, all FAQs are returned.",
 			inputSchema: {

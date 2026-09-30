@@ -30,7 +30,7 @@ const ESIGNATURE: readonly string[] = [
  */
 const CHIPS: readonly string[] = [
 	"Trusted since 2007",
-	"ISO 27001",
+	"ISO 27001-audited",
 	"UIDAI eSign",
 ];
 

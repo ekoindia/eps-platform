@@ -33,7 +33,7 @@ const DESTINATIONS: readonly { lead: string; body: string }[] = [
  * The same two claims the PAN step's aside carries. Kept in both files rather
  * than shared: see `PanAside` for why the list is exactly these two.
  */
-const CHIPS: readonly string[] = ["Trusted since 2007", "ISO 27001"];
+const CHIPS: readonly string[] = ["Trusted since 2007", "ISO 27001-audited"];
 
 /**
  * Supporting column for the Business Details step: why these fields are asked

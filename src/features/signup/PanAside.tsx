@@ -29,7 +29,7 @@ const REASONS: readonly { lead: string; body: string }[] = [
  * see the parked trust-and-compliance work (`ProductPageLayout.tsx`, the
  * commented-out `trustAndCompliance` block) before doing so.
  */
-const CHIPS: readonly string[] = ["Trusted since 2007", "ISO 27001"];
+const CHIPS: readonly string[] = ["Trusted since 2007", "ISO 27001-audited"];
 
 /**
  * Supporting column for the PAN step: why the PAN is needed, that signing up

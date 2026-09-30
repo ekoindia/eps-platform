@@ -20,6 +20,7 @@ const DOCS_GUIDE_TAGS: FaqTag[] = [
 	"testing",
 	"integration",
 	"ai",
+	"security",
 	"support",
 ];
 

@@ -98,12 +98,22 @@ export interface AgentGettingStartedTopic {
 	links: { label: string; url: string }[];
 }
 
+export interface AgentSecurityTopic {
+	id: "security";
+	/** Canonical human page. */
+	url: string;
+	summary: string;
+	/** IT-confirmed statements, markdown with absolute links. */
+	sections: { id: string; title: string; points: string[] }[];
+}
+
 export interface AgentTopics {
 	auth: AgentAuthTopic;
 	errors: AgentErrorsTopic;
 	pricing: AgentPricingTopic;
 	environments: AgentEnvironmentsTopic;
 	"getting-started": AgentGettingStartedTopic;
+	security: AgentSecurityTopic;
 }
 
 export type AgentTopicId = keyof AgentTopics;
