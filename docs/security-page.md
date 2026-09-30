@@ -34,10 +34,10 @@ product is `disabled` in `api-products.ts`:
 To gate a new product, add it to `TRANSACTION_AUTH` and `TRANSACTION_PRODUCTS`,
 and add its key phrases to `PRODUCT_STATEMENTS` in the test.
 
-> [!WARNING]
-> Disabling DMT currently breaks `buildAgentBundle`: the DMT recipes in
-> `api-recipes.ts` still reference DMT specs (`assertRecipeSlugs` throws). That's
-> an existing recipe issue, not a security-page one.
+Disabling a product is safe for the rest of the build too: its recipes drop
+out of `RECIPES` (`activeRecipes` in `api-recipes.ts`), and other products'
+`responseTypes[].next` links into it are stripped (`withoutLinksInto` in
+`docs-registry.ts`). Verified by a full `npm run build` with DMT disabled.
 
 The MCP `get_topic` enum is derived from the bundle's topic keys. Adding a
 topic to `AgentTopics` (defined in both `src/lib/agent/agent-bundle-types.ts`

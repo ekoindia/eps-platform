@@ -8,7 +8,12 @@
  *
  * `specSlug` and branch `goto` targets are foreign keys into `API_SPECS.slug`;
  * `assertRecipeSlugs` fails the build/tests on any dangling reference.
+ *
+ * Recipes of a product that is `disabled` in `api-products.ts` are left out of
+ * {@link RECIPES}, and so out of every page, route, bundle and index built from it.
  */
+
+import { ACTIVE_PRODUCTS_MAP } from "./api-products";
 
 /**
  * What triggers a branch. EXACTLY ONE key — the `?: never` arms make setting
@@ -104,7 +109,8 @@ export const RECIPE_SECTION_SLUG = "recipe";
 export const recipeHref = (slug?: string): string =>
 	slug ? `/${RECIPE_SECTION_SLUG}/${slug}` : `/${RECIPE_SECTION_SLUG}`;
 
-export const RECIPES: Recipe[] = [
+/** Every authored recipe, whether or not its product is enabled. */
+export const ALL_RECIPES: Recipe[] = [
 	{
 		id: "dmt-fino-send-money",
 		slug: "dmt-fino-send-money",
@@ -357,6 +363,24 @@ export const RECIPES: Recipe[] = [
 		],
 	},
 ];
+
+/**
+ * Recipes whose product is enabled. A product-less recipe is always kept.
+ *
+ * @param recipes  - Candidate recipes.
+ * @param isActive - Whether a product id is currently enabled.
+ */
+export const activeRecipes = (
+	recipes: Recipe[],
+	isActive: (productId: string) => boolean,
+): Recipe[] =>
+	recipes.filter((recipe) => !recipe.productId || isActive(recipe.productId));
+
+/** Published recipes: only those of enabled products. */
+export const RECIPES: Recipe[] = activeRecipes(
+	ALL_RECIPES,
+	(productId) => productId in ACTIVE_PRODUCTS_MAP,
+);
 
 const RECIPES_BY_SLUG: Map<string, Recipe> = new Map(
 	RECIPES.map((recipe) => [recipe.slug, recipe]),

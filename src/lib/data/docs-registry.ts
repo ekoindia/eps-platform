@@ -91,13 +91,42 @@ export const endpointSlug = (spec: ApiSpec): string => spec.slug;
  * `getDisplaySpecsForProduct` in api-spec-previews) to avoid clutter. */
 const isStatusSpec = (spec: ApiSpec): boolean => spec.id.endsWith("-status");
 
+const isActiveProductSpec = (spec: ApiSpec): boolean =>
+	Boolean(ACTIVE_PRODUCTS_MAP[spec.productId]);
+
+/** Slugs of enabled specs hidden only because their whole product is disabled. */
+const inactiveProductSlugs = (): Set<string> =>
+	new Set(
+		API_SPECS.filter((spec) => !isActiveProductSpec(spec)).map((s) => s.slug),
+	);
+
+/**
+ * Drop `responseTypes[].next` links into a disabled product (e.g. AePS
+ * activation → DMT onboarding), so disabling a product needs no manual
+ * cleanup. Links to a disabled or unknown *spec* are left alone and still
+ * fail `assertResponseTypeSlugs`: those are real mistakes.
+ */
+export const withoutLinksInto = (spec: ApiSpec, hidden: Set<string>): ApiSpec =>
+	spec.responseTypes?.some((rt) => rt.next && hidden.has(rt.next))
+		? {
+				...spec,
+				responseTypes: spec.responseTypes.map(({ next, ...rt }) =>
+					next && hidden.has(next) ? rt : { ...rt, next },
+				),
+			}
+		: spec;
+
 /**
  * Specs that get a docs page: any spec belonging to an active (non-disabled)
  * product — including `-status` pollers. Other consumers should derive from
  * this, not `API_SPECS`.
  */
-export const getDocumentedSpecs = (): ApiSpec[] =>
-	API_SPECS.filter((spec) => Boolean(ACTIVE_PRODUCTS_MAP[spec.productId]));
+export const getDocumentedSpecs = (): ApiSpec[] => {
+	const hidden = inactiveProductSlugs();
+	return API_SPECS.filter(isActiveProductSpec).map((spec) =>
+		withoutLinksInto(spec, hidden),
+	);
+};
 
 const toEndpointNode = (spec: ApiSpec): DocNode => ({
 	slug: endpointSlug(spec),
