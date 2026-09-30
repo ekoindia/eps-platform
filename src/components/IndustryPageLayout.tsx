@@ -5,20 +5,19 @@ import { Footer } from "@/components/Footer";
 import { GetStartedButton } from "@/components/GetStartedButton";
 import { IndustryCard } from "@/components/IndustryCard";
 import { MiniToc } from "@/components/MiniToc";
+import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { FaqSection } from "@/components/sections/FaqSection";
-import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { TrustStrip } from "@/components/sections/TrustStrip";
-import { SectionContainer, SectionHeader } from "@/components/SectionContainer";
 import { SolutionCard } from "@/components/SolutionCard";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { docsHref } from "@/lib/data/docs-registry";
 import type { IndustryData } from "@/lib/data/industries";
 import { INDUSTRIES_MAP } from "@/lib/data/industries";
 import { SOLUTIONS_MAP } from "@/lib/data/solutions";
 import { ArrowRight, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
-import { docsHref } from "@/lib/data/docs-registry";
 
 interface IndustryPageLayoutProps {
 	data: IndustryData;
@@ -386,7 +385,7 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
 				)}
 
 				{/* Bottom CTA */}
-				<LeadFormCTASection />
+				{/* <LeadFormCTASection /> */}
 			</main>
 			<MiniToc maxLevel={2} />
 			<Footer />

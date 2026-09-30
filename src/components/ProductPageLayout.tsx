@@ -14,7 +14,6 @@ import { Picture, type PictureSource } from "@/components/Picture";
 import { SectionContainer } from "@/components/SectionContainer";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { IntegrationStepperSection } from "@/components/sections/IntegrationStepperSection";
-import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { SolutionCard } from "@/components/SolutionCard";
 import {
@@ -747,10 +746,10 @@ export const ProductPageLayout = ({
 				)}
 
 				{/* Lead Form Section - Below FAQ */}
-				<LeadFormCTASection
+				{/* <LeadFormCTASection
 					heading="Get API Access"
 					formTitle={leadForm?.title || "Get API Access"}
-				/>
+				/> */}
 			</main>
 
 			<MiniToc maxLevel={2} />

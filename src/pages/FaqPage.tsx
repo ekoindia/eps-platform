@@ -5,7 +5,6 @@ import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 import { FadeIn } from "@/components/FadeIn";
 import { Footer } from "@/components/Footer";
 import { FaqSection } from "@/components/sections/FaqSection";
-import { LeadFormCTASection } from "@/components/sections/LeadFormCTASection";
 import { PageHero } from "@/components/sections/PageHero";
 import { SITE_OG_IMAGE, SITE_URL } from "@/lib/config/site";
 import { GLOBAL_FAQS } from "@/lib/data/common-faqs";
@@ -71,11 +70,11 @@ const FaqPage = () => {
 
 					<FaqSection faqs={GLOBAL_FAQS} variant="default" title={null} />
 
-					<LeadFormCTASection
+					{/* <LeadFormCTASection
 						heading="Still have questions?"
 						formTitle="Get API Access"
 						description="Sign up now, test in the free sandbox, and our team will help you go live quickly."
-					/>
+					/> */}
 				</main>
 				<Footer />
 			</div>
