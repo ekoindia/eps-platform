@@ -268,9 +268,9 @@ export const Footer = () => {
 							src="https://dunsregistered.dnb.com/SealAuthentication.aspx?Cid=1"
 							width="114px"
 							height="97px"
-							frameborder="0"
+							title="D-U-N-S Registered seal"
+							style={{ border: 0, background: "transparent" }}
 							scrolling="no"
-							allowtransparency="true"
 						></iframe>
 					</div>
 
