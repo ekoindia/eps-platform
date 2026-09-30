@@ -112,6 +112,7 @@ const developerLinks: DeveloperLinkItem[] = [
 	{ label: "Build with AI", href: "/ai", icon: Sparkles },
 	{ label: "SDKs & Libraries", href: "/docs/sdk", icon: Package },
 	{ label: "FAQs", href: "/faq", icon: HelpCircle },
+	{ label: "Security", href: "/security", icon: ShieldCheck },
 	{
 		label: "Open Source",
 		href: GITHUB_ORG_URL,
