@@ -62,14 +62,8 @@ export const IndustryPageLayout = ({ data }: IndustryPageLayoutProps) => {
 									<GetStartedButton variant="gold" size="lg">
 										Get Sandbox Access <ArrowRight className="w-4 h-4" />
 									</GetStartedButton>
-									<Button
-										variant="hero-outline"
-										size="lg"
-										onClick={() =>
-											window.dispatchEvent(new Event("open-talk-to-sales"))
-										}
-									>
-										Talk to Sales
+									<Button variant="hero-outline" size="lg" asChild>
+										<Link to={docsHref()}>How to get started?</Link>
 									</Button>
 								</div>
 							</FadeIn>
